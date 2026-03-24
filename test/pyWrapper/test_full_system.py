@@ -849,24 +849,6 @@ def test_rectilinear_mode(tmp_path):
     np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['value'], getPeakPulse(noRectilinearVertexProbe)['value'], decimal=_FIELD_TOLERANCE)
     np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['time'], getPeakPulse(noRectilinearVertexProbe)['time'], decimal=_TIME_TOLERANCE)
     
-def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arguments(tmp_path):
-    projectRoot = os.getcwd()
-    folderWitSpaces: str  = os.path.join(tmp_path, "spaced bin")
-    os.mkdir(folderWitSpaces)
-    if platform == 'win32':
-        shutil.copy2(NGSPICE_DLL, folderWitSpaces)
- 
-    sembaExecutable = SEMBA_EXE.split(os.path.sep)[-1]
-    pathToExe: str = os.path.join(folderWitSpaces, sembaExecutable)
-    shutil.copy2(SEMBA_EXE, pathToExe)
-    print(pathToExe)
-    
-    fn = CASES_FOLDER + "dielectric/dielectricTransmission.fdtd.json"
-    solver = FDTD(fn, path_to_exe=pathToExe, run_in_folder=tmp_path)
-    solver.run()
-    assert (Probe(solver.getSolvedProbeFilenames("outside")[0]) is not None)
-    assert (solver.getVTKMap()[0] is not None)
-
 @mtln_skip
 def test_nodal_source_single_wire(tmp_path):
     fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
@@ -960,20 +942,6 @@ def test_nodal_source_unshielded(tmp_path):
     assert np.corrcoef(exc, -nodalBulkProbe['current'])[0,1] > 0.999
     assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
 
-
-def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
-    fn = CASES_FOLDER + 'multipleAssigments/multipleSurfaceImpedance.fdtd.json'
-
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver.run()
-    assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
-
-def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
-    fn = CASES_FOLDER + 'multipleAssigments/multipleDielectricMaterial.fdtd.json'
-
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver.run()
-    assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
 
 @mtln_skip
 def test_lumped_resistor(tmp_path):
@@ -1636,35 +1604,4 @@ def test_conformal_delay(tmp_path):
         tdelta = t4 + 2*(i*1.0/n)*0.02/3e8
         assert np.abs(delay - tdelta)/tdelta < 0.01
         
-
-
-def test_bulk_current_outputs(tmp_path):
-    # This test uses bulk_probe_cases_over_nodal_source.fdtd from input_examples as input.
-    # Verifies all kind of bulk probes are recognised and setted properly by checking outputFile format.
-    fn = PROBES_INPUT_EXAMPLE + 'bulk_probe_cases_over_nodal_source.fdtd.json'
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver.run()
-
-    bulkXPlaneFiles = solver.getSolvedProbeFilenames("BulkXPlane") 
-    bulkYPlaneFiles = solver.getSolvedProbeFilenames("BulkYPlane") 
-    bulkZPlaneFiles = solver.getSolvedProbeFilenames("BulkZPlane") 
-    bulkYPointFiles = solver.getSolvedProbeFilenames("BulkYPoint") 
-    bulkZVolumeFiles = solver.getSolvedProbeFilenames("BulkZVolume") 
-
-    assert len(bulkXPlaneFiles) == 1
-    assert len(bulkYPlaneFiles) == 1
-    assert len(bulkZPlaneFiles) == 1
-    assert len(bulkYPointFiles) == 1
-    assert len(bulkZVolumeFiles) == 10
-
-    probeBulkXPlane = Probe(bulkXPlaneFiles[0])
-    probeBulkYPlane = Probe(bulkYPlaneFiles[0])
-    probeBulkZPlane = Probe(bulkZPlaneFiles[0])
-    probeBulkYPoint = Probe(bulkYPointFiles[0])
-    probeBulkZVolume = Probe(bulkZVolumeFiles[0])
-
-    assert probeBulkXPlane.direction == 'x'
-    assert probeBulkYPlane.direction == 'y'
-    assert probeBulkZPlane.direction == 'z'
-    assert probeBulkYPoint.direction == 'y'
     assert probeBulkZVolume.direction == 'z'

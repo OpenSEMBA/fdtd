@@ -148,10 +148,10 @@ class Probe():
 
     def __getitem__(self, key):
         if key not in self.data.columns:
-            if key == 'current_0' and 'current' in self.data.columns:
-                return self.data['current']
-            if key == 'voltage_0' and 'voltage' in self.data.columns:
-                return self.data['voltage']
+            if key == 'current' and 'current_0' in self.data.columns:
+                return self.data['current_0']
+            if key == 'voltage' and 'voltage_0' in self.data.columns:
+                return self.data['voltage_0']
         return self.data[key]
 
     @staticmethod
