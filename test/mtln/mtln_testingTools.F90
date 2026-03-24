@@ -10,8 +10,8 @@ module mtln_testingTools_mod
     character(len=*), parameter :: MTL_TYPE_UNSHIELDED = "unshielded"
 
     interface checkNear
-        module procedure checkNear_real4
-        module procedure checkNear_real8
+        module procedure checkNear_real
+        module procedure checkNear_dp
     end interface checkNear
 
 contains
@@ -21,13 +21,13 @@ contains
     
         integer, intent(in) :: n
         character(len=*), intent(in) :: name
-        real, intent(in), optional :: dt
+        real(kind=rkind_tiempo), intent(in), optional :: dt
         character(len=*), intent(in), optional :: parent_name
         integer, intent(in), optional :: conductor_in_parent
         character(len=*), intent(in) :: type
         
-        real, allocatable, dimension(:,:) :: lpul, cpul, rpul, gpul
-        real, dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
+        real(kind=rkind), allocatable, dimension(:,:) :: lpul, cpul, rpul, gpul
+        real(kind=rkind), dimension(5) :: step_size = [20.0_rkind, 20.0_rkind, 20.0_rkind, 20.0_rkind, 20.0_rkind]
         type(segment_t), allocatable, dimension(:) :: segments
         integer :: i,j
         
@@ -43,10 +43,10 @@ contains
         allocate(Zt%poles(0), Zt%residues(0))
         allocate(mE(0))
 
-        allocate(lpul(n,n), source = 0.0)
-        allocate(cpul(n,n), source = 0.0)
-        allocate(gpul(n,n), source = 0.0)
-        allocate(rpul(n,n), source = 0.0)
+        allocate(lpul(n,n), source = 0.0_rkind)
+        allocate(cpul(n,n), source = 0.0_rkind)
+        allocate(gpul(n,n), source = 0.0_rkind)
+        allocate(rpul(n,n), source = 0.0_rkind)
         allocate(segments(5))
         do i = 1, 5
             segments(i)%x = 1
@@ -87,7 +87,7 @@ contains
             end if
             res = mtl_shielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, parent, conductor, Zt)
         else if (type == MTL_TYPE_UNSHIELDED) then 
-            res = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, mE, radius = 0.0)
+            res = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, mE, radius = 0.0_rkind)
         else
             write(*,*) 'Unrecognized line type'
         end if
@@ -96,8 +96,8 @@ contains
 
     subroutine comparePULMatrices(error_cnt, m_line, m_input)
         integer, intent(inout) :: error_cnt
-        real, intent(in), dimension(:,:,:) :: m_line
-        real, intent(in), dimension(:,:) :: m_input
+        real(kind=rkind), intent(in), dimension(:,:,:) :: m_line
+        real(kind=rkind), intent(in), dimension(:,:) :: m_input
         integer :: i
 
         if (size(m_input, dim = 1) .ne. size(m_input, dim = 2)) then
@@ -115,8 +115,8 @@ contains
 
     subroutine comparePULMatricesIH(error_cnt, m_line, m_input)
         integer, intent(inout) :: error_cnt
-        real, intent(in), dimension(:,:,:) :: m_line
-        real, intent(in), dimension(:,:,:) :: m_input
+        real(kind=rkind), intent(in), dimension(:,:,:) :: m_line
+        real(kind=rkind), intent(in), dimension(:,:,:) :: m_input
         integer :: i
 
         if (size(m_input, dim = 2) .ne. size(m_input, dim = 2)) then
@@ -135,9 +135,9 @@ contains
         
     end subroutine 
 
-    function checkNear_real4(target, number, rel_tol) result(is_near)
-        real, intent(in) :: target, number
-        real :: rel_tol
+    function checkNear_real(target, number, rel_tol) result(is_near)
+        real(kind=rkind), intent(in) :: target, number
+        real(kind=rkind) :: rel_tol
         logical :: is_near
         real :: abs_diff
 
@@ -150,11 +150,11 @@ contains
 
     end function 
 
-    function checkNear_real8(target, number, rel_tol) result(is_near)
-        real(kind=8), intent(in) :: target, number
-        real(kind=8) :: rel_tol
+    function checkNear_time(target, number, rel_tol) result(is_near)
+        real(kind=rkind_tiempo), intent(in) :: target, number
+        real(kind=rkind_tiempo) :: rel_tol
         logical :: is_near
-        real(kind=8) :: abs_diff
+        real :: abs_diff
 
         abs_diff = abs(target-number)
         if (abs_diff == 0.0) then

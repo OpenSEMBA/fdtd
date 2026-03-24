@@ -5,11 +5,12 @@ module rational_approximation_m
         TRANSFER_IMPEDANCE_DIRECTION_BOTH, &
         TRANSFER_IMPEDANCE_DIRECTION_INWARDS, &
         TRANSFER_IMPEDANCE_DIRECTION_OUTWARDS
+    use FDETYPES_m, only: RKIND
     implicit none
 
     type :: pol_res_t
         complex, allocatable, dimension(:) :: q1,q2,q3
-        real :: r, l
+        real(kind=rkind) :: r, l
         integer :: number_of_poles
         integer :: direction
     end type

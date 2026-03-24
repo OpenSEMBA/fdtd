@@ -4109,7 +4109,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
               write (temp, *) mtln_solver%bundles(i)%probes(j)%val(k, n)
               buffer = buffer//" "//trim(temp)
             end do
-            write (unit, *) trim(buffer)
+            write (unit, '(a)') trim(buffer)
           end do
           close (unit)
           unit = unit + 1
