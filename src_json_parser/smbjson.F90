@@ -3978,7 +3978,7 @@ contains
                case(DIR_Y)
                   res(i)%dualBox = getdualBoxZX(res(i), despl)
                   res(i)%d1 = despl%desZ(res(i)%z-1)
-                  res(i)%d1 = despl%desX(res(i)%x-1)
+                  res(i)%d2 = despl%desX(res(i)%x-1)
                case(DIR_Z)
                   res(i)%dualBox = getdualBoxXY(res(i), despl)
                   res(i)%d1 = despl%desX(res(i)%x-1)
