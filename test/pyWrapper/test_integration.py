@@ -14,7 +14,7 @@ def test_holland_case_checking_number_of_outputs_single_wire(tmp_path):
 
     assert len(probe_files) == 1
     p = Probe(probe_files[0])
-    assert len(p['current']) == 10
+    assert len(p['current']) == 11
 
 @no_mtln_skip
 def test_holland_case_checking_number_of_outputs_wire(tmp_path):
@@ -32,7 +32,7 @@ def test_holland_case_checking_number_of_outputs_wire(tmp_path):
 
     assert len(probe_files) == 1
     p = Probe(probe_files[0])
-    assert len(p['current']) == 10
+    assert len(p['current']) == 11
 
 @no_mtln_skip
 def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
@@ -49,7 +49,7 @@ def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
 
     assert len(probe_files) == 1
     p = Probe(probe_files[0])
-    assert len(p['current']) == 10
+    assert len(p['current']) == 11
 
 
 @mtln_skip
