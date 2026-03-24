@@ -244,10 +244,10 @@ contains
         class(mtl_t) :: this
         integer :: n
         n = this%number_of_conductors
-        allocate(this%lpul(size(this%step_size, 1),     n, n))
-        allocate(this%cpul(size(this%step_size, 1) + 1, n, n))
-        allocate(this%rpul(size(this%step_size, 1),     n, n))
-        allocate(this%gpul(size(this%step_size, 1) + 1, n, n))
+        allocate(this%lpul(size(this%step_size, 1),     n, n), source = 0.0)
+        allocate(this%cpul(size(this%step_size, 1) + 1, n, n), source = 0.0)
+        allocate(this%rpul(size(this%step_size, 1),     n, n), source = 0.0)
+        allocate(this%gpul(size(this%step_size, 1) + 1, n, n), source = 0.0)
     end subroutine
 
     subroutine computeLCParameters(this, multipolar_expansion)
