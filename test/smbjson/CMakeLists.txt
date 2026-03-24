@@ -29,6 +29,7 @@ if(SEMBA_FDTD_ENABLE_MTLN)
 else()
     target_sources(smbjson_test_fortran PRIVATE
         "test_read_holland1981.F90"
+        "test_read_mtln_no_mtln_compilation.F90"
     )
 endif()
 

@@ -189,6 +189,10 @@ contains
 #ifdef CompileWithMTLN 
       res%mtln = this%readMTLN()
 #else
+      if (res%general%mtlnProblem) then
+         call WarnErrReport('ERROR: Input JSON has mtlnProblem=true but was compiled without MTLN. Recompile with SEMBA_FDTD_ENABLE_MTLN=ON.', .true.)
+         error stop 'ERROR: Input JSON has mtlnProblem=true but was compiled without MTLN. Recompile with SEMBA_FDTD_ENABLE_MTLN=ON.'
+      end if
       call this%readThinWires(res%tWires, res%sonda)
 #endif
       res%tSlots = this%readThinSlots()
@@ -1861,7 +1865,8 @@ contains
                   J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
                   J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
       if (size(mwires) /= 0) then 
-         call WarnErrReport('ERROR: shieldedMultiwires and unshieldedMultiwires can only be defined if compiled with MTLN', .true.)
+         call WarnErrReport('ERROR: shieldedMultiwires and unshieldedMultiwires can only be defined if compiled with MTLN. Recompile with SEMBA_FDTD_ENABLE_MTLN=ON.', .true.)
+         error stop 'ERROR: shieldedMultiwires and unshieldedMultiwires can only be defined if compiled with MTLN. Recompile with SEMBA_FDTD_ENABLE_MTLN=ON.'
       end if
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])

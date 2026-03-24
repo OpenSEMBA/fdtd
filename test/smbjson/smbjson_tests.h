@@ -33,6 +33,8 @@ extern "C" int test_read_unshielded_multiwires_multipolar_expansion();
 extern "C" int test_read_background_defaults();
 extern "C" int test_read_background_set();
 
+extern "C" int test_read_mtln_no_mtln_compilation();
+
 TEST(smbjson, idchildtable_fhash)     {EXPECT_EQ(0, test_idchildtable_fhash()); }
 TEST(smbjson, idchildtable_add_get)   {EXPECT_EQ(0, test_idchildtable()); }
 
@@ -69,5 +71,6 @@ TEST(smbjson, read_unshielded_multiwires_multipolar_expansion) {
                                            EXPECT_EQ(0,  test_read_unshielded_multiwires_multipolar_expansion()); }
 #else
 TEST(smbjson, read_holland1981)             { EXPECT_EQ(0, test_read_holland1981()); }
+TEST(smbjson, read_mtln_no_mtln_compilation_aborts) { EXPECT_DEATH(test_read_mtln_no_mtln_compilation(), ".*"); }
 #endif
 
