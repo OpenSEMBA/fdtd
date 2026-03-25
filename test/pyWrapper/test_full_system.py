@@ -510,15 +510,14 @@ def test_sgbc_structured_resistance_unshielded(tmp_path):
     assert np.allclose(i.array[-101:-1], np.ones(100)*i.array[-100], rtol=1e-3)
     assert np.allclose(1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
 
-@mtln_skip
-def test_pec_overlapping_sgbcs_single_wire(tmp_path):
+# compiled without mtln uses classic wires
+# compiled with mltn, wire is treated as an unshielded multiwire
+def test_pec_overlapping_sgbcs(tmp_path):
     """ Test that PEC surfaces overlapping SGBC surfaces prioritize PEC.
     """
     fn = CASES_FOLDER + 'sgbcOverlapping/sgbcOverlapping.fdtd.json'
-
     # Runs case without overlap.
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver['materials'][3] = createWire(id = 3, r = 1e-4)
     solver.run()
 
     p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
@@ -532,7 +531,6 @@ def test_pec_overlapping_sgbcs_single_wire(tmp_path):
     solver.run()
     iPEC = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
 
-    
     # For debugging only.
     # plt.figure()
     # plt.plot(t, iSGBC,'.-', label='SGBC case')
@@ -544,78 +542,10 @@ def test_pec_overlapping_sgbcs_single_wire(tmp_path):
     
     # Checks values are different due to PEC prioritization.
     assert np.all(np.greater(np.abs(iPEC[1000:]), np.abs(iSGBC[1000:])))
-    
-@no_mtln_skip
-def test_pec_overlapping_sgbcs_wire(tmp_path):
-    """ Test that PEC surfaces overlapping SGBC surfaces prioritize PEC.
-    """
-    fn = CASES_FOLDER + 'sgbcOverlapping/sgbcOverlapping.fdtd.json'
-
-    # Runs case without overlap.
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver['materials'][3] = createWire(id = 3, r = 1e-4)
-    solver.run()
-
-    p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
-    t = p['time'].to_numpy()
-    iSGBC = p['current'].to_numpy()
-
-    # Adds current SGBC elements as PEC. Now both are defined over same surface.
-    sgbcElementIds = solver["materialAssociations"][1]["elementIds"]
-    solver['materialAssociations'][0]["elementIds"].extend(sgbcElementIds)
-    solver.cleanUp()
-    solver.run()
-    iPEC = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
-
-    
-    # For debugging only.
-    # plt.figure()
-    # plt.plot(t, iSGBC,'.-', label='SGBC case')
-    # plt.plot(t, iPEC,'.-', label='PEC overlapping')
-    # plt.grid(which='both')
-    # plt.legend()
-    # plt.show()
-
-    
-    # Checks values are different due to PEC prioritization.
-    assert np.all(np.greater(np.abs(iPEC[1000:]), np.abs(iSGBC[1000:])))
-    
-@no_mtln_skip
-def test_pec_overlapping_sgbcs_unshielded(tmp_path):
-    """ Test that PEC surfaces overlapping SGBC surfaces prioritize PEC.
-    """
-    fn = CASES_FOLDER + 'sgbcOverlapping/sgbcOverlapping.fdtd.json'
-
-    # Runs case without overlap.
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver['materials'][3] = createUnshieldedWire(id = 3, lpul = 5.497210529384488e-07, cpul = 2.0212271390586895e-11)
-    solver.run()
-
-    p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
-    t = p['time'].to_numpy()
-    iSGBC = p['current'].to_numpy()
-
-    # Adds current SGBC elements as PEC. Now both are defined over same surface.
-    sgbcElementIds = solver["materialAssociations"][1]["elementIds"]
-    solver['materialAssociations'][0]["elementIds"].extend(sgbcElementIds)
-    solver.cleanUp()
-    solver.run()
-    iPEC = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
-
-    
-    # For debugging only.
-    # plt.figure()
-    # plt.plot(t, iSGBC,'.-', label='SGBC case')
-    # plt.plot(t, iPEC,'.-', label='PEC overlapping')
-    # plt.grid(which='both')
-    # plt.legend()
-    # plt.show()
-
-    
-    # Checks values are different due to PEC prioritization.
-    assert np.all(np.greater(np.abs(iPEC[1000:]), np.abs(iSGBC[1000:])))
-@mtln_skip
-def test_sgbc_overlapping_sgbc_single_wire(tmp_path):
+ 
+# compiled without mtln uses classic wires
+# compiled with mltn, wire is treated as an unshielded multiwire
+def test_sgbc_overlapping_sgbc(tmp_path):
     """ Test that SGBC surfaces overlapping SGBC surfaces prioritize first in MatAss.
     """
     fn = CASES_FOLDER + 'sgbcOverlapping/sgbcOverlapping.fdtd.json'
@@ -623,7 +553,6 @@ def test_sgbc_overlapping_sgbc_single_wire(tmp_path):
     # Runs case without overlap.
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     # Changes materialId in first SGBC in MatAss to material with larger conductivity.
-    solver['materials'][3] = createWire(id = 3, r = 1e-4)
     solver['materialAssociations'][1]["materialId"] = 6
     solver.cleanUp()
     solver.run()
@@ -646,82 +575,6 @@ def test_sgbc_overlapping_sgbc_single_wire(tmp_path):
     # plt.grid(which='both')
     # plt.legend()
     # plt.show()
-    
-    # Checks values are different due to prioritization of first written.
-    assert np.all(np.greater(np.abs(iSGBC_top[1000:]), np.abs(iSGBC_bottom[1000:])))
-
-@no_mtln_skip
-def test_sgbc_overlapping_sgbc_wire(tmp_path):
-    """ Test that SGBC surfaces overlapping SGBC surfaces prioritize first in MatAss.
-    """
-    fn = CASES_FOLDER + 'sgbcOverlapping/sgbcOverlapping.fdtd.json'
-
-    # Runs case without overlap.
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    # Changes materialId in first SGBC in MatAss to material with larger conductivity.
-    solver['materials'][3] = createWire(id = 3, r = 1e-4)
-    solver['materialAssociations'][1]["materialId"] = 6
-    solver.cleanUp()
-    solver.run()
-    p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
-
-    t = p['time'].to_numpy()
-    iSGBC_top = p['current'].to_numpy()
-
-    # Changes materialId in second SGBC in MatAss to material with larger conductivity.
-    solver['materialAssociations'][1]["materialId"] = 2
-    solver['materialAssociations'][2]["materialId"] = 6
-    solver.cleanUp()
-    solver.run()
-    iSGBC_bottom = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
-
-    
-    # For debugging only.
-    # plt.figure()
-    # plt.plot(t, iSGBC_top,'.-', label='SGBC sigma = 40 S/m, top')
-    # plt.plot(t, iSGBC_bottom,'.-', label='SGBC sigma = 20 S/m, bottom')
-    # plt.grid(which='both')
-    # plt.legend()
-    # plt.show()
-
-    
-    # Checks values are different due to prioritization of first written.
-    assert np.all(np.greater(np.abs(iSGBC_top[1000:]), np.abs(iSGBC_bottom[1000:])))
-
-@no_mtln_skip
-def test_sgbc_overlapping_sgbc_unshielded(tmp_path):
-    """ Test that SGBC surfaces overlapping SGBC surfaces prioritize first in MatAss.
-    """
-    fn = CASES_FOLDER + 'sgbcOverlapping/sgbcOverlapping.fdtd.json'
-
-    # Runs case without overlap.
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    # Changes materialId in first SGBC in MatAss to material with larger conductivity.
-    solver['materials'][3] = createUnshieldedWire(id = 3, lpul = 5.497210529384488e-07, cpul = 2.0212271390586895e-11)
-    solver['materialAssociations'][1]["materialId"] = 6
-    solver.cleanUp()
-    solver.run()
-    p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
-
-    t = p['time'].to_numpy()
-    iSGBC_top = p['current'].to_numpy()
-
-    # Changes materialId in second SGBC in MatAss to material with larger conductivity.
-    solver['materialAssociations'][1]["materialId"] = 2
-    solver['materialAssociations'][2]["materialId"] = 6
-    solver.cleanUp()
-    solver.run()
-    iSGBC_bottom = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
-
-    
-    # For debugging only.
-    # plt.figure()
-    # plt.plot(t, iSGBC_top,'.-', label='SGBC sigma = 40 S/m, top')
-    # plt.plot(t, iSGBC_bottom,'.-', label='SGBC sigma = 20 S/m, bottom')
-    # plt.grid(which='both')
-    # plt.legend()
-    # plt.show()
-
     
     # Checks values are different due to prioritization of first written.
     assert np.all(np.greater(np.abs(iSGBC_top[1000:]), np.abs(iSGBC_bottom[1000:])))
@@ -839,74 +692,13 @@ def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arg
     assert (Probe(solver.getSolvedProbeFilenames("outside")[0]) is not None)
     assert (solver.getVTKMap()[0] is not None)
 
-@mtln_skip
-def test_nodal_source_single_wire(tmp_path):
+# compiled without mtln uses classic wires
+# compiled with mltn, wire is treated as an unshielded multiwire
+def test_nodal_source(tmp_path):
     fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
     assert (os.path.isfile(fn))
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver['materials'][1] = createWire(id = 2, r = 0.1e-5, rpul=10000.0)
-    solver.run()
-    
-    resistanceBulkProbe = Probe( \
-    solver.getSolvedProbeFilenames("Bulk probe Resistance")[0])
-    nodalBulkProbe = Probe( \
-        solver.getSolvedProbeFilenames("Bulk probe Nodal Source")[0])
-    excitation = ExcitationFile( \
-        excitation_filename=solver.getExcitationFile("predefinedExcitation")[0])
-
-    # For debugging.
-    # plt.figure()
-    # plt.plot(resistanceBulkProbe['time'].to_numpy(), 
-    #         resistanceBulkProbe['current'].to_numpy(), label='BP Current@resistance')
-    # plt.plot(excitation.data['time'].to_numpy(), 
-    #         excitation.data['value'].to_numpy(), label='excited current')
-    # plt.plot(nodalBulkProbe['time'].to_numpy(),
-    #         -nodalBulkProbe['current'].to_numpy(), label='BP Current@nodal source')
-    # plt.legend()
-
-    exc = np.interp(nodalBulkProbe['time'].to_numpy(), 
-                    excitation.data['time'].to_numpy(), 
-                    excitation.data['value'].to_numpy())
-    assert np.corrcoef(exc, -nodalBulkProbe['current'])[0,1] > 0.999
-    assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
-
-@no_mtln_skip
-def test_nodal_source_wire(tmp_path):
-    fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
-    assert (os.path.isfile(fn))
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver['materials'][1] = createWire(id = 2, r = 0.1e-5, rpul=10000.0)
-    solver.run()
-    
-    resistanceBulkProbe = Probe( \
-    solver.getSolvedProbeFilenames("Bulk probe Resistance")[0])
-    nodalBulkProbe = Probe( \
-        solver.getSolvedProbeFilenames("Bulk probe Nodal Source")[0])
-    excitation = ExcitationFile( \
-        excitation_filename=solver.getExcitationFile("predefinedExcitation")[0])
-
-    # For debugging.
-    # plt.figure()
-    # plt.plot(resistanceBulkProbe['time'].to_numpy(), 
-    #         resistanceBulkProbe['current'].to_numpy(), label='BP Current@resistance')
-    # plt.plot(excitation.data['time'].to_numpy(), 
-    #         excitation.data['value'].to_numpy(), label='excited current')
-    # plt.plot(nodalBulkProbe['time'].to_numpy(),
-    #         -nodalBulkProbe['current'].to_numpy(), label='BP Current@nodal source')
-    # plt.legend()
-
-    exc = np.interp(nodalBulkProbe['time'].to_numpy(), 
-                    excitation.data['time'].to_numpy(), 
-                    excitation.data['value'].to_numpy())
-    assert np.corrcoef(exc, -nodalBulkProbe['current'])[0,1] > 0.999
-    assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
-
-@no_mtln_skip
-def test_nodal_source_unshielded(tmp_path):
-    fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
-    assert (os.path.isfile(fn))
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver['materials'][1] = createUnshieldedWire(id = 2, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11, rpul = 10000.0)        
     solver.run()
     
     resistanceBulkProbe = Probe( \
