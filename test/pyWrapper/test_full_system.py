@@ -49,10 +49,15 @@ def test_shieldedPair(tmp_path):
     for pf in probe_files:
         p_expected.append(Probe(OUTPUTS_FOLDER+pf))
 
-    for i in [0, 1, 2, 3]:
-        p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].data.to_numpy()[:, 0:4], p_solved.data.to_numpy()[
-                           :, 0:4], rtol=5e-2, atol=0.2)
+    p_solved = []
+    for i in range(4):
+        p_solved.append(Probe(probe_files[i]))
+
+    for i in range(4):
+        assert np.allclose(
+            p_expected[i].data.to_numpy()[:, 0:4], 
+            p_solved[i].data.to_numpy()[:, 0:4],
+             rtol=5e-2, atol=0.2)
 
 @no_mtln_skip
 @no_mpi_skip

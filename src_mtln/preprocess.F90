@@ -327,6 +327,7 @@ contains
         integer(kind=4), allocatable, dimension(:,:) :: layer_indices
         logical :: bundle_in_layer = .false.
         integer(kind=4), dimension(2) :: alloc_z
+        logical :: bundle_in_layer = .true.
         if (present(alloc)) then
             alloc_z(1) = alloc(3)%zi
             alloc_z(2) = alloc(3)%ze
@@ -595,7 +596,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: termination_r, termination_l, termination_c, line_c, line_g
+        character(30) :: termination_r, termination_l, termination_c, line_c, line_g
 
         write(termination_c, *) termination%capacitance
         write(termination_r, *) termination%resistance
@@ -611,7 +612,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: termination_r, termination_l, termination_c, line_c, line_g
+        character(30) :: termination_r, termination_l, termination_c, line_c, line_g
 
         write(termination_c, *) termination%capacitance
         write(termination_r, *) termination%resistance
@@ -659,7 +660,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: line_c, line_g, short_r
+        character(30) :: line_c, line_g, short_r
         write(short_r, *) 1e-10
         write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
@@ -699,7 +700,7 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: model_name, model_file
-        character(20) :: line_c, line_g
+        character(30) :: line_c, line_g
         write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
 
@@ -744,13 +745,12 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: termination_r, termination_l, line_c, line_g
-
+        character(30) :: termination_r, termination_l, line_c, line_g
+        
         write(termination_r, *) termination%resistance
         write(termination_l, *) termination%inductance
         write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
-
 
         buff = trim("R" // node%name // " " // node%name // "_R "   // node%name //" ")//" "//trim(termination_r)
         call appendToStringArray(res, buff)
@@ -817,7 +817,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: short_R, line_c, line_g
+        character(30) :: short_R, line_c, line_g
 
         write(short_r, *) 1e-10
         write(line_c, *) node%line_c_per_meter*node%step/2
@@ -856,7 +856,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: line_c, line_g
+        character(30) :: line_c, line_g
 
         write(line_c, *) node%line_c_per_meter*node%step/2
 
@@ -881,7 +881,6 @@ contains
         type(termination_t), intent(in) :: termination
         character(len=256), allocatable :: res(:)
         character(len=*), intent(in) :: end_node
-
         if (termination%termination_type == TERMINATION_SERIES) then 
             res = writeSeriesNode(node, termination, end_node)
         else if (termination%termination_type == TERMINATION_PARALLEL) then 
@@ -906,7 +905,7 @@ contains
             res = writeModelNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_NETWORK) then 
             res = writeNetwork_circuitNode(node, termination , end_node)
-        else if (termination%termination_type == TERMINATION_UNDEFINED) then            
+        else if (termination%termination_type == TERMINATION_UNDEFINED) then
             call WarnErrReport('writeNodeDescription: undefined termination at '// node%name, .true.) 
         end if
 
@@ -920,7 +919,7 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: node_name
-        character(20) :: termination_x, termination_y, termination_z, line_c, line_g
+        character(30) :: termination_x, termination_y, termination_z, line_c, line_g
         
         if (XYZ == "RLC" .or. XYZ == "LRC") then 
             write(termination_x, *) termination%resistance
@@ -980,7 +979,7 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: node_name
-        character(20) :: termination_x, termination_y, termination_z, line_c, line_g
+        character(30) :: termination_x, termination_y, termination_z, line_c, line_g
         
         if (XYZ == "RLC" .or. XYZ == "RCL") then 
             write(termination_x, *) termination%resistance
@@ -1056,7 +1055,7 @@ contains
         
         block
             integer :: v_index, i_index
-            real :: line_c_per_meter, line_g_per_meter, step
+            real(kind=rkind) :: line_c_per_meter, line_g_per_meter, step
             if (node%side == TERMINAL_NODE_SIDE_INI) then 
                 v_index = lbound(this%bundles(d)%v,2)
                 i_index = lbound(this%bundles(d)%i,2)
@@ -1106,7 +1105,6 @@ contains
         character(256), dimension(:), allocatable :: node_description, old_description
 
         type(nw_node_t) :: new_node
-
         aux_nodes = nodes
         deallocate(nodes)
         allocate(nodes(size(aux_nodes) + 1))
@@ -1121,6 +1119,7 @@ contains
         allocate(description(size(old_description) + size(node_description)))
         description(1:size(old_description)) = old_description
         description((size(old_description)+1):size(description)) = node_description(:)
+
     end subroutine
 
     subroutine connectNodesToNetworkCircuit(this, terminal_connection, nodes, description)
@@ -1214,7 +1213,7 @@ contains
         type(network_t) :: res
         integer :: i
         type(terminal_connection_t), dimension(:), allocatable :: network_circuit_connections, node2node_connections
-        
+
         call filterConnections(terminal_network%connections, network_circuit_connections, node2node_connections)
 
         allocate(listOfModels(0))
@@ -1239,6 +1238,7 @@ contains
         end do
 
         res = networkCtor(nodes, description)
+
     end function
 
     function isModelIncluded(model, listOfModels) result (res)
@@ -1364,7 +1364,7 @@ contains
         character(256), dimension(:), allocatable, intent(inout) :: description
         character(256) :: buff
         real(kind=RKIND_TIEMPO), intent(in) :: final_time, dt
-        character(20) :: sTime, sdt, sDelta, sPrint
+        character(30) :: sTime, sdt, sDelta, sPrint
         integer, intent(in) :: print_step        
 
         write(sTime, '(E10.2)') final_time
