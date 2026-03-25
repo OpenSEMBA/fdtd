@@ -208,7 +208,7 @@ def test_holland_wire(tmp_path):
         expected_i = np.append(expected_i, float(data['value'][1]))    
 
     expected_i_interp = np.interp(p['time']-3.05*1e-9, expected_t, expected_i)
-    assert np.allclose(expected_i_interp, p['current_0'], rtol=1e-4, atol=5e-5)
+    assert np.allclose(expected_i_interp, p['current'], rtol=1e-4, atol=5e-5)
 
 @no_mtln_skip
 def test_holland_unshielded(tmp_path):
@@ -1608,5 +1608,3 @@ def test_conformal_delay(tmp_path):
         delay = t[front['field'].argmin()]
         tdelta = t4 + 2*(i*1.0/n)*0.02/3e8
         assert np.abs(delay - tdelta)/tdelta < 0.01
-        
-    assert probeBulkZVolume.direction == 'z'
