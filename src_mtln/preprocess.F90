@@ -327,7 +327,6 @@ contains
         integer(kind=4), allocatable, dimension(:,:) :: layer_indices
         logical :: bundle_in_layer = .false.
         integer(kind=4), dimension(2) :: alloc_z
-        logical :: bundle_in_layer = .true.
         if (present(alloc)) then
             alloc_z(1) = alloc(3)%zi
             alloc_z(2) = alloc(3)%ze
