@@ -5,7 +5,7 @@ module mtl_m
     use dispersive_m, dispersive_lumped_t => lumped_t
     use mtln_types_m, only: segment_t, multipolar_expansion_t
     use multipolar_expansion_m, only: getCellCapacitanceOnBox, getCellInductanceOnBox
-    use FDETYPES_m, only: pi, mu_vacuum, c_vacuum, RKIND_wires, RKIND_TIEMPO
+    use FDETYPES_m, only: pi, mu_vacuum, c_vacuum, RKIND_wires, RKIND, RKIND_TIEMPO
 #ifdef CompileWithMPI 
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
 #endif
@@ -34,9 +34,9 @@ module mtl_m
     type, public :: mtl_t
         character(len=:), allocatable :: name
         integer  :: number_of_conductors
-        real, allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
-        real, allocatable, dimension(:) :: step_size
-        real, allocatable, dimension(:,:,:) :: du(:,:,:)
+        real(kind=rkind), allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
+        real(kind=rkind), allocatable, dimension(:) :: step_size
+        real(kind=rkind), allocatable, dimension(:,:,:) :: du(:,:,:)
         type(dispersive_lumped_t) :: lumped_elements
         real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 0.0
 
@@ -97,7 +97,7 @@ contains
 
     subroutine initLC(this, lpul, cpul)
         class(mtl_t) :: this
-        real, intent(in), dimension(:,:) :: lpul, cpul
+        real(kind=rkind), intent(in), dimension(:,:) :: lpul, cpul
         integer :: i
         do i = 1, size(this%lpul, 1)
             this%lpul(i,:,:) = lpul(:,:)
@@ -112,8 +112,8 @@ contains
                             dt, parent_name, conductor_in_parent, &
                             transfer_impedance, &
                             layer_indices, bundle_in_layer, alloc_z) result(res)
-        real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
-        real, intent(in), dimension(:) :: step_size
+        real(kind=rkind), intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
+        real(kind=rkind), intent(in), dimension(:) :: step_size
         character(len=*), intent(in) :: name
         type(segment_t), dimension(:), allocatable, intent(in) :: segments
         real(kind=RKIND_TIEMPO), intent(in) :: dt
@@ -127,7 +127,7 @@ contains
         
         type(mtl_t) :: res
 
-        real :: max_dt
+        real(kind=rkind) :: max_dt
 
 #ifdef CompileWithMPI
         integer(kind=4) :: sizeof, ierr
@@ -167,19 +167,19 @@ contains
                             step_size, name, segments, &
                             dt, multipolar_expansion, radius, &
                             layer_indices, bundle_in_layer, alloc_z) result(res)
-        real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
-        real, intent(in), dimension(:) :: step_size
+        real(kind=rkind), intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
+        real(kind=rkind), intent(in), dimension(:) :: step_size
         character(len=*), intent(in) :: name
         type(segment_t), dimension(:), allocatable, intent(in) :: segments
         real(kind=RKIND_TIEMPO), intent(in) :: dt
         type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
-        real, intent(in) :: radius
+        real(kind=rkind), intent(in) :: radius
         integer(kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
         integer(kind=4), dimension(2), intent(in), optional :: alloc_z
         
         type(mtl_t) :: res
-        real :: max_dt
+        real(kind=rkind) :: max_dt
 #ifdef CompileWithMPI
         integer(kind=4) :: sizeof, ierr
         if (present(layer_indices)) then 
@@ -220,7 +220,7 @@ contains
         logical, intent(in) :: getMax
         real(kind=RKIND_TIEMPO), intent(in), optional :: dt
         
-        real :: max_dt
+        real(kind=rkind) :: max_dt
         if (present(dt)) then 
             if (getMax) then 
                 max_dt = this%getMaxTimeStep() 
@@ -254,7 +254,7 @@ contains
         class(mtl_t) :: this
         type(multipolar_expansion_t), intent(in) :: multipolar_expansion
         integer :: i, j, k, n
-        real, dimension(:,:), allocatable :: ppul
+        real(kind=rkind), dimension(:,:), allocatable :: ppul
         allocate(ppul(size(this%cpul,2),size(this%cpul,3)))
         do i = 1, size(this%segments)
             this%lpul(i,:,:) = getCellInductanceOnBox(multipolar_expansion, this%segments(i)%dualBox)
@@ -267,10 +267,10 @@ contains
 
     subroutine computeLCParametersFromRadius(this, rad) 
         class(mtl_t) :: this
-        real, intent(in) :: rad
+        real(kind=rkind), intent(in) :: rad
         real(kind=RKIND_wires) :: invMu
         integer :: i
-        real :: d1, d2
+        real(kind=rkind) :: d1, d2
         invMu = 1.0/mu_vacuum
         do i = 1, size(this%segments)
             d1 = this%segments(i)%d1
@@ -305,7 +305,7 @@ contains
     end subroutine
 
     subroutine checkPULDimensions(lpul, cpul, rpul, gpul)
-        real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
+        real(kind=rkind), intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
 
         if ((size(lpul, 1) /= size(lpul, dim = 2)).or.&
             (size(cpul, 1) /= size(cpul, dim = 2)).or.&
@@ -325,8 +325,8 @@ contains
 
     function getPhaseVelocities(this) result(res)
         class(mtl_t) :: this
-        real, dimension(size(this%step_size,1), this%number_of_conductors) :: res
-        real, dimension(2*this%number_of_conductors) :: ev
+        real(kind=rkind), dimension(size(this%step_size,1), this%number_of_conductors) :: res
+        real(kind=rkind), dimension(2*this%number_of_conductors) :: ev
         integer :: k
 
         do k = 1, size(this%step_size, 1)
@@ -338,13 +338,13 @@ contains
 
     function getMaxTimeStep(this) result(res)
         class(mtl_t) :: this
-        real :: res
+        real(kind=rkind) :: res
         res= minval(pack(this%du, this%du /= 0))/maxval(this%getPhaseVelocities())
     end function
 
     subroutine initRG(this, rpul, gpul)
         class(mtl_t) :: this
-        real, intent(in), dimension(:,:) :: rpul, gpul
+        real(kind=rkind), intent(in), dimension(:,:) :: rpul, gpul
         integer :: i
         do i = 1, size(this%rpul, 1)
             this%rpul(i,:,:) = rpul(:,:)
@@ -358,7 +358,7 @@ contains
     subroutine setTimeStep(this, numberOfSteps, finalTime)
         class(mtl_t) :: this
         integer, intent(in) :: numberOfSteps
-        real, intent(in) ::finalTime
+        real(kind=rkind), intent(in) ::finalTime
         this%dt = finalTime/numberOfSteps
     end subroutine
 
@@ -367,7 +367,7 @@ contains
 
     subroutine initStepSizeAndFieldSegments(this, step_size, segments, layer_indices)
         class(mtl_t) :: this
-        real, intent(in), dimension(:) :: step_size
+        real(kind=rkind), intent(in), dimension(:) :: step_size
         type(segment_t), intent(in), dimension(:) :: segments
         integer(kind=4), allocatable, dimension(:,:), intent(in) :: layer_indices
         integer :: n, j

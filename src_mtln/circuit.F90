@@ -14,15 +14,15 @@ module circuit_m
     type source_t
         logical :: has_source = .false.
         real(kind=RKIND_TIEMPO), dimension(:), allocatable :: time
-        real, dimension(:), allocatable :: value
+        real(kind=RKIND), dimension(:), allocatable :: value
         integer :: source_type
     contains 
         procedure :: interpolate
     end type
 
     type VI_t
-        real :: voltage
-        real :: current
+        real(kind=RKIND) :: voltage
+        real(kind=RKIND) :: current
         real(kind=RKIND_TIEMPO) :: time
     end type
 
@@ -62,12 +62,12 @@ module circuit_m
 
 contains
 
-    real function interpolate(this, time, dt) result(res)
+    real(kind=rkind) function interpolate(this, time, dt) result(res)
         class(source_t) :: this
         real(kind=RKIND_TIEMPO) :: time, dt
-        real :: x1,x2, y1, y2
+        real(kind=RKIND) :: x1,x2, y1, y2
         integer :: index
-        real, dimension(:), allocatable :: timediff
+        real(kind=rkind), dimension(:), allocatable :: timediff
         timediff = this%time - time + dt
         index = maxloc(timediff, 1, (timediff) <= 0)
         if (index == 0) index = 1
@@ -125,7 +125,7 @@ contains
     type(source_t) function setSource(source_path) result(res)
         character(*), intent(in) :: source_path
         real(kind=RKIND_TIEMPO) :: time
-        real ::value
+        real(kind=RKIND) ::value
         integer :: io, line_count, i
         
         if (source_path == "" ) then 
@@ -199,10 +199,10 @@ contains
     subroutine setStopTimes(this, finalTime, dt)
         class(circuit_t) :: this
         real(kind=RKIND_TIEMPO), intent(in) :: finalTime, dt
-        character(20) :: charTime
-        real :: time
+        character(50) :: charTime
+        real(kind=rkind) :: time
 
-        time = 0.0
+        time = 0.0_rkind
         do while (time < finalTime)
             time = time + dt
             write(charTime, *) time
@@ -213,8 +213,7 @@ contains
     subroutine setModStopTimes(this, dt)
         class(circuit_t) :: this
         real(kind=RKIND_TIEMPO), intent(in) :: dt
-        character(20) :: charTime
-        real :: time
+        character(50) :: charTime
         write(charTime, *) real(dt, SINGLE)
         call command('stop when time mod '//charTime // c_null_char)
     end subroutine
@@ -275,8 +274,8 @@ contains
     subroutine updateCircuitSources(this, time)
         class(circuit_t) :: this
         real(kind=RKIND_TIEMPO), intent(in) :: time
-        real :: interp
-        character(20) :: source_value
+        real(kind=RKIND) :: interp
+        character(50) :: source_value
         integer :: i, index
         do i = 1, size(this%nodes%sources)
             if (this%nodes%sources(i)%has_source) then
@@ -296,8 +295,8 @@ contains
     subroutine modifyLineCapacitorValue(this, name, c)
         class(circuit_t) :: this
         character(*), intent(in) :: name
-        real, intent(in) :: c
-        character(20) :: sC
+        real(kind=rkind), intent(in) :: c
+        character(50) :: sC
 
         write(sC, *) c
         call command("alter @CL"//trim(name)//" = "//trim(sC) // c_null_char)
@@ -306,8 +305,8 @@ contains
 
     subroutine updateNodeCurrent(this, node_name, current)
         class(circuit_t) :: this
-        real :: current
-        character(20) :: sCurrent
+        real(kind=rkind) :: current
+        character(50) :: sCurrent
         character(*) :: node_name
         if (index(node_name, "initial") /= 0) then
             write(sCurrent, *) current
@@ -336,20 +335,20 @@ contains
     function getNodeVoltage(this, name) result(res)
         class(circuit_t) :: this
         character(len=*), intent(in) :: name
-        real :: res
+        real(kind=rkind) :: res
         res = this%nodes%values(findVoltageIndexByName(this%nodes%names, name))%voltage
     end function
 
     function getNodeCurrent(this, name) result(res)
         class(circuit_t) :: this
         character(len=*), intent(in) :: name
-        real :: res
+        real(kind=rkind) :: res
         res = this%nodes%values(findVoltageIndexByName(this%nodes%names, name))%current
     end function
 
     function getTime(this) result(res)
         class(circuit_t) :: this
-        real :: res
+        real(kind=rkind_tiempo) :: res
         res = this%nodes%values(findIndexByName(this%nodes%names, "time"))%time
     end function
 

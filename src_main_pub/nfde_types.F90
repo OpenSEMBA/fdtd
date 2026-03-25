@@ -149,12 +149,12 @@ module NFDETypes_m
    type, public :: conformal_edge_media_t
       type(edge_t), dimension(:), allocatable :: edges
       real(kind=rkind) :: ratio
-      integer(kind=4) :: size
+      integer(kind=4) :: n_elements
    end type
    type, public :: conformal_face_media_t
       type(face_t), dimension(:), allocatable :: faces
       real(kind=rkind) :: ratio
-      integer(kind=4) :: size
+      integer(kind=4) :: n_elements
    end type
 
    type, public :: ConformalMedia_t

@@ -187,25 +187,25 @@ end module CALC_CONSTANTS_m
 !!call AdvancePMLbodyH
 !!call AdvanceMagneticCPML          ( sgg%NumMedia, b, sggMiHx, sggMiHy, sggMiHz, g%gm2, Hx, Hy, Hz, Ex, Ey, Ez)
 !!call FreeSpace_AdvanceMagneticCPML( sgg%NumMedia, b,                            g%gm2, Hx, Hy, Hz, Ex, Ey, Ez)
-!!!!INNECESARIO!call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
-!!!!INNECESARIO!call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
+!!!!INNECESARIO!call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,num_procs)
+!!!!INNECESARIO!call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,num_procs)
 !!call AdvanceSGBCH
 !!call AdvanceMDispersiveH(sgg)
 !!call AdvanceMultiportH    (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,sggMiHx,sggMiHy,sggMiHz,g%gm2,sgg%nummedia,conformalskin)
 !!call AdvanceAnisMultiportH(sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,sggMiHx,sggMiHy,sggMiHz,g%gm2,sgg%nummedia)
 !!call AdvancePlaneWaveH(sgg,n, b        , g%gm2, Idxe,Idye, Idze, Hx, Hy, Hz)
 !!call AdvanceNodalH(sgg,sggMiHx,sggMiHy,sggMiHz,sgg%NumMedia,n, b       ,g%gm2,Idxe,Idye,Idze,Hx,Hy,Hz)
-!!call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
-!!call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
+!!call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,num_procs)
+!!call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,num_procs)
 !!call conformal_advance_H()
 !!call AdvanceMagneticMUR              (b, sgg,sggMiHx, sggMiHy, sggMiHz, Hx, Hy, Hz,mur_second)
 !!call UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, n,ini_save, b, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_FULLSIZE,wirecrank)
-!!call FlushObservationFiles(sgg,ini_save,mindum,layoutnumber,size, dxe, dye, dze, dxh, dyh, dzh,b,singlefilewrite,facesNF2FF,.FALSE.) !no se flushean los farfields ahora
-!!call flush_and_save_resume(sgg, b, layoutnumber, size, nEntradaroot, nresumeable2, thereare, n,eps0,mu0, everflushed,Ex, Ey, Ez, Hx, Hy, Hz,wiresflavor,simu_devia,stochastic)
-!!call PostProcessOnthefly(layoutnumber,size,sgg,nEntradaRoot,at,somethingdone,permitscaling)
-!!call createvtkOnTheFly(layoutnumber,size,sgg,vtkindex,somethingdone)
-!!call createxdmfOnTheFly(sgg,layoutnumber,size,vtkindex,somethingdone)
-!!call unpacksinglefiles(sgg,layoutnumber,size,singlefilewrite,initialtimestep,resume) !dump the remaining to disk
+!!call FlushObservationFiles(sgg,ini_save,mindum,layoutnumber,num_procs, dxe, dye, dze, dxh, dyh, dzh,b,singlefilewrite,facesNF2FF,.FALSE.) !no se flushean los farfields ahora
+!!call flush_and_save_resume(sgg, b, layoutnumber, num_procs, nEntradaroot, nresumeable2, thereare, n,eps0,mu0, everflushed,Ex, Ey, Ez, Hx, Hy, Hz,wiresflavor,simu_devia,stochastic)
+!!call PostProcessOnthefly(layoutnumber,num_procs,sgg,nEntradaRoot,at,somethingdone,permitscaling)
+!!call createvtkOnTheFly(layoutnumber,num_procs,sgg,vtkindex,somethingdone)
+!!call createxdmfOnTheFly(sgg,layoutnumber,num_procs,vtkindex,somethingdone)
+!!call unpacksinglefiles(sgg,layoutnumber,num_procs,singlefilewrite,initialtimestep,resume) !dump the remaining to disk
 
 
    

@@ -1033,9 +1033,11 @@ contains
          res%beta = this%getRealAt(pw, J_SRC_PW_POLARIZATION//'.'//J_SRC_PW_PHI)
 
          block
+            type(cell_interval_t), dimension(:), allocatable :: cellIntervals
             type(coords_t), dimension(:), allocatable :: nfdeCoords
-            nfdeCoords = &
-               cellIntervalsToCoords(this%getSingleVolumeInElementsIds(pw))
+            cellIntervals = this%getSingleVolumeInElementsIds(pw)
+            if (size(cellIntervals) == 0) return
+            nfdeCoords = cellIntervalsToCoords(cellIntervals)
             res%coor1 = [nfdeCoords(1)%Xi, nfdeCoords(1)%Yi, nfdeCoords(1)%Zi]
             res%coor2 = [nfdeCoords(1)%Xe, nfdeCoords(1)%Ye, nfdeCoords(1)%Ze]
          end block
@@ -3921,10 +3923,10 @@ contains
          type(shielded_multiwire_t), intent(inout) :: res
          type(json_value_ptr_t) :: mat
          integer, intent(in) :: n
-         real, dimension(:,:), allocatable :: null_matrix
+         real(kind=rkind), dimension(:,:), allocatable :: null_matrix
          logical :: found
 
-         allocate(null_matrix(n,n), source = 0.0)
+         allocate(null_matrix(n,n), source = 0.0_rkind)
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
             res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
          else
@@ -3958,14 +3960,14 @@ contains
          type(json_value), pointer :: multipolarExpansionPtr
          integer, intent(in) :: n
          integer :: m
-         real, dimension(:,:), allocatable :: null_matrix
+         real(kind=rkind), dimension(:,:), allocatable :: null_matrix
          logical :: found
          logical :: areFixedInCell
          logical :: areMultipolarInCell
          logical :: hasRadius
          real(kind=RKIND), dimension(:), allocatable :: r, c
 
-         allocate(null_matrix(n,n), source = 0.0)
+         allocate(null_matrix(n,n), source = 0.0_rkind)
 
          areFixedInCell = &
             this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE) .and. &
@@ -4193,7 +4195,7 @@ contains
       function buildStepSize(segments, despl) result(res)
          type(segment_t), dimension(:), allocatable :: segments
          type(Desplazamiento_t), intent(in) :: despl
-         real, allocatable, dimension(:) :: res
+         real(kind=rkind), allocatable, dimension(:) :: res
          integer :: i, or
          allocate(res(size(segments)))
          do i = 1, size(segments)
@@ -4538,19 +4540,32 @@ contains
       elemIds = this%getIntsAt(pw, J_ELEMENTIDS, found=found)
       if (.not. found) then
          call WarnErrReport("Error reading single volume elementIds label not found.", .true.)
+         allocate(res(0))
+         return
+      end if
+      if (size(elemIds) == 0) then
+         call WarnErrReport("Entity elementIds must not be empty.", .true.)
+         allocate(res(0))
+         return
       end if
       if (size(elemIds) /= 1) then
          call WarnErrReport("Entity must contain a single elementId.", .true.)
+         allocate(res(0))
+         return
       end if
       cellRegion = this%mesh%getCellRegion(elemIds(1), found)
       if (.not. found) then
          write(errorMsg, *) "Entity elementId ", elemIds(1), " not found."
          call WarnErrReport(errorMsg, .true.)
+         allocate(res(0))
+         return
       end if
       res = cellRegion%getIntervalsOfType(CELL_TYPE_VOXEL)
       if (size(res) /= 1) then
          write(errorMsg, *) "Entity must contain a single cell region defining a volume."
          call WarnErrReport(errorMsg, .true.)
+         allocate(res(0))
+         return
       end if
    end function
 

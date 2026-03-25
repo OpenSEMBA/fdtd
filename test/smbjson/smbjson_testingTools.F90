@@ -83,15 +83,15 @@ contains
       if (present(n)) dim = n
       select type(cable)
       type is(shielded_multiwire_t)
-         allocate(cable%inductance_per_meter(dim,dim), source = 0.0)
-         allocate(cable%capacitance_per_meter(dim,dim), source = 0.0)
-         allocate(cable%resistance_per_meter(dim,dim), source = 0.0)
-         allocate(cable%conductance_per_meter(dim,dim), source = 0.0)
+         allocate(cable%inductance_per_meter(dim,dim), source = 0.0_rkind)
+         allocate(cable%capacitance_per_meter(dim,dim), source = 0.0_rkind)
+         allocate(cable%resistance_per_meter(dim,dim), source = 0.0_rkind)
+         allocate(cable%conductance_per_meter(dim,dim), source = 0.0_rkind)
       type is (unshielded_multiwire_t)
-         allocate(cable%cell_inductance_per_meter(dim,dim), source = 0.0)
-         allocate(cable%cell_capacitance_per_meter(dim,dim), source = 0.0)
-         allocate(cable%resistance_per_meter(dim,dim), source = 0.0)
-         allocate(cable%conductance_per_meter(dim,dim), source = 0.0)
+         allocate(cable%cell_inductance_per_meter(dim,dim), source = 0.0_rkind)
+         allocate(cable%cell_capacitance_per_meter(dim,dim), source = 0.0_rkind)
+         allocate(cable%resistance_per_meter(dim,dim), source = 0.0_rkind)
+         allocate(cable%conductance_per_meter(dim,dim), source = 0.0_rkind)
          allocate(cable%multipolar_expansion(0))
       end select
       end subroutine

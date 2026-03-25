@@ -87,7 +87,7 @@ contains
          allocate(res(i)%edges(size(filtered_edges)))
          res(i)%edges = filtered_edges
          res(i)%ratio = edge_ratios(i)
-         res(i)%size = size(filtered_edges)
+         res(i)%n_elements = size(filtered_edges)
       end do
    end function
 
@@ -102,7 +102,7 @@ contains
          allocate(res(i)%faces(size(filtered_faces)))
          res(i)%faces = filtered_faces
          res(i)%ratio = face_ratios(i)
-         res(i)%size = size(filtered_faces)
+         res(i)%n_elements = size(filtered_faces)
       end do
 
    end function

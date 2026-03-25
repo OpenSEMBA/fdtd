@@ -261,7 +261,7 @@ contains
     subroutine runUntil(this, final_time)
         class(mtln_t) :: this
         real(kind=RKIND_TIEMPO), intent(in):: final_time
-        real :: time
+        real(kind=RKIND_TIEMPO) :: time
         integer :: i
 
         do i = 1, this%getTimeRange(final_time)

@@ -169,7 +169,7 @@ contains
 
    !---------------------------------------------------->
    !**************************************************************************************************
-   subroutine flush_and_save_resume(sgg, b, layoutnumber, size, nentradaroot, nresumeable2, thereare, fin,eps00,mu00, everflushed,  &
+   subroutine flush_and_save_resume(sgg, b, layoutnumber, num_procs, nentradaroot, nresumeable2, thereare, fin,eps00,mu00, everflushed,  &
    Ex, Ey, Ez, Hx, Hy, Hz,wiresflavor,simu_devia,stochastic)
       logical :: simu_devia,stochastic
       type(SGGFDTDINFO_t), intent(in) :: sgg
@@ -177,7 +177,7 @@ contains
       character(len=*), INTENT(in) :: wiresflavor
       integer(kind=4) :: ierr
       type( bounds_t), intent( IN) :: b
-      integer( kind = 4), intent( IN) :: layoutnumber, size
+      integer( kind = 4), intent( IN) :: layoutnumber, num_procs
       !--->
       character( LEN=*), intent( IN) :: nresumeable2, nEntradaRoot
       type( logic_control_t), intent( IN) :: thereare
@@ -204,7 +204,7 @@ contains
       zvac=sqrt(mu0/eps0)
       cluz=1.0_RKIND/sqrt(mu0*eps0)
       
-      write( whoami, '(a,i5,a,i5,a)') '(', layoutnumber+1, '/', size,') '
+      write( whoami, '(a,i5,a,i5,a)') '(', layoutnumber+1, '/', num_procs,') '
       everflushed = .TRUE.
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!  Flush observation data to disk
@@ -251,21 +251,21 @@ contains
       if( Thereare%MURBorders)       call StoreFieldsMURBorders
 #ifdef CompileWithMPI
       !do an update of the currents to later read the currents OK
-      if (size>1)  then
+      if (num_procs>1)  then
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
-             if ((size>1).and.(thereare%wires))   then
-                call newFlushWiresMPI(layoutnumber,size)
+             if ((num_procs>1).and.(thereare%wires))   then
+                call newFlushWiresMPI(layoutnumber,num_procs)
              end if
 #ifdef CompileWithStochastic
              if (stochastic)  then
-                call syncstoch_mpi_wires(simu_devia,layoutnumber,size)
+                call syncstoch_mpi_wires(simu_devia,layoutnumber,num_procs)
              end if
 #endif             
              end if
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
-            call FlushWiresMPI_Berenger(layoutnumber,size)
+            call FlushWiresMPI_Berenger(layoutnumber,num_procs)
          end if
 #endif
       end if
@@ -293,7 +293,7 @@ contains
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
       if (stochastic)  then
-         call syncstoch_mpi_lumped(simu_devia,layoutnumber,size)
+         call syncstoch_mpi_lumped(simu_devia,layoutnumber,num_procs)
       end if
 #endif    
 #endif    
@@ -302,7 +302,7 @@ contains
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
       if (stochastic)  then
-         call syncstoch_mpi_SGBCs(simu_devia,layoutnumber,size)
+         call syncstoch_mpi_SGBCs(simu_devia,layoutnumber,num_procs)
       end if
 #endif    
 #endif    
