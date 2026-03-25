@@ -132,10 +132,14 @@ contains
 #ifdef CompileWithMPI
         integer(kind=4) :: sizeof, ierr
         if (present(layer_indices)) then 
-            call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
-            call res%initCommunicators(alloc_z)
-            res%layer_indices = layer_indices
-            res%bundle_in_layer = bundle_in_layer
+            if (size(layer_indices,1) /= 0) then 
+                call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
+                call res%initCommunicators(alloc_z)
+            else
+                allocate(res%step_size(0))
+                allocate(res%segments(0))
+                allocate(res%mpi_comm%comms(0))
+            end if
         else
             res%step_size =  step_size
             allocate(res%layer_indices(0,0))
@@ -152,10 +156,11 @@ contains
         res%number_of_conductors = size(lpul, 1)
         call res%initDirections()
         call res%allocatePULMatrices()
-        call res%initLC(lpul, cpul)
-        call res%initRG(rpul, gpul)
+        if (res%bundle_in_layer) then 
+            call res%initLC(lpul, cpul)
+            call res%initRG(rpul, gpul)
+        end if
         call res%checkTimeStep(getMax = (lpul(1,1) /= 0.0), dt = dt)
-    
         res%parent_name = parent_name
         res%conductor_in_parent = conductor_in_parent
         res%transfer_impedance = transfer_impedance
@@ -183,8 +188,14 @@ contains
 #ifdef CompileWithMPI
         integer(kind=4) :: sizeof, ierr
         if (present(layer_indices)) then 
-            call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
-            call res%initCommunicators(alloc_z)
+            if (size(layer_indices,1) /= 0) then 
+                call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
+                call res%initCommunicators(alloc_z)
+            else
+                allocate(res%step_size(0))
+                allocate(res%segments(0))
+                allocate(res%mpi_comm%comms(0))
+            end if
             res%layer_indices = layer_indices
             res%bundle_in_layer = bundle_in_layer 
         else
@@ -203,14 +214,16 @@ contains
         res%number_of_conductors = size(lpul, 1)
         call res%initDirections()
         call res%allocatePULMatrices()
-        if (size(multipolar_expansion) /= 0) then 
-            call res%computeLCParameters(multipolar_expansion(1))
-        else if (radius /= 0.0) then 
-            call res%computeLCParametersFromRadius(radius)
-        else 
-            call res%initLC(lpul, cpul)
+        if (res%bundle_in_layer) then 
+            if (size(multipolar_expansion) /= 0) then 
+                call res%computeLCParameters(multipolar_expansion(1))
+            else if (radius /= 0.0) then 
+                call res%computeLCParametersFromRadius(radius)
+            else 
+                call res%initLC(lpul, cpul)
+            end if
+            call res%initRG(rpul, gpul)
         end if
-        call res%initRG(rpul, gpul)
         call res%checkTimeStep(getMax = (lpul(1,1) /= 0.0), dt = dt)
         res%lumped_elements = dispersive_lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
     end function
@@ -376,6 +389,7 @@ contains
             n = n + layer_indices(j,2) - layer_indices(j,1) + 1
         end do
         n = n + size(layer_indices, 1) -1
+
         allocate(this%step_size(n))
         allocate(this%segments(n))
 
