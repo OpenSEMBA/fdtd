@@ -150,7 +150,12 @@ class Probe():
         if key not in self.data.columns:
             if key == 'current_0' and 'current' in self.data.columns:
                 return self.data['current']
+            elif key == 'current' and 'current_0' in self.data.columns:
+                return self.data['current_0']
+            
             if key == 'voltage_0' and 'voltage' in self.data.columns:
+                return self.data['voltage']
+            elif key == 'voltage' and 'voltage_0' in self.data.columns:
                 return self.data['voltage']
         return self.data[key]
 
