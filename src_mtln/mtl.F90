@@ -156,10 +156,8 @@ contains
         res%number_of_conductors = size(lpul, 1)
         call res%initDirections()
         call res%allocatePULMatrices()
-        if (res%bundle_in_layer) then 
-            call res%initLC(lpul, cpul)
-            call res%initRG(rpul, gpul)
-        end if
+        call res%initLC(lpul, cpul)
+        call res%initRG(rpul, gpul)
         call res%checkTimeStep(getMax = (lpul(1,1) /= 0.0), dt = dt)
         res%parent_name = parent_name
         res%conductor_in_parent = conductor_in_parent
@@ -214,7 +212,7 @@ contains
         res%number_of_conductors = size(lpul, 1)
         call res%initDirections()
         call res%allocatePULMatrices()
-        if (res%bundle_in_layer) then 
+        if (size(res%step_size) /= 0) then 
             if (size(multipolar_expansion) /= 0) then 
                 call res%computeLCParameters(multipolar_expansion(1))
             else if (radius /= 0.0) then 
@@ -222,8 +220,8 @@ contains
             else 
                 call res%initLC(lpul, cpul)
             end if
-            call res%initRG(rpul, gpul)
         end if
+        call res%initRG(rpul, gpul)
         call res%checkTimeStep(getMax = (lpul(1,1) /= 0.0), dt = dt)
         res%lumped_elements = dispersive_lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
     end function
