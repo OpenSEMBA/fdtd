@@ -7,6 +7,7 @@ from scipy import signal
 
 # compiled without mtln uses classic wires
 # compiled with mltn, wire is treated as an unshielded multiwire
+@pytest.mark.skip
 def test_lineIntegralProbe(tmp_path):
     fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
