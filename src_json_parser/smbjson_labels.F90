@@ -20,6 +20,8 @@ module smbjson_labels_m
    character(len=*), parameter :: J_FIELD_MAGNETIC = "magnetic"
    character(len=*), parameter :: J_FIELD_VOLTAGE = "voltage"
    character(len=*), parameter :: J_FIELD_CURRENT = "current"
+   character(len=*), parameter :: J_FIELD_TW_VOLTAGE = "VOLT"
+   character(len=*), parameter :: J_FIELD_TW_CURRENT = "CURR"
    character(len=*), parameter :: J_FIELD_CURRENT_DENSITY = "currentDensity"
    character(len=*), parameter :: J_FIELD_CHARGE = "charge"
 

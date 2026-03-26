@@ -2074,19 +2074,31 @@ contains
 
                select case(this%getStrAt(genSrcs(i)%p, J_FIELD))
                 case (J_FIELD_VOLTAGE)
-                  res(position)%srctype = "VOLT"
-                  res(position)%srcfile = this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)
-                  res(position)%multiplier = 1.0_RKIND
+                  if (position /= 1 .and. position /= size(linels)) call WarnErrReport('Wire voltage generator can only be placed on wire extremes', .true.)
+                  res(position)%srctype = J_FIELD_TW_VOLTAGE
                 case (J_FIELD_CURRENT)
-                  res(position)%srctype = "CURR"
-                  res(position)%srcfile = this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)
-                  res(position)%multiplier = 1.0_RKIND
-                case default
+                  res(position)%srctype = J_FIELD_TW_VOLTAGE
+               case default
                   call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
                end select
+               res(position)%srcfile = this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)
+               res(position)%multiplier = 1.0_RKIND*orientFieldFromGenerator(linels, position)
 
             end do
          end block
+      end function
+
+      function orientFieldFromGenerator(linels, position) result(res)
+         type(linel_t), dimension(:), intent(in) :: linels
+         integer :: position
+         integer :: res
+         if (position == 1) then 
+            res = sign(1,linels(position)%orientation)
+         else if  (position == size(linels)) then 
+            res = -sign(1,linels(position)%orientation)
+         else
+            res = sign(1,linels(position)%orientation)
+         end if
 
       end function
 
