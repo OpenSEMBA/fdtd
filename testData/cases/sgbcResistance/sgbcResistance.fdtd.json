@@ -70673,7 +70673,21 @@
                 "id": 13,
                 "type": "polyline",
                 "coordinateIds": [
-                    1,
+                    2,
+                    1
+                ]
+            },
+            {
+                "id": 14,
+                "type": "node",
+                "coordinateIds": [
+                    1
+                ]
+            },
+            {
+                "id": 15,
+                "type": "node",
+                "coordinateIds": [
                     2
                 ]
             }
@@ -70762,7 +70776,7 @@
             "type": "generator",
             "magnitudeFile": "ramp.exc",
             "elementIds": [
-                1
+                3
             ],
             "field": "voltage"
         }
@@ -70778,6 +70792,22 @@
             "domain": {
                 "type": "time"
             }
+        },
+        {
+            "name": "wire_probe_1",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [
+                14
+            ]
+        },
+        {
+            "name": "wire_probe_2",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [
+                15
+            ]
         }
     ]
 }
