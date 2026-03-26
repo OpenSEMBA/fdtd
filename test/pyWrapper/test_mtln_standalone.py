@@ -192,14 +192,6 @@ def test_spice_zener(tmp_path):
     v_sol_interp = np.interp(t_exp, t_sol, v_sol)
     assert np.corrcoef(v_exp, v_sol_interp)[0,1] > 0.999
     
-def test_current_source(tmp_path):
-    fn = CASES_FOLDER + 'sources/current_source.fdtd.json'
-    solver = FDTD(input_filename=fn,
-                  path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path,
-                  flags = ["-n", "1"])
-
-
 @no_mtln_skip
 @pytest.mark.mtln
 def test_mtln_sources(tmp_path):
