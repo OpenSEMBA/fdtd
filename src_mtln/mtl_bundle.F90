@@ -248,7 +248,7 @@ contains
     subroutine addGenerator(this, index, conductor, gen_type, resistance, path, layer_indices)
         class(mtl_bundle_t) :: this
         integer, intent(in) :: index, conductor, gen_type
-        real :: resistance
+        real(kind=rkind) :: resistance
         character(*), intent(in) :: path
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
 
@@ -375,7 +375,7 @@ contains
     subroutine bundle_updateGenerators(this, time, dt)
         class(mtl_bundle_t) ::this
         real(kind=RKIND_TIEMPO), intent(in) :: time, dt
-        real :: val
+        real(kind=rkind) :: val
         integer :: i
         do i = 1, size(this%generators)
             if (this%generators(i)%in_layer) then 

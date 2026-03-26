@@ -5,12 +5,14 @@ module generators_m
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI
 #endif
+    use FDETYPES_m, only: RKIND, RKIND_tiempo
 
     implicit none
 
     type generator_t
         integer :: index, conductor
-        real, dimension(:), allocatable :: time, value
+        real(kind=rkind), dimension(:), allocatable :: value
+        real(kind=rkind_tiempo), dimension(:), allocatable :: time
         real :: resistance
         integer :: source_type = SOURCE_TYPE_UNDEFINED
         logical :: in_layer = .true.
@@ -29,7 +31,7 @@ contains
     function generatorCtor(index, conductor, gen_type, resistance, path, layer_indices) result(res)
         type(generator_t) :: res
         integer, intent(in) :: index, conductor, gen_type
-        real :: resistance
+        real(kind=rkind) :: resistance
         character(*), intent(in) :: path
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
 #ifdef CompileWithMPI
@@ -69,7 +71,8 @@ contains
     subroutine initGenerator(this, path)
         class(generator_t) :: this
         character(*), intent(in) :: path
-        real :: time, value
+        real(kind=rkind) :: value
+        real(kind=rkind_tiempo) :: time
         integer :: io, line_count, i
         
         if (path == "" ) then 
@@ -105,10 +108,11 @@ contains
 
     function interpolate(this, t) result(res)
         class(generator_t) :: this
-        real :: res
-        real :: t, x1, x2, y1, y2
+        real(kind=rkind) :: res
+        real(kind=rkind_tiempo) :: t, x1, x2
+        real(kind=rkind) :: y1, y2
         integer :: index
-        real, dimension(:), allocatable :: timediff
+        real(kind=rkind_tiempo), dimension(:), allocatable :: timediff
         timediff = this%time - t
         index = maxloc(timediff, 1, (timediff) <= 0)
         if (index == 0) index = 1
