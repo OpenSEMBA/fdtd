@@ -2074,10 +2074,9 @@ contains
 
                select case(this%getStrAt(genSrcs(i)%p, J_FIELD))
                 case (J_FIELD_VOLTAGE)
-                  if (position /= 1 .and. position /= size(linels)) call WarnErrReport('Wire voltage generator can only be placed on wire extremes', .true.)
                   res(position)%srctype = J_FIELD_TW_VOLTAGE
                 case (J_FIELD_CURRENT)
-                  res(position)%srctype = J_FIELD_TW_VOLTAGE
+                  res(position)%srctype = J_FIELD_TW_CURRENT
                case default
                   call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
                end select
