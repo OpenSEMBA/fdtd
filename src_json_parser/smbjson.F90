@@ -2074,9 +2074,9 @@ contains
 
                select case(this%getStrAt(genSrcs(i)%p, J_FIELD))
                 case (J_FIELD_VOLTAGE)
-                  res(position)%srctype = J_FIELD_TW_VOLTAGE
+                  res(position)%srctype = F_SOURCE_VOLTAGE
                 case (J_FIELD_CURRENT)
-                  res(position)%srctype = J_FIELD_TW_CURRENT
+                  res(position)%srctype = F_SOURCE_CURRENT
                case default
                   call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
                end select
