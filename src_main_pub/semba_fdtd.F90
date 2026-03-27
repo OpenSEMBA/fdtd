@@ -536,6 +536,9 @@ contains
       if (this%l%finaltimestep==0) this%l%finaltimestep=this%sgg%TimeSteps !no quitar
       if (this%l%forcesteps) then
          this%sgg%TimeSteps = this%l%finaltimestep
+#ifdef CompileWithMTLN
+         this%mtln_parsed%number_of_steps = this%l%finaltimestep 
+#endif
       else
          this%l%finaltimestep = this%sgg%TimeSteps
       end if

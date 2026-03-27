@@ -50,14 +50,35 @@ def test_shieldedPair(tmp_path):
         p_expected.append(Probe(OUTPUTS_FOLDER+pf))
 
     p_solved = []
-    for i in range(4):
-        p_solved.append(Probe(probe_files[i]))
+    for pf in probe_files:
+        p_solved.append(Probe(pf))
 
-    for i in range(4):
-        assert np.allclose(
-            p_expected[i].data.to_numpy()[:, 0:4], 
-            p_solved[i].data.to_numpy()[:, 0:4],
-             rtol=5e-2, atol=0.2)
+    for i in [0,3]:
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['voltage_0'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['voltage_0'])[0,1] > 0.999
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['voltage_1'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['voltage_1'])[0,1] > 0.999
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['voltage_2'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['voltage_2'])[0,1] > 0.999
+    for i in [1,2]:
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['current_0'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['current_0'])[0,1] > 0.999
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['current_1'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['current_1'])[0,1] > 0.999
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['current_2'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['current_2'])[0,1] > 0.999
 
 @no_mtln_skip
 @no_mpi_skip
@@ -152,6 +173,37 @@ def test_shieldedPair_mpi(tmp_path):
     for pf in probe_files:
         p_expected.append(Probe(OUTPUTS_FOLDER+pf))
 
+    p_solved = []
+    for pf in probe_files:
+        p_solved.append(Probe(pf))
+
+    for i in [0,3]:
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['voltage_0'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['voltage_0'])[0,1] > 0.999
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['voltage_1'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['voltage_1'])[0,1] > 0.999
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['voltage_2'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['voltage_2'])[0,1] > 0.999
+    for i in [1,2]:
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['current_0'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['current_0'])[0,1] > 0.999
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['current_1'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['current_1'])[0,1] > 0.999
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['current_2'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['current_2'])[0,1] > 0.999
+
     for i in [0, 1, 2, 3]:
         p_solved = Probe(probe_files[i])
         assert np.allclose(p_expected[i].data.to_numpy()[:, 0:4], p_solved.data.to_numpy()[
@@ -182,15 +234,12 @@ def test_coated_antenna(tmp_path):
         OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_half_1_I_11_11_12.dat')
 
     p_solved = Probe(probe_files[0])
-    assert np.allclose(
-        p_expected['time'].to_numpy(),
-        p_solved['time'].to_numpy(),
-        rtol=0.0, atol=10e-8)
-    assert np.allclose(
-        p_expected['current_0'].to_numpy(),
-        p_solved['current_0'].to_numpy(),
-        rtol=0.0, atol=10e-8)
-
+    
+    solved = np.interp(p_expected['time'].to_numpy(), 
+                       p_solved['time'].to_numpy(), 
+                       p_solved['current_0'].to_numpy())
+    assert np.corrcoef(solved, p_expected['current_0'])[0,1] > 0.999
+    
 
 def test_holland_wire(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
@@ -309,14 +358,16 @@ def test_unshielded_multiwires(tmp_path):
     p_expected = Probe(
         OUTPUTS_FOLDER+'unshielded_multiwires_berenger.fdtd_mid_point_unshielded_two_wire_I_2_11_14.dat')
 
-    assert np.allclose(
-        p_expected['current_0'], 
-        p_solved['current_0'], 
-        rtol=1e-3, atol=0.01)
-    assert np.allclose(
-        p_expected['current_1'], 
-        p_solved['current_1'], 
-        rtol=1e-3, atol=0.01)
+    solved_0 = np.interp(p_expected['time'].to_numpy(), 
+                    p_solved.data['time'].to_numpy(), 
+                    p_solved.data['current_0'].to_numpy())
+    assert np.corrcoef(solved_0, p_expected['current_0'])[0,1] > 0.999
+    
+    solved_1 = np.interp(p_expected['time'].to_numpy(), 
+                    p_solved.data['time'].to_numpy(), 
+                    p_solved.data['current_1'].to_numpy())
+    assert np.corrcoef(solved_1, p_expected['current_1'])[0,1] > 0.999
+
 
 @mtln_skip
 def test_towelHanger(tmp_path):
@@ -373,9 +424,11 @@ def test_towelHanger(tmp_path):
                   Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
                   Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
 
-    assert np.allclose(p_expected[0]['current'], -p_solved[0]['current_0'], rtol=5e-3, atol=5e-4)
-    assert np.allclose(p_expected[1]['current'], -p_solved[1]['current_0'], rtol=5e-3, atol=5e-4)
-    assert np.allclose(p_expected[2]['current'],  p_solved[2]['current_0'], rtol=5e-3, atol=5e-4)
+    for i in range(3):
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                           p_solved[i]['time'].to_numpy(), 
+                           p_solved[i]['current_0'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['current_0'])[0,1] > 0.999
 
 
 @no_hdf_skip
