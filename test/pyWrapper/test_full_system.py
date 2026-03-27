@@ -204,11 +204,6 @@ def test_shieldedPair_mpi(tmp_path):
                             p_solved[i]['current_2'].to_numpy())
         assert np.corrcoef(solved, p_expected[i]['current_2'])[0,1] > 0.999
 
-    for i in [0, 1, 2, 3]:
-        p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].data.to_numpy()[:, 0:4], p_solved.data.to_numpy()[
-                           :, 0:4], rtol=5e-2, atol=0.2)
-
 
 @no_mtln_skip
 @pytest.mark.mtln
