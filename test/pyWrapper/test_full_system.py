@@ -6,7 +6,7 @@ from scipy import signal
 
 
 # compiled without mtln uses classic wires
-# compiled with mltn, wire is treated as an unshielded multiwire
+# compiled with mtln, wire is treated as an unshielded multiwire
 @pytest.mark.skip
 def test_lineIntegralProbe(tmp_path):
     fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
@@ -225,7 +225,7 @@ def test_coated_antenna(tmp_path):
     assert np.corrcoef(solved, p_expected['current_0'])[0,1] > 0.999
     
 # compiled without mtln uses classic wires
-# compiled with mltn, wire is treated as an unshielded multiwire
+# compiled with mtln, wire is treated as an unshielded multiwire
 def test_holland(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(input_filename=fn, 
@@ -556,7 +556,7 @@ def test_current_orientation(tmp_path):
     assert np.all(i <= 0)
 
 # compiled without mtln uses classic wires
-# compiled with mltn, wire is treated as an unshielded multiwire
+# compiled with mtln, wire is treated as an unshielded multiwire
 def test_sgbc_structured_resistance_single_wire(tmp_path):
     fn = CASES_FOLDER + 'sgbcResistance/sgbcResistance.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -571,7 +571,7 @@ def test_sgbc_structured_resistance_single_wire(tmp_path):
 
 
 # compiled without mtln uses classic wires
-# compiled with mltn, wire is treated as an unshielded multiwire
+# compiled with mtln, wire is treated as an unshielded multiwire
 def test_pec_overlapping_sgbcs(tmp_path):
     """ Test that PEC surfaces overlapping SGBC surfaces prioritize PEC.
     """
@@ -604,7 +604,7 @@ def test_pec_overlapping_sgbcs(tmp_path):
     assert np.all(np.greater(np.abs(iPEC[1000:]), np.abs(iSGBC[1000:])))
  
 # compiled without mtln uses classic wires
-# compiled with mltn, wire is treated as an unshielded multiwire
+# compiled with mtln, wire is treated as an unshielded multiwire
 def test_sgbc_overlapping_sgbc(tmp_path):
     """ Test that SGBC surfaces overlapping SGBC surfaces prioritize first in MatAss.
     """
@@ -735,25 +735,24 @@ def test_rectilinear_mode(tmp_path):
     np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['time'], getPeakPulse(noRectilinearVertexProbe)['time'], decimal=_TIME_TOLERANCE)
     
 def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arguments(tmp_path):
-    projectRoot = os.getcwd()
-    folderWitSpaces: str  = os.path.join(tmp_path, "spaced bin")
-    os.mkdir(folderWitSpaces)
+    folderWithSpaces: str  = os.path.join(tmp_path, "spaced bin")
+    os.mkdir(folderWithSpaces)
     if platform == 'win32':
-        shutil.copy2(NGSPICE_DLL, folderWitSpaces)
+        shutil.copy2(NGSPICE_DLL, folderWithSpaces)
  
-    sembaExecutable = SEMBA_EXE.split(os.path.sep)[-1]
-    pathToExe: str = os.path.join(folderWitSpaces, sembaExecutable)
+    sembaExecutable = os.path.basename(SEMBA_EXE)
+    pathToExe: str = os.path.join(folderWithSpaces, sembaExecutable)
     shutil.copy2(SEMBA_EXE, pathToExe)
-    print(pathToExe)
     
     fn = CASES_FOLDER + "dielectric/dielectricTransmission.fdtd.json"
-    solver = FDTD(fn, path_to_exe=pathToExe, run_in_folder=tmp_path)
+    solver = FDTD(fn, path_to_exe=pathToExe, run_in_folder=tmp_path, flags=['-mapvtk'])
     solver.run()
     assert (Probe(solver.getSolvedProbeFilenames("outside")[0]) is not None)
-    assert (solver.getVTKMap()[0] is not None)
-
+    vtk_map_path = solver.getVTKMap()
+    assert vtk_map_path is not None and os.path.isfile(vtk_map_path)
+    
 # compiled without mtln uses classic wires
-# compiled with mltn, wire is treated as an unshielded multiwire
+# compiled with mtln, wire is treated as an unshielded multiwire
 def test_nodal_source(tmp_path):
     fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
     assert (os.path.isfile(fn))

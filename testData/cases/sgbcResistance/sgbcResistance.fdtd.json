@@ -70673,8 +70673,8 @@
                 "id": 13,
                 "type": "polyline",
                 "coordinateIds": [
-                    2,
-                    1
+                    1,
+                    2
                 ]
             },
             {
@@ -70776,7 +70776,7 @@
             "type": "generator",
             "magnitudeFile": "ramp.exc",
             "elementIds": [
-                3
+                1
             ],
             "field": "voltage"
         }
