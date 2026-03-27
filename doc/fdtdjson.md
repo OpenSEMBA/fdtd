@@ -834,6 +834,16 @@ For terminal positions a series resistance is optional. For interior positions i
 ```
 If the generator is located at the termination of a wire, the series or parallel `resistance`  is added to the connection defined in the corresponding `terminal`. If a generator is located on a wire intermediate position, the per-unit-length properties of the corresponding segment are modified according to the `resistance` of the generator.
 
+Using classic wires, generators can be located on any node of the lines. Using MTLN wires there are some restrictions:
+
+| Syntax      | `unshieldedMultiwire` | `shieldedMultiwire` |
+| :---        |    :---   |          :--- |
+| Voltage     | Only wire extremes       | Any point      |
+| Current     | Any point        | Only wire extremes      |
+
+In case a generator is on a wire extreme, the current direction will be from the generator in the direction of the other wire extreme. If the generator is on an interior wire point, the current direction will be oriented as the wire.
+
+
 In case the generator is located at the junction (connection point) of two of more lines, the  `node` shared by the lines will share the same  `coordinateId`. If more than two lines are connected together, it is necessary to know to which of the lines the generator is connected to. The entry `[attachedToLineId]` is an integer which refers to the `elementId` of the `polyline` the source is connected to. 
 
 **Example:**

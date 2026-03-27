@@ -102,8 +102,8 @@ contains
         call this%advanceBundlesVoltage()
         call this%advanceNWVoltage()
         call this%advanceBundlesCurrent()
-        call this%advanceTime()
         call this%updateProbes()
+        call this%advanceTime()
 
     end subroutine
 
@@ -115,8 +115,8 @@ contains
         call this%advanceNWVoltage()
         call this%advanceBundlesCurrent()
 
-        call this%advanceTime()
         call this%updateProbes()
+        call this%advanceTime()
 
     end subroutine
 
@@ -264,7 +264,7 @@ contains
         real(kind=RKIND_TIEMPO) :: time
         integer :: i
 
-        do i = 1, this%getTimeRange(final_time)
+        do i = 0, this%getTimeRange(final_time)
             call this%advanceBundlesVoltage()
             call this%advanceNWVoltage()
             call this%advanceBundlesCurrent()
@@ -280,7 +280,7 @@ contains
         integer :: i
 
         call this%updatePULTerms()
-        do i = 1, this%getTimeRange(this%final_time)
+        do i = 0, this%getTimeRange(this%final_time)
             call this%advanceBundlesVoltage()
             call this%advanceNWVoltage()
             call this%advanceBundlesCurrent()
