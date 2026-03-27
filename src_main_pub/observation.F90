@@ -4102,7 +4102,6 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
           end do
           write (unit, *) trim(buffer)
           do k = 1, size(mtln_solver%bundles(i)%probes(j)%val, 1)
-          ! do k = 1, mtln_solver%number_of_steps
             buffer = ""
             write (temp, *) mtln_solver%bundles(i)%probes(j)%t(k)
             buffer = buffer//trim(temp)
