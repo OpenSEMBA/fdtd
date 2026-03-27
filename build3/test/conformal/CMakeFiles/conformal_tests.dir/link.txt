@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../lib/libconformal_tests.a CMakeFiles/conformal_tests.dir/conformal_tests.cpp.o
-/usr/bin/ranlib ../../lib/libconformal_tests.a

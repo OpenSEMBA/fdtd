@@ -1,5 +1,0 @@
-# The fortran modules provided by this target.
-provides
- cell_map_m.mod
- conformal_m.mod
- geometry_m.mod

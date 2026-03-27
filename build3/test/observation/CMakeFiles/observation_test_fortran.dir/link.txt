@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../lib/libobservation_test_fortran.a CMakeFiles/observation_test_fortran.dir/observation_testingTools.F90.o CMakeFiles/observation_test_fortran.dir/test_observation.F90.o CMakeFiles/observation_test_fortran.dir/test_preprocess.F90.o CMakeFiles/observation_test_fortran.dir/test_observation_init.F90.o CMakeFiles/observation_test_fortran.dir/test_observation_update.F90.o
-/usr/bin/ranlib ../../lib/libobservation_test_fortran.a

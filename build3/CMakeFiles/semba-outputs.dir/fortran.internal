@@ -1,8 +1,0 @@
-# The fortran modules provided by this target.
-provides
- build_t_linea_mpi_m.mod
- mpicomm_m.mod
- observa_m.mod
- vtk_m.mod
- xdmf_h5_m.mod
- xdmf_m.mod
