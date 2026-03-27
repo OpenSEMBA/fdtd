@@ -155,6 +155,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_CONF_SUBTYPE_SURFACE = "surface"
 
    ! type(NFDEGeneral_t)
+   character(len=*), parameter :: J_FORMAT = "format"
    character(len=*), parameter :: J_GENERAL = "general"
    character(len=*), parameter :: J_GEN_TIME_STEP = "timeStep"
    character(len=*), parameter :: J_GEN_NUMBER_OF_STEPS = "numberOfSteps"

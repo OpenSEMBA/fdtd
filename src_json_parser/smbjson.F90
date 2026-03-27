@@ -160,7 +160,7 @@ contains
 
       call this%checkForUnrecognizedKeys(this%root, &
          [character(len=64) :: J_GENERAL, J_BOUNDARY, J_MESH, J_MATERIALS, &
-          J_MATERIAL_ASSOCIATIONS, J_SOURCES, J_PROBES, J_BACKGROUND, "format"])
+          J_MATERIAL_ASSOCIATIONS, J_SOURCES, J_PROBES, J_BACKGROUND, J_FORMAT])
 
       call checkSectionItems(J_MATERIALS, &
          [character(len=64) :: J_ID, J_NAME, J_TYPE, &
@@ -4535,6 +4535,7 @@ contains
 
          if (.not. allocated(childName)) cycle
          if (len(childName) == 0) cycle
+         ! Skip metadata keys prefixed with '_' (e.g. "_format", "__comments").
          if (childName(1:1) == '_') cycle
 
          isValid = .false.
