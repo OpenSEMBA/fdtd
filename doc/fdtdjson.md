@@ -351,7 +351,7 @@ doi: 10.1109/TEMC.1981.303899.
 Materials of this type must contain:
 
 + `<radius>` as a real number.
-+ `<resistancePerMeter>` as a real number.
++ `[resistancePerMeter]` as a real number. Defaults to `0.0`.
 + `[inductancePerMeter]` as a real number. Defaults to `0.0`.
 
 **Example:**
@@ -382,8 +382,8 @@ They must contain the following entries:
 
 `transferImpedancePerMeter` can contain:
 
-+ `[resistiveTerm]` defined by a real representing transfer impedance resistance. Defaults to `0.0`
-+ `[inductiveTerm]` defined by a real representing transfer impedance inductance. Defaults to `0.0`.
++ `[resistancePerMeter]` defined by a real representing transfer impedance resistance. Defaults to `0.0`
++ `[inductancePerMeter]` defined by a real representing transfer impedance inductance. Defaults to `0.0`.
 + `[direction]` which can be `both`, `inwards`, or `outwards`. Indicating the type of coupling considered. Defaults to `both` meaning that fields can couple from the exterior to interior and the other way round.
 
 **Example:**
@@ -403,7 +403,7 @@ They must contain the following entries:
         [-20.5e-12, 105.5e-12 ]
     ],
     "transferImpedancePerMeter" : {
-        "inductiveTerm" : 4.2e-9,
+        "inductancePerMeter" : 4.2e-9,
         "direction" : "inwards"
     }
 }
@@ -534,8 +534,8 @@ The most common situation will be having the connector of a shielded bundle. In 
     "resistances": [100e-3],
     "transferImpedancesPerMeter" : [
         {
-        "resistiveTerm" : 3.33,
-        "inductiveTerm" : 2.6e-9,
+        "resistancePerMeter" : 3.33,
+        "inductancePerMeter" : 2.6e-9,
         "direction" : "inwards"
         }
     ]
