@@ -1675,7 +1675,6 @@ def test_conformal_delay(tmp_path):
         assert np.abs(delay - tdelta)/tdelta < 0.01
         
 
-
 def test_bulk_current_outputs(tmp_path):
     # This test uses bulk_probe_cases_over_nodal_source.fdtd from input_examples as input.
     # Verifies all kind of bulk probes are recognised and setted properly by checking outputFile format.
@@ -1706,3 +1705,4 @@ def test_bulk_current_outputs(tmp_path):
     assert probeBulkZPlane.direction == 'z'
     assert probeBulkYPoint.direction == 'y'
     assert probeBulkZVolume.direction == 'z'
+
