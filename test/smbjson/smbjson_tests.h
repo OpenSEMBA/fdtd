@@ -34,6 +34,9 @@ extern "C" int test_read_unshielded_multiwires_multipolar_expansion();
 extern "C" int test_read_background_defaults();
 extern "C" int test_read_background_set();
 
+extern "C" int test_unrecognized_key_at_root();
+extern "C" int test_unrecognized_key_in_section();
+
 TEST(smbjson, idchildtable_fhash)     {EXPECT_EQ(0, test_idchildtable_fhash()); }
 TEST(smbjson, idchildtable_add_get)   {EXPECT_EQ(0, test_idchildtable()); }
 
@@ -58,6 +61,9 @@ TEST(smbjson, read_airplane)             { EXPECT_EQ(0, test_read_airplane()); }
 TEST(smbjson, read_lumped_fixture)       { EXPECT_EQ(0, test_read_lumped_fixture()); }
 TEST(smbjson, read_background_defaults) { EXPECT_EQ(0, test_read_background_defaults()); }
 TEST(smbjson, read_background_set)      { EXPECT_EQ(0, test_read_background_set()); }
+
+TEST(smbjson, unrecognized_key_at_root)    { EXPECT_EQ(0, test_unrecognized_key_at_root()); }
+TEST(smbjson, unrecognized_key_in_section) { EXPECT_EQ(0, test_unrecognized_key_in_section()); }
 
 #ifdef CompileWithMTLN
 TEST(smbjson, read_towelhanger)             { EXPECT_EQ(0, test_read_towelhanger()); }

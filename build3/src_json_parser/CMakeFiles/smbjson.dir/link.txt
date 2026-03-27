@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../lib/libsmbjson.a CMakeFiles/smbjson.dir/smbjson_labels.F90.o CMakeFiles/smbjson.dir/cells.F90.o CMakeFiles/smbjson.dir/smbjson.F90.o CMakeFiles/smbjson.dir/idchildtable.F90.o CMakeFiles/smbjson.dir/mesh.F90.o CMakeFiles/smbjson.dir/parser_tools.F90.o CMakeFiles/smbjson.dir/nfdetypes_extension.F90.o
+/usr/bin/ranlib ../lib/libsmbjson.a

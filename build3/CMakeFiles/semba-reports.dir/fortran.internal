@@ -1,0 +1,4 @@
+# The fortran modules provided by this target.
+provides
+ report_m.mod
+ snapxdmf_m.mod

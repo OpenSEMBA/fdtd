@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libvtk_test_fortran.a CMakeFiles/vtk_test_fortran.dir/test_vtk.F90.o
+/usr/bin/ranlib ../../lib/libvtk_test_fortran.a

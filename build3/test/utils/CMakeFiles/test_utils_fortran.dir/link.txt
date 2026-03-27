@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libtest_utils_fortran.a CMakeFiles/test_utils_fortran.dir/fdetypes_tools.F90.o
+/usr/bin/ranlib ../../lib/libtest_utils_fortran.a

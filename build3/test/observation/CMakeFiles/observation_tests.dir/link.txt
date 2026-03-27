@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libobservation_tests.a CMakeFiles/observation_tests.dir/observation_tests.cpp.o
+/usr/bin/ranlib ../../lib/libobservation_tests.a

@@ -82,6 +82,7 @@ module smbjson_m
       procedure, private :: jsonValueFilterByKeyValue
       procedure, private :: jsonValueFilterByKeyValues
       procedure, private :: getSingleVolumeInElementsIds
+      procedure, private :: checkForUnrecognizedKeys
    end type
    interface parser_t
       module procedure parser_ctor
@@ -156,7 +157,36 @@ contains
       this%elementTable = IdChildTable_t(this%core, this%root, J_MESH//'.'//J_ELEMENTS)
       
       call initializeProblemDescription(res)
-      
+
+      call this%checkForUnrecognizedKeys(this%root, &
+         [character(len=64) :: J_GENERAL, J_BOUNDARY, J_MESH, J_MATERIALS, &
+          J_MATERIAL_ASSOCIATIONS, J_SOURCES, J_PROBES, J_BACKGROUND, "format"])
+
+      call checkSectionItems(J_MATERIALS, &
+         [character(len=64) :: J_ID, J_NAME, J_TYPE, &
+          J_MAT_REL_PERMITTIVITY, J_MAT_REL_PERMEABILITY, &
+          J_MAT_ELECTRIC_CONDUCTIVITY, J_MAT_MAGNETIC_CONDUCTIVITY, &
+          J_MAT_WIRE_RADIUS, J_MAT_WIRE_RESISTANCE, J_MAT_WIRE_INDUCTANCE, &
+          J_MAT_WIRE_DIELECTRIC, J_MAT_LUMPED_MODEL, J_MAT_LUMPED_RESISTANCE, &
+          J_MAT_LUMPED_STARTING_TIME, J_MAT_LUMPED_END_TIME, &
+          J_MAT_LUMPED_INDUCTANCE, J_MAT_LUMPED_CAPACITANCE, &
+          J_MAT_TERM_TERMINATIONS, J_MAT_MULTILAYERED_SURF_LAYERS, &
+          J_MAT_THINSLOT_WIDTH, J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE, &
+          J_MAT_MULTIWIRE_CAPACITANCE, J_MAT_MULTIWIRE_INDUCTANCE, &
+          J_MAT_MULTIWIRE_RESISTANCE, J_MAT_MULTIWIRE_CONDUCTANCE, &
+          J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION, &
+          J_MAT_CONN_RESISTANCES, J_MAT_CONN_TRANSFER_IMPEDANCES])
+
+      call checkSectionItems(J_SOURCES, &
+         [character(len=64) :: J_ID, J_NAME, J_TYPE, J_ELEMENTIDS, &
+          J_SRC_MAGNITUDE_FILE, J_SRC_ATTACHED_ID, J_FIELD, &
+          J_SRC_PW_DIRECTION, J_SRC_PW_POLARIZATION, J_SRC_NS_HARDNESS])
+
+      call checkSectionItems(J_PROBES, &
+         [character(len=64) :: J_ID, J_NAME, J_TYPE, J_ELEMENTIDS, &
+          J_PR_DOMAIN, J_PR_POINT_DIRECTIONS, J_PR_MOVIE_COMPONENT, &
+          J_PR_FAR_FIELD_THETA, J_PR_FAR_FIELD_PHI, J_FIELD, J_DIR])
+
       res%switches = this%readAdditionalArguments()
       
       ! Basics
@@ -193,6 +223,20 @@ contains
 #endif
       res%tSlots = this%readThinSlots()
 
+   contains
+      subroutine checkSectionItems(sectionKey, validKeys)
+         character(len=*), intent(in) :: sectionKey
+         character(len=*), dimension(:), intent(in) :: validKeys
+         type(json_value), pointer :: section, item
+         logical :: found
+         integer :: i
+         call this%core%get(this%root, sectionKey, section, found)
+         if (.not. found) return
+         do i = 1, this%core%count(section)
+            call this%core%get_child(section, i, item)
+            call this%checkForUnrecognizedKeys(item, validKeys, sectionKey)
+         end do
+      end subroutine
    end function
 
    function readMesh(this) result(res)
@@ -362,6 +406,14 @@ contains
    function readGeneral(this) result (res)
       class(parser_t) :: this
       type(NFDEGeneral_t) :: res
+      block
+         type(json_value), pointer :: gen
+         logical :: found
+         call this%core%get(this%root, J_GENERAL, gen, found)
+         if (found) call this%checkForUnrecognizedKeys(gen, &
+            [character(len=64) :: J_GEN_TIME_STEP, J_GEN_NUMBER_OF_STEPS, &
+             J_GEN_MTLN_PROBLEM, J_GEN_ADDITIONAL_ARGUMENTS], J_GENERAL)
+      end block
       res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP, default = 0.0_RKIND)
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
       res%mtlnProblem = this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
@@ -448,6 +500,27 @@ contains
       if (.not. found) then
          call WarnErrReport("Error reading boundary: " // J_BOUNDARY // " not found.", .true.)
       end if
+
+      call this%checkForUnrecognizedKeys(bdrs, &
+         [character(len=64) :: J_BND_ALL, J_BND_XL, J_BND_XU, &
+          J_BND_YL, J_BND_YU, J_BND_ZL, J_BND_ZU], J_BOUNDARY)
+
+      block
+         character(len=64), dimension(4) :: faceKeys
+         type(json_value), pointer :: facePtr
+         integer :: i
+         character(len=*), dimension(7), parameter :: faceLabels = &
+            [character(len=6) :: J_BND_ALL, J_BND_XL, J_BND_XU, J_BND_YL, J_BND_YU, J_BND_ZL, J_BND_ZU]
+         faceKeys(1) = J_TYPE
+         faceKeys(2) = J_BND_PML_LAYERS
+         faceKeys(3) = J_BND_PML_ORDER
+         faceKeys(4) = J_BND_PML_REFLECTION
+         do i = 1, size(faceLabels)
+            call this%core%get(bdrs, trim(faceLabels(i)), facePtr, found)
+            if (found) call this%checkForUnrecognizedKeys(facePtr, faceKeys, &
+               J_BOUNDARY//'.'//trim(faceLabels(i)))
+         end do
+      end block
       
       block
          bdrType = this%getStrAt(bdrs, J_BND_ALL//'.'//J_TYPE, found)
@@ -528,6 +601,13 @@ contains
       type(Materials_t), intent(inout) :: mats
       logical :: found
       real(kind=RKIND) :: val
+      block
+         type(json_value), pointer :: bkg
+         call this%core%get(this%root, J_BACKGROUND, bkg, found)
+         if (found) call this%checkForUnrecognizedKeys(bkg, &
+            [character(len=64) :: J_BKG_ABS_PERMITTIVITY, J_BKG_ABS_PERMEABILITY], &
+            J_BACKGROUND)
+      end block
 
       val = this%getRealAt(this%root, J_BACKGROUND//'.'//J_BKG_ABS_PERMITTIVITY, found=found)
       if (found) mats%mats(1)%eps = val
@@ -2417,6 +2497,12 @@ contains
       logical :: isMultiwire, isWireOrMultiwire
       character(len=BUFSIZE) :: errorMsg
       
+      call this%checkForUnrecognizedKeys(matAss, &
+         [character(len=64) :: J_MATERIAL_ID, J_ELEMENTIDS, J_NAME, &
+          J_MAT_ASS_CAB_INI_TERM_ID, J_MAT_ASS_CAB_END_TERM_ID, &
+          J_MAT_ASS_CAB_INI_CONN_ID, J_MAT_ASS_CAB_END_CONN_ID, &
+          J_MAT_ASS_CAB_CONTAINED_WITHIN_ID], J_MATERIAL_ASSOCIATIONS)
+
       ! Fills material association.
       res%materialId = this%getIntAt(matAss, J_MATERIAL_ID, found)
       if (.not. found) call showLabelNotFoundError(J_MATERIAL_ID)
@@ -4429,6 +4515,47 @@ contains
          return
       end if
    end function
+
+   subroutine checkForUnrecognizedKeys(this, place, validKeys, context)
+      class(parser_t) :: this
+      type(json_value), pointer :: place
+      character(len=*), dimension(:), intent(in) :: validKeys
+      character(len=*), intent(in), optional :: context
+      type(json_value), pointer :: child
+      character(kind=CK, len=:), allocatable :: childName
+      integer :: i, j
+      logical :: isValid
+      character(len=BUFSIZE) :: errorMsg
+
+      if (.not. associated(place)) return
+
+      do i = 1, this%core%count(place)
+         call this%core%get_child(place, i, child)
+         call this%core%info(child, name=childName)
+
+         if (.not. allocated(childName)) cycle
+         if (len(childName) == 0) cycle
+         if (childName(1:1) == '_') cycle
+
+         isValid = .false.
+         do j = 1, size(validKeys)
+            if (trim(childName) == trim(validKeys(j))) then
+               isValid = .true.
+               exit
+            end if
+         end do
+
+         if (.not. isValid) then
+            if (present(context)) then
+               write(errorMsg, *) "Unrecognized key '", trim(childName), &
+                  "' in '", trim(context), "'."
+            else
+               write(errorMsg, *) "Unrecognized key: '", trim(childName), "'."
+            end if
+            call WarnErrReport(errorMsg, .true.)
+         end if
+      end do
+   end subroutine
 
 #endif   
 end module

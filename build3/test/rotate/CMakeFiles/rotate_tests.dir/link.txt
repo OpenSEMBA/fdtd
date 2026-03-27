@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/librotate_tests.a CMakeFiles/rotate_tests.dir/rotate_tests.cpp.o
+/usr/bin/ranlib ../../lib/librotate_tests.a
