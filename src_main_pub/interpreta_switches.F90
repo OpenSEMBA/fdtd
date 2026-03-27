@@ -1907,7 +1907,7 @@ contains
       !
       ! If no input is present we stop
       if (len(trim(adjustl(l%fichin))) <= 0) then
-         call stoponerror(l%layoutnumber, l%num_procs, 'ERROR! -> No input file was specified. Use -i ****.nfde', .true.); statuse = -1; goto 667
+         call stoponerror(l%layoutnumber, l%num_procs, 'ERROR! -> No input file was specified. Use -i ****.fdtd.json', .true.); statuse = -1; goto 667
       end if
 
       l%fileFDE = trim(adjustl(l%fichin))//NFDEEXTENSION
