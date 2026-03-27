@@ -325,8 +325,8 @@ contains
         integer :: i, j, k
         integer :: nb, nl, nc
         integer(kind=4), allocatable, dimension(:,:) :: layer_indices
+        logical :: bundle_in_layer = .false.
         integer(kind=4), dimension(2) :: alloc_z
-        logical :: bundle_in_layer = .true.
         if (present(alloc)) then
             alloc_z(1) = alloc(3)%zi
             alloc_z(2) = alloc(3)%ze
@@ -335,9 +335,14 @@ contains
         allocate(res(nb))
         do i = 1, nb
             if (present(alloc)) then
-                bundle_in_layer = .true.
-                layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
-                if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
+                if (allocated(layer_indices)) deallocate(layer_indices)
+                bundle_in_layer = isBundleInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
+                if (bundle_in_layer) then 
+                    layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
+                else 
+                    allocate(layer_indices(0,2), source = 0)
+                end if
+                ! if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
             end if
             nl = size(cable_bundles(i)%levels)
             allocate(res(i)%levels(nl))
@@ -355,6 +360,28 @@ contains
         end do
 
     contains
+        logical function isBundleInLayer(cable, alloc_z)
+            integer(kind=4), dimension(2), intent(in) :: alloc_z
+            class (cable_t), pointer, intent(in) :: cable
+            integer :: n, i
+            logical :: in_layer
+            in_layer = .false.
+            n = 0
+            do i = 1, size(cable%segments)
+                if (isSegmentWithinAllocBox(cable%segments, i, alloc_z)) then 
+                    if (.not. in_layer) then 
+                        in_layer = .true.
+                    end if
+                else
+                    if (in_layer) then 
+                        in_layer = .false.
+                        n = n + 1
+                    end if
+                end if
+            end do
+            if (in_layer) n = n + 1
+            isBundleInLayer = (n/=0)
+        end function
 
         function findIndicesInLayer(cable, alloc_z) result(res)
             integer(kind=4), dimension(2), intent(in) :: alloc_z
