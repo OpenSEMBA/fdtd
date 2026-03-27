@@ -205,6 +205,14 @@ module  FDETYPES_m
    integer(kind=4), parameter :: EDGE_Y = 2
    integer(kind=4), parameter :: EDGE_Z = 3
 
+   !source types
+   character(len=*), parameter :: F_SOURCE_VOLTAGE = 'VOLT'
+   character(len=*), parameter :: F_SOURCE_SOFT_VOLTAGE = 'SOFTVOLT'
+   character(len=*), parameter :: F_SOURCE_HARD_VOLTAGE = 'HARDVOLT'
+   character(len=*), parameter :: F_SOURCE_CURRENT = 'CURR'
+   character(len=*), parameter :: F_SOURCE_SOFT_CURRENT = 'SOFTCURR'
+   character(len=*), parameter :: F_SOURCE_HARD_CURRENT = 'HARDCURR'
+
    
 #ifdef CompileWithReal4
    character(len=*), parameter  :: fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001

@@ -555,6 +555,38 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 
     assert np.allclose(fdtd_s21_db, anal_s21_db, rtol=0.05)
 
+def test_current_orientation(tmp_path):
+    fn = CASES_FOLDER + 'current_orientation/currentOrientation.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    
+    solver['mesh']['elements'][12]['coordinateIds'] = [1,2]
+    solver['sources'][0]['elementIds'] = [1]
+    solver.cleanUp()
+    solver.run()
+    i = Probe(solver.getSolvedProbeFilenames("Bulk_probe")[0]).data['current']
+    assert np.all(i >= 0)
+
+    solver['mesh']['elements'][12]['coordinateIds'] = [2,1]
+    solver['sources'][0]['elementIds'] = [1]
+    solver.cleanUp()
+    solver.run()
+    i = Probe(solver.getSolvedProbeFilenames("Bulk_probe")[0]).data['current']
+    assert np.all(i >= 0)
+
+    solver['mesh']['elements'][12]['coordinateIds'] = [1,2]
+    solver['sources'][0]['elementIds'] = [3]
+    solver.cleanUp()
+    solver.run()
+    i = Probe(solver.getSolvedProbeFilenames("Bulk_probe")[0]).data['current']
+    assert np.all(i <= 0)
+
+    solver['mesh']['elements'][12]['coordinateIds'] = [2,1]
+    solver['sources'][0]['elementIds'] = [3]
+    solver.cleanUp()
+    solver.run()
+    i = Probe(solver.getSolvedProbeFilenames("Bulk_probe")[0]).data['current']
+    assert np.all(i <= 0)
+
 @mtln_skip
 def test_sgbc_structured_resistance_single_wire(tmp_path):
     fn = CASES_FOLDER + 'sgbcResistance/sgbcResistance.fdtd.json'
@@ -565,7 +597,8 @@ def test_sgbc_structured_resistance_single_wire(tmp_path):
 
     i = Probe(solver.getSolvedProbeFilenames("Bulk_probe")[0]).data['current']
     assert np.allclose(i.array[-101:-1], np.ones(100)*i.array[-100], rtol=1e-3)
-    assert np.allclose(-1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
+    assert np.allclose(1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
+
 
 @no_mtln_skip
 def test_sgbc_structured_resistance_wire(tmp_path):
@@ -1656,3 +1689,36 @@ def test_conformal_delay(tmp_path):
         delay = t[front['field'].argmin()]
         tdelta = t4 + 2*(i*1.0/n)*0.02/3e8
         assert np.abs(delay - tdelta)/tdelta < 0.01
+        
+
+def test_bulk_current_outputs(tmp_path):
+    # This test uses bulk_probe_cases_over_nodal_source.fdtd from input_examples as input.
+    # Verifies all kind of bulk probes are recognised and setted properly by checking outputFile format.
+    fn = PROBES_INPUT_EXAMPLE + 'bulk_probe_cases_over_nodal_source.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+    bulkXPlaneFiles = solver.getSolvedProbeFilenames("BulkXPlane") 
+    bulkYPlaneFiles = solver.getSolvedProbeFilenames("BulkYPlane") 
+    bulkZPlaneFiles = solver.getSolvedProbeFilenames("BulkZPlane") 
+    bulkYPointFiles = solver.getSolvedProbeFilenames("BulkYPoint") 
+    bulkZVolumeFiles = solver.getSolvedProbeFilenames("BulkZVolume") 
+
+    assert len(bulkXPlaneFiles) == 1
+    assert len(bulkYPlaneFiles) == 1
+    assert len(bulkZPlaneFiles) == 1
+    assert len(bulkYPointFiles) == 1
+    assert len(bulkZVolumeFiles) == 10
+
+    probeBulkXPlane = Probe(bulkXPlaneFiles[0])
+    probeBulkYPlane = Probe(bulkYPlaneFiles[0])
+    probeBulkZPlane = Probe(bulkZPlaneFiles[0])
+    probeBulkYPoint = Probe(bulkYPointFiles[0])
+    probeBulkZVolume = Probe(bulkZVolumeFiles[0])
+
+    assert probeBulkXPlane.direction == 'x'
+    assert probeBulkYPlane.direction == 'y'
+    assert probeBulkZPlane.direction == 'z'
+    assert probeBulkYPoint.direction == 'y'
+    assert probeBulkZVolume.direction == 'z'
+
