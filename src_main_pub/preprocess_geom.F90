@@ -12,18 +12,10 @@ module Preprocess_m
    !
    use Report_m
    use NFDETypes_m
-   !healer sgg10
    use CreateMatrices_m
-   !typos que leo desde mi FDE
+   
    use FDETYPES_m
    use DMMA_m
-#ifdef CompileWithConformal
-   use CONFORMAL_INI_CLASS
-   use CONFORMAL_TOOLS
-   use CONFORMAL_MAPPED
-   use CONFORMAL_TYPES
-   use Conformal_TimeSteps_m
-#endif
    use conformal_m, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
    implicit none
 !!!variables globales del modulo
@@ -6331,13 +6323,8 @@ contains
       return
 
    end subroutine !prepro_skindepth
-   !!!!!!!!end 09/07/13
 
-#ifdef CompileWithConformal
-   subroutine AssigLossyOrPECtoNodes(sgg,media,conf_conflicts,input_conformal_flag)
-#else
    subroutine AssigLossyOrPECtoNodes(sgg,media)
-#endif
       type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       type(media_matrices_t), intent(inout) :: media
 
@@ -6345,18 +6332,6 @@ contains
       real(kind=RKIND) :: sigt,epst,SIGMA,SIGMAM,EPR,MUR
       integer(kind=4) i,j,k,n,kmenos1,jmenos1,imenos1,med(0:5),r,imed,i1
       character(len=BUFSIZE) :: buff
-
-#ifdef CompileWithConformal
-      type(conf_conflicts_t), pointer  :: conf_conflicts
-      type(conf_node_t), dimension(:), pointer :: conf_busy_node
-      integer(kind=confIKIND) :: dims
-      logical :: mediois1,mediois2,mediois3
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: medio1,medio2,medio3
-#endif
-
-
-      !!!lo dejo aqui para en un futuro hacerlo crecer y asignar la informacion de nodo con su tipo de material correctamente
-      !!copiado de la casuistica de wires !310715  !no esta anulado alli, pero cuando se haga crecer habra que aumenta el sgg%med para acomodar a los nuevos materiales nodales....
 
       do k= sgg%Alloc(iEz)%ZI , sgg%Alloc(iEz)%ZE
          do j= sgg%Alloc(iEy)%YI , sgg%Alloc(iEy)%YE
@@ -6437,52 +6412,6 @@ contains
             end do
          end do
       end do
-
-!CORRIGE AHORA CON LA INFO CONFORMAL (HABIA UN BUG 211116 PQ EL NODALMENTE IGUALES LO MACHACABA SI ESTO SE HACIA ANTES)
-#ifdef CompileWithConformal
-      if(input_conformal_flag)then
-         dims      =conf_conflicts%conf_busy_nodesGroup%dims
-         conf_busy_node=> conf_conflicts%conf_busy_nodesGroup%conf_busy_node
-         do n=1,dims
-            i=conf_busy_node(n)%i
-            j=conf_busy_node(n)%j
-            k=conf_busy_node(n)%k
-            if (conf_busy_node(n)%ispec) then
-               media%sggMiNo(i,j,k)=0
-            end if
-         end do
-         !!!conf_busy_node(n)%i = 0
-         !!!conf_busy_node(n)%j = 0
-         !!!conf_busy_node(n)%k = 0
-         !!!conf_busy_node(n)%isfree  = .true.
-         !!!conf_busy_node(n)%ispec   = .false.
-         !!!conf_busy_node(n)%sigmaEquiv      = 0.0_RKIND
-         !!!conf_busy_node(n)%epsilonRelEquiv = 1.0_RKIND
-         !!!conf_busy_node(n)%muRelEquiv      = 1.0_RKIND
-
-!!!      Movido a cada wires.F90. Aqui me parece inreportable y peligroso
-!!!!pedazo de niapa para poner los sggmiNo conformal a voltage nulo y que Dios reparta suerte 130220
-!!!         !barro el interior, por eso el shifing k,x - j,z - i,y
-!!!         Do k=sgg%alloc(iHx)%ZI , sgg%alloc(iHx)%ZE
-!!!            Do j=sgg%alloc(iHz)%YI , sgg%alloc(iHz)%YE
-!!!               Do i=sgg%alloc(iHy)%XI , sgg%alloc(iHy)%XE
-!!!                  medio1 =sggMiEx(i,j,k)
-!!!                  medio2 =sggMiEy(i,j,k)
-!!!                  medio3 =sggMiEz(i,j,k)
-!!!                  mediois1= sgg%med(medio1)%is%already_YEEadvanced_byconformal .or. sgg%med(medio1)%is%split_and_useless
-!!!                  mediois2= sgg%med(medio2)%is%already_YEEadvanced_byconformal .or. sgg%med(medio2)%is%split_and_useless
-!!!                  mediois3= sgg%med(medio3)%is%already_YEEadvanced_byconformal .or. sgg%med(medio3)%is%split_and_useless
-!!!                  if (mediois1.or.mediois2.or.mediois3)  then
-!!!                      sggMiNo(i,j,k)=0 !ojo !esto no sirve para contactos conformal SGBC-wires, solo para conformal PEC-wires
-!!!                  end if
-!!!               End do
-!!!            End do
-!!!         End do
-!!!!fin pedado de niapa
-
-
-      end if
-#endif
 
       return
    end subroutine AssigLossyOrPECtoNodes

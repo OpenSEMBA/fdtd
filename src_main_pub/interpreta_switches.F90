@@ -80,8 +80,6 @@ module interpreta_switches_m
          existeh5, &
          fatalerror, &
          fatalerrornfde2sgg, &
-         existeconf, &
-         existecmsh, &
          thereare_stoch, &
          experimentalVideal, &
          simu_devia, &
@@ -394,53 +392,6 @@ contains
                l%run_with_dmma = .TRUE.
                l%run_with_abrezanjas = .FALSE.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-
-#ifdef CompileWithConformal
-            CASE ('-abrezanjas') !Provisional FEB-2018
-
-               !NOTE: Comento lo de abajo para debugear
-               !   print *,'Abrezanjas not available (290521).  '
-               !   stop
-
-               l%run_with_dmma = .FALSE.
-               l%run_with_abrezanjas = .true.
-               if (.NOT. l%input_conformal_flag) then
-                  l%conformal_file_input_name = char(0)
-                  l%input_conformal_flag = .true.
-               end if
-               l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-
-            CASE ('-activateconf') !Provisional FEB-2018
-               if (.NOT. l%input_conformal_flag) then
-                  l%conformal_file_input_name = char(0)
-                  l%input_conformal_flag = .true.
-               end if
-               i = i + 1; 
-               l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-#endif
-            CASE ('-conf')
-               l%flag_conf_sgg = .true.
-               i = i + 1; 
-#ifdef CompileWithConformal
-               l%input_conformal_flag = .true.; 
-               l%conformal_file_input_name = char(0); 
-               call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               l%conformal_file_input_name = trim(adjustl(f)); 
-               inquire(file=trim(adjustl(f)), EXIST=l%existeNFDE)
-               if (.NOT. l%existeNFDE) then
-                  l%input_conformal_flag = .FALSE.; 
-                  buff = 'The conformal input file was not found '//trim(adjustl(l%fichin)); 
-                  call WarnErrReport(Trim(buff), .true.)
-               end if
-               l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-#endif
-#ifndef CompileWithConformal
-               if (l%input_conformal_flag) then
-                  buff = ''; buff = 'Conformal without conformal support. Recompile!'; 
-                  call WarnErrReport(Trim(buff), .true.)
-               end if
-#endif
-
             CASE ('-takeintcripte')
                l%takeintcripte = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
@@ -1365,9 +1316,6 @@ contains
 #ifdef CompileWithHDF
       call print11(l%layoutnumber, 'Compiled WITH .h5 HDF support')
 #endif
-#ifdef CompileWithConformal
-      call print11(l%layoutnumber, 'Compiled WITH Conformal support')
-#endif
 #ifdef CompileWithMTLN
       call print11(l%layoutnumber, 'Compiled WITH MTLN support')
 #endif
@@ -1422,14 +1370,6 @@ contains
       !!          call print11 (l%layoutnumber, '&                        increase if requested at runtime                  ')
       !!#endif
 
-      !*********************************************************************************************************************
-      !***[conformal] **************************************************************************************
-      !*********************************************************************************************************************
-      !conformal -help printf line   ref:  ##Confhelp##
-#ifdef CompileWithConformal
-      call print11(l%layoutnumber, '-conf                    : Adds the conformal file to the simulation.')
-#endif
-      !*********************************************************************************************************************
 #ifdef CompileWithNIBC
       call print11(l%layoutnumber, '-skindepthpre          : Pre-processor for sgbc metals including skin depth.')
       call print11(l%layoutnumber, '-mibc                  : Uses pure l%mibc to deal with composites.  ')
@@ -1537,10 +1477,6 @@ contains
       call print11(l%layoutnumber, '&                        with wires and PEC                ')
       call print11(l%layoutnumber, '&                        (in conjunction with -n 0 only creates the maps)  ')
       call print11(l%layoutnumber, '-mapvtk                : Creates .VTK map of the PEC/wires/Surface geometry')
-#ifdef CompileWithConformal
-      call print11(l%layoutnumber, '-conf file             : conformal file  ')
-      call print11(l%layoutnumber, '-abrezanjas            : Thin-gaps treated in conformal manner  ')
-#endif
       call print11(l%layoutnumber, '-dmma                  : Thin-gaps treated in DMMA manner  ')
 #ifdef CompileWithMPI
       call print11(l%layoutnumber, '-mpidir {x,y,z}        : Rotate model to force MPI along z be the largest  ')
@@ -1589,19 +1525,9 @@ contains
       call print11(l%layoutnumber, buff)
 #ifdef CompileWithOpenMP
       call print11(l%layoutnumber, 'SUPPORTED:   MultiCPU parallel simulation (OpenMP)')
-#else
-      !call print11 (l%layoutnumber, 'UNSUPPORTED: MultiCPU parallel simulation (OpenMP)')
 #endif
-!
 #ifdef CompileWithMPI
       call print11(l%layoutnumber, 'SUPPORTED:   MultiCPU/Multinode parallel simulation (MPI)')
-#else
-      !call print11 (l%layoutnumber, 'UNSUPPORTED: MultiCPU/Multinode parallel simulation (MPI)')
-#endif
-#ifdef CompileWithConformal
-      call print11(l%layoutnumber, 'SUPPORTED:   Conformal algorithm')
-#else
-      !call print11 (l%layoutnumber, 'UNSUPPORTED: Conformal algorithm')
 #endif
       call print11(l%layoutnumber, 'SUPPORTED:   Near-to-Far field probes')
       call print11(l%layoutnumber, 'SUPPORTED:   Lossy anistropic materials, both electric and magnetic')
@@ -1610,41 +1536,27 @@ contains
       call print11(l%layoutnumber, 'SUPPORTED:   Isotropic Multilayer Skin-depth Materials (sgbc)')
 #ifdef CompileWithNIBC
       call print11(l%layoutnumber, 'SUPPORTED:   Isotropic Multilayer Skin-depth Materials (l%mibc)')
-#else
-      !call print11 (l%layoutnumber, 'UNSUPPORTED: Isotropic Multilayer Skin-depth Materials (l%mibc)')
 #endif
       call print11(l%layoutnumber, 'SUPPORTED:   Loaded and grounded thin-wires with juntions')
       call print11(l%layoutnumber, 'SUPPORTED:   Nodal hard/soft electric and magnetic sources')
 #ifdef CompileWithHDF
       call print11(l%layoutnumber, 'SUPPORTED:   .xdmf+.h5 probes ')
-#else
-      !call print11 (l%layoutnumber, 'UNSUPPORTED: .xdmf+.h5 probes ')
 #endif
 #ifdef CompileWithOldSaving
       call print11(l%layoutnumber, 'SUPPORTED:   .fields.old files created (fail-safe)')
-#else
-      !call print11 (l%layoutnumber, 'UNSUPPORTED: .fields.old files created (fail-safe)')
 #endif
 #ifdef CompileWithStochastic
       call print11(l%layoutnumber, 'SUPPORTED:   l%stochastic analysis')
-#else
-      !call print11 (l%layoutnumber, 'UNSUPPORTED: l%stochastic analysis')
 #endif
 #ifdef CompileWithPrescale
       call print11(l%layoutnumber, 'SUPPORTED:   Permittivity scaling accelerations')
-#else
-      !call print11 (l%layoutnumber, 'UNSUPPORTED: Permittivity scaling accelerations')
 #endif
       call print11(l%layoutnumber, 'SUPPORTED:   Holland Wires')
 #ifdef CompileWithBerengerWires
       call print11(l%layoutnumber, 'SUPPORTED:   Multi-Wires')
-#else
-      !call print11 (l%layoutnumber, 'UNSUPPORTED: Multi-Wires')
 #endif
 #ifdef CompileWithSlantedWires
       call print11(l%layoutnumber, 'SUPPORTED:   Slanted Wires')
-#else
-      !call print11 (l%layoutnumber, 'UNSUPPORTED: Slanted Wires')
 #endif
 !!!!!!!!!!!!!!!!!
 #ifdef CompileWithReal4
@@ -1749,11 +1661,6 @@ contains
                call print_help(l)
                call print_credits(l)
                STOP
-            CASE ('-hh')
-               call print_credits(l)
-               call print_help(l)
-               call print_credits(l)
-               STOP
             CASE ('-i')
                num_nfdes = num_nfdes + 1
             end select
@@ -1797,21 +1704,6 @@ contains
                      statuse = -1
                      goto 667
                   end if
-!aniadido para chequear que no haya .conf sin haber invocado el -conf 15/12/16 sgg
-                  inquire(file=trim(adjustl(l%fichin))//CONFEXTENSION, EXIST=l%existeconf)
-                  if ((l%existeconf) .AND. (.not. (l%input_conformal_flag))) then
- buff = 'No -conf issued but existing file '//trim(adjustl(l%fichin))//confEXTENSION//' . Either remove file or relaunch with -conf'
-                     call stoponerror(l%layoutnumber, l%num_procs, buff, .true.)
-                     statuse = -1
-                     goto 667
-                  end if
-                  inquire(file=trim(adjustl(l%fichin))//CMSHEXTENSION, EXIST=l%existecmsh)
-                  if ((l%existecmsh) .AND. (.not. (l%input_conformal_flag))) then
- buff = 'No -conf issued but existing file '//trim(adjustl(l%fichin))//CMSHEXTENSION//' . Either remove file or relaunch with -conf'
-                     call stoponerror(l%layoutnumber, l%num_procs, buff, .true.)
-                     statuse = -1
-                     goto 667
-                  end if
 !
                   if (temp_numnfdes == 1) then !solo el primero
                      if (l%layoutnumber == 0) open (194, file='multi_'//trim(adjustl(l%fichin))//NFDEEXTENSION, form='formatted')
@@ -1843,11 +1735,7 @@ contains
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI, l%ierr)
 #endif
-      !
-      !concatenado multiples ORIGINAL 26/06/14
-
-      !fin concatenado
-
+      
       temp_numnfdes = 0
       if (n > 0) then
          i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
@@ -2005,13 +1893,6 @@ contains
 
       l%fatalerror = .false.
       l%fatalerrornfde2sgg = .false.
-      !**************************************************************************************************
-      !***[conformal] *******************************************************************
-      !**************************************************************************************************
-      !conformal existence flags   ref: ##Confflag##
-      l%input_conformal_flag = .false.
-      l%flag_conf_sgg = .false.
-      !
 
       l%dontwritevtk = .false.
 
@@ -2070,20 +1951,7 @@ contains
       l%forcestop = .false.
       l%input_conformal_flag = .false.
       l%run_with_dmma = .true.
-#ifdef CompileWithConformal
-      l%run_with_dmma = .false.
-! todo esto para el abrezanjas. se precisa tambien el l%input_conformal_flag
-!!!!quitado sgg ojo 290521 esto no se ha arreglado aim... quito el abrezanjas !290521 bug
-  !!!    l%run_with_abrezanjas = .true. !OJO 0323 A VECES DA ERROR. PONER A FALSE SI SUCEDE
-      l%run_with_abrezanjas = .false. !OJO 0323 A VECES DA ERROR. PONER A FALSE SI SUCEDE
-      !!!!l%run_with_abrezanjas = .false.
-#else
       l%run_with_abrezanjas = .false.
-#endif
-
-!fin thin gaps
-
-      input_conformal_flag = l%input_conformal_flag    !ojooo 051223 es un flag globaaaallll
       return
    end subroutine default_flags
 
