@@ -326,11 +326,11 @@ contains
 !!!!
   end subroutine preprocess_observation
 
-  subroutine eliminate_unnecesary_observation_points(observation_probe, output_item, sweep, SINPMLSweep, ZI, ZE, layoutnumber, size)
+  subroutine eliminate_unnecesary_observation_points(observation_probe, output_item, sweep, SINPMLSweep, ZI, ZE, layoutnumber, num_procs)
    type(item_t),  intent(inout) :: output_item
    type(observable_t),  intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep, SINPMLSweep
-   integer(kind=4), intent(in) :: ZI, ZE, layoutnumber, size
+   integer(kind=4), intent(in) :: ZI, ZE, layoutnumber, num_procs
    integer(kind=4) :: field
    
    output_item%Xtrancos = observation_probe%Xtrancos
@@ -356,12 +356,12 @@ contains
    field = observation_probe%What
    select case (field)
       case (iBloqueJx, iBloqueJy, iBloqueMx, iBloqueMy)
-         call eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, size)
+         call eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, num_procs)
       case (iEx, iVx, iEy, iVy, iHz, iBloqueMz, iJx, iJy, iQx, iQy)
          !in case of MPI the flushing is only cared by one of the sharing layouts
          !este es el unico caso en el que un punto es susceptible de ser escrito por dos layouts. Por eso se lo echo
          ! solo a uno de ellos: al de abajo (a menos que que sea el layout de mas arriba, en cuyo caso tiene que tratarlo el) !bug del itc2 con el pathx hasta el borde
-         if (((observation_probe%ZI >= sweep(fieldo(field, 'Z'))%ZE) .and. (layoutnumber /= size - 1)) .or. &
+         if (((observation_probe%ZI >= sweep(fieldo(field, 'Z'))%ZE) .and. (layoutnumber /= num_procs - 1)) .or. &
             (observation_probe%ZI < sweep(fieldo(field, 'Z'))%ZI)) then
             observation_probe%What = Nothing !do not observe anything
          end if
@@ -371,20 +371,20 @@ contains
             observation_probe%What = nothing !do not observe anything
          end if
       case (iExC, iEyC, iHzC, iMhC, iEzC, iHxC, iHyC, iMeC)
-         call eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, size)
+         call eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, num_procs)
       case (iCur, iCurX, iCurY, iCurZ, mapvtk)
-         call eliminate_observation_from_current(observation_probe, output_item, sweep, field, layoutnumber, size)
+         call eliminate_observation_from_current(observation_probe, output_item, sweep, field, layoutnumber, num_procs)
       case (FarField)
-         call eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE, layoutnumber, size)
+         call eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE, layoutnumber, num_procs)
    end select
   end subroutine eliminate_unnecesary_observation_points
 
-  subroutine eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, size)
+  subroutine eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, num_procs)
    type(item_t), intent(inout) :: output_item
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
    integer, intent(in) :: field
-   integer(kind=4), intent(in) :: layoutnumber, size
+   integer(kind=4), intent(in) :: layoutnumber, num_procs
 
    if ((observation_probe%ZI > sweep(fieldo(field, 'Z'))%ZE) .or. &
    (observation_probe%ZE < sweep(fieldo(field, 'Z'))%ZI)) then
@@ -401,7 +401,7 @@ contains
          output_item%MPIRoot = layoutnumber
       end if
    !all of them must call the init routine even if they do not sync
-   call MPIinitSubcomm(layoutnumber, size, &
+   call MPIinitSubcomm(layoutnumber, num_procs, &
          output_item%MPISubComm, output_item%MPIRoot, output_item%MPIGroupIndex)
 #else
    end if
@@ -409,12 +409,12 @@ contains
 
   end subroutine eliminate_observation_from_block
 
-  subroutine eliminate_observation_from_electric_current(observation_probe, output_item, sweep, field, layoutnumber, size)
+  subroutine eliminate_observation_from_electric_current(observation_probe, output_item, sweep, field, layoutnumber, num_procs)
    type(item_t), intent(inout) :: output_item
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
    integer, intent(in) :: field
-   integer(kind=4), intent(in) :: layoutnumber, size
+   integer(kind=4), intent(in) :: layoutnumber, num_procs
 
    if ((observation_probe%ZI > sweep(fieldo(field, 'Z'))%ZE) .or. &
          (observation_probe%ZE < sweep(fieldo(field, 'Z'))%ZI)) then
@@ -429,7 +429,7 @@ contains
          (observation_probe%ZI <= sweep(fieldo(field, 'Z'))%ZE)) then
       output_item%MPIRoot = layoutnumber
    end if
-   call MPIinitSubcomm(layoutnumber, size, &
+   call MPIinitSubcomm(layoutnumber, num_procs, &
       output_item%MPISubComm, output_item%MPIRoot, output_item%MPIGroupIndex)
 #else
    end if
@@ -437,12 +437,12 @@ contains
 
    end subroutine eliminate_observation_from_electric_current
 
-   subroutine eliminate_observation_from_current(observation_probe, output_item, sweep, field, layoutnumber, size)
+   subroutine eliminate_observation_from_current(observation_probe, output_item, sweep, field, layoutnumber, num_procs)
    type(item_t), intent(inout) :: output_item
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
    integer, intent(in) :: field
-   integer(kind=4), intent(in) :: layoutnumber, size
+   integer(kind=4), intent(in) :: layoutnumber, num_procs
 
    if ((observation_probe%ZI >= sweep(iHz)%ZE) .or. &
          (observation_probe%ZE < sweep(iHZ)%ZI)) then
@@ -462,7 +462,7 @@ contains
          (observation_probe%ZI <= sweep(fieldo(field, 'Z'))%ZE)) then
       output_item%MPIRoot = layoutnumber
    end if
-   call MPIinitSubcomm(layoutnumber, size, &
+   call MPIinitSubcomm(layoutnumber, num_procs, &
       output_item%MPISubComm, output_item%MPIRoot, output_item%MPIGroupIndex)
 #else
    end if
@@ -470,13 +470,13 @@ contains
 
    end subroutine eliminate_observation_from_current
 
-   subroutine eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE, layoutnumber, size)
+   subroutine eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE, layoutnumber, num_procs)
    type(item_t), intent(inout) :: output_item
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: SINPMLSweep
    integer, intent(in) :: field
    integer(kind=4), intent(in) :: ZI, ZE
-   integer(kind=4), intent(in) :: layoutnumber, size
+   integer(kind=4), intent(in) :: layoutnumber, num_procs
 
    if ((ZI > SINPMLSweep(IHz)%ZE) .or. (ZE < SINPMLSweep(iHz)%ZI)) then   !MPI NO DUPLICAR CALCULOS
       observation_probe%What = nothing
@@ -491,7 +491,7 @@ contains
       output_item%MPIRoot = layoutnumber
    end if
 
-   call MPIinitSubcomm(layoutnumber, size, &
+   call MPIinitSubcomm(layoutnumber, num_procs, &
          output_item%MPISubComm, output_item%MPIRoot, output_item%MPIGroupIndex)
 #else
    end if
@@ -499,10 +499,10 @@ contains
       
    end subroutine eliminate_observation_from_farfield
 
-    subroutine init_frequency_output(observation, privateOutput, dt, layoutnumber, size, niapapostprocess)
+    subroutine init_frequency_output(observation, privateOutput, dt, layoutnumber, num_procs, niapapostprocess)
       type(Obses_t), intent(inout) :: observation
       type(output_t), intent(inout) :: privateOutput
-      integer(kind=4), intent(in) :: layoutnumber, size
+      integer(kind=4), intent(in) :: layoutnumber, num_procs
       real(kind=RKIND_tiempo), intent(in) :: dt
       logical, intent(inout) :: niapapostprocess
 
@@ -528,11 +528,11 @@ contains
 
       if ((privateOutput%NumFreqs < 0)) then
         Buff = 'Freq. range for Freq. probes invalid'
-        call stoponerror(layoutnumber, size, Buff)
+        call stoponerror(layoutnumber, num_procs, Buff)
       end if
       if ((privateOutput%NumFreqs > 100000)) then
         Buff = 'Too many Freqs requested (>100000)'
-        call stoponerror(layoutnumber, size, Buff)
+        call stoponerror(layoutnumber, num_procs, Buff)
       end if
             
       allocate (privateOutput%Freq(1:privateOutput%NumFreqs), &
@@ -564,7 +564,7 @@ contains
         inquire (file=trim(adjustl(observation%FileNormalize)), EXIST=errnofile)
         if (.NOT. errnofile) then
           buff = trim(adjustl(observation%FileNormalize))//' NORMALIZATION FILE DOES NOT EXIST'
-          call STOPONERROR(layoutnumber, size, buff)
+          call STOPONERROR(layoutnumber, num_procs, buff)
         end if
 
         timesteps = 0
@@ -655,7 +655,7 @@ contains
 
     !!!Control Inputs
     type(sim_control_t), intent(inout) :: control
-    integer(kind=4) :: layoutnumber, size, mpidir, finaltimestep
+    integer(kind=4) :: layoutnumber, num_procs, mpidir, finaltimestep
     character(len=bufsize) :: nEntradaRoot, wiresflavor
     logical :: resume, saveall, NF2FFDecim, simu_devia, singlefilewrite
     type(nf2ff_t) :: facesNF2FF
@@ -666,7 +666,7 @@ contains
       finalTimeStep = control%finalTimeStep
       nEntradaRoot = trim(adjustl(control%nEntradaRoot))
       layoutnumber = control%layoutnumber
-      size = control%size
+      num_procs = control%num_procs
       saveall = control%saveall
       singleFileWrite = control%singleFileWrite
       wiresflavor = trim(adjustl(control%wiresflavor))
@@ -688,11 +688,11 @@ contains
     unitmaster = -1000 !!!no se bien. Lo pongo absurdo
     unit = 1000 !initial
     if (unit >= 2.0_RKIND**31.0_RKIND - 1.0_RKIND) then
-      call stoponerror(layoutnumber, size, 'Excesive number of probes')
+      call stoponerror(layoutnumber, num_procs, 'Excesive number of probes')
     end if
     !
     write (whoamishort, '(i5)') layoutnumber + 1
-    write (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+    write (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', num_procs, ') '
 
     !call crea_gnuplot
 
@@ -725,7 +725,7 @@ contains
    do ii = 1, sgg%NumberRequest
       do i = 1, sgg%Observation(ii)%nP
          call eliminate_unnecesary_observation_points(sgg%Observation(ii)%P(i), output(ii)%item(i), &
-            sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE, layoutnumber, size)
+            sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE, layoutnumber, num_procs)
       end do
    end do
 
@@ -788,7 +788,7 @@ contains
          !!!!!!!!!Comun a todas las sondas freqdomain
         do ii = 1, sgg%NumberRequest
           if (SGG%Observation(ii)%FreqDomain) then
-            call init_frequency_output(sgg%observation(ii), output(ii), sgg%dt, layoutnumber, size, niapapostprocess)
+            call init_frequency_output(sgg%observation(ii), output(ii), sgg%dt, layoutnumber, num_procs, niapapostprocess)
           end if !del freqdomain
         end do
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -934,7 +934,7 @@ contains
                   prefix_field = prefix(field)
                 end select
               else
-                call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
               end if
               !
               if ((field == iJx) .or. (field == iJy) .or. (field == iJz)) then
@@ -954,7 +954,7 @@ contains
               !
               unit = unit + 1
               if (unit >= 2.0_RKIND**31.0_RKIND - 1.0_RKIND) then
-                call stoponerror(layoutnumber, size, 'Excesive number of probes')
+                call stoponerror(layoutnumber, num_procs, 'Excesive number of probes')
               end if
               output(ii)%item(i)%unit = unit
               !
@@ -969,7 +969,7 @@ contains
               !
               memo = memo + rkind*BuffObse
               if (memo > MaxMemoryProbes) then
-                call stoponerror(layoutnumber, size, 'Recompile: excesive memory for probes.'// &
+                call stoponerror(layoutnumber, num_procs, 'Recompile: excesive memory for probes.'// &
                 &                                   'Increase MaxMemoryProbes')
               end if
               allocate (output(ii)%item(i)%valor(0:BuffObse))
@@ -1003,7 +1003,7 @@ contains
 
                   memo = memo + 3*4*BuffObse
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'Recompile: excesive memory for probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'Recompile: excesive memory for probes.'// &
                     &                                   'Increase MaxMemoryProbes')
                   end if
                   allocate ( &
@@ -1068,7 +1068,7 @@ contains
 
                   memo = memo + 3*4*BuffObse
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'Recompile: excesive memory for probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'Recompile: excesive memory for probes.'// &
                     &                                   'Increase MaxMemoryProbes')
                   end if
                   allocate ( &
@@ -1113,7 +1113,7 @@ contains
 
                   memo = memo + 3*4*BuffObse
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'Recompile: excesive memory for probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'Recompile: excesive memory for probes.'// &
                     &                                   'Increase MaxMemoryProbes')
                   end if
                   allocate ( &
@@ -1210,7 +1210,7 @@ contains
                 else
                   inquire (file=trim(adjustl(output(ii)%item(i)%path)), exist=existe)
                   if (.not. existe) then
-                    call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Ex, etc.) '//trim(adjustl(output(ii)%item(i)%path)))
+                    call stoponerror(layoutnumber, num_procs, 'Data files for resuming non existent (Ex, etc.) '//trim(adjustl(output(ii)%item(i)%path)))
                   end if
                   !
                   open (output(ii)%item(i)%unit, recl=1000, access='sequential', file=trim(adjustl(output(ii)%item(i)%path)))
@@ -1288,7 +1288,7 @@ contains
                   prefix_field = prefix(iBloqueMx)
                 end select
               else
-                call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
               end if
               !
               ext = trim(adjustl(nEntradaRoot))//'_'//trim(adjustl(sgg%observation(ii)%outputrequest))
@@ -1299,7 +1299,7 @@ contains
               !
               unit = unit + 1
               if (unit >= 2.0_RKIND**31.0_RKIND - 1.0_RKIND) then
-                call stoponerror(layoutnumber, size, 'Excesive number of probes')
+                call stoponerror(layoutnumber, num_procs, 'Excesive number of probes')
               end if
               output(ii)%item(i)%unit = unit
               !
@@ -1309,7 +1309,7 @@ contains
 
               memo = memo + rkind*BuffObse
               if (memo > MaxMemoryProbes) then
-                call stoponerror(layoutnumber, size, 'ERROR: Recompile: excesive memory for the probes.'// &
+                call stoponerror(layoutnumber, num_procs, 'ERROR: Recompile: excesive memory for the probes.'// &
                 &                                   'Recompile increasing MaxMemoryProbes')
               end if
               allocate (output(ii)%item(i)%valor(0:BuffObse))
@@ -1353,7 +1353,7 @@ contains
                 else
                   inquire (file=trim(adjustl(output(ii)%item(i)%path)), exist=existe)
                   if (.not. existe) then
-                    call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloque, etc.) '//trim(adjustl(output(ii)%item(i)%path)))
+                    call stoponerror(layoutnumber, num_procs, 'Data files for resuming non existent (Bloque, etc.) '//trim(adjustl(output(ii)%item(i)%path)))
                   end if
                   open (output(ii)%item(i)%unit, recl=1000, access='sequential', &
                         file=trim(adjustl(output(ii)%item(i)%path)))
@@ -1379,7 +1379,7 @@ contains
             case (iCur, iCurX, iCurY, iCurZ, mapvtk)
               if (sgg%Observation(ii)%Volumic) then !they are necssaryly
                 if (sgg%Observation(ii)%nP /= 1) then
-                  call stoponerror(layoutnumber, size, 'ERROR! More than a volumic probe per group')
+                  call stoponerror(layoutnumber, num_procs, 'ERROR! More than a volumic probe per group')
                 end if
                 !readjut correctly the calculation region
                 !de momento sere conservador 20/2/14 por lo que truene el MPI luego quitare el -1 si acaso !!!! !a priori puedo necesitar el HZ(alloc+1) para calcular las Bloque currents pero de momento me estoy quieto
@@ -1433,7 +1433,7 @@ contains
                     prefix_field = prefix(field)
                   end select
                 else
-                  call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                  call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
                 end if
                 !
                 ext = trim(adjustl(nEntradaRoot))//'_'//trim(adjustl(sgg%observation(ii)%outputrequest))
@@ -1443,7 +1443,7 @@ contains
                 !
                 unit = unit + 1
                 if (unit >= 2.0_RKIND**31.0_RKIND - 1.0_RKIND) then
-                  call stoponerror(layoutnumber, size, 'Excesive number of probes')
+                  call stoponerror(layoutnumber, num_procs, 'Excesive number of probes')
                 end if
                 output(ii)%item(i)%unit = unit
                 output(ii)%item(i)%columnas = 0 !Esto proboca que no se genere información dentro del binario
@@ -1571,7 +1571,7 @@ contains
                   memo = memo + RKIND*(ntfin - ntini)*output(ii)%item(i)%columnas + 16*output(ii)%item(i)%columnas ! 4 integers de 4 bytes
 
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'ERROR: Recompile: excesive memory for the 3D probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'ERROR: Recompile: excesive memory for the 3D probes.'// &
                     &                                   'Recompile increasing MaxMemoryProbes')
                   end if
 
@@ -1609,7 +1609,7 @@ contains
                 ELSEIF (SGG%Observation(ii)%FreqDomain) then
                   memo = memo + RKIND*output(ii)%NumFreqs*output(ii)%item(i)%columnas + 16*output(ii)%item(i)%columnas ! 4 integers de 4 bytes
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'ERROR: Recompile: excesive memory for the probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'ERROR: Recompile: excesive memory for the probes.'// &
                     &                                   'Recompile increasing MaxMemoryProbes')
                   end if
                   !almaceno tambien los vectores
@@ -1788,7 +1788,7 @@ contains
                 else !SE RESUMEA
                   inquire (file=trim(adjustl(output(ii)%item(i)%path)), exist=existe)
                   if (.not. existe) then
-      call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Volume) '//trim(adjustl(output(ii)%item(i)%path)))
+      call stoponerror(layoutnumber, num_procs, 'Data files for resuming non existent (Volume) '//trim(adjustl(output(ii)%item(i)%path)))
                   end if
                   open (output(ii)%item(i)%unit, access='sequential', file=trim(adjustl(output(ii)%item(i)%path)), &
                         form='unformatted')
@@ -1796,7 +1796,7 @@ contains
                   if ((SGG%Observation(ii)%TimeDomain) .and. (sgg%observation(ii)%P(1)%what /= mapvtk)) then
                     !
                     read (output(ii)%item(i)%unit) ndum
-              if (output(ii)%item(i)%columnas /= ndum) call stoponerror(layoutnumber, size, 'BUGGYError reading resuming files () ')
+              if (output(ii)%item(i)%columnas /= ndum) call stoponerror(layoutnumber, num_procs, 'BUGGYError reading resuming files () ')
                     do conta = 1, output(ii)%item(i)%columnas
                       read (output(ii)%item(i)%unit) ndum, ndum, ndum, ndum, ndum
                     end do
@@ -1869,7 +1869,7 @@ contains
             case (iMEC, iMHC, iExC, iEyC, iEzC, iHxC, iHyC, iHzC)
               if (sgg%Observation(ii)%Volumic) then !they are necssaryly
                 if (sgg%Observation(ii)%nP /= 1) then
-                  call stoponerror(layoutnumber, size, 'ERROR! More than a volumic probe per group')
+                  call stoponerror(layoutnumber, num_procs, 'ERROR! More than a volumic probe per group')
                 end if
                 !readjust correctly the calculation region
                 select case (field)
@@ -1947,7 +1947,7 @@ contains
                     prefix_field = prefix(field)
                   end select
                 else
-                  call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                  call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
                 end if
                 !
                 !
@@ -1958,7 +1958,7 @@ contains
                 !
                 unit = unit + 1
                 if (unit >= 2.0_RKIND**31.0_RKIND - 1.0_RKIND) then
-                  call stoponerror(layoutnumber, size, 'Excesive number of probes')
+                  call stoponerror(layoutnumber, num_procs, 'Excesive number of probes')
                 end if
                 output(ii)%item(i)%unit = unit
 
@@ -2003,7 +2003,7 @@ contains
                          (output(ii)%item(i)%ZEtrancos - output(ii)%item(i)%ZItrancos + 1)
 
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'ERROR: Recompile: excesive memory for the 3D probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'ERROR: Recompile: excesive memory for the 3D probes.'// &
                     &                                   'Recompile increasing MaxMemoryProbes')
                   end if
 
@@ -2016,7 +2016,7 @@ contains
                 ELSEIF (SGG%Observation(ii)%FreqDomain) then
                   memo = memo + RKIND*output(ii)%NumFreqs*output(ii)%item(i)%columnas + 16*output(ii)%item(i)%columnas ! 4 integers de 4 bytes
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'ERROR: Recompile: excesive memory for the probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'ERROR: Recompile: excesive memory for the probes.'// &
                     &                                   'Recompile increasing MaxMemoryProbes')
                   end if
 
@@ -2058,7 +2058,7 @@ contains
                   if (SGG%Observation(ii)%TimeDomain) then
                     inquire (file=trim(adjustl(output(ii)%item(i)%path)), exist=existe)
                     if (.not. existe) then
-call stoponerror(layoutnumber,size,'Data files for resuming non existent (volume xdmf...) '//trim(adjustl(output(ii)%item(i)%path)))
+call stoponerror(layoutnumber,num_procs,'Data files for resuming non existent (volume xdmf...) '//trim(adjustl(output(ii)%item(i)%path)))
                     end if
                     open (output(ii)%item(i)%unit, access='sequential', file=trim(adjustl(output(ii)%item(i)%path)), &
                           form='unformatted')
@@ -2133,7 +2133,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                            trim(adjustl(chark2))//'_'//trim(adjustl(chari2))//'_'//trim(adjustl(charj2))
                 prefix_field = prefix(field)
               else
-                call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
               end if
               !
               !
@@ -2145,14 +2145,14 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
               !
               unit = unit + 1
               if (unit >= 2.0_RKIND**31.0_RKIND - 1.0_RKIND) then
-                call stoponerror(layoutnumber, size, 'Excesive number of probes')
+                call stoponerror(layoutnumber, num_procs, 'Excesive number of probes')
               end if
               output(ii)%item(i)%unit = unit
                   !!!busca nombres de ficheros por duplicado y resuelve la duplicidad
               call checkduplicatenames
                   !!!!!!
               !inicializacion especifica del farfield
-      call InitFarField(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,layoutnumber,size, &
+      call InitFarField(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,layoutnumber,num_procs, &
                                 b, resume, &
                                 output(ii)%item(i)%unit, &
                                 output(ii)%item(i)%path, &
@@ -2211,7 +2211,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         case (iHz)
           blockCurrent = iCurZ
         case default
-          call StopOnError(layoutnumber, size, 'field is not H field')
+          call StopOnError(layoutnumber, num_procs, 'field is not H field')
         end select
       end function
 
@@ -2231,7 +2231,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         case (iHz)
           currentType = iBloqueJz
         case default
-          call StopOnError(layoutnumber, size, 'field is not a E or H field')
+          call StopOnError(layoutnumber, num_procs, 'field is not a E or H field')
         end select
       end function
 
@@ -2252,7 +2252,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         case (iHz)
           res = media%sggMiHz(i, j, k)
         case default
-          call StopOnError(layoutnumber, size, 'Unrecognized field')
+          call StopOnError(layoutnumber, num_procs, 'Unrecognized field')
         end select
       end function
 
@@ -2428,7 +2428,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 case default; prefix_field = prefix(field)
                 end select
               else
-                call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
               end if
               !
               if ((field == iJx) .or. (field == iJy) .or. (field == iJz)) then
@@ -2486,7 +2486,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 case default; prefix_field = prefix(field)
                 end select
               else
-                call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
               end if
               !
               !
@@ -2502,7 +2502,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         end do !del ii=1,numberrequest
 
         buff2 = trim(adjustl(nEntradaRoot))//'_gnuplot.pl'
-        call closefile_mpi(layoutnumber, size, buff2, thefile)
+        call closefile_mpi(layoutnumber, num_procs, buff2, thefile)
 
         return
       end subroutine crea_gnuplot
@@ -2512,9 +2512,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Closes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    subroutine CloseObservationFiles(sgg, layoutnumber, size, singlefilewrite, initialtimestep, lastexecutedtime, resume)
+    subroutine CloseObservationFiles(sgg, layoutnumber, num_procs, singlefilewrite, initialtimestep, lastexecutedtime, resume)
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      integer(kind=4) :: i, ii, layoutnumber, field, initialtimestep, unidad, size, idum
+      integer(kind=4) :: i, ii, layoutnumber, field, initialtimestep, unidad, num_procs, idum
       logical :: singlefilewrite, resume, incident, existe, wrotemaster
       real(kind=RKIND) :: rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
       real(kind=RKIND_tiempo) :: lastexecutedtime
@@ -2559,7 +2559,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                   else
                     inquire (file=trim(adjustl(output(ii)%item(i)%path)), exist=existe)
                     if (.not. existe) then
-                              call stoponerror(layoutnumber,size,'Data files for resuming non existent (generic closing) '//trim(adjustl(output(ii)%item(i)%path)))
+                              call stoponerror(layoutnumber,num_procs,'Data files for resuming non existent (generic closing) '//trim(adjustl(output(ii)%item(i)%path)))
                     end if
                     !
                     open (output(ii)%item(i)%unit, recl=1000, access='sequential', file=trim(adjustl(output(ii)%item(i)%path)))
@@ -2643,9 +2643,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Upacks .bin files observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    subroutine UnpackSingleFiles(sgg, layoutnumber, size, singlefilewrite, initialtimestep, resume)
+    subroutine UnpackSingleFiles(sgg, layoutnumber, num_procs, singlefilewrite, initialtimestep, resume)
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      integer(kind=4) :: i, ii, layoutnumber, field, initialtimestep, unidad, size, idum
+      integer(kind=4) :: i, ii, layoutnumber, field, initialtimestep, unidad, num_procs, idum
       logical :: singlefilewrite, resume, incident, existe, wrotemaster
       real(kind=RKIND) :: rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
       character(len=BUFSIZE) :: chdum
@@ -3678,7 +3678,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Flushes the observed magnitudes to disk
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine FlushObservationFiles(sgg,nInit,FinalInstant,layoutnumber,size, dxe,dye,dze,dxh,dyh,dzh,b,singlefilewrite,facesNF2FF,flushff)
+   subroutine FlushObservationFiles(sgg,nInit,FinalInstant,layoutnumber,num_procs, dxe,dye,dze,dxh,dyh,dzh,b,singlefilewrite,facesNF2FF,flushff)
       use ilumina_m !is needed to also calculate the incident field in the observed points
       !solo lo precisa de entrada farfield
       type(bounds_t) :: b
@@ -3693,7 +3693,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                                                       dxe(sgg%alloc(iHx)%XI:sgg%alloc(iHx)%XE), &
                                                       dye(sgg%alloc(iHy)%YI:sgg%alloc(iHy)%YE), &
                                                       dze(sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
-      integer(kind=4), intent(in) :: layoutnumber, size
+      integer(kind=4), intent(in) :: layoutnumber, num_procs
       integer(kind=4) :: nInit, FinalInstant, unidad, compo, conta
       integer(kind=4) :: i, field, N, ii, i1, j1, k1, Ntimeforvolumic, dummy_jjj, i1t, j1t, k1t, i0t
       logical  :: incident, singlefilewrite, flushff, ISyaopen
@@ -3705,7 +3705,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
 
       character(len=BUFSIZE) :: whoami
       !!!
-      write (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+      write (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', num_procs, ') '
       called_fromobservation = .true.
       !!!ojo dummy_logical lo dejo que incid( lo fije a still_planewave_time sin tocarlo aqui para no afectar al principal 210419
       dummy_jjj = 1  !no es preciso fijarlo, porque a incid( se le pasa  called_fromobservation
@@ -3906,7 +3906,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
             case (FarField) !no emplear tiempo calculando rcs por el camino solo al final
               at = sgg%tiempo(FinalInstant)
-              if (flushFF) call FlushFarfield(layoutnumber, size, b, dxe, dye, dze, dxh, dyh, dzh, facesNF2FF, at)
+              if (flushFF) call FlushFarfield(layoutnumber, num_procs, b, dxe, dye, dze, dxh, dyh, dzh, facesNF2FF, at)
             case (iMHC, iHxC, iHyC, iHzC, iMEC, iExC, iEyC, iEzC, icur, iCurX, iCurY, iCurZ, mapvtk)
               do N = nInit, FinalInstant
                 at = sgg%tiempo(N)
@@ -4101,7 +4101,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
             buffer = buffer//" "//"conductor_"//trim(adjustl(temp))
           end do
           write (unit, *) trim(buffer)
-          do k = 1, mtln_solver%number_of_steps
+          do k = 1, size(mtln_solver%bundles(i)%probes(j)%val, 1)
             buffer = ""
             write (temp, *) mtln_solver%bundles(i)%probes(j)%t(k)
             buffer = buffer//trim(temp)
@@ -4109,7 +4109,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
               write (temp, *) mtln_solver%bundles(i)%probes(j)%val(k, n)
               buffer = buffer//" "//trim(temp)
             end do
-            write (unit, *) trim(buffer)
+            write (unit, '(a)') trim(buffer)
           end do
           close (unit)
           unit = unit + 1

@@ -2,7 +2,9 @@ module probes_m
 
     use mtln_types_m, only: PROBE_TYPE_CURRENT, PROBE_TYPE_VOLTAGE
 #ifdef CompileWithMPI
-    use FDETYPES_m, only: SUBCOMM_MPI
+    use FDETYPES_m, only: SUBCOMM_MPI, RKIND
+#else
+    use FDETYPES_m, only: RKIND
 #endif
     use FDETYPES_m, only: RKIND, RKIND_TIEMPO
 
@@ -10,8 +12,8 @@ module probes_m
 
     type, public :: probe_t
         integer :: type
-        real, allocatable, dimension(:) :: t
-        real, allocatable, dimension(:,:) :: val
+        real(kind=RKIND), allocatable, dimension(:) :: t
+        real(kind=RKIND), allocatable, dimension(:,:) :: val
         real(kind=RKIND_TIEMPO) :: dt
         integer :: index, current_frame
         character(len=:), allocatable :: name
@@ -36,7 +38,7 @@ contains
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
         real(kind=RKIND_TIEMPO), intent(in) :: dt
-        real, dimension(3) :: position
+        real(kind=RKIND), dimension(3) :: position
         character(len=:), allocatable :: name
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
         integer :: i, slice
@@ -93,8 +95,8 @@ contains
         class(probe_t) :: this
         integer, intent(in) :: num_frames, number_of_conductors
 
-        allocate(this%t(num_frames))
-        allocate(this%val(num_frames, number_of_conductors))
+        allocate(this%t(num_frames+1))
+        allocate(this%val(num_frames+1, number_of_conductors))
         this%t = 0.0
         this%val = 0.0
 
@@ -103,8 +105,8 @@ contains
     subroutine update(this, t, v, i)
         class(probe_t) :: this
         real(kind=RKIND_TIEMPO), intent(in) :: t
-        real, dimension(:,:), intent(in) :: v
-        real, dimension(:,:), intent(in) :: i
+        real(kind=RKIND), dimension(:,:), intent(in) :: v
+        real(kind=RKIND), dimension(:,:), intent(in) :: i
         
         if (this%type == PROBE_TYPE_VOLTAGE) then
             call this%saveFrame(t, v(:,this%index))
@@ -121,7 +123,7 @@ contains
     subroutine saveFrame(this, time, values)
         class(probe_t) :: this
         real(kind=RKIND_TIEMPO), intent(in) :: time
-        real, intent(in), dimension(:) :: values
+        real(kind=RKIND), intent(in), dimension(:) :: values
         if (this%current_frame > size(this%t)) return
         this%t(this%current_frame) = time
         this%val(this%current_frame,:) = values

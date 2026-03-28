@@ -205,6 +205,14 @@ module  FDETYPES_m
    integer(kind=4), parameter :: EDGE_Y = 2
    integer(kind=4), parameter :: EDGE_Z = 3
 
+   !source types
+   character(len=*), parameter :: F_SOURCE_VOLTAGE = 'VOLT'
+   character(len=*), parameter :: F_SOURCE_SOFT_VOLTAGE = 'SOFTVOLT'
+   character(len=*), parameter :: F_SOURCE_HARD_VOLTAGE = 'HARDVOLT'
+   character(len=*), parameter :: F_SOURCE_CURRENT = 'CURR'
+   character(len=*), parameter :: F_SOURCE_SOFT_CURRENT = 'SOFTCURR'
+   character(len=*), parameter :: F_SOURCE_HARD_CURRENT = 'HARDCURR'
+
    
 #ifdef CompileWithReal4
    character(len=*), parameter  :: fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
@@ -237,7 +245,7 @@ module  FDETYPES_m
    end type coorsxyzP_t
 
    type MedioExtra_t
-      integer(kind=4) :: size,index
+      integer(kind=4) :: pml_size,index
       real(kind=rkind) :: sigma,sigmam
       logical :: exists
    end type
@@ -698,7 +706,7 @@ module  FDETYPES_m
       character(len=BUFSIZE) :: opcionestotales
       
       integer(kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 
-                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, size
+                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, num_procs
       
       type(MedioExtra_t) :: MEDIOEXTRA
       type(nf2ff_T) :: facesNF2FF

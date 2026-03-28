@@ -20,10 +20,10 @@ integer function test_math_eigvals() bind(C) result(error_cnt)
     ev = getEigenValues(mat)
     ev_real = ev(1:4)
     ev_imag = ev(5:8)
-    if (.not.(checkNear_dp(0.81630361_dp, ev_real(1), 0.005)) .or. .not.(checkNear_dp(0.0_dp, ev_imag(1), 0.005)) .or. &
-        .not.(checkNear_dp(-0.0988341_dp, ev_real(2), 0.005)) .or. .not.(checkNear_dp(0.41323483_dp, ev_imag(2), 0.005)) .or. &
-        .not.(checkNear_dp(-0.0988341_dp, ev_real(3), 0.005)) .or. .not.(checkNear_dp(-0.41323483_dp, ev_imag(3), 0.005)) .or. &
-        .not.(checkNear_dp(-0.05863542_dp, ev_real(4), 0.005)) .or. .not.(checkNear_dp(0.0_dp, ev_imag(4), 0.005))) then
+    if (.not.(checkNear(0.81630361_dp, ev_real(1), 0.005)) .or. .not.(checkNear(0.0_dp, ev_imag(1), 0.005)) .or. &
+        .not.(checkNear(-0.0988341_dp, ev_real(2), 0.005)) .or. .not.(checkNear(0.41323483_dp, ev_imag(2), 0.005)) .or. &
+        .not.(checkNear(-0.0988341_dp, ev_real(3), 0.005)) .or. .not.(checkNear(-0.41323483_dp, ev_imag(3), 0.005)) .or. &
+        .not.(checkNear(-0.05863542_dp, ev_real(4), 0.005)) .or. .not.(checkNear(0.0_dp, ev_imag(4), 0.005))) then
         error_cnt = 1
     endif  
 

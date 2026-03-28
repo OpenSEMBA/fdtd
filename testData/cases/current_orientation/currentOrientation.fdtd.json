@@ -70676,20 +70676,6 @@
                     1,
                     2
                 ]
-            },
-            {
-                "id": 14,
-                "type": "node",
-                "coordinateIds": [
-                    1
-                ]
-            },
-            {
-                "id": 15,
-                "type": "node",
-                "coordinateIds": [
-                    2
-                ]
             }
         ]
     },
@@ -70792,22 +70778,6 @@
             "domain": {
                 "type": "time"
             }
-        },
-        {
-            "name": "wire_probe_1",
-            "type": "wire",
-            "field": "current",
-            "elementIds": [
-                14
-            ]
-        },
-        {
-            "name": "wire_probe_2",
-            "type": "wire",
-            "field": "current",
-            "elementIds": [
-                15
-            ]
         }
     ]
 }

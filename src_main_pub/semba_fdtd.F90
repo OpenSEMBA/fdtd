@@ -128,16 +128,16 @@ contains
       call OnPrint
 
 #ifdef CompileWithMPI
-      call InitGeneralMPI (this%l%layoutnumber, this%l%size)
+      call InitGeneralMPI (this%l%layoutnumber, this%l%num_procs)
       SUBCOMM_MPI=MPI_COMM_WORLD !default el this%l%stochastic es el global a menos que luego se divida
 #else
-      this%l%size = 1
+      this%l%num_procs = 1
       this%l%layoutnumber = 0
 #endif
-      call setglobal(this%l%layoutnumber,this%l%size) !para crear variables globales con info MPI
+      call setglobal(this%l%layoutnumber,this%l%num_procs) !para crear variables globales con info MPI
          
       write(this%whoamishort, '(i5)') this%l%layoutnumber + 1
-      write(this%whoami, '(a,i5,a,i5,a)') '(', this%l%layoutnumber + 1, '/', this%l%size, ') '
+      write(this%whoami, '(a,i5,a,i5,a)') '(', this%l%layoutnumber + 1, '/', this%l%num_procs, ') '
          
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
@@ -181,9 +181,9 @@ contains
 
    652 continue
 
-      call CLOSEWARNINGFILE(this%l%layoutnumber,this%l%size,dummylog,.false.,.false.) !aqui ya no se tiene en cuenta el this%l%fatalerror
+      call CLOSEWARNINGFILE(this%l%layoutnumber,this%l%num_procs,dummylog,.false.,.false.) !aqui ya no se tiene en cuenta el this%l%fatalerror
 
-      write(this%l%opcionespararesumeo, '(a,i4,a)') 'mpirun -n ', this%l%size,' '
+      write(this%l%opcionespararesumeo, '(a,i4,a)') 'mpirun -n ', this%l%num_procs,' '
       call default_flags(this%l)    !set all default flags
 
 #ifdef CompileWithMPI
@@ -278,7 +278,7 @@ contains
       ! mira el command_line y el fichero launch 251022
          call get_command (this%l%chain2, this%l%length, status)
          if (status /= 0) then
-            call stoponerror (this%l%layoutnumber, this%l%size, 'General error',.true.); goto 652
+            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'General error',.true.); goto 652
          end if
       end if
 
@@ -303,7 +303,7 @@ contains
       
 
    if (status /= 0) then
-       call stoponerror (this%l%layoutnumber, this%l%size, 'Error in searching input file. Correct and remove pause file',.true.); goto 652
+       call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Error in searching input file. Correct and remove pause file',.true.); goto 652
    end if
 !!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!
@@ -372,7 +372,7 @@ contains
    84552  close(myunit)
          print *, 'END: SUCCESS creating '//trim(adjustl(this%sgg%nEntradaRoot))//'_h5bin.txt'
          stop
-   9083   call stoponerror (0, this%l%size, 'Invalid _h5bin.txt file',.true.); statuse=-1; !return
+   9083   call stoponerror (0, this%l%num_procs, 'Invalid _h5bin.txt file',.true.); statuse=-1; !return
       end if
 #ifdef CompileWithMPI
          !wait until everything comes out
@@ -405,7 +405,7 @@ contains
          !release memory created by newPARSER
          if (this%l%fatalerror) then
             if (allocated(this%media%sggMiEx)) deallocate(this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz,this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMiNo,this%media%sggMtag)
-            call stoponerror (this%l%layoutnumber, this%l%size, 'Error in .nfde file syntax. Check all *Warnings* and *tmpWarnings* files, correct and remove pause file if any',.true.); goto 652
+            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Error in .nfde file syntax. Check all *Warnings* and *tmpWarnings* files, correct and remove pause file if any',.true.); goto 652
          end if
 
          !*************************************************************************
@@ -465,7 +465,7 @@ contains
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif       
             if (this%l%resume.and.this%l%flag_conf_sgg) then
-                  call stoponerror (this%l%layoutnumber, this%l%size, 'this%l%resume -r currently unsupported by conformal solver',.true.); statuse=-1; !return
+                  call stoponerror (this%l%layoutnumber, this%l%num_procs, 'this%l%resume -r currently unsupported by conformal solver',.true.); statuse=-1; !return
             end if
             if (this%l%input_conformal_flag.and.this%l%flag_conf_sgg) then
                write(dubuf,*) '----> Conformal Mesh found';  call print11(this%l%layoutnumber,dubuf)
@@ -536,6 +536,9 @@ contains
       if (this%l%finaltimestep==0) this%l%finaltimestep=this%sgg%TimeSteps !no quitar
       if (this%l%forcesteps) then
          this%sgg%TimeSteps = this%l%finaltimestep
+#ifdef CompileWithMTLN
+         this%mtln_parsed%number_of_steps = this%l%finaltimestep 
+#endif
       else
          this%l%finaltimestep = this%sgg%TimeSteps
       end if
@@ -566,12 +569,12 @@ contains
          if (this%sgg%Med(i)%Is%ThinWire) then
 #ifndef CompileWithBerengerWires
       if  ((this%l%wiresflavor=='berenger')) then
-            call stoponerror (this%l%layoutnumber, this%l%size, 'Berenger Wires without support. Recompile!')
+            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Berenger Wires without support. Recompile!')
       end if
 #endif
 #ifndef CompileWithSlantedWires
       if  ((this%l%wiresflavor=='slanted').or.(this%l%wiresflavor=='semistructured')) then
-            call stoponerror (this%l%layoutnumber, this%l%size, 'slanted Wires without support. Recompile!')
+            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'slanted Wires without support. Recompile!')
       end if
 #endif
             continue
@@ -579,14 +582,14 @@ contains
          !
          if ((this%sgg%Med(i)%Is%AnisMultiport) .OR. (this%sgg%Med(i)%Is%multiport).OR. (this%sgg%Med(i)%Is%SGBC)) then
 #ifndef CompileWithNIBC
-            if (this%l%mibc) call stoponerror (this%l%layoutnumber, this%l%size, 'this%l%mibc Multiports without support. Recompile!')
+            if (this%l%mibc) call stoponerror (this%l%layoutnumber, this%l%num_procs, 'this%l%mibc Multiports without support. Recompile!')
 #endif
             continue
          end if
    !altair no conformal sgbc 201119
 #ifdef NoConformalSGBC
          if (this%sgg%Med(i)%Is%sgbc .and. this%l%input_conformal_flag) then
-            call stoponerror (this%l%layoutnumber, this%l%size, 'Conformal sgbc not allowed. ')
+            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Conformal sgbc not allowed. ')
          end if
 #endif
    !    
@@ -594,15 +597,15 @@ contains
       
       
       if (this%l%thereare_stoch.and.(.not.this%l%chosenyesornostochastic)) then
-         call stoponerror (this%l%layoutnumber, this%l%size, '!STOCH found in .nfde. Specify either -stoch or -nostoch')
+         call stoponerror (this%l%layoutnumber, this%l%num_procs, '!STOCH found in .nfde. Specify either -stoch or -nostoch')
       end if
 #ifndef CompileWithSlantedWires
       if (this%l%hay_slanted_wires) then
-         call stoponerror (this%l%layoutnumber, this%l%size, 'slanted wires without slanted support. Recompile ()')
+         call stoponerror (this%l%layoutnumber, this%l%num_procs, 'slanted wires without slanted support. Recompile ()')
       end if
 #endif   
       if (this%l%hay_slanted_wires .AND. ((trim(adjustl(this%l%wiresflavor))/='slanted').AND.(trim(adjustl(this%l%wiresflavor))/='semistructured'))) then
-         call stoponerror (this%l%layoutnumber, this%l%size, 'slanted wires require -this%l%wiresflavor Slanted/semistructured')
+         call stoponerror (this%l%layoutnumber, this%l%num_procs, 'slanted wires require -this%l%wiresflavor Slanted/semistructured')
       end if
 
       
@@ -612,7 +615,7 @@ contains
          if (this%sgg%Med(jmed)%Is%ThinSlot) ThereArethinslots=.true.
       end do
       if (this%l%resume.and.this%l%run_with_abrezanjas.and.ThereArethinslots) then   
-            call stoponerror (this%l%layoutnumber, this%l%size, 'this%l%resume -r currently unsupported by conformal solver',.true.); statuse=-1; !return
+            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'this%l%resume -r currently unsupported by conformal solver',.true.); statuse=-1; !return
       end if
       !
    !!!SOME FINAL REPORTING
@@ -762,7 +765,7 @@ contains
 #ifdef CompileWithMPI
          call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
-         call read_limits_nogeom (this%l%layoutnumber,this%l%size, this%sgg, this%fullsize, this%SINPML_fullsize, parser,this%l%MurAfterPML,this%l%mur_exist)
+         call read_limits_nogeom (this%l%layoutnumber,this%l%num_procs, this%sgg, this%fullsize, this%SINPML_fullsize, parser,this%l%MurAfterPML,this%l%mur_exist)
       
          dtantesdecorregir=this%sgg%dt
 
@@ -843,7 +846,7 @@ contains
          this%sgg%Sweep(1:6)%YI = this%fullsize(1:6)%YI
          this%sgg%Sweep(1:6)%YE = this%fullsize(1:6)%YE
          !
-         if (this%l%size == 1) then
+         if (this%l%num_procs == 1) then
             this%sgg%Alloc(1:6)%ZI = this%fullsize(1:6)%ZI - 1
             this%sgg%Alloc(1:6)%ZE = this%fullsize(1:6)%ZE + 1
             !REDUCE THE SWEEP AREA BY 1
@@ -861,10 +864,10 @@ contains
             !!fin 16/07/15
             write(dubuf,*) 'INIT NFDE --------> GEOM'
             call print11 (this%l%layoutnumber, dubuf)
-            call read_geomData (this%sgg,this%media,this%tag_numbers, this%l%fichin, this%l%layoutnumber, this%l%size, this%SINPML_fullsize, this%fullsize, parser, &
+            call read_geomData (this%sgg,this%media,this%tag_numbers, this%l%fichin, this%l%layoutnumber, this%l%num_procs, this%SINPML_fullsize, this%fullsize, parser, &
             this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, this%eps0, &
             this%mu0,.false.,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)            
-            ! call read_geomData (this%sgg,this%sggMtag,this%tag_numbers, this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%fichin, this%l%layoutnumber, this%l%size, this%SINPML_fullsize, this%fullsize, parser, &
+            ! call read_geomData (this%sgg,this%sggMtag,this%tag_numbers, this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%fichin, this%l%layoutnumber, this%l%num_procs, this%SINPML_fullsize, this%fullsize, parser, &
             ! this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, this%eps0, &
             ! this%mu0,.false.,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)
 #ifdef CompileWithMTLN
@@ -883,7 +886,7 @@ contains
             if (this%l%resume .AND. (slices /= this%l%slicesoriginales)) then
                buff='Different resumed/original MPI slices: '//trim(adjustl(slices))//' '//&
                & trim(adjustl(this%l%slicesoriginales))
-               call stoponerror (this%l%layoutnumber, this%l%size, buff)
+               call stoponerror (this%l%layoutnumber, this%l%num_procs, buff)
             end if
             call print11 (this%l%layoutnumber, trim(adjustl(slices)))
             !end writing
@@ -893,23 +896,23 @@ contains
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #ifdef CompileWithStochastic
             if (this%l%stochastic) then
-               buff='this%l%stochastic uncompatible with MPI this%l%size smaller than 2'
-               call stoponerror (this%l%layoutnumber, this%l%size, buff)
+               buff='this%l%stochastic uncompatible with MPI this%l%num_procs smaller than 2'
+               call stoponerror (this%l%layoutnumber, this%l%num_procs, buff)
             end if
 #endif
 #endif
-         ELSE !del this%l%size==1       
+         ELSE !del this%l%num_procs==1       
 #ifdef CompileWithMPI
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #ifdef CompileWithStochastic
             if (this%l%stochastic) then
-               call HalvesStochasticMPI(this%l%layoutnumber,this%l%size,this%l%simu_devia)
+               call HalvesStochasticMPI(this%l%layoutnumber,this%l%num_procs,this%l%simu_devia)
             end if
 #endif
                      
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)   
    !!!ahora divide el espacio computacional
-            call MPIdivide (this%sgg, this%fullsize, this%SINPML_fullsize, this%l%layoutnumber, this%l%size, this%l%forcing, this%l%forced, this%l%slicesoriginales, this%l%resume,this%l%fatalerror)
+            call MPIdivide (this%sgg, this%fullsize, this%SINPML_fullsize, this%l%layoutnumber, this%l%num_procs, this%l%forcing, this%l%forced, this%l%slicesoriginales, this%l%resume,this%l%fatalerror)
             !
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)   
             if (this%l%fatalerror) then
@@ -940,10 +943,10 @@ contains
             write(dubuf,*) 'INIT NFDE --------> GEOM'
             call print11 (this%l%layoutnumber, dubuf)           
 
-            call read_geomData (this%sgg,this%media,this%tag_numbers, this%l%fichin, this%l%layoutnumber, this%l%size, this%SINPML_fullsize, this%fullsize, parser, &
+            call read_geomData (this%sgg,this%media,this%tag_numbers, this%l%fichin, this%l%layoutnumber, this%l%num_procs, this%SINPML_fullsize, this%fullsize, parser, &
             this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, &
             this%eps0,this%mu0,this%l%simu_devia,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)
-            ! call read_geomData (this%sgg,this%sggMtag,this%tag_numbers, this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%fichin, this%l%layoutnumber, this%l%size, this%SINPML_fullsize, this%fullsize, parser, &
+            ! call read_geomData (this%sgg,this%sggMtag,this%tag_numbers, this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%fichin, this%l%layoutnumber, this%l%num_procs, this%SINPML_fullsize, this%fullsize, parser, &
             ! this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, &
             ! this%eps0,this%mu0,this%l%simu_devia,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)
 
@@ -967,7 +970,7 @@ contains
             end do
 #endif
             continue
-         end if !del this%l%size==1
+         end if !del this%l%num_procs==1
          !
 #ifdef CompileWithMPI
          !wait until everything comes out
@@ -1000,7 +1003,7 @@ contains
 #ifdef CompilePrivateVersion
          if (trim(adjustl(extension))=='.nfde') then 
 #ifdef CompileWithMTLN
-            call stoponerror(this%l%layoutnumber, this%l%size, &
+            call stoponerror(this%l%layoutnumber, this%l%num_procs, &
                'NFDE files are not supported when compiling with MTLN', .true.)
 #endif
             NFDE_FILE => cargar_NFDE_FILE (filename)
@@ -1280,8 +1283,8 @@ contains
                call print11 (this%l%layoutnumber, dubuf)
                call print11 (this%l%layoutnumber, dubuf)
             end if
-            !!!!!!!        call CLOSEdxfFILE(this%l%layoutnumber,this%l%size)
-            call CLOSEWARNINGFILE(this%l%layoutnumber,this%l%size,dummylog,this%l%stochastic,this%l%simu_devia) !aqui ya no se tiene en cuenta el this%l%fatalerror
+            !!!!!!!        call CLOSEdxfFILE(this%l%layoutnumber,this%l%num_procs)
+            call CLOSEWARNINGFILE(this%l%layoutnumber,this%l%num_procs,dummylog,this%l%stochastic,this%l%simu_devia) !aqui ya no se tiene en cuenta el this%l%fatalerror
 #ifdef CompileWithMPI
             !wait until everything comes out
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)

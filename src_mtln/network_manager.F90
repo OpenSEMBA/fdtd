@@ -3,13 +3,14 @@ module network_manager_m
     use network_m
     use circuit_m
     use mtln_types_m, only: node_source_t
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
 
     implicit none 
 
     type network_manager_t
         type(network_t), dimension(:), allocatable :: networks
         type(circuit_t) :: circuit
-        real :: time, dt
+        real(kind=rkind) :: time, dt
     contains
         procedure :: advanceVoltage => network_advanceVoltage
         procedure :: updateCircuitCurrentsFromNetwork

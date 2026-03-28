@@ -14,7 +14,7 @@ module VTK_m
 contains
    !Subrutine to parse the volumic probes to create VTK files on PEC and on wires
    !
-   subroutine createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
+   subroutine createVTK (layoutnumber, num_procs, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
    
       type(SGGFDTDINFO_t), intent(in) :: sgg
@@ -30,7 +30,7 @@ contains
       !
       !
 
-      integer(kind=4), intent(in) :: layoutnumber, size
+      integer(kind=4), intent(in) :: layoutnumber, num_procs
       integer(kind=4) :: ierr,  posicionMPI,conta,ecurrentType,eei,eej,eek,esggMtag
       integer(kind=4) , allocatable , dimension(:) :: sizeofvalores,NewsizeOfValores
 
@@ -73,7 +73,7 @@ contains
       numNodes=0; numEdges=0;numQuads=0;
 
       write(whoamishort, '(i5)') layoutnumber + 1
-      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', num_procs, ') '
       !
       output => GetOutput ()!get the output private info from observation
       !
@@ -136,7 +136,7 @@ contains
                            extpoint=trim(adjustl(chark)) //'_'//trim(adjustl(chari)) //'_'//trim(adjustl(charj))//'__'// &
                                     trim(adjustl(chark2))//'_'//trim(adjustl(chari2))//'_'//trim(adjustl(charj2))
                         else
-                           call stoponerror(layoutnumber,size,'Buggy error in mpidir. ')
+                           call stoponerror(layoutnumber,num_procs,'Buggy error in mpidir. ')
                         end if
                      !fin mpidir
                      !
@@ -153,7 +153,7 @@ contains
 
 
 #ifdef CompileWithMPI
-                     if (size>1) then
+                     if (num_procs>1) then
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            !!! call print11 (layoutnumber, trim(adjustl(whoami))////' Init processing file '//trim(adjustl(filename)), .TRUE.) !enforces print
                            continue
@@ -164,24 +164,24 @@ contains
                      allocate (att(1:finalstep))
                      !!!!!!!!!!!!!
                      numberOfSerialized=0
-                     allocate (sizeOfValores(0:size-1))
+                     allocate (sizeOfValores(0:num_procs-1))
                      sizeOfValores=0
                      sizeofvalores(layoutnumber) = output(ii)%item(1)%columnas
                      !SINCRONIZA EL TAMANIO DE CADA LAYER
 #ifdef CompileWithMPI
-                     if (size>1) then
-                        allocate (NewsizeOfValores(0:size-1))
+                     if (num_procs>1) then
+                        allocate (NewsizeOfValores(0:num_procs-1))
                         NewsizeOfValores=0
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
-                           call MPI_AllReduce (sizeofvalores, newSizeofvalores, size, MPI_INTEGER, MPI_SUM, &
+                           call MPI_AllReduce (sizeofvalores, newSizeofvalores, num_procs, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
                         end if
                         sizeofvalores = newSizeofvalores
                      end if
 #endif
                      !
-                     do i1=0,size-1
+                     do i1=0,num_procs-1
                         numberOfSerialized=numberOfSerialized + sizeofvalores(i1)
                      end do
                      !asumo solamente un time step por lectura
@@ -200,7 +200,7 @@ contains
                      !!!BUSCA LA POSICION mpi E INICIALIZA LOS NUEVOS
                      posicionMPI=0
 #ifdef CompileWithMPI
-                     if (size>1) then
+                     if (num_procs>1) then
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            buscaMPI: do i1=0,layoutnumber-1
                               posicionMPI=posicionMPI+sizeofvalores(i1)
@@ -235,7 +235,7 @@ contains
                      if (SGG%Observation(ii)%FreqDomain) read(output(ii)%item(1)%unit) rdum !instante en el que se ha escrito la info frequencial
                      !SINCRONIZA SUMPANDO LA INFO GEOMETRICA DE TODOS LOS LAYERS
 #ifdef CompileWithMPI
-                     if (size>1) then
+                     if (num_procs>1) then
                         newPosiMPI=-1
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
@@ -353,7 +353,7 @@ contains
                         !SINCRONIZA TODOS LOS LAYERS Y SOLO EL ROOT LLAMA A LA RUTINA DE ESCRITURA
 #ifdef CompileWithMPI
                         call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
-                        if (size>1) then
+                        if (num_procs>1) then
                            if (output(ii)%item(1)%MPISubComm /= -1) then
 
                               if (SGG%Observation(ii)%TimeDomain) then
@@ -790,7 +790,7 @@ contains
                      deallocate(Serialized%currentType)
                      deallocate(Serialized%sggMtag)
 #ifdef CompileWithMPI
-                     if (size>1) then
+                     if (num_procs>1) then
                         if (SGG%Observation(ii)%TimeDomain) then  
                            deallocate(NewSerialized%Valor)
                            deallocate(NewSerialized%Valor_x)
@@ -840,14 +840,14 @@ contains
                      end if
 
 #ifdef CompileWithMPI
-                     if (size>1) then
+                     if (num_procs>1) then
                         deallocate(newSizeofvalores,newPosiMPI)
                      end if
 #endif
                      deallocate(SIZEOFVALORES,PosiMPI)
                      deallocate(ATT)
 #ifdef CompileWithMPI
-                     if (size>1) then
+                     if (num_procs>1) then
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                         end if
@@ -877,7 +877,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-   subroutine createVTKOnTheFly (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
+   subroutine createVTKOnTheFly (layoutnumber, num_procs, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
       type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
@@ -885,7 +885,7 @@ contains
       integer(kind=4) :: mpidir
       logical :: vtkindex,somethingdone
 
-      integer(kind=4), intent(in) :: layoutnumber, size
+      integer(kind=4), intent(in) :: layoutnumber, num_procs
       type(output_t), pointer, dimension(:) :: output
       integer(kind=4) :: ii
       logical :: lexis,dontwritevtk
@@ -919,7 +919,7 @@ contains
          end if
 
       end do  !barrido puntos de observacion
-      call createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
+      call createVTK (layoutnumber, num_procs, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
       do ii = 1, sgg%NumberRequest
          !sondas Volumic traducelas a xdfm
          if (sgg%observation(ii)%Volumic) then
