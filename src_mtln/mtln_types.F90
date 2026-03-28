@@ -45,7 +45,7 @@ module mtln_types_m
       character(len=256) :: path_to_excitation = ""
       integer :: generator_type = SOURCE_TYPE_UNDEFINED
       type(cable_t), pointer :: attached_to_cable => null()
-      real :: resistance = 0.0
+      real(kind=rkind) :: resistance = 0.0
       integer :: index = -1, conductor = -1
    contains
       private
@@ -56,7 +56,7 @@ module mtln_types_m
    type node_source_t
       character(len=256) :: path_to_excitation = ""
       integer :: source_type = SOURCE_TYPE_UNDEFINED
-      real :: resistance
+      real(kind=rkind) :: resistance
    end type
 
    type terminal_circuit_t

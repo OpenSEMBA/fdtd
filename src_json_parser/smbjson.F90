@@ -3265,7 +3265,7 @@ contains
                   else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 
                      res%source_type = SOURCE_TYPE_CURRENT
                   end if
-                  res%resistance = this%getRealAt(genSrcs(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0)
+                  res%resistance = this%getRealAt(genSrcs(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0_rkind)
                   res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
                   return
                end if
@@ -3410,7 +3410,7 @@ contains
                   call WarnErrReport('magnitudeFile of source missing', .true.)
                end if
 
-               res(n)%resistance = this%getRealAt(gens(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0)
+               res(n)%resistance = this%getRealAt(gens(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0_rkind)
 
                select case(this%getStrAt(gens(i)%p, J_FIELD))
                 case (J_FIELD_VOLTAGE)
