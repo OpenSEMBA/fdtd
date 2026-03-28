@@ -258,7 +258,7 @@ contains
         deallocate(this%generators)
         allocate(this%generators(size(aux_generators)+1))
 #ifdef CompileWithMPI
-        new_generator = probeCtor(index, probe_type, this%dt, name, position, layer_indices = layer_indices)
+        new_generator = generatorCtor(index, conductor, gen_type, resistance, path, layer_indices = layer_indices)
 #else
         new_generator = generatorCtor(index, conductor, gen_type, resistance, path)
 #endif
