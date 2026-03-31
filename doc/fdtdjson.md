@@ -807,18 +807,7 @@ This object represents a time-varying vector field applied along an oriented lin
 
 ### `generator`
 
-A `generator` source must be located on a single `node` whose `coordinateId` is used by a single `polyline`. The entry `[field]` can be `voltage` or `current`; defaults to `voltage`. `resistance` refers to a series resistance for voltage generators and a resistance in parallel for current generators. 
-
-Allowed positions according to material associations:
-
-* Voltage generators:
-    * On `wire` and `unshieldedMultiwre` materials, voltage generators are only allowed on terminal positions. 
-    * On `shieldedMultiwre` materials, voltage generators are allowed on terminal and interior positions. 
-* Current generators:
-    * On `wire` and `unshieldedMultiwre` materials, current generators are allowed on terminal and interior positions.
-    * On `shieldedMultiwre` materials, current generators are only allowed on terminal positions. 
-
-For terminal positions a series resistance is optional. For interior positions it is mandatory. As the resistance of the voltage generator approaches 0 (or the resistance of the current generator tends to arbitrarily large value), the generator becomes a **hard** source, in which the value of the generator is imposed at the current position of the wire.
+A `generator` source must be located on a single `node`. The entry `[field]` can be `voltage` or `current`; defaults to `voltage`. `resistance` refers to a series resistance for `voltage` generators and a resistance in parallel for `current` generators. 
 
 **Example:**
 
@@ -832,19 +821,31 @@ For terminal positions a series resistance is optional. For interior positions i
     "elementIds": [1]
 }
 ```
-If the generator is located at the termination of a wire, the series or parallel `resistance`  is added to the connection defined in the corresponding `terminal`. If a generator is located on a wire intermediate position, the per-unit-length properties of the corresponding segment are modified according to the `resistance` of the generator.
 
-Using classic wires, generators can be located on any node of the lines. Using MTLN wires there are some restrictions:
+Using classic (not MTLN) wires, generators can be located on any node of the lines. Using MTLN wires there are some restrictions:
 
-| Syntax      | `unshieldedMultiwire` | `shieldedMultiwire` |
-| :---        |    :---   |          :--- |
-| Voltage     | Only wire extremes       | Any point      |
-| Current     | Any point        | Only wire extremes      |
+| Generator \ cable type            | `unshieldedMultiwire` | `shieldedMultiwire` |
+| :---                              |    :---   |          :--- |
+| Voltage                           | Only terminal nodes       | Terminal and interior nodes     |
+| Current                           | Terminal and interior nodes        | Only terminal nodes      |
+
+
+For generators places at a terminal node a resistance is optional. In case no value is provided, the resistance default value will be 0.0. for `voltage` generators and 1.0e22 for `current` generators (i.e, they will behave like hard sources). However, for interior positions it is mandatory. If the generator is located at the termination of a wire, the series or parallel `resistance`  is added to the connection defined in the corresponding `terminal`. If a generator is located on a wire intermediate position, the per-unit-length properties of the corresponding segment are modified according to the `resistance` of the generator.
+
+#### Sources hardness
+
+A **hard** source is defined as one that imposes its value at its position on the wire. On the other hand, a **soft** source adds its value to the current/voltage values. 
+
+As the resistance of the `voltage` generator approaches 0 (or the resistance of the `current` generator tends to arbitrarily large values), the generator becomes a **hard** source.
+
+#### Current direction
 
 In case a generator is on a wire extreme, the current direction will be from the generator in the direction of the other wire extreme. If the generator is on an interior wire point, the current direction will be oriented as the wire.
 
+#### Generators on junctions
 
-In case the generator is located at the junction (connection point) of two of more lines, the  `node` shared by the lines will share the same  `coordinateId`. If more than two lines are connected together, it is necessary to know to which of the lines the generator is connected to. The entry `[attachedToLineId]` is an integer which refers to the `elementId` of the `polyline` the source is connected to. 
+In case the generator is located at the junction `node` (connection point) of two of more lines,  the lines whose ends are connected  will share the same  `coordinateId`. In this case, it is necessary to know to which of the lines the generator is attached to. The entry `[attachedToLineId]` is an integer which refers to the `elementId` of the `polyline` the generator is connected to. 
+
 
 **Example:**
 

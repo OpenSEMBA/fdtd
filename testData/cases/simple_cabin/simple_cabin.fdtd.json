@@ -49234,7 +49234,7 @@
                 2
             ],
             "field": "current",
-            "resistance" : 1.0e6
+            "resistance" : 1.0e22
         }
     ],
     "probes": [

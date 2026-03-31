@@ -652,8 +652,10 @@ contains
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim(trim("I" // node%name) // "_S " // trim(end_node) // " " //trim(node%name) // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
-                buff = trim(trim("R" // node%name) // "_S " // trim(end_node) // " " //trim(node%name) // "_S " // trim(generator_r) )
-                call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim(trim("R" // node%name) // "_S " // trim(end_node) // " " //trim(node%name) // "_S " // trim(generator_r) )
+                    call appendToStringArray(res, buff) 
+                end if
             end if
         else
             buff = trim(trim("R" // node%name) // " " // trim(node%name) // " "   // end_node // trim(termination_r))
@@ -699,8 +701,10 @@ contains
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim("I" // node%name // "_S " // trim(end_node) // " " // node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
-                buff = trim("R" // node%name // "_S " // trim(end_node) // " " // node%name // "_S " // trim(generator_r))
-                call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim("R" // node%name // "_S " // trim(end_node) // " " // node%name // "_S " // trim(generator_r))
+                    call appendToStringArray(res, buff) 
+                end if
             end if
         else
             buff = trim("R" // node%name // " " // node%name // " " // trim(end_node))//" "//trim(short_R)
@@ -747,8 +751,10 @@ contains
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim("I" // node%name // "_S " // node%name // "_S " // node%name // " dc 0" )
                 call appendToStringArray(res, buff) 
-                buff = trim("R" // node%name // "_S " // node%name // "_S " // node%name // " " // trim(generator_r) )
-                call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim("R" // node%name // "_S " // node%name // "_S " // node%name // " " // trim(generator_r) )
+                    call appendToStringArray(res, buff) 
+                end if
             end if
             buff = trim("x" // node%name // " " // node%name // "_S " // end_node //" ")//" "//trim(model_name)
             call appendToStringArray(res, buff)
@@ -798,8 +804,10 @@ contains
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim("I" // node%name // "_S " // end_node // " " //node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
-                buff = trim("R" // node%name // "_S " // end_node // " " //node%name // "_S " // trim(generator_r))
-                call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim("R" // node%name // "_S " // end_node // " " //node%name // "_S " // trim(generator_r))
+                    call appendToStringArray(res, buff) 
+                end if
             end if
         else
             buff = trim("L" // node%name // " " // node%name // "_R " // end_node)//" "//trim(termination_l)
@@ -872,8 +880,10 @@ contains
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim("I" // node%name // "_S " // trim(end_node) // " " // node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
-                buff = trim("R" // node%name // "_S " // trim(end_node) // " " // node%name // "_S " //trim(generator_r))
-                call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim("R" // node%name // "_S " // trim(end_node) // " " // node%name // "_S " //trim(generator_r))
+                    call appendToStringArray(res, buff) 
+                end if
             end if
         else
             buff = trim("R" // node%name // " " // node%name // " " // trim(end_node))//" "//trim(short_R)
@@ -996,8 +1006,10 @@ contains
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim("I" // node%name // "_S " // end_node // " " //node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
-                buff = trim("R" // node%name // "_S " // end_node // " " //node%name // "_S  "// trim(generator_r))
-                call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim("R" // node%name // "_S " // end_node // " " //node%name // "_S  "// trim(generator_r))
+                    call appendToStringArray(res, buff) 
+                end if
             end if
         else 
             buff = trim(XYZ(2:2) // node%name // " " // node%name // "_X " // end_node //" "// termination_y)
@@ -1061,8 +1073,10 @@ contains
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim("I" // node%name // "_S " //end_node // " "// node%name // "_S dc 0" )
                 call appendToStringArray(res, buff) 
-                buff = trim("R" // node%name // "_S " //end_node // " "// node%name // "_S " // trim(generator_r))
-                call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim("R" // node%name // "_S " //end_node // " "// node%name // "_S " // trim(generator_r))
+                    call appendToStringArray(res, buff) 
+                end if
             end if
         else
             buff =  trim(XYZ(2:2) // node%name // " " // node%name // "_p " // end_node //" "// termination_y)
