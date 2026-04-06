@@ -830,7 +830,7 @@ Using classic (not MTLN) wires, generators can be located on any node of the lin
 | Current                           | Terminal and interior nodes        | Only terminal nodes      |
 
 
-For generators places at a terminal node a resistance is optional. In case no value is provided, the resistance default value will be 0.0. for `voltage` generators and 1.0e22 for `current` generators (i.e, they will behave like hard sources). However, for interior positions it is mandatory. If the generator is located at the termination of a wire, the series or parallel `resistance`  is added to the connection defined in the corresponding `terminal`. If a generator is located on a wire intermediate position, the per-unit-length properties of the corresponding segment are modified according to the `resistance` of the generator.
+A resistance value is recommended but optional. In case no value is provided, the resistance default value will be 0.0. for `voltage` generators and 1.0e22 for `current` generators (i.e, they will behave like hard sources). If the generator is located at the termination of a wire, the series or parallel `resistance`  is added to the connection defined in the corresponding `terminal`. If a generator is located on a wire intermediate position, the per-unit-length properties of the corresponding segment are modified according to the `resistance` of the generator.
 
 #### Sources hardness
 

@@ -3411,25 +3411,17 @@ contains
                   call WarnErrReport('magnitudeFile of source missing', .true.)
                end if
 
-               if (.not. this%existsAt(gens(i)%p, J_SRC_RESISTANCE_GEN)) then
-                  call WarnErrReport('Generator resistance missing', .true.)
-               end if
-
-               res(n)%resistance = this%getRealAt(gens(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0_rkind)
-
                select case(this%getStrAt(gens(i)%p, J_FIELD))
-                case (J_FIELD_VOLTAGE)
+               case (J_FIELD_VOLTAGE)
                   res(n)%generator_type = SOURCE_TYPE_VOLTAGE
-                  if (res(n)%resistance == 0.0) call WarnErrReport('The resistance of a voltage generator on an interior node cannot be equal to 0', .true.)
-                case (J_FIELD_CURRENT)
+                  res(n)%resistance = this%getRealAt(gens(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0_rkind)
+               case (J_FIELD_CURRENT)
                   res(n)%generator_type = SOURCE_TYPE_CURRENT
-                  if (res(n)%resistance == 0.0) call WarnErrReport('The resistance of a current generator on an interior node cannot be equal to 0', .true.)
+                  res(n)%resistance = this%getRealAt(gens(i)%p, J_SRC_RESISTANCE_GEN, default = 1.0e22_rkind)
                case default
                   call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
                end select
-
                res(n)%path_to_excitation = this%getStrAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)
-
                
                idAndPos = getPolylineElemIdAndConductorOfGenerator(gens(i)%p)
                call elemIdToCable%get(key(idAndPos(1)), value=index)

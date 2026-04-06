@@ -49233,8 +49233,7 @@
             "elementIds": [
                 2
             ],
-            "field": "current",
-            "resistance" : 1.0e22
+            "field": "current"
         }
     ],
     "probes": [
