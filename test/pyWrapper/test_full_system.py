@@ -1263,7 +1263,7 @@ def test_bulk_current_four_probes_Z_oriented(tmp_path):
 def test_conformal_impedance_cylinder_single_wire(tmp_path):
     case_name = 'conformal_impedance_cylinder_conformal'
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
+                  run_in_folder=tmp_path )
     solver.cleanUp()
 
     solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
