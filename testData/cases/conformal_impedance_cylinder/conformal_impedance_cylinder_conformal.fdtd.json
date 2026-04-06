@@ -1,7 +1,7 @@
 {
     "_format": "FDTD Input file",
     "general": {
-        "timeStep": 1e-11,
+        "timeStep": 6e-12,
         "numberOfSteps": 600000
     },
     "boundary": {

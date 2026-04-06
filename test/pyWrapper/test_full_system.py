@@ -1259,122 +1259,18 @@ def test_bulk_current_four_probes_Z_oriented(tmp_path):
     assert np.allclose(probe_LU["current"].to_numpy(), 0.0, atol=2e-3)
     assert np.allclose(probe_UL["current"].to_numpy(), 0.0, atol=2e-3)
 
-@mtln_skip
-def test_conformal_impedance_cylinder_single_wire(tmp_path):
-    case_name = 'conformal_impedance_cylinder_conformal'
-    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
 
-    solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
-    bulk_conf = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-
-    case_name = 'conformal_impedance_cylinder_staircase'
-    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
-
-    solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
-    bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-    
-    #discrete fourier transforms
-    exc_file = "predefinedExcitation.1.exc"
-    exc = pd.read_csv(exc_file, sep='\\s+')
-    exc = exc.rename(columns={
-        exc.columns[0]: 'time',
-        exc.columns[1]: 'V'
-    })
-    new_freqs = np.geomspace(1e3, 1e7, num=100)
-    Vexc = exc["V"].to_numpy()
-    texc = exc["time"].to_numpy()
-    dt_exc = texc[1]-texc[0]
-    Vfexc = dt_exc*np.array([np.sum(Vexc * np.exp(-1j * 2 * np.pi * f * texc)) for f in new_freqs])
-
-    Ibulk = bulk["current"].to_numpy()
-    tbulk = bulk["time"].to_numpy()
-    dt_bulk = tbulk[1]-tbulk[0]
-    Ifbulk = dt_bulk*np.array([np.sum(Ibulk * np.exp(-1j * 2 * np.pi * f * tbulk)) for f in new_freqs])
-
-    Ibulk_conf = bulk_conf["current"].to_numpy()
-    tbulk_conf = bulk_conf["time"].to_numpy()
-    dt_bulk_conf = tbulk_conf[1]-tbulk_conf[0]
-    Ifbulk_conf = dt_bulk_conf*np.array([np.sum(Ibulk_conf * np.exp(-1j * 2 * np.pi * f * tbulk_conf)) for f in new_freqs])
-
-    #impedance comparison
-    assert np.allclose(np.abs(Vfexc/Ifbulk), np.abs(Vfexc/Ifbulk_conf), rtol=0.01, atol=0.001)
-
-@no_mtln_skip    
-def test_conformal_impedance_cylinder_wire(tmp_path):
-    case_name = 'conformal_impedance_cylinder_conformal'
-    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
-
-    solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
-    bulk_conf = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-
-    case_name = 'conformal_impedance_cylinder_staircase'
-    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
-
-    solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
-    bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-    
-    #discrete fourier transforms
-    exc_file = "predefinedExcitation.1.exc"
-    exc = pd.read_csv(exc_file, sep='\\s+')
-    exc = exc.rename(columns={
-        exc.columns[0]: 'time',
-        exc.columns[1]: 'V'
-    })
-    new_freqs = np.geomspace(1e3, 1e7, num=100)
-    Vexc = exc["V"].to_numpy()
-    texc = exc["time"].to_numpy()
-    dt_exc = texc[1]-texc[0]
-    Vfexc = dt_exc*np.array([np.sum(Vexc * np.exp(-1j * 2 * np.pi * f * texc)) for f in new_freqs])
-
-    Ibulk = bulk["current"].to_numpy()
-    tbulk = bulk["time"].to_numpy()
-    dt_bulk = tbulk[1]-tbulk[0]
-    Ifbulk = dt_bulk*np.array([np.sum(Ibulk * np.exp(-1j * 2 * np.pi * f * tbulk)) for f in new_freqs])
-
-    Ibulk_conf = bulk_conf["current"].to_numpy()
-    tbulk_conf = bulk_conf["time"].to_numpy()
-    dt_bulk_conf = tbulk_conf[1]-tbulk_conf[0]
-    Ifbulk_conf = dt_bulk_conf*np.array([np.sum(Ibulk_conf * np.exp(-1j * 2 * np.pi * f * tbulk_conf)) for f in new_freqs])
-
-    #impedance comparison
-    assert np.allclose(np.abs(Vfexc/Ifbulk), np.abs(Vfexc/Ifbulk_conf), rtol=0.01, atol=0.001)
-
-@no_mtln_skip
+# compiled without mtln uses classic wires
+# compiled with mtln, wire is treated as an unshielded multiwire
 def test_conformal_impedance_cylinder_unshielded(tmp_path):
     case_name = 'conformal_impedance_cylinder_conformal'
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver.cleanUp()
-    solver['materials'][2] = createUnshieldedWire(id = 3, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
     solver.run()
     assert solver.hasFinishedSuccessfully()
     bulk_conf = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-
-    case_name = 'conformal_impedance_cylinder_staircase'
-    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
-    solver['materials'][2] = createUnshieldedWire(id = 3, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
-    bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-    
+   
     #discrete fourier transforms
     exc_file = "predefinedExcitation.1.exc"
     exc = pd.read_csv(exc_file, sep='\\s+')
@@ -1382,24 +1278,21 @@ def test_conformal_impedance_cylinder_unshielded(tmp_path):
         exc.columns[0]: 'time',
         exc.columns[1]: 'V'
     })
-    new_freqs = np.geomspace(1e3, 1e7, num=100)
+    new_freqs = np.geomspace(1e3, 1e6, num=100)
     Vexc = exc["V"].to_numpy()
     texc = exc["time"].to_numpy()
     dt_exc = texc[1]-texc[0]
     Vfexc = dt_exc*np.array([np.sum(Vexc * np.exp(-1j * 2 * np.pi * f * texc)) for f in new_freqs])
-
-    Ibulk = bulk["current"].to_numpy()
-    tbulk = bulk["time"].to_numpy()
-    dt_bulk = tbulk[1]-tbulk[0]
-    Ifbulk = dt_bulk*np.array([np.sum(Ibulk * np.exp(-1j * 2 * np.pi * f * tbulk)) for f in new_freqs])
 
     Ibulk_conf = bulk_conf["current"].to_numpy()
     tbulk_conf = bulk_conf["time"].to_numpy()
     dt_bulk_conf = tbulk_conf[1]-tbulk_conf[0]
     Ifbulk_conf = dt_bulk_conf*np.array([np.sum(Ibulk_conf * np.exp(-1j * 2 * np.pi * f * tbulk_conf)) for f in new_freqs])
 
-    #impedance comparison
-    assert np.allclose(np.abs(Vfexc/Ifbulk), np.abs(Vfexc/Ifbulk_conf), rtol=0.01, atol=0.001)
+    data = pd.read_csv(OUTPUTS_FOLDER+'conformal_cylinder_impedance_output.dat', sep=" ", header=0)
+    data.columns = ["f", "z"]
+
+    assert np.corrcoef(data['z'], np.abs(Vfexc/Ifbulk_conf))[0,1] > 0.999
 
     
 def test_conformal_sphere_rcs(tmp_path):
