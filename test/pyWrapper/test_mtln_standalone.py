@@ -196,14 +196,16 @@ def test_spice_zener(tmp_path):
     
     p_expected = Probe(
         OUTPUTS_FOLDER+'zener.fdtd_end_voltage_wire_V_10_10_12.dat')
+    t_exp = p_expected.data['time'].to_numpy()[:-1]
+    v_exp = p_expected.data['voltage_0'].to_numpy()[:-1]
+
     p_solved = Probe(solver.getSolvedProbeFilenames(
         "end_voltage_")[0])
-
-    t_exp = p_expected.data['time'].to_numpy()[:-1]
     t_sol = p_solved.data['time'].to_numpy()[:-1]
-    v_exp = p_expected.data['voltage_0'].to_numpy()[:-1]
     v_sol = p_solved.data['voltage_0'].to_numpy()[:-1]
-    v_sol_interp = np.interp(t_exp, t_sol, v_sol)
-    assert np.corrcoef(v_exp, v_sol_interp)[0,1] > 0.999
+
+    
+    v_exp_interp = np.interp(t_sol, t_exp, v_exp)
+    assert np.corrcoef(v_sol, v_exp_interp)[0,1] > 0.999
     
     
