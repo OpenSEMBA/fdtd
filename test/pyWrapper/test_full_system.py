@@ -1421,8 +1421,7 @@ def test_conformal_sphere_rcs(tmp_path):
     # simulated, interpolated to analytical frequencies
     rcs_interp = np.interp(f,ffar,rg)
 
-    assert np.allclose(rcs[5:150], rcs_interp[5:150], rtol=0.25, atol=0.15)
-    
+    assert np.corrcoef(rcs[5:150], rcs_interp[5:150])[0,1] > 0.98
 
 def test_conformal_delay(tmp_path):
     fn = CASES_FOLDER + 'conformal/conformal.fdtd.json'

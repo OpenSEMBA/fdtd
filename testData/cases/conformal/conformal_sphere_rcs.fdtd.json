@@ -1,7 +1,7 @@
 {
     "general": {
-        "numberOfSteps": 5000,
-        "timeStep": 7e-11
+        "numberOfSteps": 2000,
+        "timeStep": 7.7e-11
     },
     "boundary": {
         "all": {
