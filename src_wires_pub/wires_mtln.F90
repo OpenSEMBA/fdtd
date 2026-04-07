@@ -101,7 +101,7 @@ contains
          Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE),&
          Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE),&
          Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)  
-      real(kind=RKIND) :: cte,eps00,mu00
+      real(kind=RKIND) :: cte,eps00,mu00, f
       integer(kind=4) :: m, n
       real(kind=RKIND),pointer:: punt
       eps0 = eps00 

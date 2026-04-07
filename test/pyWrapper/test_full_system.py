@@ -1351,6 +1351,70 @@ def test_conformal_delay(tmp_path):
         assert np.abs(delay - tdelta)/tdelta < 0.01
         
 
+@no_mtln_skip
+@pytest.mark.mtln
+def test_current_generators(tmp_path):
+    # Checks current and voltage of probes at the extremes of a wire
+    # with a current generator in the middle of the wire
+    
+    fn = CASES_FOLDER + 'sources/sources_current.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver["sources"][0]["elementIds"] = [1]
+    solver.cleanUp()
+    solver.run()
+    probes = solver.getSolvedProbeFilenames("probe_end")
+    Iend = Probe(list(filter(lambda x: '_I_' in x, probes))[0])
+
+    probes = solver.getSolvedProbeFilenames("probe_start")
+    Istart = Probe(list(filter(lambda x: '_I_' in x, probes))[0])
+
+    probes = solver.getSolvedProbeFilenames("probe_end")
+    Vend = Probe(list(filter(lambda x: '_V_' in x, probes))[0])
+
+    probes = solver.getSolvedProbeFilenames("probe_start")
+    Vstart = Probe(list(filter(lambda x: '_V_' in x, probes))[0])
+
+    assert np.allclose(Iend['current_0'][-100:-1], 1.0/3.0, rtol=0.005)
+    assert np.allclose(Istart['current_0'][-100:-1], 1.0/3.0, rtol=0.005)
+    assert np.allclose(Vend['voltage_0'][-100:-1], 16.666, rtol=0.005)
+    assert np.allclose(Vstart['voltage_0'][-100:-1], -16.666, rtol=0.005)
+
+@no_mtln_skip
+@pytest.mark.mtln
+def test_voltage_generators(tmp_path):
+    # Checks current and voltage of probes at the extremes of bundle (1 conductor + 1 shield)
+    # with a voltage generator in the middle of the inner conductor
+    fn = CASES_FOLDER + 'sources/sources_voltage.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver["sources"][0]["elementIds"] = [1]
+    solver.cleanUp()
+    solver.run()
+
+    probes = solver.getSolvedProbeFilenames("probe_end")
+    Iend = Probe(list(filter(lambda x: '_I_' in x, probes))[0])
+
+    probes = solver.getSolvedProbeFilenames("probe_start")
+    Istart = Probe(list(filter(lambda x: '_I_' in x, probes))[0])
+
+    probes = solver.getSolvedProbeFilenames("probe_end")
+    Vend = Probe(list(filter(lambda x: '_V_' in x, probes))[0])
+
+    probes = solver.getSolvedProbeFilenames("probe_start")
+    Vstart = Probe(list(filter(lambda x: '_V_' in x, probes))[0])
+
+    assert np.allclose(Iend['current_0'][-100:-1],   0.0, rtol=0.005)
+    assert np.allclose(Istart['current_0'][-100:-1], 0.0, rtol=0.005)
+    assert np.allclose(Vend['voltage_0'][-100:-1],   0.0, rtol=0.005)
+    assert np.allclose(Vstart['voltage_0'][-100:-1], 0.0, rtol=0.005)
+
+    assert np.allclose(Iend['current_1'][-100:-1],   1.0/3.0, rtol=0.005)
+    assert np.allclose(Istart['current_1'][-100:-1], 1.0/3.0, rtol=0.005)
+    assert np.allclose(Vend['voltage_1'][-100:-1],   -16.666, rtol=0.005)
+    assert np.allclose(Vstart['voltage_1'][-100:-1], -16.666, rtol=0.005)
+
+
 def test_bulk_current_outputs(tmp_path):
     # This test uses bulk_probe_cases_over_nodal_source.fdtd from input_examples as input.
     # Verifies all kind of bulk probes are recognised and setted properly by checking outputFile format.
@@ -1381,4 +1445,5 @@ def test_bulk_current_outputs(tmp_path):
     assert probeBulkZPlane.direction == 'z'
     assert probeBulkYPoint.direction == 'y'
     assert probeBulkZVolume.direction == 'z'
-
+    
+    

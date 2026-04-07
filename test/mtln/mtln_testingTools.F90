@@ -17,7 +17,7 @@ module mtln_testingTools_mod
 contains
     
     
-    type(mtl_t) function buildLineWithNConductors(n,name, parent_name, conductor_in_parent, dt, type) result(res)
+    function buildLineWithNConductors(n,name, parent_name, conductor_in_parent, dt, type) result(res)
     
         integer, intent(in) :: n
         character(len=*), intent(in) :: name
@@ -25,6 +25,7 @@ contains
         character(len=*), intent(in), optional :: parent_name
         integer, intent(in), optional :: conductor_in_parent
         character(len=*), intent(in) :: type
+        type(mtl_t) :: res
         
         real(kind=rkind), allocatable, dimension(:,:) :: lpul, cpul, rpul, gpul
         real(kind=rkind), dimension(5) :: step_size = [20.0_rkind, 20.0_rkind, 20.0_rkind, 20.0_rkind, 20.0_rkind]
