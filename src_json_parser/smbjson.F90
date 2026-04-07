@@ -363,7 +363,9 @@ contains
       class(parser_t) :: this
       type(NFDEGeneral_t) :: res
       res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP, default = 0.0_RKIND)
+      if (res%dt < 0) call WarnErrReport('timStep cannot be negative', .true.)
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
+      if (res%nmax <=0) call WarnErrReport('numberOfSteps has to be positive', .true.)
       res%mtlnProblem = this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
    end function
 
