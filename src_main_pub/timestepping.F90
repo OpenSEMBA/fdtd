@@ -67,11 +67,6 @@ module Solver_m
    use estructura_slanted_m
 #endif
 
-
-#ifdef CompileWithConformal
-   use conformal_time_stepping_m
-   use CONFORMAL_MAPPED
-#endif
    use EpsMuTimeScale_m
    use CALC_CONSTANTS_m
 #ifdef CompileWithPrescale
@@ -273,10 +268,6 @@ module Solver_m
       this%control%MEDIOEXTRA = input%MEDIOEXTRA
       this%control%facesNF2FF = input%facesNF2FF
       this%EpsMuTimeScale_input_parameters = input%EpsMuTimeScale_input_parameters
-
-#ifdef CompileWithConformal
-      this%control%input_conformal_flag = input%input_conformal_flag
-#endif
 
       call this%thereAre%reset()
 
@@ -591,7 +582,6 @@ module Solver_m
       call initializeAnisotropic()
       call initializeSGBC()
       call initializeMultiports()
-      call initializeConformalElements()
       
       call initializeEDispersives()
       call initializeMDispersives()
@@ -1358,41 +1348,6 @@ contains
 #endif
       end subroutine initializeMultiports
 
-      subroutine initializeConformalElements()
-         character(len=BUFSIZE) :: dubuf
-         logical :: l_auxinput, l_auxoutput
-
-#ifdef CompileWithConformal
-         if(input_conformal_flag)then
-#ifdef CompileWithMPI
-            call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
-            write(dubuf,*) 'Init Conformal Elements ...';  call print11(this%control%layoutnumber,dubuf)
-!WIP
-!DEBUG
-            call initialize_memory_FDTD_conf_fields (this%sgg,this%media%sggMiEx, &
-            & this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,&
-            & this%control%layoutnumber,this%control%num_procs, this%control%verbose);
-            l_auxinput=input_conformal_flag
-            l_auxoutput=l_auxinput
-#ifdef CompileWithMPI
-            call MPI_Barrier(SUBCOMM_MPI,ierr)
-            call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-#endif
-         !       refactor JUN2015
-
-         !!!!!!!sgg 051214 !rellena correctamente los campos magneticos. Necesario para construir los surfaces a partir del wireframe 
-         !        call fillMagnetic(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz, b)
-         !!!!!!!ojo solo es valido para PEC!!!! cambiar luego !!?!?!?!?!?
-            if (l_auxoutput ) then
-               write (dubuf,*) '----> there are conformal elements';  call print11(this%control%layoutnumber,dubuf)
-            else
-               write(dubuf,*) '----> no conformal elements found';  call print11(this%control%layoutnumber,dubuf)
-            end if
-      end if
-#endif
-      end subroutine initializeConformalElements
-
       subroutine initializeEDispersives()
          character(len=bufsize) :: dubuf
          logical :: l_auxinput, l_auxoutput
@@ -1784,12 +1739,7 @@ contains
 #ifdef CompileWithProfiling
       call nvtxStartRange("Antes del bucle N")
 #endif
-!240424 sgg creo el comunicador mpi de las sondas conformal aqui. debe irse con el nuevo conformal
-#ifdef CompileWithConformal                
-#ifdef CompileWithMPI
-      call this%init_MPIConformalProbes()
-#endif  
-#endif
+
       this%still_planewave_time=.true. !inicializacion de la variable 
       flushFF = .false.
       pscale_alpha=1.0 !se le entra con 1.0 
@@ -2078,9 +2028,7 @@ contains
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       call this%AdvanceAnisotropicE()
       call this%advanceE()
-#ifdef CompileWithConformal
-      if(this%control%input_conformal_flag) call conformal_advance_E()
-#endif
+
       call this%advanceWiresE()
       call this%advancePMLE()
 #ifdef CompileWithNIBC
@@ -2120,10 +2068,6 @@ contains
       call this%advanceWiresH()
       call this%MinusCloneMagneticPMC()
       call this%CloneMagneticPeriodic()
-
-#ifdef CompileWithConformal                      
-      if(this%control%input_conformal_flag) call conformal_advance_H()
-#endif
 
 #ifdef CompileWithMPI
       !!Flush all the MPI (esto estaba justo al principo del bucle temporal diciendo que era necesario para correcto resuming)
@@ -2728,10 +2672,6 @@ contains
 #ifdef CompileWithProfiling
       call nvtxEndRange
 #endif      
-      
-#ifdef CompileWithConformal
-      if(this%control%input_conformal_flag) call conformal_final_simulation  (conf_timeSteps, this%n)
-#endif
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)

@@ -32,13 +32,6 @@ module SEMBA_FDTD_m
 #endif
 #endif
 
-#ifdef CompileWithConformal
-   use CONFORMAL_INI_CLASS
-   use CONFORMAL_TOOLS
-   use CONFORMAL_MAPPED
-   use CONFORMAL_TYPES
-   use Conformal_TimeSteps_m
-#endif
    use EpsMuTimeScale_m
 
    use interpreta_switches_m
@@ -112,9 +105,7 @@ contains
 #endif
 
       integer(kind=4) :: conf_err
-#ifdef CompileWithConformal
-      type(conf_conflicts_t), pointer  :: conf_conflicts
-#endif
+
       call initEntrada(this%l) 
 #ifdef CompileWithSMBJSON
       newrotate=.false.
@@ -408,123 +399,10 @@ contains
             call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Error in .nfde file syntax. Check all *Warnings* and *tmpWarnings* files, correct and remove pause file if any',.true.); goto 652
          end if
 
-         !*************************************************************************
-         !***[conformal] ******************************************
-         !*************************************************************************
-         !conformal conformal ini          ref: ##Confini##
-#ifdef CompileWithConformal
-      if (this%l%input_conformal_flag) then
-
-            !md notes:
-            ![1]      Todos los procesos parsean el archivo -conf completo.
-            ![2]      El parseador es INDEPENDIENTE de del resto del problema (dimensiones,
-            !         particion MPI, ... )
-            ![3]      Posteriormente conf_mesh obtenido por el parseador sera tratado por cada
-            !         proceso atendiedo al resto del porblema y la particion MPI
-
-            conf_parameter%output_file_report_id = 47;
-            !......................................................................
-         write(dubuf,*) 'Init Searching for Conformal Mesh ...';  call print11(this%l%layoutnumber,dubuf)
-#ifdef CompileWithMPI
-            call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-            call conformal_ini (TRIM(this%l%conformal_file_input_name),trim(this%l%fileFDE),parser,&
-               &this%sgg, this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,this%l%run_with_abrezanjas,&
-               &this%fullsize,this%l%layoutnumber,this%l%mpidir, this%l%input_conformal_flag,conf_err,this%l%verbose)
-#endif
-            !......................................................................
-#ifndef CompileWithMPI
-            !call conformal_ini (TRIM(this%l%conformal_file_input_name),trim(this%l%fileFDE),sgg,fullsize,0,conf_err,this%l%verbose)
-         call conformal_ini (TRIM(this%l%conformal_file_input_name),trim(this%l%fileFDE),parser,&
-               &this%sgg, this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,&
-               &this%l%run_with_abrezanjas,this%fullsize,0,this%l%mpidir,this%l%input_conformal_flag,conf_err,this%l%verbose)
-#endif
-            if(conf_err/=0)then
-               call WarnErrReport(Trim(buff),.true.)
-            end if
-
-#ifdef CompilePrivateVersion  
-         if (trim(adjustl(this%l%extension))=='.nfde') then
-         call Destroy_Parser (parser)  
-         deallocate(NFDE_FILE%lineas)
-         deallocate(NFDE_FILE)
-         nullify (NFDE_FILE)
-         end if
-#endif      
-         
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#ifdef CompileWithMPI
-         !wait until everything comes out
-         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-            l_auxinput = this%l%input_conformal_flag
-            call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
-            call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, this%l%ierr)
-            this%l%input_conformal_flag = l_auxoutput
-#endif
-            !......................................................................
-#ifdef CompileWithMPI
-            call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#endif       
-            if (this%l%resume.and.this%l%flag_conf_sgg) then
-                  call stoponerror (this%l%layoutnumber, this%l%num_procs, 'this%l%resume -r currently unsupported by conformal solver',.true.); statuse=-1; !return
-            end if
-            if (this%l%input_conformal_flag.and.this%l%flag_conf_sgg) then
-               write(dubuf,*) '----> Conformal Mesh found';  call print11(this%l%layoutnumber,dubuf)
-            else   
-               write(dubuf,*) '----> No Conformal Mesh found';  call print11(this%l%layoutnumber,dubuf)
-            end if
-      end if !FIN DEL: if (this%l%input_conformal_flag) then
-      
-#endif
-
-         !*************************************************************************
-         !*************************************************************************
-         !*************************************************************************
-
-#ifdef CompileWithConformal
-         !*************************************************************************
-         !***[conformal] ******************************************
-         !*************************************************************************
-         !conformal mapped reff: ##Confmapped##
-
-         !call creamatricesdedibujoencadaslabmpi(sgg%alloc(iEx)%XI,....,sgg%Sweep(iEx)%...)
-
-         if (this%l%input_conformal_flag) then
-               write(dubuf,*) '----> this%l%input_conformal_flag True and init';  call print11(this%l%layoutnumber,dubuf)
-            call conf_geometry_mapped_for_UGRDTD (&
-            &conf_conflicts, &
-            &this%sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, &
-            &this%fullsize, this%SINPML_fullsize,this%l%layoutnumber,conf_err,this%l%verbose);
-            !call conf_geometry_mapped_for_UGRDTD (sgg, fullsize, this%SINPML_fullsize,this%l%layoutnumber,conf_err,this%l%verbose); //refactor JUL15
-            if(conf_err==0)then
-            else
-               buff=''; buff = 'Program aborted.';
-               call WarnErrReport(Trim(buff),.true.)
-            end if
-               write(dubuf,*) '----> this%l%input_conformal_flag True and exit';  call print11(this%l%layoutnumber,dubuf)
-         end if
-
-#ifdef CompileWithMPI
-         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#endif
-         !*************************************************************************
-         !*************************************************************************
-         !*************************************************************************
-#endif
-
          if (allocated(this%media%sggMiEx)) then !para el this%l%skindepthpre no se allocatea nada
-#ifdef CompileWithConformal
-         call AssigLossyOrPECtoNodes(this%sgg,this%media, conf_conflicts,this%l%input_conformal_flag)
-#else
          call AssigLossyOrPECtoNodes(this%sgg,this%media)
-#endif
-! #ifdef CompileWithConformal
-!          call AssigLossyOrPECtoNodes(this%sgg,this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,&
-!                                        &conf_conflicts,this%l%input_conformal_flag)
-! #else
-!          call AssigLossyOrPECtoNodes(this%sgg,this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz)
-! #endif
+
          if (this%l%createmap) call store_geomData (this%sgg,this%media, this%l%geomfile)
-         ! if (this%l%createmap) call store_geomData (this%sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%geomfile)
          end if
          !
 #ifdef CompileWithMPI
@@ -1251,7 +1129,6 @@ contains
       ! call each simulation   !ojo que los layoutnumbers empiezan en 0
       if (this%l%finaltimestep /= 0) then
 #ifdef CompileWithMPI
-         !wait until everything comes out
          call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
          this%finishedwithsuccess=.false.
@@ -1283,10 +1160,8 @@ contains
                call print11 (this%l%layoutnumber, dubuf)
                call print11 (this%l%layoutnumber, dubuf)
             end if
-            !!!!!!!        call CLOSEdxfFILE(this%l%layoutnumber,this%l%num_procs)
             call CLOSEWARNINGFILE(this%l%layoutnumber,this%l%num_procs,dummylog,this%l%stochastic,this%l%simu_devia) !aqui ya no se tiene en cuenta el this%l%fatalerror
 #ifdef CompileWithMPI
-            !wait until everything comes out
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
 #ifdef CompileWithMPI
@@ -1297,10 +1172,8 @@ contains
       end if
       !
 #ifdef CompileWithMPI
-      !wait until everything comes out
       call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
-
    end subroutine semba_launch
 
    subroutine semba_end(this)
@@ -1326,7 +1199,6 @@ contains
       end if
 
 #ifdef CompileWithMPI
-      !wait until everything comes out
       call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
       !
@@ -1360,22 +1232,6 @@ contains
          end if
       end if
       !
-
-      !**************************************************************************************************
-      !***[conformal] *******************************************************************
-      !**************************************************************************************************
-      !delete conformal memory   reff: ##Conf_end##
-#ifdef CompileWithConformal
-      if(this%l%input_conformal_flag)then
-         call conf_sMesh%delete
-         call conf_timeSteps%delete;
-         call delete_conf_tools();
-      end if
-#endif
-      !**************************************************************************************************
-      !**************************************************************************************************
-      !**************************************************************************************************
-
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
 #endif
@@ -1398,7 +1254,6 @@ contains
 #ifdef CompileWithMPI
       call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
-      ! Error reading check
 
 #ifdef keeppause
       if (this%l%fatalerror) then
@@ -1468,16 +1323,25 @@ contains
 
    subroutine initEntrada(input)
       type(entrada_t), intent(inout) :: input
-#ifdef CompileWithConformal
-      input%conformal_file_input_name=char(0);  
-#endif
       input%geomfile = ' ';
-      input%prefix = ' ';input%fichin = ' '; input%chain2 = ' '; input%opcionestotales = ' ' 
-      input%nEntradaRoot = ' '; input%fileFDE = ' '; input%fileH5 = ' '
-      input%prefixopci = ' '; input%prefixopci1 = ' ';input%opcionespararesumeo = ' '; input%opcionesoriginales = ' '
-      input%slicesoriginales = ' '; ; input%chdummy = ' '
-      input%flushsecondsFields=0.; input%flushsecondsData=0.; input%time_end=0. 
-      input%existeNFDE=.false.; input%existeconf=.false.; input%existecmsh=.false.; input%existeh5=.false.
+      input%prefix = ' ';
+      input%fichin = ' ';
+      input%chain2 = ' ';
+      input%opcionestotales = ' ' 
+      input%nEntradaRoot = ' ';
+      input%fileFDE = ' ';
+      input%fileH5 = ' '
+      input%prefixopci = ' ';
+      input%prefixopci1 = ' ';
+      input%opcionespararesumeo = ' ';
+      input%opcionesoriginales = ' '
+      input%slicesoriginales = ' ';
+      input%chdummy = ' ';
+      input%flushsecondsFields=0.;
+      input%flushsecondsData=0.;
+      input%time_end=0. 
+      input%existeNFDE=.false.;
+      input%existeh5=.false.
       input%creditosyaprinteados=.false.
       call input%EpsMuTimeScale_input_parameters%init0()
 
