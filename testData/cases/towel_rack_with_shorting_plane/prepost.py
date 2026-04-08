@@ -35,8 +35,9 @@ def dtft(signal, time, freqs):
 	signal = np.asarray(signal)
 	time = np.asarray(time)
 	res = np.empty_like(freqs, dtype=complex)
+	trapz = getattr(np, "trapezoid", getattr(np, "trapz", None)) 
 	for i, f in enumerate(freqs):
-		res[i] = np.trapz(signal * np.exp(-1j * 2 * np.pi * f * time), time)
+		res[i] = trapz(signal * np.exp(-1j * 2 * np.pi * f * time), time)
 	return res
 
 def compute_impedance(probe_path, time_exc, voltage_exc, freqs):
