@@ -659,10 +659,10 @@ In this example `elementId` points to a volume element, therefore `direction` mu
 }
 ```
 
-One important aspect to keep in mind when working with `bulkCurrent` with `electric field type` is its natural offset. This arises from the fact that to measure the electric current it is necessary to calculate the closed path integral of the magnetic field, then, the electric current is defined on the **dual mesh** of the inserted grid -- i.e., the mesh corresponding to the magnetic field. The **dual mesh** is constructed by placing a point at the center of each cell in the original (primal) mesh and connecting these points.
-
-Because of this, the code internally shifts the `bulkCurrent` you define to align with the dual mesh, causing a **half-cell offset**. In the case of surfaces, the coordinates **perpendicular** to the current flowing through the surface experience a **negative offset**, as shown in the figure below:
-
+One important aspect to keep in mind when working with `bulkCurrent` with `electric field type` arises from the fact that to measure the electric current it is necessary to calculate the closed path integral of the magnetic field.
+However, the magnetic field is defined by normals located at the center of each cell faced.
+In consequence, the code internally shifts the defined `bulkCurrent`, causing a **half-cell offset**. 
+In the case of surfaces, the coordinates **perpendicular** to the current flowing through the surface experience a **negative offset**, as shown in the figure below:
 
 ![Negative offset](fig/grid-negativeOffSet.svg)
 
