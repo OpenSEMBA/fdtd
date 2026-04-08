@@ -305,7 +305,11 @@ contains
 #else
 #ifdef CompilePrivateVersion
    if (trim(adjustl(this%l%extension))=='.nfde') then 
+#ifdef CompileWithMTLN
       NFDE_FILE => cargar_NFDE_FILE (this%l%filefde)
+#else
+      call WarnErrReport(".nfde files are not supported when compiling with MTLN.", .true.)
+#endif
    else
       allocate (NFDE_FILE)
    end if

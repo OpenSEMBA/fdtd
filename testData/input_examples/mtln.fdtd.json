@@ -43,7 +43,7 @@
 			"inductancePerMeter":  [[8.802075200000001e-08]],
 			"capacitancePerMeter": [[5.5840010E-10]],
 			"transferImpedancePerMeter" : {
-				"inductiveTerm" : 8.9e-9,
+				"inductancePerMeter" : 8.9e-9,
 				"direction" : "inwards"
 			}
 		},
@@ -55,7 +55,7 @@
 			"inductancePerMeter": [[1.37228e-07]],
 			"capacitancePerMeter":[[3.2310005E-10]],
 			"transferImpedancePerMeter" : {
-				"inductiveTerm" : 7.4e-9,
+				"inductancePerMeter" : 7.4e-9,
 				"direction" : "inwards"
 			}
 		},
@@ -67,7 +67,7 @@
 			"inductancePerMeter":  [[9.1890502e-08]],
 			"capacitancePerMeter": [[4.7190007E-10]],
 			"transferImpedancePerMeter" : {
-				"inductiveTerm" : 3.0e-9,
+				"inductancePerMeter" : 3.0e-9,
 				"direction" : "inwards"
 			}
 		},
@@ -97,7 +97,7 @@
 				[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -20.5e-12, 105.5e-12]
 			],
 			"transferImpedancePerMeter" : {
-				"inductiveTerm" : 4.2e-9,
+				"inductancePerMeter" : 4.2e-9,
 				"direction" : "inwards",
 				"__factor" : 4
 			}
@@ -116,7 +116,7 @@
 				[-20.5e-12, 105.5e-12 ]
 			],
 			"transferImpedancePerMeter" : {
-				"inductiveTerm" : 4.2e-9,
+				"inductancePerMeter" : 4.2e-9,
 				"direction" : "inwards"
 			}
 		},
@@ -142,7 +142,7 @@
 				[0.0, 0.0, 0.0, 0.0, -20.5e-12, 105.5e-12 ]
 			],
 			"transferImpedancePerMeter" : {
-				"inductiveTerm" : 4.2e-9,
+				"inductancePerMeter" : 4.2e-9,
 				"direction" : "inwards",
 				"__factor" : 3
 			}		
@@ -260,7 +260,7 @@
 			"type": "connector",
 			"resistances": [100.0e-3],
 			"transferImpedancesPerMeter" : [
-				{"resistiveTerm" : 3.33, "inductiveTerm" : 2.6e-9, "direction" : "inwards"}
+				{"resistancePerMeter" : 3.33, "inductancePerMeter" : 2.6e-9, "direction" : "inwards"}
 			]
 		},
 		{
@@ -269,7 +269,7 @@
 			"type": "connector",
 			"resistances": [19.0],
 			"transferImpedancesPerMeter" : [
-				{"resistiveTerm" : 609.3, "inductiveTerm" : 2.6e-9, "direction" : "inwards"}
+				{"resistancePerMeter" : 609.3, "inductancePerMeter" : 2.6e-9, "direction" : "inwards"}
 			]
 		}
 	],

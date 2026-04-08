@@ -1947,7 +1947,8 @@ contains
          block
             type(json_value_ptr_t) :: m
             m = this%matTable%getId(cable%materialId)
-            radius = this%getRealAt(m%p, J_MAT_WIRE_RADIUS, default=0.0_RKIND)
+            
+            radius = this%getRealAt(m%p, J_MAT_WIRE_RADIUS)
             resistance = this%getRealAt(m%p, J_MAT_WIRE_RESISTANCE, default=0.0_RKIND)
             inductance = this%getRealAt(m%p, J_MAT_WIRE_INDUCTANCE, default=0.0_RKIND)
             res%rad = radius 

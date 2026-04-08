@@ -123,8 +123,8 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_CONN_TRANSFER_IMPEDANCES = "transferImpedancesPerMeter"
 
    ! -- transferImpedancePerMeter
-   character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESISTANCE = "resistiveTerm"
-   character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_INDUCTANCE = "inductiveTerm"
+   character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESISTANCE = "resistancePerMeter"
+   character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_INDUCTANCE = "inductancePerMeter"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_DIRECTION = "direction"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_POLES = "poles"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESIDUES = "residues"
