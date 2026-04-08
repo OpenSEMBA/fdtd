@@ -363,7 +363,9 @@ contains
       class(parser_t) :: this
       type(NFDEGeneral_t) :: res
       res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP, default = 0.0_RKIND)
+      if (res%dt < 0) call WarnErrReport('timStep cannot be negative', .true.)
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
+      if (res%nmax <=0) call WarnErrReport('numberOfSteps has to be positive', .true.)
       res%mtlnProblem = this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
    end function
 
@@ -819,6 +821,10 @@ contains
             end if
             res%Rtime_on = this%getRealAt(matPtr%p, J_MAT_LUMPED_STARTING_TIME, default=0.0_RKIND)
             res%Rtime_off = this%getRealAt(matPtr%p, J_MAT_LUMPED_END_TIME, default=1.0_RKIND)
+            if (res%Rtime_on < 0 .or. res%Rtime_off <0) then 
+               write(errorMsg,'(A)') errorMsgInit, mA%materialId, " starting or end time is negative"
+               call WarnErrReport('', .true.)
+            end if
           case (J_MAT_LUMPED_MODEL_INDUCTOR)
             res%inductor = .true.
             res%L = this%getRealAt(matPtr%p, J_MAT_LUMPED_INDUCTANCE, found)
@@ -2339,6 +2345,16 @@ contains
       res%tstart = this%getRealAt(domain, J_PR_DOMAIN_TIME_START, default=0.0_RKIND)
       res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=0.0_RKIND)
       res%tstep = this%getRealAt(domain, J_PR_DOMAIN_TIME_STEP, default=0.0_RKIND)
+      if (res%tstart < 0 .or. res%tstop <0 .or. res%tstep < 0) then
+         block 
+            character(len=BUFSIZE) :: errorMsg
+            character(len=:), allocatable :: p_name
+            logical :: nameFound
+            p_name = this%getStrAt(place, J_NAME, found=nameFound)
+            write(errorMsg, *) "Probe named ", p_name, " has negative times in its domain definition"
+            call WarnErrReport(errorMsg, .true.)
+         end block
+      end if
       res%fstart = this%getRealAt(domain, J_PR_DOMAIN_FREQ_START, default=0.0_RKIND)
       res%fstop = this%getRealAt(domain, J_PR_DOMAIN_FREQ_STOP, default=0.0_RKIND)
 
