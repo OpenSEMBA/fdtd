@@ -371,7 +371,7 @@ class FDTD():
         return sorted(probeFiles)
 
     def getExcitationFile(self, excitation_file_name):
-        file_extensions = ('*.1.exc',)
+        file_extensions = ('*.exc',)
         excitationFile = []
         for ext in file_extensions:
             newExcitationFile = [x for x in glob.glob(
