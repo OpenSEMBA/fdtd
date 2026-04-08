@@ -1,8 +1,8 @@
-module conformal_mod
+module conformal_m
 
-   use geometry_mod
-   use cell_map_mod
-   use NFDETypes, only: ConformalPECRegions, ConformalPECElements, ConformalMedia_t, & 
+   use geometry_m
+   use cell_map_m
+   use NFDETypes_m, only: ConformalPECRegions_t, ConformalPECElements_t, ConformalMedia_t, & 
                         edge_t, face_t, & 
                         conformal_face_media_t, conformal_edge_media_t, rkind
    
@@ -12,7 +12,7 @@ module conformal_mod
 contains
 
    function buildSideMaps(regions) result(res)
-      type(ConformalPECRegions), intent(in) :: regions
+      type(ConformalPECRegions_t), intent(in) :: regions
       type(side_tris_map_t), dimension(:), allocatable :: res
       integer :: i
       allocate(res(size(regions%volumes)))
@@ -22,7 +22,7 @@ contains
    end function
 
    function buildConformalMedia(regions) result(res)
-      type(ConformalPECRegions), intent(in) :: regions
+      type(ConformalPECRegions_t), intent(in) :: regions
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i
       allocate(res(size(regions%volumes)))
@@ -33,7 +33,7 @@ contains
 
 
    function buildConformalVolume(volume) result(res)
-      type(ConformalPECElements), intent(in) :: volume
+      type(ConformalPECElements_t), intent(in) :: volume
       type(ConformalMedia_t) :: res
 
       type(cell_map_t) :: cell_map
@@ -87,7 +87,7 @@ contains
          allocate(res(i)%edges(size(filtered_edges)))
          res(i)%edges = filtered_edges
          res(i)%ratio = edge_ratios(i)
-         res(i)%size = size(filtered_edges)
+         res(i)%n_elements = size(filtered_edges)
       end do
    end function
 
@@ -102,7 +102,7 @@ contains
          allocate(res(i)%faces(size(filtered_faces)))
          res(i)%faces = filtered_faces
          res(i)%ratio = face_ratios(i)
-         res(i)%size = size(filtered_faces)
+         res(i)%n_elements = size(filtered_faces)
       end do
 
    end function

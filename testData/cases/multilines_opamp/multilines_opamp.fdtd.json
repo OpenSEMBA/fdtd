@@ -45,8 +45,8 @@
             "type": "terminal",
             "name": "circuit_left",
             "terminations": [
-                {"type": "series", "resistance": 10, "circuitPort": 1},
-                {"type": "series", "resistance": 20, "circuitPort": 2}
+                {"type": "network", "file": "opamp.model", "name": "opamp", "node": 1},
+                {"type": "network", "file": "opamp.model", "name": "opamp", "node": 2}
             ]
         },
         {
@@ -54,7 +54,7 @@
             "type": "terminal",
             "name": "circuit_right",
             "terminations": [
-                {"type": "series", "resistance": 30, "circuitPort": 3},
+                {"type": "network",  "file": "opamp.model", "name": "opamp", "node": 3},
                 {"type": "series", "resistance": 40}
             ]
         },
@@ -71,13 +71,6 @@
             "type": "terminal",
             "name": "terminal_short",
             "terminations": [{"type": "short"}]
-        },
-        {
-            "id" : 7,
-            "type" : "circuit",
-            "name" : "opamp",
-            "file" : "opamp.model",
-            "numberOfPorts" : 3
         }
 
 	],
@@ -149,13 +142,6 @@
 			"initialTerminalId": 4,
 			"endTerminalId": 2
 		}
-	],  
-    "subcircuits" : [
-        {
-            "name" : "opamp_A",
-            "materialId" : 7,
-            "elementIds" : [5]
-        }
-    ]
+	]
 
 }

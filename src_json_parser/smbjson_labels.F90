@@ -1,4 +1,4 @@
-module smbjson_labels_mod
+module smbjson_labels_m
 
 #ifdef CompileWithSMBJSON    
    ! LABELS
@@ -69,10 +69,10 @@ module smbjson_labels_mod
    character(len=*), parameter :: J_MAT_TERM_TYPE_CsLRp = "CsLRp"
    character(len=*), parameter :: J_MAT_TERM_TYPE_RCsLp = "RCsLp"
    character(len=*), parameter :: J_MAT_TERM_TYPE_LCsRp = "LCsRp"
-
    character(len=*), parameter :: J_MAT_TERM_TYPE_RsLCp = "RsLCp"
    character(len=*), parameter :: J_MAT_TERM_TYPE_RLsCp = "RLsCp"
    character(len=*), parameter :: J_MAT_TERM_TYPE_CIRCUIT = "circuit"
+   character(len=*), parameter :: J_MAT_TERM_TYPE_NETWORK = "network"
 
    character(len=*), parameter :: J_MAT_TERM_RESISTANCE = "resistance"
    character(len=*), parameter :: J_MAT_TERM_INDUCTANCE = "inductance"
@@ -80,7 +80,7 @@ module smbjson_labels_mod
    character(len=*), parameter :: J_MAT_TERM_EXCITATION = "path_to_excitation"
    character(len=*), parameter :: J_MAT_TERM_MODEL_FILE = "file"
    character(len=*), parameter :: J_MAT_TERM_MODEL_NAME = "name"
-   character(len=*), parameter :: J_MAT_TERM_MODEL_PORT = "subcircuitPort"
+   character(len=*), parameter :: J_MAT_TERM_MODEL_NODE = "node"
 
    character(len=*), parameter :: J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE = "transferImpedancePerMeter"
    character(len=*), parameter :: J_MAT_MULTIWIRE_CAPACITANCE = "capacitancePerMeter"
@@ -129,12 +129,6 @@ module smbjson_labels_mod
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_POLES = "poles"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESIDUES = "residues"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_NUMBER_POLES = "numberOfPoles"
-
-   ! --  SPICE subcircuits
-   character(len=*), parameter :: J_SUBCIRCUITS  = "subcircuits"
-   character(len=*), parameter :: J_SUBCKT_NAME  = "name"
-   character(len=*), parameter :: J_SUBCKT_PORTS = "numberOfPorts"
-   character(len=*), parameter :: J_SUBCKT_FILE  = "file"
    
    ! -- Mesh and geometry.
    character(len=*), parameter :: J_MESH = "mesh"
@@ -145,6 +139,7 @@ module smbjson_labels_mod
    
    character(len=*), parameter :: J_GRID_NUMBER_OF_CELLS = "numberOfCells"
    character(len=*), parameter :: J_GRID_STEPS = "steps"
+   character(len=*), parameter :: J_GRID_ORIGIN = "origin"
    
    character(len=*), parameter :: J_COORDINATE_IDS = "coordinateIds"
    character(len=*), parameter :: J_COORDINATE_POS = "relativePosition"
@@ -159,15 +154,19 @@ module smbjson_labels_mod
    character(len=*), parameter :: J_CONF_SUBTYPE_VOLUME  = "volume"
    character(len=*), parameter :: J_CONF_SUBTYPE_SURFACE = "surface"
 
-   ! type(NFDEGeneral)
+   ! type(NFDEGeneral_t)
    character(len=*), parameter :: J_GENERAL = "general"
    character(len=*), parameter :: J_GEN_TIME_STEP = "timeStep"
    character(len=*), parameter :: J_GEN_NUMBER_OF_STEPS = "numberOfSteps"
    character(len=*), parameter :: J_GEN_MTLN_PROBLEM = "mtlnProblem"
    character(len=*), parameter :: J_GEN_ADDITIONAL_ARGUMENTS = "additionalArguments"
 
+   ! background
+   character(len=*), parameter :: J_BACKGROUND = "background"
+   character(len=*), parameter :: J_BKG_ABS_PERMITTIVITY = "absolutePermittivity"
+   character(len=*), parameter :: J_BKG_ABS_PERMEABILITY = "absolutePermeability"
 
-   ! type(Frontera)
+   ! type(Frontera_t)
    character(len=*), parameter :: J_BOUNDARY = "boundary"
    character(len=*), parameter :: J_BND_ALL = "all"
    character(len=*), parameter :: J_BND_XL = "xLower"
@@ -191,12 +190,13 @@ module smbjson_labels_mod
    character(len=*), parameter :: J_SOURCES = "sources"
    character(len=*), parameter :: J_SRC_MAGNITUDE_FILE = "magnitudeFile"
    
-   character(len=*), parameter :: J_SRC_TYPE_PW = "planewave"
-   character(len=*), parameter :: J_SRC_TYPE_NS = "nodalSource"
-   character(len=*), parameter :: J_SRC_TYPE_GEN = "generator"
-   character(len=*), parameter :: J_SRC_ATTACHED_ID = "attachedToLineId"
+   character (len=*), parameter :: J_SRC_TYPE_PW = "planewave"
+   character (len=*), parameter :: J_SRC_TYPE_NS = "nodalSource"
+   character (len=*), parameter :: J_SRC_TYPE_GEN = "generator"
+   character (len=*), parameter :: J_SRC_ATTACHED_ID = "attachedToLineId"
+   character (len=*), parameter :: J_SRC_RESISTANCE_GEN = "resistance"
 
-   ! type(Planewave)
+   ! type(PlaneWave_t)
    character(len=*), parameter :: J_SRC_PW_DIRECTION = "direction"
    character(len=*), parameter :: J_SRC_PW_POLARIZATION = "polarization"
    character(len=*), parameter :: J_SRC_PW_THETA = "theta"

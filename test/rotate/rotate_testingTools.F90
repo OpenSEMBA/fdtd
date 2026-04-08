@@ -1,5 +1,5 @@
 module rotate_testingTools
-   use NFDETypes
+   use NFDETypes_m
    implicit none
 
    character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'

@@ -1,5 +1,5 @@
-module DMMA
-   use FDETYPES
+module DMMA_m
+   use FDETYPES_m
    implicit none
    private
    !

@@ -3,19 +3,19 @@
 !  Observation module to store the observed data
 !  Creation date Date :  April, 8, 2010
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module Observa
-  use FDETYPES
+module Observa_m
+  use FDETYPES_m
 
 #ifdef CompileWithMPI
-  use MPIcomm
+  use MPIcomm_m
 #endif
 
-  use wiresHolland_constants
-  use HollandWires
+  use wiresHolland_constants_m
+  use HollandWires_m
 
 #ifdef CompileWithMTLN
-  use Wire_bundles_mtln_mod
-  use mtln_solver_mod, mtln_solver_t => mtln_t
+  use Wire_bundles_mtln_m
+  use mtln_solver_m, mtln_solver_t => mtln_t
 #endif
 #ifdef CompileWithBerengerWires
   use WiresBerenger
@@ -25,9 +25,9 @@ module Observa
   use WiresSlanted_Types
   use WiresSlanted_Constants
 #endif
-  use report
+  use Report_m
   use farfield_m
-  use nodalsources
+  use nodalsources_m
 !
   implicit none
   private
@@ -51,7 +51,7 @@ module Observa
   end type Serialized_t
   type item_t
 
-    type(CurrentSegments), pointer  :: segmento !segmento de hilo que se observa si lo hubiere
+    type(CurrentSegments_t), pointer  :: segmento !segmento de hilo que se observa si lo hubiere
 
 #ifdef CompileWithBerengerWires
     type(TSegment), pointer  :: segmento_Berenger !segmento de hilo que se observa si lo hubiere
@@ -326,11 +326,11 @@ contains
 !!!!
   end subroutine preprocess_observation
 
-  subroutine eliminate_unnecesary_observation_points(observation_probe, output_item, sweep, SINPMLSweep, ZI, ZE, layoutnumber, size)
+  subroutine eliminate_unnecesary_observation_points(observation_probe, output_item, sweep, SINPMLSweep, ZI, ZE, layoutnumber, num_procs)
    type(item_t),  intent(inout) :: output_item
    type(observable_t),  intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep, SINPMLSweep
-   integer(kind=4), intent(in) :: ZI, ZE, layoutnumber, size
+   integer(kind=4), intent(in) :: ZI, ZE, layoutnumber, num_procs
    integer(kind=4) :: field
    
    output_item%Xtrancos = observation_probe%Xtrancos
@@ -356,12 +356,12 @@ contains
    field = observation_probe%What
    select case (field)
       case (iBloqueJx, iBloqueJy, iBloqueMx, iBloqueMy)
-         call eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, size)
+         call eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, num_procs)
       case (iEx, iVx, iEy, iVy, iHz, iBloqueMz, iJx, iJy, iQx, iQy)
          !in case of MPI the flushing is only cared by one of the sharing layouts
          !este es el unico caso en el que un punto es susceptible de ser escrito por dos layouts. Por eso se lo echo
          ! solo a uno de ellos: al de abajo (a menos que que sea el layout de mas arriba, en cuyo caso tiene que tratarlo el) !bug del itc2 con el pathx hasta el borde
-         if (((observation_probe%ZI >= sweep(fieldo(field, 'Z'))%ZE) .and. (layoutnumber /= size - 1)) .or. &
+         if (((observation_probe%ZI >= sweep(fieldo(field, 'Z'))%ZE) .and. (layoutnumber /= num_procs - 1)) .or. &
             (observation_probe%ZI < sweep(fieldo(field, 'Z'))%ZI)) then
             observation_probe%What = Nothing !do not observe anything
          end if
@@ -371,20 +371,20 @@ contains
             observation_probe%What = nothing !do not observe anything
          end if
       case (iExC, iEyC, iHzC, iMhC, iEzC, iHxC, iHyC, iMeC)
-         call eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, size)
+         call eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, num_procs)
       case (iCur, iCurX, iCurY, iCurZ, mapvtk)
-         call eliminate_observation_from_current(observation_probe, output_item, sweep, field, layoutnumber, size)
+         call eliminate_observation_from_current(observation_probe, output_item, sweep, field, layoutnumber, num_procs)
       case (FarField)
-         call eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE, layoutnumber, size)
+         call eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE, layoutnumber, num_procs)
    end select
   end subroutine eliminate_unnecesary_observation_points
 
-  subroutine eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, size)
+  subroutine eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, num_procs)
    type(item_t), intent(inout) :: output_item
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
    integer, intent(in) :: field
-   integer(kind=4), intent(in) :: layoutnumber, size
+   integer(kind=4), intent(in) :: layoutnumber, num_procs
 
    if ((observation_probe%ZI > sweep(fieldo(field, 'Z'))%ZE) .or. &
    (observation_probe%ZE < sweep(fieldo(field, 'Z'))%ZI)) then
@@ -401,7 +401,7 @@ contains
          output_item%MPIRoot = layoutnumber
       end if
    !all of them must call the init routine even if they do not sync
-   call MPIinitSubcomm(layoutnumber, size, &
+   call MPIinitSubcomm(layoutnumber, num_procs, &
          output_item%MPISubComm, output_item%MPIRoot, output_item%MPIGroupIndex)
 #else
    end if
@@ -409,12 +409,12 @@ contains
 
   end subroutine eliminate_observation_from_block
 
-  subroutine eliminate_observation_from_electric_current(observation_probe, output_item, sweep, field, layoutnumber, size)
+  subroutine eliminate_observation_from_electric_current(observation_probe, output_item, sweep, field, layoutnumber, num_procs)
    type(item_t), intent(inout) :: output_item
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
    integer, intent(in) :: field
-   integer(kind=4), intent(in) :: layoutnumber, size
+   integer(kind=4), intent(in) :: layoutnumber, num_procs
 
    if ((observation_probe%ZI > sweep(fieldo(field, 'Z'))%ZE) .or. &
          (observation_probe%ZE < sweep(fieldo(field, 'Z'))%ZI)) then
@@ -429,7 +429,7 @@ contains
          (observation_probe%ZI <= sweep(fieldo(field, 'Z'))%ZE)) then
       output_item%MPIRoot = layoutnumber
    end if
-   call MPIinitSubcomm(layoutnumber, size, &
+   call MPIinitSubcomm(layoutnumber, num_procs, &
       output_item%MPISubComm, output_item%MPIRoot, output_item%MPIGroupIndex)
 #else
    end if
@@ -437,12 +437,12 @@ contains
 
    end subroutine eliminate_observation_from_electric_current
 
-   subroutine eliminate_observation_from_current(observation_probe, output_item, sweep, field, layoutnumber, size)
+   subroutine eliminate_observation_from_current(observation_probe, output_item, sweep, field, layoutnumber, num_procs)
    type(item_t), intent(inout) :: output_item
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
    integer, intent(in) :: field
-   integer(kind=4), intent(in) :: layoutnumber, size
+   integer(kind=4), intent(in) :: layoutnumber, num_procs
 
    if ((observation_probe%ZI >= sweep(iHz)%ZE) .or. &
          (observation_probe%ZE < sweep(iHZ)%ZI)) then
@@ -462,7 +462,7 @@ contains
          (observation_probe%ZI <= sweep(fieldo(field, 'Z'))%ZE)) then
       output_item%MPIRoot = layoutnumber
    end if
-   call MPIinitSubcomm(layoutnumber, size, &
+   call MPIinitSubcomm(layoutnumber, num_procs, &
       output_item%MPISubComm, output_item%MPIRoot, output_item%MPIGroupIndex)
 #else
    end if
@@ -470,13 +470,13 @@ contains
 
    end subroutine eliminate_observation_from_current
 
-   subroutine eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE, layoutnumber, size)
+   subroutine eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE, layoutnumber, num_procs)
    type(item_t), intent(inout) :: output_item
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: SINPMLSweep
    integer, intent(in) :: field
    integer(kind=4), intent(in) :: ZI, ZE
-   integer(kind=4), intent(in) :: layoutnumber, size
+   integer(kind=4), intent(in) :: layoutnumber, num_procs
 
    if ((ZI > SINPMLSweep(IHz)%ZE) .or. (ZE < SINPMLSweep(iHz)%ZI)) then   !MPI NO DUPLICAR CALCULOS
       observation_probe%What = nothing
@@ -491,7 +491,7 @@ contains
       output_item%MPIRoot = layoutnumber
    end if
 
-   call MPIinitSubcomm(layoutnumber, size, &
+   call MPIinitSubcomm(layoutnumber, num_procs, &
          output_item%MPISubComm, output_item%MPIRoot, output_item%MPIGroupIndex)
 #else
    end if
@@ -499,10 +499,10 @@ contains
       
    end subroutine eliminate_observation_from_farfield
 
-    subroutine init_frequency_output(observation, privateOutput, dt, layoutnumber, size, niapapostprocess)
+    subroutine init_frequency_output(observation, privateOutput, dt, layoutnumber, num_procs, niapapostprocess)
       type(Obses_t), intent(inout) :: observation
       type(output_t), intent(inout) :: privateOutput
-      integer(kind=4), intent(in) :: layoutnumber, size
+      integer(kind=4), intent(in) :: layoutnumber, num_procs
       real(kind=RKIND_tiempo), intent(in) :: dt
       logical, intent(inout) :: niapapostprocess
 
@@ -528,11 +528,11 @@ contains
 
       if ((privateOutput%NumFreqs < 0)) then
         Buff = 'Freq. range for Freq. probes invalid'
-        call stoponerror(layoutnumber, size, Buff)
+        call stoponerror(layoutnumber, num_procs, Buff)
       end if
       if ((privateOutput%NumFreqs > 100000)) then
         Buff = 'Too many Freqs requested (>100000)'
-        call stoponerror(layoutnumber, size, Buff)
+        call stoponerror(layoutnumber, num_procs, Buff)
       end if
             
       allocate (privateOutput%Freq(1:privateOutput%NumFreqs), &
@@ -564,7 +564,7 @@ contains
         inquire (file=trim(adjustl(observation%FileNormalize)), EXIST=errnofile)
         if (.NOT. errnofile) then
           buff = trim(adjustl(observation%FileNormalize))//' NORMALIZATION FILE DOES NOT EXIST'
-          call STOPONERROR(layoutnumber, size, buff)
+          call STOPONERROR(layoutnumber, num_procs, buff)
         end if
 
         timesteps = 0
@@ -612,7 +612,7 @@ contains
     !solo lo precisa de entrada farfield
     type(media_matrices_t), intent(in) :: media
     type(bounds_t) :: b
-    type(SGGFDTDINFO), intent(in) :: sgg
+    type(SGGFDTDINFO_t), intent(in) :: sgg
     type(taglist_t) :: tag_numbers
     logical :: niapapostprocess
     real(kind=RKIND) :: eps00, mu00
@@ -655,7 +655,7 @@ contains
 
     !!!Control Inputs
     type(sim_control_t), intent(inout) :: control
-    integer(kind=4) :: layoutnumber, size, mpidir, finaltimestep
+    integer(kind=4) :: layoutnumber, num_procs, mpidir, finaltimestep
     character(len=bufsize) :: nEntradaRoot, wiresflavor
     logical :: resume, saveall, NF2FFDecim, simu_devia, singlefilewrite
     type(nf2ff_t) :: facesNF2FF
@@ -666,7 +666,7 @@ contains
       finalTimeStep = control%finalTimeStep
       nEntradaRoot = trim(adjustl(control%nEntradaRoot))
       layoutnumber = control%layoutnumber
-      size = control%size
+      num_procs = control%num_procs
       saveall = control%saveall
       singleFileWrite = control%singleFileWrite
       wiresflavor = trim(adjustl(control%wiresflavor))
@@ -688,11 +688,11 @@ contains
     unitmaster = -1000 !!!no se bien. Lo pongo absurdo
     unit = 1000 !initial
     if (unit >= 2.0_RKIND**31.0_RKIND - 1.0_RKIND) then
-      call stoponerror(layoutnumber, size, 'Excesive number of probes')
+      call stoponerror(layoutnumber, num_procs, 'Excesive number of probes')
     end if
     !
     write (whoamishort, '(i5)') layoutnumber + 1
-    write (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+    write (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', num_procs, ') '
 
     !call crea_gnuplot
 
@@ -725,7 +725,7 @@ contains
    do ii = 1, sgg%NumberRequest
       do i = 1, sgg%Observation(ii)%nP
          call eliminate_unnecesary_observation_points(sgg%Observation(ii)%P(i), output(ii)%item(i), &
-            sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE, layoutnumber, size)
+            sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE, layoutnumber, num_procs)
       end do
    end do
 
@@ -788,7 +788,7 @@ contains
          !!!!!!!!!Comun a todas las sondas freqdomain
         do ii = 1, sgg%NumberRequest
           if (SGG%Observation(ii)%FreqDomain) then
-            call init_frequency_output(sgg%observation(ii), output(ii), sgg%dt, layoutnumber, size, niapapostprocess)
+            call init_frequency_output(sgg%observation(ii), output(ii), sgg%dt, layoutnumber, num_procs, niapapostprocess)
           end if !del freqdomain
         end do
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -934,7 +934,7 @@ contains
                   prefix_field = prefix(field)
                 end select
               else
-                call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
               end if
               !
               if ((field == iJx) .or. (field == iJy) .or. (field == iJz)) then
@@ -954,7 +954,7 @@ contains
               !
               unit = unit + 1
               if (unit >= 2.0_RKIND**31.0_RKIND - 1.0_RKIND) then
-                call stoponerror(layoutnumber, size, 'Excesive number of probes')
+                call stoponerror(layoutnumber, num_procs, 'Excesive number of probes')
               end if
               output(ii)%item(i)%unit = unit
               !
@@ -969,7 +969,7 @@ contains
               !
               memo = memo + rkind*BuffObse
               if (memo > MaxMemoryProbes) then
-                call stoponerror(layoutnumber, size, 'Recompile: excesive memory for probes.'// &
+                call stoponerror(layoutnumber, num_procs, 'Recompile: excesive memory for probes.'// &
                 &                                   'Increase MaxMemoryProbes')
               end if
               allocate (output(ii)%item(i)%valor(0:BuffObse))
@@ -1003,7 +1003,7 @@ contains
 
                   memo = memo + 3*4*BuffObse
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'Recompile: excesive memory for probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'Recompile: excesive memory for probes.'// &
                     &                                   'Increase MaxMemoryProbes')
                   end if
                   allocate ( &
@@ -1068,7 +1068,7 @@ contains
 
                   memo = memo + 3*4*BuffObse
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'Recompile: excesive memory for probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'Recompile: excesive memory for probes.'// &
                     &                                   'Increase MaxMemoryProbes')
                   end if
                   allocate ( &
@@ -1113,7 +1113,7 @@ contains
 
                   memo = memo + 3*4*BuffObse
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'Recompile: excesive memory for probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'Recompile: excesive memory for probes.'// &
                     &                                   'Increase MaxMemoryProbes')
                   end if
                   allocate ( &
@@ -1210,7 +1210,7 @@ contains
                 else
                   inquire (file=trim(adjustl(output(ii)%item(i)%path)), exist=existe)
                   if (.not. existe) then
-                    call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Ex, etc.) '//trim(adjustl(output(ii)%item(i)%path)))
+                    call stoponerror(layoutnumber, num_procs, 'Data files for resuming non existent (Ex, etc.) '//trim(adjustl(output(ii)%item(i)%path)))
                   end if
                   !
                   open (output(ii)%item(i)%unit, recl=1000, access='sequential', file=trim(adjustl(output(ii)%item(i)%path)))
@@ -1288,7 +1288,7 @@ contains
                   prefix_field = prefix(iBloqueMx)
                 end select
               else
-                call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
               end if
               !
               ext = trim(adjustl(nEntradaRoot))//'_'//trim(adjustl(sgg%observation(ii)%outputrequest))
@@ -1299,7 +1299,7 @@ contains
               !
               unit = unit + 1
               if (unit >= 2.0_RKIND**31.0_RKIND - 1.0_RKIND) then
-                call stoponerror(layoutnumber, size, 'Excesive number of probes')
+                call stoponerror(layoutnumber, num_procs, 'Excesive number of probes')
               end if
               output(ii)%item(i)%unit = unit
               !
@@ -1309,7 +1309,7 @@ contains
 
               memo = memo + rkind*BuffObse
               if (memo > MaxMemoryProbes) then
-                call stoponerror(layoutnumber, size, 'ERROR: Recompile: excesive memory for the probes.'// &
+                call stoponerror(layoutnumber, num_procs, 'ERROR: Recompile: excesive memory for the probes.'// &
                 &                                   'Recompile increasing MaxMemoryProbes')
               end if
               allocate (output(ii)%item(i)%valor(0:BuffObse))
@@ -1353,7 +1353,7 @@ contains
                 else
                   inquire (file=trim(adjustl(output(ii)%item(i)%path)), exist=existe)
                   if (.not. existe) then
-                    call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloque, etc.) '//trim(adjustl(output(ii)%item(i)%path)))
+                    call stoponerror(layoutnumber, num_procs, 'Data files for resuming non existent (Bloque, etc.) '//trim(adjustl(output(ii)%item(i)%path)))
                   end if
                   open (output(ii)%item(i)%unit, recl=1000, access='sequential', &
                         file=trim(adjustl(output(ii)%item(i)%path)))
@@ -1379,7 +1379,7 @@ contains
             case (iCur, iCurX, iCurY, iCurZ, mapvtk)
               if (sgg%Observation(ii)%Volumic) then !they are necssaryly
                 if (sgg%Observation(ii)%nP /= 1) then
-                  call stoponerror(layoutnumber, size, 'ERROR! More than a volumic probe per group')
+                  call stoponerror(layoutnumber, num_procs, 'ERROR! More than a volumic probe per group')
                 end if
                 !readjut correctly the calculation region
                 !de momento sere conservador 20/2/14 por lo que truene el MPI luego quitare el -1 si acaso !!!! !a priori puedo necesitar el HZ(alloc+1) para calcular las Bloque currents pero de momento me estoy quieto
@@ -1433,7 +1433,7 @@ contains
                     prefix_field = prefix(field)
                   end select
                 else
-                  call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                  call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
                 end if
                 !
                 ext = trim(adjustl(nEntradaRoot))//'_'//trim(adjustl(sgg%observation(ii)%outputrequest))
@@ -1443,7 +1443,7 @@ contains
                 !
                 unit = unit + 1
                 if (unit >= 2.0_RKIND**31.0_RKIND - 1.0_RKIND) then
-                  call stoponerror(layoutnumber, size, 'Excesive number of probes')
+                  call stoponerror(layoutnumber, num_procs, 'Excesive number of probes')
                 end if
                 output(ii)%item(i)%unit = unit
                 output(ii)%item(i)%columnas = 0 !Esto proboca que no se genere información dentro del binario
@@ -1571,7 +1571,7 @@ contains
                   memo = memo + RKIND*(ntfin - ntini)*output(ii)%item(i)%columnas + 16*output(ii)%item(i)%columnas ! 4 integers de 4 bytes
 
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'ERROR: Recompile: excesive memory for the 3D probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'ERROR: Recompile: excesive memory for the 3D probes.'// &
                     &                                   'Recompile increasing MaxMemoryProbes')
                   end if
 
@@ -1609,7 +1609,7 @@ contains
                 ELSEIF (SGG%Observation(ii)%FreqDomain) then
                   memo = memo + RKIND*output(ii)%NumFreqs*output(ii)%item(i)%columnas + 16*output(ii)%item(i)%columnas ! 4 integers de 4 bytes
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'ERROR: Recompile: excesive memory for the probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'ERROR: Recompile: excesive memory for the probes.'// &
                     &                                   'Recompile increasing MaxMemoryProbes')
                   end if
                   !almaceno tambien los vectores
@@ -1740,7 +1740,7 @@ contains
                                                  tag_numbers%getFaceTag(Hfield, iii, jjj, kkk))
                           end if
                         end do
-                        !   endif
+                        !   end if
                       end if
                       !
                     end do
@@ -1788,7 +1788,7 @@ contains
                 else !SE RESUMEA
                   inquire (file=trim(adjustl(output(ii)%item(i)%path)), exist=existe)
                   if (.not. existe) then
-      call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Volume) '//trim(adjustl(output(ii)%item(i)%path)))
+      call stoponerror(layoutnumber, num_procs, 'Data files for resuming non existent (Volume) '//trim(adjustl(output(ii)%item(i)%path)))
                   end if
                   open (output(ii)%item(i)%unit, access='sequential', file=trim(adjustl(output(ii)%item(i)%path)), &
                         form='unformatted')
@@ -1796,7 +1796,7 @@ contains
                   if ((SGG%Observation(ii)%TimeDomain) .and. (sgg%observation(ii)%P(1)%what /= mapvtk)) then
                     !
                     read (output(ii)%item(i)%unit) ndum
-              if (output(ii)%item(i)%columnas /= ndum) call stoponerror(layoutnumber, size, 'BUGGYError reading resuming files () ')
+              if (output(ii)%item(i)%columnas /= ndum) call stoponerror(layoutnumber, num_procs, 'BUGGYError reading resuming files () ')
                     do conta = 1, output(ii)%item(i)%columnas
                       read (output(ii)%item(i)%unit) ndum, ndum, ndum, ndum, ndum
                     end do
@@ -1869,7 +1869,7 @@ contains
             case (iMEC, iMHC, iExC, iEyC, iEzC, iHxC, iHyC, iHzC)
               if (sgg%Observation(ii)%Volumic) then !they are necssaryly
                 if (sgg%Observation(ii)%nP /= 1) then
-                  call stoponerror(layoutnumber, size, 'ERROR! More than a volumic probe per group')
+                  call stoponerror(layoutnumber, num_procs, 'ERROR! More than a volumic probe per group')
                 end if
                 !readjust correctly the calculation region
                 select case (field)
@@ -1947,7 +1947,7 @@ contains
                     prefix_field = prefix(field)
                   end select
                 else
-                  call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                  call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
                 end if
                 !
                 !
@@ -1958,7 +1958,7 @@ contains
                 !
                 unit = unit + 1
                 if (unit >= 2.0_RKIND**31.0_RKIND - 1.0_RKIND) then
-                  call stoponerror(layoutnumber, size, 'Excesive number of probes')
+                  call stoponerror(layoutnumber, num_procs, 'Excesive number of probes')
                 end if
                 output(ii)%item(i)%unit = unit
 
@@ -2003,7 +2003,7 @@ contains
                          (output(ii)%item(i)%ZEtrancos - output(ii)%item(i)%ZItrancos + 1)
 
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'ERROR: Recompile: excesive memory for the 3D probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'ERROR: Recompile: excesive memory for the 3D probes.'// &
                     &                                   'Recompile increasing MaxMemoryProbes')
                   end if
 
@@ -2016,7 +2016,7 @@ contains
                 ELSEIF (SGG%Observation(ii)%FreqDomain) then
                   memo = memo + RKIND*output(ii)%NumFreqs*output(ii)%item(i)%columnas + 16*output(ii)%item(i)%columnas ! 4 integers de 4 bytes
                   if (memo > MaxMemoryProbes) then
-                    call stoponerror(layoutnumber, size, 'ERROR: Recompile: excesive memory for the probes.'// &
+                    call stoponerror(layoutnumber, num_procs, 'ERROR: Recompile: excesive memory for the probes.'// &
                     &                                   'Recompile increasing MaxMemoryProbes')
                   end if
 
@@ -2058,7 +2058,7 @@ contains
                   if (SGG%Observation(ii)%TimeDomain) then
                     inquire (file=trim(adjustl(output(ii)%item(i)%path)), exist=existe)
                     if (.not. existe) then
-call stoponerror(layoutnumber,size,'Data files for resuming non existent (volume xdmf...) '//trim(adjustl(output(ii)%item(i)%path)))
+call stoponerror(layoutnumber,num_procs,'Data files for resuming non existent (volume xdmf...) '//trim(adjustl(output(ii)%item(i)%path)))
                     end if
                     open (output(ii)%item(i)%unit, access='sequential', file=trim(adjustl(output(ii)%item(i)%path)), &
                           form='unformatted')
@@ -2133,7 +2133,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                            trim(adjustl(chark2))//'_'//trim(adjustl(chari2))//'_'//trim(adjustl(charj2))
                 prefix_field = prefix(field)
               else
-                call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
               end if
               !
               !
@@ -2145,14 +2145,14 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
               !
               unit = unit + 1
               if (unit >= 2.0_RKIND**31.0_RKIND - 1.0_RKIND) then
-                call stoponerror(layoutnumber, size, 'Excesive number of probes')
+                call stoponerror(layoutnumber, num_procs, 'Excesive number of probes')
               end if
               output(ii)%item(i)%unit = unit
                   !!!busca nombres de ficheros por duplicado y resuelve la duplicidad
               call checkduplicatenames
                   !!!!!!
               !inicializacion especifica del farfield
-      call InitFarField(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,layoutnumber,size, &
+      call InitFarField(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,layoutnumber,num_procs, &
                                 b, resume, &
                                 output(ii)%item(i)%unit, &
                                 output(ii)%item(i)%path, &
@@ -2179,7 +2179,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
               !no es necesario hacer wipe out pq en DF se van machacando
             end select
           end do loop_ob
-            !!!!        endif !del time domain !NO ES PRECISO 25/02/14
+            !!!!        end if !del time domain !NO ES PRECISO 25/02/14
         end do !del ii=1,numberrequest
 
         write (19, '(a)') '!END '
@@ -2211,7 +2211,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         case (iHz)
           blockCurrent = iCurZ
         case default
-          call StopOnError(layoutnumber, size, 'field is not H field')
+          call StopOnError(layoutnumber, num_procs, 'field is not H field')
         end select
       end function
 
@@ -2231,7 +2231,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         case (iHz)
           currentType = iBloqueJz
         case default
-          call StopOnError(layoutnumber, size, 'field is not a E or H field')
+          call StopOnError(layoutnumber, num_procs, 'field is not a E or H field')
         end select
       end function
 
@@ -2252,7 +2252,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         case (iHz)
           res = media%sggMiHz(i, j, k)
         case default
-          call StopOnError(layoutnumber, size, 'Unrecognized field')
+          call StopOnError(layoutnumber, num_procs, 'Unrecognized field')
         end select
       end function
 
@@ -2428,7 +2428,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 case default; prefix_field = prefix(field)
                 end select
               else
-                call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
               end if
               !
               if ((field == iJx) .or. (field == iJy) .or. (field == iJz)) then
@@ -2486,7 +2486,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 case default; prefix_field = prefix(field)
                 end select
               else
-                call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+                call stoponerror(layoutnumber, num_procs, 'Buggy error in mpidir. ')
               end if
               !
               !
@@ -2502,7 +2502,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         end do !del ii=1,numberrequest
 
         buff2 = trim(adjustl(nEntradaRoot))//'_gnuplot.pl'
-        call closefile_mpi(layoutnumber, size, buff2, thefile)
+        call closefile_mpi(layoutnumber, num_procs, buff2, thefile)
 
         return
       end subroutine crea_gnuplot
@@ -2512,9 +2512,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Closes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    subroutine CloseObservationFiles(sgg, layoutnumber, size, singlefilewrite, initialtimestep, lastexecutedtime, resume)
-      type(SGGFDTDINFO), intent(in) :: sgg
-      integer(kind=4) :: i, ii, layoutnumber, field, initialtimestep, unidad, size, idum
+    subroutine CloseObservationFiles(sgg, layoutnumber, num_procs, singlefilewrite, initialtimestep, lastexecutedtime, resume)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      integer(kind=4) :: i, ii, layoutnumber, field, initialtimestep, unidad, num_procs, idum
       logical :: singlefilewrite, resume, incident, existe, wrotemaster
       real(kind=RKIND) :: rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
       real(kind=RKIND_tiempo) :: lastexecutedtime
@@ -2559,7 +2559,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                   else
                     inquire (file=trim(adjustl(output(ii)%item(i)%path)), exist=existe)
                     if (.not. existe) then
-                              call stoponerror(layoutnumber,size,'Data files for resuming non existent (generic closing) '//trim(adjustl(output(ii)%item(i)%path)))
+                              call stoponerror(layoutnumber,num_procs,'Data files for resuming non existent (generic closing) '//trim(adjustl(output(ii)%item(i)%path)))
                     end if
                     !
                     open (output(ii)%item(i)%unit, recl=1000, access='sequential', file=trim(adjustl(output(ii)%item(i)%path)))
@@ -2643,9 +2643,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Upacks .bin files observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    subroutine UnpackSingleFiles(sgg, layoutnumber, size, singlefilewrite, initialtimestep, resume)
-      type(SGGFDTDINFO), intent(in) :: sgg
-      integer(kind=4) :: i, ii, layoutnumber, field, initialtimestep, unidad, size, idum
+    subroutine UnpackSingleFiles(sgg, layoutnumber, num_procs, singlefilewrite, initialtimestep, resume)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      integer(kind=4) :: i, ii, layoutnumber, field, initialtimestep, unidad, num_procs, idum
       logical :: singlefilewrite, resume, incident, existe, wrotemaster
       real(kind=RKIND) :: rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
       character(len=BUFSIZE) :: chdum
@@ -2718,7 +2718,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       !solo lo precisa de entrada farfield
       type(bounds_t) :: b
       logical :: noconformalmapvtk
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
       type(taglist_t) :: tag_numbers
       !---------------------------> inputs <----------------------------------------------------------
@@ -2753,7 +2753,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       real(RKIND), pointer :: fieldReference(:,:,:), xField(:,:,:), yField(:,:,:), zField(:,:,:)
       complex(kind=CKIND), pointer, dimension(:) :: auxExp
 
-      type(CurrentSegments), pointer  :: segmDumm !segmento de hilo que se observa si lo hubiere
+      type(CurrentSegments_t), pointer  :: segmDumm !segmento de hilo que se observa si lo hubiere
       !
 #ifdef CompileWithBerengerWires
       type(TSegment), pointer  :: segmDumm_Berenger !segmento de hilo que se observa si lo hubiere
@@ -3678,22 +3678,22 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Flushes the observed magnitudes to disk
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine FlushObservationFiles(sgg,nInit,FinalInstant,layoutnumber,size, dxe,dye,dze,dxh,dyh,dzh,b,singlefilewrite,facesNF2FF,flushff)
-      use ILUMINA !is needed to also calculate the incident field in the observed points
+   subroutine FlushObservationFiles(sgg,nInit,FinalInstant,layoutnumber,num_procs, dxe,dye,dze,dxh,dyh,dzh,b,singlefilewrite,facesNF2FF,flushff)
+      use ilumina_m !is needed to also calculate the incident field in the observed points
       !solo lo precisa de entrada farfield
       type(bounds_t) :: b
       !
       type(nf2ff_t) :: facesNF2FF
       !!!
       !
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       real(kind=RKIND), dimension(:), intent(in) :: dxh(sgg%ALLOC(iEx)%XI:sgg%ALLOC(iEx)%XE), &
                                                       dyh(sgg%ALLOC(iEy)%YI:sgg%ALLOC(iEy)%YE), &
                                                       dzh(sgg%ALLOC(iEz)%ZI:sgg%ALLOC(iEz)%ZE), &
                                                       dxe(sgg%alloc(iHx)%XI:sgg%alloc(iHx)%XE), &
                                                       dye(sgg%alloc(iHy)%YI:sgg%alloc(iHy)%YE), &
                                                       dze(sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
-      integer(kind=4), intent(in) :: layoutnumber, size
+      integer(kind=4), intent(in) :: layoutnumber, num_procs
       integer(kind=4) :: nInit, FinalInstant, unidad, compo, conta
       integer(kind=4) :: i, field, N, ii, i1, j1, k1, Ntimeforvolumic, dummy_jjj, i1t, j1t, k1t, i0t
       logical  :: incident, singlefilewrite, flushff, ISyaopen
@@ -3705,7 +3705,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
 
       character(len=BUFSIZE) :: whoami
       !!!
-      write (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+      write (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', num_procs, ') '
       called_fromobservation = .true.
       !!!ojo dummy_logical lo dejo que incid( lo fije a still_planewave_time sin tocarlo aqui para no afectar al principal 210419
       dummy_jjj = 1  !no es preciso fijarlo, porque a incid( se le pasa  called_fromobservation
@@ -3740,30 +3740,30 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                       if (singlefilewrite) then
                         unidad = output(ii)%item(i)%unitmaster
                         if (incident) then
-                          WRITE (unidad) output(ii)%item(i)%unit, at, output(ii)%item(i)%valor(n - nInit), &
+                          write(unidad) output(ii)%item(i)%unit, at, output(ii)%item(i)%valor(n - nInit), &
 Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dummy_logical, called_fromobservation) !quitado el 3 de ORIGINAL sync para pscale bien sincronizado
                           !by hand para clavarlo
                         else
-                          WRITE (unidad) output(ii)%item(i)%unit, at, output(ii)%item(i)%valor(n - nInit)
+                          write(unidad) output(ii)%item(i)%unit, at, output(ii)%item(i)%valor(n - nInit)
                         end if
                       else
                         unidad = output(ii)%item(i)%unit
                         if (incident) then
 #ifdef CompileWithReal16
-                          WRITE (unidad, *) at, output(ii)%item(i)%valor(n - nInit), &
+                          write(unidad, *) at, output(ii)%item(i)%valor(n - nInit), &
 Incid(sgg, dummy_jjj, field, at*1.0_RKIND + 0.0_RKIND*sgg%dt, i1, j1, k1, dummy_logical, called_fromobservation) !quitado el 3 de ORIGINAL sync para pscale bien sincronizado
 #else
 #ifdef CompileWithmMiguelStandaloneObservation
-                          WRITE (unidad, *) at, output(ii)%item(i)%valor(n - nInit), &
+                          write(unidad, *) at, output(ii)%item(i)%valor(n - nInit), &
 Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dummy_logical, called_fromobservation) !quitado el 3 de ORIGINAL sync para pscale bien sincronizado
 #else
-                          WRITE (unidad, fmt) at, output(ii)%item(i)%valor(n - nInit), &
+                          write(unidad, fmt) at, output(ii)%item(i)%valor(n - nInit), &
 Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dummy_logical, called_fromobservation) !quitado el 3 de ORIGINAL sync para pscale bien sincronizado
                           !by hand para clavarlo
 #endif
 #endif
                         else
-                          WRITE (unidad, fmt) at, output(ii)%item(i)%valor(n - nInit)
+                          write(unidad, fmt) at, output(ii)%item(i)%valor(n - nInit)
                         end if
                       end if
                       !
@@ -3772,37 +3772,37 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
                       if (singlefilewrite) then
                         unidad = output(ii)%item(i)%unitmaster
                         if (incident) then
-WRITE (unidad) output(ii)%item(i)%unit, at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
+write(unidad) output(ii)%item(i)%unit, at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
 Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dummy_logical, called_fromobservation) !quitado el 3 de ORIGINAL sync para pscale bien sincronizado
                           !by hand para clavarlo
                         else
-                          WRITE (unidad) output(ii)%item(i)%unit, at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
+                          write(unidad) output(ii)%item(i)%unit, at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
                         end if
                       else
                         unidad = output(ii)%item(i)%unit
                         if (incident) then
 #ifdef CompileWithReal16
-                          WRITE (unidad, *) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
+                          write(unidad, *) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
 Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dummy_logical, called_fromobservation) !quitado el 3 de ORIGINAL sync para pscale bien sincronizado
 #else
 #ifdef CompileWithmMiguelStandaloneObservation
-                          WRITE (unidad, *) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
+                          write(unidad, *) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
 Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dummy_logical, called_fromobservation) !quitado el 3 de ORIGINAL sync para pscale bien sincronizado
 #else
-                          WRITE (unidad, fmt) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
+                          write(unidad, fmt) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
 Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dummy_logical, called_fromobservation) !quitado el 3 de ORIGINAL sync para pscale bien sincronizado
                           !by hand para clavarlo
 #endif
 #endif
                         else
-                          WRITE (unidad, fmt) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
+                          write(unidad, fmt) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
                         end if
                       end if
                       !
                     case (iJx, iJy, iJz)
                       if (singlefilewrite) then
                         unidad = output(ii)%item(i)%unitmaster
-                        WRITE (unidad) output(ii)%item(i)%unit, at, &
+                        write(unidad) output(ii)%item(i)%unit, at, &
                           output(ii)%item(i)%valor(n - nInit), &
                           output(ii)%item(i)%valor2(n - nInit), & !saco el valor2 -e*dl
                           output(ii)%item(i)%valor3(n - nInit), & ! VpluS
@@ -3810,7 +3810,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
                           output(ii)%item(i)%valor5(n - nInit) ! vplus-vminus
                       else
                         unidad = output(ii)%item(i)%unit
-                        WRITE (unidad, fmt) at, output(ii)%item(i)%valor(n - nInit), &
+                        write(unidad, fmt) at, output(ii)%item(i)%valor(n - nInit), &
                           output(ii)%item(i)%valor2(n - nInit), & !saco el valor2 -e*dl
                           output(ii)%item(i)%valor3(n - nInit), & ! VPLUS
                           output(ii)%item(i)%valor4(n - nInit), & ! Vminus
@@ -3819,21 +3819,21 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
                     case (iQx, iQy, iQz)
                       if (singlefilewrite) then
                         unidad = output(ii)%item(i)%unitmaster
-                        WRITE (unidad) output(ii)%item(i)%unit, at, &
+                        write(unidad) output(ii)%item(i)%unit, at, &
                           output(ii)%item(i)%valor(n - nInit) ! node charge
                       else
                         unidad = output(ii)%item(i)%unit
-                        WRITE (unidad, fmt) at, output(ii)%item(i)%valor(n - nInit) ! node charge
+                        write(unidad, fmt) at, output(ii)%item(i)%valor(n - nInit) ! node charge
                       end if
 
                     case (lineIntegral)
                       if (singlefilewrite) then
                         unidad = output(ii)%item(i)%unitmaster
-                        WRITE (unidad) output(ii)%item(i)%unit, at, &
+                        write(unidad) output(ii)%item(i)%unit, at, &
                           output(ii)%item(i)%valor(n - nInit) ! e*dl sum along line
                       else
                         unidad = output(ii)%item(i)%unit
-                        WRITE (unidad, fmt) at, output(ii)%item(i)%valor(n - nInit) ! e*dl sum along line
+                        write(unidad, fmt) at, output(ii)%item(i)%valor(n - nInit) ! e*dl sum along line
                       end if
                     end select
                   end if
@@ -3878,18 +3878,18 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
                       select case (field)
                       case (iBloqueMx, iBloqueMz, iBloqueMy)
 #ifdef CompileWithReal16
-                        WRITE (output(ii)%item(i)%unit, *) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
+                        write(output(ii)%item(i)%unit, *) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
                       case (iBloqueJx, iBloqueJz, iBloqueJy)
-                        WRITE (output(ii)%item(i)%unit, *) at, output(ii)%item(i)%valor(n - nInit)
+                        write(output(ii)%item(i)%unit, *) at, output(ii)%item(i)%valor(n - nInit)
 #else
 #ifdef CompileWithmMiguelStandaloneObservation
-                        WRITE (output(ii)%item(i)%unit, *) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
+                        write(output(ii)%item(i)%unit, *) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
                       case (iBloqueJx, iBloqueJz, iBloqueJy)
-                        WRITE (output(ii)%item(i)%unit, *) at, output(ii)%item(i)%valor(n - nInit)
+                        write(output(ii)%item(i)%unit, *) at, output(ii)%item(i)%valor(n - nInit)
 #else
-                        WRITE (output(ii)%item(i)%unit, fmt) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
+                        write(output(ii)%item(i)%unit, fmt) at - sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n - nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916
                       case (iBloqueJx, iBloqueJz, iBloqueJy)
-                        WRITE (output(ii)%item(i)%unit, fmt) at, output(ii)%item(i)%valor(n - nInit)
+                        write(output(ii)%item(i)%unit, fmt) at, output(ii)%item(i)%valor(n - nInit)
 #endif
 #endif
                       end select
@@ -3906,7 +3906,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
             case (FarField) !no emplear tiempo calculando rcs por el camino solo al final
               at = sgg%tiempo(FinalInstant)
-              if (flushFF) call FlushFarfield(layoutnumber, size, b, dxe, dye, dze, dxh, dyh, dzh, facesNF2FF, at)
+              if (flushFF) call FlushFarfield(layoutnumber, num_procs, b, dxe, dye, dze, dxh, dyh, dzh, facesNF2FF, at)
             case (iMHC, iHxC, iHyC, iHzC, iMEC, iExC, iEyC, iEzC, icur, iCurX, iCurY, iCurZ, mapvtk)
               do N = nInit, FinalInstant
                 at = sgg%tiempo(N)
@@ -3958,7 +3958,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
               at = sgg%tiempo(FinalInstant)
                   !!!!assumo que todos son electricos o magneticos en una probe Volumic para calcular el tiempo !logico
               output(ii)%TimesWritten = output(ii)%NumFreqs  !util para leer el numero exacto de freq points
-              INQUIRE (file=trim(adjustl(output(ii)%item(i)%path)), OPENED=ISyaopen)
+              inquire(file=trim(adjustl(output(ii)%item(i)%path)), OPENED=ISyaopen)
               if (isyaopen) close (output(ii)%item(i)%unit, status='delete')
               !
               my_iostat = 0
@@ -3992,7 +3992,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
             case (icur, iCurX, iCurY, iCurZ)  !!!quitadp de aqui el mapvtk porque nunca puede estar en frecuencia!!!! 050216
               at = sgg%tiempo(FinalInstant)
               output(ii)%TimesWritten = output(ii)%NumFreqs  !util para leer el numero exacto de freq points
-              INQUIRE (file=trim(adjustl(output(ii)%item(i)%path)), OPENED=ISyaopen)
+              inquire(file=trim(adjustl(output(ii)%item(i)%path)), OPENED=ISyaopen)
               if (isyaopen) close (output(ii)%item(i)%unit, status='delete')
               !
               my_iostat = 0
@@ -4101,7 +4101,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
             buffer = buffer//" "//"conductor_"//trim(adjustl(temp))
           end do
           write (unit, *) trim(buffer)
-          do k = 1, mtln_solver%number_of_steps + 1
+          do k = 1, size(mtln_solver%bundles(i)%probes(j)%val, 1)
             buffer = ""
             write (temp, *) mtln_solver%bundles(i)%probes(j)%t(k)
             buffer = buffer//trim(temp)
@@ -4109,7 +4109,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
               write (temp, *) mtln_solver%bundles(i)%probes(j)%val(k, n)
               buffer = buffer//" "//trim(temp)
             end do
-            write (unit, *) trim(buffer)
+            write (unit, '(a)') trim(buffer)
           end do
           close (unit)
           unit = unit + 1
@@ -4123,7 +4123,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
    !!! Free up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine DestroyObservation(sgg)
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       integer(kind=4) :: ii, i, field
 
 #ifdef CompileWithMPI
@@ -4357,7 +4357,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
    !!!cuenta los bordes adyacentes
     subroutine contabordes(sgg, imed, imed1, imed2, imed3, imed4, EsBorde, SINPML_fullsize, campo, iii, jjj, kkk)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize
       integer(Kind=4) imed, imed1, imed2, imed3, imed4, contaborde, campo, iii, jjj, kkk
       logical :: esborde
@@ -4369,48 +4369,48 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
         !    if     (sgg%med(imed )%is%SGBC) then
         !        if (sgg%med(imed1)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed1)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed2)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed2)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed3)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed3)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed4)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed4)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !   elseif  (sgg%med(imed )%is%Multiport) then
         !        if (sgg%med(imed1)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed1)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed2)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed2)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed3)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed3)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed4)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed4)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !    elseif (sgg%med(imed )%is%AnisMultiport) then
         !        if (sgg%med(imed1)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed1)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed2)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed2)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed3)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed3)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed4)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed4)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !    else
         !        if (imed==imed1) contaborde=contaborde+1
         !        if (imed==imed2) contaborde=contaborde+1
         !        if (imed==imed3) contaborde=contaborde+1
         !        if (imed==imed4) contaborde=contaborde+1
-        !    endif
+        !    end if
         !    if (contaborde <=1) esborde=.true.
          !!!!alternativa
         if (sgg%med(imed)%is%SGBC) then
@@ -4505,7 +4505,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     subroutine nodalvtk(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz, sggMtag, tag_numbers, &
                         init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
 
       type(output_t), pointer, dimension(:) :: output
@@ -4523,8 +4523,8 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
         sggMiHz(sgg%alloc(iHz)%XI:sgg%alloc(iHz)%XE, sgg%alloc(iHz)%YI:sgg%alloc(iHz)%YE, sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
 
       !to fetch info of nodal sources for the vtkmap
-      type(nodsou), pointer, save :: rNodal_Ex, rNodal_Ey, rNodal_Ez
-      type(nodsou), pointer, save :: rNodal_Hx, rNodal_Hy, rNodal_Hz
+      type(nodsou_t), pointer, save :: rNodal_Ex, rNodal_Ey, rNodal_Ez
+      type(nodsou_t), pointer, save :: rNodal_Hx, rNodal_Hy, rNodal_Hz
       !!!!!!!!!!!!
 
       if (init) call getnodal(rNodal_Ex, rNodal_Ey, rNodal_Ez, rNodal_Hx, rNodal_Hy, rNodal_Hz)
@@ -4867,7 +4867,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
 #ifdef CompileWithMTLN
     subroutine multiwireBundlesVTK(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, sggMtag, tag_numbers)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  & 
         (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, & 
          sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, & 
@@ -4942,7 +4942,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     subroutine wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, sggMtag, tag_numbers)
 
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       type(taglist_t) :: tag_numbers
       type(output_t), pointer, dimension(:) :: output
@@ -5198,7 +5198,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     real(kind=RKIND) function interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, i, j, k, field, atwhere) result(interp)
 
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       real(kind=RKIND), intent(in), target :: &
         Ex(sgg%alloc(iEx)%XI:sgg%alloc(iEx)%XE, sgg%alloc(iEx)%YI:sgg%alloc(iEx)%YE, sgg%alloc(iEx)%ZI:sgg%alloc(iEx)%ZE), &
         Ey(sgg%alloc(iEy)%XI:sgg%alloc(iEy)%XE, sgg%alloc(iEy)%YI:sgg%alloc(iEy)%YE, sgg%alloc(iEy)%ZI:sgg%alloc(iEy)%ZE), &
@@ -5368,5 +5368,5 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     end function interpolate_field_atwhere
 
-  end module Observa
+  end module Observa_m
 

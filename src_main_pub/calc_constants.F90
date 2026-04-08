@@ -4,15 +4,15 @@
 !  Creation date Date :  October, 24, 2018
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module CALC_CONSTANTS
-   use fdetypes
-   use report
+module CALC_CONSTANTS_m
+   use FDETYPES_m
+   use Report_m
     implicit none
     private
     public calc_g1g2gm1gm2
     contains
    subroutine calc_g1g2gm1gm2(sgg,g,eps0,mu0)
-        type(SGGFDTDINFO), intent(in) :: sgg
+        type(SGGFDTDINFO_t), intent(in) :: sgg
         type(constants_t), intent(inout) :: g
         real(kind=RKIND) , intent(inout) :: Eps0, Mu0
         integer :: r,i
@@ -53,7 +53,7 @@ module CALC_CONSTANTS
                if (g%gm1(r) < 0.0_RKIND) then !exponential time stepping
                    g%gm1(r)=exp(- Sigmam * sgg%dt / (Mu ))
                    g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
-               endif
+               end if
             elseif (sgg%Med(R)%Is%SGBC) then
 !!!!! 090519 He quitado todo este calculo que luego hara InitSGBCs para no duplicar codigo propenso a errores. Uso valores absurdos por lo que truene.
 !!!!! ojo que los parametros stochastic tambien se obtendran en InitSGBCs, por eso lo he quitado esto de aqui
@@ -76,14 +76,14 @@ module CALC_CONSTANTS
 !!!!!                     if (g%g1(r) < 0.0_RKIND) then !exponential time stepping
 !!!!!                        g%g1(r)=exp(- Sigma * sgg%dt / (Epsilon ))
 !!!!!                        g%g2(r)=(1.0_RKIND-g%g1(r))/ Sigma
-!!!!!                     endif
+!!!!!                     end if
 !!!!! hasta aqui lo comentado a 090519. Los calculos de g%gm1 y g%gm2 no los hace InitSGBCs y sus incertidumbres son nulas. asi que los hago aqui                       
                           g%gm1(r)=(1- SigmaM*sgg%dt/(2.0_RKIND *  Mu )) /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
                           g%gm2(r)=sgg%dt/ Mu                   /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
                           if (g%gm1(r) < 0.0_RKIND) then !exponential time stepping
                              g%gm1(r)=exp(- Sigmam * sgg%dt / (Mu ))
                              g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
-                          endif
+                          end if
             elseif (sgg%Med(R)%Is%Anisotropic) then
                g%g1(r)=1.0_RKIND !para que no haga nada en el bucle principal evitando los ifs
                g%g2(r)=0.0_RKIND
@@ -98,7 +98,7 @@ module CALC_CONSTANTS
                if (g%gm1(r) < 0.0_RKIND) then !exponential time stepping
                   g%gm1(r)=exp(- Sigmam * sgg%dt / (Mu ))
                   g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
-               endif
+               end if
             elseif  ((sgg%Med(R)%Is%MDispersive).and.(.not.sgg%Med(R)%Is%EDispersive).and.(.not.sgg%Med(r)%Is%MdispersiveANIS)) then
                !solo cierto para ISOTROPOS
                g%g1(r)=(1.0_RKIND- Sigma*sgg%dt/(2.0_RKIND * Epsilon)) / (1.0_RKIND + Sigma*sgg%dt/(2.0_RKIND * Epsilon))
@@ -106,7 +106,7 @@ module CALC_CONSTANTS
                if (g%g1(r) < 0.0_RKIND) then !exponential time stepping
                   g%g1(r)=exp(- Sigma * sgg%dt / (Epsilon ))
                   g%g2(r)=(1.0_RKIND-g%g1(r))/ Sigma
-               endif
+               end if
                g%gm1(r)=0.0_RKIND !will be overwritten by own values created by InitMDispersives !when written this routine
                g%gm2(r)=0.0_RKIND !will be overwritten by own values created by InitMDispersives
             elseif  ((sgg%Med(r)%Is%MdispersiveANIS).OR.(sgg%Med(r)%Is%EdispersiveANIS)) then
@@ -118,19 +118,19 @@ module CALC_CONSTANTS
                if (g%g1(r) < 0.0_RKIND) then !exponential time stepping
                   g%g1(r)=exp(- Sigma * sgg%dt / (Epsilon ))
                   g%g2(r)=(1.0_RKIND-g%g1(r))/ Sigma
-               endif
+               end if
                g%gm1(r)=(1- SigmaM*sgg%dt/(2.0_RKIND *  Mu )) /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
                g%gm2(r)=sgg%dt/ Mu                   /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
                if (g%gm1(r) < 0.0_RKIND) then !exponential time stepping
                   g%gm1(r)=exp(- Sigmam * sgg%dt / (Mu ))
                   g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
-               endif
-            endif !Multiports
-         endif
+               end if
+            end if !Multiports
+         end if
       End do
    end subroutine calc_g1g2gm1gm2
 
-end module CALC_CONSTANTS
+end module CALC_CONSTANTS_m
 
 !!!!!!INNECESARIO!      call InitOtherBorders    ()
 !!!!!!DONE       !      call InitCPMLBorders     ()
@@ -142,7 +142,7 @@ end module CALC_CONSTANTS
 !!!!!!UNSUPPORTED       !!!         call InitWires_Berenger()
 !!!!!!UNSUPPORTED       !!!      elseif((trim(adjustl(wiresflavor))=='slanted').or.(trim(adjustl(wiresflavor))=='semistructured')) then
 !!!!!!UNSUPPORTED       !!!         call InitWires_Slanted()
-!!!!!!UNSUPPORTED       !!!      endif
+!!!!!!UNSUPPORTED       !!!      end if
 !!!!!!DONE       !               call InitLumped()
 !!!!!!DONE       !               call InitAnisotropic()
 !!!!!!DONE       !               call InitSGBCs()
@@ -187,25 +187,25 @@ end module CALC_CONSTANTS
 !!call AdvancePMLbodyH
 !!call AdvanceMagneticCPML          ( sgg%NumMedia, b, sggMiHx, sggMiHy, sggMiHz, g%gm2, Hx, Hy, Hz, Ex, Ey, Ez)
 !!call FreeSpace_AdvanceMagneticCPML( sgg%NumMedia, b,                            g%gm2, Hx, Hy, Hz, Ex, Ey, Ez)
-!!!!INNECESARIO!call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
-!!!!INNECESARIO!call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
+!!!!INNECESARIO!call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,num_procs)
+!!!!INNECESARIO!call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,num_procs)
 !!call AdvanceSGBCH
 !!call AdvanceMDispersiveH(sgg)
 !!call AdvanceMultiportH    (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,sggMiHx,sggMiHy,sggMiHz,g%gm2,sgg%nummedia,conformalskin)
 !!call AdvanceAnisMultiportH(sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,sggMiHx,sggMiHy,sggMiHz,g%gm2,sgg%nummedia)
 !!call AdvancePlaneWaveH(sgg,n, b        , g%gm2, Idxe,Idye, Idze, Hx, Hy, Hz)
 !!call AdvanceNodalH(sgg,sggMiHx,sggMiHy,sggMiHz,sgg%NumMedia,n, b       ,g%gm2,Idxe,Idye,Idze,Hx,Hy,Hz)
-!!call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
-!!call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
+!!call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,num_procs)
+!!call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,num_procs)
 !!call conformal_advance_H()
 !!call AdvanceMagneticMUR              (b, sgg,sggMiHx, sggMiHy, sggMiHz, Hx, Hy, Hz,mur_second)
 !!call UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, n,ini_save, b, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_FULLSIZE,wirecrank)
-!!call FlushObservationFiles(sgg,ini_save,mindum,layoutnumber,size, dxe, dye, dze, dxh, dyh, dzh,b,singlefilewrite,facesNF2FF,.FALSE.) !no se flushean los farfields ahora
-!!call flush_and_save_resume(sgg, b, layoutnumber, size, nEntradaroot, nresumeable2, thereare, n,eps0,mu0, everflushed,Ex, Ey, Ez, Hx, Hy, Hz,wiresflavor,simu_devia,stochastic)
-!!call PostProcessOnthefly(layoutnumber,size,sgg,nEntradaRoot,at,somethingdone,permitscaling)
-!!call createvtkOnTheFly(layoutnumber,size,sgg,vtkindex,somethingdone)
-!!call createxdmfOnTheFly(sgg,layoutnumber,size,vtkindex,somethingdone)
-!!call unpacksinglefiles(sgg,layoutnumber,size,singlefilewrite,initialtimestep,resume) !dump the remaining to disk
+!!call FlushObservationFiles(sgg,ini_save,mindum,layoutnumber,num_procs, dxe, dye, dze, dxh, dyh, dzh,b,singlefilewrite,facesNF2FF,.FALSE.) !no se flushean los farfields ahora
+!!call flush_and_save_resume(sgg, b, layoutnumber, num_procs, nEntradaroot, nresumeable2, thereare, n,eps0,mu0, everflushed,Ex, Ey, Ez, Hx, Hy, Hz,wiresflavor,simu_devia,stochastic)
+!!call PostProcessOnthefly(layoutnumber,num_procs,sgg,nEntradaRoot,at,somethingdone,permitscaling)
+!!call createvtkOnTheFly(layoutnumber,num_procs,sgg,vtkindex,somethingdone)
+!!call createxdmfOnTheFly(sgg,layoutnumber,num_procs,vtkindex,somethingdone)
+!!call unpacksinglefiles(sgg,layoutnumber,num_procs,singlefilewrite,initialtimestep,resume) !dump the remaining to disk
 
 
    

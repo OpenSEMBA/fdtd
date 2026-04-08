@@ -2,12 +2,12 @@
 ! Module thin wires from Wires paper
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module HollandWires
+module HollandWires_m
    !
 
-   use report
-   use fdetypes
-   use wiresHolland_constants
+   use Report_m
+   use FDETYPES_m
+   use wiresHolland_constants_m
 
 #ifdef CompileWithStochastic   
    use wiresHolland_devia
@@ -47,7 +47,7 @@ contains
       real(kind=RKIND), intent(in) :: eps00,mu00
       real(kind=RKIND) :: eps000,mu000  !son dummies
       type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
-      type(SGGFDTDINFO), intent(INOUT) , target    :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) , target    :: sgg
       real(kind=RKIND) , pointer, dimension(:), intent(in) :: G2
       real(kind=RKIND_tiempo), intent(out) :: dtcritico
       real(kind=RKIND) , dimension(:)   , intent(in) :: &
@@ -88,7 +88,7 @@ contains
       type(sim_control_t), intent(in) :: control
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: med(0:11)=-1
 
-      type(adyacc) :: adj
+      type(adyacc_t) :: adj
       integer(kind=4) :: conta,i1,j1,k1,i2,j2,k2,iwi,iwj,iwjjj,jmed,nn,nnn,i1libre,j1libre,k1libre, &
       whatfield,whatfield2,origIndex,OrigIndex2,LeftEnd_index,RightEnd_index,nm, &
       i,j,k,indexnode,kmenos1,kmasoffk,kmas1,tipofield,i22,j22,k22,i11,j11,k11,primernorabo,Jprimernorabo=-1
@@ -96,8 +96,8 @@ contains
       despT1,despT2,DenominatorFractionMinusDummy,  &
       DenominatorFractionPlusDummy,givenautoin,resist,givenautoin_devia,resist_devia, &
       mindt,maxA,dt0,sigt,totalLind,capaci,autoin,deltax,sigtPlus,sigtMinu
-      type(CurrentSegments), pointer  :: dummy , org  ,fin ,orgmenos1 ,orgmas1 ,finmenos1,finmas1 ,segmento
-      type(ChargeNodes), pointer  :: nodo
+      type(CurrentSegments_t), pointer  :: dummy , org  ,fin ,orgmenos1 ,orgmas1 ,finmenos1,finmas1 ,segmento
+      type(ChargeNodes_t), pointer  :: nodo
 
       !dama
       integer   (kind=4)                          :: NumMultilines, NumParallel
@@ -142,7 +142,7 @@ contains
       thereAreIsources=.false.
       thereAreMurConditions=.false.
 
-      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%num_procs,') '
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -274,7 +274,7 @@ contains
             ThereAreWires=.TRUE.
             conta=conta+1
             HWires%WireTipoMedio(conta)=jmed
-         endif
+         end if
       end do
 
 !!!chequeo previo 210323 para que no haya conectores dispersivos
@@ -285,7 +285,7 @@ contains
                 (allocated(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%disp_LeftEnd  ))) then
                 write (buff,'(a)')  'Dispersive wire or connectors unsupported in Holland wires'
                 call WarnErrReport(buff,.true.)
-            endif
+            end if
       end do
 
       
@@ -296,7 +296,7 @@ contains
       end do
 
 
-      if (.not.therearewires) Return
+      if (.not.therearewires) return
 
       write (buff,'(a)')  '----------------------------------------------------------------'
       call WarnErrReport(buff)
@@ -327,7 +327,7 @@ contains
                         if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_LeftEnd) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_RightEnd=.true.
                         if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_RightEnd  ) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_LeftEnd  =.true.
                         if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_LeftEnd  ) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_RightEnd  =.true.
-                     endif
+                     end if
                      !
                      sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd = sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd .and. &
                      (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_LeftEnd .or. sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_LeftEnd.or. &
@@ -335,7 +335,7 @@ contains
                      sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd = sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd .and. &
                      (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_RightEnd .or. sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_RightEnd .or. &
                                                                                      sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasAbsorbing_RightEnd)
-                  endif
+                  end if
                   sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight= .not. &
                   (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd.or.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd)
                   !fin reajuste
@@ -414,7 +414,7 @@ contains
                      conectado=conectado1.and.conectado2
                      if (conectado) then
                         exit buskk
-                     endif
+                     end if
                   end do buskk
 
                   if (control%connectendings) then
@@ -424,15 +424,15 @@ contains
                         ((.not.conectado).and.conectado2).and. &
                         (.not.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_LeftEnd .or. sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_LeftEnd.or. &
                                                                                            sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasAbsorbing_LeftEnd))
-                     endif
+                     end if
                      if ((.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd).and. &
                      (.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd)) then
                         sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight = sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight.or. &
                         ((.not.conectado).and.conectado1).and. &
                         (.not.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_RightEnd .or. sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_RightEnd .or. &
                                                                                            sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasAbsorbing_RightEnd))
-                     endif
-                  endif
+                     end if
+                  end if
                   sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight = &
                   (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight) .and. &
                   (.not.conectado).and.(conectado1.or.conectado2) .and. &
@@ -458,7 +458,7 @@ contains
                      sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1
                      sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1
                      sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1
-                  endif
+                  end if
 
                   !caso especial
                   if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos == 1) then
@@ -479,7 +479,7 @@ contains
                         sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1
                         sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1 +1
                      end select
-                  endif
+                  end if
                   !check for intermediate RLC error
 
                   if ( (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre == -1).or. &
@@ -488,7 +488,7 @@ contains
                      if (.not.conectado) then
                         write (buff,'(a,i7,3I7,a)')  'wir0_BUGGYERROR: Non-Intermediate multi-segment WIRE. ',origIndex,i1,j1,k1,' '//dir(whatfield)
                         if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff,.true.)
-                     endif
+                     end if
                      if ( ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd).and. &
                      (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_RightEnd .or. sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_RightEnd)).or. &
                      ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd).and. &
@@ -502,9 +502,9 @@ contains
                         else
                            write (buff,'(a,i7,3I7,a)')  'wir0_BUGGYERROR: Non-Intermediate multi-segment WIRE with RLC. ',origIndex,i1,j1,k1,' '//dir(whatfield)
                            if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff,.true.)
-                        endif
-                     endif
-                  endif
+                        end if
+                     end if
+                  end if
                   !
                else !del strictOLD
 
@@ -524,7 +524,7 @@ contains
                   elseif (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd) then
                      dummy1=-1
                      dummyfin=1
-                  endif
+                  end if
                   if ( ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd).or.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd)) ) then
                      if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos/=1) then
                         dummy2=-1
@@ -538,13 +538,13 @@ contains
                            else
                               continue
                               exit buscakk2
-                           endif
+                           end if
                         end do buscakk2
                         if (dummy2==-1) then
                            dummy3=0
                         else
                            dummy3=1
-                        endif
+                        end if
 
                         !
                         sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1
@@ -554,27 +554,27 @@ contains
                            if (abs(i1-i2)+abs(j1-j2)+abs(k1-k2)>1) then
                               write (buff,'(a,i7,3I7,a)')  'wir0_ERROR: strictOLD LeftEnd/RightEnd segment disconnected.', origIndex,i1,j1,k1,' '//dir(whatfield)
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff,.true.)
-                           endif
+                           end if
                            if (i1>i2) then
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1+1-dummy3
                            elseif (i1<i2) then
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1+dummy3
-                           endif
+                           end if
                            if (j1>j2) then
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1+1-dummy3
                            elseif (j1<j2) then
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1+dummy3
-                           endif
+                           end if
                            if (k1>k2) then
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1+1-dummy3
                            elseif (k1<k2) then
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1+dummy3
-                           endif
+                           end if
                         else
                            if (abs(i1-i2)+abs(j1-j2)+abs(k1-k2)>2) then
                               write (buff,'(a,i7,3I7,a)')  'wir0_ERROR: strictOLD LeftEnd/RightEnd segment disconnected.', origIndex,i1,j1,k1,' '//dir(whatfield)
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff,.true.)
-                           endif
+                           end if
                            select case (whatfield)
                             case (iEx)
                               if (i2 == i1) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1+1
@@ -583,7 +583,7 @@ contains
                             case (iEz)
                               if (k2 == k1) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1+1
                            end select
-                        endif
+                        end if
                      ELSE !DEL NUMERO SEGMENTOS '2014 NO PORTADO A !CHECK
                         select case (whatfield)
                          case (iEx)
@@ -599,10 +599,10 @@ contains
                            sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1
                            sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1+1
                         end select
-                     endif !DEL NUMERO SEGMENTOS '2014 NO PORTADO A !CHECK
-                  ENDIF !Del Left_End Right_End
+                     end if !DEL NUMERO SEGMENTOS '2014 NO PORTADO A !CHECK
+                  end if !Del Left_End Right_End
                   !!!!!!!!!!!!!!!!!!!
-               endif !del strictOLD
+               end if !del strictOLD
 
             end do
          end do
@@ -633,7 +633,7 @@ contains
                            primernorabo=origindex2
                            Jprimernorabo=iwjjj
                            exit buscarabos
-                        endif
+                        end if
                      end do buscarabos
                      !machaca rabos
                      if (multirabos/=1) then
@@ -652,10 +652,10 @@ contains
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%multiraboDE=primernorabo
                            else
                               exit taparabos
-                           endif
+                           end if
                         end do taparabos
-                     endif !del multirabos no nulo
-                  ENDIF
+                     end if !del multirabos no nulo
+                  end if
                end do
             end do
             !ahora la vuelta
@@ -680,7 +680,7 @@ contains
                            primernorabo=origindex2
                            Jprimernorabo=iwjjj
                            exit buscarabos2
-                        endif
+                        end if
                      end do buscarabos2
 
                      !machaca rabos
@@ -701,10 +701,10 @@ contains
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%multiraboDE=primernorabo
                            else
                               exit taparabos2
-                           endif
+                           end if
                         end do taparabos2
-                     endif !del multirabos no nulo
-                  ENDIF
+                     end if !del multirabos no nulo
+                  end if
                end do
             end do
 
@@ -737,7 +737,7 @@ contains
                               primernorabo=origindex2
                               Jprimernorabo=IWjjj
                               exit buscarabos6
-                           endif
+                           end if
                         end do buscarabos6
                         !machaca rabos
                         if ((mod(multirabos,2)/=1).and.(Jprimernorabo /= sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos)) then !no al RightEnd
@@ -760,8 +760,8 @@ contains
                                      case (3)
                                         sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(Jprimernorabo)%klibre=sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(Jprimernorabo)%klibre+1
                                      end select
-                                endif
-                           endif
+                                end if
+                           end if
                            !
                            if ((.NOT.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd).AND.(.NOT.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd)) then
                               i2=        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%i
@@ -774,7 +774,7 @@ contains
                               write (buff,'(a,i7,3I7,a,a,i7)')  'wir0_WARNING: strictOLD and taparrabos redundannt zig-zag rabito, will be ALSO eliminated ', origIndex2,i2,j2,k2,dir(whatfield2), &
                               'by segment ',primernorabo
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
-                           ENDIF
+                           end if
                            !
                            if  ((.NOT.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj+1)%Is_LeftEnd).AND.(.NOT.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj+1)%Is_RightEnd)) then
                               i2=        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj+1)%i
@@ -787,9 +787,9 @@ contains
                               write (buff,'(a,i7,3I7,a,a,i7)')  'wir0_WARNING: strictOLD and taparrabos redundannt zig-zag rabito, will be ALSO eliminated ', origIndex2,i2,j2,k2,dir(whatfield2), &
                               'by segment ',primernorabo
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
-                           endif
-                        endif !del multirabos no nulo
-                     ENDIF
+                           end if
+                        end if !del multirabos no nulo
+                     end if
                   end do
                end do
                !ahora la vuelta
@@ -814,7 +814,7 @@ contains
                               primernorabo=origindex2
                               Jprimernorabo=iwjjj
                               exit buscarabos7
-                           endif
+                           end if
                         end do buscarabos7
 
                         !machaca rabos
@@ -838,9 +838,9 @@ contains
                                      case (3)
                                         sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(Jprimernorabo)%klibre=sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(Jprimernorabo)%klibre+1
                                      end select
-                                endif
+                                end if
                            
-                           endif
+                           end if
                            !
                            if ((.NOT.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd).AND.(.NOT.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd)) then
                               i2=        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%i
@@ -853,7 +853,7 @@ contains
                               write (buff,'(a,i7,3I7,a,a,i7)')  'wir0_WARNING: strictOLD and taparrabos redundannt zig-zag rabito, will be ALSO eliminated ', origIndex2,i2,j2,k2,dir(whatfield2), &
                               'by segment ',primernorabo
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
-                           endif
+                           end if
                            !
                            if  ((.NOT.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj-1)%Is_LeftEnd).AND.(.NOT.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj-1)%Is_RightEnd)) then
                               i2=        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj-1)%i
@@ -866,14 +866,14 @@ contains
                               write (buff,'(a,i7,3I7,a,a,i7)')  'wir0_WARNING: strictOLD and taparrabos redundannt zig-zag rabito, will be ALSO eliminated ', origIndex2,i2,j2,k2,dir(whatfield2), &
                               'by segment ',primernorabo
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
-                           endif
-                        endif !del multirabos no nulo
-                     ENDIF
+                           end if
+                        end if !del multirabos no nulo
+                     end if
                   end do
                end do
-            endif !del TAPARRABOS
+            end if !del TAPARRABOS
             !
-         endif !del if strictOLD
+         end if !del if strictOLD
 
          !chequeo de errores buggy multirabo
          do iwi=1,HWires%NumDifferentWires
@@ -887,7 +887,7 @@ contains
                   ORIGINDEX=sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex
                   write (buff,'(a,i7,3I7,a)')  'wir0_BuggyERROR: strictOLD LeftEnd/RightEnd cannot be multirabo ', origIndex,i1,j1,k1,' '//dir(whatfield)
                   if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff,.true.)
-               endif
+               end if
             end do
          end do
 
@@ -922,7 +922,7 @@ contains
                   write (buff,'(a,4I7,a,3I7,a,i7)')  'wir0_INFO: Ending segment (RightEnd   )',origIndex,i1,j1,k1,'-', &
                   i1libre,j1libre,k1libre,' '//dir(whatfield),RightEnd_index
                   if ((k1 >= ZI).and.(k1 <= ZE).and.control%verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight) then
                   if (control%connectendings) then
                      write (buff,'(a,4I7,a,3I7,a)')  'wir0_INFO: Ending segment (other )',origIndex,i1,j1,k1,'-', &
@@ -934,8 +934,8 @@ contains
                      i1libre,j1libre,k1libre,' '//dir(whatfield)
                      if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz)) call WarnErrReport(buff)
                      if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz)) call WarnErrReport(buff)
-                  endif
-               endif
+                  end if
+               end if
             end do
          end do
 
@@ -945,7 +945,7 @@ contains
             do iwj=1,sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos
                sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%repetido=.false.
             end do
-         enddo
+         end do
          !
          conta=0
          do iwi=1,HWires%NumDifferentWires
@@ -999,7 +999,7 @@ contains
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Removing the second one (no RightEnd RLC)', &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
-                                 endif
+                                 end if
                                  if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.control%verbose) call WarnErrReport(buff)
                                  if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.control%verbose) call WarnErrReport(buff)
                               elseif (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd) then
@@ -1012,11 +1012,11 @@ contains
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Removing the first one (no RightEnd RLC)', &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
-                                 endif
+                                 end if
                                  if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.control%verbose) call WarnErrReport(buff)
                                  if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.control%verbose) call WarnErrReport(buff)
-                              endif
-                           endif
+                              end if
+                           end if
 
                            if ( ((abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_R_RightEnd) >= 1.0e-12_RKIND_wires).or. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_RightEnd  ) >= 1.0e-12_RKIND_wires).or. &
@@ -1041,7 +1041,7 @@ contains
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Removing the second one (NO LeftEnd RLC, Only RightEnd RLC)', &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
-                                 endif
+                                 end if
                                  if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.control%verbose) call WarnErrReport(buff)
                                  if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.control%verbose) call WarnErrReport(buff)
                               elseif (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd) then
@@ -1054,11 +1054,11 @@ contains
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Removing the first one (NO LeftEnd RLC, Only RightEnd RLC)', &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
-                                 endif
+                                 end if
                                  if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.control%verbose) call WarnErrReport(buff)
                                  if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.control%verbose) call WarnErrReport(buff)
-                              endif
-                           endif
+                              end if
+                           end if
                            !
                            if ( ((abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_R_LeftEnd) >= 1.0e-12_RKIND_wires).or. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_LeftEnd  ) >= 1.0e-12_RKIND_wires).or. &
@@ -1097,7 +1097,7 @@ contains
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment with the same RLC. Will remove the second one', &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
-                                 endif
+                                 end if
                                  if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.control%verbose) call WarnErrReport(buff)
                                  if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.control%verbose) call WarnErrReport(buff)
                               else
@@ -1106,10 +1106,10 @@ contains
                                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz)) call WarnErrReport(buff,.true.)
                                  if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz)) call WarnErrReport(buff,.true.)
-                              endif
-                           ENDIF
-                        endif
-                     endif
+                              end if
+                           end if
+                        end if
+                     end if
                   end do
                   !
                   !clipping: in case of direct .nfde reading the PREPROCESSor has not clipped this data
@@ -1120,12 +1120,12 @@ contains
                   (k1 >= sgg%Alloc(whatfield)%ZI).and. &
                   (k1 <= sgg%Alloc(whatfield)%ZE)) then
                      conta=conta+1
-                  endif
-               endif
+                  end if
+               end if
             end do
          end do
          if (conta==0) therearewires=.false.
-         if (.not.therearewires) Return
+         if (.not.therearewires) return
          !Report duplicated segments
          do iwi=1,HWires%NumDifferentWires
             do iwj=1,sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos
@@ -1141,9 +1141,9 @@ contains
                   else
                      write (buff,'(a,4i7,a)')  'wir0_WARNING: Removing duplicate (Parallel) intra-WIRE segment and voiding ASSOCIATED probes ', &
                      origindex,i1,j1,k1,' '//dir(whatfield)
-                  endif
+                  end if
                   if ((k1 >= ZI).and.(k1 <= ZE).and.control%verbose) call WarnErrReport(buff)
-               endif
+               end if
             end do
          end do
 
@@ -1254,7 +1254,7 @@ contains
                            (k1 > sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj+1)%k)
                         else
                            HWires%CurrentSegment(conta)%orientadoalreves =.false. !later corrected
-                        endif
+                        end if
                      elseif     (iwj > 1 ) then
                         !only for the observation sign to match (not used in this routine)
                         if (.not.control%strictOLD) then
@@ -1264,8 +1264,8 @@ contains
                            (k1 < sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj-1)%k)
                         else
                            HWires%CurrentSegment(conta)%orientadoalreves =.false. !later corrected
-                        endif
-                     endif
+                        end if
+                     end if
                      !
                      select case (HWires%CurrentSegment(conta)%tipofield)
                      case (iEx)
@@ -1282,7 +1282,7 @@ contains
                         else !no se comete error alguno
                            !es solo para que el indice no reviente 2012
                            HWires%CurrentSegment(conta)%deltaTransv2=1.0_RKIND_wires / Idzh(k1-1)
-                        endif
+                        end if
                         !dama
                         HWires%CurrentSegment(conta)%ie     = i1+1
                         HWires%CurrentSegment(conta)%x      = j1+0.25_RKIND_wires
@@ -1302,7 +1302,7 @@ contains
                         else
                            HWires%CurrentSegment(conta)%deltaTransv1=1.0_RKIND_wires / Idzh(k1-1) !no se comete error alguno
                            !es solo para que el indice no reviente 2012
-                        endif
+                        end if
                         HWires%CurrentSegment(conta)%deltaTransv2=1.0_RKIND_wires / Idxh(i1)
                         !dama
                         HWires%CurrentSegment(conta)%je     = j1+1
@@ -1325,8 +1325,8 @@ contains
                         sggmiE = sggmiEz(i1,j1,k1); call deembed_peclossyconformal_segments(sggmiE); sggmiEz(i1,j1,k1)= sggmiE !por si se ha modificado !ojo agresivo 180220 !ojo cambiado aqui 170323 de sitio pq no se habian puesto los deltatrans y salia division por cero
                         !fin dama
                      end select
-                  endif
-               endif !del repetido
+                  end if
+               end if !del repetido
             end do
          end do
  
@@ -1353,9 +1353,9 @@ contains
          (k > SINPML_fullsize(whatfield)%ZI).and. &
          (k < SINPML_fullsize(whatfield)%ZE)) then
             if (control%makeholes.and.(.not.IsEnd_norLeft_norRight).and.(.not.Is_LeftEnd).and.(.not.Is_RightEnd)) then
-                if (control%size==0) then 
-                    call stoponerror(control%layoutnumber,control%size,'Makeholes not available for MPI. Stoppping. ')
-                endif
+                if (control%num_procs==0) then 
+                    call stoponerror(control%layoutnumber,control%num_procs,'Makeholes not available for MPI. Stoppping. ')
+                end if
                select case (whatfield)
                 case (iEx)
                   sggmiHx(i  ,j  ,k      ) = 1
@@ -1371,63 +1371,63 @@ contains
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
-                  endif
+                  end if
                   if (.not.sgg%med(sggmiEy(i  ,j  ,k      ))%Is%ThinWire)  then
                      sggmiEy(i  ,j  ,k      ) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
-                  endif
+                  end if
                   if (.not.sgg%med(sggmiEy(i  ,j-1,k      ))%Is%ThinWire)  then
                      sggmiEy(i  ,j-1,k      ) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
-                  endif
+                  end if
                   if       ((k <=  sgg%alloc(iEz)%ZE).and.(k >= sgg%alloc(iEz)%ZI)) then
                      if (.not.sgg%med(sggmiEz(i  ,j  ,k      ))%Is%ThinWire)  then
                         sggmiEz(i  ,j  ,k      ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
-                  endif
+                     end if
+                  end if
                   if   ((k-1 <=  sgg%alloc(iEz)%ZE).and.(k -1 >=sgg%alloc(iEz)%ZI)) then
                      if (.not.sgg%med(sggmiEz(i  ,j  ,k-1    ))%Is%ThinWire)  then
                         sggmiEz(i  ,j  ,k - 1  ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
-                  endif
+                     end if
+                  end if
                   if (.not.sgg%med(sggmiEy(i+1,j  ,k      ))%Is%ThinWire)  then
                      sggmiEy(i+1,j  ,k      ) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
-                  endif
+                  end if
                   if (.not.sgg%med(sggmiEy(i+1,j-1,k      ))%Is%ThinWire)  then
                      sggmiEy(i+1,j-1,k      ) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
-                  endif
+                  end if
                   if         ((k <=  sgg%alloc(iEz)%ZE).and.(k>=sgg%alloc(iEz)%ZI)) then
                      if (.not.sgg%med(sggmiEz(i+1,j  ,k      ))%Is%ThinWire)  then
                         sggmiEz(i+1,j  ,k      ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
-                  endif
+                     end if
+                  end if
                   if ((k -1 <=  sgg%alloc(iEz)%ZE).and.(k - 1 >=sgg%alloc(iEz)%ZI)) then
                      if (.not.sgg%med(sggmiEz(i+1,j  ,k - 1  ))%Is%ThinWire)  then
                         sggmiEz(i+1,j  ,k - 1  ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
-                  endif
+                     end if
+                  end if
                 case (iEy)
                   sggmiHy(i   ,j   ,k      ) = 1
                   sggmiHy(i   ,j   ,k-1    ) = 1
@@ -1442,63 +1442,63 @@ contains
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
-                  endif
+                  end if
                   if     ((k <=  sgg%alloc(iEz)%ZE).and.(k >= sgg%alloc(iEz)%ZI)) then
                      if (.not.sgg%med(sggmiEz(i  ,j  ,k      ))%Is%ThinWire)  then
                         sggmiEz(i  ,j  ,k      ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
-                  endif
+                     end if
+                  end if
                   if ((k-1 <=  sgg%alloc(iEz)%ZE).and.(k -1 >=sgg%alloc(iEz)%ZI)) then
                      if (.not.sgg%med(sggmiEz(i  ,j  ,k - 1  ))%Is%ThinWire)  then
                         sggmiEz(i  ,j  ,k - 1  ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
-                  endif
+                     end if
+                  end if
                   if (.not.sgg%med(sggmiEx(i  ,j  ,k      ))%Is%ThinWire)  then
                      sggmiEx(i  ,j  ,k      ) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
-                  endif
+                  end if
                   if (.not.sgg%med(sggmiEx(i-1,j  ,k      ))%Is%ThinWire)  then
                      sggmiEx(i-1,j  ,k      ) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
-                  endif
+                  end if
                   if ((k     <=  sgg%alloc(iEz)%ZE).and.(k >= sgg%alloc(iEz)%ZI)) then
                      if (.not.sgg%med(sggmiEz(i  ,j+1,k      ))%Is%ThinWire)  then
                         sggmiEz(i  ,j+1,k      ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
-                  endif
+                     end if
+                  end if
                   if ((k-1 <=  sgg%alloc(iEz)%ZE).and.(k -1 >=sgg%alloc(iEz)%ZI)) then
                      if (.not.sgg%med(sggmiEz(i  ,j+1,k - 1  ))%Is%ThinWire)  then
                         sggmiEz(i  ,j+1,k - 1  ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
-                  endif
+                     end if
+                  end if
                   if (.not.sgg%med(sggmiEx(i  ,j+1,k      ))%Is%ThinWire)  then
                      sggmiEx(i  ,j+1,k      ) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
-                  endif
+                  end if
                   if (.not.sgg%med(sggmiEx(i-1,j+1,k      ))%Is%ThinWire)  then
                      sggmiEx(i-1,j+1,k      ) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
-                  endif
+                  end if
                 case (iEz)
                   sggmiHz(i    ,j   ,k    ) = 1
                   sggmiHz(i -1 ,j   ,k    ) = 1
@@ -1513,66 +1513,66 @@ contains
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
-                  endif
+                  end if
                   if ((k   <=  sgg%alloc(iEx)%ZE).and.(k  >= sgg%alloc(iEx)%ZI)) then
                      if (.not.sgg%med(sggmiEx(i  ,j  ,k      ))%Is%ThinWire)  then
                         sggmiEx(i  ,j  ,k      ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
+                     end if
                      if (.not.sgg%med(sggmiEx(i-1,j  ,k      ))%Is%ThinWire)  then
                         sggmiEx(i-1,j  ,k      ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
-                  endif
+                     end if
+                  end if
                   if ((k   <=  sgg%alloc(iEy)%ZE).and.(k  >= sgg%alloc(iEy)%ZI)) then
                      if (.not.sgg%med(sggmiEy(i  ,j  ,k      ))%Is%ThinWire)  then
                         sggmiEy(i  ,j  ,k      ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
+                     end if
                      if (.not.sgg%med(sggmiEy(i  ,j-1,k      ))%Is%ThinWire)  then
                         sggmiEy(i  ,j-1,k      ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
-                  endif
+                     end if
+                  end if
                   if ((k + 1  <=  sgg%alloc(iEx)%ZE).and.(k + 1 >= sgg%alloc(iEx)%ZI)) then
                      if (.not.sgg%med(sggmiEx(i  ,j  ,k + 1  ))%Is%ThinWire)  then
                         sggmiEx(i  ,j  ,k + 1  ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
+                     end if
                      if (.not.sgg%med(sggmiEx(i-1,j  ,k + 1  ))%Is%ThinWire)  then
                         sggmiEx(i-1,j  ,k + 1  ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
-                  endif
+                     end if
+                  end if
                   if ((k + 1  <=  sgg%alloc(iEy)%ZE).and.(k + 1 >= sgg%alloc(iEy)%ZI)) then
                      if (.not.sgg%med(sggmiEy(i  ,j  ,k + 1  ))%Is%ThinWire)  then
                         sggmiEy(i  ,j  ,k + 1  ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
+                     end if
                      if (.not.sgg%med(sggmiEy(i  ,j-1,k + 1  ))%Is%ThinWire)  then
                         sggmiEy(i  ,j-1,k + 1  ) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
-                     endif
-                  endif
+                     end if
+                  end if
                end select
-            endif
-         endif
+            end if
+         end if
       end do
 
 !!!calculo y gestion autoinduccion
@@ -1585,22 +1585,22 @@ contains
          if (control%wirethickness>1) then        !solo tiene impacto en la %cte2 de acople y en la fuente de carga para que sea de voltaje
            despT1=control%wirethickness*despT1
            despT2=control%wirethickness*despT2
-         endif
+         end if
          r0=HWires%CurrentSegment(i1)%TipoWire%Radius   ! CON SU RADIO
          
           if (r0 < 1e-30) then 
               write (buff,*)  'wir0_ERROR: ire radius cannot be null'
               if ((k1 >= ZI).and.(k1 <= ZE))  call WarnErrReport(buff,.true.)
-          endif   
+          end if   
          if ((r0 < 1e-9*desp)) then
             write(BUFF,'(a,e12.2e3)') 'wir0_WARNING: WIRE radius too small ',r0
             call WarnErrReport(buff)
-         endif
+         end if
          if ((r0 > 0.5_RKIND_wires *despT1).or.(r0 > 0.5_RKIND_wires *despT2)) then
             write(BUFF,'(a,e12.2e3)') 'wir0_WARNING: WIRE radius greater '// &
             'than half a space-step. Reduced to this limit',min(0.5_RKIND_wires *despT1,0.5_RKIND_wires *despT2)
             if ((HWires%CurrentSegment(i1)%k >= ZI).and.(HWires%CurrentSegment(i1)%k <= ZE)) call WarnErrReport(buff)
-         endif
+         end if
          select case (trim(adjustl(control%inductance_model)))
           case ('berenger')
             !---------------------------------------------------------------------------------
@@ -1620,7 +1620,7 @@ contains
             if ((r0 >0.3_RKIND_wires  *despT1).or.(r0 >0.3_RKIND_wires *despT2)) then
                HWires%CurrentSegment(i1)%Lind = HWires%CurrentSegment(i1)%Lind &
                /(1.0_RKIND_wires-pi*r0**2.0_RKIND_wires /(despT1*despT2))
-            endif
+            end if
           case ('ledfelt')
             !---------------------------------------------------------------------------------
             !Ledfelt thesis square symbols
@@ -1637,7 +1637,7 @@ contains
             if ((r0 > 0.3_RKIND_wires  *despT1).or.(r0 > 0.3_RKIND_wires *despT2)) then
                HWires%CurrentSegment(i1)%Lind =  HWires%CurrentSegment(i1)%Lind &
                /(1.0_RKIND_wires-pi*r0**2.0_RKIND_wires /(despT1*despT2))
-            endif
+            end if
           case ('boutayeb')
             !!---------------------------------------------------------------------------------
             !Boutayeb's PPT. For radius>0.3_RKIND_wires  Delta coincides with that of Berenger
@@ -1651,7 +1651,7 @@ contains
 
             if ((r0 < 0.3_RKIND_wires  *despT1).or.(r0 < 0.3_RKIND_wires *despT2)) then
                HWires%CurrentSegment(i1)%Lind = HWires%CurrentSegment(i1)%Lind - 0.57_RKIND_wires/(4.0_RKIND_wires * pi*InvMu(jmed))
-            endif
+            end if
             !---------------------------------------------------------------------------------
             !Boutayeb's PPT for radius>0.3_RKIND_wires  Delta.  a>0.3_RKIND_wires  Delta.
             !(Slanted corrects for 0.3_RKIND_wires  Delta while boutayeb does it for 0.5_RKIND_wires  Delta, I take Slanted's)
@@ -1660,7 +1660,7 @@ contains
             if ((r0 > 0.3_RKIND_wires  *despT1).or.(r0 > 0.3_RKIND_wires *despT2)) then
                HWires%CurrentSegment(i1)%Lind =  HWires%CurrentSegment(i1)%Lind &
                /(1.0_RKIND_wires-pi*r0**2.0_RKIND_wires /(despT1*despT2))
-            endif
+            end if
             !!---------------------------------------------------------------------------------
           case default
             BUFF='wir0_ERROR: Incorrect inductance model'
@@ -1669,7 +1669,7 @@ contains
          if (HWires%CurrentSegment(i1)%Lind < 0.0_RKIND_wires) then
             BUFF='wir0_ERROR: Wrong self-inductance. '
             call WarnErrReport(buff,.TRUE.)
-         endif
+         end if
          !!!!for junctions after holland
          !!!    HWires%CurrentSegment(i1)%logRoverR0=log(((desp*despT1*despT2)**(1.0_RKIND_wires/3.0_RKIND_wires))/r0)  !HWires%CurrentSegment(i1)%Lind ! !holland pp90 (17)(18)
          !!!!22/07/15 el cambio de radio es equivalente a un cambio de delta.... uso algo mejor
@@ -1694,7 +1694,7 @@ contains
                if ( (org%i == fin%i).and.(org%j == fin%j).and.(org%k == fin%k).and.(org%tipofield == fin%tipofield)) then
                   org%NumParallel=org%NumParallel + 1
                   if (control%stableradholland) org%Lind_acum     = org%Lind_acum     + fin%Lind
-               endif
+               end if
             end do
             do j1=i1+1,HWires%NumCurrentSegments
                fin=>HWires%CurrentSegment(j1)
@@ -1702,9 +1702,9 @@ contains
                   fin%NumParallel=org%NumParallel
                   fin%Lind_acum     = org%Lind_acum
                   LindProb(j1)=.false.
-               endif
+               end if
             end do
-         endif
+         end if
       end do
       deallocate(LindProb)
 
@@ -1731,7 +1731,7 @@ contains
          if (r0 < 1e-30) then 
               write (buff,*)  'wir0_ERROR: wire radius cannot be null'
               if ((k1 >= ZI).and.(k1 <= ZE))  call WarnErrReport(buff,.true.)
-         endif   
+         end if   
          !!!!!!!!!!!!correccion bruta 13/07/15
          deltadummy=dummy%inv_Lind_acum * dummy%HEUR_safety/0.9_RKIND_wires  !EL 0.9 ES POR MI TRANQUILIDAD
          if (deltadummy > 1.0_RKIND_wires) then
@@ -1741,14 +1741,14 @@ contains
                   a= pi/(despT2*despT1)
                   if ((r0 < 0.3_RKIND_wires  *despT1).or.(r0 < 0.3_RKIND_wires *despT2)) then
                      B= B-0.57
-                  endif
+                  end if
                   newr0=Sqrt(-Lambert(-A*Exp(b)/4.0_RKIND_wires) /A )
                   !!!doublechecking
                   b= -4.0 * pi*InvMu(jmed) * (dummy%Lind)            + log(despT1**2.0_RKIND+despT2**2.0_RKIND)+ despT1/despT2*atan(despT2/despT1)+ despT2/despT1*atan(despT1/despT2)-3.0_RKIND_wires
                   a= pi/(despT2*despT1)
                   if ((r0 < 0.3_RKIND_wires  *despT1).or.(r0 < 0.3_RKIND_wires *despT2)) then
                      B=B-0.57
-                  endif
+                  end if
                   OLDR0=Sqrt(-Lambert(-A*Exp(b)/4.0_RKIND_wires) /A )
                   !!!!!!!!!!
                   write (buff,'(a,e10.2e3,a,2e10.2e3,a,i9,a,3i9,a,e10.2e3,a,e10.2e3)')  'wir0_WARNING: AUTOMATIC CORRECTION OF L/mu0=', dummy%Lind/mu0, ' for r0=',r0,oldr0,&
@@ -1756,7 +1756,7 @@ contains
                else
                   write (buff,'(a,e10.2e3,a,i9,a,3i9,a,e10.2e3)')  'wir0_WARNING: AUTOMATIC CORRECTION OF L/mu0=', dummy%Lind/mu0, &
                   ' ',dummy%NumParallel, ' wires at ',dummy%i,dummy%j,dummy%k,' to L/mu0=',dummy%Lind*deltadummy/mu0
-               endif
+               end if
                if ((dummy%k > ZI).and.(dummy%k <= ZE)) call WarnErrReport(buff)
                dummy%Lind = dummy%Lind* deltadummy !bajo repartiendo proporcialmente
             else
@@ -1764,14 +1764,14 @@ contains
                ' in ',dummy%NumParallel, ' wires at ',dummy%i,dummy%j,dummy%k,' smaller (posibly unstable) than L/mu0=',dummy%Lind*deltadummy/mu0
                if ((dummy%k > ZI).and.(dummy%k <= ZE)) call WarnErrReport(buff)
                dtcritico=min(sgg%dt/sqrt(deltadummy),dtcritico)
-            endif
-         endif
+            end if
+         end if
       end do
       !!if (dtcritico<sgg%dt) then
       !!            write(buff,'(a,e9.2e2,a,e9.2e2)') &
       !!            &    'wir0_ERROR: UNSTABLE sgg%dt, decrease wire radius, number of Parallel WIREs, or make sgg%dt < ',dtcritico
       !!            call WarnErrReport(buff,.true.)
-      !!endif
+      !!end if
 
       !!!!!!!!!!!fin !mi criterio 13/07/15
 
@@ -1786,16 +1786,16 @@ contains
                write (buff,'(a,5i7)')  'wir1_INFO: Absorbing conditions in terminal LeftEnd segment ', &
                segmento%origIndex,segmento%i,segmento%j,segmento%k,segmento%tipofield
                if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.control%verbose) call WarnErrReport(buff)
-            endif
-         endif
+            end if
+         end if
          if (segmento%TipoWire%HasAbsorbing_RightEnd) then
             if (segmento%Is_RightEnd) then
                segmento%HasAbsorbing_RightEnd=.true.
                write (buff,'(a,5i7)')  'wir1_WARNING: Absorbing conditions  in terminal RightEnd segment ', &
                segmento%origIndex,segmento%i,segmento%j,segmento%k,segmento%tipofield
                if ((segmento%k >= ZI).and.(segmento%k <= ZE)) call WarnErrReport(buff)
-            endif
-         endif
+            end if
+         end if
          !
          if (segmento%TipoWire%HasParallel_LeftEnd) then
             if (segmento%Is_LeftEnd) then
@@ -1803,16 +1803,16 @@ contains
                write (buff,'(a,5i7)')  'wir1_WARNING: Parallel RLC in terminal LeftEnd segment ', &
                segmento%origIndex,segmento%i,segmento%j,segmento%k,segmento%tipofield
                if ((segmento%k >= ZI).and.(segmento%k <= ZE)) call WarnErrReport(buff)
-            endif
-         endif
+            end if
+         end if
          if (segmento%TipoWire%HasParallel_RightEnd) then
             if (segmento%Is_RightEnd) then
                segmento%HasParallel_RightEnd=.true.
                write (buff,'(a,5i7)')  'wir1_WARNING: Parallel RLC in terminal RightEnd segment ', &
                segmento%origIndex,segmento%i,segmento%j,segmento%k,segmento%tipofield
                if ((segmento%k >= ZI).and.(segmento%k <= ZE)) call WarnErrReport(buff)
-            endif
-         endif
+            end if
+         end if
 
          if (segmento%TipoWire%HasSeries_LeftEnd) then
             if (segmento%Is_LeftEnd) then
@@ -1820,16 +1820,16 @@ contains
                write (buff,'(a,5i7)')  'wir1_WARNING: Series RLC in terminal LeftEnd segment ', &
                segmento%origIndex,segmento%i,segmento%j,segmento%k,segmento%tipofield
                if ((segmento%k >= ZI).and.(segmento%k <= ZE)) call WarnErrReport(buff)
-            endif
-         endif
+            end if
+         end if
          if (segmento%TipoWire%HasSeries_RightEnd) then
             if (segmento%Is_RightEnd) then
                segmento%HasSeries_RightEnd=.true.
                write (buff,'(a,5i7)')  'wir1_WARNING: Series RLC in terminal RightEnd segment ', &
                segmento%origIndex,segmento%i,segmento%j,segmento%k,segmento%tipofield
                if ((segmento%k >= ZI).and.(segmento%k <= ZE)) call WarnErrReport(buff)
-            endif
-         endif
+            end if
+         end if
 
 
       end do
@@ -1930,22 +1930,22 @@ contains
                    IsPECPlus                   = IsPECPlus           .or. sgg%med(med(nm))%is%PEC .or. (med(nm)==0)
                    if (.not.IsPECPlus) then
                       sigtPlus                    = max(sigtPlus,                    sgg%Med(med(nm))%sigma)
-                   endif
+                   end if
                 end do
                 do nm=6,11
                    IsLossyMinu             = IsLossyMinu             .or. sgg%Med(med(nm))%Is%Lossy
                    IsPECMinu               = IsPECMinu               .or. sgg%med(med(nm))%is%PEC .or. (med(nm)==0)
                    if (.not.IsPECMInu) then
                       sigtMinu                    = max(sigtMinu,                    sgg%Med(med(nm))%sigma)
-                   endif
+                   end if
                 end do
 !!!telaranias quitadas 060215
                 if (IsPECPlus) then !domina el pec en un nodo con multiples medios
                    IsLossyPlus=.false.
-                endif
+                end if
                 if (IsPECMinu) then !domina el pec en un nodo con multiples medios
                    IsLossyMinu=.false.
-                endif
+                end if
                 sigt                  = max(sigtplus,sigtMinu) !con que uno de los dos extremos sea Lossy hay que corregir la resistencia de contacto
                 IsLossy               = IsLossyPlus               .or. IsLossyMinu !con que uno de los dos extremos sea Lossy hay que corregir la resistencia de contacto
                 IsPEC                 = IsPECPlus                 .and.  IsPECMinu  !!!importante para ser PEC tienen que serlo los dos (es un caso trivial de un segemento unido a pec por los dos sitios. pero se da en el siva)
@@ -1953,7 +1953,7 @@ contains
                 if (isPEC.and.IsLossy) then !es decir: los dos extremos PEC y alguno lossy es que hay un error
                       write (buff,*)  'wir1_BUGGYERROR:  Lossy, pec, 1.  ', i,j,k,sigt,ispec,isLossy
                       call WarnErrReport(buff,.true.)
-                endif
+                end if
                 !!!
                 if ((.not.ispec).and.(.not.isLossy)) then  !algun extremo no pec y ambos extremos no lossy debe haber error si la conductividad no es nula
                    if (abs(sigt) > 1.0e-19_RKIND_wires) then
@@ -1962,26 +1962,26 @@ contains
                        !270224 pero se ha almacenado alguna sigt no nula. El arreglo es simplemente convertir esto en un warning de casuistica de conexionado en vez de un buggyerror
                       !!comentado a 010324 por los motivos anteriores    write (buff,*)  'wir1_BUGGYERROR:  Lossy, pec,  2.  ', i,j,k,sigt,ispec,isLossy
                       !!comentado a 010324 por los motivos anteriores    call WarnErrReport(buff,.true.)
-                   endif
+                   end if
                    write (buff,*)  'wir1_WARNING:  Lossy, pec,  2.: A wire is connected at some ending both to a lossy and to a PEC edge. Assuming it PEC  ', i,j,k,sigt,ispec,isLossy,IsPECPlus,IsPECMinu
                    call WarnErrReport(buff)
-                endif
+                end if
                 if (isLossy) then !alguno extremo lossy con conductividad desconocida (multiports de ss)
                    if (abs(sigt) < 1.0e-19_RKIND_wires) then
                       sigt=1e4 ! asignale una resistencia de contacto por defecto si es nula !tipico de los composites de ss !habra algun dia que afinar esto
                       write (buff,*)  'wir1_WARNING:  A Lossy segment with unknown conductivity. Assuming a STANDARD value of 1e4 S/m ', i,j,k,sigt,ispec,isLossy,IsLossyPlus,IsLossyMinu
                       call WarnErrReport(buff)
-                   endif
-                endif
+                   end if
+                end if
 
                 !!!!!!!!!!!!!!!!!!!!hasta aqui casuistica. Aniade ahora la resistencia si procede con la formula de tercero de fisicas
                 if (isLossy) then
                    !rlossy=rlossy + 1.0_RKIND_wires/(2.0_RKIND_wires * pi*dummy%TipoWire%radius*sigt)/dummy%delta   !p.u.l.     !pruebas distintas 0223
                     !rlossy=rlossy + 1.0_RKIND_wires/(2.0_RKIND_wires * pi*dummy%DELTA          *sigt)/dummy%delta   !p.u.l.     !pruebas distintas 0223
                     rlossy=rlossy ! + 1.0_RKIND_wires/(2.0_RKIND_wires * pi * (control%factordelta*dummy%DELTA +control%factorradius*dummy%TipoWire%radius) *sigt)/dummy%delta   !p.u.l. !comentado a 290323 porque no me fio de esto hasta que no se valide bien agb
-                endif
-             endif
-         endif !del esPML
+                end if
+             end if
+         end if !del esPML
          !
          resist=dummy%TipoWire%R
          givenautoin = HWires%CurrentSegment(i1)%TipoWire%L
@@ -2005,10 +2005,10 @@ contains
                resist=resist+rlossy
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Lossy material resistence to LeftEnd segment grounded through RLC ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-            endif
+            end if
             if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
             if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
-         endif
+         end if
          if ((dummy%Is_RightEnd).and.(isLossy.or.isLossy)) then
             !no tengo en cuenta el caso particularisimo de un solo segmento conectado a lossy por los dos extremos !habria que sumarle la resistencia dos veces pero la casuistica se enfollona !\E7
             if ((.not.dummy%HasParallel_RightEnd).and.(.not.dummy%HasSeries_RightEnd).and.(.not.dummy%HasAbsorbing_RightEnd)) then
@@ -2019,10 +2019,10 @@ contains
                resist=resist+rlossy
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Lossy material resistence to RightEnd segment grounded through RLC ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-            endif
+            end if
             if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
             if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
-         endif
+         end if
          !!! lOS QUE NO TENGAN RESITENCIAS Y ESTEN EN ABIERTO NO LOS CONECTO A LOSSY. sI SE QUIEREN HACER CONEXIONES A LOSSY
          !!! HAY QUE ESPECIFICAR UNA RESISTENCIA LUMPED
          !!! lUEGO SI SE CONECTARAN A pec DIRECTAMENTE SI LA TOPOLOGIA LO MANDA
@@ -2042,8 +2042,8 @@ contains
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
                if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz)) call WarnErrReport(buff,.true.)
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz)) call WarnErrReport(buff,.true.)
-            ENDIF
-         endif
+            end if
+         end if
 
          if (dummy%HasParallel_RightEnd) then
             givenautoin=givenautoin + dummy%TipoWire%Parallel_L_RightEnd/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
@@ -2066,7 +2066,7 @@ contains
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
                if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
-            endif
+            end if
 
             !(ojo que es per unit length la intrinsea)
             if (dummy%TipoWire%Parallel_L_RightEnd /= 0.0_RKIND_wires) then
@@ -2074,7 +2074,7 @@ contains
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
                if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
-            endif
+            end if
             !aniado tambien al ultimo segmento la resistencia y peto si hay capacitancias
             if (dummy%TipoWire%Parallel_C_RightEnd >= 1.0e-12_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_ERROR: (Currently unsupported)  Capacitances in Parallel RightEnd at segment ', &
@@ -2083,8 +2083,8 @@ contains
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz)) call WarnErrReport(buff,.true.)
             else
                dummy%TipoWire%Parallel_C_RightEnd=0.0_RKIND_wires
-            endif
-         endif
+            end if
+         end if
          if (dummy%HasParallel_LeftEnd) then
             givenautoin=givenautoin + dummy%TipoWire%Parallel_L_LeftEnd/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
             dummy%givenautoin=givenautoin
@@ -2105,14 +2105,14 @@ contains
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
                if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
-            endif
+            end if
 
             if (dummy%TipoWire%Parallel_L_LeftEnd /= 0.0_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Parallel LeftEnd Inductance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
                if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
-            endif
+            end if
             if (dummy%TipoWire%Parallel_C_LeftEnd >= 1.0e-12_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_ERROR: (Currently unsupported)  Capacitances in Parallel LeftEnd at segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
@@ -2120,8 +2120,8 @@ contains
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz)) call WarnErrReport(buff,.true.)
             else
                dummy%TipoWire%Parallel_C_LeftEnd=0.0_RKIND_wires
-            endif
-         endif
+            end if
+         end if
          !
          if (dummy%HasSeries_RightEnd) then
             givenautoin=givenautoin + dummy%TipoWire%Series_L_RightEnd/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
@@ -2139,13 +2139,13 @@ contains
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
                if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
-            endif
+            end if
             if (dummy%TipoWire%Series_R_RightEnd /= 0.0_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Series RightEnd Resistance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
                if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
-            endif
+            end if
             if (dummy%TipoWire%Series_C_RightEnd<= 1.0e7_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_ERROR: (Currently unsupported)  Capacitances smaller than 1.0e7_RKIND_wires (inf) in Series RightEnd at segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
@@ -2153,9 +2153,9 @@ contains
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz)) call WarnErrReport(buff,.true.)
             else
                dummy%TipoWire%Series_C_RightEnd=2.0e7_RKIND_wires
-            endif
+            end if
 
-         endif
+         end if
          if (dummy%HasSeries_LeftEnd) then
             givenautoin=givenautoin + dummy%TipoWire%Series_L_LeftEnd/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
             resist=resist +           dummy%TipoWire%Series_R_LeftEnd/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
@@ -2171,13 +2171,13 @@ contains
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
                if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
-            endif
+            end if
             if (dummy%TipoWire%Series_R_LeftEnd /= 0.0_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Series LeftEnd Resistance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
                if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
-            endif
+            end if
             if (dummy%TipoWire%Series_C_LeftEnd <= 1.0e7_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_ERROR: (Currently unsupported)  Capacitances  smaller than 1.0e7_RKIND_wires (inf) in Series LeftEnd atn segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
@@ -2185,9 +2185,9 @@ contains
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz)) call WarnErrReport(buff,.true.)
             else
                dummy%TipoWire%Series_C_LeftEnd=2.0e7_RKIND_wires
-            endif
+            end if
 
-         endif 
+         end if 
     
          dummy%R = resist
          dummy%L = givenautoin
@@ -2209,7 +2209,7 @@ contains
              dummy%Lind=givenautoin
 !
              dummy%Lind_devia= givenautoin_devia
-         endif !para el fieldtotl no tento en cuenta mas que la autoin y no devuelvo nada !100517
+         end if !para el fieldtotl no tento en cuenta mas que la autoin y no devuelvo nada !100517
 
          call wiresconstantes(control%fieldtotl,dummy,G2,sgg)
 
@@ -2332,7 +2332,7 @@ contains
                if (r0 < 1e-30) then 
                     write (buff,*)  'wir0_ERROR: Wire radius cannot be null'
                     if ((k1 >= ZI).and.(k1 <= ZE))  call WarnErrReport(buff,.true.)
-               endif   
+               end if   
                imed 	= HWires%Multilines(iw1)%Segments(is1)%ptr%indexmed
                HWires%Multilines(iw1)%Segments(is1)%ptr%Lintrinsic  = &
                (1.0_RKIND_wires / (4.0_RKIND_wires * pi*InvMu(imed)))*(log((dx1**2.0_RKIND_wires +dx2**2.0_RKIND_wires)/(4.0_RKIND_wires * r0**2.0_RKIND_wires)) + &
@@ -2342,10 +2342,10 @@ contains
                if ((r0 < 0.3_RKIND_wires  *dx1).or.(r0 < 0.3_RKIND_wires *dx2)) then
                   HWires%Multilines(iw1)%Segments(is1)%ptr%Lintrinsic = HWires%Multilines(iw1)%Segments(is1)%ptr%Lintrinsic - 0.57_RKIND_wires /(4.0_RKIND_wires * pi*InvMu(imed))
 
-               endif
+               end if
                if ((r0 > 0.3_RKIND_wires  *dx1).or.(r0 > 0.3_RKIND_wires *dx2)) then
                   HWires%Multilines(iw1)%Segments(is1)%ptr%Lintrinsic = HWires%Multilines(iw1)%Segments(is1)%ptr%Lintrinsic /(1.0_RKIND_wires-pi*r0**2.0_RKIND_wires /(dx2*dx1))
-               endif
+               end if
 
                HWires%Multilines(iw1)%Segments(is1)%ptr%L      = HWires%Multilines(iw1)%Segments(is1)%ptr%L + &
                HWires%Multilines(iw1)%Segments(is1)%ptr%Lintrinsic
@@ -2395,7 +2395,7 @@ contains
                HWires%Multilines(iw1)%Segments(is1)%ptr%bI = HWires%Multilines(iw1)%b2I(is1,is1)
             end do
          end do
-      ENDIF !DEL FLAVOR transition
+      end if !DEL FLAVOR transition
       !!!!!!!!!!fin dama
       !!!
 
@@ -2429,16 +2429,16 @@ contains
                      write (buff,'(a,5i7)')  'wir1_INFO: Voltage source with null internal resistence in segment ', &
                      segmento%origIndex,segmento%i,segmento%j,segmento%k,segmento%tipofield
                      if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.control%verbose) call WarnErrReport(buff)
-                  endif
+                  end if
                   if (segmento%Vsource%Fichero%DeltaSamples > sgg%dt) then
                      write (buff,'(a,a,a,e15.4e3)')  'wir1_WARNING: ',trim(adjustl(segmento%Vsource%Fichero%Name)), &
                      ' undersampled by a factor ', &
                      segmento%Vsource%Fichero%DeltaSamples/sgg%dt
                      if ((segmento%k >= ZI).and.(segmento%k <= ZE)) call WarnErrReport(buff)
-                  endif
-               endif
+                  end if
+               end if
             end do
-         endif
+         end if
       end do
 
       !END OF THE PROCESSING OF CURRENT SEGMENT INFORMATION
@@ -2512,22 +2512,22 @@ contains
          orgmas1 => null()
          if (i1>1) then
             if (HWires%CurrentSegment(i1-1)%indexmed==HWires%CurrentSegment(i1)%indexmed) orgmenos1=>HWires%CurrentSegment(i1-1)
-         endif
+         end if
          if (i1<NUMESEG) then
             if (HWires%CurrentSegment(i1+1)%indexmed==HWires%CurrentSegment(i1)%indexmed) orgmas1=>HWires%CurrentSegment(i1+1)
-         endif
+         end if
          do j1=1,HWires%NumCurrentSegments
             fin=>HWires%CurrentSegment(j1)
             if (J1>1) then
                FINmenos1=>HWires%CurrentSegment(J1-1)
             else
                FINmenos1 => null()
-            endif
+            end if
             if (J1<NUMESEG) then
                FINmas1=>HWires%CurrentSegment(J1+1)
             else
                FINmas1 => null()
-            endif
+            end if
             if (i1 /= j1) then
                !calls the adjacent routine to see wether the org and fin segments are connected (
                Adj=TestAdjacency(org,i1,fin,j1,control%connectendings,control%isolategroupgroups,control%strictOLD,ZI,ZE,NUMESEG,orgmenos1,orgmas1,finmenos1,finmas1,control%verbose)
@@ -2547,13 +2547,13 @@ contains
                                  if ((HWires%ChargeNode(nn)%YESsegment(j2) == adj%YESsegment(1)))  then
                                     proceed1=.false.
                                     exit b1
-                                 endif
+                                 end if
                               end do b1
                               b11: do j2=1,2*MaxNumCurrentMinusPlus
                                  if ((HWires%ChargeNode(nn)%YESsegment(j2) == adj%YESsegment(2)))  then
                                     proceed2=.false.
                                     exit b11
-                                 endif
+                                 end if
                               end do b11
                               if ((.not.proceed1).or.(.not.proceed2).or.(.not.(proceed1.and.proceed2))) then
                                  !This node was already present. There is connectivity and the node actually exists
@@ -2563,24 +2563,24 @@ contains
                                        if (HWires%ChargeNode(nn)%YESsegment(j2) < 0 )   then
                                           HWires%ChargeNode(nn)%YESsegment(j2)  = adj%YESsegment(1)
                                           exit b2
-                                       endif
+                                       end if
                                     end do b2
-                                 endif
+                                 end if
                                  if (PROCEED2) then
                                     b4: do j2=1,2*MaxNumCurrentMinusPlus
                                        if (HWires%ChargeNode(nn)%YESsegment(j2)  < 0 )   then
                                           HWires%ChargeNode(nn)%YESsegment(j2)  = adj%YESsegment(2)
                                           exit b4
-                                       endif
+                                       end if
                                     end do b4
-                                 endif
+                                 end if
                                  exit bprin
                               else
                                  NodeExists=.false.
-                              endif
-                           endif
-                        endif
-                     endif
+                              end if
+                           end if
+                        end if
+                     end if
                   end do bprin
                   if (.not.(NodeExists))   then
                      conta=conta+1
@@ -2589,23 +2589,23 @@ contains
                            if (HWires%ChargeNode(conta)%YESsegment(j2) < 0)   then
                               HWires%ChargeNode(conta)%YESsegment(j2)  = adj%YESsegment(1)
                               exit b6
-                           endif
+                           end if
                         end do b6
                         b8: do j2=1,2*MaxNumCurrentMinusPlus
                            if (HWires%ChargeNode(conta)%YESsegment(j2) < 0)   then
                               HWires%ChargeNode(conta)%YESsegment(j2)  = adj%YESsegment(2)
                               exit b8
-                           endif
+                           end if
                         end do b8
-                     endif
+                     end if
                      !
                      HWires%ChargeNode(conta)%IsHeterogeneousJunction=adj%IsHeterogeneousJunction
                      HWires%ChargeNode(conta)%Exists=.true.
                      HWires%ChargeNode(conta)%i=adj%i
                      HWires%ChargeNode(conta)%j=adj%j
                      HWires%ChargeNode(conta)%k=adj%k
-                  endif
-               endif
+                  end if
+               end if
 
                if (Adj%Is .and. ADj%BothEndingsConnected) then !busca el otro extremo y crealo tambien !SOLO NECESARIO EN WIRES DE UN SOLO SEGMENTO
                   NodeExists=.false.
@@ -2615,21 +2615,21 @@ contains
                      adj%i  = org%ilibre
                   else
                      adj%i  = org%i
-                  endif
+                  end if
                   if     ((adj%J /= org%J)) then
                      adj%J  = org%J
                   elseif ((adj%J /= org%Jlibre)) then
                      adj%J  = org%Jlibre
                   else
                      adj%J  = org%J
-                  endif
+                  end if
                   if     ((adj%K /= org%K)) then
                      adj%K  = org%K
                   elseif ((adj%K /= org%Klibre)) then
                      adj%K  = org%Klibre
                   else
                      adj%K  = org%K
-                  endif
+                  end if
                   bprin2: do nn=1,conta
                      if ((HWires%ChargeNode(nn)%i==adj%i).and. &
                      (HWires%ChargeNode(nn)%j==adj%j).and. &
@@ -2643,13 +2643,13 @@ contains
                                  if ((HWires%ChargeNode(nn)%YESsegment(j2) == adj%YESsegment(1)))  then
                                     proceed1=.false.
                                     exit b12
-                                 endif
+                                 end if
                               end do b12
                               b112: do j2=1,2*MaxNumCurrentMinusPlus
                                  if ((HWires%ChargeNode(nn)%YESsegment(j2) == adj%YESsegment(2)))  then
                                     proceed2=.false.
                                     exit b112
-                                 endif
+                                 end if
                               end do b112
                               if ((.not.proceed1).or.(.not.proceed2).or.(.not.(proceed1.and.proceed2))) then
                                  !This node was already present. There is connectivity and the node actually exists
@@ -2659,24 +2659,24 @@ contains
                                        if (HWires%ChargeNode(nn)%YESsegment(j2) < 0 )   then
                                           HWires%ChargeNode(nn)%YESsegment(j2)  = adj%YESsegment(1)
                                           exit b22
-                                       endif
+                                       end if
                                     end do b22
-                                 endif
+                                 end if
                                  if (PROCEED2) then
                                     b42: do j2=1,2*MaxNumCurrentMinusPlus
                                        if (HWires%ChargeNode(nn)%YESsegment(j2)  < 0 )   then
                                           HWires%ChargeNode(nn)%YESsegment(j2)  = adj%YESsegment(2)
                                           exit b42
-                                       endif
+                                       end if
                                     end do b42
-                                 endif
+                                 end if
                                  exit bprin2
                               else
                                  NodeExists=.false.
-                              endif
-                           endif
-                        endif
-                     endif
+                              end if
+                           end if
+                        end if
+                     end if
                   end do bprin2
                   if (.not.(NodeExists))   then
                      conta=conta+1
@@ -2685,24 +2685,24 @@ contains
                            if (HWires%ChargeNode(conta)%YESsegment(j2) < 0)   then
                               HWires%ChargeNode(conta)%YESsegment(j2)  = adj%YESsegment(1)
                               exit b62
-                           endif
+                           end if
                         end do b62
                         b82: do j2=1,2*MaxNumCurrentMinusPlus
                            if (HWires%ChargeNode(conta)%YESsegment(j2) < 0)   then
                               HWires%ChargeNode(conta)%YESsegment(j2)  = adj%YESsegment(2)
                               exit b82
-                           endif
+                           end if
                         end do b82
-                     endif
+                     end if
                      !
                      HWires%ChargeNode(conta)%IsHeterogeneousJunction=adj%IsHeterogeneousJunction
                      HWires%ChargeNode(conta)%Exists=.true.
                      HWires%ChargeNode(conta)%i=adj%i
                      HWires%ChargeNode(conta)%j=adj%j
                      HWires%ChargeNode(conta)%k=adj%k
-                  endif
-               endif
-            endif !del i1/=ji1
+                  end if
+               end if
+            end if !del i1/=ji1
             !
          end do
       end do
@@ -2726,13 +2726,13 @@ contains
                   do k1=1,2*MaxNumCurrentMinusPlus
                      if (HWires%ChargeNode(nn)%YESsegment(k1) == HWires%ChargeNode(nnn)%YESsegment(j1)) then
                         conta=conta+1
-                     endif
+                     end if
                   end do
                end do
                if (conta == 2*MaxNumCurrentMinusPlus) then !They coincide
                   HWires%ChargeNode(nn)%Exists=.false. !voids it
-               endif
-            endif
+               end if
+            end if
          end do
       end do
 
@@ -2745,7 +2745,7 @@ contains
                HWires%ChargeNode(nnn) = HWires%ChargeNode(nnn+1)
             end do
             continue
-         endif
+         end if
       end do
       !voids the rest 
       do i1=conta+1,HWires%NumChargeNodes
@@ -2804,24 +2804,24 @@ contains
                if (j1 == nodo%YESsegment(k1))  then
                   proceed=.true.
                   exit total
-               endif
+               end if
             end do total
             if (proceed) then
                if  ((segmento%i  ==nodo%i).and.(segmento%j==nodo%j).and.(segmento%k==nodo%k)) then
                   segmento%ChargeMinus=>HWires%ChargeNode(i1)
-               endif
+               end if
                if  ((segmento%i+1==nodo%i).and.(segmento%j==nodo%j).and.(segmento%k==nodo%k).and.(segmento%tipofield==iEx)) then
                   segmento%ChargePlus=>HWires%ChargeNode(i1)
-               endif
+               end if
                if  ((segmento%i==nodo%i).and.(segmento%j+1==nodo%j).and.(segmento%k==nodo%k).and.(segmento%tipofield==iEy)) then
                   segmento%ChargePlus=>HWires%ChargeNode(i1)
-               endif
+               end if
                if  ((segmento%i==nodo%i).and.(segmento%j==nodo%j).and.(segmento%k+1==nodo%k).and.(segmento%tipofield==iEz)) then
                   segmento%ChargePlus=>HWires%ChargeNode(i1)
-               endif
+               end if
             else
                continue
-            endif
+            end if
          end do
       end do
 
@@ -2835,7 +2835,7 @@ contains
             if (segmento%ChargePlus%NumCurrentMinus >9) then
                BUFF='wir1_ERROR: More than 9 Minus WIREs joined'
                call WarnErrReport(buff,.true.)
-            endif
+            end if
             select case (segmento%ChargePlus%NumCurrentMinus)
              case (1)
                segmento%ChargePlus%CurrentMinus_1=>HWires%CurrentSegment(j1)
@@ -2856,13 +2856,13 @@ contains
              case (9)
                segmento%ChargePlus%CurrentMinus_9=>HWires%CurrentSegment(j1)
             end select
-         endif
+         end if
          if (associated(segmento%ChargeMinus)) then
             segmento%ChargeMinus%NumCurrentPlus=segmento%ChargeMinus%NumCurrentPlus+1
             if (segmento%ChargeMinus%NumCurrentPlus >9) then
                BUFF='wir1_ERROR: More than 9 Plus WIREs joined'
                call WarnErrReport(buff,.true.)
-            endif
+            end if
             select case (segmento%ChargeMinus%NumCurrentPlus)
              case (1)
                segmento%ChargeMinus%CurrentPlus_1=>HWires%CurrentSegment(j1)
@@ -2883,7 +2883,7 @@ contains
              case (9)
                segmento%ChargeMinus%CurrentPlus_9=>HWires%CurrentSegment(j1)
             end select
-         endif
+         end if
       end do
 
       !Now I detect hanging nodes (at wire terminations) and increment the node info
@@ -2900,14 +2900,14 @@ contains
             HWires%ChargeNode(conta)%Exists=.true.
             If (HWires%ChargeNode(conta)%CurrentMinus_1%tipofield==iEx) then
                HWires%ChargeNode(conta)%i=HWires%ChargeNode(conta)%CurrentMinus_1%i+1
-            endif
+            end if
             If (HWires%ChargeNode(conta)%CurrentMinus_1%tipofield==iEy) then
                HWires%ChargeNode(conta)%j=HWires%ChargeNode(conta)%CurrentMinus_1%j+1
-            endif
+            end if
             If (HWires%ChargeNode(conta)%CurrentMinus_1%tipofield==iEz) then
                HWires%ChargeNode(conta)%k=HWires%ChargeNode(conta)%CurrentMinus_1%k+1
-            endif
-         endif
+            end if
+         end if
          if (.not.associated(HWires%CurrentSegment(i1)%ChargeMinus)) then
             !segments must end in a charge node
             conta=conta+1
@@ -2920,14 +2920,14 @@ contains
             HWires%ChargeNode(conta)%Exists=.true.
             If (HWires%ChargeNode(conta)%CurrentPlus_1%tipofield==iEx) then
                HWires%ChargeNode(conta)%i=HWires%ChargeNode(conta)%CurrentPlus_1%i
-            endif
+            end if
             If (HWires%ChargeNode(conta)%CurrentPlus_1%tipofield==iEy) then
                HWires%ChargeNode(conta)%j=HWires%ChargeNode(conta)%CurrentPlus_1%j
-            endif
+            end if
             If (HWires%ChargeNode(conta)%CurrentPlus_1%tipofield==iEz) then
                HWires%ChargeNode(conta)%k=HWires%ChargeNode(conta)%CurrentPlus_1%k
-            endif
-         endif
+            end if
+         end if
       end do
       HWires%NumChargeNodes=conta !reactualize POR ULTIMA VEZ the number of charge nodes
       !!!!!!!!!!!
@@ -2942,28 +2942,28 @@ contains
             (segmento%chargeplus%k == segmento%klibre)) then
                segmento%chargeplus%Is_LeftEnd =.true.
                asignado=.true.
-            endif
+            end if
             if ((segmento%chargeMinus%i == segmento%ilibre).and. &
             (segmento%chargeMinus%j == segmento%jlibre).and. &
             (segmento%chargeMinus%k == segmento%klibre)) then
                segmento%chargeMinus%Is_LeftEnd =.true.
                asignado=.true.
-            endif
-         endif
+            end if
+         end if
          if (segmento%Is_RightEnd) then
             if ((segmento%chargeplus%i == segmento%ilibre).and. &
             (segmento%chargeplus%j == segmento%jlibre).and. &
             (segmento%chargeplus%k == segmento%klibre)) then
                segmento%chargeplus%Is_RightEnd =.true.
                asignado=.true.
-            endif
+            end if
             if ((segmento%chargeMinus%i == segmento%ilibre).and. &
             (segmento%chargeMinus%j == segmento%jlibre).and. &
             (segmento%chargeMinus%k == segmento%klibre)) then
                segmento%chargeMinus%Is_RightEnd =.true.
                asignado=.true.
-            endif
-         endif
+            end if
+         end if
          !caso particular hilos de 1  segmento
          if (segmento%Is_LeftEnd.and.segmento%Is_RightEnd) then
             segmento%chargeplus%Is_LeftEnd =.true.
@@ -2975,12 +2975,12 @@ contains
                segmento%chargeplus%Is_RightEnd  =.true.
                segmento%chargeMinus%Is_RightEnd =.true.
                segmento%chargeMinus%Is_LeftEnd =.true.
-            endif
+            end if
             segmento%chargeplus%IsInSingleRLCsegment  = (segmento%HasParallel_LeftEnd.or.segmento%HasSeries_LeftEnd).or. &
             (segmento%HasParallel_RightEnd.or.segmento%HasSeries_RightEnd)
             segmento%chargeminus%IsInSingleRLCsegment = (segmento%HasParallel_LeftEnd.or.segmento%HasSeries_LeftEnd).or. &
             (segmento%HasParallel_RightEnd.or.segmento%HasSeries_RightEnd)
-         endif
+         end if
          if (.not.asignado) then
             if (segmento%HasParallel_LeftEnd .or. segmento%HasSeries_LeftEnd ) then
                if (segmento%chargeplus%isPEC .or. segmento%chargeplus%isLossy.or. segmento%chargeplus%isLossy.or. segmento%chargeplus%isLossy) then
@@ -2989,35 +2989,35 @@ contains
                      write (buff,'(a,4i7)')  'wir1_INFO: Forcing non-terminal node to LeftEnd to attach RLC ', &
                      segmento%chargeplus%i,segmento%chargeplus%j,segmento%chargeplus%k
                      if ((segmento%chargeplus%k >  ZI).and.(segmento%chargeplus%k <= ZE).and.control%verbose) call WarnErrReport(buff)
-                  endif
+                  end if
                elseif (segmento%chargeminus%isPEC .or. segmento%chargeminus%isLossy .or. segmento%chargeminus%isLossy .or. segmento%chargeminus%isLossy) then
                   if ((.not. segmento%chargeminus%Is_LeftEnd).and.(.not. segmento%chargeminus%Is_RightEnd)) then
                      segmento%chargeminus%Is_LeftEnd =.true.
                      write (buff,'(a,4i7)')  'wir1_INFO: Forcing non-terminal node to LeftEnd to attach RLC ', &
                      segmento%chargeminus%i,segmento%chargeminus%j,segmento%chargeminus%k
                      if ((segmento%chargeminus%k >  ZI).and.(segmento%chargeminus%k <= ZE).and.control%verbose) call WarnErrReport(buff)
-                  endif
+                  end if
                else
                   if (segmento%TipoWire%Series_C_LeftEnd < 1.0e7_RKIND_wires) then
                      write (buff,'(a,4i7,a)')  'wir1_ERROR: Series LeftEnd Capacitance in INTERMEDIATE segment smaller than 1e7 (inf)', &
                      segmento%origIndex,segmento%i,segmento%j,segmento%k,dir(segmento%tipofield)
                      if ((segmento%k >  ZI).and.(segmento%k <= ZE).and.(segmento%tipofield /= iEz)) call WarnErrReport(buff,.TRUE.)
                      if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.(segmento%tipofield == iEz)) call WarnErrReport(buff,.TRUE.)
-                  endif
+                  end if
                   if (segmento%TipoWire%Parallel_C_LeftEnd /= 0.0_RKIND_wires) then
                      write (buff,'(a,4i7,a)')  'wir1_ERROR: Parallel LeftEnd Capacitance in INTERMEDIATE segment ', &
                      segmento%origIndex,segmento%i,segmento%j,segmento%k,dir(segmento%tipofield)
                      if ((segmento%k >  ZI).and.(segmento%k <= ZE).and.(segmento%tipofield /= iEz)) call WarnErrReport(buff,.TRUE.)
                      if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.(segmento%tipofield == iEz)) call WarnErrReport(buff,.TRUE.)
-                  endif
+                  end if
                   if (segmento%TipoWire%Parallel_R_LeftEnd /= 0.0_RKIND_wires) then
                      write (buff,'(a,4i7,a)')  'wir1_ERROR:  Parallel LeftEnd Resistance in INTERMEDIATE segment ', &
                      segmento%origIndex,segmento%i,segmento%j,segmento%k,dir(segmento%tipofield)
                      if ((segmento%k >  ZI).and.(segmento%k <= ZE).and.(segmento%tipofield /= iEz)) call WarnErrReport(buff,.TRUE.)
                      if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.(segmento%tipofield == iEz)) call WarnErrReport(buff,.TRUE.)
-                  endif
-               endif
-            endif
+                  end if
+               end if
+            end if
             if (segmento%HasParallel_RightEnd .or. segmento%HasSeries_RightEnd ) then
                if (segmento%chargeplus%isPEC .or. segmento%chargeplus%isLossy .or. segmento%chargeplus%isLossy .or. segmento%chargeplus%isLossy) then
                   if ((.not. segmento%chargeplus%Is_LeftEnd).and.(.not. segmento%chargeplus%Is_RightEnd)) then
@@ -3025,36 +3025,36 @@ contains
                      write (buff,'(a,4i7)')  'wir1_INFO: Forcing non-terminal node to RightEnd to attach RLC ', &
                      segmento%chargeplus%i,segmento%chargeplus%j,segmento%chargeplus%k
                      if ((segmento%chargeplus%k >  ZI).and.(segmento%chargeplus%k <= ZE).and.control%verbose) call WarnErrReport(buff)
-                  endif
+                  end if
                elseif (segmento%chargeminus%isPEC .or. segmento%chargeminus%isLossy .or. segmento%chargeminus%isLossy .or. segmento%chargeminus%isLossy) then
                   if ((.not. segmento%chargeminus%Is_LeftEnd).and.(.not. segmento%chargeminus%Is_RightEnd)) then
                      segmento%chargeminus%Is_RightEnd =.true.
                      write (buff,'(a,4i7)')  'wir1_INFO: Forcing non-terminal node to RightEnd to attach RLC ', &
                      segmento%chargeminus%i,segmento%chargeminus%j,segmento%chargeminus%k
                      if ((segmento%chargeminus%k >  ZI).and.(segmento%chargeminus%k <= ZE).and.control%verbose) call WarnErrReport(buff)
-                  endif
+                  end if
                else
                   if (segmento%TipoWire%Series_C_RightEnd < 1.0e7_RKIND_wires) then
                      write (buff,'(a,4i7,a)')  'wir1_ERROR: Series RightEnd Capacitance in INTERMEDIATE segment  smaller than 1e7 (inf)', &
                      segmento%origIndex,segmento%i,segmento%j,segmento%k,dir(segmento%tipofield)
                      if ((segmento%k >  ZI).and.(segmento%k <= ZE).and.(segmento%tipofield /= iEz)) call WarnErrReport(buff,.TRUE.)
                      if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.(segmento%tipofield == iEz)) call WarnErrReport(buff,.TRUE.)
-                  endif
+                  end if
                   if (segmento%TipoWire%Parallel_C_RightEnd /= 0.0_RKIND_wires) then
                      write (buff,'(a,4i7,a)')  'wir1_ERROR: Parallel RightEnd Capacitance in INTERMEDIATE segment ', &
                      segmento%origIndex,segmento%i,segmento%j,segmento%k,dir(segmento%tipofield)
                      if ((segmento%k >  ZI).and.(segmento%k <= ZE).and.(segmento%tipofield /= iEz)) call WarnErrReport(buff,.TRUE.)
                      if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.(segmento%tipofield == iEz)) call WarnErrReport(buff,.TRUE.)
-                  endif
+                  end if
                   if (segmento%TipoWire%Parallel_R_RightEnd /= 0.0_RKIND_wires) then
                      write (buff,'(a,4i7,a)')  'wir1_ERROR: Series RightEnd Resistance in INTERMEDIATE segment ', &
                      segmento%origIndex,segmento%i,segmento%j,segmento%k,dir(segmento%tipofield)
                      if ((segmento%k >  ZI).and.(segmento%k <= ZE).and.(segmento%tipofield /= iEz)) call WarnErrReport(buff,.TRUE.)
                      if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.(segmento%tipofield == iEz)) call WarnErrReport(buff,.TRUE.)
-                  endif
-               endif
-            endif
-         endif
+                  end if
+               end if
+            end if
+         end if
       end do
 
       call detect_peclossyconformal_nodes
@@ -3071,29 +3071,29 @@ contains
           case (iEx)
             if ((segmento%i+1==sgg%Alloc(segmento%tipofield)%XE).and.(sgg%Border%IsFrontPMC)) then
                segmento%IsPMC =.true.
-            endif
+            end if
             if ((segmento%i==sgg%Alloc(segmento%tipofield)%XI).and.(sgg%Border%IsBackPMC)) then
                segmento%IsPMC =.true.
-            endif
+            end if
           case (iEy)
             if ((segmento%j+1==sgg%Alloc(segmento%tipofield)%YE).and.(sgg%Border%IsRightPMC)) then
                segmento%IsPMC =.true.
-            endif
+            end if
             if ((segmento%j==sgg%Alloc(segmento%tipofield)%YI).and.(sgg%Border%IsLeftPMC)) then
                segmento%IsPMC =.true.
-            endif
+            end if
           case (iEz)
             if ((segmento%k+1==sgg%Alloc(segmento%tipofield)%ZE).and.(sgg%Border%IsUpPMC)) then
                segmento%IsPMC =.true.
-            endif
+            end if
             if ((segmento%k==sgg%Alloc(segmento%tipofield)%ZI).and.(sgg%Border%IsDownPMC)) then
                segmento%IsPMC =.true.
-            endif
+            end if
          end select
          if (segmento%isPMC) then
             write (buff,'(a,i7,a)') 'wir1_WARNING: PMC endings in WIREs are UNTESTED'
             if ((segmento%k >= ZI).and.(segmento%k <= ZE)) call WarnErrReport(buff)
-         endif
+         end if
       end do
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3130,8 +3130,8 @@ contains
                nodo%IsPec =.true.
                write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with BACK PEC boundary conditions'
                if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
-            endif
-         endif
+            end if
+         end if
          if (nodo%i==SINPML_FULLSIZe(iHx)%XE) then
             if (sgg%Border%IsFrontPML.or.sgg%Border%IsFrontMur) then
                thereAreMurConditions=.true.
@@ -3159,8 +3159,8 @@ contains
                nodo%IsPec =.true.
                write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with FRONT PEC boundary conditions'
                if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
-            endif
-         endif
+            end if
+         end if
          !
          if (nodo%j==SINPML_FULLSIZe(iHy)%YI) then
             if (sgg%Border%IsLeftPML.or.sgg%Border%IsLeftMur) then
@@ -3190,8 +3190,8 @@ contains
                nodo%IsPec =.true.
                write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with LEFT PEC boundary conditions'
                if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
-            endif
-         endif
+            end if
+         end if
          if (nodo%j==SINPML_FULLSIZe(iHy)%YE) then
             if (sgg%Border%IsRightPML.or.sgg%Border%IsRightMur) then
                thereAreMurConditions=.true.
@@ -3219,8 +3219,8 @@ contains
                nodo%IsPec =.true.
                write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with RIGHT PEC boundary conditions'
                if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
-            endif
-         endif
+            end if
+         end if
          !
          if (nodo%k==SINPML_FULLSIZe(iHz)%ZI) then
             if (sgg%Border%IsDownPML.or.sgg%Border%IsDownMur) then
@@ -3250,8 +3250,8 @@ contains
                nodo%IsPec =.true.
                write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with DOWN PEC boundary conditions'
                if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
-            endif
-         endif
+            end if
+         end if
          if (nodo%k==SINPML_FULLSIZe(iHz)%ZE) then
             if (sgg%Border%IsUpPML.or.sgg%Border%IsUpMur) then
                thereAreMurConditions=.true.
@@ -3279,12 +3279,12 @@ contains
                nodo%IsPec =.true.
                write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with UP PEC boundary conditions'
                if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
-            endif
-         endif
+            end if
+         end if
          if ((nodo%isMur).and.(nodo%NumCurrentPlus+nodo%NumCurrentMinus >1)) then
             write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'is both a non-open and a Mur'
             if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff)
-         endif
+         end if
       end do
 
 
@@ -3340,7 +3340,7 @@ contains
                 case (9)
                   segmento=>nodo%CurrentMinus_9
                end select
-            endif
+            end if
             deltadummy=deltadummy + segmento%delta/2.0_RKIND_wires   !holland pag. 92
             indexnode = indexnode + segmento%OrigIndex
             !
@@ -3351,7 +3351,7 @@ contains
          nodo%CtePlain = sgg%dt/deltadummy
          if (nodo%NumCurrentPlus + nodo%NumCurrentMinus == 1) then
             nodo%CtePlain = sgg%dt/(2.0_RKIND_wires * deltadummy) !correct the ending in case of open terminal
-         endif
+         end if
          NODO%oRIGctePlain =nodo%CtePlain !lo salvo para que al ungroundear retome esta constante
       end do
 
@@ -3362,7 +3362,7 @@ contains
         if (nodo%IsLossy.or.nodo%isPEC) then
             nodo%CtePlain = 0.0_RKIND_wires
             nodo%cteprop  = 0.0_RKIND_wires
-        endif
+        end if
       end do
    
       !!!!FINAL reporting of unGROUNDING OF PEC/LOSSY NODES
@@ -3397,10 +3397,10 @@ contains
                         nodo%indexnode, nodo%i,nodo%j,nodo%k, &
                         ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'
                         if ((nodo%k >=  ZI).and.(nodo%k <= ZE).and.control%verbose) call WarnErrReport(buff)
-                     endif
-               endif
-            endif
-         endif
+                     end if
+               end if
+            end if
+         end if
       end do
 
    
@@ -3453,7 +3453,7 @@ contains
                 case (9)
                   segmento=>nodo%CurrentMinus_9
                end select
-            endif
+            end if
 
             !HOLD 251019
             if     ((segmento%HasAbsorbing_RightEnd).and.(nodo%Is_RightEnd))  then
@@ -3468,7 +3468,7 @@ contains
                else
                   write (buff,*)  'wir0_BUGGYERROR: Mur1 on wires wrong. '
                   call WarnErrReport(buff,.true.)
-               endif
+               end if
                nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt - dummy%delta)/ &
                      (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt + dummy%delta)
 
@@ -3484,10 +3484,10 @@ contains
                else
                   write (buff,*)  'wir0_BUGGYERROR: Mur1 on wires wrong. '
                   call WarnErrReport(buff,.true.)
-               endif
+               end if
                nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt - dummy%delta)/ &
                      (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt + dummy%delta)
-            endif
+            end if
             !!!
          end do !del barrido de nodos !movido aqui 07/02/14 bug esn.nfde solo en reporte
       end do
@@ -3623,51 +3623,51 @@ contains
             if       ((HWires%CurrentSegment(conta)%chargeplus%currentplus_1%origindex < HWires%CurrentSegment(conta)%origindex).and.&
             (HWires%CurrentSegment(conta)%chargeplus%currentplus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !tienen que estar en el mismo hilo
                HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
-            endif
-         endif
+            end if
+         end if
          if (associated(HWires%CurrentSegment(conta)%chargeplus%currentplus_2)) then
             if       ((HWires%CurrentSegment(conta)%chargeplus%currentplus_2%origindex < HWires%CurrentSegment(conta)%origindex).and.&
             (HWires%CurrentSegment(conta)%chargeplus%currentplus_2%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !tienen que estar en el mismo hilo
                HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
-            endif
-         endif
+            end if
+         end if
          if (associated(HWires%CurrentSegment(conta)%chargeplus%currentminus_1)) then !puede que sea yo mismo, por eso miro tambien el currentminus2
             if       ((HWires%CurrentSegment(conta)%chargeplus%currentminus_1%origindex < HWires%CurrentSegment(conta)%origindex).and.&
             (HWires%CurrentSegment(conta)%chargeplus%currentminus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !tienen que estar en el mismo hilo
                HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
-            endif
-         endif
+            end if
+         end if
          if (associated(HWires%CurrentSegment(conta)%chargeplus%currentminus_2)) then
             if       ((HWires%CurrentSegment(conta)%chargeplus%currentminus_2%origindex < HWires%CurrentSegment(conta)%origindex).and.&
             (HWires%CurrentSegment(conta)%chargeplus%currentminus_2%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !tienen que estar en el mismo hilo
                HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
-            endif
-         endif
+            end if
+         end if
          !!!!!!!!!
          if (associated(HWires%CurrentSegment(conta)%chargeminus%currentminus_1)) then
             if       ((HWires%CurrentSegment(conta)%chargeminus%currentminus_1%origindex > HWires%CurrentSegment(conta)%origindex).and. &
             (HWires%CurrentSegment(conta)%chargeminus%currentminus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then
                HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
-            endif
-         endif
+            end if
+         end if
          if (associated(HWires%CurrentSegment(conta)%chargeminus%currentminus_2)) then
             if       ((HWires%CurrentSegment(conta)%chargeminus%currentminus_2%origindex > HWires%CurrentSegment(conta)%origindex).and. &
             (HWires%CurrentSegment(conta)%chargeminus%currentminus_2%indexmed == HWires%CurrentSegment(conta)%indexmed)) then
                HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
-            endif
-         endif
+            end if
+         end if
          if (associated(HWires%CurrentSegment(conta)%chargeminus%currentplus_1)) then  !puede que sea yo mismo, por eso miro tambien el currentplus2
             if       ((HWires%CurrentSegment(conta)%chargeminus%currentplus_1%origindex > HWires%CurrentSegment(conta)%origindex).and. &
             (HWires%CurrentSegment(conta)%chargeminus%currentplus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then
                HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
-            endif
-         endif
+            end if
+         end if
          if (associated(HWires%CurrentSegment(conta)%chargeminus%currentplus_2)) then
             if       ((HWires%CurrentSegment(conta)%chargeminus%currentplus_2%origindex > HWires%CurrentSegment(conta)%origindex).and. &
             (HWires%CurrentSegment(conta)%chargeminus%currentplus_2%indexmed == HWires%CurrentSegment(conta)%indexmed)) then
                HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
-            endif
-         endif
+            end if
+         end if
       end do
 
 
@@ -3689,7 +3689,7 @@ contains
                      if (HWires%ChargeNode(i1)%NumCurrentPlus+HWires%ChargeNode(i1)%NumCurrentMinus>2) then
                         write (buff,'(a,i7,a)') 'wir1_ERROR: Current source at ',HWIREs%ChargeNode(i1)%indexnode,' in junctions forbidden'
                         call WarnErrReport(buff,.true.)
-                     endif
+                     end if
                      HWires%ChargeNode(i1)%Isource=>dummy%TipoWire%Isource(k1)
                      HWires%ChargeNode(i1)%HasIsource=.true.
                      thereareIsources=.true.
@@ -3701,11 +3701,11 @@ contains
                         write (buff,'(a,e15.4e3)') 'wir1_WARNING: '//trim(adjustl(HWires%ChargeNode(i1)%Isource%Fichero%Name))// &
                         ' undersampled by a factor ',HWires%ChargeNode(i1)%Isource%Fichero%DeltaSamples/sgg%dt
                         if ((HWires%ChargeNode(i1)%k > ZI).and.(HWires%ChargeNode(i1)%k <= ZE)) call WarnErrReport(buff)
-                     endif
-                  endif
-               endif
+                     end if
+                  end if
+               end if
             end do
-         endif
+         end if
       end do
 
 
@@ -3718,7 +3718,7 @@ contains
        
       if (control%wirecrank) then
           call init_wirecrank
-      endif
+      end if
 
 
 !!!!Se arregla lo del resuming permit scaling 221118 pero realmente no se por que. deberia ser lo mismo. Es redundante, pero....
@@ -3767,7 +3767,7 @@ contains
                         !  HWires%CurrentSegment(conta)%cte5 = HWires%CurrentSegment(conta)%cte5/3.5
                 else
                          HWires%CurrentSegment(conta)%cte5 = 0.0_RKIND_wires
-                endif
+                end if
                    write (buff,'(a,6i9)') 'wir0_WARNING: NO de-embedding a NON-TERMINAL conformal already_YEEadvanced_byconformal  WIRE segment: ', sggmiE, &
                                      HWires%CurrentSegment(conta)%origIndex,HWires%CurrentSegment(conta)%i, &
                                      HWires%CurrentSegment(conta)%j,HWires%CurrentSegment(conta)%k,HWires%CurrentSegment(conta)%tipofield
@@ -3779,7 +3779,7 @@ contains
                         !  HWires%CurrentSegment(conta)%cte5 = HWires%CurrentSegment(conta)%cte5/3.5
                 else
                          HWires%CurrentSegment(conta)%cte5=0.0_RKIND_wires
-                endif
+                end if
                    write (buff,'(a,6i9)') 'wir0_WARNING: NO de-embedding a YES-TERMINAL conformal already_YEEadvanced_byconformal  WIRE segment: ', sggmiE, &
                                   HWires%CurrentSegment(conta)%origIndex,HWires%CurrentSegment(conta)%i, &
                                   HWires%CurrentSegment(conta)%j,HWires%CurrentSegment(conta)%k,HWires%CurrentSegment(conta)%tipofield
@@ -3798,7 +3798,7 @@ contains
                        write (buff,'(a,6i9)')        'wir0_WARNING: YES De-embedding a NON-TERMINAL struct segment from Lossy ', sggmiE, &
                                   HWires%CurrentSegment(conta)%origIndex,HWires%CurrentSegment(conta)%i, &
                                   HWires%CurrentSegment(conta)%j,HWires%CurrentSegment(conta)%k,HWires%CurrentSegment(conta)%tipofield
-                   endif
+                   end if
                    
                   else  !SI SI SI ES UN TERMINAL
                    if ((sggmiE == 0).or.(sgg%med(sggmiE)%is%pec)) then
@@ -3810,8 +3810,8 @@ contains
                        write (buff,'(a,6i9)')  'wir0_SEVEREWARNING: YES de-embedding a YES-TERMINAL struct SEGMENT from Lossy  ', sggmiE, &
                                   HWires%CurrentSegment(conta)%origIndex,HWires%CurrentSegment(conta)%i, &
                                   HWires%CurrentSegment(conta)%j,HWires%CurrentSegment(conta)%k,HWires%CurrentSegment(conta)%tipofield
-                     endif
-                  endif  
+                     end if
+                  end if  
                   if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
 !!!!  luego normales
           else
@@ -3820,8 +3820,8 @@ contains
                       HWires%CurrentSegment(conta)%origIndex,HWires%CurrentSegment(conta)%i, &
                       HWires%CurrentSegment(conta)%j,HWires%CurrentSegment(conta)%k,HWires%CurrentSegment(conta)%tipofield
                       call WarnErrReport(buff)
-            endif
-          endif
+            end if
+          end if
    
 
           
@@ -3838,7 +3838,7 @@ contains
                         !  HWires%CurrentSegment(conta)%cte5=HWires%CurrentSegment(conta)%cte5/3.5
                 else
                          HWires%CurrentSegment(conta)%cte5=0.0_RKIND_wires
-                endif
+                end if
                     
                 HWires%CurrentSegment(conta)%Efield_wire2main => HWires%null_field  ! YES de-embedding
                 HWires%CurrentSegment(conta)%Efield_main2wire => HWires%null_field  ! YES de-embedding
@@ -3904,7 +3904,7 @@ end subroutine deembed_segment
              !!!!!     sgg%Med(sggMiEy(i,j-1,k         ))%Is%split_and_useless .or. &
              !!!!!     sgg%Med(sggMiEz(i,j,kmenos1     ))%Is%split_and_useless) then
              !!!!!     nodo%ispec=.true.
-             !!!!! endif
+             !!!!! end if
                !tampoco es esto lo del bug  FU50_50mm_conf   pero no esta de mas tenerlo en cuenta
             
                nodo%ispec = &
@@ -3925,7 +3925,7 @@ end subroutine deembed_segment
                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                    nodo%ispec=.false.
                    nodo%islossy=.false.
-               endif
+               end if
                
                
 !pedazo de niapa para poner los nodos conformal a voltage nulo y sus segmentos conformal tambien si son already_YEEadvanced_byconformal (old notouch o no_touch) y que Dios reparta suerte 140220
@@ -3942,7 +3942,7 @@ end subroutine deembed_segment
                           sgg%med(medio1m)%is%split_and_useless .or. sgg%med(medio2m)%is%split_and_useless .or. sgg%med(medio3m)%is%split_and_useless) then
                            write (buff,*)  'wir1_BUGGYERROR: Conformal node CONNECTED TO at least one split_and_useless conformal edge that cannot be safely set to PEC () ', i,j,k
                            if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff,.true.)
-                      endif
+                      end if
                      !
                       if (sgg%med(medio1 )%is%already_YEEadvanced_byconformal .or. sgg%med(medio2 )%is%already_YEEadvanced_byconformal .or. sgg%med(medio3 )%is%already_YEEadvanced_byconformal.or. &
                           sgg%med(medio1m)%is%already_YEEadvanced_byconformal .or. sgg%med(medio2m)%is%already_YEEadvanced_byconformal .or. sgg%med(medio3m)%is%already_YEEadvanced_byconformal) then
@@ -3960,8 +3960,8 @@ end subroutine deembed_segment
                                else
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, cannot be also changed to PEC line for embedding a wire at Ex ', i,j,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff) 
-                                endif
-                           endif  
+                                end if
+                           end if  
                            if (sgg%med(medio1m)%is%already_YEEadvanced_byconformal) then
                                call check_embed(embed,iEx,i-1,j,k)
                                if (.not.embed) then
@@ -3972,8 +3972,8 @@ end subroutine deembed_segment
                                else
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, cannot be also changed to PEC line for embedding a wire at mEx ', i-1,j,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff) 
-                                endif
-                           endif 
+                                end if
+                           end if 
                            if (sgg%med(medio2)%is%already_YEEadvanced_byconformal) then
                                call check_embed(embed,iEy,i,j,k)
                                if (.not.embed) then
@@ -3984,8 +3984,8 @@ end subroutine deembed_segment
                                else
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, cannot be also changed to PEC line for embedding a wire at Ey ', i,j,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff) 
-                                endif
-                           endif 
+                                end if
+                           end if 
                            if (sgg%med(medio2m)%is%already_YEEadvanced_byconformal) then
                                call check_embed(embed,iEy,i,j-1,k)
                                if (.not.embed) then
@@ -3996,8 +3996,8 @@ end subroutine deembed_segment
                                else
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, cannot be also changed to PEC line for embedding a wire at mEy ', i,j-1,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff) 
-                                endif
-                           endif 
+                                end if
+                           end if 
                            if (sgg%med(medio3)%is%already_YEEadvanced_byconformal) then
                                call check_embed(embed,iEz,i,j,k)
                                if (.not.embed) then
@@ -4008,8 +4008,8 @@ end subroutine deembed_segment
                                else
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, cannot be also changed to PEC line for embedding a wire at Ez ', i,j,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff) 
-                                endif
-                           endif
+                                end if
+                           end if
                            if (sgg%med(medio3m)%is%already_YEEadvanced_byconformal) then
                                call check_embed(embed,iEz,i,j,kmenos1)
                                if (.not.embed) then
@@ -4020,15 +4020,15 @@ end subroutine deembed_segment
                                else
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, cannot be also changed to PEC line for embedding a wire at mEz ', i,j,kmenos1
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff) 
-                                endif
-                           endif
+                                end if
+                           end if
                            
                       ELSEIF (sgg%med(medio1 )%is%split_and_useless .and. sgg%med(medio2 )%is%split_and_useless .and. sgg%med(medio3 )%is%split_and_useless .and. &
                               sgg%med(medio1m)%is%split_and_useless .and. sgg%med(medio2m)%is%split_and_useless .and. sgg%med(medio3m)%is%split_and_useless) then
                            write (buff,*)  'wir1_ERROR: Conformal split_and_useless node NOT changed (IMPOSIBLE) to PEC grounded node at ', i,j,k
                            if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff,.true.)
                            !ojo no tendria arreglo porque aunque se updatee a 0, este campo luego esta partido en dos en conformal y es split_and_useless        
-                      endif
+                      end if
                       !esta a PEC/lossy o al punietero aire
                               !!!lo he sacado del if. solo para reporte y que coincida con lo que da estructurado  280323
                       if (nodo%ispec)  then
@@ -4043,9 +4043,9 @@ end subroutine deembed_segment
                       else
                           write (buff,*)  'wir1_INFO: (SHOULD BE REDUNDANT) Terminal Node embedded in air ', i,j,k        
                           if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
-                      endif
+                      end if
                       if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
-                 endif
+                 end if
 !!!!fin pedazo de niapa           
                
 
@@ -4054,21 +4054,21 @@ end subroutine deembed_segment
                     nodo%isPEC   = .false.
 			        write (buff,*)  'wir1_ERROR: (Deprecated 170220-010324: no longer an error, though I stop. If sure relaunch with -ignoreerrors) ENL/ENR PEC grounded node detached from ground-material for being a wire junction', i,j,k,nodo%ispec,nodo%islossy
                     if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff,.true.)
-               endif               
+               end if               
                if (nodo%isLossy.and.(nodo%IsHeterogeneousJunction)) then
                     nodo%isLossy   = .false.
                     write (buff,*) 'wir1_ERROR: (Deprecated 170220-010324: no longer an error, though I stop. If sure relaunch with -ignoreerrors)  ENL/ENR Lossy grounded node detached from ground-material for being a wire junction', i,j,k,nodo%ispec,nodo%islossy
                     if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff,.true.)
-               endif
+               end if
 !!!!!!!!! fin cambio sgg 080912016               
                
                
                if (nodo%isPec) then
                     nodo%isLossy=.false. !tocado 030615 para evitar conflictos en nodos frontera entre Lossy y pec
-               endif
+               end if
                !
-            endif
-         endif !del fullsize
+            end if
+         end if !del fullsize
       end do
 
    end subroutine detect_peclossyconformal_nodes
@@ -4077,83 +4077,83 @@ end subroutine deembed_segment
    logical embed
    integer :: ib,jb,kb,tipofieldb
    integer :: io,jo,ko,tipofieldo
-   type(CurrentSegments), pointer  :: dummy
+   type(CurrentSegments_t), pointer  :: dummy
   !!!!!!!!!!!!!!!!! embed=.true.; return !!!!ojoooo sgg tocado a mano para ver bug conformal 220323 
    
     embed=.false.
     if (associated(nodo%CurrentMinus_1))  then
         dummy => nodo%CurrentMinus_1
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentMinus_2))  then
         dummy => nodo%CurrentMinus_2
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentMinus_3))  then
         dummy => nodo%CurrentMinus_3
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentMinus_4))  then
         dummy => nodo%CurrentMinus_4
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentMinus_5))  then
         dummy => nodo%CurrentMinus_5
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentMinus_6))  then
         dummy => nodo%CurrentMinus_6
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentMinus_7))  then
         dummy => nodo%CurrentMinus_7
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentMinus_8))  then
         dummy => nodo%CurrentMinus_8
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentMinus_9))  then
         dummy => nodo%CurrentMinus_9
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     !
     if (associated(nodo%CurrentPlus_1))  then
         dummy => nodo%CurrentPlus_1
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentPlus_2))  then
         dummy => nodo%CurrentPlus_2
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentPlus_3))  then
         dummy => nodo%CurrentPlus_3
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentPlus_4))  then
         dummy => nodo%CurrentPlus_4
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentPlus_5))  then
         dummy => nodo%CurrentPlus_5
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentPlus_6))  then
         dummy => nodo%CurrentPlus_6
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentPlus_7))  then
         dummy => nodo%CurrentPlus_7
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentPlus_8))  then
         dummy => nodo%CurrentPlus_8
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     if (associated(nodo%CurrentPlus_9))  then
         dummy => nodo%CurrentPlus_9
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
-    endif
+    end if
     
     return
    end subroutine check_embed
@@ -4162,7 +4162,7 @@ end subroutine deembed_segment
    logical embed
    integer :: ib,jb,kb,tipofieldb
    integer :: io,jo,ko,tipofieldo
-   type(CurrentSegments), pointer  :: dummy
+   type(CurrentSegments_t), pointer  :: dummy
         ib = dummy%i
         jb = dummy%j
         kb = dummy%k
@@ -4217,7 +4217,7 @@ subroutine resume_casuistics
          !for new wires MPI march'12 sgg bug en multiwires mpi
 
 #endif
-      endif
+      end if
 
     end subroutine resume_casuistics
    
@@ -4226,7 +4226,7 @@ subroutine resume_casuistics
          if (control%layoutnumber /=0) then
             buff='Unsupported crank in MPI'
             call WarnErrReport(buff,.true.)
-         endif
+         end if
          do n=1,HWires%NumCurrentSegments
             Segmento => HWires%CurrentSegment(n)
             jmed   = Segmento%indexmed
@@ -4263,8 +4263,8 @@ subroutine resume_casuistics
                else
                   buff='Unsupported crank'
                   call WarnErrReport(buff,.true.)
-               endif
-            endif
+               end if
+            end if
 
          end do
          end subroutine init_wirecrank
@@ -4280,7 +4280,7 @@ subroutine resume_casuistics
     subroutine calc_wirehollandconstants(sgg,G2,fieldtotl,wiresflavor,mu00,eps00,simu_devia)
 
       logical :: simu_devia
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       real(kind=RKIND) , pointer, dimension(:),intent(in) :: G2
       character(len=*), INTENT(in) :: wiresflavor
       logical, intent(in) :: fieldtotl
@@ -4291,9 +4291,9 @@ subroutine resume_casuistics
 
       real(kind=RKIND_wires) :: df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
 
-      type(CurrentSegments), pointer  :: dummy
-      type(ChargeNodes), pointer  :: Nodo
-      type(TMultiline), pointer                      :: Multiline
+      type(CurrentSegments_t), pointer  :: dummy
+      type(ChargeNodes_t), pointer  :: Nodo
+      type(TMultiline_t), pointer                      :: Multiline
    
 
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
@@ -4322,7 +4322,7 @@ subroutine resume_casuistics
             dummy => nodo%CurrentMInus_1
             nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt - dummy%delta)/ &
                      (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt + dummy%delta)
-         endif
+         end if
       end do
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -4374,7 +4374,7 @@ subroutine resume_casuistics
             end do
          end do
 
-      ENDIF 
+      end if 
 
 !!!guarda el dt anterior
 
@@ -4398,9 +4398,9 @@ subroutine resume_casuistics
    !
 
    function TestAdjacency(first,numfirst,second,numsecond,connectendings,isolategroupgroups,strictOLD,ZI,ZE,NUMESEG,firstmenos1,FIRSTMAS1,secondmenos1,secondmas1,verbose) RESULT(adj)
-      type(CurrentSegments), pointer, intent(in) :: first ,second,firstmenos1 ,firstmas1 ,secondmenos1 ,secondmas1
-      type(CurrentSegments), pointer     :: firstprevio,secondprevio
-      type(adyacc) :: adj
+      type(CurrentSegments_t), pointer, intent(in) :: first ,second,firstmenos1 ,firstmas1 ,secondmenos1 ,secondmas1
+      type(CurrentSegments_t), pointer     :: firstprevio,secondprevio
+      type(adyacc_t) :: adj
       logical :: verbose
       logical :: conexionados,RRConnected,RLConnected,LLConnected,LRConnected,EndingsConnected,connectendings,isolategroupgroups,RequestedConnection,strictOLD,success,entro1,entro2,entro3
       integer(kind=4) :: numfirst,numsecond,ZI,ZE,void,offx,offy,offz,NUMESEG
@@ -4425,46 +4425,46 @@ subroutine resume_casuistics
             if (first%i==second%i-1) then
                adj%Is=.true.
                adj%i=second%i
-            endif
+            end if
             if (first%i==second%i+1) then
                adj%Is=.true.
                adj%i=first%i
-            endif
+            end if
             if (first%i==second%i) then
                adj%Parallel=.true.
                adj%i=first%i
-            endif
+            end if
          elseif ((first%i==second%i).and.(first%k==second%k).and.(first%tipofield==iEy)) then
             adj%i=first%i
             adj%k=first%k
             if (first%j==second%j-1) then
                adj%Is=.true.
                adj%j=second%j
-            endif
+            end if
             if (first%j==second%j+1) then
                adj%Is=.true.
                adj%j=first%j
-            endif
+            end if
             if (first%j==second%j) then
                adj%Parallel=.true.
                adj%j=first%j
-            endif
+            end if
          elseif ((first%i==second%i).and.(first%j==second%j).and.(first%tipofield==iEz)) then
             adj%i=first%i
             adj%j=first%j
             if (first%k==second%k-1) then
                adj%Is=.true.
                adj%k=second%k
-            endif
+            end if
             if (first%k==second%k+1) then
                adj%Is=.true.
                adj%k=first%k
-            endif
+            end if
             if (first%k==second%k) then
                adj%Parallel=.true.
                adj%k=first%k
-            endif
-         endif
+            end if
+         end if
       elseif (((first%tipofield==iEx).and.(second%tipofield==iEy)).and. &
       (((first%i==second%i  ).and.(first%j==second%j  ).and.(first%k==second%k  )).or. &
       ((first%i==second%i  ).and.(first%j==second%j+1).and.(first%k==second%k  )))) then
@@ -4555,7 +4555,7 @@ subroutine resume_casuistics
          adj%j=first%j
          adj%k=first%k+1
          adj%i=first%i
-      endif
+      end if
       !added July'12 to connect requested endings
       if (adj%Parallel) adj%Is = .true.
       !RightConnected adyacency  foreseen in the .nfde file      !added to solve  aNTh-THW_PW bug
@@ -4565,19 +4565,19 @@ subroutine resume_casuistics
       if ((first%Is_LeftEnd).and.(second%Is_LeftEnd)) then
          RequestedConnection = (.not.connectendings).and.(first%indexmed /= second%indexmed).and. &
          ((first%tipowire%LeftEnd == second%tipowire%LeftEnd))
-      endif
+      end if
       if ((first%Is_LeftEnd).and.(second%Is_RightEnd)) then
          RequestedConnection = (.not.connectendings).and.(first%indexmed /= second%indexmed).and. &
          ((first%tipowire%LeftEnd == second%tipowire%RightEnd))
-      endif
+      end if
       if ((first%Is_RightEnd).and.(second%Is_RightEnd))  then
          RequestedConnection = (.not.connectendings).and.(first%indexmed /= second%indexmed).and. &
          ((first%tipowire%RightEnd == second%tipowire%RightEnd))
-      endif
+      end if
       if ((first%Is_RightEnd).and.(second%Is_LeftEnd))  then
          RequestedConnection = (.not.connectendings).and.(first%indexmed /= second%indexmed).and. &
          ((first%tipowire%RightEnd == second%tipowire%LeftEnd))
-      endif
+      end if
 
       !esto lo he quitado el 6/2/14 pq en ESN.nfde ambos extremos estaban adjancentes pero solo se pedia conexion en uno y por lo tanto hay que discernir con la condicional
       !de mas arriba
@@ -4661,7 +4661,7 @@ subroutine resume_casuistics
          LRConnected = LRConnected .and. conexionados
          RLConnected = RLConnected .and. conexionados
          RRConnected = RRConnected .and. conexionados
-      endif
+      end if
       if (.not.connectendings) LLConnected=LLConnected.and.(first%TIPOWIRE%LeftEnd==second%TIPOWIRE%LeftEnd)
       if (.not.connectendings) LRConnected=LRConnected.and.(first%TIPOWIRE%LeftEnd==second%TIPOWIRE%RightEnd)
       if (.not.connectendings) RLConnected=RLConnected.and.(first%TIPOWIRE%RightEnd==second%TIPOWIRE%LeftEnd)
@@ -4684,8 +4684,8 @@ subroutine resume_casuistics
                adj%i = second%ilibre
                adj%j=  second%jlibre
                adj%k=  second%klibre
-            endif
-         endif
+            end if
+         end if
          void=0
          if (first%Is_LeftEnd) void=void+1
          if (first%Is_RightEnd) void=void+1
@@ -4698,9 +4698,9 @@ subroutine resume_casuistics
                adj%i = first%ilibre
                adj%j=  first%jlibre
                adj%k=  first%klibre
-            endif
-         endif
-      endif
+            end if
+         end if
+      end if
       !los cuatro conectados (puede pasar en amelet o en nfde)
       if ((first%Is_LeftEnd .and. first%Is_RightEnd).and.(second%Is_LeftEnd .and. second%Is_RightEnd)) then
          if (connectendings) then
@@ -4730,14 +4730,14 @@ subroutine resume_casuistics
                adj%i = first%ilibre
                adj%j=  first%jlibre
                adj%k=  first%klibre
-            endif
+            end if
             !
             adj%BothEndingsConnected =adj%Parallel
          else
             EndingsConnected =(LLConnected.or.LRConnected.or.RLConnected.or.RRConnected) !redundante ya hecho antes
             adj%BothEndingsConnected = ((RRConnected.and.LLConnected).or.(RLConnected.and.LRConnected))
-         endif
-      endif
+         end if
+      end if
 
 
       !fin casos especiales
@@ -4761,14 +4761,14 @@ subroutine resume_casuistics
                            write (buff,'(i7,3i7,a,i7,3i7,a)') first%origindex,first%i,first%j,first%k,' '//dir(first%tipofield),&
                            second%origindex,second%i,second%j,second%k,' '//dir(second%tipofield)
                            if ((first%k >= ZI).and.(first%k <= ZE)) call WarnErrReport(buff)
-                        endif
+                        end if
                      ELSE
                         write (buff,'(a)')  'wir2_INFO: DISCONNECTING Parallel Adjacent intermediate segments from multiWIREs:  '
                         if ((first%k >= ZI).and.(first%k <= ZE).and.verbose) call WarnErrReport(buff)
                         write (buff,'(i7,3i7,a,i7,3i7,a)') first%origindex,first%i,first%j,first%k,' '//dir(first%tipofield),&
                         second%origindex,second%i,second%j,second%k,' '//dir(second%tipofield)
                         if ((first%k >= ZI).and.(first%k <= ZE).and.verbose) call WarnErrReport(buff)
-                     ENDIF
+                     end if
                   else
                      if ((second%Is_RightEnd .or. second%Is_LeftEnd .or. second%IsEnd_norLeft_norRight).and. &
                      (first%Is_RightEnd .or. first%Is_LeftEnd .or. first%IsEnd_norLeft_norRight)) then
@@ -4784,21 +4784,21 @@ subroutine resume_casuistics
                            write (buff,'(i7,3i7,a,i7,3i7,a)') first%origindex,first%i,first%j,first%k,' '//dir(first%tipofield),&
                            second%origindex,second%i,second%j,second%k,' '//dir(second%tipofield)
                            if ((first%k >= ZI).and.(first%k <= ZE)) call WarnErrReport(buff)
-                        endif
+                        end if
                      else
                         write (buff,'(a)')  'wir2_INFO: DISCONNECTING Non-Parallel Adjacent intermediate segments from multiWIREs:'
                         if ((first%k >= ZI).and.(first%k <= ZE).and.verbose) call WarnErrReport(buff)
                         write (buff,'(i7,3i7,a,i7,3i7,a)') first%origindex,first%i,first%j,first%k,' '//dir(first%tipofield),&
                         second%origindex,second%i,second%j,second%k,' '//dir(second%tipofield)
                         if ((first%k >= ZI).and.(first%k <= ZE).and.verbose) call WarnErrReport(buff)
-                     ENDIF
-                  endif
+                     end if
+                  end if
                elseif (EndingsConnected) then
                   if (adj%Parallel) then
                      write (buff,'(a)')  'wir2_INFO: CONNECTING Parallel Adjacent ENDING segments from multiWIREs:  '
                   else
                      write (buff,'(a)')  'wir2_INFO: CONNECTING Non-Parallel Adjacent ENDING segments from multiWIREs:'
-                  endif
+                  end if
                   if ((first%k >= ZI).and.(first%k <= ZE).and.verbose) call WarnErrReport(buff)
                   write (buff,'(i7,3i7,a,i7,3i7,a)') first%origindex,first%i,first%j,first%k,' '//dir(first%tipofield),&
                   second%origindex,second%i,second%j,second%k,' '//dir(second%tipofield)
@@ -4825,14 +4825,14 @@ subroutine resume_casuistics
                         adj%j=  second%jlibre
                         adj%k=  second%klibre
                         entro1=.true.
-                    endif
+                    end if
                     if ( &
                     ((first%ilibre == second%i     ).and.(first%jlibre == second%j     ).and.(first%klibre == second%k     ))) then
                      adj%i = first%ilibre
                      adj%j=  first%jlibre
                      adj%k=  first%klibre
                         entro2=.true.
-                    endif
+                    end if
 !!!esta es la casuistica que aniado 150219                   
                     if ( &
                     ((first%ilibre     == second%ilibre).and.(first%jlibre      == second%jlibre).and.(first%klibre      == second%klibre))) then
@@ -4840,21 +4840,21 @@ subroutine resume_casuistics
                         adj%j=  second%jlibre
                         adj%k=  second%klibre
                         entro3=.true.
-                    endif
+                    end if
 !!!fin casuistica que anidado 150219
                     if ((.not.entro1).and.(.not.entro2).and.(.not.entro3)) then
                             write (buff,*)  'wir2_BUGGYERROR: bug in adjacencies entro. ',first%ilibre,first%jlibre,first%klibre,second%ilibre,second%jlibre,second%klibre
                             call WarnErrReport(buff,.true.)
-                    endif
+                    end if
                     if (entro1.and.entro2) then
                         if (.not.entro3) then
                             write (buff,'(a)')  'wir2_BUGGYERROR: bug in adjacencies entro. ',first%ilibre,first%jlibre,first%klibre,second%ilibre,second%jlibre,second%klibre
                             call WarnErrReport(buff,.true.)
-                        endif
-                    endif
+                        end if
+                    end if
 !!!!fina aniadido 141218
-                  ENDIF
-               endif
+                  end if
+               end if
             ELSEIF (First%indexmed == second%indexmed) then
                if (adj%Parallel) then !paralelos del mismo hilo
                   if (.not.strictOLD) then
@@ -4888,16 +4888,16 @@ subroutine resume_casuistics
                               if (associated(firstmas1)) then
                                  if (.not.((firstmas1%i == first%i).and.(firstmas1%j == first%j).and.(firstmas1%k == first%k).and.(firstmas1%tipofield == first%tipofield))) then
                                     firstprevio=>firstmas1
-                                 endif
-                              endif
-                           endif
+                                 end if
+                              end if
+                           end if
                         else
                            if (associated(firstmas1)) then
                               if (.not.((firstmas1%i == first%i).and.(firstmas1%j == first%j).and.(firstmas1%k == first%k).and.(firstmas1%tipofield == first%tipofield))) then
                                  firstprevio=>firstmas1
-                              endif
-                           endif
-                        endif
+                              end if
+                           end if
+                        end if
                         if (associated(secondmenos1)) then
                            if (.not.((secondmenos1%i == second%i).and.(secondmenos1%j == second%j).and.(secondmenos1%k == second%k).and.(secondmenos1%tipofield == second%tipofield))) then
                               secondprevio=>secondmenos1
@@ -4905,16 +4905,16 @@ subroutine resume_casuistics
                               if (associated(secondmas1)) then
                                  if (.not.((secondmas1%i == second%i).and.(secondmas1%j == second%j).and.(secondmas1%k == second%k).and.(secondmas1%tipofield == second%tipofield))) then
                                     secondprevio=>secondmas1
-                                 endif
-                              endif
-                           endif
+                                 end if
+                              end if
+                           end if
                         else
                            if (associated(secondmas1)) then
                               if (.not.((secondmas1%i == second%i).and.(secondmas1%j == second%j).and.(secondmas1%k == second%k).and.(secondmas1%tipofield == second%tipofield))) then
                                  secondprevio=>secondmas1
-                              endif
-                           endif
-                        endif
+                              end if
+                           end if
+                        end if
                         !
                         offx=0; offy=0; offz=0
                         if ((first%tipofield==second%tipofield).and.(first%tipofield==iEx)) offx=1
@@ -4938,7 +4938,7 @@ subroutine resume_casuistics
                                  adj%i=first%i+offx
                                  adj%j=first%j
                                  adj%k=first%k
-                              endif
+                              end if
                             case  (iEy)
                               if (firstprevio%j == first%j) then
                                  success=.true.
@@ -4955,7 +4955,7 @@ subroutine resume_casuistics
                                  adj%i=first%i
                                  adj%j=first%j+offy
                                  adj%k=first%k
-                              endif
+                              end if
                             case  (iEz)
                               if (firstprevio%k == first%k) then
                                  success=.true.
@@ -4972,7 +4972,7 @@ subroutine resume_casuistics
                                  adj%i=first%i
                                  adj%j=first%j
                                  adj%k=first%k+offz
-                              endif
+                              end if
                            end select
                         elseif (associated(secondprevio)) then
                            select case(second%tipofield)
@@ -4992,7 +4992,7 @@ subroutine resume_casuistics
                                  adj%i=second%i+offx
                                  adj%j=second%j
                                  adj%k=second%k
-                              endif
+                              end if
                             case  (iEy)
                               if (secondprevio%j == second%j) then
                                  success=.true.
@@ -5009,7 +5009,7 @@ subroutine resume_casuistics
                                  adj%i=second%i
                                  adj%j=second%j+offy
                                  adj%k=second%k
-                              endif
+                              end if
                             case  (iEz)
                               if (secondprevio%k == second%k) then
                                  success=.true.
@@ -5026,7 +5026,7 @@ subroutine resume_casuistics
                                  adj%i=second%i
                                  adj%j=second%j
                                  adj%k=second%k+offz
-                              endif
+                              end if
                            end select
                         else
                            if ((first%Is_LeftEnd .or. first%Is_RightEnd).and.(second%Is_LeftEnd .or. second%Is_RightEnd)) then
@@ -5034,8 +5034,8 @@ subroutine resume_casuistics
                               adj%i=second%i+offx
                               adj%j=second%j+offy
                               adj%k=second%k+offz
-                           endif
-                        endif
+                           end if
+                        end if
                         if (success) then
                            adj%IsHeterogeneousJunction=.false.
                            ADJ%IS=.TRUE.
@@ -5056,10 +5056,10 @@ subroutine resume_casuistics
                            write (buff,'(i7,3i7,a,i7,3i7,a)') first%origindex,first%i,first%j,first%k,' '//dir(first%tipofield),&
                            second%origindex,second%i,second%j,second%k,' '//dir(second%tipofield)
                            call WarnErrReport(buff,.true.)
-                        endif
+                        end if
                         !
-                     endif
-                  endif !DEL NO STRICTO
+                     end if
+                  end if !DEL NO STRICTO
                else !no son paralelos pero si estan en el mismo hilko
                   if (.not.strictOLD) then
                      adj%IsHeterogeneousJunction=.false.
@@ -5072,7 +5072,7 @@ subroutine resume_casuistics
                      ELSE
                         write (buff,'(a)')  'wir2_INFO: CONNECTING CORRELATIVE Non-Parallel segments from the same WIRE:'
                         if (verbose) call WarnErrReport(buff)
-                     ENDIF
+                     end if
                      write (buff,'(i7,3i7,a,i7,3i7,a)') first%origindex,first%i,first%j,first%k,' '//dir(first%tipofield),&
                      second%origindex,second%i,second%j,second%k,' '//dir(second%tipofield)
                      call WarnErrReport(buff)
@@ -5099,11 +5099,11 @@ subroutine resume_casuistics
                         if (verbose) call WarnErrReport(buff)
                         write (buff,'(a,3i7)')  '           AT :',adj%i,adj%j,adj%k
                         if (verbose) call WarnErrReport(buff)
-                     endif
-                  endif
-               endif
-            endif
-         endif
+                     end if
+                  end if
+               end if
+            end if
+         end if
       !
       !!!!!!!!!isolategroupsgroups
       if (isolategroupgroups) then
@@ -5115,8 +5115,8 @@ subroutine resume_casuistics
             if ((first%k >= ZI).and.(first%k <= ZE)) call WarnErrReport(buff)
             adj%is=.false.
             adj%BothEndingsConnected=.false.
-         endif
-      endif
+         end if
+      end if
       !!!!!!!!!!
       return
    end function TestAdjacency
@@ -5133,16 +5133,16 @@ subroutine resume_casuistics
       real(kind=RKIND), intent(in) :: eps0,mu0
       integer, intent(in) :: wirethickness
       logical :: simu_devia,stochastic,experimentalVideal
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
 
       integer(kind=4) :: n,jmed,layoutnumber,iw1,is1,is2
 
       integer(kind=4), intent(in) :: timeinstant
       real(kind=RKIND_wires) :: Iplus,IMinus,Qplus,QMinus,timei
       real(kind=RKIND_wires) :: Vincid,Iincid
-      type(CurrentSegments), pointer  :: Segmento, Segmento2
-      type(ChargeNodes), pointer  :: Nodo
-      type(TMultiline), pointer                      :: Multiline
+      type(CurrentSegments_t), pointer  :: Segmento, Segmento2
+      type(ChargeNodes_t), pointer  :: Nodo
+      type(TMultiline_t), pointer                      :: Multiline
       character(len=*), INTENT(in) :: wiresflavor
       timei = sgg%tiempo(timeinstant) 
       !!!
@@ -5166,22 +5166,22 @@ subroutine resume_casuistics
 !!!         !debe ser lo primero que se hace para overridear el call conformal_advance_E
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield1)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield1=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield2)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield2=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield3)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield3=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield4)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield4=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield5)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield5=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield6)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield6=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
@@ -5224,24 +5224,24 @@ subroutine resume_casuistics
                 else
             !The node is a true terminal one and the mirror of the current is employed for updating (Edelvik's treatment similar to PMC)
                     Iplus = -Iminus
-                endif
-            endif
+                end if
+            end if
             if ((Nodo%NumCurrentMinus == 0).and.(Nodo%NumCurrentPlus == 1)) then
                 if (Nodo%IsPeriodic) then
                     IMinus = +Iplus
                 else
                     IMinus = -Iplus
-                endif
-            endif
+                end if
+            end if
             !Algoritmo comun a toda la casuistica !feb 13
             if (.not.nodo%IsMur)   then
                Nodo%ChargePresent =  Nodo%CteProp*Nodo%ChargePast   - Nodo%CtePlain*(Iplus-IMinus)
             else
                 continue
-            endif
+            end if
             !        if (nodo%IsAttachedtoVoltage) Nodo%ChargePresent =  0.0_RKIND_wires
 
-         endif !del nodo%exists !voideo algunos cuando spliteo
+         end if !del nodo%exists !voideo algunos cuando spliteo
       end do
 !!!no toco lo que esta comentado a 230323 para fuentes duras/blandas
       !!!las convierto en duras mas abajo. correos jag rayos junio'15
@@ -5257,11 +5257,11 @@ subroutine resume_casuistics
       !!            Nodo%ChargePresent                         =Nodo%ChargePresent                          +  Nodo%CtePlain                          * Iincid
       !!!!!!!!no funciona esta idea previa de fuente de corriente  quizas porque violo kirchhoff
       !!            Nodo%CurrentPlus_1%Chargeplus%ChargePresent=Nodo%CurrentPlus_1%Chargeplus%ChargePresent -  Nodo%CurrentPlus_1%Chargeplus%CtePlain * Iincid
-      !!        endif
-      !!        endif
+      !!        end if
+      !!        end if
       !!    end do
-      !!!endif
-      !!!endif
+      !!!end if
+      !!!end if
       
 !aniado eso a 230323 para fuentes de corrientes duras blandas. Me inspiro en lo que esta comentado antes   
       if (.not.simu_devia) then              
@@ -5283,13 +5283,13 @@ subroutine resume_casuistics
                           else
                               print *,'bug in current sources '
                               stop
-                          endif
-                      endif
-                  endif
-                  endif
+                          end if
+                      end if
+                  end if
+                  end if
               end do
-          endif
-      endif
+          end if
+      end if
 
       !Absorbing Mur boundary conditions if necessary in the charges
       if (thereAreMurConditions) then
@@ -5300,12 +5300,12 @@ subroutine resume_casuistics
             Nodo => HWires%ChargeNode(n)
             if (nodo%exists.and.nodo%IsMur) then
                Nodo%ChargePresent=Nodo%NodeInside%ChargePast + Nodo%cteMur*(Nodo%NodeInside%ChargePresent - Nodo%ChargePast)
-            endif
+            end if
          end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-      endif
+      end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !END OF CHARGE ADVANCING from n+1.0_RKIND_wires / 2 to n+3/2
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -5330,13 +5330,13 @@ subroutine resume_casuistics
 #ifdef CompileWithThickWires
              if (wirethickness>1) then
                 call Advance_Thick_Efield_wire2main(sgg,segmento,eps0,mu0,wirethickness)
-             endif 
+             end if 
 #endif                      
              if (wirethickness==1) then
                 segmento%efield_wire2main=real(segmento%efield_wire2main,kind=rkind_wires) &
                     - segmento%cte5 * segmento%current
-             endif
-         endif
+             end if
+         end if
       end do
 
       !revoids the null_field value (unvoided above) for embedded and paralel segments (if requested at run time with -groundwires)
@@ -5415,14 +5415,14 @@ subroutine resume_casuistics
 #ifdef CompileWithThickWires
                    if (wirethickness>1) then
                        call Advance_Thick_Efield_main2wire(sgg,segmento,eps0,mu0,wirethickness)
-                   endif 
+                   end if 
 #endif                            
                    if (wirethickness==1) then
                      Segmento%Current = Segmento%Current + &
                          Segmento%cte2*real(Segmento%Efield_main2wire,kind=RKIND_wires)
-                   endif           
-               endif
-            endif
+                   end if           
+               end if
+            end if
          end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -5432,7 +5432,7 @@ subroutine resume_casuistics
          !!!!!!!!!!!!!!!!!!!
       else
          call WarnErrReport('wir0_BUGGYERROR: this flavor not permitted in sgg routine',.true.)
-      endif !wiresflavor
+      end if !wiresflavor
       !igual en ambos
       if (.not.simu_devia) then             
           if (thereAreVsources) then
@@ -5449,7 +5449,7 @@ subroutine resume_casuistics
                    !!!         Segmento%ChargeMinus%ChargePresent =  Vincid  / (Segmento%Lind * InvMu(Segmento%indexmed)*InvEps(Segmento%indexmed))
                    !!!    else
                    !!!        print *,'error en experimentalVideal 200621'
-                   !!!    endif
+                   !!!    end if
                    !!!else
                        !lo de siempre. aniado lo anterior para ver lo de las fuentes duras !C=Q/V-> C=c^-2/L-> Q=V*C=V/(L c^2)
                        if (Segmento%Vsource%soft) then !fuentes blandas usuales 230323 
@@ -5461,12 +5461,12 @@ subroutine resume_casuistics
                        else !nuevas fuentes duras 230323
                            Iincid=Vincid !realmente se trata de forzar la corriente 230323
                            Segmento%Current =  Iincid
-                       endif
-                   !!!endif
-                endif
+                       end if
+                   !!!end if
+                end if
              end do
-          endif
-      endif
+          end if
+      end if
       
 !!!230323 comento lo que sigue porque ya manejo fuentes duras y blandas antes, pero esto funciono con jag rayos junio'15
       !!!!!!080615  uso una fuente dura de corriente correos jag simulacion rayos Junio'15
@@ -5479,11 +5479,11 @@ subroutine resume_casuistics
       !!!                Iincid=evolucion(timei,Nodo%Isource%Fichero%Samples, &
       !!!                Nodo%Isource%Fichero%DeltaSamples,Nodo%Isource%Fichero%NumSamples)
       !!!                Nodo%CurrentPlus_1%Current = Iincid
-      !!!             endif
-      !!!          endif
+      !!!             end if
+      !!!          end if
       !!!       end do
-      !!!    endif
-      !!!endif
+      !!!    end if
+      !!!end if
       !!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -5507,22 +5507,22 @@ subroutine resume_casuistics
 !!!         !debe ser lo primero que se hace para overridear el call conformal_advance_E 
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield1)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield1=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield2)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield2=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield3)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield3=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield4)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield4=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield5)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield5=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield6)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield6=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
@@ -5543,16 +5543,16 @@ subroutine resume_casuistics
       real(kind=RKIND), intent(in) :: eps0,mu0
       integer, intent(in) :: wirethickness
       logical :: simu_devia,stochastic,experimentalVideal
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
 
       integer(kind=4) :: n,jmed,layoutnumber,iw1,is1,is2
 
       integer(kind=4), intent(in) :: timeinstant
       real(kind=RKIND_wires) :: Iplus,IMinus,Qplus,QMinus,timei
       real(kind=RKIND_wires) :: Vincid,Iincid
-      type(CurrentSegments), pointer  :: Segmento, Segmento2
-      type(ChargeNodes), pointer  :: Nodo
-      type(TMultiline), pointer                      :: Multiline
+      type(CurrentSegments_t), pointer  :: Segmento, Segmento2
+      type(ChargeNodes_t), pointer  :: Nodo
+      type(TMultiline_t), pointer                      :: Multiline
       character(len=*), INTENT(in) :: wiresflavor
       timei = sgg%tiempo(timeinstant) 
    
@@ -5563,11 +5563,11 @@ subroutine resume_casuistics
 #ifdef CompileWithThickWires
          if (wirethickness>1) then
             call Advance_Thick_Hfield_wire2main(sgg,Segmento,eps0,mu0)
-         endif 
+         end if 
 #endif                      
         if (wirethickness==1) then
             continue
-        endif
+        end if
       end do
 
       
@@ -5586,7 +5586,7 @@ subroutine resume_casuistics
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine AdvanceWiresEcrank(sgg,timeinstant,layoutnumber,wiresflavor,simu_devia,stochastic)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       logical :: simu_devia,stochastic
 
       !!!
@@ -5596,9 +5596,9 @@ subroutine resume_casuistics
       integer(kind=4), intent(in) :: timeinstant
       real(kind=RKIND_wires) :: Iplus,IMinus,IplusPast,IMinusPast,source,timei
       real(kind=RKIND_wires) :: Vincid,Iincid
-      type(CurrentSegments), pointer  :: Segmento , Segmento2
-      type(ChargeNodes), pointer  :: Nodo
-      type(TMultiline), pointer                      :: Multiline
+      type(CurrentSegments_t), pointer  :: Segmento , Segmento2
+      type(ChargeNodes_t), pointer  :: Nodo
+      type(TMultiline_t), pointer                      :: Multiline
       character(len=*), INTENT(in) :: wiresflavor
       real(kind=RKIND_wires) , dimension(1:HWires%NumCurrentSegments) :: a,b,c,d,x
       
@@ -5619,22 +5619,22 @@ subroutine resume_casuistics
 !!!         !debe ser lo primero que se hace para overridear el call conformal_advance_E 
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield1)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield1=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield2)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield2=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield3)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield3=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield4)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield4=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield5)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield5=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield6)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield6=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
@@ -5673,8 +5673,8 @@ subroutine resume_casuistics
                 source=evolucion(timei,Segmento%Vsource%Fichero%Samples, &
                 Segmento%Vsource%Fichero%DeltaSamples,Segmento%Vsource%Fichero%NumSamples)
                 d(n)=d(n) + source
-             endif
-         endif
+             end if
+         end if
          
       end do
       n=HWires%NumCurrentSegments
@@ -5725,7 +5725,7 @@ subroutine resume_casuistics
 
             Nodo%ChargePresent =  Nodo%CteProp*Nodo%ChargePast   - Nodo%CtePlain*((Iplus+IplusPast)/2.0_RKIND_wires-(IMinus+IminusPast)/2.0_RKIND_wires)
 
-         endif
+         end if
       end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -5746,22 +5746,22 @@ subroutine resume_casuistics
 !!!         !debe ser lo primero que se hace para overridear el call conformal_advance_E 
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield1)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield1=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield2)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield2=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield3)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield3=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield4)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield4=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield5)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield5=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield6)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield6=0.0_RKIND
-!!!         endif
+!!!         end if
 !!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
@@ -5791,7 +5791,7 @@ subroutine resume_casuistics
          evolucion=0.0_RKIND_wires !if running out of samples, assume they are null
       else
          evolucion=(evol(nprev+1)-evol(nprev))/deltaevol*((t)-nprev*deltaevol)+evol(nprev) !linear interpolation
-      endif
+      end if
 
       return
    end function evolucion
@@ -5839,7 +5839,7 @@ subroutine resume_casuistics
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine DestroyWires(sgg)
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       integer(kind=4) :: i
 
       !free up memory !ojo no se como hacerlo
@@ -5848,7 +5848,7 @@ subroutine resume_casuistics
             if (associated(sgg%Med(i)%wire(1)%Vsource)) deallocate(sgg%Med(i)%wire(1)%Vsource)
             if (associated(sgg%Med(i)%wire(1)%Isource)) deallocate(sgg%Med(i)%wire(1)%Isource)
             if (associated(sgg%Med(i)%wire)) deallocate(sgg%Med(i)%wire)
-         endif
+         end if
       end do
 
       if (associated(HWires%WireTipoMedio )) deallocate(HWires%WireTipoMedio )
@@ -5877,16 +5877,16 @@ subroutine resume_casuistics
 
    !!!!!!!!!!!!!!!!!!!!Just for reporting
    !!! It also set the IsHeterogeneousJunction flag correctly (not needed for anything else than reporting)
-   subroutine ReportWireJunctions(layoutnumber,size,therearewires,ZI,ZE,groundwires,strictOLD,verbose)
+   subroutine ReportWireJunctions(layoutnumber,num_procs,therearewires,ZI,ZE,groundwires,strictOLD,verbose)
 
       logical :: paralelos,groundwires,therearewires,Terminal,IsHeterogeneousJunction,paraErr,strictOLD,verbose
       character(len=BUFSIZE) :: buff
-      integer(kind=4) :: i1,j1,layoutnumber,zi,ze,ierr,size,indio
+      integer(kind=4) :: i1,j1,layoutnumber,zi,ze,ierr,num_procs,indio
       integer(kind=4) :: mini=1000000000,minj=1000000000,mink=1000000000,maxi=-1000000000,maxj=-1000000000,maxk=-1000000000
-      type(CurrentSegments), pointer  :: org,fin
+      type(CurrentSegments_t), pointer  :: org,fin
       character(len=3), dimension(1:3) :: DIR
       character(len=BUFSIZE) :: ig
-      type(ChargeNodes), pointer :: nodo
+      type(ChargeNodes_t), pointer :: nodo
       type :: nodosopentoair_t 
         integer(kind=4) :: i,j,k,indexnode
       end type
@@ -5907,7 +5907,7 @@ subroutine resume_casuistics
       if (therearewires) then
          write (buff,'(a)')  '----------------------------------------------------------------'
          call WarnErrReport(buff)
-      endif
+      end if
 
       do i1=1,HWires%NumCurrentSegments
          if (HWires%CurrentSegment(i1)%i < mini) mini=HWires%CurrentSegment(i1)%i
@@ -5925,7 +5925,7 @@ subroutine resume_casuistics
             call WarnErrReport(buff,.true.)
             write (buff,'(a)')  'Contact with  to increase this limit.'
             call WarnErrReport(buff,.true.)
-         endif
+         end if
       end do
       if ((maxi >=mini).and.(maxj>=minj).and.(maxk>=mink)) write (buff,'(a,6i12)')  'wir3_INFO: BBOX for Holland WIREs ', mini,minj,mink,maxi,maxj,maxk
       if (HWires%NumCurrentSegments /= 0) call WarnErrReport(buff)
@@ -5952,9 +5952,9 @@ subroutine resume_casuistics
                      org%origindex,fin%origindex,' at ',org%i,org%j,org%k
 
                      if ((org%k >= ZI).and.(org%k <= ZE).and.verbose) call WarnErrReport(buff)
-                  endif
-               endif
-            endif
+                  end if
+               end if
+            end if
          end do
       end do
       !
@@ -6078,7 +6078,7 @@ subroutine resume_casuistics
                (nodo%CurrentPlus_6%indexmed /= nodo%CurrentPlus_9%indexmed ).and. &
                (nodo%CurrentPlus_7%indexmed /= nodo%CurrentPlus_9%indexmed ).and. &
                (nodo%CurrentPlus_8%indexmed /= nodo%CurrentPlus_9%indexmed )
-            endif
+            end if
 
             if ((IsHeterogeneousJunction       .and. nodo%IsHeterogeneousJunction).or. &
             (.not.IsHeterogeneousJunction).and.(.not.nodo%IsHeterogeneousJunction)) then
@@ -6088,9 +6088,9 @@ subroutine resume_casuistics
                nodo%indexnode, nodo%i,nodo%j,nodo%k, &
                ' (',nodo%numcurrentminus,nodo%numcurrentplus,'). '
                if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,.true.)
-            endif
+            end if
 
-         endif !del if exist
+         end if !del if exist
       end do
 
 
@@ -6128,10 +6128,10 @@ subroutine resume_casuistics
                         nodo%indexnode, nodo%i,nodo%j,nodo%k, &
                         ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'//trim(adjustl(ig)),Nodo%CteProp,Nodo%CtePlain
                      if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
-                     endif
-                  endif
-            endif
-         endif
+                     end if
+                  end if
+            end if
+         end if
       end do
 
 
@@ -6156,7 +6156,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_1%tipofield), &
                   nodo%CurrentMinus_1%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 2) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentMinus_2%Is_LeftEnd.or.nodo%CurrentMinus_2%Is_RightEnd.or.nodo%CurrentMinus_2%IsEnd_norLeft_norRight)
@@ -6168,7 +6168,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_2%tipofield), &
                   nodo%CurrentMinus_2%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 3) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentMinus_3%Is_LeftEnd.or.nodo%CurrentMinus_3%Is_RightEnd.or.nodo%CurrentMinus_3%IsEnd_norLeft_norRight)
@@ -6180,7 +6180,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_3%tipofield), &
                   nodo%CurrentMinus_3%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 4) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentMinus_4%Is_LeftEnd.or.nodo%CurrentMinus_4%Is_RightEnd.or.nodo%CurrentMinus_4%IsEnd_norLeft_norRight)
@@ -6192,7 +6192,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_4%tipofield), &
                   nodo%CurrentMinus_4%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 5) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentMinus_5%Is_LeftEnd.or.nodo%CurrentMinus_5%Is_RightEnd.or.nodo%CurrentMinus_5%IsEnd_norLeft_norRight)
@@ -6204,7 +6204,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_5%tipofield), &
                   nodo%CurrentMinus_5%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 6) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentMinus_6%Is_LeftEnd.or.nodo%CurrentMinus_6%Is_RightEnd.or.nodo%CurrentMinus_6%IsEnd_norLeft_norRight)
@@ -6216,7 +6216,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_6%tipofield), &
                   nodo%CurrentMinus_6%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 7) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentMinus_7%Is_LeftEnd.or.nodo%CurrentMinus_7%Is_RightEnd.or.nodo%CurrentMinus_7%IsEnd_norLeft_norRight)
@@ -6228,7 +6228,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_7%tipofield), &
                   nodo%CurrentMinus_7%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 8) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentMinus_8%Is_LeftEnd.or.nodo%CurrentMinus_8%Is_RightEnd.or.nodo%CurrentMinus_8%IsEnd_norLeft_norRight)
@@ -6240,7 +6240,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_8%tipofield), &
                   nodo%CurrentMinus_8%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 9) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentMinus_9%Is_LeftEnd.or.nodo%CurrentMinus_9%Is_RightEnd.or.nodo%CurrentMinus_9%IsEnd_norLeft_norRight)
@@ -6252,7 +6252,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_9%tipofield), &
                   nodo%CurrentMinus_9%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff)
-               endif
+               end if
                !
                if (nodo%NumCurrentplus >= 1) then
                   Terminal = Terminal .or. &
@@ -6265,7 +6265,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_1%tipofield), &
                   nodo%Currentplus_1%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 2) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentPlus_2%Is_LeftEnd.or.nodo%CurrentPlus_2%Is_RightEnd.or.nodo%CurrentPlus_2%IsEnd_norLeft_norRight)
@@ -6277,7 +6277,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_2%tipofield), &
                   nodo%Currentplus_2%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 3) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentPlus_3%Is_LeftEnd.or.nodo%CurrentPlus_3%Is_RightEnd.or.nodo%CurrentPlus_3%IsEnd_norLeft_norRight)
@@ -6289,7 +6289,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_3%tipofield), &
                   nodo%Currentplus_3%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 4) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentPlus_4%Is_LeftEnd.or.nodo%CurrentPlus_4%Is_RightEnd.or.nodo%CurrentPlus_4%IsEnd_norLeft_norRight)
@@ -6301,7 +6301,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_4%tipofield), &
                   nodo%Currentplus_4%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 5) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentPlus_5%Is_LeftEnd.or.nodo%CurrentPlus_5%Is_RightEnd.or.nodo%CurrentPlus_5%IsEnd_norLeft_norRight)
@@ -6313,7 +6313,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_5%tipofield), &
                   nodo%Currentplus_5%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 6) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentPlus_6%Is_LeftEnd.or.nodo%CurrentPlus_6%Is_RightEnd.or.nodo%CurrentPlus_6%IsEnd_norLeft_norRight)
@@ -6325,7 +6325,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_6%tipofield), &
                   nodo%Currentplus_6%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 7) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentPlus_7%Is_LeftEnd.or.nodo%CurrentPlus_7%Is_RightEnd.or.nodo%CurrentPlus_7%IsEnd_norLeft_norRight)
@@ -6337,7 +6337,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_7%tipofield), &
                   nodo%Currentplus_7%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 8) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentPlus_8%Is_LeftEnd.or.nodo%CurrentPlus_8%Is_RightEnd.or.nodo%CurrentPlus_8%IsEnd_norLeft_norRight)
@@ -6349,7 +6349,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_8%tipofield), &
                   nodo%Currentplus_8%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 9) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentPlus_9%Is_LeftEnd.or.nodo%CurrentPlus_9%Is_RightEnd.or.nodo%CurrentPlus_9%IsEnd_norLeft_norRight)
@@ -6361,14 +6361,14 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_9%tipofield), &
                   nodo%Currentplus_9%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
-               endif
+               end if
                if (.not.Terminal) then
                   write (buff,'(a)')  'wir3_BUGGYERROR: Some of the segments are not terminal'
                   call WarnErrReport(buff,.true.)
-               endif
+               end if
 
-            endif
-         endif
+            end if
+         end if
       end do
 
       !!!!!!!!!!!!!!!!
@@ -6386,7 +6386,7 @@ subroutine resume_casuistics
                   write (buff,'(a)')  'wir3_ERROR: Intra-WIRE Junction of more than 2 segments is forbidden: '
                   paraerr=.true.
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                write (buff,'(a,3i7)')  '         At node: ', &
                nodo%i, &
                nodo%j, &
@@ -6401,7 +6401,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_1%tipofield), &
                   nodo%CurrentMinus_1%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 2) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -2: ',  &
                   nodo%CurrentMinus_2%origindex, &
@@ -6411,7 +6411,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_2%tipofield), &
                   nodo%CurrentMinus_2%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 3) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -3: ',  &
                   nodo%CurrentMinus_3%origindex, &
@@ -6421,7 +6421,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_3%tipofield), &
                   nodo%CurrentMinus_3%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 4) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -4: ',  &
                   nodo%CurrentMinus_4%origindex, &
@@ -6431,7 +6431,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_4%tipofield), &
                   nodo%CurrentMinus_4%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 5) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -5: ',  &
                   nodo%CurrentMinus_5%origindex, &
@@ -6441,7 +6441,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_5%tipofield), &
                   nodo%CurrentMinus_5%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 6) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -6: ',  &
                   nodo%CurrentMinus_6%origindex, &
@@ -6451,7 +6451,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_6%tipofield), &
                   nodo%CurrentMinus_6%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 7) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -7: ',  &
                   nodo%CurrentMinus_7%origindex, &
@@ -6461,7 +6461,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_7%tipofield), &
                   nodo%CurrentMinus_7%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 8) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -8: ',  &
                   nodo%CurrentMinus_8%origindex, &
@@ -6471,7 +6471,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_8%tipofield), &
                   nodo%CurrentMinus_8%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentMinus >= 9) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -9: ',  &
                   nodo%CurrentMinus_9%origindex, &
@@ -6481,7 +6481,7 @@ subroutine resume_casuistics
                   dir(nodo%CurrentMinus_9%tipofield), &
                   nodo%CurrentMinus_9%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                !
                if (nodo%NumCurrentplus >= 1) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +1: ',  &
@@ -6492,7 +6492,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_1%tipofield), &
                   nodo%Currentplus_1%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 2) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +2: ',  &
                   nodo%Currentplus_2%origindex, &
@@ -6502,7 +6502,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_2%tipofield), &
                   nodo%Currentplus_2%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 3) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +3: ',  &
                   nodo%Currentplus_3%origindex, &
@@ -6512,7 +6512,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_3%tipofield), &
                   nodo%Currentplus_3%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 4) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +4: ',  &
                   nodo%Currentplus_4%origindex, &
@@ -6522,7 +6522,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_4%tipofield), &
                   nodo%Currentplus_4%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 5) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +5: ',  &
                   nodo%Currentplus_5%origindex, &
@@ -6532,7 +6532,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_5%tipofield), &
                   nodo%Currentplus_5%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 6) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +6: ',  &
                   nodo%Currentplus_6%origindex, &
@@ -6542,7 +6542,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_6%tipofield), &
                   nodo%Currentplus_6%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 7) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +7: ',  &
                   nodo%Currentplus_7%origindex, &
@@ -6552,7 +6552,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_7%tipofield), &
                   nodo%Currentplus_7%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 8) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +8: ',  &
                   nodo%Currentplus_8%origindex, &
@@ -6562,7 +6562,7 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_8%tipofield), &
                   nodo%Currentplus_8%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
+               end if
                if (nodo%NumCurrentplus >= 9) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +9: ',  &
                   nodo%Currentplus_9%origindex, &
@@ -6572,9 +6572,9 @@ subroutine resume_casuistics
                   dir(nodo%Currentplus_9%tipofield), &
                   nodo%Currentplus_9%indexmed
                   if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               endif
-            endif
-         endif
+               end if
+            end if
+         end if
       end do
 
 
@@ -6605,9 +6605,9 @@ subroutine resume_casuistics
                      write (buff,'(a,i7,3i7)')  'wir3_INFO: NON-JUNCTION Node  GROUNDED ',nodo%indexnode, &
                      nodo%i,nodo%j,nodo%k
                      if ((nodo%k >=  ZI).and.(nodo%k <= ZE).and.verbose) call WarnErrReport(buff)
-               endif
-            endif
-         endif
+               end if
+            end if
+         end if
       end do
       
       do i1=1,indio
@@ -6616,7 +6616,7 @@ subroutine resume_casuistics
                   write (buff,'(a,8i7)')  'wir3_ERROR: TWO nodes at the same location open to air. Should be connected? ',indio,i1,j1, &
                   nodosopentoair(i1)%indexnode, nodosopentoair(j1)%indexnode, nodosopentoair(i1)%i,nodosopentoair(i1)%j,nodosopentoair(i1)%k
                   if ((nodosopentoair(i1)%k >=  ZI).and.(nodosopentoair(i1)%k <= ZE)) call WarnErrReport(buff,.true.)
-            endif
+            end if
         end do
       end do
       deallocate(nodosopentoair)
@@ -6634,7 +6634,7 @@ subroutine resume_casuistics
             nodo%indexnode,nodo%i,nodo%j,nodo%k, &
             ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'
             call WarnErrReport(buff,.true.)
-         endif
+         end if
       end do
 
 
@@ -6915,7 +6915,7 @@ subroutine resume_casuistics
       if (z<-1.0_RKIND_wires/3.0_RKIND_wires) then
          X=-1
          return !no va a converger nunca
-      endif
+      end if
       n=1
       loop:do while ((abs(x*Exp(x)-z)>eps).and.(n<maxn))
          expx = exp(x)
@@ -6928,7 +6928,7 @@ subroutine resume_casuistics
       expx = exp(x)
       if (n>=maxn) then
          X=-1
-      endif
+      end if
       return
    end function Lambert
 
@@ -6958,7 +6958,7 @@ subroutine resume_casuistics
          m = b(i)-cp(i-1)*a(i)
          cp(i) = c(i)/m
          dp(i) = (d(i)-dp(i-1)*a(i))/m
-      enddo
+      end do
       ! initialize x
       x(n) = dp(n)
       ! solve for x from the vectors c-prime and d-prime
@@ -6970,18 +6970,18 @@ subroutine resume_casuistics
 
       subroutine wiresconstantes(fieldtotl,dummy,G2,sgg)
       
-          type(SGGFDTDINFO), intent(in) , target    :: sgg
+          type(SGGFDTDINFO_t), intent(in) , target    :: sgg
           real(kind=RKIND) , pointer, dimension(:), intent(in) :: G2
           
           logical, intent(in) :: fieldtotl
-          type(CurrentSegments), pointer  :: dummy
+          type(CurrentSegments_t), pointer  :: dummy
 !!!ojooooo 110517 acumulo en %lind toda la autoinduccion para que los calculos de capacidad la tengan en cuenta completa    
          if (.not.fieldtotl) then
              dummy%cte5 = G2(dummy%indexmed)/(dummy%deltaTransv1*dummy%deltaTransv2)
             !  dummy%cte5 = dummy%cte5/3.5
          else
              dummy%cte5 = 0.0_RKIND_wires !esta es la cte de acoplo wire2main 
-         endif !para el fieldtotl no tento en cuenta mas que la autoin y no devuelvo nada !100517
+         end if !para el fieldtotl no tento en cuenta mas que la autoin y no devuelvo nada !100517
 !!!!
 !
 !Lind ya contiene el givenautoin y a los autoin LeftEnd y RightEnd, que entiendo que de escalarse el mu tambien afectaria a todos ellos !ojo
@@ -7003,4 +7003,4 @@ subroutine resume_casuistics
     end subroutine wiresconstantes
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-end module HollandWires
+end module HollandWires_m

@@ -1,0 +1,403 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "",
+    "general": {
+        "timeStep": 1e-11,
+        "numberOfSteps": 6000
+    },
+    "boundary": {
+        "all": {
+            "type": "mur",
+            "layers": 6,
+            "order": 2.0,
+            "reflection": 0.001
+        }
+    },
+    "materials": [
+        {
+            "id": 1,
+            "type": "unshieldedMultiwire",
+            "inductancePerMeter": [
+                [
+                    6.5138e-07
+                ]
+            ],
+            "capacitancePerMeter": [
+                [
+                    1.7069e-11
+                ]
+            ]
+        },
+        {
+            "id": 2,
+            "type": "terminal",
+            "terminations": [
+                {
+                    "type": "series",
+                    "resistance": 50.0
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "type": "terminal",
+            "terminations": [
+                {
+                    "type": "short"
+                }
+            ]
+        },
+        {
+            "name": "copper",
+            "id": 4,
+            "type": "pec"
+        },
+        {
+            "id": 5,
+            "type": "terminal",
+            "terminations": [
+                {
+                    "type": "series",
+                    "resistance": 50.0
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "type": "shieldedMultiwire",
+            "inductancePerMeter": [
+                [
+                    6.8138e-07
+                ]
+            ],
+            "capacitancePerMeter": [
+                [
+                    1.8069e-11
+                ]
+            ]
+        }
+
+    ],
+    "mesh": {
+        "grid": {
+            "numberOfCells": [
+                60,
+                60,
+                60
+            ],
+            "steps": {
+                "x": [
+                    0.01
+                ],
+                "y": [
+                    0.01
+                ],
+                "z": [
+                    0.01
+                ]
+            }
+        },
+        "coordinates": [
+            {
+                "id": 1,
+                "relativePosition": [
+                    27,
+                    25,
+                    30
+                ]
+            },
+            {
+                "id": 9,
+                "relativePosition": [
+                    27,
+                    25,
+                    30
+                ]
+            },
+            {
+                "id": 2,
+                "relativePosition": [
+                    27,
+                    25,
+                    32
+                ]
+            },
+            {
+                "id": 10,
+                "relativePosition": [
+                    27,
+                    25,
+                    32
+                ]
+            },
+            {
+                "id": 3,
+                "relativePosition": [
+                    43,
+                    25,
+                    32
+                ]
+            },
+            {
+                "id": 11,
+                "relativePosition": [
+                    43,
+                    25,
+                    32
+                ]
+            },
+            {
+                "id": 4,
+                "relativePosition": [
+                    43,
+                    25,
+                    30
+                ]
+            },
+            {
+                "id": 12,
+                "relativePosition": [
+                    43,
+                    25,
+                    30
+                ]
+            },
+            {
+                "id": 5,
+                "relativePosition": [
+                    35,
+                    25,
+                    32
+                ]
+            },
+            {
+                "id": 13,
+                "relativePosition": [
+                    35,
+                    25,
+                    32
+                ]
+            },
+            {
+                "id": 6,
+                "relativePosition": [
+                    35,
+                    25,
+                    32
+                ]
+            },
+            {
+                "id": 7,
+                "relativePosition": [
+                    33,
+                    25,
+                    32
+                ]
+            },
+            {
+                "id": 8,
+                "relativePosition": [
+                    37,
+                    25,
+                    32
+                ]
+            }
+        ],
+        "elements": [
+            {
+                "id": 1,
+                "type": "node",
+                "coordinateIds": [
+                    5
+                ]
+            },
+            {
+                "id": 2,
+                "type": "polyline",
+                "coordinateIds": [
+                    1,
+                    2,
+                    5,
+                    3,
+                    4
+                ]
+            },
+            {
+                "id": 11,
+                "type": "polyline",
+                "coordinateIds": [
+                    9,
+                    10,
+                    13,
+                    11,
+                    12
+                ]
+            },
+            {
+                "id": 3,
+                "type": "cell",
+                "name": "ground_plane",
+                "intervals": [
+                    [
+                        [
+                            25,
+                            20,
+                            30
+                        ],
+                        [
+                            45,
+                            30,
+                            30
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 4,
+                "type": "node",
+                "coordinateIds": [
+                    8
+                ]
+            },
+            {
+                "id": 5,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            1,
+                            1,
+                            1
+                        ],
+                        [
+                            59,
+                            59,
+                            59
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 6,
+                "type": "node",
+                "coordinateIds": [
+                    7
+                ]
+            },
+            {
+                "id": 7,
+                "type": "polyline",
+                "coordinateIds": [
+                    1,
+                    4
+                ]
+            },
+            {
+                "id": 8,
+                "type": "node",
+                "coordinateIds": [
+                    7
+                ]
+            },
+            {
+                "id": 9,
+                "type": "node",
+                "coordinateIds": [
+                    9
+                ]
+            },
+            {
+                "id": 10,
+                "type": "node",
+                "coordinateIds": [
+                    13
+                ]
+            }
+        ]
+    },
+    "materialAssociations": [
+        {
+            "name": "wire",
+            "materialId": 6,
+            "initialTerminalId": 5,
+            "endTerminalId": 2,
+            "elementIds": [
+                2
+            ],
+            "containedWithinElementId" : 11
+        },
+        {
+            "name": "outer",
+            "materialId": 1,
+            "initialTerminalId": 5,
+            "endTerminalId": 2,
+            "elementIds": [
+                11
+            ]
+        },
+        {
+            "materialId": 4,
+            "elementIds": [
+                3
+            ]
+        }
+    ],
+    "sources": [
+        {
+            "name": "terminal_source",
+            "type": "generator",
+            "magnitudeFile": "voltage_source_50V.exc",
+            "elementIds": [
+                1
+            ],
+            "field": "voltage",
+            "resistance": 50.0
+        }
+    ],
+    "probes": [
+        {
+            "name": "probe_start",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [
+                9
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "probe_start",
+            "type": "wire",
+            "field": "voltage",
+            "elementIds": [
+                9
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "probe_end",
+            "type": "wire",
+            "field": "voltage",
+            "elementIds": [
+                10
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "probe_end",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [
+                10
+            ],
+            "domain": {
+                "type": "time"
+            }
+        }
+    ]
+}

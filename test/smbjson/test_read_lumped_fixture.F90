@@ -1,11 +1,11 @@
 integer function test_read_lumped_fixture() bind (C) result(err)
-   use smbjson
+   use smbjson_m
    use smbjson_testingTools
 
    implicit none
 
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'lumped_fixture.fdtd.json'
-   type(Parseador) :: problem, expected
+   type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -17,32 +17,32 @@ integer function test_read_lumped_fixture() bind (C) result(err)
 
 contains
    function expectedProblemDescription() result (expected)
-      type(Parseador) :: expected
+      type(Parseador_t) :: expected
 
       integer :: i
 
       call initializeProblemDescription(expected)
 
       ! Expected general info
-      expected%general%dt = 7.7033e-12
+      expected%general%dt = 7.7033e-12_RKIND
       expected%general%nmax = 389
 
       ! Expected media matrix
-      expected%matriz%totalX = 20
-      expected%matriz%totalY = 8
-      expected%matriz%totalZ = 9
+      expected%matriz%totalX = 21
+      expected%matriz%totalY = 9
+      expected%matriz%totalZ = 10
 
       ! Expected grid
-      expected%despl%nX = 20
-      expected%despl%nY = 8
-      expected%despl%nZ = 9
+      expected%despl%nX = 1
+      expected%despl%nY = 1
+      expected%despl%nZ = 1
 
-      allocate(expected%despl%desX(20))
-      allocate(expected%despl%desY(8))
-      allocate(expected%despl%desZ(9))
-      expected%despl%desX = 0.005
-      expected%despl%desY = 0.005
-      expected%despl%desZ = 0.005
+      allocate(expected%despl%desX(1:1))
+      allocate(expected%despl%desY(1:1))
+      allocate(expected%despl%desZ(1:1))
+      expected%despl%desX = 0.005_RKIND
+      expected%despl%desY = 0.005_RKIND
+      expected%despl%desZ = 0.005_RKIND
       expected%despl%mx1 = 0
       expected%despl%my1 = 0
       expected%despl%mz1 = 0
@@ -149,16 +149,18 @@ contains
       expected%dielRegs%Lins(1)%c2P%Ze = 7
       expected%dielRegs%Lins(1)%c2P%tag = '100ohm_resistor@lumped_line'
 
-      expected%dielRegs%Lins(1)%sigma = 0.0
+      expected%dielRegs%Lins(1)%sigma = 0.0_RKIND
       expected%dielRegs%Lins(1)%eps = EPSILON_VACUUM
       expected%dielRegs%Lins(1)%mu = MU_VACUUM
-      expected%dielRegs%Lins(1)%sigmam = 0.0
+      expected%dielRegs%Lins(1)%sigmam = 0.0_RKIND
 
-      expected%dielRegs%Lins(1)%R = 100.0
-      expected%dielRegs%Lins(1)%Rtime_on = 0.0
-      expected%dielRegs%Lins(1)%Rtime_off = 1.0
+      expected%dielRegs%Lins(1)%R = 100.0_RKIND
+      expected%dielRegs%Lins(1)%Rtime_on = 0.0_RKIND
+      expected%dielRegs%Lins(1)%Rtime_off = 1.0_RKIND
 
       expected%dielRegs%Lins(1)%resistor = .true.
+      expected%dielRegs%Lins(1)%orient = 1
+      expected%dielRegs%Lins(1)%DiodOri = 1
 
       
       ! Expected sources
@@ -182,27 +184,28 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%Zi = 2
       expected%nodSrc%NodalSource(1)%c2P(1)%Ze = 2
       expected%nodSrc%NodalSource(1)%c2P(1)%tag = 'nodal_source'
-      expected%nodSrc%NodalSource(1)%c2P(1)%xc = 1.0
-      expected%nodSrc%NodalSource(1)%c2P(1)%yc = 0.0
-      expected%nodSrc%NodalSource(1)%c2P(1)%zc = 0.0
+      expected%nodSrc%NodalSource(1)%c2P(1)%xc = 1.0_RKIND
+      expected%nodSrc%NodalSource(1)%c2P(1)%yc = 0.0_RKIND
+      expected%nodSrc%NodalSource(1)%c2P(1)%zc = 0.0_RKIND
 
       ! Expected probes
       
       ! Electric field point probe
       expected%Sonda%length = 1
       expected%Sonda%length_max = 1
+      expected%Sonda%len_cor_max = 3
       allocate(expected%Sonda%collection(1))
 
       expected%Sonda%collection(1)%outputrequest = "e_probe"
       expected%Sonda%collection(1)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(1)%type2 = NP_T2_TIME
       expected%Sonda%collection(1)%filename = ' '
-      expected%Sonda%collection(1)%tstart = 0.0
-      expected%Sonda%collection(1)%tstop = 0.0
-      expected%Sonda%collection(1)%tstep = 0.0
-      expected%Sonda%collection(1)%fstart = 0.0
-      expected%Sonda%collection(1)%fstop = 0.0
-      expected%Sonda%collection(1)%fstep = 0.0
+      expected%Sonda%collection(1)%tstart = 0.0_RKIND
+      expected%Sonda%collection(1)%tstop = 0.0_RKIND
+      expected%Sonda%collection(1)%tstep = 0.0_RKIND
+      expected%Sonda%collection(1)%fstart = 0.0_RKIND
+      expected%Sonda%collection(1)%fstop = 0.0_RKIND
+      expected%Sonda%collection(1)%fstep = 0.0_RKIND
       allocate(expected%Sonda%collection(1)%cordinates(3))
       expected%Sonda%collection(1)%len_cor = 3
       expected%Sonda%collection(1)%cordinates(1:3)%Xi = 10
@@ -221,12 +224,12 @@ contains
       expected%BloquePrb%bp(1)%outputrequest = "Bulk probe"
       expected%BloquePrb%bp(1)%FileNormalize = ' '
       expected%BloquePrb%bp(1)%type2 = NP_T2_TIME
-      expected%BloquePrb%bp(1)%tstart = 0.0
-      expected%BloquePrb%bp(1)%tstop = 0.0
-      expected%BloquePrb%bp(1)%tstep = 0.0
-      expected%BloquePrb%bp(1)%fstart = 0.0
-      expected%BloquePrb%bp(1)%fstop = 0.0
-      expected%BloquePrb%bp(1)%fstep = 0.0
+      expected%BloquePrb%bp(1)%tstart = 0.0_RKIND
+      expected%BloquePrb%bp(1)%tstop = 0.0_RKIND
+      expected%BloquePrb%bp(1)%tstep = 0.0_RKIND
+      expected%BloquePrb%bp(1)%fstart = 0.0_RKIND
+      expected%BloquePrb%bp(1)%fstop = 0.0_RKIND
+      expected%BloquePrb%bp(1)%fstep = 0.0_RKIND
       expected%BloquePrb%bp(1)%i1 = 6
       expected%BloquePrb%bp(1)%i2 = 6
       expected%BloquePrb%bp(1)%j1 = 1

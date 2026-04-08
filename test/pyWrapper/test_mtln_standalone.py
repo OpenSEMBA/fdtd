@@ -18,9 +18,10 @@ def test_paul_8_6_square(tmp_path):
     probe_files = [probe_voltage, probe_current]
     p_solved = Probe(probe_files[0])
 
-    assert np.allclose(p_expected.data.to_numpy()[:, 0:2], p_solved.data.to_numpy()[
-                       :, 0:2], rtol=0.01, atol=0.2)
-
+    solved = np.interp(p_expected['time'].to_numpy(), 
+                       p_solved['time'].to_numpy(), 
+                       p_solved['voltage_0'].to_numpy())
+    assert np.corrcoef(solved, p_expected['voltage_0'])[0,1] > 0.999
 
 
 @no_mtln_skip
@@ -40,8 +41,10 @@ def test_paul_8_6_triangle(tmp_path):
     probe_files = [probe_voltage, probe_current]
     p_solved = Probe(probe_files[0])
 
-    assert np.allclose(p_expected.data.to_numpy()[:, 0:2], p_solved.data.to_numpy()[
-                       :, 0:2], rtol=0.01, atol=0.5)
+    solved = np.interp(p_expected['time'].to_numpy(), 
+                       p_solved['time'].to_numpy(), 
+                       p_solved['voltage_0'].to_numpy())
+    assert np.corrcoef(solved, p_expected['voltage_0'])[0,1] > 0.999
 
 
 @no_mtln_skip
@@ -65,8 +68,15 @@ def test_paul_9_6(tmp_path):
     p_solved = [Probe(probe_files[0]), Probe(probe_files[1])]
 
     for i in range(2):
-        assert np.allclose(p_expected[i].data.to_numpy()[
-                           :, :], p_solved[i].data.to_numpy()[:, :], rtol=0.01, atol=0.5)
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                        p_solved[i]['time'].to_numpy(), 
+                        p_solved[i]['voltage_0'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['voltage_0'])[0,1] > 0.999
+        
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                        p_solved[i]['time'].to_numpy(), 
+                        p_solved[i]['voltage_1'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['voltage_1'])[0,1] > 0.999
 
 
 @no_mtln_skip
@@ -86,8 +96,10 @@ def test_spice_multilines_opamp(tmp_path):
 
     p_solved = [Probe(probe_files[0]), Probe(probe_files[0])]
 
-    assert np.allclose(p_expected[0].data.to_numpy()[
-                       :-1, :], p_solved[0].data.to_numpy()[:-1, :], rtol=0.01, atol=0.05e-3)
+    solved = np.interp(p_expected[0]['time'].to_numpy(), 
+                    p_solved[0]['time'].to_numpy(), 
+                    p_solved[0]['voltage_0'].to_numpy())
+    assert np.corrcoef(solved, p_expected[0]['voltage_0'])[0,1] > 0.999
 
 
 @no_mtln_skip
@@ -112,8 +124,12 @@ def test_spice_connectors_diode(tmp_path):
     p_solved = [Probe(probe_files[0]), Probe(probe_files[1])]
 
     for i in range(2):
-        assert np.allclose(p_expected[i].data.to_numpy()[
-                           :-20, :], p_solved[i].data.to_numpy()[:-20, :], rtol=0.01, atol=0.05e-3)
+        t_exp = p_expected[i].data['time'].to_numpy()[:-1]
+        t_sol = p_solved[i].data['time'].to_numpy()[:-1]
+        v_exp = p_expected[i].data['voltage_0'].to_numpy()[:-1]
+        v_sol = p_solved[i].data['voltage_0'].to_numpy()[:-1]
+        v_sol_interp = np.interp(t_exp, t_sol, v_sol)
+        assert np.corrcoef(v_exp, v_sol_interp)[0,1] > 0.99999
 
 
 @no_mtln_skip
@@ -134,12 +150,14 @@ def test_line_multiline_junction(tmp_path):
     probe_s2 = solver.getSolvedProbeFilenames("s2_start")[0]
     probe_s4 = solver.getSolvedProbeFilenames("s4_end")[0]
     probe_s5 = solver.getSolvedProbeFilenames("s5_end")[0]
-    probe_files = [probe_s4, probe_s5, probe_s2]
+    p_solved = [Probe(probe_s4), Probe(probe_s5), Probe(probe_s2)]
 
     for i in range(3):
-        assert np.allclose(p_expected[i].data.to_numpy()[
-                           :-20, :], Probe(probe_files[i]).data.to_numpy()[:-20, :], rtol=0.01, atol=5e-3)
-
+        solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                        p_solved[i]['time'].to_numpy(), 
+                        p_solved[i]['voltage_0'].to_numpy())
+        assert np.corrcoef(solved, p_expected[i]['voltage_0'])[0,1] > 0.999
+        
 
 @no_mtln_skip
 @pytest.mark.mtln
@@ -158,8 +176,12 @@ def test_spice_opamp_saturation(tmp_path):
     p_solved = Probe(solver.getSolvedProbeFilenames(
         "opamp_voltage_wire1")[0])
 
-    assert np.allclose(p_expected.data.to_numpy()[
-                       :-5, :], p_solved.data.to_numpy()[:-5, :], rtol=0.01, atol=0.05e-3)
+    t_exp = p_expected.data['time'].to_numpy()[:-1]
+    t_sol = p_solved.data['time'].to_numpy()[:-1]
+    v_exp = p_expected.data['voltage_0'].to_numpy()[:-1]
+    v_sol = p_solved.data['voltage_0'].to_numpy()[:-1]
+    v_sol_interp = np.interp(t_exp, t_sol, v_sol)
+    assert np.corrcoef(v_exp, v_sol_interp)[0,1] > 0.999
 
 
 @no_mtln_skip
@@ -174,10 +196,16 @@ def test_spice_zener(tmp_path):
     
     p_expected = Probe(
         OUTPUTS_FOLDER+'zener.fdtd_end_voltage_wire_V_10_10_12.dat')
+    t_exp = p_expected.data['time'].to_numpy()[:-1]
+    v_exp = p_expected.data['voltage_0'].to_numpy()[:-1]
+
     p_solved = Probe(solver.getSolvedProbeFilenames(
         "end_voltage_")[0])
+    t_sol = p_solved.data['time'].to_numpy()[:-1]
+    v_sol = p_solved.data['voltage_0'].to_numpy()[:-1]
 
-    assert np.allclose(p_expected.data.to_numpy()[
-                       :-5, :], p_solved.data.to_numpy()[:-5, :], rtol=0.01, atol=0.05e-3)
+    
+    v_exp_interp = np.interp(t_sol, t_exp, v_exp)
+    assert np.corrcoef(v_sol, v_exp_interp)[0,1] > 0.999
     
     

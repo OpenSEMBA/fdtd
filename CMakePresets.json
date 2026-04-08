@@ -32,6 +32,31 @@
       "cacheVariables": {
         "SEMBA_FDTD_ENABLE_MTLN": "OFF"
       }
+    },
+    {
+      "name": "intel-rls",
+      "generator": "Ninja",
+      "binaryDir": "build-intel-rls/",
+      "environment": {
+        "I_MPI_ROOT": "/opt/intel/oneapi/mpi/latest",
+        "FC": "mpiifx",
+        "CC": "mpiicx",
+        "CXX": "mpiicpx"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "SEMBA_FDTD_ENABLE_MPI": "ON",
+        "SEMBA_FDTD_ENABLE_MTLN": "ON",
+        "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "ON"
+      }
+    },
+    {
+      "name": "intel-rls-nomtln",
+      "inherits": "intel-rls",
+      "binaryDir": "build-intel-rls-nomtln/",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_MTLN": "OFF"
+      }
     }
   ]
 }

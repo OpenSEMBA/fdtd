@@ -1,11 +1,11 @@
-module parser_tools_mod
+module parser_tools_m
 
 #ifdef CompileWithSMBJSON
-   use mesh_mod
-   use cells_mod
+   use mesh_m
+   use cells_m
    use json_module
    use json_kinds
-   use NFDETypes
+   use NFDETypes_m
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 
@@ -13,7 +13,7 @@ module parser_tools_mod
 
    integer, private, parameter :: J_ERROR_NUMBER = 1
 
-   type :: json_value_ptr
+   type :: json_value_ptr_t
       type(json_value), pointer :: p
    end type
 
@@ -63,23 +63,23 @@ contains
       type(cell_region_t), intent(in) :: cellRegion
       integer, intent(in), optional :: cellType
       character(len=BUFSIZE), optional, intent(in) :: tag
-      type(coords), dimension(:), allocatable :: res
+      type(coords_t), dimension(:), allocatable :: res
 
       type(cell_interval_t), dimension(:), allocatable :: intervals
-      type(coords), dimension(:), allocatable :: cs
+      type(coords_t), dimension(:), allocatable :: cs
 
       intervals = getIntervalsInCellRegions([cellRegion], cellType)
       if (present(tag)) then
          cs = cellIntervalsToCoords(intervals, tag)
       else
          cs = cellIntervalsToCoords(intervals)
-      endif
+      end if
       res = cs
    end
 
    function coordsToScaledCoords(cs) result(res)
-      type(coords), intent(in), dimension(:) :: cs
-      type(coords_scaled), dimension(:), allocatable :: res
+      type(coords_t), intent(in), dimension(:) :: cs
+      type(coords_scaled_t), dimension(:), allocatable :: res
       integer :: i
 
       allocate(res(size(cs)))
@@ -114,11 +114,11 @@ contains
    end
 
    subroutine cellRegionsToScaledCoords(res, cellRegions, tag)
-      type(coords_scaled), dimension(:), pointer :: res
+      type(coords_scaled_t), dimension(:), pointer :: res
       type(cell_region_t), dimension(:), intent(in) :: cellRegions
       type(cell_interval_t), dimension(:), allocatable :: intervals
-      type(coords), dimension(:), allocatable :: cs
-      type(coords_scaled), dimension(:), allocatable :: scaledCoords
+      type(coords_t), dimension(:), allocatable :: cs
+      type(coords_scaled_t), dimension(:), allocatable :: scaledCoords
       character(len=BUFSIZE), optional, intent(in) :: tag
 
       intervals = getIntervalsInCellRegions(cellRegions, CELL_TYPE_LINEL)
@@ -126,14 +126,14 @@ contains
          cs = cellIntervalsToCoords(intervals, tag)
       else
          cs = cellIntervalsToCoords(intervals)
-      endif
+      end if
       scaledCoords = coordsToScaledCoords(cs)
       allocate(res(size(scaledCoords)))
       res = scaledCoords
    end
 
    function cellIntervalsToCoords(ivls, tag) result(res)
-      type(coords), dimension(:), pointer :: res
+      type(coords_t), dimension(:), pointer :: res
       type(cell_interval_t), dimension(:), intent(in) :: ivls
       integer :: i
       character(len=BUFSIZE), optional, intent(in) :: tag
@@ -193,21 +193,79 @@ contains
 
 
    function vectorToDiagonalMatrix(vector) result(res)
-      real, dimension(:), intent(in) :: vector
-      real, dimension(:, :), allocatable :: res
+      real(kind=RKIND), dimension(:), intent(in) :: vector
+      real(kind=rkind), dimension(:, :), allocatable :: res
       integer :: i, n
       n = size(vector, 1)
-      allocate(res(n,n), source = 0.0)
+      allocate(res(n,n), source = 0.0_rkind)
       do i = 1, n
          res(i,i) = vector(i)
       end do
    end function
 
    function scalarToMatrix(scalar) result(res)
-      real, intent(in) :: scalar
-      real, dimension(:, :), allocatable :: res
-      allocate(res(1,1), source = 0.0)
+      real(kind=RKIND), intent(in) :: scalar
+      real(kind=rkind), dimension(:, :), allocatable :: res
+      allocate(res(1,1), source = 0.0_rkind)
       res(1,1) = scalar
    end function
+
+   subroutine splitLineIntoWords(line, words)
+      character(len=*), intent(in) :: line
+      character(len=BUFSIZE), allocatable, dimension(:), intent(out) :: words
+
+      integer :: lenstr, i, start, nwords, wlen
+
+      lenstr = len_trim(line)
+      nwords = 0
+      i = 1
+      ! First pass: count words
+      do while (i <= lenstr)
+         do while (i <= lenstr .and. (line(i:i) == ' ' .or. line(i:i) == achar(9)))
+            i = i + 1
+         end do
+         if (i > lenstr) exit
+         nwords = nwords + 1
+         do while (i <= lenstr .and. (line(i:i) /= ' ' .and. line(i:i) /= achar(9)))
+            i = i + 1
+         end do
+      end do
+
+      if (nwords == 0) then
+         allocate(words(0))
+         return
+      end if
+
+      allocate(words(nwords))
+      i = 1
+      start = 1
+      nwords = 0
+      do while (i <= lenstr)
+         do while (i <= lenstr .and. (line(i:i) == ' ' .or. line(i:i) == achar(9)))
+            i = i + 1
+         end do
+         if (i > lenstr) exit
+         start = i
+         do while (i <= lenstr .and. (line(i:i) /= ' ' .and. line(i:i) /= achar(9)))
+            i = i + 1
+         end do
+         wlen = i - start
+         nwords = nwords + 1
+         words(nwords) = line(start:start+wlen-1)
+      end do
+   end subroutine
+
+   pure function to_upper(str) result(res)
+      character(len=*), intent(in) :: str
+      character(len=len(str)) :: res
+      integer :: i
+      res = str
+      do i = 1, len(str)
+         if (res(i:i) >= 'a' .and. res(i:i) <= 'z') then
+            res(i:i) = achar(iachar(res(i:i)) - 32)
+         end if
+      end do
+   end function
+
 #endif
 end module

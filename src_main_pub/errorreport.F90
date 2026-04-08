@@ -1,7 +1,7 @@
-module Report
-   use FDETYPES
+module Report_m
+   use FDETYPES_m
 
-   use snapxdmf
+   use snapxdmf_m
 
    implicit none
    private
@@ -29,7 +29,7 @@ module Report
    integer, save :: thefile !for mpi file management
    logical, save :: ignoreerrors
    !
-   type(coorsxyzP) , save  :: Punto
+   type(coorsxyzP_t) , save  :: Punto
 
    character(len=BUFSIZE), SAVE :: mynEntradaRoot
 
@@ -43,6 +43,7 @@ module Report
    print11,Onprint,Offprint,file10isopen,file11isopen
    public WarnErrReport,INITWARNINGFILE,CLOSEWARNINGFILE,get_secnds,openfile_mpi,writefile_mpi, &
           closefile_mpi,reportmedia,erasesignalingfiles,openclosedelete,openclose
+   public isFatalError, resetFatalError
 
    !part of the dxf
    !!!public dxfwrite,INITdxfFILE,CLOSEdxfFILE,writemmdxf,TRIMNULLCHAR
@@ -69,17 +70,17 @@ contains
       return
    end subroutine
    !!!!!!!!!!!!!!!!!
-   subroutine StopOnError(layoutnumber,size,message,calledfrommain)
+   subroutine StopOnError(layoutnumber,num_procs,message,calledfrommain)
       character(len=BUFSIZE) :: ficherito
       logical , optional  :: calledfrommain
       character(len=*), intent( IN) :: message
-      integer(kind=4), optional  :: layoutnumber,size
+      integer(kind=4), optional  :: layoutnumber,num_procs
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
       character(len=BUFSIZE) :: whoami
 
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
 
 
       call print11(layoutnumber,trim(adjustl(whoami))//' ERROR: '//trim(adjustl(message)),.true.)
@@ -88,8 +89,8 @@ contains
 
       !hay que revisar los stoponerror y hacerlos mas elegantes. De momento aborto a lo bestia comentanod sin cerrar ni warning ni dxf (To do)
 
-      !call CLOSEWARNINGFILE(layoutnumber,size)
-      !!!!call CLOSEdxfFILE(layoutnumber,size)
+      !call CLOSEWARNINGFILE(layoutnumber,num_procs)
+      !!!!call CLOSEdxfFILE(layoutnumber,num_procs)
 
 
 
@@ -98,24 +99,24 @@ contains
       if (present(calledfrommain)) then
          if (calledfrommain) then
             if (layoutnumber == 0) then
-               OPEN (38, FILE='pause')
-               WRITE (38, '(a)') '!END'
+               open(38, FILE='pause')
+               write(38, '(a)') '!END'
                CLOSE (38)
-            endif
+            end if
             call print11(layoutnumber,'Trying to relaunch. Correct error, create launch, and remove pause/warning '// &
                                       'file (or kill the process)',.true.)
 !!!            call CloseReportingFiles !sgg 240817 no se deben cerrar los reporting files
             return
-         endif
+         end if
       else
          if (layoutnumber == 0) then
-            OPEN (38, FILE='pause')
-            WRITE (38, '(a)') '!END'
+            open(38, FILE='pause')
+            write(38, '(a)') '!END'
             CLOSE (38)
-         endif
+         end if
          call print11(layoutnumber,'Stopping, but creating the signal file pause to prevent queuing losses!!! '// & '
                                    '(correct error and remove to continue)',.true.)
-      endif
+      end if
 #else
       if (layoutnumber == 0) then
          ficherito='running'
@@ -126,7 +127,7 @@ contains
          !
          ficherito='relaunch'
           call openclosedelete(ficherito)
-      endif
+      end if
 #endif
 
 #ifdef CompileWithMPI
@@ -136,10 +137,7 @@ contains
 #endif
       call CloseReportingFiles
  
-
-
-      STOP
-
+      STOP 1
 
       return
 
@@ -152,11 +150,11 @@ contains
       if (file10isopen) then
          close (10) !energy file
          file10isopen=.false.
-      endif
+      end if
       if (file11isopen) then
          close (11) !reporting file
          file11isopen=.false.
-      endif
+      end if
       return
 
    end subroutine
@@ -165,7 +163,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine InitReporting(sgg,c)
-      type(SGGFDTDINFO), intent(INout) :: sgg
+      type(SGGFDTDINFO_t), intent(INout) :: sgg
       type(sim_control_t) :: c
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
@@ -173,7 +171,7 @@ contains
       Logical  :: errnofile
       character(len=BUFSIZE) :: buff, whoami
 
-      write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%num_procs,') '
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -188,8 +186,8 @@ contains
             open (10,file=trim(adjustl(c%nEntradaRoot))//'_Energy.dat',form='formatted',position='append')
          else
             open (10,file=trim(adjustl(c%nEntradaRoot))//'_Energy.dat',form='formatted')
-         endif
-      endif
+         end if
+      end if
       file10isopen=.true.
 
 #ifdef CompileWithMPI
@@ -210,28 +208,28 @@ contains
       if (c%resume) then
          errnofile=.false.
          if (c%resume_fromold) then
-            INQUIRE (FILE=trim(adjustl(c%nresumeable2))//'.old', EXIST=errnofile)
+            inquire(FILE=trim(adjustl(c%nresumeable2))//'.old', EXIST=errnofile)
          else
-            INQUIRE (FILE=trim(adjustl(c%nresumeable2)), EXIST=errnofile)
-         endif
+            inquire(FILE=trim(adjustl(c%nresumeable2)), EXIST=errnofile)
+         end if
          if (.not.errnofile) then
             if (c%resume_fromold) then
                buff='FILE '//trim(adjustl(c%nresumeable2))//'.old DOES NOT EXIST'
-               call StopOnError(c%layoutnumber,c%size,buff)
+               call StopOnError(c%layoutnumber,c%num_procs,buff)
             else
                buff='FILE '//trim(adjustl(c%nresumeable2))//' DOES NOT EXIST'
-               call StopOnError(c%layoutnumber,c%size,buff)
-            endif
-         endif
+               call StopOnError(c%layoutnumber,c%num_procs,buff)
+            end if
+         end if
          call print11(c%layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
          call print11(c%layoutnumber,' ')
          if (c%resume_fromold) then
             call print11(c%layoutnumber,'Reading resuming data from '//trim(adjustl(c%nresumeable2))//'.old etc.')
          else
             call print11(c%layoutnumber,'Reading resuming data from '//trim(adjustl(c%nresumeable2))//' etc.')
-         endif
-         call print11(c%layoutnumber,SEPARADOR//sEPARADOR//SEPARADOR)
-      endif
+         end if
+         call print11(c%layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
+      end if
 
 
 #ifdef CompileWithMPI
@@ -245,19 +243,19 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine ReportExistence(sgg,layoutnumber,size,thereare,mur_second,MurAfterPML)
+   subroutine ReportExistence(sgg,layoutnumber,num_procs,thereare,mur_second,MurAfterPML)
       logical :: mur_second,MurAfterPML
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       !
-      type(logic_control), intent(in) :: thereare
-      integer(kind=4), intent(in) :: layoutnumber,size
+      type(logic_control_t), intent(in) :: thereare
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
       character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: buff
 
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -272,111 +270,111 @@ contains
          continue
 #else
          buff=trim(adjustl(whoami))//' MIBC unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
+         call stoponerror(layoutnumber,num_procs,buff)
 #endif
-      endif
+      end if
       !!!!!!!!!!!!!
       if (thereAre%MagneticMedia) then
          buff=' has special H-media'
          call warnerrreport(buff)
-      endif
+      end if
       if (thereAre%PMLMagneticMedia) then
          buff=' has special PML H-media'
          call warnerrreport(buff)
-      endif
+      end if
       if ((thereare%NodalE).or.(thereare%NodalH))    then
          buff=' has Nodal sources'
          call warnerrreport(buff)
-      endif
+      end if
       if (thereare%Observation)    then
          buff=   ' has probes'
          call warnerrreport(buff)
-      endif
+      end if
       if (thereare%FarFields)    then
          buff=   ' has Far Field probes'
          call warnerrreport(buff)
-      endif
+      end if
       If (thereare%PlaneWaveBoxes) then
          buff=   ' has planewaves'
          call warnerrreport(buff)
-      endif
+      end if
       if (thereare%Multiports)     then
          buff=   ' has MIBC Multiports'
          call warnerrreport(buff)
-      endif
+      end if
       if (thereare%AnisMultiports)     then
          buff=   ' has MIBC Anisotropic Multiports'
          call warnerrreport(buff)
-      endif
+      end if
       if (thereare%SGBCs)     then
          buff=   ' has Thin metal Materials'
          call warnerrreport(buff)
-      endif
+      end if
       if ((thereare%Anisotropic).and.(.not.thereare%ThinSlot))     then
          buff=   ' has pure anisotropic media'
          call warnerrreport(buff)
-      endif
+      end if
       if (thereare%ThinSlot)     then
          buff=   ' has Thin Slots'
          call warnerrreport(buff)
-      endif
+      end if
       !
       if (thereare%EDispersives)     then
          buff=   ' has electric dispersives'
          call warnerrreport(buff)
-      endif
+      end if
       if (thereare%MDispersives)     then
          buff=   ' has magnetic dispersives'
          call warnerrreport(buff)
-      endif
+      end if
       If (thereare%Wires)            then
          buff=   ' has Holland WIREs'
          call warnerrreport(buff)
-      endif
+      end if
 #ifdef CompileWithBerengerWires
       If (thereare%Wires)            then
          buff=   ' has Multi-WIREs'
          call warnerrreport(buff)
-      endif
+      end if
 #endif
 #ifdef CompileWithSlantedWires
       If (thereare%Wires)            then
          buff=   ' has Slanted WIREs'
          call warnerrreport(buff)
-      endif
+      end if
 #endif
       If (thereare%PMLBorders)      then
          if (sgg%Border%IsUpPML.or.sgg%Border%IsDownPML) then
             buff=   ' has PML regions inside Z'
             call warnerrreport(buff)
-         endif
-      endif
+         end if
+      end if
       If (thereare%MURBorders)      then
          if (sgg%Border%IsUpMUR.or.sgg%Border%IsDownMUR) then
             if (mur_second) then
                buff=   ' has MUR2 regions inside Z'
             else
                buff=   ' has MUR1 regions inside Z'
-            endif
+            end if
             call warnerrreport(buff)
-         endif
-      endif
+         end if
+      end if
       If (murAfterPML)      then
          if (mur_second) then
             buff=   ' CPML are backed by MUR1'
          else
             buff=   ' CPML are backed by MUR2'
-         endif
+         end if
          call warnerrreport(buff)
-      endif
+      end if
       If (thereare%PMCBorders)      then
          buff=   ' has PMC borders'
          call warnerrreport(buff)
-      endif
+      end if
       If (thereare%PECBorders)      then
          buff=   ' has PEC borders'
          call warnerrreport(buff)
-      endif
+      end if
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -390,7 +388,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitTiming(sgg, c, t, initialtimestep, maxSourceValue)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(sim_control_t) , intent(in):: c
       real(kind=8), intent(in) :: t
       integer(kind=4), intent(in) :: initialtimestep
@@ -401,7 +399,7 @@ contains
 #endif
       character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: dubuf
-      write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%num_procs,') '
       
       time_desdelanzamiento=t
       snapLevel=1.0e25_RKIND !*maxSourceValue
@@ -434,15 +432,15 @@ contains
          else
             write(dubuf,*)  'Flushing of restarting FIELDS at the end (mins) :',c%maxCPUtime
             call print11(c%layoutnumber,dubuf)
-         endif
-      endif
+         end if
+      end if
       if (c%flushsecondsDATA/=0) then
          write(dubuf,*)  'Flushing observation DATA every  ',int(c%flushsecondsDATA/60.0_RKIND),' minutes and every ', &
                           BuffObse,' steps'
          call print11(c%layoutnumber,dubuf)
       else
          call print11(c%layoutnumber,'WARNING: NO flushing of observation DATA scheduled')
-      endif
+      end if
       write(dubuf,*)  'Reporting simulation info every  ',int(reportingseconds/60.0_RKIND),' minutes '
       call print11(c%layoutnumber,dubuf)
 
@@ -508,9 +506,9 @@ contains
       !        t_0 = (month-1) * diasenbisiesto(month-1) * 86400 + day * 86400 ! + (year-2000.) * 365 * 86400
       !   else
       !        t_0 = (month-1) * diasen(month-1) * 86400 + day * 86400 ! + (year-2000.) * 365 * 86400
-      !   endif
+      !   end if
       !        esprimeravez = .FALSE.
-      !   endif
+      !   end if
       call date_and_time(date=caux2,time = caux,zone=zone,values=values)
       read( caux( 1: 2), '(i2)') h
       read( caux( 3: 4), '(i2)') m
@@ -525,7 +523,7 @@ contains
                     (year-2000.) * 365 * 86400.
       else
          time_out = diasen(month-1) * 86400 + (day-1) * 86400 + 3600.0 * h + 60.0 * m + s - t_0  + (year-2000.) * 365 * 86400.
-      endif
+      end if
       time_out2%segundos=time_out !seconds from year 2000
       time_out2%hora=caux !hora
       time_out2%fecha=caux2 !fecha
@@ -534,7 +532,7 @@ contains
       !!if ((month >=4 ).and.(month <= 10)) then
       !!   h=h+1 !dst aproximado
       !!   write( time_out2%hora( 1: 2), '(i2)') h
-      !!endif
+      !!end if
       return
    endsubroutine get_secnds
 
@@ -544,19 +542,19 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !**************************************************************************************************
-   subroutine Timing(sgg, b, n, n_info, layoutnumber, size, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
+   subroutine Timing(sgg, b, n, n_info, layoutnumber, num_procs, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
    finaltimestep, perform, &
    parar, forcetiming,Ex,Ey,Ez,everflushed, nentradaroot,maxSourceValue,opcionestotales,simu_devia,dontwritevtk,permitscaling)
-   ! subroutine Timing(sgg, b, n, n_info, layoutnumber, size, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
+   ! subroutine Timing(sgg, b, n, n_info, layoutnumber, num_procs, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
    ! finaltimestep, &
    ! parar, forcetiming,Ex,Ey,Ez,everflushed, nentradaroot,maxSourceValue,opcionestotales,simu_devia,dontwritevtk,permitscaling)
    
       logical :: simu_devia,dontwritevtk,stopdontwritevtk,stopflushingdontwritevtk,flushdontwritevtk,stoponlydontwritevtk
       !---------------------------> inputs <----------------------------------------------------------
-      type(SGGFDTDINFO), intent(in)              :: sgg              ! Simulation data.
+      type(SGGFDTDINFO_t), intent(in)              :: sgg              ! Simulation data.
       type( bounds_t), intent( IN) :: b
       character(len=BUFSIZE), intent(in) :: opcionestotales
-      integer( kind = 4), intent( IN) :: layoutnumber, size, n,maxCPUtime
+      integer( kind = 4), intent( IN) :: layoutnumber, num_procs, n,maxCPUtime
       integer( kind = 4), intent( IN) :: flushsecondsFields, flushsecondsData, initialtimestep, finaltimestep
       !--->
       real(kind = RKIND), dimension( 0: b%Ex%NX-1, 0: b%Ex%NY-1, 0: b%Ex%NZ-1), intent( IN) :: Ex
@@ -587,16 +585,16 @@ contains
       character( LEN=BUFSIZE) :: whoamishort,whoami,chinstant
       character(len=BUFSIZE) :: dubuf
       character(len=BUFSIZE) :: dondex,dondey,dondez
-      real(kind=rKIND), dimension(1:size) :: NEWlmaxval,NEWlmaxval_x,NEWlmaxval_y,NEWlmaxval_z
-      integer( kind = 4), dimension(1:size) :: NEWlmaxval_i,NEWlmaxval_j,NEWlmaxval_k
-      real(kind=rKIND), dimension(1:size) :: lmaxval,lmaxval_x,lmaxval_y,lmaxval_z
-      integer( kind = 4), dimension(1:size) :: lmaxval_i,lmaxval_j,lmaxval_k
+      real(kind=rKIND), dimension(1:num_procs) :: NEWlmaxval,NEWlmaxval_x,NEWlmaxval_y,NEWlmaxval_z
+      integer( kind = 4), dimension(1:num_procs) :: NEWlmaxval_i,NEWlmaxval_j,NEWlmaxval_k
+      real(kind=rKIND), dimension(1:num_procs) :: lmaxval,lmaxval_x,lmaxval_y,lmaxval_z
+      integer( kind = 4), dimension(1:num_procs) :: lmaxval_i,lmaxval_j,lmaxval_k
       real(kind=rKIND) :: qmaxval , qmaxval_x,qmaxval_y,qmaxval_z
       integer( kind = 4) :: qmaxval_i,qmaxval_j,qmaxval_k,thefilenoflu
-      real(kind=rKIND), dimension(1:size) :: NEWlminval,NEWlminval_x,NEWlminval_y,NEWlminval_z
-      integer( kind = 4), dimension(1:size) :: NEWlminval_i,NEWlminval_j,NEWlminval_k
-      real(kind=rKIND), dimension(1:size) :: lminval,lminval_x,lminval_y,lminval_z
-      integer( kind = 4), dimension(1:size) :: lminval_i,lminval_j,lminval_k
+      real(kind=rKIND), dimension(1:num_procs) :: NEWlminval,NEWlminval_x,NEWlminval_y,NEWlminval_z
+      integer( kind = 4), dimension(1:num_procs) :: NEWlminval_i,NEWlminval_j,NEWlminval_k
+      real(kind=rKIND), dimension(1:num_procs) :: lminval,lminval_x,lminval_y,lminval_z
+      integer( kind = 4), dimension(1:num_procs) :: lminval_i,lminval_j,lminval_k
       real(kind=rKIND) :: qminval , qminval_x,qminval_y,qminval_z
       integer( kind = 4) :: qminval_i,qminval_j,qminval_k,dimxsnap,dimysnap,dimzsnap,veces,i1,j1,k1
       integer( kind = 4) :: ini_ibox,fin_ibox,ini_jbox,fin_jbox,ini_kbox,fin_kbox
@@ -620,7 +618,7 @@ contains
       integer(kind=4) :: ierr
 #endif
       !!!
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
       write(whoamishort,'(i5)') layoutnumber+1
 
       !---------------------------> empieza Timing <--------------------------------------------------
@@ -686,15 +684,15 @@ contains
          inquire( FILE = 'stop_only_dontwritevtk', EXIST = stoponlydontwritevtk)
          if (pararnoflushing) then
              dontwritevtk=.false.
-         endif
+         end if
          if (stopdontwritevtk) then
              pararnoflushing=.true.
              dontwritevtk=.true.
-         endif
+         end if
          if (stoponlydontwritevtk) then
              stop_only=.true.
              dontwritevtk=.true.
-         endif
+         end if
          if (stop_only) then
              open(newunit=thefilenoflu,FILE = 'stop_only',action="read")
              read(thefilenoflu,*) quien_es
@@ -702,9 +700,9 @@ contains
                  pararNOflushing=.true.
              else
                  pararNOflushing=.false.
-             endif
+             end if
              close(thefilenoflu)
-         endif
+         end if
          !
          inquire( FILE = 'stopflushing', EXIST = pararflushing)
          inquire( FILE = 'stopflushing_only', EXIST = stopflushing_only)
@@ -712,15 +710,15 @@ contains
          inquire( FILE = 'stopflushing_only_dontwritevtk', EXIST = stopflushingonlydontwritevtk)
          if (pararflushing) then
              dontwritevtk=.false.
-         endif
+         end if
          if (stopflushingdontwritevtk) then
              pararflushing=.true.
              dontwritevtk=.true.
-         endif
+         end if
          if (stopflushingonlydontwritevtk) then
              stopflushing_only=.true.
              dontwritevtk=.true.
-         endif
+         end if
          if (stopflushing_only) then
              open(newunit=thefilenoflu,FILE = 'stopflushing_only',action="read")
              read(thefilenoflu,*) quien_es
@@ -728,9 +726,9 @@ contains
                  pararflushing=.true.
              else
                  pararflushing=.false.
-             endif
+             end if
              close(thefilenoflu)
-         endif
+         end if
          !        
          inquire( FILE = 'flush', EXIST = mustflushFIELDS)
          inquire( FILE = 'flush_only', EXIST = flush_only)
@@ -738,15 +736,15 @@ contains
          inquire( FILE = 'flush_only_dontwritevtk', EXIST = flushonlydontwritevtk)
          if (mustflushFIELDS) then
              dontwritevtk=.false.
-         endif
+         end if
          if (flushdontwritevtk) then
              mustflushFIELDS=.true.
              dontwritevtk=.true.
-         endif
+         end if
          if (flushdontwritevtk) then
              flush_only=.true.
              dontwritevtk=.true.
-         endif
+         end if
          if (flush_only) then
              open(newunit=thefilenoflu,FILE = 'flush_only',action="read")
              read(thefilenoflu,*) quien_es
@@ -754,9 +752,9 @@ contains
                  mustflushFIELDS=.true.
              else
                  mustflushFIELDS=.false.
-             endif
+             end if
              close(thefilenoflu)
-         endif
+         end if
          !
          inquire( FILE = 'flushdata', EXIST = mustflushdata)
          inquire( FILE = 'flushdata_only', EXIST = flushdata_only)
@@ -764,15 +762,15 @@ contains
          inquire( FILE = 'flushdata_only_dontwritevtk', EXIST = flushdataonlydontwritevtk)
          if (mustflushdata) then
              dontwritevtk=.false.
-         endif
+         end if
          if (flushdatadontwritevtk) then
              mustflushdata=.true.
              dontwritevtk=.true.
-         endif
+         end if
          if (flushdataonlydontwritevtk) then
              flushdata_only=.true.
              dontwritevtk=.true.
-         endif
+         end if
          if (flushdata_only) then
              open(newunit=thefilenoflu,FILE = 'flushdata_only',action="read")
              read(thefilenoflu,*) quien_es
@@ -780,9 +778,9 @@ contains
                  mustflushdata=.true.
              else
                  mustflushdata=.false.
-             endif
+             end if
              close(thefilenoflu)
-         endif
+         end if
          !
          inquire( FILE = 'unpack', EXIST = mustUnpack)
          inquire( FILE = 'postprocess', EXIST = mustPostprocess)
@@ -825,20 +823,20 @@ contains
          !
          !to prevent duplicate writes on resuming
          !--->
-         lmaxval  (1:size) =  0.0_RKIND
-         lmaxval_i(1:size) =  0
-         lmaxval_j(1:size) =  0
-         lmaxval_k(1:size) =  0
-         lmaxval_x(1:size) =  0.0_RKIND
-         lmaxval_y(1:size) =  0.0_RKIND
-         lmaxval_z(1:size) =  0.0_RKIND
-         lminval  (1:size) =  0.0_RKIND
-         lminval_i(1:size) =  0
-         lminval_j(1:size) =  0
-         lminval_k(1:size) =  0
-         lminval_x(1:size) =  1e+20
-         lminval_y(1:size) =  1e+20
-         lminval_z(1:size) =  1e+20
+         lmaxval  (1:num_procs) =  0.0_RKIND
+         lmaxval_i(1:num_procs) =  0
+         lmaxval_j(1:num_procs) =  0
+         lmaxval_k(1:num_procs) =  0
+         lmaxval_x(1:num_procs) =  0.0_RKIND
+         lmaxval_y(1:num_procs) =  0.0_RKIND
+         lmaxval_z(1:num_procs) =  0.0_RKIND
+         lminval  (1:num_procs) =  0.0_RKIND
+         lminval_i(1:num_procs) =  0
+         lminval_j(1:num_procs) =  0
+         lminval_k(1:num_procs) =  0
+         lminval_x(1:num_procs) =  1e+20
+         lminval_y(1:num_procs) =  1e+20
+         lminval_z(1:num_procs) =  1e+20
          !
 
          valor = 0.0_RKIND
@@ -854,9 +852,9 @@ contains
             do j = ini_j, fin_j
                do i = ini_i, fin_i
                   valor = valor + Ex( i, j, k) * Ex( i, j, k)
-               enddo
-            enddo
-         enddo
+               end do
+            end do
+         end do
          !--->
          ini_i = b%sweepSINPMLEy%XI - b%Ey%XI
          fin_i = b%sweepSINPMLEy%XE - b%Ey%XI
@@ -868,9 +866,9 @@ contains
             do j = ini_j, fin_j
                do i = ini_i, fin_i
                   valor = valor + Ey( i, j, k) * Ey( i, j, k)
-               enddo
-            enddo
-         enddo
+               end do
+            end do
+         end do
          !--->
          ini_i = b%sweepSINPMLEz%XI - b%Ez%XI
          fin_i = b%sweepSINPMLEz%XE - b%Ez%XI
@@ -882,9 +880,9 @@ contains
             do j = ini_j, fin_j
                do i = ini_i, fin_i
                   valor = valor + Ez( i, j, k) * Ez( i, j, k)
-               enddo
-            enddo
-         enddo
+               end do
+            end do
+         end do
          !
          !--->
          energy = valor !!! quitado 241018 para evitar pasar el eps0----> 0.5_RKIND * Eps0 * valor
@@ -922,7 +920,7 @@ contains
                      lmaxval_x(layoutnumber+1)=Punto%PhysCoor(iHx)%x(lmaxval_i(layoutnumber+1))
                      lmaxval_y(layoutnumber+1)=Punto%PhysCoor(iHy)%y(lmaxval_j(layoutnumber+1))
                      lmaxval_z(layoutnumber+1)=Punto%PhysCoor(iHz)%z(lmaxval_k(layoutnumber+1))
-                  endif
+                  end if
                   if (lminval  (layoutnumber+1)> valor) then
                      lminval  (layoutnumber+1)= valor
                      lminval_i(layoutnumber+1)=i+b%Hx%XI
@@ -931,24 +929,24 @@ contains
                      lminval_x(layoutnumber+1)=Punto%PhysCoor(iHx)%x(lminval_i(layoutnumber+1))
                      lminval_y(layoutnumber+1)=Punto%PhysCoor(iHy)%y(lminval_j(layoutnumber+1))
                      lminval_z(layoutnumber+1)=Punto%PhysCoor(iHz)%z(lminval_k(layoutnumber+1))
-                  endif
-               enddo
-            enddo
-         enddo
+                  end if
+               end do
+            end do
+         end do
 
          !
-         NEWlmaxval  (1:size) =0.0_RKIND
-         NEWlmaxval_i(1:size) =0
-         NEWlmaxval_j(1:size) =0
-         NEWlmaxval_k(1:size) =0
+         NEWlmaxval  (1:num_procs) =0.0_RKIND
+         NEWlmaxval_i(1:num_procs) =0
+         NEWlmaxval_j(1:num_procs) =0
+         NEWlmaxval_k(1:num_procs) =0
 #ifdef CompileWithMPI
-         call MPI_AllReduce( LMAXVAL, NEWlmaxval  , size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LMAXVAL_i, NEWlmaxval_I, size, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LMAXVAL_j, NEWlmaxval_J, size, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LMAXVAL_k, NEWlmaxval_K, size, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LMAXVAL_x, NEWlmaxval_x, size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LMAXVAL_y, NEWlmaxval_y, size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LMAXVAL_z, NEWlmaxval_z, size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL, NEWlmaxval  , num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL_i, NEWlmaxval_I, num_procs, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL_j, NEWlmaxval_J, num_procs, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL_k, NEWlmaxval_K, num_procs, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL_x, NEWlmaxval_x, num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL_y, NEWlmaxval_y, num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL_z, NEWlmaxval_z, num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
 #else
          NEWlmaxval   = LMAXVAL
          NEWlmaxval_i = LMAXVAL_I
@@ -965,7 +963,7 @@ contains
          qmaxval_x = 0.0_RKIND
          qmaxval_y = 0.0_RKIND
          qmaxval_z = 0.0_RKIND
-         do i=1,size
+         do i=1,num_procs
             if (abs(NEWlmaxval(i)) > qmaxval) then
                qmaxval   = abs(NEWlmaxval(i))
                qmaxval_i = newlmaxval_i(i)
@@ -974,25 +972,25 @@ contains
                qmaxval_x = newlmaxval_x(i)
                qmaxval_y = newlmaxval_y(i)
                qmaxval_z = newlmaxval_z(i)
-            endif
+            end if
          end do
 
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          !
-         NEWlminval  (1:size) =0.0_RKIND
-         NEWlminval_i(1:size) =0
-         NEWlminval_j(1:size) =0
-         NEWlminval_k(1:size) =0
+         NEWlminval  (1:num_procs) =0.0_RKIND
+         NEWlminval_i(1:num_procs) =0
+         NEWlminval_j(1:num_procs) =0
+         NEWlminval_k(1:num_procs) =0
 #ifdef CompileWithMPI
-         call MPI_AllReduce( LminVAL, NEWlminval  , size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LminVAL_i, NEWlminval_I, size, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LminVAL_j, NEWlminval_J, size, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LminVAL_k, NEWlminval_K, size, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LminVAL_x, NEWlminval_x, size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LminVAL_y, NEWlminval_y, size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LminVAL_z, NEWlminval_z, size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL, NEWlminval  , num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL_i, NEWlminval_I, num_procs, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL_j, NEWlminval_J, num_procs, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL_k, NEWlminval_K, num_procs, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL_x, NEWlminval_x, num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL_y, NEWlminval_y, num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL_z, NEWlminval_z, num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
 #else
          NEWlminval   = LminVAL
          NEWlminval_i = LminVAL_I
@@ -1009,7 +1007,7 @@ contains
          qminval_x = 0.0_RKIND
          qminval_y = 0.0_RKIND
          qminval_z = 0.0_RKIND
-         do i=1,size
+         do i=1,num_procs
             if (abs(NEWlminval(i)) > qminval) then
                qminval   = abs(NEWlminval(i))
                qminval_i = newlminval_i(i)
@@ -1018,7 +1016,7 @@ contains
                qminval_x = newlminval_x(i)
                qminval_y = newlminval_y(i)
                qminval_z = newlminval_z(i)
-            endif
+            end if
          end do
 
 #ifdef CompileWithMPI
@@ -1037,8 +1035,8 @@ contains
                read(35,*,end=1153,err=1153) snapHowMany
 1153           close (35)
                call erasesignalingfiles(simu_devia)
-            endif
-         endif
+            end if
+         end if
 #ifdef CompileWithMPI
          call MPI_Barrier(MPI_COMM_WORLD,ierr) 
          call MPI_BCast( mustSnap, 1_4, MPI_LOGICAL, 0_4, MPI_COMM_WORLD, ierr)
@@ -1077,15 +1075,15 @@ contains
             !!!!                                               Ey( i+i1, j+j1, k+k1) * Ey(i+i1, j+j1, k+k1)+ &
             !!!!                                            Ez(i+i1, j+j1, k+k1) * Ez( i+i1, j+j1, k+k1))
             !!!!                            veces=veces+1
-            !!!!                        endif
+            !!!!                        end if
             !!!!                        end do
             !!!!                        end do
             !!!!                        end do
             !!!!                        snap(ini_ibox+int((i-ini_ibox)/snapstep),ini_jbox+int((j-ini_jbox)/snapstep), &
             !!!!                            ini_kbox+int((k-ini_kbox)/snapstep),1) = valor/veces
-            !!!!                    enddo
-            !!!!                enddo
-            !!!!             enddo
+            !!!!                    end do
+            !!!!                end do
+            !!!!             end do
 
             do k = ini_kbox, fin_kbox , snapStep
                do  j = ini_jbox, fin_jbox , snapStep
@@ -1100,15 +1098,15 @@ contains
                                                     Ey( i+i1, j+j1, k+k1) * Ey(i+i1, j+j1, k+k1)+ &
                                  Ez(i+i1, j+j1, k+k1) * Ez( i+i1, j+j1, k+k1))
                                  veces=veces+1
-                              endif
+                              end if
                            end do
                         end do
                      end do
                      snap(ini_ibox+int((i-ini_ibox)/snapstep),ini_jbox+int((j-ini_jbox)/snapstep), &
                           ini_kbox+int((k-ini_kbox)/snapstep),1) = valor/veces
-                  enddo
-               enddo
-            enddo
+                  end do
+               end do
+            end do
 
 
             write(chinstant,'(i8)') n
@@ -1139,8 +1137,8 @@ contains
             !             do k = ini_kbox, fin_kbox
             !                do j = ini_jbox, fin_jbox
             !                       write (35) (snap(i,j,k,1),i = ini_ibox, fin_ibox)
-            !                enddo
-            !             enddo
+            !                end do
+            !             end do
             !#endif
             !             close (35)
 
@@ -1150,8 +1148,8 @@ contains
             if (countersnap >= snapHowMany) then
                mustsnap=.false.
                countersnap=0
-            endif
-         endif
+            end if
+         end if
 
 #ifdef CompileWithMPI
          call MPI_Barrier(MPI_COMM_WORLD,ierr) !TODOS STOCH O NO 060619
@@ -1166,10 +1164,10 @@ contains
             call print11(layoutnumber,dubuf)
             write(dubuf,*) 'Switches: '//trim(adjustl(opcionestotales))
             call print11(layoutnumber,dubuf)
-            !if (size/=1) then
-                write(dubuf,*) 'MPI Processes: ',size
+            !if (num_procs/=1) then
+                write(dubuf,*) 'MPI Processes: ',num_procs
                 call print11(layoutnumber,dubuf)
-            !endif
+            !end if
             !
             write(dubuf,*) 'Date/Time ', time_out2%fecha( 7: 8),'/', &
             time_out2%fecha( 5: 6),'/', &
@@ -1185,7 +1183,7 @@ contains
                                                                ', dt(pscaled)= ',sgg%dt
             else
                 write(dubuf,'(a,e19.9e3,a,e19.9e3,a,e19.9e3)') 'Time= ',sgg%tiempo(n),', dt0 = ',sgg%dt
-            endif
+            end if
             call print11(layoutnumber,dubuf)
             !
             if (energytotal > oldenergytotal) then
@@ -1196,46 +1194,46 @@ contains
                write(dubuf,*)     'Total Energy (dec) :',energytotal
                if (simu_devia) dubuf=trim(adjustl(dubuf))//' (Stoch)'
                oldenergytotal=energytotal
-            endif
+            end if
             call print11(layoutnumber,dubuf)
             !
             if (qmaxval_x<-1e19) then
                write (dondex,'(a)') ' PML '
             else
                write (dondex,'(e15.4e3)') qmaxval_x
-            endif
+            end if
             if (qmaxval_y<-1e19) then
                write (dondey,'(a)') ' PML '
             else
                write (dondey,'(e15.4e3)') qmaxval_y
-            endif
+            end if
             if (qmaxval_z<-1e19) then
                write (dondez,'(a)') ' PML '
             else
                write (dondez,'(e15.4e3)') qmaxval_z
-            endif
+            end if
 
             write(dubuf,'(a,e13.4e3,a,3i5,a)')     'Max field: ',qmaxval,' at (',qmaxval_i,qmaxval_j,qmaxval_k,')=('// &
             ' '//trim(adjustl(dondex))//','//' '//trim(adjustl(dondey))//','//' '//trim(adjustl(dondez))//')'
 
             if (simu_devia) dubuf=trim(adjustl(dubuf))//' (Stoch)'
             call print11(layoutnumber,dubuf)
-            do i=1,size
+            do i=1,num_procs
                if (newlmaxval_x(i)<-1e19) then
                   write (dondex,'(a)') ' PML '
                else
                   write (dondex,'(e15.4e3)') newlmaxval_x(i)
-               endif
+               end if
                if (newlmaxval_y(i)<-1e19) then
                   write (dondey,'(a)') ' PML '
                else
                   write (dondey,'(e15.4e3)') newlmaxval_y(i)
-               endif
+               end if
                if (newlmaxval_z(i)<-1e19) then
                   write (dondez,'(a)') ' PML '
                else
                   write (dondez,'(e15.4e3)') newlmaxval_z(i)
-               endif
+               end if
 
                write(dubuf,'(a,i5,e15.4e3,a,e15.4e3,a,3i5,a)')  'Max field slice: ',i,NEWlmaxval(i),'/',maxSourceValue, &
                ' at (',newlmaxval_i(i),newlmaxval_j(i),newlmaxval_k(i),')=('// &
@@ -1259,7 +1257,7 @@ contains
             else
                write(dubuf,*) 'Never flushed resuming fields.'
                call print11(layoutnumber,dubuf)
-            endif
+            end if
             if (flushsecondsFields /= 0) then
                write(dubuf,*) 'Mins. next flushing:',min(ceiling((flushsecondsFIELDS-(time_end-time_begin2))/60.0_RKIND), &
                ceiling(((finaltimestep-n)*megaceldastotales)/speedGlobAvg/60.0_RKIND))
@@ -1271,8 +1269,8 @@ contains
                else
                   write(dubuf,*) 'Flushing of restarting DATA at the end.'
                   call print11(layoutnumber,dubuf)
-               endif
-            endif
+               end if
+            end if
             !
             write(dubuf,*) 'Next info at step: ',n_info
             call print11(layoutnumber,dubuf)
@@ -1284,7 +1282,7 @@ contains
                write(dubuf,*) 'Mcells/sec  :',speedGlobInst,'(',reportedinstant, ' to ',N,')'
                if (simu_devia) dubuf=trim(adjustl(dubuf))//' (Stoch)'
                call print11(layoutnumber,dubuf)
-            endif
+            end if
             !
             write(dubuf,*) 'Mcells/sec  :',speedGlobAvg ,'(',INITIALtimeSTEP, ' to ',N,')'
             if (simu_devia) dubuf=trim(adjustl(dubuf))//' (Stoch)'
@@ -1297,7 +1295,7 @@ contains
             !write(67,'(i5)') nint(100.0_RKIND * n/finaltimestep) !percentage
             call flush(11)
             call flush(10)
-         endif
+         end if
          !
 #ifdef CompileWithMPI
       call MPI_Barrier(MPI_COMM_WORLD,ierr)
@@ -1305,7 +1303,7 @@ contains
          call get_secnds(time_out2)
          time_begin = time_out2%segundos !restart timing
          reportedinstant=n+1
-      endif !every reporting seconds
+      end if !every reporting seconds
       !
 
       !stop if this probe blows up
@@ -1329,7 +1327,7 @@ contains
 !!!#endif
          !
      !!    stoponNaN_aux=.true.
-     !! endif
+     !! end if
 #ifdef CompileWithMPI
       call MPI_AllReduce( stoponNaN_aux, stoponNaN, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #else
@@ -1343,13 +1341,13 @@ contains
             call print11(layoutnumber,dubuf)
             write(dubuf,*) '     In case of surface IBCs: reduce -att factor'
             call print11(layoutnumber,dubuf)
-         endif
+         end if
 #ifdef CompileWithMPI
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
          parar=.true.
-         !            call StopOnError(layoutnumber,size,' Aborting')
-      endif
+         !            call StopOnError(layoutnumber,num_procs,' Aborting')
+      end if
       !
       l_aux = ( ((time_end-time_begin2) > flushsecondsFIELDS).AND. &
       (flushsecondsFIELDS/=0                       )).or. &
@@ -1382,8 +1380,8 @@ contains
          !  Clear the flushing signaling file
          if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
-         endif
-      endif
+         end if
+      end if
       if (hay_flushDATA) then
          !
          mustflushDATA=.false.
@@ -1396,8 +1394,8 @@ contains
          !  Clear the flushing signaling file
          if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
-         endif
-      endif
+         end if
+      end if
       if (mustunpack) then
          !
          mustunpack=.false.
@@ -1405,8 +1403,8 @@ contains
          !  Clear the flushing signaling file
          if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
-         endif
-      endif
+         end if
+      end if
       if (mustpostprocess) then
          !
          mustpostprocess=.false.
@@ -1414,8 +1412,8 @@ contains
          !  Clear the flushing signaling file
          if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
-         endif
-      endif
+         end if
+      end if
       if (mustflushXdmf) then
          !
          mustflushXdmf=.false.
@@ -1423,16 +1421,16 @@ contains
          !  Clear the flushing signaling file
          if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
-         endif
-      endif
+         end if
+      end if
       if (mustflushVTK) then
          !
          mustflushVTK=.false.
          perform%flushVTK=.true.
          if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
-         endif
-      endif
+         end if
+      end if
       !---------------------------> acaba Timing <----------------------------------------------------
       return
    endsubroutine Timing
@@ -1441,9 +1439,9 @@ contains
 
 
 
-   subroutine INITWARNINGFILE(layoutnumber,size,nEntradaRoot,verbosete,ignoreErrors1)
+   subroutine INITWARNINGFILE(layoutnumber,num_procs,nEntradaRoot,verbosete,ignoreErrors1)
       character(len=*) :: nEntradaRoot
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       !file management
       character(len=BUFSIZE) :: whoamishort
 #ifdef CompileWithMPI
@@ -1457,7 +1455,7 @@ contains
 
       ignoreerrors=ignoreerrors1
 
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
       write(whoamishort,'(i5)') layoutnumber+1
 
       if (layoutnumber == 0) then          
@@ -1466,7 +1464,7 @@ contains
       !!!if (itsopen2) print *,'----------->17 open!!!'
         ficherito=trim(adjustl(nEntradaRoot))//trim(adjustl(whoamishort))//'_tmpWarnings.txt'
         call openclosedelete(ficherito)
-      endif
+      end if
 
       !!!#ifdef CompileWithMPI
       !!!if (SIZE/=0) then
@@ -1481,7 +1479,7 @@ contains
       !!!                               MPI_INFO_NULL, ierr)
       !!!ELSE
       !!!    open (17,file=trim(adjustl(nEntradaRoot))//'_tmpWarnings.txt',form='formatted')
-      !!!ENDIF
+      !!!end if
       !!!#else
       
       inquire(unit=17, opened=itsopen2)
@@ -1499,7 +1497,7 @@ contains
 
 
    subroutine WarnErrReport(bufff,error)
-      !
+      use iso_fortran_env, only : error_unit
       logical :: itsopen
       logical, optional :: error
 #ifdef CompileWithMPI
@@ -1522,6 +1520,7 @@ contains
       call trimnullchar(buff2)
 
       write (17,'(a)',err=154) trim(adjustl(buff3))
+      write (error_unit,'(a)') trim(adjustl(buff3))
 
       goto 155
 154   inquire(unit=17, opened=itsopen) 
@@ -1531,10 +1530,19 @@ contains
 
    end subroutine WarnErrReport
 
+   function isFatalError() result(res)
+      logical :: res
+      res = fatalerror
+   end function
+
+   subroutine resetFatalError()
+      fatalerror = .false.
+   end subroutine
 
 
-   subroutine CLOSEWARNINGFILE(layoutnumber,size,fatalerror_final,stoch_undivided,simu_devia)
-      integer(kind=4), intent(in) :: layoutnumber,size
+
+   subroutine CLOSEWARNINGFILE(layoutnumber,num_procs,fatalerror_final,stoch_undivided,simu_devia)
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       integer(kind=4) :: ierr,posic,i
       character(len=BUFSIZE) :: buf2
       character(len=BUFSIZE) :: dubuf
@@ -1550,7 +1558,7 @@ contains
       !!!    call MPI_FILE_close (thefile, ierr)
       !!!ELSE
       !!!    close (17)
-      !!!ENDIF
+      !!!end if
       !!!#else
       close (17)
       !!!#endif
@@ -1561,19 +1569,19 @@ contains
 #endif
 
       !arregla los NUL
-      if ((layoutnumber==0).or.((layoutnumber == size/2).and.stoch_undivided)) then
+      if ((layoutnumber==0).or.((layoutnumber == num_procs/2).and.stoch_undivided)) then
          open (88,file=trim(adjustl(WarningFile))//'_Warnings.txt',form='formatted')
          posic=0
-         do i=0,size-1
+         do i=0,num_procs-1
             if (stoch_undivided) then
                 write(whoamishort,'(i5)') i+1
             else
                if (simu_devia) then
-                   write(whoamishort,'(i5)') size+i+1
+                   write(whoamishort,'(i5)') num_procs+i+1
                else
                    write(whoamishort,'(i5)') i+1
-               endif
-            endif 
+               end if
+            end if 
             inquire(file=trim(adjustl(WarningFile))//trim(adjustl(whoamishort))//'_tmpWarnings.txt',exist=lexis)
             if (lexis) then         
       !!!inquire(unit=87, opened=itsopen2)
@@ -1587,7 +1595,7 @@ contains
                if ((buf2(1:1) /= ' ').and.(buf2(1:1) /=char(0))) then
                   write(88,'(a)') trim(adjustl(buf2))
                   posic=posic+1
-               endif
+               end if
                goto 875
                !
 876            continue
@@ -1601,7 +1609,7 @@ contains
                ficherito=trim(adjustl(WarningFile))//trim(adjustl(whoamishort))//'_tmpWarnings.txt'
                call openclosedelete(ficherito)
 #endif
-            endif
+            end if
          end do
 
          !
@@ -1613,7 +1621,7 @@ contains
          call print11(layoutnumber,dubuf)
 
          close (88)
-      endif
+      end if
 
       warningfileIsOpen=.false.
 #ifdef CompileWithMPI
@@ -1626,11 +1634,11 @@ contains
       if (fatalerror_final.and.(ignoreErrors)) then
          write(dubuf,*) SEPARADOR//separador//separador
          call print11(layoutnumber,dubuf)
-         write(dubuf,*) 'There are ERRORS: The simulation will CONTINUE but Revise *Warnings file '
+         write(dubuf,*) 'There are ERRORS: The simulation will continue but Revise *Warnings file '
          call print11(layoutnumber,dubuf)
          write(dubuf,*) SEPARADOR//separador//separador
          call print11(layoutnumber,dubuf)
-      endif
+      end if
 
       fatalerror_final=(fatalerror_final).and.(.not.ignoreErrors)
 
@@ -1678,9 +1686,9 @@ contains
          if (layoutnumber == 0)    then
              write (11,'(a)',err=111) trim(adjustl(message))
            !!!  print *,'----11--> ', trim(adjustl(message))
-         endif
+         end if
          
-      endif
+      end if
       goto 112
 111   continue 
       !fort.11 a veces lo intentan escribir 2 a la vez de los que dan fallos en writing restarting fields. 
@@ -1693,9 +1701,9 @@ contains
 
 
 
-   !!!subroutine INITdxfFILE(layoutnumber,size,nEntradaRoot)
+   !!!subroutine INITdxfFILE(layoutnumber,num_procs,nEntradaRoot)
    !!!character(len=*) :: nEntradaRoot
-   !!!integer(kind=4) :: layoutnumber,size
+   !!!integer(kind=4) :: layoutnumber,num_procs
    !!!!file management
    !!!character(len=BUFSIZE) whoamishort
    !!!#ifdef CompileWithMPI
@@ -1710,7 +1718,7 @@ contains
    !!!    open (87,file=trim(adjustl(mynEntradaRoot))//trim(adjustl(whoamishort))//'.tmpdxf',form='formatted')
    !!!    write(87,*) '!END'
    !!!    close (87,status='delete')
-   !!!endif
+   !!!end if
    !!!
    !!!!!!#ifdef CompileWithMPI
    !!!!!!call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1769,7 +1777,7 @@ contains
    !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '0'
    !!!    call DXFWRITE(DXFBUFF)
-   !!!endif
+   !!!end if
    !!!
    !!!end subroutine INITdxfFILE
    !!!
@@ -1796,8 +1804,8 @@ contains
    !!!
    !!!
    !!!
-   !!!subroutine CLOSEdxfFILE(layoutnumber,size)
-   !!!integer(kind=4), intent(in) :: layoutnumber,size
+   !!!subroutine CLOSEdxfFILE(layoutnumber,num_procs)
+   !!!integer(kind=4), intent(in) :: layoutnumber,num_procs
    !!!integer(kind=4) :: ierr,i
    !!!integer(kind=8) :: posic
    !!!character(len=dxflinesize) :: buf2
@@ -1823,7 +1831,7 @@ contains
    !!!if (layoutnumber == 0) then
    !!!    open (988,file=trim(adjustl(mynEntradaRoot))//'.dxf',form='formatted')
    !!!    posic=0
-   !!!    do i=0,size-1
+   !!!    do i=0,num_procs-1
    !!!        write(whoamishort,'(i5)') i+1
    !!!        inquire(file=trim(adjustl(mynEntradaRoot))//trim(adjustl(whoamishort))//'.tmpdxf',exist=lexis)
    !!!        if (lexis) then
@@ -1835,7 +1843,7 @@ contains
    !!!            if ((buf2(1:1) /= ' ').and.(buf2(1:1) /=char(0))) then
    !!!                write(988,'(a)') trim(adjustl(buf2))
    !!!                posic=posic+1
-   !!!            endif
+   !!!            end if
    !!!            goto 875
    !!!!
    !!!876         close (987)
@@ -1843,7 +1851,7 @@ contains
    !!!            open (987,file=trim(adjustl(mynEntradaRoot))//trim(adjustl(whoamishort))//'.tmpdxf')
    !!!            write(987,*) '!END'
    !!!            close (987,status='delete')
-   !!!        endif
+   !!!        end if
    !!!    end do
    !!!!end the file
    !!!    write(988,'(a)')  'ENDSEC'
@@ -1857,7 +1865,7 @@ contains
    !!!    call print11(layoutnumber,dubuf)
    !!!    write(dubuf,*) 'Closing dxf file. Number of lines: ',posic
    !!!    call print11(layoutnumber,dubuf)
-   !!!endif
+   !!!end if
    !!!
    !!!continue
    !!!
@@ -1868,7 +1876,7 @@ contains
    !!!
    !!!subroutine writemmdxf(layoutnumber,sgg,sggMiHx,sggMiHy,sggMiHz)
    !!!integer i,j,k,layoutnumber
-   !!!type(SGGFDTDINFO), intent(in) :: sgg
+   !!!type(SGGFDTDINFO_t), intent(in) :: sgg
    !!!integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
    !!!           sggMiHx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE, &
    !!!                   sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE, &
@@ -1951,7 +1959,7 @@ contains
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '0'
    !!!                    call DXFWRITE(DXFBUFF)
-   !!!                endif
+   !!!                end if
    !!!            end do
    !!!        end do
    !!!    end do
@@ -2025,7 +2033,7 @@ contains
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '0'
    !!!                    call DXFWRITE(DXFBUFF)
-   !!!                endif
+   !!!                end if
    !!!            end do
    !!!        end do
    !!!    end do
@@ -2100,7 +2108,7 @@ contains
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '0'
    !!!                    call DXFWRITE(DXFBUFF)
-   !!!                endif
+   !!!                end if
    !!!            end do
    !!!        end do
    !!!    end do
@@ -2161,13 +2169,13 @@ end function openfile_mpi
 
    end subroutine writefile_mpi
 
-   subroutine closefile_mpi(layoutnumber,size,nombrefich,thefile8)
+   subroutine closefile_mpi(layoutnumber,num_procs,nombrefich,thefile8)
 
       integer(kind=4) :: thefile8,thefile19
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       character(len=BUFSIZE) :: buff2
       character(len=BUFSIZE) :: nombrefich
       integer(kind=4) :: conta,i
@@ -2191,7 +2199,7 @@ end function openfile_mpi
       !arregla los NUL
       if (layoutnumber == 0) then
          open (newunit=thefile8,file=trim(adjustl(nombrefich)),form='formatted' )
-         do i=0,size-1
+         do i=0,num_procs-1
             write(whoamishort,'(i5)') i+1
             inquire(file=trim(adjustl(nombrefich))//trim(adjustl(whoamishort))//'_tmp',exist=lexis)
             if (lexis) then
@@ -2203,19 +2211,19 @@ end function openfile_mpi
                if ((buff2(1:1) /= ' ').and.(buff2(1:1) /=char(0))) then
                   write(thefile8,'(a)') trim(adjustl(buff2))
                   conta=conta+1
-               endif
+               end if
                goto 875
                !
 876            continue
                close (thefile19)
                ficherito=trim(adjustl(nombrefich))//trim(adjustl(whoamishort))//'_tmp'
                call openclosedelete(ficherito)
-            endif
+            end if
          end do
          close (thefile8)
 
          !
-      endif
+      end if
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -2225,8 +2233,8 @@ end function openfile_mpi
 
    function creaPuntos(sgg)  result(punto) !crea coordenadas fisicas
       !
-      type(SGGFDTDINFO), intent(INout) :: sgg
-      type(coorsxyzP) :: Punto
+      type(SGGFDTDINFO_t), intent(INout) :: sgg
+      type(coorsxyzP_t) :: Punto
       integer(Kind=4) :: i,j,k,field
 
 
@@ -2308,74 +2316,74 @@ end function openfile_mpi
    end function
 
    subroutine reportmedia(sgg)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4) :: j
       character(len=BUFSIZE) :: buff
 
       do j = 0, sgg%NumMedia
-         WRITE (buff,*) '_____________________________'
+         write(buff,*) '_____________________________'
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'MEDIO :  ', j
+         write(buff,*) 'MEDIO :  ', j
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Priority ', sgg%Med(j)%Priority
+         write(buff,*) 'Priority ', sgg%Med(j)%Priority
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Epr ', sgg%Med(j)%Epr
+         write(buff,*) 'Epr ', sgg%Med(j)%Epr
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Sigma ', sgg%Med(j)%Sigma
+         write(buff,*) 'Sigma ', sgg%Med(j)%Sigma
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Mur ', sgg%Med(j)%Mur
+         write(buff,*) 'Mur ', sgg%Med(j)%Mur
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'SigmaM ', sgg%Med(j)%SigmaM
+         write(buff,*) 'SigmaM ', sgg%Med(j)%SigmaM
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is PML ', sgg%Med(j)%Is%PML
+         write(buff,*) 'Is PML ', sgg%Med(j)%Is%PML
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is PEC ', sgg%Med(j)%Is%PEC
+         write(buff,*) 'Is PEC ', sgg%Med(j)%Is%PEC
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is ThinWIRE ', sgg%Med(j)%Is%ThinWire
+         write(buff,*) 'Is ThinWIRE ', sgg%Med(j)%Is%ThinWire
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is MULTIWIRE ', sgg%Med(j)%Is%Multiwire
+         write(buff,*) 'Is MULTIWIRE ', sgg%Med(j)%Is%Multiwire
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is SlantedWIRE ', sgg%Med(j)%Is%SlantedWire
+         write(buff,*) 'Is SlantedWIRE ', sgg%Med(j)%Is%SlantedWire
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is EDispersive ', sgg%Med(j)%Is%EDispersive
+         write(buff,*) 'Is EDispersive ', sgg%Med(j)%Is%EDispersive
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is EDispersiveaANIS', sgg%Med(j)%Is%EDispersiveANIS
+         write(buff,*) 'Is EDispersiveaANIS', sgg%Med(j)%Is%EDispersiveANIS
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is MDispersive ', sgg%Med(j)%Is%MDispersive
+         write(buff,*) 'Is MDispersive ', sgg%Med(j)%Is%MDispersive
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is MDispersiveANIS ', sgg%Med(j)%Is%MDispersiveANIS
+         write(buff,*) 'Is MDispersiveANIS ', sgg%Med(j)%Is%MDispersiveANIS
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
+         write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is SGBC ', sgg%Med(j)%Is%SGBC
+         write(buff,*) 'Is SGBC ', sgg%Med(j)%Is%SGBC
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Lossy ', sgg%Med(j)%Is%Lossy
+         write(buff,*) 'Is Lossy ', sgg%Med(j)%Is%Lossy
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
+         write(buff,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
+         write(buff,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is MultiportPadding ', sgg%Med(j)%Is%multiportpadding
+         write(buff,*) 'Is MultiportPadding ', sgg%Med(j)%Is%multiportpadding
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Dielectric ', sgg%Med(j)%Is%dielectric
+         write(buff,*) 'Is Dielectric ', sgg%Med(j)%Is%dielectric
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
+         write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Anisotropic ', sgg%Med(j)%Is%Anisotropic
+         write(buff,*) 'Is Anisotropic ', sgg%Med(j)%Is%Anisotropic
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Needed ', sgg%Med(j)%Is%Needed
+         write(buff,*) 'Is Needed ', sgg%Med(j)%Is%Needed
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is already_YEEadvanced_byconformal ', sgg%Med(j)%Is%already_YEEadvanced_byconformal
+         write(buff,*) 'Is already_YEEadvanced_byconformal ', sgg%Med(j)%Is%already_YEEadvanced_byconformal
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Iss split_and_useless ', sgg%Med(j)%Is%split_and_useless
+         write(buff,*) 'Iss split_and_useless ', sgg%Med(j)%Is%split_and_useless
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Volume ', sgg%Med(j)%Is%Volume
+         write(buff,*) 'Is Volume ', sgg%Med(j)%Is%Volume
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Surface ', sgg%Med(j)%Is%Surface
+         write(buff,*) 'Is Surface ', sgg%Med(j)%Is%Surface
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Line ', sgg%Med(j)%Is%Line
+         write(buff,*) 'Is Line ', sgg%Med(j)%Is%Line
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) '_____________________________'
+         write(buff,*) '_____________________________'
          call WarnErrReport(Trim(buff))
       end do
       return
@@ -2436,7 +2444,7 @@ end function openfile_mpi
           call openclosedelete(ficherito)
           ficherito='flushvtk'
           call openclosedelete(ficherito)
-      endif
+      end if
       return
         
    

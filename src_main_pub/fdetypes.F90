@@ -4,7 +4,7 @@
 ! This module contains the types and parameters shared by all the rest of the modules
 ! No public variables are defined. Only types and parameters
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module  FDETYPES
+module  FDETYPES_m
 
 
 #ifdef CompileWithOpenMP
@@ -102,7 +102,7 @@ module  FDETYPES
    integer(kind=4), parameter  :: INTEGERSIZE=MPI_INTEGER4
 #endif
 #endif
-    integer(kind=4), parameter  :: IKINDMTAG=4 !PARA SGGMTAG 151020 !dejarlo en 4 bytes. No tocar
+   integer(kind=4), parameter  :: IKINDMTAG=4 !PARA SGGMTAG 151020 !dejarlo en 4 bytes. No tocar
 
    integer(kind=2), parameter  :: SINGLE=4
    integer(kind=2), parameter  :: DOUBLE=8
@@ -205,6 +205,14 @@ module  FDETYPES
    integer(kind=4), parameter :: EDGE_Y = 2
    integer(kind=4), parameter :: EDGE_Z = 3
 
+   !source types
+   character(len=*), parameter :: F_SOURCE_VOLTAGE = 'VOLT'
+   character(len=*), parameter :: F_SOURCE_SOFT_VOLTAGE = 'SOFTVOLT'
+   character(len=*), parameter :: F_SOURCE_HARD_VOLTAGE = 'HARDVOLT'
+   character(len=*), parameter :: F_SOURCE_CURRENT = 'CURR'
+   character(len=*), parameter :: F_SOURCE_SOFT_CURRENT = 'SOFTCURR'
+   character(len=*), parameter :: F_SOURCE_HARD_CURRENT = 'HARDCURR'
+
    
 #ifdef CompileWithReal4
    character(len=*), parameter  :: fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
@@ -228,20 +236,20 @@ module  FDETYPES
         integer(Kind=4) :: numertags
     end type
 
-   type coorsxyz
+   type coorsxyz_t
       real(kind=RKIND), pointer, dimension( : ) :: x,y,z
-   end type coorsxyz
+   end type coorsxyz_t
    !
-   type coorsxyzP
-      type(coorsxyz), dimension(1:6) :: PhysCoor
-   end type coorsxyzP
+   type coorsxyzP_t
+      type(coorsxyz_t), dimension(1:6) :: PhysCoor
+   end type coorsxyzP_t
 
    type MedioExtra_t
-      integer(kind=4) :: size,index
+      integer(kind=4) :: pml_size,index
       real(kind=rkind) :: sigma,sigmam
       logical :: exists
    end type
-   type logic_control
+   type logic_control_t
       LOGICAL  :: Wires  , &
       PMLbodies  , &
       MultiportS  , &
@@ -286,7 +294,7 @@ module  FDETYPES
    type XYZlimit_t
       integer(kind=4) :: XI,XE,YI,YE,ZI,ZE
    end type
-   type XYZlimit_t_scaled
+   type xyzlimit_scaled_t
       integer(kind=4) :: XI,XE,YI,YE,ZI,ZE
       real(kind=RKIND) :: xc,yc,zc
       integer(kind=4) :: Or   !to include possible orientations (nodal sources 180915)
@@ -330,14 +338,14 @@ module  FDETYPES
    !
 
    !wires
-   type  :: fichevol_t_wires
+   type  :: fichevol_wires_t
       character(len=BUFSIZE) :: Name
       integer(kind=4) :: NumSamples
       real(kind=RKIND_wires) :: DeltaSamples
       real(kind=RKIND_wires), dimension( : ), pointer  :: Samples
    end type
-   type  :: source
-      type(fichevol_t_wires) :: Fichero
+   type  :: source_t
+      type(fichevol_wires_t) :: Fichero
       real(kind=RKIND_wires) :: Resistance
       real(kind=RKIND_wires) :: Multiplier
       logical :: soft
@@ -346,7 +354,7 @@ module  FDETYPES
 
    type  :: NodalSource_t
       type(fichevol_t) :: Fichero
-      type(XYZlimit_t_scaled), pointer, dimension(:) :: punto
+      type(xyzlimit_scaled_t), pointer, dimension(:) :: punto
       integer(kind=4) :: numpuntos
       logical :: IsInitialValue
       logical :: IsHard
@@ -359,13 +367,13 @@ module  FDETYPES
       complex(kind=CKIND)                        :: d, e
    end type
 
-   type  :: oriented_point
+   type  :: oriented_point_t
       integer(kind=4) :: ori
       integer(kind=4) :: i,j,k,origIndex,ilibre,jlibre,klibre,multiraboDE !si es multirabo de que indice lo es
       logical :: Is_LeftEnd,Is_RightEnd,IsEnd_norLeft_norRight
       logical :: repetido,multirabo !marca segmentos que aparecen repetidos en un mismo thin wire!los bundles deberan estar thin-wires distintos
       logical :: orientadoalreves
-   end type oriented_point
+   end type oriented_point_t
 
 #ifdef CompileWithMTLN   
    type  :: Multiwires_t
@@ -377,9 +385,9 @@ module  FDETYPES
       real(kind=RKIND_wires) :: Radius_devia,R_devia,L_devia,C_devia
       type(WireDispersiveParams_t), allocatable, dimension(:) :: disp
       integer(kind=4) :: numsegmentos,NUMVOLTAGESOURCES,NUMCURRENTSOURCES
-      type(oriented_point), pointer, dimension( : ) :: segm
-      type(source), pointer, dimension( : ) :: Vsource
-      type(source), pointer, dimension( : ) :: Isource
+      type(oriented_point_t), pointer, dimension( : ) :: segm
+      type(source_t), pointer, dimension( : ) :: Vsource
+      type(source_t), pointer, dimension( : ) :: Isource
       logical  :: VsourceExists ,IsourceExists
       logical  :: HasParallel_LeftEnd ,HasParallel_RightEnd ,&
                    HasSeries_LeftEnd ,HasSeries_RightEnd,HasAbsorbing_LeftEnd,HasAbsorbing_RightEnd
@@ -391,11 +399,11 @@ module  FDETYPES
       real(kind=RKIND_wires) :: Series_C_RightEnd,Series_C_LeftEnd
 !
       real(kind=RKIND_wires) :: Parallel_R_RightEnd_devia ,Parallel_R_LeftEnd_devia
-      real(kind=RKIND_wires) ::  Series_R_RightEnd_devia ,  Series_R_LeftEnd_devia
+      real(kind=RKIND_wires) :: Series_R_RightEnd_devia ,  Series_R_LeftEnd_devia
       real(kind=RKIND_wires) :: Parallel_L_RightEnd_devia ,Parallel_L_LeftEnd_devia
-      real(kind=RKIND_wires) ::  Series_L_RightEnd_devia ,  Series_L_LeftEnd_devia
+      real(kind=RKIND_wires) :: Series_L_RightEnd_devia ,  Series_L_LeftEnd_devia
       real(kind=RKIND_wires) :: Parallel_C_RightEnd_devia ,Parallel_C_LeftEnd_devia
-      real(kind=RKIND_wires) ::  Series_C_RightEnd_devia ,  Series_C_LeftEnd_devia
+      real(kind=RKIND_wires) :: Series_C_RightEnd_devia ,  Series_C_LeftEnd_devia
       type(WireDispersiveParams_t), allocatable, dimension(:) :: disp_LeftEnd, disp_RightEnd
       ! integer(kind=4) :: LextremoI,LextremoJ,LextremoK,RextremoI,RextremoJ,RextremoK !no ncesario: yo luego calculo bien los extremos
       integer(kind=4) :: LeftEnd,RightEnd
@@ -405,7 +413,7 @@ module  FDETYPES
       integer(kind=4) :: index
       real(kind=RKIND_wires) :: x, y, z
       logical                 :: VsourceExists, IsourceExists
-      type(source), pointer  :: Vsource, Isource
+      type(source_t), pointer  :: Vsource, Isource
    end type SlantedNode_t
    
    type  :: SlantedWires_t
@@ -431,12 +439,12 @@ module  FDETYPES
       real(kind=RKIND_wires) :: R,L,C,DiodB,DiodIsat,Rtime_on,Rtime_off
       logical :: resistor , inductor , capacitor , diodo 
       real(kind=RKIND_wires) ::R_devia,L_devia,C_devia
-   END type Lumped_t
+   end type Lumped_t
 !!!
    !end wires
    type  :: PMLbody_t
       integer(kind=4) :: orient = 0 !orientation +iEx, -iEx,+iEy.......el signo aqui es intranscendente
-   END type PMLbody_t
+   end type PMLbody_t
 !!!
    type  :: Multiport_t
       integer(kind=4) :: Multiportdir = 0 !orientation +iEx, -iEx,+iEy.......
@@ -448,14 +456,14 @@ module  FDETYPES
 !!old pre 17/08/115: no es valido para mallados NO uniformes. Hay que hacerlo punto a punto
 !!!                     real(kind=rkind) :: transversalSpaceDelta
       integer(kind=4) :: numcapas
-   END type Multiport_t
+   end type Multiport_t
    !
    type  :: AnisMultiport_t
       integer(kind=4) :: Multiportdir = 0 !orientation +iEx, -iEx,+iEy.......
       character(len=BUFSIZE)                            :: MultiportFileZ11,MultiportFileZ22, &
       MultiportFileZ12,MultiportFileZ21
       real(kind=rkind), pointer, dimension( : ) :: epr,mur,sigma,sigmam,width
-   END type AnisMultiport_t
+   end type AnisMultiport_t
    !
    type planeonde_t
       real(kind=RKIND) :: INCERTMAX
@@ -611,7 +619,7 @@ module  FDETYPES
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! This is the  class which stores all the simulation data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   type  :: SGGFDTDINFO
+   type  :: SGGFDTDINFO_t
       real(kind=RKIND_tiempo)     , pointer, dimension( : ) :: tiempo !para permit scaling
       real(kind=RKIND_tiempo) :: dt
       character(len=BUFSIZE) :: extraswitches
@@ -640,7 +648,7 @@ module  FDETYPES
       logical  :: thereAreMagneticMedia
       logical  :: thereArePMLMagneticMedia
       character(len=BUFSIZE) :: nEntradaRoot
-      type(coorsxyzP) :: Punto
+      type(coorsxyzP_t) :: Punto
    end type
 
    type media_matrices_t
@@ -686,9 +694,6 @@ module  FDETYPES
                  permitscaling,mtlnberenger,niapapostprocess, &
                  stochastic, verbose, dontwritevtk, &
                  resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
-#ifdef CompileWithConformal
-      logical :: input_conformal_flag
-#endif
       real(kind=8) :: time_desdelanzamiento
       real(kind=RKIND) :: cfl, attfactorc,attfactorw, alphamaxpar, &
                            alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol, maxSourceValue
@@ -698,7 +703,7 @@ module  FDETYPES
       character(len=BUFSIZE) :: opcionestotales
       
       integer(kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 
-                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, size
+                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, num_procs
       
       type(MedioExtra_t) :: MEDIOEXTRA
       type(nf2ff_T) :: facesNF2FF
@@ -756,7 +761,7 @@ contains
    end subroutine 
 
    subroutine logic_reset(this)
-      class(logic_control) :: this
+      class(logic_control_t) :: this
       this%Wires = .false.
       this%PMLbodies = .false.
       this%MultiportS = .false.
@@ -812,7 +817,7 @@ contains
         prior_TW   = 1500   !cambiado a 231024 y puesto con maxima prioridad. es solo experimental y por visualizacion    
       else !opcion correcta. lo anterior es solo experimental y por visualizacion      
         prior_TW   = 15   !prioridad del thin-wire por debajo de todos (excepto del background)  
-      endif  
+      end if  
 !      prior_pmlbody = prior_TW-1 !el hilo tiene prioridad sobre el pmlbody (prueba HOLD coax sgg 251019)
       prior_pmlbody = prior_BV+1 !el pml body puede ser penetrado por todo 311019 sgg
       !!!!
@@ -820,12 +825,12 @@ contains
          prior_CS=prior_PEC+2
       else
          prior_CS=prior_PEC-2       !composites has lower than PEC to properly handle junctions PEC-composite !(ss's 210312 mail)
-      endif
+      end if
       if (prioritizeISOTROPICBODYoverall) then  ! Isotropic body
          prior_IB      = 200   !SOLO PARA EL CASO DEL SIVA SACAR BOCADOS DE vacio 
       else
          prior_IB      =   20 !EL SUSUAL
-      endif 
+      end if 
       return
       
 
@@ -868,7 +873,7 @@ contains
       direction_eq = direction_eq .and. (a%orientation == b%orientation)
 
    end function
-end module FDETYPES
+end module FDETYPES_m
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !         STRUCTURE OF SGG

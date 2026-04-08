@@ -5,11 +5,11 @@
 !!!solo teniendo en cuenta los parametros efectivos y sin actualizar los magneticos.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module Lumped
+module Lumped_m
 
-   use Report
-   use fdetypes   
-   use lumped_vars
+   use Report_m
+   use FDETYPES_m   
+   use lumped_vars_m
 #ifdef CompileWithStochastic
    use lumped_devia
 #endif
@@ -37,7 +37,7 @@ contains
       real(kind=RKIND) :: eps00,mu00
       type(media_matrices_t), intent(in) :: media
 
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       real(kind=RKIND)   , intent(in) , target     :: &
       Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
       Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
@@ -63,7 +63,7 @@ contains
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !
 !!!
-      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%num_procs,') '
       unstable=.false.
 !
 !
@@ -101,7 +101,7 @@ contains
       ThereAreLumped=(conta /=0)
       if (.not.thereareLumped) then
          return
-      endif
+      end if
       LumpElem%NumNodes=conta
       allocate (LumpElem%Nodes(1 : LumpElem%NumNodes))
       !!!!!!!!
@@ -123,7 +123,7 @@ contains
                   lumped_%Ha_Minu   => Hz(i1,j1-1,k1)
                   lumped_%Hb_Plus   => Hy(i1,j1  ,k1)
                   lumped_%Hb_Minu   => Hy(i1,j1  ,k1-1)
-               endif
+               end if
             end do
          end do
       end do
@@ -145,7 +145,7 @@ contains
                   lumped_%Ha_Minu   => Hx(i1  ,j1  ,k1-1)
                   lumped_%Hb_Plus   => Hz(i1  ,j1  ,k1  )
                   lumped_%Hb_Minu   => Hz(i1-1,j1  ,k1  )
-               endif
+               end if
             end do
          end do
       end do
@@ -167,7 +167,7 @@ contains
                   lumped_%Ha_Minu => Hy(i1-1,j1  ,k1)
                   lumped_%Hb_Plus => Hx(i1  ,j1  ,k1  )
                   lumped_%Hb_Minu => Hx(i1  ,j1-1,k1  )
-               endif
+               end if
             end do
          end do
       end do
@@ -190,7 +190,7 @@ contains
             lumped_%EfieldPrev_for_devia    =0.0_RKIND
             lumped_%Jcur_for_devia          =0.0_RKIND 
              end do
-         endif
+         end if
 #endif
       else  
         do conta=1,LumpElem%numnodes
@@ -203,9 +203,9 @@ contains
                 lumped_ => LumpElem%Nodes(conta)
                 read(14) lumped_%EfieldPrevPrev_for_devia,lumped_%EfieldPrev_for_devia,lumped_%Jcur_for_devia
              end do
-         endif
+         end if
 #endif
-      endif
+      end if
       return
    end subroutine InitLumped
 
@@ -217,7 +217,7 @@ contains
 
    subroutine AdvanceLumpedE(sgg,timestep,simu_devia,stochastic)
       logical :: simu_devia,stochastic 
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4) :: conta,timestep
       real(kind=RKIND) :: Enplus1, fieldC,A
       type(Nodes_t), pointer :: lumped_
@@ -230,7 +230,7 @@ contains
              lumped_%Jcur = lumped_%currentCoeff * lumped_%Jcur + lumped_%sigmaEffResistInduct * (lumped_%EfieldPrev + lumped_%EfieldPrevPrev)
          else
              lumped_%Jcur=0.0_RKIND
-         endif
+         end if
          if (sgg%med(lumped_%jmed)%lumped(1)%diodo) then
              fieldC= - lumped_%G1 * lumped_%Efield -  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) - lumped_%diodepreA
              A= lumped_%diodepreA * exp(lumped_%diodeB * lumped_%Efield) 
@@ -244,12 +244,12 @@ contains
                 else
                    lumped_%Efield = lumped_%G1_usual * lumped_%Efield +(lumped_%G2a_usual *(lumped_%Ha_Plus - lumped_%Ha_Minu) - &
                                                                         lumped_%G2b_usual *(lumped_%Hb_Plus - lumped_%Hb_Minu))
-                endif
+                end if
             else !inductor o capacitor
                 lumped_%Efield = lumped_%G1 * lumped_%Efield +  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) - &
                                  lumped_%GJ * lumped_%Jcur
-            endif
-         endif                     
+            end if
+         end if                     
 #ifdef CompileWithStochastic
          call inject_devialumped(sgg,timestep,simu_devia,stochastic,lumped_)
 !inyecta las devia como sources
@@ -262,7 +262,7 @@ contains
 
    subroutine calc_lumpedconstants(sgg,eps00,mu00)      
       real(kind=RKIND) :: eps00,mu00
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4) :: conta
       type(Nodes_t), pointer :: lumped_
 !!!variables locales
@@ -317,14 +317,14 @@ contains
             elseif (sgg%med(jmed)%lumped(1)%diodo) then
                 sigmaeff= sigma     + sigmaEffResistDiode                    
                 epsiloneff= epsilon 
-            endif 
+            end if 
             if (.not.sgg%Med(jmed)%sigmareasignado) then
                 sgg%Med(jmed)%sigma = sigmaeff !devuelve al principal el efectivo para hacer bien las conexiones lossy con thin wires 120123
                 sgg%Med(jmed)%sigmareasignado=.true.
             else
                 print *,'error buggy: reasignando sigma en un lumped'
                 stop
-            endif
+            end if
 !ORIGINALES COMENTADOS 151222 por otros equivalentes para simplificar implem stoch            
 !           G1=(1.0_RKIND  - SigmaEff * sgg%dt / (2.0_RKIND * epsilonEff) ) / &
 !              (1.0_RKIND  + SigmaEff * sgg%dt / (2.0_RKIND * epsilonEff) ) 
@@ -341,7 +341,7 @@ contains
             !!if (g1 < 0.0_RKIND) then !exponential time stepping
             !!    g1=exp(- SigmaEff * sgg%dt / (epsilonEff ))
             !!    g2=(1.0_RKIND-g1)/ SigmaEff
-            !!endif
+            !!end if
             lumped_%g1=g1 
             lumped_%G2a= G2 / transversalDeltaHa 
             lumped_%G2b= G2 / transversalDeltaHb
@@ -360,7 +360,7 @@ contains
             if (g1_usual < 0.0_RKIND) then !exponential time stepping
                 g1_usual=exp(- Sigma * sgg%dt / (epsilon ))
                 g2_usual=(1.0_RKIND-g1_usual)/ Sigma
-            endif
+            end if
             lumped_%g1_usual=g1_usual
             lumped_%G2a_usual= G2_usual / transversalDeltaHa 
             lumped_%G2b_usual= G2_usual / transversalDeltaHb
@@ -373,9 +373,9 @@ contains
                 lumped_%diodeB    = -lumped_%diodeB * alignedDeltaE / 2.0_RKIND
                 lumped_%diodepreA = -DiodIsat * G2 / ( transversalDeltaHa * transversalDeltaHb) 
             else
-                WRITE (buff, *)    'Buggy ERROR: In lumped orientations. '
+                write(buff, *)    'Buggy ERROR: In lumped orientations. '
                 call WarnErrReport (buff,.TRUE.)
-            endif   
+            end if   
         
 #ifdef CompileWithStochastic
             call calc_lumped_deviaconsts(sgg,lumped_,jmed,Resist,Induct,Capaci,sigmaeff,epsiloneff,eps0,mu0)
@@ -400,7 +400,7 @@ contains
                 lumped_ => LumpElem%Nodes(conta)
                 write(14,err=634) lumped_%EfieldPrevPrev_for_devia,lumped_%EfieldPrev_for_devia,lumped_%Jcur_for_devia !olvide almacenar jcur 071118
              end do
-         endif
+         end if
 #endif
       goto 635
 634   call print11(0,SEPARADOR//separador//separador)
@@ -412,14 +412,14 @@ contains
 
    subroutine DestroyLumped(sgg)
 
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       integer(kind=4) :: i
 
       !free up memory
       do i=1,sgg%NumMedia
          if ((sgg%Med(i)%Is%Lumped).and.(.not.sgg%Med(i)%Is%PML)) then
             if (associated(sgg%Med(i)%Lumped)) deallocate(sgg%Med(i)%Lumped)
-         endif
+         end if
       end do
 
 
@@ -445,7 +445,7 @@ contains
             clave = 0
             n = i
             EXIT busca
-        ENDIF
+        end if
         xx0 = x
     end do busca
     if (clave /= 0) call print11 (0, 'Error convergencia en Newton-Raphson')
@@ -461,4 +461,4 @@ contains
    
    
    
-end module Lumped
+end module Lumped_m
