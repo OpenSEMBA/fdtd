@@ -17,6 +17,8 @@ module mtln_solver_m
         ! type(probe_t), allocatable, dimension(:) :: probes
         integer :: number_of_bundles
         integer :: number_of_steps
+        real(kind=rkind) :: null_field
+
     contains
 
         procedure :: updateBundlesTimeStep
@@ -82,7 +84,7 @@ contains
         call res%initNodes()
 
         res%number_of_steps = parsed%number_of_steps
-
+        res%null_field = 0.0_rkind
     end function
 
     subroutine initNodes(this)

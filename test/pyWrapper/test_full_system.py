@@ -394,6 +394,68 @@ def test_towelHanger(tmp_path):
         assert np.corrcoef(solved, p_expected[i]['current_0'])[0,1] > 0.999
 
 
+def test_towel_rack_with_and_without_shorting_plane(tmp_path):
+    fn = CASES_FOLDER + \
+        'towel_rack_with_shorting_plane/towel_rack_with_shorting_plane.fdtd.json'
+
+    # --- excitation ---
+    dt = 1e-12
+    w0 = 0.1e-8
+    t0 = 10 * w0
+    t = np.arange(0, t0 + 20 * w0, dt)
+    excitation = np.exp(-np.power(t - t0, 2) / w0 ** 2)
+    exc_file = os.path.join(tmp_path, 'gauss.exc')
+    np.savetxt(exc_file, np.column_stack([t, excitation]))
+
+    freqs = np.geomspace(1e3, 1e9, 61)
+
+    # --- with shorting plane ---
+    folder_with    = os.path.join(tmp_path, 'with_shorting_plane')
+    os.makedirs(folder_with)
+    solver_w = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=folder_with)
+    solver_w.run()
+
+    probe_name = os.path.basename(solver_w.getSolvedProbeFilenames("Wire probe")[0])
+    probe_w = Probe(os.path.join(folder_with, probe_name))
+    time_I_w  = probe_w["time"].to_numpy()
+    current_w = probe_w["current_0"].to_numpy()
+    V_interp_w = np.interp(time_I_w, t, excitation)
+    Z_in_w = dtft(V_interp_w, time_I_w, freqs) / dtft(current_w, time_I_w, freqs)
+
+    # --- without shorting plane ---
+    folder_without = os.path.join(tmp_path, 'without_shorting_plane')
+    os.makedirs(folder_without)
+    solver_wo = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=folder_without)
+    solver_wo['materialAssociations'][0]['elementIds'] = [1]
+    solver_wo.run()
+
+    probe_wo = Probe(os.path.join(folder_without, probe_name))
+    time_I_wo  = probe_wo["time"].to_numpy()
+    current_wo = probe_wo["current_0"].to_numpy()
+    V_interp_wo = np.interp(time_I_wo, t, excitation)
+    Z_in_wo = dtft(V_interp_wo, time_I_wo, freqs) / dtft(current_wo, time_I_wo, freqs)
+
+    # For debugging
+    # import matplotlib.pyplot as plt
+    # plt.figure()
+    # plt.semilogx(freqs, 20 * np.log10(np.abs(Z_in_w)),  label="With shorting plane")
+    # plt.semilogx(freqs, 20 * np.log10(np.abs(Z_in_wo)), label="Without shorting plane")
+    # plt.xlabel("Frequency [Hz]")
+    # plt.ylabel("|Z(j2πf)| [dB]")
+    # plt.grid(which="both")
+    # plt.legend()
+    # plt.tight_layout()
+    # plt.savefig('tmp-plot.png')
+    # plt.show()
+
+    # Expect the shorting plane not chaning the impedance at low frequencies.
+    assert np.allclose(
+        np.abs(Z_in_w[freqs < 1e6]), 
+        np.abs(Z_in_wo[freqs < 1e6]), 
+        rtol=0.1
+    )
+
+
 @no_hdf_skip
 @pytest.mark.hdf
 def test_sphere(tmp_path):

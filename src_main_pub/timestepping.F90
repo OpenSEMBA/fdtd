@@ -1232,7 +1232,10 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
-         call InitWires_mtln(this%sgg,Ex,Ey,Ez,this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles, dtcritico)
+         call InitWires_mtln(this%sgg,Ex,Ey,Ez,& 
+                             this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,& 
+                             this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,&
+                             this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles, dtcritico)
 #endif
 
 
