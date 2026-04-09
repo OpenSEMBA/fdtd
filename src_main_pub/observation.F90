@@ -4155,7 +4155,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
         end do
       end do
     end subroutine
-
+#endif
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Free up memory
