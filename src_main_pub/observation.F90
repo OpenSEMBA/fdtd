@@ -2182,6 +2182,10 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
             !!!!        end if !del time domain !NO ES PRECISO 25/02/14
         end do !del ii=1,numberrequest
 
+#ifdef CompileWithMTLN
+        call InitObservationMTLN(control%nEntradaRoot)
+#endif
+
         write (19, '(a)') '!END '
         close (19)
 
@@ -2636,7 +2640,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
           end if !no hay singlewrite para sondas freqdomain
         end do
       end do
-
+#ifdef CompileWithMTLN
+      call CloseObservationFilesMTLN()
+#endif
       return
     end subroutine CloseObservationFiles
 
@@ -3304,6 +3310,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
           end if !del nothing
         end do loop_obser
       end do
+#ifdef CompileWithMTLN
+      call UpdateObservationMTLN(nTime)
+#endif
       !---------------------------> acaba UpdateObservation <-----------------------------------------
       return
 

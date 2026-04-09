@@ -283,7 +283,7 @@ module Solver_m
 
       call solveMTLNProblem(mtln_parsed)
       call reportSimulationEnd(layoutnumber)
-      ! call FlushMTLNObservationFiles(nEntradaRoot)
+      call FlushMTLNObservationFiles(nEntradaRoot)
    end subroutine
 #endif
 
@@ -1466,9 +1466,6 @@ contains
          call InitObservation (this%sgg,this%media,this%tag_numbers, &
                                  this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%initialtimestep,this%lastexecutedtime, &
                                  this%sinPML_fullsize,this%eps0,this%mu0,this%bounds, this%control)
-#ifdef CompileWithMTLN
-         call InitObservationMTLN(this%control%nEntradaRoot)
-#endif
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
 
@@ -1980,9 +1977,6 @@ contains
          integer(kind=4) :: mindum
          if (this%thereAre%Observation) then
             call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
-#ifdef CompileWithMTLN
-            call UpdateObservationMTLN(this%n)
-#endif            
             if (this%n>=this%ini_save+BuffObse)  then
                mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
                call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
@@ -2720,10 +2714,6 @@ contains
       if (this%thereAre%Observation) then
          call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
-#ifdef CompileWithMTLN      
-         call CloseObservationFilesMTLN()
-         ! call FlushMTLNObservationFiles(this%control%nentradaroot)
-#endif
       end if
       
       if (this%thereAre%FarFields) then
