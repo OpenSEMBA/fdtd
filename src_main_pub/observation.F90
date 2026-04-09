@@ -114,7 +114,7 @@ module Observa_m
   !Required at least in tests
   public fieldo
 #ifdef CompileWithMTLN
-  public InitObservationMTLN, UpdateObservationMTLN, CloseObservationFilesMTLN, FlushMTLNObservationFiles
+  public InitObservationMTLN, UpdateObservationMTLN, CloseObservationFilesMTLN
 #endif
 contains
 
@@ -4156,53 +4156,6 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
       end do
     end subroutine
 
-    subroutine FlushMTLNObservationFiles(nEntradaRoot)
-      character(len=*), intent(in) :: nEntradaRoot
-      type(mtln_solver_t), pointer :: mtln_solver
-      integer :: i, j, k, n
-      integer :: unit
-      character(len=bufsize) :: temp
-      character(len=bufsize) :: path
-      character(len=:), allocatable :: buffer
-#ifdef CompileWithMPI
-      integer(kind=4) :: ierr
-#endif
-
-      mtln_solver => GetSolverPtr()
-      if (.not. allocated(mtln_solver%bundles)) return
-      unit = 2000
-      do i = 1, size(mtln_solver%bundles)
-        do j = 1, size(mtln_solver%bundles(i)%probes)
-#ifdef CompileWithMPI
-          if (.not. mtln_solver%bundles(i)%probes(j)%in_layer) cycle
-#endif          
-          path = trim(trim(nEntradaRoot)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat")
-          open (unit=unit, file=trim(path))
-          write (*, *) 'name: ', trim(mtln_solver%bundles(i)%probes(j)%name)
-          buffer = "time"
-
-          do k = 1, size(mtln_solver%bundles(i)%probes(j)%val, 2)
-            write (temp, *) k
-            buffer = buffer//" "//"conductor_"//trim(adjustl(temp))
-          end do
-          write (unit, *) trim(buffer)
-          do k = 1, size(mtln_solver%bundles(i)%probes(j)%val, 1)
-            buffer = ""
-            write (temp, *) mtln_solver%bundles(i)%probes(j)%t(k)
-            buffer = buffer//trim(temp)
-            do n = 1, size(mtln_solver%bundles(i)%probes(j)%val, 2)
-              write (temp, *) mtln_solver%bundles(i)%probes(j)%val(k, n)
-              buffer = buffer//" "//trim(temp)
-            end do
-            write (unit, '(a)') trim(buffer)
-          end do
-          close (unit)
-          unit = unit + 1
-        end do
-      end do
-
-    end subroutine
-#endif
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Free up memory

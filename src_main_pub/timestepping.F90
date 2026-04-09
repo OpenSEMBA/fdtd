@@ -73,7 +73,6 @@ module Solver_m
    use P_rescale
 #endif              
 #ifdef CompileWithMTLN
-   ! use mtln_solver_mod, mtln_solver_t => mtln_t
    use mtln_types_m, only: mtln_t
    use Wire_bundles_mtln_m
 #endif
@@ -280,10 +279,9 @@ module Solver_m
       type(mtln_t) :: mtln_parsed
       character(len=*), intent(in) :: nEntradaRoot
       integer(kind=4), intent(in) :: layoutnumber
-
-      call solveMTLNProblem(mtln_parsed)
+      
+      call solveMTLNProblem(mtln_parsed, nEntradaRoot)
       call reportSimulationEnd(layoutnumber)
-      call FlushMTLNObservationFiles(nEntradaRoot)
    end subroutine
 #endif
 
