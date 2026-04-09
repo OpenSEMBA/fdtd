@@ -84,7 +84,7 @@ contains
         call res%initNodes()
 
         res%number_of_steps = parsed%number_of_steps
-        ! res%null_field = 0.0_rkind
+        res%null_field = 0.0_rkind
     end function
 
     subroutine initNodes(this)
