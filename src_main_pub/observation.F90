@@ -3516,7 +3516,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         media = getMedia(field, i, j, k)
         if ((media == 0) .or. (sgg%Med(media)%is%Pec)) then
           res = 0
-         else if (sgg%Med(media)%is%ConformalPec) then 
+        else if (sgg%Med(media)%is%PMC) then
+          res = 16.0
+        else if (sgg%Med(media)%is%ConformalPec) then 
             res = 1000+media
         elseif (sgg%Med(media)%is%thinwire) then
           call StopOnError(0, 1, 'ERROR: A magnetic field cannot be a thin-wire')
@@ -3544,34 +3546,36 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
         media = getMedia(field, i, j, k)
         if ((sgg%Med(media)%is%already_YEEadvanced_byconformal) .and. (.not. noconformalmapvtk)) then
-          res = 5.5
+          res = 5.5_RKIND
         elseif ((sgg%Med(media)%is%split_and_useless) .and. (.not. noconformalmapvtk)) then
-          res = 6.5
+          res = 6.5_RKIND
         elseif (sgg%Med(media)%is%thinwire) then
           if (collidesWithNonThinWire(field, i, j, k)) then
-            res = 8
+            res = 8_RKIND
           else
-            res = 7
+            res = 7_RKIND
           end if
         elseif (sgg%Med(media)%is%multiwire) then
           if (collidesWithNonMultiwire(field, i, j, k)) then
-            res = 13
+            res = 13_RKIND
           else
-            res = 12
+            res = 12_RKIND
           end if
         elseif ((media == 0) .or. (sgg%Med(media)%is%Pec)) then
           res = 0.5_RKIND
+        elseif (sgg%Med(media)%is%PMC) then
+          res = 16.5_RKIND
          else if (sgg%Med(media)%is%ConformalPec) then 
             res=2000+media
         elseif (isSGBCorMultiport(media)) then
-          res = 3.5
+          res = 3.5_RKIND
         elseif (isDispersive(media)) then
-          res = 1.5
+          res = 1.5_RKIND
         elseif ((sgg%Med(media)%is%Dielectric) .or. &
                 (sgg%Med(media)%is%Anisotropic)) then
-          res = 2.5
+          res = 2.5_RKIND
         elseif (sgg%Med(media)%is%thinslot) then
-          res = 4.5
+          res = 4.5_RKIND
         else
           res = -0.5_RKIND
         end if

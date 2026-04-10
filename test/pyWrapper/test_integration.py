@@ -545,13 +545,13 @@ def test_volume_and_surfaces(tmp_path):
 
     face_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=9, property='mediatype')
-    assert face_media_dict[-1] == 1  # PEC surface
+    assert face_media_dict[16] == 1  # PMC surface
     assert face_media_dict[0] == 6  # PEC surface
     assert face_media_dict[305] == 1  # SGBC surface
 
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
-    assert line_media_dict[-0.5] == 4  # PMC line
+    assert line_media_dict[16.5] == 4  # PMC line
     assert line_media_dict[0.5] == 1  # PEC line
     assert line_media_dict[3.5] == 3  # SGBC line
 
