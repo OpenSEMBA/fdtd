@@ -1227,3 +1227,13 @@ def test_bulk_current_outputs(tmp_path):
     assert probeBulkZPlane.direction == 'z'
     assert probeBulkYPoint.direction == 'y'
 
+def test_wires_vtk(tmp_path):
+    fn = CASES_FOLDER + 'wire_vtk/wire_vtk.fdtd.json'
+
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    
+    vtkmapfile = solver.getVTKMap()
+    reader = pv.get_reader(vtkmapfile)
+    mesh = reader.read()
+    assert mesh.n_cells != 0
