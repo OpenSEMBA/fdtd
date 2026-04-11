@@ -123,8 +123,8 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_CONN_TRANSFER_IMPEDANCES = "transferImpedancesPerMeter"
 
    ! -- transferImpedancePerMeter
-   character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESISTANCE = "resistiveTerm"
-   character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_INDUCTANCE = "inductiveTerm"
+   character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESISTANCE = "resistancePerMeter"
+   character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_INDUCTANCE = "inductancePerMeter"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_DIRECTION = "direction"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_POLES = "poles"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESIDUES = "residues"
@@ -190,10 +190,11 @@ module smbjson_labels_m
    character(len=*), parameter :: J_SOURCES = "sources"
    character(len=*), parameter :: J_SRC_MAGNITUDE_FILE = "magnitudeFile"
    
-   character(len=*), parameter :: J_SRC_TYPE_PW = "planewave"
-   character(len=*), parameter :: J_SRC_TYPE_NS = "nodalSource"
-   character(len=*), parameter :: J_SRC_TYPE_GEN = "generator"
-   character(len=*), parameter :: J_SRC_ATTACHED_ID = "attachedToLineId"
+   character (len=*), parameter :: J_SRC_TYPE_PW = "planewave"
+   character (len=*), parameter :: J_SRC_TYPE_NS = "nodalSource"
+   character (len=*), parameter :: J_SRC_TYPE_GEN = "generator"
+   character (len=*), parameter :: J_SRC_ATTACHED_ID = "attachedToLineId"
+   character (len=*), parameter :: J_SRC_RESISTANCE_GEN = "resistance"
 
    ! type(PlaneWave_t)
    character(len=*), parameter :: J_SRC_PW_DIRECTION = "direction"

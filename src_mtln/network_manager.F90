@@ -58,6 +58,7 @@ contains
             do j = 1, size(networks(i)%nodes)
                 res(n)%path_to_excitation = trim(networks(i)%nodes(j)%source%path_to_excitation)
                 res(n)%source_type = networks(i)%nodes(j)%source%source_type
+                res(n)%resistance = networks(i)%nodes(j)%source%resistance
                 n = n + 1
             end do
         end do
