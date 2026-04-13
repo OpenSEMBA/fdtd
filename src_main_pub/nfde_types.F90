@@ -823,7 +823,6 @@ module NFDETypes_m
    end type t_linea_t
    !--->
    type, public :: t_NFDE_FILE_t
-      integer(kind=4) mpidir !x=1,y=2,z=3
       integer(kind=8) :: targ
       !--->
       integer(kind=8) :: numero
