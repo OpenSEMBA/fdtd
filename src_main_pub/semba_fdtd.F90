@@ -79,7 +79,6 @@ contains
       logical :: dummylog,l_auxinput, l_auxoutput, ThereArethinslots
       logical :: hayinput
       logical :: lexis
-      logical :: newrotate
 
       character(len=BUFSIZE) :: f= ' ', chain = ' ', chain3 = ' ',chain4 = ' ', chaindummy= ' '
       character(len=BUFSIZE_LONG) :: slices = ' '
@@ -107,11 +106,7 @@ contains
       integer(kind=4) :: conf_err
 
       call initEntrada(this%l) 
-#ifdef CompileWithSMBJSON
-      newrotate=.false.
-#else
-      newrotate=.true.
-#endif
+
       this%eps0= 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
       this%mu0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
       this%cluz=1.0_RKIND/sqrt(this%eps0*this%mu0)
@@ -334,22 +329,20 @@ contains
    this%sgg%nEntradaRoot=trim (adjustl(this%l%nEntradaRoot))
 
 #ifdef CompileWithMPI            
-      call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+   call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
 
-      if(newrotate) then      
-         call nfde_rotate (parser,NFDE_FILE%mpidir)
-      end if 
+   call nfde_rotate (parser,NFDE_FILE%mpidir)
 
 #ifdef CompileWithMPI            
-         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+   call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
 
 #ifdef CompileWithMTLN   
-      if (parser%general%mtlnProblem) then 
-         call solver%launch_mtln_simulation(parser%mtln, this%l%nEntradaRoot, this%l%layoutnumber) 
-         STOP
-      end if
+   if (parser%general%mtlnProblem) then 
+      call solver%launch_mtln_simulation(parser%mtln, this%l%nEntradaRoot, this%l%layoutnumber) 
+      STOP
+   end if
 #endif
 
 #ifdef CompileWithHDF
@@ -946,7 +939,7 @@ contains
    
       if (trim(adjustl(this%l%extension))=='.nfde') then 
 #ifdef CompilePrivateVersion   
-            if(newrotate) NFDE_FILE%mpidir=3 !Legacy hardset to avoid newParser rotation
+            ! if(newrotate) NFDE_FILE%mpidir=3 !Legacy hardset to avoid newParser rotation
             parsedProblem => newparser (NFDE_FILE)
             this%l%thereare_stoch=NFDE_FILE%thereare_stoch
 #else
