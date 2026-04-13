@@ -90,7 +90,6 @@ contains
       integer(kind=4) :: finaltimestepantesdecorregir,NEWfinaltimestep,thefileno
       integer(kind=4) :: statuse
       integer(kind=4) :: status, i, field
-      integer(kind=4) :: verdadero_mpidir
       integer(kind=4) :: my_iostat
 
 
@@ -332,7 +331,7 @@ contains
    call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
 
-   call nfde_rotate (parser,NFDE_FILE%mpidir)
+   call nfde_rotate (parser,this%l%mpidir)
 
 #ifdef CompileWithMPI            
    call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
@@ -939,12 +938,12 @@ contains
    
       if (trim(adjustl(this%l%extension))=='.nfde') then 
 #ifdef CompilePrivateVersion   
-            ! if(newrotate) NFDE_FILE%mpidir=3 !Legacy hardset to avoid newParser rotation
-            parsedProblem => newparser (NFDE_FILE)
-            this%l%thereare_stoch=NFDE_FILE%thereare_stoch
+         parsedProblem => newparser (NFDE_FILE)
+         ! this%l%mpidir = NFDE_FILE%mpidir
+         this%l%thereare_stoch=NFDE_FILE%thereare_stoch
 #else
-            print *,'Not compiled with cargaNFDEINDEX'
-            stop
+         print *,'Not compiled with cargaNFDEINDEX'
+         stop
 #endif
       
 #ifdef CompileWithSMBJSON
