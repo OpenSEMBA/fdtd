@@ -1,0 +1,12 @@
+.git
+build/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+*.o
+*.mod
+# Keep precompiled_libraries and external/ submodule contents
