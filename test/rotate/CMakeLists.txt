@@ -20,6 +20,7 @@ add_library(
     "test_rotate_generateMasSondas.F90"
     "test_rotate_generateBloqueProbes.F90" 
     "test_rotate_generateVolumicProbes.F90"
+    "test_rotate_mtln.F90"
 )
 
 target_link_libraries(rotate_test_fortran
