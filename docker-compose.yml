@@ -23,7 +23,7 @@ services:
     ports:
       - "2345:2345"
     working_dir: /work
-    entrypoint: ["gdbserver", ":2345", "/src/build/bin/semba-fdtd"]
+    entrypoint: ["gdbserver", ":2345", "/src/build/bin/semba-fdtd", "-i"]
 
   # Build the project and run all tests
   test:

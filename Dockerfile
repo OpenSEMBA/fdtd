@@ -55,4 +55,4 @@ COPY --from=builder /src/build/bin/semba-fdtd /usr/local/bin/semba-fdtd
 
 WORKDIR /work
 
-ENTRYPOINT ["semba-fdtd"]
+ENTRYPOINT ["semba-fdtd", "-i"]

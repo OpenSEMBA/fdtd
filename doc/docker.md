@@ -149,7 +149,9 @@ Listening on port 2345
 
 ### Step 4 — Connect from VSCode
 
-Create `.vscode/launch.json` in the repo root with the following content (this file is gitignored — each developer sets it up locally):
+`.vscode/launch.json` is tracked in the repository and already contains the **Docker: attach gdbserver** configuration.
+
+Open the **Run and Debug** panel (`Ctrl+Shift+D`), select **Docker: attach gdbserver**, and press `F5`. VSCode connects, the simulation starts, and breakpoints work normally.
 
 ```json
 {
@@ -178,8 +180,6 @@ Create `.vscode/launch.json` in the repo root with the following content (this f
     ]
 }
 ```
-
-Open the **Run and Debug** panel (`Ctrl+Shift+D`), select **Docker: attach gdbserver**, and press `F5`. VSCode connects, the simulation starts, and breakpoints work normally.
 
 > The `sourceFileMap` maps `/src` (container path baked into debug info) to `${workspaceFolder}` on the host, so source files display correctly.
 
