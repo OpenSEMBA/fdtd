@@ -30,8 +30,9 @@ contains
       call rotate_generateMasSondas                  (this, mpidir)
       call rotate_generateBloqueProbes               (this, mpidir)
       call rotate_generateVolumicProbes              (this, mpidir)
-
-
+#ifdef compilewithMTLN      
+      call rotate_mtln                               (this, mpidir)
+#endif
 
       return
    end subroutine nfde_rotate
