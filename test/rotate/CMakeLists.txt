@@ -20,8 +20,13 @@ add_library(
     "test_rotate_generateMasSondas.F90"
     "test_rotate_generateBloqueProbes.F90" 
     "test_rotate_generateVolumicProbes.F90"
-    "test_rotate_mtln.F90"
 )
+    
+if(SEMBA_FDTD_ENABLE_MTLN)
+    target_sources(rotate_test_fortran PRIVATE
+        "test_rotate_mtln.F90"
+    )
+endif()
 
 target_link_libraries(rotate_test_fortran
     smbjson
