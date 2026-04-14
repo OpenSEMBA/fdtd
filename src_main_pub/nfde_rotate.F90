@@ -26,16 +26,63 @@ contains
       call  rotate_generateThinSlots                 (this, mpidir)
       call  rotate_generateLossyThinSurface          (this, mpidir)
       call  rotate_generateFDMs                      (this, mpidir)
-      call rotate_generateSONDAs                     (this, mpidir)
-      call rotate_generateMasSondas                  (this, mpidir)
-      call rotate_generateBloqueProbes               (this, mpidir)
-      call rotate_generateVolumicProbes              (this, mpidir)
-#ifdef compilewithMTLN      
-      call rotate_mtln                               (this, mpidir)
+      call  rotate_generateSONDAs                     (this, mpidir)
+      call  rotate_generateMasSondas                  (this, mpidir)
+      call  rotate_generateBloqueProbes               (this, mpidir)
+      call  rotate_generateVolumicProbes              (this, mpidir)
+#ifdef CompileWithMTLN
+      call  rotate_mtln                               (this, mpidir)
 #endif
 
       return
    end subroutine nfde_rotate
+
+#ifdef CompileWithMTLN
+   subroutine rotate_mtln(this, mpidir)
+      type(Parseador_t), intent(inout) :: this          
+      integer(kind=4) :: mpidir
+      type(mtln_t), pointer :: old_mtln => null()
+      integer(kind=4) :: i, j
+      integer(kind=4) :: x, y, z, or
+
+      allocate(old_mtln, source = this%mtln)
+      do i = 1, size(old_mtln%cables)
+         do j = 1, size(old_mtln%cables(i)%ptr%segments)
+            x = old_mtln%cables(i)%ptr%segments(j)%x
+            y = old_mtln%cables(i)%ptr%segments(j)%y
+            z = old_mtln%cables(i)%ptr%segments(j)%z
+            or = old_mtln%cables(i)%ptr%segments(j)%orientation
+            if (mpidir == 2) then 
+               this%mtln%cables(i)%ptr%segments(j)%x = z
+               this%mtln%cables(i)%ptr%segments(j)%y = x
+               this%mtln%cables(i)%ptr%segments(j)%z = y
+               select case(abs(or))
+               case(1)
+                  this%mtln%cables(i)%ptr%segments(j)%orientation = sign(2, or)
+               case(2)
+                  this%mtln%cables(i)%ptr%segments(j)%orientation = sign(3, or)
+               case(3)
+                  this%mtln%cables(i)%ptr%segments(j)%orientation = sign(1, or)
+               end select
+            else if (mpidir == 1) then 
+               this%mtln%cables(i)%ptr%segments(j)%x = y
+               this%mtln%cables(i)%ptr%segments(j)%y = z
+               this%mtln%cables(i)%ptr%segments(j)%z = x
+               select case(abs(old_mtln%cables(i)%ptr%segments(j)%orientation))
+               case(1)
+                  this%mtln%cables(i)%ptr%segments(j)%orientation = sign(3, or)
+               case(2)
+                  this%mtln%cables(i)%ptr%segments(j)%orientation = sign(1, or)
+               case(3)
+                  this%mtln%cables(i)%ptr%segments(j)%orientation = sign(2, or)
+               end select
+            end if
+         end do
+      end do
+      deallocate(old_mtln)
+   end subroutine
+#endif
+
 
    subroutine rotate_generateSpaceSteps (this, mpidir)
       type(Parseador_t), intent(inout) :: this          
