@@ -2411,6 +2411,9 @@ contains
                   HWires%CurrentSegment(i1)%Vsource=>segmento%TipoWire%Vsource(k1)
                   segmento%HasVsource=.true.
                   thereareVsources=.true.
+
+                  segmento%resist = segmento%resist + segmento%TipoWire%vsource(k1)%resistance/segmento%delta
+         
                   if ((segmento%HasSeries_RightEnd).or.(segmento%HasSeries_LeftEnd)) then
                      write (buff,'(a,5i7)')  'wir1_INFO: Voltage source with Series RL (C neglected if present) impedance in segment ', &
                      segmento%origIndex,segmento%i,segmento%j,segmento%k,segmento%tipofield
@@ -3692,6 +3695,7 @@ contains
                      end if
                      HWires%ChargeNode(i1)%Isource=>dummy%TipoWire%Isource(k1)
                      HWires%ChargeNode(i1)%HasIsource=.true.
+
                      thereareIsources=.true.
                      write (buff,'(a,i7,3i7)')  'wir1_INFO: Current source at node ', &
                      nodo%indexnode, nodo%i,nodo%j,nodo%k

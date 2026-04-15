@@ -807,7 +807,7 @@ This object represents a time-varying vector field applied along an oriented lin
 
 ### `generator`
 
-A `generator` source must be located on a single `node`. The entry `[field]` can be `voltage` or `current`; defaults to `voltage`. `resistance` refers to a series resistance for `voltage` generators and a resistance in parallel for `current` generators. 
+A `generator` source must be located on a single `node`. The entry `[field]` can be `voltage` or `current`; defaults to `voltage`. 
 
 **Example:**
 
@@ -817,26 +817,31 @@ A `generator` source must be located on a single `node`. The entry `[field]` can
     "type": "generator",
     "field": "current",
     "magnitudeFile": "gauss.exc",
-    "resistance" : 50.0, 
     "elementIds": [1]
 }
 ```
+#### Holland vs MTLN generators
 
-Using classic (not MTLN) wires, generators can be located on any node of the lines. Using MTLN wires there are some restrictions:
+##### Holland wires
+
+Using Holland wires, generators can be located on any node of the lines. Voltage(current) generators cannot have a series(parallel) resistance defined. The magnitude of the source already has to include any resistances that belong to the generator. 
+
+##### MLTN wires
+
+Using MTLN wires there are some restrictions on the position of the generator:
 
 | Generator \ cable type            | `unshieldedMultiwire` | `shieldedMultiwire` |
 | :---                              |    :---   |          :--- |
 | Voltage                           | Only terminal nodes       | Terminal and interior nodes     |
 | Current                           | Terminal and interior nodes        | Only terminal nodes      |
 
+MTLN voltage(current) generators can have a series(parallel) resistance, which is optional. In case no value is provided, the resistance default value will be 0.0. for `voltage` generators and 1.0e22 for `current` generators. 
 
-A resistance value is recommended but optional. In case no value is provided, the resistance default value will be 0.0. for `voltage` generators and 1.0e22 for `current` generators (i.e, they will behave like hard sources). If the generator is located at the termination of a wire, the series or parallel `resistance`  is added to the connection defined in the corresponding `terminal`. If a generator is located on a wire intermediate position, the per-unit-length properties of the corresponding segment are modified according to the `resistance` of the generator.
+If the generator is located at the termination of a wire, the series or parallel `resistance` is added to the connection defined in the corresponding `terminal`. If a current generator is located on a wire intermediate position, its Thévenin equivalent (generator + series resistance) is computed to substitute the current generator.  The per-unit-length properties of the corresponding segment are modified according to the `resistance` of the generator.
 
 #### Sources hardness
 
-A **hard** source is defined as one that imposes its value at its position on the wire. On the other hand, a **soft** source adds its value to the current/voltage values. 
-
-As the resistance of the `voltage` generator approaches 0 (or the resistance of the `current` generator tends to arbitrarily large values), the generator becomes a **hard** source.
+A **hard** source is defined as one that imposes its value at its position on the wire. On the other hand, a **soft** source adds its value to the current/voltage values. **Sources for both Holland and MTLN wires are always soft**.
 
 #### Current direction
 
