@@ -5268,24 +5268,12 @@ subroutine resume_casuistics
           if (thereAreIsources) then
               do n=1,HWires%NumChargeNodes
                   if (HWires%ChargeNode(n)%exists) then
-                  If  (HWires%ChargeNode(n)%HasIsource) then
-                      Nodo => HWires%ChargeNode(n)
-                      Iincid=evolucion(timei-unmedio*sgg%dt,Nodo%Isource%Fichero%Samples, &
+                     If  (HWires%ChargeNode(n)%HasIsource) then
+                        Nodo => HWires%ChargeNode(n)
+                        Iincid=evolucion(timei-unmedio*sgg%dt,Nodo%Isource%Fichero%Samples, &
                                         Nodo%Isource%Fichero%DeltaSamples,Nodo%Isource%Fichero%NumSamples)
-                      if (Nodo%Isource%soft) then
-                            Nodo%ChargePresent = Nodo%ChargePresent    +  Nodo%CtePlain     * Iincid
-                      else
-                          Vincid=iincid !es realmente una fuente de carga
-                          if (associated(Nodo%CurrentPlus_1)) then
-                            Nodo%ChargePresent = Vincid/ (Nodo%CurrentPlus_1%Lind * InvMu(Nodo%CurrentPlus_1%indexmed)*InvEps(Nodo%CurrentPlus_1%indexmed))
-                          elseif (associated(Nodo%CurrentMinus_1)) then !alguno estara asociado, solo es para sacar el L, eps, mu
-                            Nodo%ChargePresent = Vincid/ (Nodo%CurrentMinus_1%Lind * InvMu(Nodo%CurrentMinus_1%indexmed)*InvEps(Nodo%CurrentMinus_1%indexmed))
-                          else
-                              print *,'bug in current sources '
-                              stop
-                          end if
-                      end if
-                  end if
+                        Nodo%ChargePresent = Nodo%ChargePresent    +  Nodo%CtePlain     * Iincid
+                     end if
                   end if
               end do
           end if
@@ -5451,17 +5439,12 @@ subroutine resume_casuistics
                    !!!        print *,'error en experimentalVideal 200621'
                    !!!    end if
                    !!!else
-                       !lo de siempre. aniado lo anterior para ver lo de las fuentes duras !C=Q/V-> C=c^-2/L-> Q=V*C=V/(L c^2)
-                       if (Segmento%Vsource%soft) then !fuentes blandas usuales 230323 
-                           !fuentes de voltaje. para que sean de carga hay que comentar el Lind
-                           Segmento%Current = Segmento%Current + &
-                                 Segmento%cte3 * Vincid  / (Segmento%Lind * InvMu(Segmento%indexmed)*InvEps(Segmento%indexmed))
-                           !I use the capacitance to find the incident charge
-                           !assuming that the evolution file contains a voltage, not a charge
-                       else !nuevas fuentes duras 230323
-                           Iincid=Vincid !realmente se trata de forzar la corriente 230323
-                           Segmento%Current =  Iincid
-                       end if
+                  !lo de siempre. aniado lo anterior para ver lo de las fuentes duras !C=Q/V-> C=c^-2/L-> Q=V*C=V/(L c^2)
+                  !fuentes de voltaje. para que sean de carga hay que comentar el Lind
+                  Segmento%Current = Segmento%Current + &
+                     Segmento%cte3 * Vincid  / (Segmento%Lind * InvMu(Segmento%indexmed)*InvEps(Segmento%indexmed))
+                  !I use the capacitance to find the incident charge
+                  !assuming that the evolution file contains a voltage, not a charge
                    !!!end if
                 end if
              end do
