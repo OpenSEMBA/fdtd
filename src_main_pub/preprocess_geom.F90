@@ -2495,33 +2495,17 @@ contains
             !!!!!!
 
 
-            if ((trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == F_SOURCE_VOLTAGE).or. &
-               (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == F_SOURCE_SOFT_VOLTAGE)) then
+            if (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == F_SOURCE_VOLTAGE) then
                allocate (sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource)
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VsourceExists = .TRUE.
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%SOFT=.TRUE.  !fuentes duras sgg 230323. default blandas
+               ! sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%SOFT=.TRUE.  !fuentes duras sgg 230323. default blandas
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%Multiplier = this%swires%SW(j)%swc(i)%m
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%Resistance = 0.0_RKIND
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%fichero%name = trim (adjustl(this%swires%SW(j)%swc(i)%SRCFILE))
-            ELSE if ((trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == F_SOURCE_CURRENT).OR. &
-               (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == F_SOURCE_HARD_CURRENT)) then !EQUIVALENTES A IMPLEMENTAR UNA DE voltage
-               allocate (sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource)
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VsourceExists = .TRUE.
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource%SOFT=.FALSE.
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource%Multiplier = this%swires%SW(j)%swc(i)%m
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource%Resistance = 0.0_RKIND
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource%fichero%name = trim (adjustl(this%swires%SW(j)%swc(i)%SRCFILE))
-            ELSEIF (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == F_SOURCE_HARD_VOLTAGE) then !EQUIVALENTES A IMPLEMENTAR UNA DE Corriente
+            ELSE if (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == F_SOURCE_CURRENT) then
                allocate (sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource)
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%IsourceExists = .TRUE.
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%ISource%SOFT=.FALSE.
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%ISource%Multiplier = this%swires%SW(j)%swc(i)%m
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%ISource%Resistance = 0.0_RKIND
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%ISource%fichero%name = trim (adjustl(this%swires%SW(j)%swc(i)%SRCFILE))
-            ELSE if ((trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == F_SOURCE_SOFT_CURRENT)) then
-               allocate (sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource)
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%IsourceExists = .TRUE.
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource%SOFT=.TRUE.
+               ! sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource%SOFT=.TRUE.
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource%Multiplier = this%swires%SW(j)%swc(i)%m
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource%Resistance = 0.0_RKIND
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource%fichero%name = trim (adjustl(this%swires%SW(j)%swc(i)%SRCFILE))

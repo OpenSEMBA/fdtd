@@ -344,7 +344,6 @@ module  FDETYPES_m
       type(fichevol_wires_t) :: Fichero
       real(kind=RKIND_wires) :: Resistance
       real(kind=RKIND_wires) :: Multiplier
-      logical :: soft
       integer(kind=4) :: i,j,k
    end type
 
