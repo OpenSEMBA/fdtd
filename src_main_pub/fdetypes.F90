@@ -207,11 +207,7 @@ module  FDETYPES_m
 
    !source types
    character(len=*), parameter :: F_SOURCE_VOLTAGE = 'VOLT'
-   character(len=*), parameter :: F_SOURCE_SOFT_VOLTAGE = 'SOFTVOLT'
-   character(len=*), parameter :: F_SOURCE_HARD_VOLTAGE = 'HARDVOLT'
    character(len=*), parameter :: F_SOURCE_CURRENT = 'CURR'
-   character(len=*), parameter :: F_SOURCE_SOFT_CURRENT = 'SOFTCURR'
-   character(len=*), parameter :: F_SOURCE_HARD_CURRENT = 'HARDCURR'
 
    
 #ifdef CompileWithReal4
