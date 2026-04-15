@@ -424,12 +424,6 @@ contains
    elemental logical function dielectricregions_eq(a, b) result(res)
       type(DielectricRegions_t), intent(in) :: a, b
       res = .false.
-      if (.not. associated(a%Lins))  return
-      if (.not. associated(b%Lins))  return
-      if (.not. associated(a%Surfs)) return
-      if (.not. associated(b%Surfs)) return
-      if (.not. associated(a%Vols))  return
-      if (.not. associated(b%Vols))  return
       if (a%nVols     /= b%nVols)     return
       if (a%nSurfs    /= b%nSurfs)    return
       if (a%nLins     /= b%nLins)     return
@@ -438,9 +432,33 @@ contains
       if (a%nLins_max  /= b%nLins_max)  return
       if (a%n_C1P_max /= b%n_C1P_max) return
       if (a%n_C2P_max /= b%n_C2P_max) return
-      if (.not. all(a%Lins  == b%Lins))  return
-      if (.not. all(a%Surfs == b%Surfs)) return
-      if (.not. all(a%Vols  == b%Vols))  return
+      if (associated(a%Lins) .eqv. associated(b%Lins)) then
+         if (associated(a%Lins)) then
+            if (.not. all(a%Lins == b%Lins)) return
+         end if
+      else if (associated(a%Lins)) then
+         if (size(a%Lins) /= 0) return
+      else
+         if (size(b%Lins) /= 0) return
+      end if
+      if (associated(a%Surfs) .eqv. associated(b%Surfs)) then
+         if (associated(a%Surfs)) then
+            if (.not. all(a%Surfs == b%Surfs)) return
+         end if
+      else if (associated(a%Surfs)) then
+         if (size(a%Surfs) /= 0) return
+      else
+         if (size(b%Surfs) /= 0) return
+      end if
+      if (associated(a%Vols) .eqv. associated(b%Vols)) then
+         if (associated(a%Vols)) then
+            if (.not. all(a%Vols == b%Vols)) return
+         end if
+      else if (associated(a%Vols)) then
+         if (size(a%Vols) /= 0) return
+      else
+         if (size(b%Vols) /= 0) return
+      end if
       res = .true.
    end function dielectricregions_eq
 

@@ -931,7 +931,7 @@ contains
       allocate(res%cs(nLossySurfaces))
       res%length = nLossySurfaces
       res%length_max = nLossySurfaces
-      res%nC_max = nLossySurfaces
+
       k = 1
       do i = 1, size(mAs)
          call this%matAssToCoords(cs, mAs(i), CELL_TYPE_SURFEL)
@@ -939,12 +939,18 @@ contains
          res%cs(k) = readLossyThinSurface(mAs(i))
          k = k + 1
       end do
+
+      do i = 1, nLossySurfaces
+         if (res%nC_max < size(res%cs(i)%c)) then
+            res%nC_max = size(res%cs(i)%c)
+         end if
+      end do
       
    contains
       function readLossyThinSurface(mA) result(res)
          type(materialAssociation_t), intent(in) :: mA
          type(LossyThinSurface_t) :: res
-         logical :: found
+         logical :: found, hasAbsPermittivity, hasAbsPermeability
          character(len=*), parameter :: errorMsgInit = "ERROR reading lossy thin surface: "
          integer :: i
          type(json_value_ptr_t) :: mat
@@ -955,6 +961,7 @@ contains
          res%nc = size(res%c)
 
          mat = this%matTable%getId(mA%materialId)
+         res%files = trim(adjustl(this%getStrAt(mat%p, J_NAME, default=' ')))
          call this%core%get(mat%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers)
 
          res%numcapas = this%core%count(layers)
@@ -972,8 +979,14 @@ contains
             call this%core%get_child(layers, i, layer)
             res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
             res%sigmam(i) = this%getRealAt(layer, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0_RKIND)
-            res%eps(i)    = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND) * EPSILON_VACUUM
-            res%mu(i)     = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0_RKIND) * MU_VACUUM
+            res%eps(i)    = this%getRealAt(layer, J_MAT_ABS_PERMITTIVITY, hasAbsPermittivity)
+            if (.not. hasAbsPermittivity) then
+               res%eps(i) = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND) * EPSILON_VACUUM
+            end if
+            res%mu(i)     = this%getRealAt(layer, J_MAT_ABS_PERMEABILITY, hasAbsPermeability)
+            if (.not. hasAbsPermeability) then
+               res%mu(i) = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0_RKIND) * MU_VACUUM
+            end if
             res%thk(i)    = this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
             if (.not. found) then
                call WarnErrReport(errorMsgInit // J_MAT_MULTILAYERED_SURF_THICKNESS // " in layer not found.", .true.)
@@ -1004,7 +1017,7 @@ contains
       logical :: found
 
       call this%core%get(this%root, J_SOURCES, sources, found)
-
+      
       if (.not. found) then
          allocate(res%collection(0))
          res%nc = size(res%collection)
@@ -1031,7 +1044,7 @@ contains
 
          res%nombre_fichero = trim(adjustl(this%getStrAt(pw,J_SRC_MAGNITUDE_FILE)))
 
-         res%atributo = ""
+         res%atributo = "LOCKED"
 
          res%theta = this%getRealAt(pw, J_SRC_PW_DIRECTION//'.'//J_SRC_PW_THETA)
          res%phi = this%getRealAt(pw, J_SRC_PW_DIRECTION//'.'//J_SRC_PW_PHI)

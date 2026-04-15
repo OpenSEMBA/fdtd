@@ -307,7 +307,16 @@ A parallel $CR$ circuit:
 
 ### `multilayeredSurface`
 
-A `multilayeredSurface` must contain the entry `<layers>` which is an array indicating materials which are described in the same way as [isotropic materials](#isotropic) and a `<thickness>`.
+A `multilayeredSurface` must contain the entry `<layers>` which is an array indicating materials and a `<thickness>` per layer.
+
+For each layer:
+
++ `[relativePermittivity]` or `[absolutePermittivity]` can be provided. If both exist, `absolutePermittivity` is used.
++ `[relativePermeability]` or `[absolutePermeability]` can be provided. If both exist, `absolutePermeability` is used.
++ `[electricConductivity]` and `[magneticConductivity]` have the same behavior as in `isotropic` materials.
+
+For `multilayeredSurface`, the material `[name]` is also used as the NFDE file identifier.
+
 Its `elementIds` must reference `cell` elements. All `intervals` modeling entities different to oriented surfaces are ignored.
 
 ```json
