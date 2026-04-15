@@ -4896,7 +4896,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
             output(ii)%item(i)%Serialized%eJ(conta) = nj
             output(ii)%item(i)%Serialized%eK(conta) = nk
 
-            select case (mtln_local%bundles(n)%external_field_segments(m)%direction)
+            select case (abs(mtln_local%bundles(n)%external_field_segments(m)%direction))
             case (iEx)
               output(ii)%item(i)%Serialized%currentType(conta) = iJx
               output(ii)%item(i)%Serialized%sggMtag(conta) = iabs(tag_numbers%edge%x(ni, nj, nk))
