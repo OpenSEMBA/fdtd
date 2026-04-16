@@ -31,8 +31,8 @@
 				[-20.5e-12, 85.0e-12 ]
 			],
 			"transferImpedancePerMeter" : {
-				"resistancePerMeter" : 0.0,
-				"inductancePerMeter" : 4.0e-9,
+				"resistiveTerm" : 0.0,
+				"inductiveTerm" : 4.0e-9,
 				"direction": "both"
 			}
 		},

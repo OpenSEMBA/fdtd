@@ -16,17 +16,9 @@
     "materials": [
         {
             "id": 1,
-            "type": "unshieldedMultiwire",
-            "inductancePerMeter": [
-                [
-                    6.5138e-07
-                ]
-            ],
-            "capacitancePerMeter": [
-                [
-                    1.7069e-11
-                ]
-            ]
+            "type": "wire",
+            "radius" : 0.1e-3,
+            "resistancePerMeter": 0.0
         },
         {
             "id": 2,

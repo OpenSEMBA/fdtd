@@ -25,6 +25,8 @@ module smbjson_labels_m
 
    ! -- materials
    character(len=*), parameter :: J_MATERIALS = "materials"
+   character(len=*), parameter :: J_MAT_ABS_PERMITTIVITY = "absolutePermittivity"
+   character(len=*), parameter :: J_MAT_ABS_PERMEABILITY = "absolutePermeability"
    character(len=*), parameter :: J_MAT_REL_PERMITTIVITY = "relativePermittivity"
    character(len=*), parameter :: J_MAT_REL_PERMEABILITY = "relativePermeability"
    character(len=*), parameter :: J_MAT_ELECTRIC_CONDUCTIVITY = "electricConductivity"
@@ -45,10 +47,6 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_WIRE_RADIUS = "radius"
    character(len=*), parameter :: J_MAT_WIRE_RESISTANCE = "resistancePerMeter"
    character(len=*), parameter :: J_MAT_WIRE_INDUCTANCE = "inductancePermeter"
-   character(len=*), parameter :: J_MAT_WIRE_REF_CAPACITANCE = "__referenceCapacitancePerMeter"
-   character(len=*), parameter :: J_MAT_WIRE_REF_INDUCTANCE = "__referenceInductancePerMeter"
-   character(len=*), parameter :: J_MAT_WIRE_DIELECTRIC = "dielectric"
-   character(len=*), parameter :: J_MAT_WIRE_DIELECTRIC_RADIUS = "radius"
 
    character(len=*), parameter :: J_MAT_LUMPED_MODEL = "model"
    character(len=*), parameter :: J_MAT_LUMPED_MODEL_RESISTOR = "resistor"
@@ -123,8 +121,8 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_CONN_TRANSFER_IMPEDANCES = "transferImpedancesPerMeter"
 
    ! -- transferImpedancePerMeter
-   character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESISTANCE = "resistancePerMeter"
-   character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_INDUCTANCE = "inductancePerMeter"
+   character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESISTANCE = "resistiveTerm"
+   character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_INDUCTANCE = "inductiveTerm"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_DIRECTION = "direction"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_POLES = "poles"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESIDUES = "residues"

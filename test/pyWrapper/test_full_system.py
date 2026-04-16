@@ -332,51 +332,53 @@ def test_unshielded_multiwires(tmp_path):
     assert np.corrcoef(solved_1, p_expected['current_1'])[0,1] > 0.999
 
 
-@mtln_skip
+@no_mpi_skip
+def test_towelHanger_mpi(tmp_path):
+    fn = CASES_FOLDER + 'towelHanger/towelHanger_mpi.fdtd.json'
+    mpidir = ["x","y","z"]
+    for i in range(3):
+        solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                    run_in_folder=tmp_path, flags=['-mpidir ' + mpidir[i]], 
+                    mpi_command='mpirun -np 1',)
+        for j in range(len(solver["mesh"]["coordinates"])):
+            cs = [0,0,0]
+            cs[0] = solver["mesh"]["coordinates"][j]["relativePosition"][(0 + i)%3]
+            cs[1] = solver["mesh"]["coordinates"][j]["relativePosition"][(1 + i)%3]
+            cs[2] = solver["mesh"]["coordinates"][j]["relativePosition"][(2 + i)%3]
+            solver["mesh"]["coordinates"][j]["relativePosition"] = cs
+
+        intervals = [[[0,0,0], [0,0,0]]]
+        intervals[0][0][0] = solver["mesh"]["elements"][2]["intervals"][0][0][(0 + i)%3]
+        intervals[0][0][1] = solver["mesh"]["elements"][2]["intervals"][0][0][(1 + i)%3]
+        intervals[0][0][2] = solver["mesh"]["elements"][2]["intervals"][0][0][(2 + i)%3]
+        intervals[0][1][0] = solver["mesh"]["elements"][2]["intervals"][0][1][(0 + i)%3]
+        intervals[0][1][1] = solver["mesh"]["elements"][2]["intervals"][0][1][(1 + i)%3]
+        intervals[0][1][2] = solver["mesh"]["elements"][2]["intervals"][0][1][(2 + i)%3]
+
+        solver["mesh"]["elements"][2]["intervals"] = intervals
+        solver.cleanUp()
+        solver.run()
+
+        p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
+                    Probe(solver.getSolvedProbeFilenames("wire_mid")[0]),
+                    Probe(solver.getSolvedProbeFilenames("wire_end")[0])]
+
+        p_expected = [Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
+                    Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
+                    Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
+
+        for i in range(3):
+            solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['current_0'].to_numpy())
+            assert np.corrcoef(solved, p_expected[i]['current_0'])[0,1] > 0.999
+    
+    
+
 def test_towelHanger(tmp_path):
     fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
-    solver['materials'][0] = createWire(id = 1, r = 0.1e-3)
-
-    p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
-                   Probe(solver.getSolvedProbeFilenames("wire_mid")[0]),
-                   Probe(solver.getSolvedProbeFilenames("wire_end")[0])]
-
-    p_expected = [Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
-                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
-                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
-
-    assert np.allclose(p_expected[0]['current'], p_solved[0]['current'], rtol=5e-3, atol=5e-4)
-    assert np.allclose(p_expected[1]['current'], p_solved[1]['current'], rtol=5e-3, atol=5e-4)
-    assert np.allclose(p_expected[2]['current'], p_solved[2]['current'], rtol=5e-3, atol=5e-4)
-
-@no_mtln_skip
-def test_towelHanger(tmp_path):
-    fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
-    solver.run()
-
-    p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
-                   Probe(solver.getSolvedProbeFilenames("wire_mid")[0]),
-                   Probe(solver.getSolvedProbeFilenames("wire_end")[0])]
-
-    p_expected = [Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
-                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
-                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
-
-    assert np.allclose(p_expected[0]['current'], -p_solved[0]['current_0'], rtol=5e-3, atol=5e-4)
-    assert np.allclose(p_expected[1]['current'], -p_solved[1]['current_0'], rtol=5e-3, atol=5e-4)
-    assert np.allclose(p_expected[2]['current'],  p_solved[2]['current_0'], rtol=5e-3, atol=5e-4)
-
-@no_mtln_skip
-def test_towelHanger(tmp_path):
-    fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
     solver.run()
 
     p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
@@ -448,7 +450,7 @@ def test_towel_rack_with_and_without_shorting_plane(tmp_path):
     # plt.savefig('tmp-plot.png')
     # plt.show()
 
-    # Expect the shorting plane not chaning the impedance at low frequencies.
+    # Expect the shorting plane not changing the impedance at low frequencies.
     assert np.allclose(
         np.abs(Z_in_w[freqs < 1e6]), 
         np.abs(Z_in_wo[freqs < 1e6]), 
@@ -1413,10 +1415,9 @@ def test_conformal_delay(tmp_path):
         assert np.abs(delay - tdelta)/tdelta < 0.01
         
 
-
 @no_mtln_skip
 @pytest.mark.mtln
-def test_current_generators(tmp_path):
+def test_current_generators_with_resistance(tmp_path):
     # Checks current and voltage of probes at the extremes of a wire
     # with a current generator in the middle of the wire
     
@@ -1426,22 +1427,48 @@ def test_current_generators(tmp_path):
     solver["sources"][0]["elementIds"] = [1]
     solver.cleanUp()
     solver.run()
-    probes = solver.getSolvedProbeFilenames("probe_end")
-    Iend = Probe(list(filter(lambda x: '_I_' in x, probes))[0])
-
-    probes = solver.getSolvedProbeFilenames("probe_start")
-    Istart = Probe(list(filter(lambda x: '_I_' in x, probes))[0])
-
-    probes = solver.getSolvedProbeFilenames("probe_end")
-    Vend = Probe(list(filter(lambda x: '_V_' in x, probes))[0])
-
-    probes = solver.getSolvedProbeFilenames("probe_start")
-    Vstart = Probe(list(filter(lambda x: '_V_' in x, probes))[0])
+    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
+    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+    Vend = Probe(solver.getSolvedProbeFilenames("probe_end")[1])
+    Vstart = Probe(solver.getSolvedProbeFilenames("probe_start")[1])
 
     assert np.allclose(Iend['current_0'][-100:-1], 1.0/3.0, rtol=0.005)
     assert np.allclose(Istart['current_0'][-100:-1], 1.0/3.0, rtol=0.005)
     assert np.allclose(Vend['voltage_0'][-100:-1], 16.666, rtol=0.005)
     assert np.allclose(Vstart['voltage_0'][-100:-1], -16.666, rtol=0.005)
+
+def test_current_generators_without_resistance(tmp_path):
+    # Checks current probes at the extremes of a wire
+    # with a current generator in the middle of the wire and on the extremes of the wire
+    
+    fn = CASES_FOLDER + 'sources/sources_current_no_resistance.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver["sources"][0]["elementIds"] = [1] # wire center
+    solver.cleanUp()
+    solver.run()
+    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
+    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+    assert np.allclose(Iend['current_0'][-100:-1], 1.0, rtol=0.005)
+    assert np.allclose(Istart['current_0'][-100:-1], 1.0, rtol=0.005)
+
+    solver["sources"][0]["elementIds"] = [9] # wire start
+    solver.cleanUp()
+    solver.run()
+    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
+    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+
+    assert np.allclose(Iend['current_0'][-100:-1], 1.0, rtol=0.005)
+    assert np.allclose(Istart['current_0'][-100:-1], 1.0, rtol=0.005)
+
+    solver["sources"][0]["elementIds"] = [10] # wire end
+    solver.cleanUp()
+    solver.run()
+    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
+    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+
+    assert np.allclose(Iend['current_0'][-100:-1], -1.0, rtol=0.005)
+    assert np.allclose(Istart['current_0'][-100:-1], -1.0, rtol=0.005)
 
 @no_mtln_skip
 @pytest.mark.mtln
@@ -1455,17 +1482,11 @@ def test_voltage_generators(tmp_path):
     solver.cleanUp()
     solver.run()
 
-    probes = solver.getSolvedProbeFilenames("probe_end")
-    Iend = Probe(list(filter(lambda x: '_I_' in x, probes))[0])
-
-    probes = solver.getSolvedProbeFilenames("probe_start")
-    Istart = Probe(list(filter(lambda x: '_I_' in x, probes))[0])
-
-    probes = solver.getSolvedProbeFilenames("probe_end")
-    Vend = Probe(list(filter(lambda x: '_V_' in x, probes))[0])
-
-    probes = solver.getSolvedProbeFilenames("probe_start")
-    Vstart = Probe(list(filter(lambda x: '_V_' in x, probes))[0])
+    
+    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
+    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+    Vend = Probe(solver.getSolvedProbeFilenames("probe_end")[1])
+    Vstart = Probe(solver.getSolvedProbeFilenames("probe_start")[1])
 
     assert np.allclose(Iend['current_0'][-100:-1],   0.0, rtol=0.005)
     assert np.allclose(Istart['current_0'][-100:-1], 0.0, rtol=0.005)
@@ -1476,7 +1497,7 @@ def test_voltage_generators(tmp_path):
     assert np.allclose(Istart['current_1'][-100:-1], 1.0/3.0, rtol=0.005)
     assert np.allclose(Vend['voltage_1'][-100:-1],   -16.666, rtol=0.005)
     assert np.allclose(Vstart['voltage_1'][-100:-1], -16.666, rtol=0.005)
-
+    
 def test_bulk_current_outputs(tmp_path):
     # This test uses bulk_probe_cases_over_nodal_source.fdtd from input_examples as input.
     # Verifies all kind of bulk probes are recognised and setted properly by checking outputFile format.
