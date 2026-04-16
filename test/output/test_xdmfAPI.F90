@@ -3,7 +3,7 @@ integer function test_create_h5_file() bind(c) result(err)
    use HDF5
    use mod_xdmfAPI
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
    character(len=14), parameter :: folder='testing_folder'
@@ -38,7 +38,7 @@ integer function test_write_1d_dataset() bind(c) result(err)
    use HDF5
    use mod_xdmfAPI
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
    character(len=14), parameter :: folder='testing_folder'
@@ -79,7 +79,7 @@ integer function test_write_2d_dataset() bind(c) result(err)
    use HDF5
    use mod_xdmfAPI
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
    character(len=14), parameter :: folder='testing_folder'
@@ -119,7 +119,7 @@ integer function test_write_3d_dataset() bind(c) result(err)
    use HDF5
    use mod_xdmfAPI
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
    character(len=14), parameter :: folder='testing_folder'
@@ -160,7 +160,7 @@ integer function test_xdmf_file_creation() bind(c) result(err)
 
    use mod_xdmfAPI
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
    character(len=14), parameter :: folder='testing_folder'
@@ -206,7 +206,7 @@ integer function test_xdmf_file_with_h5data() bind(c) result(err)
     use HDF5
     use mod_xdmfAPI
     use mod_assertionTools
-    use mod_directoryUtils
+    use directoryUtils_m
     implicit none
 
     character(len=20), parameter :: folder = "testing_folder"

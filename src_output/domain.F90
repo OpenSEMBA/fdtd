@@ -1,5 +1,5 @@
 module mod_domain
-   use FDETYPES
+   use FDETYPES_m
    use outputTypes
    implicit none
 

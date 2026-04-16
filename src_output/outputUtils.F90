@@ -1,5 +1,5 @@
 module mod_outputUtils
-   use FDETYPES
+   use FDETYPES_m
    use outputTypes
    use mod_domain
    use report
@@ -659,7 +659,7 @@ contains
    end function get_delta
 
    subroutine create_data_file(filePathReference, probePathReference, domainTypeReference, fileExtension)
-      use mod_directoryUtils
+      use directoryUtils_m
       character(len=*), intent(out) :: filePathReference
       character(len=*), intent(in) :: probePathReference
       character(len=*), intent(in) :: domainTypeReference

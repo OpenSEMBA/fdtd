@@ -2,7 +2,7 @@
 ! Test: count_required_coords
 !--------------------------------------------------------------------------------
 integer function test_count_required_coords() bind(c) result(err)
-   use FDETYPES
+   use FDETYPES_m
    use outputTypes
    use mod_volumicProbeUtils
    use mod_assertionTools
@@ -36,7 +36,7 @@ end function test_count_required_coords
 ! Test: store_required_coords
 !--------------------------------------------------------------------------------
 integer function test_store_required_coords() bind(c) result(err)
-   use FDETYPES
+   use FDETYPES_m
    use outputTypes
    use mod_outputUtils
    use mod_volumicProbeUtils
@@ -78,7 +78,7 @@ end function test_store_required_coords
 ! Test: isValidPointForCurrent
 !--------------------------------------------------------------------------------
 integer function test_is_valid_point_current() bind(c) result(err)
-   use FDETYPES
+   use FDETYPES_m
    use outputTypes
    use mod_volumicProbeUtils
    use mod_testOutputUtils
@@ -107,7 +107,7 @@ end function test_is_valid_point_current
 ! Test: isValidPointForField
 !--------------------------------------------------------------------------------
 integer function test_is_valid_point_field() bind(c) result(err)
-     use FDETYPES
+     use FDETYPES_m
      use outputTypes
      use mod_volumicProbeUtils
      use mod_testOutputUtils

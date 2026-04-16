@@ -1,5 +1,5 @@
 module test_rotate_generateThinSlots_m
-    use smbjson
+    use smbjson_m
     use nfde_rotate_m
     use rotate_testingTools
     implicit none
@@ -7,7 +7,7 @@ module test_rotate_generateThinSlots_m
 contains
 
 integer function test_rotate_generate_thin_slots() bind(C) result(err)
-    type(Parseador) :: this
+    type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     integer :: test_err = 0
     
@@ -31,7 +31,7 @@ integer function test_rotate_generate_thin_slots() bind(C) result(err)
 end function test_rotate_generate_thin_slots
 
 subroutine setup_thin_slot_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer :: n_slots=1
     integer :: i
     
@@ -49,7 +49,7 @@ subroutine setup_thin_slot_test(this)
 end subroutine setup_thin_slot_test
 
 subroutine init_thin_slot_component(this, tgidx, tgcidx, i, j, k, dir, node, tag)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer, intent(in) :: tgidx, tgcidx, i, j, k, dir, node
     character(len=*), intent(in) :: tag
     
@@ -65,7 +65,7 @@ end subroutine init_thin_slot_component
 
 subroutine verify_thin_slot_rotation(test_err, this, mpidir)
     integer, intent(inout) :: test_err, mpidir
-    type(Parseador), intent(in) :: this
+    type(Parseador_t), intent(in) :: this
     if (mpidir==2) then
         call expect_eq_int(test_err, 3, this%tslots%tg(1)%tgc(1)%i, "rotate_generateThinSlots: i(1) mpidir2 error")
         call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%j, "rotate_generateThinSlots: j(1) mpidir2 error")
@@ -98,7 +98,7 @@ subroutine verify_thin_slot_rotation(test_err, this, mpidir)
 end subroutine verify_thin_slot_rotation
 
 subroutine cleanup_thin_slot_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer :: i
     
     if (this%tslots%n_tg > 0) then

@@ -1,21 +1,21 @@
 integer function test_init_time_movie_observation() bind(C) result(err)
-    use FDETYPES
+    use FDETYPES_m
     use FDETYPES_TOOLS
-    use Observa
+    use Observa_m
     use observation_testingTools
 
-    type(SGGFDTDINFO) ::  sgg
+    type(SGGFDTDINFO_t) :: sgg
     type(media_matrices_t) :: media
     type(taglist_t) :: tag_numbers
     logical :: ThereAreObservation, ThereAreWires, ThereAreFarFields
     integer :: initialtimestep
     real(kind=RKIND_tiempo) :: lastexecutedtime
     type(limit_t), dimension(1:6) :: SINPML_fullsize
-    type(bounds_t)  ::  bounds
+    type(bounds_t) :: bounds
     type(sim_control_t) :: control
     type(nf2ff_t) :: facesNF2FF
     real(kind=RKIND) :: eps = EPSILON_VACUUM, mu = MU_VACUUM
-    character(LEN=BUFSIZE)  ::  chari, charj, chark, chari2, charj2, chark2, expectedOutputPath
+    character(len=BUFSIZE) :: chari, charj, chark, chari2, charj2, chark2, expectedOutputPath
 
     type(output_t), pointer, dimension(:) :: output
 
@@ -35,7 +35,9 @@ integer function test_init_time_movie_observation() bind(C) result(err)
     SINPML_fullsize = create_limit_t(0,4,0,4,0,4,3,3,3)
 
     facesNF2FF = create_facesNF2FF(.false., .false., .false., .false., .false., .false.)
-    control = create_control_flags(nEntradaRoot="entryRoot", wiresflavor="wiresflavour",facesNF2FF=facesNF2FF)
+    control = create_control_flags(0, 0, 3, 10, trim(get_temp_dir())//'/entryRoot', "wireflavour",&
+                                    .false., .false., .false., .false., .false.,&
+                                    facesNF2FF)
 
     call InitObservation(sgg, media, tag_numbers, &
                             ThereAreObservation, ThereAreWires, ThereAreFarFields,&
@@ -74,7 +76,7 @@ integer function test_init_time_movie_observation() bind(C) result(err)
 
     contains
         subroutine set_sgg_data(baseSGG)
-            type(SGGFDTDINFO), intent(inout) :: baseSGG
+            type(SGGFDTDINFO_t), intent(inout) :: baseSGG
             allocate(baseSGG%Observation(1))
             baseSGG%Observation(1) = define_time_movie_observation()
         end subroutine 
@@ -108,7 +110,7 @@ integer function test_init_time_movie_observation() bind(C) result(err)
 
         function create_time_movie_observable(XI,YI,ZI,XE,YE,ZE) result(observable)
             type(observable_t) :: observable
-            integer (kind=4)  ::  XI,YI,ZI,XE,YE,ZE
+            integer(kind=4) :: XI,YI,ZI,XE,YE,ZE
 
             observable%XI = XI
             observable%YI = YI

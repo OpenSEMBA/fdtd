@@ -136,7 +136,7 @@ end function
 !==============================
 integer function test_vtkAPI_vts_file_creation() bind(C) result(error_cnt)
    use mod_vtkAPI
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
    type(vtk_structured_grid), target :: grid
    class(vtk_grid), pointer :: grid_base
@@ -174,7 +174,7 @@ end function
 !==============================
 integer function test_vtkAPI_vtu_file_creation() bind(C) result(error_cnt)
    use mod_vtkAPI
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
    type(vtk_unstructured_grid), target :: ugrid
    class(vtk_grid), pointer :: grid_base
@@ -256,7 +256,7 @@ end function
 !==============================
 integer function test_vtkAPI_vts_content() bind(C) result(error_cnt)
    use mod_vtkAPI
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
    type(vtk_structured_grid), target :: grid
    class(vtk_grid), pointer :: grid_base
@@ -325,7 +325,7 @@ end function
 !==============================
 integer function test_vtkAPI_vtu_content() bind(C) result(error_cnt)
    use mod_vtkAPI
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
    type(vtk_unstructured_grid), target :: ugrid
    class(vtk_grid), pointer :: grid_base

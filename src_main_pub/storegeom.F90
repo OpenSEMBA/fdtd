@@ -1,133 +1,133 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Module to handle the storing of the geometry in ascii files
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-MODULE storeData
-   USE fdetypes
+module storeData_m
+   use FDETYPES_m
    !
-   IMPLICIT NONE
-   PRIVATE
+   implicit none
+   private
    !
-   INTEGER (KIND=4), PARAMETER, PRIVATE :: BLOCK_SIZE = 1024
-   PUBLIC store_geomData
+   integer(kind=4), parameter, private :: BLOCK_SIZE = 1024
+   public store_geomData
    !
-CONTAINS
+contains
    !
    !
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Stores the geometrical data given by the parser into disk
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   SUBROUTINE store_geomData (sgg,media, fileFDE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: INTJ
+   subroutine store_geomData (sgg,media, fileFDE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: INTJ
       type(media_matrices_t), intent(in) :: media
-      type (SGGFDTDINFO), intent(IN) :: sgg
-      INTEGER (KIND=4) :: i, j, k, campo, q
-      CHARACTER (LEN=*), INTENT (IN) :: fileFDE
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      integer(kind=4) :: i, j, k, campo, q
+      character(len=*), intent(in) :: fileFDE
       !Writes an ASCII map of the media matrix for each field component
-      OPEN (20, FILE=trim(adjustl(fileFDE))//'_MapEx.txt')
-      OPEN (21, FILE=trim(adjustl(fileFDE))//'_MapEy.txt')
-      OPEN (22, FILE=trim(adjustl(fileFDE))//'_MapEz.txt')
-      OPEN (23, FILE=trim(adjustl(fileFDE))//'_MapHx.txt')
-      OPEN (24, FILE=trim(adjustl(fileFDE))//'_MapHy.txt')
-      OPEN (25, FILE=trim(adjustl(fileFDE))//'_MapHz.txt')
-      DO campo = 1, 6
+      open(20, FILE=trim(adjustl(fileFDE))//'_MapEx.txt')
+      open(21, FILE=trim(adjustl(fileFDE))//'_MapEy.txt')
+      open(22, FILE=trim(adjustl(fileFDE))//'_MapEz.txt')
+      open(23, FILE=trim(adjustl(fileFDE))//'_MapHx.txt')
+      open(24, FILE=trim(adjustl(fileFDE))//'_MapHy.txt')
+      open(25, FILE=trim(adjustl(fileFDE))//'_MapHz.txt')
+      do campo = 1, 6
          i = 19 + campo
          q = 19 + campo
-         WRITE (q,*) '____ 1-Sustrato, -n PML_______'
-         DO j = 0, sgg%NumMedia
+         write(q,*) '____ 1-Sustrato, -n PML_______'
+         do j = 0, sgg%NumMedia
             INTJ=J
-            WRITE (q,*) '_____________________________'
-            WRITE (q,*) 'MEDIO :  ', chartranslate (Intj)
-            WRITE (q,*) 'Priority ', sgg%Med(j)%Priority
-            WRITE (q,*) 'Epr ', sgg%Med(j)%Epr
-            WRITE (q,*) 'Sigma ', sgg%Med(j)%Sigma
-            WRITE (q,*) 'Mur ', sgg%Med(j)%Mur
-            WRITE (q,*) 'Is PML ', sgg%Med(j)%Is%PML
-            WRITE (q,*) 'Is PEC ', sgg%Med(j)%Is%PEC
-            WRITE (q,*) 'SigmaM ', sgg%Med(j)%SigmaM
-            WRITE (q,*) 'Is ThinWIRE ', sgg%Med(j)%Is%ThinWire
-            WRITE (q,*) 'Is SlantedWIRE ', sgg%Med(j)%Is%SlantedWire
-            WRITE (q,*) 'Is EDispersive ', sgg%Med(j)%Is%EDispersive
-            WRITE (q,*) 'Is MDispersive ', sgg%Med(j)%Is%MDispersive
-            WRITE (q,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
-            WRITE (q,*) 'Is SGBC ', sgg%Med(j)%Is%SGBC
-            WRITE (q,*) 'Is Lossy ', sgg%Med(j)%Is%Lossy
-            WRITE (q,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
-            WRITE (q,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
-            WRITE (q,*) 'Is MultiportPadding ', sgg%Med(j)%Is%multiportpadding
-            WRITE (q,*) 'Is Dielectric ', sgg%Med(j)%Is%dielectric
-            WRITE (q,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
-            WRITE (q,*) 'Is Anisotropic ', sgg%Med(j)%Is%Anisotropic
-            WRITE (q,*) 'Is Needed ', sgg%Med(j)%Is%Needed
-            WRITE (q,*) 'Is already_YEEadvanced_byconformal ', sgg%Med(j)%Is%already_YEEadvanced_byconformal
-            WRITE (q,*) 'Is split_and_useless ', sgg%Med(j)%Is%split_and_useless
-            WRITE (q,*) 'Is Volume ', sgg%Med(j)%Is%Volume
-            WRITE (q,*) 'Is Surface ', sgg%Med(j)%Is%Surface
-            WRITE (q,*) 'Is Line ', sgg%Med(j)%Is%Line
-         END DO
+            write(q,*) '_____________________________'
+            write(q,*) 'MEDIO :  ', chartranslate (Intj)
+            write(q,*) 'Priority ', sgg%Med(j)%Priority
+            write(q,*) 'Epr ', sgg%Med(j)%Epr
+            write(q,*) 'Sigma ', sgg%Med(j)%Sigma
+            write(q,*) 'Mur ', sgg%Med(j)%Mur
+            write(q,*) 'Is PML ', sgg%Med(j)%Is%PML
+            write(q,*) 'Is PEC ', sgg%Med(j)%Is%PEC
+            write(q,*) 'SigmaM ', sgg%Med(j)%SigmaM
+            write(q,*) 'Is ThinWIRE ', sgg%Med(j)%Is%ThinWire
+            write(q,*) 'Is SlantedWIRE ', sgg%Med(j)%Is%SlantedWire
+            write(q,*) 'Is EDispersive ', sgg%Med(j)%Is%EDispersive
+            write(q,*) 'Is MDispersive ', sgg%Med(j)%Is%MDispersive
+            write(q,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
+            write(q,*) 'Is SGBC ', sgg%Med(j)%Is%SGBC
+            write(q,*) 'Is Lossy ', sgg%Med(j)%Is%Lossy
+            write(q,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
+            write(q,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
+            write(q,*) 'Is MultiportPadding ', sgg%Med(j)%Is%multiportpadding
+            write(q,*) 'Is Dielectric ', sgg%Med(j)%Is%dielectric
+            write(q,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
+            write(q,*) 'Is Anisotropic ', sgg%Med(j)%Is%Anisotropic
+            write(q,*) 'Is Needed ', sgg%Med(j)%Is%Needed
+            write(q,*) 'Is already_YEEadvanced_byconformal ', sgg%Med(j)%Is%already_YEEadvanced_byconformal
+            write(q,*) 'Is split_and_useless ', sgg%Med(j)%Is%split_and_useless
+            write(q,*) 'Is Volume ', sgg%Med(j)%Is%Volume
+            write(q,*) 'Is Surface ', sgg%Med(j)%Is%Surface
+            write(q,*) 'Is Line ', sgg%Med(j)%Is%Line
+         end do
          !
-         WRITE (i,*) campo, ' con PML IINIC, IFIN ', sgg%sweep(campo)%XI, sgg%sweep(campo)%XE
-         WRITE (i,*) campo, ' con PML JINIC, JFIN ', sgg%sweep(campo)%YI, sgg%sweep(campo)%YE
-         WRITE (i,*) campo, ' con PML KINIC, KFIN ', sgg%sweep(campo)%ZI, sgg%sweep(campo)%ZE
-         WRITE (i,*) campo, ' sin PML IINIC, IFIN ', sgg%SINPMLsweep(campo)%XI, sgg%SINPMLsweep(campo)%XE
-         WRITE (i,*) campo, ' sin PML JINIC, JFIN ', sgg%SINPMLsweep(campo)%YI, sgg%SINPMLsweep(campo)%YE
-         WRITE (i,*) campo, ' sin PML KINIC, KFIN ', sgg%SINPMLsweep(campo)%ZI, sgg%SINPMLsweep(campo)%ZE
+         write(i,*) campo, ' con PML IINIC, IFIN ', sgg%sweep(campo)%XI, sgg%sweep(campo)%XE
+         write(i,*) campo, ' con PML JINIC, JFIN ', sgg%sweep(campo)%YI, sgg%sweep(campo)%YE
+         write(i,*) campo, ' con PML KINIC, KFIN ', sgg%sweep(campo)%ZI, sgg%sweep(campo)%ZE
+         write(i,*) campo, ' sin PML IINIC, IFIN ', sgg%SINPMLsweep(campo)%XI, sgg%SINPMLsweep(campo)%XE
+         write(i,*) campo, ' sin PML JINIC, JFIN ', sgg%SINPMLsweep(campo)%YI, sgg%SINPMLsweep(campo)%YE
+         write(i,*) campo, ' sin PML KINIC, KFIN ', sgg%SINPMLsweep(campo)%ZI, sgg%SINPMLsweep(campo)%ZE
          !
-         DO k = sgg%sweep(campo)%ZI, sgg%sweep(campo)%ZE
+         do k = sgg%sweep(campo)%ZI, sgg%sweep(campo)%ZE
             i = 19 + campo
-            WRITE (i, '(A)') '_______________________________________________________________________'
-            WRITE (i,*) '!!!!!!** k=', k
-            WRITE (19+campo, '(A,400a)') 'I=  |', ('0123456789', i=sgg%Alloc(campo)%XI, sgg%Alloc(campo)%XE+10, 10)
-            WRITE (19+campo, '(A)') 'J______________________________________________________________________'
-            DO j = sgg%sweep(campo)%YE, sgg%sweep(campo)%YI, - 1
+            write(i, '(A)') '_______________________________________________________________________'
+            write(i,*) '!!!!!!** k=', k
+            write(19+campo, '(A,400a)') 'I=  |', ('0123456789', i=sgg%Alloc(campo)%XI, sgg%Alloc(campo)%XE+10, 10)
+            write(19+campo, '(A)') 'J______________________________________________________________________'
+            do j = sgg%sweep(campo)%YE, sgg%sweep(campo)%YI, - 1
                SELECT CASE (campo)
                 CASE (iEx)
-                  WRITE (19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEx(i, j, k)), i=sgg%sweep(campo)%XI, &
+                  write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEx(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
                 CASE (iEy)
-                  WRITE (19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEy(i, j, k)), i=sgg%sweep(campo)%XI, &
+                  write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEy(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
                 CASE (iEz)
-                  WRITE (19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEz(i, j, k)), i=sgg%sweep(campo)%XI, &
+                  write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEz(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
                 CASE (iHx)
-                  WRITE (19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHx(i, j, k)), i=sgg%sweep(campo)%XI, &
+                  write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHx(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
                 CASE (iHy)
-                  WRITE (19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHy(i, j, k)), i=sgg%sweep(campo)%XI, &
+                  write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHy(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
                 CASE (iHz)
-                  WRITE (19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHz(i, j, k)), i=sgg%sweep(campo)%XI, &
+                  write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHz(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
-               END SELECT
-            END DO
-         END DO
-      END DO
-      DO i = 20, 25
+               end select
+            end do
+         end do
+      end do
+      do i = 20, 25
          CLOSE (i)
-      END DO
+      end do
       !
-      RETURN
+      return
       !
-   CONTAINS
+   contains
       !
       !Function to translate media indexes into characters for the mapping files
       !
-      FUNCTION chartranslate (entero) RESULT (chara)
-         INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) entero
-         CHARACTER (LEN=1) chara
-         IF (entero == 1) THEN
+      function chartranslate (entero) RESULT (chara)
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) entero
+         character(len=1) chara
+         if (entero == 1) then
             chara = '_'
-         ELSE IF (entero == 0) THEN
+         ELSE if (entero == 0) then
             chara = '0'
-         ELSE IF (entero ==-1) THEN
+         ELSE if (entero ==-1) then
             chara = '#'
          ELSE
             chara = char (48+Abs(entero))
-         END IF
-         RETURN
-      END FUNCTION chartranslate
+         end if
+         return
+      end function chartranslate
       !
-   END SUBROUTINE store_geomData
+   end subroutine store_geomData
    !
-END MODULE storeData
+end module storeData_m
 !

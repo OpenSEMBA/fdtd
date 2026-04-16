@@ -1,11 +1,11 @@
 integer function test_read_mtln() bind (C) result(err)
-   use smbjson
+   use smbjson_m
    use smbjson_testingTools
 
    implicit none
 
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mtln.fdtd.json'
-   type(Parseador) :: problem, expected
+   type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -16,32 +16,32 @@ integer function test_read_mtln() bind (C) result(err)
    call expect_eq(err, expected, problem)
 contains
    function expectedProblemDescription() result (expected)
-      type(Parseador) :: expected
+      type(Parseador_t) :: expected
       class(cable_t), pointer :: ptr
       integer :: i, j
 
       call initializeProblemDescription(expected)
 
       ! Expected general info.
-      expected%general%dt = 1e-12
+      expected%general%dt = 1e-12_RKIND
       expected%general%nmax = 1000
 
       ! Excected media matrix.
-      expected%matriz%totalX = 100
-      expected%matriz%totalY = 7
-      expected%matriz%totalZ = 2
+      expected%matriz%totalX = 101
+      expected%matriz%totalY = 8
+      expected%matriz%totalZ = 3
 
       ! Expected grid.
-      expected%despl%nX = 100
-      expected%despl%nY = 7
-      expected%despl%nZ = 2
+      expected%despl%nX = 1
+      expected%despl%nY = 1
+      expected%despl%nZ = 1
 
-      allocate(expected%despl%desX(100))
-      allocate(expected%despl%desY(7))
-      allocate(expected%despl%desZ(2))
-      expected%despl%desX = 0.1
-      expected%despl%desY = 0.1
-      expected%despl%desZ = 0.1
+      allocate(expected%despl%desX(1:1))
+      allocate(expected%despl%desY(1:1))
+      allocate(expected%despl%desZ(1:1))
+      expected%despl%desX = 0.1_RKIND
+      expected%despl%desY = 0.1_RKIND
+      expected%despl%desZ = 0.1_RKIND
       expected%despl%mx1 = 0
       expected%despl%mx2 = 100
       expected%despl%my1 = 0
@@ -84,41 +84,41 @@ contains
       !connectors
       ! id = 24
       ! expected%mtln%has_multiwires = .true.
-      expected%mtln%time_step = 1e-12
+      expected%mtln%time_step = 1e-12_RKIND
       expected%mtln%number_of_steps = 1000
 
       allocate(expected%mtln%connectors(4))
 
       allocate(expected%mtln%connectors(1)%resistances(1))
       expected%mtln%connectors(1)%id = 24
-      expected%mtln%connectors(1)%resistances = [100.0e-3]
+      expected%mtln%connectors(1)%resistances = [100.0e-3_RKIND]
       allocate(expected%mtln%connectors(1)%transfer_impedances_per_meter(0))
 
       ! id = 25
       allocate(expected%mtln%connectors(2)%resistances(1))
       expected%mtln%connectors(2)%id = 25
-      expected%mtln%connectors(2)%resistances = [19.0]
+      expected%mtln%connectors(2)%resistances = [19.0_RKIND]
       allocate(expected%mtln%connectors(2)%transfer_impedances_per_meter(0))
 
       ! id = 204
       allocate(expected%mtln%connectors(3)%resistances(1))
       expected%mtln%connectors(3)%id = 204
-      expected%mtln%connectors(3)%resistances = [100.0e-3]
+      expected%mtln%connectors(3)%resistances = [100.0e-3_RKIND]
       allocate(expected%mtln%connectors(3)%transfer_impedances_per_meter(1))
       expected%mtln%connectors(3)%transfer_impedances_per_meter(1)%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-      expected%mtln%connectors(3)%transfer_impedances_per_meter(1)%resistive_term = 3.33
-      expected%mtln%connectors(3)%transfer_impedances_per_meter(1)%inductive_term = 2.6e-9
+      expected%mtln%connectors(3)%transfer_impedances_per_meter(1)%resistive_term = 3.33_RKIND
+      expected%mtln%connectors(3)%transfer_impedances_per_meter(1)%inductive_term = 2.6e-9_RKIND
       allocate(expected%mtln%connectors(3)%transfer_impedances_per_meter(1)%poles(0))
       allocate(expected%mtln%connectors(3)%transfer_impedances_per_meter(1)%residues(0))
 
       ! id = 205
       allocate(expected%mtln%connectors(4)%resistances(1))
       expected%mtln%connectors(4)%id = 205
-      expected%mtln%connectors(4)%resistances = [19.0]
+      expected%mtln%connectors(4)%resistances = [19.0_RKIND]
       allocate(expected%mtln%connectors(4)%transfer_impedances_per_meter(1))
       expected%mtln%connectors(4)%transfer_impedances_per_meter(1)%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-      expected%mtln%connectors(4)%transfer_impedances_per_meter(1)%resistive_term = 609.3
-      expected%mtln%connectors(4)%transfer_impedances_per_meter(1)%inductive_term = 2.6e-9
+      expected%mtln%connectors(4)%transfer_impedances_per_meter(1)%resistive_term = 609.3_RKIND
+      expected%mtln%connectors(4)%transfer_impedances_per_meter(1)%inductive_term = 2.6e-9_RKIND
       allocate(expected%mtln%connectors(4)%transfer_impedances_per_meter(1)%poles(0))
       allocate(expected%mtln%connectors(4)%transfer_impedances_per_meter(1)%residues(0))
 
@@ -133,15 +133,15 @@ contains
       select type(ptr)
       type is (unshielded_multiwire_t)
          ptr%name = "line_0_0"
-         ptr%cell_inductance_per_meter = reshape( source = [5.481553487168089e-07], shape = [ 1,1 ] )
-         ptr%cell_capacitance_per_meter = reshape( source = [2.0270004E-11], shape = [ 1,1 ] )
-         ptr%resistance_per_meter =  reshape(source=[22.9e-3], shape=[1,1])
+         ptr%cell_inductance_per_meter = reshape( source = [5.481553487168089e-07_RKIND], shape = [ 1,1 ] )
+         ptr%cell_capacitance_per_meter = reshape( source = [2.0270004E-11_RKIND], shape = [ 1,1 ] )
+         ptr%resistance_per_meter =  reshape(source=[22.9e-3_RKIND], shape=[1,1])
          
          deallocate(ptr%multipolar_expansion)
          allocate(ptr%multipolar_expansion(0))
 
          allocate(ptr%step_size(9))
-         ptr%step_size = [(0.1, i = 1, 9)]
+         ptr%step_size = [(0.1_RKIND, i = 1, 9)]
          allocate(ptr%segments(9))
          do i = 1, 9
             ptr%segments(i)%x = i
@@ -160,12 +160,12 @@ contains
       select type(ptr)
       type is (shielded_multiwire_t)
          ptr%name = "line_1_0"
-         ptr%inductance_per_meter = reshape(source=[8.802075200000001e-08], shape=[1,1])
-         ptr%capacitance_per_meter = reshape(source=[5.5840010E-10], shape=[1,1])
-         ptr%resistance_per_meter = reshape(source=[3.9e-3], shape=[1,1])
+         ptr%inductance_per_meter = reshape(source=[8.802075200000001e-08_RKIND], shape=[1,1])
+         ptr%capacitance_per_meter = reshape(source=[5.5840010E-10_RKIND], shape=[1,1])
+         ptr%resistance_per_meter = reshape(source=[3.9e-3_RKIND], shape=[1,1])
 
          allocate(ptr%step_size(9))
-         ptr%step_size =  [(0.1, i = 1, 9)]
+         ptr%step_size =  [(0.1_RKIND, i = 1, 9)]
 
          allocate(ptr%segments(9))
          do i = 1, 9
@@ -176,8 +176,8 @@ contains
          end do
 
          ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-         ptr%transfer_impedance%resistive_term = 0.0
-         ptr%transfer_impedance%inductive_term = 8.9e-9
+         ptr%transfer_impedance%resistive_term = 0.0_RKIND
+         ptr%transfer_impedance%inductive_term = 8.9e-9_RKIND
          allocate(ptr%transfer_impedance%poles(0))
          allocate(ptr%transfer_impedance%residues(0))
 
@@ -194,30 +194,30 @@ contains
       type is (shielded_multiwire_t)
          ptr%name = "line_2_0"
          ptr%inductance_per_meter(1:2,1:2) = & 
-            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+            reshape(source=[2.4382084E-07_RKIND, 4.7377505E-08_RKIND, 4.7377508E-08_RKIND, 2.4382081E-07_RKIND], shape=[2,2], order =[2,1])
          ptr%inductance_per_meter(3:4,3:4) = & 
-            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+            reshape(source=[2.4382084E-07_RKIND, 4.7377505E-08_RKIND, 4.7377508E-08_RKIND, 2.4382081E-07_RKIND], shape=[2,2], order =[2,1])
          ptr%inductance_per_meter(5:6,5:6) = & 
-            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+            reshape(source=[2.4382084E-07_RKIND, 4.7377505E-08_RKIND, 4.7377508E-08_RKIND, 2.4382081E-07_RKIND], shape=[2,2], order =[2,1])
          ptr%inductance_per_meter(7:8,7:8) = & 
-            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+            reshape(source=[2.4382084E-07_RKIND, 4.7377505E-08_RKIND, 4.7377508E-08_RKIND, 2.4382081E-07_RKIND], shape=[2,2], order =[2,1])
 
          ptr%capacitance_per_meter(1:2,1:2) = &
-            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+            reshape(source=[105.5e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 105.5e-12_RKIND], shape=[2,2], order =[2,1])
          ptr%capacitance_per_meter(3:4,3:4) = &
-            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+            reshape(source=[105.5e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 105.5e-12_RKIND], shape=[2,2], order =[2,1])
          ptr%capacitance_per_meter(5:6,5:6) = &
-            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+            reshape(source=[105.5e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 105.5e-12_RKIND], shape=[2,2], order =[2,1])
          ptr%capacitance_per_meter(7:8,7:8) = &
-            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+            reshape(source=[105.5e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 105.5e-12_RKIND], shape=[2,2], order =[2,1])
 
 
          do i = 1, 8
-            ptr%resistance_per_meter(i,i) =  62.0e-3
+            ptr%resistance_per_meter(i,i) =  62.0e-3_RKIND
          end do
 
          allocate(ptr%step_size(9))
-         ptr%step_size =  [(0.1, i = 1, 9)]      
+         ptr%step_size =  [(0.1_RKIND, i = 1, 9)]      
 
          allocate(ptr%segments(9))
          do i = 1, 9
@@ -230,8 +230,8 @@ contains
 
 
          ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-         ptr%transfer_impedance%resistive_term = 0.0
-         ptr%transfer_impedance%inductive_term = 4.2e-9
+         ptr%transfer_impedance%resistive_term = 0.0_RKIND
+         ptr%transfer_impedance%inductive_term = 4.2e-9_RKIND
          allocate(ptr%transfer_impedance%poles(0))
          allocate(ptr%transfer_impedance%residues(0))
 
@@ -249,15 +249,15 @@ contains
       type is (unshielded_multiwire_t)
          ptr%name = "line_0_1"
 
-         ptr%cell_inductance_per_meter = reshape( source = [6.482560773828984e-07], shape = [ 1,1 ] )
-         ptr%cell_capacitance_per_meter = reshape( source = [1.7140003E-11], shape = [ 1,1 ] )
-         ptr%resistance_per_meter =  reshape(source=[11.8e-3], shape=[1,1])
+         ptr%cell_inductance_per_meter = reshape( source = [6.482560773828984e-07_RKIND], shape = [ 1,1 ] )
+         ptr%cell_capacitance_per_meter = reshape( source = [1.7140003E-11_RKIND], shape = [ 1,1 ] )
+         ptr%resistance_per_meter =  reshape(source=[11.8e-3_RKIND], shape=[1,1])
          
          deallocate(ptr%multipolar_expansion)
          allocate(ptr%multipolar_expansion(0))
 
          allocate(ptr%step_size(8))
-         ptr%step_size = [(0.1, i = 1, 8)]
+         ptr%step_size = [(0.1_RKIND, i = 1, 8)]
 
          allocate(ptr%segments(8))
          do i = 1, 8
@@ -276,13 +276,13 @@ contains
       select type(ptr)
       type is (shielded_multiwire_t)
          ptr%name = "line_1_1"
-         ptr%inductance_per_meter = reshape(source=[1.37228e-07], shape=[1,1])
-         ptr%capacitance_per_meter = reshape(source=[3.2310005E-10], shape=[1,1])
-         ptr%resistance_per_meter = reshape(source=[12.2e-3], shape=[1,1])
-         ptr%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
+         ptr%inductance_per_meter = reshape(source=[1.37228e-07_RKIND], shape=[1,1])
+         ptr%capacitance_per_meter = reshape(source=[3.2310005E-10_RKIND], shape=[1,1])
+         ptr%resistance_per_meter = reshape(source=[12.2e-3_RKIND], shape=[1,1])
+         ptr%conductance_per_meter = reshape(source=[0.0_RKIND], shape=[1,1])
 
          allocate(ptr%step_size(8))
-         ptr%step_size =  [(0.1, i = 1, 8)]
+         ptr%step_size =  [(0.1_RKIND, i = 1, 8)]
 
          allocate(ptr%segments(8))
          do i = 1, 8
@@ -293,8 +293,8 @@ contains
          end do
 
          ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-         ptr%transfer_impedance%resistive_term = 0.0
-         ptr%transfer_impedance%inductive_term = 7.4e-9
+         ptr%transfer_impedance%resistive_term = 0.0_RKIND
+         ptr%transfer_impedance%inductive_term = 7.4e-9_RKIND
          allocate(ptr%transfer_impedance%poles(0))
          allocate(ptr%transfer_impedance%residues(0))
 
@@ -311,17 +311,17 @@ contains
       type is (shielded_multiwire_t)
          ptr%name = "line_2_4"
          ptr%inductance_per_meter(1:2,1:2) = & 
-            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+            reshape(source=[2.4382084E-07_RKIND, 4.7377505E-08_RKIND, 4.7377508E-08_RKIND, 2.4382081E-07_RKIND], shape=[2,2], order =[2,1])
 
          ptr%capacitance_per_meter(1:2,1:2) = &
-            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+            reshape(source=[105.5e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 105.5e-12_RKIND], shape=[2,2], order =[2,1])
 
          do i = 1, 2
-            ptr%resistance_per_meter(i,i) = 62.0e-3
+            ptr%resistance_per_meter(i,i) = 62.0e-3_RKIND
          end do
 
          allocate(ptr%step_size(8))
-         ptr%step_size =  [(0.1, i = 1, 8)]
+         ptr%step_size =  [(0.1_RKIND, i = 1, 8)]
 
          allocate(ptr%segments(8))
          do i = 1, 8
@@ -333,8 +333,8 @@ contains
 
 
          ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-         ptr%transfer_impedance%resistive_term = 0.0
-         ptr%transfer_impedance%inductive_term = 4.2e-9
+         ptr%transfer_impedance%resistive_term = 0.0_RKIND
+         ptr%transfer_impedance%inductive_term = 4.2e-9_RKIND
          allocate(ptr%transfer_impedance%poles(0))
          allocate(ptr%transfer_impedance%residues(0))
 
@@ -350,15 +350,15 @@ contains
       select type(ptr)
       type is (unshielded_multiwire_t)
          ptr%name = "line_0_2"
-         ptr%cell_inductance_per_meter = reshape( source = [5.802145885361537e-07], shape = [ 1,1 ] )
-         ptr%cell_capacitance_per_meter = reshape( source = [1.9150003E-11], shape = [ 1,1 ] )
-         ptr%resistance_per_meter =  reshape(source=[17.3e-3], shape=[1,1])
+         ptr%cell_inductance_per_meter = reshape( source = [5.802145885361537e-07_RKIND], shape = [ 1,1 ] )
+         ptr%cell_capacitance_per_meter = reshape( source = [1.9150003E-11_RKIND], shape = [ 1,1 ] )
+         ptr%resistance_per_meter =  reshape(source=[17.3e-3_RKIND], shape=[1,1])
          
          deallocate(ptr%multipolar_expansion)
          allocate(ptr%multipolar_expansion(0))
 
          allocate(ptr%step_size(7))
-         ptr%step_size = [(0.1, i = 1, 7)]
+         ptr%step_size = [(0.1_RKIND, i = 1, 7)]
 
          allocate(ptr%segments(7))
          do i = 1,7
@@ -378,13 +378,13 @@ contains
       select type(ptr)
       type is (shielded_multiwire_t)
          ptr%name = "line_1_2"
-         ptr%inductance_per_meter = reshape(source=[9.1890502e-08], shape=[1,1])
-         ptr%capacitance_per_meter = reshape(source=[4.7190007E-10], shape=[1,1])
-         ptr%resistance_per_meter = reshape(source=[6.5e-3], shape=[1,1])
-         ptr%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
+         ptr%inductance_per_meter = reshape(source=[9.1890502e-08_RKIND], shape=[1,1])
+         ptr%capacitance_per_meter = reshape(source=[4.7190007E-10_RKIND], shape=[1,1])
+         ptr%resistance_per_meter = reshape(source=[6.5e-3_RKIND], shape=[1,1])
+         ptr%conductance_per_meter = reshape(source=[0.0_RKIND], shape=[1,1])
 
          allocate(ptr%step_size(7))
-         ptr%step_size =  [(0.1, i = 1, 7)]
+         ptr%step_size =  [(0.1_RKIND, i = 1, 7)]
 
          allocate(ptr%segments(7))
          do i = 1,7
@@ -395,8 +395,8 @@ contains
          end do
 
          ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-         ptr%transfer_impedance%resistive_term = 0.0
-         ptr%transfer_impedance%inductive_term = 3.0e-9
+         ptr%transfer_impedance%resistive_term = 0.0_RKIND
+         ptr%transfer_impedance%inductive_term = 3.0e-9_RKIND
          allocate(ptr%transfer_impedance%poles(0))
          allocate(ptr%transfer_impedance%residues(0))
 
@@ -413,24 +413,24 @@ contains
       type is (shielded_multiwire_t)
          ptr%name = "line_2_5"
          ptr%inductance_per_meter(1:2,1:2) = & 
-            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+            reshape(source=[2.4382084E-07_RKIND, 4.7377505E-08_RKIND, 4.7377508E-08_RKIND, 2.4382081E-07_RKIND], shape=[2,2], order =[2,1])
          ptr%inductance_per_meter(3:4,3:4) = & 
-            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+            reshape(source=[2.4382084E-07_RKIND, 4.7377505E-08_RKIND, 4.7377508E-08_RKIND, 2.4382081E-07_RKIND], shape=[2,2], order =[2,1])
          ptr%inductance_per_meter(5:6,5:6) = & 
-            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+            reshape(source=[2.4382084E-07_RKIND, 4.7377505E-08_RKIND, 4.7377508E-08_RKIND, 2.4382081E-07_RKIND], shape=[2,2], order =[2,1])
 
          ptr%capacitance_per_meter(1:2,1:2) = &
-            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+            reshape(source=[105.5e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 105.5e-12_RKIND], shape=[2,2], order =[2,1])
          ptr%capacitance_per_meter(3:4,3:4) = &
-            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+            reshape(source=[105.5e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 105.5e-12_RKIND], shape=[2,2], order =[2,1])
          ptr%capacitance_per_meter(5:6,5:6) = &
-            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+            reshape(source=[105.5e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 105.5e-12_RKIND], shape=[2,2], order =[2,1])
 
          do i = 1, 6
-            ptr%resistance_per_meter(i,i) = 62.0e-3
+            ptr%resistance_per_meter(i,i) = 62.0e-3_RKIND
          end do
          allocate(ptr%step_size(7))
-         ptr%step_size =  [(0.1, i = 1, 7)]
+         ptr%step_size =  [(0.1_RKIND, i = 1, 7)]
 
          allocate(ptr%segments(7))
          do i = 1,7
@@ -441,8 +441,8 @@ contains
          end do
 
          ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-         ptr%transfer_impedance%resistive_term = 0.0
-         ptr%transfer_impedance%inductive_term = 4.2e-9
+         ptr%transfer_impedance%resistive_term = 0.0_RKIND
+         ptr%transfer_impedance%inductive_term = 4.2e-9_RKIND
          allocate(ptr%transfer_impedance%poles(0))
          allocate(ptr%transfer_impedance%residues(0))
 
@@ -511,14 +511,14 @@ contains
       expected%mtln%networks(1)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
       expected%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)%ptr
       expected%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%resistance = 0.7e-3
+      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%resistance = 0.7e-3_RKIND
 
       allocate(expected%mtln%networks(1)%connections(2)%nodes(1))
       expected%mtln%networks(1)%connections(2)%nodes(1)%conductor_in_cable = 1
       expected%mtln%networks(1)%connections(2)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
       expected%mtln%networks(1)%connections(2)%nodes(1)%belongs_to_cable => expected%mtln%cables(2)%ptr
       expected%mtln%networks(1)%connections(2)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(1)%connections(2)%nodes(1)%termination%resistance = 1e-6
+      expected%mtln%networks(1)%connections(2)%nodes(1)%termination%resistance = 1e-6_RKIND
 
       do i = 3, 10
          allocate(expected%mtln%networks(1)%connections(i)%nodes(1))
@@ -528,33 +528,33 @@ contains
       end do
 
       expected%mtln%networks(1)%connections(4)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(1)%connections(4)%nodes(1)%termination%resistance = 1e10
+      expected%mtln%networks(1)%connections(4)%nodes(1)%termination%resistance = 1e10_RKIND
       expected%mtln%networks(1)%connections(6)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(1)%connections(6)%nodes(1)%termination%resistance = 1e10
+      expected%mtln%networks(1)%connections(6)%nodes(1)%termination%resistance = 1e10_RKIND
       expected%mtln%networks(1)%connections(8)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(1)%connections(8)%nodes(1)%termination%resistance = 1e10
+      expected%mtln%networks(1)%connections(8)%nodes(1)%termination%resistance = 1e10_RKIND
       expected%mtln%networks(1)%connections(10)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(1)%connections(10)%nodes(1)%termination%resistance = 1e10
+      expected%mtln%networks(1)%connections(10)%nodes(1)%termination%resistance = 1e10_RKIND
 
       expected%mtln%networks(1)%connections(3)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
-      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%resistance = 50.0
-      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%inductance = 30e-12
-      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%capacitance = 60e-9
+      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%resistance = 50.0_RKIND
+      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%inductance = 30e-12_RKIND
+      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%capacitance = 60e-9_RKIND
 
       expected%mtln%networks(1)%connections(5)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
-      expected%mtln%networks(1)%connections(5)%nodes(1)%termination%resistance = 50.0
-      expected%mtln%networks(1)%connections(5)%nodes(1)%termination%inductance = 30e-12
-      expected%mtln%networks(1)%connections(5)%nodes(1)%termination%capacitance = 60e-9
+      expected%mtln%networks(1)%connections(5)%nodes(1)%termination%resistance = 50.0_RKIND
+      expected%mtln%networks(1)%connections(5)%nodes(1)%termination%inductance = 30e-12_RKIND
+      expected%mtln%networks(1)%connections(5)%nodes(1)%termination%capacitance = 60e-9_RKIND
 
       expected%mtln%networks(1)%connections(7)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
-      expected%mtln%networks(1)%connections(7)%nodes(1)%termination%resistance = 50.0
-      expected%mtln%networks(1)%connections(7)%nodes(1)%termination%inductance = 30e-12
-      expected%mtln%networks(1)%connections(7)%nodes(1)%termination%capacitance = 60e-9
+      expected%mtln%networks(1)%connections(7)%nodes(1)%termination%resistance = 50.0_RKIND
+      expected%mtln%networks(1)%connections(7)%nodes(1)%termination%inductance = 30e-12_RKIND
+      expected%mtln%networks(1)%connections(7)%nodes(1)%termination%capacitance = 60e-9_RKIND
 
       expected%mtln%networks(1)%connections(9)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
-      expected%mtln%networks(1)%connections(9)%nodes(1)%termination%resistance = 50.0
-      expected%mtln%networks(1)%connections(9)%nodes(1)%termination%inductance = 30e-12
-      expected%mtln%networks(1)%connections(9)%nodes(1)%termination%capacitance = 60e-9
+      expected%mtln%networks(1)%connections(9)%nodes(1)%termination%resistance = 50.0_RKIND
+      expected%mtln%networks(1)%connections(9)%nodes(1)%termination%inductance = 30e-12_RKIND
+      expected%mtln%networks(1)%connections(9)%nodes(1)%termination%capacitance = 60e-9_RKIND
 
       ! NETWORK 2
       allocate(expected%mtln%networks(2)%connections(10))
@@ -573,7 +573,7 @@ contains
 
       do i = 1, 3
          expected%mtln%networks(2)%connections(1)%nodes(i)%termination%termination_type = TERMINATION_SERIES
-         expected%mtln%networks(2)%connections(1)%nodes(i)%termination%resistance = 1e-6
+         expected%mtln%networks(2)%connections(1)%nodes(i)%termination%resistance = 1e-6_RKIND
       end do
 
       allocate(expected%mtln%networks(2)%connections(2)%nodes(3))
@@ -591,7 +591,7 @@ contains
 
       do i = 1, 3
          expected%mtln%networks(2)%connections(2)%nodes(i)%termination%termination_type = TERMINATION_SERIES
-         expected%mtln%networks(2)%connections(2)%nodes(i)%termination%resistance = 1e-6
+         expected%mtln%networks(2)%connections(2)%nodes(i)%termination%resistance = 1e-6_RKIND
       end do
 
       ! NETWORK 2 - CONNECTIONS 3-10
@@ -608,7 +608,7 @@ contains
 
          do j = 1, 2
             expected%mtln%networks(2)%connections(i)%nodes(j)%termination%termination_type = TERMINATION_SERIES
-            expected%mtln%networks(2)%connections(i)%nodes(j)%termination%resistance = 1e-6
+            expected%mtln%networks(2)%connections(i)%nodes(j)%termination%resistance = 1e-6_RKIND
          end do
 
       end do
@@ -626,7 +626,7 @@ contains
 
          do j = 1, 2
             expected%mtln%networks(2)%connections(i)%nodes(j)%termination%termination_type = TERMINATION_SERIES
-            expected%mtln%networks(2)%connections(i)%nodes(j)%termination%resistance = 1e-6
+            expected%mtln%networks(2)%connections(i)%nodes(j)%termination%resistance = 1e-6_RKIND
          end do
 
       end do
@@ -647,7 +647,7 @@ contains
       expected%mtln%networks(3)%connections(2)%nodes(1)%side = TERMINAL_NODE_SIDE_END
       expected%mtln%networks(3)%connections(2)%nodes(1)%belongs_to_cable => expected%mtln%cables(5)%ptr
       expected%mtln%networks(3)%connections(2)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(3)%connections(2)%nodes(1)%termination%resistance = 1e-6
+      expected%mtln%networks(3)%connections(2)%nodes(1)%termination%resistance = 1e-6_RKIND
 
       do i = 3, 4
          allocate(expected%mtln%networks(3)%connections(i)%nodes(1))
@@ -670,14 +670,14 @@ contains
       expected%mtln%networks(4)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_END
       expected%mtln%networks(4)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(7)%ptr
       expected%mtln%networks(4)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(4)%connections(1)%nodes(1)%termination%resistance = 0.7e-3
+      expected%mtln%networks(4)%connections(1)%nodes(1)%termination%resistance = 0.7e-3_RKIND
 
       allocate(expected%mtln%networks(4)%connections(2)%nodes(1))
       expected%mtln%networks(4)%connections(2)%nodes(1)%conductor_in_cable = 1
       expected%mtln%networks(4)%connections(2)%nodes(1)%side = TERMINAL_NODE_SIDE_END
       expected%mtln%networks(4)%connections(2)%nodes(1)%belongs_to_cable => expected%mtln%cables(8)%ptr
       expected%mtln%networks(4)%connections(2)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(4)%connections(2)%nodes(1)%termination%resistance = 1e-6
+      expected%mtln%networks(4)%connections(2)%nodes(1)%termination%resistance = 1e-6_RKIND
 
       do i = 3, 8
          allocate(expected%mtln%networks(4)%connections(i)%nodes(1))

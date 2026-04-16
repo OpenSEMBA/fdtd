@@ -1,6 +1,6 @@
 module mod_pointProbeOutput
-   use FDETYPES
-   use mod_UTILS
+   use FDETYPES_m
+   use utils_m
    use outputTypes
    use mod_domain
    use mod_outputUtils

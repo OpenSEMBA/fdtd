@@ -1,5 +1,5 @@
 module mod_arrayAssertionTools
-   use FDETYPES
+   use FDETYPES_m
    implicit none
    real(RKIND), parameter :: tol = 1.0e-12_RKIND
    private

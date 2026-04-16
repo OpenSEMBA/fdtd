@@ -1,7 +1,7 @@
 integer function test_termination_resistive() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
@@ -17,10 +17,10 @@ integer function test_termination_resistive() bind(C) result(error_cnt)
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind),dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind),dimension(1,1) :: gpul = 0.0
+    real(kind=rkind),dimension(1,1) :: rpul = 0.0
+    real(kind=rkind),dimension(1,1) :: cpul = 100.0e-12
     error_cnt = 0
 
     cable%name = "wire0"
@@ -101,9 +101,9 @@ integer function test_termination_resistive() bind(C) result(error_cnt)
 end function
 
 integer function test_termination_resistive_inductive() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
@@ -119,10 +119,10 @@ integer function test_termination_resistive_inductive() bind(C) result(error_cnt
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind),dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind),dimension(1,1) :: gpul = 0.0
+    real(kind=rkind),dimension(1,1) :: rpul = 0.0
+    real(kind=rkind),dimension(1,1) :: cpul = 100.0e-12
 
     error_cnt = 0
 
@@ -204,9 +204,9 @@ integer function test_termination_resistive_inductive() bind(C) result(error_cnt
 end function
 
 integer function test_termination_resistive_capacitive_parallel() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: square_excitation = &
@@ -223,10 +223,10 @@ integer function test_termination_resistive_capacitive_parallel() bind(C) result
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind),dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind),dimension(1,1) :: gpul = 0.0
+    real(kind=rkind),dimension(1,1) :: rpul = 0.0
+    real(kind=rkind),dimension(1,1) :: cpul = 100.0e-12
 
     error_cnt = 0
 
@@ -308,9 +308,9 @@ integer function test_termination_resistive_capacitive_parallel() bind(C) result
 end function
 
 integer function test_termination_rls_cp() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: square_excitation = &
@@ -327,10 +327,10 @@ integer function test_termination_rls_cp() bind(C) result(error_cnt)
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
 
     error_cnt = 0
 
@@ -412,9 +412,9 @@ integer function test_termination_rls_cp() bind(C) result(error_cnt)
 end function
 
 integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_gauss.exc'
@@ -430,10 +430,10 @@ integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
 
     real :: final_time
 
@@ -521,9 +521,9 @@ integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
 end function
 
 integer function test_termination_rcp() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: square_excitation = &
@@ -540,10 +540,10 @@ integer function test_termination_rcp() bind(C) result(error_cnt)
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
 
     error_cnt = 0
 
@@ -625,9 +625,9 @@ integer function test_termination_rcp() bind(C) result(error_cnt)
 end function
 
 integer function test_termination_resistive_capacitive() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     ! character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
@@ -644,10 +644,10 @@ integer function test_termination_resistive_capacitive() bind(C) result(error_cn
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
 
     error_cnt = 0
 
@@ -729,9 +729,9 @@ integer function test_termination_resistive_capacitive() bind(C) result(error_cn
 end function
 
 integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)    
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     ! character(len=*), parameter :: filename = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.5_square.smb.json'
@@ -748,10 +748,10 @@ integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
 
     character(20) :: charR, charL, charC, lineC
     integer :: i
@@ -769,7 +769,7 @@ integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)
         external_field_segments(i)%field => null()
     end do
     cable%external_field_segments = external_field_segments
-    cable%step_size = [(4.0, i = 1, 100)]
+    cable%step_size = [(4.0_rkind, i = 1, 100)]
 
     parsed%time_step = 2e-8
     parsed%number_of_steps = 20e-6/parsed%time_step
@@ -854,9 +854,9 @@ integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)
 end function
 
 integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)    
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.05_triangle.exc'
@@ -872,10 +872,10 @@ integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
 
     character(20) :: charR, charL, charC, lineC
     integer :: i 
@@ -894,7 +894,7 @@ integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)
         external_field_segments(i)%field => null()
     end do
     cable%external_field_segments = external_field_segments
-    cable%step_size = [(4.0, i = 1, 100)]
+    cable%step_size = [(4.0_rkind, i = 1, 100)]
 
     parsed%time_step = 2e-8
     parsed%number_of_steps = 20e-6/parsed%time_step
@@ -977,9 +977,9 @@ integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)
 end function
 
 integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)    
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     ! character(len=*), parameter :: filename = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_square.smb.json'
@@ -996,10 +996,10 @@ integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)
     type(parsed_probe_t) :: probe_v_left, probe_v_right, probe_v_mid, probe_i_left, probe_i_right, probe_i_mid
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.805756e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 117.791e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.805756e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 117.791e-12
 
 
     character(20) :: charR, charL, charC, lineC
@@ -1107,9 +1107,9 @@ integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)
 end function 
 
 integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)    
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_pulse.exc'
@@ -1124,10 +1124,10 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
     type(parsed_probe_t) :: probe_v_left, probe_v_right, probe_v_mid, probe_i_left, probe_i_right, probe_i_mid
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(2,2) :: lpul = reshape( source = [0.805756e-6, 0.538771e-6, 0.538771e-6, 1.07754e-6], shape = [2,2])
-    real,dimension(2,2) :: gpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
-    real,dimension(2,2) :: rpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
-    real,dimension(2,2) :: cpul = reshape( source = [117.791e-12, -58.8956e-12, -58.8956e-12, 71.8544e-12], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: lpul = reshape( source = [0.805756e-6_rkind, 0.538771e-6_rkind, 0.538771e-6_rkind, 1.07754e-6_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: gpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: rpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: cpul = reshape( source = [117.791e-12_rkind, -58.8956e-12_rkind, -58.8956e-12_rkind, 71.8544e-12_rkind], shape = [2,2])
 
 
     character(20) :: charR, charL, charC, lineC
@@ -1283,9 +1283,9 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
 end function 
 
 integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt)    
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_11_20ns.exc'
@@ -1300,10 +1300,10 @@ integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt
     type(parsed_probe_t) :: probe_v_101, probe_v_201
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(2,2) :: lpul = reshape( source = [0.7485e-6, 0.5077e-6, 0.5077e-6, 1.0154e-6], shape = [2,2])
-    real,dimension(2,2) :: gpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
-    real,dimension(2,2) :: rpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
-    real,dimension(2,2) :: cpul = reshape( source = [37.432e-12, -18.716e-12, -18.716e-12, 24.982e-12], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: lpul = reshape( source = [0.7485e-6_rkind, 0.5077e-6_rkind, 0.5077e-6_rkind, 1.0154e-6_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: gpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: rpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: cpul = reshape( source = [37.432e-12_rkind, -18.716e-12_rkind, -18.716e-12_rkind, 24.982e-12_rkind], shape = [2,2])
 
     real :: final_time
 
@@ -1318,7 +1318,7 @@ integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt
     cable%capacitance_per_meter = cpul
     block
         integer :: i
-        cable%step_size = [(1.0, i = 1, 2)]
+        cable%step_size = [(1.0_rkind, i = 1, 2)]
     end block
 
     final_time = 200e-9
@@ -1399,9 +1399,9 @@ integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt
 end function 
 
 integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)    
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_11_1ns.exc'
@@ -1416,10 +1416,10 @@ integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)
     type(parsed_probe_t) :: probe_v_101, probe_v_201
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(2,2) :: lpul = reshape( source = [0.7485e-6, 0.5077e-6, 0.5077e-6, 1.0154e-6], shape = [2,2])
-    real,dimension(2,2) :: gpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
-    real,dimension(2,2) :: rpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
-    real,dimension(2,2) :: cpul = reshape( source = [37.432e-12, -18.716e-12, -18.716e-12, 24.982e-12], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: lpul = reshape( source = [0.7485e-6_rkind, 0.5077e-6_rkind, 0.5077e-6_rkind, 1.0154e-6_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: gpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: rpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: cpul = reshape( source = [37.432e-12_rkind, -18.716e-12_rkind, -18.716e-12_rkind, 24.982e-12_rkind], shape = [2,2])
 
     real :: final_time
 
@@ -1434,7 +1434,7 @@ integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)
     cable%capacitance_per_meter = cpul
     block
         integer :: i
-        cable%step_size = [(0.02, i = 1, 100)]
+        cable%step_size = [(0.02_rkind, i = 1, 100)]
     end block
 
     final_time = 200e-9

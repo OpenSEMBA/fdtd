@@ -1,6 +1,6 @@
 module mod_movieProbeOutput
-   use FDETYPES
-   USE mod_UTILS
+   use FDETYPES_m
+   use utils_m
    use Report
    use outputTypes
    use mod_outputUtils

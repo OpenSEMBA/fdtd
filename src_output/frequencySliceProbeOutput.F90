@@ -1,11 +1,11 @@
 module mod_frequencySliceProbeOutput
-   use FDETYPES
-   use mod_UTILS
+   use FDETYPES_m
+   use utils_m
    use Report
    use outputTypes
    use mod_outputUtils
    use mod_volumicProbeUtils
-   use mod_directoryUtils
+   use directoryUtils_m
    use HDF5
    use mod_xdmfAPI
    implicit none

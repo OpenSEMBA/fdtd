@@ -1,9 +1,9 @@
 module mod_mapVTKOutput
-   use FDETYPES
+   use FDETYPES_m
    use outputTypes
    use mod_outputUtils
-   use mod_directoryUtils
-   use mod_allocationUtils
+   use directoryUtils_m
+   use allocationUtils_m
    use mod_vtkAPI
    use mod_volumicProbeUtils
    use Report

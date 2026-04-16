@@ -1,11 +1,11 @@
-module multipolar_expansion_mod
+module multipolar_expansion_m
 
-   use mtln_types_mod
-   use Report
-   use FDETypes, only: pi, EPSILON_VACUUM, MU_VACUUM
+   use mtln_types_m
+   use Report_m
+   use FDETYPES_m, only: pi, EPSILON_VACUUM, MU_VACUUM, RKIND
 
    type, private :: integration_grid_t
-      real, dimension(:), allocatable :: x, y
+      real(kind=rkind), dimension(:), allocatable :: x, y
    end type
 
 contains
@@ -17,12 +17,12 @@ contains
 
       implicit none
 
-      real, intent(in) :: position(2)
-      real, intent(in) :: expansionCenter(2)
+      real(kind=rkind), intent(in) :: position(2)
+      real(kind=rkind), intent(in) :: expansionCenter(2)
       type(multipolar_coefficient_t), dimension(:), intent(in) :: ab
-      real :: res
+      real(kind=rkind) :: res
 
-      real :: rVec(2), r, phi
+      real(kind=rkind) :: rVec(2), r, phi
       integer :: n
 
       rVec = position - expansionCenter
@@ -48,10 +48,10 @@ contains
       type(integration_grid_t) :: res
 
       integer, parameter :: GRID_INTEGRATION_SAMPLING_POINTS = 100
-      real :: minval, maxval, step
+      real(kind=rkind) :: minval, maxval, step
       integer :: x, k
-      real, allocatable :: controlPoints(:)
-      real, allocatable :: allPoints(:)
+      real(kind=rkind), allocatable :: controlPoints(:)
+      real(kind=rkind), allocatable :: allPoints(:)
       integer :: i, j
 
       ! Preconditions
@@ -63,7 +63,7 @@ contains
       end if
 
       block
-         real, dimension(2) :: innerRegionSize, integrationBoxSize         
+         real(kind=rkind), dimension(2) :: innerRegionSize, integrationBoxSize         
          innerRegionSize = innerRegionBox%max - innerRegionBox%min
          integrationBoxSize = integrationBox%max - integrationBox%min
          if (any(integrationBoxSize < innerRegionSize * 1.25)) then
@@ -102,26 +102,26 @@ contains
       end do
    end function
 
-   real function boxArea(box) result(res)
+   real(kind=rkind) function boxArea(box) result(res)
       type(box_2d_t), intent(in) :: box
       res = (box%max(1) - box%min(1)) * (box%max(2) - box%min(2))
    end function
 
    logical function isWithinBox(box, point) result(res)
       type(box_2d_t), intent(in) :: box
-      real, dimension(2), intent(in) :: point
+      real(kind=rkind), dimension(2), intent(in) :: point
       res = all(point >= box%min) .and. all(point <= box%max)
    end function
 
    function getAveragePotential(potential, innerBox, outerBox) result(avVj)
       type(field_reconstruction_t), intent(in) :: potential
       type(box_2d_t), intent(in) :: innerBox, outerBox
-      real :: avVj
+      real(kind=rkind) :: avVj
 
       type(integration_grid_t) :: integrationGrid
-      real :: outerV, innerV, area
-      real :: xMin, xMax, yMin, yMax
-      real :: midPoint(2), center(2)
+      real(kind=rkind) :: outerV, innerV, area
+      real(kind=rkind) :: xMin, xMax, yMin, yMax
+      real(kind=rkind) :: midPoint(2), center(2)
       integer :: m, n, nx, ny
 
       integrationGrid = buildIntegrationGridForBox(outerBox, innerBox)
@@ -151,12 +151,12 @@ contains
    end function
   
    function getCellCapacitanceOnBox(multipolarExpansionParameters, cellBox) result (res)
-      real, dimension(:,:), allocatable :: res
+      real(kind=RKIND), dimension(:,:), allocatable :: res
 
       type(multipolar_expansion_t), intent(in) :: multipolarExpansionParameters
       type(box_2d_t), intent(in) :: cellBox
 
-      real :: Qj, avVj, ViWhenPrescribedVj
+      real(kind=rkind) :: Qj, avVj, ViWhenPrescribedVj
 
       integer :: i, j
       integer :: N
@@ -180,12 +180,12 @@ contains
    end function
   
    function getCellInductanceOnBox(multipolarExpansionParameters, cellBox) result (res)
-      real, dimension(:,:), allocatable :: res
+      real(kind=RKIND), dimension(:,:), allocatable :: res
 
       type(multipolar_expansion_t), intent(in) :: multipolarExpansionParameters
       type(box_2d_t), intent(in) :: cellBox
 
-      real :: Ij, avAj, ViWhenPrescribedVj
+      real(kind=rkind) :: Ij, avAj, ViWhenPrescribedVj
 
       integer :: i, j
       integer :: N
@@ -208,4 +208,4 @@ contains
 
    end function
 
-end module multipolar_expansion_mod
+end module multipolar_expansion_m

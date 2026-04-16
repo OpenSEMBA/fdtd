@@ -1,7 +1,7 @@
 integer function test_dispersive_init_1_pole() bind(C) result(error_cnt)    
-    use dispersive_mod
+    use dispersive_m
     use mtln_testingTools_mod
-    use mtl_bundle_mod
+    use mtl_bundle_m
 
     implicit none
     type(transfer_impedance_per_meter_t) :: zt
@@ -92,9 +92,9 @@ integer function test_dispersive_init_1_pole() bind(C) result(error_cnt)
 end function
 
 integer function test_dispersive_init_1_pole_lines_with_lumped() bind(C) result(error_cnt)    
-    use dispersive_mod
+    use dispersive_m
     use mtln_testingTools_mod
-    use mtl_bundle_mod
+    use mtl_bundle_m
 
     implicit none
 
@@ -208,9 +208,9 @@ integer function test_dispersive_init_1_pole_lines_with_lumped() bind(C) result(
 end function
 
 integer function test_dispersive_init_2_poles() bind(C) result(error_cnt)    
-    use dispersive_mod
+    use dispersive_m
     use mtln_testingTools_mod
-    use mtl_bundle_mod
+    use mtl_bundle_m
 
     implicit none
     type(transfer_impedance_per_meter_t) :: zt
@@ -301,9 +301,9 @@ integer function test_dispersive_init_2_poles() bind(C) result(error_cnt)
 end function
 
 integer function test_dispersive_init_1_pole_3_levels() bind(C) result(error_cnt)    
-    use dispersive_mod
+    use dispersive_m
     use mtln_testingTools_mod
-    use mtl_bundle_mod
+    use mtl_bundle_m
 
     implicit none
     type(transfer_impedance_per_meter_t) :: zt

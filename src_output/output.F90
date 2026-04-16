@@ -1,5 +1,5 @@
 module output
-   use FDETYPES
+   use FDETYPES_m
    use Report
    use mod_domain
    use mod_outputUtils
@@ -107,7 +107,7 @@ contains
 
    subroutine init_outputs(sgg, media, sinpml_fullsize, materialTags, bounds, control, observationsExists, wiresExists)
       
-      type(SGGFDTDINFO), intent(in) ::  sgg
+      type(SGGFDTDINFO_t), intent(in) ::  sgg
       type(media_matrices_t), target, intent(in) :: media
       type(limit_t), dimension(:), target, intent(in)  ::  SINPML_fullsize
       type(bounds_t),intent(in), target :: bounds
@@ -486,7 +486,7 @@ contains
    end subroutine close_pvd
 
    function get_required_output_count(sgg) result(count)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=SINGLE) ::i, count
       count = 0
       do i = 1, sgg%NumberRequest

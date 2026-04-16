@@ -3,14 +3,14 @@ integer function test_init_point_probe() bind(c) result(err)
 ! It verifies that the probe is correctly registered in the simulation outputs,
 ! that the output ID matches POINT_PROBE_ID, and that the output paths for
 ! both the probe and its time data file are correctly set and exist.
-   use FDETYPES
+   use FDETYPES_m
    use FDETYPES_TOOLS
    use output
    use outputTypes
    use mod_testOutputUtils
    use mod_sggMethods
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
    ! Parameters
@@ -23,7 +23,7 @@ integer function test_init_point_probe() bind(c) result(err)
    character(len=BUFSIZE) :: expectedProbePath
    character(len=BUFSIZE) :: expectedDataPath
 
-   type(SGGFDTDINFO)              :: sgg
+   type(SGGFDTDINFO_t)              :: sgg
    type(sim_control_t)            :: control
    type(bounds_t)                 :: bounds
    type(media_matrices_t)         :: media
@@ -88,14 +88,14 @@ integer function test_update_point_probe() bind(c) result(err)
 ! over two timesteps. It verifies that the probe correctly stores the time
 ! steps and associated field values, ensuring proper temporal tracking of
 ! measured quantities.
-   use FDETYPES
+   use FDETYPES_m
    use FDETYPES_TOOLS
    use output
    use outputTypes
    use mod_testOutputUtils
    use mod_sggMethods
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
    ! Parameters
@@ -106,7 +106,7 @@ integer function test_update_point_probe() bind(c) result(err)
    character(len=1) :: sep
    character(len=BUFSIZE) :: nEntrada
 
-   type(SGGFDTDINFO)              :: sgg
+   type(SGGFDTDINFO_t)              :: sgg
    type(sim_control_t)            :: control
    type(bounds_t)                 :: bounds
    type(media_matrices_t)         :: media
@@ -195,7 +195,7 @@ integer function test_flush_point_probe() bind(c) result(err)
    use mod_domain
    use mod_testOutputUtils
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
    ! Parameters
@@ -274,7 +274,7 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    use mod_domain
    use mod_testOutputUtils
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
    ! Parameters
@@ -374,10 +374,10 @@ integer function test_init_movie_probe() bind(c) result(err)
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
-   type(SGGFDTDINFO)              :: dummysgg
+   type(SGGFDTDINFO_t)              :: dummysgg
    type(sim_control_t)            :: dummyControl
    type(bounds_t)                 :: dummyBound
    type(XYZlimit_t)               :: dummySweep(6)
@@ -498,10 +498,10 @@ integer function test_update_movie_probe() bind(c) result(err)
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
-   type(SGGFDTDINFO)              :: dummysgg
+   type(SGGFDTDINFO_t)              :: dummysgg
    type(sim_control_t)            :: dummyControl
    type(bounds_t)                 :: dummyBound
    type(solver_output_t), pointer :: outputs(:)
@@ -642,10 +642,10 @@ integer function test_flush_movie_probe() bind(c) result(err)
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
-   type(SGGFDTDINFO)              :: dummysgg
+   type(SGGFDTDINFO_t)              :: dummysgg
    type(sim_control_t)            :: dummyControl
    type(bounds_t)                 :: dummyBound
    type(solver_output_t), pointer :: outputs(:)
@@ -808,10 +808,10 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
-   type(SGGFDTDINFO)              :: dummysgg
+   type(SGGFDTDINFO_t)              :: dummysgg
    type(sim_control_t)            :: dummyControl
    type(bounds_t)                 :: dummyBound
    type(solver_output_t), pointer :: outputs(:)
@@ -943,10 +943,10 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
-   type(SGGFDTDINFO)              :: dummysgg
+   type(SGGFDTDINFO_t)              :: dummysgg
    type(sim_control_t)            :: dummyControl
    type(bounds_t)                 :: dummyBound
    type(solver_output_t), pointer :: outputs(:)
@@ -1089,10 +1089,10 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
-   use mod_directoryUtils
+   use directoryUtils_m
    implicit none
 
-   type(SGGFDTDINFO)              :: dummysgg
+   type(SGGFDTDINFO_t)              :: dummysgg
    type(sim_control_t)            :: dummyControl
    type(bounds_t)                 :: dummyBound
    type(solver_output_t), pointer :: outputs(:)

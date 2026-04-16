@@ -1,6 +1,6 @@
 module mod_bulkProbeOutput
-   use FDETYPES
-   use mod_UTILS
+   use FDETYPES_m
+   use utils_m
    use outputTypes
    use mod_outputUtils
    implicit none

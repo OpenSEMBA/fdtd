@@ -1,5 +1,5 @@
 module mod_testOutputUtils
-   use FDETYPES
+   use FDETYPES_m
    use FDETYPES_TOOLS
    use outputTypes
    implicit none

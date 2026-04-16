@@ -4,62 +4,62 @@
 !  Borders :  PML  handling
 !  Creation date Date :  April, 8, 2010
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module BORDERS_CPML
-   use fdetypes
-   use report
+module BORDERS_CPML_m
+   use FDETYPES_m
+   use Report_m
    implicit none
    private
    !
    !
-   REAL (KIND=RKIND), parameter  ::  StaticFrequency=1.0e14_RKIND
+   real(kind=RKIND), parameter  :: StaticFrequency=1.0e14_RKIND
    ! Limits of the PML region
-   type XYZlimit_tvar
-      integer (kind=4), dimension(1:6)  ::  XI,XE,YI,YE,ZI,ZE
-   end type XYZlimit_tvar
-   type (XYZlimit_tvar), dimension(1:6)  ::    PMLc
+   type xyzlimit_var_t
+      integer(kind=4), dimension(1:6) :: XI,XE,YI,YE,ZI,ZE
+   end type xyzlimit_var_t
+   type(xyzlimit_var_t), dimension(1:6) :: PMLc
 
-   type LR
-      REAL (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Exy,Psi_Ezy,Psi_Hxy,Psi_Hzy
-      REAL (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Exyvac,Psi_Ezyvac,Psi_Hxyvac,Psi_Hzyvac
+   type LR_t
+      real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Exy,Psi_Ezy,Psi_Hxy,Psi_Hzy
+      real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Exyvac,Psi_Ezyvac,Psi_Hxyvac,Psi_Hzyvac
    end type
-   type DU
-      REAL (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Eyz,Psi_Exz,Psi_Hyz,Psi_Hxz
-      REAL (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Eyzvac,Psi_Exzvac,Psi_Hyzvac,Psi_Hxzvac
+   type DU_t
+      real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Eyz,Psi_Exz,Psi_Hyz,Psi_Hxz
+      real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Eyzvac,Psi_Exzvac,Psi_Hyzvac,Psi_Hxzvac
    end type
-   type BF
-      REAL (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Ezx,Psi_Eyx,Psi_Hzx,Psi_Hyx
-      REAL (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Ezxvac,Psi_Eyxvac,Psi_Hzxvac,Psi_Hyxvac
+   type BF_t
+      real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Ezx,Psi_Eyx,Psi_Hzx,Psi_Hyx
+      real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Ezxvac,Psi_Eyxvac,Psi_Hzxvac,Psi_Hyxvac
    end type
 
 
 
    !LOCAL VARIABLES
-   type (LR), dimension(left : right) , save ::  regLR
-   type (DU), dimension(down : up)    , save ::  regDU
-   type (BF), dimension(back : front) , save ::  regBF
-   REAL (KIND=RKIND) , pointer, dimension ( : , : ) , SAVE  ::   sig_max
-   REAL (KIND=RKIND) , pointer, dimension ( : , : ) , SAVE  ::   aPar_max ,kPar_max
-   REAL (KIND=RKIND) , pointer, dimension ( : ) , SAVE ::   P_ce_x ,P_ce_y ,P_ce_z ,P_be_x ,P_be_y ,P_be_z,&
+   type(LR_t), dimension(left : right) , save :: regLR
+   type(DU_t), dimension(down : up)    , save :: regDU
+   type(BF_t), dimension(back : front) , save :: regBF
+   real(kind=RKIND) , pointer, dimension( : , : ) , SAVE  :: sig_max
+   real(kind=RKIND) , pointer, dimension( : , : ) , SAVE  :: aPar_max ,kPar_max
+   real(kind=RKIND) , pointer, dimension( : ) , SAVE :: P_ce_x ,P_ce_y ,P_ce_z ,P_be_x ,P_be_y ,P_be_z,&
    P_cm_x ,P_cm_y,P_cm_z ,P_bm_x ,P_bm_y ,P_bm_z
-   REAL (KIND=RKIND) , pointer, dimension ( : ), SAVE  ::  ce_x ,ce_y ,ce_z ,cm_x ,cm_y ,cm_z , &
+   real(kind=RKIND) , pointer, dimension( : ), SAVE  :: ce_x ,ce_y ,ce_z ,cm_x ,cm_y ,cm_z , &
    Ice_x ,Ice_y ,Ice_z ,Icm_x ,Icm_y ,Icm_z
 
 !!!variables globales del modulo
-   REAL (KIND=RKIND), save           ::  zvac
-   REAL (KIND=RKIND), save           ::  eps0,mu0
+   real(kind=RKIND), save           :: zvac
+   real(kind=RKIND), save           :: eps0,mu0
 !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   REAL (KIND=RKIND), save     ::  alphamaxpar,alphaOrden,kappamaxpar
+   real(kind=RKIND), save     :: alphamaxpar,alphaOrden,kappamaxpar
 !cpml stretching maximum parameters !!alphamaxpar=StaticFrequency*2*pi*Eps0
-   type (limit_t), dimension(1:6), save  ::  SINPML_fullsize
-   REAL (KIND=RKIND) , dimension (:)   ,  allocatable, save    :: dxe, dye,dze,dxh,dyh,dzh
+   type(limit_t), dimension(1:6), save  :: SINPML_fullsize
+   real(kind=RKIND) , dimension(:)   ,  allocatable, save    :: dxe, dye,dze,dxh,dyh,dzh
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !
-   public  ::  InitCPMLBorders, AdvanceelectricCPML,AdvanceMagneticCPML,StoreFieldsCPMLBorders,DestroyCPMLBorders,AdvanceelectricCPML_freespace,AdvanceMagneticCPML_freespace
-   public  ::  calc_cpmlconstants
-   !!!public  ::  FreeSpace_AdvanceMagneticCPML,calc_cpmlconstants
+   public  :: InitCPMLBorders, AdvanceelectricCPML,AdvanceMagneticCPML,StoreFieldsCPMLBorders,DestroyCPMLBorders,AdvanceelectricCPML_freespace,AdvanceMagneticCPML_freespace
+   public  :: calc_cpmlconstants
+   !!!public  :: FreeSpace_AdvanceMagneticCPML,calc_cpmlconstants
 contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -67,27 +67,27 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitCPMLBorders(sgg,temp_SINPML_Fullsize,ThereArePMLBorders, control, &
    temp_dxe,temp_dye,temp_dze,temp_dxh,temp_dyh,temp_dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
-      REAL (KIND=RKIND)           ::  eps00,mu00
-      type (SGGFDTDINFO), intent(IN)         ::  sgg
-      REAL (KIND=RKIND) , dimension (:)   ,  intent(in)    ::  &
+      real(kind=RKIND) :: eps00,mu00
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      real(kind=RKIND) , dimension(:)   ,  intent(in) :: &
       temp_dxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
       temp_dye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &
       temp_dze(sgg%ALLOC(iHz)%ZI : sgg%ALLOC(iHz)%ZE), &
       temp_dxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
       temp_dyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
       temp_dzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
-      REAL (KIND=RKIND) , dimension (:)   , intent(inout)      ::  &
+      real(kind=RKIND) , dimension(:)   , intent(inout) :: &
       Idxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
       Idye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &
       Idze(sgg%ALLOC(iHz)%ZI : sgg%ALLOC(iHz)%ZE), &
       Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
       Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
       Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
-       type (limit_t), dimension(1:6),  intent(in)  ::  temp_SINPML_fullsize
+       type(limit_t), dimension(1:6),  intent(in) :: temp_SINPML_fullsize
       !!!
       type(sim_control_t), intent(in) :: control
-      logical  ::  ThereArePMLBorders
-      integer (kind=4)  ::  i,j,k,region,field
+      logical  :: ThereArePMLBorders
+      integer(kind=4) :: i,j,k,region,field
 !      character(len=BUFSIZE) :: buff
 !
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
@@ -110,14 +110,14 @@ contains
       dzh = temp_dzh
 !
       !!!
-      !character (len=BUFSIZE) :: donde
-      !integer (KIND=4) :: layoutnumber
+      !character(len=BUFSIZE) :: donde
+      !integer(kind=4) :: layoutnumber
 
       !
       ThereArePMLBorders=.false.
       if (sgg%Border%IsBackPML.or.sgg%Border%IsFrontPML.or.sgg%Border%IsLeftPML.or.sgg%Border%IsRightPML.or. &
       sgg%Border%IsUpPML.or.sgg%Border%IsDownPML) ThereArePMLBorders=.true.
-      IF (.not.(ThereArePMLBorders)) return
+      if (.not.(ThereArePMLBorders)) return
 
 
       !Find the limits of each of the 6 padding PML regions for each field component
@@ -174,8 +174,8 @@ contains
       !!! PML stuff
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      ALLOCATE (sig_max(1 : 3,1 : 2),aPar_max(1 : 3,1 : 2),kPar_max(1 : 3,1 : 2))
-      ALLOCATE (P_ce_x(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE ), &
+     allocate(sig_max(1 : 3,1 : 2),aPar_max(1 : 3,1 : 2),kPar_max(1 : 3,1 : 2))
+     allocate(P_ce_x(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE ), &
       P_ce_y(sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE ), &
       P_ce_z(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE ), &
       P_be_x(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE ), &
@@ -213,7 +213,7 @@ contains
          else
             ce_x(i) =0.0_RKIND
             Ice_x(i)=0.0_RKIND
-         endif
+         end if
       end do
       do i=sgg%ALLOC(iHx)%XI,sgg%ALLOC(iHx)%XE
          if (i <= SINPML_Fullsize(iHx)%XI-1 .and. sgg%PML%NumLayers(1,1) /= 0) then
@@ -225,7 +225,7 @@ contains
          else
             cm_x(i)=0.0_RKIND
             Icm_x(i)=0.0_RKIND
-         endif
+         end if
       end do
       do j=sgg%ALLOC(iHy)%YI,sgg%ALLOC(iHy)%YE
          if (j <= SINPML_Fullsize(iHy)%YI .and. sgg%PML%NumLayers(2,1) /= 0) then
@@ -237,7 +237,7 @@ contains
          else
             ce_y(j)=0.0_RKIND
             Ice_y(j)=0.0_RKIND
-         endif
+         end if
       end do
       do j=sgg%ALLOC(iHy)%YI,sgg%ALLOC(iHy)%YE
          if (j <= SINPML_Fullsize(iHy)%YI-1 .and. sgg%PML%NumLayers(2,1) /= 0) then
@@ -249,7 +249,7 @@ contains
          else
             cm_y(j)=0.0_RKIND
             Icm_y(j)=0.0_RKIND
-         endif
+         end if
       end do
       do k=sgg%ALLOC(iHz)%ZI,sgg%ALLOC(iHz)%ZE
          if (k <= SINPML_Fullsize(iHz)%ZI .and. sgg%PML%NumLayers(3,1) /= 0) then
@@ -261,7 +261,7 @@ contains
          else
             ce_z(k)=0.0_RKIND
             Ice_z(k)=0.0_RKIND
-         endif
+         end if
       end do
       do k=sgg%ALLOC(iHz)%ZI,sgg%ALLOC(iHz)%ZE
          if (k <= SINPML_Fullsize(iHz)%ZI-1 .and. sgg%PML%NumLayers(3,1) /= 0) then
@@ -273,22 +273,22 @@ contains
          else
             cm_z(k)=0.0_RKIND
             Icm_z(k)=0.0_RKIND
-         endif
+         end if
       end do
 
 
 
       call calc_cpmlconstants(sgg,Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps0,mu0)
 
-      !Fake coms and ends IN CASE OF NO pml SO THAT NEVER ENTER THE DO FOR THESE CASES
-      IF (.not.(sgg%Border%IsDownPML)) PMLc(1:6)%ZI(down)=PMLc(1:6)%ZE(down)+100
-      IF (.not.(sgg%Border%IsUpPML))   PMLc(1:6)%ZI(up)  =PMLc(1:6)%ZE(up)  +100
+      !Fake coms and ends IN CASE OF NO pml SO THAT NEVER ENTER THE do FOR THESE CASES
+      if (.not.(sgg%Border%IsDownPML)) PMLc(1:6)%ZI(down)=PMLc(1:6)%ZE(down)+100
+      if (.not.(sgg%Border%IsUpPML))   PMLc(1:6)%ZI(up)  =PMLc(1:6)%ZE(up)  +100
       !
-      IF (.not.(sgg%Border%IsLeftPML))  PMLc(1:6)%ZI(left) =PMLc(1:6)%ZE(left) +100
-      IF (.not.(sgg%Border%IsRightPML)) PMLc(1:6)%ZI(right)=PMLc(1:6)%ZE(right)+100
+      if (.not.(sgg%Border%IsLeftPML))  PMLc(1:6)%ZI(left) =PMLc(1:6)%ZE(left) +100
+      if (.not.(sgg%Border%IsRightPML)) PMLc(1:6)%ZI(right)=PMLc(1:6)%ZE(right)+100
       !
-      IF (.not.(sgg%Border%IsFrontPML)) PMLc(1:6)%ZI(front)=PMLc(1:6)%ZE(front)+100
-      IF (.not.(sgg%Border%IsBackPML))  PMLc(1:6)%ZI(back) =PMLc(1:6)%ZE(back) +100
+      if (.not.(sgg%Border%IsFrontPML)) PMLc(1:6)%ZI(front)=PMLc(1:6)%ZE(front)+100
+      if (.not.(sgg%Border%IsBackPML))  PMLc(1:6)%ZI(back) =PMLc(1:6)%ZE(back) +100
 
 
 
@@ -332,7 +332,7 @@ contains
                   READ (14) ( regLR(region)%Psi_Hzy(i,j,k),i=PMLc(iHz)%XI(region),PMLc(iHz)%XE(region))
                End do
             End do
-         endif
+         end if
       end do
       do REGION=down,up
          allocate (regDU(region)%Psi_Eyz(PMLc(iEy)%XI(region) : PMLc(iEy)%XE(region), &
@@ -370,7 +370,7 @@ contains
                   READ (14) ( regDU(region)%Psi_Hxz(i,j,k),i=PMLc(iHx)%XI(region),PMLc(iHx)%XE(region))
                End do
             End do
-         endif
+         end if
       end do
       do REGION=back,front
          allocate (regBF(region)%Psi_Ezx(PMLc(iEz)%XI(region) : PMLc(iEz)%XE(region), &
@@ -408,7 +408,7 @@ contains
                   READ (14) ( regBF(region)%Psi_Hyx(i,j,k),i=PMLc(iHy)%XI(region),PMLc(iHy)%XE(region))
                End do
             End do
-         endif
+         end if
       end do
 
       return
@@ -422,7 +422,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine StoreFieldsCPMLBorders
 
-      integer (kind=4)  ::  region,i,j,k
+      integer(kind=4) :: region,i,j,k
 
 
       do REGION=left,right
@@ -504,19 +504,19 @@ contains
    !!!  Free-up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine DestroyCPMLBorders
-      integer (kind=4)  ::  region
-      if (associated(sig_max)) deALLOCATE (sig_max,aPar_max,kPar_max)
-      if (associated(P_ce_x )) deallocate (P_ce_x,P_ce_y,P_ce_z,P_be_x,P_be_y,P_be_z,P_cm_x,P_cm_y,P_cm_z,P_bm_x,P_bm_y,P_bm_z)
-      if (associated(ce_x   )) deallocate ( ce_x, ce_y, ce_z, cm_x, cm_y, cm_z,Ice_x,Ice_y,Ice_z,Icm_x,Icm_y,Icm_z)
+      integer(kind=4) :: region
+      if (associated(sig_max)) deallocate(sig_max,aPar_max,kPar_max)
+      if (associated(P_ce_x )) deallocate(P_ce_x,P_ce_y,P_ce_z,P_be_x,P_be_y,P_be_z,P_cm_x,P_cm_y,P_cm_z,P_bm_x,P_bm_y,P_bm_z)
+      if (associated(ce_x   )) deallocate( ce_x, ce_y, ce_z, cm_x, cm_y, cm_z,Ice_x,Ice_y,Ice_z,Icm_x,Icm_y,Icm_z)
 
       do REGION=left,right
-         if (associated(regLR(region)%Psi_Exy)) deallocate (regLR(region)%Psi_Exy,regLR(region)%Psi_Ezy,regLR(region)%Psi_Hxy,regLR(region)%Psi_Hzy)
+         if (associated(regLR(region)%Psi_Exy)) deallocate(regLR(region)%Psi_Exy,regLR(region)%Psi_Ezy,regLR(region)%Psi_Hxy,regLR(region)%Psi_Hzy)
       end do
       do REGION=down,up
-         if (associated(regDU(region)%Psi_Eyz)) deallocate (regDU(region)%Psi_Eyz,regDU(region)%Psi_Exz,regDU(region)%Psi_Hyz,regDU(region)%Psi_Hxz)
+         if (associated(regDU(region)%Psi_Eyz)) deallocate(regDU(region)%Psi_Eyz,regDU(region)%Psi_Exz,regDU(region)%Psi_Hyz,regDU(region)%Psi_Hxz)
       end do
       do REGION=back,front
-         if (associated(regBF(region)%Psi_Ezx)) deallocate (regBF(region)%Psi_Ezx,regBF(region)%Psi_Eyx,regBF(region)%Psi_Hzx,regBF(region)%Psi_Hyx)
+         if (associated(regBF(region)%Psi_Ezx)) deallocate(regBF(region)%Psi_Ezx,regBF(region)%Psi_Eyx,regBF(region)%Psi_Hzx,regBF(region)%Psi_Hyx)
       end do
       if (allocated(dxe)) deallocate(dxe, dye,dze,dxh,dyh,dzh)
       return
@@ -525,24 +525,24 @@ contains
    !**************************************************************************************************
    subroutine AdvanceelectricCPML( NumMedia, b, sggMiEx, sggMiEy, sggMiEz, g2, Ex, Ey, Ez, Hx, Hy, Hz)
       !---------------------------> inputs <----------------------------------------------------------
-      integer, intent( IN)  ::  NumMedia
-      type( bounds_t), intent( IN)  ::  b
+      integer, intent( IN) :: NumMedia
+      type( bounds_t), intent( IN) :: b
       !--->
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent( IN)  ::  sggMiEx
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent( IN)  ::  sggMiEy
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent( IN)  ::  sggMiEz
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent( IN) :: sggMiEx
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent( IN) :: sggMiEy
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent( IN) :: sggMiEz
       !--->
-      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  g2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN) :: g2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN) :: Hz
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT) :: Ez
       !---------------------------> variables locales <-----------------------------------------------
-      integer (kind=4)  ::  REGION, i, j, k, medio, i_m, j_m, k_m
+      integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceelectricCPML <-------------------------------------
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -550,7 +550,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = left
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -563,14 +563,14 @@ contains
                regLR( REGION)%Psi_Exy( i, j, k) = P_be_y( j) * regLR( REGION)%Psi_Exy( i, j, k) +  &
                (Hz( i_m, j_m, k_m) - Hz( i_m, j_m-1, k_m)) * P_ce_y( j)
                Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) + G2( medio) * regLR( REGION)%Psi_Exy( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -582,9 +582,9 @@ contains
                regLR( REGION)%Psi_Ezy( i, j, k) = P_be_y( j) * regLR( REGION)%Psi_Ezy( i, j, k) +  &
                (Hx( i_m, j_m, k_m) - Hx( i_m, j_m-1, k_m)) * P_ce_y( j)
                Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) - G2( medio) * regLR( REGION)%Psi_Ezy( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -594,7 +594,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION =  right
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -607,14 +607,14 @@ contains
                regLR( REGION)%Psi_Exy( i, j, k) = P_be_y( j) * regLR( REGION)%Psi_Exy( i, j, k) +  &
                (Hz( i_m, j_m, k_m) - Hz( i_m, j_m-1, k_m)) * P_ce_y( j)
                Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) + G2( medio) * regLR( REGION)%Psi_Exy( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -626,9 +626,9 @@ contains
                regLR( REGION)%Psi_Ezy( i, j, k) = P_be_y( j) * regLR( REGION)%Psi_Ezy( i, j, k) +  &
                (Hx( i_m, j_m, k_m) - Hx( i_m, j_m-1, k_m)) * P_ce_y( j)
                Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) - G2( medio) * regLR( REGION)%Psi_Ezy( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -640,7 +640,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = down
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -652,14 +652,14 @@ contains
                regDU( REGION)%Psi_Eyz( i, j, k) = P_be_z( k) * regDU( REGION)%Psi_Eyz( i, j, k) +  &
                (Hx( i_m, j_m, k_m) - Hx( i_m, j_m, k_m-1)) * P_ce_z( k)
                Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) + G2( medio) * regDU( REGION)%Psi_Eyz( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -671,9 +671,9 @@ contains
                regDU( REGION)%Psi_Exz( i, j, k) = P_be_z( k) * regDU( REGION)%Psi_Exz( i, j, k) +  &
                (Hy( i_m, j_m, k_m) - Hy( i_m, j_m, k_m-1)) * P_ce_z( k)
                Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) - G2( medio) * regDU( REGION)%Psi_Exz( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -684,7 +684,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = up
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -696,14 +696,14 @@ contains
                regDU( REGION)%Psi_Eyz( i, j, k) = P_be_z( k) * regDU( REGION)%Psi_Eyz( i, j, k) +  &
                (Hx( i_m, j_m, k_m) - Hx( i_m, j_m, k_m-1)) * P_ce_z( k)
                Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) + G2( medio) * regDU( REGION)%Psi_Eyz( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -715,9 +715,9 @@ contains
                regDU( REGION)%Psi_Exz( i, j, k) = P_be_z( k) * regDU( REGION)%Psi_Exz( i, j, k) +  &
                (Hy( i_m, j_m, k_m) - Hy( i_m, j_m, k_m-1)) * P_ce_z( k)
                Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) - G2( medio) * regDU( REGION)%Psi_Exz( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -730,7 +730,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = back
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -742,14 +742,14 @@ contains
                regBF( REGION)%Psi_Ezx( i, j, k) = P_be_x( i) * regBF( REGION)%Psi_Ezx( i, j, k) +  &
                (Hy( i_m, j_m, k_m) - Hy( i_m-1, j_m, k_m)) * P_ce_x( i)
                Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) + G2( medio) * regBF( REGION)%Psi_Ezx( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -761,9 +761,9 @@ contains
                regBF( REGION)%Psi_Eyx( i, j, k) = P_be_x( i) * regBF( REGION)%Psi_Eyx( i, j, k) +  &
                (Hz( i_m, j_m, k_m) - Hz( i_m-1, j_m, k_m)) * P_ce_x( i)
                Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) - G2( medio) * regBF( REGION)%Psi_Eyx( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -774,7 +774,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -786,14 +786,14 @@ contains
                regBF( REGION)%Psi_Ezx( i, j, k) = P_be_x( i) * regBF( REGION)%Psi_Ezx( i, j, k) +  &
                (Hy( i_m, j_m, k_m) - Hy( i_m-1, j_m, k_m)) * P_ce_x( i)
                Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) + G2( medio) * regBF( REGION)%Psi_Ezx( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -805,9 +805,9 @@ contains
                regBF( REGION)%Psi_Eyx( i, j, k) = P_be_x( i) * regBF( REGION)%Psi_Eyx( i, j, k) +  &
                (Hz( i_m, j_m, k_m) - Hz( i_m-1, j_m, k_m)) * P_ce_x( i)
                Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) - G2( medio) * regBF( REGION)%Psi_Eyx( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -822,24 +822,24 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine AdvanceMagneticCPML( NumMedia, b, sggMiHx, sggMiHy, sggMiHz, gm2, Hx, Hy, Hz, Ex, Ey, Ez)
       !---------------------------> inputs <----------------------------------------------------------
-      integer, intent( IN)  ::  NumMedia
-      type( bounds_t), intent( IN)  ::  b
+      integer, intent( IN) :: NumMedia
+      type( bounds_t), intent( IN) :: b
       !--->
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( IN)  ::  sggMiHx
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN)  ::  sggMiHy
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN)  ::  sggMiHz
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( IN) :: sggMiHx
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN) :: sggMiHy
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN) :: sggMiHz
       !--->
-      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  gm2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN) :: gm2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN) :: Ez
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
-      integer (kind=4)  ::  REGION, i, j, k, medio, i_m, j_m, k_m
+      integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceMagneTicCPML <-------------------------------------
       !Hetic Fields PML Zone
       !
@@ -848,7 +848,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = left
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -861,14 +861,14 @@ contains
                (Ez( i_m, j_m+1, k_m) - Ez( i_m, j_m, k_m)) * P_cm_y( j)
                medio = sggMiHx( i_m , j_m , k_m )
                Hx( i_m, j_m, k_m)=Hx( i_m, j_m, k_m)-GM2(medio)*regLR(REGION)%Psi_Hxy(i,j,k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -881,9 +881,9 @@ contains
                (Ex( i_m, j_m+1, k_m) - Ex( i_m, j_m, k_m)) * P_cm_y( j)
                medio = sggMiHz( i_m , j_m , k_m )
                Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) + GM2( medio) * regLR( REGION)%Psi_Hzy( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -893,7 +893,7 @@ contains
 
       REGION = right
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -906,14 +906,14 @@ contains
                (Ez( i_m, j_m+1, k_m) - Ez( i_m, j_m, k_m)) * P_cm_y( j)
                medio = sggMiHx( i_m , j_m , k_m )
                Hx( i_m, j_m, k_m)=Hx( i_m, j_m, k_m)-GM2(medio)*regLR(REGION)%Psi_Hxy(i,j,k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -926,9 +926,9 @@ contains
                (Ex( i_m, j_m+1, k_m) - Ex( i_m, j_m, k_m)) * P_cm_y( j)
                medio = sggMiHz( i_m , j_m , k_m )
                Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) + GM2( medio) * regLR( REGION)%Psi_Hzy( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -938,7 +938,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = down
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -951,14 +951,14 @@ contains
                (Ex( i_m, j_m, k_m+1) - Ex( i_m, j_m, k_m)) * P_cm_z( k)
                medio = sggMiHy( i_m , j_m , k_m )
                Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - GM2( medio) * regDU( REGION)%Psi_Hyz( i, j, k)
-            enddo !bucle i
-         enddo
-      enddo
+            end do !bucle i
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -971,9 +971,9 @@ contains
                (Ey( i_m, j_m, k_m+1) - Ey( i_m, j_m, k_m)) * P_cm_z( k)
                medio = sggMiHx( i_m , j_m , k_m )
                Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) + GM2(medio) * regDU( REGION)%Psi_Hxz( i, j, k)
-            enddo !bucle i
-         enddo
-      enddo
+            end do !bucle i
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -983,7 +983,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = up
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -996,14 +996,14 @@ contains
                (Ex( i_m, j_m, k_m+1) - Ex( i_m, j_m, k_m)) * P_cm_z( k)
                medio = sggMiHy( i_m , j_m , k_m )
                Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - GM2( medio) * regDU( REGION)%Psi_Hyz( i, j, k)
-            enddo !bucle i
-         enddo
-      enddo
+            end do !bucle i
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -1016,9 +1016,9 @@ contains
                (Ey( i_m, j_m, k_m+1) - Ey( i_m, j_m, k_m)) * P_cm_z( k)
                medio = sggMiHx( i_m , j_m , k_m )
                Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) + GM2(medio) * regDU( REGION)%Psi_Hxz( i, j, k)
-            enddo !bucle i
-         enddo
-      enddo
+            end do !bucle i
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1028,7 +1028,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION=back
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -1041,14 +1041,14 @@ contains
                (Ey( i_m+1, j_m, k_m) - Ey( i_m, j_m, k_m)) * P_cm_x( i)
                medio = sggMiHz( i_m , j_m , k_m )
                Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) - GM2( medio) * regBF( REGION)%Psi_Hzx( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -1061,9 +1061,9 @@ contains
                (Ez( i_m+1, j_m, k_m) - Ez( i_m, j_m, k_m)) * P_cm_x( i)
                medio = sggMiHy( i_m , j_m , k_m )
                Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) + GM2( medio) * regBF( REGION)%Psi_Hyx( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1072,7 +1072,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION=front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -1085,14 +1085,14 @@ contains
                (Ey( i_m+1, j_m, k_m) - Ey( i_m, j_m, k_m)) * P_cm_x( i)
                medio = sggMiHz( i_m , j_m , k_m )
                Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) - GM2( medio) * regBF( REGION)%Psi_Hzx( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -1105,9 +1105,9 @@ contains
                (Ez( i_m+1, j_m, k_m) - Ez( i_m, j_m, k_m)) * P_cm_x( i)
                medio = sggMiHy( i_m , j_m , k_m )
                Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) + GM2( medio) * regBF( REGION)%Psi_Hyx( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1122,21 +1122,21 @@ contains
 !!!   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   subroutine FreeSpace_AdvanceMagneticCPML( NumMedia, b, gm2, Hx, Hy, Hz, Ex, Ey, Ez)
 !!!      !---------------------------> inputs <----------------------------------------------------------
-!!!      integer, intent( IN)  ::  NumMedia
-!!!      type( bounds_t), intent( IN)  ::  b
+!!!      integer, intent( IN) :: NumMedia
+!!!      type( bounds_t), intent( IN) :: b
 !!!      !--->
-!!!      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  gm2
+!!!      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN) :: gm2
 !!!      !--->
-!!!      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
-!!!      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
-!!!      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
+!!!      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN) :: Ex
+!!!      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN) :: Ey
+!!!      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN) :: Ez
 !!!      !---------------------------> inputs/outputs <--------------------------------------------------
-!!!      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
-!!!      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
-!!!      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
+!!!      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hx
+!!!      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT) :: Hy
+!!!      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT) :: Hz
 !!!      !---------------------------> variables locales <-----------------------------------------------
-!!!      integer (kind=4)  ::  REGION, i, j, k, i_m, j_m, k_m
-!!!      real (kind = RKIND)  ::  GM2_1
+!!!      integer(kind=4) :: REGION, i, j, k, i_m, j_m, k_m
+!!!      real(kind = RKIND) :: GM2_1
 !!!      GM2_1=GM2(1)
 !!!      !---------------------------> empieza AdvanceMagneTicCPML <-------------------------------------
 !!!      !Hetic Fields PML Zone
@@ -1146,7 +1146,7 @@ contains
 !!!      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!      REGION = left
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!!!!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 !!!#endif
 !!!      do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
 !!!         k_m = k - b%Hx%ZI
@@ -1158,14 +1158,14 @@ contains
 !!!               regLR( REGION)%Psi_Hxy( i, j, k) = P_bm_y( j) * regLR( REGION)%Psi_Hxy( i, j, k) +  &
 !!!               (Ez( i_m, j_m+1, k_m) - Ez( i_m, j_m, k_m)) * P_cm_y( j)
 !!!               Hx( i_m, j_m, k_m)=Hx( i_m, j_m, k_m)-GM2_1*regLR(REGION)%Psi_Hxy(i,j,k)
-!!!            enddo
-!!!         enddo
-!!!      enddo
+!!!            end do
+!!!         end do
+!!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
 !!!#endif
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!!!!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 !!!#endif
 !!!      do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
 !!!         k_m = k - b%Hz%ZI
@@ -1177,9 +1177,9 @@ contains
 !!!               regLR( REGION)%Psi_Hzy( i, j, k) = P_bm_y( j) * regLR( REGION)%Psi_Hzy( i, j, k) +  &
 !!!               (Ex( i_m, j_m+1, k_m) - Ex( i_m, j_m, k_m)) * P_cm_y( j)
 !!!               Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) + GM2_1 * regLR( REGION)%Psi_Hzy( i, j, k)
-!!!            enddo
-!!!         enddo
-!!!      enddo
+!!!            end do
+!!!         end do
+!!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
 !!!#endif
@@ -1189,7 +1189,7 @@ contains
 !!!
 !!!      REGION = right
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!!!!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 !!!#endif
 !!!      do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
 !!!         k_m = k - b%Hx%ZI
@@ -1201,14 +1201,14 @@ contains
 !!!               regLR( REGION)%Psi_Hxy( i, j, k) = P_bm_y( j) * regLR( REGION)%Psi_Hxy( i, j, k) +  &
 !!!               (Ez( i_m, j_m+1, k_m) - Ez( i_m, j_m, k_m)) * P_cm_y( j)
 !!!               Hx( i_m, j_m, k_m)=Hx( i_m, j_m, k_m)-GM2_1*regLR(REGION)%Psi_Hxy(i,j,k)
-!!!            enddo
-!!!         enddo
-!!!      enddo
+!!!            end do
+!!!         end do
+!!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
 !!!#endif
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!!!!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 !!!#endif
 !!!      do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
 !!!         k_m = k - b%Hz%ZI
@@ -1220,9 +1220,9 @@ contains
 !!!               regLR( REGION)%Psi_Hzy( i, j, k) = P_bm_y( j) * regLR( REGION)%Psi_Hzy( i, j, k) +  &
 !!!               (Ex( i_m, j_m+1, k_m) - Ex( i_m, j_m, k_m)) * P_cm_y( j)
 !!!               Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) + GM2_1 * regLR( REGION)%Psi_Hzy( i, j, k)
-!!!            enddo
-!!!         enddo
-!!!      enddo
+!!!            end do
+!!!         end do
+!!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
 !!!#endif
@@ -1232,7 +1232,7 @@ contains
 !!!      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!      REGION = down
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!!!!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 !!!#endif
 !!!      do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
 !!!         k_m = k - b%Hy%ZI
@@ -1244,14 +1244,14 @@ contains
 !!!               regDU( REGION)%Psi_Hyz( i, j, k) = P_bm_z( k) * regDU( REGION)%Psi_Hyz( i, j, k) +  &
 !!!               (Ex( i_m, j_m, k_m+1) - Ex( i_m, j_m, k_m)) * P_cm_z( k)
 !!!               Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - GM2_1 * regDU( REGION)%Psi_Hyz( i, j, k)
-!!!            enddo !bucle i
-!!!         enddo
-!!!      enddo
+!!!            end do !bucle i
+!!!         end do
+!!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
 !!!#endif
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!!!!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 !!!#endif
 !!!      do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
 !!!         k_m = k - b%Hx%ZI
@@ -1263,9 +1263,9 @@ contains
 !!!               regDU( REGION)%Psi_Hxz( i, j, k) = P_bm_z( k) * regDU( REGION)%Psi_Hxz( i, j, k) +  &
 !!!               (Ey( i_m, j_m, k_m+1) - Ey( i_m, j_m, k_m)) * P_cm_z( k)
 !!!               Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) + GM2_1 * regDU( REGION)%Psi_Hxz( i, j, k)
-!!!            enddo !bucle i
-!!!         enddo
-!!!      enddo
+!!!            end do !bucle i
+!!!         end do
+!!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
 !!!#endif
@@ -1275,7 +1275,7 @@ contains
 !!!      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!      REGION = up
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!!!!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 !!!#endif
 !!!      do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
 !!!         k_m = k - b%Hy%ZI
@@ -1287,14 +1287,14 @@ contains
 !!!               regDU( REGION)%Psi_Hyz( i, j, k) = P_bm_z( k) * regDU( REGION)%Psi_Hyz( i, j, k) +  &
 !!!               (Ex( i_m, j_m, k_m+1) - Ex( i_m, j_m, k_m)) * P_cm_z( k)
 !!!               Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - GM2_1 * regDU( REGION)%Psi_Hyz( i, j, k)
-!!!            enddo !bucle i
-!!!         enddo
-!!!      enddo
+!!!            end do !bucle i
+!!!         end do
+!!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
 !!!#endif
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!!!!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 !!!#endif
 !!!      do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
 !!!         k_m = k - b%Hx%ZI
@@ -1306,9 +1306,9 @@ contains
 !!!               regDU( REGION)%Psi_Hxz( i, j, k) = P_bm_z( k) * regDU( REGION)%Psi_Hxz( i, j, k) +  &
 !!!               (Ey( i_m, j_m, k_m+1) - Ey( i_m, j_m, k_m)) * P_cm_z( k)
 !!!               Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) + GM2_1 * regDU( REGION)%Psi_Hxz( i, j, k)
-!!!            enddo !bucle i
-!!!         enddo
-!!!      enddo
+!!!            end do !bucle i
+!!!         end do
+!!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
 !!!#endif
@@ -1318,7 +1318,7 @@ contains
 !!!      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!      REGION=back
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!!!!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 !!!#endif
 !!!      do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
 !!!         k_m = k - b%Hz%ZI
@@ -1330,14 +1330,14 @@ contains
 !!!               regBF( REGION)%Psi_Hzx( i, j, k) = P_bm_x( i) * regBF( REGION)%Psi_Hzx( i, j, k) +  &
 !!!               (Ey( i_m+1, j_m, k_m) - Ey( i_m, j_m, k_m)) * P_cm_x( i)
 !!!               Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) - GM2_1 * regBF( REGION)%Psi_Hzx( i, j, k)
-!!!            enddo
-!!!         enddo
-!!!      enddo
+!!!            end do
+!!!         end do
+!!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
 !!!#endif
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!!!!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 !!!#endif
 !!!      do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
 !!!         k_m = k - b%Hy%ZI
@@ -1349,9 +1349,9 @@ contains
 !!!               regBF( region)%Psi_Hyx( i, j, k) = P_bm_x( i) * regBF( REGION)%Psi_Hyx( i, j, k) +  &
 !!!               (Ez( i_m+1, j_m, k_m) - Ez( i_m, j_m, k_m)) * P_cm_x( i)
 !!!               Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) + GM2_1 * regBF( REGION)%Psi_Hyx( i, j, k)
-!!!            enddo
-!!!         enddo
-!!!      enddo
+!!!            end do
+!!!         end do
+!!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
 !!!#endif
@@ -1360,7 +1360,7 @@ contains
 !!!      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!      REGION=front
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!!!!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 !!!#endif
 !!!      do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
 !!!         k_m = k - b%Hz%ZI
@@ -1372,14 +1372,14 @@ contains
 !!!               regBF( REGION)%Psi_Hzx( i, j, k) = P_bm_x( i) * regBF( REGION)%Psi_Hzx( i, j, k) +  &
 !!!               (Ey( i_m+1, j_m, k_m) - Ey( i_m, j_m, k_m)) * P_cm_x( i)
 !!!               Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) - GM2_1 * regBF( REGION)%Psi_Hzx( i, j, k)
-!!!            enddo
-!!!         enddo
-!!!      enddo
+!!!            end do
+!!!         end do
+!!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
 !!!#endif
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!!!!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 !!!#endif
 !!!      do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
 !!!         k_m = k - b%Hy%ZI
@@ -1391,9 +1391,9 @@ contains
 !!!               regBF( region)%Psi_Hyx( i, j, k) = P_bm_x( i) * regBF( REGION)%Psi_Hyx( i, j, k) +  &
 !!!               (Ez( i_m+1, j_m, k_m) - Ez( i_m, j_m, k_m)) * P_cm_x( i)
 !!!               Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) + GM2_1 * regBF( REGION)%Psi_Hyx( i, j, k)
-!!!            enddo
-!!!         enddo
-!!!      enddo
+!!!            end do
+!!!         end do
+!!!      end do
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP END PARALLEL DO
 !!!#endif
@@ -1405,9 +1405,9 @@ contains
 
 
 subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
-      type (SGGFDTDINFO), intent(IN)         ::  sgg
-      REAL (KIND=RKIND), intent (in)  ::  eps00,mu00
-      REAL (KIND=RKIND) , dimension (:)   , intent(inout)      ::  &
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      real(kind=RKIND), intent(in) :: eps00,mu00
+      real(kind=RKIND) , dimension(:)   , intent(inout) :: &
       Idxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
       Idye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &
       Idze(sgg%ALLOC(iHz)%ZI : sgg%ALLOC(iHz)%ZE), &
@@ -1415,7 +1415,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
       Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
       Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
       integer :: i,j,k,o,p
-      REAL (KIND=RKIND) :: del,sigmae,kpare,apare,sigmam,kparm,aparm
+      real(kind=RKIND) :: del,sigmae,kpare,apare,sigmam,kparm,aparm
       character(len=BUFSIZE) :: buff
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       zvac=sqrt(mu0/eps0)
@@ -1443,10 +1443,10 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                   !ojo LO SIGUIENTE  estaba maaaaallllllllll porque NO ES MATERIAL INDEPENDENT
                   !                          (2*sqrt(Mu0/eps0)*sqrt(sgg%Med(jmed)%Epr*sgg%Med(jmed)%Mur)*sgg%PML%NumLayers(o,p)*del))
                   !los multilayer petan- !!! !Viene de Gedney, pero esta maaaalllll!! !corregido 20marzo 2011
-               endif
+               end if
             else
                sig_max(o,p)=1.0e29_RKIND
-            endif
+            end if
          end do
       end do
 
@@ -1465,7 +1465,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                aPar_max(o,p)=0.0_RKIND
                kPar_max(o,p)=1.0_RKIND
-            endif
+            end if
          end do
       end do
 
@@ -1491,7 +1491,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                Sigmae=    Sig_max(1,1)   * ce_x(i)**sgg%PML%orden(1,1)
                kPare=1.0_RKIND+(kPar_max(1,1)-1)* ce_x(i)**sgg%PML%orden(1,1)
-            endif
+            end if
             aPare=    aPar_max(1,1)*Ice_x(i)**alphaOrden !!  **sgg%PML%orden(1,1) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente !gedney lo escala linealmente
             P_be_x(i)=exp(-(sigmae/kPare+aPare)*sgg%dt/Eps0)
             P_ce_x(i)=(sigmae*(P_be_x(i)-1.0_RKIND)/(sigmae+kPare*aPare)/kpare)/dxh(i)
@@ -1503,12 +1503,12 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                Sigmae=    Sig_max(1,2)   * ce_x(i)**sgg%PML%orden(1,2)
                kPare=1.0_RKIND+(kPar_max(1,2)-1)* ce_x(i)**sgg%PML%orden(1,2)
-            endif
+            end if
             aPare=    aPar_max(1,2)*Ice_x(i)**alphaOrden !!  **sgg%PML%orden(1,2) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
             P_be_x(i)=exp(-(sigmae/kPare+aPare)*sgg%dt/Eps0)
             P_ce_x(i)=(sigmae*(P_be_x(i)-1.0_RKIND)/(sigmae+kPare*aPare)/kpare)/dxh(i)
             Idxh(i)=1.0_RKIND / (kPare*dxh(i))
-         endif
+         end if
       end do
       do j=sgg%ALLOC(iEy)%YI,sgg%ALLOC(iEy)%YE
          if (j <= SINPML_Fullsize(iHy)%YI-1) then !Left
@@ -1518,7 +1518,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                Sigmae=    Sig_max(2,1)   * ce_y(j)**sgg%PML%orden(2,1)
                kPare=1.0_RKIND+(kPar_max(2,1)-1)* ce_y(j)**sgg%PML%orden(2,1)
-            endif
+            end if
             aPare=    aPar_max(2,1)*Ice_y(j)**alphaOrden !!  **sgg%PML%orden(2,1) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
             P_be_y     (j)=exp(-(sigmae/kPare+aPare)*sgg%dt/Eps0)
             P_ce_y     (j)=(sigmae*(P_be_y(j)-1.0_RKIND)/(sigmae+kPare*aPare)/kpare)/dyh(j)
@@ -1530,12 +1530,12 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                Sigmae=    Sig_max(2,2)   * ce_y(j)**sgg%PML%orden(2,2)
                kPare=1.0_RKIND+(kPar_max(2,2)-1)* ce_y(j)**sgg%PML%orden(2,2)
-            endif
+            end if
             aPare=    aPar_max(2,2)*Ice_y(j)**alphaOrden !!  **sgg%PML%orden(2,2) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
             P_be_y     (j)=exp(-(sigmae/kPare+aPare)*sgg%dt/Eps0)
             P_ce_y     (j)=(sigmae*(P_be_y(j)-1.0_RKIND)/(sigmae+kPare*aPare)/kpare)/dyh(j)
             IdYh(j) =1.0_RKIND / (kPare*dyh(j))
-         endif
+         end if
       end do
       do k=sgg%ALLOC(iEz)%ZI,sgg%ALLOC(iEz)%ZE
          if (k <= SINPML_Fullsize(iHz)%ZI-1) then !Down
@@ -1545,7 +1545,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                sigmae=    Sig_max(3,1)   * ce_z(k)**sgg%PML%orden(3,1)
                kPare=1.0_RKIND+(kPar_max(3,1)-1)* ce_z(k)**sgg%PML%orden(3,1)
-            endif
+            end if
             aPare=    aPar_max(3,1)*Ice_z(k)**alphaOrden !!  **sgg%PML%orden(3,1) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
             P_be_z     (k)=exp(-(sigmae/kPare+aPare)*sgg%dt/Eps0)
             P_ce_z     (k)=(sigmae*(P_be_z(k)-1.0_RKIND)/(sigmae+kPare*aPare)/kpare)/dzh(k)
@@ -1557,12 +1557,12 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                sigmae=    Sig_max(3,2)   * ce_z(k)**sgg%PML%orden(3,2)
                kPare=1.0_RKIND+(kPar_max(3,2)-1)* ce_z(k)**sgg%PML%orden(3,2)
-            endif
+            end if
             aPare=    aPar_max(3,2)*Ice_z(k)**alphaOrden !!  **sgg%PML%orden(3,2) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
             P_be_z     (k)=exp(-(sigmae/kPare+aPare)*sgg%dt/Eps0)
             P_ce_z     (k)=(sigmae*(P_be_z(k)-1.0_RKIND)/(sigmae+kPare*aPare)/kpare)/dzh(k)
             Idzh(k)=1.0_RKIND / (kPare*dzh(k))
-         endif
+         end if
       end do
       !magnetic
       do i=sgg%ALLOC(iHx)%XI,sgg%ALLOC(iHx)%XE
@@ -1573,15 +1573,15 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                Sigmam=    Sig_max(1,1)   * cm_x(i)**sgg%PML%orden(1,1)
                kParm=1.0_RKIND+(kPar_max(1,1)-1)* cm_x(i)**sgg%PML%orden(1,1)
-            endif
+            end if
             aParm=    aPar_max(1,1)*Icm_x(i)**alphaOrden !!  **sgg%PML%orden(1,1) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
             P_bm_x(i)=exp(-(sigmam/kParm+aParm)*sgg%dt/Eps0)
             P_cm_x(i)=(sigmam*(P_bm_x(i)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dxe(i)
             Idxe(i)=1.0_RKIND / (kParm*dxe(i))
             !
-            WRITE (buff,'(a,i4,a,5e9.2e2)') 'back(',i,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
+            write(buff,'(a,i4,a,5e9.2e2)') 'back(',i,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             (sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
-            !IF ((sgg%Border%IsBackPML).and.(i>sgg%ALLOC(iHx)%XI)) CALL print11 (control%layoutnumber, buff)
+            !if ((sgg%Border%IsBackPML).and.(i>sgg%ALLOC(iHx)%XI)) call print11 (control%layoutnumber, buff)
          elseif (i >= SINPML_Fullsize(iHx)%XE )  then !front
             if ((sgg%PML%orden(1,2) == 0)) then
                Sigmam=    Sig_max(1,2)
@@ -1589,16 +1589,16 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                Sigmam=    Sig_max(1,2)   * cm_x(i)**sgg%PML%orden(1,2)
                kParm=1.0_RKIND+(kPar_max(1,2)-1)* cm_x(i)**sgg%PML%orden(1,2)
-            endif
+            end if
             aParm=    aPar_max(1,2)*Icm_x(i)**alphaOrden !!  **sgg%PML%orden(1,2) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
             P_bm_x(i)=exp(-(sigmam/kParm+aParm)*sgg%dt/Eps0)
             P_cm_x(i)=(sigmam*(P_bm_x(i)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dxe(i)
             Idxe(i)=1.0_RKIND / (kParm*dxe(i))
             !
-            !WRITE (buff,'(a,i4,a,5e9.2e2)') 'front(',i,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
+            !write(buff,'(a,i4,a,5e9.2e2)') 'front(',i,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
-            !IF ((sgg%Border%IsFrontPML).and.(i<sgg%ALLOC(iHx)%XE-1))  CALL print11 (control%layoutnumber, buff)
-         endif
+            !if ((sgg%Border%IsFrontPML).and.(i<sgg%ALLOC(iHx)%XE-1))  call print11 (control%layoutnumber, buff)
+         end if
       end do
       do j=sgg%ALLOC(iHy)%YI,sgg%ALLOC(iHy)%YE
          if (j <= SINPML_Fullsize(iHy)%YI-1) then !Left
@@ -1608,15 +1608,15 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                Sigmam=    Sig_max(2,1)   * cm_y(j)**sgg%PML%orden(2,1)
                kParm=1.0_RKIND+(kPar_max(2,1)-1)* cm_y(j)**sgg%PML%orden(2,1)
-            endif
+            end if
             aParm=    aPar_max(2,1)*Icm_y(j)**alphaOrden !!  **sgg%PML%orden(2,1) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
             P_bm_y(j)=exp(-(sigmam/kParm+aParm)*sgg%dt/Eps0)
             P_cm_y     (j)=(sigmam*(P_bm_y(j)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dye(j)
             Idye(j)=1.0_RKIND / (kParm*dye(j))
             !
-            !WRITE (buff,'(a,i4,a,5e9.2e2)') 'left(',j,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
+            !write(buff,'(a,i4,a,5e9.2e2)') 'left(',j,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
-            !IF ((sgg%Border%IsLeftPML).and.(j>sgg%ALLOC(iHy)%YI)) CALL print11 (control%layoutnumber, buff)
+            !if ((sgg%Border%IsLeftPML).and.(j>sgg%ALLOC(iHy)%YI)) call print11 (control%layoutnumber, buff)
          elseif (j >= SINPML_Fullsize(iHy)%YE ) then  !Right
             if ((sgg%PML%orden(2,2) == 0)) then
                Sigmam=    Sig_max(2,2)
@@ -1624,16 +1624,16 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                Sigmam=    Sig_max(2,2)   * cm_y(j)**sgg%PML%orden(2,2)
                kParm=1.0_RKIND+(kPar_max(2,2)-1)* cm_y(j)**sgg%PML%orden(2,2)
-            endif
+            end if
             aParm=    aPar_max(2,2)*Icm_y(j)**alphaOrden !!  **sgg%PML%orden(2,2) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
             P_bm_y(j)=exp(-(sigmam/kParm+aParm)*sgg%dt/Eps0)
             P_cm_y     (j)=(sigmam*(P_bm_y(j)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dye(j)
             Idye(j)=1.0_RKIND / (kParm*dye(j))
             !
-            !WRITE (buff,'(a,i4,a,5e9.2e2)') 'right(',j,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
+            !write(buff,'(a,i4,a,5e9.2e2)') 'right(',j,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
-            !IF ((sgg%Border%IsRightPML).and.(j<sgg%ALLOC(iHy)%YE-1)) CALL print11 (control%layoutnumber, buff)
-         endif
+            !if ((sgg%Border%IsRightPML).and.(j<sgg%ALLOC(iHy)%YE-1)) call print11 (control%layoutnumber, buff)
+         end if
       end do
       do k=sgg%ALLOC(iHz)%ZI,sgg%ALLOC(iHz)%ZE
          if (k <= SINPML_Fullsize(iHz)%ZI-1) then !Down
@@ -1643,15 +1643,15 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                Sigmam=    Sig_max(3,1)   * cm_z(k)**sgg%PML%orden(3,1)
                kParm=1.0_RKIND+(kPar_max(3,1)-1)* cm_z(k)**sgg%PML%orden(3,1)
-            endif
+            end if
             aParm=    aPar_max(3,1)*Icm_z(k)**alphaOrden !!  **sgg%PML%orden(3,1) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
             P_bm_z(k)=exp(-(sigmam/kParm+aParm)*sgg%dt/Eps0)
             P_cm_z     (k)=(sigmam*(P_bm_z(k)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dze(k)
             Idze(k)=1.0_RKIND / (kParm*dze(k))
             !
-            !WRITE (buff,'(a,i4,a,5e9.2e2)') 'down(',k,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
+            !write(buff,'(a,i4,a,5e9.2e2)') 'down(',k,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
-            !IF ((sgg%Border%IsDownPML).and.(k>sgg%ALLOC(iHz)%ZI)) CALL print11 (control%layoutnumber, buff)
+            !if ((sgg%Border%IsDownPML).and.(k>sgg%ALLOC(iHz)%ZI)) call print11 (control%layoutnumber, buff)
          elseif (k >= SINPML_Fullsize(iHz)%ZE ) then !Up
             if ((sgg%PML%orden(3,2) == 0)) then
                Sigmam=    Sig_max(3,2)
@@ -1659,16 +1659,16 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             else
                Sigmam=    Sig_max(3,2)   * cm_z(k)**sgg%PML%orden(3,2)
                kParm=1.0_RKIND+(kPar_max(3,2)-1)* cm_z(k)**sgg%PML%orden(3,2)
-            endif
+            end if
             aParm=    aPar_max(3,2)*Icm_z(k)**alphaOrden !!  **sgg%PML%orden(3,2) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
             P_bm_z(k)=exp(-(sigmam/kParm+aParm)*sgg%dt/Eps0)
             P_cm_z     (k)=(sigmam*(P_bm_z(k)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dze(k)
             Idze(k)=1.0_RKIND / (kParm*dze(k))
             !
-            !WRITE (buff,'(a,i4,a,5e9.2e2)') 'up   (',k,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
+            !write(buff,'(a,i4,a,5e9.2e2)') 'up   (',k,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
-            !IF ((sgg%Border%IsUpPML).and.(k<sgg%ALLOC(iHz)%ZE-1)) CALL print11 (control%layoutnumber, buff)
-         endif
+            !if ((sgg%Border%IsUpPML).and.(k<sgg%ALLOC(iHz)%ZE-1)) call print11 (control%layoutnumber, buff)
+         end if
       end do
 
 
@@ -1680,24 +1680,24 @@ end subroutine calc_cpmlconstants
    !**************************************************************************************************
    subroutine AdvanceelectricCPML_freespace( NumMedia, b, sggMiEx, sggMiEy, sggMiEz, g2, Ex, Ey, Ez, Hx, Hy, Hz)
       !---------------------------> inputs <----------------------------------------------------------
-      integer, intent( IN)  ::  NumMedia
-      type( bounds_t), intent( IN)  ::  b
+      integer, intent( IN) :: NumMedia
+      type( bounds_t), intent( IN) :: b
       !--->
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent( IN)  ::  sggMiEx
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent( IN)  ::  sggMiEy
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent( IN)  ::  sggMiEz
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent( IN) :: sggMiEx
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent( IN) :: sggMiEy
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent( IN) :: sggMiEz
       !--->
-      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  g2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN) :: g2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN) :: Hz
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT) :: Ez
       !---------------------------> variables locales <-----------------------------------------------
-      integer (kind=4)  ::  REGION, i, j, k, medio, i_m, j_m, k_m
+      integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceelectricCPML <-------------------------------------
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1705,7 +1705,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = left
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -1718,14 +1718,14 @@ end subroutine calc_cpmlconstants
                regLR( REGION)%Psi_Exyvac( i, j, k) = P_be_y( j) * regLR( REGION)%Psi_Exyvac( i, j, k) +  &
                (Hz( i_m, j_m, k_m) - Hz( i_m, j_m-1, k_m)) * P_ce_y( j)
                Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) + G2( medio) * regLR( REGION)%Psi_Exyvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -1737,9 +1737,9 @@ end subroutine calc_cpmlconstants
                regLR( REGION)%Psi_Ezyvac( i, j, k) = P_be_y( j) * regLR( REGION)%Psi_Ezyvac( i, j, k) +  &
                (Hx( i_m, j_m, k_m) - Hx( i_m, j_m-1, k_m)) * P_ce_y( j)
                Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) - G2( medio) * regLR( REGION)%Psi_Ezyvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1749,7 +1749,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION =  right
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -1762,14 +1762,14 @@ end subroutine calc_cpmlconstants
                regLR( REGION)%Psi_Exyvac( i, j, k) = P_be_y( j) * regLR( REGION)%Psi_Exyvac( i, j, k) +  &
                (Hz( i_m, j_m, k_m) - Hz( i_m, j_m-1, k_m)) * P_ce_y( j)
                Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) + G2( medio) * regLR( REGION)%Psi_Exyvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -1781,9 +1781,9 @@ end subroutine calc_cpmlconstants
                regLR( REGION)%Psi_Ezyvac( i, j, k) = P_be_y( j) * regLR( REGION)%Psi_Ezyvac( i, j, k) +  &
                (Hx( i_m, j_m, k_m) - Hx( i_m, j_m-1, k_m)) * P_ce_y( j)
                Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) - G2( medio) * regLR( REGION)%Psi_Ezyvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1795,7 +1795,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = down
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -1807,14 +1807,14 @@ end subroutine calc_cpmlconstants
                regDU( REGION)%Psi_Eyzvac( i, j, k) = P_be_z( k) * regDU( REGION)%Psi_Eyzvac( i, j, k) +  &
                (Hx( i_m, j_m, k_m) - Hx( i_m, j_m, k_m-1)) * P_ce_z( k)
                Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) + G2( medio) * regDU( REGION)%Psi_Eyzvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -1826,9 +1826,9 @@ end subroutine calc_cpmlconstants
                regDU( REGION)%Psi_Exzvac( i, j, k) = P_be_z( k) * regDU( REGION)%Psi_Exzvac( i, j, k) +  &
                (Hy( i_m, j_m, k_m) - Hy( i_m, j_m, k_m-1)) * P_ce_z( k)
                Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) - G2( medio) * regDU( REGION)%Psi_Exzvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1839,7 +1839,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = up
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -1851,14 +1851,14 @@ end subroutine calc_cpmlconstants
                regDU( REGION)%Psi_Eyzvac( i, j, k) = P_be_z( k) * regDU( REGION)%Psi_Eyzvac( i, j, k) +  &
                (Hx( i_m, j_m, k_m) - Hx( i_m, j_m, k_m-1)) * P_ce_z( k)
                Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) + G2( medio) * regDU( REGION)%Psi_Eyzvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -1870,9 +1870,9 @@ end subroutine calc_cpmlconstants
                regDU( REGION)%Psi_Exzvac( i, j, k) = P_be_z( k) * regDU( REGION)%Psi_Exzvac( i, j, k) +  &
                (Hy( i_m, j_m, k_m) - Hy( i_m, j_m, k_m-1)) * P_ce_z( k)
                Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) - G2( medio) * regDU( REGION)%Psi_Exzvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1885,7 +1885,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = back
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -1897,14 +1897,14 @@ end subroutine calc_cpmlconstants
                regBF( REGION)%Psi_Ezxvac( i, j, k) = P_be_x( i) * regBF( REGION)%Psi_Ezxvac( i, j, k) +  &
                (Hy( i_m, j_m, k_m) - Hy( i_m-1, j_m, k_m)) * P_ce_x( i)
                Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) + G2( medio) * regBF( REGION)%Psi_Ezxvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -1916,9 +1916,9 @@ end subroutine calc_cpmlconstants
                regBF( REGION)%Psi_Eyxvac( i, j, k) = P_be_x( i) * regBF( REGION)%Psi_Eyxvac( i, j, k) +  &
                (Hz( i_m, j_m, k_m) - Hz( i_m-1, j_m, k_m)) * P_ce_x( i)
                Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) - G2( medio) * regBF( REGION)%Psi_Eyxvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1929,7 +1929,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -1941,14 +1941,14 @@ end subroutine calc_cpmlconstants
                regBF( REGION)%Psi_Ezxvac( i, j, k) = P_be_x( i) * regBF( REGION)%Psi_Ezxvac( i, j, k) +  &
                (Hy( i_m, j_m, k_m) - Hy( i_m-1, j_m, k_m)) * P_ce_x( i)
                Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) + G2( medio) * regBF( REGION)%Psi_Ezxvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -1960,9 +1960,9 @@ end subroutine calc_cpmlconstants
                regBF( REGION)%Psi_Eyxvac( i, j, k) = P_be_x( i) * regBF( REGION)%Psi_Eyxvac( i, j, k) +  &
                (Hz( i_m, j_m, k_m) - Hz( i_m-1, j_m, k_m)) * P_ce_x( i)
                Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) - G2( medio) * regBF( REGION)%Psi_Eyxvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1977,24 +1977,24 @@ end subroutine calc_cpmlconstants
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine AdvanceMagneticCPML_freespace( NumMedia, b, sggMiHx, sggMiHy, sggMiHz, gm2, Hx, Hy, Hz, Ex, Ey, Ez)
       !---------------------------> inputs <----------------------------------------------------------
-      integer, intent( IN)  ::  NumMedia
-      type( bounds_t), intent( IN)  ::  b
+      integer, intent( IN) :: NumMedia
+      type( bounds_t), intent( IN) :: b
       !--->
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( IN)  ::  sggMiHx
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN)  ::  sggMiHy
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN)  ::  sggMiHz
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( IN) :: sggMiHx
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN) :: sggMiHy
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN) :: sggMiHz
       !--->
-      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  gm2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN) :: gm2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN) :: Ez
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
-      integer (kind=4)  ::  REGION, i, j, k, medio, i_m, j_m, k_m
+      integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceMagneTicCPML <-------------------------------------
       !Hetic Fields PML Zone
       !
@@ -2003,7 +2003,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = left
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -2016,14 +2016,14 @@ end subroutine calc_cpmlconstants
                (Ez( i_m, j_m+1, k_m) - Ez( i_m, j_m, k_m)) * P_cm_y( j)
                medio = 1
                Hx( i_m, j_m, k_m)=Hx( i_m, j_m, k_m)-GM2(medio)*regLR(REGION)%Psi_Hxyvac(i,j,k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -2036,9 +2036,9 @@ end subroutine calc_cpmlconstants
                (Ex( i_m, j_m+1, k_m) - Ex( i_m, j_m, k_m)) * P_cm_y( j)
                medio = 1
                Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) + GM2( medio) * regLR( REGION)%Psi_Hzyvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -2048,7 +2048,7 @@ end subroutine calc_cpmlconstants
 
       REGION = right
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -2061,14 +2061,14 @@ end subroutine calc_cpmlconstants
                (Ez( i_m, j_m+1, k_m) - Ez( i_m, j_m, k_m)) * P_cm_y( j)
                medio = 1
                Hx( i_m, j_m, k_m)=Hx( i_m, j_m, k_m)-GM2(medio)*regLR(REGION)%Psi_Hxyvac(i,j,k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -2081,9 +2081,9 @@ end subroutine calc_cpmlconstants
                (Ex( i_m, j_m+1, k_m) - Ex( i_m, j_m, k_m)) * P_cm_y( j)
                medio = 1
                Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) + GM2( medio) * regLR( REGION)%Psi_Hzyvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -2093,7 +2093,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = down
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -2106,14 +2106,14 @@ end subroutine calc_cpmlconstants
                (Ex( i_m, j_m, k_m+1) - Ex( i_m, j_m, k_m)) * P_cm_z( k)
                medio = 1
                Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - GM2( medio) * regDU( REGION)%Psi_Hyzvac( i, j, k)
-            enddo !bucle i
-         enddo
-      enddo
+            end do !bucle i
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -2126,9 +2126,9 @@ end subroutine calc_cpmlconstants
                (Ey( i_m, j_m, k_m+1) - Ey( i_m, j_m, k_m)) * P_cm_z( k)
                medio = 1
                Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) + GM2(medio) * regDU( REGION)%Psi_Hxzvac( i, j, k)
-            enddo !bucle i
-         enddo
-      enddo
+            end do !bucle i
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -2138,7 +2138,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = up
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -2151,14 +2151,14 @@ end subroutine calc_cpmlconstants
                (Ex( i_m, j_m, k_m+1) - Ex( i_m, j_m, k_m)) * P_cm_z( k)
                medio = 1
                Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - GM2( medio) * regDU( REGION)%Psi_Hyzvac( i, j, k)
-            enddo !bucle i
-         enddo
-      enddo
+            end do !bucle i
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -2171,9 +2171,9 @@ end subroutine calc_cpmlconstants
                (Ey( i_m, j_m, k_m+1) - Ey( i_m, j_m, k_m)) * P_cm_z( k)
                medio = 1
                Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) + GM2(medio) * regDU( REGION)%Psi_Hxzvac( i, j, k)
-            enddo !bucle i
-         enddo
-      enddo
+            end do !bucle i
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -2183,7 +2183,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION=back
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -2196,14 +2196,14 @@ end subroutine calc_cpmlconstants
                (Ey( i_m+1, j_m, k_m) - Ey( i_m, j_m, k_m)) * P_cm_x( i)
                medio = 1
                Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) - GM2( medio) * regBF( REGION)%Psi_Hzxvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -2216,9 +2216,9 @@ end subroutine calc_cpmlconstants
                (Ez( i_m+1, j_m, k_m) - Ez( i_m, j_m, k_m)) * P_cm_x( i)
                medio = 1
                Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) + GM2( medio) * regBF( REGION)%Psi_Hyxvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -2227,7 +2227,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION=front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -2240,14 +2240,14 @@ end subroutine calc_cpmlconstants
                (Ey( i_m+1, j_m, k_m) - Ey( i_m, j_m, k_m)) * P_cm_x( i)
                medio = 1
                Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) - GM2( medio) * regBF( REGION)%Psi_Hzxvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -2260,9 +2260,9 @@ end subroutine calc_cpmlconstants
                (Ez( i_m+1, j_m, k_m) - Ez( i_m, j_m, k_m)) * P_cm_x( i)
                medio = 1
                Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) + GM2( medio) * regBF( REGION)%Psi_Hyxvac( i, j, k)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -2273,6 +2273,6 @@ end subroutine calc_cpmlconstants
    endsubroutine AdvanceMagneTicCPML_freespace
 
 
-end Module Borders_CPML
+end Module BORDERS_CPML_m
 
 

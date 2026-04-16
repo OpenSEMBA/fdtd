@@ -1,5 +1,5 @@
 module outputTypes
-   use FDETYPES
+   use FDETYPES_m
    use HollandWires
    use wiresHolland_constants
 #ifdef CompileWithBerengerWires

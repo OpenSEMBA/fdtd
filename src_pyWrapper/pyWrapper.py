@@ -120,11 +120,11 @@ class Probe():
             self.cell_init, self.cell_end = \
                 Probe._positionStrToTwoCells(position_str)
             self.data = self.data.rename(columns={
-                    self.data.columns[0]: 'freq',
-                    self.data.columns[7]: 'rcs_arit',
-                    self.data.columns[8]: 'rcs_geom'
-                })
-                
+                self.data.columns[0]: 'freq',
+                self.data.columns[7]: 'rcs_arit',
+                self.data.columns[8]: 'rcs_geom'
+            })
+
         elif tag in Probe.MOVIE_TAGS:
             self.type = 'movie'
             self.cell_init, self.cell_end = \
@@ -148,6 +148,16 @@ class Probe():
             raise ValueError("Unable to determine probe type")
 
     def __getitem__(self, key):
+        if key not in self.data.columns:
+            if key == 'current' and 'current_0' in self.data.columns:
+                return self.data['current_0']
+            elif key == 'current_0' and 'current' in self.data.columns:
+                return self.data['current']
+            
+            if key == 'voltage' and 'voltage_0' in self.data.columns:
+                return self.data['voltage_0']
+            elif key == 'voltage_0' and 'voltage' in self.data.columns:
+                return self.data['voltage']
         return self.data[key]
 
     @staticmethod
@@ -208,6 +218,7 @@ class Probe():
     def _getFieldAndDirection(tag: str):
         return tag[1], tag[2]
 
+
 class ExcitationFile():
     def __init__(self, excitation_filename):
         if isinstance(excitation_filename, os.PathLike):
@@ -216,11 +227,12 @@ class ExcitationFile():
             self.filename = excitation_filename
         assert os.path.isfile(self.filename)
 
-        self.data = pd.read_csv(self.filename, sep='\\s+', names=['time', 'value'])
+        self.data = pd.read_csv(
+            self.filename, sep='\\s+', names=['time', 'value'])
 
     def __getitem__(self, key):
         return self.data[key]
-    
+
 
 class FDTD():
     def __init__(self, input_filename, path_to_exe=None,
@@ -289,18 +301,12 @@ class FDTD():
                 if 'magnitudeFile' in p:
                     res.append(p['magnitudeFile'])
 
-        # .model files in circuit type materials.
-        if 'materials' in self._input:
-            for p in self._input['materials']:
-                if 'file' in p:
-                    res.append(p['file'])
-
         # .model files in terminations.
         if 'materials' in self._input:
             for p in self._input['materials']:
                 if 'terminations' in p:
                     for t in p['terminations']:
-                        if 'file' in t:
+                        if 'file' in t and not t['file'] in res:
                             res.append(t['file'])
 
         return res
@@ -356,7 +362,6 @@ class FDTD():
         for f in subfolders:
             shutil.rmtree(f, ignore_errors=True)
 
-
     def getSolvedProbeFilenames(self, probe_name):
         if not "probes" in self._input:
             raise ValueError('Solver does not contain probes.')
@@ -371,17 +376,18 @@ class FDTD():
         return sorted(probeFiles)
 
     def getExcitationFile(self, excitation_file_name):
-        file_extensions =('*.1.exc',)
+        file_extensions = ('*.exc',)
         excitationFile = []
         for ext in file_extensions:
-            newExcitationFile = [x for x in glob.glob(ext) if re.match(excitation_file_name, x)]
+            newExcitationFile = [x for x in glob.glob(
+                ext) if re.match(excitation_file_name, x)]
             excitationFile.extend(newExcitationFile)
-        
+
         if ((len(excitationFile)) != 1):
-            raise "Unexpected number of excitation Files found: {}".format(excitationFile)
+            raise ValueError(
+                "Unexpected number of excitation Files found: {}".format(excitationFile))
 
         return excitationFile
-
 
     def getVTKMap(self):
         current_path = os.getcwd()
@@ -392,9 +398,8 @@ class FDTD():
         for folder in folders:
             mapFile = os.path.join(current_path, folder, folder+"_1.vtk")
             if os.path.isfile(mapFile):
-                return mapFile            
+                return mapFile
         raise ValueError("Unable to find mapvatk file")
-
 
     def getCurrentVTKMap(self):
         current_path = os.getcwd()
@@ -403,7 +408,8 @@ class FDTD():
         if len(folders) != 1:
             return None
         for folder in folders:
-            mapFile = os.path.join(current_path, folder, folder+"_1_current.vtk")
+            mapFile = os.path.join(current_path, folder,
+                                   folder+"_1_current.vtk")
             if os.path.isfile(mapFile):
                 return mapFile
         raise ValueError("Unable to find current vtk file")
@@ -413,5 +419,3 @@ class FDTD():
             for idx, element in enumerate(self._input['materials']):
                 if element.get("name") == materialName:
                     return self._input['materials'][idx]
-
-

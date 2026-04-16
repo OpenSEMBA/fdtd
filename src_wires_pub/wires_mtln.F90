@@ -3,19 +3,19 @@
 ! Module thin wires from Wires paper
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module Wire_bundles_mtln_mod             
+module Wire_bundles_mtln_m             
 #ifdef CompileWithMTLN
 
-   use report
-   use fdetypes
-   use mtln_solver_mod , mtln_solver_t => mtln_t 
-   use mtln_types_mod, only: mtln_t
-   use HollandWires
-   use wiresHolland_constants
-   use ilumina
+   use Report_m
+   use FDETYPES_m
+   use mtln_solver_m , mtln_solver_t => mtln_t 
+   use mtln_types_m, only: mtln_t
+   use HollandWires_m
+   use wiresHolland_constants_m
+   use ilumina_m
    implicit none
    
-   REAL (KIND=RKIND_wires)           ::  eps0,mu0
+   real(kind=RKIND_wires) :: eps0,mu0
    private   
 
    public InitWires_mtln, AdvanceWiresE_mtln, GetSolverPtr, solveMTLNProblem, reportSimulationEnd
@@ -25,9 +25,9 @@ module Wire_bundles_mtln_mod
 contains
 
 
-   subroutine InitWires_mtln(sgg,Ex,Ey,Ez, eps00, mu00, mtln_parsed,thereAreMTLNbundles, dtcritico)
-      type (SGGFDTDINFO), intent(IN), target    :: sgg 
-      REAL (KIND=RKIND), intent(inout), target :: &
+   subroutine InitWires_mtln(sgg,Ex,Ey,Ez, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz, eps00, mu00, mtln_parsed,thereAreMTLNbundles, dtcritico)
+      type(SGGFDTDINFO_t), intent(in), target    :: sgg 
+      real(kind=RKIND), intent(inout), target :: &
          Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,  &
             sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,  &
             sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
@@ -37,12 +37,20 @@ contains
          Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,  &
             sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,  &
             sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
+
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
+         sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
+         sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
+         sggMiEz(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE), &
+         sggMiHx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE), &
+         sggMiHy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE), &
+         sggMiHz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE)
    
-      real(KIND=RKIND) :: eps00,mu00
+      real(kind=RKIND) :: eps00,mu00
    
       type(mtln_t) :: mtln_parsed
       logical :: thereAreMTLNbundles
-      real (kind=rkind_tiempo), intent(inout) :: dtcritico
+      real(kind=rkind_tiempo), intent(inout) :: dtcritico
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
@@ -61,7 +69,7 @@ contains
         else    
            thereAreMTLNbundles=.false.
            return
-      endif
+      end if
       if (mtln_solver%dt < dtcritico) dtcritico = mtln_solver%dt
       call pointSegmentsToFields()
       call mtln_solver%updatePULTerms()
@@ -69,7 +77,7 @@ contains
    contains
 
       subroutine pointSegmentsToFields()
-         integer (kind=4) :: i, j, k, m, n, direction
+         integer(kind=4) :: i, j, k, m, n
 #ifdef CompileWithMPI      
          integer(kind=4) :: ierr, rank
          call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
@@ -79,33 +87,50 @@ contains
             if (mtln_solver%bundles(m)%bundle_in_layer) then 
                do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
                   call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))
-                  direction = abs(mtln_solver%bundles(m)%external_field_segments(n)%direction)
                   select case (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction))
-                     case(1)                                
-                     mtln_solver%bundles(m)%external_field_segments(n)%field => Ex(i, j, k) 
-                     case(2)     
-                     mtln_solver%bundles(m)%external_field_segments(n)%field => Ey(i, j, k) 
-                     case(3)        
-                     mtln_solver%bundles(m)%external_field_segments(n)%field => Ez(i, j, k)
+                     case(DIRECTION_X_POS)
+                        if (isEmbeddedInPECorLossy(sggmiEx(i,j,k))) then 
+                           mtln_solver%bundles(m)%external_field_segments(n)%field => mtln_solver%null_field
+                        else
+                           mtln_solver%bundles(m)%external_field_segments(n)%field => Ex(i, j, k) 
+                        end if
+                     case(DIRECTION_Y_POS)     
+                        if (isEmbeddedInPECorLossy(sggmiEy(i,j,k))) then 
+                           mtln_solver%bundles(m)%external_field_segments(n)%field => mtln_solver%null_field
+                        else
+                           mtln_solver%bundles(m)%external_field_segments(n)%field => Ey(i, j, k) 
+                        end if
+                     case(DIRECTION_Z_POS)        
+                        if (isEmbeddedInPECorLossy(sggmiEz(i,j,k))) then 
+                           mtln_solver%bundles(m)%external_field_segments(n)%field => mtln_solver%null_field
+                        else
+                           mtln_solver%bundles(m)%external_field_segments(n)%field => Ez(i, j, k) 
+                        end if
                      end select
                end do
             end if
          end do
       end subroutine
 
-   endsubroutine InitWires_mtln
+      logical function isEmbeddedInPECorLossy(media)
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: media
+         isEmbeddedInPECorLossy = (media == 0 .or. sgg%med(media)%is%pec .or. sgg%med(media)%is%lossy)
+   end function
+
+   end subroutine InitWires_mtln
 
    subroutine AdvanceWiresE_mtln(sgg,Idxh, Idyh, Idzh, eps00,mu00)  
-      type (SGGFDTDINFO), intent(IN), target    :: sgg      
-      real (kind=RKIND), dimension (:), intent(in) :: &
+      type(SGGFDTDINFO_t), intent(in), target    :: sgg      
+      real(kind=RKIND), dimension(:), intent(in) :: &
          Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE),&
          Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE),&
          Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)  
-      real(KIND=RKIND) :: cte,eps00,mu00
-      integer (kind=4) :: m, n
-      REAL (KIND=RKIND),pointer:: punt
+      real(kind=RKIND) :: cte,eps00,mu00, f
+      integer(kind=4) :: m, n
+      real(kind=RKIND),pointer:: punt
       eps0 = eps00 
       mu0 = mu00
+      mtln_solver%null_field = 0.0_rkind
       
       do m = 1, mtln_solver%number_of_bundles
          if (mtln_solver%bundles(m)%bundle_in_layer) then 
@@ -115,6 +140,7 @@ contains
             end do
          end if
       end do
+      mtln_solver%null_field = 0.0_rkind
 
       call mtln_solver%step()
 
@@ -125,7 +151,7 @@ contains
          integer(kind=4), intent(in) :: m, n
          real(kind=rkind) :: res
          real(kind=rkind) :: curr
-         integer (kind=4) :: direction, i
+         integer(kind=4) :: direction, i
          res = 0
          direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
          curr = 0
@@ -139,7 +165,7 @@ contains
          integer(kind=4), intent(in) :: m, n
          real(kind=rkind) :: dS_inverse, factor
          real(kind=rkind) :: res
-         integer (kind=4) :: i, j, k, direction
+         integer(kind=4) :: i, j, k, direction
          direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
          call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
          select case (abs(direction))  
@@ -178,8 +204,8 @@ contains
    end subroutine
 
    subroutine reportSimulationEnd(layoutnumber)
-      character (len=bufsize) :: dubuf
-      integer (kind=4), intent(in) ::  layoutnumber
+      character(len=bufsize) :: dubuf
+      integer(kind=4), intent(in) :: layoutnumber
       write(dubuf, *) 'MTLN simulation finished. Init flusing probe data to output files'
       call print11(layoutnumber,dubuf)
 
@@ -188,4 +214,4 @@ contains
 
 #endif
 
-end module Wire_bundles_mtln_mod
+end module Wire_bundles_mtln_m

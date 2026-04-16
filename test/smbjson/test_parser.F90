@@ -1,5 +1,5 @@
 integer function test_parser_ctor() bind(C) result(err)
-   use smbjson
+   use smbjson_m
    use smbjson_testingTools
 
    implicit none
@@ -16,13 +16,13 @@ integer function test_parser_ctor() bind(C) result(err)
 end function
 
 integer function test_parser_tools_interval_to_coords() result(err)
-   use parser_tools_mod
+   use parser_tools_m
    use smbjson_testingTools
 
    implicit none
 
    type(cell_interval_t) :: interval
-   type(coords), dimension(:), allocatable :: cs
+   type(coords_t), dimension(:), allocatable :: cs
    err = 0
 
    ! +Y oriented linel interval.
@@ -71,7 +71,7 @@ end function
 
 integer function test_parser_read_mesh() bind(C) result(err)
 
-   use smbjson
+   use smbjson_m
    use smbjson_testingTools
 
    implicit none
@@ -107,7 +107,7 @@ end function
 
 integer function test_parser_read_conformal_volume() bind(C) result(err)
 
-   use smbjson
+   use smbjson_m
    use smbjson_testingTools
    
    implicit none

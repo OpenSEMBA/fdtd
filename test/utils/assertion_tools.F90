@@ -1,5 +1,5 @@
 module mod_assertionTools
-   use FDETYPES
+   use FDETYPES_m
    use mod_arrayAssertionTools
    use iso_fortran_env, only: real32, real64
    implicit none

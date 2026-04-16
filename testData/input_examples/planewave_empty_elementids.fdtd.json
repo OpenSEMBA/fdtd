@@ -1,0 +1,38 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Planewave with empty elementIds - should fail with error, not segfault.",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 2000
+    },
+    
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [10, 10, 10],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "coordinates": [],
+        "elements": []
+    },
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [],
+            "direction": {
+                "theta": 0.0,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 1.5708,
+                "phi": 0.0
+            }
+        }
+    ]
+}

@@ -18,7 +18,7 @@ contains
   subroutine init_farField_probe_output(this, sgg, lowerBound, upperBound, field, domain, sphericRange, outputTypeExtension, fileNormalize,control, problemInfo, eps0, mu0)
       type(far_field_probe_output_t), intent(out) :: this
       type(domain_t), intent(in) :: domain
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
       integer(kind=SINGLE), intent(in) :: field
       type(spheric_domain_t), intent(in) :: sphericRange

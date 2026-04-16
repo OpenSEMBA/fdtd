@@ -1,12 +1,12 @@
-module mesh_mod
+module mesh_m
 
 #ifdef CompileWithSMBJSON   
    use, intrinsic :: iso_fortran_env , only: error_unit
    
    use fhash, only: fhash_tbl_t, key=>fhash_key
-   use cells_mod
-   use geometry_mod, only: triangle_t
-   integer, private, parameter  ::  MAX_LINE = 256
+   use cells_m
+   use geometry_m, only: triangle_t
+   integer, private, parameter  :: MAX_LINE = 256
    integer, parameter :: REGION_TYPE_VOLUME = 3
    integer, parameter :: REGION_TYPE_SURFACE = 2
 
