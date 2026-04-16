@@ -197,16 +197,20 @@ contains
       return
    end function
 
-   subroutine solveMTLNProblem(mtln_parsed)
+   subroutine solveMTLNProblem(mtln_parsed, nEntradaRoot)
       type(mtln_t) :: mtln_parsed
+      character(len=*), intent(in) :: nEntradaRoot
       mtln_solver = mtlnCtor(mtln_parsed)
+      call mtln_solver%updatePULTerms()
+      call mtln_solver%initObservation(nEntradaRoot)
       call mtln_solver%run()
+      call mtln_solver%closeObservation()
    end subroutine
 
    subroutine reportSimulationEnd(layoutnumber)
       character(len=bufsize) :: dubuf
       integer(kind=4), intent(in) :: layoutnumber
-      write(dubuf, *) 'MTLN simulation finished. Init flusing probe data to output files'
+      write(dubuf, *) 'MTLN simulation finished.'
       call print11(layoutnumber,dubuf)
 
    end subroutine

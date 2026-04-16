@@ -1528,4 +1528,3 @@ def test_bulk_current_outputs(tmp_path):
     assert probeBulkZPlane.direction == 'z'
     assert probeBulkYPoint.direction == 'y'
     assert probeBulkZVolume.direction == 'z'
-
