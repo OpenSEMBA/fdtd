@@ -73,7 +73,6 @@ module Solver_m
    use P_rescale
 #endif              
 #ifdef CompileWithMTLN
-   ! use mtln_solver_mod, mtln_solver_t => mtln_t
    use mtln_types_m, only: mtln_t
    use Wire_bundles_mtln_m
 #endif
@@ -280,10 +279,9 @@ module Solver_m
       type(mtln_t) :: mtln_parsed
       character(len=*), intent(in) :: nEntradaRoot
       integer(kind=4), intent(in) :: layoutnumber
-
-      call solveMTLNProblem(mtln_parsed)
+      
+      call solveMTLNProblem(mtln_parsed, nEntradaRoot)
       call reportSimulationEnd(layoutnumber)
-      call FlushMTLNObservationFiles(nEntradaRoot, mtlnProblem = .true.)
    end subroutine
 #endif
 
@@ -1466,7 +1464,6 @@ contains
          call InitObservation (this%sgg,this%media,this%tag_numbers, &
                                  this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%initialtimestep,this%lastexecutedtime, &
                                  this%sinPML_fullsize,this%eps0,this%mu0,this%bounds, this%control)
-
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
 
@@ -2715,9 +2712,6 @@ contains
       if (this%thereAre%Observation) then
          call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
-#ifdef CompileWithMTLN      
-         call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
-#endif
       end if
       
       if (this%thereAre%FarFields) then

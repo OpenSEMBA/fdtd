@@ -114,7 +114,7 @@ module Observa_m
   !Required at least in tests
   public fieldo
 #ifdef CompileWithMTLN
-  public FlushMTLNObservationFiles
+  public InitObservationMTLN, UpdateObservationMTLN, CloseObservationFilesMTLN
 #endif
 contains
 
@@ -2182,6 +2182,10 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
             !!!!        end if !del time domain !NO ES PRECISO 25/02/14
         end do !del ii=1,numberrequest
 
+#ifdef CompileWithMTLN
+        call InitObservationMTLN(control%nEntradaRoot)
+#endif
+
         write (19, '(a)') '!END '
         close (19)
 
@@ -2636,7 +2640,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
           end if !no hay singlewrite para sondas freqdomain
         end do
       end do
-
+#ifdef CompileWithMTLN
+      call CloseObservationFilesMTLN()
+#endif
       return
     end subroutine CloseObservationFiles
 
@@ -3304,6 +3310,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
           end if !del nothing
         end do loop_obser
       end do
+#ifdef CompileWithMTLN
+      call UpdateObservationMTLN(nTime)
+#endif
       !---------------------------> acaba UpdateObservation <-----------------------------------------
       return
 
@@ -4074,9 +4083,54 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
     end subroutine FlushObservationFiles
 
 #ifdef CompileWithMTLN
-    subroutine FlushMTLNObservationFiles(nEntradaRoot, mtlnProblem)
+    subroutine InitObservationMTLN(nEntradaRoot)
       character(len=*), intent(in) :: nEntradaRoot
-      logical, intent(in) :: mtlnProblem
+      type(mtln_solver_t), pointer :: mtln_solver
+      integer :: i, j, k, unit
+      character(len=bufsize) :: path
+      character(len=bufsize) :: temp
+      character(len=:), allocatable :: buffer
+
+      mtln_solver => GetSolverPtr()
+      if (.not. allocated(mtln_solver%bundles)) return
+      unit = 2000
+      do i = 1, size(mtln_solver%bundles)
+        do j = 1, size(mtln_solver%bundles(i)%probes)
+#ifdef CompileWithMPI
+          if (.not. mtln_solver%bundles(i)%probes(j)%in_layer) cycle
+#endif          
+          mtln_solver%bundles(i)%probes(j)%unit = unit
+          path = trim(trim(nEntradaRoot)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat")
+          open (unit=unit, file=trim(path))
+          write (*, *) 'name: ', trim(mtln_solver%bundles(i)%probes(j)%name)
+          buffer = "time"
+          do k = 1, size(mtln_solver%bundles(i)%probes(j)%val, 2)
+            write (temp, *) k
+            buffer = buffer//" "//"conductor_"//trim(adjustl(temp))
+          end do
+          write (unit, '(a)') trim(buffer)
+          unit = unit + 1
+        end do
+      end do
+    end subroutine
+
+    subroutine CloseObservationFilesMTLN()
+      type(mtln_solver_t), pointer :: mtln_solver
+      integer :: i, j, k
+      mtln_solver => GetSolverPtr()
+      if (.not. allocated(mtln_solver%bundles)) return
+      do i = 1, size(mtln_solver%bundles)
+        do j = 1, size(mtln_solver%bundles(i)%probes)
+#ifdef CompileWithMPI
+          if (.not. mtln_solver%bundles(i)%probes(j)%in_layer) cycle
+#endif          
+          close(mtln_solver%bundles(i)%probes(k)%unit)
+        end do
+      end do
+    end subroutine
+
+    subroutine UpdateObservationMTLN(step)
+      integer, intent(in) :: step
       type(mtln_solver_t), pointer :: mtln_solver
       integer :: i, j, k, n
       integer :: unit
@@ -4089,37 +4143,21 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
       mtln_solver => GetSolverPtr()
       if (.not. allocated(mtln_solver%bundles)) return
-      unit = 2000
       do i = 1, size(mtln_solver%bundles)
         do j = 1, size(mtln_solver%bundles(i)%probes)
 #ifdef CompileWithMPI
           if (.not. mtln_solver%bundles(i)%probes(j)%in_layer) cycle
 #endif          
-          path = trim(trim(nEntradaRoot)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat")
-          open (unit=unit, file=trim(path))
-          write (*, *) 'name: ', trim(mtln_solver%bundles(i)%probes(j)%name)
-          buffer = "time"
-
-          do k = 1, size(mtln_solver%bundles(i)%probes(j)%val, 2)
-            write (temp, *) k
-            buffer = buffer//" "//"conductor_"//trim(adjustl(temp))
+          buffer = ""
+          write(temp, *) mtln_solver%bundles(i)%probes(j)%t(step+1)
+          buffer = buffer//trim(temp)
+          do n = 1, size(mtln_solver%bundles(i)%probes(j)%val, 2)
+            write (temp, *) mtln_solver%bundles(i)%probes(j)%val(step+1, n)
+            buffer = buffer//" "//trim(temp)
           end do
-          write (unit, *) trim(buffer)
-          do k = 1, size(mtln_solver%bundles(i)%probes(j)%val, 1)
-            buffer = ""
-            write (temp, *) mtln_solver%bundles(i)%probes(j)%t(k)
-            buffer = buffer//trim(temp)
-            do n = 1, size(mtln_solver%bundles(i)%probes(j)%val, 2)
-              write (temp, *) mtln_solver%bundles(i)%probes(j)%val(k, n)
-              buffer = buffer//" "//trim(temp)
-            end do
-            write (unit, '(a)') trim(buffer)
-          end do
-          close (unit)
-          unit = unit + 1
+          write (mtln_solver%bundles(i)%probes(j)%unit, '(a)') trim(buffer)
         end do
       end do
-
     end subroutine
 #endif
 
