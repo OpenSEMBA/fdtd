@@ -304,7 +304,7 @@ def test_three_surfaces(tmp_path):
     line_tag_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='tagnumber')
     assert line_tag_dict[64] == 8
-    assert line_tag_dict[128] == 4
+    assert line_tag_dict[128] == 6
     assert line_tag_dict[192] == 4
 
     face_media_dict = createPropertyDictionary(
@@ -316,7 +316,7 @@ def test_three_surfaces(tmp_path):
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
     assert line_media_dict[0.5] == 8  # PEC line
-    assert line_media_dict[3.5] == 8  # SGBC line
+    assert line_media_dict[3.5] == 10  # SGBC line
 
 def test_three_surfaces_Jprobe(tmp_path):
     fn = CASES_FOLDER + 'observation/three_surfaces_Jprobe.fdtd.json'

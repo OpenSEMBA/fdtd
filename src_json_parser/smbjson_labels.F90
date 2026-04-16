@@ -25,6 +25,8 @@ module smbjson_labels_m
 
    ! -- materials
    character(len=*), parameter :: J_MATERIALS = "materials"
+   character(len=*), parameter :: J_MAT_ABS_PERMITTIVITY = "absolutePermittivity"
+   character(len=*), parameter :: J_MAT_ABS_PERMEABILITY = "absolutePermeability"
    character(len=*), parameter :: J_MAT_REL_PERMITTIVITY = "relativePermittivity"
    character(len=*), parameter :: J_MAT_REL_PERMEABILITY = "relativePermeability"
    character(len=*), parameter :: J_MAT_ELECTRIC_CONDUCTIVITY = "electricConductivity"

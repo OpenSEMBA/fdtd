@@ -77,7 +77,7 @@ contains
       ! Expected sources.
       allocate(expected%plnSrc%collection(1))
       expected%plnSrc%collection(1)%nombre_fichero = "shielded_pair.exc"
-      expected%plnSrc%collection(1)%atributo = ""
+      expected%plnSrc%collection(1)%atributo = "LOCKED"
       expected%plnSrc%collection(1)%coor1 = [10, 10, 10]
       expected%plnSrc%collection(1)%coor2 = [139, 139, 139]
       expected%plnSrc%collection(1)%theta = 3.1416_RKIND

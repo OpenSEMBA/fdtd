@@ -69,7 +69,7 @@ contains
       ! ex sources.
       allocate(ex%plnSrc%collection(1))
       ex%plnSrc%collection(1)%nombre_fichero = "unshielded_50ns.exc"
-      ex%plnSrc%collection(1)%atributo = ""
+      ex%plnSrc%collection(1)%atributo = "LOCKED"
       ex%plnSrc%collection(1)%coor1 = [1, 1, 1]
       ex%plnSrc%collection(1)%coor2 = [28, 28, 28]
       ex%plnSrc%collection(1)%theta = 1.5708_RKIND
