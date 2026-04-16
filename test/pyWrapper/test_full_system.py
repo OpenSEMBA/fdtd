@@ -1429,8 +1429,8 @@ def test_current_generators_with_resistance(tmp_path):
     solver.run()
     Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
     Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
-    Vend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
-    Vstart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+    Vend = Probe(solver.getSolvedProbeFilenames("probe_end")[1])
+    Vstart = Probe(solver.getSolvedProbeFilenames("probe_start")[1])
 
     assert np.allclose(Iend['current_0'][-100:-1], 1.0/3.0, rtol=0.005)
     assert np.allclose(Istart['current_0'][-100:-1], 1.0/3.0, rtol=0.005)
@@ -1485,8 +1485,8 @@ def test_voltage_generators(tmp_path):
     
     Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
     Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
-    Vend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
-    Vstart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+    Vend = Probe(solver.getSolvedProbeFilenames("probe_end")[1])
+    Vstart = Probe(solver.getSolvedProbeFilenames("probe_start")[1])
 
     assert np.allclose(Iend['current_0'][-100:-1],   0.0, rtol=0.005)
     assert np.allclose(Istart['current_0'][-100:-1], 0.0, rtol=0.005)
