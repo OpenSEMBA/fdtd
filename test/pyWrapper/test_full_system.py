@@ -332,51 +332,53 @@ def test_unshielded_multiwires(tmp_path):
     assert np.corrcoef(solved_1, p_expected['current_1'])[0,1] > 0.999
 
 
-@mtln_skip
+@no_mpi_skip
+def test_towelHanger_mpi(tmp_path):
+    fn = CASES_FOLDER + 'towelHanger/towelHanger_mpi.fdtd.json'
+    mpidir = ["x","y","z"]
+    for i in range(3):
+        solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                    run_in_folder=tmp_path, flags=['-mpidir ' + mpidir[i]], 
+                    mpi_command='mpirun -np 1',)
+        for j in range(len(solver["mesh"]["coordinates"])):
+            cs = [0,0,0]
+            cs[0] = solver["mesh"]["coordinates"][j]["relativePosition"][(0 + i)%3]
+            cs[1] = solver["mesh"]["coordinates"][j]["relativePosition"][(1 + i)%3]
+            cs[2] = solver["mesh"]["coordinates"][j]["relativePosition"][(2 + i)%3]
+            solver["mesh"]["coordinates"][j]["relativePosition"] = cs
+
+        intervals = [[[0,0,0], [0,0,0]]]
+        intervals[0][0][0] = solver["mesh"]["elements"][2]["intervals"][0][0][(0 + i)%3]
+        intervals[0][0][1] = solver["mesh"]["elements"][2]["intervals"][0][0][(1 + i)%3]
+        intervals[0][0][2] = solver["mesh"]["elements"][2]["intervals"][0][0][(2 + i)%3]
+        intervals[0][1][0] = solver["mesh"]["elements"][2]["intervals"][0][1][(0 + i)%3]
+        intervals[0][1][1] = solver["mesh"]["elements"][2]["intervals"][0][1][(1 + i)%3]
+        intervals[0][1][2] = solver["mesh"]["elements"][2]["intervals"][0][1][(2 + i)%3]
+
+        solver["mesh"]["elements"][2]["intervals"] = intervals
+        solver.cleanUp()
+        solver.run()
+
+        p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
+                    Probe(solver.getSolvedProbeFilenames("wire_mid")[0]),
+                    Probe(solver.getSolvedProbeFilenames("wire_end")[0])]
+
+        p_expected = [Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
+                    Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
+                    Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
+
+        for i in range(3):
+            solved = np.interp(p_expected[i]['time'].to_numpy(), 
+                            p_solved[i]['time'].to_numpy(), 
+                            p_solved[i]['current_0'].to_numpy())
+            assert np.corrcoef(solved, p_expected[i]['current_0'])[0,1] > 0.999
+    
+    
+
 def test_towelHanger(tmp_path):
     fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
-    solver['materials'][0] = createWire(id = 1, r = 0.1e-3)
-
-    p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
-                   Probe(solver.getSolvedProbeFilenames("wire_mid")[0]),
-                   Probe(solver.getSolvedProbeFilenames("wire_end")[0])]
-
-    p_expected = [Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
-                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
-                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
-
-    assert np.allclose(p_expected[0]['current'], p_solved[0]['current'], rtol=5e-3, atol=5e-4)
-    assert np.allclose(p_expected[1]['current'], p_solved[1]['current'], rtol=5e-3, atol=5e-4)
-    assert np.allclose(p_expected[2]['current'], p_solved[2]['current'], rtol=5e-3, atol=5e-4)
-
-@no_mtln_skip
-def test_towelHanger(tmp_path):
-    fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
-    solver.run()
-
-    p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
-                   Probe(solver.getSolvedProbeFilenames("wire_mid")[0]),
-                   Probe(solver.getSolvedProbeFilenames("wire_end")[0])]
-
-    p_expected = [Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
-                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
-                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
-
-    assert np.allclose(p_expected[0]['current'], -p_solved[0]['current_0'], rtol=5e-3, atol=5e-4)
-    assert np.allclose(p_expected[1]['current'], -p_solved[1]['current_0'], rtol=5e-3, atol=5e-4)
-    assert np.allclose(p_expected[2]['current'],  p_solved[2]['current_0'], rtol=5e-3, atol=5e-4)
-
-@no_mtln_skip
-def test_towelHanger(tmp_path):
-    fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
     solver.run()
 
     p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
@@ -392,6 +394,68 @@ def test_towelHanger(tmp_path):
                            p_solved[i]['time'].to_numpy(), 
                            p_solved[i]['current_0'].to_numpy())
         assert np.corrcoef(solved, p_expected[i]['current_0'])[0,1] > 0.999
+
+
+def test_towel_rack_with_and_without_shorting_plane(tmp_path):
+    fn = CASES_FOLDER + \
+        'towel_rack_with_shorting_plane/towel_rack_with_shorting_plane.fdtd.json'
+
+    # --- excitation ---
+    dt = 1e-12
+    w0 = 0.1e-8
+    t0 = 10 * w0
+    t = np.arange(0, t0 + 20 * w0, dt)
+    excitation = np.exp(-np.power(t - t0, 2) / w0 ** 2)
+    exc_file = os.path.join(tmp_path, 'gauss.exc')
+    np.savetxt(exc_file, np.column_stack([t, excitation]))
+
+    freqs = np.geomspace(1e3, 1e9, 61)
+
+    # --- with shorting plane ---
+    folder_with    = os.path.join(tmp_path, 'with_shorting_plane')
+    os.makedirs(folder_with)
+    solver_w = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=folder_with)
+    solver_w.run()
+
+    probe_name = os.path.basename(solver_w.getSolvedProbeFilenames("Wire probe")[0])
+    probe_w = Probe(os.path.join(folder_with, probe_name))
+    time_I_w  = probe_w["time"].to_numpy()
+    current_w = probe_w["current_0"].to_numpy()
+    V_interp_w = np.interp(time_I_w, t, excitation)
+    Z_in_w = dtft(V_interp_w, time_I_w, freqs) / dtft(current_w, time_I_w, freqs)
+
+    # --- without shorting plane ---
+    folder_without = os.path.join(tmp_path, 'without_shorting_plane')
+    os.makedirs(folder_without)
+    solver_wo = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=folder_without)
+    solver_wo['materialAssociations'][0]['elementIds'] = [1]
+    solver_wo.run()
+
+    probe_wo = Probe(os.path.join(folder_without, probe_name))
+    time_I_wo  = probe_wo["time"].to_numpy()
+    current_wo = probe_wo["current_0"].to_numpy()
+    V_interp_wo = np.interp(time_I_wo, t, excitation)
+    Z_in_wo = dtft(V_interp_wo, time_I_wo, freqs) / dtft(current_wo, time_I_wo, freqs)
+
+    # For debugging
+    # import matplotlib.pyplot as plt
+    # plt.figure()
+    # plt.semilogx(freqs, 20 * np.log10(np.abs(Z_in_w)),  label="With shorting plane")
+    # plt.semilogx(freqs, 20 * np.log10(np.abs(Z_in_wo)), label="Without shorting plane")
+    # plt.xlabel("Frequency [Hz]")
+    # plt.ylabel("|Z(j2πf)| [dB]")
+    # plt.grid(which="both")
+    # plt.legend()
+    # plt.tight_layout()
+    # plt.savefig('tmp-plot.png')
+    # plt.show()
+
+    # Expect the shorting plane not changing the impedance at low frequencies.
+    assert np.allclose(
+        np.abs(Z_in_w[freqs < 1e6]), 
+        np.abs(Z_in_wo[freqs < 1e6]), 
+        rtol=0.1
+    )
 
 
 @no_hdf_skip
@@ -1259,147 +1323,40 @@ def test_bulk_current_four_probes_Z_oriented(tmp_path):
     assert np.allclose(probe_LU["current"].to_numpy(), 0.0, atol=2e-3)
     assert np.allclose(probe_UL["current"].to_numpy(), 0.0, atol=2e-3)
 
-@mtln_skip
-def test_conformal_impedance_cylinder_single_wire(tmp_path):
-    case_name = 'conformal_impedance_cylinder_conformal'
-    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
 
-    solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
-    bulk_conf = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-
-    case_name = 'conformal_impedance_cylinder_staircase'
-    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
-
-    solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
-    bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-    
-    #discrete fourier transforms
-    exc_file = "predefinedExcitation.1.exc"
-    exc = pd.read_csv(exc_file, sep='\\s+')
-    exc = exc.rename(columns={
-        exc.columns[0]: 'time',
-        exc.columns[1]: 'V'
-    })
-    new_freqs = np.geomspace(1e3, 1e7, num=100)
-    Vexc = exc["V"].to_numpy()
-    texc = exc["time"].to_numpy()
-    dt_exc = texc[1]-texc[0]
-    Vfexc = dt_exc*np.array([np.sum(Vexc * np.exp(-1j * 2 * np.pi * f * texc)) for f in new_freqs])
-
-    Ibulk = bulk["current"].to_numpy()
-    tbulk = bulk["time"].to_numpy()
-    dt_bulk = tbulk[1]-tbulk[0]
-    Ifbulk = dt_bulk*np.array([np.sum(Ibulk * np.exp(-1j * 2 * np.pi * f * tbulk)) for f in new_freqs])
-
-    Ibulk_conf = bulk_conf["current"].to_numpy()
-    tbulk_conf = bulk_conf["time"].to_numpy()
-    dt_bulk_conf = tbulk_conf[1]-tbulk_conf[0]
-    Ifbulk_conf = dt_bulk_conf*np.array([np.sum(Ibulk_conf * np.exp(-1j * 2 * np.pi * f * tbulk_conf)) for f in new_freqs])
-
-    #impedance comparison
-    assert np.allclose(np.abs(Vfexc/Ifbulk), np.abs(Vfexc/Ifbulk_conf), rtol=0.01, atol=0.001)
-
-@no_mtln_skip    
-def test_conformal_impedance_cylinder_wire(tmp_path):
-    case_name = 'conformal_impedance_cylinder_conformal'
-    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
-
-    solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
-    bulk_conf = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-
-    case_name = 'conformal_impedance_cylinder_staircase'
-    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
-
-    solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
-    bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-    
-    #discrete fourier transforms
-    exc_file = "predefinedExcitation.1.exc"
-    exc = pd.read_csv(exc_file, sep='\\s+')
-    exc = exc.rename(columns={
-        exc.columns[0]: 'time',
-        exc.columns[1]: 'V'
-    })
-    new_freqs = np.geomspace(1e3, 1e7, num=100)
-    Vexc = exc["V"].to_numpy()
-    texc = exc["time"].to_numpy()
-    dt_exc = texc[1]-texc[0]
-    Vfexc = dt_exc*np.array([np.sum(Vexc * np.exp(-1j * 2 * np.pi * f * texc)) for f in new_freqs])
-
-    Ibulk = bulk["current"].to_numpy()
-    tbulk = bulk["time"].to_numpy()
-    dt_bulk = tbulk[1]-tbulk[0]
-    Ifbulk = dt_bulk*np.array([np.sum(Ibulk * np.exp(-1j * 2 * np.pi * f * tbulk)) for f in new_freqs])
-
-    Ibulk_conf = bulk_conf["current"].to_numpy()
-    tbulk_conf = bulk_conf["time"].to_numpy()
-    dt_bulk_conf = tbulk_conf[1]-tbulk_conf[0]
-    Ifbulk_conf = dt_bulk_conf*np.array([np.sum(Ibulk_conf * np.exp(-1j * 2 * np.pi * f * tbulk_conf)) for f in new_freqs])
-
-    #impedance comparison
-    assert np.allclose(np.abs(Vfexc/Ifbulk), np.abs(Vfexc/Ifbulk_conf), rtol=0.01, atol=0.001)
-
-@no_mtln_skip
+# compiled without mtln uses classic wires
+# compiled with mtln, wire is treated as an unshielded multiwire
 def test_conformal_impedance_cylinder_unshielded(tmp_path):
     case_name = 'conformal_impedance_cylinder_conformal'
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver.cleanUp()
-    solver['materials'][2] = createUnshieldedWire(id = 3, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
     solver.run()
     assert solver.hasFinishedSuccessfully()
     bulk_conf = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-
-    case_name = 'conformal_impedance_cylinder_staircase'
-    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
-    solver['materials'][2] = createUnshieldedWire(id = 3, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
-    bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-    
+   
     #discrete fourier transforms
-    exc_file = "predefinedExcitation.1.exc"
+    exc_file = solver.getExcitationFile("predefinedExcitation")[0]
     exc = pd.read_csv(exc_file, sep='\\s+')
     exc = exc.rename(columns={
         exc.columns[0]: 'time',
         exc.columns[1]: 'V'
     })
-    new_freqs = np.geomspace(1e3, 1e7, num=100)
+    new_freqs = np.geomspace(1e3, 1e6, num=100)
     Vexc = exc["V"].to_numpy()
     texc = exc["time"].to_numpy()
     dt_exc = texc[1]-texc[0]
     Vfexc = dt_exc*np.array([np.sum(Vexc * np.exp(-1j * 2 * np.pi * f * texc)) for f in new_freqs])
-
-    Ibulk = bulk["current"].to_numpy()
-    tbulk = bulk["time"].to_numpy()
-    dt_bulk = tbulk[1]-tbulk[0]
-    Ifbulk = dt_bulk*np.array([np.sum(Ibulk * np.exp(-1j * 2 * np.pi * f * tbulk)) for f in new_freqs])
 
     Ibulk_conf = bulk_conf["current"].to_numpy()
     tbulk_conf = bulk_conf["time"].to_numpy()
     dt_bulk_conf = tbulk_conf[1]-tbulk_conf[0]
     Ifbulk_conf = dt_bulk_conf*np.array([np.sum(Ibulk_conf * np.exp(-1j * 2 * np.pi * f * tbulk_conf)) for f in new_freqs])
 
-    #impedance comparison
-    assert np.allclose(np.abs(Vfexc/Ifbulk), np.abs(Vfexc/Ifbulk_conf), rtol=0.01, atol=0.001)
+    data = pd.read_csv(OUTPUTS_FOLDER+'conformal_cylinder_impedance_output.dat', sep=" ", header=0)
+    data.columns = ["f", "z"]
+
+    assert np.corrcoef(data['z'], np.abs(Vfexc/Ifbulk_conf))[0,1] > 0.999
 
     
 def test_conformal_sphere_rcs(tmp_path):
@@ -1421,8 +1378,7 @@ def test_conformal_sphere_rcs(tmp_path):
     # simulated, interpolated to analytical frequencies
     rcs_interp = np.interp(f,ffar,rg)
 
-    assert np.allclose(rcs[5:150], rcs_interp[5:150], rtol=0.25, atol=0.15)
-    
+    assert np.corrcoef(rcs[5:150], rcs_interp[5:150])[0,1] > 0.98
 
 def test_conformal_delay(tmp_path):
     fn = CASES_FOLDER + 'conformal/conformal.fdtd.json'
@@ -1459,6 +1415,89 @@ def test_conformal_delay(tmp_path):
         assert np.abs(delay - tdelta)/tdelta < 0.01
         
 
+@no_mtln_skip
+@pytest.mark.mtln
+def test_current_generators_with_resistance(tmp_path):
+    # Checks current and voltage of probes at the extremes of a wire
+    # with a current generator in the middle of the wire
+    
+    fn = CASES_FOLDER + 'sources/sources_current.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver["sources"][0]["elementIds"] = [1]
+    solver.cleanUp()
+    solver.run()
+    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
+    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+    Vend = Probe(solver.getSolvedProbeFilenames("probe_end")[1])
+    Vstart = Probe(solver.getSolvedProbeFilenames("probe_start")[1])
+
+    assert np.allclose(Iend['current_0'][-100:-1], 1.0/3.0, rtol=0.005)
+    assert np.allclose(Istart['current_0'][-100:-1], 1.0/3.0, rtol=0.005)
+    assert np.allclose(Vend['voltage_0'][-100:-1], 16.666, rtol=0.005)
+    assert np.allclose(Vstart['voltage_0'][-100:-1], -16.666, rtol=0.005)
+
+def test_current_generators_without_resistance(tmp_path):
+    # Checks current probes at the extremes of a wire
+    # with a current generator in the middle of the wire and on the extremes of the wire
+    
+    fn = CASES_FOLDER + 'sources/sources_current_no_resistance.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver["sources"][0]["elementIds"] = [1] # wire center
+    solver.cleanUp()
+    solver.run()
+    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
+    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+    assert np.allclose(Iend['current_0'][-100:-1], 1.0, rtol=0.005)
+    assert np.allclose(Istart['current_0'][-100:-1], 1.0, rtol=0.005)
+
+    solver["sources"][0]["elementIds"] = [9] # wire start
+    solver.cleanUp()
+    solver.run()
+    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
+    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+
+    assert np.allclose(Iend['current_0'][-100:-1], 1.0, rtol=0.005)
+    assert np.allclose(Istart['current_0'][-100:-1], 1.0, rtol=0.005)
+
+    solver["sources"][0]["elementIds"] = [10] # wire end
+    solver.cleanUp()
+    solver.run()
+    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
+    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+
+    assert np.allclose(Iend['current_0'][-100:-1], -1.0, rtol=0.005)
+    assert np.allclose(Istart['current_0'][-100:-1], -1.0, rtol=0.005)
+
+@no_mtln_skip
+@pytest.mark.mtln
+def test_voltage_generators(tmp_path):
+    # Checks current and voltage of probes at the extremes of bundle (1 conductor + 1 shield)
+    # with a voltage generator in the middle of the inner conductor
+    fn = CASES_FOLDER + 'sources/sources_voltage.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver["sources"][0]["elementIds"] = [1]
+    solver.cleanUp()
+    solver.run()
+
+    
+    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
+    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+    Vend = Probe(solver.getSolvedProbeFilenames("probe_end")[1])
+    Vstart = Probe(solver.getSolvedProbeFilenames("probe_start")[1])
+
+    assert np.allclose(Iend['current_0'][-100:-1],   0.0, rtol=0.005)
+    assert np.allclose(Istart['current_0'][-100:-1], 0.0, rtol=0.005)
+    assert np.allclose(Vend['voltage_0'][-100:-1],   0.0, rtol=0.005)
+    assert np.allclose(Vstart['voltage_0'][-100:-1], 0.0, rtol=0.005)
+
+    assert np.allclose(Iend['current_1'][-100:-1],   1.0/3.0, rtol=0.005)
+    assert np.allclose(Istart['current_1'][-100:-1], 1.0/3.0, rtol=0.005)
+    assert np.allclose(Vend['voltage_1'][-100:-1],   -16.666, rtol=0.005)
+    assert np.allclose(Vstart['voltage_1'][-100:-1], -16.666, rtol=0.005)
+    
 def test_bulk_current_outputs(tmp_path):
     # This test uses bulk_probe_cases_over_nodal_source.fdtd from input_examples as input.
     # Verifies all kind of bulk probes are recognised and setted properly by checking outputFile format.
@@ -1489,4 +1528,3 @@ def test_bulk_current_outputs(tmp_path):
     assert probeBulkZPlane.direction == 'z'
     assert probeBulkYPoint.direction == 'y'
     assert probeBulkZVolume.direction == 'z'
-

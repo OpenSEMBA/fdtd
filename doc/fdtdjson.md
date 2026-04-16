@@ -307,7 +307,16 @@ A parallel $CR$ circuit:
 
 ### `multilayeredSurface`
 
-A `multilayeredSurface` must contain the entry `<layers>` which is an array indicating materials which are described in the same way as [isotropic materials](#isotropic) and a `<thickness>`.
+A `multilayeredSurface` must contain the entry `<layers>` which is an array indicating materials and a `<thickness>` per layer.
+
+For each layer:
+
++ `[relativePermittivity]` or `[absolutePermittivity]` can be provided. If both exist, `absolutePermittivity` is used.
++ `[relativePermeability]` or `[absolutePermeability]` can be provided. If both exist, `absolutePermeability` is used.
++ `[electricConductivity]` and `[magneticConductivity]` have the same behavior as in `isotropic` materials.
+
+For `multilayeredSurface`, the material `[name]` is also used as the NFDE file identifier.
+
 Its `elementIds` must reference `cell` elements. All `intervals` modeling entities different to oriented surfaces are ignored.
 
 ```json
@@ -351,7 +360,7 @@ doi: 10.1109/TEMC.1981.303899.
 Materials of this type must contain:
 
 + `<radius>` as a real number.
-+ `<resistancePerMeter>` as a real number.
++ `[resistancePerMeter]` as a real number. Defaults to `0.0`.
 + `[inductancePerMeter]` as a real number. Defaults to `0.0`.
 
 **Example:**
@@ -659,10 +668,10 @@ In this example `elementId` points to a volume element, therefore `direction` mu
 }
 ```
 
-One important aspect to keep in mind when working with `bulkCurrent` with `electric field type` is its natural offset. This arises from the fact that to measure the electric current it is necessary to calculate the closed path integral of the magnetic field, then, the electric current is defined on the **dual mesh** of the inserted grid -- i.e., the mesh corresponding to the magnetic field. The **dual mesh** is constructed by placing a point at the center of each cell in the original (primal) mesh and connecting these points.
-
-Because of this, the code internally shifts the `bulkCurrent` you define to align with the dual mesh, causing a **half-cell offset**. In the case of surfaces, the coordinates **perpendicular** to the current flowing through the surface experience a **negative offset**, as shown in the figure below:
-
+One important aspect to keep in mind when working with `bulkCurrent` with `electric field type` arises from the fact that to measure the electric current it is necessary to calculate the closed path integral of the magnetic field.
+However, the magnetic field is defined by normals located at the center of each cell faced.
+In consequence, the code internally shifts the defined `bulkCurrent`, causing a **half-cell offset**. 
+In the case of surfaces, the coordinates **perpendicular** to the current flowing through the surface experience a **negative offset**, as shown in the figure below:
 
 ![Negative offset](fig/grid-negativeOffSet.svg)
 
@@ -807,7 +816,7 @@ This object represents a time-varying vector field applied along an oriented lin
 
 ### `generator`
 
-A `generator` source must be located on a single `node` whose `coordinateId` is used by a single `polyline`. The entry `[field]` can be `voltage` or `current`; defaults to `voltage`.
+A `generator` source must be located on a single `node`. The entry `[field]` can be `voltage` or `current`; defaults to `voltage`. 
 
 **Example:**
 
@@ -816,22 +825,41 @@ A `generator` source must be located on a single `node` whose `coordinateId` is 
     "name": "voltage_source",
     "type": "generator",
     "field": "current",
-    "magnitudeFile": "gauss.exc", 
+    "magnitudeFile": "gauss.exc",
     "elementIds": [1]
 }
 ```
+#### Holland vs MTLN generators
 
-Using classic wires, generators can be located on any node of the lines. Using MTLN wires there are some restrictions:
+##### Holland wires
 
-| Syntax      | `unshieldedMultiwire` | `shieldedMultiwire` |
-| :---        |    :---   |          :--- |
-| Voltage     | Only wire extremes       | Any point      |
-| Current     | Any point        | Only wire extremes      |
+Using Holland wires, generators can be located on any node of the lines. Voltage(current) generators cannot have a series(parallel) resistance defined. The magnitude of the source already has to include any resistances that belong to the generator. 
+
+##### MLTN wires
+
+Using MTLN wires there are some restrictions on the position of the generator:
+
+| Generator \ cable type            | `unshieldedMultiwire` | `shieldedMultiwire` |
+| :---                              |    :---   |          :--- |
+| Voltage                           | Only terminal nodes       | Terminal and interior nodes     |
+| Current                           | Terminal and interior nodes        | Only terminal nodes      |
+
+MTLN voltage(current) generators can have a series(parallel) resistance, which is optional. In case no value is provided, the resistance default value will be 0.0. for `voltage` generators and 1.0e22 for `current` generators. 
+
+If the generator is located at the termination of a wire, the series or parallel `resistance` is added to the connection defined in the corresponding `terminal`. If a current generator is located on a wire intermediate position, its Thévenin equivalent (generator + series resistance) is computed to substitute the current generator.  The per-unit-length properties of the corresponding segment are modified according to the `resistance` of the generator.
+
+#### Sources hardness
+
+A **hard** source is defined as one that imposes its value at its position on the wire. On the other hand, a **soft** source adds its value to the current/voltage values. **Sources for both Holland and MTLN wires are always soft**.
+
+#### Current direction
 
 In case a generator is on a wire extreme, the current direction will be from the generator in the direction of the other wire extreme. If the generator is on an interior wire point, the current direction will be oriented as the wire.
 
+#### Generators on junctions
 
-In case the generator is located at the junction (connection point) of two of more lines, the  `node` shared by the lines will share the same  `coordinateId`. If more than two lines are connected together, it is necessary to know to which of the lines the generator is connected to. The entry `[attachedToLineId]` is an integer which refers to the `elementId` of the `polyline` the source is connected to. 
+In case the generator is located at the junction `node` (connection point) of two of more lines,  the lines whose ends are connected  will share the same  `coordinateId`. In this case, it is necessary to know to which of the lines the generator is attached to. The entry `[attachedToLineId]` is an integer which refers to the `elementId` of the `polyline` the generator is connected to. 
+
 
 **Example:**
 

@@ -15,7 +15,7 @@ module probes_m
         real(kind=RKIND), allocatable, dimension(:) :: t
         real(kind=RKIND), allocatable, dimension(:,:) :: val
         real(kind=RKIND_TIEMPO) :: dt
-        integer :: index, current_frame
+        integer :: index, current_frame, unit
         character(len=:), allocatable :: name
         logical :: in_layer = .true.
 
@@ -53,25 +53,25 @@ contains
         
 #ifdef CompileWithMPI
         if (present(layer_indices)) then
-        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
-        if (sizeof > 1) then
-            res%in_layer = .false.
-            do i = 1, size(layer_indices,1) 
-                if (index >= layer_indices(i, 1) .and. index <= layer_indices(i,2)+1) then 
-                    res%in_layer = .true.
-                    slice = i
-                end if
-            end do
-
-            layer_index = 0
-            if (res%in_layer) then 
-                do i = 1, slice - 1
-                    layer_index = layer_index + layer_indices(i,2) + 1 - (layer_indices(i,1) - 1)
+            call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+            if (sizeof > 1) then
+                res%in_layer = .false.
+                do i = 1, size(layer_indices,1) 
+                    if (index >= layer_indices(i, 1) .and. index <= layer_indices(i,2)+1) then 
+                        res%in_layer = .true.
+                        slice = i
+                    end if
                 end do
-                layer_index = layer_index + res%index - layer_indices(i,1) + 1
+
+                layer_index = 0
+                if (res%in_layer) then 
+                    do i = 1, slice - 1
+                        layer_index = layer_index + layer_indices(i,2) + 1 - (layer_indices(i,1) - 1)
+                    end do
+                    layer_index = layer_index + res%index - layer_indices(i,1) + 1
+                end if
+                res%index = layer_index
             end if
-            res%index = layer_index
-        end if
         end if
 #endif
         res%name = res%name//name//"_"

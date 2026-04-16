@@ -304,7 +304,7 @@ def test_three_surfaces(tmp_path):
     line_tag_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='tagnumber')
     assert line_tag_dict[64] == 8
-    assert line_tag_dict[128] == 4
+    assert line_tag_dict[128] == 6
     assert line_tag_dict[192] == 4
 
     face_media_dict = createPropertyDictionary(
@@ -316,7 +316,7 @@ def test_three_surfaces(tmp_path):
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
     assert line_media_dict[0.5] == 8  # PEC line
-    assert line_media_dict[3.5] == 8  # SGBC line
+    assert line_media_dict[3.5] == 10  # SGBC line
 
 def test_three_surfaces_Jprobe(tmp_path):
     fn = CASES_FOLDER + 'observation/three_surfaces_Jprobe.fdtd.json'
@@ -545,13 +545,13 @@ def test_volume_and_surfaces(tmp_path):
 
     face_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=9, property='mediatype')
-    assert face_media_dict[-1] == 1  # PEC surface
+    assert face_media_dict[16] == 1  # PMC surface
     assert face_media_dict[0] == 6  # PEC surface
     assert face_media_dict[305] == 1  # SGBC surface
 
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
-    assert line_media_dict[-0.5] == 4  # PMC line
+    assert line_media_dict[16.5] == 4  # PMC line
     assert line_media_dict[0.5] == 1  # PEC line
     assert line_media_dict[3.5] == 3  # SGBC line
 
@@ -1227,3 +1227,13 @@ def test_bulk_current_outputs(tmp_path):
     assert probeBulkZPlane.direction == 'z'
     assert probeBulkYPoint.direction == 'y'
 
+def test_wires_vtk(tmp_path):
+    fn = CASES_FOLDER + 'wire_vtk/wire_vtk.fdtd.json'
+
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    
+    vtkmapfile = solver.getVTKMap()
+    reader = pv.get_reader(vtkmapfile)
+    mesh = reader.read()
+    assert mesh.n_cells != 0

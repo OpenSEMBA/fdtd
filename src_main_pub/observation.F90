@@ -114,7 +114,7 @@ module Observa_m
   !Required at least in tests
   public fieldo
 #ifdef CompileWithMTLN
-  public FlushMTLNObservationFiles
+  public InitObservationMTLN, UpdateObservationMTLN, CloseObservationFilesMTLN
 #endif
 contains
 
@@ -2182,6 +2182,10 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
             !!!!        end if !del time domain !NO ES PRECISO 25/02/14
         end do !del ii=1,numberrequest
 
+#ifdef CompileWithMTLN
+        call InitObservationMTLN(control%nEntradaRoot)
+#endif
+
         write (19, '(a)') '!END '
         close (19)
 
@@ -2636,7 +2640,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
           end if !no hay singlewrite para sondas freqdomain
         end do
       end do
-
+#ifdef CompileWithMTLN
+      call CloseObservationFilesMTLN()
+#endif
       return
     end subroutine CloseObservationFiles
 
@@ -3304,6 +3310,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
           end if !del nothing
         end do loop_obser
       end do
+#ifdef CompileWithMTLN
+      call UpdateObservationMTLN(nTime)
+#endif
       !---------------------------> acaba UpdateObservation <-----------------------------------------
       return
 
@@ -3516,7 +3525,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         media = getMedia(field, i, j, k)
         if ((media == 0) .or. (sgg%Med(media)%is%Pec)) then
           res = 0
-         else if (sgg%Med(media)%is%ConformalPec) then 
+        else if (sgg%Med(media)%is%PMC) then
+          res = 16.0
+        else if (sgg%Med(media)%is%ConformalPec) then 
             res = 1000+media
         elseif (sgg%Med(media)%is%thinwire) then
           call StopOnError(0, 1, 'ERROR: A magnetic field cannot be a thin-wire')
@@ -3544,34 +3555,36 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
         media = getMedia(field, i, j, k)
         if ((sgg%Med(media)%is%already_YEEadvanced_byconformal) .and. (.not. noconformalmapvtk)) then
-          res = 5.5
+          res = 5.5_RKIND
         elseif ((sgg%Med(media)%is%split_and_useless) .and. (.not. noconformalmapvtk)) then
-          res = 6.5
+          res = 6.5_RKIND
         elseif (sgg%Med(media)%is%thinwire) then
           if (collidesWithNonThinWire(field, i, j, k)) then
-            res = 8
+            res = 8_RKIND
           else
-            res = 7
+            res = 7_RKIND
           end if
         elseif (sgg%Med(media)%is%multiwire) then
           if (collidesWithNonMultiwire(field, i, j, k)) then
-            res = 13
+            res = 13_RKIND
           else
-            res = 12
+            res = 12_RKIND
           end if
         elseif ((media == 0) .or. (sgg%Med(media)%is%Pec)) then
           res = 0.5_RKIND
+        elseif (sgg%Med(media)%is%PMC) then
+          res = 16.5_RKIND
          else if (sgg%Med(media)%is%ConformalPec) then 
             res=2000+media
         elseif (isSGBCorMultiport(media)) then
-          res = 3.5
+          res = 3.5_RKIND
         elseif (isDispersive(media)) then
-          res = 1.5
+          res = 1.5_RKIND
         elseif ((sgg%Med(media)%is%Dielectric) .or. &
                 (sgg%Med(media)%is%Anisotropic)) then
-          res = 2.5
+          res = 2.5_RKIND
         elseif (sgg%Med(media)%is%thinslot) then
-          res = 4.5
+          res = 4.5_RKIND
         else
           res = -0.5_RKIND
         end if
@@ -4070,9 +4083,54 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
     end subroutine FlushObservationFiles
 
 #ifdef CompileWithMTLN
-    subroutine FlushMTLNObservationFiles(nEntradaRoot, mtlnProblem)
+    subroutine InitObservationMTLN(nEntradaRoot)
       character(len=*), intent(in) :: nEntradaRoot
-      logical, intent(in) :: mtlnProblem
+      type(mtln_solver_t), pointer :: mtln_solver
+      integer :: i, j, k, unit
+      character(len=bufsize) :: path
+      character(len=bufsize) :: temp
+      character(len=:), allocatable :: buffer
+
+      mtln_solver => GetSolverPtr()
+      if (.not. allocated(mtln_solver%bundles)) return
+      unit = 2000
+      do i = 1, size(mtln_solver%bundles)
+        do j = 1, size(mtln_solver%bundles(i)%probes)
+#ifdef CompileWithMPI
+          if (.not. mtln_solver%bundles(i)%probes(j)%in_layer) cycle
+#endif          
+          mtln_solver%bundles(i)%probes(j)%unit = unit
+          path = trim(trim(nEntradaRoot)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat")
+          open (unit=unit, file=trim(path))
+          write (*, *) 'name: ', trim(mtln_solver%bundles(i)%probes(j)%name)
+          buffer = "time"
+          do k = 1, size(mtln_solver%bundles(i)%probes(j)%val, 2)
+            write (temp, *) k
+            buffer = buffer//" "//"conductor_"//trim(adjustl(temp))
+          end do
+          write (unit, '(a)') trim(buffer)
+          unit = unit + 1
+        end do
+      end do
+    end subroutine
+
+    subroutine CloseObservationFilesMTLN()
+      type(mtln_solver_t), pointer :: mtln_solver
+      integer :: i, j, k
+      mtln_solver => GetSolverPtr()
+      if (.not. allocated(mtln_solver%bundles)) return
+      do i = 1, size(mtln_solver%bundles)
+        do j = 1, size(mtln_solver%bundles(i)%probes)
+#ifdef CompileWithMPI
+          if (.not. mtln_solver%bundles(i)%probes(j)%in_layer) cycle
+#endif          
+          close(mtln_solver%bundles(i)%probes(k)%unit)
+        end do
+      end do
+    end subroutine
+
+    subroutine UpdateObservationMTLN(step)
+      integer, intent(in) :: step
       type(mtln_solver_t), pointer :: mtln_solver
       integer :: i, j, k, n
       integer :: unit
@@ -4085,37 +4143,21 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
       mtln_solver => GetSolverPtr()
       if (.not. allocated(mtln_solver%bundles)) return
-      unit = 2000
       do i = 1, size(mtln_solver%bundles)
         do j = 1, size(mtln_solver%bundles(i)%probes)
 #ifdef CompileWithMPI
           if (.not. mtln_solver%bundles(i)%probes(j)%in_layer) cycle
 #endif          
-          path = trim(trim(nEntradaRoot)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat")
-          open (unit=unit, file=trim(path))
-          write (*, *) 'name: ', trim(mtln_solver%bundles(i)%probes(j)%name)
-          buffer = "time"
-
-          do k = 1, size(mtln_solver%bundles(i)%probes(j)%val, 2)
-            write (temp, *) k
-            buffer = buffer//" "//"conductor_"//trim(adjustl(temp))
+          buffer = ""
+          write(temp, *) mtln_solver%bundles(i)%probes(j)%t(step+1)
+          buffer = buffer//trim(temp)
+          do n = 1, size(mtln_solver%bundles(i)%probes(j)%val, 2)
+            write (temp, *) mtln_solver%bundles(i)%probes(j)%val(step+1, n)
+            buffer = buffer//" "//trim(temp)
           end do
-          write (unit, *) trim(buffer)
-          do k = 1, size(mtln_solver%bundles(i)%probes(j)%val, 1)
-            buffer = ""
-            write (temp, *) mtln_solver%bundles(i)%probes(j)%t(k)
-            buffer = buffer//trim(temp)
-            do n = 1, size(mtln_solver%bundles(i)%probes(j)%val, 2)
-              write (temp, *) mtln_solver%bundles(i)%probes(j)%val(k, n)
-              buffer = buffer//" "//trim(temp)
-            end do
-            write (unit, '(a)') trim(buffer)
-          end do
-          close (unit)
-          unit = unit + 1
+          write (mtln_solver%bundles(i)%probes(j)%unit, '(a)') trim(buffer)
         end do
       end do
-
     end subroutine
 #endif
 
@@ -4896,7 +4938,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
             output(ii)%item(i)%Serialized%eJ(conta) = nj
             output(ii)%item(i)%Serialized%eK(conta) = nk
 
-            select case (mtln_local%bundles(n)%external_field_segments(m)%direction)
+            select case (abs(mtln_local%bundles(n)%external_field_segments(m)%direction))
             case (iEx)
               output(ii)%item(i)%Serialized%currentType(conta) = iJx
               output(ii)%item(i)%Serialized%sggMtag(conta) = iabs(tag_numbers%edge%x(ni, nj, nk))

@@ -14,9 +14,11 @@ module mtln_solver_m
         real(kind=RKIND_TIEMPO) :: time, dt, final_time
         type(mtl_bundle_t), allocatable, dimension(:) :: bundles
         type(network_manager_t) :: network_manager
-        type(probe_t), allocatable, dimension(:) :: probes
+        ! type(probe_t), allocatable, dimension(:) :: probes
         integer :: number_of_bundles
         integer :: number_of_steps
+        real(kind=rkind) :: null_field
+
     contains
 
         procedure :: updateBundlesTimeStep
@@ -34,7 +36,9 @@ module mtln_solver_m
         
         procedure :: runUntil
         procedure :: run => mtln_run
-
+        procedure :: initObservation => mtln_initObservation
+        procedure :: updateObservation => mtln_updateObservation
+        procedure :: closeObservation => mtln_closeObservation
     end type mtln_t
 
 
@@ -77,12 +81,12 @@ contains
         res%number_of_bundles = size(res%bundles)
         
         res%network_manager = pre%network_manager
-        res%probes = pre%probes
+        ! res%probes = pre%probes
         call res%updateBundlesTimeStep(res%dt)
         call res%initNodes()
 
         res%number_of_steps = parsed%number_of_steps
-
+        res%null_field = 0.0_rkind
     end function
 
     subroutine initNodes(this)
@@ -138,8 +142,8 @@ contains
         integer :: i
 
         do i = 1, this%number_of_bundles
-            if (this%bundles(i)%bundle_in_layer) then 
-                call this%bundles(i)%updateSources(this%time, this%dt)
+            if (this%bundles(i)%bundle_in_layer) then
+                call this%bundles(i)%updateGenerators(this%time, this%dt)
                 call this%bundles(i)%advanceVoltage()
             end if
         end do
@@ -268,8 +272,9 @@ contains
             call this%advanceBundlesVoltage()
             call this%advanceNWVoltage()
             call this%advanceBundlesCurrent()
-            call this%advanceTime()
             call this%updateProbes()
+            call this%advanceTime()
+            call this%updateObservation(i)
         end do
 
     end subroutine
@@ -279,15 +284,89 @@ contains
         real(kind=RKIND_TIEMPO) :: time
         integer :: i
 
-        call this%updatePULTerms()
         do i = 0, this%getTimeRange(this%final_time)
             call this%advanceBundlesVoltage()
             call this%advanceNWVoltage()
             call this%advanceBundlesCurrent()
-            call this%advanceTime()
             call this%updateProbes()
+            call this%advanceTime()
+            call this%updateObservation(i)
         end do
 
     end subroutine
 
+    subroutine mtln_initObservation(this, nEntradaRoot)
+        class(mtln_t) :: this
+        character(len=*), intent(in) :: nEntradaRoot
+        integer :: i, j, k, unit
+        character(len=bufsize) :: path
+        character(len=bufsize) :: temp
+        character(len=:), allocatable :: buffer
+
+        if (.not. allocated(this%bundles)) return
+        unit = 2000
+        do i = 1, size(this%bundles)
+            do j = 1, size(this%bundles(i)%probes)
+#ifdef CompileWithMPI
+                if (.not. this%bundles(i)%probes(j)%in_layer) cycle
+#endif          
+                this%bundles(i)%probes(j)%unit = unit
+                path = trim(trim(nEntradaRoot)//"_"//trim(this%bundles(i)%probes(j)%name)//".dat")
+                open (unit=unit, file=trim(path))
+                write (*, *) 'name: ', trim(this%bundles(i)%probes(j)%name)
+                buffer = "time"
+                do k = 1, size(this%bundles(i)%probes(j)%val, 2)
+                    write (temp, *) k
+                    buffer = buffer//" "//"conductor_"//trim(adjustl(temp))
+                end do
+                write (unit, '(a)') trim(buffer)
+                unit = unit + 1
+            end do
+        end do
+    end subroutine
+
+    subroutine mtln_updateObservation(this, step)
+        class(mtln_t) :: this
+        integer, intent(in) :: step
+        integer :: i, j, k, n
+        integer :: unit
+        character(len=bufsize) :: temp
+        character(len=bufsize) :: path
+        character(len=:), allocatable :: buffer
+#ifdef CompileWithMPI
+        integer(kind=4) :: ierr
+#endif
+        if (.not. allocated(this%bundles)) return
+        do i = 1, size(this%bundles)
+            do j = 1, size(this%bundles(i)%probes)
+#ifdef CompileWithMPI
+                if (.not. this%bundles(i)%probes(j)%in_layer) cycle
+#endif          
+                buffer = ""
+                write(temp, *) this%bundles(i)%probes(j)%t(step+1)
+                buffer = buffer//trim(temp)
+                do n = 1, size(this%bundles(i)%probes(j)%val, 2)
+                    write (temp, *) this%bundles(i)%probes(j)%val(step+1, n)
+                    buffer = buffer//" "//trim(temp)
+                end do
+                write (this%bundles(i)%probes(j)%unit, '(a)') trim(buffer)
+            end do
+        end do
+    end subroutine
+
+    subroutine mtln_closeObservation(this)
+        class(mtln_t) :: this
+        integer :: i, j, k
+        if (.not. allocated(this%bundles)) return
+        do i = 1, size(this%bundles)
+            do j = 1, size(this%bundles(i)%probes)
+#ifdef CompileWithMPI
+                if (.not. this%bundles(i)%probes(j)%in_layer) cycle
+#endif          
+                close(this%bundles(i)%probes(k)%unit)
+            end do
+      end do
+    end subroutine
+
+    
 end module mtln_solver_m

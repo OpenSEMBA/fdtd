@@ -66,7 +66,7 @@ contains
       ! Expected sources.
       allocate(ex%plnSrc%collection(1))
       ex%plnSrc%collection(1)%nombre_fichero = "gauss.exc"
-      ex%plnSrc%collection(1)%atributo = ""
+      ex%plnSrc%collection(1)%atributo = "LOCKED"
       ex%plnSrc%collection(1)%coor1 = [0, 0, 0]
       ex%plnSrc%collection(1)%coor2 = [79, 79, 79]
       ex%plnSrc%collection(1)%theta = 1.5707963268_RKIND

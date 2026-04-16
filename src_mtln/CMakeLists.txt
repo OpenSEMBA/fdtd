@@ -16,6 +16,7 @@ add_library(mtlnsolver
 	"network_manager.F90"
 	"utils.F90"
 	"probes.F90"
+	"generators.F90"
 	"dispersive.F90"
 	"rational_approximation.F90"
 	"circuit.F90"

@@ -207,11 +207,7 @@ module  FDETYPES_m
 
    !source types
    character(len=*), parameter :: F_SOURCE_VOLTAGE = 'VOLT'
-   character(len=*), parameter :: F_SOURCE_SOFT_VOLTAGE = 'SOFTVOLT'
-   character(len=*), parameter :: F_SOURCE_HARD_VOLTAGE = 'HARDVOLT'
    character(len=*), parameter :: F_SOURCE_CURRENT = 'CURR'
-   character(len=*), parameter :: F_SOURCE_SOFT_CURRENT = 'SOFTCURR'
-   character(len=*), parameter :: F_SOURCE_HARD_CURRENT = 'HARDCURR'
 
    
 #ifdef CompileWithReal4
@@ -348,7 +344,6 @@ module  FDETYPES_m
       type(fichevol_wires_t) :: Fichero
       real(kind=RKIND_wires) :: Resistance
       real(kind=RKIND_wires) :: Multiplier
-      logical :: soft
       integer(kind=4) :: i,j,k
    end type
 
@@ -694,9 +689,6 @@ module  FDETYPES_m
                  permitscaling,mtlnberenger,niapapostprocess, &
                  stochastic, verbose, dontwritevtk, &
                  resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
-#ifdef CompileWithConformal
-      logical :: input_conformal_flag
-#endif
       real(kind=8) :: time_desdelanzamiento
       real(kind=RKIND) :: cfl, attfactorc,attfactorw, alphamaxpar, &
                            alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol, maxSourceValue
