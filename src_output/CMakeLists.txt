@@ -17,13 +17,13 @@ add_library(fdtd-output
   "mapVTKOutput.F90"
 )
 
-	target_link_libraries(fdtd-output PRIVATE
-    semba-components
-    semba-types
-    fdtd-utils
-    ${HDF5_LIBRARIES} 
-    ${HDF5_HL_LIBRARIES}
-	)
+target_link_libraries(fdtd-output PRIVATE
+  semba-components
+  semba-types
+  fdtd-utils
+  ${HDF5_LIBRARIES} 
+  ${HDF5_HL_LIBRARIES}
+)
 
 
 add_library(vtkAPI
@@ -34,12 +34,13 @@ add_library(xdmfAPI
   "xdmfAPI.F90"
 )
 
-	target_link_libraries(xdmfAPI PRIVATE
-    ${HDF5_LIBRARIES} 
-    ${HDF5_HL_LIBRARIES}
-	)
+target_link_libraries(xdmfAPI PRIVATE
+  ${HDF5_LIBRARIES} 
+  ${HDF5_HL_LIBRARIES}
+)
 
 target_link_libraries(vtkAPI
  fdtd-utils
 )
 
+target_include_directories(xdmfAPI PRIVATE ${HDF5_INCLUDE_DIRS})
