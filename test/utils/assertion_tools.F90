@@ -5,14 +5,12 @@ module assertionTools_m
    implicit none
 
    private :: assert_real_equal_impl
-   private :: assert_real_RKIND_equal_impl
 #ifndef CompileWithReal8
    private :: assert_real_time_equal_impl
 #endif
    ! Generic interface for real assertions
    interface assert_real_equal
       module procedure assert_real_equal_impl
-      module procedure assert_real_RKIND_equal_impl
 #ifndef CompileWithReal8
       module procedure assert_real_time_equal_impl
 #endif
@@ -55,20 +53,7 @@ contains
    ! Real equality implementations
    !---------------------------------------
    function assert_real_equal_impl(val, expected, tolerance, errorMessage) result(err)
-      real(real32), intent(in) :: val, expected, tolerance
-      character(*), intent(in) :: errorMessage
-      integer :: err
-      if (abs(val - expected) <= tolerance) then
-         err = 0
-      else
-         err = 1
-         print *, 'ASSERTION FAILED (real32): ', trim(errorMessage)
-         print *, '  Value: ', val, '. Expected: ', expected, '. Tolerance: ', tolerance
-      end if
-   end function
-
-   function assert_real_RKIND_equal_impl(val, expected, tolerance, errorMessage) result(err)
-      real(RKIND), intent(in) :: val, expected, tolerance
+      real(kind=RKIND), intent(in) :: val, expected, tolerance
       character(*), intent(in) :: errorMessage
       integer :: err
       if (abs(val - expected) <= tolerance) then

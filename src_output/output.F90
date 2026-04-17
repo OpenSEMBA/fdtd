@@ -9,9 +9,11 @@ module output_m
    use movieProbeOutput_m
    use frequencySliceProbeOutput_m
    use farFieldOutput_m
-   use mtln_solver_m, only: mtln_solver_t => mtln_t
-   use Wire_bundles_mtln_m, only: GetSolverPtr
    use mapVTKOutput_m
+#ifdef CompileWithMTLN
+   use Wire_bundles_mtln_m, only: GetSolverPtr
+   use mtln_solver_m, only: mtln_solver_t => mtln_t
+#endif
    
 
    implicit none
