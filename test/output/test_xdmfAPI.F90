@@ -1,6 +1,5 @@
 integer function test_create_h5_file() bind(c) result(err)
 
-   use HDF5
    use xdmfAPI_m
    use assertionTools_m
    use directoryUtils_m
@@ -35,7 +34,6 @@ end function
 
 integer function test_write_1d_dataset() bind(c) result(err)
 
-   use HDF5
    use xdmfAPI_m
    use assertionTools_m
    use directoryUtils_m
@@ -76,7 +74,6 @@ end function
 
 integer function test_write_2d_dataset() bind(c) result(err)
 
-   use HDF5
    use xdmfAPI_m
    use assertionTools_m
    use directoryUtils_m
@@ -116,7 +113,6 @@ end function
 
 integer function test_write_3d_dataset() bind(c) result(err)
 
-   use HDF5
    use xdmfAPI_m
    use assertionTools_m
    use directoryUtils_m
@@ -203,7 +199,7 @@ integer function test_xdmf_file_creation() bind(c) result(err)
 end function
 
 integer function test_xdmf_file_with_h5data() bind(c) result(err)
-    use HDF5
+   !  use HDF5
     use xdmfAPI_m
     use assertionTools_m
     use directoryUtils_m

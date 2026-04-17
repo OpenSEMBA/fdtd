@@ -5,7 +5,6 @@ module movieProbeOutput_m
    use outputTypes_m
    use outputUtils_m
    use volumicProbeUtils_m
-   use HDF5
    use xdmfAPI_m
    implicit none
    private

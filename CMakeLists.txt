@@ -207,17 +207,10 @@ add_subdirectory(src_utils)
 if (SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
 	add_subdirectory(src_output)
 	set(OUTPUT_LIBRARIES fdtd-output)
-	target_link_libraries(fdtd-output
-	semba-components
-	semba-types
-	fdtd-utils
-	${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES}
-	)
-
-	target_include_directories(fdtd-output PRIVATE ${HDF5_INCLUDE_DIRS})
 	set(VTK_API_LIBRARIES vtkAPI)
 	set(XDMF_API_LIBRARIES xdmfAPI)
 endif()
+
 add_subdirectory(src_conformal)
 set(CONFORMAL_LIBRARIES conformal)
 

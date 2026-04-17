@@ -1,3 +1,7 @@
+message(STATUS "Creating build system for output")
+
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
+
 add_library(fdtd-output 
   "output.F90"
   "outputTypes.F90"
@@ -12,6 +16,16 @@ add_library(fdtd-output
   "farFieldProbeOutput.F90"
   "mapVTKOutput.F90"
 )
+
+	target_link_libraries(fdtd-output PRIVATE
+    semba-components
+    semba-types
+    fdtd-utils
+    ${HDF5_LIBRARIES} 
+    ${HDF5_HL_LIBRARIES}
+	)
+
+
 add_library(vtkAPI
   "vtkAPI.F90"
 )
@@ -20,7 +34,10 @@ add_library(xdmfAPI
   "xdmfAPI.F90"
 )
 
-target_include_directories(xdmfAPI PRIVATE ${HDF5_INCLUDE_DIRS})
+	target_link_libraries(xdmfAPI PRIVATE
+    ${HDF5_LIBRARIES} 
+    ${HDF5_HL_LIBRARIES}
+	)
 
 target_link_libraries(vtkAPI
  fdtd-utils

@@ -461,7 +461,7 @@ contains
 
    subroutine create_pvd(pvdPath)
       implicit none
-      character(len=*), intent(out) :: pvdPath
+      character(len=*), intent(in) :: pvdPath
       integer :: ios
       integer :: unit
 
