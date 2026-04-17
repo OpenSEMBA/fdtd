@@ -1,5 +1,5 @@
-module mod_directoryUtils
-   use FDETYPES
+module directoryUtils_m
+   use FDETYPES_m
    implicit none
    private
 
@@ -273,4 +273,4 @@ contains
 
    end function get_path_separator
 
-end module mod_directoryUtils
+end module directoryUtils_m

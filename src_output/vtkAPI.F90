@@ -1,4 +1,4 @@
-module mod_vtkAPI
+module vtkAPI_m
    implicit none
    private
    public :: vtk_data_array, vtk_grid, vtk_structured_grid, vtk_unstructured_grid
@@ -353,4 +353,4 @@ contains
       write (iunit, *) '      </Cells>'
    end subroutine write_cells
 
-end module mod_vtkAPI
+end module vtkAPI_m

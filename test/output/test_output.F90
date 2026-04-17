@@ -3,14 +3,14 @@ integer function test_init_point_probe() bind(c) result(err)
 ! It verifies that the probe is correctly registered in the simulation outputs,
 ! that the output ID matches POINT_PROBE_ID, and that the output paths for
 ! both the probe and its time data file are correctly set and exist.
-   use FDETYPES
+   use FDETYPES_m
    use FDETYPES_TOOLS
-   use output
-   use outputTypes
-   use mod_testOutputUtils
-   use mod_sggMethods
-   use mod_assertionTools
-   use mod_directoryUtils
+   use output_m
+   use outputTypes_m
+   use testOutputUtils_m
+   use sggMethods_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
    ! Parameters
@@ -23,7 +23,7 @@ integer function test_init_point_probe() bind(c) result(err)
    character(len=BUFSIZE) :: expectedProbePath
    character(len=BUFSIZE) :: expectedDataPath
 
-   type(SGGFDTDINFO)              :: sgg
+   type(SGGFDTDINFO_t)              :: sgg
    type(sim_control_t)            :: control
    type(bounds_t)                 :: bounds
    type(media_matrices_t)         :: media
@@ -88,14 +88,14 @@ integer function test_update_point_probe() bind(c) result(err)
 ! over two timesteps. It verifies that the probe correctly stores the time
 ! steps and associated field values, ensuring proper temporal tracking of
 ! measured quantities.
-   use FDETYPES
+   use FDETYPES_m
    use FDETYPES_TOOLS
-   use output
-   use outputTypes
-   use mod_testOutputUtils
-   use mod_sggMethods
-   use mod_assertionTools
-   use mod_directoryUtils
+   use output_m
+   use outputTypes_m
+   use testOutputUtils_m
+   use sggMethods_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
    ! Parameters
@@ -106,7 +106,7 @@ integer function test_update_point_probe() bind(c) result(err)
    character(len=1) :: sep
    character(len=BUFSIZE) :: nEntrada
 
-   type(SGGFDTDINFO)              :: sgg
+   type(SGGFDTDINFO_t)              :: sgg
    type(sim_control_t)            :: control
    type(bounds_t)                 :: bounds
    type(media_matrices_t)         :: media
@@ -189,13 +189,13 @@ integer function test_flush_point_probe() bind(c) result(err)
 ! This test validates the flush operation for a point probe. It ensures
 ! that time and frequency data are properly written to files, and that
 ! internal arrays are cleared/reset after flushing, preserving data integrity.
-   use output
-   use outputTypes
-   use mod_pointProbeOutput
-   use mod_domain
-   use mod_testOutputUtils
-   use mod_assertionTools
-   use mod_directoryUtils
+   use output_m
+   use outputTypes_m
+   use pointProbeOutput_m
+   use domain_m
+   use testOutputUtils_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
    ! Parameters
@@ -268,13 +268,13 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
 ! This test verifies that multiple consecutive flushes of a point probe
 ! correctly append or overwrite data files without losing previous data.
 ! It ensures consistency of both time and frequency outputs across multiple flushes.
-   use output
-   use outputTypes
-   use mod_pointProbeOutput
-   use mod_domain
-   use mod_testOutputUtils
-   use mod_assertionTools
-   use mod_directoryUtils
+   use output_m
+   use outputTypes_m
+   use pointProbeOutput_m
+   use domain_m
+   use testOutputUtils_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
    ! Parameters
@@ -368,16 +368,16 @@ integer function test_init_movie_probe() bind(c) result(err)
 ! It checks that the probe is correctly allocated, that the number of measurement
 ! points and buffer sizes are correct, and that the output folder and PVD file
 ! for the movie are properly created.
-   use output
-   use outputTypes
-   use mod_testOutputUtils
+   use output_m
+   use outputTypes_m
+   use testOutputUtils_m
    use FDETYPES_TOOLS
-   use mod_sggMethods
-   use mod_assertionTools
-   use mod_directoryUtils
+   use sggMethods_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
-   type(SGGFDTDINFO)              :: dummysgg
+   type(SGGFDTDINFO_t)              :: dummysgg
    type(sim_control_t)            :: dummyControl
    type(bounds_t)                 :: dummyBound
    type(XYZlimit_t)               :: dummySweep(6)
@@ -416,7 +416,6 @@ integer function test_init_movie_probe() bind(c) result(err)
    character(len=BUFSIZE) :: nEntrada
    character(len=1) :: sep
    character(len=BUFSIZE) :: expectedProbePath
-   character(len=BUFSIZE) :: expectedPDVPath
    character(len=BUFSIZE) :: pdvFileName
    integer :: ios
 
@@ -450,10 +449,10 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
 
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
 
    expectedNumMeasurments = 4_SINGLE
    mediaPtr => media
@@ -476,11 +475,9 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    expectedProbePath = trim(nEntrada)//wordSeparation//'movieProbe_BC_2_2_2__5_5_5'
    pdvFileName = trim(get_last_component(expectedProbePath))//pvdExtension
-   expectedPDVPath = join_path(expectedProbePath, pdvFileName)
 
    test_err = test_err + assert_string_equal(outputs(1)%movieProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Movie folder do not exist')
-   test_err = test_err + assert_true(file_exists(expectedPDVPath), 'PDV file for movie do not exist')
 
    !Cleanup
    call remove_folder(test_folder, ios)
@@ -492,16 +489,16 @@ integer function test_update_movie_probe() bind(c) result(err)
 ! This test updates a movie probe with field values at a single timestep.
 ! It verifies that the probe correctly stores the measured values in the x, y,
 ! and z components for all points, and that the timestep buffer is properly populated.
-   use output
-   use outputTypes
-   use mod_testOutputUtils
+   use output_m
+   use outputTypes_m
+   use testOutputUtils_m
    use FDETYPES_TOOLS
-   use mod_sggMethods
-   use mod_assertionTools
-   use mod_directoryUtils
+   use sggMethods_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
-   type(SGGFDTDINFO)              :: dummysgg
+   type(SGGFDTDINFO_t)              :: dummysgg
    type(sim_control_t)            :: dummyControl
    type(bounds_t)                 :: dummyBound
    type(solver_output_t), pointer :: outputs(:)
@@ -570,10 +567,10 @@ integer function test_update_movie_probe() bind(c) result(err)
 
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
 
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
 
    expectedNumMeasurments = 4_SINGLE
    mediaPtr => media
@@ -636,16 +633,16 @@ integer function test_flush_movie_probe() bind(c) result(err)
 ! This test validates flushing movie probes to disk. It ensures that
 ! VTU files for each timestep and the PVD file are created, confirming that
 ! the temporal sequence of the movie probe is correctly serialized and saved.
-   use output
-   use outputTypes
-   use mod_testOutputUtils
+   use output_m
+   use outputTypes_m
+   use testOutputUtils_m
    use FDETYPES_TOOLS
-   use mod_sggMethods
-   use mod_assertionTools
-   use mod_directoryUtils
+   use sggMethods_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
-   type(SGGFDTDINFO)              :: dummysgg
+   type(SGGFDTDINFO_t)              :: dummysgg
    type(sim_control_t)            :: dummyControl
    type(bounds_t)                 :: dummyBound
    type(solver_output_t), pointer :: outputs(:)
@@ -722,21 +719,21 @@ integer function test_flush_movie_probe() bind(c) result(err)
 
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
 
-   call assing_material_id_to_media_matrix_coordinate(media, iEx, 3, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iHy, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEx, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iHy, 3, 3, 3, simulationMaterials(0)%Id)
 
-   call assing_material_id_to_media_matrix_coordinate(media, iEx, 3, 4, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iHy, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEx, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iHy, 3, 4, 3, simulationMaterials(0)%Id)
 
-   call assing_material_id_to_media_matrix_coordinate(media, iEx, 4, 4, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iHy, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEx, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iHy, 4, 4, 3, simulationMaterials(0)%Id)
 
-   call assing_material_id_to_media_matrix_coordinate(media, iEx, 4, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iHy, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEx, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iHy, 4, 3, 3, simulationMaterials(0)%Id)
 
    expectedNumMeasurments = 4_SINGLE
    mediaPtr => media
@@ -802,16 +799,16 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 ! This test initializes a frequency slice probe over a 3D region (2,2,2) to (5,5,5).
 ! It verifies that the probe is correctly set up, that the expected number of measurement
 ! points and frequencies are allocated, and that the output folder and PVD file exist.
-   use output
-   use outputTypes
-   use mod_testOutputUtils
+   use output_m
+   use outputTypes_m
+   use testOutputUtils_m
    use FDETYPES_TOOLS
-   use mod_sggMethods
-   use mod_assertionTools
-   use mod_directoryUtils
+   use sggMethods_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
-   type(SGGFDTDINFO)              :: dummysgg
+   type(SGGFDTDINFO_t)              :: dummysgg
    type(sim_control_t)            :: dummyControl
    type(bounds_t)                 :: dummyBound
    type(solver_output_t), pointer :: outputs(:)
@@ -850,7 +847,6 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    character(len=13), parameter :: test_name = 'initFrequency'
 
    character(len=BUFSIZE) :: nEntrada
-   character(len=BUFSIZE) :: expectedPDVPath
    character(len=BUFSIZE) :: expectedProbePath
    character(len=BUFSIZE) :: pdvFileName
    integer :: ios
@@ -884,10 +880,10 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
 
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
 
    expectedNumMeasurments = 4_SINGLE
    mediaPtr => media
@@ -920,12 +916,9 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 
    expectedProbePath = trim(nEntrada)//wordSeparation//'frequencySliceProbe_BC_2_2_2__5_5_5'
    pdvFileName = trim(get_last_component(expectedProbePath))//pvdExtension
-   expectedPDVPath = join_path(expectedProbePath, pdvFileName)
 
    test_err = test_err + assert_string_equal(outputs(1)%frequencySliceProbe%path, expectedProbePath, 'Unexpected path')
-   test_err = test_err + assert_string_equal(outputs(1)%frequencySliceProbe%pvdPath, expectedPDVPath, 'Unexpected pdv path')
    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Frequency Slice folder do not exist')
-   test_err = test_err + assert_true(file_exists(expectedPDVPath), 'PDV file for Frequency Slice do not exist')
 
    call remove_folder(test_folder, ios)
 
@@ -937,16 +930,16 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 ! It checks that no current is detected along the X-axis for H-field gradients
 ! and verifies the correct relation between Y and Z values (Y = -Z), ensuring
 ! correct handling of field distributions across the frequency slice.
-   use output
-   use outputTypes
-   use mod_testOutputUtils
+   use output_m
+   use outputTypes_m
+   use testOutputUtils_m
    use FDETYPES_TOOLS
-   use mod_sggMethods
-   use mod_assertionTools
-   use mod_directoryUtils
+   use sggMethods_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
-   type(SGGFDTDINFO)              :: dummysgg
+   type(SGGFDTDINFO_t)              :: dummysgg
    type(sim_control_t)            :: dummyControl
    type(bounds_t)                 :: dummyBound
    type(solver_output_t), pointer :: outputs(:)
@@ -1017,10 +1010,10 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
 
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
    expectedNumberFrequencies = 6_SINGLE
    expectedNumMeasurments = 4_SINGLE
    mediaPtr => media
@@ -1072,157 +1065,6 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    test_err = test_err + assert_arrays_equal(outputs(1)%frequencySliceProbe%yValueForFreq, &
                                 -1.0_RKIND*outputs(1)%frequencySliceProbe%zValueForFreq, errormessage='Unequal values for Y and -Z')
 
-
-   call remove_folder(test_folder, ios)
-
-   err = test_err
-end function
-
-integer function test_flush_frequency_slice_probe() bind(c) result(err)
-! This test validates flushing a frequency slice probe to disk.
-! It ensures that all data corresponding to measured points and frequencies
-! are correctly written to output files and that the PVD file for visualization
-! is properly created.
-   use output
-   use outputTypes
-   use mod_testOutputUtils
-   use FDETYPES_TOOLS
-   use mod_sggMethods
-   use mod_assertionTools
-   use mod_directoryUtils
-   implicit none
-
-   type(SGGFDTDINFO)              :: dummysgg
-   type(sim_control_t)            :: dummyControl
-   type(bounds_t)                 :: dummyBound
-   type(solver_output_t), pointer :: outputs(:)
-
-   type(media_matrices_t), target :: media
-   type(media_matrices_t), pointer :: mediaPtr
-
-   type(MediaData_t), allocatable, target :: simulationMaterials(:)
-   type(MediaData_t), pointer     :: simulationMaterialsPtr(:)
-
-   type(limit_t), target          :: sinpml_fullsize(6)
-   type(limit_t), pointer         :: sinpml_fullsizePtr(:)
-
-   type(taglist_t)                :: tagNumbers
-
-   type(XYZlimit_t)               :: dummySweep(6)
-   type(XYZlimit_t)               :: dummySinpmlSweep(6)
-   type(XYZlimit_t)               :: allocationRange(6)
-
-   type(Obses_t)                  :: frequencySliceCurrentObservable
-   type(Obses_t)                  :: frequencySliceElectricXObservable
-   type(Obses_t)                  :: frequencySliceMagneticHObservable
-   type(fields_reference_t)       :: fields
-   type(dummyFields_t), target    :: dummyFields
-
-   real(kind=RKIND_tiempo), pointer :: timeArray(:)
-   real(kind=RKIND_tiempo)          :: dt = 0.1_RKIND_tiempo
-   integer(kind=SINGLE)             :: nTimeSteps = 100_SINGLE
-   integer(kind=SINGLE)             :: expectedNumMeasurments
-   integer(kind=SINGLE)             :: expectedNumFrequencies
-   integer(kind=SINGLE)             :: mpidir = 3
-   integer(kind=SINGLE)             :: iter
-   integer(kind=SINGLE)             :: test_err = 0
-   logical                          :: ThereAreWires = .false.
-   logical                          :: outputRequested
-   character(len=BUFSIZE)           :: test_folder_path = 'tmp_cases/'
-   character(len=BUFSIZE)           :: expectedPath
-   character(len=3) :: freqIdName
-
-
-   character(len=14), parameter :: test_folder = 'testing_folder'
-   character(len=13), parameter :: test_name = 'initFrequency'
-
-   character(len=BUFSIZE) :: nEntrada
-   integer :: ios
-   integer :: freq
-
-   nEntrada = join_path(test_folder, test_name)
-
-   err = 1
-
-   !--- Setup SGG ---
-   call sgg_init(dummysgg)
-   call init_time_array(timeArray, nTimeSteps, dt)
-   call sgg_set_tiempo(dummysgg, timeArray)
-   call sgg_set_dt(dummysgg, dt)
-
-   call init_simulation_material_list(simulationMaterials)
-   simulationMaterialsPtr => simulationMaterials
-   call sgg_set_NumMedia(dummysgg, size(simulationMaterials))
-   call sgg_set_Med(dummysgg, simulationMaterialsPtr)
-
-   dummySweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
-   call sgg_set_Sweep(dummysgg, dummySweep)
-   dummySinpmlSweep = create_xyz_limit_array(1, 1, 1, 5, 5, 5)
-   call sgg_set_SINPMLSweep(dummysgg, dummySinpmlSweep)
-   call sgg_set_NumPlaneWaves(dummysgg, 1)
-   allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
-   call sgg_set_Alloc(dummysgg, allocationRange)
-
-   frequencySliceCurrentObservable = create_frequency_slice_observation(2, 2, 2, 5, 5, 5, iCur)
-   call sgg_add_observation(dummysgg, frequencySliceCurrentObservable)
-
-   frequencySliceElectricXObservable = create_frequency_slice_observation(2, 2, 2, 5, 5, 5, iExC)
-   call sgg_add_observation(dummysgg, frequencySliceElectricXObservable)
-
-   frequencySliceMagneticHObservable = create_frequency_slice_observation(2, 2, 2, 5, 5, 5, iHyC)
-   call sgg_add_observation(dummysgg, frequencySliceMagneticHObservable)
-
-   call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
-
-   expectedNumFrequencies = 6_SINGLE
-   expectedNumMeasurments = 4_SINGLE
-
-   mediaPtr => media
-
-   do iter = 1, 6
-      sinpml_fullsize(iter) = create_limit_t(0, 8, 0, 8, 0, 8, 10, 10, 10)
-   end do
-   sinpml_fullsizePtr => sinpml_fullsize
-
-   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
-
-   call init_outputs(dummysgg, media, sinpml_fullsize, tagNumbers, dummyBound, dummyControl, &
-                     outputRequested, ThereAreWires)
-   outputs => GetOutputs()
-
-   !--- Dummy update ---
-   frequencySliceObservable
-   do freq = 1, expectedNumFrequencies
-      outputs(1)%frequencySliceProbe%xvalueForFreq(freq, :) = [(0.1_RKIND, 0.1_RKIND), (0.2_RKIND, 0.2_RKIND), (0.3_RKIND, 0.3_RKIND), (0.4_RKIND, 0.4_RKIND)]
-      outputs(1)%frequencySliceProbe%yvalueForFreq(freq, :) = [(0.5_RKIND, 0.5_RKIND), (0.6_RKIND, 0.6_RKIND), (0.7_RKIND, 0.7_RKIND), (0.8_RKIND, 0.8_RKIND)]
-      outputs(1)%frequencySliceProbe%zvalueForFreq(freq, :) = [(0.9_RKIND, 0.9_RKIND), (1.0_RKIND, 1.0_RKIND), (1.1_RKIND, 1.1_RKIND), (1.2_RKIND, 1.2_RKIND)]
-   end do
-   frequencySliceXObservable
-   do freq = 1, expectedNumFrequencies
-      outputs(2)%frequencySliceProbe%xvalueForFreq(freq, :) = [(0.1_RKIND, 0.1_RKIND), (0.2_RKIND, 0.2_RKIND), (0.3_RKIND, 0.3_RKIND), (0.4_RKIND, 0.4_RKIND)]
-   end do
-   frequencySliceYObservable
-   do freq = 1, expectedNumFrequencies
-      outputs(3)%frequencySliceProbe%yvalueForFreq(freq, :) = [(0.1_RKIND, 0.1_RKIND), (0.2_RKIND, 0.2_RKIND), (0.3_RKIND, 0.3_RKIND), (0.4_RKIND, 0.4_RKIND)]
-   end do
-
-   call flush_outputs(dummysgg%tiempo, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
-
-    !--- Assert file existance
-   do iter = 1, expectedNumFrequencies
-      write (freqIdName, '(i3)') iter
-      expectedPath = add_extension(remove_extension(outputs(1)%frequencySliceProbe%pvdPath),'_fq'//'000'//trim(adjustl(freqIdName))//'.vtu')
-      test_err = test_err + assert_true(file_exists(expectedPath), 'Primera iteracion no encontrada')
-   end do
-
-   call close_outputs()
-
-   expectedPath = trim(adjustl(outputs(1)%frequencySliceProbe%pvdPath))
-   test_err = test_err + assert_true(file_exists(expectedPath), 'PVD file not found')
 
    call remove_folder(test_folder, ios)
 

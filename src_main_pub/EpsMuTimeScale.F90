@@ -1,16 +1,10 @@
-
- 
-!//===========================================================================//
-!// HYSTORY & VERSION:                                                        //
-!//    DATE beginning: 2018-12-18 17:17:09                                   //
-!//===========================================================================//
 module EpsMuTimeScale_m
 
-USE FDETYPES
+use FDETYPES_m
 private :: new_input_, checkError_
 
 type EpsMuTimeScale_input_parameters_t
-    real (kind=RKind) :: tini, tend, alpha_max
+    real(kind=RKind) :: tini, tend, alpha_max
     logical :: electric, magnetic
     logical :: are_there
 contains
@@ -23,14 +17,14 @@ contains
 
 function get_slope_ (this) result (slope)
     class (EpsMuTimeScale_input_parameters_t) :: this
-    real (kind=RKind) :: slope
+    real(kind=RKind) :: slope
     slope = (this%alpha_max-1.0_Rkind)/(this%tend-this%tini)
 end function get_slope_
 
 subroutine new_input_ (this)
     class (EpsMuTimeScale_input_parameters_t) :: this
     this%alpha_max = 1.0_Rkind
-    this%tini        = 1e20_Rkind
+    this%tini      = 1e20_Rkind
     this%tend      = 1e20_Rkind
     this%electric = .false.
     this%magnetic  = .false.

@@ -1,5 +1,5 @@
-module mod_allocationUtils
-   use FDETYPES, only: RKIND, CKIND, SINGLE, RKIND_tiempo, IKINDMTAG, INTEGERSIZEOFMEDIAMATRICES
+module allocationUtils_m
+   use FDETYPES_m, only: RKIND, CKIND, SINGLE, RKIND_tiempo, IKINDMTAG, INTEGERSIZEOFMEDIAMATRICES
    implicit none
    private
    public :: alloc_and_init
@@ -133,4 +133,4 @@ contains
       allocate (array(n1, n2, n3))
       array = initVal
    END subroutine alloc_and_init_complex_3D
-end module mod_allocationUtils
+end module allocationUtils_m

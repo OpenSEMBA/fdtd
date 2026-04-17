@@ -22,7 +22,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        compiler: [ {name: 'intel', version: '2025.0'} ]
+        compiler: [ {name: 'intel', version: '2025.2.1'} ]
         build-type: ["Release"]
         mpi: ["OFF"]
         mtln: ["ON", "OFF"]
@@ -79,5 +79,5 @@ jobs:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
-      run: python -m pytest -m 'not codemodel' test/
+      run: python -m pytest -m 'not codemodel' test/ --durations=20
         

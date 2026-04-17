@@ -1,13 +1,13 @@
-module mod_frequencySliceProbeOutput
-   use FDETYPES
-   use mod_UTILS
-   use Report
-   use outputTypes
-   use mod_outputUtils
-   use mod_volumicProbeUtils
-   use mod_directoryUtils
+module frequencySliceProbeOutput_m
+   use FDETYPES_m
+   use utils_m
+   use report_m
+   use outputTypes_m
+   use outputUtils_m
+   use volumicProbeUtils_m
+   use directoryUtils_m
    use HDF5
-   use mod_xdmfAPI
+   use xdmfAPI_m
    implicit none
    private
 
@@ -162,7 +162,7 @@ contains
          case (iCur); call save_current_module(this, fieldsReference, step, problemInfo)
          case (iMEC); call save_field_module(this, fieldsReference%E, step, request, problemInfo)
          case (iMHC); call save_field_module(this, fieldsReference%H, step, request, problemInfo)
-         case default; call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
+         case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_X_MEASURE == request)) then
@@ -170,7 +170,7 @@ contains
          case (iCurX); call save_current_component(this, this%xValueForFreq, fieldsReference, problemInfo, iEx, this%auxExp_E, this%nFreq, step)
          case (iExC); call save_field_component(this, this%xValueForFreq, fieldsReference%E%x, step, problemInfo, iEx)
          case (iHxC); call save_field_component(this, this%xValueForFreq, fieldsReference%H%x, step, problemInfo, iHx)
-         case default; call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
+         case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_Y_MEASURE == request)) then
@@ -178,7 +178,7 @@ contains
          case (iCurY); call save_current_component(this, this%yValueForFreq, fieldsReference, problemInfo, iEy, this%auxExp_E, this%nFreq, step)
          case (iEyC); call save_field_component(this, this%yValueForFreq, fieldsReference%E%y, step, problemInfo, iEy)
          case (iHyC); call save_field_component(this, this%yValueForFreq, fieldsReference%H%y, step, problemInfo, iHy)
-         case default; call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
+         case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_Z_MEASURE == request)) then
@@ -186,7 +186,7 @@ contains
          case (iCurZ); call save_current_component(this, this%zValueForFreq, fieldsReference, problemInfo, iEz, this%auxExp_E, this%nFreq, step)
          case (iEzC); call save_field_component(this, this%zValueForFreq, fieldsReference%E%z, step, problemInfo, iEz)
          case (iHzC); call save_field_component(this, this%zValueForFreq, fieldsReference%H%z, step, problemInfo, iHz)
-         case default; call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
+         case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
       end if
    end subroutine update_frequency_slice_probe_output
@@ -338,4 +338,4 @@ contains
 
 
 
-end module mod_frequencySliceProbeOutput
+end module frequencySliceProbeOutput_m

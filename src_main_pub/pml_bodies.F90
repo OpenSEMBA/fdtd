@@ -9,78 +9,78 @@
 !!!Mangento en el fichero PMLbody_pre170815_noupdateababienH.F90 la version antigua
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module PMLbodies
+module PMLbodies_m
 
 
 
-   use Report
+   use Report_m
 
-   use fdetypes
+   use FDETYPES_m
    implicit none
    private
    !structures needed by the PMLbody
 
-   TYPE  ::  BerPML__t
-      REAL (KIND=RKIND), pointer ::  field,Plus,Minu
-      REAL (KIND=RKIND)          ::  gx2,P_be,P_ce,Psi,transversalDelta,del,posi
-      integer (kind=4)  ::  minTotal,maxTotal
-   END TYPE BerPML__t
+   type  :: BerPML__t
+      real(kind=RKIND), pointer :: field,Plus,Minu
+      real(kind=RKIND) :: gx2,P_be,P_ce,Psi,transversalDelta,del,posi
+      integer(kind=4) :: minTotal,maxTotal
+   end type BerPML__t
 
 
-   TYPE  ::  berpml_t
-      integer (kind=4)   ::   NumNodes,orient
-      type (BerPML__t), allocatable, dimension (:) :: nodes
+   type  :: berpml_t
+      integer(kind=4) :: NumNodes,orient
+      type(BerPML__t), allocatable, dimension(:) :: nodes
    end type berpml_t
 
    !!!!!valiables locales
-   type (berpml_t), save, target   ::  berpmlE,berpmlH
+   type(berpml_t), save, target   :: berpmlE,berpmlH
 
-   integer (kind=4), parameter :: PMLorden = 2
-   REAL (KIND=RKIND), parameter :: CoeffReflPML=1e-4
+   integer(kind=4), parameter :: PMLorden = 2
+   real(kind=RKIND), parameter :: CoeffReflPML=1e-4
 
 !!!variables globales del modulo
-   REAL (KIND=RKIND), save           ::  eps0,mu0
+   real(kind=RKIND), save           :: eps0,mu0
 !!!
    public AdvancePMLbodyE,AdvancePMLbodyH,InitPMLbodies,DestroyPMLbodies,StorefieldsPMLbodies,calc_pmlbodypar
 
 contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Subroutine to initialize the parameters
+   ! subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitPMLbodies(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,ThereArePMLbodies,control, eps00,mu00)
-      REAL (KIND=RKIND)           ::  eps00,mu00
-      type (SGGFDTDINFO), intent(IN)     ::  sgg
+      real(kind=RKIND) :: eps00,mu00
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
-      REAL (KIND=RKIND)     , pointer, dimension ( : )   ::   g2,gm2
-      REAL (KIND=RKIND)   , intent(in) , target     :: &
+      real(kind=RKIND)     , pointer, dimension( : ) :: g2,gm2
+      real(kind=RKIND)   , intent(in) , target     :: &
       Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
       Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
       Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
       Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
       Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
       Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      REAL (KIND=RKIND) , dimension (:)   , intent(in)   :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
+      real(kind=RKIND) , dimension(:)   , intent(in) :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
                                                          &  Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
                                                          &  Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE), &
                                                             Idxe(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE), &
                                                             Idye(sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE), &
                                                             Idze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
 
-      REAL (KIND=RKIND)  :: sigma
-      logical, INTENT(OUT)  ::  ThereArePMLbodies
+      real(kind=RKIND) :: sigma
+      logical, intent(out) :: ThereArePMLbodies
       type(sim_control_t), intent(in) :: control
-      integer (kind=4)  ::  jmed,j1,conta,k1,i1,orient
-      integer (kind=4), dimension(0:sgg%nummedia) ::maxx,minx,maxy,miny,maxz,minz
+      integer(kind=4) :: jmed,j1,conta,k1,i1,orient
+      integer(kind=4), dimension(0:sgg%nummedia) ::maxx,minx,maxy,miny,maxz,minz
       character(len=BUFSIZE) :: buff
-      character (LEN=BUFSIZE)  ::  whoami
-      type (BerPML__t), pointer :: PML_
+      character(len=BUFSIZE) :: whoami
+      type(BerPML__t), pointer :: PML_
       logical :: unstable
 !
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !         
 !!!
-      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%num_procs,') '
       unstable=.false.
 !
       ThereArePMLbodies=.FALSE.
@@ -104,8 +104,8 @@ contains
                        if (j1 > maxy(jmed)) maxy(jmed)=j1
                        if (k1 > maxz(jmed)) maxz(jmed)=k1
                        conta=conta+1
-                   endif
-               endif
+                   end if
+               end if
             end do
          end do
       end do
@@ -123,8 +123,8 @@ contains
                        if (j1 > maxy(jmed)) maxy(jmed)=j1
                        if (k1 > maxz(jmed)) maxz(jmed)=k1
                        conta=conta+1
-                   endif
-               endif
+                   end if
+               end if
             end do
          end do
       end do
@@ -143,8 +143,8 @@ contains
                        if (j1 > maxy(jmed)) maxy(jmed)=j1
                        if (k1 > maxz(jmed)) maxz(jmed)=k1
                        conta=conta+1
-                   endif
-               endif
+                   end if
+               end if
             end do
          end do
       end do
@@ -153,7 +153,7 @@ contains
       ThereArePMLbodies=(conta /=0)
       if (.not.therearePMLbodies) then
          return
-      endif
+      end if
 !!!!!
       berpmlE%NumNodes=conta
       allocate (berpmlE%Nodes(1 : berpmlE%NumNodes))
@@ -167,8 +167,8 @@ contains
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                    if (orient/=iEx) then
                        conta=conta+1
-                   endif
-               endif
+                   end if
+               end if
             end do
          end do
       end do
@@ -180,8 +180,8 @@ contains
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                    if (orient/=iEy) then
                        conta=conta+1
-                   endif
-               endif
+                   end if
+               end if
             end do
          end do
       end do
@@ -194,17 +194,17 @@ contains
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                    if (orient/=iEz) then
                        conta=conta+1
-                   endif
-               endif
+                   end if
+               end if
             end do
          end do
       end do
       !!!!!!!!!!!!!!!!!!!!!!
       ThereArePMLbodies=ThereArePMLbodies.and.(conta /=0)
       if (.not.therearePMLbodies) then
-         WRITE (buff, *)    'Buggy ERROR: In PMLbodies. fields exist withouth Hfields. '
-        CALL WarnErrReport (buff,.TRUE.)
-      endif
+         write(buff, *)    'Buggy ERROR: In PMLbodies. fields exist withouth Hfields. '
+        call WarnErrReport (buff,.TRUE.)
+      end if
       berpmlH%NumNodes=conta
       allocate (berpmlH%Nodes(1 : berpmlH%NumNodes))
 !!!!
@@ -241,12 +241,12 @@ contains
                      PML_%maxTotal=maxZ(jmed)
                      PML_%posi=k1
                   case DEFAULT
-                     WRITE (buff, *)    'Buggy ERROR: In PMLbodies. '
-                     CALL WarnErrReport (buff,.TRUE.)
+                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
+                     call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
-                endif
-               endif  
+                end if
+               end if  
             end do
          end do
       end do
@@ -282,12 +282,12 @@ contains
                      PML_%maxTotal=maxX(jmed)
                      PML_%posi=i1
                    case DEFAULT
-                     WRITE (buff, *)    'Buggy ERROR: In PMLbodies. '
-                     CALL WarnErrReport (buff,.TRUE.)
+                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
+                     call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
-                endif
-               endif  
+                end if
+               end if  
             end do
          end do
       end do
@@ -323,12 +323,12 @@ contains
                      PML_%maxTotal=maxY(jmed)
                      PML_%posi=j1
                    case DEFAULT
-                     WRITE (buff, *)    'Buggy ERROR: In PMLbodies. '
-                     CALL WarnErrReport (buff,.TRUE.)
+                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
+                     call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
-                endif
-               endif  
+                end if
+               end if  
             end do
          end do
       end do
@@ -369,12 +369,12 @@ contains
                      PML_%maxTotal=maxZ(jmed)
                      PML_%posi=k1+0.5
                   case DEFAULT
-                     WRITE (buff, *)    'Buggy ERROR: In PMLbodies. '
-                     CALL WarnErrReport (buff,.TRUE.)
+                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
+                     call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
-                endif
-               endif  
+                end if
+               end if  
             end do
          end do
       end do
@@ -410,12 +410,12 @@ contains
                      PML_%maxTotal=maxX(jmed)
                      PML_%posi=i1+0.5
                    case DEFAULT
-                     WRITE (buff, *)    'Buggy ERROR: In PMLbodies. '
-                     CALL WarnErrReport (buff,.TRUE.)
+                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
+                     call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
-                endif
-               endif  
+                end if
+               end if  
             end do
          end do
       end do
@@ -451,12 +451,12 @@ contains
                      PML_%maxTotal=maxY(jmed)
                      PML_%posi=j1+0.5
                    case DEFAULT
-                     WRITE (buff, *)    'Buggy ERROR: In PMLbodies. '
-                     CALL WarnErrReport (buff,.TRUE.)
+                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
+                     call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
-                endif
-               endif  
+                end if
+               end if  
             end do
          end do
       end do
@@ -477,7 +477,7 @@ contains
       else  
             READ (14) (berpmlE%Nodes(conta)%Psi,conta=1,berpmlE%numnodes)
             READ (14) (berpmlH%Nodes(conta)%Psi,conta=1,berpmlH%numnodes)
-      endif
+      end if
       return
 
    end subroutine InitPMLbodies
@@ -486,12 +486,12 @@ contains
 
   subroutine calc_pmlbodypar(sgg,eps00,mu00)
 
-        type (SGGFDTDINFO), intent(IN)     ::  sgg  
-        REAL (KIND=RKIND)           ::  eps00,mu00
-        integer (kind=4)  ::  conta
-        type (BerPML__t), pointer :: PML_
-        integer (kind=4) :: nn
-        real (kind=RKIND) :: sigmamax,sigma
+        type(SGGFDTDINFO_t), intent(in) :: sgg  
+        real(kind=RKIND) :: eps00,mu00
+        integer(kind=4) :: conta
+        type(BerPML__t), pointer :: PML_
+        integer(kind=4) :: nn
+        real(kind=RKIND) :: sigmamax,sigma
 !
         eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !         
@@ -503,7 +503,7 @@ contains
                 sigma=Sigmamax * (abs(PML_%posi-1.0*PML_%minTotal) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLorden 
                 else
                 sigma=Sigmamax * (abs(1.0*PML_%maxTotal-PML_%posi) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLorden
-                endif
+                end if
                 PML_%P_be=Exp(-(sigma)*sgg%dt/Eps0)
                 PML_%P_ce=  (PML_%P_be-1.0_RKIND)/PML_%transversalDelta
                 !!!  write(30,*) jmed,orient,i1,j1,k1,sigma,PML_%P_be,PML_%P_ce
@@ -516,7 +516,7 @@ contains
                 sigma=Sigmamax * (abs(PML_%posi-1.0*PML_%minTotal) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLorden 
                 else
                 sigma=Sigmamax * (abs(1.0*PML_%maxTotal-PML_%posi) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLorden
-                endif
+                end if
                 PML_%P_be=Exp(-(sigma)*sgg%dt/Eps0)
                 PML_%P_ce=  (PML_%P_be-1.0_RKIND)/PML_%transversalDelta
                 !!!  write(30,*) jmed,orient,i1,j1,k1,sigma,PML_%P_be,PML_%P_ce
@@ -526,13 +526,13 @@ contains
      end subroutine calc_pmlbodypar  
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Subroutine to advance the E field in the PMLbody: Usual Yee
+   ! subroutine to advance the E field in the PMLbody: Usual Yee
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
    subroutine AdvancePMLbodyE
-      integer (kind=4)  ::  conta
-      type (BerPML__t), pointer :: PML_
+      integer(kind=4) :: conta
+      type(BerPML__t), pointer :: PML_
       do conta=1,berpmlE%numnodes
          PML_ => berpmlE%Nodes(conta) 
          PML_%Psi=PML_%P_be * PML_%Psi + PML_%P_ce * (PML_%Plus   - PML_%Minu)    
@@ -544,8 +544,8 @@ contains
 
 
    subroutine AdvancePMLbodyH
-      integer (kind=4)  ::  conta
-      type (BerPML__t), pointer :: PML_
+      integer(kind=4) :: conta
+      type(BerPML__t), pointer :: PML_
       do conta=1,berpmlH%numnodes
          PML_ => berpmlH%Nodes(conta) 
          PML_%Psi=PML_%P_be * PML_%Psi + PML_%P_ce * (PML_%Plus   - PML_%Minu)    
@@ -560,7 +560,7 @@ contains
  
 
    subroutine StorefieldsPMLbodies
-         integer (kind=4) :: conta
+         integer(kind=4) :: conta
             write (14,err=634) (berpmlE%Nodes(conta)%Psi,conta=1,berpmlE%numnodes)
             write (14,err=634) (berpmlH%Nodes(conta)%Psi,conta=1,berpmlH%numnodes)
 
@@ -574,23 +574,23 @@ contains
 
    subroutine DestroyPMLbodies(sgg)
 
-      type (SGGFDTDINFO), intent(INOUT)         ::  sgg
-      integer (kind=4)  ::  i
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
+      integer(kind=4) :: i
 
       !free up memory
       do i=1,sgg%NumMedia
          if ((sgg%Med(i)%Is%PMLbody).and.(.not.sgg%Med(i)%Is%PML)) then
-             if (associated (sgg%Med(i)%PMLbody)) deallocate (sgg%Med(i)%PMLbody)
-         endif
+             if (associated (sgg%Med(i)%PMLbody)) deallocate(sgg%Med(i)%PMLbody)
+         end if
       end do
 
 
-      if(allocated(berpmlE%nodes)) deallocate (berpmlE%nodes)
-      if(allocated(berpmlH%nodes)) deallocate (berpmlH%nodes)
+      if(allocated(berpmlE%nodes)) deallocate(berpmlE%nodes)
+      if(allocated(berpmlH%nodes)) deallocate(berpmlH%nodes)
 
    end subroutine
 
 
 
 
-end module PMLbodies
+end module PMLbodies_m

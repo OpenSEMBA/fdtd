@@ -1,7 +1,7 @@
-module mod_farFieldOutput
-   use outputTypes
-   use Report
-   use mod_outputUtils
+module farFieldOutput_m
+   use outputTypes_m
+   use report_m
+   use outputUtils_m
    use farfield_m
    implicit none
    private
@@ -18,7 +18,7 @@ contains
   subroutine init_farField_probe_output(this, sgg, lowerBound, upperBound, field, domain, sphericRange, outputTypeExtension, fileNormalize,control, problemInfo, eps0, mu0)
       type(far_field_probe_output_t), intent(out) :: this
       type(domain_t), intent(in) :: domain
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
       integer(kind=SINGLE), intent(in) :: field
       type(spheric_domain_t), intent(in) :: sphericRange
@@ -36,7 +36,7 @@ contains
       call InitFarField(sgg, &
          problemInfo%geometryToMaterialData%sggMiEx, problemInfo%geometryToMaterialData%sggMiEy, problemInfo%geometryToMaterialData%sggMiEz, &
          problemInfo%geometryToMaterialData%sggMiHx, problemInfo%geometryToMaterialData%sggMiHy, problemInfo%geometryToMaterialData%sggMiHz, &
-                        control%layoutnumber, control%size, problemInfo%simulationBounds, control%resume, &
+                        control%layoutnumber, control%num_procs, problemInfo%simulationBounds, control%resume, &
                         2025, this%path, &
                         lowerBound%x, upperBound%x, &
                         lowerBound%y, upperBound%y, &
@@ -85,10 +85,10 @@ contains
     real(kind=RKIND_tiempo) :: flushTime
 
     flushTime = simlulationTimeArray(timeIndex)
-    call FlushFarfield(control%layoutnumber, control%size, bounds, & 
+    call FlushFarfield(control%layoutnumber, control%num_procs, bounds, & 
     fieldsReference%E%deltaX, fieldsReference%E%deltaY, fieldsReference%E%deltaZ, &
     fieldsReference%H%deltaX, fieldsReference%H%deltaY, fieldsReference%H%deltaZ, &
     control%facesNF2FF, flushTime)
     end subroutine flush_farfield_probe_output
 
-end module mod_farFieldOutput
+end module farFieldOutput_m

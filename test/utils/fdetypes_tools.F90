@@ -1,7 +1,7 @@
 module FDETYPES_TOOLS
-   use FDETYPES
-   use mod_UTILS
-   use NFDETypes
+   use FDETYPES_m
+   use utils_m
+   use NFDETypes_m
    implicit none
    private
 
@@ -28,7 +28,7 @@ module FDETYPES_TOOLS
    public :: create_facesNF2FF
    public :: create_control_flags
    public :: add_simulation_material
-   public :: assing_material_id_to_media_matrix_coordinate
+   public :: assign_material_id_to_media_matrix_coordinate
    !===========================
 
    !===========================
@@ -163,7 +163,7 @@ contains
 
       ! 1. Set explicit defaults for all components
       control%layoutnumber = 0
-      control%size = 0
+      control%num_procs = 0
       control%mpidir = 3
       control%finaltimestep = 0
       control%nEntradaRoot = ""
@@ -178,7 +178,7 @@ contains
 
       ! 2. Overwrite defaults only if the optional argument is present
       if (present(layoutnumber)) control%layoutnumber = layoutnumber
-      if (present(size)) control%size = size
+      if (present(size)) control%num_procs = size
       if (present(mpidir)) control%mpidir = mpidir
       if (present(finaltimestep)) control%finaltimestep = finaltimestep
       if (present(nEntradaRoot)) control%nEntradaRoot = nEntradaRoot
@@ -405,7 +405,7 @@ contains
    subroutine add_media_data_to_sgg(sgg, mediaData)
       implicit none
 
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(MediaData_t), intent(in)    :: mediaData
 
       type(MediaData_t), dimension(:), target, allocatable :: temp_Med
@@ -432,7 +432,7 @@ contains
 
    end subroutine add_media_data_to_sgg
 
-   subroutine assing_material_id_to_media_matrix_coordinate(media, fieldComponent, i, j, k, materialId)
+   subroutine assign_material_id_to_media_matrix_coordinate(media, fieldComponent, i, j, k, materialId)
       type(media_matrices_t), intent(inout) :: media
       integer(kind=SINGLE), intent(in) :: fieldComponent, i, j, k, materialId
       selectcase (fieldComponent)
@@ -444,7 +444,7 @@ contains
       case (iHz); media%sggMiHz(i, j, k) = materialId
       end select
 
-   end subroutine assing_material_id_to_media_matrix_coordinate
+   end subroutine assign_material_id_to_media_matrix_coordinate
 
    function get_default_mediadata() result(res)
       implicit none
@@ -512,7 +512,7 @@ contains
       implicit none
 
       type(MediaData_t) :: res
-      type(Material) :: mat
+      type(Material_t) :: mat
 
       mat = create_pec_material()
       res = get_default_mediadata()
@@ -531,7 +531,7 @@ contains
       implicit none
 
       type(MediaData_t) :: res
-      type(Material) :: mat
+      type(Material_t) :: mat
 
       mat = create_pmc_material()
       res = get_default_mediadata()
@@ -552,7 +552,7 @@ contains
       integer(kind=SINGLE) :: materialId
 
       type(MediaData_t) :: res
-      type(Material) :: mat
+      type(Material_t) :: mat
 
       type(Wires_t), target, dimension(1) :: wire
 
@@ -570,14 +570,14 @@ contains
 
    function create_empty_material() result(mat)
       implicit none
-      type(Material) :: mat
+      type(Material_t) :: mat
    end function create_empty_material
 
    function create_material(eps_in, mu_in, sigma_in, sigmam_in, id_in) result(mat)
       implicit none
       real(kind=RK), intent(in) :: eps_in, mu_in, sigma_in, sigmam_in
       integer(kind=4), intent(in) :: id_in
-      type(Material) :: mat
+      type(Material_t) :: mat
 
       mat%eps = eps_in
       mat%mu = mu_in
@@ -587,31 +587,31 @@ contains
    end function create_material
 
    function create_vacuum_material() result(mat)
-      type(Material) :: mat
+      type(Material_t) :: mat
       mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0_RKIND, 0.0_RKIND, 1)
    end function create_vacuum_material
 
    function create_pec_material() result(mat)
-      type(Material) :: mat
+      type(Material_t) :: mat
       mat = create_material(EPSILON_VACUUM, MU_VACUUM, SIGMA_PEC, 0.0_RKIND, 0)
    end function create_pec_material
 
    function create_pmc_material() result(mat)
-      type(Material) :: mat
+      type(Material_t) :: mat
       mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0_RKIND, SIGMA_PMC, 2)
    end function create_pmc_material
 
    function create_empty_materials() result(mats)
       implicit none
-      type(Materials) :: mats
+      type(Materials_t) :: mats
    end function create_empty_materials
 
    subroutine add_material_to_materials(mats_collection, new_mat)
       implicit none
-      type(Materials), intent(inout) :: mats_collection
-      type(Material), intent(in) :: new_mat
+      type(Materials_t), intent(inout) :: mats_collection
+      type(Material_t), intent(in) :: new_mat
 
-      type(Material), dimension(:), target, allocatable :: temp_Mats
+      type(Material_t), dimension(:), target, allocatable :: temp_Mats
       integer :: old_size, new_size
 
       old_size = mats_collection%n_Mats

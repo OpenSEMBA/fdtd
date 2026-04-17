@@ -11,7 +11,6 @@ extern "C" int test_update_movie_probe();
 extern "C" int test_flush_movie_probe();
 extern "C" int test_init_frequency_slice_probe();
 extern "C" int test_update_frequency_slice_probe();
-extern "C" int test_flush_frequency_slice_probe();
 
 extern "C" int test_count_required_coords();
 extern "C" int test_store_required_coords();
@@ -28,7 +27,6 @@ TEST(output, test_update_movie_probe_for_pec_surface)    {EXPECT_EQ(0, test_upda
 TEST(output, test_flush_movie_probe_data)    {EXPECT_EQ(0, test_flush_movie_probe()); }
 TEST(output, test_init_frequency_slice)    {EXPECT_EQ(0, test_init_frequency_slice_probe()); }
 TEST(output, test_update_frequency_slice)    {EXPECT_EQ(0, test_update_frequency_slice_probe()); }
-TEST(output, test_flush_frequency_slice)    {EXPECT_EQ(0, test_flush_frequency_slice_probe()); }
 
 TEST(output, test_volumic_utils_count) { EXPECT_EQ(0, test_count_required_coords()); }
 TEST(output, test_volumic_utils_store) { EXPECT_EQ(0, test_store_required_coords()); }

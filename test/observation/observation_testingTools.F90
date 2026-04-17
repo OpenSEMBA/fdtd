@@ -1,5 +1,5 @@
 module observation_testingTools
-   use FDETYPES
+   use FDETYPES_m
    type :: dummyFields_t
       real(kind=RKIND),allocatable, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=RKIND),allocatable, dimension(:) :: dxe, dye, dze, dxh, dyh, dzh
@@ -48,7 +48,7 @@ contains
    end subroutine create_dummy_fields
 
    subroutine check_shape_real(arr, n_expected, test_err, name)
-      use Observa
+      use Observa_m
       real(kind=RKIND), intent(in), dimension(:, :) :: arr
       integer, intent(in) :: n_expected
       integer, intent(inout) :: test_err
@@ -74,7 +74,7 @@ contains
    end subroutine check_shape_real
 
    subroutine check_shape_complex(arr, n_expected, test_err, name)
-      use Observa
+      use Observa_m
       complex(kind=CKIND), intent(in), dimension(:, :) :: arr
       integer, intent(in) :: n_expected
       integer, intent(inout) :: test_err
@@ -100,7 +100,7 @@ contains
    end subroutine check_shape_complex
 
    subroutine check_size(arr, n_expected, test_err, name)
-      use Observa
+      use Observa_m
       integer, intent(in), dimension(:) :: arr
       integer, intent(in) :: n_expected
       integer, intent(inout) :: test_err
@@ -129,9 +129,22 @@ contains
       equal = abs(a - b) <= tol
    end function approx_equal
 
+   function create_time_array(array_size, interval) result(arr)
+      integer, intent(in) :: array_size
+      integer(kind=4) :: i
+      real(kind=RKIND_tiempo) :: interval
+
+      real(kind=RKIND_tiempo), pointer, dimension(:) :: arr
+      allocate (arr(array_size))
+
+      do i = 1, array_size
+         arr(i) = (i - 1)*interval
+      end do
+   end function create_time_array
+
    function create_xyz_limit_array(XI,YI,ZI,XE,YE,ZE) result(arr)
       type(XYZlimit_t), dimension(1:6) :: arr
-      integer (kind=4), intent(in) :: XI,YI,ZI,XE,YE,ZE
+      integer(kind=4), intent(in) :: XI,YI,ZI,XE,YE,ZE
       integer :: i
       do i = 1, 6
          arr(i)%XI = XI
@@ -143,7 +156,71 @@ contains
       end do
    end function create_xyz_limit_array
 
-   function create_basic_media () result(media)
-      type(MediaData_t) :: media
-   end function create_basic_media
+   
+   function create_facesNF2FF(tr, fr, iz, de, ab, ar) result(faces)
+      type(nf2ff_t) :: faces
+      logical :: tr, fr, iz, de, ab, ar
+
+      faces%tr = tr
+      faces%fr = fr
+      faces%iz = iz
+      faces%de = de
+      faces%ab = ab
+      faces%ar = ar
+   end function create_facesNF2FF
+
+   function create_control_flags(layoutnumber, num_procs, mpidir, finaltimestep, &
+                                       nEntradaRoot, wiresflavor, &
+                                       resume, saveall, NF2FFDecim, simu_devia, singlefilewrite, &
+                                       facesNF2FF) result(control)
+      type(sim_control_t) :: control
+      integer(kind=4), intent(in) :: layoutnumber, num_procs, mpidir, finaltimestep
+      character(len=*), intent(in) :: nEntradaRoot, wiresflavor
+      logical, intent(in) :: resume, saveall, NF2FFDecim, simu_devia, singlefilewrite
+      type(nf2ff_t), intent(in) :: facesNF2FF
+
+      control%layoutnumber  = layoutnumber
+      control%num_procs = num_procs
+      control%mpidir  = mpidir
+      control%finaltimestep = finaltimestep
+      control%nEntradaRoot  = nEntradaRoot
+      control%wiresflavor = wiresflavor
+      control%resume  = resume
+      control%saveall = saveall
+      control%NF2FFDecim = NF2FFDecim
+      control%simu_devia = simu_devia
+      control%singlefilewrite  = singlefilewrite
+      control%facesNF2FF = facesNF2FF
+
+   end function create_control_flags
+
+   function create_base_sgg() result(sgg)
+      type(SGGFDTDINFO_t) :: sgg
+      type(MediaData_t) :: basic_media
+      
+      sgg%NumMedia = 3
+      allocate(sgg%Med(0:sgg%NumMedia))
+      sgg%Med = basic_media
+      sgg%NumberRequest = 1
+      sgg%dt = 0.1_RKIND_tiempo
+      sgg%tiempo => create_time_array(100, sgg%dt)
+      sgg%Sweep = create_xyz_limit_array(0,0,0,6,6,6)
+      sgg%SINPMLSweep = create_xyz_limit_array(1,1,1,5,5,5)
+      sgg%NumPlaneWaves = 1
+      sgg%alloc = create_xyz_limit_array(0,0,0,6,6,6)
+ 
+   end function create_base_sgg
+
+   function get_temp_dir() result(tmpdir)
+      character(len=BUFSIZE) :: tmpdir
+      integer :: status
+      call GET_ENVIRONMENT_VARIABLE("TMPDIR", tmpdir, status=status)
+      if (status /= 0 .or. len_trim(tmpdir) == 0) &
+         call GET_ENVIRONMENT_VARIABLE("TEMP", tmpdir, status=status)
+      if (status /= 0 .or. len_trim(tmpdir) == 0) &
+         call GET_ENVIRONMENT_VARIABLE("TMP", tmpdir, status=status)
+      if (status /= 0 .or. len_trim(tmpdir) == 0) &
+         tmpdir = "/tmp"
+   end function get_temp_dir
+
 end module

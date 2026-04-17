@@ -4,25 +4,25 @@
 !  Module to handle the resuming of a problem
 !  Date :  April, 8, 2010
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module resuming
+module resuming_m
 
-   Use Report
+   Use Report_m
 
-   use fdetypes
+   use FDETYPES_m
 #ifdef CompileWithStochastic
    use SGBC_stoch
 #else
-   use SGBC_NOstoch
+   use SGBC_nostoch_m
 #endif  
-   use PMLbodies
-   use Lumped
+   use PMLbodies_m
+   use Lumped_m
 #ifdef CompileWithNIBC
    use Multiports
 #endif
-   use EDispersives
-   use MDispersives
+   use EDispersives_m
+   use Mdispersives_m
    use farfield_m
-   use HollandWires
+   use HollandWires_m
 #ifdef CompileWithBerengerWires
    use WiresBerenger
 #ifdef CompileWithMPI
@@ -34,17 +34,17 @@ module resuming
 #endif
 
    !Plane Wave Module
-   use Ilumina
+   use ilumina_m
    !Observation Module
-   use Observa
+   use Observa_m
    !PMC and PML Module
-   use Borders_CPML
-   use Borders_MUR
+   use BORDERS_CPML_m
+   use BORDERS_MUR_m
 
 
 
 #ifdef CompileWithMPI
-   use MPIComm
+   use MPIcomm_m
 #endif
 #ifdef CompileWithStochastic
    use MPI_stochastic
@@ -56,10 +56,10 @@ module resuming
 
    
 !!!variables globales del modulo
-   REAL (KIND=RKIND), save           ::  zvac,cluz
-   REAL (KIND=RKIND), save           ::  eps0,mu0
+   real(kind=RKIND), save           :: zvac,cluz
+   real(kind=RKIND), save           :: eps0,mu0
 !!!   
-   integer (kind=4), parameter, private  ::  BLOCK_SIZE = 1024
+   integer(kind=4), parameter, private  :: BLOCK_SIZE = 1024
    public ReadFields,flush_and_save_resume
 
 
@@ -71,17 +71,17 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine ReadFields(sggalloc,lastexecutedtimestep,lastexecutedtime,ultimodt,eps00,mu00,Ex,Ey,Ez,Hx,Hy,Hz)
 
-      type (XYZlimit_t), dimension(1:6)  ::  sggalloc
-      REAL (KIND=RKIND)   , intent(inout)      :: &
+      type(XYZlimit_t), dimension(1:6) :: sggalloc
+      real(kind=RKIND)   , intent(inout) :: &
       Ex(sggalloc(iEx)%XI : sggalloc(iEx)%XE,sggalloc(iEx)%YI : sggalloc(iEx)%YE,sggalloc(iEx)%ZI : sggalloc(iEx)%ZE),&
       Ey(sggalloc(iEy)%XI : sggalloc(iEy)%XE,sggalloc(iEy)%YI : sggalloc(iEy)%YE,sggalloc(iEy)%ZI : sggalloc(iEy)%ZE),&
       Ez(sggalloc(iEz)%XI : sggalloc(iEz)%XE,sggalloc(iEz)%YI : sggalloc(iEz)%YE,sggalloc(iEz)%ZI : sggalloc(iEz)%ZE),&
       Hx(sggalloc(iHx)%XI : sggalloc(iHx)%XE,sggalloc(iHx)%YI : sggalloc(iHx)%YE,sggalloc(iHx)%ZI : sggalloc(iHx)%ZE),&
       Hy(sggalloc(iHy)%XI : sggalloc(iHy)%XE,sggalloc(iHy)%YI : sggalloc(iHy)%YE,sggalloc(iHy)%ZI : sggalloc(iHy)%ZE),&
       Hz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
-      REAL (KIND=RKIND_tiempo) :: lastexecutedtime,ultimodt
-      REAL (KIND=RKIND) :: eps00,mu00
-      integer (kind=4)  ::  lastexecutedtimestep,i,j,k,i_block,n_block,ini,fin
+      real(kind=RKIND_tiempo) :: lastexecutedtime,ultimodt
+      real(kind=RKIND) :: eps00,mu00
+      integer(kind=4) :: lastexecutedtimestep,i,j,k,i_block,n_block,ini,fin
 
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       zvac=sqrt(mu0/eps0)
@@ -169,34 +169,34 @@ contains
 
    !---------------------------------------------------->
    !**************************************************************************************************
-   subroutine flush_and_save_resume(sgg, b, layoutnumber, size, nentradaroot, nresumeable2, thereare, fin,eps00,mu00, everflushed,  &
+   subroutine flush_and_save_resume(sgg, b, layoutnumber, num_procs, nentradaroot, nresumeable2, thereare, fin,eps00,mu00, everflushed,  &
    Ex, Ey, Ez, Hx, Hy, Hz,wiresflavor,simu_devia,stochastic)
       logical :: simu_devia,stochastic
-      type (SGGFDTDINFO), intent(IN)    :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       !---------------------------> inputs <----------------------------------------------------------
       character(len=*), INTENT(in) :: wiresflavor
-      integer (kind=4) :: ierr
-      type( bounds_t), intent( IN)  ::  b
-      integer( kind = 4), intent( IN)  ::  layoutnumber, size
+      integer(kind=4) :: ierr
+      type( bounds_t), intent( IN) :: b
+      integer( kind = 4), intent( IN) :: layoutnumber, num_procs
       !--->
-      character( LEN=*), intent( IN)  ::  nresumeable2, nEntradaRoot
-      type( logic_control), intent( IN)  ::  thereare
-      integer( kind=4), intent( IN)  ::  fin
+      character( LEN=*), intent( IN) :: nresumeable2, nEntradaRoot
+      type( logic_control_t), intent( IN) :: thereare
+      integer( kind=4), intent( IN) :: fin
       logical :: existe
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN) :: Ez
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN) :: Hz
       !---------------------------> output <----------------------------------------------------------
-      logical, intent( OUT)  ::  everflushed
+      logical, intent( OUT) :: everflushed
       !---------------------------> variables locales <-----------------------------------------------
-      character (LEN=BUFSIZE)  ::  whoami
-      character (LEN=BUFSIZE)     ::  dubuf
-      real (kind = RKIND) :: eps00,mu00
+      character(len=BUFSIZE) :: whoami
+      character(len=BUFSIZE) :: dubuf
+      real(kind = RKIND) :: eps00,mu00
       !---------------------------> empieza flush_and_save_resume <-----------------------------------
       integer :: my_iostat
       
@@ -204,16 +204,16 @@ contains
       zvac=sqrt(mu0/eps0)
       cluz=1.0_RKIND/sqrt(mu0*eps0)
       
-      write( whoami, '(a,i5,a,i5,a)') '(', layoutnumber+1, '/', size,') '
+      write( whoami, '(a,i5,a,i5,a)') '(', layoutnumber+1, '/', num_procs,') '
       everflushed = .TRUE.
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!  Flush observation data to disk
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !SYNC TO DISK ENERGY AND REPORTING FILES
-      IF (layoutnumber == 0) THEN
+      if (layoutnumber == 0) then
          call flush(11)
          call flush(10)
-      endif
+      end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!  Open unit 14 and store the fields of each module for resuming pruposesdata
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -227,7 +227,7 @@ contains
          write( 14, '(a)',err=634) '!END'
          close ( 14, status = 'delete',err=634)
          call rename(trim(adjustl( nresumeable2)),trim(adjustl( nresumeable2))//'.old')
-      endif
+      end if
 #endif
       !
 #ifdef CompileWithMPI
@@ -251,24 +251,24 @@ contains
       if( Thereare%MURBorders)       call StoreFieldsMURBorders
 #ifdef CompileWithMPI
       !do an update of the currents to later read the currents OK
-      if (size>1)  then
+      if (num_procs>1)  then
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
-             if ((size>1).and.(thereare%wires))   then
-                call newFlushWiresMPI(layoutnumber,size)
-             endif
+             if ((num_procs>1).and.(thereare%wires))   then
+                call newFlushWiresMPI(layoutnumber,num_procs)
+             end if
 #ifdef CompileWithStochastic
              if (stochastic)  then
-                call syncstoch_mpi_wires(simu_devia,layoutnumber,size)
-             endif
+                call syncstoch_mpi_wires(simu_devia,layoutnumber,num_procs)
+             end if
 #endif             
-             endif
+             end if
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
-            call FlushWiresMPI_Berenger(layoutnumber,size)
-         endif
+            call FlushWiresMPI_Berenger(layoutnumber,num_procs)
+         end if
 #endif
-      endif
+      end if
       
 
 #endif
@@ -276,25 +276,25 @@ contains
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
             call StoreFieldsWires
-         endif
+         end if
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             call StoreFieldsWires_Berenger
-         endif
+         end if
 #endif
 #ifdef CompileWithSlantedWires
          if((trim(adjustl(wiresflavor))=='slanted').or.(trim(adjustl(wiresflavor))=='semistructured')) then
             call StoreFieldsWires_Slanted
-         endif
+         end if
 #endif
-      endif
+      end if
 
       
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
       if (stochastic)  then
-         call syncstoch_mpi_lumped(simu_devia,layoutnumber,size)
-      endif
+         call syncstoch_mpi_lumped(simu_devia,layoutnumber,num_procs)
+      end if
 #endif    
 #endif    
       if (ThereAre%Lumpeds) call StoreFieldsLumpeds(stochastic)
@@ -302,13 +302,13 @@ contains
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
       if (stochastic)  then
-         call syncstoch_mpi_SGBCs(simu_devia,layoutnumber,size)
-      endif
+         call syncstoch_mpi_SGBCs(simu_devia,layoutnumber,num_procs)
+      end if
 #endif    
 #endif    
       if( Thereare%SGBCs)       then
           call StoreFieldsSGBCs(stochastic)
-      endif      
+      end if      
 #ifdef CompileWithNIBC
       if( Thereare%Multiports)       call StoreFieldsMultiports
 #endif
@@ -340,20 +340,20 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine StoreFields( sgg,finaltimestep,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
       !---------------------------> inputs <----------------------------------------------------------
-      type (SGGFDTDINFO), intent(IN)   ::  sgg
-      type( bounds_t), intent( IN)  ::  b
-      integer( kind = 4), intent(IN)  ::  finaltimestep
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      type( bounds_t), intent( IN) :: b
+      integer( kind = 4), intent(in) :: finaltimestep
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN) :: Ez
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
-      integer( kind = 4)  ::  i, j, k, i_block, n_block, ini, fin
-      real (kind = RKIND) :: eps0,mu0,cluz,zvac
+      integer( kind = 4) :: i, j, k, i_block, n_block, ini, fin
+      real(kind = RKIND) :: eps0,mu0,cluz,zvac
       !---------------------------> empieza StoreFields <---------------------------------------------
       write(14,err=634) finaltimestep,sgg%tiempo(finaltimestep),sgg%dt,eps0,mu0
       !--->
@@ -365,10 +365,10 @@ contains
                fin = ini-1 + BLOCK_SIZE
                write(14,err=634) ( Ex( i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
-            enddo
+            end do
             write(14,err=634) ( Ex( i, j, k), i = ini, b%Ex%NX-1)
-         enddo
-      enddo
+         end do
+      end do
       !--->
       do k = 0, b%Ey%NZ-1
          do j= 0, b%Ey%NY-1
@@ -378,10 +378,10 @@ contains
                fin = ini-1 + BLOCK_SIZE
                write(14,err=634) ( Ey( i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
-            enddo
+            end do
             write(14,err=634) ( Ey(i,j,k), i = ini, b%Ey%NX-1)
-         enddo
-      enddo
+         end do
+      end do
       !--->
       do k = 0, b%Ez%NZ-1
          do j = 0, b%Ez%NY-1
@@ -391,10 +391,10 @@ contains
                fin = ini-1 + BLOCK_SIZE
                write(14,err=634) ( Ez( i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
-            enddo
+            end do
             write(14,err=634) ( Ez( i, j, k), i = ini, b%Ez%NX-1)
-         enddo
-      enddo
+         end do
+      end do
       !--->
       do k = 0, b%Hx%NZ-1
          do j = 0, b%Hx%NY-1
@@ -404,10 +404,10 @@ contains
                fin = ini-1 + BLOCK_SIZE
                write(14,err=634) ( Hx( i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
-            enddo
+            end do
             write(14,err=634) ( Hx( i, j, k), i = ini, b%Hx%NX-1)
-         enddo
-      enddo
+         end do
+      end do
       !--->
       do k = 0, b%Hy%NZ-1
          do j = 0, b%Hy%NY-1
@@ -417,10 +417,10 @@ contains
                fin = ini-1 + BLOCK_SIZE
                write(14,err=634) ( Hy( i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
-            enddo
+            end do
             write(14,err=634) ( Hy( i, j, k), i = ini, b%Hy%NX-1)
-         enddo
-      enddo
+         end do
+      end do
       !--->
       do k = 0, b%Hz%NZ-1
          do j = 0, b%Hz%NY-1
@@ -430,10 +430,10 @@ contains
                fin = ini-1 + BLOCK_SIZE
                write(14,err=634) ( Hz( i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
-            enddo
+            end do
             write(14,err=634) ( Hz( i, j, k), i = ini, b%Hz%NX-1)
-         enddo
-      enddo
+         end do
+      end do
 
       goto 635
 634   call print11(0,SEPARADOR//separador//separador)

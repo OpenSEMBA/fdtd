@@ -1,5 +1,5 @@
 integer function test_cell_map_coords() bind(C) result(err)
-    use cell_map_mod
+    use cell_map_m
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use iso_fortran_env, only: int32, int64
 
@@ -7,7 +7,7 @@ integer function test_cell_map_coords() bind(C) result(err)
 
     type(fhash_tbl_t) :: tbl
     type(triangle_t) :: t_set, t_get 
-    integer (int32), dimension(3) :: cell_set
+    integer(int32), dimension(3) :: cell_set
     class(*), allocatable :: t_alloc
     integer :: stat, n_cond
     err = 0
@@ -29,7 +29,7 @@ integer function test_cell_map_coords() bind(C) result(err)
 end function
 
 integer function test_cell_map_array() bind(C) result(err)
-    use cell_map_mod
+    use cell_map_m
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use iso_fortran_env, only: int32, int64
 
@@ -39,7 +39,7 @@ integer function test_cell_map_array() bind(C) result(err)
     type(triangle_t) :: t1, t2
     type(triangle_t), dimension(:), allocatable :: t_array, t_array_aux
     type(element_set_t) :: tri_list, tri_list_aux
-    integer (kind=4), dimension(3) :: cell_set
+    integer(kind=4), dimension(3) :: cell_set
     class(*), allocatable :: t_alloc
     integer :: stat, n_cond
     err = 0
@@ -101,7 +101,7 @@ integer function test_cell_map_array() bind(C) result(err)
 end function
 
 integer function test_cell_map_add_triangle() bind(C) result(err)
-    use cell_map_mod
+    use cell_map_m
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use iso_fortran_env, only: int32, int64
 
@@ -111,7 +111,7 @@ integer function test_cell_map_add_triangle() bind(C) result(err)
     type(triangle_t) :: t1, t2
     type(triangle_t), dimension(:), allocatable :: t_array, t_array_aux
     type(element_set_t) :: tri_list, tri_list_aux
-    integer (kind=4), dimension(3) :: cell_set
+    integer(kind=4), dimension(3) :: cell_set
     class(*), allocatable :: t_alloc
     integer :: stat, n_cond
     type(cell_t), dimension(:), allocatable :: keys
@@ -159,8 +159,8 @@ integer function test_cell_map_add_triangle() bind(C) result(err)
 end function
 
 integer function test_cell_map_cellmap_set_get() bind(C) result(err)
-    use cell_map_mod
-    use geometry_mod
+    use cell_map_m
+    use geometry_m
     implicit none 
 
     type(triangle_map_t) :: tri_map

@@ -1,8 +1,8 @@
-module mod_outputUtils
-   use FDETYPES
-   use outputTypes
-   use mod_domain
-   use report
+module outputUtils_m
+   use FDETYPES_m
+   use outputTypes_m
+   use domain_m
+   use report_m
    implicit none
    integer(kind=SINGLE), parameter :: FILE_UNIT = 400
 
@@ -659,7 +659,7 @@ contains
    end function get_delta
 
    subroutine create_data_file(filePathReference, probePathReference, domainTypeReference, fileExtension)
-      use mod_directoryUtils
+      use directoryUtils_m
       character(len=*), intent(out) :: filePathReference
       character(len=*), intent(in) :: probePathReference
       character(len=*), intent(in) :: domainTypeReference
@@ -672,4 +672,4 @@ contains
       call create_file_with_path(filePathReference, err)
    end subroutine
 
-end module mod_outputUtils
+end module outputUtils_m

@@ -1,8 +1,8 @@
-module mod_volumicProbeUtils
-   use FDETYPES
-   USE mod_UTILS
-   use outputTypes
-   use mod_outputUtils
+module volumicProbeUtils_m
+   use FDETYPES_m
+   use utils_m
+   use outputTypes_m
+   use outputUtils_m
    implicit none
    private
 
@@ -364,4 +364,4 @@ contains
       componentFieldRequest = isWithinBounds(fieldDir, i, j, k, problemInfo)
    end function componentFieldRequest
 
-end module mod_volumicProbeUtils
+end module volumicProbeUtils_m

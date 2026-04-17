@@ -1,11 +1,11 @@
-module mod_wireProbeOutput
-   use FDETYPES
-   USE mod_UTILS
-   use Report
-   use outputTypes
-   use mod_outputUtils
-   use wiresHolland_constants
-   use HollandWires
+module wireProbeOutput_m
+   use FDETYPES_m
+   use utils_m
+   use report_m
+   use outputTypes_m
+   use outputUtils_m
+   use wiresHolland_constants_m
+   use HollandWires_m
 
    implicit none
    private
@@ -174,7 +174,7 @@ module mod_wireProbeOutput
       character(len=*), intent(in) :: wiresflavor
 
       type(Thinwires_t), pointer :: Hwireslocal
-      type(CurrentSegments), pointer :: seg
+      type(CurrentSegments_t), pointer :: seg
 #ifdef CompileWithBerengerWires
       type(TWires), pointer :: Hwireslocal_B
 #endif
@@ -266,7 +266,7 @@ module mod_wireProbeOutput
       character(len=*), intent(in) :: wiresflavor
 
       type(Thinwires_t), pointer :: Hwireslocal
-      type(CurrentSegments), pointer :: seg
+      type(CurrentSegments_t), pointer :: seg
       integer :: n
       logical :: found
       character(len=BUFSIZE) :: buff
@@ -366,7 +366,7 @@ module mod_wireProbeOutput
       type(sim_control_t), intent(in) :: control
       real(kind=RKIND), intent(in) :: InvEps(:), InvMu(:)
 
-      type(CurrentSegments), pointer :: seg
+      type(CurrentSegments_t), pointer :: seg
 
       seg => this%segment
 
@@ -456,4 +456,4 @@ module mod_wireProbeOutput
    end subroutine update_current_slanted
 #endif
 
-end module mod_wireProbeOutput
+end module wireProbeOutput_m

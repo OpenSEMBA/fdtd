@@ -1,5 +1,5 @@
-module mod_valueReplacer
-  use FDETYPES, only: RKIND, CKIND, SINGLE, RKIND_tiempo
+module valueReplacer_m
+  use FDETYPES_m, only: RKIND, CKIND, SINGLE, RKIND_tiempo
   implicit none
   private
 
@@ -127,4 +127,4 @@ contains
     x(idx1, idx2, idx3) = val
   end subroutine
 
-end module mod_valueReplacer
+end module valueReplacer_m

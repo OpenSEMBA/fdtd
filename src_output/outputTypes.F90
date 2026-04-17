@@ -1,7 +1,7 @@
-module outputTypes
-   use FDETYPES
-   use HollandWires
-   use wiresHolland_constants
+module outputTypes_m
+   use FDETYPES_m
+   use HollandWires_m
+   use wiresHolland_constants_m
 #ifdef CompileWithBerengerWires
    use WiresBerenger
 #endif
@@ -135,13 +135,13 @@ module outputTypes
    type, extends(abstract_time_probe_t) :: wire_charge_probe_output_t
       integer(kind=SINGLE) :: sign = +1
       real(kind=RKIND), allocatable :: chargeValue(:)
-      type(CurrentSegments), pointer :: segment
+      type(CurrentSegments_t), pointer :: segment
    end type wire_charge_probe_output_t
 
    type, extends(abstract_time_probe_t) :: wire_current_probe_output_t
       integer(kind=SINGLE) :: sign = +1
       type(current_values_t) :: currentValues(BuffObse)
-      type(CurrentSegments), pointer :: segment
+      type(CurrentSegments_t), pointer :: segment
 #ifdef CompileWithBerengerWires
       type(TSegment), pointer :: segmentBerenger
 #endif
@@ -218,4 +218,4 @@ module outputTypes
 
 contains
 
-end module outputTypes
+end module outputTypes_m

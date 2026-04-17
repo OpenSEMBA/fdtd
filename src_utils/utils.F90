@@ -1,9 +1,9 @@
-module mod_UTILS
-  use mod_allocationUtils
-  use mod_valueReplacer
-  use mod_directoryUtils
+module utils_m
+  use allocationUtils_m
+  use valueReplacer_m
+  use directoryUtils_m
   implicit none
   
 contains
   
-end module mod_UTILS
+end module utils_m

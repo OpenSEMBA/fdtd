@@ -1,5 +1,5 @@
 integer function test_cells() bind(C) result(err)
-   use cells_mod
+   use cells_m
    use smbjson_testingTools
 
    implicit none

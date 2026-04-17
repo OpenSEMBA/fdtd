@@ -1,12 +1,12 @@
-module mod_movieProbeOutput
-   use FDETYPES
-   USE mod_UTILS
-   use Report
-   use outputTypes
-   use mod_outputUtils
-   use mod_volumicProbeUtils
+module movieProbeOutput_m
+   use FDETYPES_m
+   use utils_m
+   use report_m
+   use outputTypes_m
+   use outputUtils_m
+   use volumicProbeUtils_m
    use HDF5
-   use mod_xdmfAPI
+   use xdmfAPI_m
    implicit none
    private
 
@@ -151,7 +151,7 @@ contains
          case (iMHC)
             call save_field_module(this, fieldsReference%H, request, step, problemInfo)
          case default
-            call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
+            call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
       else if (any(VOLUMIC_X_MEASURE == request)) then
          select case (request)
@@ -162,7 +162,7 @@ contains
          case (iHxC)
             call save_field_component(this, this%xValueForTime, fieldsReference%H%x, step, problemInfo, iHx)
          case default
-            call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
+            call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
       else if (any(VOLUMIC_Y_MEASURE == request)) then
          select case (request)
@@ -173,7 +173,7 @@ contains
          case (iHyC)
             call save_field_component(this, this%yValueForTime, fieldsReference%H%y, step, problemInfo, iHy)
          case default
-            call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
+            call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
       else if (any(VOLUMIC_Z_MEASURE == request)) then
          select case (request)
@@ -184,7 +184,7 @@ contains
          case (iHzC)
             call save_field_component(this, this%zValueForTime, fieldsReference%H%z, step, problemInfo, iHz)
          case default
-            call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
+            call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
       end if
    end subroutine update_movie_probe_output
@@ -476,4 +476,4 @@ contains
       end if
    end subroutine clear_memory_data
 
-end module mod_movieProbeOutput
+end module movieProbeOutput_m

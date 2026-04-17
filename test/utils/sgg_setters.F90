@@ -1,5 +1,5 @@
-module mod_sggMethods
-   use FDETYPES
+module sggMethods_m
+   use FDETYPES_m
    implicit none
    private
    
@@ -69,7 +69,7 @@ contains
 
       implicit none
 
-      type(SGGFDTDINFO), intent(inout) :: obj
+      type(SGGFDTDINFO_t), intent(inout) :: obj
 
       ! ===== Optional arguments =====
       real(kind=RKIND_tiempo), pointer, optional :: tiempo(:)
@@ -153,243 +153,243 @@ contains
    end subroutine sgg_init
 
    subroutine sgg_set_tiempo(sgg, tiempo)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       real(kind=RKIND_tiempo), pointer :: tiempo(:)
       sgg%tiempo => tiempo
    end subroutine
 
    subroutine sgg_set_dt(sgg, dt)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       real(kind=RKIND_tiempo), intent(in) :: dt
       sgg%dt = dt
    end subroutine
 
    subroutine sgg_set_extraswitches(sgg, extraswitches)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       character(len=*), intent(in) :: extraswitches
       sgg%extraswitches = extraswitches
    end subroutine
 
    subroutine sgg_set_NumMedia(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%NumMedia = newValue
    end subroutine
 
    subroutine sgg_set_AllocMed(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%AllocMed = newValue
    end subroutine
 
    subroutine sgg_set_IniPMLMedia(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%IniPMLMedia = newValue
    end subroutine
 
    subroutine sgg_set_EndPMLMedia(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%EndPMLMedia = newValue
    end subroutine
 
    subroutine sgg_set_NumPlaneWaves(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%NumPlaneWaves = newValue
    end subroutine
 
    subroutine sgg_set_TimeSteps(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%TimeSteps = newValue
    end subroutine
 
    subroutine sgg_set_InitialTimeStep(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%InitialTimeStep = newValue
    end subroutine
 
    subroutine sgg_set_NumNodalSources(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%NumNodalSources = newValue
    end subroutine
 
    subroutine sgg_set_NumberRequest(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%NumberRequest = newValue
    end subroutine
 
    subroutine sgg_set_LineX(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       real(kind=RKIND), pointer :: newValue(:)
       sgg%LineX => newValue
    end subroutine
 
    subroutine sgg_set_LineY(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       real(kind=RKIND), pointer :: newValue(:)
       sgg%LineY => newValue
    end subroutine
 
    subroutine sgg_set_LineZ(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       real(kind=RKIND), pointer :: newValue(:)
       sgg%LineZ => newValue
    end subroutine
 
    subroutine sgg_set_DX(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       real(kind=RKIND), pointer :: newValue(:)
       sgg%DX => newValue
    end subroutine
 
    subroutine sgg_set_DY(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       real(kind=RKIND), pointer :: newValue(:)
       sgg%DY => newValue
    end subroutine
 
    subroutine sgg_set_DZ(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       real(kind=RKIND), pointer :: newValue(:)
       sgg%DZ => newValue
    end subroutine
 
    subroutine sgg_set_AllocDxI(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%AllocDxI = newValue
    end subroutine
 
    subroutine sgg_set_AllocDyI(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%AllocDyI = newValue
    end subroutine
 
    subroutine sgg_set_AllocDzI(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%AllocDzI = newValue
    end subroutine
 
    subroutine sgg_set_AllocDxE(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%AllocDxE = newValue
    end subroutine
 
    subroutine sgg_set_AllocDyE(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%AllocDyE = newValue
    end subroutine
 
    subroutine sgg_set_AllocDzE(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=SINGLE), intent(in) :: newValue
       sgg%AllocDzE = newValue
    end subroutine
 
    subroutine sgg_set_PlaneWave(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(planeonde_t), pointer :: newValue(:)
       sgg%PlaneWave => newValue
    end subroutine
 
    subroutine sgg_set_Med(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(MediaData_t), pointer :: newValue(:)
       sgg%Med => newValue
    end subroutine
 
    subroutine sgg_set_NodalSource(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(NodalSource_t), pointer :: newValue(:)
       sgg%NodalSource => newValue
    end subroutine
 
    subroutine sgg_set_Observation(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(obses_t), pointer :: newValue(:)
       sgg%Observation => newValue
    end subroutine
 
    subroutine sgg_set_Border(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(Border_t), intent(in) :: newValue
       sgg%Border = newValue
    end subroutine
 
    subroutine sgg_set_PML(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(PML_t), intent(in) :: newValue
       sgg%PML = newValue
    end subroutine
 
    subroutine sgg_set_Eshared(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(Shared_t), intent(in) :: newValue
       sgg%Eshared = newValue
    end subroutine
 
    subroutine sgg_set_Hshared(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(Shared_t), intent(in) :: newValue
       sgg%Hshared = newValue
    end subroutine
 
    subroutine sgg_set_Alloc(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(XYZlimit_t), intent(in) :: newValue(1:6)
       sgg%Alloc = newValue
    end subroutine
 
    subroutine sgg_set_Sweep(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(XYZlimit_t), intent(in) :: newValue(1:6)
       sgg%Sweep = newValue
    end subroutine
 
    subroutine sgg_set_SINPMLSweep(sgg, newValue)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(XYZlimit_t), intent(in) :: newValue(1:6)
       sgg%SINPMLSweep = newValue
    end subroutine
 
    subroutine sgg_set_thereAreMagneticMedia(sgg, value)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       logical, intent(in) :: value
       sgg%thereAreMagneticMedia = value
    end subroutine
 
    subroutine sgg_set_thereArePMLMagneticMedia(sgg, value)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       logical, intent(in) :: value
       sgg%thereArePMLMagneticMedia = value
    end subroutine
 
    subroutine sgg_set_nEntradaRoot(sgg, value)
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       character(len=*), intent(in) :: value
       sgg%nEntradaRoot = value
    end subroutine
 
    subroutine sgg_set_Punto(sgg, value)
-      type(SGGFDTDINFO), intent(inout) :: sgg
-      type(coorsxyzP), intent(in) :: value
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
+      type(coorsxyzP_t), intent(in) :: value
       sgg%Punto = value
    end subroutine
 
    subroutine sgg_add_observation(sgg, new_observation)
       implicit none
 
-      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(Obses_t), intent(in), target :: new_observation
 
       type(Obses_t), dimension(:), pointer :: temp_obs
@@ -413,4 +413,4 @@ contains
 
    end subroutine sgg_add_observation
    
-end module mod_sggMethods
+end module sggMethods_m

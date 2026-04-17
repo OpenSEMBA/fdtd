@@ -1,8 +1,8 @@
-module mod_bulkProbeOutput
-   use FDETYPES
-   use mod_UTILS
-   use outputTypes
-   use mod_outputUtils
+module bulkProbeOutput_m
+   use FDETYPES_m
+   use utils_m
+   use outputTypes_m
+   use outputUtils_m
    implicit none
 
 contains
@@ -180,4 +180,4 @@ contains
       end subroutine clear_time_data
    end subroutine flush_bulk_probe_output
 
-end module mod_bulkProbeOutput
+end module bulkProbeOutput_m

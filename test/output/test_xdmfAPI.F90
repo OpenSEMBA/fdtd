@@ -1,9 +1,9 @@
 integer function test_create_h5_file() bind(c) result(err)
 
    use HDF5
-   use mod_xdmfAPI
-   use mod_assertionTools
-   use mod_directoryUtils
+   use xdmfAPI_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
    character(len=14), parameter :: folder='testing_folder'
@@ -36,9 +36,9 @@ end function
 integer function test_write_1d_dataset() bind(c) result(err)
 
    use HDF5
-   use mod_xdmfAPI
-   use mod_assertionTools
-   use mod_directoryUtils
+   use xdmfAPI_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
    character(len=14), parameter :: folder='testing_folder'
@@ -60,7 +60,7 @@ integer function test_write_1d_dataset() bind(c) result(err)
 
    call create_h5_file(trim(adjustl(file)), file_id)
 
-   call write_dataset(file_id, "/data1d", data)
+   call h5_write_dataset(file_id, "/data1d", data)
 
    test_err = test_err + assert_integer_equal(size(data), 10, "1D dataset size mismatch")
 
@@ -77,9 +77,9 @@ end function
 integer function test_write_2d_dataset() bind(c) result(err)
 
    use HDF5
-   use mod_xdmfAPI
-   use mod_assertionTools
-   use mod_directoryUtils
+   use xdmfAPI_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
    character(len=14), parameter :: folder='testing_folder'
@@ -99,7 +99,7 @@ integer function test_write_2d_dataset() bind(c) result(err)
 
    call create_h5_file(trim(adjustl(file)), file_id)
 
-   call write_dataset(file_id, "/data2d", data)
+   call h5_write_dataset(file_id, "/data2d", data)
 
    test_err = test_err + assert_integer_equal(size(data,1),4,"2D dim1 mismatch")
    test_err = test_err + assert_integer_equal(size(data,2),5,"2D dim2 mismatch")
@@ -117,9 +117,9 @@ end function
 integer function test_write_3d_dataset() bind(c) result(err)
 
    use HDF5
-   use mod_xdmfAPI
-   use mod_assertionTools
-   use mod_directoryUtils
+   use xdmfAPI_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
    character(len=14), parameter :: folder='testing_folder'
@@ -139,7 +139,7 @@ integer function test_write_3d_dataset() bind(c) result(err)
 
    call create_h5_file(trim(adjustl(file)), file_id)
 
-   call write_dataset(file_id, "/data3d", data)
+   call h5_write_dataset(file_id, "/data3d", data)
 
    test_err = test_err + assert_integer_equal(size(data,1),3,"3D dim1 mismatch")
    test_err = test_err + assert_integer_equal(size(data,2),3,"3D dim2 mismatch")
@@ -158,9 +158,9 @@ end function
 
 integer function test_xdmf_file_creation() bind(c) result(err)
 
-   use mod_xdmfAPI
-   use mod_assertionTools
-   use mod_directoryUtils
+   use xdmfAPI_m
+   use assertionTools_m
+   use directoryUtils_m
    implicit none
 
    character(len=14), parameter :: folder='testing_folder'
@@ -168,12 +168,12 @@ integer function test_xdmf_file_creation() bind(c) result(err)
    integer :: test_err = 0
    integer :: error, unit
    logical :: exists
-   integer :: dims(3)
+   integer :: dims(4)
 
    call create_folder(folder, error)
    file = join_path(folder, "test_api.xdmf")
 
-   dims = [4,4,4]
+   dims = [4,4,4,1]
 
    
    open(newunit=unit, file=trim(file), position='append')
@@ -183,7 +183,7 @@ integer function test_xdmf_file_creation() bind(c) result(err)
 
    call xdmf_write_attribute(unit,"Efield")
 
-   call xdmf_write_h5_data_item(unit,"data.h5","/Efield","4 4 4")
+   call xdmf_write_scalar_attribute(unit, dims, "data.h5","/Efield")
 
    call xdmf_close_data_item(unit)
    call xdmf_close_attribute(unit)
@@ -204,9 +204,9 @@ end function
 
 integer function test_xdmf_file_with_h5data() bind(c) result(err)
     use HDF5
-    use mod_xdmfAPI
-    use mod_assertionTools
-    use mod_directoryUtils
+    use xdmfAPI_m
+    use assertionTools_m
+    use directoryUtils_m
     implicit none
 
     character(len=20), parameter :: folder = "testing_folder"
@@ -214,7 +214,7 @@ integer function test_xdmf_file_with_h5data() bind(c) result(err)
     integer :: test_err = 0
     integer :: error, t, unit
     logical :: exists
-    integer :: dims(3)
+    integer :: dims(4)
     integer(HID_T) :: file_id
     real(dp), allocatable :: Efield(:,:), coords(:,:)
     real(dp) :: time
@@ -231,7 +231,7 @@ integer function test_xdmf_file_with_h5data() bind(c) result(err)
     ! Create HDF5 file
     call create_h5_file(trim(h5_file), file_id)
 
-    dims = [3,3,1]      ! 2D grid stored as 3D with depth 1
+    dims = [3,3,1,1]      ! 2D grid stored as 3D with depth 1
     npoints = dims(1)*dims(2)
 
     ! Allocate and write coords data: shape (npoints,3)
@@ -243,12 +243,12 @@ integer function test_xdmf_file_with_h5data() bind(c) result(err)
           coords((j-1)*dims(1)+i,3) = 0.0_dp         ! Z
        end do
     end do
-    call write_dataset(file_id,"coords",coords)
+    call h5_write_dataset(file_id,"coords",coords)
     deallocate(coords)
 
     ! Create XDMF file
     open(newunit=unit,file=trim(xdmf_file),position='append')
-    call xdmf_write_header_file(unit)
+    call xdmf_write_header_file(unit, 'movieProbe')
 
     do t = 1, 5
         time = real(t-1,dp)*0.1_dp
@@ -263,12 +263,13 @@ integer function test_xdmf_file_with_h5data() bind(c) result(err)
         write(ts,'("Efield_",I0)') t
 
         ! Write timestep data
-        call write_dataset(file_id,trim(ts),Efield)
+        call h5_write_dataset(file_id,trim(ts),Efield)
 
         ! XDMF grid
         call xdmf_create_grid_step_info(unit,trim(ts),real(time),trim(h5_file),npoints)
         call xdmf_write_attribute(unit,"Efield")
-        call xdmf_write_h5_data_item(unit,trim(h5_file),"/"//trim(ts),"3 3 1")
+        call xdmf_write_scalar_attribute(unit,dims, trim(h5_file),"/"//trim(ts))
+
         call xdmf_close_data_item(unit)
         call xdmf_close_attribute(unit)
         call xdmf_close_grid(unit)

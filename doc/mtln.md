@@ -48,7 +48,7 @@ where $\Delta t$ and $\Delta z$ are the time and space steps of the discretizati
 
 In a general way we call *networks* the connections at the ends of a transmission line. These connections can be to other tranmission lines (_interconnection_ networks, or _junctions_) or to the reference conductor (_termination_ networks). In its simplest form, a network is a short between elements: a short from a transmission line end to the reference conductor, or a short between the ends of tranmission lines. 
 
-![Left: MTLs connected by interconnection networks (in green) or terminated in termination networks (red). Right: example of possible resistive connections inside a network. ](networks.png)
+![Left: MTLs connected by interconnection networks (in green) or terminated in termination networks (red). Right: example of possible resistive connections inside a network. ](fig/networks.png)
 <figcaption>
 
 Left: MTLs connected by interconnection networks (in green) or terminated in termination networks (red). Right: example of possible resistive connections inside a network. 

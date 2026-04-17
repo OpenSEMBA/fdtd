@@ -1,6 +1,6 @@
-module NFDETypes_extension      
+module NFDETypes_extension_m      
 #ifdef CompileWithSMBJSON
-   use NFDETypes
+   use NFDETypes_m
 
    implicit none
 
@@ -67,7 +67,7 @@ module NFDETypes_extension
 
 contains
    subroutine initializeProblemDescription(pD)
-      type(Parseador), intent(inout) :: pD
+      type(Parseador_t), intent(inout) :: pD
 
       allocate(pD%general)
       allocate(pD%matriz)
@@ -165,484 +165,530 @@ contains
 
    end subroutine
 
-   elemental logical function parseador_eq(a, b)
-      type(Parseador), intent(in) :: a, b
-      parseador_eq = &
-         (a%switches == b%switches) .and. &
-         (a%general        == b%general) .and. &
-         (a%matriz         == b%matriz) .and. &
-         (a%despl          == b%despl) .and. &
-         (a%front          == b%front) .and. &
-         (a%Mats           == b%Mats) .and. &
-         (a%pecRegs        == b%pecRegs) .and. &
-         (a%pmcRegs        == b%pmcRegs) .and. &
-         (a%DielRegs       == b%DielRegs) .and. &
-         (a%LossyThinSurfs == b%LossyThinSurfs) .and. &
-         (a%frqDepMats     == b%frqDepMats) .and. &
-         (a%aniMats        == b%aniMats) .and. &
-         (a%boxSrc         == b%boxSrc) .and. &
-         (a%plnSrc         == b%plnSrc) .and. &
-         (a%nodSrc         == b%nodSrc) .and. &
-         (a%oldSONDA       == b%oldSONDA) .and. &
-         (a%Sonda          == b%Sonda) .and. &
-         (a%BloquePrb      == b%BloquePrb) .and. &
-         (a%VolPrb         == b%VolPrb) .and. &
-         (a%tWires         == b%tWires) .and. &
-         (a%sWires         == b%sWires) .and. &
-         (a%tSlots         == b%tSlots)
+   elemental logical function parseador_eq(a, b) result(res)
+      type(Parseador_t), intent(in) :: a, b
+      res = .false.
+      if (.not. (a%switches == b%switches)) return
+      if (.not. (a%general        == b%general)) return
+      if (.not. (a%matriz         == b%matriz)) return
+      if (.not. (a%despl          == b%despl)) return
+      if (.not. (a%front          == b%front)) return
+      if (.not. (a%Mats           == b%Mats)) return
+      if (.not. (a%pecRegs        == b%pecRegs)) return
+      if (.not. (a%pmcRegs        == b%pmcRegs)) return
+      if (.not. (a%DielRegs       == b%DielRegs)) return
+      if (.not. (a%LossyThinSurfs == b%LossyThinSurfs)) return
+      if (.not. (a%frqDepMats     == b%frqDepMats)) return
+      if (.not. (a%aniMats        == b%aniMats)) return
+      if (.not. (a%boxSrc         == b%boxSrc)) return
+      if (.not. (a%plnSrc         == b%plnSrc)) return
+      if (.not. (a%nodSrc         == b%nodSrc)) return
+      if (.not. (a%oldSONDA       == b%oldSONDA)) return
+      if (.not. (a%Sonda          == b%Sonda)) return
+      if (.not. (a%BloquePrb      == b%BloquePrb)) return
+      if (.not. (a%VolPrb         == b%VolPrb)) return
+      if (.not. (a%tWires         == b%tWires)) return
+      if (.not. (a%sWires         == b%sWires)) return
+      if (.not. (a%tSlots         == b%tSlots)) return
+      res = .true.
    end function parseador_eq
 
-   elemental logical function MatrizMedios_eq(a, b)
-      type(MatrizMedios), intent(in) :: a, b
-      MatrizMedios_eq = &
-         a%totalX == b%totalX .and. &
-         a%totalY == b%totalY .and. &
-         a%totalZ == b%totalZ
+   elemental logical function MatrizMedios_eq(a, b) result(res)
+      type(MatrizMedios_t), intent(in) :: a, b
+      res = .false.
+      if (a%totalX /= b%totalX) return
+      if (a%totalY /= b%totalY) return
+      if (a%totalZ /= b%totalZ) return
+      res = .true.
    end function MatrizMedios_eq
 
-   elemental logical function Material_eq(a, b)
-      type(Material), intent(in) :: a, b
-      Material_eq = &
-         a%eps == b%eps .and. &
-         a%mu == b%mu .and. &
-         a%sigma == b%sigma .and. &
-         a%sigmam == b%sigmam .and. &
-         a%id == b%id
+   elemental logical function Material_eq(a, b) result(res)
+      type(Material_t), intent(in) :: a, b
+      res = .false.
+      if (a%eps    /= b%eps) return
+      if (a%mu     /= b%mu) return
+      if (a%sigma  /= b%sigma) return
+      if (a%sigmam /= b%sigmam) return
+      if (a%id     /= b%id) return
+      res = .true.
    end function Material_eq
 
-   elemental logical function Materials_eq(a, b)
-      type(Materials), intent(in) :: a, b
-
-      Materials_eq = &
-         (a%n_Mats == b%n_Mats) .and. &
-         (a%n_Mats_max == b%n_Mats_max) .and. &
-         all(a%Mats == b%Mats)
+   elemental logical function Materials_eq(a, b) result(res)
+      type(Materials_t), intent(in) :: a, b
+      res = .false.
+      if (a%n_Mats     /= b%n_Mats) return
+      if (a%n_Mats_max /= b%n_Mats_max) return
+      if (.not. all(a%Mats == b%Mats)) return
+      res = .true.
    end function Materials_eq
 
-   elemental logical function pecregions_eq(a, b)
-      type(PECRegions), intent(in) :: a, b
-      logical :: allAssociated
-
-      allAssociated = &
-         associated(a%Lins) .and. associated(b%Lins) .and. &
-         associated(a%Surfs) .and. associated(b%Surfs) .and. &
-         associated(a%Vols) .and. associated(b%Vols)
-      if (.not. allAssociated) then
-         pecregions_eq = .false.
-         return
+   elemental logical function pecregions_eq(a, b) result(res)
+      type(PECRegions_t), intent(in) :: a, b
+      res = .false.
+      if (a%nLins     /= b%nLins) return
+      if (a%nLins_max /= b%nLins_max) return
+      if (a%nSurfs     /= b%nSurfs) return
+      if (a%nSurfs_max /= b%nSurfs_max) return
+      if (a%nVols     /= b%nVols) return
+      if (a%nVols_max /= b%nVols_max) return
+      if (associated(a%Lins) .eqv. associated(b%Lins)) then
+         if (associated(a%Lins)) then
+            if (.not. all(a%Lins == b%Lins)) return
+         end if
+      else if (associated(a%Lins)) then
+         if (size(a%Lins) /= 0) return
+      else
+         if (size(b%Lins) /= 0) return
       end if
-
-      pecregions_eq = &
-         (a%nVols == b%nVols) .and. &
-         (a%nSurfs == b%nSurfs) .and. &
-         (a%nLins_max == b%nLins_max) .and. &
-         (a%nVols_max == b%nVols_max) .and. &
-         (a%nSurfs_max == b%nSurfs_max) .and. &
-         (a%nLins == b%nLins)
-      pecregions_eq = pecregions_eq .and. all(a%Lins == b%Lins) 
-      pecregions_eq = pecregions_eq .and. all(a%surfs == b%surfs) 
-      pecregions_eq = pecregions_eq .and. all(a%vols == b%vols) 
-
+      if (associated(a%Surfs) .eqv. associated(b%Surfs)) then
+         if (associated(a%Surfs)) then
+            if (.not. all(a%Surfs == b%Surfs)) return
+         end if
+      else if (associated(a%Surfs)) then
+         if (size(a%Surfs) /= 0) return
+      else
+         if (size(b%Surfs) /= 0) return
+      end if
+      if (associated(a%Vols) .eqv. associated(b%Vols)) then
+         if (associated(a%Vols)) then
+            if (.not. all(a%Vols == b%Vols)) return
+         end if
+      else if (associated(a%Vols)) then
+         if (size(a%Vols) /= 0) return
+      else
+         if (size(b%Vols) /= 0) return
+      end if
+      res = .true.
    end function pecregions_eq
 
-   elemental logical function dielectric_eq(a, b)
+   elemental logical function dielectric_eq(a, b) result(res)
       type(dielectric_t), intent(in) :: a, b
-      logical :: allAssociated
-      dielectric_eq = &
-         (a%n_C1P == b%n_C1P) .and. &
-         (a%n_C2P == b%n_C2P) .and. &
-         (a%sigma == b%sigma) .and. &
-         (a%eps == b%eps) .and. &
-         (a%mu == b%mu) .and. &
-         (a%sigmam == b%sigmam) .and. &
-         (a%Rtime_on == b%Rtime_on) .and. &
-         (a%Rtime_off == b%Rtime_off) .and. &
-         (a%R == b%R) .and. &
-         (a%L == b%L) .and. &
-         (a%C == b%C) .and. &
-         (a%R_devia == b%R_devia) .and. &
-         (a%L_devia == b%L_devia) .and. &
-         (a%C_devia == b%C_devia) .and. &
-         (a%DiodB == b%DiodB) .and. &
-         (a%DiodIsat == b%DiodIsat) .and. &
-         (a%DiodOri == b%DiodOri) .and. &
-         (a%orient == b%orient) .and. &
-         (a%resistor  .eqv. b%resistor) .and. &
-         (a%inductor  .eqv. b%inductor) .and. &
-         (a%capacitor .eqv. b%capacitor) .and. &
-         (a%diodo     .eqv. b%diodo) .and. &
-         (a%plain     .eqv. b%plain) .and. &
-         (a%PMLbody   .eqv. b%PMLbody)
-      
-      allAssociated = &
-         associated(a%C1P) .and. associated(b%C1P) .and. &
-         associated(a%C2P) .and. associated(b%C2P) 
-      if (.not. allAssociated) then
-         dielectric_eq = .false.
-         return
-      end if
-      dielectric_eq = all(a%C1P == b%C1P) .and. all(a%C2P == b%C2P)
+      res = .false.
+      if (a%n_C1P    /= b%n_C1P) return
+      if (a%n_C2P    /= b%n_C2P) return
+      if (a%sigma    /= b%sigma) return
+      if (a%eps      /= b%eps) return
+      if (a%mu       /= b%mu) return
+      if (a%sigmam   /= b%sigmam) return
+      if (a%Rtime_on /= b%Rtime_on) return
+      if (a%Rtime_off /= b%Rtime_off) return
+      if (a%R        /= b%R) return
+      if (a%L        /= b%L) return
+      if (a%C        /= b%C) return
+      if (a%R_devia  /= b%R_devia) return
+      if (a%L_devia  /= b%L_devia) return
+      if (a%C_devia  /= b%C_devia) return
+      if (a%DiodB    /= b%DiodB) return
+      if (a%DiodIsat /= b%DiodIsat) return
+      if (a%DiodOri  /= b%DiodOri) return
+      if (a%orient   /= b%orient) return
+      if (a%resistor  .neqv. b%resistor) return
+      if (a%inductor  .neqv. b%inductor) return
+      if (a%capacitor .neqv. b%capacitor) return
+      if (a%diodo     .neqv. b%diodo) return
+      if (a%plain     .neqv. b%plain) return
+      if (a%PMLbody   .neqv. b%PMLbody) return
+      if (.not. associated(a%C1P)) return
+      if (.not. associated(b%C1P)) return
+      if (.not. associated(a%C2P)) return
+      if (.not. associated(b%C2P)) return
+      if (.not. all(a%C1P == b%C1P)) return
+      if (.not. all(a%C2P == b%C2P)) return
+      res = .true.
    end function dielectric_eq
 
-   elemental logical function freqdepenmaterial_eq(a, b)
-      type(FreqDepenMaterial), intent(in) :: a, b
-      freqdepenmaterial_eq = &
-         all(a%a11 == b%a11) .and. &
-         all(a%b11 == b%b11) .and. &
-         all(a%am11 == b%am11) .and. &
-         all(a%bm11 == b%bm11) .and. &
-         all(a%a12 == b%a12) .and. &
-         all(a%b12 == b%b12) .and. &
-         all(a%am12 == b%am12) .and. &
-         all(a%bm12 == b%bm12) .and. &
-         all(a%a13 == b%a13) .and. &
-         all(a%b13 == b%b13) .and. &
-         all(a%am13 == b%am13) .and. &
-         all(a%bm13 == b%bm13) .and. &
-         all(a%a22 == b%a22) .and. &
-         all(a%b22 == b%b22) .and. &
-         all(a%am22 == b%am22) .and. &
-         all(a%bm22 == b%bm22) .and. &
-         all(a%a23 == b%a23) .and. &
-         all(a%b23 == b%b23) .and. &
-         all(a%am23 == b%am23) .and. &
-         all(a%bm23 == b%bm23) .and. &
-         all(a%a33 == b%a33) .and. &
-         all(a%b33 == b%b33) .and. &
-         all(a%am33 == b%am33) .and. &
-         all(a%bm33 == b%bm33) .and. &
-         all(a%alpha == b%alpha) .and. &
-         all(a%beta == b%beta) .and. &
-         all(a%gamma == b%gamma) .and. &
-         all(a%alpham == b%alpham) .and. &
-         all(a%betam == b%betam) .and. &
-         all(a%gammam == b%gammam) .and. &
-         all(coords_eq(a%c(1:a%n_c), b%c(1:b%n_c))) .and. &
-         (a%eps11 == b%eps11) .and. &
-         (a%eps12 == b%eps12) .and. &
-         (a%eps13 == b%eps13) .and. &
-         (a%eps22 == b%eps22) .and. &
-         (a%eps23 == b%eps23) .and. &
-         (a%eps33 == b%eps33) .and. &
-         (a%mu11 == b%mu11) .and. &
-         (a%mu12 == b%mu12) .and. &
-         (a%mu13 == b%mu13) .and. &
-         (a%mu22 == b%mu22) .and. &
-         (a%mu23 == b%mu23) .and. &
-         (a%mu33 == b%mu33) .and. &
-         (a%sigma11 == b%sigma11) .and. &
-         (a%sigma12 == b%sigma12) .and. &
-         (a%sigma13 == b%sigma13) .and. &
-         (a%sigma22 == b%sigma22) .and. &
-         (a%sigma23 == b%sigma23) .and. &
-         (a%sigma33 == b%sigma33) .and. &
-         (a%sigmam11 == b%sigmam11) .and. &
-         (a%sigmam12 == b%sigmam12) .and. &
-         (a%sigmam13 == b%sigmam13) .and. &
-         (a%sigmam22 == b%sigmam22) .and. &
-         (a%sigmam23 == b%sigmam23) .and. &
-         (a%sigmam33 == b%sigmam33) .and. &
-         (a%K11 == b%K11) .and. &
-         (a%Km11 == b%Km11) .and. &
-         (a%K12 == b%K12) .and. &
-         (a%Km12 == b%Km12) .and. &
-         (a%K13 == b%K13) .and. &
-         (a%Km13 == b%Km13) .and. &
-         (a%K22 == b%K22) .and. &
-         (a%Km22 == b%Km22) .and. &
-         (a%K23 == b%K23) .and. &
-         (a%Km23 == b%Km23) .and. &
-         (a%K33 == b%K33) .and. &
-         (a%Km33 == b%Km33) .and. &
-         (a%L == b%L) .and. &
-         (a%Lm == b%Lm) .and. &
-         (a%n_c == b%n_c) .and. &
-         (a%files == b%files)
+   elemental logical function freqdepenmaterial_eq(a, b) result(res)
+      type(FreqDepenMaterial_t), intent(in) :: a, b
+      res = .false.
+      if (.not. all(a%a11   == b%a11))   return
+      if (.not. all(a%b11   == b%b11))   return
+      if (.not. all(a%am11  == b%am11))  return
+      if (.not. all(a%bm11  == b%bm11))  return
+      if (.not. all(a%a12   == b%a12))   return
+      if (.not. all(a%b12   == b%b12))   return
+      if (.not. all(a%am12  == b%am12))  return
+      if (.not. all(a%bm12  == b%bm12))  return
+      if (.not. all(a%a13   == b%a13))   return
+      if (.not. all(a%b13   == b%b13))   return
+      if (.not. all(a%am13  == b%am13))  return
+      if (.not. all(a%bm13  == b%bm13))  return
+      if (.not. all(a%a22   == b%a22))   return
+      if (.not. all(a%b22   == b%b22))   return
+      if (.not. all(a%am22  == b%am22))  return
+      if (.not. all(a%bm22  == b%bm22))  return
+      if (.not. all(a%a23   == b%a23))   return
+      if (.not. all(a%b23   == b%b23))   return
+      if (.not. all(a%am23  == b%am23))  return
+      if (.not. all(a%bm23  == b%bm23))  return
+      if (.not. all(a%a33   == b%a33))   return
+      if (.not. all(a%b33   == b%b33))   return
+      if (.not. all(a%am33  == b%am33))  return
+      if (.not. all(a%bm33  == b%bm33))  return
+      if (.not. all(a%alpha  == b%alpha))  return
+      if (.not. all(a%beta   == b%beta))   return
+      if (.not. all(a%gamma  == b%gamma))  return
+      if (.not. all(a%alpham == b%alpham)) return
+      if (.not. all(a%betam  == b%betam))  return
+      if (.not. all(a%gammam == b%gammam)) return
+      if (.not. all(coords_eq(a%c(1:a%n_c), b%c(1:b%n_c)))) return
+      if (a%eps11    /= b%eps11)    return
+      if (a%eps12    /= b%eps12)    return
+      if (a%eps13    /= b%eps13)    return
+      if (a%eps22    /= b%eps22)    return
+      if (a%eps23    /= b%eps23)    return
+      if (a%eps33    /= b%eps33)    return
+      if (a%mu11     /= b%mu11)     return
+      if (a%mu12     /= b%mu12)     return
+      if (a%mu13     /= b%mu13)     return
+      if (a%mu22     /= b%mu22)     return
+      if (a%mu23     /= b%mu23)     return
+      if (a%mu33     /= b%mu33)     return
+      if (a%sigma11  /= b%sigma11)  return
+      if (a%sigma12  /= b%sigma12)  return
+      if (a%sigma13  /= b%sigma13)  return
+      if (a%sigma22  /= b%sigma22)  return
+      if (a%sigma23  /= b%sigma23)  return
+      if (a%sigma33  /= b%sigma33)  return
+      if (a%sigmam11 /= b%sigmam11) return
+      if (a%sigmam12 /= b%sigmam12) return
+      if (a%sigmam13 /= b%sigmam13) return
+      if (a%sigmam22 /= b%sigmam22) return
+      if (a%sigmam23 /= b%sigmam23) return
+      if (a%sigmam33 /= b%sigmam33) return
+      if (a%K11  /= b%K11)  return
+      if (a%Km11 /= b%Km11) return
+      if (a%K12  /= b%K12)  return
+      if (a%Km12 /= b%Km12) return
+      if (a%K13  /= b%K13)  return
+      if (a%Km13 /= b%Km13) return
+      if (a%K22  /= b%K22)  return
+      if (a%Km22 /= b%Km22) return
+      if (a%K23  /= b%K23)  return
+      if (a%Km23 /= b%Km23) return
+      if (a%K33  /= b%K33)  return
+      if (a%Km33 /= b%Km33) return
+      if (a%L    /= b%L)    return
+      if (a%Lm   /= b%Lm)   return
+      if (a%n_c  /= b%n_c)  return
+      if (a%files /= b%files) return
+      res = .true.
    end function freqdepenmaterial_eq
 
-   elemental logical function freqdepenmaterials_eq(a, b)
-      type(FreqDepenMaterials), intent(in) :: a, b
-      freqdepenmaterials_eq = &
-         (a%nVols == b%nVols) .and. &
-         (a%nSurfs == b%nSurfs) .and. &
-         (a%nLins == b%nLins) .and. &
-         (a%nVols_max == b%nVols_max) .and. &
-         (a%nSurfs_max == b%nSurfs_max) .and. &
-         (a%nLins_max == b%nLins_max) .and. &
-         (a%n_c_max == b%n_c_max) .and. &
-         all(a%Vols  == b%Vols) .and. &
-         all(a%Surfs == b%Surfs) .and. &
-         all(a%Lins  == b%Lins)
+   elemental logical function freqdepenmaterials_eq(a, b) result(res)
+      type(FreqDepenMaterials_t), intent(in) :: a, b
+      res = .false.
+      if (a%nVols     /= b%nVols)     return
+      if (a%nSurfs    /= b%nSurfs)    return
+      if (a%nLins     /= b%nLins)     return
+      if (a%nVols_max  /= b%nVols_max)  return
+      if (a%nSurfs_max /= b%nSurfs_max) return
+      if (a%nLins_max  /= b%nLins_max)  return
+      if (a%n_c_max   /= b%n_c_max)   return
+      if (.not. all(a%Vols  == b%Vols))  return
+      if (.not. all(a%Surfs == b%Surfs)) return
+      if (.not. all(a%Lins  == b%Lins))  return
+      res = .true.
    end function freqdepenmaterials_eq
 
-   elemental logical function anisotropicbody_eq(a, b)
+   elemental logical function anisotropicbody_eq(a, b) result(res)
       type(ANISOTROPICbody_t), intent(in) :: a, b
-      anisotropicbody_eq = &
-         all(a%c1P == b%c1P) .and. &
-         all(a%c2P == b%c2P) .and. &
-         all(a%sigma == b%sigma) .and. &
-         all(a%eps == b%eps) .and. &
-         all(a%mu == b%mu) .and. &
-         all(a%sigmam == b%sigmam) .and. &
-         (a%n_C1P == b%n_C1P) .and. &
-         (a%n_C2P == b%n_C2P)
+      res = .false.
+      if (.not. all(a%c1P    == b%c1P))   return
+      if (.not. all(a%c2P    == b%c2P))   return
+      if (.not. all(a%sigma  == b%sigma))  return
+      if (.not. all(a%eps    == b%eps))    return
+      if (.not. all(a%mu     == b%mu))     return
+      if (.not. all(a%sigmam == b%sigmam)) return
+      if (a%n_C1P /= b%n_C1P) return
+      if (a%n_C2P /= b%n_C2P) return
+      res = .true.
    end function anisotropicbody_eq
 
-   elemental logical function anisotropicelements_eq(a, b)
+   elemental logical function anisotropicelements_eq(a, b) result(res)
       type(ANISOTROPICelements_t), intent(in) :: a, b
-      anisotropicelements_eq = &
-         (a%nVols == b%nVols) .and. &
-         (a%nSurfs == b%nSurfs) .and. &
-         (a%nLins == b%nLins) .and. &
-         (a%nVols_max == b%nVols_max) .and. &
-         (a%nSurfs_max == b%nSurfs_max) .and. &
-         (a%nLins_max == b%nLins_max) .and. &
-         (a%n_C1P_max == b%n_C1P_max) .and. &
-         (a%n_C2P_max == b%n_C2P_max) .and. &
-         all(a%Vols  == b%Vols ) .and. &
-         all(a%Surfs == b%Surfs) .and. &
-         all(a%Lins  == b%Lins )
+      res = .false.
+      if (a%nVols     /= b%nVols)     return
+      if (a%nSurfs    /= b%nSurfs)    return
+      if (a%nLins     /= b%nLins)     return
+      if (a%nVols_max  /= b%nVols_max)  return
+      if (a%nSurfs_max /= b%nSurfs_max) return
+      if (a%nLins_max  /= b%nLins_max)  return
+      if (a%n_C1P_max /= b%n_C1P_max) return
+      if (a%n_C2P_max /= b%n_C2P_max) return
+      if (.not. all(a%Vols  == b%Vols))  return
+      if (.not. all(a%Surfs == b%Surfs)) return
+      if (.not. all(a%Lins  == b%Lins))  return
+      res = .true.
    end function anisotropicelements_eq
 
-   elemental logical function dielectricregions_eq(a, b)
-      type(DielectricRegions), intent(in) :: a, b
-      logical :: allAssociated
-      
-      allAssociated = &
-         associated(a%Lins) .and. associated(b%Lins) .and. &
-         associated(a%Surfs) .and. associated(b%Surfs) .and. &
-         associated(a%Vols) .and. associated(b%Vols)
-         if (.not. allAssociated) then
-            dielectricregions_eq = .false.
-            return
+   elemental logical function dielectricregions_eq(a, b) result(res)
+      type(DielectricRegions_t), intent(in) :: a, b
+      res = .false.
+      if (a%nVols     /= b%nVols)     return
+      if (a%nSurfs    /= b%nSurfs)    return
+      if (a%nLins     /= b%nLins)     return
+      if (a%nVols_max  /= b%nVols_max)  return
+      if (a%nSurfs_max /= b%nSurfs_max) return
+      if (a%nLins_max  /= b%nLins_max)  return
+      if (a%n_C1P_max /= b%n_C1P_max) return
+      if (a%n_C2P_max /= b%n_C2P_max) return
+      if (associated(a%Lins) .eqv. associated(b%Lins)) then
+         if (associated(a%Lins)) then
+            if (.not. all(a%Lins == b%Lins)) return
          end if
-
-      dielectricregions_eq = &
-         a%nVols == b%nVols .and. &
-         a%nSurfs == b%nSurfs .and. &
-         a%nLins == b%nLins .and. &
-         a%nVols_max == b%nVols_max .and. &
-         a%nSurfs_max == b%nSurfs_max .and. &
-         a%nLins_max == b%nLins_max .and. &
-         a%n_C1P_max == b%n_C1P_max .and. &
-         a%n_C2P_max == b%n_C2P_max
-
-      dielectricregions_eq = dielectricregions_eq .and. all(a%Lins == b%Lins) 
-      dielectricregions_eq = dielectricregions_eq .and. all(a%surfs == b%surfs) 
-      dielectricregions_eq = dielectricregions_eq .and. all(a%vols == b%vols) 
+      else if (associated(a%Lins)) then
+         if (size(a%Lins) /= 0) return
+      else
+         if (size(b%Lins) /= 0) return
+      end if
+      if (associated(a%Surfs) .eqv. associated(b%Surfs)) then
+         if (associated(a%Surfs)) then
+            if (.not. all(a%Surfs == b%Surfs)) return
+         end if
+      else if (associated(a%Surfs)) then
+         if (size(a%Surfs) /= 0) return
+      else
+         if (size(b%Surfs) /= 0) return
+      end if
+      if (associated(a%Vols) .eqv. associated(b%Vols)) then
+         if (associated(a%Vols)) then
+            if (.not. all(a%Vols == b%Vols)) return
+         end if
+      else if (associated(a%Vols)) then
+         if (size(a%Vols) /= 0) return
+      else
+         if (size(b%Vols) /= 0) return
+      end if
+      res = .true.
    end function dielectricregions_eq
 
-   elemental logical function LossyThinSurface_eq(a, b)
-      type(LossyThinSurface), intent(in) :: a, b
-      LossyThinSurface_eq = &
-         all(a%c == b%c) .and. &
-         all(a%sigma == b%sigma) .and. &
-         all(a%eps == b%eps) .and. &
-         all(a%mu == b%mu) .and. &
-         all(a%sigmam == b%sigmam) .and. &
-         all(a%thk == b%thk) .and. &
-         all(a%sigma_devia == b%sigma_devia) .and. &
-         all(a%eps_devia == b%eps_devia) .and. &
-         all(a%mu_devia == b%mu_devia) .and. &
-         all(a%sigmam_devia == b%sigmam_devia) .and. &
-         all(a%thk_devia == b%thk_devia) .and. &
-         (a%nc == b%nc) .and. &
-         (a%files == b%files) .and. &
-         (a%numcapas == b%numcapas)
+   elemental logical function LossyThinSurface_eq(a, b) result(res)
+      type(LossyThinSurface_t), intent(in) :: a, b
+      res = .false.
+      if (.not. all(a%c            == b%c))            return
+      if (.not. all(a%sigma        == b%sigma))        return
+      if (.not. all(a%eps          == b%eps))          return
+      if (.not. all(a%mu           == b%mu))           return
+      if (.not. all(a%sigmam       == b%sigmam))       return
+      if (.not. all(a%thk          == b%thk))          return
+      if (.not. all(a%sigma_devia  == b%sigma_devia))  return
+      if (.not. all(a%eps_devia    == b%eps_devia))    return
+      if (.not. all(a%mu_devia     == b%mu_devia))     return
+      if (.not. all(a%sigmam_devia == b%sigmam_devia)) return
+      if (.not. all(a%thk_devia    == b%thk_devia))    return
+      if (a%nc       /= b%nc)       return
+      if (a%files    /= b%files)    return
+      if (a%numcapas /= b%numcapas) return
+      res = .true.
    end function LossyThinSurface_eq
 
-   elemental logical function LossyThinSurfaces_eq(a, b)
-      type(LossyThinSurfaces), intent(in) :: a, b
-
-      LossyThinSurfaces_eq = all(a%cs == b%cs) .and. &
-         (a%length == b%length) .and. &
-         (a%length_max == b%length_max) .and. &
-         (a%nC_max == b%nC_max)
+   elemental logical function LossyThinSurfaces_eq(a, b) result(res)
+      type(LossyThinSurfaces_t), intent(in) :: a, b
+      res = .false.
+      if (.not. all(a%cs == b%cs)) return
+      if (a%length     /= b%length)     return
+      if (a%length_max /= b%length_max) return
+      if (a%nC_max     /= b%nC_max)     return
+      res = .true.
    end function LossyThinSurfaces_eq
 
-   elemental logical function ThinWireComp_eq(a, b)
-      type(ThinWireComp), intent(in) :: a, b
+   elemental logical function ThinWireComp_eq(a, b) result(res)
+      type(ThinWireComp_t), intent(in) :: a, b
+      res = .false.
 
-      ThinWireComp_eq = &
-         (a%srctype == b%srctype) .and. &
-         (a%srcfile == b%srcfile) .and. &
-         (a%i == b%i) .and. &
-         (a%j == b%j) .and. &
-         (a%K == b%K) .and. &
-         (a%nd == b%nd) .and. &
-         (a%d == b%d) .and. &
-         (a%m == b%m) .and. &
-         (a%tag == b%tag)
+      if (a%srctype /= b%srctype) return
+      if (a%srcfile /= b%srcfile) return
+      if (a%i /= b%i) return
+      if (a%j /= b%j) return
+      if (a%K /= b%K) return
+      if (a%nd /= b%nd) return
+      if (a%d /= b%d) return
+      if (a%m /= b%m) return
+      if (a%tag /= b%tag) return
+      res = .true.
    end function ThinWireComp_eq
 
    elemental logical function ThinWire_eq(a, b)
-      type(ThinWire), intent(in) :: a, b
+      type(ThinWire_t), intent(in) :: a, b
 
-      ThinWire_eq = (a%rad == b%rad) .and. &
-         (a%disp .eqv. b%disp) .and. &
-         (a%dispfile == b%dispfile) .and. &
-         (a%res == b%res) .and. &
-         (a%ind == b%ind) .and. &
-         (a%cap == b%cap) .and. &
-         (a%P_res == b%P_res) .and. &
-         (a%P_ind == b%P_ind) .and. &
-         (a%P_cap == b%P_cap) .and. &
-         (a%dispfile_LeftEnd == b%dispfile_LeftEnd) .and. &
-         (a%R_LeftEnd == b%R_LeftEnd) .and. &
-         (a%L_LeftEnd == b%L_LeftEnd) .and. &
-         (a%C_LeftEnd == b%C_LeftEnd) .and. &
-         (a%dispfile_RightEnd == b%dispfile_RightEnd) .and. &
-         (a%R_RightEnd == b%R_RightEnd) .and. &
-         (a%L_RightEnd == b%L_RightEnd) .and. &
-         (a%C_RightEnd == b%C_RightEnd) .and. &
-         (a%LeftEnd == b%LeftEnd) .and. &
-         (a%RightEnd == b%RightEnd) .and. &
-         (a%tl == b%tl) .and. &
-         (a%tr == b%tr) .and. &
-         (all(a%twc == b%twc)) .and. &
-         (a%n_twc == b%n_twc) .and. &
-         (a%n_twc_max == b%n_twc_max)
+      ThinWire_eq = .false.
+      if (a%rad /= b%rad) return
+      if (a%disp .neqv. b%disp) return
+      if (a%dispfile /= b%dispfile) return
+      if (a%res /= b%res) return
+      if (a%ind /= b%ind) return
+      if (a%cap /= b%cap) return
+      if (a%P_res /= b%P_res) return
+      if (a%P_ind /= b%P_ind) return
+      if (a%P_cap /= b%P_cap) return
+      if (a%dispfile_LeftEnd /= b%dispfile_LeftEnd) return
+      if (a%R_LeftEnd /= b%R_LeftEnd) return
+      if (a%L_LeftEnd /= b%L_LeftEnd) return
+      if (a%C_LeftEnd /= b%C_LeftEnd) return
+      if (a%dispfile_RightEnd /= b%dispfile_RightEnd) return
+      if (a%R_RightEnd /= b%R_RightEnd) return
+      if (a%L_RightEnd /= b%L_RightEnd) return
+      if (a%C_RightEnd /= b%C_RightEnd) return
+      if (a%LeftEnd /= b%LeftEnd) return
+      if (a%RightEnd /= b%RightEnd) return
+      if (a%tl /= b%tl) return
+      if (a%tr /= b%tr) return
+      if (.not. all(a%twc == b%twc)) return
+      if (a%n_twc /= b%n_twc) return
+      if (a%n_twc_max /= b%n_twc_max) return
+      ThinWire_eq = .true.
    end function ThinWire_eq
 
    elemental logical function ThinWires_eq(a, b)
-      type(ThinWires), intent(in) :: a, b
-      logical :: allAssociated
-      allAssociated = &
-         associated(a%tw) .and. associated(b%tw)
-      if (.not. allAssociated) then
-         ThinWires_eq = .false.
-         return
+      type(ThinWires_t), intent(in) :: a, b
+      integer :: i
+      ThinWires_eq = .false.
+      if (a%n_tw /= b%n_tw) return
+      if (a%n_tw_max /= b%n_tw_max) return
+      if (associated(a%tw) .eqv. associated(b%tw)) then
+         if (associated(a%tw)) then
+            do i = 1, size(a%tw)
+               if (.not. a%tw(i) == b%tw(i)) return
+            end do
+         end if
+      else if (associated(a%tw)) then
+         if (size(a%tw) /= 0) return
+      else
+         if (size(b%tw) /= 0) return
       end if
-
-      ThinWires_eq = all(a%tw == b%tw) .and. &
-         (a%n_tw == b%n_tw) .and. &
-         (a%n_tw_max == b%n_tw_max)
+      ThinWires_eq = .true.
    end function ThinWires_eq
 
-   elemental logical function SlantedWireComp_eq(a, b)
-      type(SlantedWireComp), intent(in) :: a, b
-
-      SlantedWireComp_eq = &
-         (a%srctype == b%srctype) .and. &
-         (a%srcfile == b%srcfile) .and. &
-         (a%x == b%x) .and. &
-         (a%y == b%y) .and. &
-         (a%z == b%z) .and. &
-         (a%nd == b%nd) .and. &
-         (a%m == b%m) .and. &
-         (a%tag == b%tag)
+   elemental logical function SlantedWireComp_eq(a, b) result(res)
+      type(SlantedWireComp_t), intent(in) :: a, b
+      res = .false.
+      if (a%srctype /= b%srctype) return
+      if (a%srcfile /= b%srcfile) return
+      if (a%x       /= b%x)       return
+      if (a%y       /= b%y)       return
+      if (a%z       /= b%z)       return
+      if (a%nd      /= b%nd)      return
+      if (a%m       /= b%m)       return
+      if (a%tag     /= b%tag)     return
+      res = .true.
    end function SlantedWireComp_eq
 
-   elemental logical function SlantedWire_eq(a, b)
-      type(SlantedWire), intent(in) :: a, b
-
-      SlantedWire_eq = &
-         (a%rad == b%rad) .and. &
-         (a%disp .eqv. b%disp) .and. &
-         (a%dispfile == b%dispfile) .and. &
-         (a%res == b%res) .and. &
-         (a%ind == b%ind) .and. &
-         (a%cap == b%cap) .and. &
-         (a%P_res == b%P_res) .and. &
-         (a%P_ind == b%P_ind) .and. &
-         (a%P_cap == b%P_cap) .and. &
-         (a%dispfile_LeftEnd == b%dispfile_LeftEnd) .and. &
-         (a%R_LeftEnd == b%R_LeftEnd) .and. &
-         (a%L_LeftEnd == b%L_LeftEnd) .and. &
-         (a%C_LeftEnd == b%C_LeftEnd) .and. &
-         (a%dispfile_RightEnd == b%dispfile_RightEnd) .and. &
-         (a%R_RightEnd == b%R_RightEnd) .and. &
-         (a%L_RightEnd == b%L_RightEnd) .and. &
-         (a%C_RightEnd == b%C_RightEnd) .and. &
-         (a%LeftEnd == b%LeftEnd) .and. &
-         (a%RightEnd == b%RightEnd) .and. &
-         (a%tl == b%tl) .and. &
-         (a%tr == b%tr) .and. &
-         (a%n_swc == b%n_swc) .and. &
-         (a%n_swc_max == b%n_swc_max)
+   elemental logical function SlantedWire_eq(a, b) result(res)
+      type(SlantedWire_t), intent(in) :: a, b
+      res = .false.
+      if (a%rad                /= b%rad)                return
+      if (a%disp               .neqv. b%disp)           return
+      if (a%dispfile           /= b%dispfile)           return
+      if (a%res                /= b%res)                return
+      if (a%ind                /= b%ind)                return
+      if (a%cap                /= b%cap)                return
+      if (a%P_res              /= b%P_res)              return
+      if (a%P_ind              /= b%P_ind)              return
+      if (a%P_cap              /= b%P_cap)              return
+      if (a%dispfile_LeftEnd   /= b%dispfile_LeftEnd)   return
+      if (a%R_LeftEnd          /= b%R_LeftEnd)          return
+      if (a%L_LeftEnd          /= b%L_LeftEnd)          return
+      if (a%C_LeftEnd          /= b%C_LeftEnd)          return
+      if (a%dispfile_RightEnd  /= b%dispfile_RightEnd)  return
+      if (a%R_RightEnd         /= b%R_RightEnd)         return
+      if (a%L_RightEnd         /= b%L_RightEnd)         return
+      if (a%C_RightEnd         /= b%C_RightEnd)         return
+      if (a%LeftEnd            /= b%LeftEnd)            return
+      if (a%RightEnd           /= b%RightEnd)           return
+      if (a%tl                 /= b%tl)                 return
+      if (a%tr                 /= b%tr)                 return
+      if (a%n_swc              /= b%n_swc)              return
+      if (a%n_swc_max          /= b%n_swc_max)          return
+      res = .true.
    end function SlantedWire_eq
 
-   elemental logical function SlantedWires_eq(a, b)
-      type(SlantedWires), intent(in) :: a, b
-      logical :: allAssociated
-      allAssociated = &
-         associated(a%sw) .and. associated(b%sw)
-      if (.not. allAssociated) then
-         SlantedWires_eq = .false.
-         return
-      end if
-      SlantedWires_eq = &
-         all(a%sw == b%sw) .and. &
-         (a%n_sw == b%n_sw) .and. &
-         (a%n_sw_max == b%n_sw_max)
+   elemental logical function SlantedWires_eq(a, b) result(res)
+      type(SlantedWiresInfo_t), intent(in) :: a, b
+      res = .false.
+      if (.not. associated(a%sw)) return
+      if (.not. associated(b%sw)) return
+      if (.not. all(a%sw == b%sw)) return
+      if (a%n_sw     /= b%n_sw)     return
+      if (a%n_sw_max /= b%n_sw_max) return
+      res = .true.
    end function SlantedWires_eq
 
-   elemental logical function ThinSlotComp_eq(a, b)
-      type(ThinSlotComp), intent(in) :: a, b
-
-      ThinSlotComp_eq = (a%i == b%i) .and. &
-         (a%j == b%j) .and. &
-         (a%K == b%K) .and. &
-         (a%node == b%node) .and. &
-         (a%dir == b%dir) .and. &
-         (a%Or == b%Or) .and. &
-         (a%tag == b%tag)
+   elemental logical function ThinSlotComp_eq(a, b) result(res)
+      type(ThinSlotComp_t), intent(in) :: a, b
+      res = .false.
+      if (a%i    /= b%i)    return
+      if (a%j    /= b%j)    return
+      if (a%K    /= b%K)    return
+      if (a%node /= b%node) return
+      if (a%dir  /= b%dir)  return
+      if (a%Or   /= b%Or)   return
+      if (a%tag  /= b%tag)  return
+      res = .true.
    end function ThinSlotComp_eq
 
    elemental logical function ThinSlot_eq(a, b)
-      type(ThinSlot), intent(in) :: a, b
-      logical :: allAssociated
-      allAssociated = associated(a%tgc) .and. associated(b%tgc)
-      if (.not. allAssociated) then
-         ThinSlot_eq = .false.
-         return
+      type(ThinSlot_t), intent(in) :: a, b
+      ThinSlot_eq = .false.
+      if (a%width /= b%width) return
+      if (a%n_tgc /= b%n_tgc) return
+      if (a%n_tgc_max /= b%n_tgc_max) return
+      if (associated(a%tgc) .eqv. associated(b%tgc)) then
+         if (associated(a%tgc)) then
+            if (.not. all(a%tgc == b%tgc)) return
+         end if
+      else if (associated(a%tgc)) then
+         if (size(a%tgc) /= 0) return
+      else
+         if (size(b%tgc) /= 0) return
       end if
-      ThinSlot_eq = &
-         all(a%tgc == b%tgc) .and. &
-         (a%width == b%width) .and. &
-         (a%n_tgc == b%n_tgc) .and. &
-         (a%n_tgc_max == b%n_tgc_max)
+      ThinSlot_eq = .true.
    end function ThinSlot_eq
 
    elemental logical function ThinSlots_eq(a, b)
-      type(ThinSlots), intent(in) :: a, b
-      if (.not. associated(a%tg) .or. &
-          .not. associated(b%tg)) then
-         ThinSlots_eq = .false. 
-         return
+      type(ThinSlots_t), intent(in) :: a, b
+      ThinSlots_eq = .false.
+      if (a%n_tg /= b%n_tg) return
+      if (a%n_tg_max /= b%n_tg_max) return
+      if (associated(a%tg) .eqv. associated(b%tg)) then
+         if (associated(a%tg)) then
+            if (.not. all(a%tg == b%tg)) return
+         end if
+      else if (associated(a%tg)) then
+         if (size(a%tg) /= 0) return
+      else
+         if (size(b%tg) /= 0) return
       end if
-
-      ThinSlots_eq = all(a%tg == b%tg) .and. &
-         (a%n_tg == b%n_tg) .and. &
-         (a%n_tg_max == b%n_tg_max)
+      ThinSlots_eq = .true.
    end function ThinSlots_eq
 
    elemental logical function NFDEGeneral_eq(a, b) result (res)
-      type(NFDEGeneral), intent(in) :: a, b
+      type(NFDEGeneral_t), intent(in) :: a, b
       res = .false.
       if (a%dt /= b%dt) return
       if (a%nmax /= b%nmax) return
       res = .true.
    end function
 
-   elemental logical function box_eq(a, b)
-      type(Box), intent(in) :: a, b
-      box_eq = &
-         (a%nombre_fichero == b%nombre_fichero) .and. &
-         all(a%coor1 == b%coor1) .and. &
-         all(a%coor2 == b%coor2)
+   elemental logical function box_eq(a, b) result(res)
+      type(Box_t), intent(in) :: a, b
+      res = .false.
+      if (a%nombre_fichero /= b%nombre_fichero) return
+      if (.not. all(a%coor1 == b%coor1)) return
+      if (.not. all(a%coor2 == b%coor2)) return
+      res = .true.
    end function box_eq
 
-   elemental logical function boxes_eq(a, b)
-      type(Boxes), intent(in) :: a, b
-      boxes_eq = &
-         (a%nVols == b%nVols) .and. &
-         (a%nVols_max == b%nVols_max) .and. &
-         all(a%Vols == b%Vols)
+   elemental logical function boxes_eq(a, b) result(res)
+      type(Boxes_t), intent(in) :: a, b
+      res = .false.
+      if (a%nVols     /= b%nVols)     return
+      if (a%nVols_max /= b%nVols_max) return
+      if (.not. all(a%Vols == b%Vols)) return
+      res = .true.
    end function boxes_eq
 
    elemental logical function planewave_eq(a,b) result(res)
-      type(PlaneWave), intent(in) :: a, b
+      type(PlaneWave_t), intent(in) :: a, b
       res = .false.
       if (a%nombre_fichero /= b%nombre_fichero) return
       if (a%atributo /= b%atributo) return
@@ -659,46 +705,57 @@ contains
    end function
 
    elemental logical function planewaves_eq(a,b) result(res)
-      type(Planewaves), intent(in) :: a, b
+      type(PlaneWaves_t), intent(in) :: a, b
       res = .false.
-      if (.not. associated(a%collection)) return
-      if (.not. associated(b%collection)) return
       if (a%nc /= b%nc) return
       if (a%nC_max /= b%nC_max) return
-      if (any(.not. a%collection == b%collection)) return
+      if (associated(a%collection) .eqv. associated(b%collection)) then
+         if (associated(a%collection)) then
+            if (any(.not. a%collection == b%collection)) return
+         end if
+      else if (associated(a%collection)) then
+         if (size(a%collection) /= 0) return
+      else
+         if (size(b%collection) /= 0) return
+      end if
       res = .true.
    end function
 
-   elemental logical function curr_field_src_eq(a, b)
-      type(Curr_Field_Src), intent(in) :: a, b
-      curr_field_src_eq = &
-         all(a%c1P == b%c1P) .and. &
-         all(a%c2P == b%c2P) .and. &
-         (a%n_C1P == b%n_C1P) .and. &
-         (a%n_C2P == b%n_C2P) .and. &
-         (a%nombre == b%nombre) .and. &
-         (a%isElec .eqv. b%isElec) .and. &
-         (a%isHard .eqv. b%isHard) .and. &
-         (a%isInitialValue .eqv. b%isInitialValue)
+   elemental logical function curr_field_src_eq(a, b) result(res)
+      type(Curr_Field_Src_t), intent(in) :: a, b
+      res = .false.
+      if (.not. all(a%c1P == b%c1P)) return
+      if (.not. all(a%c2P == b%c2P)) return
+      if (a%n_C1P /= b%n_C1P) return
+      if (a%n_C2P /= b%n_C2P) return
+      if (a%nombre /= b%nombre) return
+      if (a%isElec         .neqv. b%isElec)         return
+      if (a%isHard         .neqv. b%isHard)         return
+      if (a%isInitialValue .neqv. b%isInitialValue) return
+      res = .true.
    end function curr_field_src_eq
 
    elemental logical function nodsource_eq(a, b)
-      type(NodSource), intent(in) :: a, b
-      if (.not. associated(a%NodalSource) .or. &
-         .not. associated(b%NodalSource)) then
-         nodsource_eq = .false.
-         return
+      type(NodSource_t), intent(in) :: a, b
+      nodsource_eq = .false.
+      if (a%n_nodSrc /= b%n_nodSrc) return
+      if (a%n_nodSrc_max /= b%n_nodSrc_max) return
+      if (a%n_C1P_max /= b%n_C1P_max) return
+      if (a%n_C2P_max /= b%n_C2P_max) return
+      if (associated(a%NodalSource) .eqv. associated(b%NodalSource)) then
+         if (associated(a%NodalSource)) then
+            if (any(.not. a%NodalSource == b%NodalSource)) return
+         end if
+      else if (associated(a%NodalSource)) then
+         if (size(a%NodalSource) /= 0) return
+      else
+         if (size(b%NodalSource) /= 0) return
       end if
-      nodsource_eq = &
-         (a%n_nodSrc == b%n_nodSrc) .and. &
-         (a%n_nodSrc_max == b%n_nodSrc_max) .and. &
-         (a%n_C1P_max == b%n_C1P_max) .and. &
-         (a%n_C2P_max == b%n_C2P_max) .and. &
-         all(a%NodalSource == b%NodalSource)
+      nodsource_eq = .true.
    end function nodsource_eq
 
    elemental logical function fronteraPML_eq(a, b) result (res)
-      type(FronteraPML), intent(in) :: a, b
+      type(FronteraPML_t), intent(in) :: a, b
       res = .false.
       if (a%orden    /= b%orden) return
       if (a%refl     /= b%refl) return
@@ -707,7 +764,7 @@ contains
    end function
 
    elemental logical function frontera_eq(a, b) result (res)
-      type(Frontera), intent(in) :: a, b
+      type(Frontera_t), intent(in) :: a, b
       integer :: i
       res = .false.
       if (any(a%tipoFrontera /= b%tipoFrontera)) return
@@ -716,7 +773,7 @@ contains
    end function
 
    elemental logical function desplazamiento_eq(a, b) result (res)
-      type(Desplazamiento), intent(in) :: a, b
+      type(Desplazamiento_t), intent(in) :: a, b
 
       res = .false.
 
@@ -754,7 +811,7 @@ contains
    end function
 
    elemental logical function coords_eq(a, b) result(res)
-      type(coords), intent(in) :: a, b
+      type(coords_t), intent(in) :: a, b
       res = .false.
       if (a%xi /= b%xi) return
       if (a%xe /= b%xe) return
@@ -770,102 +827,223 @@ contains
       res = .true.
    end function
 
-   elemental logical function coords_scaled_eq(a, b)
-      type(coords_scaled), intent(in) :: a, b
-      coords_scaled_eq = &
-         (a%Xi == b%Xi) .and. &
-         (a%Xe == b%Xe) .and. &
-         (a%Yi == b%Yi) .and. &
-         (a%Ye == b%Ye) .and. &
-         (a%Zi == b%Zi) .and. &
-         (a%Ze == b%Ze) .and. &
-         (a%xc == b%xc) .and. &
-         (a%yc == b%yc) .and. &
-         (a%zc == b%zc) .and. &
-         (a%Or == b%Or) .and. &
-         (a%tag == b%tag)
+   elemental logical function coords_scaled_eq(a, b) result(res)
+      type(coords_scaled_t), intent(in) :: a, b
+      res = .false.
+      if (a%Xi  /= b%Xi)  return
+      if (a%Xe  /= b%Xe)  return
+      if (a%Yi  /= b%Yi)  return
+      if (a%Ye  /= b%Ye)  return
+      if (a%Zi  /= b%Zi)  return
+      if (a%Ze  /= b%Ze)  return
+      if (a%xc  /= b%xc)  return
+      if (a%yc  /= b%yc)  return
+      if (a%zc  /= b%zc)  return
+      if (a%Or  /= b%Or)  return
+      if (a%tag /= b%tag) return
+      res = .true.
    end function coords_scaled_eq
 
-   elemental logical function FarField_Sonda_eq(a, b)
-      type(FarField_Sonda), intent(in) :: a, b
-      FarField_Sonda_eq = a%probe == b%probe
+   elemental logical function FarField_Sonda_eq(a, b) result(res)
+      type(FarField_Sonda_t), intent(in) :: a, b
+      res = .false.
+      if (.not. (a%probe == b%probe)) return
+      res = .true.
    end function FarField_Sonda_eq
 
-   elemental logical function Electric_Sonda_eq(a, b)
-      type(Electric_Sonda), intent(in) :: a, b
-      Electric_Sonda_eq = a%probe == b%probe
+   elemental logical function Electric_Sonda_eq(a, b) result(res)
+      type(Electric_Sonda_t), intent(in) :: a, b
+      res = .false.
+      if (.not. (a%probe == b%probe)) return
+      res = .true.
    end function Electric_Sonda_eq
 
-   elemental logical function Magnetic_Sonda_eq(a, b)
-      type(Magnetic_Sonda), intent(in) :: a, b
-      Magnetic_Sonda_eq = a%probe == b%probe
+   elemental logical function Magnetic_Sonda_eq(a, b) result(res)
+      type(Magnetic_Sonda_t), intent(in) :: a, b
+      res = .false.
+      if (.not. (a%probe == b%probe)) return
+      res = .true.
    end function Magnetic_Sonda_eq
 
-   elemental logical function NormalElectric_Sonda_eq(a, b)
-      type(NormalElectric_Sonda), intent(in) :: a, b
-      NormalElectric_Sonda_eq = a%probe == b%probe
+   elemental logical function NormalElectric_Sonda_eq(a, b) result(res)
+      type(NormalElectric_Sonda_t), intent(in) :: a, b
+      res = .false.
+      if (.not. (a%probe == b%probe)) return
+      if (a%n_nml /= b%n_nml) return
+      if (a%n_nml_max /= b%n_nml_max) return
+      if (associated(a%nml) .eqv. associated(b%nml)) then
+         if (associated(a%nml)) then
+            if (any(a%nml /= b%nml)) return
+         end if
+      else if (associated(a%nml)) then
+         if (size(a%nml) /= 0) return
+      else
+         if (size(b%nml) /= 0) return
+      end if
+      res = .true.
    end function NormalElectric_Sonda_eq
 
-   elemental logical function NormalMagnetic_Sonda_eq(a, b)
-      type(NormalMagnetic_Sonda), intent(in) :: a, b
-      NormalMagnetic_Sonda_eq = a%probe == b%probe
+   elemental logical function NormalMagnetic_Sonda_eq(a, b) result(res)
+      type(NormalMagnetic_Sonda_t), intent(in) :: a, b
+      res = .false.
+      if (.not. (a%probe == b%probe)) return
+      if (a%n_nml /= b%n_nml) return
+      if (a%n_nml_max /= b%n_nml_max) return
+      if (associated(a%nml) .eqv. associated(b%nml)) then
+         if (associated(a%nml)) then
+            if (any(a%nml /= b%nml)) return
+         end if
+      else if (associated(a%nml)) then
+         if (size(a%nml) /= 0) return
+      else
+         if (size(b%nml) /= 0) return
+      end if
+      res = .true.
    end function NormalMagnetic_Sonda_eq
 
-   elemental logical function SurfaceElectricCurrent_Sonda_eq(a, b)
-      type(SurfaceElectricCurrent_Sonda), intent(in) :: a, b
-      SurfaceElectricCurrent_Sonda_eq = a%probe == b%probe
+   elemental logical function SurfaceElectricCurrent_Sonda_eq(a, b) result(res)
+      type(SurfaceElectricCurrent_Sonda_t), intent(in) :: a, b
+      res = .false.
+      if (.not. (a%probe == b%probe)) return
+      if (a%n_nml /= b%n_nml) return
+      if (a%n_nml_max /= b%n_nml_max) return
+      if (associated(a%nml) .eqv. associated(b%nml)) then
+         if (associated(a%nml)) then
+            if (any(a%nml /= b%nml)) return
+         end if
+      else if (associated(a%nml)) then
+         if (size(a%nml) /= 0) return
+      else
+         if (size(b%nml) /= 0) return
+      end if
+      res = .true.
    end function SurfaceElectricCurrent_Sonda_eq
 
-   elemental logical function SurfaceMagneticCurrent_Sonda_eq(a, b)
-      type(SurfaceMagneticCurrent_Sonda), intent(in) :: a, b
-      SurfaceMagneticCurrent_Sonda_eq = a%probe == b%probe
+   elemental logical function SurfaceMagneticCurrent_Sonda_eq(a, b) result(res)
+      type(SurfaceMagneticCurrent_Sonda_t), intent(in) :: a, b
+      res = .false.
+      if (.not. (a%probe == b%probe)) return
+      if (a%n_nml /= b%n_nml) return
+      if (a%n_nml_max /= b%n_nml_max) return
+      if (associated(a%nml) .eqv. associated(b%nml)) then
+         if (associated(a%nml)) then
+            if (any(a%nml /= b%nml)) return
+         end if
+      else if (associated(a%nml)) then
+         if (size(a%nml) /= 0) return
+      else
+         if (size(b%nml) /= 0) return
+      end if
+      res = .true.
    end function SurfaceMagneticCurrent_Sonda_eq
 
    elemental logical function abstractSonda_eq(a, b) result(res)
-      type(abstractSonda), intent(in) :: a, b
-      integer(kind=4) :: i
+      type(abstractSonda_t), intent(in) :: a, b
 
       res = .false.
 
       if (a%n_FarField /= b%n_FarField) return
+      if (a%n_Electric /= b%n_Electric) return
+      if (a%n_Magnetic /= b%n_Magnetic) return
+      if (a%n_NormalElectric /= b%n_NormalElectric) return
+      if (a%n_NormalMagnetic /= b%n_NormalMagnetic) return
+      if (a%n_SurfaceElectricCurrent /= b%n_SurfaceElectricCurrent) return
+      if (a%n_SurfaceMagneticCurrent /= b%n_SurfaceMagneticCurrent) return
+      if (a%n_FarField_max /= b%n_FarField_max) return
+      if (a%n_Electric_max /= b%n_Electric_max) return
+      if (a%n_Magnetic_max /= b%n_Magnetic_max) return
+      if (a%n_NormalElectric_max /= b%n_NormalElectric_max) return
+      if (a%n_NormalMagnetic_max /= b%n_NormalMagnetic_max) return
+      if (a%n_SurfaceElectricCurrent_max /= b%n_SurfaceElectricCurrent_max) return
+      if (a%n_SurfaceMagneticCurrent_max /= b%n_SurfaceMagneticCurrent_max) return
 
-      if (.not. associated(a%FarField)               .or. .not. associated(b%FarField)) return
+#define CHECK_PTR(field) \
+      if (associated(a%field) .eqv. associated(b%field)) then ; \
+         if (associated(a%field)) then ; \
+            if (any(.not. a%field == b%field)) return ; \
+         end if ; \
+      else if (associated(a%field)) then ; \
+         if (size(a%field) /= 0) return ; \
+      else ; \
+         if (size(b%field) /= 0) return ; \
+      end if
 
-      if (any(.not. a%FarField == b%FarField)) return
+      CHECK_PTR(FarField)
+      CHECK_PTR(Electric)
+      CHECK_PTR(Magnetic)
+      CHECK_PTR(NormalElectric)
+      CHECK_PTR(NormalMagnetic)
+      CHECK_PTR(SurfaceElectricCurrent)
+      CHECK_PTR(SurfaceMagneticCurrent)
+
+#undef CHECK_PTR
 
       res = .true.
    end function abstractSonda_eq
 
    elemental logical function sondas_eq(a, b) result(res)
-      type(Sondas), intent(in) :: a, b
-      integer :: i
+      type(Sondas_t), intent(in) :: a, b
 
       res = .false.
-
       if (a%n_probes /= b%n_probes) return
       if (a%n_probes_max /= b%n_probes_max) return
-
-      if (.not. associated(a%probes) .or. .not. associated(b%probes)) return
-      if (any(.not. a%probes == b%probes)) return
-
+      if (associated(a%probes) .eqv. associated(b%probes)) then
+         if (associated(a%probes)) then
+            if (any(.not. a%probes == b%probes)) return
+         end if
+      else if (associated(a%probes)) then
+         if (size(a%probes) /= 0) return
+      else
+         if (size(b%probes) /= 0) return
+      end if
       res = .true.
    end function sondas_eq
 
    elemental logical function sonda_eq(a, b) result (res)
-      type(Sonda), intent(in) :: a, b
+      type(Sonda_t), intent(in) :: a, b
       res = .false.
 
       if (a%grname /= b%grname) return
 
-      if (.not. associated(a%i) .or. .not. associated(b%i)) return
-      if (.not. associated(a%j) .or. .not. associated(b%j)) return
-      if (.not. associated(a%k) .or. .not. associated(b%k)) return
-      if (.not. associated(a%node) .or. .not. associated(b%node)) return
+      if (associated(a%i) .eqv. associated(b%i)) then
+         if (associated(a%i)) then
+            if (any(a%i /= b%i)) return
+         end if
+      else if (associated(a%i)) then
+         if (size(a%i) /= 0) return
+      else
+         if (size(b%i) /= 0) return
+      end if
 
-      if (any(a%i /= b%i)) return
-      if (any(a%j /= b%j)) return
-      if (any(a%k /= b%k)) return
-      if (any(a%node /= b%node)) return
+      if (associated(a%j) .eqv. associated(b%j)) then
+         if (associated(a%j)) then
+            if (any(a%j /= b%j)) return
+         end if
+      else if (associated(a%j)) then
+         if (size(a%j) /= 0) return
+      else
+         if (size(b%j) /= 0) return
+      end if
+
+      if (associated(a%k) .eqv. associated(b%k)) then
+         if (associated(a%k)) then
+            if (any(a%k /= b%k)) return
+         end if
+      else if (associated(a%k)) then
+         if (size(a%k) /= 0) return
+      else
+         if (size(b%k) /= 0) return
+      end if
+
+      if (associated(a%node) .eqv. associated(b%node)) then
+         if (associated(a%node)) then
+            if (any(a%node /= b%node)) return
+         end if
+      else if (associated(a%node)) then
+         if (size(a%node) /= 0) return
+      else
+         if (size(b%node) /= 0) return
+      end if
 
       if (a%n_cord /= b%n_cord) return
       if (a%n_cord_max /= b%n_cord_max) return
@@ -887,8 +1065,7 @@ contains
    end function
 
    elemental logical function masSonda_eq(a, b) result (res)
-      type(MasSonda), intent(in) :: a, b
-      integer :: i
+      type(MasSonda_t), intent(in) :: a, b
       res = .false.
 
       if (a%filename /= b%filename) return
@@ -896,94 +1073,130 @@ contains
       if (a%type2 /= b%type2) return
       if (a%outputrequest /= b%outputrequest) return
       if (a%len_cor /= b%len_cor) return
-
-      if (.not. associated(a%cordinates) .or. .not. associated(b%cordinates)) return
-      if (all(.not. a%cordinates == b%cordinates)) return
-
       if (a%tstart /= b%tstart) return
       if (a%tstop /= b%tstop) return
       if (a%tstep /= b%tstep) return
       if (a%fstart /= b%fstart) return
-      if (a%fstop/= b%fstop) return
+      if (a%fstop /= b%fstop) return
       if (a%fstep /= b%fstep) return
+
+      if (associated(a%cordinates) .eqv. associated(b%cordinates)) then
+         if (associated(a%cordinates)) then
+            if (any(.not. a%cordinates == b%cordinates)) return
+         end if
+      else if (associated(a%cordinates)) then
+         if (size(a%cordinates) /= 0) return
+      else
+         if (size(b%cordinates) /= 0) return
+      end if
       res = .true.
    end function
 
    elemental logical function MasSondas_eq(a, b)
-      type(MasSondas), intent(in) :: a, b
-      integer(kind=4) :: i
+      type(MasSondas_t), intent(in) :: a, b
+      integer :: i
 
       MasSondas_eq = .false.
-
       if (a%length /= b%length) return
       if (a%length_max /= b%length_max) return
       if (a%len_cor_max /= b%len_cor_max) return
-
-      if (.not. associated(a%collection) .or. .not. associated(b%collection)) return
-      if (any(.not. a%collection == b%collection)) return
-
+      if (associated(a%collection) .eqv. associated(b%collection)) then
+         if (associated(a%collection)) then
+            do i = 1, size(a%collection)
+               if (.not. a%collection(i) == b%collection(i)) return
+            end do
+         end if
+      else if (associated(a%collection)) then
+         if (size(a%collection) /= 0) return
+      else
+         if (size(b%collection) /= 0) return
+      end if
       MasSondas_eq = .true.
    end function MasSondas_eq
 
    elemental logical function bloqueprobe_eq(a, b)
-      type(BloqueProbe), intent(in) :: a, b
-      bloqueprobe_eq = (a%tstart == b%tstart) .and. &
-         (a%tstop == b%tstop) .and. &
-         (a%tstep == b%tstep) .and. &
-         (a%fstart == b%fstart) .and. &
-         (a%fstop == b%fstop) .and. &
-         (a%fstep == b%fstep) .and. &
-         (trim(a%FileNormalize) == trim(b%FileNormalize)) .and. &
-         (a%type2 == b%type2) .and. &
-         (a%i1 == b%i1) .and. (a%i2 == b%i2) .and. &
-         (a%j1 == b%j1) .and. (a%j2 == b%j2) .and. &
-         (a%k1 == b%k1) .and. (a%k2 == b%k2) .and. &
-         (a%skip == b%skip) .and. &
-         (a%nml == b%nml) .and. &
-         (a%t .eqv. b%t) .and. &
-         (a%outputrequest == b%outputrequest) .and. &
-         (a%tag == b%tag)
+      type(BloqueProbe_t), intent(in) :: a, b
+      bloqueprobe_eq = .false.
+      if (a%tstart /= b%tstart) return
+      if (a%tstop /= b%tstop) return
+      if (a%tstep /= b%tstep) return
+      if (a%fstart /= b%fstart) return
+      if (a%fstop /= b%fstop) return
+      if (a%fstep /= b%fstep) return
+      if (trim(a%FileNormalize) /= trim(b%FileNormalize)) return
+      if (a%type2 /= b%type2) return
+      if (a%i1 /= b%i1) return
+      if (a%i2 /= b%i2) return
+      if (a%j1 /= b%j1) return
+      if (a%j2 /= b%j2) return
+      if (a%k1 /= b%k1) return
+      if (a%k2 /= b%k2) return
+      if (a%skip /= b%skip) return
+      if (a%nml /= b%nml) return
+      if (a%t .neqv. b%t) return
+      if (a%outputrequest /= b%outputrequest) return
+      if (a%tag /= b%tag) return
+      bloqueprobe_eq = .true.
    end function bloqueprobe_eq
 
    elemental logical function bloqueprobes_eq(a, b)
-      type(BloqueProbes), intent(in) :: a, b
-      if (.not. associated(a%bp) .or. .not. associated(b%bp)) then
-         bloqueprobes_eq = .false.
-         return
+      type(BloqueProbes_t), intent(in) :: a, b
+      bloqueprobes_eq = .false.
+      if (a%n_bp /= b%n_bp) return
+      if (a%n_bp_max /= b%n_bp_max) return
+      if (associated(a%bp) .eqv. associated(b%bp)) then
+         if (associated(a%bp)) then
+            if (.not. all(a%bp == b%bp)) return
+         end if
+      else if (associated(a%bp)) then
+         if (size(a%bp) /= 0) return
+      else
+         if (size(b%bp) /= 0) return
       end if
-      bloqueprobes_eq = &
-         (a%n_bp == b%n_bp) .and. &
-         (a%n_bp_max == b%n_bp_max) .and. &
-         all(a%bp == b%bp)
+      bloqueprobes_eq = .true.
    end function bloqueprobes_eq
 
    elemental logical function volprobe_eq(a, b)
-      type(VolProbe), intent(in) :: a, b
-      volprobe_eq = all(a%cordinates == b%cordinates)
-      volprobe_eq = volprobe_eq .and. &
-         (a%tstart == b%tstart) .and. &
-         (a%tstop == b%tstop) .and. &
-         (a%tstep == b%tstep) .and. &
-         (a%outputrequest == b%outputrequest) .and. &
-         (a%len_cor == b%len_cor) .and. &
-         (a%fstart == b%fstart) .and. &
-         (a%fstop == b%fstop) .and. &
-         (a%fstep == b%fstep) .and. &
-         (a%type2 == b%type2) .and. &
-         (a%filename == b%filename)
+      type(VolProbe_t), intent(in) :: a, b
+      volprobe_eq = .false.
+      if (a%tstart /= b%tstart) return
+      if (a%tstop /= b%tstop) return
+      if (a%tstep /= b%tstep) return
+      if (a%outputrequest /= b%outputrequest) return
+      if (a%len_cor /= b%len_cor) return
+      if (a%fstart /= b%fstart) return
+      if (a%fstop /= b%fstop) return
+      if (a%fstep /= b%fstep) return
+      if (a%type2 /= b%type2) return
+      if (a%filename /= b%filename) return
+      if (associated(a%cordinates) .eqv. associated(b%cordinates)) then
+         if (associated(a%cordinates)) then
+            if (.not. all(a%cordinates == b%cordinates)) return
+         end if
+      else if (associated(a%cordinates)) then
+         if (size(a%cordinates) /= 0) return
+      else
+         if (size(b%cordinates) /= 0) return
+      end if
+      volprobe_eq = .true.
    end function volprobe_eq
 
    elemental logical function volprobes_eq(a, b)
-      type(VolProbes), intent(in) :: a, b
-      if (.not. associated(a%collection) .or. .not. associated(b%collection)) then
-         volprobes_eq = .false.
-         return
+      type(VolProbes_t), intent(in) :: a, b
+      volprobes_eq = .false.
+      if (a%length /= b%length) return
+      if (a%length_max /= b%length_max) return
+      if (a%len_cor_max /= b%len_cor_max) return
+      if (associated(a%collection) .eqv. associated(b%collection)) then
+         if (associated(a%collection)) then
+            if (.not. all(a%collection == b%collection)) return
+         end if
+      else if (associated(a%collection)) then
+         if (size(a%collection) /= 0) return
+      else
+         if (size(b%collection) /= 0) return
       end if
-      volprobes_eq = &
-         (a%length == b%length) .and. &
-         (a%length_max == b%length_max) .and. &
-         (a%len_cor_max == b%len_cor_max) .and. &
-         all(a%collection == b%collection)
+      volprobes_eq = .true.
    end function volprobes_eq
 
 #endif

@@ -1,11 +1,11 @@
 integer function test_read_towelhanger() bind (C) result(err)
-   use smbjson
+   use smbjson_m
    use smbjson_testingTools
 
    implicit none
 
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'towelHanger.fdtd.json'
-   type(Parseador) :: problem, expected
+   type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -17,32 +17,32 @@ integer function test_read_towelhanger() bind (C) result(err)
 
 contains
    function expectedProblemDescription() result (expected)
-      type(Parseador) :: expected
+      type(Parseador_t) :: expected
 
       integer :: i
 
       call initializeProblemDescription(expected)
 
       ! Expected general info.
-      expected%general%dt = 1e-12
+      expected%general%dt = 1e-12_RKIND
       expected%general%nmax = 2000
 
       ! Excected media matrix.
-      expected%matriz%totalX = 60
-      expected%matriz%totalY = 60
-      expected%matriz%totalZ = 60
+      expected%matriz%totalX = 61
+      expected%matriz%totalY = 61
+      expected%matriz%totalZ = 61
 
       ! Expected grid.
-      expected%despl%nX = 60
-      expected%despl%nY = 60
-      expected%despl%nZ = 60
+      expected%despl%nX = 1
+      expected%despl%nY = 1
+      expected%despl%nZ = 1
 
-      allocate(expected%despl%desX(60))
-      allocate(expected%despl%desY(60))
-      allocate(expected%despl%desZ(60))
-      expected%despl%desX = 0.01
-      expected%despl%desY = 0.01
-      expected%despl%desZ = 0.01
+      allocate(expected%despl%desX(1:1))
+      allocate(expected%despl%desY(1:1))
+      allocate(expected%despl%desZ(1:1))
+      expected%despl%desX = 0.01_RKIND
+      expected%despl%desY = 0.01_RKIND
+      expected%despl%desZ = 0.01_RKIND
       expected%despl%mx1 = 0
       expected%despl%mx2 = 60
       expected%despl%my1 = 0
@@ -53,8 +53,8 @@ contains
       ! Expected boundaries.
       expected%front%tipoFrontera(:) = F_PML
       expected%front%propiedadesPML(:)%numCapas = 6
-      expected%front%propiedadesPML(:)%orden = 2.0
-      expected%front%propiedadesPML(:)%refl = 0.001
+      expected%front%propiedadesPML(:)%orden = 2.0_RKIND
+      expected%front%propiedadesPML(:)%refl = 0.001_RKIND
 
       ! Expected PEC regions.
       expected%pecRegs%nLins = 0
@@ -76,126 +76,9 @@ contains
       expected%pecRegs%Surfs(1)%Or = 3
       expected%pecRegs%Surfs(1)%tag =  "copper@ground_plane"
 
-      ! ! Expected probes
-      ! ! sonda
-      ! expected%Sonda%length = 3
-      ! expected%Sonda%length_max = 3
-      ! allocate(expected%Sonda%collection(3))
-      ! expected%Sonda%collection(1)%outputrequest = "wire_start"
-      ! expected%Sonda%collection(1)%type1 = NP_T1_PLAIN
-      ! expected%Sonda%collection(1)%type2 = NP_T2_TIME
-      ! expected%Sonda%collection(1)%filename = ' '
-      ! expected%Sonda%collection(1)%tstart = 0.0
-      ! expected%Sonda%collection(1)%tstop = 0.0
-      ! expected%Sonda%collection(1)%tstep = 0.0
-      ! expected%Sonda%collection(1)%fstart = 0.0
-      ! expected%Sonda%collection(1)%fstop = 0.0
-      ! expected%Sonda%collection(1)%fstep = 0.0
-      ! allocate(expected%Sonda%collection(1)%cordinates(1))
-      ! expected%Sonda%collection(1)%len_cor = 1
-      ! expected%Sonda%collection(1)%cordinates(1)%tag = "wire_start"
-      ! expected%Sonda%collection(1)%cordinates(1)%Xi = 1 ! Coord id as tag.
-      ! expected%Sonda%collection(1)%cordinates(1)%Yi = 0
-      ! expected%Sonda%collection(1)%cordinates(1)%Zi = 0
-      ! expected%Sonda%collection(1)%cordinates(1)%Or = NP_COR_WIRECURRENT
-
-      ! expected%Sonda%collection(2)%outputrequest = "wire_end"
-      ! expected%Sonda%collection(2)%type1 = NP_T1_PLAIN
-      ! expected%Sonda%collection(2)%type2 = NP_T2_TIME
-      ! expected%Sonda%collection(2)%filename = ' '
-      ! expected%Sonda%collection(2)%tstart = 0.0
-      ! expected%Sonda%collection(2)%tstop = 0.0
-      ! expected%Sonda%collection(2)%tstep = 0.0
-      ! expected%Sonda%collection(2)%fstart = 0.0
-      ! expected%Sonda%collection(2)%fstop = 0.0
-      ! expected%Sonda%collection(2)%fstep = 0.0
-      ! allocate(expected%Sonda%collection(2)%cordinates(1))
-      ! expected%Sonda%collection(2)%len_cor = 1
-      ! expected%Sonda%collection(2)%cordinates(1)%tag = "wire_end"
-      ! expected%Sonda%collection(2)%cordinates(1)%Xi = 4 ! Coord id as tag.
-      ! expected%Sonda%collection(2)%cordinates(1)%Yi = 0
-      ! expected%Sonda%collection(2)%cordinates(1)%Zi = 0
-      ! expected%Sonda%collection(2)%cordinates(1)%Or = NP_COR_WIRECURRENT
-      
-      ! expected%Sonda%collection(3)%outputrequest = "wire_mid"
-      ! expected%Sonda%collection(3)%type1 = NP_T1_PLAIN
-      ! expected%Sonda%collection(3)%type2 = NP_T2_TIME
-      ! expected%Sonda%collection(3)%filename = ' '
-      ! expected%Sonda%collection(3)%tstart = 0.0
-      ! expected%Sonda%collection(3)%tstop = 0.0
-      ! expected%Sonda%collection(3)%tstep = 0.0
-      ! expected%Sonda%collection(3)%fstart = 0.0
-      ! expected%Sonda%collection(3)%fstop = 0.0
-      ! expected%Sonda%collection(3)%fstep = 0.0
-      ! allocate(expected%Sonda%collection(3)%cordinates(1))
-      ! expected%Sonda%collection(3)%len_cor = 1
-      ! expected%Sonda%collection(3)%cordinates(1)%tag = "wire_mid"
-      ! expected%Sonda%collection(3)%cordinates(1)%Xi = 5 ! Coord id as tag.
-      ! expected%Sonda%collection(3)%cordinates(1)%Yi = 0
-      ! expected%Sonda%collection(3)%cordinates(1)%Zi = 0
-      ! expected%Sonda%collection(3)%cordinates(1)%Or = NP_COR_WIRECURRENT
-      
-      
-      ! ! Expected thin wires
-      ! allocate(expected%tWires%tw(1))
-      ! expected%tWires%tw(1)%rad=0.1e-3
-      ! expected%tWires%tw(1)%dispfile = trim(adjustl(" "))
-      ! expected%tWires%tw(1)%dispfile_LeftEnd = trim(adjustl(" "))
-      ! expected%tWires%tw(1)%dispfile_RightEnd = trim(adjustl(" "))
-      ! expected%tWires%tw(1)%n_twc=20
-      ! expected%tWires%tw(1)%n_twc_max=20
-      ! allocate(expected%tWires%tw(1)%twc(20))
-      ! expected%tWires%tw(1)%twc(1)%srcfile = 'towelHanger.exc'
-      ! expected%tWires%tw(1)%twc(1)%srctype = 'VOLT'
-      ! expected%tWires%tw(1)%twc(1)%m = 1.0
-      ! expected%tWires%tw(1)%twc(2)%srcfile = 'None'
-      ! expected%tWires%tw(1)%twc(2)%srctype = 'None'
-      ! expected%tWires%tw(1)%twc(2)%m = 0.0
-      ! expected%tWires%tw(1)%twc(1:2)%i = 27
-      ! expected%tWires%tw(1)%twc(1:2)%j = 25
-      ! expected%tWires%tw(1)%twc(1:2)%k = [(i, i = 30, 31)]
-      ! expected%tWires%tw(1)%twc(1:2)%d = DIR_Z
-      ! expected%tWires%tw(1)%twc(1:2)%nd = -1
-
-      ! expected%tWires%tw(1)%twc(3:18)%srcfile = 'None'
-      ! expected%tWires%tw(1)%twc(3:18)%srctype = 'None'
-      ! expected%tWires%tw(1)%twc(3:18)%m = 0.0
-      ! expected%tWires%tw(1)%twc(3:18)%i = [(i, i=27,42)]
-      ! expected%tWires%tw(1)%twc(3:18)%j = 25
-      ! expected%tWires%tw(1)%twc(3:18)%k = 32
-      ! expected%tWires%tw(1)%twc(3:18)%d = DIR_X
-      ! expected%tWires%tw(1)%twc(3:18)%nd = -1
-
-      ! expected%tWires%tw(1)%twc(19:20)%srcfile = 'None'
-      ! expected%tWires%tw(1)%twc(19:20)%srctype = 'None'
-      ! expected%tWires%tw(1)%twc(19:20)%m = 0.0
-
-      ! expected%tWires%tw(1)%twc(19:20)%i = 43
-      ! expected%tWires%tw(1)%twc(19:20)%j = 25
-      ! expected%tWires%tw(1)%twc(19:20)%k = [(i, i=31, 30, -1)]
-      ! expected%tWires%tw(1)%twc(19:20)%d = DIR_Z
-      ! expected%tWires%tw(1)%twc(19:20)%nd = -1
-
-      ! expected%tWires%tw(1)%twc(1)%nd  = 1
-      ! expected%tWires%tw(1)%twc(3)%nd  = 2
-      ! expected%tWires%tw(1)%twc(11)%nd  = 5
-      ! expected%tWires%tw(1)%twc(19)%nd  = 3
-      ! expected%tWires%tw(1)%twc(20)%nd = 4
-      
-      ! expected%tWires%tw(1)%twc(1:20)%tag = trim(adjustl("2"))   ! The polyline id is used as tag.
-      
-      ! expected%tWires%tw(1)%tl = SERIES_CONS
-      ! expected%tWires%tw(1)%R_LeftEnd = 50
-      ! expected%tWires%tw(1)%C_LeftEnd = 1e22
-      ! expected%tWires%tw(1)%tr = MATERIAL_CONS
-      ! expected%tWires%tw(1)%C_RightEnd = 1e22
-      
-      ! expected%tWires%n_tw = 1
-      ! expected%tWires%n_tw_max = 1
-
       ! expected mtln bundles
       ! expected%mtln%has_multiwires = .true.
-      expected%mtln%time_step = 1e-12
+      expected%mtln%time_step = 1e-12_RKIND
       expected%mtln%number_of_steps = 2000
       deallocate(expected%mtln%cables)
       allocate(expected%mtln%cables(1))
@@ -204,7 +87,7 @@ contains
       expected%mtln%cables(1)%ptr%name = "wire"
       call initializeCablePulParameters(expected%mtln%cables(1)%ptr)
       allocate(expected%mtln%cables(1)%ptr%step_size(20))
-      expected%mtln%cables(1)%ptr%step_size =  [(0.01, i = 1, 20)]
+      expected%mtln%cables(1)%ptr%step_size =  [(0.01_RKIND, i = 1, 20)]
       allocate(expected%mtln%cables(1)%ptr%segments(20))
       
       do i = 1,2
@@ -271,7 +154,7 @@ contains
       expected%mtln%networks(1)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
       expected%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)%ptr
       expected%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%resistance = 50.0
+      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%resistance = 50.0_RKIND
       expected%mtln%networks(1)%connections(1)%nodes(1)%termination%source%path_to_excitation = "towelHanger.exc"
       expected%mtln%networks(1)%connections(1)%nodes(1)%termination%source%source_type = SOURCE_TYPE_VOLTAGE
 

@@ -1,6 +1,6 @@
 integer function test_init_solver() bind (C) result(err)
-   use SEMBA_FDTD_mod
-   use system_testingTools_mod   
+   use SEMBA_FDTD_m
+   use system_testingTools_m   
    implicit none
    type(semba_fdtd_t) :: semba
    type(solver_t) :: solver
@@ -22,8 +22,8 @@ end function
 
 
 integer function test_rank_remapping() bind (C) result(err)
-   use SEMBA_FDTD_mod
-   use system_testingTools_mod   
+   use SEMBA_FDTD_m
+   use system_testingTools_m   
    implicit none
 
    type(semba_fdtd_t) :: semba

@@ -1,15 +1,16 @@
-module network_manager_mod
+module network_manager_m
 
-    use network_mod
-    use circuit_mod
-    use mtln_types_mod, only: node_source_t
+    use network_m
+    use circuit_m
+    use mtln_types_m, only: node_source_t
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
 
     implicit none 
 
     type network_manager_t
         type(network_t), dimension(:), allocatable :: networks
         type(circuit_t) :: circuit
-        real :: time, dt
+        real(kind=rkind) :: time, dt
     contains
         procedure :: advanceVoltage => network_advanceVoltage
         procedure :: updateCircuitCurrentsFromNetwork
@@ -57,6 +58,7 @@ contains
             do j = 1, size(networks(i)%nodes)
                 res(n)%path_to_excitation = trim(networks(i)%nodes(j)%source%path_to_excitation)
                 res(n)%source_type = networks(i)%nodes(j)%source%source_type
+                res(n)%resistance = networks(i)%nodes(j)%source%resistance
                 n = n + 1
             end do
         end do
@@ -81,7 +83,7 @@ contains
     function network_managerCtor(networks, description, final_time, dt) result(res)
         type(network_t), dimension(:), intent(in) :: networks
         character(*), dimension(:), intent(in) :: description
-        real, intent(in) :: final_time, dt
+        real(kind=RKIND_TIEMPO), intent(in) :: final_time, dt
         type(network_manager_t) :: res
         logical :: printInput = .true.
         res%dt = dt

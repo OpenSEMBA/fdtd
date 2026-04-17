@@ -1,18 +1,19 @@
-module network_mod
+module network_m
 
-    use mtl_bundle_mod
-    use mtln_types_mod, parsed_probe_t => probe_t, parsed_mtln_t => mtln_t
-    use circuit_mod, only: string_t
+    use mtl_bundle_m
+    use mtln_types_m, parsed_probe_t => probe_t, parsed_mtln_t => mtln_t
+    use circuit_m, only: string_t
+    use FDETYPES_m, only: RKIND
     implicit none
 
     type nw_node_t
         character(len=:), allocatable :: name
         type(node_source_t) :: source
         integer :: source_type
-        real :: line_c_per_meter, line_g_per_meter
-        real :: step
-        real :: v
-        real :: i
+        real(kind=rkind) :: line_c_per_meter, line_g_per_meter
+        real(kind=rkind) :: step
+        real(kind=rkind) :: v
+        real(kind=rkind) :: i
         integer :: bundle_number, conductor_number, v_index, i_index
         integer :: side
         logical :: open = .false.

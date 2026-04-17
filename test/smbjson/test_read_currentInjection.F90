@@ -1,11 +1,11 @@
 integer function test_read_currentinjection() bind (C) result(err)
-   use smbjson
+   use smbjson_m
    use smbjson_testingTools
 
    implicit none
 
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'currentInjection.fdtd.json'
-   type(Parseador) :: problem, expected
+   type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -17,32 +17,32 @@ integer function test_read_currentinjection() bind (C) result(err)
 
 contains
    function expectedProblemDescription() result (expected)
-      type(Parseador) :: expected
+      type(Parseador_t) :: expected
 
       integer :: i
 
       call initializeProblemDescription(expected)
 
       ! Expected general info.
-      expected%general%dt = 1e-12
+      expected%general%dt = 1e-12_RKIND
       expected%general%nmax = 1000
 
       ! Excected media matrix.
-      expected%matriz%totalX = 20
-      expected%matriz%totalY = 20
-      expected%matriz%totalZ = 20
+      expected%matriz%totalX = 21
+      expected%matriz%totalY = 21
+      expected%matriz%totalZ = 21
 
       ! Expected grid.
-      expected%despl%nX = 20
-      expected%despl%nY = 20
-      expected%despl%nZ = 20
+      expected%despl%nX = 1
+      expected%despl%nY = 1
+      expected%despl%nZ = 1
 
-      allocate(expected%despl%desX(20))
-      allocate(expected%despl%desY(20))
-      allocate(expected%despl%desZ(20))
-      expected%despl%desX = 0.1
-      expected%despl%desY = 0.1
-      expected%despl%desZ = 0.1
+      allocate(expected%despl%desX(1:1))
+      allocate(expected%despl%desY(1:1))
+      allocate(expected%despl%desZ(1:1))
+      expected%despl%desX = 0.1_RKIND
+      expected%despl%desY = 0.1_RKIND
+      expected%despl%desZ = 0.1_RKIND
       expected%despl%mx1 = 0
       expected%despl%my1 = 0
       expected%despl%mz1 = 0
@@ -105,9 +105,9 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%Zi = 10
       expected%nodSrc%NodalSource(1)%c2P(1)%Ze = 10
       expected%nodSrc%NodalSource(1)%c2P(1)%tag = 'entry_line_curent'
-      expected%nodSrc%NodalSource(1)%c2P(1)%xc = 0.0
-      expected%nodSrc%NodalSource(1)%c2P(1)%yc = 1.0
-      expected%nodSrc%NodalSource(1)%c2P(1)%zc = 0.0
+      expected%nodSrc%NodalSource(1)%c2P(1)%xc = 0.0_RKIND
+      expected%nodSrc%NodalSource(1)%c2P(1)%yc = 1.0_RKIND
+      expected%nodSrc%NodalSource(1)%c2P(1)%zc = 0.0_RKIND
 
       ! Expected probes
       ! bloqueprobes
@@ -117,12 +117,12 @@ contains
       expected%BloquePrb%bp(1)%outputrequest = "bulk_current_at_entry"
       expected%BloquePrb%bp(1)%FileNormalize = ''
       expected%BloquePrb%bp(1)%type2 = NP_T2_TIME
-      expected%BloquePrb%bp(1)%tstart = 0.0
-      expected%BloquePrb%bp(1)%tstop = 0.0
-      expected%BloquePrb%bp(1)%tstep = 0.0
-      expected%BloquePrb%bp(1)%fstart = 0.0
-      expected%BloquePrb%bp(1)%fstop = 0.0
-      expected%BloquePrb%bp(1)%fstep = 0.0
+      expected%BloquePrb%bp(1)%tstart = 0.0_RKIND
+      expected%BloquePrb%bp(1)%tstop = 0.0_RKIND
+      expected%BloquePrb%bp(1)%tstep = 0.0_RKIND
+      expected%BloquePrb%bp(1)%fstart = 0.0_RKIND
+      expected%BloquePrb%bp(1)%fstop = 0.0_RKIND
+      expected%BloquePrb%bp(1)%fstep = 0.0_RKIND
       expected%BloquePrb%bp(1)%i1 = 9
       expected%BloquePrb%bp(1)%i2 = 10
       expected%BloquePrb%bp(1)%j1 =  2
@@ -137,12 +137,12 @@ contains
       expected%BloquePrb%bp(2)%outputrequest = "bulk_current_at_exit"
       expected%BloquePrb%bp(2)%FileNormalize = ' '
       expected%BloquePrb%bp(2)%type2 = NP_T2_TIME
-      expected%BloquePrb%bp(2)%tstart = 0.0
-      expected%BloquePrb%bp(2)%tstop = 0.0
-      expected%BloquePrb%bp(2)%tstep = 0.0
-      expected%BloquePrb%bp(2)%fstart = 0.0
-      expected%BloquePrb%bp(2)%fstop = 0.0
-      expected%BloquePrb%bp(2)%fstep = 0.0
+      expected%BloquePrb%bp(2)%tstart = 0.0_RKIND
+      expected%BloquePrb%bp(2)%tstop = 0.0_RKIND
+      expected%BloquePrb%bp(2)%tstep = 0.0_RKIND
+      expected%BloquePrb%bp(2)%fstart = 0.0_RKIND
+      expected%BloquePrb%bp(2)%fstop = 0.0_RKIND
+      expected%BloquePrb%bp(2)%fstep = 0.0_RKIND
       expected%BloquePrb%bp(2)%i1 = 9
       expected%BloquePrb%bp(2)%i2 = 10
       expected%BloquePrb%bp(2)%j1 = 17
