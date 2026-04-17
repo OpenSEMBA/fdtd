@@ -465,6 +465,9 @@ contains
    elemental logical function LossyThinSurface_eq(a, b) result(res)
       type(LossyThinSurface_t), intent(in) :: a, b
       res = .false.
+      if (a%nc       /= b%nc)       return
+      if (a%files    /= b%files)    return
+      if (a%numcapas /= b%numcapas) return
       if (.not. all(a%c            == b%c))            return
       if (.not. all(a%sigma        == b%sigma))        return
       if (.not. all(a%eps          == b%eps))          return
@@ -476,9 +479,6 @@ contains
       if (.not. all(a%mu_devia     == b%mu_devia))     return
       if (.not. all(a%sigmam_devia == b%sigmam_devia)) return
       if (.not. all(a%thk_devia    == b%thk_devia))    return
-      if (a%nc       /= b%nc)       return
-      if (a%files    /= b%files)    return
-      if (a%numcapas /= b%numcapas) return
       res = .true.
    end function LossyThinSurface_eq
 
