@@ -1,7 +1,7 @@
-module mod_testOutputUtils
+module testOutputUtils_m
    use FDETYPES_m
    use FDETYPES_TOOLS
-   use outputTypes
+   use outputTypes_m
    implicit none
    private
 
@@ -233,4 +233,4 @@ contains
       nullify(problemInfo%simulationBounds)
    end subroutine clean_dummy_problem_info
 
-end module mod_testOutputUtils
+end module testOutputUtils_m

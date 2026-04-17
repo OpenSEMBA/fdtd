@@ -15,14 +15,14 @@
 !________________________________________________________________________________________
 
 module Solver_m
-   use mod_logUtils
+   use logUtils_m
    use FDETYPES_m
    use Report_m
    use PostProcessing_m
    use ilumina_m
 #ifdef CompileWithNewOutputModule
-   use output
-   use outputTypes
+   use output_m
+   use outputTypes_m
 #endif
    use Observa_m
    use BORDERS_other_m
@@ -2762,8 +2762,8 @@ contains
 #else 
          call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
-      end if
 #endif      
+      end if
       if (this%thereAre%FarFields) then
          write(dubuf,'(a,i9)')   ' DONE FINAL OBSERVATION DATA FLUSHED and Near-to-Far field  n= ',this%n
       else

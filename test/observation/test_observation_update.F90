@@ -3,7 +3,7 @@ integer function test_update_time_movie_observation() bind(C) result(err)
     use FDETYPES_TOOLS
     use Observa_m
     use observation_testingTools
-    use mod_sggMethods
+    use sggMethods_m
 
     type(SGGFDTDINFO_t) :: sgg
     type(media_matrices_t) :: media

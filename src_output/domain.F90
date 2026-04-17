@@ -1,6 +1,6 @@
-module mod_domain
+module domain_m
    use FDETYPES_m
-   use outputTypes
+   use outputTypes_m
    implicit none
 
    private
@@ -64,4 +64,4 @@ contains
       new_domain%domainType = UNDEFINED_DOMAIN
    end function 
 
-end module mod_domain
+end module domain_m

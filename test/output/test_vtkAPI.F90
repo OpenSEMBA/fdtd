@@ -1,12 +1,12 @@
 !==============================
-! mod_vtkAPI extended testsuite (class-based)
+! vtkAPI_m extended testsuite (class-based)
 !==============================
 
 !==============================
 ! Test 1: Structured grid basic allocation
 !==============================
 integer function test_vtkAPI_points_allocation() bind(C) result(error_cnt)
-   use mod_vtkAPI
+   use vtkAPI_m
    implicit none
    type(vtk_structured_grid), target :: grid
    class(vtk_grid), pointer :: grid_base
@@ -31,7 +31,7 @@ end function
 ! Test 2: Point scalar assignment
 !==============================
 integer function test_vtkAPI_point_scalar() bind(C) result(error_cnt)
-   use mod_vtkAPI
+   use vtkAPI_m
    implicit none
    type(vtk_structured_grid), target :: grid
    class(vtk_grid), pointer :: grid_base
@@ -56,7 +56,7 @@ end function
 ! Test 3: Point vector assignment
 !==============================
 integer function test_vtkAPI_point_vector() bind(C) result(error_cnt)
-   use mod_vtkAPI
+   use vtkAPI_m
    implicit none
    type(vtk_structured_grid), target :: grid
    class(vtk_grid), pointer :: grid_base
@@ -83,7 +83,7 @@ end function
 ! Test 4: Cell scalar assignment
 !==============================
 integer function test_vtkAPI_cell_scalar() bind(C) result(error_cnt)
-   use mod_vtkAPI
+   use vtkAPI_m
    implicit none
    type(vtk_structured_grid), target :: grid
    class(vtk_grid), pointer :: grid_base
@@ -108,7 +108,7 @@ end function
 ! Test 5: Cell vector assignment
 !==============================
 integer function test_vtkAPI_cell_vector() bind(C) result(error_cnt)
-   use mod_vtkAPI
+   use vtkAPI_m
    implicit none
    type(vtk_structured_grid), target :: grid
    class(vtk_grid), pointer :: grid_base
@@ -135,7 +135,7 @@ end function
 ! Test 6: VTS file creation
 !==============================
 integer function test_vtkAPI_vts_file_creation() bind(C) result(error_cnt)
-   use mod_vtkAPI
+   use vtkAPI_m
    use directoryUtils_m
    implicit none
    type(vtk_structured_grid), target :: grid
@@ -173,7 +173,7 @@ end function
 ! Test 7: VTU file creation with cells and point data
 !==============================
 integer function test_vtkAPI_vtu_file_creation() bind(C) result(error_cnt)
-   use mod_vtkAPI
+   use vtkAPI_m
    use directoryUtils_m
    implicit none
    type(vtk_unstructured_grid), target :: ugrid
@@ -223,7 +223,7 @@ end function
 ! Test 8: VTU file with cell data
 !==============================
 integer function test_vtkAPI_vtu_cell_data() bind(C) result(error_cnt)
-   use mod_vtkAPI
+   use vtkAPI_m
    implicit none
    type(vtk_unstructured_grid), target :: ugrid
    class(vtk_grid), pointer :: grid_base
@@ -255,7 +255,7 @@ end function
 ! Test 9: Verificación de VTS contenido
 !==============================
 integer function test_vtkAPI_vts_content() bind(C) result(error_cnt)
-   use mod_vtkAPI
+   use vtkAPI_m
    use directoryUtils_m
    implicit none
    type(vtk_structured_grid), target :: grid
@@ -324,7 +324,7 @@ end function
 ! Test 10: Verificación de VTU contenido
 !==============================
 integer function test_vtkAPI_vtu_content() bind(C) result(error_cnt)
-   use mod_vtkAPI
+   use vtkAPI_m
    use directoryUtils_m
    implicit none
    type(vtk_unstructured_grid), target :: ugrid

@@ -28,7 +28,7 @@ module FDETYPES_TOOLS
    public :: create_facesNF2FF
    public :: create_control_flags
    public :: add_simulation_material
-   public :: assing_material_id_to_media_matrix_coordinate
+   public :: assign_material_id_to_media_matrix_coordinate
    !===========================
 
    !===========================
@@ -432,7 +432,7 @@ contains
 
    end subroutine add_media_data_to_sgg
 
-   subroutine assing_material_id_to_media_matrix_coordinate(media, fieldComponent, i, j, k, materialId)
+   subroutine assign_material_id_to_media_matrix_coordinate(media, fieldComponent, i, j, k, materialId)
       type(media_matrices_t), intent(inout) :: media
       integer(kind=SINGLE), intent(in) :: fieldComponent, i, j, k, materialId
       selectcase (fieldComponent)
@@ -444,7 +444,7 @@ contains
       case (iHz); media%sggMiHz(i, j, k) = materialId
       end select
 
-   end subroutine assing_material_id_to_media_matrix_coordinate
+   end subroutine assign_material_id_to_media_matrix_coordinate
 
    function get_default_mediadata() result(res)
       implicit none

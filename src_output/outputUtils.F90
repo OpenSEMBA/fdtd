@@ -1,8 +1,8 @@
-module mod_outputUtils
+module outputUtils_m
    use FDETYPES_m
-   use outputTypes
-   use mod_domain
-   use report
+   use outputTypes_m
+   use domain_m
+   use report_m
    implicit none
    integer(kind=SINGLE), parameter :: FILE_UNIT = 400
 
@@ -672,4 +672,4 @@ contains
       call create_file_with_path(filePathReference, err)
    end subroutine
 
-end module mod_outputUtils
+end module outputUtils_m

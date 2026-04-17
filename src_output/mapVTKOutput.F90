@@ -1,12 +1,12 @@
-module mod_mapVTKOutput
+module mapVTKOutput_m
    use FDETYPES_m
-   use outputTypes
-   use mod_outputUtils
+   use outputTypes_m
+   use outputUtils_m
    use directoryUtils_m
    use allocationUtils_m
-   use mod_vtkAPI
-   use mod_volumicProbeUtils
-   use Report
+   use vtkAPI_m
+   use volumicProbeUtils_m
+   use report_m
 
    implicit none
 contains
@@ -340,5 +340,5 @@ contains
 
    end function
 
-end module mod_mapVTKOutput
+end module mapVTKOutput_m
 

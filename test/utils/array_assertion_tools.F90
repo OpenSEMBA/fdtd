@@ -1,4 +1,4 @@
-module mod_arrayAssertionTools
+module arrayAssertionTools_m
    use FDETYPES_m
    implicit none
    real(RKIND), parameter :: tol = 1.0e-12_RKIND
@@ -334,4 +334,4 @@ contains
       end if
    end function
 
-end module mod_arrayAssertionTools
+end module arrayAssertionTools_m

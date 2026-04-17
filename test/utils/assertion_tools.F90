@@ -1,6 +1,6 @@
-module mod_assertionTools
+module assertionTools_m
    use FDETYPES_m
-   use mod_arrayAssertionTools
+   use arrayAssertionTools_m
    use iso_fortran_env, only: real32, real64
    implicit none
 
@@ -192,4 +192,4 @@ contains
       if (ios /= 0) err = 1
    end function
 
-end module mod_assertionTools
+end module assertionTools_m

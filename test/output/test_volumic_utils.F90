@@ -3,10 +3,10 @@
 !--------------------------------------------------------------------------------
 integer function test_count_required_coords() bind(c) result(err)
    use FDETYPES_m
-   use outputTypes
-   use mod_volumicProbeUtils
-   use mod_assertionTools
-   use mod_testOutputUtils
+   use outputTypes_m
+   use volumicProbeUtils_m
+   use assertionTools_m
+   use testOutputUtils_m
    implicit none
 
    type(cell_coordinate_t) :: lowerBound, upperBound
@@ -37,11 +37,11 @@ end function test_count_required_coords
 !--------------------------------------------------------------------------------
 integer function test_store_required_coords() bind(c) result(err)
    use FDETYPES_m
-   use outputTypes
-   use mod_outputUtils
-   use mod_volumicProbeUtils
-   use mod_assertionTools
-   use mod_testOutputUtils
+   use outputTypes_m
+   use outputUtils_m
+   use volumicProbeUtils_m
+   use assertionTools_m
+   use testOutputUtils_m
    implicit none
 
    type(cell_coordinate_t) :: lowerBound, upperBound
@@ -79,9 +79,9 @@ end function test_store_required_coords
 !--------------------------------------------------------------------------------
 integer function test_is_valid_point_current() bind(c) result(err)
    use FDETYPES_m
-   use outputTypes
-   use mod_volumicProbeUtils
-   use mod_testOutputUtils
+   use outputTypes_m
+   use volumicProbeUtils_m
+   use testOutputUtils_m
    implicit none
 
    type(problem_info_t) :: problemInfo
@@ -108,9 +108,9 @@ end function test_is_valid_point_current
 !--------------------------------------------------------------------------------
 integer function test_is_valid_point_field() bind(c) result(err)
      use FDETYPES_m
-     use outputTypes
-     use mod_volumicProbeUtils
-     use mod_testOutputUtils
+     use outputTypes_m
+     use volumicProbeUtils_m
+     use testOutputUtils_m
      implicit none
 
      type(problem_info_t) :: problemInfo

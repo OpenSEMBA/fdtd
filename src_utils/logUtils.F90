@@ -1,4 +1,4 @@
-module mod_logUtils
+module logUtils_m
    implicit none
 
 contains
@@ -87,4 +87,4 @@ contains
          write (11, '(a)') SEPARADOR
       end if
    end subroutine printSeparator
-end module mod_logUtils
+end module logUtils_m

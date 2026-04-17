@@ -1,4 +1,4 @@
-module mod_xdmfAPI
+module xdmfAPI_m
    use HDF5
    implicit none
 
@@ -135,12 +135,12 @@ contains
       integer, intent(in) :: unit, offset(4), stride(4), selection(4), h5_dimension(4)
       character(len=*), intent(in) :: h5_file_path, h5_data_path
       write (unit, '(A,I0,1X,I0,1X,I0,1X,I0,A)') '<DataItem ItemType="HyperSlab" Dimensions="',selection(1), selection(2), selection(3), selection(4),'Format="XML">'
-      call xdmf_write_h5_acces_data_item(unit, offset, stride, selection)
+      call xdmf_write_h5_access_data_item(unit, offset, stride, selection)
       call xdmf_write_h5_data_path(unit, h5_dimension, h5_file_path, h5_data_path)
       call xdmf_close_data_item(unit)
    end subroutine xdmf_write_hyperslab_data_item
 
-   subroutine xdmf_write_h5_acces_data_item(unit, offset, stride, selection)
+   subroutine xdmf_write_h5_access_data_item(unit, offset, stride, selection)
       !Used on cases where we acces parts of an h5 array
       integer, intent(in) :: unit, offset(4), stride(4), selection(4)
       write (unit, '(A)'                   ) '<DataItem Dimensions="3 4" Format="XML">'
@@ -148,7 +148,7 @@ contains
       write (unit, '(I0,1X,I0,1X,I0,1X,I0)') stride(1), stride(2), stride(3), stride(4) 
       write (unit, '(I0,1X,I0,1X,I0,1X,I0)') selection(1), selection(2), selection(3), selection(4) 
       call xdmf_close_data_item(unit)
-   end subroutine xdmf_write_h5_acces_data_item
+   end subroutine xdmf_write_h5_access_data_item
 
    subroutine xdmf_write_h5_data_path(unit, h5_dimension, h5_file_path, h5_data_path)
       integer, intent(in) :: unit, h5_dimension(4)
@@ -558,4 +558,4 @@ contains
 
    end subroutine
 
-end module mod_xdmfAPI
+end module xdmfAPI_m

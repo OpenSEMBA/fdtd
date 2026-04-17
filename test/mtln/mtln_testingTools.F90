@@ -1,4 +1,4 @@
-module mtln_testingTools_mod
+module mtln_testingTools_m
     use iso_c_binding
     use mtl_m, only: mtl_t
     use network_m
@@ -182,5 +182,5 @@ contains
     end function 
 
 
- end module mtln_testingTools_mod
+ end module mtln_testingTools_m
  

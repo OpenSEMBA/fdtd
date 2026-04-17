@@ -1,4 +1,4 @@
-module mod_sggMethods
+module sggMethods_m
    use FDETYPES_m
    implicit none
    private
@@ -413,4 +413,4 @@ contains
 
    end subroutine sgg_add_observation
    
-end module mod_sggMethods
+end module sggMethods_m

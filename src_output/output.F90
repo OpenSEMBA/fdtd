@@ -1,17 +1,17 @@
-module output
+module output_m
    use FDETYPES_m
-   use Report
-   use mod_domain
-   use mod_outputUtils
-   use mod_pointProbeOutput
-   use mod_wireProbeOutput
-   use mod_bulkProbeOutput
-   use mod_movieProbeOutput
-   use mod_frequencySliceProbeOutput
-   use mod_farFieldOutput
-   use mtln_solver_mod, only: mtln_solver_t => mtln_t
-   use Wire_bundles_mtln_mod, only: GetSolverPtr
-   use mod_mapVTKOutput
+   use report_m
+   use domain_m
+   use outputUtils_m
+   use pointProbeOutput_m
+   use wireProbeOutput_m
+   use bulkProbeOutput_m
+   use movieProbeOutput_m
+   use frequencySliceProbeOutput_m
+   use farFieldOutput_m
+   use mtln_solver_m, only: mtln_solver_t => mtln_t
+   use Wire_bundles_mtln_m, only: GetSolverPtr
+   use mapVTKOutput_m
    
 
    implicit none
@@ -152,7 +152,7 @@ contains
       !do ii = 1, sgg%NumberRequest
       !do i = 1, sgg%Observation(ii)%nP
       !   call eliminate_unnecesary_observation_points(sgg%Observation(ii)%P(i), output(ii)%item(i), &
-      !     sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE, control%layoutnumber, control%size)
+      !     sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE, control%layoutnumber, control%num_procs)
       !end do
       !end do
 
@@ -503,11 +503,11 @@ contains
       integer :: iostat, i, unit
 
       write (whoamishort, '(i5)') control%layoutnumber + 1
-      write (whoami, '(a,i5,a,i5,a)') '(', control%layoutnumber + 1, '/', control%size, ') '
+      write (whoami, '(a,i5,a,i5,a)') '(', control%layoutnumber + 1, '/', control%num_procs, ') '
       write (outputRequestFile, *) trim(adjustl(control%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt'
 
       call create_file_with_path(outputRequestFile, iostat)
-      if (iostat /= 0) call StopOnError(control%layoutnumber, control%size, 'Error while creating new outputrequestRegister file...')
+      if (iostat /= 0) call StopOnError(control%layoutnumber, control%num_procs, 'Error while creating new outputrequestRegister file...')
 
       open (newunit=unit, file=trim(adjustl(outputRequestFile)), status='replace', action='write', position='append', iostat=iostat)
       do i = 1, outputCount
@@ -542,4 +542,4 @@ contains
       close (unit)
    end subroutine
 
-end module output
+end module output_m

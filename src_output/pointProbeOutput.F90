@@ -1,9 +1,9 @@
-module mod_pointProbeOutput
+module pointProbeOutput_m
    use FDETYPES_m
    use utils_m
-   use outputTypes
-   use mod_domain
-   use mod_outputUtils
+   use outputTypes_m
+   use domain_m
+   use outputUtils_m
 
    implicit none
 

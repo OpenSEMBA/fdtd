@@ -2,7 +2,7 @@ integer function test_preprocess_conductors_before_cable() bind(C) result(error_
 
     use mtl_m 
     use mtln_preprocess_m, only: conductorsInLevel, findConductorsBeforeCable
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
 
     type(mtl_t) :: line1, line2, line3_1, line3_2, line4
     type(transmission_line_bundle_t) :: line_bundle
@@ -39,7 +39,7 @@ integer function test_preprocess_conductors_in_level() bind(C) result(error_cnt)
 
     use mtl_m 
     use mtln_preprocess_m, only: conductorsInLevel, findConductorsBeforeCable
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
 
     type(mtl_t) :: line1, line2, line3_1, line3_2, line4
     type(transmission_line_bundle_t) :: line_bundle
@@ -70,7 +70,7 @@ integer function test_preprocess_zt_conductor_ranges() bind(C) result(error_cnt)
     use mtl_m 
     use mtl_bundle_m 
     use mtln_preprocess_m, only: conductorsInLevel, findOuterConductorNumber, findInnerConductorRange
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
 
     type :: range
         integer, dimension(:), allocatable :: idx
@@ -142,7 +142,7 @@ integer function test_preprocess_zt_conductor_ranges_2() bind(C) result(error_cn
     use mtl_m 
     use mtl_bundle_m 
     use mtln_preprocess_m, only: conductorsInLevel, findOuterConductorNumber, findInnerConductorRange
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
 
     type :: range
         integer, dimension(:), allocatable :: idx
