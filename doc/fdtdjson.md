@@ -7,11 +7,11 @@ This document assumes that you are familiar with the basic JSON notation, a brie
 
 The following are examples of valid inputs:
 
- 1. An empty space illuminated by a plane wave: [planewave.fdtd.json](testData/input_examples/planewave.fdtd.json). The field at a point close to the center is recorded.
- 2. A thin straight wire illuminated by a plane wave: [holland1981.fdtd.json](testData/input_examples/holland1981.fdtd.json) which aims to replicate the case described in https://doi.org/10.1109/TEMC.1981.303899. It contains a probe which records the wire at the middle of the wire.
- 3. A current injection which mimics a lightning strike on a square metallic surface: [currentinjection.fdtd.json](testData/input_examples/currentInjection.fdtd.json). It contains two bulk current probes to measure the current at the entry and exit lines.
- 4. A shielded pair of wires fed by a voltage source in one of its ends: [shieldedPair.fdtd.json](testData/input_examples/shieldedPair.fdtd.json). The interior of the shield uses a multiconductor transmission line (MTL) algorithm to evolve the common mode currents which are induced in the shield and propagated inside using a transfer impedance.
- 5. A multiconductor transmission line network (MTLN) case which includes three cable bundles with a shared junction: [mtln.fdtd.json](testData/input_examples/mtln.fdtd.json).
+ 1. An empty space illuminated by a plane wave: [planewave.fdtd.json](https://github.com/OpenSEMBA/fdtd/blob/main/testData/input_examples/planewave.fdtd.json). The field at a point close to the center is recorded.
+ 2. A thin straight wire illuminated by a plane wave: [holland1981.fdtd.json](https://github.com/OpenSEMBA/fdtd/blob/main/testData/input_examples/holland1981.fdtd.json) which aims to replicate the case described in https://doi.org/10.1109/TEMC.1981.303899. It contains a probe which records the wire at the middle of the wire.
+ 3. A current injection which mimics a lightning strike on a square metallic surface: [currentInjection.fdtd.json](https://github.com/OpenSEMBA/fdtd/blob/main/testData/input_examples/currentInjection.fdtd.json). It contains two bulk current probes to measure the current at the entry and exit lines.
+ 4. A shielded pair of wires fed by a voltage source in one of its ends: [shieldedPair.fdtd.json](https://github.com/OpenSEMBA/fdtd/blob/main/testData/input_examples/shieldedPair.fdtd.json). The interior of the shield uses a multiconductor transmission line (MTL) algorithm to evolve the common mode currents which are induced in the shield and propagated inside using a transfer impedance.
+ 5. A multiconductor transmission line network (MTLN) case which includes three cable bundles with a shared junction: [mtln.fdtd.json](https://github.com/OpenSEMBA/fdtd/blob/main/testData/input_examples/mtln.fdtd.json).
 
 ## FDTD-JSON objects description
 All units are assumed to be SI-MKS, except when specified otherwise.
@@ -50,8 +50,8 @@ Additionally, it may contain the following optional entry:
 ### `[background]`
 This object sets the background electromagnetic media properties to an specified value it can contain the following objects entries:
 
-+ `[absolutePermittivity]`: a real number indicating the value of background permittivity. Defaults to the value specified in EPSILON_VACUUM at [fdtypes.F90](../src_main_pub/fdetypes.F90).
-+ `[absolutePermeability]`: a real number indicating the value of background permeability. Defaults to the value specified in MU_VACUUM at [fdtypes.F90](../src_main_pub/fdetypes.F90).
++ `[absolutePermittivity]`: a real number indicating the value of background permittivity. Defaults to the value specified in EPSILON_VACUUM at [fdetypes.F90](https://github.com/OpenSEMBA/fdtd/blob/main/src_main_pub/fdetypes.F90).
++ `[absolutePermeability]`: a real number indicating the value of background permeability. Defaults to the value specified in MU_VACUUM at [fdetypes.F90](https://github.com/OpenSEMBA/fdtd/blob/main/src_main_pub/fdetypes.F90).
 
 ### `[boundary]`
 This specifies the boundaries which will be used to terminate the computational domain. 
@@ -90,7 +90,7 @@ These objects must contain a `<type>` label which can be:
 
 All the geometrical information of the simulation case is exclusively stored by the `mesh` object. It is a JSON object which contains three objects: a `<grid>`, a list of `[coordinates]` and a list of `[elements]`.
 
-```json
+```text
 "mesh": {
     "grid": { ... },       
     "coordinates": [ ... ],
@@ -147,7 +147,7 @@ The `elements` entry contains an array of JSON objects, each of which represents
 
   + `node`, representing a point in space. Elements with this type include a `<coordinateIds>` entry which is an array of a single integer representing the `id` of a coordinate and which must exist in the within the `mesh` `coordinates` list.
   + `polyline`, representing an oriented collection of segments. It must contain a list `<coordinateIds>` with at least two coordinates.
-  + `cell`, containing a list of one or more `<intervals>` defined following the [interval convention](#the-interval-convention).
+  + `cell`, containing a list of one or more `<intervals>` defined following the [interval convention](#interval-convention).
   + + If `cell` represents a conformal element it will contain a list of zero or more <intervals> and a list of <triangles>,  describing a close outwards-pointing surface. 
   + + In this case, the `cell` must contain an entry `subtype`, which can be `surface` or `volume`, according to the dimension of the geometrical entity.
 
@@ -175,6 +175,7 @@ Below there is an example of a mesh object which includes several types of eleme
 }
 ```
 
+(interval-convention)=
 ##### The `interval` convention
 
 A `interval` is defined by a pair of two triplets of integer numbers $\mathbf{a} = \{a_x, a_y, a_z\}$ and $\mathbf{b} = \{b_x, b_y, b_z\}$. Each of these triplets refers to a cell and the combination of the two represents a region formed by the closed-open intervals $[a_x, b_x) \times [a_y, b_y) \times [a_z, b_z)$.
@@ -376,6 +377,7 @@ Materials of this type must contain:
 ```
 
 
+(shieldedmultiwire)=
 ### `shieldedMultiwire`
 
 A `shieldedMultiwire`, models $N+1$ electrical wires inside a bundled. The voltages and currents on these wires are solved by a multiconductor transmission lines (MTLN) solver described in:
@@ -418,6 +420,7 @@ They must contain the following entries:
 }
 ```
 
+(unshieldedmultiwire)=
 ### `unshieldedMultiwire`
 
 A `unshieldedMultiwire`, models a bundle of $N$ electrical wires. The charges and currents on these wires are solved using the model described in:
@@ -433,6 +436,7 @@ They must contain the following entries:
         - Two arrays, `<electric>` and `<magnetic>` in which each contain a [field reconstruction object](#field-reconstruction) described below. They must contain a $N$ multipolar expansions, one for each conductor. Each entry assumes that the $n$-th conductor has a prescribed potential of $1 \, \text{V}$ and the rest are floating.
 + `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
 
+(field-reconstruction)=
 #### Field reconstruction
 
 The field reconstruction objects contains information necessary to calculate the in-cell parameters for an `unshieldedMultiwire` with $N$ conductors. The `electric` and `magnetic`potentials are used to compute the in-cell capacitances and in-cell inductances, respectively. Each contains information to perform a multipolar expansion based on
@@ -528,7 +532,7 @@ In this case, the three wires of a e-conductor cable are connected to the nodes 
 The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire`, a `shieldedMultiwire` or an `unshieldedMultiwire`. The `connector` can have the following properties:
 
 + `[resistances]`, an array of real numbers which will be converted to resistances per unit length and will replace the resistancePerMeter of that segment.
-+ `[transferImpedancesPerMeter]`, an array of [transferImpedancePerMeter], as described in the [shieldedMultiwire](#shieldedMultiwire) section. 
++ `[transferImpedancesPerMeter]`, an array of [transferImpedancePerMeter], as described in the [shieldedMultiwire](#shieldedmultiwire) section. 
 
 The most common situation will be having the connector of a shielded bundle. In that case, the arrays have a single component. However, the `connector` can describe the connections of a (unshielded) bundle of $N$ shielded conductors. In that case, the `connector` has to describe the connections, if any, of the $N$ shielded conductors.
 
@@ -572,7 +576,7 @@ Associations with cables can contain the following inputs:
 
 + `<initialTerminalId>` and `<endTerminalId>` which must be present within the `materials` list of type. These entries indicate the lumped circuits connected at the ends of the cable.
 + `[initialConnectorId]` and `[endConnectorId]` entries which must point to materials of type `connector` and are assigned to the last segments of the corresponding ends of the cable.
-+ Its `materialId` must point to a [`wire`](#wire), a [`shieldedMultiwire`](#shieldedMultiwire) or an [`unshieldedMultiwire`](#unshieldedMultiwire) material. If it points to a `shieldedMultiwire`, it must also contain an entry named `<containedWithinElementId>` which indicates the `polyline` in which this `shieldedMultiwire` is embedded.
++ Its `materialId` must point to a [`wire`](#wire), a [`shieldedMultiwire`](#shieldedmultiwire) or an [`unshieldedMultiwire`](#unshieldedmultiwire) material. If it points to a `shieldedMultiwire`, it must also contain an entry named `<containedWithinElementId>` which indicates the `polyline` in which this `shieldedMultiwire` is embedded.
 
 **Example:**
 
@@ -764,7 +768,7 @@ Additionally, a `domain` can contain a `[magnitudeFile]` as specified in [source
 
 This entry is an array which stores all the electromagnetic sources of the simulation case. Each source is a JSON object which must contain the following entries:
 
-+ `<magnitudeFile>` contains a relative path to the plain text file which will be used as a magnitude for this source. This file must contain two columns, with the first stating the time and the second one the magnitude value; an example magnitude file can be found at [gauss.exc](testData/excitations/gauss.exc).
++ `<magnitudeFile>` contains a relative path to the plain text file which will be used as a magnitude for this source. This file must contain two columns, with the first stating the time and the second one the magnitude value; an example magnitude file can be found at [gauss.exc](https://github.com/OpenSEMBA/fdtd/blob/main/testData/excitations/gauss.exc).
 + `<type>` must be a label of the ones defined below. Some examples of source `type` are `planewave` or `nodalSource`.
 + `<elementIds>` is an array of integers which must exist within the `mesh` `elements` list. These indicate the geometrical place where this source is located. The `type` and number of the allowed elements depends on the source `type` and can be check in the descriptions of each source object, below.
 
