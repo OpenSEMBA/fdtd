@@ -64,7 +64,6 @@ module SEMBA_FDTD_m
       procedure :: end => semba_end
       procedure :: create_solver => semba_create_solver
       procedure :: update_after_simulation => semba_update_after_simulation
-      procedure :: nfde2sgg => semba_nfde2sgg
       procedure, private :: data_loader => semba_data_loader
       procedure, private :: write_paraview_tag_info => semba_write_paraview_tag_info
    end type semba_fdtd_t 
@@ -109,8 +108,8 @@ contains
 
       call initEntrada(this%l) 
 
-      this%eps0= 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
-      this%mu0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
+      this%eps0= EPSILON_VACUUM
+      this%mu0 = MU_VACUUM
       this%cluz=1.0_RKIND/sqrt(this%eps0*this%mu0)
       
       call OnPrint
@@ -293,8 +292,7 @@ contains
    if (status /= 0) then
        call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Error in searching input file. Correct and remove pause file',.true.); goto 652
    end if
-!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!
+
    call print_credits(this%l)
 
 #ifdef CompileWithMPI
@@ -318,7 +316,7 @@ contains
    call this%data_loader(this%l%filefde, NFDE_FILE, parser)
 
    this%sgg%extraswitches=parser%switches
-!!!da preferencia a los switches por linea de comando
+   
    call getcommandargument (this%l%chain2, 1, chaindummy, this%l%length, statuse, getBinaryPath())
 
    this%l%chain2=trim(adjustl(this%l%chain2))
@@ -385,7 +383,7 @@ contains
 
          call print11 (this%l%layoutnumber, SEPARADOR//SEPARADOR//SEPARADOR)
          !!!!!!!!!!!!!!!!!!!!!!
-         call this%nfde2sgg(parser, dtantesdecorregir)
+         dtantesdecorregir = nfde2sgg(this, parser)
          this%l%fatalerror=this%l%fatalerror.or.this%l%fatalerrornfde2sgg
          !!!!!!!!!!!!!!!!!!!!!
 #ifdef CompileWithMPI
@@ -409,7 +407,7 @@ contains
          call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
       end if
-      write(dubuf,*) '[OK] Ended Conformal Mesh';  call print11(this%l%layoutnumber,dubuf)
+      
       if (this%l%finaltimestep==0) this%l%finaltimestep=this%sgg%TimeSteps !no quitar
       if (this%l%forcesteps) then
          this%sgg%TimeSteps = this%l%finaltimestep
@@ -463,13 +461,7 @@ contains
 #endif
             continue
          end if
-   !altair no conformal sgbc 201119
-#ifdef NoConformalSGBC
-         if (this%sgg%Med(i)%Is%sgbc .and. this%l%input_conformal_flag) then
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Conformal sgbc not allowed. ')
-         end if
-#endif
-   !    
+      !    
       end do
       
       
@@ -495,7 +487,6 @@ contains
             call stoponerror (this%l%layoutnumber, this%l%num_procs, 'this%l%resume -r currently unsupported by conformal solver',.true.); statuse=-1; !return
       end if
       !
-   !!!SOME FINAL REPORTING
 
       if (this%l%layoutnumber==0) then
          write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
@@ -756,10 +747,10 @@ contains
    end subroutine semba_init  
 
 
-   subroutine semba_nfde2sgg(this, parser, dtantesdecorregir)
-      class(semba_fdtd_t), intent(inout) :: this
+   function nfde2sgg(this, parser) result(dtantesdecorregir)
+      type(semba_fdtd_t), intent(inout) :: this
       type(Parseador_t), pointer, intent(in) :: parser
-      real(kind=RKIND), intent(out) :: dtantesdecorregir
+      real(kind=RKIND) :: dtantesdecorregir
 
       real(kind=RKIND) :: dt, finaldt
       real(kind=RKIND) :: dxmin, dymin, dzmin, dtlay
@@ -990,7 +981,7 @@ contains
          this%sgg%SINPMLSweep(field)%ZE = Min (this%SINPML_fullsize(field)%ZE, this%sgg%Sweep(field)%ZE)
       end do
       return
-   end subroutine semba_nfde2sgg
+   end function nfde2sgg
 
 
    subroutine semba_data_loader(this, filename, NFDE_FILE, parsedProblem)
