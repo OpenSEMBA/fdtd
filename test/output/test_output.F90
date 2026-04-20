@@ -349,10 +349,11 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    call flush_point_probe_output(probe)
 
    ! Assertions
+   unit = 1
    open (unit=unit, file=probe%filePathTime, status='old', action='read')
    test_err = test_err + assert_file_content(unit, expectedTime, 2*n, 2, 1e-06_RKIND)
    close (unit)
-
+   unit = 2
    open (unit=unit, file=probe%filePathFreq, status='old', action='read')
    test_err = test_err + assert_file_content(unit, expectedFreq, n, 2, 1e-06_RKIND)
    close (unit)
