@@ -514,14 +514,14 @@ contains
       ! -----------------------------------------------------------
 
       ! Shift for Term A
-      i_shift_a = i - merge(1, 0, curl_component_a == iex)
-      j_shift_a = j - merge(1, 0, curl_component_a == iey)
-      k_shift_a = k - merge(1, 0, curl_component_a == iez)
+      i_shift_a = i - merge(1, 0, curl_component_b == iex)
+      j_shift_a = j - merge(1, 0, curl_component_b == iey)
+      k_shift_a = k - merge(1, 0, curl_component_b == iez)
 
       ! Shift for Term B
-      i_shift_b = i - merge(1, 0, curl_component_b == iex)
-      j_shift_b = j - merge(1, 0, curl_component_b == iey)
-      k_shift_b = k - merge(1, 0, curl_component_b == iez)
+      i_shift_b = i - merge(1, 0, curl_component_a == iex)
+      j_shift_b = j - merge(1, 0, curl_component_a == iey)
+      k_shift_b = k - merge(1, 0, curl_component_a == iez)
 
       ! -----------------------------------------------------------
       ! 3. Calculate J (Curl Difference)
@@ -529,11 +529,11 @@ contains
       ! -----------------------------------------------------------
 
       res = &
-         ! TERM B: (Positive term in the difference)
-         (get_delta(curl_component_b, i, j, k, fields_reference)* &
+         ! TERM B: (Negative term in the difference)
+         - (get_delta(curl_component_b, i, j, k, fields_reference)* &
       ( get_field(curl_component_b + 3, i, j, k, fields_reference) - get_field(curl_component_b + 3, i_shift_b, j_shift_b, k_shift_b, fields_reference) ) &
-          ) - &
-         ! TERM A: (Negative term in the difference)
+          ) + &
+         ! TERM A: (Positive term in the difference)
          (get_delta(curl_component_a, i, j, k, fields_reference)* &
       ( get_field(curl_component_a + 3, i, j, k, fields_reference) - get_field(curl_component_a + 3, i_shift_a, j_shift_a, k_shift_a, fields_reference) ) &
           )

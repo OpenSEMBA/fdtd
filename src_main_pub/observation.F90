@@ -3419,8 +3419,8 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         i2 = i - merge(1, 0, 1 + mod(field, 3) == iEx)
         j2 = j - merge(1, 0, 1 + mod(field, 3) == iEy)
         k2 = k - merge(1, 0, 1 + mod(field, 3) == iEz)
- res =  getDelta(1+mod(field,3)  , i, j, k) * (-getField(1+mod(field,3) + 3,  i,j,k) + getField(1+mod(field,3) + 3,  i1,j1,k1))  + &
-             getDelta(1+mod(field+1,3), i, j, k) * ( getField(1+mod(field+1,3) + 3,i,j,k) - getField(1+mod(field+1,3) + 3,i2,j2,k2))
+        res =   getDelta(1+mod(field+1,3), i, j, k) * (getField(1+mod(field+1,3) + 3,i,j,k) - getField(1+mod(field+1,3) + 3,i2,j2,k2)) + &
+              - getDelta(1+mod(field,3)  , i, j, k) * (getField(1+mod(field,3) + 3,  i,j,k) - getField(1+mod(field,3) + 3,  i1,j1,k1))
       end function
 
       function getField(field, i, j, k) result(res)

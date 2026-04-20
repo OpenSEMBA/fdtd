@@ -534,6 +534,8 @@ integer function test_update_movie_probe() bind(c) result(err)
    real(kind=RKIND_tiempo)          :: dt = 0.1_RKIND_tiempo
    integer(kind=SINGLE)             :: nTimeSteps = 100_SINGLE
 
+   real(kind=RKIND), dimension(:), pointer   :: x_steps, y_steps, z_steps
+
    type(dummyFields_t), target     :: dummyFields
    type(fields_reference_t)        :: fields
 
@@ -571,6 +573,13 @@ integer function test_update_movie_probe() bind(c) result(err)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
    allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
    call sgg_set_Alloc(dummysgg, allocationRange)
+
+   allocate(x_steps(6),source=1.0_RKIND)
+   allocate(y_steps(6),source=1.0_RKIND)
+   allocate(z_steps(6),source=1.0_RKIND)
+   call sgg_set_LineX(dummysgg, x_steps)
+   call sgg_set_LineY(dummysgg, y_steps)
+   call sgg_set_LineZ(dummysgg, z_steps)
 
    movieObservable = create_movie_observation(2, 2, 2, 5, 5, 5, iCur)
    call sgg_add_observation(dummysgg, movieObservable)
@@ -619,13 +628,13 @@ integer function test_update_movie_probe() bind(c) result(err)
    call update_outputs(dummyControl, dummysgg%tiempo, 1_SINGLE, fields)
 
    test_err = test_err + assert_real_equal(outputs(1)%movieProbe%yValueForTime(1, 1), &
-                                           0.2_RKIND, 1e-5_RKIND, 'Value error')
+                                           -0.2_RKIND, 1e-5_RKIND, 'Value error')
 
    test_err = test_err + assert_real_equal(outputs(1)%movieProbe%yValueForTime(1, 2), &
-                                           0.0_RKIND, 1e-5_RKIND, 'Value error')
+                                           0.4_RKIND, 1e-5_RKIND, 'Value error')
 
    test_err = test_err + assert_real_equal(outputs(1)%movieProbe%yValueForTime(1, 3), &
-                                           0.2_RKIND, 1e-5_RKIND, 'Value error')
+                                           0.0_RKIND, 1e-5_RKIND, 'Value error')
 
    test_err = test_err + assert_real_equal(outputs(1)%movieProbe%yValueForTime(1, 4), &
                                            0.0_RKIND, 1e-5_RKIND, 'Value error')
@@ -681,6 +690,8 @@ integer function test_flush_movie_probe() bind(c) result(err)
    real(kind=RKIND_tiempo)          :: dt = 0.1_RKIND_tiempo
    integer(kind=SINGLE)             :: nTimeSteps = 100_SINGLE
 
+   real(kind=RKIND), dimension(:), pointer   :: x_steps, y_steps, z_steps
+   
    integer(kind=SINGLE)             :: expectedNumMeasurments
    integer(kind=SINGLE)             :: mpidir = 3
    integer(kind=SINGLE)             :: iter
@@ -717,6 +728,13 @@ integer function test_flush_movie_probe() bind(c) result(err)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
    allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
    call sgg_set_Alloc(dummysgg, allocationRange)
+
+   allocate(x_steps(6),source=1.0_RKIND)
+   allocate(y_steps(6),source=1.0_RKIND)
+   allocate(z_steps(6),source=1.0_RKIND)
+   call sgg_set_LineX(dummysgg, x_steps)
+   call sgg_set_LineY(dummysgg, y_steps)
+   call sgg_set_LineZ(dummysgg, z_steps)
 
    movieCurrentObservable = create_movie_observation(2, 2, 2, 5, 5, 5, iCur)
    call sgg_add_observation(dummysgg, movieCurrentObservable)
