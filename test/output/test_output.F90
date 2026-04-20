@@ -404,6 +404,8 @@ integer function test_init_movie_probe() bind(c) result(err)
    real(kind=RKIND_tiempo)          :: dt = 0.1_RKIND_tiempo
    integer(kind=SINGLE)             :: nTimeSteps = 100_SINGLE
 
+   real(kind=RKIND), dimension(:), pointer   :: x_steps, y_steps, z_steps
+
    integer(kind=SINGLE)             :: expectedNumMeasurments
    integer(kind=SINGLE)             :: mpidir = 3
    logical                          :: ThereAreWires = .false.
@@ -444,6 +446,13 @@ integer function test_init_movie_probe() bind(c) result(err)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
    allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
    call sgg_set_Alloc(dummysgg, allocationRange)
+
+   allocate(x_steps(6),source=1.0_RKIND)
+   allocate(y_steps(6),source=1.0_RKIND)
+   allocate(z_steps(6),source=1.0_RKIND)
+   call sgg_set_LineX(dummysgg, x_steps)
+   call sgg_set_LineY(dummysgg, y_steps)
+   call sgg_set_LineZ(dummysgg, z_steps)
 
    movieObservable = create_movie_observation(2, 2, 2, 5, 5, 5, iCur)
    call sgg_add_observation(dummysgg, movieObservable)
