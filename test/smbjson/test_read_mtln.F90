@@ -54,7 +54,7 @@ contains
 
       ! Expected sources.
       allocate(expected%nodSrc%NodalSource(1))
-      expected%nodSrc%n_C1P_max = 0
+      expected%nodSrc%n_C1P_max = 1
       expected%nodSrc%n_C2P_max = 1
       expected%nodSrc%n_nodSrc = 1
       expected%nodSrc%n_nodSrc_max = 1
@@ -62,8 +62,6 @@ contains
       expected%nodSrc%NodalSource(1)%isElec = .true.
       expected%nodSrc%NodalSource(1)%isHard = .false.
       expected%nodSrc%NodalSource(1)%isInitialValue = .false.
-      expected%nodSrc%NodalSource(1)%n_C1P = 0
-      allocate(expected%nodSrc%NodalSource(1)%c1P(0))
       expected%nodSrc%NodalSource(1)%n_C2P = 1
       allocate(expected%nodSrc%NodalSource(1)%c2P(1))
       expected%nodSrc%NodalSource(1)%c2P(1)%xi = 2
@@ -76,7 +74,7 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%yc = 0
       expected%nodSrc%NodalSource(1)%c2P(1)%zc = 0
       expected%nodSrc%NodalSource(1)%c2P(1)%or = 1
-      expected%nodSrc%NodalSource(1)%c2P(1)%tag = "DistributedSource"
+      expected%nodSrc%NodalSource(1)%c2P(1)%tag = ''
       
             
 
