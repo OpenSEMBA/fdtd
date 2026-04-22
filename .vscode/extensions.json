@@ -18,6 +18,7 @@
 		// Testing
 		"matepek.vscode-catch2-test-adapter",
 		"fredericbonnet.cmake-test-adapter",
+		"ms-python.python",
 
 		// Git
 		"mhutchie.git-graph",
@@ -25,7 +26,8 @@
 
 		// GitHub Copilot
 		"github.copilot",
-		"github.copilot-chat"
+		"github.copilot-chat",
+		"ms-toolsai.jupyter"
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
 	"unwantedRecommendations": [
