@@ -65,6 +65,11 @@ jobs:
             git -C "${path}" remote set-branches --add origin '*'
             git -C "${path}" fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*' >/dev/null
 
+            # actions/checkout can leave submodules shallow; unshallow to make ancestry checks reliable.
+            if git -C "${path}" rev-parse --is-shallow-repository | grep -q true; then
+              git -C "${path}" fetch --unshallow --no-tags origin >/dev/null
+            fi
+
             default_ref="$(git -C "${path}" ls-remote --symref origin HEAD | awk '/^ref:/ {print $2}' || true)"
             default_branch="${default_ref#refs/heads/}"
 
