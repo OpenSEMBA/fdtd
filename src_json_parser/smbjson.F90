@@ -1094,8 +1094,13 @@ contains
          res%NodalSource(i) = readField(nodSrcs(i)%p)
       end do
       do i = 1, size(nodSrcs)
+         res%n_C1P_max = max(res%n_C1P_max, res%NodalSource(i)%n_C1P)
          res%n_C2P_max = max(res%n_C2P_max, res%NodalSource(i)%n_C2P)
       end do
+      if (res%n_nodSrc > 0) then
+         if (res%n_C1P_max == 0) res%n_C1P_max = 1
+         if (res%n_C2P_max == 0) res%n_C2P_max = 1
+      end if
 
    contains
       function readField(jns) result(res)
@@ -1103,7 +1108,8 @@ contains
          type(json_value), pointer :: jns, entry
          integer, dimension(:), allocatable :: elementIds
          character(len=BUFSIZE) :: nodalSourceName
-         type(coords_scaled_t), dimension(:), allocatable :: coordsFromLinels
+         type(coords_scaled_t), dimension(:), pointer :: allCoords
+         integer :: j, cnt_c1p, cnt_c2p
 
          select case (this%getStrAt(jns, J_FIELD, default=J_FIELD_CURRENT))
           case (J_FIELD_CURRENT)
@@ -1127,12 +1133,40 @@ contains
 
          nodalSourceName = this%getStrAt(jns, J_NAME, default=' ')
 
-         allocate(res%c1P(0))
-         res%n_C1P = 0
-
          elementIds = this%getIntsAt(jns, J_ELEMENTIDS)
-         call cellRegionsToScaledCoords(res%C2P,  this%mesh%getCellRegions(elementIds), nodalSourceName)
-         res%n_C2P = size(res%C2p)
+         call cellRegionsToScaledCoords(allCoords, this%mesh%getCellRegions(elementIds))
+
+         cnt_c1p = 0
+         cnt_c2p = 0
+         do j = 1, size(allCoords)
+            if (allCoords(j)%Xi == allCoords(j)%Xe .and. &
+                allCoords(j)%Yi == allCoords(j)%Ye .and. &
+                allCoords(j)%Zi == allCoords(j)%Ze) then
+               cnt_c1p = cnt_c1p + 1
+            else
+               cnt_c2p = cnt_c2p + 1
+            end if
+         end do
+
+         if (cnt_c1p > 0) allocate(res%c1P(cnt_c1p))
+         if (cnt_c2p > 0) allocate(res%c2P(cnt_c2p))
+         cnt_c1p = 0
+         cnt_c2p = 0
+         do j = 1, size(allCoords)
+            if (allCoords(j)%Xi == allCoords(j)%Xe .and. &
+                allCoords(j)%Yi == allCoords(j)%Ye .and. &
+                allCoords(j)%Zi == allCoords(j)%Ze) then
+               cnt_c1p = cnt_c1p + 1
+               res%c1P(cnt_c1p) = allCoords(j)
+            else
+               cnt_c2p = cnt_c2p + 1
+               res%c2P(cnt_c2p) = allCoords(j)
+            end if
+         end do
+         res%n_C1P = cnt_c1p
+         res%n_C2P = cnt_c2p
+
+         deallocate(allCoords)
 
       end function
    end function
