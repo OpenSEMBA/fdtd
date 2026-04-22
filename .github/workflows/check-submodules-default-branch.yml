@@ -24,7 +24,7 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Validate submodules point to default branch history
+      - name: Validate submodules point to main/master history
         shell: bash
         run: |
           set -euo pipefail
@@ -82,19 +82,40 @@ jobs:
 
             echo "Default branch detected: ${default_branch}"
 
-            if git -C "${path}" merge-base --is-ancestor "${sha}" "origin/${default_branch}"; then
-              echo "OK: ${path} commit belongs to origin/${default_branch} history"
-            else
-              echo "::error title=Submodule not on default branch history::Submodule '${path}' points to ${sha}, which is not contained in origin/${default_branch}"
+            candidate_branches=()
+
+            if git -C "${path}" show-ref --verify --quiet refs/remotes/origin/main; then
+              candidate_branches+=("main")
+            fi
+
+            if git -C "${path}" show-ref --verify --quiet refs/remotes/origin/master; then
+              candidate_branches+=("master")
+            fi
+
+            if [[ " ${candidate_branches[*]} " != *" ${default_branch} "* ]]; then
+              candidate_branches+=("${default_branch}")
+            fi
+
+            is_valid=0
+            for branch in "${candidate_branches[@]}"; do
+              if git -C "${path}" merge-base --is-ancestor "${sha}" "origin/${branch}"; then
+                echo "OK: ${path} commit belongs to origin/${branch} history"
+                is_valid=1
+                break
+              fi
+            done
+
+            if [[ ${is_valid} -eq 0 ]]; then
+              echo "::error title=Submodule not on main/master history::Submodule '${path}' points to ${sha}, which is not contained in any accepted branch: ${candidate_branches[*]}"
               failed=1
             fi
           done
 
           if [[ ${failed} -ne 0 ]]; then
             echo ""
-            echo "One or more submodules are not aligned with their default branch history."
+            echo "One or more submodules are not aligned with accepted branch history (main/master/default)."
             exit 1
           fi
 
           echo ""
-          echo "All submodule commits are contained in their remote default branch history."
+          echo "All submodule commits are contained in accepted branch history (main/master/default)."
