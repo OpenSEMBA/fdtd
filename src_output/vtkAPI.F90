@@ -281,7 +281,16 @@ contains
       type(vtk_data_array), allocatable, intent(in) :: scalars(:)
       type(vtk_data_array), allocatable, intent(in) :: vectors(:)
       integer :: i
-      write (iunit, *) '      <PointData>'
+      character(len=1024) :: tag
+      tag = '      <PointData'
+      if (allocated(scalars)) then
+         if (size(scalars) > 0) tag = trim(tag)//' Scalars="'//trim(scalars(1)%name)//'"'
+      end if
+      if (allocated(vectors)) then
+         if (size(vectors) > 0) tag = trim(tag)//' Vectors="'//trim(vectors(1)%name)//'"'
+      end if
+      tag = trim(tag)//'>'
+      write (iunit, '(A)') trim(tag)
       if (allocated(scalars)) then
          do i = 1, size(scalars)
             write (iunit, '(A)') '        <DataArray type="Float32" Name="'//trim(scalars(i)%name)//'" format="ascii">'

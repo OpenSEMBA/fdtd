@@ -321,7 +321,7 @@ integer function test_vtkAPI_vts_content() bind(C) result(error_cnt)
 end function
 
 !==============================
-! Test 10: Verificación de VTU contenido
+! Test 10
 !==============================
 integer function test_vtkAPI_vtu_content() bind(C) result(error_cnt)
    use vtkAPI_m

@@ -28,7 +28,7 @@ option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
 option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
 option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
 
-option(SEMBA_FDTD_ENABLE_OUTPUT_MODULE "Use new output module" OFF)
+option(SEMBA_FDTD_ENABLE_OUTPUT_MODULE "Use new output module" ON)
 
 # Compilation defines.
 if(CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "release" )
