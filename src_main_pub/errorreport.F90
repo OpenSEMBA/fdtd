@@ -43,6 +43,7 @@ module Report_m
    print11,Onprint,Offprint,file10isopen,file11isopen
    public WarnErrReport,INITWARNINGFILE,CLOSEWARNINGFILE,get_secnds,openfile_mpi,writefile_mpi, &
           closefile_mpi,reportmedia,erasesignalingfiles,openclosedelete,openclose
+   public isFatalError, resetFatalError
 
    !part of the dxf
    !!!public dxfwrite,INITdxfFILE,CLOSEdxfFILE,writemmdxf,TRIMNULLCHAR
@@ -136,7 +137,7 @@ contains
 #endif
       call CloseReportingFiles
  
-      STOP "stop on error"
+      STOP 1
 
       return
 
@@ -1518,7 +1519,8 @@ contains
       buff2=CHAR(13)//CHAR(10)//trim(adjustl(buff3))
       call trimnullchar(buff2)
 
-      write (17,'(a)',err=154) trim(adjustl(buff3))
+      inquire(unit=17, opened=itsopen)
+      if (itsopen) write (17,'(a)',err=154) trim(adjustl(buff3))
       write (error_unit,'(a)') trim(adjustl(buff3))
 
       goto 155
@@ -1528,6 +1530,15 @@ contains
 155   return
 
    end subroutine WarnErrReport
+
+   function isFatalError() result(res)
+      logical :: res
+      res = fatalerror
+   end function
+
+   subroutine resetFatalError()
+      fatalerror = .false.
+   end subroutine
 
 
 

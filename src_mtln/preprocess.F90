@@ -19,7 +19,7 @@ module mtln_preprocess_m
     type, public :: preprocess_t
         type(mtl_bundle_t), dimension(:), allocatable :: bundles
         type(network_manager_t) :: network_manager
-        type(probe_t), dimension(:), allocatable :: probes
+        ! type(probe_t), dimension(:), allocatable :: probes
         type(fhash_tbl_t) :: conductors_before_cable
         type(fhash_tbl_t) :: cable_name_to_bundle_id
         real(kind=RKIND_TIEMPO) :: final_time, dt
@@ -33,6 +33,7 @@ module mtln_preprocess_m
         procedure :: connectNodesToNetworkCircuit
         procedure :: addNodeWithId
         procedure :: addProbesWithId
+        procedure :: addGenerators
     end type preprocess_t
 
     interface preprocess_t
@@ -70,11 +71,14 @@ contains
         call mpi_barrier(subcomm_mpi, ierr)
     
 #endif
+
+        ! Group cables into bundles
         cable_bundles = buildCableBundles(parsed%cables)
 
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
+        ! Create mtl objets from cables
         if (present(alloc)) then 
             line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
         else 
@@ -84,17 +88,30 @@ contains
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
+        ! create mlt_bundles from mtl objects
         res%bundles = res%buildMTLBundles(line_bundles)
         if (size(res%bundles) == 0) then 
             return
         end if
 
         res%cable_name_to_bundle_id = mapCablesToBundlesId(line_bundles, res%bundles)
-        if (size(parsed%probes) /= 0) then
-            res%probes = res%addProbesWithId(parsed%probes)
-        else 
-            allocate(res%probes(0))
-        end if
+
+        ! if (size(parsed%probes) /= 0) then
+        !     ! res%probes = res%addProbesWithId(parsed%probes)
+        call res%addProbesWithId(parsed%probes)
+        !     allocate(res%probes(0))
+        ! else 
+        !     allocate(res%probes(0))
+        !     allocate(probes(0))
+        ! end if
+
+        ! if (size(parsed%generators) /= 0) then 
+        call res%addGenerators(parsed%wireGenerators)
+        ! end if
+        
+
+
+
         res%network_manager = res%buildNetworkManager(parsed%networks)
     end function
 
@@ -325,7 +342,7 @@ contains
         integer :: i, j, k
         integer :: nb, nl, nc
         integer(kind=4), allocatable, dimension(:,:) :: layer_indices
-        logical :: bundle_in_layer = .true.
+        logical :: bundle_in_layer = .false.
         integer(kind=4), dimension(2) :: alloc_z
         if (present(alloc)) then
             alloc_z(1) = alloc(3)%zi
@@ -335,9 +352,14 @@ contains
         allocate(res(nb))
         do i = 1, nb
             if (present(alloc)) then
-                bundle_in_layer = .true.
-                layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
-                if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
+                if (allocated(layer_indices)) deallocate(layer_indices)
+                bundle_in_layer = isBundleInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
+                if (bundle_in_layer) then 
+                    layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
+                else 
+                    allocate(layer_indices(0,2), source = 0)
+                end if
+                ! if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
             end if
             nl = size(cable_bundles(i)%levels)
             allocate(res(i)%levels(nl))
@@ -355,6 +377,28 @@ contains
         end do
 
     contains
+        logical function isBundleInLayer(cable, alloc_z)
+            integer(kind=4), dimension(2), intent(in) :: alloc_z
+            class (cable_t), pointer, intent(in) :: cable
+            integer :: n, i
+            logical :: in_layer
+            in_layer = .false.
+            n = 0
+            do i = 1, size(cable%segments)
+                if (isSegmentWithinAllocBox(cable%segments, i, alloc_z)) then 
+                    if (.not. in_layer) then 
+                        in_layer = .true.
+                    end if
+                else
+                    if (in_layer) then 
+                        in_layer = .false.
+                        n = n + 1
+                    end if
+                end if
+            end do
+            if (in_layer) n = n + 1
+            isBundleInLayer = (n/=0)
+        end function
 
         function findIndicesInLayer(cable, alloc_z) result(res)
             integer(kind=4), dimension(2), intent(in) :: alloc_z
@@ -568,7 +612,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: termination_r, termination_l, termination_c, line_c, line_g
+        character(30) :: termination_r, termination_l, termination_c, line_c, line_g
 
         write(termination_c, *) termination%capacitance
         write(termination_r, *) termination%resistance
@@ -584,7 +628,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: termination_r, termination_l, termination_c, line_c, line_g
+        character(30) :: termination_r, termination_l, termination_c, line_c, line_g, generator_r
 
         write(termination_c, *) termination%capacitance
         write(termination_r, *) termination%resistance
@@ -598,12 +642,20 @@ contains
             call appendToStringArray(res, buff) 
             buff = trim(trim("C" // node%name) // " " // trim(node%name) // " "   //   trim(node%name) //"_S " // trim(termination_c))
             call appendToStringArray(res, buff) 
+
+            write(generator_r, *) termination%source%resistance
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim(trim("V" // node%name) // "_S " // trim(node%name) // "_S " // trim(end_node) //" dc 0" )
+                buff = trim(trim("V" // node%name) // "_S " // trim(node%name) // "_S " // trim(node%name) //"_genR" //" dc 0" )
+                call appendToStringArray(res, buff) 
+                buff = trim(trim("R" // node%name) // "_S " // trim(node%name) // "_genR " // trim(end_node) //" "// trim(generator_r) )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim(trim("I" // node%name) // "_S " // trim(end_node) // " " //trim(node%name) // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim(trim("R" // node%name) // "_S " // trim(end_node) // " " //trim(node%name) // "_S " // trim(generator_r) )
+                    call appendToStringArray(res, buff) 
+                end if
             end if
         else
             buff = trim(trim("R" // node%name) // " " // trim(node%name) // " "   // end_node // trim(termination_r))
@@ -632,20 +684,27 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: line_c, line_g, short_r
+        character(30) :: line_c, line_g, short_r, generator_r
         write(short_r, *) 1e-10
         write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
 
         if (termination%source%path_to_excitation /= "") then
+            write(generator_r, *) termination%source%resistance
             buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // "_S " // trim(end_node) //" dc 0" )
+                buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name // "_genR " //" dc 0" )
+                call appendToStringArray(res, buff) 
+                buff = trim("R" // node%name // "_S " // node%name // "_genR " // " " // trim(end_node) //" "// trim(generator_r))
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim("I" // node%name // "_S " // trim(end_node) // " " // node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim("R" // node%name // "_S " // trim(end_node) // " " // node%name // "_S " // trim(generator_r))
+                    call appendToStringArray(res, buff) 
+                end if
             end if
         else
             buff = trim("R" // node%name // " " // node%name // " " // trim(end_node))//" "//trim(short_R)
@@ -672,7 +731,7 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: model_name, model_file
-        character(20) :: line_c, line_g
+        character(30) :: line_c, line_g, generator_r
         write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
 
@@ -683,12 +742,19 @@ contains
         call appendToStringArray(res, buff)
         
         if (termination%source%path_to_excitation /= "") then
+            write(generator_r, *) termination%source%resistance
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // " " // node%name //"_S dc 0" )
+                buff = trim("V" // node%name // "_S " // node%name // " " // node%name //"_genR dc 0" )
+                call appendToStringArray(res, buff) 
+                buff = trim("R" // node%name // "_S " // node%name // "_genR " // node%name //"_S " //trim(generator_r))
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim("I" // node%name // "_S " // node%name // "_S " // node%name // " dc 0" )
                 call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim("R" // node%name // "_S " // node%name // "_S " // node%name // " " // trim(generator_r) )
+                    call appendToStringArray(res, buff) 
+                end if
             end if
             buff = trim("x" // node%name // " " // node%name // "_S " // end_node //" ")//" "//trim(model_name)
             call appendToStringArray(res, buff)
@@ -717,25 +783,31 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: termination_r, termination_l, line_c, line_g
-
+        character(30) :: termination_r, termination_l, line_c, line_g, generator_r
+        
         write(termination_r, *) termination%resistance
         write(termination_l, *) termination%inductance
         write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
 
-
         buff = trim("R" // node%name // " " // node%name // "_R "   // node%name //" ")//" "//trim(termination_r)
         call appendToStringArray(res, buff)
         if (termination%source%path_to_excitation /= "") then
+            write(generator_r, *) termination%source%resistance
             buff = trim("L" // node%name // " " // node%name // "_R " // node%name //"_S")//" "//trim(termination_l)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // "_S " // end_node //" dc 0" )
+                buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
+                call appendToStringArray(res, buff) 
+                buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim("I" // node%name // "_S " // end_node // " " //node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim("R" // node%name // "_S " // end_node // " " //node%name // "_S " // trim(generator_r))
+                    call appendToStringArray(res, buff) 
+                end if
             end if
         else
             buff = trim("L" // node%name // " " // node%name // "_R " // end_node)//" "//trim(termination_l)
@@ -790,21 +862,28 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: short_R, line_c, line_g
+        character(30) :: short_R, line_c, line_g, generator_r
 
         write(short_r, *) 1e-10
         write(line_c, *) node%line_c_per_meter*node%step/2
 
         allocate(res(0))
         if (termination%source%path_to_excitation /= "") then
+            write(generator_r,*) termination%source%resistance
             buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // "_S " // trim(end_node) //" dc 0" )
+                buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
+                call appendToStringArray(res, buff) 
+                buff = trim("R" // node%name // "_S " // node%name // "_genR " // trim(end_node) //" " // trim(generator_r) )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim("I" // node%name // "_S " // trim(end_node) // " " // node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim("R" // node%name // "_S " // trim(end_node) // " " // node%name // "_S " //trim(generator_r))
+                    call appendToStringArray(res, buff) 
+                end if
             end if
         else
             buff = trim("R" // node%name // " " // node%name // " " // trim(end_node))//" "//trim(short_R)
@@ -829,7 +908,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: line_c, line_g
+        character(30) :: line_c, line_g
 
         write(line_c, *) node%line_c_per_meter*node%step/2
 
@@ -854,7 +933,6 @@ contains
         type(termination_t), intent(in) :: termination
         character(len=256), allocatable :: res(:)
         character(len=*), intent(in) :: end_node
-
         if (termination%termination_type == TERMINATION_SERIES) then 
             res = writeSeriesNode(node, termination, end_node)
         else if (termination%termination_type == TERMINATION_PARALLEL) then 
@@ -879,7 +957,7 @@ contains
             res = writeModelNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_NETWORK) then 
             res = writeNetwork_circuitNode(node, termination , end_node)
-        else if (termination%termination_type == TERMINATION_UNDEFINED) then            
+        else if (termination%termination_type == TERMINATION_UNDEFINED) then
             call WarnErrReport('writeNodeDescription: undefined termination at '// node%name, .true.) 
         end if
 
@@ -893,7 +971,7 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: node_name
-        character(20) :: termination_x, termination_y, termination_z, line_c, line_g
+        character(30) :: termination_x, termination_y, termination_z, line_c, line_g, generator_r
         
         if (XYZ == "RLC" .or. XYZ == "LRC") then 
             write(termination_x, *) termination%resistance
@@ -915,16 +993,23 @@ contains
         buff = trim(XYZ(1:1) // node%name // " " // node%name // " "   // node%name //"_X " // termination_x)
         call appendToStringArray(res, buff)
         if (termination%source%path_to_excitation /= "") then
+            write(generator_r, *) termination%source%resistance
             buff = trim(XYZ(2:2) // node%name // " " // node%name // "_X " // node%name //"_S " // termination_y)
             call appendToStringArray(res, buff)
             buff = trim(XYZ(3:3) // node%name // " " // node%name // " " // node%name //"_S " // termination_z)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // "_S " // end_node //" dc 0" )
+                buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
+                call appendToStringArray(res, buff) 
+                buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim("I" // node%name // "_S " // end_node // " " //node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim("R" // node%name // "_S " // end_node // " " //node%name // "_S  "// trim(generator_r))
+                    call appendToStringArray(res, buff) 
+                end if
             end if
         else 
             buff = trim(XYZ(2:2) // node%name // " " // node%name // "_X " // end_node //" "// termination_y)
@@ -953,7 +1038,7 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: node_name
-        character(20) :: termination_x, termination_y, termination_z, line_c, line_g
+        character(30) :: termination_x, termination_y, termination_z, line_c, line_g, generator_r
         
         if (XYZ == "RLC" .or. XYZ == "RCL") then 
             write(termination_x, *) termination%resistance
@@ -974,17 +1059,24 @@ contains
         allocate(res(0))
         res = [trim(XYZ(1:1) // node%name // " " // node%name // " "   // node%name //"_p " // termination_x)]
         if (termination%source%path_to_excitation /= "") then
+            write(generator_r,*) termination%source%resistance
             buff = trim(XYZ(2:2) // node%name // " " // node%name // "_p " // node%name //"_S "// termination_y)
             call appendToStringArray(res, buff)
             buff = trim(XYZ(3:3) // node%name // " " // node%name // "_p " // node%name //"_S "// termination_z)
             call appendToStringArray(res, buff)
 
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // "_S " // end_node //" dc 0" )
+                buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
+                call appendToStringArray(res, buff) 
+                buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
                 buff = trim("I" // node%name // "_S " //end_node // " "// node%name // "_S dc 0" )
                 call appendToStringArray(res, buff) 
+                if (termination%source%resistance /= 1.0e22_rkind) then 
+                    buff = trim("R" // node%name // "_S " //end_node // " "// node%name // "_S " // trim(generator_r))
+                    call appendToStringArray(res, buff) 
+                end if
             end if
         else
             buff =  trim(XYZ(2:2) // node%name // " " // node%name // "_p " // end_node //" "// termination_y)
@@ -1029,7 +1121,7 @@ contains
         
         block
             integer :: v_index, i_index
-            real :: line_c_per_meter, line_g_per_meter, step
+            real(kind=rkind) :: line_c_per_meter, line_g_per_meter, step
             if (node%side == TERMINAL_NODE_SIDE_INI) then 
                 v_index = lbound(this%bundles(d)%v,2)
                 i_index = lbound(this%bundles(d)%i,2)
@@ -1079,7 +1171,6 @@ contains
         character(256), dimension(:), allocatable :: node_description, old_description
 
         type(nw_node_t) :: new_node
-
         aux_nodes = nodes
         deallocate(nodes)
         allocate(nodes(size(aux_nodes) + 1))
@@ -1094,6 +1185,7 @@ contains
         allocate(description(size(old_description) + size(node_description)))
         description(1:size(old_description)) = old_description
         description((size(old_description)+1):size(description)) = node_description(:)
+
     end subroutine
 
     subroutine connectNodesToNetworkCircuit(this, terminal_connection, nodes, description)
@@ -1187,7 +1279,7 @@ contains
         type(network_t) :: res
         integer :: i
         type(terminal_connection_t), dimension(:), allocatable :: network_circuit_connections, node2node_connections
-        
+
         call filterConnections(terminal_network%connections, network_circuit_connections, node2node_connections)
 
         allocate(listOfModels(0))
@@ -1212,6 +1304,7 @@ contains
         end do
 
         res = networkCtor(nodes, description)
+
     end function
 
     function isModelIncluded(model, listOfModels) result (res)
@@ -1337,7 +1430,7 @@ contains
         character(256), dimension(:), allocatable, intent(inout) :: description
         character(256) :: buff
         real(kind=RKIND_TIEMPO), intent(in) :: final_time, dt
-        character(20) :: sTime, sdt, sDelta, sPrint
+        character(30) :: sTime, sdt, sDelta, sPrint
         integer, intent(in) :: print_step        
 
         write(sTime, '(E10.2)') final_time
@@ -1427,17 +1520,38 @@ contains
 
     end function
 
+    subroutine addGenerators(this, parsed_generators)
+        class(preprocess_t) :: this
+        type(parsed_generator_t), dimension(:), allocatable :: parsed_generators
+        integer :: i, d, stat, n
 
-    function addProbesWithId(this, parsed_probes) result(res)
+        do i = 1, size(parsed_generators)
+            call this%cable_name_to_bundle_id%get(key = key(parsed_generators(i)%attached_to_cable%name), &
+                                               value = d, &
+                                               stat=stat)
+            if (stat /= 0) return
+            call this%conductors_before_cable%get(key(parsed_generators(i)%attached_to_cable%name), n)
+            call this%bundles(d)%addGenerator(index = parsed_generators(i)%index, &
+                                              conductor = n + parsed_generators(i)%conductor, &
+                                              gen_type = parsed_generators(i)%generator_type, &
+                                              resistance = parsed_generators(i)%resistance, &
+                                              path = parsed_generators(i)%path_to_excitation &
+#ifdef CompileWithMPI                                               
+                                             ,layer_indices = this%bundles(d)%layer_indices & 
+#endif                        
+                                          )
+
+        end do
+    end subroutine
+
+
+    subroutine addProbesWithId(this, parsed_probes)
         class(preprocess_t) :: this
         type(parsed_probe_t), dimension(:), allocatable :: parsed_probes
-        type(probe_t), dimension(:), allocatable :: res
-        integer :: i, d
-        integer :: stat
+        integer :: i, d, stat
         type(mtl_bundle_t), target :: tbundle
         character(len=:), allocatable :: probe_name
 
-        allocate(res(size(parsed_probes)))
         do i = 1, size(parsed_probes)
             call this%cable_name_to_bundle_id%get(key = key(parsed_probes(i)%attached_to_cable%name), &
                                                value = d, &
@@ -1445,18 +1559,18 @@ contains
 
             if (stat /= 0) return
             probe_name = parsed_probes(i)%probe_name//"_"//this%bundles(d)%name
+            
 
-
-            res(i) =  this%bundles(d)%addProbe(index = parsed_probes(i)%index, &
-                                               probe_type = parsed_probes(i)%probe_type,&
-                                               name = probe_name,&
-                                               position =parsed_probes(i)%probe_position &
+            call this%bundles(d)%addProbe(index = parsed_probes(i)%index, &
+                                          probe_type = parsed_probes(i)%probe_type,&
+                                          name = probe_name,&
+                                          position =parsed_probes(i)%probe_position &
 #ifdef CompileWithMPI                                               
-                                               ,layer_indices = this%bundles(d)%layer_indices & 
+                                          ,layer_indices = this%bundles(d)%layer_indices & 
 #endif                        
-                                              )
+                                          )
         end do
-    end function
+    end subroutine
 
 
 end module

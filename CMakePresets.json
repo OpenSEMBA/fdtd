@@ -26,6 +26,14 @@
       }
     },
     {
+      "name": "rls-nomtln",
+      "inherits": "rls",
+      "binaryDir": "build-rls-nomtln/",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_MTLN": "OFF"
+      }
+    },
+    {
       "name": "intel-rls",
       "generator": "Ninja",
       "binaryDir": "build-intel-rls/",

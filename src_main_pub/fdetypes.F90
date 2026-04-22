@@ -205,6 +205,10 @@ module  FDETYPES_m
    integer(kind=4), parameter :: EDGE_Y = 2
    integer(kind=4), parameter :: EDGE_Z = 3
 
+   !source types
+   character(len=*), parameter :: F_SOURCE_VOLTAGE = 'VOLT'
+   character(len=*), parameter :: F_SOURCE_CURRENT = 'CURR'
+
    
 #ifdef CompileWithReal4
    character(len=*), parameter  :: fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
@@ -340,7 +344,6 @@ module  FDETYPES_m
       type(fichevol_wires_t) :: Fichero
       real(kind=RKIND_wires) :: Resistance
       real(kind=RKIND_wires) :: Multiplier
-      logical :: soft
       integer(kind=4) :: i,j,k
    end type
 
@@ -686,9 +689,6 @@ module  FDETYPES_m
                  permitscaling,mtlnberenger,niapapostprocess, &
                  stochastic, verbose, dontwritevtk, &
                  resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
-#ifdef CompileWithConformal
-      logical :: input_conformal_flag
-#endif
       real(kind=8) :: time_desdelanzamiento
       real(kind=RKIND) :: cfl, attfactorc,attfactorw, alphamaxpar, &
                            alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol, maxSourceValue

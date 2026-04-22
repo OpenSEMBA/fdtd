@@ -54,7 +54,7 @@ contains
       ! Expected sources.
       allocate(expected%plnSrc%collection(1))
       expected%plnSrc%collection(1)%nombre_fichero = "gauss.exc"
-      expected%plnSrc%collection(1)%atributo = ""
+      expected%plnSrc%collection(1)%atributo = "LOCKED"
       expected%plnSrc%collection(1)%coor1 = [1, 1, 1]
       expected%plnSrc%collection(1)%coor2 = [8, 8, 8]
       expected%plnSrc%collection(1)%theta = 0.0_RKIND
@@ -115,3 +115,24 @@ contains
    end function
 end function
 
+integer function test_read_planewave_empty_elementids() bind(C) result(err)
+   use smbjson_m
+   use smbjson_testingTools
+   use Report_m, only: isFatalError, resetFatalError
+
+   implicit none
+
+   character(len=*), parameter :: filename = &
+      PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave_empty_elementids.fdtd.json'
+   type(Parseador_t) :: pr
+   type(parser_t) :: parser
+   err = 0
+
+   call resetFatalError()
+   parser = parser_t(filename)
+   pr = parser%readProblemDescription()
+
+   if (.not. isFatalError()) &
+      call testFails(err, 'Expected a fatal error for planewave with empty elementIds')
+
+end function

@@ -87,14 +87,13 @@ contains
       ! Expected sources.
       expected%nodSrc%n_nodSrc = 1
       expected%nodSrc%n_nodSrc_max = 1
-      expected%nodSrc%n_C1P_max = 0
+      expected%nodSrc%n_C1P_max = 1
       expected%nodSrc%n_C2P_max = 1
       allocate(expected%nodSrc%NodalSource(1))
       expected%nodSrc%NodalSource(1)%nombre = "gauss.exc"
       expected%nodSrc%NodalSource(1)%isElec = .true.
       expected%nodSrc%NodalSource(1)%isHard = .false.
       expected%nodSrc%NodalSource(1)%isInitialValue = .false.
-      allocate(expected%nodSrc%NodalSource(1)%c1P(0))
       allocate(expected%nodSrc%NodalSource(1)%c2P(1))
       expected%nodSrc%NodalSource(1)%n_C2P = 1
       expected%nodSrc%NodalSource(1)%c2P(1)%Or = iEy
@@ -104,7 +103,7 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%Ye =  4
       expected%nodSrc%NodalSource(1)%c2P(1)%Zi = 10
       expected%nodSrc%NodalSource(1)%c2P(1)%Ze = 10
-      expected%nodSrc%NodalSource(1)%c2P(1)%tag = 'entry_line_curent'
+      expected%nodSrc%NodalSource(1)%c2P(1)%tag = ''
       expected%nodSrc%NodalSource(1)%c2P(1)%xc = 0.0_RKIND
       expected%nodSrc%NodalSource(1)%c2P(1)%yc = 1.0_RKIND
       expected%nodSrc%NodalSource(1)%c2P(1)%zc = 0.0_RKIND

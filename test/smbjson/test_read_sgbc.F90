@@ -75,11 +75,12 @@ contains
       allocate(expected%lossyThinSurfs%cs(2))
       expected%lossyThinSurfs%length = 2
       expected%lossyThinSurfs%length_max = 2
-      expected%lossyThinSurfs%nC_max = 2
+      expected%lossyThinSurfs%nC_max = 1
       
       !!! 2-layer composite
       allocate(expected%lossyThinSurfs%cs(1)%c(1))
       expected%lossyThinSurfs%cs(1)%nc = 1
+      expected%lossyThinSurfs%cs(1)%files = '2-layers-composite'
       expected%lossyThinSurfs%cs(1)%c(1)%tag = '2-layers-composite@layer2'
       expected%lossyThinSurfs%cs(1)%c(1)%Or = +iEy
       expected%lossyThinSurfs%cs(1)%c(1)%Xi = 3
@@ -113,6 +114,7 @@ contains
       !!! 3-layer composite
       allocate(expected%lossyThinSurfs%cs(2)%c(1))
       expected%lossyThinSurfs%cs(2)%nc = 1
+      expected%lossyThinSurfs%cs(2)%files = '3-layers-composite'
       expected%lossyThinSurfs%cs(2)%c(1)%tag = '3-layers-composite@layer3'
       expected%lossyThinSurfs%cs(2)%c(1)%Or = +iEx
       expected%lossyThinSurfs%cs(2)%c(1)%Xi = 3

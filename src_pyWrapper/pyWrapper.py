@@ -148,9 +148,14 @@ class Probe():
 
     def __getitem__(self, key):
         if key not in self.data.columns:
-            if key == 'current_0' and 'current' in self.data.columns:
+            if key == 'current' and 'current_0' in self.data.columns:
+                return self.data['current_0']
+            elif key == 'current_0' and 'current' in self.data.columns:
                 return self.data['current']
-            if key == 'voltage_0' and 'voltage' in self.data.columns:
+            
+            if key == 'voltage' and 'voltage_0' in self.data.columns:
+                return self.data['voltage_0']
+            elif key == 'voltage_0' and 'voltage' in self.data.columns:
                 return self.data['voltage']
         return self.data[key]
 
@@ -366,7 +371,7 @@ class FDTD():
         return sorted(probeFiles)
 
     def getExcitationFile(self, excitation_file_name):
-        file_extensions = ('*.1.exc',)
+        file_extensions = ('*.exc',)
         excitationFile = []
         for ext in file_extensions:
             newExcitationFile = [x for x in glob.glob(
@@ -374,8 +379,8 @@ class FDTD():
             excitationFile.extend(newExcitationFile)
 
         if ((len(excitationFile)) != 1):
-            raise "Unexpected number of excitation Files found: {}".format(
-                excitationFile)
+            raise ValueError(
+                "Unexpected number of excitation Files found: {}".format(excitationFile))
 
         return excitationFile
 
