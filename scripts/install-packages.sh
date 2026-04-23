@@ -38,11 +38,11 @@ sudo apt install -y \
 
 
 echo "=== Installing Python packages ==="
-pip3 install --break-system-packages fortls
+pip3 install --break-system-packages -r requirements.txt
 
-COMPILER_VERSION="2025.1"
 
 echo "=== Adding Intel oneAPI apt repository ==="
+COMPILER_VERSION="2025.1"
 KEY="GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB"
 curl -fsSL "https://apt.repos.intel.com/intel-gpg-keys/$KEY" \
     | sudo apt-key add -
