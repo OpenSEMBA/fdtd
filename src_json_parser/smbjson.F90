@@ -2199,9 +2199,9 @@ contains
 
          select case(label)
           case(J_MAT_TERM_TYPE_OPEN)
-            res%r = 0.0_RKIND
+            res%r = 1e22_RKIND
             res%l = 0.0_RKIND
-            res%c = 0.0_RKIND
+            res%c = 1e22_RKIND
           case(J_MAT_TERM_TYPE_SHORT)
             res%r = 0.0_RKIND
             res%l = 0.0_RKIND
@@ -2221,7 +2221,7 @@ contains
          integer :: res
          select case (label)
           case (J_MAT_TERM_TYPE_OPEN)
-            res = MATERIAL_CONS
+            res = SERIES_CONS
           case (J_MAT_TERM_TYPE_SERIES)
             res = SERIES_CONS
           case (J_MAT_TERM_TYPE_SHORT)

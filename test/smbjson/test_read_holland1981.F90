@@ -115,8 +115,14 @@ contains
       
       ex%tWires%tw(1)%twc(1:10)%tag = "material1@layer2"
       
-      ex%tWires%tw(1)%tl = MATERIAL_CONS
-      ex%tWires%tw(1)%tr = MATERIAL_CONS
+      ex%tWires%tw(1)%tl = SERIES_CONS
+      ex%tWires%tw(1)%tr = SERIES_CONS
+      ex%tWires%tw(1)%R_LeftEnd  = 1e22_RKIND
+      ex%tWires%tw(1)%L_LeftEnd  = 0.0_RKIND
+      ex%tWires%tw(1)%C_LeftEnd  = 1e22_RKIND
+      ex%tWires%tw(1)%R_RightEnd = 1e22_RKIND
+      ex%tWires%tw(1)%L_RightEnd = 0.0_RKIND
+      ex%tWires%tw(1)%C_RightEnd = 1e22_RKIND
       ex%tWires%tw(1)%LeftEnd = 1
       ex%tWires%tw(1)%RightEnd = 2
       
