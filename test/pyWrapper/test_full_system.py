@@ -1,5 +1,6 @@
 from utils import *
 from typing import Dict
+from pathlib import Path
 import os
 from sys import platform
 from scipy import signal
@@ -1529,14 +1530,64 @@ def test_bulk_current_outputs(tmp_path):
     assert probeBulkYPoint.direction == 'y'
     assert probeBulkZVolume.direction == 'z'
 
-def test_conductors_forming_y_on_panel_bulk_current_is_not_nan(tmp_path):
-    fn = CASES_FOLDER + 'conductors_forming_y_on_panel/Conductors_50ohm_terminals.fdtd.json'
-    solver = FDTD(
-        input_filename=fn, 
-        path_to_exe=SEMBA_EXE, 
-        run_in_folder=tmp_path
-    )
-    solver.run()
+@no_mtln_skip
+@pytest.mark.mtln
+def test_conductors_forming_y_on_panel_holland_vs_mtln(tmp_path):
+    def get_probe_file(solver, probe_name):
+        folder = Path(solver.getFolder())
+        case_name = solver.getCaseName()
+        files = sorted(folder.glob(f'{case_name}_{probe_name}*.dat'))
+        assert files, f'Probe {probe_name} not found in {folder}'
+        return files[0]
 
-    probe_bulk = Probe(solver.getSolvedProbeFilenames("BC")[0])
-    assert not probe_bulk["current"].isnull().any()
+    holland_run = tmp_path / 'holland'
+    mtln_run = tmp_path / 'mtln'
+    holland_run.mkdir()
+    mtln_run.mkdir()
+
+    holland_solver = FDTD(
+        input_filename=CASES_FOLDER + 'conductors_forming_y_on_panel/Conductors_Holland_50ohm_terminals.fdtd.json',
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=holland_run
+    )
+    holland_solver.run()
+
+    mtln_solver = FDTD(
+        input_filename=CASES_FOLDER + 'conductors_forming_y_on_panel/Conductors_MTLN_50ohm_terminals.fdtd.json',
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=mtln_run
+    )
+    mtln_solver.run()
+
+    holland_yplus = Probe(get_probe_file(holland_solver, "curr_yplus"))
+    holland_yminus = Probe(get_probe_file(holland_solver, "curr_yminus"))
+    holland_joined_1 = Probe(get_probe_file(holland_solver, "curr_joined_1"))
+    holland_joined_2 = Probe(get_probe_file(holland_solver, "curr_joined_2"))
+
+    mtln_yplus = Probe(get_probe_file(mtln_solver, "curr_yplus"))
+    mtln_yminus = Probe(get_probe_file(mtln_solver, "curr_yminus"))
+    mtln_joined = Probe(get_probe_file(mtln_solver, "curr_joined"))
+
+    corr_yplus = corrcoef_on_common_time(
+        holland_yplus['time'].to_numpy(), holland_yplus['current'].to_numpy(),
+        mtln_yplus['time'].to_numpy(), mtln_yplus['current'].to_numpy(),
+    )
+    corr_yminus = corrcoef_on_common_time(
+        holland_yminus['time'].to_numpy(), holland_yminus['current'].to_numpy(),
+        mtln_yminus['time'].to_numpy(), mtln_yminus['current'].to_numpy(),
+    )
+
+    # MTLN joined probe contains two current columns for the two conductors.
+    corr_j1 = corrcoef_on_common_time(
+        holland_joined_1['time'].to_numpy(), holland_joined_1['current'].to_numpy(),
+        mtln_joined['time'].to_numpy(), mtln_joined['current_0'].to_numpy(),
+    )
+    corr_j2 = corrcoef_on_common_time(
+        holland_joined_2['time'].to_numpy(), holland_joined_2['current'].to_numpy(),
+        mtln_joined['time'].to_numpy(), mtln_joined['current_1'].to_numpy(),
+    )
+
+    assert corr_yplus > 0.999
+    assert corr_yminus > 0.999
+    assert corr_j1 > 0.999
+    assert corr_j2 > 0.999

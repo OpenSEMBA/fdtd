@@ -204,3 +204,12 @@ def compute_impedance(probe_path, time_exc, voltage_exc, freqs):
     V_f = dtft(V_interp, time_I, freqs)
     Z = V_f / I_f
     return time_I, current, Z
+
+def corrcoef_on_common_time(t_ref, y_ref, t_cmp, y_cmp):
+    t_ini = max(t_ref[0], t_cmp[0])
+    t_end = min(t_ref[-1], t_cmp[-1])
+    mask = (t_ref >= t_ini) & (t_ref <= t_end)
+    t_common = t_ref[mask]
+    y_ref_common = y_ref[mask]
+    y_cmp_interp = np.interp(t_common, t_cmp, y_cmp)
+    return np.corrcoef(y_ref_common, y_cmp_interp)[0, 1]
