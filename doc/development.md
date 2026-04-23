@@ -23,7 +23,7 @@ If you use intel oneapi compiler, make sure to run
 
 #### HDF5 Libraries
 
-HDF5 precompiled libraries for ubuntu are used by default (see [precompiled libraries cmake script](../set_precompiled_libraries.cmake)).  
+HDF5 precompiled libraries for ubuntu are used by default (see [precompiled libraries CMake script](https://github.com/OpenSEMBA/fdtd/blob/main/set_precompiled_libraries.cmake)).  
 
 You can compile HDF5 for your specific platform downloading the latest sources from this [link](https://www.hdfgroup.org/downloads/hdf5/source-code/).
 Extract to a folder and build and install with the following commands

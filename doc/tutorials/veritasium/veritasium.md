@@ -1,10 +1,10 @@
 # Example `smbjson` from The Big Misconception About Electricity
 
-This JSON models the problem presented in [The Big Misconception About Electricity](https://www.youtube.com/watch?v=bHIhgxav9LY) by Veritasium. The general structure of the JSON can be found in the [FDTD-JSON format](https://github.com/OpenSEMBA/fdtd/blob/main/doc/smbjson.md).
+This JSON models the problem presented in [The Big Misconception About Electricity](https://www.youtube.com/watch?v=bHIhgxav9LY) by Veritasium. The general structure of the JSON can be found in the [FDTD-JSON format](../../fdtdjson.md).
 
 ## JSON layout in the example case
 
-Each object in the JSON is shown for the example case. As indicated in [smbjson.md](https://github.com/OpenSEMBA/fdtd/blob/main/doc/smbjson.md), all units are assumed to be SI-MKS.
+Each object in the JSON is shown for the example case. As indicated in [](../../fdtdjson.md), all units are assumed to be SI-MKS.
 
 ### `general`
 
@@ -313,4 +313,3 @@ plt.show()
 ```
 
 ![Current vs time](./veritasium.png)
-
