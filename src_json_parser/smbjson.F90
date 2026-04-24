@@ -3258,6 +3258,16 @@ contains
          if (stat == 0) then
          res%node%belongs_to_cable => mtln_res%cables(cable_index)%ptr
 
+         select type(cable => res%node%belongs_to_cable)
+         type is (unshielded_multiwire_t)
+            ! Keep wire terminals compatible with the legacy thin-wire parser:
+            ! a short terminal on a wire material is handled as open.
+            if (cable%radius /= 0.0_RKIND .and. &
+                res%node%termination%termination_type == TERMINATION_SHORT) then
+               res%node%termination%termination_type = TERMINATION_OPEN
+            end if
+         end select
+
          polyline = this%mesh%getPolyline(id)
             if (label == TERMINAL_NODE_SIDE_INI) then
                res%cId = polyline%coordIds(1)

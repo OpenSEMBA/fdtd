@@ -52,6 +52,39 @@ def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
     assert len(p['current']) == 11
 
 
+@no_mtln_skip
+def test_holland_short_terminal_matches_nomtln(tmp_path):
+    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    nomtln_exe = os.getenv(
+        'SEMBA_EXE_NOMTLN',
+        os.path.join(os.getcwd(), 'build-rls-nomtln', 'bin', 'semba-fdtd')
+    )
+
+    if not os.path.isfile(nomtln_exe):
+        pytest.skip('No no-MTLN binary found. Set SEMBA_EXE_NOMTLN or build build-rls-nomtln/bin/semba-fdtd')
+
+    mtln_folder = os.path.join(tmp_path, 'mtln')
+    nomtln_folder = os.path.join(tmp_path, 'nomtln')
+    os.makedirs(mtln_folder, exist_ok=True)
+    os.makedirs(nomtln_folder, exist_ok=True)
+
+    solver_mtln = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=mtln_folder)
+    solver_mtln['materials'][1]['terminations'][0]['type'] = 'short'
+    solver_mtln.run()
+    p_mtln = Probe(solver_mtln.getSolvedProbeFilenames('mid_point')[0])
+
+    solver_nomtln = FDTD(fn, path_to_exe=nomtln_exe, run_in_folder=nomtln_folder)
+    solver_nomtln['materials'][1]['terminations'][0]['type'] = 'short'
+    solver_nomtln.run()
+    p_nomtln = Probe(solver_nomtln.getSolvedProbeFilenames('mid_point')[0])
+
+    current_mtln = p_mtln['current'].to_numpy()
+    current_nomtln = p_nomtln['current'].to_numpy()
+
+    assert len(current_mtln) == len(current_nomtln)
+    assert np.max(np.abs(current_mtln - current_nomtln)) < 2e-5
+
+
 @mtln_skip
 def test_towel_hanger_case_creates_output_probes(tmp_path):
     fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
