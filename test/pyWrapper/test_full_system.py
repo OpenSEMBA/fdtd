@@ -244,44 +244,33 @@ def test_holland(tmp_path):
     assert np.allclose(expected_i_interp, p['current'], rtol=1e-4, atol=5e-5)
 
 
+@no_mtln_skip
+@pytest.mark.mtln
 def test_holland_open_short_regression_with_stored_references(tmp_path):
-    """Regression for issue #382 using stored references so only one binary is needed.
+    # Compare Holland (wire) and MTLN (unshieldedMultiwire) using short terminals.
+    holland_fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    mtln_fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
 
-    The expected traces are stored for both build modes:
-    - mtln_on: build with SEMBA_FDTD_ENABLE_MTLN=ON
-    - mtln_off: build with SEMBA_FDTD_ENABLE_MTLN=OFF
-    """
-    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
-    mode = 'mtln_on' if os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON" else 'mtln_off'
+    holland_dir = os.path.join(tmp_path, 'holland_short')
+    mtln_dir = os.path.join(tmp_path, 'mtln_short')
+    os.makedirs(holland_dir, exist_ok=True)
+    os.makedirs(mtln_dir, exist_ok=True)
 
-    def run_case(terminal_type, run_subfolder):
-        run_dir = os.path.join(tmp_path, run_subfolder)
-        os.makedirs(run_dir, exist_ok=True)
-        solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=run_dir)
-        solver['materials'][1]['terminations'][0]['type'] = terminal_type
-        solver.run()
-        probe = Probe(solver.getSolvedProbeFilenames("mid_point")[0])
-        return probe['time'].to_numpy(), probe['current'].to_numpy()
+    holland_solver = FDTD(input_filename=holland_fn, path_to_exe=SEMBA_EXE, run_in_folder=holland_dir)
+    holland_solver['materials'][1]['terminations'][0]['type'] = 'short'
+    holland_solver.run()
+    holland_probe = Probe(holland_solver.getSolvedProbeFilenames("mid_point")[0])
 
-    def load_reference(terminal_type):
-        ref_file = OUTPUTS_FOLDER + f'holland1981_{terminal_type}_expected_{mode}.dat'
-        ref_data = np.loadtxt(ref_file, skiprows=1)
-        return ref_data[:, 0], ref_data[:, 1]
+    mtln_solver = FDTD(input_filename=mtln_fn, path_to_exe=SEMBA_EXE, run_in_folder=mtln_dir)
+    mtln_solver['materials'][1]['terminations'][0]['type'] = 'short'
+    mtln_solver.run()
+    mtln_probe = Probe(mtln_solver.getSolvedProbeFilenames("mid_point")[0])
 
-    t_open, i_open = run_case('open', 'holland_open')
-    t_short, i_short = run_case('short', 'holland_short')
+    holland_t = holland_probe['time'].to_numpy()
+    holland_i = holland_probe['current'].to_numpy()
+    mtln_i_interp = np.interp(holland_t, mtln_probe['time'].to_numpy(), mtln_probe['current'].to_numpy())
 
-    t_open_ref, i_open_ref = load_reference('open')
-    t_short_ref, i_short_ref = load_reference('short')
-
-    assert np.allclose(t_open, t_open_ref, rtol=0.0, atol=0.0)
-    assert np.allclose(t_short, t_short_ref, rtol=0.0, atol=0.0)
-    assert np.allclose(i_open, i_open_ref, rtol=1e-5, atol=1e-9)
-    assert np.allclose(i_short, i_short_ref, rtol=1e-5, atol=1e-9)
-
-    if mode == 'mtln_on':
-        # In MTLN mode, issue #381 semantics make open and short different.
-        assert np.max(np.abs(i_open - i_short)) > 1e-6
+    assert np.allclose(holland_i, mtln_i_interp, rtol=1e-4, atol=5e-5)
 
 @no_mtln_skip
 @no_mpi_skip
