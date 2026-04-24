@@ -103,15 +103,30 @@ jobs:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
+        SEMBA_FDTD_ENABLE_OUTPUT_MODULE: ${{ matrix.new-output-module }}
       run: python -m pytest test/ --durations=20
 
-    - name: Run python output regression tests
+    - name: Build legacy observation executable
+      if: matrix.new-output-module=='ON' && matrix.mpi=='OFF'
+      run: |
+        cmake -S . -B build-legacy \
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+          -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
+          -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
+          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}} \
+          -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=${{matrix.double-precision}} \
+          -DSEMBA_FDTD_ENABLE_OUTPUT_MODULE=OFF
+        cmake --build build-legacy -j
+
+    - name: Run python output equivalence tests
       if: matrix.new-output-module=='ON' && matrix.mpi=='OFF'
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
-      run: python -m pytest test/pyWrapper/test_output_module_regression.py --durations=20
+        SEMBA_FDTD_ENABLE_OUTPUT_MODULE: ${{ matrix.new-output-module }}
+        SEMBA_LEGACY_EXE: ${{ github.workspace }}/build-legacy/bin/semba-fdtd
+      run: python -m pytest test/pyWrapper/test_output_module_equivalence.py --durations=20
         
        
       
