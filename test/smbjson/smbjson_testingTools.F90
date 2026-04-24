@@ -2,7 +2,11 @@ module smbjson_testingTools
    use NFDETypes_extension_m
    implicit none
 
+#ifdef SEMBA_TEST_DATA_DIR
+   character(len=*), parameter :: PATH_TO_TEST_DATA = SEMBA_TEST_DATA_DIR//'/'
+#else
    character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'
+#endif
    character(len=*), parameter :: INPUT_EXAMPLES='input_examples/'
    
 contains

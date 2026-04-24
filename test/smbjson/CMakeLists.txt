@@ -1,5 +1,7 @@
 message(STATUS "Creating build system for test/smbjson")
 
+file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/testData/" SEMBA_SMBJSON_TEST_DATA_DIR)
+
 add_library (smbjson_test_fortran 
     "smbjson_testingTools.F90" 
     "test_idchildtable.F90"
@@ -38,6 +40,10 @@ target_link_libraries(smbjson_test_fortran
     fhash 
 
     ${JSONFORTRAN_LIB}
+)
+
+target_compile_definitions(smbjson_test_fortran PRIVATE
+    SEMBA_TEST_DATA_DIR="${SEMBA_SMBJSON_TEST_DATA_DIR}"
 )
 
 add_library(smbjson_tests "smbjson_tests.cpp")
