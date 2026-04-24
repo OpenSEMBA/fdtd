@@ -104,6 +104,14 @@ jobs:
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: python -m pytest test/ --durations=20
+
+    - name: Run python output regression tests
+      if: matrix.new-output-module=='ON' && matrix.mpi=='OFF'
+      env:
+        SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
+        SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
+        SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
+      run: python -m pytest test/pyWrapper/test_output_module_regression.py --durations=20
         
        
       
