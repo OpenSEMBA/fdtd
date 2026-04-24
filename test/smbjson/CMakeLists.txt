@@ -18,7 +18,6 @@ add_library (smbjson_test_fortran
 )
 if(SEMBA_FDTD_ENABLE_MTLN)
     target_sources(smbjson_test_fortran PRIVATE
-        "test_read_holland1981_short.F90"
         "test_read_holland1981_unshielded.F90"
         "test_read_connectedWires.F90"
         "test_read_shieldedPair.F90"

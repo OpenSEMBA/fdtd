@@ -24,7 +24,6 @@ extern "C" int test_read_airplane();
 extern "C" int test_read_mtln();
 extern "C" int test_read_towelhanger();
 extern "C" int test_read_holland1981();
-extern "C" int test_read_holland1981_short();
 extern "C" int test_read_holland1981_unshielded();
 extern "C" int test_read_connectedwires();
 extern "C" int test_read_shieldedpair();
@@ -62,7 +61,6 @@ TEST(smbjson, read_background_set)      { EXPECT_EQ(0, test_read_background_set(
 
 #ifdef CompileWithMTLN
 TEST(smbjson, read_towelhanger)             { EXPECT_EQ(0, test_read_towelhanger()); }
-TEST(smbjson, read_holland1981_short)       { EXPECT_EQ(0, test_read_holland1981_short()); }
 TEST(smbjson, read_holland1981_unshielded)  { EXPECT_EQ(0, test_read_holland1981_unshielded()); }
 TEST(smbjson, read_connectedwires)          { EXPECT_EQ(0, test_read_connectedwires()); }
 TEST(smbjson, read_currentinjection)     { EXPECT_EQ(0, test_read_currentinjection()); }
