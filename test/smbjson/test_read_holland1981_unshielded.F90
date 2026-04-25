@@ -113,14 +113,14 @@ contains
       ex%mtln%networks(1)%connections(1)%nodes(1)%conductor_in_cable = 1
       ex%mtln%networks(1)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
       ex%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  ex%mtln%cables(1)%ptr
-      ex%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_OPEN
+      ex%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SHORT
 
       allocate(ex%mtln%networks(2)%connections(1))
       allocate(ex%mtln%networks(2)%connections(1)%nodes(1))
       ex%mtln%networks(2)%connections(1)%nodes(1)%conductor_in_cable = 1
       ex%mtln%networks(2)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_END
       ex%mtln%networks(2)%connections(1)%nodes(1)%belongs_to_cable =>  ex%mtln%cables(1)%ptr
-      ex%mtln%networks(2)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_OPEN
+      ex%mtln%networks(2)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SHORT
 
 
    end function

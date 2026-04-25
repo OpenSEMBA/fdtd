@@ -902,32 +902,6 @@ contains
 
     end function
 
-    function writeOpenNode(node, termination, end_node) result(res)
-        type(nw_node_t), intent(in) :: node
-        type(termination_t), intent(in) :: termination
-        character(len=*), intent(in) :: end_node
-        character(len=256), allocatable :: res(:)
-        character(len=256) :: buff
-        character(30) :: line_c, line_g
-
-        write(line_c, *) node%line_c_per_meter*node%step/2
-
-        allocate(res(0))
-        buff = trim("R" // node%name // " " // node%name // " " // end_node//" 1e22")
-        call appendToStringArray(res, buff)
-        buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
-        call appendToStringArray(res, buff)
-        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
-        call appendToStringArray(res, buff)
-        
-        if (node%line_g_per_meter /= 0) then
-            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
-            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
-            call appendToStringArray(res, buff)
-        end if    
-
-    end function
-    
     function writeNodeDescription(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
@@ -951,8 +925,6 @@ contains
             res = writeXYsZpNode(node, termination, end_node, XYZ = "LCR")
         else if (termination%termination_type == TERMINATION_SHORT) then 
             res = writeShortNode(node, termination , end_node)
-        else if (termination%termination_type == TERMINATION_OPEN) then 
-            res = writeOpenNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_CIRCUIT) then 
             res = writeModelNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_NETWORK) then 
@@ -1145,7 +1117,6 @@ contains
             res%step = step
         end block
 
-        if (node%termination%termination_type == TERMINATION_open) res%open = .true.
         res%source = node%termination%source
 
     contains

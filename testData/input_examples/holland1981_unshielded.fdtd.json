@@ -28,7 +28,7 @@
         {
             "id": 2,
             "type": "terminal",
-            "terminations": [{"type": "open"}]
+            "terminations": [{"type": "short"}]
         }
     ],
 

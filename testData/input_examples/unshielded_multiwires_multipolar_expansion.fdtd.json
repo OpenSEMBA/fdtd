@@ -107,10 +107,10 @@
             "type": "terminal",
             "terminations": [
                 {
-                    "type": "open"
+                    "type": "short"
                 },
                 {
-                    "type": "open"
+                    "type": "short"
                 }
             ]
         }

@@ -59,7 +59,6 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_LUMPED_CAPACITANCE = "capacitance" 
       
    character(len=*), parameter :: J_MAT_TERM_TERMINATIONS = "terminations"
-   character(len=*), parameter :: J_MAT_TERM_TYPE_OPEN = "open"
    character(len=*), parameter :: J_MAT_TERM_TYPE_SHORT = "short"
    character(len=*), parameter :: J_MAT_TERM_TYPE_SERIES = "series"
    character(len=*), parameter :: J_MAT_TERM_TYPE_PARALLEL = "parallel"

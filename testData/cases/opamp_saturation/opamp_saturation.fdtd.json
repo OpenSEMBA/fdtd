@@ -38,7 +38,7 @@
 			"type": "terminal",
 			"terminations" : [
 				{"type": "series", "resistance": 50, "capacitance": 1e22, "inductance" : 0.0 },
-				{"type": "open"}
+				{"type": "short"}
 			]
 		},
 		{

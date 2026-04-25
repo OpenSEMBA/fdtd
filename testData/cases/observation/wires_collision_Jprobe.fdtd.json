@@ -53,7 +53,7 @@
             "name": "terminal2",
             "id": 3,
             "type": "terminal",
-            "terminations": [ {"type": "open"} ]
+            "terminations": [ {"type": "short"} ]
         },
         {
             "name": "wireMaterial2",

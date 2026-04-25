@@ -457,7 +457,6 @@ A `terminal` models a lumped circuit which is assumed to located at one end of a
 Each entry in `terminations` is specified by a `type`
 
 + `short` if the wire is short-circuited with another wire or with any surface which might be present.
-+ `open` if the wire does not end in an ohmic contact with any other structure.
 + Different configurations of passive circuit elements R, L, and C can be defined:
   + `series` (for RLC series circuits), 
   + `parallel` (for RLC parallel circuits), 

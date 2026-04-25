@@ -16,7 +16,6 @@ module network_m
         real(kind=rkind) :: i
         integer :: bundle_number, conductor_number, v_index, i_index
         integer :: side
-        logical :: open = .false.
     end type
 
 

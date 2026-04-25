@@ -4,7 +4,6 @@ module mtln_types_m
 
    integer, parameter :: TERMINATION_UNDEFINED  = -1
    integer, parameter :: TERMINATION_SHORT      =  1
-   integer, parameter :: TERMINATION_OPEN       =  2
    integer, parameter :: TERMINATION_SERIES     =  3
    integer, parameter :: TERMINATION_PARALLEL   =  4
    integer, parameter :: TERMINATION_RsLCp      =  5

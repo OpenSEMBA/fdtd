@@ -2198,10 +2198,6 @@ contains
          end if
 
          select case(label)
-          case(J_MAT_TERM_TYPE_OPEN)
-            res%r = 0.0_RKIND
-            res%l = 0.0_RKIND
-            res%c = 0.0_RKIND
           case(J_MAT_TERM_TYPE_SHORT)
             res%r = 0.0_RKIND
             res%l = 0.0_RKIND
@@ -2211,7 +2207,7 @@ contains
             res%l = this%getRealAt(tm, J_MAT_TERM_INDUCTANCE, default=0.0_RKIND)
             res%c = this%getRealAt(tm, J_MAT_TERM_CAPACITANCE, default=1e22_RKIND)
           case default
-            call WarnErrReport("Error reading wire terminal. Holland wires only support open, short, and series terminations", .true.)
+            call WarnErrReport("Error reading wire terminal. Holland wires only support short and series terminations", .true.)
          end select
 
       end function
@@ -2220,11 +2216,11 @@ contains
          character(len=:), allocatable, intent(in) :: label
          integer :: res
          select case (label)
-          case (J_MAT_TERM_TYPE_OPEN)
-            res = MATERIAL_CONS
           case (J_MAT_TERM_TYPE_SERIES)
             res = SERIES_CONS
           case (J_MAT_TERM_TYPE_SHORT)
+            res = MATERIAL_CONS
+          case default
             res = MATERIAL_CONS
          end select
       end function
@@ -3372,8 +3368,10 @@ contains
          integer :: res
          character(:), allocatable :: type
          type = this%getStrAt(termination, J_TYPE)
-         if (type == J_MAT_TERM_TYPE_OPEN) then
-            res = TERMINATION_OPEN
+         if (type == "open") then
+            call WarnErrReport("Termination type 'open' is no longer supported. " // &
+               "Use a 'series' termination with a large resistance instead.", .true.)
+            res = TERMINATION_UNDEFINED
          else if (type == J_MAT_TERM_TYPE_SHORT) then
             res = TERMINATION_SHORT
          else if (type == J_MAT_TERM_TYPE_SERIES) then
