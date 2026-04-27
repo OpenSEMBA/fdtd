@@ -216,3 +216,84 @@ integer function test_preprocess_zt_conductor_ranges_2() bind(C) result(error_cn
 
 end function
 
+integer function test_preprocess_floating_short_terminal_is_open() bind(C) result(error_cnt)
+
+    use mtln_solver_m
+    use mtln_testingTools_mod
+    use mtln_preprocess_m
+    implicit none
+
+    type(unshielded_multiwire_t), target :: cable
+    type(terminal_node_t) :: node
+    type(terminal_connection_t) :: connection
+    type(terminal_network_t) :: network
+    type(parsed_mtln_t) :: parsed
+    type(mtln_t) :: solver
+    type(segment_t), dimension(8) :: segments
+    type(multipolar_expansion_t), allocatable, dimension(:) :: multipolar_expansion
+
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
+    integer :: i
+
+    error_cnt = 0
+
+    cable%name = "wire0"
+    cable%cell_inductance_per_meter = lpul
+    cable%cell_capacitance_per_meter = cpul
+    cable%conductance_per_meter = gpul
+    cable%resistance_per_meter = rpul
+    cable%radius = 0.0_rkind
+
+    allocate(multipolar_expansion(0))
+    cable%multipolar_expansion = multipolar_expansion
+
+    do i = 1, 8
+        segments(i)%x = i
+        segments(i)%y = 1
+        segments(i)%z = 1
+        segments(i)%orientation = DIRECTION_X_POS
+    end do
+    cable%segments = segments
+    cable%step_size = [(4.0_rkind, i = 1, 8)]
+
+    node%belongs_to_cable => cable
+    node%conductor_in_cable = 1
+    node%side = TERMINAL_NODE_SIDE_END
+    node%termination = termination_t(termination_type = TERMINATION_SHORT)
+
+    connection%nodes = [node]
+    network%connections = [connection]
+
+    parsed%time_step = 1.0e-9
+    parsed%number_of_steps = 10
+
+    allocate(parsed%networks(1))
+    parsed%networks = [network]
+
+    allocate(parsed%cables(1))
+    parsed%cables(1)%ptr => cable
+
+    allocate(parsed%probes(0))
+    allocate(parsed%wireGenerators(0))
+
+    solver = mtlnCtor(parsed)
+
+    if (size(solver%network_manager%networks) /= 1) then
+        error_cnt = error_cnt + 1
+        return
+    end if
+
+    if (size(solver%network_manager%networks(1)%nodes) /= 1) then
+        error_cnt = error_cnt + 1
+        return
+    end if
+
+    if (.not. solver%network_manager%networks(1)%nodes(1)%open) then
+        error_cnt = error_cnt + 1
+    end if
+
+end function
+

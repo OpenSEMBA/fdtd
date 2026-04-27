@@ -1171,15 +1171,23 @@ contains
         character(256), dimension(:), allocatable :: node_description, old_description
 
         type(nw_node_t) :: new_node
+        type(terminal_node_t) :: node
+
+        node = terminal_connection%nodes(1)
+        ! A short on an isolated terminal has no physical return path.
+        if (node%termination%termination_type == TERMINATION_SHORT) then
+            node%termination%termination_type = TERMINATION_OPEN
+        end if
+
         aux_nodes = nodes
         deallocate(nodes)
         allocate(nodes(size(aux_nodes) + 1))
 
-        new_node = this%addNodeWithId(terminal_connection%nodes(1))
+        new_node = this%addNodeWithId(node)
         nodes(size(aux_nodes) + 1) = new_node
         nodes(1:size(nodes) - 1) = aux_nodes
 
-        node_description = writeNodeDescription(new_node, terminal_connection%nodes(1)%termination, "0")
+        node_description = writeNodeDescription(new_node, node%termination, "0")
         old_description = description
         deallocate(description)
         allocate(description(size(old_description) + size(node_description)))

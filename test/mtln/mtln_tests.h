@@ -43,6 +43,7 @@ extern "C" int test_preprocess_conductors_before_cable();
 extern "C" int test_preprocess_conductors_in_level();
 extern "C" int test_preprocess_zt_conductor_ranges_2();
 extern "C" int test_preprocess_zt_conductor_ranges();
+extern "C" int test_preprocess_floating_short_terminal_is_open();
 // extern "C" int test_coaxial_line_paul_8_6_square();
 // extern "C" int test_coaxial_line_paul_8_6_triangle();
 // extern "C" int test_2_conductor_line_paul_9_6();
@@ -71,6 +72,7 @@ TEST(mtln, preprocess_conductors_before_cable) { EXPECT_EQ(0, test_preprocess_co
 TEST(mtln, preprocess_conductors_in_level) { EXPECT_EQ(0, test_preprocess_conductors_in_level()); }
 TEST(mtln, preprocess_zt_conductor_ranges_2) { EXPECT_EQ(0, test_preprocess_zt_conductor_ranges_2()); }
 TEST(mtln, preprocess_zt_conductor_ranges) { EXPECT_EQ(0, test_preprocess_zt_conductor_ranges()); }
+TEST(mtln, preprocess_floating_short_terminal_is_open) { EXPECT_EQ(0, test_preprocess_floating_short_terminal_is_open()); }
 
 TEST(mtln, math_eigvals) { EXPECT_EQ(0, test_math_eigvals()); }
 TEST(mtln, math_matmul_broadcast) { EXPECT_EQ(0, test_math_matmul_broadcast()); }
