@@ -106,24 +106,32 @@ def readSpiceFile(spice_file):
     return t, val
 
 
-def createWire(id, r, rpul=0.0, lpul=0.0):
-    return {"id": id,
+def createWire(id, r, rpul=0.0, lpul=0.0, total_resistance=None):
+    mat = {"id": id,
             "type": "wire",
             "radius": r,
-            "resistancePerMeter": rpul,
             "inductancePerMeter": lpul
             }
+    if total_resistance is not None:
+        mat["totalResistance"] = total_resistance
+    else:
+        mat["resistancePerMeter"] = rpul
+    return mat
 
 
-def createUnshieldedWire(id, lpul, cpul, rpul=0.0, gpul=0.0):
-    return {
+def createUnshieldedWire(id, lpul, cpul, rpul=0.0, gpul=0.0, total_resistance=None):
+    mat = {
         "id": id,
         "type": "unshieldedMultiwire",
         "inductancePerMeter":  [[lpul]],
         "capacitancePerMeter": [[cpul]],
-        "resistancePerMeter": [rpul],
         "conductancePerMeter": [gpul]
     }
+    if total_resistance is not None:
+        mat["totalResistance"] = [total_resistance]
+    else:
+        mat["resistancePerMeter"] = [rpul]
+    return mat
 
 
 def createPropertyDictionary(vtkfile, celltype: int, property: str):

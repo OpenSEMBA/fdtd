@@ -847,6 +847,33 @@ def test_nodal_source(tmp_path):
     assert np.corrcoef(exc, -nodalBulkProbe['current'])[0,1] > 0.999
     assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
 
+# compiled without mtln uses classic wires
+# compiled with mtln, wire is treated as an unshielded multiwire
+def test_nodal_source_with_total_resistance(tmp_path):
+    """Verify that specifying totalResistance gives the same result as resistancePerMeter.
+    
+    The nodalSource wire spans 10 cells of 0.001 m each (total 0.01 m).
+    totalResistance = 100.0 Ohm  <=>  resistancePerMeter = 10000.0 Ohm/m.
+    """
+    fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
+    assert (os.path.isfile(fn))
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver['materials'][1] = createWire(id = 2, r = 0.1e-5, total_resistance=100.0)
+    solver.run()
+
+    resistanceBulkProbe = Probe( \
+        solver.getSolvedProbeFilenames("Bulk probe Resistance")[0])
+    nodalBulkProbe = Probe( \
+        solver.getSolvedProbeFilenames("Bulk probe Nodal Source")[0])
+    excitation = ExcitationFile( \
+        excitation_filename=solver.getExcitationFile("predefinedExcitation")[0])
+
+    exc = np.interp(nodalBulkProbe['time'].to_numpy(),
+                    excitation.data['time'].to_numpy(),
+                    excitation.data['value'].to_numpy())
+    assert np.corrcoef(exc, -nodalBulkProbe['current'])[0,1] > 0.999
+    assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
+
 def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
     fn = CASES_FOLDER + 'multipleAssigments/multipleSurfaceImpedance.fdtd.json'
 

@@ -360,7 +360,8 @@ doi: 10.1109/TEMC.1981.303899.
 Materials of this type must contain:
 
 + `<radius>` as a real number.
-+ `[resistancePerMeter]` as a real number. Defaults to `0.0`.
++ `[resistancePerMeter]` as a real number. Defaults to `0.0`. Mutually exclusive with `totalResistance`.
++ `[totalResistance]` as a real number, in Ohm. When specified, the resistance per unit length is computed as `totalResistance / staircase_wire_length`, where `staircase_wire_length` is the total physical length of the wire after meshing. This avoids the error introduced by staircasing when the wire is not aligned with the grid. Mutually exclusive with `resistancePerMeter`.
 + `[inductancePerMeter]` as a real number. Defaults to `0.0`.
 
 **Example:**
@@ -386,7 +387,8 @@ A `shieldedMultiwire`, models $N+1$ electrical wires inside a bundled. The volta
 They must contain the following entries:
 
 + `<inductancePerMeter>` and `<capacitancePerMeter>` which must be matrices with a size $N \times N$. If the number of wires is equal to $1$, this property must be a $1 \times 1$ matrix, e.g `[[1e-7]]` 
-+ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
++ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`. Mutually exclusive with `totalResistance`.
++ `[totalResistance]` which must be an array of size $N$, in Ohm. When specified, the resistance per unit length for each conductor is computed as `totalResistance[i] / staircase_wire_length`. Mutually exclusive with `resistancePerMeter`.
 + `[transferImpedancePerMeter]` which represents the coupling with the external domain, described below. If not present, it defaults to zero, i.e. perfect shielding.
 
 `transferImpedancePerMeter` can contain:
@@ -431,7 +433,8 @@ They must contain the following entries:
     - By a `multipolarExpansion` object which allows to calculate the in-cell inductances and capacitances. This object can be obtained using the [_opensemba/pulmtln_ ](https://github.com/OpenSEMBA/pulmtln) tool containing:
         - An `<innerRegionBox>` object, containing two pairs of real numbers, named `min` and `max` which describe a cross sectional bounding box. This box must contain all the conductors and dielectrics which form the bundle cross section. It also must be smaller or equal than the minimum side of the FDTD dual cells which are crossed by the bundle.
         - Two arrays, `<electric>` and `<magnetic>` in which each contain a [field reconstruction object](#field-reconstruction) described below. They must contain a $N$ multipolar expansions, one for each conductor. Each entry assumes that the $n$-th conductor has a prescribed potential of $1 \, \text{V}$ and the rest are floating.
-+ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
++ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`. Mutually exclusive with `totalResistance`.
++ `[totalResistance]` which must be an array of size $N$, in Ohm. When specified, the resistance per unit length for each conductor is computed as `totalResistance[i] / staircase_wire_length`. Mutually exclusive with `resistancePerMeter`.
 
 #### Field reconstruction
 

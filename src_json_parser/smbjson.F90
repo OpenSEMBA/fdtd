@@ -1990,14 +1990,28 @@ contains
          type(json_value), pointer :: je, je2
          integer :: i
          logical :: found
-         real(kind=RKIND) :: radius, resistance, inductance
+         real(kind=RKIND) :: radius, resistance, inductance, totalResistance
+         logical :: hasTotalResistance
          block
             type(json_value_ptr_t) :: m
             m = this%matTable%getId(cable%materialId)
-            
+
+            if (this%existsAt(m%p, J_MAT_WIRE_TOTAL_RESISTANCE) .and. &
+                this%existsAt(m%p, J_MAT_WIRE_RESISTANCE)) then
+               call WarnErrReport( &
+                  'Error: wire material cannot specify both resistancePerMeter and totalResistance.', .true.)
+            end if
+
             radius = this%getRealAt(m%p, J_MAT_WIRE_RADIUS)
-            resistance = this%getRealAt(m%p, J_MAT_WIRE_RESISTANCE, default=0.0_RKIND)
             inductance = this%getRealAt(m%p, J_MAT_WIRE_INDUCTANCE, default=0.0_RKIND)
+            if (this%existsAt(m%p, J_MAT_WIRE_TOTAL_RESISTANCE)) then
+               totalResistance = this%getRealAt(m%p, J_MAT_WIRE_TOTAL_RESISTANCE)
+               hasTotalResistance = .true.
+               resistance = 0.0_RKIND
+            else
+               resistance = this%getRealAt(m%p, J_MAT_WIRE_RESISTANCE, default=0.0_RKIND)
+               hasTotalResistance = .false.
+            end if
             res%rad = radius 
             res%res = resistance
             res%ind = inductance
@@ -2039,6 +2053,40 @@ contains
             
             polyline = this%mesh%getPolyline(cable%elementIds(1))
             linels = this%mesh%polylineToLinels(polyline)
+
+            if (hasTotalResistance) then
+               block
+                  type(Desplazamiento_t) :: despl
+                  real(kind=RKIND) :: totalLength, stepSize
+                  integer :: k
+                  despl = this%readGrid()
+                  totalLength = 0.0_RKIND
+                  do k = 1, size(linels)
+                     select case(abs(linels(k)%orientation))
+                     case(DIR_X)
+                        if (size(despl%desX) == 1) then
+                           stepSize = despl%desX(1)
+                        else
+                           stepSize = despl%desX(linels(k)%cell(1))
+                        end if
+                     case(DIR_Y)
+                        if (size(despl%desY) == 1) then
+                           stepSize = despl%desY(1)
+                        else
+                           stepSize = despl%desY(linels(k)%cell(2))
+                        end if
+                     case(DIR_Z)
+                        if (size(despl%desZ) == 1) then
+                           stepSize = despl%desZ(1)
+                        else
+                           stepSize = despl%desZ(linels(k)%cell(3))
+                        end if
+                     end select
+                     totalLength = totalLength + stepSize
+                  end do
+                  res%res = totalResistance / totalLength
+               end block
+            end if
 
             tagLabel = this%buildTagName(cable%materialId, cable%elementIds(1))
 
@@ -3924,21 +3972,28 @@ contains
          logical :: found
          character(:), allocatable :: materialType
          character(len=MAX_LINE) :: tagLabel
+         type(segment_t), dimension(:), allocatable :: cable_segments
+         real(kind=rkind), allocatable, dimension(:) :: cable_step_size
+         real(kind=rkind) :: totalLength
          material = this%matTable%getId(j_cable%materialId)
          materialType = this%getStrAt(material%p, J_TYPE)
+         mtln_despl = buildMTLNDespl()
+         cable_segments = buildSegments(j_cable, mtln_despl)
+         cable_step_size = buildStepSize(cable_segments, mtln_despl)
+         totalLength = sum(cable_step_size)
          select case (materialType)
          case (J_MAT_TYPE_SHIELDED_MULTIWIRE)
             allocate(shielded_multiwire_t :: res)
             select type(res)
             type is(shielded_multiwire_t)
                res%transfer_impedance = buildTransferImpedance(material)
-               call assignPULProperties(res, material, size(j_cable%elementIds))
+               call assignPULProperties(res, material, size(j_cable%elementIds), totalLength)
             end select
          case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE, J_MAT_TYPE_WIRE)
             allocate(unshielded_multiwire_t :: res)
             select type(res)
             type is(unshielded_multiwire_t)
-               call assignInCellProperties(res, material, size(j_cable%elementIds))
+               call assignInCellProperties(res, material, size(j_cable%elementIds), totalLength)
                write(tagLabel, '(i10)') j_cable%elementIds(1)
                res%tag = trim(adjustl(tagLabel))
             end select
@@ -3948,10 +4003,9 @@ contains
          res%initial_connector => findConnectorWithId(j_cable%initialConnectorId)
          res%end_connector => findConnectorWithId(j_cable%endConnectorId)
          res%name = j_cable%name
-         mtln_despl = buildMTLNDespl()
-         res%segments = buildSegments(j_cable, mtln_despl)
-         res%n_segments = size(res%segments)
-         res%step_size = buildStepSize(res%segments, mtln_despl)
+         res%segments = cable_segments
+         res%n_segments = size(cable_segments)
+         res%step_size = cable_step_size
 
       end function
 
@@ -3989,10 +4043,11 @@ contains
          end if
       end function
 
-      subroutine assignPULProperties(res, mat, n)
+      subroutine assignPULProperties(res, mat, n, total_length)
          type(shielded_multiwire_t), intent(inout) :: res
          type(json_value_ptr_t) :: mat
          integer, intent(in) :: n
+         real(kind=rkind), intent(in) :: total_length
          real(kind=rkind), dimension(:,:), allocatable :: null_matrix
          logical :: found
 
@@ -4011,7 +4066,16 @@ contains
             res%capacitance_per_meter = null_matrix
          end if
 
-         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
+         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_TOTAL_RESISTANCE) .and. &
+             this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
+            call WarnErrReport( &
+               'Error: shieldedMultiwire material cannot specify both resistancePerMeter and totalResistance.', .true.)
+         end if
+
+         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_TOTAL_RESISTANCE)) then
+            res%resistance_per_meter = vectorToDiagonalMatrix( &
+               this%getRealsAt(mat%p, J_MAT_MULTIWIRE_TOTAL_RESISTANCE, found) / total_length)
+         else if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
             res%resistance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
          else
             res%resistance_per_meter = null_matrix
@@ -4024,11 +4088,12 @@ contains
          end if
       end subroutine
 
-      subroutine assignInCellProperties(res, mat, n)
+      subroutine assignInCellProperties(res, mat, n, total_length)
          type(unshielded_multiwire_t), intent(inout) :: res
          type(json_value_ptr_t) :: mat
          type(json_value), pointer :: multipolarExpansionPtr
          integer, intent(in) :: n
+         real(kind=rkind), intent(in) :: total_length
          integer :: m
          real(kind=rkind), dimension(:,:), allocatable :: null_matrix
          logical :: found
@@ -4074,7 +4139,22 @@ contains
             res%radius = this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default=0.0_RKIND)
          end if
 
-         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
+         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_TOTAL_RESISTANCE) .and. &
+             this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
+            call WarnErrReport( &
+               'Error: wire/unshieldedMultiwire material cannot specify both resistancePerMeter and totalResistance.', .true.)
+         end if
+
+         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_TOTAL_RESISTANCE)) then
+            m = this%dimensionAt(mat%p, J_MAT_MULTIWIRE_TOTAL_RESISTANCE)
+            if (m == 0) then
+               allocate(r(1))
+               r(1) = this%getRealAt(mat%p, J_MAT_MULTIWIRE_TOTAL_RESISTANCE, found)
+            else
+               r = this%getRealsAt(mat%p, J_MAT_MULTIWIRE_TOTAL_RESISTANCE, found)
+            end if
+            res%resistance_per_meter = vectorToDiagonalMatrix(r / total_length)
+         else if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
             m = this%dimensionAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)
             if (m == 0) then 
                allocate(r(1))
