@@ -109,6 +109,9 @@ module smbjson_m
       integer :: initialConnectorId = -1
       integer :: endConnectorId = -1
       integer :: containedWithinElementId = -1
+      ! Optional total resistance override (replaces resistancePerMeter from material).
+      real(kind=RKIND), dimension(:), allocatable :: totalResistance
+      logical :: hasTotalResistance = .false.
    end type
 
    type, private :: domain_t
@@ -1994,7 +1997,7 @@ contains
          block
             type(json_value_ptr_t) :: m
             m = this%matTable%getId(cable%materialId)
-            
+
             radius = this%getRealAt(m%p, J_MAT_WIRE_RADIUS)
             resistance = this%getRealAt(m%p, J_MAT_WIRE_RESISTANCE, default=0.0_RKIND)
             inductance = this%getRealAt(m%p, J_MAT_WIRE_INDUCTANCE, default=0.0_RKIND)
@@ -2039,6 +2042,40 @@ contains
             
             polyline = this%mesh%getPolyline(cable%elementIds(1))
             linels = this%mesh%polylineToLinels(polyline)
+
+            if (cable%hasTotalResistance) then
+               block
+                  type(Desplazamiento_t) :: despl
+                  real(kind=RKIND) :: totalLength, stepSize
+                  integer :: k
+                  despl = this%readGrid()
+                  totalLength = 0.0_RKIND
+                  do k = 1, size(linels)
+                     select case(abs(linels(k)%orientation))
+                     case(DIR_X)
+                        if (size(despl%desX) == 1) then
+                           stepSize = despl%desX(1)
+                        else
+                           stepSize = despl%desX(linels(k)%cell(1))
+                        end if
+                     case(DIR_Y)
+                        if (size(despl%desY) == 1) then
+                           stepSize = despl%desY(1)
+                        else
+                           stepSize = despl%desY(linels(k)%cell(2))
+                        end if
+                     case(DIR_Z)
+                        if (size(despl%desZ) == 1) then
+                           stepSize = despl%desZ(1)
+                        else
+                           stepSize = despl%desZ(linels(k)%cell(3))
+                        end if
+                     end select
+                     totalLength = totalLength + stepSize
+                  end do
+                  res%res = cable%totalResistance(1) / totalLength
+               end block
+            end if
 
             tagLabel = this%buildTagName(cable%materialId, cable%elementIds(1))
 
@@ -2499,6 +2536,16 @@ contains
       res%endConnectorId     = this%getIntAt(matAss, J_MAT_ASS_CAB_END_CONN_ID, default=-1)
       res%containedWithinElementId = &
                   this%getIntAt(matAss, J_MAT_ASS_CAB_CONTAINED_WITHIN_ID, default=-1)
+
+      res%hasTotalResistance = this%existsAt(matAss, J_MAT_ASS_TOTAL_RESISTANCE)
+      if (res%hasTotalResistance) then
+         if (this%dimensionAt(matAss, J_MAT_ASS_TOTAL_RESISTANCE) == 0) then
+            allocate(res%totalResistance(1))
+            res%totalResistance(1) = this%getRealAt(matAss, J_MAT_ASS_TOTAL_RESISTANCE)
+         else
+            res%totalResistance = this%getRealsAt(matAss, J_MAT_ASS_TOTAL_RESISTANCE)
+         end if
+      end if
 
       ! Checks validity of associations.
       if (this%matTable%checkId(res%materialId) /= 0) then
@@ -3924,8 +3971,15 @@ contains
          logical :: found
          character(:), allocatable :: materialType
          character(len=MAX_LINE) :: tagLabel
+         type(segment_t), dimension(:), allocatable :: cable_segments
+         real(kind=rkind), allocatable, dimension(:) :: cable_step_size
+         real(kind=rkind) :: totalLength
          material = this%matTable%getId(j_cable%materialId)
          materialType = this%getStrAt(material%p, J_TYPE)
+         mtln_despl = buildMTLNDespl()
+         cable_segments = buildSegments(j_cable, mtln_despl)
+         cable_step_size = buildStepSize(cable_segments, mtln_despl)
+         totalLength = sum(cable_step_size)
          select case (materialType)
          case (J_MAT_TYPE_SHIELDED_MULTIWIRE)
             allocate(shielded_multiwire_t :: res)
@@ -3933,12 +3987,20 @@ contains
             type is(shielded_multiwire_t)
                res%transfer_impedance = buildTransferImpedance(material)
                call assignPULProperties(res, material, size(j_cable%elementIds))
+               if (j_cable%hasTotalResistance) then
+                  res%resistance_per_meter = vectorToDiagonalMatrix( &
+                     j_cable%totalResistance / totalLength)
+               end if
             end select
          case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE, J_MAT_TYPE_WIRE)
             allocate(unshielded_multiwire_t :: res)
             select type(res)
             type is(unshielded_multiwire_t)
                call assignInCellProperties(res, material, size(j_cable%elementIds))
+               if (j_cable%hasTotalResistance) then
+                  res%resistance_per_meter = vectorToDiagonalMatrix( &
+                     j_cable%totalResistance / totalLength)
+               end if
                write(tagLabel, '(i10)') j_cable%elementIds(1)
                res%tag = trim(adjustl(tagLabel))
             end select
@@ -3948,10 +4010,9 @@ contains
          res%initial_connector => findConnectorWithId(j_cable%initialConnectorId)
          res%end_connector => findConnectorWithId(j_cable%endConnectorId)
          res%name = j_cable%name
-         mtln_despl = buildMTLNDespl()
-         res%segments = buildSegments(j_cable, mtln_despl)
-         res%n_segments = size(res%segments)
-         res%step_size = buildStepSize(res%segments, mtln_despl)
+         res%segments = cable_segments
+         res%n_segments = size(cable_segments)
+         res%step_size = cable_step_size
 
       end function
 
