@@ -243,6 +243,46 @@ def test_holland(tmp_path):
     expected_i_interp = np.interp(p['time']-3.05*1e-9, expected_t, expected_i)
     assert np.allclose(expected_i_interp, p['current'], rtol=1e-4, atol=5e-5)
 
+
+def test_holland_short_terminals_match_open_terminals(tmp_path):
+    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    number_of_steps = 1000
+    
+    folder_open = os.path.join(tmp_path, 'open_terminals')
+    os.makedirs(folder_open)
+    solver_open = FDTD(input_filename=fn,
+                       path_to_exe=SEMBA_EXE,
+                       run_in_folder=folder_open)
+    solver_open['general']['numberOfSteps'] = number_of_steps
+    solver_open.run()
+
+    probe_name = os.path.basename(solver_open.getSolvedProbeFilenames("mid_point")[0])
+    probe_open = Probe(os.path.join(folder_open, probe_name))
+
+    folder_short = os.path.join(tmp_path, 'short_terminals')
+    os.makedirs(folder_short)
+    solver_short = FDTD(input_filename=fn,
+                        path_to_exe=SEMBA_EXE,
+                        run_in_folder=folder_short)
+    solver_short['general']['numberOfSteps'] = number_of_steps
+    solver_short['materials'][1]['terminations'][0]['type'] = 'short'
+    solver_short.run()
+
+    probe_short = Probe(os.path.join(folder_short, probe_name))
+
+    assert np.allclose(
+        probe_open['time'].to_numpy(),
+        probe_short['time'].to_numpy(),
+        rtol=0.0,
+        atol=0.0,
+    )
+    assert np.allclose(
+        probe_open['current'].to_numpy(),
+        probe_short['current'].to_numpy(),
+        rtol=1e-4,
+        atol=5e-5,
+    )
+
 @no_mtln_skip
 @no_mpi_skip
 @pytest.mark.mtln
