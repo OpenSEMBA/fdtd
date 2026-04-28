@@ -848,15 +848,18 @@ def test_nodal_source(tmp_path):
     assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
 
 def test_nodal_source_with_total_resistance(tmp_path):
-    """Verify that specifying a total resistance gives the same result as resistancePerMeter.
+    """Verify that totalResistance in materialAssociation overrides resistancePerMeter from material.
     
     The nodalSource wire spans 10 cells of 0.001 m each (total 0.01 m).
     totalResistance = 100.0 Ohm  <=>  resistancePerMeter = 10000.0 Ohm/m.
+    The material's resistancePerMeter is set to zero and the total resistance is
+    supplied through the materialAssociation instead.
     """
     fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
     assert (os.path.isfile(fn))
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver['materials'][1] = createWire(id = 2, r = 0.1e-5, total_resistance=100.0)
+    solver['materials'][1]['resistancePerMeter'] = 0.0
+    solver['materialAssociations'][1]['totalResistance'] = 100.0
     solver.run()
 
     resistanceBulkProbe = Probe( \

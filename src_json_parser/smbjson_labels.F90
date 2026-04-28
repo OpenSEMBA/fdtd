@@ -46,7 +46,6 @@ module smbjson_labels_m
    
    character(len=*), parameter :: J_MAT_WIRE_RADIUS = "radius"
    character(len=*), parameter :: J_MAT_WIRE_RESISTANCE = "resistancePerMeter"
-   character(len=*), parameter :: J_MAT_WIRE_TOTAL_RESISTANCE = "resistance"
    character(len=*), parameter :: J_MAT_WIRE_INDUCTANCE = "inductancePermeter"
 
    character(len=*), parameter :: J_MAT_LUMPED_MODEL = "model"
@@ -86,7 +85,6 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_MULTIWIRE_INDUCTANCE = "inductancePerMeter"
    character(len=*), parameter :: J_MAT_MULTIWIRE_RESISTANCE = "resistancePerMeter"
    character(len=*), parameter :: J_MAT_MULTIWIRE_CONDUCTANCE = "conductancePerMeter"
-   character(len=*), parameter :: J_MAT_MULTIWIRE_TOTAL_RESISTANCE = "resistance"
    
    character(len=*), parameter :: J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION = "multipolarExpansion"
    ! ME = Multipolar Expansion
@@ -117,6 +115,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_ASS_CAB_INI_CONN_ID = "initialConnectorId"
    character(len=*), parameter :: J_MAT_ASS_CAB_END_CONN_ID = "endConnectorId"
    character(len=*), parameter :: J_MAT_ASS_CAB_CONTAINED_WITHIN_ID = "containedWithinElementId"
+   character(len=*), parameter :: J_MAT_ASS_TOTAL_RESISTANCE = "totalResistance"
    
    ! -- connector
    character(len=*), parameter :: J_MAT_CONN_RESISTANCES = "resistances"

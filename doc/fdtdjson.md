@@ -360,8 +360,7 @@ doi: 10.1109/TEMC.1981.303899.
 Materials of this type must contain:
 
 + `<radius>` as a real number.
-+ `[resistancePerMeter]` as a real number. Defaults to `0.0`. Mutually exclusive with `resistance`.
-+ `[resistance]` as a real number, in Ohm. When specified, the resistance per unit length is computed as `resistance` divided by the discretized wire length after meshing. This avoids the error introduced by staircasing when the wire is not aligned with the grid. Mutually exclusive with `resistancePerMeter`.
++ `[resistancePerMeter]` as a real number. Defaults to `0.0`.
 + `[inductancePerMeter]` as a real number. Defaults to `0.0`.
 
 **Example:**
@@ -387,8 +386,7 @@ A `shieldedMultiwire`, models $N+1$ electrical wires inside a bundled. The volta
 They must contain the following entries:
 
 + `<inductancePerMeter>` and `<capacitancePerMeter>` which must be matrices with a size $N \times N$. If the number of wires is equal to $1$, this property must be a $1 \times 1$ matrix, e.g `[[1e-7]]` 
-+ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`. Mutually exclusive with `resistance`.
-+ `[resistance]` which must be an array of size $N$, in Ohm. When specified, the resistance per unit length for each conductor is computed as `resistance` divided by the discretized wire length. Mutually exclusive with `resistancePerMeter`.
++ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
 + `[transferImpedancePerMeter]` which represents the coupling with the external domain, described below. If not present, it defaults to zero, i.e. perfect shielding.
 
 `transferImpedancePerMeter` can contain:
@@ -433,8 +431,7 @@ They must contain the following entries:
     - By a `multipolarExpansion` object which allows to calculate the in-cell inductances and capacitances. This object can be obtained using the [_opensemba/pulmtln_ ](https://github.com/OpenSEMBA/pulmtln) tool containing:
         - An `<innerRegionBox>` object, containing two pairs of real numbers, named `min` and `max` which describe a cross sectional bounding box. This box must contain all the conductors and dielectrics which form the bundle cross section. It also must be smaller or equal than the minimum side of the FDTD dual cells which are crossed by the bundle.
         - Two arrays, `<electric>` and `<magnetic>` in which each contain a [field reconstruction object](#field-reconstruction) described below. They must contain a $N$ multipolar expansions, one for each conductor. Each entry assumes that the $n$-th conductor has a prescribed potential of $1 \, \text{V}$ and the rest are floating.
-+ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`. Mutually exclusive with `resistance`.
-+ `[resistance]` which must be an array of size $N$, in Ohm. When specified, the resistance per unit length for each conductor is computed as `resistance` divided by the discretized wire length. Mutually exclusive with `resistancePerMeter`.
++ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
 
 #### Field reconstruction
 
@@ -576,6 +573,7 @@ Associations with cables can contain the following inputs:
 + `<initialTerminalId>` and `<endTerminalId>` which must be present within the `materials` list of type. These entries indicate the lumped circuits connected at the ends of the cable.
 + `[initialConnectorId]` and `[endConnectorId]` entries which must point to materials of type `connector` and are assigned to the last segments of the corresponding ends of the cable.
 + Its `materialId` must point to a [`wire`](#wire), a [`shieldedMultiwire`](#shieldedMultiwire) or an [`unshieldedMultiwire`](#unshieldedMultiwire) material. If it points to a `shieldedMultiwire`, it must also contain an entry named `<containedWithinElementId>` which indicates the `polyline` in which this `shieldedMultiwire` is embedded.
++ `[totalResistance]` as a real number (for `wire`) or an array of size $N$ (for `shieldedMultiwire` / `unshieldedMultiwire`), in Ohm. When specified, the resistance per unit length is computed as `totalResistance` divided by the discretized wire length after meshing, overriding any `resistancePerMeter` defined in the material. This eliminates the extra error introduced by staircasing when the wire is not aligned with the grid.
 
 **Example:**
 
