@@ -46,7 +46,7 @@ module smbjson_labels_m
    
    character(len=*), parameter :: J_MAT_WIRE_RADIUS = "radius"
    character(len=*), parameter :: J_MAT_WIRE_RESISTANCE = "resistancePerMeter"
-   character(len=*), parameter :: J_MAT_WIRE_TOTAL_RESISTANCE = "totalResistance"
+   character(len=*), parameter :: J_MAT_WIRE_TOTAL_RESISTANCE = "resistance"
    character(len=*), parameter :: J_MAT_WIRE_INDUCTANCE = "inductancePermeter"
 
    character(len=*), parameter :: J_MAT_LUMPED_MODEL = "model"
@@ -85,8 +85,8 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_MULTIWIRE_CAPACITANCE = "capacitancePerMeter"
    character(len=*), parameter :: J_MAT_MULTIWIRE_INDUCTANCE = "inductancePerMeter"
    character(len=*), parameter :: J_MAT_MULTIWIRE_RESISTANCE = "resistancePerMeter"
-   character(len=*), parameter :: J_MAT_MULTIWIRE_TOTAL_RESISTANCE = "totalResistance"
    character(len=*), parameter :: J_MAT_MULTIWIRE_CONDUCTANCE = "conductancePerMeter"
+   character(len=*), parameter :: J_MAT_MULTIWIRE_TOTAL_RESISTANCE = "resistance"
    
    character(len=*), parameter :: J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION = "multipolarExpansion"
    ! ME = Multipolar Expansion

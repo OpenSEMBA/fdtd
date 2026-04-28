@@ -847,10 +847,8 @@ def test_nodal_source(tmp_path):
     assert np.corrcoef(exc, -nodalBulkProbe['current'])[0,1] > 0.999
     assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
 
-# compiled without mtln uses classic wires
-# compiled with mtln, wire is treated as an unshielded multiwire
 def test_nodal_source_with_total_resistance(tmp_path):
-    """Verify that specifying totalResistance gives the same result as resistancePerMeter.
+    """Verify that specifying a total resistance gives the same result as resistancePerMeter.
     
     The nodalSource wire spans 10 cells of 0.001 m each (total 0.01 m).
     totalResistance = 100.0 Ohm  <=>  resistancePerMeter = 10000.0 Ohm/m.

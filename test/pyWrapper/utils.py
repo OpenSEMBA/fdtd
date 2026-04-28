@@ -113,7 +113,7 @@ def createWire(id, r, rpul=0.0, lpul=0.0, total_resistance=None):
             "inductancePerMeter": lpul
             }
     if total_resistance is not None:
-        mat["totalResistance"] = total_resistance
+        mat["resistance"] = total_resistance
     else:
         mat["resistancePerMeter"] = rpul
     return mat
@@ -128,7 +128,7 @@ def createUnshieldedWire(id, lpul, cpul, rpul=0.0, gpul=0.0, total_resistance=No
         "conductancePerMeter": [gpul]
     }
     if total_resistance is not None:
-        mat["totalResistance"] = [total_resistance]
+        mat["resistance"] = [total_resistance]
     else:
         mat["resistancePerMeter"] = [rpul]
     return mat
