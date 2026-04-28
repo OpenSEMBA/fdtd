@@ -2951,6 +2951,9 @@ contains
          type(json_value), pointer :: terminations_ini, terminations_end
          type(coordinate_t), dimension(:), allocatable :: networks_coordinates
          type(materialAssociation_t), dimension(:), allocatable :: cables
+         type(json_value_ptr_t) :: cableMat
+         character(len=:), allocatable :: cableType
+         logical :: isShieldedCable
          
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
@@ -2959,11 +2962,14 @@ contains
                     this%getMaterialAssociations([J_MAT_TYPE_WIRE]) ]
          do i = 1, size(cables)
             elemIds = cables(i)%elementIds
+            cableMat = this%matTable%getId(cables(i)%materialId)
+            cableType = this%getStrAt(cableMat%p, J_TYPE)
+            isShieldedCable = (cableType == J_MAT_TYPE_SHIELDED_MULTIWIRE)
             terminations_ini => getTerminationsOnSide(cables(i)%initialTerminalId)
             terminations_end => getTerminationsOnSide(cables(i)%endTerminalId)
             do j = 1, size(elemIds)
-               aux_nodes = [aux_nodes, buildNode(terminations_ini, TERMINAL_NODE_SIDE_INI, j, elemIds(j))]
-               aux_nodes = [aux_nodes, buildNode(terminations_end, TERMINAL_NODE_SIDE_END, j, elemIds(j))]
+               aux_nodes = [aux_nodes, buildNode(terminations_ini, TERMINAL_NODE_SIDE_INI, j, elemIds(j), isShieldedCable)]
+               aux_nodes = [aux_nodes, buildNode(terminations_end, TERMINAL_NODE_SIDE_END, j, elemIds(j), isShieldedCable)]
                call updateListOfNetworksCoordinates(networks_coordinates, elemIds(j))
             end do
 
@@ -3233,10 +3239,11 @@ contains
 
 
 
-      function buildNode(termination_list, label, index, id) result(res)
+      function buildNode(termination_list, label, index, id, isShieldedCable) result(res)
          type(json_value), pointer :: termination_list, termination
          integer, intent(in) :: label
          integer, intent(in) :: index, id
+         logical, intent(in) :: isShieldedCable
          type(polyline_t) :: polyline
          type(aux_node_t) :: res
          integer :: cable_index
@@ -3268,7 +3275,7 @@ contains
                res%relPos = this%mesh%getCoordinate(polyline%coordIds(ubound(polyline%coordIds,1)))
             end if
 
-            if (res%node%termination%termination_type == TERMINATION_SHORT) then
+            if (res%node%termination%termination_type == TERMINATION_SHORT .and. .not. isShieldedCable) then
                if (.not. terminalTouchesAnyEntity(res%cId, res%relPos, id)) then
                   res%node%termination%termination_type = TERMINATION_OPEN
                   write(warningMsg, '(A)') 'MTLN terminal on cable '//trim(res%node%belongs_to_cable%name)// &
