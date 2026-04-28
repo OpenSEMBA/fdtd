@@ -1541,8 +1541,8 @@ module CreateMatrices_m
       BoundingBox%ZI = Max (BBox%ZI, SINPML_fullsize(iHz)%ZI)
       BoundingBox%ZE = Min (BBox%ZE, SINPML_fullsize(iHz)%ZE)
       ! Build the interior of the PML regions in MediaMatrix
-      ! temporarily assing minus sign to PML media
-      ! corners are swept twice to assing the correct media (do not remove AbS!!)
+      ! temporarily assign minus sign to PML media
+      ! corners are swept twice to assign the correct media (do not remove AbS!!)
       field = iEx
       do j = YIPML (field), YEPML (field)
          do k = ZIPML (field), ZEPML (field)
@@ -1902,7 +1902,7 @@ module CreateMatrices_m
       end do
       !
      allocate(NewMed(NumMedia+1:NuevoNumeroMediosConPML))
-      !Reassing the PML media info with the compact indexes
+      !Reassign the PML media info with the compact indexes
       field = iEx
       do k = ZIPML (field), ZEPML (field)
          do j = YIPML (field), YEPML (field)

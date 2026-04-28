@@ -1,5 +1,5 @@
 module dispersive_m
-    use utils_m
+    use mtln_utils_m
     use rational_approximation_m
     use FDETYPES_m, only: RKIND, RKIND_TIEMPO
     implicit none

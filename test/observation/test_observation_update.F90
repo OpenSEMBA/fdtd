@@ -3,6 +3,7 @@ integer function test_update_time_movie_observation() bind(C) result(err)
     use FDETYPES_TOOLS
     use Observa_m
     use observation_testingTools
+    use sggMethods_m
 
     type(SGGFDTDINFO_t) :: sgg
     type(media_matrices_t) :: media
@@ -21,10 +22,10 @@ integer function test_update_time_movie_observation() bind(C) result(err)
 
     type(output_t), pointer, dimension(:) :: output
 
-    sgg = create_base_sgg()
+    call sgg_init(sgg)
     call set_sgg_data(sgg)
 
-    media = create_media(sgg%Alloc)
+    media = create_geometry_media_from_sggAlloc(sgg%Alloc)
     tag_numbers = create_tag_list(sgg%Alloc)
 
     ThereAreObservation = .false.

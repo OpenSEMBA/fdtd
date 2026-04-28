@@ -7,7 +7,9 @@
 #ifdef CompileWithSMBJSON
     #include "smbjson/smbjson_tests.h"
     #include "rotate/rotate_tests.h"
-    #include "vtk/vtk_tests.h"
+    #include "output/output_tests.h"
+    #include "output/vtkAPI_tests.h"
+    #include "output/xdmfAPI_tests.h"
 #endif
 #ifndef CompileWithMPI
     #include "observation/observation_tests.h"

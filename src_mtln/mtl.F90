@@ -1,7 +1,6 @@
 module mtl_m
 
-    ! use NFDETypes
-    use utils_m
+    use mtln_utils_m
     use dispersive_m, dispersive_lumped_t => lumped_t
     use mtln_types_m, only: segment_t, multipolar_expansion_t
     use multipolar_expansion_m, only: getCellCapacitanceOnBox, getCellInductanceOnBox

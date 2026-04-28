@@ -35,6 +35,8 @@ no_mpi_skip = pytest.mark.skipif(
 # Use of absolute path to avoid conflicts when changing directory.
 if platform == "linux":
     SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd')
+    RELEASE_SEMBA_EXE = os.path.join(os.getcwd(), 'build-rls', 'bin', 'semba-fdtd')
+    DEBUG_SEMBA_EXE = os.path.join(os.getcwd(), 'build-dbg', 'bin', 'semba-fdtd')
 elif platform == "win32":
     SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd.exe')
 

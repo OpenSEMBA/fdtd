@@ -15,11 +15,15 @@
 !________________________________________________________________________________________
 
 module Solver_m
-
+   use logUtils_m
    use FDETYPES_m
    use Report_m
    use PostProcessing_m
    use ilumina_m
+#ifdef CompileWithNewOutputModule
+   use output_m
+   use outputTypes_m
+#endif
    use Observa_m
    use BORDERS_other_m
    use BORDERS_CPML_m
@@ -1461,9 +1465,13 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Observation...';  call print11(this%control%layoutnumber,dubuf)
+#ifdef CompileWithNewOutputModule
+         call init_outputs(this%sgg, this%media, this%sinPML_fullsize, this%tag_numbers, this%bounds, this%control, this%thereAre%Observation, this%thereAre%wires)
+#else
          call InitObservation (this%sgg,this%media,this%tag_numbers, &
                                  this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%initialtimestep,this%lastexecutedtime, &
                                  this%sinPML_fullsize,this%eps0,this%mu0,this%bounds, this%control)
+#endif
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
 
@@ -1725,8 +1733,12 @@ contains
    subroutine solver_run(this)
       class(solver_t) :: this
 
-      real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
-      real(kind=rkind), pointer, dimension(:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
+      real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
+      real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
+
+#ifdef CompileWithNewOutputModule
+      type(fields_reference_t) :: fieldReference
+#endif
 
       logical :: call_timing, l_aux, flushFF, somethingdone, newsomethingdone
       integer :: i
@@ -1748,6 +1760,23 @@ contains
       
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 
+#ifdef CompileWithNewOutputModule
+      fieldReference%E%x => this%Ex
+      fieldReference%E%y => this%Ey
+      fieldReference%E%z => this%Ez
+
+      fieldReference%E%deltax => this%dxe
+      fieldReference%E%deltay => this%dye
+      fieldReference%E%deltaz => this%dze
+
+      fieldReference%H%x => this%Hx
+      fieldReference%H%y => this%Hy
+      fieldReference%H%z => this%Hz
+
+      fieldReference%H%deltax => this%dxh
+      fieldReference%H%deltay => this%dyh
+      fieldReference%H%deltaz => this%dzh
+#endif
 
       ciclo_temporal :  do while (this%n <= this%control%finaltimestep)
       
@@ -1771,48 +1800,13 @@ contains
             Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
 
             if (.not.this%parar) then !!! si es por parada se gestiona al final
-!!!!! si esta hecho lo flushea todo pero poniendo de acuerdo a todos los mpi
-                do i=1,this%sgg%NumberRequest
-                   if  (this%sgg%Observation(i)%done.and.(.not.this%sgg%Observation(i)%flushed)) then
-                      this%perform%flushXdmf=.true.
-                      this%perform%flushVTK=.true.
-                   end if
-                end do
-#ifdef CompileWithMPI
-                l_aux=this%perform%flushVTK
-                call MPI_AllReduce( l_aux, this%perform%flushVTK, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-                !
-                l_aux=this%perform%flushXdmf
-                call MPI_AllReduce( l_aux, this%perform%flushXdmf, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-                !
-                l_aux=this%perform%flushDATA
-                call MPI_AllReduce( l_aux, this%perform%flushDATA, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-                !
-                l_aux=this%perform%flushFIELDS
-                call MPI_AllReduce( l_aux, this%perform%flushFIELDS, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-                !
-                l_aux=this%perform%postprocess
-                call MPI_AllReduce( l_aux, this%perform%postprocess, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-#endif
-!!!!!!!!!!!!
-                if (this%perform%flushFIELDS) then
-                   write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nentradaroot)),separador
-                   call print11(this%control%layoutnumber,dubuf)
-                   write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
-                   call print11(this%control%layoutnumber,dubuf)
-                   call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
-                   Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
-#ifdef CompileWithMPI
-                   call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
-                   write(dubuf,*) SEPARADOR//separador//separador
-                   call print11(this%control%layoutnumber,dubuf)
-                   write(dubuf,*) 'DONE FLUSHING OF RESTARTING FIELDS n=',this%n
-                   call print11(this%control%layoutnumber,dubuf)
-                   write(dubuf,*) SEPARADOR//separador//separador
-                   call print11(this%control%layoutnumber,dubuf)
-                end if
-                if (this%perform%isFlush()) then
+               call request_flush_if_any_observation_is_done()
+
+               if (this%perform%flushFIELDS) then
+                  call performFlushField()
+               end if
+
+               if (this%perform%isFlush()) then
                       !
                       flushFF=this%perform%postprocess
                       if (this%thereAre%FarFields.and.flushFF) then
@@ -1820,12 +1814,11 @@ contains
                       else
                           write(dubuf,'(a,i9)')  ' INIT OBSERVATION DATA FLUSHING n= ',this%n
                       end if
-                      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                      call print11(this%control%layoutnumber,dubuf)
-                      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-    !!
+                      call printMessageWithSeparator(this%control%layoutnumber,dubuf)
+#ifdef CompileWithNewOutputModule
+                      if (this%thereAre%Observation) call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, flushFF)
+#else
                       if (this%thereAre%Observation) call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,flushFF)
-                      !!
 #ifdef CompileWithMPI
                       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1834,15 +1827,11 @@ contains
                       else
                           write(dubuf,'(a,i9)')  ' Done OBSERVATION DATA FLUSHED n= ',this%n
                       end if
-                      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                      call print11(this%control%layoutnumber,dubuf)
-                      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+                      call printMessageWithSeparator(this%control%layoutnumber,dubuf)
     !
                       if (this%perform%postprocess) then
                          write(dubuf,'(a,i9)') 'Postprocessing frequency domain probes, if any, at n= ',this%n
-                         call print11(this%control%layoutnumber,dubuf)
-                         write(dubuf,*) SEPARADOR//separador//separador
-                         call print11(this%control%layoutnumber,dubuf)
+                         call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                          somethingdone=.false.
                          at=this%n*this%sgg%dt
                          if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
@@ -1853,22 +1842,16 @@ contains
 #endif
                          if (somethingdone) then
                            write(dubuf,*) 'End Postprocessing frequency domain probes.'
-                           call print11(this%control%layoutnumber,dubuf)
-                           write(dubuf,*) SEPARADOR//separador//separador
-                           call print11(this%control%layoutnumber,dubuf)
+                           call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                          else
                            write(dubuf,*) 'No frequency domain probes snapshots found to be postrocessed'
-                           call print11(this%control%layoutnumber,dubuf)
-                           write(dubuf,*) SEPARADOR//separador//separador
-                           call print11(this%control%layoutnumber,dubuf)
+                           call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                          end if
                       end if
                   !!       
                       if (this%perform%flushvtk) then   
                          write(dubuf,'(a,i9)')  ' Post-processing .vtk files n= ',this%n
-                         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                         call print11(this%control%layoutnumber,dubuf)
-                         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+                         call printMessageWithSeparator(this%control%layoutnumber,dubuf)
                          somethingdone=.false.
                          if (this%thereAre%Observation) call createvtkOnTheFly(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%media%sggMtag,this%control%dontwritevtk)
 #ifdef CompileWithMPI
@@ -1878,21 +1861,15 @@ contains
 #endif
                           if (somethingdone) then
                                 write(dubuf,*) 'End flushing .vtk snapshots'
-                                call print11(this%control%layoutnumber,dubuf)
-                                write(dubuf,*) SEPARADOR//separador//separador
-                                call print11(this%control%layoutnumber,dubuf)
+                                call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                           else
                                 write(dubuf,*) 'No .vtk snapshots found to be flushed'
-                                call print11(this%control%layoutnumber,dubuf)
-                                write(dubuf,*) SEPARADOR//separador//separador
-                                call print11(this%control%layoutnumber,dubuf)
+                                call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                           end if
                       end if  
                          if (this%perform%flushXdmf) then
                             write(dubuf,'(a,i9)')  ' Post-processing .xdmf files n= ',this%n
-                            call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                            call print11(this%control%layoutnumber,dubuf)
-                            call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+                            call printMessageWithSeparator(this%control%layoutnumber,dubuf)
                             somethingdone=.false.
 
                             if (this%thereAre%Observation) call createxdmfOnTheFly(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)                          
@@ -1905,30 +1882,22 @@ contains
 #endif
                             if (somethingdone) then
                                       write(dubuf,*) 'End flushing .xdmf snapshots'
-                                      call print11(this%control%layoutnumber,dubuf)
-                                      write(dubuf,*) SEPARADOR//separador//separador
-                                      call print11(this%control%layoutnumber,dubuf)
+                                      call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                              else
                                       write(dubuf,*) 'No .xdmf snapshots found to be flushed'
-                                      call print11(this%control%layoutnumber,dubuf)
-                                      write(dubuf,*) SEPARADOR//separador//separador
-                                      call print11(this%control%layoutnumber,dubuf)
+                                      call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                             end if
                       end if
 
 #ifdef CompileWithMPI
                      call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
+#endif
                  end if !del if (this%performflushDATA.or....
-    !
-
-
                   if (this%control%singlefilewrite.and.this%perform%Unpack) call singleUnpack()
                   if ((this%control%singlefilewrite.and.this%perform%Unpack).or.this%perform%isFlush()) then
                      write(dubuf,'(a,i9)')  ' Continuing simulation at n= ',this%n
-                     call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                     call print11(this%control%layoutnumber,dubuf)
-                     call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+                     call printMessageWithSeparator(this%control%layoutnumber,dubuf)
                   end if
 
                 end if !!!del if (.not.this%parar)
@@ -1970,15 +1939,72 @@ contains
          this%n=this%n+1 !sube de iteracion
       end do ciclo_temporal ! End of the time-stepping loop
 
+
 contains
+
+      subroutine request_flush_if_any_observation_is_done()
+         do i=1,this%sgg%NumberRequest
+            if  (this%sgg%Observation(i)%done.and.(.not.this%sgg%Observation(i)%flushed)) then
+               this%perform%flushXdmf=.true.
+               this%perform%flushVTK=.true.
+            end if
+         end do
+#ifdef CompileWithMPI
+         call syncroniceFlushFlags(this%perform, ierr)
+#endif
+      end subroutine
+      
+#ifdef CompileWithMPI
+      subroutine syncroniceFlushFlags(performFlags, integerError)
+         type(perform_t), intent(inout) :: performFlags
+         integer, intent(inout) :: integerError
+         logical :: logicalAux
+         logicalAux=performFlags%flushVTK
+         call MPI_AllReduce( logicalAux, performFlags%flushVTK, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         logicalAux=performFlags%flushXdmf
+         call MPI_AllReduce( logicalAux, performFlags%flushXdmf, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         logicalAux=performFlags%flushDATA
+         call MPI_AllReduce( logicalAux, performFlags%flushDATA, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         logicalAux=performFlags%flushFIELDS
+         call MPI_AllReduce( logicalAux, performFlags%flushFIELDS, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         logicalAux=performFlags%postprocess
+         call MPI_AllReduce( logicalAux, performFlags%postprocess, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+      end subroutine syncroniceFlushFlags
+#endif
+
+      subroutine performFlushField()
+         write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nentradaroot)),SEPARADOR
+         call printMessage(this%control%layoutnumber,dubuf)
+         write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
+         call printMessage(this%control%layoutnumber,dubuf)
+
+         call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
+         Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'DONE FLUSHING OF RESTARTING FIELDS n=',this%n
+         call printMessageWithSeparator(this%control%layoutnumber, dubuf)
+
+      end subroutine performFlushField
       subroutine updateAndFlush()
          integer(kind=4) :: mindum
-         if (this%thereAre%Observation) then
+         IF (this%thereAre%Observation) then
+#ifdef CompileWithNewOutputModule
+            if (this%n /= 0) then
+               call update_outputs(this%control, this%sgg%tiempo, this%n, fieldReference)
+               if (this%n>=this%ini_save+BuffObse)  then
+                  mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
+                  call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .FALSE.)
+               end if
+            end if
+#else
             call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
             if (this%n>=this%ini_save+BuffObse)  then
                mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
                call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
             end if
+#endif
          end if
       end subroutine
 
@@ -1989,10 +2015,9 @@ contains
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
 #endif
-         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
          write(dubuf,'(a,i9)')  ' Unpacking .bin files and prostprocessing them at n= ',this%n
-         call print11(this%control%layoutnumber,dubuf)
-         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+         call printMessageWithSeparator(this%control%layoutnumber, dubuf)
+
          if (this%thereAre%Observation) call unpacksinglefiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%control%resume) !dump the remaining to disk
          somethingdone=.false.
          if (this%control%singlefilewrite.and.this%perform%Unpack) then
@@ -2005,9 +2030,7 @@ contains
          somethingdone=newsomethingdone
 #endif
          write(dubuf,'(a,i9)')  ' Done Unpacking .bin files and prostprocessing them at n= ',this%n
-         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-         call print11(this%control%layoutnumber,dubuf)
-         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+         call printMessageWithSeparator(this%control%layoutnumber, dubuf)
 
       end subroutine singleUnpack
 
@@ -2663,11 +2686,34 @@ contains
       logical :: dummylog, somethingdone, newsomethingdone
       character(len=bufsize) :: dubuf
 
+#ifdef CompileWithNewOutputModule
+      type(fields_reference_t) :: fieldReference
+#endif
+
+
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz;
       dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
+
+#ifdef CompileWithNewOutputModule
+      fieldReference%E%x => this%Ex
+      fieldReference%E%y => this%Ey
+      fieldReference%E%z => this%Ez
+
+      fieldReference%E%deltax => this%dxe
+      fieldReference%E%deltay => this%dye
+      fieldReference%E%deltaz => this%dze
+
+      fieldReference%H%x => this%Hx
+      fieldReference%H%y => this%Hy
+      fieldReference%H%z => this%Hz
+
+      fieldReference%H%deltax => this%dxh
+      fieldReference%H%deltay => this%dyh
+      fieldReference%H%deltaz => this%dzh
+#endif
 
 #ifdef CompileWithProfiling
       call nvtxEndRange
@@ -2710,10 +2756,14 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       if (this%thereAre%Observation) then
+#ifdef CompileWithNewOutputModule
+         call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .TRUE.)
+         call close_outputs()
+#else 
          call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
+#endif      
       end if
-      
       if (this%thereAre%FarFields) then
          write(dubuf,'(a,i9)')   ' DONE FINAL OBSERVATION DATA FLUSHED and Near-to-Far field  n= ',this%n
       else
@@ -2727,6 +2777,9 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
 
+#ifdef CompileWithNewOutputModule
+#else
+
       write(dubuf,'(a,i9)') 'INIT FINAL Postprocessing frequency domain probes, if any, at n= ',this%n
       call print11(this%control%layoutnumber,dubuf)
       write(dubuf,*) SEPARADOR//separador//separador
@@ -2734,6 +2787,7 @@ contains
       somethingdone=.false.
       at=this%n*this%sgg%dt
       if (this%thereAre%Observation) call PostProcess(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
+#endif
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
       call MPI_AllReduce(somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
