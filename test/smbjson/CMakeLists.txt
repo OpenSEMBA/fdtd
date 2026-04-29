@@ -11,6 +11,7 @@ add_library (smbjson_test_fortran
     "test_read_thinSlot.F90"
     "test_read_sgbc.F90"
     "test_read_currentInjection.F90"
+    "test_read_nodal_source_resistance.F90"
     "test_read_sphere.F90"
     "test_read_airplane.F90"
     "test_read_lumped_fixture.F90"
@@ -28,6 +29,7 @@ if(SEMBA_FDTD_ENABLE_MTLN)
     )
 else()
     target_sources(smbjson_test_fortran PRIVATE
+        "test_read_nodal_source_resistance.F90"
         "test_read_holland1981.F90"
     )
 endif()
