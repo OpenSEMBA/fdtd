@@ -17,7 +17,7 @@ module mtl_bundle_m
         real(kind=rkind), allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
         integer  :: number_of_conductors = 0, number_of_divisions = 0
         real(kind=RKIND), dimension(:), allocatable :: step_size
-        real(kind=RKIND), allocatable, dimension(:,:) :: v, i
+        real(kind=RKIND), allocatable, dimension(:,:) :: v, i, i_prev
         real(kind=RKIND), allocatable, dimension(:,:) :: v_source, i_source, e_L
         real(kind=RKIND), allocatable, dimension(:,:) :: i_prev
         real(kind=RKIND), allocatable, dimension(:,:,:) :: du(:,:,:)
