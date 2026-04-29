@@ -57,6 +57,32 @@
       "cacheVariables": {
         "SEMBA_FDTD_ENABLE_MTLN": "OFF"
       }
+    },
+    {
+      "name": "nvhpc-rls",
+      "generator": "Ninja",
+      "binaryDir": "build-nvhpc-rls/",
+      "environment": {
+        "NVHPC_ROOT": "/opt/nvidia/hpc_sdk/Linux_x86_64/24.5",
+        "FC": "/opt/nvidia/hpc_sdk/Linux_x86_64/24.5/compilers/bin/nvfortran",
+        "CC": "/opt/nvidia/hpc_sdk/Linux_x86_64/24.5/compilers/bin/nvc",
+        "CXX": "/opt/nvidia/hpc_sdk/Linux_x86_64/24.5/compilers/bin/nvc++"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "SEMBA_FDTD_ENABLE_MPI": "OFF",
+        "SEMBA_FDTD_ENABLE_MTLN": "OFF",
+        "SEMBA_FDTD_ENABLE_HDF": "OFF",
+        "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "OFF"
+      }
+    },
+    {
+      "name": "nvhpc-dbg",
+      "inherits": "nvhpc-rls",
+      "binaryDir": "build-nvhpc-dbg/",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
     }
   ]
 }

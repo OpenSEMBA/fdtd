@@ -22,7 +22,8 @@ jobs:
         os: [ubuntu-latest]
         compiler: [
           {name: 'intel', version: '2025.1'},
-          {name: 'gcc', version: 11}
+          {name: 'gcc', version: 11},
+          {name: 'nvidia-hpc', version: '24.5'}
         ]
         build-type: ["Release"]
         mpi: ["ON", "OFF"]
@@ -31,15 +32,6 @@ jobs:
         double-precision: ["OFF"]
 
         include:
-          # Disable by lack of space on github action
-          # - os: ubuntu-latest
-          #   compiler: {name: 'nvidia-hpc', version: '24.5'}
-          #   build-type: "Release"
-          #   mpi: "OFF"
-          #   mtln: "OFF"
-          #   hdf: "OFF"
-          #   double-precision: "OFF"
-
           - os: ubuntu-latest # This is the only test with double precision.
             compiler: {name: 'intel', version: '2025.1'}
             build-type: "Release"
@@ -47,6 +39,22 @@ jobs:
             mtln: "OFF"
             hdf: "ON"
             double-precision: "ON"
+
+          - os: ubuntu-latest # Single NVIDIA HPC build: no MPI/MTLN/HDF to keep it slim.
+            compiler: {name: 'nvidia-hpc', version: '24.5'}
+            build-type: "Release"
+            mpi: "OFF"
+            mtln: "OFF"
+            hdf: "OFF"
+            double-precision: "OFF"
+
+        exclude:
+          - compiler: {name: 'nvidia-hpc', version: '24.5'}
+            mpi: "ON"
+          - compiler: {name: 'nvidia-hpc', version: '24.5'}
+            mtln: "ON"
+          - compiler: {name: 'nvidia-hpc', version: '24.5'}
+            hdf: "ON"
             
       fail-fast: false
             
@@ -82,7 +90,19 @@ jobs:
         compiler: ${{matrix.compiler.name}}
         version: ${{matrix.compiler.version}}
         
+    - name: Build application (nvidia-hpc)
+      if: matrix.compiler.name=='nvidia-hpc'
+      run: |
+        cmake -S . -B build-nvhpc-rls \
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+          -DSEMBA_FDTD_ENABLE_MPI=OFF \
+          -DSEMBA_FDTD_ENABLE_HDF=OFF \
+          -DSEMBA_FDTD_ENABLE_MTLN=OFF \
+          -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=OFF
+        cmake --build build-nvhpc-rls -j
+
     - name: Build application
+      if: matrix.compiler.name!='nvidia-hpc'
       run: |       
         cmake -S . -B build \
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
@@ -93,13 +113,23 @@ jobs:
         cmake --build build -j
       
     - name: Run unit tests 
+      if: matrix.compiler.name!='nvidia-hpc'
       run: build/bin/fdtd_tests
 
     - name: Run python tests
+      if: matrix.compiler.name!='nvidia-hpc'
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
+      run: python -m pytest test/ --durations=20
+
+    - name: Run python tests (nvidia-hpc)
+      if: matrix.compiler.name=='nvidia-hpc'
+      env:
+        SEMBA_FDTD_ENABLE_MPI: "OFF"
+        SEMBA_FDTD_ENABLE_MTLN: "OFF"
+        SEMBA_FDTD_ENABLE_HDF: "OFF"
       run: python -m pytest test/ --durations=20
         
        
