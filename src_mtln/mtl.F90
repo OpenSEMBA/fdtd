@@ -140,6 +140,8 @@ contains
                 allocate(res%segments(0))
                 allocate(res%mpi_comm%comms(0))
             end if
+            res%layer_indices = layer_indices
+            res%bundle_in_layer = bundle_in_layer
         else
             res%step_size =  step_size
             allocate(res%layer_indices(0,0))

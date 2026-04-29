@@ -19,6 +19,7 @@ module mtl_bundle_m
         real(kind=RKIND), dimension(:), allocatable :: step_size
         real(kind=RKIND), allocatable, dimension(:,:) :: v, i
         real(kind=RKIND), allocatable, dimension(:,:) :: v_source, i_source, e_L
+        real(kind=RKIND), allocatable, dimension(:,:) :: i_prev
         real(kind=RKIND), allocatable, dimension(:,:,:) :: du(:,:,:)
         real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 1e10
 
@@ -115,6 +116,7 @@ contains
 
         allocate(this%v(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0_rkind)
         allocate(this%i(this%number_of_conductors, this%number_of_divisions), source = 0.0_rkind)
+        allocate(this%i_prev(this%number_of_conductors, this%number_of_divisions), source = 0.0_rkind)
         allocate(this%e_L(this%number_of_conductors, this%number_of_divisions), source = 0.0_rkind)
 
         allocate(this%v_source(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0_rkind)
@@ -406,19 +408,17 @@ contains
 
     subroutine bundle_advanceCurrent(this)
         class(mtl_bundle_t) ::this
-        real(kind=rkind), dimension(:,:), allocatable :: i_prev, i_now
         integer :: i
         real(kind=rkind) :: eps_r
 #ifdef CompileWithMPI
-        integer(kind=4) :: sizeof, ierr
+        integer(kind=4) :: ierr
 
 #endif
 #ifdef CompileWithMPI
-        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
-        if (sizeof > 1) call this%Comm_MPI_V()
+        if (size(this%mpi_comm%comms) > 0) call this%Comm_MPI_V()
 #endif
         call this%transfer_impedance%updateQ3Phi()
-        i_prev = this%i
+        this%i_prev = this%i
 
         do i = 1, this%number_of_divisions
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
@@ -427,18 +427,14 @@ contains
                                                       matmul(this%du(i,:,:),this%v_source(:,i))) - &
                           matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
-        i_now = this%i
-        call this%transfer_impedance%updatePhi(i_prev, i_now)
+        call this%transfer_impedance%updatePhi(this%i_prev, this%i)
     end subroutine
 
     subroutine bundle_setExternalLongitudinalField(this)
         class(mtl_bundle_t) :: this
         integer :: i, j
 #ifdef CompileWithMPI
-        integer :: sizeof, ierr
-
-        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
-        if (sizeof > 1) call this%Comm_MPI_Fields()
+        if (size(this%mpi_comm%comms) > 0) call this%Comm_MPI_Fields()
 #endif
 
         do j = 1, this%conductors_in_level(1)
@@ -454,27 +450,23 @@ contains
 #ifdef CompileWithMPI
     subroutine Comm_MPI_V(this)
         class(mtl_bundle_t) :: this
-        integer :: number_of_conductors, i, c
+        integer :: number_of_conductors, i
         integer :: ierr, rank, status(MPI_STATUS_SIZE)
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
         number_of_conductors = size(this%v,1)
         do i = 1, size(this%mpi_comm%comms)
             if (this%mpi_comm%comms(i)%comm_type == COMM_V .or. this%mpi_comm%comms(i)%comm_type == COMM_BOTH) then
                 if (this%mpi_comm%comms(i)%comm_task == COMM_SEND) then
-                    do c = 1, number_of_conductors
-                        call MPI_send(this%v(c, this%mpi_comm%comms(i)%v_index),1, REALSIZE, &
-                                      rank+this%mpi_comm%comms(i)%delta_rank, &
-                                      200*(rank+this%mpi_comm%comms(i)%delta_rank+1)+c, &
-                                      SUBCOMM_MPI, ierr)
-                    end do
+                    call MPI_send(this%v(:, this%mpi_comm%comms(i)%v_index), number_of_conductors, REALSIZE, &
+                                  rank+this%mpi_comm%comms(i)%delta_rank, &
+                                  200*(rank+this%mpi_comm%comms(i)%delta_rank+1), &
+                                  SUBCOMM_MPI, ierr)
                 end if
                 if (this%mpi_comm%comms(i)%comm_task == COMM_RECV) then
-                    do c = 1, number_of_conductors
-                        call MPI_recv(this%v(c, this%mpi_comm%comms(i)%v_index),1, REALSIZE, &
-                                      rank+this%mpi_comm%comms(i)%delta_rank, &
-                                      200*(rank+1)+c, &
-                                      SUBCOMM_MPI, status, ierr)
-                    end do
+                    call MPI_recv(this%v(:, this%mpi_comm%comms(i)%v_index), number_of_conductors, REALSIZE, &
+                                  rank+this%mpi_comm%comms(i)%delta_rank, &
+                                  200*(rank+1), &
+                                  SUBCOMM_MPI, status, ierr)
                 end if
             end if
         end do

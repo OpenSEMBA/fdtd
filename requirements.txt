@@ -7,3 +7,4 @@ pyvista
 h5py
 scikit-rf
 vtk
+psutil

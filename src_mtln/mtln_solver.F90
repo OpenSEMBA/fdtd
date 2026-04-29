@@ -363,7 +363,7 @@ contains
 #ifdef CompileWithMPI
                 if (.not. this%bundles(i)%probes(j)%in_layer) cycle
 #endif          
-                close(this%bundles(i)%probes(k)%unit)
+                close(this%bundles(i)%probes(j)%unit)
             end do
       end do
     end subroutine
