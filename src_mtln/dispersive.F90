@@ -76,12 +76,17 @@ contains
 
     subroutine updateQ3Phi(this)
         class(dispersive_t) :: this
-        integer :: i_div,j,k
+        integer :: i_div, i, j
 
-        this%q3_phi(:,:) = reshape(&
-            source = [(dotmatrixmul(this%q3(i_div, :, :, :), this%phi(i_div, :, :)), i_div = 1, this%number_of_divisions)], &
-            shape=[this%number_of_divisions, this%number_of_conductors], &
-            order=[2,1])
+        this%q3_phi = 0.0
+        do i_div = 1, this%number_of_divisions
+            do i = 1, this%number_of_conductors
+                do j = 1, this%number_of_conductors
+                    this%q3_phi(i_div, i) = this%q3_phi(i_div, i) + &
+                        dot_product(this%q3(i_div, i, j, :), this%phi(i_div, j, :))
+                end do
+            end do
+        end do
     end subroutine
 
     subroutine updatePhi(this, i_prev, i_now)
