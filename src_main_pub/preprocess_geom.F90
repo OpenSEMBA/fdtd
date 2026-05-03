@@ -17,6 +17,7 @@ module Preprocess_m
    use FDETYPES_m
    use DMMA_m
    use conformal_m, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
+   use preprocess_tags_m
    implicit none
 !!!variables globales del modulo
    real(kind=RKIND), save           :: cluz,zvac
@@ -4823,74 +4824,7 @@ contains
          bbox%ZE = -sgg%Alloc(iHz)%ZE
       end subroutine
 
-      function getDifferentEdgeRatios(conformal_media) result(res)
-         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conformal_media
-         integer :: i, j, k
-         real(kind=rkind), dimension(:), allocatable :: aux
-         real(kind=rkind), dimension(:), allocatable :: res
-         logical :: isNew
-         allocate(res(0))
-         do i = 1, ubound(conformal_media,1)
-            do j = 1, ubound(conformal_media(i)%edge_media,1)
 
-               isNew = .true.
-               do k = 1, ubound(res,1)
-                  if (eq_ratio(res(k), conformal_media(i)%edge_media(j)%ratio, EDGE_RATIO_EQ_TOLERANCE)) isNew = .false.
-               end do
-               if (isNew) then 
-                  block 
-                     if (ubound(res,1) == 0) then 
-                        deallocate(res)
-                        allocate(res(1))
-                        res(1) = conformal_media(i)%edge_media(j)%ratio
-                     else
-                        if (allocated(aux)) deallocate(aux)
-                        allocate(aux(ubound(res,1) + 1))
-                        aux(1:ubound(res,1)) = res
-                        aux(ubound(res,1) + 1) = conformal_media(i)%edge_media(j)%ratio
-                        deallocate(res)
-                        allocate(res(ubound(aux,1)))
-                        res = aux
-                     end if
-                  end block
-               end if
-            end do
-         end do
-      end function
-      function getDifferentFaceRatios(conformal_media) result(res)
-         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conformal_media
-         integer :: i, j, k
-         real(kind=rkind), dimension(:), allocatable :: res
-         real(kind=rkind), dimension(:), allocatable :: aux
-         logical :: isNew
-         allocate(res(0))
-         do i = 1, ubound(conformal_media,1)
-            do j = 1, ubound(conformal_media(i)%face_media,1)
-
-               isNew = .true.
-               do k = 1, ubound(res,1)
-                  if (eq_ratio(res(k), conformal_media(i)%face_media(j)%ratio, FACE_RATIO_EQ_TOLERANCE)) isNew = .false.
-               end do
-               if (isNew) then 
-                  block 
-                     if (ubound(res,1) == 0) then 
-                        deallocate(res)
-                        allocate(res(1))
-                        res(1) = conformal_media(i)%face_media(j)%ratio
-                     else
-                        if (allocated(aux)) deallocate(aux)
-                        allocate(aux(ubound(res,1) + 1))
-                        aux(1:ubound(res,1)) = res
-                        aux(ubound(res,1) + 1) = conformal_media(i)%face_media(j)%ratio
-                        deallocate(res)
-                        allocate(res(ubound(aux,1)))
-                        res = aux
-                     end if
-                  end block
-               end if
-            end do
-         end do
-      end function
 
       subroutine addConformalMedia(sgg, media, conformal_media, edge_ratios, face_ratios, contamedia, bbox, side_map)
          type(SGGFDTDINFO_t), intent(inout) :: sgg
@@ -6977,246 +6911,75 @@ contains
    end subroutine cuentatags
 
 
-   subroutine checkDielectricComponentTags (component, prev_components, n_prev, coord_type, numertag, tagtype, precounting, error_msg)
-      type(Dielectric_t), intent(in) :: component        ! Current component
-      type(Dielectric_t), intent(in) :: prev_components(:) ! Array of previous components
-      integer, intent(in) :: n_prev                            ! Number of previous components
-      character(len=*), intent(in) :: coord_type               ! 'c1P' or 'c2P'
-      integer, intent(inout) :: numertag
-      type(tagtype_t), intent(inout) :: tagtype
-      integer, intent(in) :: precounting
-      character(len=*), intent(in) :: error_msg
+   function getDifferentEdgeRatios(conformal_media) result(res)
+      type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conformal_media
+      integer :: i, j, k
+      real(kind=rkind), dimension(:), allocatable :: aux
+      real(kind=rkind), dimension(:), allocatable :: res
+      logical :: isNew
+      allocate(res(0))
+      do i = 1, ubound(conformal_media,1)
+         do j = 1, ubound(conformal_media(i)%edge_media,1)
 
-      logical :: foundDuplicate
-      character(len=BUFSIZE) :: tagToCheck
-      integer :: i, j, k, m, tama2, prev_size
-
-      if (coord_type == 'c1P') then
-         tama2 = component%n_c1P
-      else
-         tama2 = component%n_c2P
-      end if
-
-      check_tags: do j = 1, tama2
-         numertag = numertag + 1
-         foundDuplicate = .false.
-
-         ! Get tag to check based on coord_type
-         if (coord_type == 'c1P') then
-            tagToCheck = trim(adjustl(component%c1P(j)%tag))
-         else
-            tagToCheck = trim(adjustl(component%c2P(j)%tag))
-         end if
-
-         ! Check current component up to j-1
-         if (j > 1) then
-            check_current: do k = 1, j-1
-               if (coord_type == 'c1P') then
-                  if (tagToCheck == trim(adjustl(component%c1P(k)%tag))) then
-                     foundDuplicate = .true.
-                     exit check_current
+            isNew = .true.
+            do k = 1, ubound(res,1)
+               if (eq_ratio(res(k), conformal_media(i)%edge_media(j)%ratio, EDGE_RATIO_EQ_TOLERANCE)) isNew = .false.
+            end do
+            if (isNew) then
+               block
+                  if (ubound(res,1) == 0) then
+                     deallocate(res)
+                     allocate(res(1))
+                     res(1) = conformal_media(i)%edge_media(j)%ratio
+                  else
+                     if (allocated(aux)) deallocate(aux)
+                     allocate(aux(ubound(res,1) + 1))
+                     aux(1:ubound(res,1)) = res
+                     aux(ubound(res,1) + 1) = conformal_media(i)%edge_media(j)%ratio
+                     deallocate(res)
+                     allocate(res(ubound(aux,1)))
+                     res = aux
                   end if
-               else
-                  if (tagToCheck == trim(adjustl(component%c2P(k)%tag))) then
-                     foundDuplicate = .true.
-                     exit check_current
+               end block
+            end if
+         end do
+      end do
+   end function getDifferentEdgeRatios
+
+   function getDifferentFaceRatios(conformal_media) result(res)
+      type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conformal_media
+      integer :: i, j, k
+      real(kind=rkind), dimension(:), allocatable :: res
+      real(kind=rkind), dimension(:), allocatable :: aux
+      logical :: isNew
+      allocate(res(0))
+      do i = 1, ubound(conformal_media,1)
+         do j = 1, ubound(conformal_media(i)%face_media,1)
+
+            isNew = .true.
+            do k = 1, ubound(res,1)
+               if (eq_ratio(res(k), conformal_media(i)%face_media(j)%ratio, FACE_RATIO_EQ_TOLERANCE)) isNew = .false.
+            end do
+            if (isNew) then
+               block
+                  if (ubound(res,1) == 0) then
+                     deallocate(res)
+                     allocate(res(1))
+                     res(1) = conformal_media(i)%face_media(j)%ratio
+                  else
+                     if (allocated(aux)) deallocate(aux)
+                     allocate(aux(ubound(res,1) + 1))
+                     aux(1:ubound(res,1)) = res
+                     aux(ubound(res,1) + 1) = conformal_media(i)%face_media(j)%ratio
+                     deallocate(res)
+                     allocate(res(ubound(aux,1)))
+                     res = aux
                   end if
-               end if
-            end do check_current
-         end if
-
-         ! If not found, check all previous components
-         if (.not. foundDuplicate) then
-            check_previous: do m = 1, n_prev
-               ! Check c1P of previous component
-               if (prev_components(m)%n_c1P > 0) then
-                  do k = 1, prev_components(m)%n_c1P
-                     if (tagToCheck == trim(adjustl(prev_components(m)%c1P(k)%tag))) then
-                        print *, error_msg
-                        print *, 'Duplicate tag found:', tagToCheck
-                        stop
-                     end if
-                  end do
-               end if
-
-               ! Check c2P of previous component
-               if (prev_components(m)%n_c2P > 0) then
-                  do k = 1, prev_components(m)%n_c2P
-                     if (tagToCheck == trim(adjustl(prev_components(m)%c2P(k)%tag))) then
-                        print *, error_msg
-                        print *, 'Duplicate tag found:', tagToCheck
-                        stop
-                     end if
-                  end do
-               end if
-            end do check_previous
-         end if
-
-         if (foundDuplicate) then
-            numertag = numertag - 1
-         else if (precounting == 1) then
-            tagtype%tag(numertag) = tagToCheck
-         end if
-      end do check_tags
-   end subroutine
-
-
-   subroutine checkAnimatedComponentTags (component, prev_components, n_prev, coord_type, numertag, tagtype, precounting, error_msg)
-      type(ANISOTROPICbody_t), intent(in) :: component        ! Current component
-      type(ANISOTROPICbody_t), intent(in) :: prev_components(:) ! Array of previous components
-      integer, intent(in) :: n_prev                            ! Number of previous components
-      character(len=*), intent(in) :: coord_type               ! 'c1P' or 'c2P'
-      integer, intent(inout) :: numertag
-      type(tagtype_t), intent(inout) :: tagtype
-      integer, intent(in) :: precounting
-      character(len=*), intent(in) :: error_msg
-
-      logical :: foundDuplicate
-      character(len=BUFSIZE) :: tagToCheck
-      integer :: i, j, k, m, tama2, prev_size
-
-      if (coord_type == 'c1P') then
-         tama2 = component%n_c1P
-      else
-         tama2 = component%n_c2P
-      end if
-
-      check_tags: do j = 1, tama2
-         numertag = numertag + 1
-         foundDuplicate = .false.
-
-         ! Get tag to check based on coord_type
-         if (coord_type == 'c1P') then
-            tagToCheck = trim(adjustl(component%c1P(j)%tag))
-         else
-            tagToCheck = trim(adjustl(component%c2P(j)%tag))
-         end if
-
-         ! Check current component up to j-1
-         if (j > 1) then
-            check_current: do k = 1, j-1
-               if (coord_type == 'c1P') then
-                  if (tagToCheck == trim(adjustl(component%c1P(k)%tag))) then
-                     foundDuplicate = .true.
-                     exit check_current
-                  end if
-               else
-                  if (tagToCheck == trim(adjustl(component%c2P(k)%tag))) then
-                     foundDuplicate = .true.
-                     exit check_current
-                  end if
-               end if
-            end do check_current
-         end if
-
-         ! If not found, check all previous components
-         if (.not. foundDuplicate) then
-            check_previous: do m = 1, n_prev
-               ! Check c1P of previous component
-               if (prev_components(m)%n_c1P > 0) then
-                  do k = 1, prev_components(m)%n_c1P
-                     if (tagToCheck == trim(adjustl(prev_components(m)%c1P(k)%tag))) then
-                        print *, error_msg
-                        print *, 'Duplicate tag found:', tagToCheck
-                        stop
-                     end if
-                  end do
-               end if
-
-               ! Check c2P of previous component
-               if (prev_components(m)%n_c2P > 0) then
-                  do k = 1, prev_components(m)%n_c2P
-                     if (tagToCheck == trim(adjustl(prev_components(m)%c2P(k)%tag))) then
-                        print *, error_msg
-                        print *, 'Duplicate tag found:', tagToCheck
-                        stop
-                     end if
-                  end do
-               end if
-            end do check_previous
-         end if
-
-         if (foundDuplicate) then
-            numertag = numertag - 1
-         else if (precounting == 1) then
-            tagtype%tag(numertag) = tagToCheck
-         end if
-      end do check_tags
-   end subroutine
-
-   subroutine checkLossyTags(component, prev_components, n_prev, numertag, tagtype, precounting)
-      type(LossyThinSurface_t), intent(in) :: component        ! Current component
-      type(LossyThinSurface_t), intent(in) :: prev_components(:) ! Array of previous components
-      integer, intent(in) :: n_prev                         ! Number of previous components
-      integer, intent(inout) :: numertag
-      type(tagtype_t), intent(inout) :: tagtype
-      integer, intent(in) :: precounting
-
-      logical :: foundDuplicate
-      character(len=BUFSIZE) :: tagToCheck
-      integer :: i, j, k, m, tama2
-
-      tama2 = component%nc
-      if (tama2 == 0) then
-         print *, 'Bug in LossyThinSurf Tags. Missing coordinates'
-         stop
-      end if
-
-      check_tags: do j = 1, tama2
-         numertag = numertag + 1
-         foundDuplicate = .false.
-
-         tagToCheck = trim(adjustl(component%C(j)%tag))
-
-         ! Check current component up to j-1
-         if (j > 1) then
-            check_current: do k = 1, j-1
-               if (tagToCheck == trim(adjustl(component%C(k)%tag))) then
-                  foundDuplicate = .true.
-                  exit check_current
-               end if
-            end do check_current
-         end if
-
-         ! If not found, check all previous components
-         
-         if ((.not. foundDuplicate) .and. (n_prev>0)) then
-            check_previous: do m = 1, n_prev
-               if (prev_components(m)%nc > 0) then
-                  do k = 1, prev_components(m)%nc
-                     if (tagToCheck == trim(adjustl(prev_components(m)%C(k)%tag))) then
-                        foundDuplicate = .true.
-                     end if
-                  end do
-               end if
-            end do check_previous
-         end if
-
-         if (foundDuplicate) then
-            numertag = numertag - 1
-         else if (precounting == 1) then
-            tagtype%tag(numertag) = tagToCheck
-         end if
-      end do check_tags
-   end subroutine
-
-
-   function searchtag(tagtype,tag) result(numertag)
-
-
-      character(len=BUFSIZE) :: tag
-      integer(Kind=4) :: i,numertag
-      type(tagtype_t) :: tagtype
-
-      numertag=-1
-      busca: do i=1,tagtype%numertags
-         if (trim(adjustl(tagtype%tag(i)))==trim(adjustl(tag))) then
-            numertag=i
-            exit busca
-         end if
-      end do busca
-      return
-   end function searchtag
+               end block
+            end if
+         end do
+      end do
+   end function getDifferentFaceRatios
 
 
 end module Preprocess_m
