@@ -1,6 +1,6 @@
 integer function test_math_eigvals() bind(C) result(error_cnt)    
-    use utils_m
-    use mtln_testingTools_mod
+    use mtln_utils_m
+    use mtln_testingTools_m
 
     use iso_fortran_env, only: real64
     implicit none
@@ -30,7 +30,7 @@ integer function test_math_eigvals() bind(C) result(error_cnt)
 end function
 
 integer function test_math_matmul_broadcast() bind(C) result(error_cnt)    
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
 
     implicit none
     integer :: i

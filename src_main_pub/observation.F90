@@ -743,13 +743,15 @@ contains
         type(mtln_solver_t), pointer :: mtln_solver
         integer :: i, j
         mtln_solver => GetSolverPtr()
-        do i = 1, ubound(mtln_solver%bundles, 1)
-          if (ubound(mtln_solver%bundles(i)%probes, 1) /= 0) then
-            do j = 1, ubound(mtln_solver%bundles(i)%probes, 1)
-              if (mtln_solver%bundles(i)%probes(j)%in_layer) ThereAreObservation = .true.
-            end do
-          end if
-        end do
+        if (mtln_solver%number_of_bundles > 0) then
+          do i = 1, ubound(mtln_solver%bundles, 1)
+            if (ubound(mtln_solver%bundles(i)%probes, 1) /= 0) then
+              do j = 1, ubound(mtln_solver%bundles(i)%probes, 1)
+                if (mtln_solver%bundles(i)%probes(j)%in_layer) ThereAreObservation = .true.
+              end do
+            end if
+          end do
+        end if
       end block
 #endif
       !
@@ -1802,7 +1804,7 @@ contains
                     end do
                     cutting3: do
                       read (output(ii)%item(i)%unit, end=699) at
-          if (output(ii)%item(i)%columnas /= 0) read (output(ii)%item(i)%unit, end=699) (rdum, conta=1, output(ii)%item(i)%columnas)
+                      if (output(ii)%item(i)%columnas /= 0) read (output(ii)%item(i)%unit, end=699) (rdum, conta=1, output(ii)%item(i)%columnas)
                       output(ii)%TimesWritten = output(ii)%TimesWritten + 1
                       if (at > lastexecutedtime) then
                      print '(i4,a,a,2e19.9e3)', quienmpi, 'Cutting 3 ', trim(adjustl(output(ii)%item(i)%path)), at, lastexecutedtime
@@ -3417,8 +3419,8 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         i2 = i - merge(1, 0, 1 + mod(field, 3) == iEx)
         j2 = j - merge(1, 0, 1 + mod(field, 3) == iEy)
         k2 = k - merge(1, 0, 1 + mod(field, 3) == iEz)
- res =  getDelta(1+mod(field,3)  , i, j, k) * (-getField(1+mod(field,3) + 3,  i,j,k) + getField(1+mod(field,3) + 3,  i1,j1,k1))  + &
-             getDelta(1+mod(field+1,3), i, j, k) * ( getField(1+mod(field+1,3) + 3,i,j,k) - getField(1+mod(field+1,3) + 3,i2,j2,k2))
+        res =   getDelta(1+mod(field+1,3), i, j, k) * (getField(1+mod(field+1,3) + 3,i,j,k) - getField(1+mod(field+1,3) + 3,i2,j2,k2)) + &
+              - getDelta(1+mod(field,3)  , i, j, k) * (getField(1+mod(field,3) + 3,  i,j,k) - getField(1+mod(field,3) + 3,  i1,j1,k1))
       end function
 
       function getField(field, i, j, k) result(res)

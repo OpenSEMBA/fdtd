@@ -1,7 +1,7 @@
 integer function test_multipolar_expansion_for_dipole() bind(C) result(error_cnt)    
     use mtln_types_m
     use multipolar_expansion_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     
     real(kind=rkind), dimension(2) :: expansionCenter = [0.0_rkind, 0.0_rkind]
     real(kind=rkind) :: d=0.1, r=1.0 
@@ -45,7 +45,7 @@ integer function test_multipolar_expansion_for_lansink_two_wires() bind(C) resul
 	! EMC Europe(pp. 334 - 339). IEEE.
     use mtln_types_m
     use multipolar_expansion_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
 
     type(multipolar_expansion_t) :: mE
     type(box_2d_t) :: fdtdCell
@@ -125,7 +125,7 @@ integer function test_multipolar_expansion_for_lansink_wire_with_dielectric() bi
 	! EMC Europe(pp. 334 - 339). IEEE.
     use mtln_types_m
     use multipolar_expansion_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
 
     type(multipolar_expansion_t) :: mE
     type(box_2d_t) :: fdtdCell

@@ -1,6 +1,6 @@
 module mtl_bundle_m
 
-    use utils_m
+    use mtln_utils_m
     use probes_m
     use generators_m
     use dispersive_m

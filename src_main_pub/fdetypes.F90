@@ -186,6 +186,17 @@ module  FDETYPES_m
    integer(kind=4),  parameter  :: iBloqueJx=100*iEx,iBloqueJy=100*iEy,iBloqueJz=100*iEz
    integer(kind=4),  parameter  :: iBloqueMx=100*iHx,iBloqueMy=100*iHy,iBloqueMz=100*iHz
    !
+   integer (kind=4),  parameter :: VOLUMIC_M_MEASURE(3) = [iCur, iMEC, iMHC] !Module
+   integer (kind=4),  parameter :: VOLUMIC_X_MEASURE(3) = [iCurx, iExC, iHxC]
+   integer (kind=4),  parameter :: VOLUMIC_Y_MEASURE(3) = [iCury, iEyC, iHyC]
+   integer (kind=4),  parameter :: VOLUMIC_Z_MEASURE(3) = [iCurz, iEzC, iHzC]
+
+   integer (kind=4),  parameter :: MAGNETIC_FIELD_DIRECTION(3) = [iEx, iEy, iEz]
+   integer (kind=4),  parameter :: ELECTRIC_FIELD_DIRECTION(3) = [iHx, iHy, iHz]
+   integer (kind=4),  parameter :: CURRENT_MEASURE(4) = [iCur, iCurx, iCury, iCurz]
+   integer (kind=4),  parameter :: ELECTRIC_FIELD_MEASURE(4) = [iMEC, iExC, iEyC, iEzC]
+   integer (kind=4),  parameter :: MAGNETIC_FIELD_MEASURE(4) = [iMHC, iHxC, iHyC, iHzC]
+   !
    character(len=*), parameter  :: SEPARADOR='______________'
    integer(kind=4), parameter  :: comi=1,fine=2, icoord=1,jcoord=2,kcoord=3
 
@@ -594,6 +605,7 @@ module  FDETYPES_m
 
 
    type  :: MediaData_t
+      integer(kind=SINGLE) :: Id
       real(kind=RKIND) :: Priority,Epr,Sigma,Mur,SigmaM
       logical :: sigmareasignado !solo afecta a un chequeo de errores en lumped 120123
       type(exists_t)            :: Is
@@ -619,18 +631,18 @@ module  FDETYPES_m
       real(kind=RKIND_tiempo) :: dt
       character(len=BUFSIZE) :: extraswitches
       !!
-      integer(kind=4) :: NumMedia,AllocMed
-      integer(kind=4) :: IniPMLMedia,EndPMLMedia
-      integer(kind=4) :: NumPlaneWaves,TimeSteps,InitialTimeStep
-      integer(kind=4) :: NumNodalSources
-      integer(kind=4) :: NumberRequest
+      integer (kind=SINGLE)   ::  NumMedia,AllocMed
+      integer (kind=SINGLE)   ::  IniPMLMedia,EndPMLMedia
+      integer (kind=SINGLE)   ::  NumPlaneWaves,TimeSteps,InitialTimeStep
+      integer (kind=SINGLE)   ::  NumNodalSources
+      integer (kind=SINGLE)   ::  NumberRequest = 0_SINGLE
       !!!
-      real(kind=RKIND)     , pointer, dimension( : ) :: LineX,LineY,LineZ
-      real(kind=RKIND)     , pointer, dimension( : ) :: DX,DY,DZ
-      integer(kind=4)                                        :: AllocDxI,AllocDyI,AllocDzI,AllocDxE,AllocDyE,AllocDzE
-      type(planeonde_t), pointer, dimension( : )            :: PlaneWave
-      type(Border_t)                                         :: Border
-      type(PML_t)                                            :: PML
+      REAL (KIND=RKIND)     , pointer, dimension ( : )        ::  LineX,LineY,LineZ
+      REAL (KIND=RKIND)     , pointer, dimension ( : )        ::  DX,DY,DZ
+      integer (kind=SINGLE)                                        ::  AllocDxI,AllocDyI,AllocDzI,AllocDxE,AllocDyE,AllocDzE
+      type (planeonde_t), pointer, dimension ( : )            ::  PlaneWave
+      type (Border_t)                                         ::  Border
+      type (PML_t)                                            ::  PML
       !    !
       type(Shared_t)                                        :: Eshared !etangetial info
       !only needed by Slots and processed by anisotropic
