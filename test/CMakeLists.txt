@@ -23,6 +23,8 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
     set(ROTATE_TESTS_LIBRARY rotate_tests)
     add_subdirectory(vtk)
     set(VTK_TESTS_LIBRARY vtk_tests)
+    add_subdirectory(semba_fdtd)
+    set(SEMBA_FDTD_TESTS_LIBRARY semba_fdtd_tests)
     if (NOT SEMBA_FDTD_ENABLE_MPI)
         add_subdirectory(observation)
         set(OBSERVATION_TESTS_LIBRARY observation_tests)
@@ -45,5 +47,6 @@ target_link_libraries(fdtd_tests
     ${VTK_TESTS_LIBRARY}
     ${SYSTEM_TESTS_LIBRARY}
     ${OBSERVATION_TESTS_LIBRARY}
+    ${SEMBA_FDTD_TESTS_LIBRARY}
     GTest::gtest_main
 )

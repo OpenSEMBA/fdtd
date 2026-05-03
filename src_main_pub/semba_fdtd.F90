@@ -64,6 +64,8 @@ module SEMBA_FDTD_m
       procedure :: end => semba_end
       procedure :: create_solver => semba_create_solver
       procedure :: update_after_simulation => semba_update_after_simulation
+      procedure, private :: data_loader => semba_data_loader
+      procedure, private :: write_paraview_tag_info => semba_write_paraview_tag_info
    end type semba_fdtd_t 
 
    
@@ -106,8 +108,8 @@ contains
 
       call initEntrada(this%l) 
 
-      this%eps0= 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
-      this%mu0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
+      this%eps0= EPSILON_VACUUM
+      this%mu0 = MU_VACUUM
       this%cluz=1.0_RKIND/sqrt(this%eps0*this%mu0)
       
       call OnPrint
@@ -290,8 +292,7 @@ contains
    if (status /= 0) then
        call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Error in searching input file. Correct and remove pause file',.true.); goto 652
    end if
-!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!
+
    call print_credits(this%l)
 
 #ifdef CompileWithMPI
@@ -312,10 +313,10 @@ contains
 #endif
 #endif
 
-   call data_loader(this%l%filefde, parser)
+   call this%data_loader(this%l%filefde, NFDE_FILE, parser)
 
    this%sgg%extraswitches=parser%switches
-!!!da preferencia a los switches por linea de comando
+   
    call getcommandargument (this%l%chain2, 1, chaindummy, this%l%length, statuse, getBinaryPath())
 
    this%l%chain2=trim(adjustl(this%l%chain2))
@@ -382,7 +383,7 @@ contains
 
          call print11 (this%l%layoutnumber, SEPARADOR//SEPARADOR//SEPARADOR)
          !!!!!!!!!!!!!!!!!!!!!!
-         call NFDE2sgg
+         dtantesdecorregir = nfde2sgg(this, parser)
          this%l%fatalerror=this%l%fatalerror.or.this%l%fatalerrornfde2sgg
          !!!!!!!!!!!!!!!!!!!!!
 #ifdef CompileWithMPI
@@ -406,7 +407,7 @@ contains
          call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
       end if
-      write(dubuf,*) '[OK] Ended Conformal Mesh';  call print11(this%l%layoutnumber,dubuf)
+      
       if (this%l%finaltimestep==0) this%l%finaltimestep=this%sgg%TimeSteps !no quitar
       if (this%l%forcesteps) then
          this%sgg%TimeSteps = this%l%finaltimestep
@@ -460,13 +461,7 @@ contains
 #endif
             continue
          end if
-   !altair no conformal sgbc 201119
-#ifdef NoConformalSGBC
-         if (this%sgg%Med(i)%Is%sgbc .and. this%l%input_conformal_flag) then
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Conformal sgbc not allowed. ')
-         end if
-#endif
-   !    
+      !    
       end do
       
       
@@ -492,7 +487,6 @@ contains
             call stoponerror (this%l%layoutnumber, this%l%num_procs, 'this%l%resume -r currently unsupported by conformal solver',.true.); statuse=-1; !return
       end if
       !
-   !!!SOME FINAL REPORTING
 
       if (this%l%layoutnumber==0) then
          write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
@@ -557,313 +551,9 @@ contains
          call erasesignalingfiles(this%l%simu_devia)
       end if
       
-      if (this%l%layoutnumber==0) then
-         
-         open(newunit=thefileno,FILE = trim(adjustl(this%l%nEntradaRoot))//'_tag_paraviewfilters.txt')
-               write(thefileno,'(a)') trim(adjustl('### FOR SLICE CURRENT VTK PROBES select the "current_t" or "current_f"                           '))   
-               write(thefileno,'(a)') trim(adjustl('### FOR MAP VTK PROBES select the "mediatype" layer                                               '))             
-               write(thefileno,'(a)') trim(adjustl('### For Paraview versions over 5.10 just use the Threshold exisiting filter to select the interval'))           
-               write(thefileno,'(a)') trim(adjustl('### ######################'))
-               write(thefileno,'(a)') trim(adjustl('### For Paraview versions under 5.10 Copy and paste the next as a programmable filter to select only one interval of tags'))
-               write(thefileno,'(a)') trim(adjustl('import vtk                                                                                        '))
-               write(thefileno,'(a)') trim(adjustl('inp = self.GetInputDataObject(0, 0)                                                               '))
-               write(thefileno,'(a)') trim(adjustl('outp = self.GetOutputDataObject(0)                                                                '))
-               write(thefileno,'(a)') trim(adjustl('thresh = vtk.vtkThreshold()                                                                       '))
-               write(thefileno,'(a)') trim(adjustl('thresh.SetInputData(inp)                                                                          '))
-               write(thefileno,'(a)') trim(adjustl('thresh.SetInputArrayToProcess(0, 0, 0,vtk.vtkDataObject.FIELD_ASSOCIATION_CELLS, "tagnumber")     '))
-               write(thefileno,'(a)') trim(adjustl('thresh.ThresholdBetween(64,127)                                                              '))
-               write(thefileno,'(a)') trim(adjustl('thresh.Update()                                                              '))
-               write(thefileno,'(a)') trim(adjustl('outp.ShallowCopy(thresh.GetOutput())    '))        
-               write(thefileno,'(a)') trim(adjustl( '# Replace the thresh.ThresholdBetween numbers by tag intervals below to filter by tags           '))
-               write(thefileno,'(a)')               '# ( -1e21    , -1e-3    ) '//trim(adjustl('Candidates for undesired free-space slots'))
-               write(thefileno,'(a,i9,a,i9,a)')     '# (  0       ,  63      ) '//trim(adjustl('Nodal sources, etc.'))
-               do i=1,this%tagtype%numertags
-                  write(thefileno,'(a,i9,a,i9,a)') '# (',i*64,' , ',i*64+63,') '//trim(adjustl(this%tagtype%tag(i))) !los shifteo 6 bits y les sumo 2**campo ! idea de los 3 bits de 151020
-               end do
-               !!
-               write(thefileno,'(a)') trim(adjustl( '###    '))   
-               write(thefileno,'(a)') trim(adjustl( '###    '))   
-               write(thefileno,'(a)') trim(adjustl( '### FOR MAP VTK PROBES select the "mediatype" layer                                               '))                
-               write(thefileno,'(a)') trim(adjustl( '### For Paraview versions over 5.10 just use the Threshold exisiting filter to select the interval'))           
-               write(thefileno,'(a)') trim(adjustl( '### ######################'))
-               write(thefileno,'(a)') trim(adjustl( '### For Paraview versions under 5.10Copy and paste the next as a programmable filter to select only one types of media'))
-               write(thefileno,'(a)') trim(adjustl( 'import vtk                                                                                        '))
-               write(thefileno,'(a)') trim(adjustl( 'inp = self.GetInputDataObject(0, 0)                                                               '))
-               write(thefileno,'(a)') trim(adjustl( 'outp = self.GetOutputDataObject(0)                                                                '))
-               write(thefileno,'(a)') trim(adjustl( 'thresh = vtk.vtkThreshold()                                                                       '))
-               write(thefileno,'(a)') trim(adjustl( 'thresh.SetInputData(inp)                                                                          '))
-               write(thefileno,'(a)') trim(adjustl( 'thresh.SetInputArrayToProcess(0, 0, 0,vtk.vtkDataObject.FIELD_ASSOCIATION_CELLS, "mediatype")     '))
-               write(thefileno,'(a)') trim(adjustl( 'thresh.ThresholdBetween(0.0,0.5)                                                              '))
-               write(thefileno,'(a)') trim(adjustl( 'thresh.Update()                                                              '))
-               write(thefileno,'(a)') trim(adjustl( 'outp.ShallowCopy(thresh.GetOutput())  '))
-               write(thefileno,'(a)') trim(adjustl( '# Replace the thresh.ThresholdBetween numbers by media types below to filter by media types           '))
-               write(thefileno,'(a)') '# ( -100 , -100 ) '//trim(adjustl('Candidates for undesired free-space slots                               (Surface)'))
-               write(thefileno,'(a)') '# (  0.0 ,  0.0 ) '//trim(adjustl('PEC                                                                     (Surface)'))
-               write(thefileno,'(a)') '# (  0.5 ,  0.5 ) '//trim(adjustl('PEC                                                                     (Line)'))
-               write(thefileno,'(a)') '# ( 16.0 , 16.0 ) '//trim(adjustl('PMC                                                                     (Surface)'))
-               write(thefileno,'(a)') '# ( 16.5 , 16.5 ) '//trim(adjustl('PMC                                                                     (Line)'))
-               write(thefileno,'(a)') '# (  1.5 ,  1.5 ) '//trim(adjustl('Dispersive electric or magnetic isotropic or anisotropic                (Line)'))
-               write(thefileno,'(a)') '# (  100 ,  199 ) '//trim(adjustl('Dispersive electric/magnetic isotropic/anisotropic (+indexmedium)       (Surface) '))
-               write(thefileno,'(a)') '# (  2.5 ,  2.5 ) '//trim(adjustl('Dielectric isotropic or anisotropic                                     (Line)'))
-               write(thefileno,'(a)') '# (  200 ,  299 ) '//trim(adjustl('Dielectric isotropic or anisotropic (+indexmedium)                      (Surface)'))
-               write(thefileno,'(a)') '# (  3.5 ,  3.5 ) '//trim(adjustl('sgbc/this%l%mibc Isotropic/anisotropic Multiport                        (Line)'))
-               write(thefileno,'(a)') '# (  300 ,  399 ) '//trim(adjustl('sgbc/this%l%mibc Isotropic/anisotropic Multiport (+indexmedium)         (Surface)'))
-               write(thefileno,'(a)') '# (  4.5 ,  4.5 ) '//trim(adjustl('Thin slot                                                               (Line)'))
-               write(thefileno,'(a)') '# (  5.0 ,  5.0 ) '//trim(adjustl('Already_YEEadvanced_byconformal                                         (Surface)'))
-               write(thefileno,'(a)') '# (  5.5 ,  5.5 ) '//trim(adjustl('Already_YEEadvanced_byconformal                                         (Line)'))
-               write(thefileno,'(a)') '# (  6.0 ,  6.0 ) '//trim(adjustl('Split_and_useless                                                       (Surface)'))
-               write(thefileno,'(a)') '# (  6.5 ,  6.5 ) '//trim(adjustl('Split_and_useless                                                       (Line)'))
-               write(thefileno,'(a)') '# (  7.0 ,  7.0 ) '//trim(adjustl('Edge Not colliding thin wires                                           (Line)'))
-               write(thefileno,'(a)') '# (  8.0 ,  8.0 ) '//trim(adjustl('Thin wire segments colliding with structure                             (Line)'))
-               write(thefileno,'(a)') '# (  8.5 ,  8.5 ) '//trim(adjustl('Soft/Hard Nodal CURRENT/FIELD ELECTRIC DENSITY SOURCE                   (Line)'))
-               write(thefileno,'(a)') '# (  9.0 ,  9.0 ) '//trim(adjustl('Soft/Hard Nodal CURRENT/FIELD MAGNETIC DENSITY SOURCE                   (Line)'))
-               write(thefileno,'(a)') '# (   10 ,   11 ) '//trim(adjustl('LeftEnd/RightEnd/Ending wire segment                                    (Wire)'))
-               write(thefileno,'(a)') '# (   20 ,   20 ) '//trim(adjustl('Intermediate wire segment +number_holland_parallel or +number_berenger  (Wire) '))
-               write(thefileno,'(a)') '# (   12 ,   12 ) '//trim(adjustl('Edge Not colliding multiwires                                           (Multiwire)'))
-               write(thefileno,'(a)') '# (   13 ,   13 ) '//trim(adjustl('Multiwire segments colliding with structure                             (Multiwire)'))
-               write(thefileno,'(a)') '# (   14 ,   15 ) '//trim(adjustl('LeftEnd/RightEnd/Ending multiwire segment                               (Multiwire)'))
-               write(thefileno,'(a)') '# (   60 ,   60 ) '//trim(adjustl('Intermediate multiwire segment + number parallel segments               (Multiwire) '))
-               write(thefileno,'(a)') '# (  400 ,  499 ) '//trim(adjustl('Thin slot (+indexmedium)                                                (Surface)'))
-               write(thefileno,'(a)') '# ( 1000 , 1999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Surface)'))
-               write(thefileno,'(a)') '# ( 2000 , 2999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Line)'))
-               write(thefileno,'(a)') '# ( -0.5 , -0.5 ) '//trim(adjustl('Other types of media                                                    (Line)'))
-               write(thefileno,'(a)') '# ( -1.0 , -1.0 ) '//trim(adjustl('Other types of media                                                    (Surface)'))
-         close(thefileno)
-      end if
+      call this%write_paraview_tag_info()
 
 contains 
-   subroutine NFDE2sgg     
-   !!!!!!!!!      
-         real(kind=rkind) :: dt,finaldt
-         logical fatalerror
-         ! parser now holds all the .nfde info
-         !first read the limits
-#ifdef CompileWithMPI
-         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#endif
-         call read_limits_nogeom (this%l%layoutnumber,this%l%num_procs, this%sgg, this%fullsize, this%SINPML_fullsize, parser,this%l%MurAfterPML,this%l%mur_exist)
-      
-         dtantesdecorregir=this%sgg%dt
-
-         dxmin=minval(this%sgg%DX)
-         dymin=minval(this%sgg%DY)
-         dzmin=minval(this%sgg%DZ)
-         !!!
-         dtlay=(1.0_RKIND/(this%cluz*sqrt(((1.0_RKIND / dxmin)**2.0_RKIND )+((1.0_RKIND / dymin)**2.0_RKIND )+((1.0_RKIND / dzmin)**2.0_RKIND ))))
-         dt=dtlay
-#ifdef CompileWithMPI
-         call MPIupdateMin(dtlay,dt)
-#endif
-
-         if (this%l%forcecfl) then
-            this%sgg%dt=dt*this%l%cfl
-            write(dubuf,*) SEPARADOR//separador//separador
-            call print11(this%l%layoutnumber,dubuf)
-            write(dubuf,*) 'Correcting sgg%dt with -this%l%cfl switch. New time step: ',this%sgg%dt
-            call print11(this%l%layoutnumber,dubuf)
-            write(dubuf,*) SEPARADOR//separador//separador
-            call print11(this%l%layoutnumber,dubuf)
-         else
-            if (dtantesdecorregir == 0.0 .or. this%sgg%dt > dt*heurCFL) then
-               write(dubuf,*) SEPARADOR//separador//separador
-               call print11(this%l%layoutnumber,dubuf)
-               write(dubuf,*) 'Automatically correcting dt for stability reasons: '
-               call print11(this%l%layoutnumber,dubuf)
-               write(dubuf,*) 'Original dt: ', this%sgg%dt
-               call print11(this%l%layoutnumber,dubuf)
-               this%sgg%dt=dt*heurCFL
-               write(dubuf,*) 'New dt: ', this%sgg%dt
-               call print11(this%l%layoutnumber,dubuf)
-               write(dubuf,*) SEPARADOR//separador//separador
-               call print11(this%l%layoutnumber,dubuf)
-            end if
-         end if
-         !!!!!!!!!!!!No es preciso re-sincronizar pero lo hago !!!!!!!!!!!!!!!!!!!!!!!!!!
-         finaldt=this%sgg%dt
-#ifdef CompileWithMPI
-         call MPIupdateMin(real(this%sgg%dt,RKIND),finaldt)
-#endif
-         !!!!!!!!!!!!!!
-         this%l%cfl=this%sgg%dt/dtlay
-         write(dubuf,*) SEPARADOR//separador//separador
-         call print11(this%l%layoutnumber,dubuf)
-         write(dubuf,*) 'CFLN= ',this%l%cfl
-         call print11(this%l%layoutnumber,dubuf)
-         write(dubuf,*) SEPARADOR//separador//separador
-         call print11(this%l%layoutnumber,dubuf)
-
-         write(dubuf,*) SEPARADOR//separador//separador
-         call print11(this%l%layoutnumber,dubuf)
-         write(dubuf,*) 'Deltat= ',this%sgg%dt
-         if (this%l%layoutnumber==0) call print11(this%l%layoutnumber,dubuf)
-#ifdef CompileWithMPI
-         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#endif
-         write(dubuf,*) SEPARADOR//separador//separador
-         call print11(this%l%layoutnumber,dubuf)
-         if (this%l%mur_exist.and.this%l%mur_first) then
-            this%l%mur_second=.false.
-         else
-            this%l%mur_second=.false. !arreglar cuando se arregle el bug de las mur second
-            this%l%mur_first=.true. !arreglar cuando se arregle el bug de las mur second
-         end if
-#ifdef CompileWithMPI
-         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#endif
-         !LATER OVERRRIDEN BY MPI
-         !ALLOCATED ONE MORE TO KEEP PMC INFO FOR THE HX,HY,HZ FIELDS
-         this%sgg%Alloc(1:6)%XI = this%fullsize(1:6)%XI - 1
-         this%sgg%Alloc(1:6)%XE = this%fullsize(1:6)%XE + 1
-         this%sgg%Alloc(1:6)%YI = this%fullsize(1:6)%YI - 1
-         this%sgg%Alloc(1:6)%YE = this%fullsize(1:6)%YE + 1
-         !REDUCE THE SWEEP AREA BY 1
-         this%sgg%Sweep(1:6)%XI = this%fullsize(1:6)%XI
-         this%sgg%Sweep(1:6)%XE = this%fullsize(1:6)%XE
-         this%sgg%Sweep(1:6)%YI = this%fullsize(1:6)%YI
-         this%sgg%Sweep(1:6)%YE = this%fullsize(1:6)%YE
-         !
-         if (this%l%num_procs == 1) then
-            this%sgg%Alloc(1:6)%ZI = this%fullsize(1:6)%ZI - 1
-            this%sgg%Alloc(1:6)%ZE = this%fullsize(1:6)%ZE + 1
-            !REDUCE THE SWEEP AREA BY 1
-            this%sgg%Sweep(1:6)%ZI = this%fullsize(1:6)%ZI
-            this%sgg%Sweep(1:6)%ZE = this%fullsize(1:6)%ZE
-            !!incluido aqui pq se precisa para clip 16/07/15
-            do field = iEx, iHz
-               this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
-               this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
-               this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
-               this%sgg%SINPMLSweep(field)%YE = Min (this%SINPML_fullsize(field)%YE, this%sgg%Sweep(field)%YE)
-               this%sgg%SINPMLSweep(field)%ZI = Max (this%SINPML_fullsize(field)%ZI, this%sgg%Sweep(field)%ZI)
-               this%sgg%SINPMLSweep(field)%ZE = Min (this%SINPML_fullsize(field)%ZE, this%sgg%Sweep(field)%ZE)
-            end do
-            !!fin 16/07/15
-            write(dubuf,*) 'INIT NFDE --------> GEOM'
-            call print11 (this%l%layoutnumber, dubuf)
-            call read_geomData (this%sgg,this%media,this%tag_numbers, this%l%fichin, this%l%layoutnumber, this%l%num_procs, this%SINPML_fullsize, this%fullsize, parser, &
-            this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, this%eps0, &
-            this%mu0,.false.,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)            
-            ! call read_geomData (this%sgg,this%sggMtag,this%tag_numbers, this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%fichin, this%l%layoutnumber, this%l%num_procs, this%SINPML_fullsize, this%fullsize, parser, &
-            ! this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, this%eps0, &
-            ! this%mu0,.false.,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)
-#ifdef CompileWithMTLN
-            if (trim(adjustl(this%l%extension))=='.json')  then 
-               this%mtln_parsed = parser%mtln
-               this%mtln_parsed%time_step = this%sgg%dt
-            end if
-            ! if (trim(adjustl(this%l%extension))=='.json')  mtln_solver = mtlnCtor(parser%mtln)   
-#endif
-            write(dubuf,*) '[OK] ENDED NFDE --------> GEOM'
-            call print11 (this%l%layoutnumber, dubuf)
-            !writing
-            slices = '!SLICES'
-            write(buff, '(i7)') this%sgg%Sweep(iHz)%ZE - this%sgg%Sweep(iHz)%ZI
-            slices = trim (adjustl(slices)) // '_' // trim (adjustl(buff))
-            if (this%l%resume .AND. (slices /= this%l%slicesoriginales)) then
-               buff='Different resumed/original MPI slices: '//trim(adjustl(slices))//' '//&
-               & trim(adjustl(this%l%slicesoriginales))
-               call stoponerror (this%l%layoutnumber, this%l%num_procs, buff)
-            end if
-            call print11 (this%l%layoutnumber, trim(adjustl(slices)))
-            !end writing
-            write(buff, '(a,i7,a,i7)') '_________Spanning from z=', this%sgg%Sweep(iHz)%ZI, ' to z=', this%sgg%Sweep(iHz)%ZE
-            call print11 (this%l%layoutnumber, trim(adjustl(buff)))
-#ifdef CompileWithMPI
-            call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#ifdef CompileWithStochastic
-            if (this%l%stochastic) then
-               buff='this%l%stochastic uncompatible with MPI this%l%num_procs smaller than 2'
-               call stoponerror (this%l%layoutnumber, this%l%num_procs, buff)
-            end if
-#endif
-#endif
-         ELSE !del this%l%num_procs==1       
-#ifdef CompileWithMPI
-            call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#ifdef CompileWithStochastic
-            if (this%l%stochastic) then
-               call HalvesStochasticMPI(this%l%layoutnumber,this%l%num_procs,this%l%simu_devia)
-            end if
-#endif
-                     
-            call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)   
-   !!!ahora divide el espacio computacional
-            call MPIdivide (this%sgg, this%fullsize, this%SINPML_fullsize, this%l%layoutnumber, this%l%num_procs, this%l%forcing, this%l%forced, this%l%slicesoriginales, this%l%resume,this%l%fatalerror)
-            !
-            call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)   
-            if (this%l%fatalerror) then
-   !intenta recuperarte
-               return
-            end if
-      
-            ! if the layout is pure PML then take at least a line of non PML to build the PML data insider read_geomDAta
-            ! Uses extra memory but later matrix sggm is deallocated in favor of smaller sggMIEX, etc
-            do field = iEx, iHz
-               tempalloc(field)%ZE = this%sgg%Alloc(field)%ZE
-               tempalloc(field)%ZI = this%sgg%Alloc(field)%ZI
-               this%sgg%Alloc(field)%ZE = Max (this%sgg%Alloc(field)%ZE, this%SINPML_fullsize(field)%ZI+1)
-               this%sgg%Alloc(field)%ZI = Min (this%sgg%Alloc(field)%ZI, this%SINPML_fullsize(field)%ZE-1)
-            end do
-            !   
-            call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)  
-            !!incluido aqui pq se precisa para clip 16/07/15
-            do field = iEx, iHz
-               this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
-               this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
-               this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
-               this%sgg%SINPMLSweep(field)%YE = Min (this%SINPML_fullsize(field)%YE, this%sgg%Sweep(field)%YE)
-               this%sgg%SINPMLSweep(field)%ZI = Max (this%SINPML_fullsize(field)%ZI, this%sgg%Sweep(field)%ZI)
-               this%sgg%SINPMLSweep(field)%ZE = Min (this%SINPML_fullsize(field)%ZE, this%sgg%Sweep(field)%ZE)
-            end do
-            !!fin 16/07/15
-            write(dubuf,*) 'INIT NFDE --------> GEOM'
-            call print11 (this%l%layoutnumber, dubuf)           
-
-            call read_geomData (this%sgg,this%media,this%tag_numbers, this%l%fichin, this%l%layoutnumber, this%l%num_procs, this%SINPML_fullsize, this%fullsize, parser, &
-            this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, &
-            this%eps0,this%mu0,this%l%simu_devia,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)
-            ! call read_geomData (this%sgg,this%sggMtag,this%tag_numbers, this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%fichin, this%l%layoutnumber, this%l%num_procs, this%SINPML_fullsize, this%fullsize, parser, &
-            ! this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, &
-            ! this%eps0,this%mu0,this%l%simu_devia,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)
-
-
-#ifdef CompileWithMPI
-            !wait until everything comes out
-            call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#endif
-#ifdef CompileWithMTLN
-            if (trim(adjustl(this%l%extension))=='.json')  then 
-               this%mtln_parsed = parser%mtln
-               this%mtln_parsed%time_step = this%sgg%dt
-            end if
-#endif
-            write(dubuf,*) '[OK] ENDED NFDE --------> GEOM'
-            call print11 (this%l%layoutnumber, dubuf)
-            !restore back the indexes
-            do field = iEx, iHz
-               this%sgg%Alloc(field)%ZE = tempalloc(field)%ZE
-               this%sgg%Alloc(field)%ZI = tempalloc(field)%ZI
-            end do
-#endif
-            continue
-         end if !del this%l%num_procs==1
-         !
-#ifdef CompileWithMPI
-         !wait until everything comes out
-         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#endif
-         !!!!!!!!!!!!!lo dejo aqui debajo tambien aunque ya se ha calculado antes para lo del clipping
-         do field = iEx, iHz
-            this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
-            this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
-            this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
-            this%sgg%SINPMLSweep(field)%YE = Min (this%SINPML_fullsize(field)%YE, this%sgg%Sweep(field)%YE)
-            this%sgg%SINPMLSweep(field)%ZI = Max (this%SINPML_fullsize(field)%ZI, this%sgg%Sweep(field)%ZI)
-            this%sgg%SINPMLSweep(field)%ZE = Min (this%SINPML_fullsize(field)%ZE, this%sgg%Sweep(field)%ZE)
-         end do
-         return
-      end subroutine
-
 #ifdef CompileWithMPI
    subroutine initialize_MPI_process(filename, extension)
       character(len=BUFSIZE), intent(in) :: filename, extension
@@ -929,44 +619,6 @@ contains
    end subroutine initialize_MPI_process
 
 #endif
-   subroutine data_loader(filename, parsedProblem)
-      character(len=1024), intent(in) :: filename
-      type(Parseador_t), pointer :: parsedProblem
-      type(fdtdjson_parser_t) :: parsed_t
-
-      write (dubuf,*) 'INIT interpreting geometrical data from ', trim (adjustl(filename))
-      call print11 (this%l%layoutnumber, dubuf)
-
-   
-      if (trim(adjustl(this%l%extension))=='.nfde') then 
-#ifdef CompilePrivateVersion   
-         parsedProblem => newparser (NFDE_FILE)
-         ! this%l%mpidir = NFDE_FILE%mpidir
-         this%l%thereare_stoch=NFDE_FILE%thereare_stoch
-#else
-         print *,'Not compiled with cargaNFDEINDEX'
-         stop
-#endif
-      
-#ifdef CompileWithSMBJSON
-      elseif (trim(adjustl(this%l%extension))=='.json') then
-         parsed_t = fdtdjson_parser_t(filename)   
-         allocate(parsedProblem)
-         parsedProblem = parsed_t%readProblemDescription()
-#endif
-
-      else
-         print *, 'Neither .nfde nor .json files used as input after -i'
-         stop
-      end if
-
-      write(dubuf,*) '[OK] '//trim(adjustl(this%whoami))//' Parser still working ';  call print11(this%l%layoutnumber,dubuf)       
-#ifdef CompileWithMPI            
-         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#endif
-      return
-   end subroutine data_loader
-
    function countLinesInJSONOneLiner(filename, unit) result(res)
       character(len=*), intent(in) :: filename
       integer(kind=4), intent(in) :: unit
@@ -1093,6 +745,367 @@ contains
 
 
    end subroutine semba_init  
+
+
+   function nfde2sgg(this, parser) result(dtantesdecorregir)
+      type(semba_fdtd_t), intent(inout) :: this
+      type(Parseador_t), pointer, intent(in) :: parser
+      real(kind=RKIND) :: dtantesdecorregir
+
+      real(kind=RKIND) :: dt, finaldt
+      real(kind=RKIND) :: dxmin, dymin, dzmin, dtlay
+      logical :: fatalerror
+      character(len=BUFSIZE) :: dubuf
+      character(len=BUFSIZE) :: buff
+      character(len=BUFSIZE_LONG) :: slices
+      integer(kind=4) :: field
+#ifdef CompileWithMPI
+      type(XYZlimit_t), dimension(1:6) :: tempalloc
+#endif
+
+      ! parser now holds all the .nfde info
+      !first read the limits
+#ifdef CompileWithMPI
+      call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+#endif
+      call read_limits_nogeom (this%l%layoutnumber,this%l%num_procs, this%sgg, this%fullsize, this%SINPML_fullsize, parser,this%l%MurAfterPML,this%l%mur_exist)
+   
+      dtantesdecorregir=this%sgg%dt
+
+      dxmin=minval(this%sgg%DX)
+      dymin=minval(this%sgg%DY)
+      dzmin=minval(this%sgg%DZ)
+      !!!
+      dtlay=(1.0_RKIND/(this%cluz*sqrt(((1.0_RKIND / dxmin)**2.0_RKIND )+((1.0_RKIND / dymin)**2.0_RKIND )+((1.0_RKIND / dzmin)**2.0_RKIND ))))
+      dt=dtlay
+#ifdef CompileWithMPI
+      call MPIupdateMin(dtlay,dt)
+#endif
+
+      if (this%l%forcecfl) then
+         this%sgg%dt=dt*this%l%cfl
+         write(dubuf,*) SEPARADOR//separador//separador
+         call print11(this%l%layoutnumber,dubuf)
+         write(dubuf,*) 'Correcting sgg%dt with -this%l%cfl switch. New time step: ',this%sgg%dt
+         call print11(this%l%layoutnumber,dubuf)
+         write(dubuf,*) SEPARADOR//separador//separador
+         call print11(this%l%layoutnumber,dubuf)
+      else
+         if (dtantesdecorregir == 0.0 .or. this%sgg%dt > dt*heurCFL) then
+            write(dubuf,*) SEPARADOR//separador//separador
+            call print11(this%l%layoutnumber,dubuf)
+            write(dubuf,*) 'Automatically correcting dt for stability reasons: '
+            call print11(this%l%layoutnumber,dubuf)
+            write(dubuf,*) 'Original dt: ', this%sgg%dt
+            call print11(this%l%layoutnumber,dubuf)
+            this%sgg%dt=dt*heurCFL
+            write(dubuf,*) 'New dt: ', this%sgg%dt
+            call print11(this%l%layoutnumber,dubuf)
+            write(dubuf,*) SEPARADOR//separador//separador
+            call print11(this%l%layoutnumber,dubuf)
+         end if
+      end if
+      !!!!!!!!!!!!No es preciso re-sincronizar pero lo hago !!!!!!!!!!!!!!!!!!!!!!!!!!
+      finaldt=this%sgg%dt
+#ifdef CompileWithMPI
+      call MPIupdateMin(real(this%sgg%dt,RKIND),finaldt)
+#endif
+      !!!!!!!!!!!!!!
+      this%l%cfl=this%sgg%dt/dtlay
+      write(dubuf,*) SEPARADOR//separador//separador
+      call print11(this%l%layoutnumber,dubuf)
+      write(dubuf,*) 'CFLN= ',this%l%cfl
+      call print11(this%l%layoutnumber,dubuf)
+      write(dubuf,*) SEPARADOR//separador//separador
+      call print11(this%l%layoutnumber,dubuf)
+
+      write(dubuf,*) SEPARADOR//separador//separador
+      call print11(this%l%layoutnumber,dubuf)
+      write(dubuf,*) 'Deltat= ',this%sgg%dt
+      if (this%l%layoutnumber==0) call print11(this%l%layoutnumber,dubuf)
+#ifdef CompileWithMPI
+      call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+#endif
+      write(dubuf,*) SEPARADOR//separador//separador
+      call print11(this%l%layoutnumber,dubuf)
+      if (this%l%mur_exist.and.this%l%mur_first) then
+         this%l%mur_second=.false.
+      else
+         this%l%mur_second=.false. !arreglar cuando se arregle el bug de las mur second
+         this%l%mur_first=.true. !arreglar cuando se arregle el bug de las mur second
+      end if
+#ifdef CompileWithMPI
+      call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+#endif
+      !LATER OVERRRIDEN BY MPI
+      !ALLOCATED ONE MORE TO KEEP PMC INFO FOR THE HX,HY,HZ FIELDS
+      this%sgg%Alloc(1:6)%XI = this%fullsize(1:6)%XI - 1
+      this%sgg%Alloc(1:6)%XE = this%fullsize(1:6)%XE + 1
+      this%sgg%Alloc(1:6)%YI = this%fullsize(1:6)%YI - 1
+      this%sgg%Alloc(1:6)%YE = this%fullsize(1:6)%YE + 1
+      !REDUCE THE SWEEP AREA BY 1
+      this%sgg%Sweep(1:6)%XI = this%fullsize(1:6)%XI
+      this%sgg%Sweep(1:6)%XE = this%fullsize(1:6)%XE
+      this%sgg%Sweep(1:6)%YI = this%fullsize(1:6)%YI
+      this%sgg%Sweep(1:6)%YE = this%fullsize(1:6)%YE
+      !
+      if (this%l%num_procs == 1) then
+         this%sgg%Alloc(1:6)%ZI = this%fullsize(1:6)%ZI - 1
+         this%sgg%Alloc(1:6)%ZE = this%fullsize(1:6)%ZE + 1
+         !REDUCE THE SWEEP AREA BY 1
+         this%sgg%Sweep(1:6)%ZI = this%fullsize(1:6)%ZI
+         this%sgg%Sweep(1:6)%ZE = this%fullsize(1:6)%ZE
+         !!incluido aqui pq se precisa para clip 16/07/15
+         do field = iEx, iHz
+            this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
+            this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
+            this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
+            this%sgg%SINPMLSweep(field)%YE = Min (this%SINPML_fullsize(field)%YE, this%sgg%Sweep(field)%YE)
+            this%sgg%SINPMLSweep(field)%ZI = Max (this%SINPML_fullsize(field)%ZI, this%sgg%Sweep(field)%ZI)
+            this%sgg%SINPMLSweep(field)%ZE = Min (this%SINPML_fullsize(field)%ZE, this%sgg%Sweep(field)%ZE)
+         end do
+         !!fin 16/07/15
+         write(dubuf,*) 'INIT NFDE --------> GEOM'
+         call print11 (this%l%layoutnumber, dubuf)
+         call read_geomData (this%sgg,this%media,this%tag_numbers, this%l%fichin, this%l%layoutnumber, this%l%num_procs, this%SINPML_fullsize, this%fullsize, parser, &
+         this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, this%eps0, &
+         this%mu0,.false.,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)            
+#ifdef CompileWithMTLN
+         if (trim(adjustl(this%l%extension))=='.json')  then 
+            this%mtln_parsed = parser%mtln
+            this%mtln_parsed%time_step = this%sgg%dt
+         end if
+#endif
+         write(dubuf,*) '[OK] ENDED NFDE --------> GEOM'
+         call print11 (this%l%layoutnumber, dubuf)
+         !writing
+         slices = '!SLICES'
+         write(buff, '(i7)') this%sgg%Sweep(iHz)%ZE - this%sgg%Sweep(iHz)%ZI
+         slices = trim (adjustl(slices)) // '_' // trim (adjustl(buff))
+         if (this%l%resume .AND. (slices /= this%l%slicesoriginales)) then
+            buff='Different resumed/original MPI slices: '//trim(adjustl(slices))//' '//&
+            & trim(adjustl(this%l%slicesoriginales))
+            call stoponerror (this%l%layoutnumber, this%l%num_procs, buff)
+         end if
+         call print11 (this%l%layoutnumber, trim(adjustl(slices)))
+         !end writing
+         write(buff, '(a,i7,a,i7)') '_________Spanning from z=', this%sgg%Sweep(iHz)%ZI, ' to z=', this%sgg%Sweep(iHz)%ZE
+         call print11 (this%l%layoutnumber, trim(adjustl(buff)))
+#ifdef CompileWithMPI
+         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+#ifdef CompileWithStochastic
+         if (this%l%stochastic) then
+            buff='this%l%stochastic uncompatible with MPI this%l%num_procs smaller than 2'
+            call stoponerror (this%l%layoutnumber, this%l%num_procs, buff)
+         end if
+#endif
+#endif
+      ELSE !del this%l%num_procs==1       
+#ifdef CompileWithMPI
+         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+#ifdef CompileWithStochastic
+         if (this%l%stochastic) then
+            call HalvesStochasticMPI(this%l%layoutnumber,this%l%num_procs,this%l%simu_devia)
+         end if
+#endif
+                  
+         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)   
+!!!ahora divide el espacio computacional
+         call MPIdivide (this%sgg, this%fullsize, this%SINPML_fullsize, this%l%layoutnumber, this%l%num_procs, this%l%forcing, this%l%forced, this%l%slicesoriginales, this%l%resume,this%l%fatalerror)
+         !
+         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)   
+         if (this%l%fatalerror) then
+!intenta recuperarte
+            return
+         end if
+   
+         ! if the layout is pure PML then take at least a line of non PML to build the PML data insider read_geomDAta
+         ! Uses extra memory but later matrix sggm is deallocated in favor of smaller sggMIEX, etc
+         do field = iEx, iHz
+            tempalloc(field)%ZE = this%sgg%Alloc(field)%ZE
+            tempalloc(field)%ZI = this%sgg%Alloc(field)%ZI
+            this%sgg%Alloc(field)%ZE = Max (this%sgg%Alloc(field)%ZE, this%SINPML_fullsize(field)%ZI+1)
+            this%sgg%Alloc(field)%ZI = Min (this%sgg%Alloc(field)%ZI, this%SINPML_fullsize(field)%ZE-1)
+         end do
+         !   
+         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)  
+         !!incluido aqui pq se precisa para clip 16/07/15
+         do field = iEx, iHz
+            this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
+            this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
+            this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
+            this%sgg%SINPMLSweep(field)%YE = Min (this%SINPML_fullsize(field)%YE, this%sgg%Sweep(field)%YE)
+            this%sgg%SINPMLSweep(field)%ZI = Max (this%SINPML_fullsize(field)%ZI, this%sgg%Sweep(field)%ZI)
+            this%sgg%SINPMLSweep(field)%ZE = Min (this%SINPML_fullsize(field)%ZE, this%sgg%Sweep(field)%ZE)
+         end do
+         !!fin 16/07/15
+         write(dubuf,*) 'INIT NFDE --------> GEOM'
+         call print11 (this%l%layoutnumber, dubuf)           
+
+         call read_geomData (this%sgg,this%media,this%tag_numbers, this%l%fichin, this%l%layoutnumber, this%l%num_procs, this%SINPML_fullsize, this%fullsize, parser, &
+         this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, &
+         this%eps0,this%mu0,this%l%simu_devia,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)
+
+#ifdef CompileWithMPI
+         !wait until everything comes out
+         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+#endif
+#ifdef CompileWithMTLN
+         if (trim(adjustl(this%l%extension))=='.json')  then 
+            this%mtln_parsed = parser%mtln
+            this%mtln_parsed%time_step = this%sgg%dt
+         end if
+#endif
+         write(dubuf,*) '[OK] ENDED NFDE --------> GEOM'
+         call print11 (this%l%layoutnumber, dubuf)
+         !restore back the indexes
+         do field = iEx, iHz
+            this%sgg%Alloc(field)%ZE = tempalloc(field)%ZE
+            this%sgg%Alloc(field)%ZI = tempalloc(field)%ZI
+         end do
+#endif
+         continue
+      end if !del this%l%num_procs==1
+      !
+#ifdef CompileWithMPI
+      !wait until everything comes out
+      call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+#endif
+      !!!!!!!!!!!!!lo dejo aqui debajo tambien aunque ya se ha calculado antes para lo del clipping
+      do field = iEx, iHz
+         this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
+         this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
+         this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
+         this%sgg%SINPMLSweep(field)%YE = Min (this%SINPML_fullsize(field)%YE, this%sgg%Sweep(field)%YE)
+         this%sgg%SINPMLSweep(field)%ZI = Max (this%SINPML_fullsize(field)%ZI, this%sgg%Sweep(field)%ZI)
+         this%sgg%SINPMLSweep(field)%ZE = Min (this%SINPML_fullsize(field)%ZE, this%sgg%Sweep(field)%ZE)
+      end do
+      return
+   end function nfde2sgg
+
+
+   subroutine semba_data_loader(this, filename, NFDE_FILE, parsedProblem)
+      class(semba_fdtd_t), intent(inout) :: this
+      character(len=1024), intent(in) :: filename
+      type(t_NFDE_FILE_t), pointer, intent(inout) :: NFDE_FILE
+      type(Parseador_t), pointer :: parsedProblem
+
+      character(len=BUFSIZE) :: dubuf
+      type(fdtdjson_parser_t) :: parsed_t
+
+      write (dubuf,*) 'INIT interpreting geometrical data from ', trim (adjustl(filename))
+      call print11 (this%l%layoutnumber, dubuf)
+
+   
+      if (trim(adjustl(this%l%extension))=='.nfde') then 
+#ifdef CompilePrivateVersion   
+         parsedProblem => newparser (NFDE_FILE)
+         ! this%l%mpidir = NFDE_FILE%mpidir
+         this%l%thereare_stoch=NFDE_FILE%thereare_stoch
+#else
+         print *,'Not compiled with cargaNFDEINDEX'
+         stop
+#endif
+      
+#ifdef CompileWithSMBJSON
+      elseif (trim(adjustl(this%l%extension))=='.json') then
+         parsed_t = fdtdjson_parser_t(filename)   
+         allocate(parsedProblem)
+         parsedProblem = parsed_t%readProblemDescription()
+#endif
+
+      else
+         print *, 'Neither .nfde nor .json files used as input after -i'
+         stop
+      end if
+
+      write(dubuf,*) '[OK] '//trim(adjustl(this%whoami))//' Parser still working ';  call print11(this%l%layoutnumber,dubuf)       
+#ifdef CompileWithMPI            
+         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+#endif
+      return
+   end subroutine semba_data_loader
+
+
+   subroutine semba_write_paraview_tag_info(this)
+      class(semba_fdtd_t), intent(in) :: this
+
+      integer(kind=4) :: thefileno, i
+
+      if (this%l%layoutnumber==0) then
+         
+         open(newunit=thefileno,FILE = trim(adjustl(this%l%nEntradaRoot))//'_tag_paraviewfilters.txt')
+               write(thefileno,'(a)') trim(adjustl('### FOR SLICE CURRENT VTK PROBES select the "current_t" or "current_f"                           '))   
+               write(thefileno,'(a)') trim(adjustl('### FOR MAP VTK PROBES select the "mediatype" layer                                               '))             
+               write(thefileno,'(a)') trim(adjustl('### For Paraview versions over 5.10 just use the Threshold exisiting filter to select the interval'))           
+               write(thefileno,'(a)') trim(adjustl('### ######################'))
+               write(thefileno,'(a)') trim(adjustl('### For Paraview versions under 5.10 Copy and paste the next as a programmable filter to select only one interval of tags'))
+               write(thefileno,'(a)') trim(adjustl('import vtk                                                                                        '))
+               write(thefileno,'(a)') trim(adjustl('inp = self.GetInputDataObject(0, 0)                                                               '))
+               write(thefileno,'(a)') trim(adjustl('outp = self.GetOutputDataObject(0)                                                                '))
+               write(thefileno,'(a)') trim(adjustl('thresh = vtk.vtkThreshold()                                                                       '))
+               write(thefileno,'(a)') trim(adjustl('thresh.SetInputData(inp)                                                                          '))
+               write(thefileno,'(a)') trim(adjustl('thresh.SetInputArrayToProcess(0, 0, 0,vtk.vtkDataObject.FIELD_ASSOCIATION_CELLS, "tagnumber")     '))
+               write(thefileno,'(a)') trim(adjustl('thresh.ThresholdBetween(64,127)                                                              '))
+               write(thefileno,'(a)') trim(adjustl('thresh.Update()                                                              '))
+               write(thefileno,'(a)') trim(adjustl('outp.ShallowCopy(thresh.GetOutput())    '))        
+               write(thefileno,'(a)') trim(adjustl( '# Replace the thresh.ThresholdBetween numbers by tag intervals below to filter by tags           '))
+               write(thefileno,'(a)')               '# ( -1e21    , -1e-3    ) '//trim(adjustl('Candidates for undesired free-space slots'))
+               write(thefileno,'(a,i9,a,i9,a)')     '# (  0       ,  63      ) '//trim(adjustl('Nodal sources, etc.'))
+               do i=1,this%tagtype%numertags
+                  write(thefileno,'(a,i9,a,i9,a)') '# (',i*64,' , ',i*64+63,') '//trim(adjustl(this%tagtype%tag(i)))
+               end do
+               !!
+               write(thefileno,'(a)') trim(adjustl( '###    '))   
+               write(thefileno,'(a)') trim(adjustl( '###    '))   
+               write(thefileno,'(a)') trim(adjustl( '### FOR MAP VTK PROBES select the "mediatype" layer                                               '))                
+               write(thefileno,'(a)') trim(adjustl( '### For Paraview versions over 5.10 just use the Threshold exisiting filter to select the interval'))           
+               write(thefileno,'(a)') trim(adjustl( '### ######################'))
+               write(thefileno,'(a)') trim(adjustl( '### For Paraview versions under 5.10Copy and paste the next as a programmable filter to select only one types of media'))
+               write(thefileno,'(a)') trim(adjustl( 'import vtk                                                                                        '))
+               write(thefileno,'(a)') trim(adjustl( 'inp = self.GetInputDataObject(0, 0)                                                               '))
+               write(thefileno,'(a)') trim(adjustl( 'outp = self.GetOutputDataObject(0)                                                                '))
+               write(thefileno,'(a)') trim(adjustl( 'thresh = vtk.vtkThreshold()                                                                       '))
+               write(thefileno,'(a)') trim(adjustl( 'thresh.SetInputData(inp)                                                                          '))
+               write(thefileno,'(a)') trim(adjustl( 'thresh.SetInputArrayToProcess(0, 0, 0,vtk.vtkDataObject.FIELD_ASSOCIATION_CELLS, "mediatype")     '))
+               write(thefileno,'(a)') trim(adjustl( 'thresh.ThresholdBetween(0.0,0.5)                                                              '))
+               write(thefileno,'(a)') trim(adjustl( 'thresh.Update()                                                              '))
+               write(thefileno,'(a)') trim(adjustl( 'outp.ShallowCopy(thresh.GetOutput())  '))
+               write(thefileno,'(a)') trim(adjustl( '# Replace the thresh.ThresholdBetween numbers by media types below to filter by media types           '))
+               write(thefileno,'(a)') '# ( -100 , -100 ) '//trim(adjustl('Candidates for undesired free-space slots                               (Surface)'))
+               write(thefileno,'(a)') '# (  0.0 ,  0.0 ) '//trim(adjustl('PEC                                                                     (Surface)'))
+               write(thefileno,'(a)') '# (  0.5 ,  0.5 ) '//trim(adjustl('PEC                                                                     (Line)'))
+               write(thefileno,'(a)') '# ( 16.0 , 16.0 ) '//trim(adjustl('PMC                                                                     (Surface)'))
+               write(thefileno,'(a)') '# ( 16.5 , 16.5 ) '//trim(adjustl('PMC                                                                     (Line)'))
+               write(thefileno,'(a)') '# (  1.5 ,  1.5 ) '//trim(adjustl('Dispersive electric or magnetic isotropic or anisotropic                (Line)'))
+               write(thefileno,'(a)') '# (  100 ,  199 ) '//trim(adjustl('Dispersive electric/magnetic isotropic/anisotropic (+indexmedium)       (Surface) '))
+               write(thefileno,'(a)') '# (  2.5 ,  2.5 ) '//trim(adjustl('Dielectric isotropic or anisotropic                                     (Line)'))
+               write(thefileno,'(a)') '# (  200 ,  299 ) '//trim(adjustl('Dielectric isotropic or anisotropic (+indexmedium)                      (Surface)'))
+               write(thefileno,'(a)') '# (  3.5 ,  3.5 ) '//trim(adjustl('sgbc/this%l%mibc Isotropic/anisotropic Multiport                        (Line)'))
+               write(thefileno,'(a)') '# (  300 ,  399 ) '//trim(adjustl('sgbc/this%l%mibc Isotropic/anisotropic Multiport (+indexmedium)         (Surface)'))
+               write(thefileno,'(a)') '# (  4.5 ,  4.5 ) '//trim(adjustl('Thin slot                                                               (Line)'))
+               write(thefileno,'(a)') '# (  5.0 ,  5.0 ) '//trim(adjustl('Already_YEEadvanced_byconformal                                         (Surface)'))
+               write(thefileno,'(a)') '# (  5.5 ,  5.5 ) '//trim(adjustl('Already_YEEadvanced_byconformal                                         (Line)'))
+               write(thefileno,'(a)') '# (  6.0 ,  6.0 ) '//trim(adjustl('Split_and_useless                                                       (Surface)'))
+               write(thefileno,'(a)') '# (  6.5 ,  6.5 ) '//trim(adjustl('Split_and_useless                                                       (Line)'))
+               write(thefileno,'(a)') '# (  7.0 ,  7.0 ) '//trim(adjustl('Edge Not colliding thin wires                                           (Line)'))
+               write(thefileno,'(a)') '# (  8.0 ,  8.0 ) '//trim(adjustl('Thin wire segments colliding with structure                             (Line)'))
+               write(thefileno,'(a)') '# (  8.5 ,  8.5 ) '//trim(adjustl('Soft/Hard Nodal CURRENT/FIELD ELECTRIC DENSITY SOURCE                   (Line)'))
+               write(thefileno,'(a)') '# (  9.0 ,  9.0 ) '//trim(adjustl('Soft/Hard Nodal CURRENT/FIELD MAGNETIC DENSITY SOURCE                   (Line)'))
+               write(thefileno,'(a)') '# (   10 ,   11 ) '//trim(adjustl('LeftEnd/RightEnd/Ending wire segment                                    (Wire)'))
+               write(thefileno,'(a)') '# (   20 ,   20 ) '//trim(adjustl('Intermediate wire segment +number_holland_parallel or +number_berenger  (Wire) '))
+               write(thefileno,'(a)') '# (   12 ,   12 ) '//trim(adjustl('Edge Not colliding multiwires                                           (Multiwire)'))
+               write(thefileno,'(a)') '# (   13 ,   13 ) '//trim(adjustl('Multiwire segments colliding with structure                             (Multiwire)'))
+               write(thefileno,'(a)') '# (   14 ,   15 ) '//trim(adjustl('LeftEnd/RightEnd/Ending multiwire segment                               (Multiwire)'))
+               write(thefileno,'(a)') '# (   60 ,   60 ) '//trim(adjustl('Intermediate multiwire segment + number parallel segments               (Multiwire) '))
+               write(thefileno,'(a)') '# (  400 ,  499 ) '//trim(adjustl('Thin slot (+indexmedium)                                                (Surface)'))
+               write(thefileno,'(a)') '# ( 1000 , 1999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Surface)'))
+               write(thefileno,'(a)') '# ( 2000 , 2999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Line)'))
+               write(thefileno,'(a)') '# ( -0.5 , -0.5 ) '//trim(adjustl('Other types of media                                                    (Line)'))
+               write(thefileno,'(a)') '# ( -1.0 , -1.0 ) '//trim(adjustl('Other types of media                                                    (Surface)'))
+         close(thefileno)
+      end if
+   end subroutine semba_write_paraview_tag_info
 
 
    function semba_create_solver(this) result (res)
