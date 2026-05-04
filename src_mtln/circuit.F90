@@ -65,23 +65,45 @@ contains
     real(kind=rkind) function interpolate(this, time, dt) result(res)
         class(source_t) :: this
         real(kind=RKIND_TIEMPO) :: time, dt
-        real(kind=RKIND) :: x1,x2, y1, y2
-        integer :: index
+        real(kind=RKIND_TIEMPO) :: t_eval
+        real(kind=RKIND) :: x1, x2, y1, y2
+        integer :: index, n
         real(kind=rkind), dimension(:), allocatable :: timediff
-        timediff = this%time - time + dt
+
+        n = size(this%time)
+        if (n == 0) then
+            res = 0.0_RKIND
+            return
+        end if
+
+        t_eval = time - dt
+
+        ! Clamp to avoid extrapolation and division by zero at source tail.
+        if (t_eval <= this%time(1)) then
+            res = this%value(1)
+            return
+        end if
+        if (t_eval >= this%time(n)) then
+            res = this%value(n)
+            return
+        end if
+
+        timediff = this%time - t_eval
         index = maxloc(timediff, 1, (timediff) <= 0)
         if (index == 0) index = 1
+        if (index >= n) index = n - 1
+
         x1 = this%time(index)
         y1 = this%value(index)
-        if (index+1 > size(this%time)) then
-            x2 = x1
-            y2 = y1
-        else 
-            x2 = this%time(index+1)
-            y2 = this%value(index+1)
+        x2 = this%time(index+1)
+        y2 = this%value(index+1)
+
+        if (x2 == x1) then
+            res = y2
+            return
         end if
-                
-        res = (time*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
+
+        res = (t_eval*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
     end function
 
     subroutine printCWD(this)
@@ -179,12 +201,23 @@ contains
 
     subroutine step(this)
         class(circuit_t) :: this
+        if (has_error() /= 0) then
+            call WarnErrReport('Ngspice reported a controlled exit before MTLN step.', .true.)
+            return
+        end if
+
         call this%updateCircuitSources(this%time)
         if (this%time == 0) then
             call this%run()
         else
             call this%resume()
         end if
+
+        if (has_error() /= 0) then
+            call WarnErrReport('Ngspice reported a controlled exit after run/resume.', .true.)
+            return
+        end if
+
         call this%updateNodes()
 
     end subroutine
@@ -320,9 +353,31 @@ contains
         class(circuit_t) :: this
         integer :: i
         type(vectorInfo_t), pointer :: info
+        type(c_ptr) :: info_ptr
         real(kind=c_double), pointer :: values(:)
+
+        if (has_error() /= 0) then
+            call WarnErrReport('Ngspice reported a controlled exit while updating nodes.', .true.)
+            return
+        end if
+
         do i = 1, size(this%nodes%names)
-            call c_f_pointer(get_vector_info(trim(this%nodes%names(i)%name)//c_null_char), info)
+            info_ptr = get_vector_info(trim(this%nodes%names(i)%name)//c_null_char)
+            if (.not. c_associated(info_ptr)) then
+                call WarnErrReport('Ngspice returned null vector info for '//trim(this%nodes%names(i)%name), .true.)
+                return
+            end if
+
+            call c_f_pointer(info_ptr, info)
+            if (.not. c_associated(info%vRealData)) then
+                call WarnErrReport('Ngspice returned null vector data for '//trim(this%nodes%names(i)%name), .true.)
+                return
+            end if
+            if (info%vLength <= 0) then
+                call WarnErrReport('Ngspice returned empty vector for '//trim(this%nodes%names(i)%name), .true.)
+                return
+            end if
+
             call c_f_pointer(info%vRealData, values,shape=[info%vLength])
             if (this%nodes%names(i)%name /= "time") then 
                 this%nodes%values(i)%voltage = values(ubound(values,1))

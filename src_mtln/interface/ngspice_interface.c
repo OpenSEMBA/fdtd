@@ -39,6 +39,7 @@ ng_data(pvecvaluesall vdata, int numvecs, int ident, void* userdata);
 void start()
 {
     int ret = 0;
+    errorflag = false;
     ret = ngSpice_Init(ng_getchar, ng_getstat, ng_exit,  ng_data, ng_initdata, ng_thread_runs, NULL);
     return;
 }
@@ -46,6 +47,9 @@ void start()
 void command(char* input)
 {
     int ret = 0;
+    if (errorflag) {
+        return;
+    }
     ret = ngSpice_Command(input);
     return;
 }
@@ -58,13 +62,24 @@ char** get_all_plots(){
 }
 
 pvector_info get_vector_info(char* vecname){
+    if (errorflag) {
+        return NULL;
+    }
     pvector_info ret = ngGet_Vec_Info(vecname);
     return ret;
 }
 
 void circ(char** input){
+    if (errorflag) {
+        return;
+    }
     int ret = ngSpice_Circ(input);
     return;
+}
+
+int has_error(void)
+{
+    return errorflag ? 1 : 0;
 }
 
 /* Callback function called from bg thread in ngspice to transfer
@@ -112,10 +127,11 @@ ng_initdata(pvecinfoall intdata, int ident, void* userdata)
 int
 ng_exit(int exitstatus, bool immediate, bool quitexit, int ident, void* userdata)
 {
+    errorflag = true;
 
     if(quitexit) {
-        printf("DNote: Returned form quit with exit status %d\n", exitstatus);
-        exit(exitstatus);
+        printf("DNote: ngspice requested quit with exit status %d\n", exitstatus);
+        return exitstatus;
     }
     if(immediate) {
         printf("DNote: Unloading ngspice inmmediately is not possible\n");
@@ -125,9 +141,6 @@ ng_exit(int exitstatus, bool immediate, bool quitexit, int ident, void* userdata
     else {
         printf("DNote: Unloading ngspice is not possible\n");
         printf("DNote: Can we recover? Send 'quit' command to ngspice.\n");
-        errorflag = true;
-        ngSpice_Command("quit 5");
-//        raise(SIGINT);
     }
 
     return exitstatus;
