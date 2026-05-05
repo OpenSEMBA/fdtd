@@ -286,6 +286,10 @@ contains
             argv_c(i) = c_loc(tmp(i)%item)
         end do
         call circ(argv_c)
+        ! Prevent ngspice from accumulating per-step vector history:
+        ! with 'save none', plotAddRealValue always overwrites position 0,
+        ! keeping only the latest value and avoiding unbounded memory growth.
+        call command('save none' // c_null_char)
     end subroutine
 
     function getName(cName) result(res)
