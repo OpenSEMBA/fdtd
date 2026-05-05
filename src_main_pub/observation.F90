@@ -4149,10 +4149,10 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
           if (.not. mtln_solver%bundles(i)%probes(j)%in_layer) cycle
 #endif          
           buffer = ""
-          write(temp, *) mtln_solver%bundles(i)%probes(j)%t(step+1)
+          write(temp, *) mtln_solver%bundles(i)%probes(j)%t(1)
           buffer = buffer//trim(temp)
           do n = 1, size(mtln_solver%bundles(i)%probes(j)%val, 2)
-            write (temp, *) mtln_solver%bundles(i)%probes(j)%val(step+1, n)
+            write (temp, *) mtln_solver%bundles(i)%probes(j)%val(1, n)
             buffer = buffer//" "//trim(temp)
           end do
           write (mtln_solver%bundles(i)%probes(j)%unit, '(a)') trim(buffer)

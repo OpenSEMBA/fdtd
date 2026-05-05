@@ -290,6 +290,9 @@ contains
         ! with 'save none', plotAddRealValue always overwrites position 0,
         ! keeping only the latest value and avoiding unbounded memory growth.
         call command('save none' // c_null_char)
+        ! Limit command history to 1 entry so the history list does not grow
+        ! with every per-step 'alter' call in updateNodeCurrent.
+        call command('set history = 1' // c_null_char)
     end subroutine
 
     function getName(cName) result(res)

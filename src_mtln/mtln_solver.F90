@@ -343,10 +343,10 @@ contains
                 if (.not. this%bundles(i)%probes(j)%in_layer) cycle
 #endif          
                 buffer = ""
-                write(temp, *) this%bundles(i)%probes(j)%t(step+1)
+                write(temp, *) this%bundles(i)%probes(j)%t(1)
                 buffer = buffer//trim(temp)
                 do n = 1, size(this%bundles(i)%probes(j)%val, 2)
-                    write (temp, *) this%bundles(i)%probes(j)%val(step+1, n)
+                    write (temp, *) this%bundles(i)%probes(j)%val(1, n)
                     buffer = buffer//" "//trim(temp)
                 end do
                 write (this%bundles(i)%probes(j)%unit, '(a)') trim(buffer)
