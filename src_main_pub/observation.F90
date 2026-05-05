@@ -4116,7 +4116,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     subroutine CloseObservationFilesMTLN()
       type(mtln_solver_t), pointer :: mtln_solver
-      integer :: i, j, k
+      integer :: i, j
       mtln_solver => GetSolverPtr()
       if (.not. allocated(mtln_solver%bundles)) return
       do i = 1, size(mtln_solver%bundles)
@@ -4124,7 +4124,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 #ifdef CompileWithMPI
           if (.not. mtln_solver%bundles(i)%probes(j)%in_layer) cycle
 #endif          
-          close(mtln_solver%bundles(i)%probes(k)%unit)
+          close(mtln_solver%bundles(i)%probes(j)%unit)
         end do
       end do
     end subroutine

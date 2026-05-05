@@ -356,14 +356,14 @@ contains
 
     subroutine mtln_closeObservation(this)
         class(mtln_t) :: this
-        integer :: i, j, k
+        integer :: i, j
         if (.not. allocated(this%bundles)) return
         do i = 1, size(this%bundles)
             do j = 1, size(this%bundles(i)%probes)
 #ifdef CompileWithMPI
                 if (.not. this%bundles(i)%probes(j)%in_layer) cycle
 #endif          
-                close(this%bundles(i)%probes(k)%unit)
+                close(this%bundles(i)%probes(j)%unit)
             end do
       end do
     end subroutine
