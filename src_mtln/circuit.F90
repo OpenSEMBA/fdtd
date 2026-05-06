@@ -211,7 +211,6 @@ contains
             call this%run()
         else
             call this%resume()
-            call reset_time_points()
         end if
 
         if (has_error() /= 0) then
@@ -255,7 +254,6 @@ contains
     subroutine resume(this)
         class(circuit_t) :: this
         call command('resume ' // c_null_char)
-        call command('NULL ' // c_null_char)
     end subroutine
 
     subroutine quit(this)

@@ -39,12 +39,5 @@ module ngspice_interface_m
         integer(c_int) function has_error() bind (C, name="has_error")
             use iso_c_binding, only: c_int
         end function
-
-        subroutine reset_time_points() bind (C, name="ng_reset_time_points")
-            use iso_c_binding
-        end subroutine
-
     end interface
-
-
 end module
