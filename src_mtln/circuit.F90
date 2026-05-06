@@ -221,6 +221,7 @@ contains
     subroutine resume(this)
         class(circuit_t) :: this
         call command('resume ' // c_null_char)
+        call command('NULL ' // c_null_char)
     end subroutine
 
     subroutine quit(this)
