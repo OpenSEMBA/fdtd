@@ -130,7 +130,7 @@ extern "C" {
 
 /* required only if header is used by the caller,
    is already defined in ngspice.dll */
-#ifndef ngspice_NGSPICE_H
+#ifndef ngspice_COMPLEX_H
 /* Complex numbers. */
 struct ngcomplex {
     double cx_real;
@@ -430,6 +430,11 @@ NG_BOOL ngSpice_running(void);
 /* set a breakpoint in ngspice */
 IMPEXP
 NG_BOOL ngSpice_SetBkpt(double time);
+
+/* reset ngspice's internal time point tracking to prevent memory growth
+   during repeated resume calls (e.g. from MTLN per-timestep stepping) */
+IMPEXP
+void ngResetTimePoints(void);
 
 
 #ifdef __cplusplus
