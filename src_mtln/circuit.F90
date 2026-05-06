@@ -211,6 +211,7 @@ contains
             call this%run()
         else
             call this%resume()
+            call reset_time_points()
         end if
 
         if (has_error() /= 0) then

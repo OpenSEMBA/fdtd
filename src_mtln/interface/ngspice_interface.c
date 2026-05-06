@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #ifndef _MSC_VER
-#include <stdbool.h>
 #include <pthread.h>
 #else
 #define bool int
@@ -13,7 +12,45 @@
 #endif
 #include <signal.h>
 
+/* Include ngspice headers first - they define bool/BOOL/ngcomplex/ngcomplex_t
+   which would conflict with <stdbool.h> and ngspice_interface.h.
+   Strategy: include bool.h first for bool/BOOL types, then ngspice_interface.h
+   (defines struct+typedef), then guard ngspice_COMPLEX_H before fteext.h. */
+#include "ngspice/bool.h"
 #include "ngspice_interface.h"
+#define ngspice_COMPLEX_H
+#include "ngspice/fteext.h"
+
+#ifndef _MSC_VER
+#ifndef __cplusplus
+typedef int bool;
+#endif
+typedef int BOOL;
+#define true 1
+#define false 0
+#endif
+
+/* Reset CKTtimePoints array to prevent unbounded memory growth.
+    CKTcurJob is at offset 664 in CKTcircuit.
+    CKTtimePoints is at offset 672, CKTdeltaList at 680,
+    CKTtimeListSize at 688, CKTtimeIndex at 692. */
+void ng_reset_time_points(void)
+{
+    if (ft_curckt == NULL || ft_curckt->ci_ckt == NULL) {
+        return;
+    }
+    unsigned char *base = (unsigned char *)ft_curckt->ci_ckt;
+    double **time_points = (double **)(base + 672);
+    int *time_list_size = (int *)(base + 688);
+    int *time_index = (int *)(base + 692);
+    if (*time_points != NULL) {
+        free(*time_points);
+        *time_points = NULL;
+    }
+    *time_index = 0;
+    *time_list_size = 0;
+}
+
 bool no_bg = true;
 static bool errorflag = false;
 
@@ -145,3 +182,5 @@ ng_exit(int exitstatus, bool immediate, bool quitexit, int ident, void* userdata
 
     return exitstatus;
 }
+
+

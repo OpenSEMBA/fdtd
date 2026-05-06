@@ -40,6 +40,10 @@ module ngspice_interface_m
             use iso_c_binding, only: c_int
         end function
 
+        subroutine reset_time_points() bind (C, name="ng_reset_time_points")
+            use iso_c_binding
+        end subroutine
+
     end interface
 
 
