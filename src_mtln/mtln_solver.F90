@@ -199,7 +199,6 @@ contains
 
         if (.not. has_active_node) return
         call this%network_manager%advanceVoltage()
-
         do i = 1, size(this%network_manager%networks)
             do j = 1, size(this%network_manager%networks(i)%nodes)
                 b = this%network_manager%networks(i)%nodes(j)%bundle_number
@@ -230,8 +229,9 @@ contains
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
         do i = 1, this%number_of_bundles
-            if (this%bundles(i)%bundle_in_layer) call this%bundles(i)%advanceCurrent()
-
+            if (this%bundles(i)%bundle_in_layer) then
+                call this%bundles(i)%advanceCurrent()
+            end if
         end do
     end subroutine
 

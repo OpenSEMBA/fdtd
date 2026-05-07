@@ -57,12 +57,12 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
 		message(STATUS "Using GNU flags")
 
-		set(CMAKE_CXX_FLAGS "-fopenmp")
-		set(CMAKE_Fortran_FLAGS "-fopenmp -ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+		set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fopenmp -ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
 		
-		set(CMAKE_C_FLAGS_RELEASE "-Ofast")
-		set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
-		set(CMAKE_Fortran_FLAGS_RELEASE "-Ofast")
+	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Ofast")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
+		set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} -Ofast")
 
 		set(CMAKE_C_FLAGS_DEBUG "-g -O0")
 		set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
