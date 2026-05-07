@@ -397,11 +397,16 @@ contains
     subroutine bundle_advanceVoltage(this)
         class(mtl_bundle_t) ::this
         integer :: i
+#ifdef CompileWithOpenMP
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+#endif
         do i = 2,this%number_of_divisions
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:), (this%i(:,i) - this%i(:,i-1)) + matmul(this%du(i,:,:), this%i_source(:,i)))
         end do
-
+#ifdef CompileWithOpenMP
+!$OMP END PARALLEL DO
+#endif
     end subroutine
 
 
@@ -419,7 +424,9 @@ contains
 #endif
         call this%transfer_impedance%updateQ3Phi()
         this%i_prev = this%i
-
+#ifdef CompileWithOpenMP
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+#endif
         do i = 1, this%number_of_divisions
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
                           matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - &
@@ -427,6 +434,9 @@ contains
                                                       matmul(this%du(i,:,:),this%v_source(:,i))) - &
                           matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
+#ifdef CompileWithOpenMP
+!$OMP END PARALLEL DO
+#endif
         call this%transfer_impedance%updatePhi(this%i_prev, this%i)
     end subroutine
 

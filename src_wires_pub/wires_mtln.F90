@@ -125,8 +125,9 @@ contains
          Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE),&
          Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE),&
          Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)  
-      real(kind=RKIND) :: cte,eps00,mu00, f
-      integer(kind=4) :: m, n
+      real(kind=RKIND) :: eps00,mu00
+      real(kind=RKIND) :: dS_inverse, factor, current_sum
+      integer(kind=4) :: m, n, i, j, k, direction, ncond, num_segments
       real(kind=RKIND),pointer:: punt
       eps0 = eps00 
       mu0 = mu00
@@ -134,51 +135,29 @@ contains
       
       do m = 1, mtln_solver%number_of_bundles
          if (mtln_solver%bundles(m)%bundle_in_layer) then 
-            do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
+            ncond = mtln_solver%bundles(m)%conductors_in_level(1)
+            num_segments = ubound(mtln_solver%bundles(m)%external_field_segments,1)
+            do n = 1, num_segments
+               direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
+               call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))
+               current_sum = sum(mtln_solver%bundles(m)%i(1:ncond, n))
+               current_sum = current_sum * sign(1.0_rkind, real(direction, kind=rkind))
+               select case (abs(direction))
+               case (DIRECTION_X_POS)
+                  dS_inverse = idyh(j) * idzh(k)
+               case (DIRECTION_Y_POS)
+                  dS_inverse = idxh(i) * idzh(k)
+               case (DIRECTION_Z_POS)
+                  dS_inverse = idxh(i) * idyh(j)
+               end select
+               factor = (sgg%dt / eps0) * dS_inverse
                punt => mtln_solver%bundles(m)%external_field_segments(n)%field
-               punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
+               punt = punt - factor * current_sum
             end do
          end if
       end do
-      mtln_solver%null_field = 0.0_rkind
 
       call mtln_solver%step()
-
-
-   contains
-
-      function getOrientedCurrent(m, n) result(res)
-         integer(kind=4), intent(in) :: m, n
-         real(kind=rkind) :: res
-         real(kind=rkind) :: curr
-         integer(kind=4) :: direction, i
-         res = 0
-         direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
-         curr = 0
-         do i = 1, mtln_solver%bundles(m)%conductors_in_level(1)
-            curr = curr + mtln_solver%bundles(m)%i(i, n)
-         end do
-         res = curr * sign(1.0, real(direction))
-      end function
-
-      function computeFieldFromCurrent(m, n) result(res)
-         integer(kind=4), intent(in) :: m, n
-         real(kind=rkind) :: dS_inverse, factor
-         real(kind=rkind) :: res
-         integer(kind=4) :: i, j, k, direction
-         direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
-         call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
-         select case (abs(direction))  
-         case(1)   
-            dS_inverse = (idyh(j)*idzh(k))
-         case(2)     
-            dS_inverse = (idxh(i)*idzh(k))
-         case(3)   
-            dS_inverse = (idxh(i)*idyh(j))
-         end select
-         factor = (sgg%dt / (eps0)) * dS_inverse
-         res = factor * getOrientedCurrent(m, n)
-      end function
 
    end subroutine AdvanceWiresE_mtln
 

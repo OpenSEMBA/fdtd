@@ -2587,7 +2587,9 @@ contains
       character(len=bufsize) :: buff
 
 #ifdef CompileWithMTLN
+   if (this%thereAre%MTLNbundles) then
       call AdvanceWiresE_mtln(this%sgg,this%Idxh,this%Idyh,this%Idzh,this%eps0,this%mu0)
+   end if
 #else 
 
       if (( (trim(adjustl(this%control%wiresflavor))=='holland') .or. &
