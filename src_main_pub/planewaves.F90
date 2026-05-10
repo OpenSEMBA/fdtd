@@ -879,19 +879,19 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
 #endif
-             do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
-                k_m = k - b%Ez%ZI
-                do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
-                   j_m = j - b%Ez%YI
-                   !--->
-                   incidente = Incid(sgg,jjj, iHy, timei, i-1, j, k,still_planewave_time,called_fromobservation)
-                   Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) - G2_1 * incidente * Id
-                end do
-             end do
+              do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
+                 k_m = k - b%Ez%ZI
+                 do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
+                    j_m = j - b%Ez%YI
+                    !--->
+                    incidente = Incid(sgg,jjj, iHy, timei, i-1, j, k,still_planewave_time,called_fromobservation)
+                    Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) - G2_1 * incidente * Id
+                 end do
+              end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-             !Ey Back
+              !Ey Back
              i = TrFr(jjj)%I%tra%Ey  !Back
              i_m = i - b%Ey%XI
              Id = Idxh( i_m )
@@ -899,21 +899,21 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
 #endif
-             do k = TrFr(jjj)%K%com%Ey, TrFr(jjj)%K%fin%Ey
-                k_m = k - b%Ey%ZI
-                do j = TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey
-                   j_m = j - b%Ey%YI
-                   !--->
-                   incidente = Incid(sgg,jjj, iHz, timei, i-1, j, k,still_planewave_time,called_fromobservation)
-                   Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) + G2_1 * incidente * Id
-                End do
-             end do
+              do k = TrFr(jjj)%K%com%Ey, TrFr(jjj)%K%fin%Ey
+                 k_m = k - b%Ey%ZI
+                 do j = TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey
+                    j_m = j - b%Ey%YI
+                    !--->
+                    incidente = Incid(sgg,jjj, iHz, timei, i-1, j, k,still_planewave_time,called_fromobservation)
+                    Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) + G2_1 * incidente * Id
+                 End do
+              end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-          end if
-          !--->
-          If( IluminaFr(jjj)) then
+           end if
+           !--->
+           If( IluminaFr(jjj)) then
              !Ez  Front
              i = TrFr(jjj)%I%fro%Ez !Front
              i_m = i - b%Ez%XI
@@ -922,19 +922,19 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
 #endif
-             do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
-                k_m = k - b%Ez%ZI
-                do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
-                   j_m = j - b%Ez%YI
-                   !--->
-                   incidente = Incid(sgg,jjj, iHy, timei, i, j, k,still_planewave_time,called_fromobservation)
-                   Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) + G2_1 * incidente * Id
-                end do
-             end do
+              do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
+                 k_m = k - b%Ez%ZI
+                 do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
+                    j_m = j - b%Ez%YI
+                    !--->
+                    incidente = Incid(sgg,jjj, iHy, timei, i, j, k,still_planewave_time,called_fromobservation)
+                    Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) + G2_1 * incidente * Id
+                 end do
+              end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-             !Ey  Front
+              !Ey  Front
              i = TrFr(jjj)%I%fro%Ey !Front
              i_m = i - b%Ey%XI
              Id = Idxh( i_m )

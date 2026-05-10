@@ -22,6 +22,7 @@ option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
 option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag (not supported in github actions)" OFF) 
 option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables the interprocedural optimization" OFF)
+option(SEMBA_FDTD_ENABLE_ACC "Enable OpenACC GPU acceleration (NVHPC compiler)" OFF)
 
 option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
 option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
@@ -48,6 +49,10 @@ add_definitions(
 	-DCompileWithInt2 
 	-DCompileWithOpenMP
 )
+
+if (SEMBA_FDTD_ENABLE_ACC)
+	add_definitions(-DCompileWithACC)
+endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
@@ -106,9 +111,65 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 	
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
-		message(STATUS "Using nvhpc flags")
+ 		message(STATUS "Using nvhpc flags")
+ 		
+ 		# Detect NVHPC SDK location - try standard paths, then NVCOMPILERS env var
+ 		if(DEFINED ENV{NVCOMPILERS})
+ 			set(NVHPC_SDK_ROOT "$ENV{NVCOMPILERS}")
+ 		elseif(EXISTS "/opt/nvidia/hpc_sdk/Linux_x86_64")
+ 			file(GLOB NVHPC_VERSION_DIRS "/opt/nvidia/hpc_sdk/Linux_x86_64/[0-9]*.[0-9]*")
+ 			list(SORT NVHPC_VERSION_DIRS)
+ 			list(GET NVHPC_VERSION_DIRS -1 NVHPC_VERSION_DIR)
+ 			get_filename_component(NVHPC_SDK_ROOT "${NVHPC_VERSION_DIR}" DIRECTORY)
+ 		else()
+ 			set(NVHPC_SDK_ROOT "/opt/nvidia/hpc_sdk/Linux_x86_64/24.7")
+ 		endif()
+ 		message(STATUS "NVHPC SDK root: ${NVHPC_SDK_ROOT}")
+ 		
+ 		# Base flags: OpenACC + Fortran free-form preprocessor
+ 		set(CMAKE_Fortran_FLAGS "-acc -Minfo=accel -Mpreprocess -Mbyteswapio")
+ 		set(CMAKE_C_FLAGS "-Minfo=accel")
+ 		set(CMAKE_CXX_FLAGS "-Minfo=accel")
+ 		set(CMAKE_Fortran_LINK_FLAGS "-acc")
+ 		
+ 		# Release: OpenACC + aggressive optimization
+ 		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -Minfo=accel -Mprefetch")
+ 		set(CMAKE_Fortran_LINK_FLAGS_RELEASE "-acc -O3")
+ 		set(CMAKE_C_FLAGS_RELEASE "-O3 -Minfo=accel")
+ 		set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Minfo=accel")
+ 		set(CMAKE_C_LINK_FLAGS_RELEASE "-acc -O3")
+ 		set(CMAKE_CXX_LINK_FLAGS_RELEASE "-acc -O3")
+ 		
+ 		# Debug: no optimization + bounds checking
+ 		set(CMAKE_Fortran_FLAGS_DEBUG "-g -C -Minfo=accel")
+ 		set(CMAKE_Fortran_LINK_FLAGS_DEBUG "-acc")
+ 		set(CMAKE_C_FLAGS_DEBUG "-g")
+ 		set(CMAKE_CXX_FLAGS_DEBUG "-g")
+ 		
+ 		# OpenACC requires CUDA runtime libraries at link time
+ 		set(NVHPC_COMPILER_LIB "${NVHPC_SDK_ROOT}/compilers/lib")
+ 		# Try CUDA 11.8 first (older SDKs), then 12.x, then 13.x
+ 		set(CUDA_LIB_DIR "")
+ 		set(NVVM_LIB_DIR "")
+ 		foreach(CUDA_VER "11.8" "12.0" "12.8" "13.1")
+ 			if(EXISTS "${NVHPC_SDK_ROOT}/cuda/${CUDA_VER}/lib64")
+ 				set(CUDA_LIB_DIR "${NVHPC_SDK_ROOT}/cuda/${CUDA_VER}/lib64")
+ 				set(NVVM_LIB_DIR "${NVHPC_SDK_ROOT}/cuda/${CUDA_VER}/nvvm/lib64")
+ 				break()
+ 			endif()
+ 		endforeach()
+ 		
+ 		if(EXISTS "${CUDA_LIB_DIR}")
+ 			link_directories("${CUDA_LIB_DIR}" "${NVVM_LIB_DIR}" "${NVHPC_COMPILER_LIB}")
+ 			list(APPEND CMAKE_EXE_LINKER_FLAGS "-L${CUDA_LIB_DIR} -L${NVVM_LIB_DIR} -L${NVHPC_COMPILER_LIB} -laccstub_static -lnvvm")
+ 			list(APPEND CMAKE_SHARED_LINKER_FLAGS "-L${CUDA_LIB_DIR} -L${NVVM_LIB_DIR} -L${NVHPC_COMPILER_LIB} -laccstub_static -lnvvm")
+ 			message(STATUS "NVHPC CUDA lib: ${CUDA_LIB_DIR}")
+ 			message(STATUS "NVHPC NVVM lib: ${NVVM_LIB_DIR}")
+ 		else()
+ 			message(WARNING "NVHPC CUDA toolkit not found at ${NVHPC_SDK_ROOT}/cuda/")
+ 		endif()
 		
-		# TODO: Tune flags for NVHPC
+		# LAPACK from NVHPC SDK (already configured in set_precompiled_libraries.cmake)
 	else()
 		message(FATAL_ERROR "Unrecognized compiler:" ${CMAKE_Fortran_COMPILER_ID})
 	endif()

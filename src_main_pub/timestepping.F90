@@ -2207,9 +2207,9 @@ contains
 !$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk,Idyhj) 
 #endif
 #ifdef CompileWithACC   
-!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk,Idyhj)  copyin(Ex,sggMiEx,Hy,Hz,Idyh,Idzh,b,G1,G2) copyout(Ex) 
+!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk,Idyhj)
 #endif
-      Do k=1,this%bounds%sweepEx%NZ
+       Do k=1,this%bounds%sweepEx%NZ
          Do j=1,this%bounds%sweepEx%NY
             Do i=1,this%bounds%sweepEx%NX
                Idzhk=Idzh(k)
@@ -2250,7 +2250,7 @@ contains
 !$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk)  
 #endif
 #ifdef CompileWithACC   
-!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk)     copyin(Ey,sggMiEy,Hz,Hx,Idzh,Idxh,b,G1,G2) copyout(Ey) 
+!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk)
 #endif
       Do k=1,this%bounds%sweepEy%NZ
          Do j=1,this%bounds%sweepEy%NY
@@ -2296,9 +2296,9 @@ contains
 !$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyhj)    
 #endif
 #ifdef CompileWithACC   
-!$ACC parallel loop   DEFAULT(present) collapse (2) private (i,j,k,medio,Idyhj)        copyin(Ez,sggMiEz,Hx,Hy,Idxh,Idyh,b,G1,G2) copyout(Ez) 
+!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idyhj)
 #endif
-      Do k=1,this%bounds%sweepEz%NZ
+       Do k=1,this%bounds%sweepEz%NZ
          Do j=1,this%bounds%sweepEz%NY
             Do i=1,this%bounds%sweepEz%NX
                Idyhj=Idyh(j)
@@ -2359,9 +2359,9 @@ contains
 !$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek,Idyej)     
 #endif
 #ifdef CompileWithACC   
-!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek,Idyej)       copyin(Hx,sggMiHx,Ey,Ez,Idye,Idze,b,GM1,GM2) copyout(Hx) 
+!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek,Idyej)
 #endif
-      Do k=1,this%bounds%sweepHx%NZ
+       Do k=1,this%bounds%sweepHx%NZ
          Do j=1,this%bounds%sweepHx%NY
             Do i=1,this%bounds%sweepHx%NX
             Idzek=Idze(k)
@@ -2401,9 +2401,9 @@ contains
 !$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek)     
 #endif
 #ifdef CompileWithACC   
-!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek)         copyin(Hy,sggMiHy,Ez,Ex,Idze,Idxe,b,GM1,GM2) copyout(Hy) 
+!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek)
 #endif
-      Do k=1,this%bounds%sweepHy%NZ
+       Do k=1,this%bounds%sweepHy%NZ
          Do j=1,this%bounds%sweepHy%NY
             Do i=1,this%bounds%sweepHy%NX
                Idzek=Idze(k)
@@ -2440,9 +2440,9 @@ contains
 !$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyej)  
 #endif
 #ifdef CompileWithACC   
-!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idyej)       copyin(Hz,sggMiHz,Ex,Ey,Idxe,Idye,b,GM1,GM2) copyout(Hz)
+!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idyej)
 #endif
-      Do k=1,this%bounds%sweepHz%NZ
+       Do k=1,this%bounds%sweepHz%NZ
          Do j=1,this%bounds%sweepHz%NY
             Do i=1,this%bounds%sweepHz%NX
                Idyej=Idye(j)

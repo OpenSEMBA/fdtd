@@ -41,25 +41,43 @@ jobs:
             double-precision: "ON"
 
           - os: ubuntu-latest # Single NVIDIA HPC build: no MPI/MTLN/HDF to keep it slim.
-            compiler: {name: 'nvidia-hpc', version: '24.5'}
+            compiler: {name: 'nvidia-hpc', version: '24.7'}
             build-type: "Release"
             mpi: "OFF"
             mtln: "OFF"
             hdf: "OFF"
             double-precision: "OFF"
 
+          - os: ubuntu-latest # NVIDIA HPC with OpenACC GPU acceleration.
+            compiler: {name: 'nvidia-hpc', version: '24.7'}
+            build-type: "Release"
+            mpi: "OFF"
+            mtln: "OFF"
+            hdf: "OFF"
+            double-precision: "OFF"
+            acc: "ON"
+
         exclude:
-          - compiler: {name: 'nvidia-hpc', version: '24.5'}
+          - compiler: {name: 'nvidia-hpc', version: '24.7'}
             mpi: "ON"
-          - compiler: {name: 'nvidia-hpc', version: '24.5'}
+          - compiler: {name: 'nvidia-hpc', version: '24.7'}
             mtln: "ON"
-          - compiler: {name: 'nvidia-hpc', version: '24.5'}
+          - compiler: {name: 'nvidia-hpc', version: '24.7'}
+            hdf: "ON"
+          - compiler: {name: 'nvidia-hpc', version: '24.7'}
+            acc: "ON"
+            mpi: "ON"
+          - compiler: {name: 'nvidia-hpc', version: '24.7'}
+            acc: "ON"
+            mtln: "ON"
+          - compiler: {name: 'nvidia-hpc', version: '24.7'}
+            acc: "ON"
             hdf: "ON"
             
       fail-fast: false
             
     runs-on: ${{ matrix.os }}
-    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})-double(${{matrix.double-precision}})
+    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})-double(${{matrix.double-precision}})-acc(${{matrix.acc}})
 
     steps:       
     - name: Checkout
@@ -93,12 +111,17 @@ jobs:
     - name: Build application (nvidia-hpc)
       if: matrix.compiler.name=='nvidia-hpc'
       run: |
+        ACC_FLAG=""
+        if [ "${{matrix.acc}}" = "ON" ]; then
+          ACC_FLAG="-DSEMBA_FDTD_ENABLE_ACC=ON"
+        fi
         cmake -S . -B build-nvhpc-rls \
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
           -DSEMBA_FDTD_ENABLE_MPI=OFF \
           -DSEMBA_FDTD_ENABLE_HDF=OFF \
           -DSEMBA_FDTD_ENABLE_MTLN=OFF \
-          -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=OFF
+          -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=OFF \
+          $ACC_FLAG
         cmake --build build-nvhpc-rls -j
 
     - name: Build application
