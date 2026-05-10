@@ -81,6 +81,28 @@ pytest test/
   options, etc.), please describe the change clearly in your pull
   request.
 
+## Style conventions
+
+These conventions apply to Fortran source code in the project.
+Feel free to propose additions or changes via an issue.
+
+1. All names and comments must be in English.
+2. Fortran keywords always lowercase. Example: `type` rather than `TYPE`.
+3. No space before parenthesis when declaring variables. Example:
+   write `type(edge_t)` rather than `type (edge_t)`.
+4. Fortran type names should end with `_t`. Example: prefer
+   `type(cell_t)` rather than `type(cell)`.
+5. Fortran module names should end with `_m`. Example: prefer
+   `module mesh_m` rather than `module mesh`.
+6. Prefer two-word endings. Example: prefer `end if` rather than `endif`.
+7. Do not use Fortran keywords as variable names. Example: do not use
+   `size` as a variable name.
+8. No space between `(` and the interior of functions or during
+   variable declaration. Example: prefer `integer(kind=8)` rather
+   than `integer ( kind = 8 )`.
+9. All `parameters` must be named with uppercase letters. Example:
+   prefer `RKIND` to `rkind`.
+
 ## Testing your changes
 
 Before opening a pull request:
