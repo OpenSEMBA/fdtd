@@ -253,3 +253,14 @@ rm -rf build && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build 
 - **MTLN documentation:** `doc/mtln.md`
 - **Docker setup:** `doc/docker.md`
 - **Tutorial:** `doc/tutorials/veritasium/veritasium.md`
+
+## Skills
+
+Specialized workflows for common roles. Each skill file contains detailed guidance, key file references, and step-by-step workflows.
+
+| Skill | File | Purpose |
+|-------|------|---------|
+| **Adding Unit Tests** | `.agents/skills/unit-tests/SKILL.md` | GoogleTest patterns (Fortran/C++ glue), pytest integration, test data management |
+| **EMC Engineer** | `.agents/skills/emc-engineer/SKILL.md` | Writing `.fdtd.json` inputs, launching simulations, analyzing probe outputs with pyWrapper |
+| **HPC Engineer** | `.agents/skills/hpc-engineer/SKILL.md` | MPI domain decomposition, OpenMP tuning, compiler optimization, profiling, GPU roadmap |
+| **Code Reviewer** | `.agents/skills/code-reviewer/SKILL.md` | PR review checklist, conditional compilation guards, test coverage verification |
