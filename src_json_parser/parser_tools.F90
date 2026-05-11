@@ -133,7 +133,7 @@ contains
    end
 
    function cellIntervalsToCoords(ivls, tag) result(res)
-      type(coords_t), dimension(:), pointer :: res
+      type(coords_t), dimension(:), allocatable :: res
       type(cell_interval_t), dimension(:), intent(in) :: ivls
       integer :: i
       character(len=BUFSIZE), optional, intent(in) :: tag

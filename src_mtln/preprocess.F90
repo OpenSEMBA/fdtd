@@ -563,7 +563,7 @@ contains
     function buildCableBundles(cables) result(cable_bundles)
         type(cable_abstract_t), dimension(:), intent(in) :: cables
         type(cable_abstract_t), dimension(:), allocatable :: parents
-        type(cable_bundle_t), dimension(:), pointer :: cable_bundles
+        type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
         integer :: i
 
         parents = findParentCables(cables)
