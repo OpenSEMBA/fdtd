@@ -24,6 +24,10 @@ option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, en
 option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables the interprocedural optimization" OFF)
 option(SEMBA_FDTD_ENABLE_ACC "Enable OpenACC GPU acceleration (NVHPC compiler)" OFF)
 
+if(SEMBA_FDTD_ENABLE_ACC AND NOT CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
+	message(FATAL_ERROR "SEMBA_FDTD_ENABLE_ACC requires NVHPC Fortran compiler")
+endif()
+
 option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
 option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
 option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
@@ -52,6 +56,7 @@ add_definitions(
 
 if (SEMBA_FDTD_ENABLE_ACC)
 	add_definitions(-DCompileWithACC)
+	add_definitions(-DSEMBA_FDTD_ENABLE_ACC)
 endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
@@ -126,25 +131,36 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
  		endif()
  		message(STATUS "NVHPC SDK root: ${NVHPC_SDK_ROOT}")
  		
- 		# Base flags: OpenACC + Fortran free-form preprocessor
- 		set(CMAKE_Fortran_FLAGS "-acc -Minfo=accel -Mpreprocess -Mbyteswapio")
- 		set(CMAKE_C_FLAGS "-Minfo=accel")
- 		set(CMAKE_CXX_FLAGS "-Minfo=accel")
- 		set(CMAKE_Fortran_LINK_FLAGS "-acc")
- 		
- 		# Release: OpenACC + aggressive optimization
- 		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -Minfo=accel -Mprefetch")
- 		set(CMAKE_Fortran_LINK_FLAGS_RELEASE "-acc -O3")
- 		set(CMAKE_C_FLAGS_RELEASE "-O3 -Minfo=accel")
- 		set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Minfo=accel")
- 		set(CMAKE_C_LINK_FLAGS_RELEASE "-acc -O3")
- 		set(CMAKE_CXX_LINK_FLAGS_RELEASE "-acc -O3")
- 		
- 		# Debug: no optimization + bounds checking
- 		set(CMAKE_Fortran_FLAGS_DEBUG "-g -C -Minfo=accel")
- 		set(CMAKE_Fortran_LINK_FLAGS_DEBUG "-acc")
- 		set(CMAKE_C_FLAGS_DEBUG "-g")
- 		set(CMAKE_CXX_FLAGS_DEBUG "-g")
+# Base flags: Fortran free-form preprocessor
+		set(CMAKE_Fortran_FLAGS "-Minfo=accel -Mpreprocess -Mbyteswapio")
+		# Only set C/CXX accel flags if using NVHPC C/C++ compiler
+		if(CMAKE_C_COMPILER_ID MATCHES "NVHPC")
+			set(CMAKE_C_FLAGS "-Minfo=accel")
+			set(CMAKE_CXX_FLAGS "-Minfo=accel")
+		endif()
+		
+		# Release: aggressive optimization
+		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -Minfo=accel -Mprefetch")
+		if(CMAKE_C_COMPILER_ID MATCHES "NVHPC")
+			set(CMAKE_C_FLAGS_RELEASE "-O3 -Minfo=accel")
+			set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Minfo=accel")
+		endif()
+		
+		# Debug: no optimization + bounds checking
+		set(CMAKE_Fortran_FLAGS_DEBUG "-g -C -Minfo=accel")
+		set(CMAKE_C_FLAGS_DEBUG "-g")
+		set(CMAKE_CXX_FLAGS_DEBUG "-g")
+		
+		# OpenACC specific flags
+		if (SEMBA_FDTD_ENABLE_ACC)
+			set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -acc=gpu -gpu=ccnative,mem:separate")
+			set(CMAKE_Fortran_LINK_FLAGS "-acc=gpu -gpu=ccnative,mem:separate")
+			set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} -acc=gpu -gpu=ccnative,mem:separate -O3")
+			set(CMAKE_Fortran_LINK_FLAGS_RELEASE "-acc=gpu -gpu=ccnative,mem:separate -O3")
+			set(CMAKE_C_LINK_FLAGS_RELEASE "-acc=gpu -gpu=ccnative,mem:separate -O3")
+			set(CMAKE_CXX_LINK_FLAGS_RELEASE "-acc=gpu -gpu=ccnative,mem:separate -O3")
+			set(CMAKE_Fortran_LINK_FLAGS_DEBUG "-acc=gpu -gpu=ccnative,mem:separate")
+		endif()
  		
  		# OpenACC requires CUDA runtime libraries at link time
  		set(NVHPC_COMPILER_LIB "${NVHPC_SDK_ROOT}/compilers/lib")
@@ -310,6 +326,9 @@ if(SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/resuming.F90"	
 		"src_main_pub/timestepping.F90"
 	)
+	if (SEMBA_FDTD_ENABLE_ACC)
+		target_sources(semba-main PRIVATE "src_main_pub/gpu_kernels.F90")
+	endif()
 	target_link_libraries(semba-main
 		semba-outputs 
 		${SMBJSON_LIBRARIES} 
@@ -322,6 +341,11 @@ if (SEMBA_FDTD_EXECUTABLE)
 	)
 	target_link_libraries(semba-fdtd semba-main semba-reports)
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
+	
+	# Add OpenACC flags to link options (like working example)
+	if (SEMBA_FDTD_ENABLE_ACC)
+		target_link_options(semba-fdtd PRIVATE -acc=gpu -gpu=ccnative,mem:separate -Minfo=accel)
+	endif()
 endif()
 
 

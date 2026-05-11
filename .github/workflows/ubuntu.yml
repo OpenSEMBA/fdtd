@@ -48,7 +48,7 @@ jobs:
             hdf: "OFF"
             double-precision: "OFF"
 
-          - os: ubuntu-latest # NVIDIA HPC with OpenACC GPU acceleration.
+          - os: ubuntu-latest # NVIDIA HPC with CUDA Fortran GPU acceleration.
             compiler: {name: 'nvidia-hpc', version: '24.7'}
             build-type: "Release"
             mpi: "OFF"
@@ -113,7 +113,7 @@ jobs:
       run: |
         ACC_FLAG=""
         if [ "${{matrix.acc}}" = "ON" ]; then
-          ACC_FLAG="-DSEMBA_FDTD_ENABLE_ACC=ON"
+          ACC_FLAG="-DSEMBA_FDTD_ENABLE_CUF=ON"
         fi
         cmake -S . -B build-nvhpc-rls \
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \

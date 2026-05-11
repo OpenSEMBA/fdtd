@@ -73,13 +73,17 @@
         "SEMBA_FDTD_ENABLE_MPI": "OFF",
         "SEMBA_FDTD_ENABLE_MTLN": "OFF",
         "SEMBA_FDTD_ENABLE_HDF": "OFF",
-        "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "OFF"
+        "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "OFF",
+        "CMAKE_Fortran_LINKER": "/home/luis/nvidia_sdk/Linux_x86_64/26.3/compilers/bin/nvfortran"
       }
     },
     {
       "name": "nvhpc-dbg",
       "inherits": "nvhpc-rls",
       "binaryDir": "build-nvhpc-dbg/",
+      "environment": {
+        "CMAKE_Fortran_LINKER": "/home/luis/nvidia_sdk/Linux_x86_64/26.3/compilers/bin/nvfortran"
+      },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
