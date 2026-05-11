@@ -475,16 +475,16 @@ module Solver_m
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
 
 #if defined(SEMBA_FDTD_ENABLE_ACC) || defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-      if (.not.this%gpu_initialized) then
-         call gpu_init(this%gpu, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz, &
-                       this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, &
-                       this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
-                       this%g%g1, this%g%g2, this%g%gm1, this%g%gm2, &
-                       this%Idxe, this%Idye, this%Idze, this%Idxh, this%Idyh, this%Idzh, &
-                       this%dxe, this%dye, this%dze, this%dxh, this%dyh, this%dzh)
-         this%gpu_initialized = this%gpu%initialized
-      endif
-#endif
+       if (.not.this%gpu_initialized) then
+          call gpu_init(this%gpu, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz, &
+                        this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, &
+                        this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
+                        this%g%g1, this%g%g2, this%g%gm1, this%g%gm2, &
+                        this%Idxe, this%Idye, this%Idze, this%Idxh, this%Idyh, this%Idzh, &
+                        this%dxe, this%dye, this%dze, this%dxh, this%dyh, this%dzh)
+          this%gpu_initialized = this%gpu%initialized
+       endif
+ #endif
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! Init the local variables and observation stuff needed by each module, taking into account resume status
@@ -2604,12 +2604,12 @@ contains
    end subroutine
 
    subroutine solver_advanceMagneticCPML(this)
-      class(solver_t) :: this
-      If (this%thereAre%PMLBorders) call advanceMagneticCPML(this%sgg%numMedia, this%bounds, & 
-                                                             this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, & 
-                                                             this%g%gm2, this%Hx, this%Hy, this%Hz, & 
-                                                             this%Ex, this%Ey, this%Ez)
-   end subroutine
+       class(solver_t) :: this
+       If (this%thereAre%PMLBorders) call advanceMagneticCPML(this%sgg%numMedia, this%bounds, & 
+                                                              this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, & 
+                                                              this%g%gm2, this%Hx, this%Hy, this%Hz, & 
+                                                              this%Ex, this%Ey, this%Ez)
+    end subroutine
 
    subroutine solver_MinusCloneMagneticPMC(this)
       class(solver_t) :: this
@@ -2625,15 +2625,15 @@ contains
 
 
    subroutine solver_advancePMLE(this)
-      class (solver_t) :: this
-      If (this%thereAre%PMLbodies) then !waveport absorbers
-         call AdvancePMLbodyE()
-      end if
-      If (this%thereAre%PMLBorders) then
-         call AdvanceelectricCPML(this%sgg%numMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, & 
-                                  this%g%G2, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
-      end if
-   end subroutine
+       class (solver_t) :: this
+       If (this%thereAre%PMLbodies) then !waveport absorbers
+          call AdvancePMLbodyE()
+       end if
+       If (this%thereAre%PMLBorders) then
+          call AdvanceelectricCPML(this%sgg%numMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, & 
+                                   this%g%G2, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
+       end if
+    end subroutine
 
    subroutine solver_advancesgbcE(this)
       class(solver_t) :: this
