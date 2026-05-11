@@ -58,7 +58,9 @@ module BORDERS_CPML_m
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !
    public  :: InitCPMLBorders, AdvanceelectricCPML,AdvanceMagneticCPML,StoreFieldsCPMLBorders,DestroyCPMLBorders,AdvanceelectricCPML_freespace,AdvanceMagneticCPML_freespace
-   public  :: calc_cpmlconstants
+    public  :: calc_cpmlconstants
+    public  :: PMLc
+    public  :: P_be_y, P_ce_y, P_bm_y, P_cm_y
    !!!public  :: FreeSpace_AdvanceMagneticCPML,calc_cpmlconstants
 contains
 
