@@ -131,6 +131,25 @@ def test_fdtd_clean_up_after_run(tmp_path):
     assert not os.path.isfile(pn[0])
 
 
+def test_fdtd_clean_up_does_not_delete_other_cases_files(tmp_path):
+    input = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
+    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    case_name = solver.getCaseName()
+    other_case_name = 'other_case.fdtd'
+
+    own_file = os.path.join(str(tmp_path), case_name + '_probe_Ex_1_2_3.dat')
+    other_file = os.path.join(str(tmp_path), other_case_name + '_probe_Ex_1_2_3.dat')
+
+    open(own_file, 'w').close()
+    open(other_file, 'w').close()
+
+    solver.cleanUp()
+
+    assert not os.path.isfile(own_file)
+    assert os.path.isfile(other_file)
+
+
 def test_fdtd_get_used_files():
     fn = CASES_FOLDER + 'multilines_opamp/multilines_opamp.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE)

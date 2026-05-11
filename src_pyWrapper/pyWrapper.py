@@ -346,16 +346,19 @@ class FDTD():
 
     def cleanUp(self):
         folder = self.getFolder()
+        case_name = self.getCaseName()
         extensions = ('*.dat', '*.pl', '*.txt', '*.xdmf', '*.bin', '*.h5')
         for ext in extensions:
-            files = glob.glob(folder + '/' + ext)
+            files = glob.glob(os.path.join(folder, ext))
             for file in files:
-                os.remove(file)
+                if os.path.basename(file).startswith(case_name):
+                    os.remove(file)
 
         subfolders = [item for item in os.listdir(
             folder) if os.path.isdir(os.path.join(folder, item))]
         for f in subfolders:
-            shutil.rmtree(f, ignore_errors=True)
+            if f.startswith(case_name):
+                shutil.rmtree(os.path.join(folder, f), ignore_errors=True)
 
     def getSolvedProbeFilenames(self, probe_name):
         if not "probes" in self._input:
