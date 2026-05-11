@@ -2180,6 +2180,11 @@ contains
 
    subroutine advanceE(this)
       class(solver_t) :: this
+#ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+      if (this%gpu_initialized) then
+         call gpu_upload(this%gpu)
+      endif
+#endif
 #ifdef CompileWithProfiling
       call nvtxStartRange("Antes del bucle EX")
 #endif
@@ -2216,14 +2221,7 @@ contains
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
-   #ifdef SEMBA_FDTD_ENABLE_ACC
-      ! GPU acceleration for Ex is currently blocked due to NVHPC OpenACC runtime issues.
-      ! Even a no-op kernel fails at launch time, suggesting a compiler/device interaction problem.
-      ! TODO: Revisit with newer NVHPC versions or alternative GPU strategies (e.g., CUF, direct CUDA).
-      ! For now, Ex updates fall through to CPU path below.
-      #endif
-
-      #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+     #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
          if (this%gpu_initialized) then
             call gpu_advanceEx(this%gpu, this%bounds)
             return
@@ -2270,12 +2268,7 @@ contains
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
-   #ifdef SEMBA_FDTD_ENABLE_ACC
-      ! GPU acceleration for Ey is currently blocked due to NVHPC OpenACC runtime issues (same as Ex).
-      ! Fall through to CPU path below.
-   #endif
-
-   #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+  #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
       if (this%gpu_initialized) then
          call gpu_advanceEy(this%gpu, this%bounds)
          return
@@ -2324,12 +2317,7 @@ contains
       integer(kind = 4) :: i, j, k
       integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
 
-   #ifdef SEMBA_FDTD_ENABLE_ACC
-      ! GPU acceleration for Ez is currently blocked due to NVHPC OpenACC runtime issues (same as Ex).
-      ! Fall through to CPU path below.
-   #endif
-
-   #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+ #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
       if (this%gpu_initialized) then
          call gpu_advanceEz(this%gpu, this%bounds)
          return
@@ -2396,12 +2384,7 @@ contains
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
-   #ifdef SEMBA_FDTD_ENABLE_ACC
-      ! GPU acceleration for Hx is currently blocked due to NVHPC OpenACC runtime issues (same as Ex).
-      ! Fall through to CPU path below.
-   #endif
-
-   #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+#ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
       if (this%gpu_initialized) then
          call gpu_advanceHx(this%gpu, this%bounds)
          return
@@ -2448,12 +2431,7 @@ contains
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
-   #ifdef SEMBA_FDTD_ENABLE_ACC
-      ! GPU acceleration for Hy is currently blocked due to NVHPC OpenACC runtime issues (same as Ex).
-      ! Fall through to CPU path below.
-   #endif
-
-   #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+#ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
       if (this%gpu_initialized) then
          call gpu_advanceHy(this%gpu, this%bounds)
          return
@@ -2499,12 +2477,7 @@ contains
       integer(kind = 4) :: i, j, k
       integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
 
-   #ifdef SEMBA_FDTD_ENABLE_ACC
-      ! GPU acceleration for Hz is currently blocked due to NVHPC OpenACC runtime issues (same as Ex).
-      ! Fall through to CPU path below.
-   #endif
-
-   #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+#ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
       if (this%gpu_initialized) then
          call gpu_advanceHz(this%gpu, this%bounds)
          return
@@ -2530,13 +2503,20 @@ contains
          End do
       End do
 #ifdef CompileWithOpenMP
-!$OMP  END PARALLEL DO
+ !$OMP  END PARALLEL DO
 #endif
-      return
-   end subroutine advanceHz
+
+#ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+       if (this%gpu_initialized) then
+          call gpu_download(this%gpu)
+       endif
+#endif
+       return
+    end subroutine advanceHz
 
 
-   subroutine solver_advanceEDispersiveE(this)
+
+    subroutine solver_advanceEDispersiveE(this)
       class(solver_t) :: this
       if (this%thereAre%Edispersives) call AdvanceEDispersiveE(this%sgg)
    end subroutine

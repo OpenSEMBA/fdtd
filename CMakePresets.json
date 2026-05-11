@@ -105,7 +105,7 @@
         "SEMBA_FDTD_ENABLE_MTLN": "OFF",
         "SEMBA_FDTD_ENABLE_HDF": "OFF",
         "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "OFF",
-        "SEMBA_FDTD_ENABLE_ACC": "ON"
+        "SEMBA_FDTD_ENABLE_CUDA_FORTRAN": "ON"
       }
     },
     {

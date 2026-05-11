@@ -1,0 +1,47 @@
+=========================
+semba-fdtd
+=========================
+__________________________________________
+Compilation date: May 11 2026 15:50:40
+Compiler Id: NVHPC 25.9.0
+git commit: 7cc0d31f
+cmake build type: Release
+cmake compilation flags: -Minfo=accel -Mpreprocess -Mbyteswapio -acc=gpu -gpu=ccnative,mem:separate -O3 -Minfo=accel -Mprefetch -acc=gpu -gpu=ccnative,mem:separate -O3
+__________________________________________
+__________________________________________
+All rights reserved by the University of Granada (Spain)
+Contact person: Luis D. Angulo <lmdiazangulo@ugr.es>
+
+__________________________________________
+Compiled WITH SMBJSON support
+__________________________________________
+Launched on              11/05/2026 15:52
+INIT interpreting geometrical data from ./testData/input_examples/conformal.fdtd.json
+[OK] (    1/    1) Parser still working
+Switches ./build-nvhpc-rls/bin/semba-fdtd -i ./testData/input_examples/conformal.fdtd.json
+__________________________________________
+Closing warning file. Number of messages:             0
+__________________________________________
+Compiled with Single precision (real*4)
+__________________________________________
+Launched on              11/05/2026 15:52
+__________________________________________
+Launched with total options
+./build-nvhpc-rls/bin/semba-fdtd -i ./testData/input_examples/conformal.fdtd.json
+If later resuming use compulsory options
+mpirun -n    1
+__________________________________________
+INIT conversion internal ASCII => Binary
+__________________________________________
+__________________________________________
+__________________________________________
+CFLN=    7.7888370E-02
+__________________________________________
+__________________________________________
+Deltat=    2.9999999880125916E-012
+__________________________________________
+INIT NFDE --------> GEOM
+INIT UPDATING SHARED INFO. This process may take time!
+Launch with -noshared to skip this process (just relevant for structured NIBC CFCs and Anisot.)
+[OK] END UPDATING SHARED INFO
+(    1/    1) ERROR: gauss.exc DOES NOT EXIST

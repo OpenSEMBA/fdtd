@@ -55,7 +55,7 @@ jobs:
             mtln: "OFF"
             hdf: "OFF"
             double-precision: "OFF"
-            acc: "ON"
+            cuda-fortran: "ON"
 
         exclude:
           - compiler: {name: 'nvidia-hpc', version: '24.7'}
@@ -65,19 +65,19 @@ jobs:
           - compiler: {name: 'nvidia-hpc', version: '24.7'}
             hdf: "ON"
           - compiler: {name: 'nvidia-hpc', version: '24.7'}
-            acc: "ON"
+            cuda-fortran: "ON"
             mpi: "ON"
           - compiler: {name: 'nvidia-hpc', version: '24.7'}
-            acc: "ON"
+            cuda-fortran: "ON"
             mtln: "ON"
           - compiler: {name: 'nvidia-hpc', version: '24.7'}
-            acc: "ON"
+            cuda-fortran: "ON"
             hdf: "ON"
             
       fail-fast: false
             
     runs-on: ${{ matrix.os }}
-    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})-double(${{matrix.double-precision}})-acc(${{matrix.acc}})
+    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})-double(${{matrix.double-precision}})-cuf(${{matrix.cuda-fortran}})
 
     steps:       
     - name: Checkout
@@ -111,9 +111,9 @@ jobs:
     - name: Build application (nvidia-hpc)
       if: matrix.compiler.name=='nvidia-hpc'
       run: |
-        ACC_FLAG=""
-        if [ "${{matrix.acc}}" = "ON" ]; then
-          ACC_FLAG="-DSEMBA_FDTD_ENABLE_CUF=ON"
+        CUF_FLAG=""
+        if [ "${{matrix.cuda-fortran}}" = "ON" ]; then
+          CUF_FLAG="-DSEMBA_FDTD_ENABLE_CUDA_FORTRAN=ON"
         fi
         cmake -S . -B build-nvhpc-rls \
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
@@ -121,7 +121,7 @@ jobs:
           -DSEMBA_FDTD_ENABLE_HDF=OFF \
           -DSEMBA_FDTD_ENABLE_MTLN=OFF \
           -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=OFF \
-          $ACC_FLAG
+          $CUF_FLAG
         cmake --build build-nvhpc-rls -j
 
     - name: Build application

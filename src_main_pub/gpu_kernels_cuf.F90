@@ -1,7 +1,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  GPU KERNELS MODULE - CUDA Fortran (CUF) accelerated YEE kernels
-!  Implements the same API as gpu_kernels_m used by timestepping.F90.
-!  Current implementation uses local device allocations per kernel call.
+!  Persistent device memory allocated once in gpu_init, reused every step.
+!  Eliminates per-kernel allocation/deallocation overhead.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module gpu_kernels_m
@@ -13,16 +13,37 @@ module gpu_kernels_m
    implicit none
 
    type gpu_state_t
+      ! Host-side pointers (same as original)
       real(kind=rkind), pointer, dimension(:,:,:), contiguous :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension(:), contiguous :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       integer(kind=integersizeofmediamatrices), pointer, dimension(:,:,:), contiguous :: sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz
       real(kind=rkind), pointer, dimension(:), contiguous :: g1, g2, gm1, gm2
+
+      ! Persistent device memory buffers
+      real(kind=rkind), pointer, device, dimension(:,:,:) :: Ex_d, Ey_d, Ez_d, Hx_d, Hy_d, Hz_d
+      real(kind=rkind), pointer, device, dimension(:) :: Idxe_d, Idye_d, Idze_d, Idxh_d, Idyh_d, Idzh_d, dxe_d, dye_d, dze_d, dxh_d, dyh_d, dzh_d
+      integer(kind=integersizeofmediamatrices), pointer, device, dimension(:,:,:) :: sggMiEx_d, sggMiEy_d, sggMiEz_d, sggMiHx_d, sggMiHy_d, sggMiHz_d
+      real(kind=rkind), pointer, device, dimension(:) :: g1_d, g2_d, gm1_d, gm2_d
+
+      ! Device event handles for timing
+      integer(kind=4), pointer, device, dimension(:) :: dev_event_d
+
+      ! Dimensions for device memory
+      integer(kind=4) :: Ex_nx, Ex_ny, Ex_nz, Ey_nx, Ey_ny, Ey_nz, Ez_nx, Ez_ny, Ez_nz
+      integer(kind=4) :: Hx_nx, Hx_ny, Hx_nz, Hy_nx, Hy_ny, Hy_nz, Hz_nx, Hz_ny, Hz_nz
+      integer(kind=4) :: Idxe_n, Idye_n, Idze_n, Idxh_n, Idyh_n, Idzh_n
+      integer(kind=4) :: dxe_n, dye_n, dze_n, dxh_n, dyh_n, dzh_n
+      integer(kind=4) :: g1_n, g2_n, gm1_n, gm2_n
+      integer(kind=4) :: sggMi_nx, sggMi_ny, sggMi_nz
 
       logical :: initialized = .false.
    end type
 
 contains
 
+   !--------------------------------------------------------------------------------
+   ! Initialize GPU data regions - called once at simulation start
+   !--------------------------------------------------------------------------------
    subroutine gpu_init(this, Ex, Ey, Ez, Hx, Hy, Hz, sggMiEx, sggMiEy, sggMiEz, &
                        sggMiHx, sggMiHy, sggMiHz, g1, g2, gm1, gm2, &
                        Idxe_in, Idye_in, Idze_in, Idxh_in, Idyh_in, Idzh_in, dxe_in, dye_in, dze_in, dxh_in, dyh_in, dzh_in)
@@ -49,37 +70,90 @@ contains
          return
       endif
 
-      this%Ex => Ex
-      this%Ey => Ey
-      this%Ez => Ez
-      this%Hx => Hx
-      this%Hy => Hy
-      this%Hz => Hz
+      ! Store host pointers
+      this%Ex => Ex; this%Ey => Ey; this%Ez => Ez
+      this%Hx => Hx; this%Hy => Hy; this%Hz => Hz
+      this%sggMiEx => sggMiEx; this%sggMiEy => sggMiEy; this%sggMiEz => sggMiEz
+      this%sggMiHx => sggMiHx; this%sggMiHy => sggMiHy; this%sggMiHz => sggMiHz
+      this%g1 => g1; this%g2 => g2; this%gm1 => gm1; this%gm2 => gm2
+      this%Idxe => Idxe_in; this%Idye => Idye_in; this%Idze => Idze_in
+      this%Idxh => Idxh_in; this%Idyh => Idyh_in; this%Idzh => Idzh_in
+      this%dxe => dxe_in; this%dye => dye_in; this%dze => dze_in
+      this%dxh => dxh_in; this%dyh => dyh_in; this%dzh => dzh_in
 
-      this%sggMiEx => sggMiEx
-      this%sggMiEy => sggMiEy
-      this%sggMiEz => sggMiEz
-      this%sggMiHx => sggMiHx
-      this%sggMiHy => sggMiHy
-      this%sggMiHz => sggMiHz
+      ! Store dimensions
+      this%Ex_nx = ubound(Ex,1) - lbound(Ex,1) + 1
+      this%Ex_ny = ubound(Ex,2) - lbound(Ex,2) + 1
+      this%Ex_nz = ubound(Ex,3) - lbound(Ex,3) + 1
+      this%Ey_nx = ubound(Ey,1) - lbound(Ey,1) + 1
+      this%Ey_ny = ubound(Ey,2) - lbound(Ey,2) + 1
+      this%Ey_nz = ubound(Ey,3) - lbound(Ey,3) + 1
+      this%Ez_nx = ubound(Ez,1) - lbound(Ez,1) + 1
+      this%Ez_ny = ubound(Ez,2) - lbound(Ez,2) + 1
+      this%Ez_nz = ubound(Ez,3) - lbound(Ez,3) + 1
+      this%Hx_nx = ubound(Hx,1) - lbound(Hx,1) + 1
+      this%Hx_ny = ubound(Hx,2) - lbound(Hx,2) + 1
+      this%Hx_nz = ubound(Hx,3) - lbound(Hx,3) + 1
+      this%Hy_nx = ubound(Hy,1) - lbound(Hy,1) + 1
+      this%Hy_ny = ubound(Hy,2) - lbound(Hy,2) + 1
+      this%Hy_nz = ubound(Hy,3) - lbound(Hy,3) + 1
+      this%Hz_nx = ubound(Hz,1) - lbound(Hz,1) + 1
+      this%Hz_ny = ubound(Hz,2) - lbound(Hz,2) + 1
+      this%Hz_nz = ubound(Hz,3) - lbound(Hz,3) + 1
 
-      this%g1 => g1
-      this%g2 => g2
-      this%gm1 => gm1
-      this%gm2 => gm2
+      this%Idxe_n = ubound(Idxe_in,1) - lbound(Idxe_in,1) + 1
+      this%Idye_n = ubound(Idye_in,1) - lbound(Idye_in,1) + 1
+      this%Idze_n = ubound(Idze_in,1) - lbound(Idze_in,1) + 1
+      this%Idxh_n = ubound(Idxh_in,1) - lbound(Idxh_in,1) + 1
+      this%Idyh_n = ubound(Idyh_in,1) - lbound(Idyh_in,1) + 1
+      this%Idzh_n = ubound(Idzh_in,1) - lbound(Idzh_in,1) + 1
+      this%dxe_n = ubound(dxe_in,1) - lbound(dxe_in,1) + 1
+      this%dye_n = ubound(dye_in,1) - lbound(dye_in,1) + 1
+      this%dze_n = ubound(dze_in,1) - lbound(dze_in,1) + 1
+      this%dxh_n = ubound(dxh_in,1) - lbound(dxh_in,1) + 1
+      this%dyh_n = ubound(dyh_in,1) - lbound(dyh_in,1) + 1
+      this%dzh_n = ubound(dzh_in,1) - lbound(dzh_in,1) + 1
+      this%g1_n = ubound(g1,1) - lbound(g1,1) + 1
+      this%g2_n = ubound(g2,1) - lbound(g2,1) + 1
+      this%gm1_n = ubound(gm1,1) - lbound(gm1,1) + 1
+      this%gm2_n = ubound(gm2,1) - lbound(gm2,1) + 1
 
-      this%Idxe => Idxe_in
-      this%Idye => Idye_in
-      this%Idze => Idze_in
-      this%Idxh => Idxh_in
-      this%Idyh => Idyh_in
-      this%Idzh => Idzh_in
-      this%dxe => dxe_in
-      this%dye => dye_in
-      this%dze => dze_in
-      this%dxh => dxh_in
-      this%dyh => dyh_in
-      this%dzh => dzh_in
+      this%sggMi_nx = ubound(sggMiEx,1) - lbound(sggMiEx,1) + 1
+      this%sggMi_ny = ubound(sggMiEx,2) - lbound(sggMiEx,2) + 1
+      this%sggMi_nz = ubound(sggMiEx,3) - lbound(sggMiEx,3) + 1
+
+      ! Allocate persistent device memory
+      allocate(this%Ex_d(this%Ex_nx, this%Ex_ny, this%Ex_nz))
+      allocate(this%Ey_d(this%Ey_nx, this%Ey_ny, this%Ey_nz))
+      allocate(this%Ez_d(this%Ez_nx, this%Ez_ny, this%Ez_nz))
+      allocate(this%Hx_d(this%Hx_nx, this%Hx_ny, this%Hx_nz))
+      allocate(this%Hy_d(this%Hy_nx, this%Hy_ny, this%Hy_nz))
+      allocate(this%Hz_d(this%Hz_nx, this%Hz_ny, this%Hz_nz))
+
+      allocate(this%Idxe_d(this%Idxe_n))
+      allocate(this%Idye_d(this%Idye_n))
+      allocate(this%Idze_d(this%Idze_n))
+      allocate(this%Idxh_d(this%Idxh_n))
+      allocate(this%Idyh_d(this%Idyh_n))
+      allocate(this%Idzh_d(this%Idzh_n))
+      allocate(this%dxe_d(this%dxe_n))
+      allocate(this%dye_d(this%dye_n))
+      allocate(this%dze_d(this%dze_n))
+      allocate(this%dxh_d(this%dxh_n))
+      allocate(this%dyh_d(this%dyh_n))
+      allocate(this%dzh_d(this%dzh_n))
+
+      allocate(this%sggMiEx_d(this%sggMi_nx, this%sggMi_ny, this%sggMi_nz))
+      allocate(this%sggMiEy_d(this%sggMi_nx, this%sggMi_ny, this%sggMi_nz))
+      allocate(this%sggMiEz_d(this%sggMi_nx, this%sggMi_ny, this%sggMi_nz))
+      allocate(this%sggMiHx_d(this%sggMi_nx, this%sggMi_ny, this%sggMi_nz))
+      allocate(this%sggMiHy_d(this%sggMi_nx, this%sggMi_ny, this%sggMi_nz))
+      allocate(this%sggMiHz_d(this%sggMi_nx, this%sggMi_ny, this%sggMi_nz))
+
+      allocate(this%g1_d(this%g1_n))
+      allocate(this%g2_d(this%g2_n))
+      allocate(this%gm1_d(this%gm1_n))
+      allocate(this%gm2_d(this%gm2_n))
 
       this%initialized = .true.
 
@@ -88,72 +162,127 @@ contains
    subroutine gpu_destroy(this)
       class(gpu_state_t), intent(inout) :: this
 
-      nullify(this%Ex)
-      nullify(this%Ey)
-      nullify(this%Ez)
-      nullify(this%Hx)
-      nullify(this%Hy)
-      nullify(this%Hz)
-      nullify(this%sggMiEx)
-      nullify(this%sggMiEy)
-      nullify(this%sggMiEz)
-      nullify(this%sggMiHx)
-      nullify(this%sggMiHy)
-      nullify(this%sggMiHz)
-      nullify(this%g1)
-      nullify(this%g2)
-      nullify(this%gm1)
-      nullify(this%gm2)
-      nullify(this%Idxe)
-      nullify(this%Idye)
-      nullify(this%Idze)
-      nullify(this%Idxh)
-      nullify(this%Idyh)
-      nullify(this%Idzh)
-      nullify(this%dxe)
-      nullify(this%dye)
-      nullify(this%dze)
-      nullify(this%dxh)
-      nullify(this%dyh)
-      nullify(this%dzh)
+      ! Deallocate device memory
+      if (associated(this%Ex_d)) deallocate(this%Ex_d)
+      if (associated(this%Ey_d)) deallocate(this%Ey_d)
+      if (associated(this%Ez_d)) deallocate(this%Ez_d)
+      if (associated(this%Hx_d)) deallocate(this%Hx_d)
+      if (associated(this%Hy_d)) deallocate(this%Hy_d)
+      if (associated(this%Hz_d)) deallocate(this%Hz_d)
+
+      if (associated(this%Idxe_d)) deallocate(this%Idxe_d)
+      if (associated(this%Idye_d)) deallocate(this%Idye_d)
+      if (associated(this%Idze_d)) deallocate(this%Idze_d)
+      if (associated(this%Idxh_d)) deallocate(this%Idxh_d)
+      if (associated(this%Idyh_d)) deallocate(this%Idyh_d)
+      if (associated(this%Idzh_d)) deallocate(this%Idzh_d)
+      if (associated(this%dxe_d)) deallocate(this%dxe_d)
+      if (associated(this%dye_d)) deallocate(this%dye_d)
+      if (associated(this%dze_d)) deallocate(this%dze_d)
+      if (associated(this%dxh_d)) deallocate(this%dxh_d)
+      if (associated(this%dyh_d)) deallocate(this%dyh_d)
+      if (associated(this%dzh_d)) deallocate(this%dzh_d)
+
+      if (associated(this%sggMiEx_d)) deallocate(this%sggMiEx_d)
+      if (associated(this%sggMiEy_d)) deallocate(this%sggMiEy_d)
+      if (associated(this%sggMiEz_d)) deallocate(this%sggMiEz_d)
+      if (associated(this%sggMiHx_d)) deallocate(this%sggMiHx_d)
+      if (associated(this%sggMiHy_d)) deallocate(this%sggMiHy_d)
+      if (associated(this%sggMiHz_d)) deallocate(this%sggMiHz_d)
+
+      if (associated(this%g1_d)) deallocate(this%g1_d)
+      if (associated(this%g2_d)) deallocate(this%g2_d)
+      if (associated(this%gm1_d)) deallocate(this%gm1_d)
+      if (associated(this%gm2_d)) deallocate(this%gm2_d)
+
+      ! Nullify host pointers
+      nullify(this%Ex); nullify(this%Ey); nullify(this%Ez)
+      nullify(this%Hx); nullify(this%Hy); nullify(this%Hz)
+      nullify(this%sggMiEx); nullify(this%sggMiEy); nullify(this%sggMiEz)
+      nullify(this%sggMiHx); nullify(this%sggMiHy); nullify(this%sggMiHz)
+      nullify(this%g1); nullify(this%g2); nullify(this%gm1); nullify(this%gm2)
+      nullify(this%Idxe); nullify(this%Idye); nullify(this%Idze)
+      nullify(this%Idxh); nullify(this%Idyh); nullify(this%Idzh)
+      nullify(this%dxe); nullify(this%dye); nullify(this%dze)
+      nullify(this%dxh); nullify(this%dyh); nullify(this%dzh)
 
       this%initialized = .false.
 
    end subroutine gpu_destroy
 
+   !--------------------------------------------------------------------------------
+   ! Upload host data to device - called once per timestep for fields that change
+   !--------------------------------------------------------------------------------
+   subroutine gpu_upload(this)
+      class(gpu_state_t), intent(inout) :: this
+
+      if (.not. this%initialized) return
+
+      ! Copy fields (read-write: host and device stay in sync)
+      this%Ex_d = this%Ex
+      this%Ey_d = this%Ey
+      this%Ez_d = this%Ez
+      this%Hx_d = this%Hx
+      this%Hy_d = this%Hy
+      this%Hz_d = this%Hz
+
+      ! Copy coefficients (read-only, could be cached but small overhead)
+      this%Idxe_d = this%Idxe
+      this%Idye_d = this%Idye
+      this%Idze_d = this%Idze
+      this%Idxh_d = this%Idxh
+      this%Idyh_d = this%Idyh
+      this%Idzh_d = this%Idzh
+      this%dxe_d = this%dxe
+      this%dye_d = this%dye
+      this%dze_d = this%dze
+      this%dxh_d = this%dxh
+      this%dyh_d = this%dyh
+      this%dzh_d = this%dzh
+
+      this%sggMiEx_d = this%sggMiEx
+      this%sggMiEy_d = this%sggMiEy
+      this%sggMiEz_d = this%sggMiEz
+      this%sggMiHx_d = this%sggMiHx
+      this%sggMiHy_d = this%sggMiHy
+      this%sggMiHz_d = this%sggMiHz
+
+      this%g1_d = this%g1
+      this%g2_d = this%g2
+      this%gm1_d = this%gm1
+      this%gm2_d = this%gm2
+
+   end subroutine gpu_upload
+
+   !--------------------------------------------------------------------------------
+   ! Download device data to host - called once per timestep
+   !--------------------------------------------------------------------------------
+   subroutine gpu_download(this)
+      class(gpu_state_t), intent(inout) :: this
+
+      if (.not. this%initialized) return
+
+      this%Ex = this%Ex_d
+      this%Ey = this%Ey_d
+      this%Ez = this%Ez_d
+      this%Hx = this%Hx_d
+      this%Hy = this%Hy_d
+      this%Hz = this%Hz_d
+
+   end subroutine gpu_download
+
+   !--------------------------------------------------------------------------------
+   ! Advance Ex field - GPU accelerated YEE kernel
+   !--------------------------------------------------------------------------------
    subroutine gpu_advanceEx(this, bounds)
       class(gpu_state_t), intent(inout) :: this
       type(bounds_t), intent(in) :: bounds
 
-      real(kind=rkind), allocatable, device, dimension(:,:,:) :: Ex_d, Hy_d, Hz_d
-      integer(kind=integersizeofmediamatrices), allocatable, device, dimension(:,:,:) :: sggMiEx_d
-      real(kind=rkind), allocatable, device, dimension(:) :: Idyh_d, Idzh_d, g1_d, g2_d
+      if (.not. this%initialized) return
 
-      allocate(Ex_d(lbound(this%Ex,1):ubound(this%Ex,1), lbound(this%Ex,2):ubound(this%Ex,2), lbound(this%Ex,3):ubound(this%Ex,3)))
-      allocate(Hy_d(lbound(this%Hy,1):ubound(this%Hy,1), lbound(this%Hy,2):ubound(this%Hy,2), lbound(this%Hy,3):ubound(this%Hy,3)))
-      allocate(Hz_d(lbound(this%Hz,1):ubound(this%Hz,1), lbound(this%Hz,2):ubound(this%Hz,2), lbound(this%Hz,3):ubound(this%Hz,3)))
-      allocate(sggMiEx_d(lbound(this%sggMiEx,1):ubound(this%sggMiEx,1), lbound(this%sggMiEx,2):ubound(this%sggMiEx,2), lbound(this%sggMiEx,3):ubound(this%sggMiEx,3)))
-      allocate(Idyh_d(lbound(this%Idyh,1):ubound(this%Idyh,1)))
-      allocate(Idzh_d(lbound(this%Idzh,1):ubound(this%Idzh,1)))
-      allocate(g1_d(lbound(this%g1,1):ubound(this%g1,1)))
-      allocate(g2_d(lbound(this%g2,1):ubound(this%g2,1)))
-
-      Ex_d = this%Ex
-      Hy_d = this%Hy
-      Hz_d = this%Hz
-      sggMiEx_d = this%sggMiEx
-      Idyh_d = this%Idyh
-      Idzh_d = this%Idzh
-      g1_d = this%g1
-      g2_d = this%g2
-
-      call gpu_advanceEx_kernel(Ex_d, Hy_d, Hz_d, sggMiEx_d, &
-                                Idyh_d, Idzh_d, g1_d, g2_d, &
+      call gpu_advanceEx_kernel(this%Ex_d, this%Hy_d, this%Hz_d, this%sggMiEx_d, &
+                                this%Idyh_d, this%Idzh_d, this%g1_d, this%g2_d, &
                                 bounds%sweepEx%NX, bounds%sweepEx%NY, bounds%sweepEx%NZ)
-
-      this%Ex = Ex_d
-
-      deallocate(Ex_d, Hy_d, Hz_d, sggMiEx_d, Idyh_d, Idzh_d, g1_d, g2_d)
 
    end subroutine gpu_advanceEx
 
@@ -181,37 +310,19 @@ contains
       end do
    end subroutine gpu_advanceEx_kernel
 
+   !--------------------------------------------------------------------------------
+   ! Advance Ey field - GPU accelerated YEE kernel
+   !--------------------------------------------------------------------------------
    subroutine gpu_advanceEy(this, bounds)
       class(gpu_state_t), intent(inout) :: this
       type(bounds_t), intent(in) :: bounds
-      real(kind=rkind), allocatable, device, dimension(:,:,:) :: Ey_d, Hz_d, Hx_d
-      integer(kind=integersizeofmediamatrices), allocatable, device, dimension(:,:,:) :: sggMiEy_d
-      real(kind=rkind), allocatable, device, dimension(:) :: Idzh_d, Idxh_d, g1_d, g2_d
 
-      allocate(Ey_d(lbound(this%Ey,1):ubound(this%Ey,1), lbound(this%Ey,2):ubound(this%Ey,2), lbound(this%Ey,3):ubound(this%Ey,3)))
-      allocate(Hz_d(lbound(this%Hz,1):ubound(this%Hz,1), lbound(this%Hz,2):ubound(this%Hz,2), lbound(this%Hz,3):ubound(this%Hz,3)))
-      allocate(Hx_d(lbound(this%Hx,1):ubound(this%Hx,1), lbound(this%Hx,2):ubound(this%Hx,2), lbound(this%Hx,3):ubound(this%Hx,3)))
-      allocate(sggMiEy_d(lbound(this%sggMiEy,1):ubound(this%sggMiEy,1), lbound(this%sggMiEy,2):ubound(this%sggMiEy,2), lbound(this%sggMiEy,3):ubound(this%sggMiEy,3)))
-      allocate(Idzh_d(lbound(this%Idzh,1):ubound(this%Idzh,1)))
-      allocate(Idxh_d(lbound(this%Idxh,1):ubound(this%Idxh,1)))
-      allocate(g1_d(lbound(this%g1,1):ubound(this%g1,1)))
-      allocate(g2_d(lbound(this%g2,1):ubound(this%g2,1)))
+      if (.not. this%initialized) return
 
-      Ey_d = this%Ey
-      Hz_d = this%Hz
-      Hx_d = this%Hx
-      sggMiEy_d = this%sggMiEy
-      Idzh_d = this%Idzh
-      Idxh_d = this%Idxh
-      g1_d = this%g1
-      g2_d = this%g2
-
-      call gpu_advanceEy_kernel(Ey_d, Hz_d, Hx_d, sggMiEy_d, Idzh_d, Idxh_d, g1_d, g2_d, &
+      call gpu_advanceEy_kernel(this%Ey_d, this%Hz_d, this%Hx_d, this%sggMiEy_d, &
+                                this%Idzh_d, this%Idxh_d, this%g1_d, this%g2_d, &
                                 bounds%sweepEy%NX, bounds%sweepEy%NY, bounds%sweepEy%NZ)
 
-      this%Ey = Ey_d
-
-      deallocate(Ey_d, Hz_d, Hx_d, sggMiEy_d, Idzh_d, Idxh_d, g1_d, g2_d)
    end subroutine gpu_advanceEy
 
    subroutine gpu_advanceEy_kernel(Ey_d, Hz_d, Hx_d, sggMiEy_d, Idzh_d, Idxh_d, g1_d, g2_d, nx, ny, nz)
@@ -237,37 +348,19 @@ contains
       end do
    end subroutine gpu_advanceEy_kernel
 
+   !--------------------------------------------------------------------------------
+   ! Advance Ez field - GPU accelerated YEE kernel
+   !--------------------------------------------------------------------------------
    subroutine gpu_advanceEz(this, bounds)
       class(gpu_state_t), intent(inout) :: this
       type(bounds_t), intent(in) :: bounds
-      real(kind=rkind), allocatable, device, dimension(:,:,:) :: Ez_d, Hx_d, Hy_d
-      integer(kind=integersizeofmediamatrices), allocatable, device, dimension(:,:,:) :: sggMiEz_d
-      real(kind=rkind), allocatable, device, dimension(:) :: Idyh_d, Idxh_d, g1_d, g2_d
 
-      allocate(Ez_d(lbound(this%Ez,1):ubound(this%Ez,1), lbound(this%Ez,2):ubound(this%Ez,2), lbound(this%Ez,3):ubound(this%Ez,3)))
-      allocate(Hx_d(lbound(this%Hx,1):ubound(this%Hx,1), lbound(this%Hx,2):ubound(this%Hx,2), lbound(this%Hx,3):ubound(this%Hx,3)))
-      allocate(Hy_d(lbound(this%Hy,1):ubound(this%Hy,1), lbound(this%Hy,2):ubound(this%Hy,2), lbound(this%Hy,3):ubound(this%Hy,3)))
-      allocate(sggMiEz_d(lbound(this%sggMiEz,1):ubound(this%sggMiEz,1), lbound(this%sggMiEz,2):ubound(this%sggMiEz,2), lbound(this%sggMiEz,3):ubound(this%sggMiEz,3)))
-      allocate(Idyh_d(lbound(this%Idyh,1):ubound(this%Idyh,1)))
-      allocate(Idxh_d(lbound(this%Idxh,1):ubound(this%Idxh,1)))
-      allocate(g1_d(lbound(this%g1,1):ubound(this%g1,1)))
-      allocate(g2_d(lbound(this%g2,1):ubound(this%g2,1)))
+      if (.not. this%initialized) return
 
-      Ez_d = this%Ez
-      Hx_d = this%Hx
-      Hy_d = this%Hy
-      sggMiEz_d = this%sggMiEz
-      Idyh_d = this%Idyh
-      Idxh_d = this%Idxh
-      g1_d = this%g1
-      g2_d = this%g2
-
-      call gpu_advanceEz_kernel(Ez_d, Hx_d, Hy_d, sggMiEz_d, Idyh_d, Idxh_d, g1_d, g2_d, &
+      call gpu_advanceEz_kernel(this%Ez_d, this%Hx_d, this%Hy_d, this%sggMiEz_d, &
+                                this%Idyh_d, this%Idxh_d, this%g1_d, this%g2_d, &
                                 bounds%sweepEz%NX, bounds%sweepEz%NY, bounds%sweepEz%NZ)
 
-      this%Ez = Ez_d
-
-      deallocate(Ez_d, Hx_d, Hy_d, sggMiEz_d, Idyh_d, Idxh_d, g1_d, g2_d)
    end subroutine gpu_advanceEz
 
    subroutine gpu_advanceEz_kernel(Ez_d, Hx_d, Hy_d, sggMiEz_d, Idyh_d, Idxh_d, g1_d, g2_d, nx, ny, nz)
@@ -293,37 +386,19 @@ contains
       end do
    end subroutine gpu_advanceEz_kernel
 
+   !--------------------------------------------------------------------------------
+   ! Advance Hx field - GPU accelerated YEE kernel
+   !--------------------------------------------------------------------------------
    subroutine gpu_advanceHx(this, bounds)
       class(gpu_state_t), intent(inout) :: this
       type(bounds_t), intent(in) :: bounds
-      real(kind=rkind), allocatable, device, dimension(:,:,:) :: Hx_d, Ey_d, Ez_d
-      integer(kind=integersizeofmediamatrices), allocatable, device, dimension(:,:,:) :: sggMiHx_d
-      real(kind=rkind), allocatable, device, dimension(:) :: Idye_d, Idze_d, gm1_d, gm2_d
 
-      allocate(Hx_d(lbound(this%Hx,1):ubound(this%Hx,1), lbound(this%Hx,2):ubound(this%Hx,2), lbound(this%Hx,3):ubound(this%Hx,3)))
-      allocate(Ey_d(lbound(this%Ey,1):ubound(this%Ey,1), lbound(this%Ey,2):ubound(this%Ey,2), lbound(this%Ey,3):ubound(this%Ey,3)))
-      allocate(Ez_d(lbound(this%Ez,1):ubound(this%Ez,1), lbound(this%Ez,2):ubound(this%Ez,2), lbound(this%Ez,3):ubound(this%Ez,3)))
-      allocate(sggMiHx_d(lbound(this%sggMiHx,1):ubound(this%sggMiHx,1), lbound(this%sggMiHx,2):ubound(this%sggMiHx,2), lbound(this%sggMiHx,3):ubound(this%sggMiHx,3)))
-      allocate(Idye_d(lbound(this%Idye,1):ubound(this%Idye,1)))
-      allocate(Idze_d(lbound(this%Idze,1):ubound(this%Idze,1)))
-      allocate(gm1_d(lbound(this%gm1,1):ubound(this%gm1,1)))
-      allocate(gm2_d(lbound(this%gm2,1):ubound(this%gm2,1)))
+      if (.not. this%initialized) return
 
-      Hx_d = this%Hx
-      Ey_d = this%Ey
-      Ez_d = this%Ez
-      sggMiHx_d = this%sggMiHx
-      Idye_d = this%Idye
-      Idze_d = this%Idze
-      gm1_d = this%gm1
-      gm2_d = this%gm2
-
-      call gpu_advanceHx_kernel(Hx_d, Ey_d, Ez_d, sggMiHx_d, Idye_d, Idze_d, gm1_d, gm2_d, &
+      call gpu_advanceHx_kernel(this%Hx_d, this%Ey_d, this%Ez_d, this%sggMiHx_d, &
+                                this%Idye_d, this%Idze_d, this%gm1_d, this%gm2_d, &
                                 bounds%sweepHx%NX, bounds%sweepHx%NY, bounds%sweepHx%NZ)
 
-      this%Hx = Hx_d
-
-      deallocate(Hx_d, Ey_d, Ez_d, sggMiHx_d, Idye_d, Idze_d, gm1_d, gm2_d)
    end subroutine gpu_advanceHx
 
    subroutine gpu_advanceHx_kernel(Hx_d, Ey_d, Ez_d, sggMiHx_d, Idye_d, Idze_d, gm1_d, gm2_d, nx, ny, nz)
@@ -350,37 +425,19 @@ contains
       end do
    end subroutine gpu_advanceHx_kernel
 
+   !--------------------------------------------------------------------------------
+   ! Advance Hy field - GPU accelerated YEE kernel
+   !--------------------------------------------------------------------------------
    subroutine gpu_advanceHy(this, bounds)
       class(gpu_state_t), intent(inout) :: this
       type(bounds_t), intent(in) :: bounds
-      real(kind=rkind), allocatable, device, dimension(:,:,:) :: Hy_d, Ez_d, Ex_d
-      integer(kind=integersizeofmediamatrices), allocatable, device, dimension(:,:,:) :: sggMiHy_d
-      real(kind=rkind), allocatable, device, dimension(:) :: Idze_d, Idxe_d, gm1_d, gm2_d
 
-      allocate(Hy_d(lbound(this%Hy,1):ubound(this%Hy,1), lbound(this%Hy,2):ubound(this%Hy,2), lbound(this%Hy,3):ubound(this%Hy,3)))
-      allocate(Ez_d(lbound(this%Ez,1):ubound(this%Ez,1), lbound(this%Ez,2):ubound(this%Ez,2), lbound(this%Ez,3):ubound(this%Ez,3)))
-      allocate(Ex_d(lbound(this%Ex,1):ubound(this%Ex,1), lbound(this%Ex,2):ubound(this%Ex,2), lbound(this%Ex,3):ubound(this%Ex,3)))
-      allocate(sggMiHy_d(lbound(this%sggMiHy,1):ubound(this%sggMiHy,1), lbound(this%sggMiHy,2):ubound(this%sggMiHy,2), lbound(this%sggMiHy,3):ubound(this%sggMiHy,3)))
-      allocate(Idze_d(lbound(this%Idze,1):ubound(this%Idze,1)))
-      allocate(Idxe_d(lbound(this%Idxe,1):ubound(this%Idxe,1)))
-      allocate(gm1_d(lbound(this%gm1,1):ubound(this%gm1,1)))
-      allocate(gm2_d(lbound(this%gm2,1):ubound(this%gm2,1)))
+      if (.not. this%initialized) return
 
-      Hy_d = this%Hy
-      Ez_d = this%Ez
-      Ex_d = this%Ex
-      sggMiHy_d = this%sggMiHy
-      Idze_d = this%Idze
-      Idxe_d = this%Idxe
-      gm1_d = this%gm1
-      gm2_d = this%gm2
-
-      call gpu_advanceHy_kernel(Hy_d, Ez_d, Ex_d, sggMiHy_d, Idze_d, Idxe_d, gm1_d, gm2_d, &
+      call gpu_advanceHy_kernel(this%Hy_d, this%Ez_d, this%Ex_d, this%sggMiHy_d, &
+                                this%Idze_d, this%Idxe_d, this%gm1_d, this%gm2_d, &
                                 bounds%sweepHy%NX, bounds%sweepHy%NY, bounds%sweepHy%NZ)
 
-      this%Hy = Hy_d
-
-      deallocate(Hy_d, Ez_d, Ex_d, sggMiHy_d, Idze_d, Idxe_d, gm1_d, gm2_d)
    end subroutine gpu_advanceHy
 
    subroutine gpu_advanceHy_kernel(Hy_d, Ez_d, Ex_d, sggMiHy_d, Idze_d, Idxe_d, gm1_d, gm2_d, nx, ny, nz)
@@ -406,37 +463,19 @@ contains
       end do
    end subroutine gpu_advanceHy_kernel
 
+   !--------------------------------------------------------------------------------
+   ! Advance Hz field - GPU accelerated YEE kernel
+   !--------------------------------------------------------------------------------
    subroutine gpu_advanceHz(this, bounds)
       class(gpu_state_t), intent(inout) :: this
       type(bounds_t), intent(in) :: bounds
-      real(kind=rkind), allocatable, device, dimension(:,:,:) :: Hz_d, Ex_d, Ey_d
-      integer(kind=integersizeofmediamatrices), allocatable, device, dimension(:,:,:) :: sggMiHz_d
-      real(kind=rkind), allocatable, device, dimension(:) :: Idye_d, Idxe_d, gm1_d, gm2_d
 
-      allocate(Hz_d(lbound(this%Hz,1):ubound(this%Hz,1), lbound(this%Hz,2):ubound(this%Hz,2), lbound(this%Hz,3):ubound(this%Hz,3)))
-      allocate(Ex_d(lbound(this%Ex,1):ubound(this%Ex,1), lbound(this%Ex,2):ubound(this%Ex,2), lbound(this%Ex,3):ubound(this%Ex,3)))
-      allocate(Ey_d(lbound(this%Ey,1):ubound(this%Ey,1), lbound(this%Ey,2):ubound(this%Ey,2), lbound(this%Ey,3):ubound(this%Ey,3)))
-      allocate(sggMiHz_d(lbound(this%sggMiHz,1):ubound(this%sggMiHz,1), lbound(this%sggMiHz,2):ubound(this%sggMiHz,2), lbound(this%sggMiHz,3):ubound(this%sggMiHz,3)))
-      allocate(Idye_d(lbound(this%Idye,1):ubound(this%Idye,1)))
-      allocate(Idxe_d(lbound(this%Idxe,1):ubound(this%Idxe,1)))
-      allocate(gm1_d(lbound(this%gm1,1):ubound(this%gm1,1)))
-      allocate(gm2_d(lbound(this%gm2,1):ubound(this%gm2,1)))
+      if (.not. this%initialized) return
 
-      Hz_d = this%Hz
-      Ex_d = this%Ex
-      Ey_d = this%Ey
-      sggMiHz_d = this%sggMiHz
-      Idye_d = this%Idye
-      Idxe_d = this%Idxe
-      gm1_d = this%gm1
-      gm2_d = this%gm2
-
-      call gpu_advanceHz_kernel(Hz_d, Ex_d, Ey_d, sggMiHz_d, Idye_d, Idxe_d, gm1_d, gm2_d, &
+      call gpu_advanceHz_kernel(this%Hz_d, this%Ex_d, this%Ey_d, this%sggMiHz_d, &
+                                this%Idye_d, this%Idxe_d, this%gm1_d, this%gm2_d, &
                                 bounds%sweepHz%NX, bounds%sweepHz%NY, bounds%sweepHz%NZ)
 
-      this%Hz = Hz_d
-
-      deallocate(Hz_d, Ex_d, Ey_d, sggMiHz_d, Idye_d, Idxe_d, gm1_d, gm2_d)
    end subroutine gpu_advanceHz
 
    subroutine gpu_advanceHz_kernel(Hz_d, Ex_d, Ey_d, sggMiHz_d, Idye_d, Idxe_d, gm1_d, gm2_d, nx, ny, nz)

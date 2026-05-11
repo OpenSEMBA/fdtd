@@ -1,0 +1,52 @@
+=========================
+semba-fdtd
+=========================
+__________________________________________
+Compilation date: May 11 2026 15:43:32
+Compiler Id: NVHPC 26.3.0
+git commit: 7cc0d31f
+cmake build type: Release
+cmake compilation flags: -Minfo=accel -Mpreprocess -Mbyteswapio -O3 -Minfo=accel -Mprefetch
+__________________________________________
+__________________________________________
+All rights reserved by the University of Granada (Spain)
+Contact person: Luis D. Angulo <lmdiazangulo@ugr.es>
+
+__________________________________________
+Compiled WITH SMBJSON support
+__________________________________________
+Launched on              11/05/2026 15:52
+INIT interpreting geometrical data from ./testData/input_examples/airplane.fdtd.json
+[OK] (    1/    1) Parser still working
+Switches ./build-cuda-rls/bin/semba-fdtd -i ./testData/input_examples/airplane.fdtd.json
+__________________________________________
+Closing warning file. Number of messages:             0
+__________________________________________
+Compiled with Single precision (real*4)
+__________________________________________
+Launched on              11/05/2026 15:52
+__________________________________________
+Launched with total options
+./build-cuda-rls/bin/semba-fdtd -i ./testData/input_examples/airplane.fdtd.json
+If later resuming use compulsory options
+mpirun -n    1
+__________________________________________
+INIT conversion internal ASCII => Binary
+__________________________________________
+__________________________________________
+__________________________________________
+Automatically correcting dt for stability reasons:
+Original dt:    1.2971875795741994E-009
+New dt:    3.0253469174290615E-010
+__________________________________________
+__________________________________________
+CFLN=    0.8000000
+__________________________________________
+__________________________________________
+Deltat=    3.0253469174290615E-010
+__________________________________________
+INIT NFDE --------> GEOM
+INIT UPDATING SHARED INFO. This process may take time!
+Launch with -noshared to skip this process (just relevant for structured NIBC CFCs and Anisot.)
+[OK] END UPDATING SHARED INFO
+(    1/    1) ERROR: gauss.exc DOES NOT EXIST
