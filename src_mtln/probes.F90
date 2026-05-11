@@ -94,9 +94,10 @@ contains
     subroutine resizeFrames(this, num_frames, number_of_conductors)
         class(probe_t) :: this
         integer, intent(in) :: num_frames, number_of_conductors
-
-        allocate(this%t(num_frames+1))
-        allocate(this%val(num_frames+1, number_of_conductors))
+        ! A single frame suffices: data is written to disk each step right after
+        ! it is stored, so there is no need to buffer the full time history.
+        allocate(this%t(1))
+        allocate(this%val(1, number_of_conductors))
         this%t = 0.0
         this%val = 0.0
 
@@ -124,11 +125,9 @@ contains
         class(probe_t) :: this
         real(kind=RKIND_TIEMPO), intent(in) :: time
         real(kind=RKIND), intent(in), dimension(:) :: values
-        if (this%current_frame > size(this%t)) return
-        this%t(this%current_frame) = time
-        this%val(this%current_frame,:) = values
-        this%current_frame = this%current_frame + 1
-
+        ! Always overwrite slot 1; the caller flushes to disk each step.
+        this%t(1) = time
+        this%val(1,:) = values
     end subroutine
 
 
