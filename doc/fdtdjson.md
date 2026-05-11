@@ -573,6 +573,7 @@ Associations with cables can contain the following inputs:
 + `<initialTerminalId>` and `<endTerminalId>` which must be present within the `materials` list of type. These entries indicate the lumped circuits connected at the ends of the cable.
 + `[initialConnectorId]` and `[endConnectorId]` entries which must point to materials of type `connector` and are assigned to the last segments of the corresponding ends of the cable.
 + Its `materialId` must point to a [`wire`](#wire), a [`shieldedMultiwire`](#shieldedMultiwire) or an [`unshieldedMultiwire`](#unshieldedMultiwire) material. If it points to a `shieldedMultiwire`, it must also contain an entry named `<containedWithinElementId>` which indicates the `polyline` in which this `shieldedMultiwire` is embedded.
++ `[totalResistance]` as a real number (for `wire`) or an array of size $N$ (for `shieldedMultiwire` / `unshieldedMultiwire`), in Ohm. When specified, the resistance per unit length is computed as `totalResistance` divided by the discretized wire length after meshing, overriding any `resistancePerMeter` defined in the material. This eliminates the extra error introduced by staircasing when the wire is not aligned with the grid.
 
 **Example:**
 

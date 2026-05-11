@@ -17,7 +17,7 @@ module mtl_bundle_m
         real(kind=rkind), allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
         integer  :: number_of_conductors = 0, number_of_divisions = 0
         real(kind=RKIND), dimension(:), allocatable :: step_size
-        real(kind=RKIND), allocatable, dimension(:,:) :: v, i
+        real(kind=RKIND), allocatable, dimension(:,:) :: v, i, i_prev
         real(kind=RKIND), allocatable, dimension(:,:) :: v_source, i_source, e_L
         real(kind=RKIND), allocatable, dimension(:,:,:) :: du(:,:,:)
         real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 1e10
@@ -115,6 +115,7 @@ contains
 
         allocate(this%v(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0_rkind)
         allocate(this%i(this%number_of_conductors, this%number_of_divisions), source = 0.0_rkind)
+        allocate(this%i_prev(this%number_of_conductors, this%number_of_divisions), source = 0.0_rkind)
         allocate(this%e_L(this%number_of_conductors, this%number_of_divisions), source = 0.0_rkind)
 
         allocate(this%v_source(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0_rkind)
@@ -406,7 +407,6 @@ contains
 
     subroutine bundle_advanceCurrent(this)
         class(mtl_bundle_t) ::this
-        real(kind=rkind), dimension(:,:), allocatable :: i_prev, i_now
         integer :: i
         real(kind=rkind) :: eps_r
 #ifdef CompileWithMPI
@@ -418,7 +418,7 @@ contains
         if (sizeof > 1) call this%Comm_MPI_V()
 #endif
         call this%transfer_impedance%updateQ3Phi()
-        i_prev = this%i
+        this%i_prev = this%i
 
         do i = 1, this%number_of_divisions
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
@@ -427,8 +427,7 @@ contains
                                                       matmul(this%du(i,:,:),this%v_source(:,i))) - &
                           matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
-        i_now = this%i
-        call this%transfer_impedance%updatePhi(i_prev, i_now)
+        call this%transfer_impedance%updatePhi(this%i_prev, this%i)
     end subroutine
 
     subroutine bundle_setExternalLongitudinalField(this)
