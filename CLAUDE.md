@@ -27,6 +27,17 @@ cmake --build build -j
 - `-DSEMBA_FDTD_ENABLE_SMBJSON=ON` — JSON input parser (ON by default)
 - `-DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=ON` — 8-byte reals (OFF by default)
 - `-DSEMBA_FDTD_ENABLE_TEST=ON` — compile unit tests (ON by default)
+- `-DSEMBA_FDTD_ENABLE_ACC=ON` — OpenACC GPU path (currently blocked at runtime on NVHPC 26.3 + cc120)
+- `-DSEMBA_FDTD_ENABLE_CUDA_FORTRAN=ON` — CUDA Fortran GPU path (experimental, Ex kernel)
+
+**CUDA Fortran runtime gate:**
+CUDA Fortran execution is opt-in. Enable it explicitly:
+
+```bash
+export SEMBA_FDTD_ENABLE_CUF_RUNTIME=1
+```
+
+Without this variable, CUDA Fortran builds fall back to CPU execution at runtime.
 
 **Binary output:** `./build/bin/semba-fdtd`
 

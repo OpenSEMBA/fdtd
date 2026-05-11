@@ -23,9 +23,18 @@ option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag (not supported in github actions)" OFF) 
 option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables the interprocedural optimization" OFF)
 option(SEMBA_FDTD_ENABLE_ACC "Enable OpenACC GPU acceleration (NVHPC compiler)" OFF)
+option(SEMBA_FDTD_ENABLE_CUDA_FORTRAN "Enable CUDA Fortran GPU acceleration (NVHPC compiler)" OFF)
 
 if(SEMBA_FDTD_ENABLE_ACC AND NOT CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
 	message(FATAL_ERROR "SEMBA_FDTD_ENABLE_ACC requires NVHPC Fortran compiler")
+endif()
+
+if(SEMBA_FDTD_ENABLE_CUDA_FORTRAN AND NOT CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
+	message(FATAL_ERROR "SEMBA_FDTD_ENABLE_CUDA_FORTRAN requires NVHPC Fortran compiler")
+endif()
+
+if(SEMBA_FDTD_ENABLE_ACC AND SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+	message(FATAL_ERROR "SEMBA_FDTD_ENABLE_ACC and SEMBA_FDTD_ENABLE_CUDA_FORTRAN cannot both be enabled")
 endif()
 
 option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
@@ -57,6 +66,11 @@ add_definitions(
 if (SEMBA_FDTD_ENABLE_ACC)
 	add_definitions(-DCompileWithACC)
 	add_definitions(-DSEMBA_FDTD_ENABLE_ACC)
+endif()
+
+if (SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+	add_definitions(-DCompileWithACC)
+	add_definitions(-DSEMBA_FDTD_ENABLE_CUDA_FORTRAN)
 endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
@@ -161,6 +175,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 			set(CMAKE_CXX_LINK_FLAGS_RELEASE "-acc=gpu -gpu=ccnative,mem:separate -O3")
 			set(CMAKE_Fortran_LINK_FLAGS_DEBUG "-acc=gpu -gpu=ccnative,mem:separate")
 		endif()
+
+		# CUDA Fortran is enabled per-source (gpu_kernels_cuf.F90) to avoid impacting all Fortran units.
  		
  		# OpenACC requires CUDA runtime libraries at link time
  		set(NVHPC_COMPILER_LIB "${NVHPC_SDK_ROOT}/compilers/lib")
@@ -328,6 +344,10 @@ if(SEMBA_FDTD_MAIN_LIB)
 	)
 	if (SEMBA_FDTD_ENABLE_ACC)
 		target_sources(semba-main PRIVATE "src_main_pub/gpu_kernels.F90")
+	elseif (SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+		target_sources(semba-main PRIVATE "src_main_pub/gpu_kernels_cuf.F90")
+		set_source_files_properties("src_main_pub/gpu_kernels_cuf.F90" PROPERTIES COMPILE_OPTIONS "-cuda")
+		target_link_options(semba-main PRIVATE -cuda)
 	endif()
 	target_link_libraries(semba-main
 		semba-outputs 
@@ -345,6 +365,8 @@ if (SEMBA_FDTD_EXECUTABLE)
 	# Add OpenACC flags to link options (like working example)
 	if (SEMBA_FDTD_ENABLE_ACC)
 		target_link_options(semba-fdtd PRIVATE -acc=gpu -gpu=ccnative,mem:separate -Minfo=accel)
+	elseif (SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+		target_link_options(semba-fdtd PRIVATE -cuda)
 	endif()
 endif()
 

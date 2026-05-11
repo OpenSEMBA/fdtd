@@ -80,7 +80,7 @@ module Solver_m
 #ifdef CompileWithProfiling
    use nvtx
 #endif
-#ifdef SEMBA_FDTD_ENABLE_ACC
+#if defined(SEMBA_FDTD_ENABLE_ACC) || defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
    use gpu_kernels_m
 #endif
    implicit none
@@ -117,7 +117,7 @@ module Solver_m
       type(mtln_t) :: mtln_parsed
 #endif
 
-#ifdef SEMBA_FDTD_ENABLE_ACC
+#if defined(SEMBA_FDTD_ENABLE_ACC) || defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
       type(gpu_state_t) :: gpu
       logical :: gpu_initialized = .false.
 #endif
@@ -474,7 +474,7 @@ module Solver_m
       call this%init_fields()
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
 
-#ifdef SEMBA_FDTD_ENABLE_ACC
+#if defined(SEMBA_FDTD_ENABLE_ACC) || defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
       if (.not.this%gpu_initialized) then
          call gpu_init(this%gpu, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz, &
                        this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, &
@@ -482,7 +482,7 @@ module Solver_m
                        this%g%g1, this%g%g2, this%g%gm1, this%g%gm2, &
                        this%Idxe, this%Idye, this%Idze, this%Idxh, this%Idyh, this%Idzh, &
                        this%dxe, this%dye, this%dze, this%dxh, this%dyh, this%dzh)
-         this%gpu_initialized = .true.
+         this%gpu_initialized = this%gpu%initialized
       endif
 #endif
       
@@ -2221,7 +2221,14 @@ contains
       ! Even a no-op kernel fails at launch time, suggesting a compiler/device interaction problem.
       ! TODO: Revisit with newer NVHPC versions or alternative GPU strategies (e.g., CUF, direct CUDA).
       ! For now, Ex updates fall through to CPU path below.
-   #endif
+      #endif
+
+      #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+         if (this%gpu_initialized) then
+            call gpu_advanceEx(this%gpu, this%bounds)
+            return
+         endif
+      #endif
 
       Ex(0:this%bounds%Ex%NX-1,0:this%bounds%Ex%NY-1,0:this%bounds%Ex%NZ-1) => this%Ex
       Hy(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1) => this%Hy
@@ -2266,6 +2273,13 @@ contains
    #ifdef SEMBA_FDTD_ENABLE_ACC
       ! GPU acceleration for Ey is currently blocked due to NVHPC OpenACC runtime issues (same as Ex).
       ! Fall through to CPU path below.
+   #endif
+
+   #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+      if (this%gpu_initialized) then
+         call gpu_advanceEy(this%gpu, this%bounds)
+         return
+      endif
    #endif
 
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
@@ -2313,6 +2327,13 @@ contains
    #ifdef SEMBA_FDTD_ENABLE_ACC
       ! GPU acceleration for Ez is currently blocked due to NVHPC OpenACC runtime issues (same as Ex).
       ! Fall through to CPU path below.
+   #endif
+
+   #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+      if (this%gpu_initialized) then
+         call gpu_advanceEz(this%gpu, this%bounds)
+         return
+      endif
    #endif
 
 
@@ -2380,6 +2401,13 @@ contains
       ! Fall through to CPU path below.
    #endif
 
+   #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+      if (this%gpu_initialized) then
+         call gpu_advanceHx(this%gpu, this%bounds)
+         return
+      endif
+   #endif
+
       Hx(0:this%bounds%Hx%NX-1,0:this%bounds%Hx%NY-1,0:this%bounds%Hx%NZ-1) => this%Hx
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
       Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
@@ -2425,6 +2453,13 @@ contains
       ! Fall through to CPU path below.
    #endif
 
+   #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+      if (this%gpu_initialized) then
+         call gpu_advanceHy(this%gpu, this%bounds)
+         return
+      endif
+   #endif
+
       Hy(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1) => this%Hy
       Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
       Ex(0:this%bounds%Ex%NX-1,0:this%bounds%Ex%NY-1,0:this%bounds%Ex%NZ-1) => this%Ex
@@ -2467,6 +2502,13 @@ contains
    #ifdef SEMBA_FDTD_ENABLE_ACC
       ! GPU acceleration for Hz is currently blocked due to NVHPC OpenACC runtime issues (same as Ex).
       ! Fall through to CPU path below.
+   #endif
+
+   #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+      if (this%gpu_initialized) then
+         call gpu_advanceHz(this%gpu, this%bounds)
+         return
+      endif
    #endif
 
       Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
@@ -2851,7 +2893,7 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       this%finishedwithsuccess=.true.
 
-#ifdef SEMBA_FDTD_ENABLE_ACC
+#if defined(SEMBA_FDTD_ENABLE_ACC) || defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
       if (this%gpu_initialized) then
          call gpu_destroy(this%gpu)
          this%gpu_initialized = .false.
