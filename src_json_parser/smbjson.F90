@@ -2998,6 +2998,9 @@ contains
          type(json_value), pointer :: terminations_ini, terminations_end
          type(coordinate_t), dimension(:), allocatable :: networks_coordinates
          type(materialAssociation_t), dimension(:), allocatable :: cables
+         type(json_value_ptr_t) :: cableMat
+         character(len=:), allocatable :: cableType
+         logical :: isShieldedCable
          
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
@@ -3006,11 +3009,14 @@ contains
                     this%getMaterialAssociations([J_MAT_TYPE_WIRE]) ]
          do i = 1, size(cables)
             elemIds = cables(i)%elementIds
+            cableMat = this%matTable%getId(cables(i)%materialId)
+            cableType = this%getStrAt(cableMat%p, J_TYPE)
+            isShieldedCable = (cableType == J_MAT_TYPE_SHIELDED_MULTIWIRE)
             terminations_ini => getTerminationsOnSide(cables(i)%initialTerminalId)
             terminations_end => getTerminationsOnSide(cables(i)%endTerminalId)
             do j = 1, size(elemIds)
-               aux_nodes = [aux_nodes, buildNode(terminations_ini, TERMINAL_NODE_SIDE_INI, j, elemIds(j))]
-               aux_nodes = [aux_nodes, buildNode(terminations_end, TERMINAL_NODE_SIDE_END, j, elemIds(j))]
+               aux_nodes = [aux_nodes, buildNode(terminations_ini, TERMINAL_NODE_SIDE_INI, j, elemIds(j), isShieldedCable)]
+               aux_nodes = [aux_nodes, buildNode(terminations_end, TERMINAL_NODE_SIDE_END, j, elemIds(j), isShieldedCable)]
                call updateListOfNetworksCoordinates(networks_coordinates, elemIds(j))
             end do
 
@@ -3280,14 +3286,16 @@ contains
 
 
 
-      function buildNode(termination_list, label, index, id) result(res)
+      function buildNode(termination_list, label, index, id, isShieldedCable) result(res)
          type(json_value), pointer :: termination_list, termination
          integer, intent(in) :: label
          integer, intent(in) :: index, id
+         logical, intent(in) :: isShieldedCable
          type(polyline_t) :: polyline
          type(aux_node_t) :: res
          integer :: cable_index
          integer :: stat
+         character(len=BUFSIZE) :: warningMsg
          call this%core%get_child(termination_list, index, termination)
          
          res%node%termination%termination_type = readTerminationType(termination)
@@ -3313,7 +3321,186 @@ contains
                res%cId = polyline%coordIds(ubound(polyline%coordIds,1))
                res%relPos = this%mesh%getCoordinate(polyline%coordIds(ubound(polyline%coordIds,1)))
             end if
+
+            if (res%node%termination%termination_type == TERMINATION_SHORT .and. .not. isShieldedCable) then
+               if (.not. terminalTouchesAnyEntity(res%cId, res%relPos, id)) then
+                  res%node%termination%termination_type = TERMINATION_OPEN
+                  write(warningMsg, '(A)') 'MTLN terminal on cable '//trim(res%node%belongs_to_cable%name)// &
+                        ' (conductor '//trim(intToStr(index))//', side '//trim(sideToStr(label))//') is short but not touching any wire or non-vacuum material. Treating as open.'
+                  call WarnErrReport(trim(warningMsg), .false.)
+               end if
+            end if
          end if
+      end function
+
+      logical function terminalTouchesAnyEntity(cId, relPos, ownElemId)
+         integer, intent(in) :: cId, ownElemId
+         type(coordinate_t), intent(in) :: relPos
+         terminalTouchesAnyEntity = touchesOtherWire(cId, ownElemId) .or. touchesNonVacuumMaterial(cId, relPos)
+      end function
+
+      logical function touchesOtherWire(cId, ownElemId)
+         integer, intent(in) :: cId, ownElemId
+         type(materialAssociation_t), dimension(:), allocatable :: wireMAs
+         type(polyline_t) :: pl
+         logical :: found
+         integer :: i, j
+
+         wireMAs = [this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE]), &
+                    this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE]), &
+                    this%getMaterialAssociations([J_MAT_TYPE_WIRE])]
+
+         do i = 1, size(wireMAs)
+            do j = 1, size(wireMAs(i)%elementIds)
+               if (wireMAs(i)%elementIds(j) == ownElemId) cycle
+               pl = this%mesh%getPolyline(wireMAs(i)%elementIds(j), found)
+               if (found) then
+                  if (any(pl%coordIds == cId)) then
+                     touchesOtherWire = .true.
+                     return
+                  end if
+               end if
+            end do
+         end do
+         touchesOtherWire = .false.
+      end function
+
+      logical function touchesNonVacuumMaterial(cId, relPos)
+         integer, intent(in) :: cId
+         type(coordinate_t), intent(in) :: relPos
+         type(json_value), pointer :: allMatAss, mAPtr
+         type(json_value_ptr_t) :: mat
+         type(materialAssociation_t) :: mA
+         character(len=:), allocatable :: matType
+         logical :: found
+         integer :: i, j, ix, iy, iz
+
+         ix = nint(relPos%position(1))
+         iy = nint(relPos%position(2))
+         iz = nint(relPos%position(3))
+
+         call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, allMatAss, found)
+         if (.not. found) then
+            touchesNonVacuumMaterial = .false.
+            return
+         end if
+
+         do i = 1, this%core%count(allMatAss)
+            call this%core%get_child(allMatAss, i, mAPtr)
+            mA = this%parseMaterialAssociation(mAPtr)
+            mat = this%matTable%getId(mA%materialId)
+            matType = this%getStrAt(mat%p, J_TYPE)
+
+            if (matType == J_MAT_TYPE_WIRE .or. &
+                matType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE .or. &
+                matType == J_MAT_TYPE_SHIELDED_MULTIWIRE .or. &
+                matType == J_MAT_TYPE_TERMINAL .or. &
+                matType == J_MAT_TYPE_CONNECTOR) cycle
+
+            if (matType == J_MAT_TYPE_ISOTROPIC) then
+               if (isVacuumIsotropic(mat%p)) cycle
+            end if
+
+            do j = 1, size(mA%elementIds)
+               if (elementTouchesCoordinate(mA%elementIds(j), cId, ix, iy, iz)) then
+                  touchesNonVacuumMaterial = .true.
+                  return
+               end if
+            end do
+         end do
+
+         touchesNonVacuumMaterial = .false.
+      end function
+
+      logical function elementTouchesCoordinate(elemId, cId, ix, iy, iz)
+         integer, intent(in) :: elemId, cId, ix, iy, iz
+         type(node_t) :: node
+         type(polyline_t) :: pl
+         type(cell_region_t) :: cr
+         logical :: found
+         integer :: k
+
+         node = this%mesh%getNode(elemId, found)
+         if (found) then
+            elementTouchesCoordinate = any(node%coordIds == cId)
+            return
+         end if
+
+         pl = this%mesh%getPolyline(elemId, found)
+         if (found) then
+            elementTouchesCoordinate = any(pl%coordIds == cId)
+            return
+         end if
+
+         cr = this%mesh%getCellRegion(elemId, found)
+         if (found) then
+            do k = 1, size(cr%intervals)
+               if (intervalContainsNode(cr%intervals(k), ix, iy, iz)) then
+                  elementTouchesCoordinate = .true.
+                  return
+               end if
+            end do
+         end if
+
+         elementTouchesCoordinate = .false.
+      end function
+
+      logical function intervalContainsNode(interval, ix, iy, iz)
+         type(cell_interval_t), intent(in) :: interval
+         integer, intent(in) :: ix, iy, iz
+         integer :: ax, bx, ay, by, az, bz
+
+         ax = min(interval%ini%cell(1), interval%end%cell(1))
+         bx = max(interval%ini%cell(1), interval%end%cell(1))
+         ay = min(interval%ini%cell(2), interval%end%cell(2))
+         by = max(interval%ini%cell(2), interval%end%cell(2))
+         az = min(interval%ini%cell(3), interval%end%cell(3))
+         bz = max(interval%ini%cell(3), interval%end%cell(3))
+
+         intervalContainsNode = (ix >= ax .and. ix <= bx .and. &
+                                 iy >= ay .and. iy <= by .and. &
+                                 iz >= az .and. iz <= bz)
+      end function
+
+      logical function isVacuumIsotropic(matPtr)
+         type(json_value), pointer, intent(in) :: matPtr
+         real(kind=RKIND) :: relEps, relMu, sigmaE, sigmaM
+         real(kind=RKIND) :: absEps, absMu
+         real(kind=RKIND), parameter :: tol = 1.0e-12_RKIND
+
+         relEps = this%getRealAt(matPtr, J_MAT_REL_PERMITTIVITY, default = 1.0_RKIND)
+         relMu = this%getRealAt(matPtr, J_MAT_REL_PERMEABILITY, default = 1.0_RKIND)
+         sigmaE = this%getRealAt(matPtr, J_MAT_ELECTRIC_CONDUCTIVITY, default = 0.0_RKIND)
+         sigmaM = this%getRealAt(matPtr, J_MAT_MAGNETIC_CONDUCTIVITY, default = 0.0_RKIND)
+
+         absEps = this%getRealAt(matPtr, J_MAT_ABS_PERMITTIVITY, default = relEps*EPSILON_VACUUM)
+         absMu = this%getRealAt(matPtr, J_MAT_ABS_PERMEABILITY, default = relMu*MU_VACUUM)
+
+         isVacuumIsotropic = abs(relEps - 1.0_RKIND) <= tol .and. &
+                             abs(relMu - 1.0_RKIND) <= tol .and. &
+                             abs(absEps - EPSILON_VACUUM) <= max(tol, tol*EPSILON_VACUUM) .and. &
+                             abs(absMu - MU_VACUUM) <= max(tol, tol*MU_VACUUM) .and. &
+                             abs(sigmaE) <= tol .and. abs(sigmaM) <= tol
+      end function
+
+      function sideToStr(side) result(res)
+         integer, intent(in) :: side
+         character(len=:), allocatable :: res
+         if (side == TERMINAL_NODE_SIDE_INI) then
+            res = 'initial'
+         else if (side == TERMINAL_NODE_SIDE_END) then
+            res = 'end'
+         else
+            res = 'undefined'
+         end if
+      end function
+
+      function intToStr(v) result(res)
+         integer, intent(in) :: v
+         character(len=:), allocatable :: res
+         character(len=20) :: tmp
+         write(tmp, '(I0)') v
+         res = trim(tmp)
       end function
 
       function readGeneratorOnTermination(id, label) result(res)
