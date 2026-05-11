@@ -25,9 +25,6 @@ module gpu_kernels_m
       integer(kind=integersizeofmediamatrices), pointer, device, dimension(:,:,:) :: sggMiEx_d, sggMiEy_d, sggMiEz_d, sggMiHx_d, sggMiHy_d, sggMiHz_d
       real(kind=rkind), pointer, device, dimension(:) :: g1_d, g2_d, gm1_d, gm2_d
 
-      ! Device event handles for timing
-      integer(kind=4), pointer, device, dimension(:) :: dev_event_d
-
       ! Dimensions for device memory
       integer(kind=4) :: Ex_nx, Ex_ny, Ex_nz, Ey_nx, Ey_ny, Ey_nz, Ez_nx, Ez_ny, Ez_nz
       integer(kind=4) :: Hx_nx, Hx_ny, Hx_nz, Hy_nx, Hy_ny, Hy_nz, Hz_nx, Hz_ny, Hz_nz
@@ -211,7 +208,8 @@ contains
    end subroutine gpu_destroy
 
    !--------------------------------------------------------------------------------
-   ! Upload host data to device - called once per timestep for fields that change
+   ! Upload host data to device - called once per timestep
+   ! Only transfers field arrays (read-write); coefficients are already on device
    !--------------------------------------------------------------------------------
    subroutine gpu_upload(this)
       class(gpu_state_t), intent(inout) :: this
@@ -226,36 +224,11 @@ contains
       this%Hy_d = this%Hy
       this%Hz_d = this%Hz
 
-      ! Copy coefficients (read-only, could be cached but small overhead)
-      this%Idxe_d = this%Idxe
-      this%Idye_d = this%Idye
-      this%Idze_d = this%Idze
-      this%Idxh_d = this%Idxh
-      this%Idyh_d = this%Idyh
-      this%Idzh_d = this%Idzh
-      this%dxe_d = this%dxe
-      this%dye_d = this%dye
-      this%dze_d = this%dze
-      this%dxh_d = this%dxh
-      this%dyh_d = this%dyh
-      this%dzh_d = this%dzh
-
-      this%sggMiEx_d = this%sggMiEx
-      this%sggMiEy_d = this%sggMiEy
-      this%sggMiEz_d = this%sggMiEz
-      this%sggMiHx_d = this%sggMiHx
-      this%sggMiHy_d = this%sggMiHy
-      this%sggMiHz_d = this%sggMiHz
-
-      this%g1_d = this%g1
-      this%g2_d = this%g2
-      this%gm1_d = this%gm1
-      this%gm2_d = this%gm2
-
    end subroutine gpu_upload
 
    !--------------------------------------------------------------------------------
    ! Download device data to host - called once per timestep
+   ! Only downloads field arrays; coefficients remain on device
    !--------------------------------------------------------------------------------
    subroutine gpu_download(this)
       class(gpu_state_t), intent(inout) :: this

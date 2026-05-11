@@ -2185,6 +2185,27 @@ contains
          call gpu_upload(this%gpu)
       endif
 #endif
+
+#ifdef CompileWithProfiling
+       call nvtxStartRange("Antes del bucle EX")
+#endif
+       call this%advanceEx(this%media%sggMiEx)
+#ifdef CompileWithProfiling
+       call nvtxEndRange
+
+       call nvtxStartRange("Antes del bucle EY")
+#endif
+       call this%advanceEy(this%media%sggMiEy)
+
+#ifdef CompileWithProfiling
+       call nvtxEndRange
+
+       call nvtxStartRange("Antes del bucle EZ")
+#endif
+       call this%advanceEz(this%media%sggMiEz)
+#ifdef CompileWithProfiling
+       call nvtxEndRange
+#endif
 #ifdef CompileWithProfiling
       call nvtxStartRange("Antes del bucle EX")
 #endif
