@@ -140,7 +140,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		endif()
 		
 		# Release: aggressive optimization with architecture-specific tuning
-		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -Minfo=accel -Mprefetch -Mxhost")
+		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -Minfo=accel -Mprefetch -pg")
 		if(CMAKE_C_COMPILER_ID MATCHES "NVHPC")
 			set(CMAKE_C_FLAGS_RELEASE "-O3 -Minfo=accel")
 			set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Minfo=accel")
@@ -319,7 +319,7 @@ if(SEMBA_FDTD_MAIN_LIB)
 	)
 	if (SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
 		target_sources(semba-main PRIVATE "src_main_pub/gpu_kernels_cuf.F90")
-		set_source_files_properties("src_main_pub/gpu_kernels_cuf.F90" PROPERTIES COMPILE_OPTIONS "-cuda")
+		set_source_files_properties("src_main_pub/gpu_kernels_cuf.F90" PROPERTIES COMPILE_OPTIONS "-cuda;-gpu=pinned")
 		target_link_options(semba-main PRIVATE -cuda)
 	endif()
 	target_link_libraries(semba-main
