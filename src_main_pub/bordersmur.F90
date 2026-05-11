@@ -513,7 +513,7 @@ contains
             j = MURc(iHx)%YI( REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,k,i_m,k_m,medio)
 #endif
             do k = MURc(iHx)%ZI( REGION), MURc(iHx)%ZE( REGION)
                k_m = k - b%Hx%ZI
@@ -531,7 +531,7 @@ contains
             j = MURc(iHz)%YI( REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,k,i_m,k_m,medio)
 #endif
             do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
                k_m = k - b%Hz%ZI
@@ -556,7 +556,7 @@ contains
             j = MURc(iHx)%YE( REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,k,i_m,k_m,medio)
 #endif
             do k = MURc(iHx)%ZI( REGION), MURc(iHx)%ZE( REGION)
                k_m = k - b%Hx%ZI
@@ -574,7 +574,7 @@ contains
             j = MURc(iHz)%YE( REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,k,i_m,k_m,medio)
 #endif
             do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
                k_m = k - b%Hz%ZI
@@ -599,7 +599,7 @@ contains
             k = MURc(iHy)%ZI( REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,i_m,j_m,medio)
 #endif
             do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
                j_m = j - b%Hy%YI
@@ -617,7 +617,7 @@ contains
             k = MURc(iHx)%ZI( REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,i_m,j_m,medio)
 #endif
             do j = MURc(iHx)%YI( REGION), MURc(iHx)%YE( REGION)
                j_m = j - b%Hx%YI
@@ -642,7 +642,7 @@ contains
             k = MURc(iHy)%ZE( REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,i_m,j_m,medio)
 #endif
             do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
                j_m = j - b%Hy%YI
@@ -660,7 +660,7 @@ contains
             k = MURc(iHx)%ZE( REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,i_m,j_m,medio)
 #endif
             do j = MURc(iHx)%YI( REGION), MURc(iHx)%YE( REGION)
                j_m = j - b%Hx%YI
@@ -685,7 +685,7 @@ contains
             i = MURc(iHz)%XI( REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (j,k,j_m,k_m,medio)
 #endif
             do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
                k_m = k - b%Hz%ZI
@@ -703,7 +703,7 @@ contains
             i = MURc(iHy)%XI( REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (j,k,j_m,k_m,medio)
 #endif
             do k = MURc(iHy)%ZI( REGION), MURc(iHy)%ZE( REGION)
                k_m = k - b%Hy%ZI
@@ -728,7 +728,7 @@ contains
             i = MURc(iHz)%XE( REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (j,k,j_m,k_m,medio)
 #endif
             do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
                k_m = k - b%Hz%ZI
@@ -746,7 +746,7 @@ contains
             i = MURc(iHy)%XE( REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (j,k,j_m,k_m,medio)
 #endif
             do k = MURc(iHy)%ZI( REGION), MURc(iHy)%ZE( REGION)
                k_m = k - b%Hy%ZI
@@ -780,7 +780,7 @@ contains
             j = MURc(iHx)%YI( REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,k,i_m,k_m,medio)
 #endif
             do k = MURc(iHx)%ZI( REGION) + 1, MURc(iHx)%ZE( REGION) - 1
                k_m = k - b%Hx%ZI
@@ -803,7 +803,7 @@ contains
             j = MURc(iHz)%YI( REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,k,i_m,k_m,medio)
 #endif
             do k = MURc(iHz)%ZI( REGION) + 1, MURc(iHz)%ZE( REGION) - 1
                k_m = k - b%Hz%ZI
@@ -833,7 +833,7 @@ contains
             j = MURc(iHx)%YE( REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,k,i_m,k_m,medio)
 #endif
             do k = MURc(iHx)%ZI( REGION) + 1, MURc(iHx)%ZE( REGION) - 1
                k_m = k - b%Hx%ZI
@@ -856,7 +856,7 @@ contains
             j = MURc(iHz)%YE( REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,k,i_m,k_m,medio)
 #endif
             do k = MURc(iHz)%ZI( REGION) + 1, MURc(iHz)%ZE( REGION) - 1
                k_m = k - b%Hz%ZI
@@ -886,7 +886,7 @@ contains
             k = MURc(iHy)%ZI( REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,i_m,j_m,medio)
 #endif
             do j = MURc(iHy)%YI( REGION) + 1, MURc(iHy)%YE( REGION) - 1
                j_m = j - b%Hy%YI
@@ -909,7 +909,7 @@ contains
             k = MURc(iHx)%ZI( REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,i_m,j_m,medio)
 #endif
             do j = MURc(iHx)%YI( REGION) + 1, MURc(iHx)%YE( REGION) - 1
                j_m = j - b%Hx%YI
@@ -939,7 +939,7 @@ contains
             k = MURc(iHy)%ZE( REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,i_m,j_m,medio)
 #endif
             do j = MURc(iHy)%YI( REGION) + 1, MURc(iHy)%YE( REGION) - 1
                j_m = j - b%Hy%YI
@@ -962,7 +962,7 @@ contains
             k = MURc(iHx)%ZE( REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,i_m,j_m,medio)
 #endif
             do j = MURc(iHx)%YI( REGION) + 1, MURc(iHx)%YE( REGION) - 1
                j_m = j - b%Hx%YI
@@ -992,7 +992,7 @@ contains
             i = MURc(iHz)%XI( REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (j,k,j_m,k_m,medio)
 #endif
             do k = MURc(iHz)%ZI( REGION) + 1, MURc(iHz)%ZE( REGION) - 1
                k_m = k - b%Hz%ZI
@@ -1015,7 +1015,7 @@ contains
             i = MURc(iHy)%XI( REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (j,k,j_m,k_m,medio)
 #endif
             do k = MURc(iHy)%ZI( REGION) + 1, MURc(iHy)%ZE( REGION) - 1
                k_m = k - b%Hy%ZI
@@ -1045,7 +1045,7 @@ contains
             i = MURc(iHz)%XE( REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (j,k,j_m,k_m,medio)
 #endif
             do k = MURc(iHz)%ZI( REGION) + 1, MURc(iHz)%ZE( REGION) - 1
                k_m = k - b%Hz%ZI
@@ -1068,7 +1068,7 @@ contains
             i = MURc(iHy)%XE( REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (j,k,j_m,k_m,medio)
 #endif
             do k = MURc(iHy)%ZI( REGION) + 1, MURc(iHy)%ZE( REGION) - 1
                k_m = k - b%Hy%ZI
@@ -1110,7 +1110,7 @@ contains
             j = MURc(iHx)%YI( REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,k,i_m,k_m,medio)
 #endif
             do k = MURc(iHx)%ZI( REGION), MURc(iHx)%ZE( REGION)
                k_m = k - b%Hx%ZI
@@ -1128,7 +1128,7 @@ contains
             j = MURc(iHz)%YI( REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,k,i_m,k_m,medio)
 #endif
             do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
                k_m = k - b%Hz%ZI
@@ -1153,7 +1153,7 @@ contains
             j = MURc(iHx)%YE( REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,k,i_m,k_m,medio)
 #endif
             do k = MURc(iHx)%ZI( REGION), MURc(iHx)%ZE( REGION)
                k_m = k - b%Hx%ZI
@@ -1171,7 +1171,7 @@ contains
             j = MURc(iHz)%YE( REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,k,i_m,k_m,medio)
 #endif
             do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
                k_m = k - b%Hz%ZI
@@ -1196,7 +1196,7 @@ contains
             k = MURc(iHy)%ZI( REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,i_m,j_m,medio)
 #endif
             do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
                j_m = j - b%Hy%YI
@@ -1214,7 +1214,7 @@ contains
             k = MURc(iHx)%ZI( REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,i_m,j_m,medio)
 #endif
             do j = MURc(iHx)%YI( REGION), MURc(iHx)%YE( REGION)
                j_m = j - b%Hx%YI
@@ -1239,7 +1239,7 @@ contains
             k = MURc(iHy)%ZE( REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,i_m,j_m,medio)
 #endif
             do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
                j_m = j - b%Hy%YI
@@ -1257,7 +1257,7 @@ contains
             k = MURc(iHx)%ZE( REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,i_m,j_m,medio)
 #endif
             do j = MURc(iHx)%YI( REGION), MURc(iHx)%YE( REGION)
                j_m = j - b%Hx%YI
@@ -1282,7 +1282,7 @@ contains
             i = MURc(iHz)%XI( REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (j,k,j_m,k_m,medio)
 #endif
             do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
                k_m = k - b%Hz%ZI
@@ -1300,7 +1300,7 @@ contains
             i = MURc(iHy)%XI( REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (j,k,j_m,k_m,medio)
 #endif
             do k = MURc(iHy)%ZI( REGION), MURc(iHy)%ZE( REGION)
                k_m = k - b%Hy%ZI
@@ -1325,7 +1325,7 @@ contains
             i = MURc(iHz)%XE( REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (j,k,j_m,k_m,medio)
 #endif
             do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
                k_m = k - b%Hz%ZI
@@ -1343,7 +1343,7 @@ contains
             i = MURc(iHy)%XE( REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (j,k,j_m,k_m,medio)
 #endif
             do k = MURc(iHy)%ZI( REGION), MURc(iHy)%ZE( REGION)
                k_m = k - b%Hy%ZI
@@ -1374,7 +1374,7 @@ contains
       if (sgg%Border%IsLeftMUR) then
          REGION = left
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,k,i_m,j_m,k_m)
 #endif
          do k = MURc(iHx)%ZI( REGION) , MURc(iHx)%ZE( REGION)
             k_m = k - b%Hx%ZI
@@ -1392,7 +1392,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,k,i_m,j_m,k_m)
 #endif
          do k = MURc(iHz)%ZI( REGION) , MURc(iHz)%ZE( REGION)
             k_m = k - b%Hz%ZI
@@ -1417,7 +1417,7 @@ contains
       if (sgg%Border%IsRightMUR) then
          REGION = right
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,k,i_m,j_m,k_m)
 #endif
          do k = MURc(iHx)%ZI( REGION), MURc(iHx)%ZE( REGION)
             k_m = k - b%Hx%ZI
@@ -1435,7 +1435,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,k,i_m,j_m,k_m)
 #endif
          do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
             k_m = k - b%Hz%ZI
@@ -1460,7 +1460,7 @@ contains
       if (sgg%Border%IsDownMUR) then
          REGION = down
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,k,i_m,j_m,k_m)
 #endif
          do k = MURc(iHy)%ZI( REGION) , MURc(iHy)%ZE( REGION)
             k_m = k - b%Hy%ZI
@@ -1478,7 +1478,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,k,i_m,j_m,k_m)
 #endif
          do k = MURc(iHx)%ZI( REGION) , MURc(iHx)%ZE( REGION)
             k_m = k - b%Hx%ZI
@@ -1503,7 +1503,7 @@ contains
       if (sgg%Border%IsUpMUR) then
          REGION = up
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,k,i_m,j_m,k_m)
 #endif
          do k = MURc(iHy)%ZI( REGION) , MURc(iHy)%ZE( REGION)
             k_m = k - b%Hy%ZI
@@ -1521,7 +1521,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,k,i_m,j_m,k_m)
 #endif
          do k = MURc(iHx)%ZI( REGION) , MURc(iHx)%ZE( REGION)
             k_m = k - b%Hx%ZI
@@ -1546,7 +1546,7 @@ contains
       if (sgg%Border%IsBackMUR) then
          REGION =back
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,k,i_m,j_m,k_m)
 #endif
          do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
             k_m = k - b%Hz%ZI
@@ -1564,7 +1564,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,k,i_m,j_m,k_m)
 #endif
          do k = MURc(iHy)%ZI( REGION), MURc(iHy)%ZE( REGION)
             k_m = k - b%Hy%ZI
@@ -1589,7 +1589,7 @@ contains
       if (sgg%Border%IsFrontMUR) then
          REGION =front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,k,i_m,j_m,k_m)
 #endif
          do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
             k_m = k - b%Hz%ZI
@@ -1607,7 +1607,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private (i,j,k,i_m,j_m,k_m)
 #endif
          do k = MURc(iHy)%ZI( REGION) , MURc(iHy)%ZE( REGION)
             k_m = k - b%Hy%ZI

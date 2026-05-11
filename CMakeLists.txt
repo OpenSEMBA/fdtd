@@ -139,8 +139,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 			set(CMAKE_CXX_FLAGS "-Minfo=accel")
 		endif()
 		
-		# Release: aggressive optimization
-		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -Minfo=accel -Mprefetch")
+		# Release: aggressive optimization with architecture-specific tuning
+		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -Minfo=accel -Mprefetch -Mxhost")
 		if(CMAKE_C_COMPILER_ID MATCHES "NVHPC")
 			set(CMAKE_C_FLAGS_RELEASE "-O3 -Minfo=accel")
 			set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Minfo=accel")

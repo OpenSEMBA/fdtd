@@ -2086,8 +2086,6 @@ contains
       call this%advancePlaneWaveH()
       call this%advanceNodalH()
       call this%advanceWiresH()
-      call this%MinusCloneMagneticPMC()
-      call this%CloneMagneticPeriodic()
 
 #ifdef CompileWithMPI
       !!Flush all the MPI (esto estaba justo al principo del bucle temporal diciendo que era necesario para correcto resuming)
@@ -2204,29 +2202,9 @@ contains
 #endif
        call this%advanceEz(this%media%sggMiEz)
 #ifdef CompileWithProfiling
-       call nvtxEndRange
+        call nvtxEndRange
 #endif
-#ifdef CompileWithProfiling
-      call nvtxStartRange("Antes del bucle EX")
-#endif
-      call this%advanceEx(this%media%sggMiEx)
-#ifdef CompileWithProfiling
-      call nvtxEndRange
-
-      call nvtxStartRange("Antes del bucle EY")
-#endif
-      call this%advanceEy(this%media%sggMiEy)
-      
-#ifdef CompileWithProfiling    
-      call nvtxEndRange
-
-      call nvtxStartRange("Antes del bucle EZ")
-#endif
-      call this%advanceEz(this%media%sggMiEz)
-#ifdef CompileWithProfiling    
-      call nvtxEndRange
-#endif
-   end subroutine
+    end subroutine
 
    subroutine advanceEx(this, sggMiEx)
       class(solver_t) :: this

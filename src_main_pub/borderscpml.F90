@@ -550,7 +550,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = left
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -570,7 +570,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -594,7 +594,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION =  right
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -614,7 +614,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -640,7 +640,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = down
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -659,7 +659,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -684,7 +684,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = up
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -703,7 +703,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -730,7 +730,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = back
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -749,7 +749,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -774,7 +774,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -793,7 +793,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -848,7 +848,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = left
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -868,7 +868,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -893,7 +893,7 @@ contains
 
       REGION = right
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -913,7 +913,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -938,7 +938,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = down
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -958,7 +958,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -983,7 +983,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = up
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -1003,7 +1003,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -1028,7 +1028,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION=back
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -1048,7 +1048,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -1072,7 +1072,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION=front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -1092,7 +1092,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -1705,7 +1705,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = left
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -1725,7 +1725,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -1749,7 +1749,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION =  right
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -1769,7 +1769,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -1795,7 +1795,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = down
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -1814,7 +1814,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -1839,7 +1839,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = up
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -1858,7 +1858,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEx)%ZI( REGION), PMLc(iEx)%ZE( REGION)
          k_m = k - b%Ex%ZI
@@ -1885,7 +1885,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = back
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -1904,7 +1904,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -1929,7 +1929,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEz)%ZI( REGION), PMLc(iEz)%ZE( REGION)
          k_m = k - b%Ez%ZI
@@ -1948,7 +1948,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iEy)%ZI( REGION), PMLc(iEy)%ZE( REGION)
          k_m = k - b%Ey%ZI
@@ -2003,7 +2003,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = left
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -2023,7 +2023,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -2048,7 +2048,7 @@ end subroutine calc_cpmlconstants
 
       REGION = right
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -2068,7 +2068,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -2093,7 +2093,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = down
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -2113,7 +2113,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -2138,7 +2138,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = up
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -2158,7 +2158,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHx)%ZI( REGION), PMLc(iHx)%ZE( REGION)
          k_m = k - b%Hx%ZI
@@ -2183,7 +2183,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION=back
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -2203,7 +2203,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
@@ -2227,7 +2227,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION=front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHz)%ZI( REGION), PMLc(iHz)%ZE( REGION)
          k_m = k - b%Hz%ZI
@@ -2247,7 +2247,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) collapse(2) private(i,j,k,i_m,j_m,k_m,medio)
 #endif
       do k = PMLc(iHy)%ZI( REGION), PMLc(iHy)%ZE( REGION)
          k_m = k - b%Hy%ZI
