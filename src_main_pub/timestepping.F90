@@ -1815,13 +1815,18 @@ contains
                 call MPI_AllReduce( l_aux, this%perform%postprocess, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
 #endif
 !!!!!!!!!!!!
-                if (this%perform%flushFIELDS) then
-                   write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nentradaroot)),separador
-                   call print11(this%control%layoutnumber,dubuf)
-                   write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
-                   call print11(this%control%layoutnumber,dubuf)
-                   call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
-                   Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+               if (this%perform%flushFIELDS) then
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+                    if (this%gpu_initialized .and. this%gpu%fields_on_device) then
+                       call gpu_download(this%gpu)
+                    endif
+#endif
+                    write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nentradaroot)),separador
+                    call print11(this%control%layoutnumber,dubuf)
+                    write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
+                    call print11(this%control%layoutnumber,dubuf)
+                    call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
+                    Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
 #ifdef CompileWithMPI
                    call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1844,8 +1849,13 @@ contains
                       call print11(this%control%layoutnumber,dubuf)
                       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
     !!
-                      if (this%thereAre%Observation) call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,flushFF)
-                      !!
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+                       if (this%gpu_initialized .and. this%gpu%fields_on_device) then
+                          call gpu_download(this%gpu)
+                       endif
+#endif
+                       if (this%thereAre%Observation) call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,flushFF)
+                       !!
 #ifdef CompileWithMPI
                       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1885,12 +1895,17 @@ contains
                       end if
                   !!       
                       if (this%perform%flushvtk) then   
-                         write(dubuf,'(a,i9)')  ' Post-processing .vtk files n= ',this%n
-                         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                         call print11(this%control%layoutnumber,dubuf)
-                         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                         somethingdone=.false.
-                         if (this%thereAre%Observation) call createvtkOnTheFly(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%media%sggMtag,this%control%dontwritevtk)
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+                          if (this%gpu_initialized .and. this%gpu%fields_on_device) then
+                             call gpu_download(this%gpu)
+                          endif
+#endif
+                          write(dubuf,'(a,i9)')  ' Post-processing .vtk files n= ',this%n
+                          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+                          call print11(this%control%layoutnumber,dubuf)
+                          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+                          somethingdone=.false.
+                          if (this%thereAre%Observation) call createvtkOnTheFly(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%media%sggMtag,this%control%dontwritevtk)
 #ifdef CompileWithMPI
                          call MPI_Barrier(SUBCOMM_MPI,ierr)
                          call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -1991,10 +2006,15 @@ contains
       end do ciclo_temporal ! End of the time-stepping loop
 
 contains
-      subroutine updateAndFlush()
-         integer(kind=4) :: mindum
-         if (this%thereAre%Observation) then
-            call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
+     subroutine updateAndFlush()
+          integer(kind=4) :: mindum
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+          if (this%gpu_initialized .and. this%gpu%fields_on_device) then
+             call gpu_download(this%gpu)
+          endif
+#endif
+          if (this%thereAre%Observation) then
+             call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
             if (this%n>=this%ini_save+BuffObse)  then
                mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
                call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
@@ -2177,13 +2197,7 @@ contains
 #endif
 
    subroutine advanceE(this)
-      class(solver_t) :: this
-#ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
-      if (this%gpu_initialized) then
-         call gpu_upload(this%gpu)
-      endif
-#endif
-
+       class(solver_t) :: this
 #ifdef CompileWithProfiling
        call nvtxStartRange("Antes del bucle EX")
 #endif
@@ -2505,13 +2519,8 @@ contains
  !$OMP  END PARALLEL DO
 #endif
 
-#ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
-       if (this%gpu_initialized) then
-          call gpu_download(this%gpu)
-       endif
-#endif
        return
-    end subroutine advanceHz
+     end subroutine advanceHz
 
 
 
@@ -2747,11 +2756,16 @@ contains
       write(dubuf,*)'END FDTD time stepping. Beginning posprocessing at n= ',this%n
       call print11(this%control%layoutnumber,dubuf)
 
-      if ((this%control%flushsecondsFields/=0).or.this%perform%flushFIELDS) then
-         write(dubuf,'(a,i9)')  ' INIT FINAL FLUSHING OF RESTARTING FIELDS n= ',this%n
-         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-         call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
-         Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+     if ((this%control%flushsecondsFields/=0).or.this%perform%flushFIELDS) then
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+          if (this%gpu_initialized .and. this%gpu%fields_on_device) then
+             call gpu_download(this%gpu)
+          endif
+#endif
+          write(dubuf,'(a,i9)')  ' INIT FINAL FLUSHING OF RESTARTING FIELDS n= ',this%n
+          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+          call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
+          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
          write(dubuf,'(a,i9)')  ' DONE FINAL FLUSHING OF RESTARTING FIELDS N=',this%n
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
          call print11(this%control%layoutnumber,dubuf)
@@ -2765,11 +2779,16 @@ contains
       end if
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       call print11(this%control%layoutnumber,dubuf)
-      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-      if (this%thereAre%Observation) then
-         call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
-         call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
-      end if
+    call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+       if (this%thereAre%Observation) then
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+          if (this%gpu_initialized .and. this%gpu%fields_on_device) then
+             call gpu_download(this%gpu)
+          endif
+#endif
+          call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
+          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
+       end if
       
       if (this%thereAre%FarFields) then
          write(dubuf,'(a,i9)')   ' DONE FINAL OBSERVATION DATA FLUSHED and Near-to-Far field  n= ',this%n
