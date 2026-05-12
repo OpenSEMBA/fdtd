@@ -1173,11 +1173,19 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
      write(dubuf,*) 'Init Mur Borders...';  call print11(this%control%layoutnumber,dubuf)
-          call InitMURBorders      (this%sgg,this%thereAre%MURBorders,this%control%resume,Idxh,Idyh,Idzh,this%eps0,this%mu0)
-          ! MUR GPU init deferred — NVHPC 26.3 has strict array/pointer matching
-          ! that prevents passing module-level allocatable arrays to device functions
-          ! MUR GPU kernels exist in gpu_mur_m.F90 but are not yet wired for NVHPC
-     ! CPU MUR path (AdvanceMagneticMUR) is used as fallback
+           call InitMURBorders      (this%sgg,this%thereAre%MURBorders,this%control%resume,Idxh,Idyh,Idzh,this%eps0,this%mu0)
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+           if (this%gpu_initialized) then
+              call gpu_init_mur_coeffs(this%gpu, this%sgg%numMedia, &
+                                       left_CAB1, left_CAB3, left_cab4, &
+                                       right_CAB1, right_CAB3, right_cab4, &
+                                       down_CAB1, down_CAB3, down_cab4, &
+                                       up_CAB1, up_CAB3, up_cab4, &
+                                       back_CAB1, back_CAB3, back_cab4, &
+                                       front_CAB1, front_CAB3, front_cab4)
+           endif
+#endif
+      ! CPU MUR path (AdvanceMagneticMUR) is used as fallback
           l_auxinput= this%thereAre%MURBorders
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -2862,14 +2870,21 @@ subroutine solver_advanceMagneticMUR(this)
        If (this%thereAre%MURBorders) then
  #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
           if (this%gpu_initialized .and. this%gpu%mur_initialized .and. .not. this%control%mur_second) then
-             call gpu_advanceMUR_H_left(this%gpu, this%bounds)
-             call gpu_advanceMUR_H_right(this%gpu, this%bounds)
-             call gpu_advanceMUR_H_down(this%gpu, this%bounds)
-             call gpu_advanceMUR_H_up(this%gpu, this%bounds)
-             call gpu_advanceMUR_H_back(this%gpu, this%bounds)
-             call gpu_advanceMUR_H_front(this%gpu, this%bounds)
-             return
-          endif
+              call gpu_advanceMUR_H_left(this%gpu, this%bounds)
+              call gpu_advanceMUR_H_right(this%gpu, this%bounds)
+              call gpu_advanceMUR_H_down(this%gpu, this%bounds)
+              call gpu_advanceMUR_H_up(this%gpu, this%bounds)
+              call gpu_advanceMUR_H_back(this%gpu, this%bounds)
+              call gpu_advanceMUR_H_front(this%gpu, this%bounds)
+              ! Update past fields for next timestep
+              call gpu_update_mur_past_left(this%gpu, this%bounds)
+              call gpu_update_mur_past_right(this%gpu, this%bounds)
+              call gpu_update_mur_past_down(this%gpu, this%bounds)
+              call gpu_update_mur_past_up(this%gpu, this%bounds)
+              call gpu_update_mur_past_back(this%gpu, this%bounds)
+              call gpu_update_mur_past_front(this%gpu, this%bounds)
+              return
+           endif
  #endif
           call AdvanceMagneticMUR(this%bounds, this%sgg, & 
                                   this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &

@@ -392,4 +392,278 @@ contains
       end do
    end subroutine gpu_advanceMUR_Hy_front_kernel
 
-end module gpu_mur_m
+    !--------------------------------------------------------------------------------
+    ! Update MUR past fields on device - copy current Hx/Hy/Hz to past arrays
+    ! Called after each MUR step to prepare for next timestep
+    !--------------------------------------------------------------------------------
+    subroutine gpu_update_mur_past_left(this, b)
+       class(gpu_state_t), intent(inout) :: this
+       type(bounds_t), intent(in) :: b
+
+       if (.not. this%mur_initialized) return
+
+       call gpu_update_mur_past_Hx_left_kernel(this%Hx_d, this%mur_past_Hx_left, &
+                                               this%mur_left_Hx_ii, this%mur_left_Hx_ij, &
+                                               this%mur_left_Hx_ji, this%mur_left_Hx_jj, &
+                                               this%mur_left_Hx_ki, this%mur_left_Hx_kj)
+
+       call gpu_update_mur_past_Hz_left_kernel(this%Hz_d, this%mur_past_Hz_left, &
+                                               this%mur_left_Hz_ii, this%mur_left_Hz_ij, &
+                                               this%mur_left_Hz_ji, this%mur_left_Hz_jj, &
+                                               this%mur_left_Hz_ki, this%mur_left_Hz_kj)
+    end subroutine gpu_update_mur_past_left
+
+    subroutine gpu_update_mur_past_Hx_left_kernel(Hx_d, past_Hx_d, ii, ij, ji, jj, ki, kj)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj
+       real(kind=rkind), device, dimension(:,:,:) :: Hx_d, past_Hx_d
+
+       integer(kind=4) :: i, k
+
+       !$cuf kernel do(2) <<<*, *>>>
+       do k=ki,kj
+          do i=ii,ij
+             past_Hx_d(i, ji, k) = Hx_d(i, ji, k)
+          end do
+       end do
+    end subroutine gpu_update_mur_past_Hx_left_kernel
+
+    subroutine gpu_update_mur_past_Hz_left_kernel(Hz_d, past_Hz_d, ii, ij, ji, jj, ki, kj)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj
+       real(kind=rkind), device, dimension(:,:,:) :: Hz_d, past_Hz_d
+
+       integer(kind=4) :: i, k
+
+       !$cuf kernel do(2) <<<*, *>>>
+       do k=ki,kj
+          do i=ii,ij
+             past_Hz_d(i, ji, k) = Hz_d(i, ji, k)
+          end do
+       end do
+    end subroutine gpu_update_mur_past_Hz_left_kernel
+
+    subroutine gpu_update_mur_past_right(this, b)
+       class(gpu_state_t), intent(inout) :: this
+       type(bounds_t), intent(in) :: b
+
+       if (.not. this%mur_initialized) return
+
+       call gpu_update_mur_past_Hx_right_kernel(this%Hx_d, this%mur_past_Hx_right, &
+                                                this%mur_right_Hx_ii, this%mur_right_Hx_ij, &
+                                                this%mur_right_Hx_ji, this%mur_right_Hx_jj, &
+                                                this%mur_right_Hx_ki, this%mur_right_Hx_kj)
+
+       call gpu_update_mur_past_Hz_right_kernel(this%Hz_d, this%mur_past_Hz_right, &
+                                                this%mur_right_Hz_ii, this%mur_right_Hz_ij, &
+                                                this%mur_right_Hz_ji, this%mur_right_Hz_jj, &
+                                                this%mur_right_Hz_ki, this%mur_right_Hz_kj)
+    end subroutine gpu_update_mur_past_right
+
+    subroutine gpu_update_mur_past_Hx_right_kernel(Hx_d, past_Hx_d, ii, ij, ji, jj, ki, kj)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj
+       real(kind=rkind), device, dimension(:,:,:) :: Hx_d, past_Hx_d
+
+       integer(kind=4) :: i, k
+
+       !$cuf kernel do(2) <<<*, *>>>
+       do k=ki,kj
+          do i=ii,ij
+             past_Hx_d(i, ji, k) = Hx_d(i, ji, k)
+          end do
+       end do
+    end subroutine gpu_update_mur_past_Hx_right_kernel
+
+    subroutine gpu_update_mur_past_Hz_right_kernel(Hz_d, past_Hz_d, ii, ij, ji, jj, ki, kj)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj
+       real(kind=rkind), device, dimension(:,:,:) :: Hz_d, past_Hz_d
+
+       integer(kind=4) :: i, k
+
+       !$cuf kernel do(2) <<<*, *>>>
+       do k=ki,kj
+          do i=ii,ij
+             past_Hz_d(i, ji, k) = Hz_d(i, ji, k)
+          end do
+       end do
+    end subroutine gpu_update_mur_past_Hz_right_kernel
+
+    subroutine gpu_update_mur_past_down(this, b)
+       class(gpu_state_t), intent(inout) :: this
+       type(bounds_t), intent(in) :: b
+
+       if (.not. this%mur_initialized) return
+
+       call gpu_update_mur_past_Hy_down_kernel(this%Hy_d, this%mur_past_Hy_down, &
+                                               this%mur_down_Hy_ii, this%mur_down_Hy_ij, &
+                                               this%mur_down_Hy_ji, this%mur_down_Hy_jj, &
+                                               this%mur_down_Hy_ki, this%mur_down_Hy_kj)
+
+       call gpu_update_mur_past_Hx_down_kernel(this%Hx_d, this%mur_past_Hx_down, &
+                                               this%mur_down_Hx_ii, this%mur_down_Hx_ij, &
+                                               this%mur_down_Hx_ji, this%mur_down_Hx_jj, &
+                                               this%mur_down_Hx_ki, this%mur_down_Hx_kj)
+    end subroutine gpu_update_mur_past_down
+
+    subroutine gpu_update_mur_past_Hy_down_kernel(Hy_d, past_Hy_d, ii, ij, ji, jj, ki, kj)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj
+       real(kind=rkind), device, dimension(:,:,:) :: Hy_d, past_Hy_d
+
+       integer(kind=4) :: i, k
+
+       !$cuf kernel do(2) <<<*, *>>>
+       do k=ki,kj
+          do i=ii,ij
+             past_Hy_d(i, ji, k) = Hy_d(i, ji, k)
+          end do
+       end do
+    end subroutine gpu_update_mur_past_Hy_down_kernel
+
+    subroutine gpu_update_mur_past_Hx_down_kernel(Hx_d, past_Hx_d, ii, ij, ji, jj, ki, kj)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj
+       real(kind=rkind), device, dimension(:,:,:) :: Hx_d, past_Hx_d
+
+       integer(kind=4) :: i, k
+
+       !$cuf kernel do(2) <<<*, *>>>
+       do k=ki,kj
+          do i=ii,ij
+             past_Hx_d(i, ji, k) = Hx_d(i, ji, k)
+          end do
+       end do
+    end subroutine gpu_update_mur_past_Hx_down_kernel
+
+    subroutine gpu_update_mur_past_up(this, b)
+       class(gpu_state_t), intent(inout) :: this
+       type(bounds_t), intent(in) :: b
+
+       if (.not. this%mur_initialized) return
+
+       call gpu_update_mur_past_Hy_up_kernel(this%Hy_d, this%mur_past_Hy_up, &
+                                             this%mur_up_Hy_ii, this%mur_up_Hy_ij, &
+                                             this%mur_up_Hy_ji, this%mur_up_Hy_jj, &
+                                             this%mur_up_Hy_ki, this%mur_up_Hy_kj)
+
+       call gpu_update_mur_past_Hx_up_kernel(this%Hx_d, this%mur_past_Hx_up, &
+                                             this%mur_up_Hx_ii, this%mur_up_Hx_ij, &
+                                             this%mur_up_Hx_ji, this%mur_up_Hx_jj, &
+                                             this%mur_up_Hx_ki, this%mur_up_Hx_kj)
+    end subroutine gpu_update_mur_past_up
+
+    subroutine gpu_update_mur_past_Hy_up_kernel(Hy_d, past_Hy_d, ii, ij, ji, jj, ki, kj)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj
+       real(kind=rkind), device, dimension(:,:,:) :: Hy_d, past_Hy_d
+
+       integer(kind=4) :: i, k
+
+       !$cuf kernel do(2) <<<*, *>>>
+       do k=ki,kj
+          do i=ii,ij
+             past_Hy_d(i, ji, k) = Hy_d(i, ji, k)
+          end do
+       end do
+    end subroutine gpu_update_mur_past_Hy_up_kernel
+
+    subroutine gpu_update_mur_past_Hx_up_kernel(Hx_d, past_Hx_d, ii, ij, ji, jj, ki, kj)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj
+       real(kind=rkind), device, dimension(:,:,:) :: Hx_d, past_Hx_d
+
+       integer(kind=4) :: i, k
+
+       !$cuf kernel do(2) <<<*, *>>>
+       do k=ki,kj
+          do i=ii,ij
+             past_Hx_d(i, ji, k) = Hx_d(i, ji, k)
+          end do
+       end do
+    end subroutine gpu_update_mur_past_Hx_up_kernel
+
+    subroutine gpu_update_mur_past_back(this, b)
+       class(gpu_state_t), intent(inout) :: this
+       type(bounds_t), intent(in) :: b
+
+       if (.not. this%mur_initialized) return
+
+       call gpu_update_mur_past_Hz_back_kernel(this%Hz_d, this%mur_past_Hz_back, &
+                                               this%mur_back_Hz_ii, this%mur_back_Hz_ij, &
+                                               this%mur_back_Hz_ji, this%mur_back_Hz_jj, &
+                                               this%mur_back_Hz_ki, this%mur_back_Hz_kj)
+
+       call gpu_update_mur_past_Hy_back_kernel(this%Hy_d, this%mur_past_Hy_back, &
+                                               this%mur_back_Hy_ii, this%mur_back_Hy_ij, &
+                                               this%mur_back_Hy_ji, this%mur_back_Hy_jj, &
+                                               this%mur_back_Hy_ki, this%mur_back_Hy_kj)
+    end subroutine gpu_update_mur_past_back
+
+    subroutine gpu_update_mur_past_Hz_back_kernel(Hz_d, past_Hz_d, ii, ij, ji, jj, ki, kj)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj
+       real(kind=rkind), device, dimension(:,:,:) :: Hz_d, past_Hz_d
+
+       integer(kind=4) :: i, j
+
+       !$cuf kernel do(2) <<<*, *>>>
+       do j=ji,jj
+          do i=ii,ij
+             past_Hz_d(i, j, kj) = Hz_d(i, j, kj)
+          end do
+       end do
+    end subroutine gpu_update_mur_past_Hz_back_kernel
+
+    subroutine gpu_update_mur_past_Hy_back_kernel(Hy_d, past_Hy_d, ii, ij, ji, jj, ki, kj)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj
+       real(kind=rkind), device, dimension(:,:,:) :: Hy_d, past_Hy_d
+
+       integer(kind=4) :: i, j
+
+       !$cuf kernel do(2) <<<*, *>>>
+       do j=ji,jj
+          do i=ii,ij
+             past_Hy_d(i, j, kj) = Hy_d(i, j, kj)
+          end do
+       end do
+    end subroutine gpu_update_mur_past_Hy_back_kernel
+
+    subroutine gpu_update_mur_past_front(this, b)
+       class(gpu_state_t), intent(inout) :: this
+       type(bounds_t), intent(in) :: b
+
+       if (.not. this%mur_initialized) return
+
+       call gpu_update_mur_past_Hz_front_kernel(this%Hz_d, this%mur_past_Hz_front, &
+                                                this%mur_front_Hz_ii, this%mur_front_Hz_ij, &
+                                                this%mur_front_Hz_ji, this%mur_front_Hz_jj, &
+                                                this%mur_front_Hz_ki, this%mur_front_Hz_kj)
+
+       call gpu_update_mur_past_Hy_front_kernel(this%Hy_d, this%mur_past_Hy_front, &
+                                                this%mur_front_Hy_ii, this%mur_front_Hy_ij, &
+                                                this%mur_front_Hy_ji, this%mur_front_Hy_jj, &
+                                                this%mur_front_Hy_ki, this%mur_front_Hy_kj)
+    end subroutine gpu_update_mur_past_front
+
+    subroutine gpu_update_mur_past_Hz_front_kernel(Hz_d, past_Hz_d, ii, ij, ji, jj, ki, kj)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj
+       real(kind=rkind), device, dimension(:,:,:) :: Hz_d, past_Hz_d
+
+       integer(kind=4) :: i, j
+
+       !$cuf kernel do(2) <<<*, *>>>
+       do j=ji,jj
+          do i=ii,ij
+             past_Hz_d(i, j, kj) = Hz_d(i, j, kj)
+          end do
+       end do
+    end subroutine gpu_update_mur_past_Hz_front_kernel
+
+    subroutine gpu_update_mur_past_Hy_front_kernel(Hy_d, past_Hy_d, ii, ij, ji, jj, ki, kj)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj
+       real(kind=rkind), device, dimension(:,:,:) :: Hy_d, past_Hy_d
+
+       integer(kind=4) :: i, j
+
+       !$cuf kernel do(2) <<<*, *>>>
+       do j=ji,jj
+          do i=ii,ij
+             past_Hy_d(i, j, kj) = Hy_d(i, j, kj)
+          end do
+       end do
+    end subroutine gpu_update_mur_past_Hy_front_kernel
+
+ end module gpu_mur_m
