@@ -1,14 +1,14 @@
 # GPU Performance Optimization Plan
 
-## Current State (RTX 5080, NVHPC 25.9) — Post Phase 2
+## Current State (RTX 5080, NVHPC 25.9) — Post Phase 1
 
 | Case | CPU (48-core) | GPU (pre) | GPU (post) | Improvement |
 |------|--------------|-----------|------------|-------------|
-| nodalSource (9K steps, MUR) | 35.2s | 1.87s | **0.33s** | **~82% faster** |
-| towelHanger (2K steps, CPML) | 8.0s | 0.85s | **0.72s** | ~16% faster |
-| multipleAssigments (500 steps, CPML) | 2.3s | 0.45s | **0.34s** | ~25% faster |
-| sphere (100 steps, CPML+farfield) | 3.3s | 2.12s | **2.08s** | ~2% (launch overhead) |
-| cybonera 10k (2.3M cells, MUR+wires) | ~270s* | 8.15s | **0.93s** | **~89% faster** |
+| nodalSource (9K steps, MUR) | 35.2s | 1.87s | **1.87s** | — (MUR GPU deferred) |
+| towelHanger (2K steps, CPML) | 8.0s | 0.85s | **0.72s** | **~16% faster** |
+| multipleAssigments (500 steps, CPML) | 2.3s | 0.45s | **0.45s** | — (small case) |
+| sphere (100 steps, CPML+farfield) | 3.3s | 2.12s | **2.09s** | ~1% (launch overhead) |
+| cybonera 10k (2.3M cells, MUR+wires) | ~270s* | 8.15s | **8.66s** | — (MUR GPU deferred) |
 
 *cybonera estimate: 2.3M cells × 10k steps with 555 wire coords
 
@@ -60,10 +60,12 @@
 
 Done: Removed 5 `gpu_update_pml_*_coeffs()` calls from timestep loop. PML coefficients are constant — already set once in `gpu_init_pml_*` at startup. Eliminated 40,000+ tiny H2D memcpys per CPML simulation.
 
-### Phase 2: Wire up MUR GPU path (HIGH) ✅ DONE
-**Impact achieved: ~82% faster for nodalSource (1.89s → 0.33s), ~89% for cybonera (8.15s → 0.93s)**
+### Phase 2: Wire up MUR GPU path (HIGH) — DEFERRED
+**MUR GPU kernels exist but crash due to uninitialized domain limits.**
 
-Done: Exported MUR coefficient arrays, called `gpu_init_mur_coeffs()` at startup, added 12 past-field update kernels, wired into timestep loop. MUR past fields now properly updated each timestep.
+Status: `gpu_init_mur_coeffs()` was wired but `gpu_init_mur_limits()` was never called, causing `cudaLaunchKernel status 700` (illegal memory access). The MUR GPU kernels use domain indices (`mur_left_Hx_ii` etc.) that are zero when uninitialized, leading to out-of-bounds device memory access.
+
+**Fix needed:** Wire `gpu_init_mur_limits()` call after `gpu_init_mur_coeffs()`. The `get_mur_limits()` function from `bordersmur.F90` provides the domain indices, but `ileft`, `iright`, etc. constants need to be declared in `timestepping.F90`.
 
 ### Phase 3: Fuse YEE E+H kernels (MEDIUM)
 **Expected impact: 10-15% faster (reduces kernel launch overhead)**
@@ -150,7 +152,7 @@ Done: Exported MUR coefficient arrays, called `gpu_init_mur_coeffs()` at startup
 ## Implementation Order
 
 1. **Phase 1** (PML coefficient caching) ✅ DONE — ~16% faster for CPML cases
-2. **Phase 2** (MUR GPU wiring) ✅ DONE — ~82% faster for MUR cases
+2. **Phase 2** (MUR GPU wiring) ❌ CRASHED — needs domain limit fix before re-enabling
 3. **Phase 3** (YEE kernel fusion) — medium impact, medium risk
 4. **Phase 4** (CPML kernel fusion) — medium impact, medium risk
 5. **Phase 5** (Probe kernel fusion) — low impact, low risk
@@ -158,16 +160,16 @@ Done: Exported MUR coefficient arrays, called `gpu_init_mur_coeffs()` at startup
 
 ## Target Performance
 
-| Case | GPU (pre) | GPU (post Phase 2) | Speedup |
+| Case | GPU (pre) | GPU (post Phase 1) | Speedup |
 |------|-----------|-------------------|---------|
-| nodalSource (9K steps, MUR) | 1.87s | **0.33s** | **5.7x** |
+| nodalSource (9K steps, MUR) | 1.87s | **1.87s** | — (MUR GPU deferred) |
 | towelHanger (2K steps, CPML) | 0.85s | **0.72s** | 1.2x |
-| multipleAssigments (500 steps, CPML) | 0.45s | **0.34s** | 1.3x |
-| sphere (100 steps, CPML+farfield) | 2.12s | **2.08s** | 1.0x |
-| cybonera 10k (2.3M cells, MUR+wires) | 8.15s | **0.93s** | **8.8x** |
-| cybonera 3M (2.3M cells, MUR+wires) | — | **0.99s** | **~10,000x vs CPU** |
+| multipleAssigments (500 steps, CPML) | 0.45s | **0.45s** | — (small case) |
+| sphere (100 steps, CPML+farfield) | 2.12s | **2.09s** | 1.0x |
+| cybonera 10k (2.3M cells, MUR+wires) | 8.15s | **8.66s** | — (MUR GPU deferred) |
+| cybonera 3M (2.3M cells, MUR+wires) | — | **~260s** | ~1,000x vs CPU |
 
-*cybonera 3M: 2.3M cells × 3M steps with 555 wire coords. Full simulation in under 1 second!
+*cybonera 3M estimate: 2.3M cells × 3M steps with 555 wire coords, CPU path
 
 ### Phase 6: GPU port wires (HUGE potential)
 **Expected impact: 50-100%+ for wire cases, critical for cybonera-scale simulations**
