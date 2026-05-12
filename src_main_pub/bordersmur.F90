@@ -47,9 +47,20 @@ module BORDERS_MUR_m
 !!!
    !
    public  :: InitMURBorders, AdvanceMagneticMUR,StoreFieldsMURBorders,DestroyMURBorders,calc_murconstants
-
+   public  :: get_mur_limits
 
 contains
+
+   subroutine get_mur_limits(field, bound, xi, xe, yi, ye, zi, ze)
+      integer(kind=4), intent(in) :: field, bound
+      integer(kind=4), intent(out) :: xi, xe, yi, ye, zi, ze
+      xi = MURc(field)%XI(bound)
+      xe = MURc(field)%XE(bound)
+      yi = MURc(field)%YI(bound)
+      ye = MURc(field)%YE(bound)
+      zi = MURc(field)%ZI(bound)
+      ze = MURc(field)%ZE(bound)
+   end subroutine get_mur_limits
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes MUR data

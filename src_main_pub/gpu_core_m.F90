@@ -152,6 +152,9 @@ module gpu_core_m
        logical :: pml_up_initialized = .false.
        logical :: pml_back_initialized = .false.
        logical :: pml_front_initialized = .false.
+
+       ! Download tracking for lazy field transfer
+       integer(kind=4) :: last_download_step = 0
     end type
 
 contains
@@ -406,19 +409,21 @@ contains
    ! Download device data to host - called only when output/probes are needed
    !--------------------------------------------------------------------------------
    subroutine gpu_download(this)
-      class(gpu_state_t), intent(inout) :: this
+       class(gpu_state_t), intent(inout) :: this
 
-      if (.not. this%initialized) return
+       if (.not. this%initialized) return
+       if (.not. this%fields_on_device) return
 
-      this%Ex = this%Ex_d
-      this%Ey = this%Ey_d
-      this%Ez = this%Ez_d
-      this%Hx = this%Hx_d
-      this%Hy = this%Hy_d
-      this%Hz = this%Hz_d
-      this%fields_on_device = .false.
+       this%Ex = this%Ex_d
+       this%Ey = this%Ey_d
+       this%Ez = this%Ez_d
+       this%Hx = this%Hx_d
+       this%Hy = this%Hy_d
+       this%Hz = this%Hz_d
+       this%fields_on_device = .false.
+       this%last_download_step = 0
 
-   end subroutine gpu_download
+    end subroutine gpu_download
 
    !--------------------------------------------------------------------------------
    ! Destroy GPU state - called at simulation end
@@ -806,20 +811,21 @@ contains
    !--------------------------------------------------------------------------------
    ! Upload host data to device - called only when fields are modified on host
    !--------------------------------------------------------------------------------
-   subroutine gpu_upload(this)
-      class(gpu_state_t), intent(inout) :: this
+  subroutine gpu_upload(this)
+       class(gpu_state_t), intent(inout) :: this
 
-      if (.not. this%initialized) return
+       if (.not. this%initialized) return
 
-      this%Ex_d = this%Ex
-      this%Ey_d = this%Ey
-      this%Ez_d = this%Ez
-      this%Hx_d = this%Hx
-      this%Hy_d = this%Hy
-      this%Hz_d = this%Hz
-      this%fields_on_device = .true.
+       this%Ex_d = this%Ex
+       this%Ey_d = this%Ey
+       this%Ez_d = this%Ez
+       this%Hx_d = this%Hx
+       this%Hy_d = this%Hy
+       this%Hz_d = this%Hz
+       this%fields_on_device = .true.
+       this%last_download_step = -1024
 
-   end subroutine gpu_upload
+    end subroutine gpu_upload
 
    !--------------------------------------------------------------------------------
    ! Update CPML left boundary coefficients on device - called every step
@@ -1052,3 +1058,113 @@ contains
      end subroutine gpu_init_mur_limits
 
   end module gpu_core_m
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  GPU CORE PROBE EXTENSION - Probe-aware selective download
+!  Downloads only the cells that observation probes reference,
+!  eliminating per-timestep full-field downloads.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+module gpu_core_probe_m
+
+   use FDETYPES_m
+   use Report_m
+   use cudafor
+   use gpu_core_m
+
+   implicit none
+
+contains
+
+   !--------------------------------------------------------------------------------
+   ! Download only probe-relevant cells from device to host
+   ! Much smaller than downloading all 6 fields
+   !--------------------------------------------------------------------------------
+   subroutine gpu_download_probes(this, sgg, Ex, Ey, Ez, Hx, Hy, Hz)
+      class(gpu_state_t), intent(inout) :: this
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      real(kind=rkind), dimension(:,:,:), pointer, intent(inout) :: Ex, Ey, Ez, Hx, Hy, Hz
+
+      integer(kind=4) :: ii, i, field
+      integer(kind=4) :: I1, J1, K1, I2, J2, K2
+      integer(kind=4) :: iii, jjj, kkk
+      integer(kind=4) :: pointObservationCases(6), blockCurrentObservationCases(6)
+      integer(kind=4) :: i1_m, i2_m, j1_m, j2_m, k1_m, k2_m
+      logical :: is_point, is_block
+
+      pointObservationCases = [iEx, iEy, iEz, iHx, iHy, iHz]
+      blockCurrentObservationCases = [iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz]
+
+      if (.not. this%initialized) return
+      if (.not. this%fields_on_device) return
+
+      ! Check if any probe has invalid bounds (0,0,0) — indicates element-based probe
+      ! Element-based probes need full field download since cell locations
+      ! are determined by element geometry, not by simple cell ranges
+      do ii = 1, sgg%NumberRequest
+         do i = 1, sgg%Observation(ii)%nP
+            if (sgg%Observation(ii)%P(i)%XI == 0 .and. &
+                sgg%Observation(ii)%P(i)%YI == 0 .and. &
+                sgg%Observation(ii)%P(i)%ZI == 0) then
+               ! Element-based probe — fall back to full download
+               this%Ex = this%Ex_d
+               this%Ey = this%Ey_d
+               this%Ez = this%Ez_d
+               this%Hx = this%Hx_d
+               this%Hy = this%Hy_d
+               this%Hz = this%Hz_d
+               this%fields_on_device = .false.
+               return
+            end if
+         end do
+      end do
+
+      ! Point probes: download individual cells
+      do ii = 1, sgg%NumberRequest
+         do i = 1, sgg%Observation(ii)%nP
+            field = sgg%Observation(ii)%P(i)%what
+            if (field == nothing) cycle
+
+            I1 = sgg%Observation(ii)%P(i)%XI
+            J1 = sgg%Observation(ii)%P(i)%YI
+            K1 = sgg%Observation(ii)%P(i)%ZI
+
+            is_point = any(field == pointObservationCases)
+            is_block = any(field == blockCurrentObservationCases)
+
+            if (is_point) then
+               ! Download single cell from each field
+               Ex(I1,J1,K1) = this%Ex_d(I1,J1,K1)
+               Ey(I1,J1,K1) = this%Ey_d(I1,J1,K1)
+               Ez(I1,J1,K1) = this%Ez_d(I1,J1,K1)
+               Hx(I1,J1,K1) = this%Hx_d(I1,J1,K1)
+               Hy(I1,J1,K1) = this%Hy_d(I1,J1,K1)
+               Hz(I1,J1,K1) = this%Hz_d(I1,J1,K1)
+            else if (is_block) then
+               ! Block probes: download the surface/volume region
+               ! Only download if bounds are valid (element-based probes may have 0 bounds)
+               i1_m = I1; i2_m = sgg%Observation(ii)%P(i)%XE
+               j1_m = J1; j2_m = sgg%Observation(ii)%P(i)%YE
+               k1_m = K1; k2_m = sgg%Observation(ii)%P(i)%ZE
+               ! Skip if bounds are invalid (element-based probes use elementIds, not cell ranges)
+               if (i1_m > 0 .and. i2_m > 0 .and. j1_m > 0 .and. j2_m > 0 .and. k1_m > 0 .and. k2_m > 0) then
+                  do kkk = k1_m, k2_m
+                     do jjj = j1_m, j2_m
+                        do iii = i1_m, i2_m
+                           Ex(iii,jjj,kkk) = this%Ex_d(iii,jjj,kkk)
+                           Ey(iii,jjj,kkk) = this%Ey_d(iii,jjj,kkk)
+                           Ez(iii,jjj,kkk) = this%Ez_d(iii,jjj,kkk)
+                           Hx(iii,jjj,kkk) = this%Hx_d(iii,jjj,kkk)
+                           Hy(iii,jjj,kkk) = this%Hy_d(iii,jjj,kkk)
+                           Hz(iii,jjj,kkk) = this%Hz_d(iii,jjj,kkk)
+                        end do
+                     end do
+                  end do
+               end if
+            end if
+         end do
+      end do
+
+   end subroutine gpu_download_probes
+
+end module gpu_core_probe_m

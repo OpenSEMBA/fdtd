@@ -51,6 +51,7 @@ module Solver_m
    ! use gpu_sgbc_core_m
    ! use gpu_sgbc_e_m
    ! use gpu_sgbc_h_m
+   use gpu_core_probe_m
 #endif  
    use EDispersives_m
    use Mdispersives_m
@@ -90,6 +91,7 @@ module Solver_m
    use gpu_core_m
    use gpu_yee_m
    use gpu_cpml_m
+   use gpu_mur_m
 #endif
    implicit none
 
@@ -1056,12 +1058,12 @@ contains
          end if
       end subroutine
 
-      subroutine initializeBorders()
-         character(len=BUFSIZE) :: dubuf
-         logical :: l_auxinput, l_auxoutput
-#ifdef CompileWithMPI
-         integer(kind=4) :: ierr
-#endif
+  subroutine initializeBorders()
+          character(len=BUFSIZE) :: dubuf
+          logical :: l_auxinput, l_auxoutput
+ #ifdef CompileWithMPI
+          integer(kind=4) :: ierr
+ #endif
          write(dubuf,*) 'Init Other Borders...';  call print11(this%control%layoutnumber,dubuf)
          call InitOtherBorders    (this%sgg,this%thereAre)
          l_auxinput=this%thereAre%PECBorders.or.this%thereAre%PMCBorders.or.this%thereAre%PeriodicBorders
@@ -1166,9 +1168,13 @@ contains
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-         write(dubuf,*) 'Init Mur Borders...';  call print11(this%control%layoutnumber,dubuf)
-         call InitMURBorders      (this%sgg,this%thereAre%MURBorders,this%control%resume,Idxh,Idyh,Idzh,this%eps0,this%mu0)
-         l_auxinput= this%thereAre%MURBorders
+     write(dubuf,*) 'Init Mur Borders...';  call print11(this%control%layoutnumber,dubuf)
+          call InitMURBorders      (this%sgg,this%thereAre%MURBorders,this%control%resume,Idxh,Idyh,Idzh,this%eps0,this%mu0)
+          ! MUR GPU init deferred — NVHPC 26.3 has strict array/pointer matching
+          ! that prevents passing module-level allocatable arrays to device functions
+          ! MUR GPU kernels exist in gpu_mur_m.F90 but are not yet wired for NVHPC
+     ! CPU MUR path (AdvanceMagneticMUR) is used as fallback
+          l_auxinput= this%thereAre%MURBorders
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2067,20 +2073,43 @@ contains
 
 contains
      subroutine updateAndFlush()
-          integer(kind=4) :: mindum
+           integer(kind=4) :: mindum, ii, i
+           logical :: has_element_probes
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-          if (this%gpu_initialized .and. this%gpu%fields_on_device) then
-             call gpu_download(this%gpu)
-          endif
+           ! GPU optimization: keep fields on device between timesteps.
+           ! For probes with cell-range bounds (XI/YI/ZI > 0), download only
+           ! the probe cells. For element-based probes (XI=0), fall back to
+           ! CPU observation path which handles element geometry lookup.
+           if (this%gpu_initialized .and. this%gpu%fields_on_device .and. this%thereAre%Observation) then
+              has_element_probes = .false.
+              do ii = 1, this%sgg%NumberRequest
+                 do i = 1, this%sgg%Observation(ii)%nP
+                    if (this%sgg%Observation(ii)%P(i)%XI == 0 .and. &
+                        this%sgg%Observation(ii)%P(i)%YI == 0 .and. &
+                        this%sgg%Observation(ii)%P(i)%ZI == 0) then
+                       has_element_probes = .true.
+                       exit
+                    end if
+                 end do
+                 if (has_element_probes) exit
+              end do
+              if (.not. has_element_probes) then
+                 ! Cell-range probes — download only probe cells
+                 call gpu_download_probes(this%gpu, this%sgg, Ex, Ey, Ez, Hx, Hy, Hz)
+              else
+                 ! Element-based probes — download all fields (fallback)
+                 call gpu_download(this%gpu)
+              endif
+           endif
 #endif
-          if (this%thereAre%Observation) then
-             call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
-            if (this%n>=this%ini_save+BuffObse)  then
-               mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
-               call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
-            end if
-         end if
-      end subroutine
+           if (this%thereAre%Observation) then
+              call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
+             if (this%n>=this%ini_save+BuffObse)  then
+                mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
+                call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
+             end if
+          end if
+       end subroutine
 
       subroutine singleUnpack()
          character(len=BUFSIZE) :: dubuf
@@ -2800,26 +2829,37 @@ contains
 
    end subroutine
 
-   subroutine solver_advanceMagneticMUR(this)
-      class(solver_t) :: this
-#ifdef CompileWithMPI
-      integer(kind=4) :: ierr
-#endif
-      If (this%thereAre%MURBorders) then
-         call AdvanceMagneticMUR(this%bounds, this%sgg, & 
-                                 this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
-                                 this%Hx, this%Hy, this%Hz, & 
-                                 this%control%mur_second)
-#ifdef CompileWithMPI
-         if (this%control%mur_second) then
-            if (this%control%num_procs>1) then
-               call MPI_Barrier(SUBCOMM_MPI,ierr)
-               call FlushMPI_H_Cray
-            end if
-         end if
-#endif
-      end if
-   end subroutine
+subroutine solver_advanceMagneticMUR(this)
+       class(solver_t) :: this
+ #ifdef CompileWithMPI
+       integer(kind=4) :: ierr
+ #endif
+       If (this%thereAre%MURBorders) then
+ #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+          if (this%gpu_initialized .and. this%gpu%mur_initialized .and. .not. this%control%mur_second) then
+             call gpu_advanceMUR_H_left(this%gpu, this%bounds)
+             call gpu_advanceMUR_H_right(this%gpu, this%bounds)
+             call gpu_advanceMUR_H_down(this%gpu, this%bounds)
+             call gpu_advanceMUR_H_up(this%gpu, this%bounds)
+             call gpu_advanceMUR_H_back(this%gpu, this%bounds)
+             call gpu_advanceMUR_H_front(this%gpu, this%bounds)
+             return
+          endif
+ #endif
+          call AdvanceMagneticMUR(this%bounds, this%sgg, & 
+                                  this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
+                                  this%Hx, this%Hy, this%Hz, & 
+                                  this%control%mur_second)
+ #ifdef CompileWithMPI
+          if (this%control%mur_second) then
+             if (this%control%num_procs>1) then
+                call MPI_Barrier(SUBCOMM_MPI,ierr)
+                call FlushMPI_H_Cray
+             end if
+          end if
+ #endif
+       end if
+    end subroutine
 
 
    subroutine solver_end(this)
