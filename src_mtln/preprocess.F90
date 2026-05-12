@@ -1147,6 +1147,11 @@ contains
 
         if (node%termination%termination_type == TERMINATION_open) res%open = .true.
         res%source = node%termination%source
+        ! Store termination info for hybrid handler
+        res%termination_type = node%termination%termination_type
+        res%R = node%termination%resistance
+        res%L = node%termination%inductance
+        res%C = node%termination%capacitance
 
     contains
         function nodeSideToString(side) result(cSide)
