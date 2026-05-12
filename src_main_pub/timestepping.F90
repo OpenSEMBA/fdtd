@@ -484,20 +484,20 @@ module Solver_m
       call this%init_fields()
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
 
-#if defined(SEMBA_FDTD_ENABLE_ACC) || defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-if (.not.this%gpu_initialized) then
-           call gpu_init(this%gpu, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz, &
-                         this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, &
-                         this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
-                         this%g%g1, this%g%g2, this%g%gm1, this%g%gm2, &
-                         this%Idxe, this%Idye, this%Idze, this%Idxh, this%Idyh, this%Idzh, &
-                         this%dxe, this%dye, this%dze, this%dxh, this%dyh, this%dzh)
-           this%gpu_initialized = this%gpu%initialized
-           ! Initialize probe buffers for on-device sampling
-           if (this%gpu_initialized .and. this%thereAre%Observation) then
-              call gpu_init_probe_buffers(this%gpu, this%sgg)
-           end if
-        endif
+#if defined(SEMBA_FDTD_ENABLE_ACC) || defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN) || defined(CompileWithACC)
+       if (.not.this%gpu_initialized) then
+          call gpu_init(this%gpu, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz, &
+                        this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, &
+                        this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
+                        this%g%g1, this%g%g2, this%g%gm1, this%g%gm2, &
+                        this%Idxe, this%Idye, this%Idze, this%Idxh, this%Idyh, this%Idzh, &
+                        this%dxe, this%dye, this%dze, this%dxh, this%dyh, this%dzh)
+          this%gpu_initialized = this%gpu%initialized
+          ! Initialize probe buffers for on-device sampling
+          if (this%gpu_initialized .and. this%thereAre%Observation) then
+             call gpu_init_probe_buffers(this%gpu, this%sgg)
+          end if
+       endif
 #endif
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
