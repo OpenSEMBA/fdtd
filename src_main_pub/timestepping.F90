@@ -52,6 +52,10 @@ module Solver_m
    ! use gpu_sgbc_e_m
    ! use gpu_sgbc_h_m
    use gpu_core_probe_m
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+   use farfield_m
+   use gpu_nf2ff_m
+#endif
 #endif  
    use EDispersives_m
    use Mdispersives_m
@@ -622,6 +626,12 @@ module Solver_m
 
       call fillMtag(this%sgg, this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMtag, this%bounds, this%tag_numbers)
       call initializeObservation()
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+        ! Initialize GPU NF2FF buffers after InitFarField (deferred — full implementation pending)
+        ! if (this%gpu_initialized .and. associated(FF%ExIz)) then
+        !    call gpu_init_nf2ff_buffers(...)
+        ! endif
+#endif
 
       !!!!voy a jugar con fuego !!!210815 sincronizo las matrices de medios porque a veces se precisan. Reutilizo rutinas viejas mias NO CRAY. Solo se usan aqui
       !MPI initialization
@@ -1922,10 +1932,12 @@ contains
       real(kind=rkind), pointer, dimension(:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
 
       logical :: call_timing, l_aux, flushFF, somethingdone, newsomethingdone
-      integer :: i
-      real(kind=rkind) :: pscale_alpha
-      real(kind=rkind_tiempo) :: at
-      character(len=bufsize) :: dubuf
+       integer :: i
+       real(kind=rkind) :: pscale_alpha
+       real(kind=rkind_tiempo) :: at
+       character(len=bufsize) :: dubuf
+       ! NF2FF GPU output buffers
+       real(kind=rkind), dimension(:), allocatable :: Etheta_out, Ephi_out, RCS_out
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
@@ -2023,11 +2035,16 @@ contains
                       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
     !!
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-                       if (this%gpu_initialized .and. this%gpu%fields_on_device) then
-                          call gpu_download(this%gpu)
-                       endif
+                        if (this%gpu_initialized .and. this%gpu%fields_on_device) then
+                           call gpu_download(this%gpu)
+                        endif
+                        ! GPU NF2FF flush — replaces CPU far-field pattern computation
+                        ! GPU NF2FF flush deferred — CPU path handles far-field computation
+                        ! if (this%gpu_initialized .and. this%gpu%nf2ff_initialized .and. this%thereAre%FarFields) then
+                        !    call gpu_flush_nf2ff(this%gpu, Etheta_out, Ephi_out, RCS_out)
+                        ! endif
 #endif
-                       if (this%thereAre%Observation) call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,flushFF)
+                        if (this%thereAre%Observation) call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,flushFF)
                        !!
 #ifdef CompileWithMPI
                       call MPI_Barrier(SUBCOMM_MPI,ierr)

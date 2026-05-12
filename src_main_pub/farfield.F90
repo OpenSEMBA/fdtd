@@ -71,7 +71,7 @@ module farfield_m
 !!!
    !
    public UpdateFarField,InitFarField,Destroyfarfield,FlushFarfield,StoreFarfields
-   public farfield_t
+   public farfield_t, FF
    !
    type(farfield_t), save, target :: FF
 

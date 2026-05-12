@@ -323,9 +323,11 @@ if(SEMBA_FDTD_MAIN_LIB)
 			"src_main_pub/gpu_yee_m.F90"
 			"src_main_pub/gpu_cpml_m.F90"
 			"src_main_pub/gpu_mur_m.F90"
+			"src_main_pub/gpu_nf2ff_m.F90"
 		)
-		set_source_files_properties("src_main_pub/gpu_core_m.F90" "src_main_pub/gpu_yee_m.F90" "src_main_pub/gpu_cpml_m.F90" "src_main_pub/gpu_mur_m.F90" PROPERTIES COMPILE_OPTIONS "-cuda;-gpu=pinned")
+		set_source_files_properties("src_main_pub/gpu_core_m.F90" "src_main_pub/gpu_yee_m.F90" "src_main_pub/gpu_cpml_m.F90" "src_main_pub/gpu_mur_m.F90" "src_main_pub/gpu_nf2ff_m.F90" PROPERTIES COMPILE_OPTIONS "-cuda;-gpu=pinned")
 		target_link_options(semba-main PRIVATE -cuda)
+		target_link_libraries(semba-main semba-outputs)
 		# gpu_core_probe_m is embedded in gpu_core_m.F90 (append at EOF)
 	endif()
 	target_link_libraries(semba-main

@@ -3765,7 +3765,7 @@ end subroutine UpdateObservation
       logical :: called_fromobservation, dummy_logical
       integer :: my_iostat
 
-      character(len=BUFSIZE) :: whoami
+       character(len=BUFSIZE) :: whoami
       !!!
       write (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', num_procs, ') '
       called_fromobservation = .true.

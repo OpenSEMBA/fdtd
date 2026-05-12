@@ -1136,9 +1136,9 @@ this%pml_up_initialized = .false.
          this%mur_front_Hy_ji = front_Hy_ji; this%mur_front_Hy_jj = front_Hy_jj
          this%mur_front_Hy_ki = front_Hy_ki; this%mur_front_Hy_kj = front_Hy_kj
 
-     end subroutine gpu_init_mur_limits
+    end subroutine gpu_init_mur_limits
 
-  end module gpu_core_m
+   end module gpu_core_m
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  GPU CORE PROBE EXTENSION - Probe-aware selective download
@@ -1765,10 +1765,10 @@ end subroutine gpu_download_probes
                                         phys_x_Jx, phys_y_Jx, phys_z_Jx, &
                                         phys_x_Jy, phys_y_Jy, phys_z_Jy, &
                                         phys_x_Jz, phys_y_Jz, phys_z_Jz, &
-                                        dyh, dye, dze, dzh, &
-                                        numCells, numFreqs, Ntheta, Nphi, &
-                                        thetaStart, thetaStop, thetaStep, phiStart, phiStop, phiStep, &
-                                        freqStep, initialFreq, cluz, z0, XDobleAncho, YDobleAncho, ZDobleAncho, sym_flags)
+                                        dyh_in, dye_in, dze_in, dzh_in, &
+                                         numCells, numFreqs, Ntheta, Nphi, &
+                                         thetaStart, thetaStop, thetaStep, phiStart, phiStop, phiStep, &
+                                         freqStep, initialFreq, cluz, z0, XDobleAncho, YDobleAncho, ZDobleAncho, sym_flags)
         class(gpu_state_t), intent(inout) :: this
         complex(kind=rkind), dimension(:,:,:), intent(in) :: ExIz, ExDe, ExAb, ExAr, EyFr, EyTr, EyAb, EyAr, EzIz, EzDe, EzFr, EzTr
         complex(kind=rkind), dimension(:,:,:), intent(in) :: HxIz, HxDe, HxAb, HxAr, HyFr, HyTr, HyAb, HyAr, HzIz, HzDe, HzFr, HzTr
@@ -1779,13 +1779,13 @@ end subroutine gpu_download_probes
         real(kind=rkind), dimension(:), intent(in) :: phys_x_Mz, phys_y_Mz, phys_z_Mz
         real(kind=rkind), dimension(:), intent(in) :: phys_x_Jx, phys_y_Jx, phys_z_Jx
         real(kind=rkind), dimension(:), intent(in) :: phys_x_Jy, phys_y_Jy, phys_z_Jy
-        real(kind=rkind), dimension(:), intent(in) :: phys_x_Jz, phys_y_Jz, phys_z_Jz
-        real(kind=rkind), dimension(:), intent(in) :: dyh, dye, dze, dzh
-        integer(kind=4), intent(in) :: numCells, numFreqs, Ntheta, Nphi
+     real(kind=rkind), dimension(:), intent(in) :: phys_x_Jz, phys_y_Jz, phys_z_Jz
+         integer(kind=4), intent(in) :: numCells, numFreqs, Ntheta, Nphi
         real(kind=rkind), intent(in) :: thetaStart, thetaStop, thetaStep, phiStart, phiStop, phiStep
         real(kind=rkind), intent(in) :: freqStep, initialFreq, cluz, z0
         real(kind=rkind), intent(in) :: XDobleAncho, YDobleAncho, ZDobleAncho
         integer(kind=4), intent(in) :: sym_flags
+        real(kind=rkind), dimension(:), intent(in) :: dyh_in, dye_in, dze_in, dzh_in
 
         integer(kind=4) :: nx, ny, nz, cuda_status
 
@@ -1926,16 +1926,16 @@ end subroutine gpu_download_probes
         endif
 
         ! Allocate and copy cell dimension arrays
-        if (numCells > 0) then
-           allocate(this%nf2ff_dyh_d(0:numCells-1))
-           allocate(this%nf2ff_dze_d(0:numCells-1))
-           allocate(this%nf2ff_dye_d(0:numCells-1))
-           allocate(this%nf2ff_dzh_d(0:numCells-1))
-           cuda_status = cudaMemcpy(this%nf2ff_dyh_d, dyh, numCells*4, cudaMemcpyHostToDevice)
-           cuda_status = cudaMemcpy(this%nf2ff_dze_d, dze, numCells*4, cudaMemcpyHostToDevice)
-           cuda_status = cudaMemcpy(this%nf2ff_dye_d, dye, numCells*4, cudaMemcpyHostToDevice)
-           cuda_status = cudaMemcpy(this%nf2ff_dzh_d, dzh, numCells*4, cudaMemcpyHostToDevice)
-        endif
+         if (numCells > 0) then
+            allocate(this%nf2ff_dyh_d(0:numCells-1))
+            allocate(this%nf2ff_dze_d(0:numCells-1))
+            allocate(this%nf2ff_dye_d(0:numCells-1))
+            allocate(this%nf2ff_dzh_d(0:numCells-1))
+            cuda_status = cudaMemcpy(this%nf2ff_dyh_d, dyh_in, numCells*4, cudaMemcpyHostToDevice)
+            cuda_status = cudaMemcpy(this%nf2ff_dze_d, dze_in, numCells*4, cudaMemcpyHostToDevice)
+            cuda_status = cudaMemcpy(this%nf2ff_dye_d, dye_in, numCells*4, cudaMemcpyHostToDevice)
+            cuda_status = cudaMemcpy(this%nf2ff_dzh_d, dzh_in, numCells*4, cudaMemcpyHostToDevice)
+         endif
 
         ! Allocate output buffers
         if (Ntheta > 0 .and. Nphi > 0 .and. numFreqs > 0) then
