@@ -2416,10 +2416,15 @@ contains
    end subroutine init_MPIConformalProbes
 #endif
 
-   subroutine advanceE(this)
-       class(solver_t) :: this
+subroutine advanceE(this)
+        class(solver_t) :: this
+#ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+        if (this%gpu_initialized) then
+           this%gpu%gpu_e_fused_launched = .false.
+        endif
+#endif
 #ifdef CompileWithProfiling
-       call nvtxStartRange("Antes del bucle EX")
+        call nvtxStartRange("Antes del bucle EX")
 #endif
        call this%advanceEx(this%media%sggMiEx)
 #ifdef CompileWithProfiling
@@ -2455,10 +2460,13 @@ contains
       integer(kind=integersizeofmediamatrices) :: medio
 
 #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
-         if (this%gpu_initialized) then
-            call gpu_advanceEx(this%gpu, this%bounds)
-            return
-         endif
+          if (this%gpu_initialized) then
+             if (.not. this%gpu%gpu_e_fused_launched) then
+                call gpu_advanceE_all(this%gpu, this%bounds)
+                this%gpu%gpu_e_fused_launched = .true.
+             endif
+             return
+          endif
 #endif
 
       Ex(0:this%bounds%Ex%NX-1,0:this%bounds%Ex%NY-1,0:this%bounds%Ex%NZ-1) => this%Ex
@@ -2502,10 +2510,13 @@ contains
       integer(kind=integersizeofmediamatrices) :: medio
 
 #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
-      if (this%gpu_initialized) then
-         call gpu_advanceEy(this%gpu, this%bounds)
-         return
-      endif
+       if (this%gpu_initialized) then
+          if (.not. this%gpu%gpu_e_fused_launched) then
+             call gpu_advanceE_all(this%gpu, this%bounds)
+             this%gpu%gpu_e_fused_launched = .true.
+          endif
+          return
+       endif
 #endif
 
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
@@ -2551,10 +2562,13 @@ contains
       integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
 
 #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
-      if (this%gpu_initialized) then
-         call gpu_advanceEz(this%gpu, this%bounds)
-         return
-      endif
+       if (this%gpu_initialized) then
+          if (.not. this%gpu%gpu_e_fused_launched) then
+             call gpu_advanceE_all(this%gpu, this%bounds)
+             this%gpu%gpu_e_fused_launched = .true.
+          endif
+          return
+       endif
 #endif
 
 
@@ -2618,10 +2632,13 @@ contains
       integer(kind=integersizeofmediamatrices) :: medio
 
 #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
-      if (this%gpu_initialized) then
-         call gpu_advanceHx(this%gpu, this%bounds)
-         return
-      endif
+       if (this%gpu_initialized) then
+          if (.not. this%gpu%gpu_h_fused_launched) then
+             call gpu_advanceH_all(this%gpu, this%bounds)
+             this%gpu%gpu_h_fused_launched = .true.
+          endif
+          return
+       endif
 #endif
 
       Hx(0:this%bounds%Hx%NX-1,0:this%bounds%Hx%NY-1,0:this%bounds%Hx%NZ-1) => this%Hx
@@ -2665,10 +2682,13 @@ contains
       integer(kind=integersizeofmediamatrices) :: medio
 
 #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
-      if (this%gpu_initialized) then
-         call gpu_advanceHy(this%gpu, this%bounds)
-         return
-      endif
+       if (this%gpu_initialized) then
+          if (.not. this%gpu%gpu_h_fused_launched) then
+             call gpu_advanceH_all(this%gpu, this%bounds)
+             this%gpu%gpu_h_fused_launched = .true.
+          endif
+          return
+       endif
 #endif
 
       Hy(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1) => this%Hy
@@ -2711,10 +2731,13 @@ contains
       integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
 
 #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
-      if (this%gpu_initialized) then
-         call gpu_advanceHz(this%gpu, this%bounds)
-         return
-      endif
+       if (this%gpu_initialized) then
+          if (.not. this%gpu%gpu_h_fused_launched) then
+             call gpu_advanceH_all(this%gpu, this%bounds)
+             this%gpu%gpu_h_fused_launched = .true.
+          endif
+          return
+       endif
 #endif
 
       Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
@@ -2827,6 +2850,9 @@ contains
          class(solver_t) :: this
          If (this%thereAre%PMLBorders) then
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+            if (this%gpu_initialized) then
+               this%gpu%gpu_h_fused_launched = .false.
+            endif
             if (this%gpu_initialized .and. this%gpu%pml_left_initialized .and. this%gpu%pml_right_initialized .and. &
                  this%gpu%pml_down_initialized .and. this%gpu%pml_up_initialized .and. &
                  this%gpu%pml_back_initialized .and. this%gpu%pml_front_initialized) then
@@ -2959,9 +2985,14 @@ contains
 
 subroutine solver_advanceMagneticMUR(this)
         class(solver_t) :: this
-  #ifdef CompileWithMPI
+#ifdef CompileWithMPI
         integer(kind=4) :: ierr
-  #endif
+#endif
+#ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+        if (this%gpu_initialized) then
+           this%gpu%gpu_h_fused_launched = .false.
+        endif
+#endif
         If (this%thereAre%MURBorders) then
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
             if (this%gpu_initialized) then

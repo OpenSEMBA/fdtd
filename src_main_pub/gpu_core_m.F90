@@ -141,7 +141,11 @@ module gpu_core_m
         integer(kind=4) :: mur_front_Hy_ii, mur_front_Hy_ij, mur_front_Hy_ji, mur_front_Hy_jj, mur_front_Hy_ki, mur_front_Hy_kj
 
         ! MUR flags
-        logical :: mur_initialized = .false.
+        logical :: mur_initialized
+
+        ! Fused kernel execution flags to avoid redundant launches
+        logical :: gpu_e_fused_launched = .false.
+        logical :: gpu_h_fused_launched = .false.
 
         ! Flags
        logical :: initialized = .false.
