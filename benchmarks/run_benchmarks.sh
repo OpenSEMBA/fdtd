@@ -39,7 +39,7 @@ declare -a CASES=(
     "nodalSource:testData/cases/nodalSource:nodalSource.fdtd.json:445K:9000"
     "towelHanger:testData/cases/towelHanger:towelHanger.fdtd.json:216K:2000"
     "multipleAssigments:testData/cases/multipleAssigments:multipleDielectricMaterial.fdtd.json:500K:500"
-    "sphere:testData/cases/sphere:sphere.fdtd.json:512K:100"
+  "sphere:testData/cases/sphere:sphere.fdtd.json:512K:100"
 )
 
 echo "=============================================="

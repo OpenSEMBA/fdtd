@@ -47,9 +47,10 @@ module Solver_m
    use SGBC_nostoch_m
 #endif
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-   use gpu_sgbc_core_m
-   use gpu_sgbc_e_m
-   use gpu_sgbc_h_m
+   ! SGBC GPU not compatible with NVHPC 26.3
+   ! use gpu_sgbc_core_m
+   ! use gpu_sgbc_e_m
+   ! use gpu_sgbc_h_m
 #endif  
    use EDispersives_m
    use Mdispersives_m
@@ -126,9 +127,7 @@ module Solver_m
 
 #if defined(SEMBA_FDTD_ENABLE_ACC) || defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
       type(gpu_state_t) :: gpu
-      type(gpu_state_sgbc_t) :: gpu_sgbc
       logical :: gpu_initialized = .false.
-      logical :: gpu_sgbc_initialized = .false.
 #endif
 
    contains
@@ -2737,229 +2736,20 @@ contains
          end if
       end subroutine
 
-   subroutine solver_advancesgbcE(this)
-       class(solver_t) :: this
-       if (this%thereAre%sgbcs.and.(this%control%sgbc)) then 
-#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-          if (this%gpu_sgbc_initialized .and. .not.this%control%sgbcDispersive) then
-             call sgbc_gpu_advance(this)
-          else
-             call AdvancesgbcE(real(this%sgg%dt,RKIND),this%control%sgbcDispersive, & 
-                                    this%control%simu_devia,this%control%stochastic)
-          endif
-#else
-          call AdvancesgbcE(real(this%sgg%dt,RKIND),this%control%sgbcDispersive, & 
-                                 this%control%simu_devia,this%control%stochastic)
-#endif
-       end if
-    end subroutine
+  subroutine solver_advancesgbcE(this)
+        class(solver_t) :: this
+        if (this%thereAre%sgbcs.and.(this%control%sgbc)) then 
+           call AdvancesgbcE(real(this%sgg%dt,RKIND),this%control%sgbcDispersive, & 
+                                  this%control%simu_devia,this%control%stochastic)
+        end if
+     end subroutine
 
-    subroutine solver_advancesgbcH(this)
-       class(solver_t) :: this
-       if (this%thereAre%sgbcs.and.(this%control%sgbc)) then
-#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-          if (this%gpu_sgbc_initialized .and. .not.this%control%sgbcDispersive) then
-             call sgbc_gpu_advance_h(this)
-          else
-             call AdvancesgbcH()
-          endif
-#else
-          call AdvancesgbcH()
-#endif
-       end if
+ subroutine solver_advancesgbcH(this)
+        class(solver_t) :: this
+        if (this%thereAre%sgbcs.and.(this%control%sgbc)) then
+           call AdvancesgbcH()
+        end if
    end subroutine
-
-    !--------------------------------------------------------------------------------
-    ! GPU SGBC wrapper - E-field advance
-    !--------------------------------------------------------------------------------
-#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-    subroutine sgbc_gpu_advance(this)
-       class(solver_t), intent(inout) :: this
-       integer(kind=4) :: numNodes, maxDepth, offset, i, j
-       real(kind=rkind), allocatable, dimension(:) :: Efield_arr, Ha_Plus_arr, Ha_Minu_arr
-       real(kind=rkind), allocatable, dimension(:) :: Hb_Plus_arr, Hb_Minu_arr
-       integer(kind=4), allocatable, dimension(:) :: depth_arr, jmed_arr, depth_node_arr
-       real(kind=rkind), allocatable, dimension(:) :: gm2_ext_arr
-       real(kind=rkind), allocatable, dimension(:) :: transE_arr, transH_arr, alignedH_arr
-       real(kind=rkind), allocatable, dimension(:) :: g1_arr, g2a_arr, g2b_arr, gm2_ext_val_arr
-       logical, allocatable, dimension(:) :: correct_ha_arr, correct_hb_arr, crank_arr, filo_placa_arr
-       real(kind=rkind), allocatable, dimension(:,:) :: G1_int_arr, G2_int_arr, GM1_int_arr, GM2_int_arr
-       real(kind=rkind), allocatable, dimension(:,:) :: a_arr, b_arr, c_arr, rb_arr, rh_arr, rhm1_arr
-       real(kind=rkind), allocatable, dimension(:) :: tridiag_a1_arr, tridiag_b1_arr, tridiag_c1_arr
-       real(kind=rkind), allocatable, dimension(:) :: tridiag_an_arr, tridiag_bn_arr, tridiag_cn_arr
-       integer(kind=4), allocatable, dimension(:,:) :: capa_arr
-       real(kind=rkind), allocatable, dimension(:,:) :: delta_arr
-       real(kind=rkind), allocatable, dimension(:) :: Hyee_left_arr, Hyee_right_arr
-       real(kind=rkind), allocatable, dimension(:,:) :: E_state_arr, H_state_arr, E_past_arr, D_state_arr
-
-       numNodes = malon%NumNodes
-       maxDepth = 0
-       do i = 1, numNodes
-          if (malon%Nodes(i)%depth > maxDepth) maxDepth = malon%Nodes(i)%depth
-       end do
-       maxDepth = max(maxDepth, 1)
-       offset = -maxDepth
-
-       ! Allocate host buffers
-       allocate(depth_arr(numNodes))
-       allocate(gm2_ext_arr(numNodes))
-       allocate(jmed_arr(numNodes))
-       allocate(transE_arr(numNodes))
-       allocate(transH_arr(numNodes))
-       allocate(alignedH_arr(numNodes))
-       allocate(g1_arr(numNodes))
-       allocate(g2a_arr(numNodes))
-       allocate(g2b_arr(numNodes))
-       allocate(gm2_ext_val_arr(numNodes))
-       allocate(correct_ha_arr(numNodes))
-       allocate(correct_hb_arr(numNodes))
-       allocate(crank_arr(numNodes))
-       allocate(filo_placa_arr(numNodes))
-       allocate(depth_node_arr(numNodes))
-       allocate(G1_int_arr(2*maxDepth+1, numNodes))
-       allocate(G2_int_arr(2*maxDepth+1, numNodes))
-       allocate(GM1_int_arr(2*maxDepth+1, numNodes))
-       allocate(GM2_int_arr(2*maxDepth+1, numNodes))
-       allocate(a_arr(2*maxDepth+1, numNodes))
-       allocate(b_arr(2*maxDepth+1, numNodes))
-       allocate(c_arr(2*maxDepth+1, numNodes))
-       allocate(rb_arr(2*maxDepth+1, numNodes))
-       allocate(rh_arr(2*maxDepth+1, numNodes))
-       allocate(rhm1_arr(2*maxDepth+1, numNodes))
-       allocate(tridiag_a1_arr(numNodes))
-       allocate(tridiag_b1_arr(numNodes))
-       allocate(tridiag_c1_arr(numNodes))
-       allocate(tridiag_an_arr(numNodes))
-       allocate(tridiag_bn_arr(numNodes))
-       allocate(tridiag_cn_arr(numNodes))
-       allocate(capa_arr(2*maxDepth+1, numNodes))
-       allocate(delta_arr(2*maxDepth+1, numNodes))
-       allocate(Hyee_left_arr(numNodes))
-       allocate(Hyee_right_arr(numNodes))
-       allocate(Efield_arr(numNodes))
-       allocate(Ha_Plus_arr(numNodes))
-       allocate(Ha_Minu_arr(numNodes))
-       allocate(Hb_Plus_arr(numNodes))
-       allocate(Hb_Minu_arr(numNodes))
-       allocate(E_state_arr(2*maxDepth+1, numNodes))
-       allocate(H_state_arr(2*maxDepth+1, numNodes))
-       allocate(E_past_arr(2*maxDepth+1, numNodes))
-       allocate(D_state_arr(2*maxDepth+1, numNodes))
-
-       ! Get constants
-       call GetSGBCConstants(depth_arr, gm2_ext_arr, jmed_arr, transE_arr, transH_arr, alignedH_arr, &
-                             g1_arr, g2a_arr, g2b_arr, gm2_ext_val_arr, &
-                             correct_ha_arr, correct_hb_arr, crank_arr, filo_placa_arr, &
-                             depth_node_arr, G1_int_arr, G2_int_arr, GM1_int_arr, GM2_int_arr, &
-                             a_arr, b_arr, c_arr, rb_arr, rh_arr, rhm1_arr, &
-                             tridiag_a1_arr, tridiag_b1_arr, tridiag_c1_arr, &
-                             tridiag_an_arr, tridiag_bn_arr, tridiag_cn_arr, &
-                             capa_arr, delta_arr, Hyee_left_arr, Hyee_right_arr, &
-                             numNodes, maxDepth)
-
-       ! Get state
-       call GetSGBCState(E_state_arr, H_state_arr, E_past_arr, D_state_arr, offset)
-
-       ! Get field pointers
-       call GetSGBCFieldPointers(Efield_arr, Ha_Plus_arr, Ha_Minu_arr, &
-                                  Hb_Plus_arr, Hb_Minu_arr, numNodes)
-
-       ! Upload to GPU
-       if (.not.this%gpu_sgbc_initialized) then
-          call gpu_init_sgbc(this%gpu_sgbc, numNodes, maxDepth, this%sgg%dt, 1e6, .false., .false.)
-          this%gpu_sgbc_initialized = this%gpu_sgbc%initialized
-       endif
-
-       if (this%gpu_sgbc_initialized) then
-          call gpu_upload_sgbc_constants(this%gpu_sgbc, depth_arr, gm2_ext_arr, jmed_arr, &
-                                          transE_arr, transH_arr, alignedH_arr, &
-                                          g1_arr, g2a_arr, g2b_arr, gm2_ext_val_arr, &
-                                          correct_ha_arr, correct_hb_arr, crank_arr, &
-                                          filo_placa_arr, depth_node_arr)
-          call gpu_upload_sgbc_state(this%gpu_sgbc, E_state_arr, H_state_arr, E_past_arr, D_state_arr, &
-                                      G1_int_arr, G2_int_arr, GM1_int_arr, GM2_int_arr, &
-                                      a_arr, b_arr, c_arr, rb_arr, rh_arr, rhm1_arr, &
-                                      capa_arr, delta_arr, &
-                                      tridiag_a1_arr, tridiag_b1_arr, tridiag_c1_arr, &
-                                      tridiag_an_arr, tridiag_bn_arr, tridiag_cn_arr, &
-                                      Hyee_left_arr, Hyee_right_arr, offset)
-          call gpu_upload_sgbc_fields(this%gpu_sgbc, Efield_arr, Ha_Plus_arr, Ha_Minu_arr, &
-                                       Hb_Plus_arr, Hb_Minu_arr)
-
-          ! Advance E on GPU
-          call gpu_advance_sgbc_e(this%gpu_sgbc, this%sgg%dt)
-
-          ! Download state
-          call gpu_download_sgbc_state(this%gpu_sgbc, E_state_arr, H_state_arr, E_past_arr, D_state_arr, &
-                                        Hyee_left_arr, Hyee_right_arr, offset)
-
-          ! Download fields
-          call gpu_download_sgbc_fields(this%gpu_sgbc, Ha_Plus_arr, Ha_Minu_arr, &
-                                         Hb_Plus_arr, Hb_Minu_arr, &
-                                         Hyee_left_arr, Hyee_right_arr, Efield_arr)
-
-          ! Write back to host state
-          do j = 1, numNodes
-             malon%Nodes(j)%Efield = Efield_arr(j)
-             malon%Nodes(j)%Ha_Plus = Ha_Plus_arr(j)
-             malon%Nodes(j)%Ha_Minu = Ha_Minu_arr(j)
-             malon%Nodes(j)%Hb_Plus = Hb_Plus_arr(j)
-             malon%Nodes(j)%Hb_Minu = Hb_Minu_arr(j)
-             malon%Nodes(j)%Hyee__left = Hyee_left_arr(j)
-             malon%Nodes(j)%Hyee_right = Hyee_right_arr(j)
-             do i = -malon%Nodes(j)%depth, malon%Nodes(j)%depth
-                malon%Nodes(j)%E(i) = E_state_arr(i + malon%Nodes(j)%depth + 1, j)
-                malon%Nodes(j)%E_past(i) = E_past_arr(i + malon%Nodes(j)%depth + 1, j)
-             end do
-             if (malon%Nodes(j)%depth > 0) then
-                do i = -malon%Nodes(j)%depth, malon%Nodes(j)%depth-1
-                   malon%Nodes(j)%H(i) = H_state_arr(i + malon%Nodes(j)%depth + 1, j)
-                end do
-             end if
-          end do
-       end if
-
-       deallocate(depth_arr, gm2_ext_arr, jmed_arr, transE_arr, transH_arr, alignedH_arr)
-       deallocate(g1_arr, g2a_arr, g2b_arr, gm2_ext_val_arr)
-       deallocate(correct_ha_arr, correct_hb_arr, crank_arr, filo_placa_arr)
-       deallocate(depth_node_arr)
-       deallocate(G1_int_arr, G2_int_arr, GM1_int_arr, GM2_int_arr)
-       deallocate(a_arr, b_arr, c_arr, rb_arr, rh_arr, rhm1_arr)
-       deallocate(tridiag_a1_arr, tridiag_b1_arr, tridiag_c1_arr)
-       deallocate(tridiag_an_arr, tridiag_bn_arr, tridiag_cn_arr)
-       deallocate(capa_arr, delta_arr, Hyee_left_arr, Hyee_right_arr)
-       deallocate(Efield_arr, Ha_Plus_arr, Ha_Minu_arr, Hb_Plus_arr, Hb_Minu_arr)
-       deallocate(E_state_arr, H_state_arr, E_past_arr, D_state_arr)
-
-    end subroutine sgbc_gpu_advance
-
-    !--------------------------------------------------------------------------------
-    ! GPU SGBC wrapper - H-field advance
-    !--------------------------------------------------------------------------------
-    subroutine sgbc_gpu_advance_h(this)
-       class(solver_t), intent(inout) :: this
-       integer(kind=4) :: numNodes, j
-
-       numNodes = malon%NumNodes
-
-       if (.not.this%gpu_sgbc_initialized .or. .not.this%gpu_sgbc%fields_on_device) return
-
-       ! Advance H on GPU (uses field values already on device from E-advance)
-       call gpu_advance_sgbc_h(this%gpu_sgbc, this%sgg%dt)
-
-       ! Download field values
-       do j = 1, numNodes
-          malon%Nodes(j)%Ha_Plus = this%gpu_sgbc%Ha_Plus_val(j)
-          malon%Nodes(j)%Ha_Minu = this%gpu_sgbc%Ha_Minu_val(j)
-          malon%Nodes(j)%Hb_Plus = this%gpu_sgbc%Hb_Plus_val(j)
-          malon%Nodes(j)%Hb_Minu = this%gpu_sgbc%Hb_Minu_val(j)
-          malon%Nodes(j)%Hyee__left = this%gpu_sgbc%Hyee_left(j)
-          malon%Nodes(j)%Hyee_right = this%gpu_sgbc%Hyee_right(j)
-          malon%Nodes(j)%Efield = this%gpu_sgbc%Efield_val(j)
-       end do
-
-    end subroutine sgbc_gpu_advance_h
-#endif
 
     subroutine solver_advanceWiresE(this)
       class(solver_t) :: this
@@ -3208,10 +2998,6 @@ contains
       if (this%gpu_initialized) then
          call gpu_destroy(this%gpu)
          this%gpu_initialized = .false.
-      endif
-      if (this%gpu_sgbc_initialized) then
-         call gpu_destroy_sgbc(this%gpu_sgbc)
-         this%gpu_sgbc_initialized = .false.
       endif
 #endif
 
