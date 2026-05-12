@@ -2725,12 +2725,10 @@ contains
          If (this%thereAre%PMLBorders) then
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
             if (this%gpu_initialized .and. this%gpu%pml_left_initialized .and. this%gpu%pml_right_initialized .and. &
-                this%gpu%pml_down_initialized .and. this%gpu%pml_up_initialized .and. &
-                this%gpu%pml_back_initialized .and. this%gpu%pml_front_initialized) then
-               call gpu_update_pml_left_coeffs(this%gpu, P_be_y, P_ce_y, P_bm_y, P_cm_y)
-               call gpu_update_pml_down_coeffs(this%gpu, P_be_z, P_ce_z, P_bm_z, P_cm_z)
-               call gpu_update_pml_back_coeffs(this%gpu, P_be_x, P_ce_x, P_bm_x, P_cm_x)
-               call gpu_advanceCPML_H_left(this%gpu, this%bounds)
+                 this%gpu%pml_down_initialized .and. this%gpu%pml_up_initialized .and. &
+                 this%gpu%pml_back_initialized .and. this%gpu%pml_front_initialized) then
+                ! PML coefficients are constant - already set in gpu_init_pml_* at startup
+                call gpu_advanceCPML_H_left(this%gpu, this%bounds)
                call gpu_advanceCPML_H_right(this%gpu, this%bounds, this%sgg%numMedia)
                call gpu_advanceCPML_H_down(this%gpu, this%bounds)
                call gpu_advanceCPML_H_up(this%gpu, this%bounds)
@@ -2771,12 +2769,11 @@ contains
          end if
          If (this%thereAre%PMLBorders) then
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-            if (this%gpu_initialized .and. this%gpu%pml_left_initialized .and. this%gpu%pml_right_initialized .and. &
-                this%gpu%pml_down_initialized .and. this%gpu%pml_up_initialized .and. &
-                this%gpu%pml_back_initialized .and. this%gpu%pml_front_initialized) then
-               call gpu_update_pml_down_coeffs(this%gpu, P_be_z, P_ce_z, P_bm_z, P_cm_z)
-               call gpu_update_pml_back_coeffs(this%gpu, P_be_x, P_ce_x, P_bm_x, P_cm_x)
-               call gpu_advanceCPML_E_left(this%gpu, this%bounds)
+           if (this%gpu_initialized .and. this%gpu%pml_left_initialized .and. this%gpu%pml_right_initialized .and. &
+                 this%gpu%pml_down_initialized .and. this%gpu%pml_up_initialized .and. &
+                 this%gpu%pml_back_initialized .and. this%gpu%pml_front_initialized) then
+                ! PML coefficients are constant - already set in gpu_init_pml_* at startup
+                call gpu_advanceCPML_E_left(this%gpu, this%bounds)
                call gpu_advanceCPML_E_right(this%gpu, this%bounds, this%sgg%numMedia)
                call gpu_advanceCPML_E_down(this%gpu, this%bounds)
                call gpu_advanceCPML_E_up(this%gpu, this%bounds)
