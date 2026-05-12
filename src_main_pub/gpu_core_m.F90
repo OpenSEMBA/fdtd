@@ -172,7 +172,56 @@ module gpu_core_m
         integer(kind=4), pointer, device, dimension(:) :: block_probe_I2_d, block_probe_J2_d, block_probe_K2_d
         integer(kind=4) :: num_block_probe_results = 0
         logical :: probe_buffers_initialized = .false.
-     end type
+
+        ! NF2FF (near-to-far-field) device buffers
+        complex(kind=rkind), pointer, device, dimension(:,:,:) :: nf2ff_ExIz_d, nf2ff_ExDe_d, nf2ff_ExAb_d, nf2ff_ExAr_d
+        complex(kind=rkind), pointer, device, dimension(:,:,:) :: nf2ff_EyFr_d, nf2ff_EyTr_d, nf2ff_EyAb_d, nf2ff_EyAr_d
+        complex(kind=rkind), pointer, device, dimension(:,:,:) :: nf2ff_EzIz_d, nf2ff_EzDe_d, nf2ff_EzFr_d, nf2ff_EzTr_d
+        complex(kind=rkind), pointer, device, dimension(:,:,:) :: nf2ff_HxIz_d, nf2ff_HxDe_d, nf2ff_HxAb_d, nf2ff_HxAr_d
+        complex(kind=rkind), pointer, device, dimension(:,:,:) :: nf2ff_HyFr_d, nf2ff_HyTr_d, nf2ff_HyAb_d, nf2ff_HyAr_d
+        complex(kind=rkind), pointer, device, dimension(:,:,:) :: nf2ff_HzIz_d, nf2ff_HzDe_d, nf2ff_HzFr_d, nf2ff_HzTr_d
+        complex(kind=rkind), pointer, device, dimension(:,:,:) :: nf2ff_HxIz2_d, nf2ff_HxDe2_d, nf2ff_HxAb2_d, nf2ff_HxAr2_d
+        complex(kind=rkind), pointer, device, dimension(:,:,:) :: nf2ff_HyFr2_d, nf2ff_HyTr2_d, nf2ff_HyAb2_d, nf2ff_HyAr2_d
+        complex(kind=rkind), pointer, device, dimension(:,:,:) :: nf2ff_HzIz2_d, nf2ff_HzDe2_d, nf2ff_HzFr2_d, nf2ff_HzTr2_d
+
+        ! NF2FF frequency arrays (device)
+        complex(kind=rkind), pointer, device, dimension(:) :: nf2ff_expIwdt_d, nf2ff_auxExp_E_d, nf2ff_auxExp_H_d
+
+        ! NF2FF geometry (device) — 18 coordinate arrays for Mx,My,Mz,Jx,Jy,Jz per cell
+        real(kind=rkind), pointer, device, dimension(:) :: nf2ff_phys_x_Mx_d, nf2ff_phys_y_Mx_d, nf2ff_phys_z_Mx_d
+        real(kind=rkind), pointer, device, dimension(:) :: nf2ff_phys_x_My_d, nf2ff_phys_y_My_d, nf2ff_phys_z_My_d
+        real(kind=rkind), pointer, device, dimension(:) :: nf2ff_phys_x_Mz_d, nf2ff_phys_y_Mz_d, nf2ff_phys_z_Mz_d
+        real(kind=rkind), pointer, device, dimension(:) :: nf2ff_phys_x_Jx_d, nf2ff_phys_y_Jx_d, nf2ff_phys_z_Jx_d
+        real(kind=rkind), pointer, device, dimension(:) :: nf2ff_phys_x_Jy_d, nf2ff_phys_y_Jy_d, nf2ff_phys_z_Jy_d
+        real(kind=rkind), pointer, device, dimension(:) :: nf2ff_phys_x_Jz_d, nf2ff_phys_y_Jz_d, nf2ff_phys_z_Jz_d
+
+        ! NF2FF cell dimensions (device)
+        real(kind=rkind), pointer, device, dimension(:) :: nf2ff_dyh_d, nf2ff_dze_d, nf2ff_dye_d, nf2ff_dzh_d
+
+        ! NF2FF output buffers (device)
+        real(kind=rkind), pointer, device, dimension(:) :: nf2ff_Etheta_d, nf2ff_Ephi_d, nf2ff_RCS_d
+
+        ! NF2FF configuration
+        logical :: nf2ff_initialized = .false.
+        integer(kind=4) :: nf2ff_num_cells = 0
+        integer(kind=4) :: nf2ff_num_freqs = 0
+        integer(kind=4) :: nf2ff_Ntheta = 0
+        integer(kind=4) :: nf2ff_Nphi = 0
+        integer(kind=4) :: nf2ff_theta_start = 0
+        integer(kind=4) :: nf2ff_theta_stop = 0
+        integer(kind=4) :: nf2ff_phi_start = 0
+        integer(kind=4) :: nf2ff_phi_stop = 0
+        real(kind=rkind) :: nf2ff_thetaStep = 0.0_rkind
+        real(kind=rkind) :: nf2ff_phiStep = 0.0_rkind
+        real(kind=rkind) :: nf2ff_freqStep = 0.0_rkind
+        real(kind=rkind) :: nf2ff_initialFreq = 0.0_rkind
+        real(kind=rkind) :: nf2ff_cluz = 0.0_rkind
+        real(kind=rkind) :: nf2ff_z0 = 0.0_rkind
+        real(kind=rkind) :: nf2ff_XDobleAncho = 0.0_rkind
+        real(kind=rkind) :: nf2ff_YDobleAncho = 0.0_rkind
+        real(kind=rkind) :: nf2ff_ZDobleAncho = 0.0_rkind
+        integer(kind=4) :: nf2ff_sym_flags = 0
+      end type
 
 contains
 
@@ -1703,4 +1752,297 @@ end subroutine gpu_download_probes
 
     end subroutine gpu_destroy_probe_buffers
 
- end module gpu_core_probe_m
+     !--------------------------------------------------------------------------------
+     ! Initialize NF2FF (near-to-far-field) buffers on GPU
+     !--------------------------------------------------------------------------------
+     subroutine gpu_init_nf2ff_buffers(this, ExIz, ExDe, ExAb, ExAr, EyFr, EyTr, EyAb, EyAr, EzIz, EzDe, EzFr, EzTr, &
+                                        HxIz, HxDe, HxAb, HxAr, HyFr, HyTr, HyAb, HyAr, HzIz, HzDe, HzFr, HzTr, &
+                                        HxIz2, HxDe2, HxAb2, HxAr2, HyFr2, HyTr2, HyAb2, HyAr2, HzIz2, HzDe2, HzFr2, HzTr2, &
+                                        expIwdt, auxExp_E, auxExp_H, &
+                                        phys_x_Mx, phys_y_Mx, phys_z_Mx, &
+                                        phys_x_My, phys_y_My, phys_z_My, &
+                                        phys_x_Mz, phys_y_Mz, phys_z_Mz, &
+                                        phys_x_Jx, phys_y_Jx, phys_z_Jx, &
+                                        phys_x_Jy, phys_y_Jy, phys_z_Jy, &
+                                        phys_x_Jz, phys_y_Jz, phys_z_Jz, &
+                                        dyh, dye, dze, dzh, &
+                                        numCells, numFreqs, Ntheta, Nphi, &
+                                        thetaStart, thetaStop, thetaStep, phiStart, phiStop, phiStep, &
+                                        freqStep, initialFreq, cluz, z0, XDobleAncho, YDobleAncho, ZDobleAncho, sym_flags)
+        class(gpu_state_t), intent(inout) :: this
+        complex(kind=rkind), dimension(:,:,:), intent(in) :: ExIz, ExDe, ExAb, ExAr, EyFr, EyTr, EyAb, EyAr, EzIz, EzDe, EzFr, EzTr
+        complex(kind=rkind), dimension(:,:,:), intent(in) :: HxIz, HxDe, HxAb, HxAr, HyFr, HyTr, HyAb, HyAr, HzIz, HzDe, HzFr, HzTr
+        complex(kind=rkind), dimension(:,:,:), intent(in) :: HxIz2, HxDe2, HxAb2, HxAr2, HyFr2, HyTr2, HyAb2, HyAr2, HzIz2, HzDe2, HzFr2, HzTr2
+        complex(kind=rkind), dimension(:), intent(in) :: expIwdt, auxExp_E, auxExp_H
+        real(kind=rkind), dimension(:), intent(in) :: phys_x_Mx, phys_y_Mx, phys_z_Mx
+        real(kind=rkind), dimension(:), intent(in) :: phys_x_My, phys_y_My, phys_z_My
+        real(kind=rkind), dimension(:), intent(in) :: phys_x_Mz, phys_y_Mz, phys_z_Mz
+        real(kind=rkind), dimension(:), intent(in) :: phys_x_Jx, phys_y_Jx, phys_z_Jx
+        real(kind=rkind), dimension(:), intent(in) :: phys_x_Jy, phys_y_Jy, phys_z_Jy
+        real(kind=rkind), dimension(:), intent(in) :: phys_x_Jz, phys_y_Jz, phys_z_Jz
+        real(kind=rkind), dimension(:), intent(in) :: dyh, dye, dze, dzh
+        integer(kind=4), intent(in) :: numCells, numFreqs, Ntheta, Nphi
+        real(kind=rkind), intent(in) :: thetaStart, thetaStop, thetaStep, phiStart, phiStop, phiStep
+        real(kind=rkind), intent(in) :: freqStep, initialFreq, cluz, z0
+        real(kind=rkind), intent(in) :: XDobleAncho, YDobleAncho, ZDobleAncho
+        integer(kind=4), intent(in) :: sym_flags
+
+        integer(kind=4) :: nx, ny, nz, cuda_status
+
+        if (.not. this%initialized) return
+        if (this%nf2ff_initialized) return
+
+        ! Determine buffer dimensions from first array
+        nx = ubound(ExIz, 1) - lbound(ExIz, 1) + 1
+        ny = ubound(ExIz, 2) - lbound(ExIz, 2) + 1
+        nz = ubound(ExIz, 3) - lbound(ExIz, 3) + 1
+
+        ! Allocate NF2FF DFT buffers (18 complex arrays, 3D)
+        if (numCells > 0 .and. numFreqs > 0) then
+           allocate(this%nf2ff_ExIz_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_ExDe_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_ExAb_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_ExAr_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_EyFr_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_EyTr_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_EyAb_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_EyAr_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_EzIz_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_EzDe_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_EzFr_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_EzTr_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HxIz_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HxDe_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HxAb_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HxAr_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HyFr_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HyTr_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HyAb_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HyAr_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HzIz_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HzDe_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HzFr_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HzTr_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HxIz2_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HxDe2_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HxAb2_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HxAr2_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HyFr2_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HyTr2_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HyAb2_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HyAr2_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HzIz2_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HzDe2_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HzFr2_d(0:nx-1, 0:ny-1, 0:nz-1))
+           allocate(this%nf2ff_HzTr2_d(0:nx-1, 0:ny-1, 0:nz-1))
+
+           ! Copy DFT buffers from host to device
+           cuda_status = cudaMemcpy(this%nf2ff_ExIz_d, ExIz, size(ExIz)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_ExDe_d, ExDe, size(ExDe)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_ExAb_d, ExAb, size(ExAb)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_ExAr_d, ExAr, size(ExAr)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_EyFr_d, EyFr, size(EyFr)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_EyTr_d, EyTr, size(EyTr)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_EyAb_d, EyAb, size(EyAb)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_EyAr_d, EyAr, size(EyAr)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_EzIz_d, EzIz, size(EzIz)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_EzDe_d, EzDe, size(EzDe)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_EzFr_d, EzFr, size(EzFr)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_EzTr_d, EzTr, size(EzTr)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HxIz_d, HxIz, size(HxIz)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HxDe_d, HxDe, size(HxDe)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HxAb_d, HxAb, size(HxAb)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HxAr_d, HxAr, size(HxAr)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HyFr_d, HyFr, size(HyFr)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HyTr_d, HyTr, size(HyTr)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HyAb_d, HyAb, size(HyAb)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HyAr_d, HyAr, size(HyAr)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HzIz_d, HzIz, size(HzIz)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HzDe_d, HzDe, size(HzDe)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HzFr_d, HzFr, size(HzFr)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HzTr_d, HzTr, size(HzTr)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HxIz2_d, HxIz2, size(HxIz2)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HxDe2_d, HxDe2, size(HxDe2)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HxAb2_d, HxAb2, size(HxAb2)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HxAr2_d, HxAr2, size(HxAr2)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HyFr2_d, HyFr2, size(HyFr2)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HyTr2_d, HyTr2, size(HyTr2)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HyAb2_d, HyAb2, size(HyAb2)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HyAr2_d, HyAr2, size(HyAr2)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HzIz2_d, HzIz2, size(HzIz2)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HzDe2_d, HzDe2, size(HzDe2)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HzFr2_d, HzFr2, size(HzFr2)*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_HzTr2_d, HzTr2, size(HzTr2)*8, cudaMemcpyHostToDevice)
+        endif
+
+        ! Allocate and copy frequency arrays
+        if (numFreqs > 0) then
+           allocate(this%nf2ff_expIwdt_d(0:numFreqs-1))
+           allocate(this%nf2ff_auxExp_E_d(0:numFreqs-1))
+           allocate(this%nf2ff_auxExp_H_d(0:numFreqs-1))
+           cuda_status = cudaMemcpy(this%nf2ff_expIwdt_d, expIwdt, numFreqs*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_auxExp_E_d, auxExp_E, numFreqs*8, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_auxExp_H_d, auxExp_H, numFreqs*8, cudaMemcpyHostToDevice)
+        endif
+
+        ! Allocate and copy geometry arrays (18 coordinate arrays)
+        if (numCells > 0) then
+           allocate(this%nf2ff_phys_x_Mx_d(0:numCells-1))
+           allocate(this%nf2ff_phys_y_Mx_d(0:numCells-1))
+           allocate(this%nf2ff_phys_z_Mx_d(0:numCells-1))
+           allocate(this%nf2ff_phys_x_My_d(0:numCells-1))
+           allocate(this%nf2ff_phys_y_My_d(0:numCells-1))
+           allocate(this%nf2ff_phys_z_My_d(0:numCells-1))
+           allocate(this%nf2ff_phys_x_Mz_d(0:numCells-1))
+           allocate(this%nf2ff_phys_y_Mz_d(0:numCells-1))
+           allocate(this%nf2ff_phys_z_Mz_d(0:numCells-1))
+           allocate(this%nf2ff_phys_x_Jx_d(0:numCells-1))
+           allocate(this%nf2ff_phys_y_Jx_d(0:numCells-1))
+           allocate(this%nf2ff_phys_z_Jx_d(0:numCells-1))
+           allocate(this%nf2ff_phys_x_Jy_d(0:numCells-1))
+           allocate(this%nf2ff_phys_y_Jy_d(0:numCells-1))
+           allocate(this%nf2ff_phys_z_Jy_d(0:numCells-1))
+           allocate(this%nf2ff_phys_x_Jz_d(0:numCells-1))
+           allocate(this%nf2ff_phys_y_Jz_d(0:numCells-1))
+           allocate(this%nf2ff_phys_z_Jz_d(0:numCells-1))
+           cuda_status = cudaMemcpy(this%nf2ff_phys_x_Mx_d, phys_x_Mx, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_y_Mx_d, phys_y_Mx, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_z_Mx_d, phys_z_Mx, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_x_My_d, phys_x_My, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_y_My_d, phys_y_My, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_z_My_d, phys_z_My, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_x_Mz_d, phys_x_Mz, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_y_Mz_d, phys_y_Mz, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_z_Mz_d, phys_z_Mz, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_x_Jx_d, phys_x_Jx, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_y_Jx_d, phys_y_Jx, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_z_Jx_d, phys_z_Jx, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_x_Jy_d, phys_x_Jy, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_y_Jy_d, phys_y_Jy, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_z_Jy_d, phys_y_Jy, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_x_Jz_d, phys_x_Jz, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_y_Jz_d, phys_y_Jz, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_phys_z_Jz_d, phys_z_Jz, numCells*4, cudaMemcpyHostToDevice)
+        endif
+
+        ! Allocate and copy cell dimension arrays
+        if (numCells > 0) then
+           allocate(this%nf2ff_dyh_d(0:numCells-1))
+           allocate(this%nf2ff_dze_d(0:numCells-1))
+           allocate(this%nf2ff_dye_d(0:numCells-1))
+           allocate(this%nf2ff_dzh_d(0:numCells-1))
+           cuda_status = cudaMemcpy(this%nf2ff_dyh_d, dyh, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_dze_d, dze, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_dye_d, dye, numCells*4, cudaMemcpyHostToDevice)
+           cuda_status = cudaMemcpy(this%nf2ff_dzh_d, dzh, numCells*4, cudaMemcpyHostToDevice)
+        endif
+
+        ! Allocate output buffers
+        if (Ntheta > 0 .and. Nphi > 0 .and. numFreqs > 0) then
+           allocate(this%nf2ff_Etheta_d(0:numFreqs*Ntheta*Nphi-1))
+           allocate(this%nf2ff_Ephi_d(0:numFreqs*Ntheta*Nphi-1))
+           allocate(this%nf2ff_RCS_d(0:numFreqs*Ntheta*Nphi-1))
+        endif
+
+        ! Store configuration
+        this%nf2ff_num_cells = numCells
+        this%nf2ff_num_freqs = numFreqs
+        this%nf2ff_Ntheta = Ntheta
+        this%nf2ff_Nphi = Nphi
+        this%nf2ff_thetaStep = thetaStep
+        this%nf2ff_phiStep = phiStep
+        this%nf2ff_freqStep = freqStep
+        this%nf2ff_initialFreq = initialFreq
+        this%nf2ff_cluz = cluz
+        this%nf2ff_z0 = z0
+        this%nf2ff_XDobleAncho = XDobleAncho
+        this%nf2ff_YDobleAncho = YDobleAncho
+        this%nf2ff_ZDobleAncho = ZDobleAncho
+        this%nf2ff_sym_flags = sym_flags
+
+        this%nf2ff_initialized = .true.
+
+     end subroutine gpu_init_nf2ff_buffers
+
+     !--------------------------------------------------------------------------------
+     ! Destroy NF2FF device buffers
+     !--------------------------------------------------------------------------------
+     subroutine gpu_destroy_nf2ff_buffers(this)
+        class(gpu_state_t), intent(inout) :: this
+
+        if (.not. this%nf2ff_initialized) return
+
+        if (associated(this%nf2ff_ExIz_d)) deallocate(this%nf2ff_ExIz_d)
+        if (associated(this%nf2ff_ExDe_d)) deallocate(this%nf2ff_ExDe_d)
+        if (associated(this%nf2ff_ExAb_d)) deallocate(this%nf2ff_ExAb_d)
+        if (associated(this%nf2ff_ExAr_d)) deallocate(this%nf2ff_ExAr_d)
+        if (associated(this%nf2ff_EyFr_d)) deallocate(this%nf2ff_EyFr_d)
+        if (associated(this%nf2ff_EyTr_d)) deallocate(this%nf2ff_EyTr_d)
+        if (associated(this%nf2ff_EyAb_d)) deallocate(this%nf2ff_EyAb_d)
+        if (associated(this%nf2ff_EyAr_d)) deallocate(this%nf2ff_EyAr_d)
+        if (associated(this%nf2ff_EzIz_d)) deallocate(this%nf2ff_EzIz_d)
+        if (associated(this%nf2ff_EzDe_d)) deallocate(this%nf2ff_EzDe_d)
+        if (associated(this%nf2ff_EzFr_d)) deallocate(this%nf2ff_EzFr_d)
+        if (associated(this%nf2ff_EzTr_d)) deallocate(this%nf2ff_EzTr_d)
+        if (associated(this%nf2ff_HxIz_d)) deallocate(this%nf2ff_HxIz_d)
+        if (associated(this%nf2ff_HxDe_d)) deallocate(this%nf2ff_HxDe_d)
+        if (associated(this%nf2ff_HxAb_d)) deallocate(this%nf2ff_HxAb_d)
+        if (associated(this%nf2ff_HxAr_d)) deallocate(this%nf2ff_HxAr_d)
+        if (associated(this%nf2ff_HyFr_d)) deallocate(this%nf2ff_HyFr_d)
+        if (associated(this%nf2ff_HyTr_d)) deallocate(this%nf2ff_HyTr_d)
+        if (associated(this%nf2ff_HyAb_d)) deallocate(this%nf2ff_HyAb_d)
+        if (associated(this%nf2ff_HyAr_d)) deallocate(this%nf2ff_HyAr_d)
+        if (associated(this%nf2ff_HzIz_d)) deallocate(this%nf2ff_HzIz_d)
+        if (associated(this%nf2ff_HzDe_d)) deallocate(this%nf2ff_HzDe_d)
+        if (associated(this%nf2ff_HzFr_d)) deallocate(this%nf2ff_HzFr_d)
+        if (associated(this%nf2ff_HzTr_d)) deallocate(this%nf2ff_HzTr_d)
+        if (associated(this%nf2ff_HxIz2_d)) deallocate(this%nf2ff_HxIz2_d)
+        if (associated(this%nf2ff_HxDe2_d)) deallocate(this%nf2ff_HxDe2_d)
+        if (associated(this%nf2ff_HxAb2_d)) deallocate(this%nf2ff_HxAb2_d)
+        if (associated(this%nf2ff_HxAr2_d)) deallocate(this%nf2ff_HxAr2_d)
+        if (associated(this%nf2ff_HyFr2_d)) deallocate(this%nf2ff_HyFr2_d)
+        if (associated(this%nf2ff_HyTr2_d)) deallocate(this%nf2ff_HyTr2_d)
+        if (associated(this%nf2ff_HyAb2_d)) deallocate(this%nf2ff_HyAb2_d)
+        if (associated(this%nf2ff_HyAr2_d)) deallocate(this%nf2ff_HyAr2_d)
+        if (associated(this%nf2ff_HzIz2_d)) deallocate(this%nf2ff_HzIz2_d)
+        if (associated(this%nf2ff_HzDe2_d)) deallocate(this%nf2ff_HzDe2_d)
+        if (associated(this%nf2ff_HzFr2_d)) deallocate(this%nf2ff_HzFr2_d)
+        if (associated(this%nf2ff_HzTr2_d)) deallocate(this%nf2ff_HzTr2_d)
+
+        if (associated(this%nf2ff_expIwdt_d)) deallocate(this%nf2ff_expIwdt_d)
+        if (associated(this%nf2ff_auxExp_E_d)) deallocate(this%nf2ff_auxExp_E_d)
+        if (associated(this%nf2ff_auxExp_H_d)) deallocate(this%nf2ff_auxExp_H_d)
+
+        if (associated(this%nf2ff_phys_x_Mx_d)) deallocate(this%nf2ff_phys_x_Mx_d)
+        if (associated(this%nf2ff_phys_y_Mx_d)) deallocate(this%nf2ff_phys_y_Mx_d)
+        if (associated(this%nf2ff_phys_z_Mx_d)) deallocate(this%nf2ff_phys_z_Mx_d)
+        if (associated(this%nf2ff_phys_x_My_d)) deallocate(this%nf2ff_phys_x_My_d)
+        if (associated(this%nf2ff_phys_y_My_d)) deallocate(this%nf2ff_phys_y_My_d)
+        if (associated(this%nf2ff_phys_z_My_d)) deallocate(this%nf2ff_phys_z_My_d)
+        if (associated(this%nf2ff_phys_x_Mz_d)) deallocate(this%nf2ff_phys_x_Mz_d)
+        if (associated(this%nf2ff_phys_y_Mz_d)) deallocate(this%nf2ff_phys_y_Mz_d)
+        if (associated(this%nf2ff_phys_z_Mz_d)) deallocate(this%nf2ff_phys_z_Mz_d)
+        if (associated(this%nf2ff_phys_x_Jx_d)) deallocate(this%nf2ff_phys_x_Jx_d)
+        if (associated(this%nf2ff_phys_y_Jx_d)) deallocate(this%nf2ff_phys_y_Jx_d)
+        if (associated(this%nf2ff_phys_z_Jx_d)) deallocate(this%nf2ff_phys_z_Jx_d)
+        if (associated(this%nf2ff_phys_x_Jy_d)) deallocate(this%nf2ff_phys_x_Jy_d)
+        if (associated(this%nf2ff_phys_y_Jy_d)) deallocate(this%nf2ff_phys_y_Jy_d)
+        if (associated(this%nf2ff_phys_z_Jy_d)) deallocate(this%nf2ff_phys_z_Jy_d)
+        if (associated(this%nf2ff_phys_x_Jz_d)) deallocate(this%nf2ff_phys_x_Jz_d)
+        if (associated(this%nf2ff_phys_y_Jz_d)) deallocate(this%nf2ff_phys_y_Jz_d)
+        if (associated(this%nf2ff_phys_z_Jz_d)) deallocate(this%nf2ff_phys_z_Jz_d)
+
+        if (associated(this%nf2ff_dyh_d)) deallocate(this%nf2ff_dyh_d)
+        if (associated(this%nf2ff_dze_d)) deallocate(this%nf2ff_dze_d)
+        if (associated(this%nf2ff_dye_d)) deallocate(this%nf2ff_dye_d)
+        if (associated(this%nf2ff_dzh_d)) deallocate(this%nf2ff_dzh_d)
+
+        if (associated(this%nf2ff_Etheta_d)) deallocate(this%nf2ff_Etheta_d)
+        if (associated(this%nf2ff_Ephi_d)) deallocate(this%nf2ff_Ephi_d)
+        if (associated(this%nf2ff_RCS_d)) deallocate(this%nf2ff_RCS_d)
+
+        this%nf2ff_initialized = .false.
+
+     end subroutine gpu_destroy_nf2ff_buffers
+
+  end module gpu_core_probe_m
