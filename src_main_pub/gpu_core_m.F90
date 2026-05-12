@@ -63,11 +63,61 @@ module gpu_core_m
        integer(kind=4) :: pml_right_Hx_ii, pml_right_Hx_ij, pml_right_Hx_ji, pml_right_Hx_jj, pml_right_Hx_ki, pml_right_Hx_kj
        integer(kind=4) :: pml_right_Hz_ii, pml_right_Hz_ij, pml_right_Hz_ji, pml_right_Hz_jj, pml_right_Hz_ki, pml_right_Hz_kj
 
+       ! CPML down/up boundary - z-dependent coefficients
+       integer(kind=4) :: pml_down_Ex_ii, pml_down_Ex_ij, pml_down_Ex_ji, pml_down_Ex_jj, pml_down_Ex_ki, pml_down_Ex_kj
+       integer(kind=4) :: pml_down_Ey_ii, pml_down_Ey_ij, pml_down_Ey_ji, pml_down_Ey_jj, pml_down_Ey_ki, pml_down_Ey_kj
+       integer(kind=4) :: pml_down_Hx_ii, pml_down_Hx_ij, pml_down_Hx_ji, pml_down_Hx_jj, pml_down_Hx_ki, pml_down_Hx_kj
+       integer(kind=4) :: pml_down_Hy_ii, pml_down_Hy_ij, pml_down_Hy_ji, pml_down_Hy_jj, pml_down_Hy_ki, pml_down_Hy_kj
+       integer(kind=4) :: pml_down_Exz_nx, pml_down_Exz_ny, pml_down_Exz_nz
+       integer(kind=4) :: pml_down_Eyz_nx, pml_down_Eyz_ny, pml_down_Eyz_nz
+       integer(kind=4) :: pml_down_Hxz_nx, pml_down_Hxz_ny, pml_down_Hxz_nz
+       integer(kind=4) :: pml_down_Hyz_nx, pml_down_Hyz_ny, pml_down_Hyz_nz
+       real(kind=rkind), pointer, device, dimension(:,:,:) :: pml_psi_Exz_down
+       real(kind=rkind), pointer, device, dimension(:,:,:) :: pml_psi_Eyz_down
+       real(kind=rkind), pointer, device, dimension(:,:,:) :: pml_psi_Hxz_down
+       real(kind=rkind), pointer, device, dimension(:,:,:) :: pml_psi_Hyz_down
+       integer(kind=4) :: pml_coeff_z_n
+       real(kind=rkind), pointer, device, dimension(:) :: pml_P_be_z_down
+       real(kind=rkind), pointer, device, dimension(:) :: pml_P_ce_z_down
+       real(kind=rkind), pointer, device, dimension(:) :: pml_P_bm_z_down
+       real(kind=rkind), pointer, device, dimension(:) :: pml_P_cm_z_down
+       integer(kind=4) :: pml_up_Ex_ii, pml_up_Ex_ij, pml_up_Ex_ji, pml_up_Ex_jj, pml_up_Ex_ki, pml_up_Ex_kj
+       integer(kind=4) :: pml_up_Ey_ii, pml_up_Ey_ij, pml_up_Ey_ji, pml_up_Ey_jj, pml_up_Ey_ki, pml_up_Ey_kj
+       integer(kind=4) :: pml_up_Hx_ii, pml_up_Hx_ij, pml_up_Hx_ji, pml_up_Hx_jj, pml_up_Hx_ki, pml_up_Hx_kj
+       integer(kind=4) :: pml_up_Hy_ii, pml_up_Hy_ij, pml_up_Hy_ji, pml_up_Hy_jj, pml_up_Hy_ki, pml_up_Hy_kj
+
+       ! CPML back/front boundary - x-dependent coefficients
+       integer(kind=4) :: pml_back_Ez_ii, pml_back_Ez_ij, pml_back_Ez_ji, pml_back_Ez_jj, pml_back_Ez_ki, pml_back_Ez_kj
+       integer(kind=4) :: pml_back_Ey_ii, pml_back_Ey_ij, pml_back_Ey_ji, pml_back_Ey_jj, pml_back_Ey_ki, pml_back_Ey_kj
+       integer(kind=4) :: pml_back_Hz_ii, pml_back_Hz_ij, pml_back_Hz_ji, pml_back_Hz_jj, pml_back_Hz_ki, pml_back_Hz_kj
+       integer(kind=4) :: pml_back_Hy_ii, pml_back_Hy_ij, pml_back_Hy_ji, pml_back_Hy_jj, pml_back_Hy_ki, pml_back_Hy_kj
+       integer(kind=4) :: pml_back_Ezx_nx, pml_back_Ezx_ny, pml_back_Ezx_nz
+       integer(kind=4) :: pml_back_Eyx_nx, pml_back_Eyx_ny, pml_back_Eyx_nz
+       integer(kind=4) :: pml_back_Hzx_nx, pml_back_Hzx_ny, pml_back_Hzx_nz
+       integer(kind=4) :: pml_back_Hyx_nx, pml_back_Hyx_ny, pml_back_Hyx_nz
+       real(kind=rkind), pointer, device, dimension(:,:,:) :: pml_psi_Ezx_back
+       real(kind=rkind), pointer, device, dimension(:,:,:) :: pml_psi_Eyx_back
+       real(kind=rkind), pointer, device, dimension(:,:,:) :: pml_psi_Hzx_back
+       real(kind=rkind), pointer, device, dimension(:,:,:) :: pml_psi_Hyx_back
+       integer(kind=4) :: pml_coeff_x_n
+       real(kind=rkind), pointer, device, dimension(:) :: pml_P_be_x_back
+       real(kind=rkind), pointer, device, dimension(:) :: pml_P_ce_x_back
+       real(kind=rkind), pointer, device, dimension(:) :: pml_P_bm_x_back
+       real(kind=rkind), pointer, device, dimension(:) :: pml_P_cm_x_back
+       integer(kind=4) :: pml_front_Ez_ii, pml_front_Ez_ij, pml_front_Ez_ji, pml_front_Ez_jj, pml_front_Ez_ki, pml_front_Ez_kj
+       integer(kind=4) :: pml_front_Ey_ii, pml_front_Ey_ij, pml_front_Ey_ji, pml_front_Ey_jj, pml_front_Ey_ki, pml_front_Ey_kj
+       integer(kind=4) :: pml_front_Hz_ii, pml_front_Hz_ij, pml_front_Hz_ji, pml_front_Hz_jj, pml_front_Hz_ki, pml_front_Hz_kj
+       integer(kind=4) :: pml_front_Hy_ii, pml_front_Hy_ij, pml_front_Hy_ji, pml_front_Hy_jj, pml_front_Hy_ki, pml_front_Hy_kj
+
        ! Flags
        logical :: initialized = .false.
        logical :: fields_on_device = .false.
        logical :: pml_left_initialized = .false.
        logical :: pml_right_initialized = .false.
+       logical :: pml_down_initialized = .false.
+       logical :: pml_up_initialized = .false.
+       logical :: pml_back_initialized = .false.
+       logical :: pml_front_initialized = .false.
     end type
 
 contains
@@ -377,32 +427,315 @@ contains
       if (associated(this%gm1_d)) deallocate(this%gm1_d)
       if (associated(this%gm2_d)) deallocate(this%gm2_d)
 
-      ! Deallocate CPML left boundary device memory
-      if (associated(this%pml_psi_Exy_left)) deallocate(this%pml_psi_Exy_left)
-      if (associated(this%pml_psi_Ezy_left)) deallocate(this%pml_psi_Ezy_left)
-      if (associated(this%pml_psi_Hxy_left)) deallocate(this%pml_psi_Hxy_left)
-      if (associated(this%pml_psi_Hzy_left)) deallocate(this%pml_psi_Hzy_left)
-      if (associated(this%pml_P_be_y_left)) deallocate(this%pml_P_be_y_left)
-      if (associated(this%pml_P_ce_y_left)) deallocate(this%pml_P_ce_y_left)
-      if (associated(this%pml_P_bm_y_left)) deallocate(this%pml_P_bm_y_left)
-      if (associated(this%pml_P_cm_y_left)) deallocate(this%pml_P_cm_y_left)
+    ! Deallocate CPML left boundary device memory
+       if (associated(this%pml_psi_Exy_left)) deallocate(this%pml_psi_Exy_left)
+       if (associated(this%pml_psi_Ezy_left)) deallocate(this%pml_psi_Ezy_left)
+       if (associated(this%pml_psi_Hxy_left)) deallocate(this%pml_psi_Hxy_left)
+       if (associated(this%pml_psi_Hzy_left)) deallocate(this%pml_psi_Hzy_left)
+       if (associated(this%pml_P_be_y_left)) deallocate(this%pml_P_be_y_left)
+       if (associated(this%pml_P_ce_y_left)) deallocate(this%pml_P_ce_y_left)
+       if (associated(this%pml_P_bm_y_left)) deallocate(this%pml_P_bm_y_left)
+       if (associated(this%pml_P_cm_y_left)) deallocate(this%pml_P_cm_y_left)
 
-      ! Nullify host pointers
-      nullify(this%Ex); nullify(this%Ey); nullify(this%Ez)
-      nullify(this%Hx); nullify(this%Hy); nullify(this%Hz)
-      nullify(this%sggMiEx); nullify(this%sggMiEy); nullify(this%sggMiEz)
-      nullify(this%sggMiHx); nullify(this%sggMiHy); nullify(this%sggMiHz)
-      nullify(this%g1); nullify(this%g2); nullify(this%gm1); nullify(this%gm2)
-      nullify(this%Idxe); nullify(this%Idye); nullify(this%Idze)
-      nullify(this%Idxh); nullify(this%Idyh); nullify(this%Idzh)
-      nullify(this%dxe); nullify(this%dye); nullify(this%dze)
-      nullify(this%dxh); nullify(this%dyh); nullify(this%dzh)
+       ! Deallocate CPML down boundary device memory
+       if (associated(this%pml_psi_Exz_down)) deallocate(this%pml_psi_Exz_down)
+       if (associated(this%pml_psi_Eyz_down)) deallocate(this%pml_psi_Eyz_down)
+       if (associated(this%pml_psi_Hxz_down)) deallocate(this%pml_psi_Hxz_down)
+       if (associated(this%pml_psi_Hyz_down)) deallocate(this%pml_psi_Hyz_down)
+       if (associated(this%pml_P_be_z_down)) deallocate(this%pml_P_be_z_down)
+       if (associated(this%pml_P_ce_z_down)) deallocate(this%pml_P_ce_z_down)
+       if (associated(this%pml_P_bm_z_down)) deallocate(this%pml_P_bm_z_down)
+       if (associated(this%pml_P_cm_z_down)) deallocate(this%pml_P_cm_z_down)
 
-      this%initialized = .false.
-      this%fields_on_device = .false.
-      this%pml_left_initialized = .false.
+       ! Deallocate CPML back boundary device memory
+       if (associated(this%pml_psi_Ezx_back)) deallocate(this%pml_psi_Ezx_back)
+       if (associated(this%pml_psi_Eyx_back)) deallocate(this%pml_psi_Eyx_back)
+       if (associated(this%pml_psi_Hzx_back)) deallocate(this%pml_psi_Hzx_back)
+       if (associated(this%pml_psi_Hyx_back)) deallocate(this%pml_psi_Hyx_back)
+       if (associated(this%pml_P_be_x_back)) deallocate(this%pml_P_be_x_back)
+       if (associated(this%pml_P_ce_x_back)) deallocate(this%pml_P_ce_x_back)
+       if (associated(this%pml_P_bm_x_back)) deallocate(this%pml_P_bm_x_back)
+       if (associated(this%pml_P_cm_x_back)) deallocate(this%pml_P_cm_x_back)
 
-   end subroutine gpu_destroy
+       ! Nullify host pointers
+       nullify(this%Ex); nullify(this%Ey); nullify(this%Ez)
+       nullify(this%Hx); nullify(this%Hy); nullify(this%Hz)
+       nullify(this%sggMiEx); nullify(this%sggMiEy); nullify(this%sggMiEz)
+       nullify(this%sggMiHx); nullify(this%sggMiHy); nullify(this%sggMiHz)
+       nullify(this%g1); nullify(this%g2); nullify(this%gm1); nullify(this%gm2)
+       nullify(this%Idxe); nullify(this%Idye); nullify(this%Idze)
+       nullify(this%Idxh); nullify(this%Idyh); nullify(this%Idzh)
+       nullify(this%dxe); nullify(this%dye); nullify(this%dze)
+       nullify(this%dxh); nullify(this%dyh); nullify(this%dzh)
+
+     this%initialized = .false.
+       this%fields_on_device = .false.
+       this%pml_left_initialized = .false.
+       this%pml_right_initialized = .false.
+       this%pml_down_initialized = .false.
+       this%pml_up_initialized = .false.
+       this%pml_back_initialized = .false.
+       this%pml_front_initialized = .false.
+
+    end subroutine gpu_destroy
+
+    !--------------------------------------------------------------------------------
+    ! Update CPML down/up boundary coefficients on device - called every step
+    !--------------------------------------------------------------------------------
+    subroutine gpu_update_pml_down_coeffs(this, P_be_z, P_ce_z, P_bm_z, P_cm_z)
+       class(gpu_state_t), intent(inout) :: this
+       real(kind=rkind), dimension(:), intent(in) :: P_be_z, P_ce_z, P_bm_z, P_cm_z
+
+       if (.not. this%pml_down_initialized) return
+
+       this%pml_P_be_z_down = P_be_z
+       this%pml_P_ce_z_down = P_ce_z
+       this%pml_P_bm_z_down = P_bm_z
+       this%pml_P_cm_z_down = P_cm_z
+
+    end subroutine gpu_update_pml_down_coeffs
+
+    !--------------------------------------------------------------------------------
+    ! Update CPML back/front boundary coefficients on device - called every step
+    !--------------------------------------------------------------------------------
+    subroutine gpu_update_pml_back_coeffs(this, P_be_x, P_ce_x, P_bm_x, P_cm_x)
+       class(gpu_state_t), intent(inout) :: this
+       real(kind=rkind), dimension(:), intent(in) :: P_be_x, P_ce_x, P_bm_x, P_cm_x
+
+       if (.not. this%pml_back_initialized) return
+
+       this%pml_P_be_x_back = P_be_x
+       this%pml_P_ce_x_back = P_ce_x
+       this%pml_P_bm_x_back = P_bm_x
+       this%pml_P_cm_x_back = P_cm_x
+
+    end subroutine gpu_update_pml_back_coeffs
+
+    !--------------------------------------------------------------------------------
+    ! Initialize CPML down boundary on GPU
+    !--------------------------------------------------------------------------------
+    subroutine gpu_init_pml_down(this, P_be_z, P_ce_z, P_bm_z, P_cm_z, &
+                                 Ex_iEx_ii, Ex_iEx_ij, Ex_iEx_ji, Ex_iEx_jj, Ex_iEx_ki, Ex_iEx_kj, &
+                                 Ex_iEy_ii, Ex_iEy_ij, Ex_iEy_ji, Ex_iEy_jj, Ex_iEy_ki, Ex_iEy_kj, &
+                                 Hx_iHx_ii, Hx_iHx_ij, Hx_iHx_ji, Hx_iHx_jj, Hx_iHx_ki, Hx_iHx_kj, &
+                                 Hx_iHy_ii, Hx_iHy_ij, Hx_iHy_ji, Hx_iHy_jj, Hx_iHy_ki, Hx_iHy_kj)
+       class(gpu_state_t), intent(inout) :: this
+       real(kind=rkind), dimension(:), intent(in) :: P_be_z, P_ce_z, P_bm_z, P_cm_z
+       integer(kind=4), intent(in) :: Ex_iEx_ii, Ex_iEx_ij, Ex_iEx_ji, Ex_iEx_jj, Ex_iEx_ki, Ex_iEx_kj
+       integer(kind=4), intent(in) :: Ex_iEy_ii, Ex_iEy_ij, Ex_iEy_ji, Ex_iEy_jj, Ex_iEy_ki, Ex_iEy_kj
+       integer(kind=4), intent(in) :: Hx_iHx_ii, Hx_iHx_ij, Hx_iHx_ji, Hx_iHx_jj, Hx_iHx_ki, Hx_iHx_kj
+       integer(kind=4), intent(in) :: Hx_iHy_ii, Hx_iHy_ij, Hx_iHy_ji, Hx_iHy_jj, Hx_iHy_ki, Hx_iHy_kj
+
+       integer(kind=4) :: z_lo, z_hi
+
+       if (.not. this%initialized) return
+
+       this%pml_down_Ex_ii = Ex_iEx_ii + 1; this%pml_down_Ex_ij = Ex_iEx_ij + 1
+       this%pml_down_Ex_ji = Ex_iEx_ji + 1; this%pml_down_Ex_jj = Ex_iEx_jj + 1
+       this%pml_down_Ex_ki = Ex_iEx_ki + 1; this%pml_down_Ex_kj = Ex_iEx_kj + 1
+
+       this%pml_down_Ey_ii = Ex_iEy_ii + 1; this%pml_down_Ey_ij = Ex_iEy_ij + 1
+       this%pml_down_Ey_ji = Ex_iEy_ji + 1; this%pml_down_Ey_jj = Ex_iEy_jj + 1
+       this%pml_down_Ey_ki = Ex_iEy_ki + 1; this%pml_down_Ey_kj = Ex_iEy_kj + 1
+
+       this%pml_down_Hx_ii = Hx_iHx_ii + 1; this%pml_down_Hx_ij = Hx_iHx_ij + 1
+       this%pml_down_Hx_ji = Hx_iHx_ji + 1; this%pml_down_Hx_jj = Hx_iHx_jj + 1
+       this%pml_down_Hx_ki = Hx_iHx_ki + 1; this%pml_down_Hx_kj = Hx_iHx_kj + 1
+
+       this%pml_down_Hy_ii = Hx_iHy_ii + 1; this%pml_down_Hy_ij = Hx_iHy_ij + 1
+       this%pml_down_Hy_ji = Hx_iHy_ji + 1; this%pml_down_Hy_jj = Hx_iHy_jj + 1
+       this%pml_down_Hy_ki = Hx_iHy_ki + 1; this%pml_down_Hy_kj = Hx_iHy_kj + 1
+
+       this%pml_down_Exz_nx = Ex_iEx_ij - Ex_iEx_ii + 1
+       this%pml_down_Exz_ny = Ex_iEx_jj - Ex_iEx_ji + 1
+       this%pml_down_Exz_nz = Ex_iEx_kj - Ex_iEx_ki + 1
+       allocate(this%pml_psi_Exz_down(this%pml_down_Exz_nx, this%pml_down_Exz_ny, this%pml_down_Exz_nz))
+
+       this%pml_down_Eyz_nx = Ex_iEy_ij - Ex_iEy_ii + 1
+       this%pml_down_Eyz_ny = Ex_iEy_jj - Ex_iEy_ji + 1
+       this%pml_down_Eyz_nz = Ex_iEy_kj - Ex_iEy_ki + 1
+       allocate(this%pml_psi_Eyz_down(this%pml_down_Eyz_nx, this%pml_down_Eyz_ny, this%pml_down_Eyz_nz))
+
+       this%pml_down_Hxz_nx = Hx_iHx_ij - Hx_iHx_ii + 1
+       this%pml_down_Hxz_ny = Hx_iHx_jj - Hx_iHx_ji + 1
+       this%pml_down_Hxz_nz = Hx_iHx_kj - Hx_iHx_ki + 1
+       allocate(this%pml_psi_Hxz_down(this%pml_down_Hxz_nx, this%pml_down_Hxz_ny, this%pml_down_Hxz_nz))
+
+       this%pml_down_Hyz_nx = Hx_iHy_ij - Hx_iHy_ii + 1
+       this%pml_down_Hyz_ny = Hx_iHy_jj - Hx_iHy_ji + 1
+       this%pml_down_Hyz_nz = Hx_iHy_kj - Hx_iHy_ki + 1
+       allocate(this%pml_psi_Hyz_down(this%pml_down_Hyz_nx, this%pml_down_Hyz_ny, this%pml_down_Hyz_nz))
+
+       this%pml_psi_Exz_down = 0.0_rkind
+       this%pml_psi_Eyz_down = 0.0_rkind
+       this%pml_psi_Hxz_down = 0.0_rkind
+       this%pml_psi_Hyz_down = 0.0_rkind
+
+       z_lo = lbound(P_be_z, 1)
+       z_hi = ubound(P_be_z, 1)
+       this%pml_coeff_z_n = z_hi - z_lo + 1
+       allocate(this%pml_P_be_z_down(z_lo:z_hi))
+       allocate(this%pml_P_ce_z_down(z_lo:z_hi))
+       allocate(this%pml_P_bm_z_down(z_lo:z_hi))
+       allocate(this%pml_P_cm_z_down(z_lo:z_hi))
+
+       this%pml_P_be_z_down = P_be_z
+       this%pml_P_ce_z_down = P_ce_z
+       this%pml_P_bm_z_down = P_bm_z
+       this%pml_P_cm_z_down = P_cm_z
+
+       this%pml_down_initialized = .true.
+
+    end subroutine gpu_init_pml_down
+
+    !--------------------------------------------------------------------------------
+    ! Initialize CPML up boundary on GPU
+    !--------------------------------------------------------------------------------
+    subroutine gpu_init_pml_up(this, &
+                               Ex_iEx_ii, Ex_iEx_ij, Ex_iEx_ji, Ex_iEx_jj, Ex_iEx_ki, Ex_iEx_kj, &
+                               Ex_iEy_ii, Ex_iEy_ij, Ex_iEy_ji, Ex_iEy_jj, Ex_iEy_ki, Ex_iEy_kj, &
+                               Hx_iHx_ii, Hx_iHx_ij, Hx_iHx_ji, Hx_iHx_jj, Hx_iHx_ki, Hx_iHx_kj, &
+                               Hx_iHy_ii, Hx_iHy_ij, Hx_iHy_ji, Hx_iHy_jj, Hx_iHy_ki, Hx_iHy_kj)
+       class(gpu_state_t), intent(inout) :: this
+       integer(kind=4), intent(in) :: Ex_iEx_ii, Ex_iEx_ij, Ex_iEx_ji, Ex_iEx_jj, Ex_iEx_ki, Ex_iEx_kj
+       integer(kind=4), intent(in) :: Ex_iEy_ii, Ex_iEy_ij, Ex_iEy_ji, Ex_iEy_jj, Ex_iEy_ki, Ex_iEy_kj
+       integer(kind=4), intent(in) :: Hx_iHx_ii, Hx_iHx_ij, Hx_iHx_ji, Hx_iHx_jj, Hx_iHx_ki, Hx_iHx_kj
+       integer(kind=4), intent(in) :: Hx_iHy_ii, Hx_iHy_ij, Hx_iHy_ji, Hx_iHy_jj, Hx_iHy_ki, Hx_iHy_kj
+
+       if (.not. this%initialized) return
+
+       this%pml_up_Ex_ii = Ex_iEx_ii + 1; this%pml_up_Ex_ij = Ex_iEx_ij + 1
+       this%pml_up_Ex_ji = Ex_iEx_ji + 1; this%pml_up_Ex_jj = Ex_iEx_jj + 1
+       this%pml_up_Ex_ki = Ex_iEx_ki + 1; this%pml_up_Ex_kj = Ex_iEx_kj + 1
+
+       this%pml_up_Ey_ii = Ex_iEy_ii + 1; this%pml_up_Ey_ij = Ex_iEy_ij + 1
+       this%pml_up_Ey_ji = Ex_iEy_ji + 1; this%pml_up_Ey_jj = Ex_iEy_jj + 1
+       this%pml_up_Ey_ki = Ex_iEy_ki + 1; this%pml_up_Ey_kj = Ex_iEy_kj + 1
+
+       this%pml_up_Hx_ii = Hx_iHx_ii + 1; this%pml_up_Hx_ij = Hx_iHx_ij + 1
+       this%pml_up_Hx_ji = Hx_iHx_ji + 1; this%pml_up_Hx_jj = Hx_iHx_jj + 1
+       this%pml_up_Hx_ki = Hx_iHx_ki + 1; this%pml_up_Hx_kj = Hx_iHx_kj + 1
+
+       this%pml_up_Hy_ii = Hx_iHy_ii + 1; this%pml_up_Hy_ij = Hx_iHy_ij + 1
+       this%pml_up_Hy_ji = Hx_iHy_ji + 1; this%pml_up_Hy_jj = Hx_iHy_jj + 1
+       this%pml_up_Hy_ki = Hx_iHy_ki + 1; this%pml_up_Hy_kj = Hx_iHy_kj + 1
+
+       this%pml_up_initialized = .true.
+
+    end subroutine gpu_init_pml_up
+
+    !--------------------------------------------------------------------------------
+    ! Initialize CPML back boundary on GPU
+    !--------------------------------------------------------------------------------
+    subroutine gpu_init_pml_back(this, P_be_x, P_ce_x, P_bm_x, P_cm_x, &
+                                 Ez_iEz_ii, Ez_iEz_ij, Ez_iEz_ji, Ez_iEz_jj, Ez_iEz_ki, Ez_iEz_kj, &
+                                 Ez_iEy_ii, Ez_iEy_ij, Ez_iEy_ji, Ez_iEy_jj, Ez_iEy_ki, Ez_iEy_kj, &
+                                 Hz_iHz_ii, Hz_iHz_ij, Hz_iHz_ji, Hz_iHz_jj, Hz_iHz_ki, Hz_iHz_kj, &
+                                 Hz_iHy_ii, Hz_iHy_ij, Hz_iHy_ji, Hz_iHy_jj, Hz_iHy_ki, Hz_iHy_kj)
+       class(gpu_state_t), intent(inout) :: this
+       real(kind=rkind), dimension(:), intent(in) :: P_be_x, P_ce_x, P_bm_x, P_cm_x
+       integer(kind=4), intent(in) :: Ez_iEz_ii, Ez_iEz_ij, Ez_iEz_ji, Ez_iEz_jj, Ez_iEz_ki, Ez_iEz_kj
+       integer(kind=4), intent(in) :: Ez_iEy_ii, Ez_iEy_ij, Ez_iEy_ji, Ez_iEy_jj, Ez_iEy_ki, Ez_iEy_kj
+       integer(kind=4), intent(in) :: Hz_iHz_ii, Hz_iHz_ij, Hz_iHz_ji, Hz_iHz_jj, Hz_iHz_ki, Hz_iHz_kj
+       integer(kind=4), intent(in) :: Hz_iHy_ii, Hz_iHy_ij, Hz_iHy_ji, Hz_iHy_jj, Hz_iHy_ki, Hz_iHy_kj
+
+       integer(kind=4) :: x_lo, x_hi
+
+       if (.not. this%initialized) return
+
+       this%pml_back_Ez_ii = Ez_iEz_ii + 1; this%pml_back_Ez_ij = Ez_iEz_ij + 1
+       this%pml_back_Ez_ji = Ez_iEz_ji + 1; this%pml_back_Ez_jj = Ez_iEz_jj + 1
+       this%pml_back_Ez_ki = Ez_iEz_ki + 1; this%pml_back_Ez_kj = Ez_iEz_kj + 1
+
+       this%pml_back_Ey_ii = Ez_iEy_ii + 1; this%pml_back_Ey_ij = Ez_iEy_ij + 1
+       this%pml_back_Ey_ji = Ez_iEy_ji + 1; this%pml_back_Ey_jj = Ez_iEy_jj + 1
+       this%pml_back_Ey_ki = Ez_iEy_ki + 1; this%pml_back_Ey_kj = Ez_iEy_kj + 1
+
+       this%pml_back_Hz_ii = Hz_iHz_ii + 1; this%pml_back_Hz_ij = Hz_iHz_ij + 1
+       this%pml_back_Hz_ji = Hz_iHz_ji + 1; this%pml_back_Hz_jj = Hz_iHz_jj + 1
+       this%pml_back_Hz_ki = Hz_iHz_ki + 1; this%pml_back_Hz_kj = Hz_iHz_kj + 1
+
+       this%pml_back_Hy_ii = Hz_iHy_ii + 1; this%pml_back_Hy_ij = Hz_iHy_ij + 1
+       this%pml_back_Hy_ji = Hz_iHy_ji + 1; this%pml_back_Hy_jj = Hz_iHy_jj + 1
+       this%pml_back_Hy_ki = Hz_iHy_ki + 1; this%pml_back_Hy_kj = Hz_iHy_kj + 1
+
+       this%pml_back_Ezx_nx = Ez_iEz_ij - Ez_iEz_ii + 1
+       this%pml_back_Ezx_ny = Ez_iEz_jj - Ez_iEz_ji + 1
+       this%pml_back_Ezx_nz = Ez_iEz_kj - Ez_iEz_ki + 1
+       allocate(this%pml_psi_Ezx_back(this%pml_back_Ezx_nx, this%pml_back_Ezx_ny, this%pml_back_Ezx_nz))
+
+       this%pml_back_Eyx_nx = Ez_iEy_ij - Ez_iEy_ii + 1
+       this%pml_back_Eyx_ny = Ez_iEy_jj - Ez_iEy_ji + 1
+       this%pml_back_Eyx_nz = Ez_iEy_kj - Ez_iEy_ki + 1
+       allocate(this%pml_psi_Eyx_back(this%pml_back_Eyx_nx, this%pml_back_Eyx_ny, this%pml_back_Eyx_nz))
+
+       this%pml_back_Hzx_nx = Hz_iHz_ij - Hz_iHz_ii + 1
+       this%pml_back_Hzx_ny = Hz_iHz_jj - Hz_iHz_ji + 1
+       this%pml_back_Hzx_nz = Hz_iHz_kj - Hz_iHz_ki + 1
+       allocate(this%pml_psi_Hzx_back(this%pml_back_Hzx_nx, this%pml_back_Hzx_ny, this%pml_back_Hzx_nz))
+
+       this%pml_back_Hyx_nx = Hz_iHy_ij - Hz_iHy_ii + 1
+       this%pml_back_Hyx_ny = Hz_iHy_jj - Hz_iHy_ji + 1
+       this%pml_back_Hyx_nz = Hz_iHy_kj - Hz_iHy_ki + 1
+       allocate(this%pml_psi_Hyx_back(this%pml_back_Hyx_nx, this%pml_back_Hyx_ny, this%pml_back_Hyx_nz))
+
+       this%pml_psi_Ezx_back = 0.0_rkind
+       this%pml_psi_Eyx_back = 0.0_rkind
+       this%pml_psi_Hzx_back = 0.0_rkind
+       this%pml_psi_Hyx_back = 0.0_rkind
+
+       x_lo = lbound(P_be_x, 1)
+       x_hi = ubound(P_be_x, 1)
+       this%pml_coeff_x_n = x_hi - x_lo + 1
+       allocate(this%pml_P_be_x_back(x_lo:x_hi))
+       allocate(this%pml_P_ce_x_back(x_lo:x_hi))
+       allocate(this%pml_P_bm_x_back(x_lo:x_hi))
+       allocate(this%pml_P_cm_x_back(x_lo:x_hi))
+
+       this%pml_P_be_x_back = P_be_x
+       this%pml_P_ce_x_back = P_ce_x
+       this%pml_P_bm_x_back = P_bm_x
+       this%pml_P_cm_x_back = P_cm_x
+
+       this%pml_back_initialized = .true.
+
+    end subroutine gpu_init_pml_back
+
+    !--------------------------------------------------------------------------------
+    ! Initialize CPML front boundary on GPU
+    !--------------------------------------------------------------------------------
+    subroutine gpu_init_pml_front(this, &
+                                  Ez_iEz_ii, Ez_iEz_ij, Ez_iEz_ji, Ez_iEz_jj, Ez_iEz_ki, Ez_iEz_kj, &
+                                  Ez_iEy_ii, Ez_iEy_ij, Ez_iEy_ji, Ez_iEy_jj, Ez_iEy_ki, Ez_iEy_kj, &
+                                  Hz_iHz_ii, Hz_iHz_ij, Hz_iHz_ji, Hz_iHz_jj, Hz_iHz_ki, Hz_iHz_kj, &
+                                  Hz_iHy_ii, Hz_iHy_ij, Hz_iHy_ji, Hz_iHy_jj, Hz_iHy_ki, Hz_iHy_kj)
+       class(gpu_state_t), intent(inout) :: this
+       integer(kind=4), intent(in) :: Ez_iEz_ii, Ez_iEz_ij, Ez_iEz_ji, Ez_iEz_jj, Ez_iEz_ki, Ez_iEz_kj
+       integer(kind=4), intent(in) :: Ez_iEy_ii, Ez_iEy_ij, Ez_iEy_ji, Ez_iEy_jj, Ez_iEy_ki, Ez_iEy_kj
+       integer(kind=4), intent(in) :: Hz_iHz_ii, Hz_iHz_ij, Hz_iHz_ji, Hz_iHz_jj, Hz_iHz_ki, Hz_iHz_kj
+       integer(kind=4), intent(in) :: Hz_iHy_ii, Hz_iHy_ij, Hz_iHy_ji, Hz_iHy_jj, Hz_iHy_ki, Hz_iHy_kj
+
+       if (.not. this%initialized) return
+
+       this%pml_front_Ez_ii = Ez_iEz_ii + 1; this%pml_front_Ez_ij = Ez_iEz_ij + 1
+       this%pml_front_Ez_ji = Ez_iEz_ji + 1; this%pml_front_Ez_jj = Ez_iEz_jj + 1
+       this%pml_front_Ez_ki = Ez_iEz_ki + 1; this%pml_front_Ez_kj = Ez_iEz_kj + 1
+
+       this%pml_front_Ey_ii = Ez_iEy_ii + 1; this%pml_front_Ey_ij = Ez_iEy_ij + 1
+       this%pml_front_Ey_ji = Ez_iEy_ji + 1; this%pml_front_Ey_jj = Ez_iEy_jj + 1
+       this%pml_front_Ey_ki = Ez_iEy_ki + 1; this%pml_front_Ey_kj = Ez_iEy_kj + 1
+
+       this%pml_front_Hz_ii = Hz_iHz_ii + 1; this%pml_front_Hz_ij = Hz_iHz_ij + 1
+       this%pml_front_Hz_ji = Hz_iHz_ji + 1; this%pml_front_Hz_jj = Hz_iHz_jj + 1
+       this%pml_front_Hz_ki = Hz_iHz_ki + 1; this%pml_front_Hz_kj = Hz_iHz_kj + 1
+
+       this%pml_front_Hy_ii = Hz_iHy_ii + 1; this%pml_front_Hy_ij = Hz_iHy_ij + 1
+       this%pml_front_Hy_ji = Hz_iHy_ji + 1; this%pml_front_Hy_jj = Hz_iHy_jj + 1
+       this%pml_front_Hy_ki = Hz_iHy_ki + 1; this%pml_front_Hy_kj = Hz_iHy_kj + 1
+
+       this%pml_front_initialized = .true.
+
+    end subroutine gpu_init_pml_front
 
    !--------------------------------------------------------------------------------
    ! Upload host data to device - called only when fields are modified on host

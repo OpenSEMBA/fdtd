@@ -87,8 +87,150 @@ integer(kind=4), save:: SGBCdepth
 !!!
 public Malon_t,SGBCSurface_t !el tipo es publico
 public AdvanceSGBCE,AdvanceSGBCH,InitSGBCs,DestroySGBCs,StoreFieldsSGBCs,calc_SGBCconstants,GetSGBCs
+public GetSGBCConstants,GetSGBCState,GetSGBCFieldPointers
+public malon
 
 contains
+
+!--------------------------------------------------------------------------------
+! Export per-node constants for GPU
+!--------------------------------------------------------------------------------
+subroutine GetSGBCConstants(depth_arr, gm2_ext_arr, jmed_arr, transE_arr, transH_arr, alignedH_arr, &
+                             g1_arr, g2a_arr, g2b_arr, gm2_ext_val_arr, &
+                             correct_ha_arr, correct_hb_arr, crank_arr, filo_placa_arr, &
+                             depth_node_arr, G1_int_arr, G2_int_arr, GM1_int_arr, GM2_int_arr, &
+                             a_arr, b_arr, c_arr, rb_arr, rh_arr, rhm1_arr, &
+                             tridiag_a1_arr, tridiag_b1_arr, tridiag_c1_arr, &
+                             tridiag_an_arr, tridiag_bn_arr, tridiag_cn_arr, &
+                             capa_arr, delta_arr, Hyee_left_arr, Hyee_right_arr, &
+                             numNodes_out, maxDepth_out)
+   integer(kind=4), intent(out) :: depth_arr(:), jmed_arr(:), depth_node_arr(:)
+   real(kind=RKIND), intent(out) :: gm2_ext_arr(:), transE_arr(:), transH_arr(:), alignedH_arr(:)
+   real(kind=RKIND), intent(out) :: g1_arr(:), g2a_arr(:), g2b_arr(:), gm2_ext_val_arr(:)
+   logical, intent(out) :: correct_ha_arr(:), correct_hb_arr(:), crank_arr(:), filo_placa_arr(:)
+   real(kind=RKIND), intent(out) :: G1_int_arr(:,:), G2_int_arr(:,:), GM1_int_arr(:,:), GM2_int_arr(:,:)
+   real(kind=RKIND), intent(out) :: a_arr(:,:), b_arr(:,:), c_arr(:,:), rb_arr(:,:), rh_arr(:,:), rhm1_arr(:,:)
+   real(kind=RKIND), intent(out) :: tridiag_a1_arr(:), tridiag_b1_arr(:), tridiag_c1_arr(:)
+   real(kind=RKIND), intent(out) :: tridiag_an_arr(:), tridiag_bn_arr(:), tridiag_cn_arr(:)
+   integer(kind=4), intent(out) :: capa_arr(:,:)
+   real(kind=RKIND), intent(out) :: delta_arr(:,:)
+   real(kind=RKIND), intent(out) :: Hyee_left_arr(:), Hyee_right_arr(:)
+   integer(kind=4), intent(out) :: numNodes_out, maxDepth_out
+
+   type(SGBCSurface_t), pointer :: compo
+   integer(kind=4) :: conta, i, maxD
+
+   maxD = 0
+   do conta = 1, malon%NumNodes
+      compo => malon%Nodes(conta)
+      if (compo%depth > maxD) maxD = compo%depth
+   end do
+   maxD = max(maxD, 1)
+
+   numNodes_out = malon%NumNodes
+   maxDepth_out = maxD
+
+   do conta = 1, malon%NumNodes
+      compo => malon%Nodes(conta)
+      depth_arr(conta) = 1
+      jmed_arr(conta) = compo%jmed
+      depth_node_arr(conta) = compo%depth
+      gm2_ext_arr(conta) = compo%GM2_externo
+      transE_arr(conta) = compo%transversalDeltaE
+      transH_arr(conta) = compo%transversalDeltaH
+      alignedH_arr(conta) = compo%alignedlDeltaH
+      g1_arr(conta) = compo%g1(0)
+      g2a_arr(conta) = compo%g2a(0)
+      g2b_arr(conta) = compo%g2b(0)
+      gm2_ext_val_arr(conta) = compo%GM2_externo
+      correct_ha_arr(conta) = compo%correct_ha
+      correct_hb_arr(conta) = compo%correct_hb
+      crank_arr(conta) = compo%SGBCCrank
+      filo_placa_arr(conta) = compo%es_unfilo_placa
+
+      ! Copy per-node state arrays
+      do i = -compo%depth, compo%depth
+         G1_int_arr(i + compo%depth + 1, conta) = compo%G1_interno(i)
+         G2_int_arr(i + compo%depth + 1, conta) = compo%G2_interno(i)
+         GM1_int_arr(i + compo%depth + 1, conta) = compo%GM1_interno(i)
+         GM2_int_arr(i + compo%depth + 1, conta) = compo%GM2_interno(i)
+         a_arr(i + compo%depth + 1, conta) = compo%a(i)
+         b_arr(i + compo%depth + 1, conta) = compo%b(i)
+         c_arr(i + compo%depth + 1, conta) = compo%c(i)
+         rb_arr(i + compo%depth + 1, conta) = compo%rb(i)
+         rh_arr(i + compo%depth + 1, conta) = compo%rh(i)
+         rhm1_arr(i + compo%depth + 1, conta) = compo%rhm1(i)
+         capa_arr(i + compo%depth + 1, conta) = compo%capa(i)
+         delta_arr(i + compo%depth + 1, conta) = compo%delta_entreEinterno(i)
+      end do
+
+      ! Tridiag boundary constants
+      tridiag_a1_arr(conta) = compo%a1
+      tridiag_b1_arr(conta) = compo%b1
+      tridiag_c1_arr(conta) = compo%c1
+      tridiag_an_arr(conta) = compo%an
+      tridiag_bn_arr(conta) = compo%bn
+      tridiag_cn_arr(conta) = compo%cn
+      Hyee_left_arr(conta) = compo%Hyee__left
+      Hyee_right_arr(conta) = compo%Hyee_right
+   end do
+
+end subroutine GetSGBCConstants
+
+!--------------------------------------------------------------------------------
+! Export per-node state (E, H, E_past, D) for GPU
+!--------------------------------------------------------------------------------
+subroutine GetSGBCState(E_arr, H_arr, E_past_arr, D_arr, offset)
+   real(kind=RKIND), intent(out) :: E_arr(:,:), H_arr(:,:), E_past_arr(:,:), D_arr(:,:)
+   integer(kind=4), intent(in) :: offset
+
+   type(SGBCSurface_t), pointer :: compo
+   integer(kind=4) :: conta, i
+
+   do conta = 1, malon%NumNodes
+      compo => malon%Nodes(conta)
+      do i = -compo%depth, compo%depth
+         E_arr(i + offset, conta) = compo%E(i)
+         E_past_arr(i + offset, conta) = compo%E_past(i)
+      end do
+      if (compo%depth > 0) then
+         do i = -compo%depth, compo%depth-1
+            H_arr(i + offset, conta) = compo%H(i)
+            D_arr(i + offset, conta) = compo%d(i)
+         end do
+      end if
+      ! Zero out D for depth=0 nodes
+      if (compo%depth == 0) then
+         D_arr(1 + offset, conta) = 0.0_RKIND
+      end if
+   end do
+
+end subroutine GetSGBCState
+
+!--------------------------------------------------------------------------------
+! Export per-timestep field pointers for GPU upload
+!--------------------------------------------------------------------------------
+subroutine GetSGBCFieldPointers(Efield_arr, Ha_Plus_arr, Ha_Minu_arr, &
+                                  Hb_Plus_arr, Hb_Minu_arr, numNodes_out)
+   real(kind=RKIND), intent(out) :: Efield_arr(:), Ha_Plus_arr(:), Ha_Minu_arr(:)
+   real(kind=RKIND), intent(out) :: Hb_Plus_arr(:), Hb_Minu_arr(:)
+   integer(kind=4), intent(out) :: numNodes_out
+
+   type(SGBCSurface_t), pointer :: compo
+   integer(kind=4) :: conta
+
+   numNodes_out = malon%NumNodes
+   do conta = 1, malon%NumNodes
+      compo => malon%Nodes(conta)
+      Efield_arr(conta) = compo%Efield
+      Ha_Plus_arr(conta) = compo%Ha_Plus
+      Ha_Minu_arr(conta) = compo%Ha_Minu
+      Hb_Plus_arr(conta) = compo%Hb_Plus
+      Hb_Minu_arr(conta) = compo%Hb_Minu
+   end do
+
+end subroutine GetSGBCFieldPointers
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! subroutine to initialize the parameters

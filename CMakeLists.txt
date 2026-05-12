@@ -322,8 +322,11 @@ if(SEMBA_FDTD_MAIN_LIB)
 			"src_main_pub/gpu_core_m.F90"
 			"src_main_pub/gpu_yee_m.F90"
 			"src_main_pub/gpu_cpml_m.F90"
+			"src_main_pub/gpu_sgbc_core_m.F90"
+			"src_main_pub/gpu_sgbc_e_m.F90"
+			"src_main_pub/gpu_sgbc_h_m.F90"
 		)
-		set_source_files_properties("src_main_pub/gpu_core_m.F90" "src_main_pub/gpu_yee_m.F90" "src_main_pub/gpu_cpml_m.F90" PROPERTIES COMPILE_OPTIONS "-cuda;-gpu=pinned")
+		set_source_files_properties("src_main_pub/gpu_core_m.F90" "src_main_pub/gpu_yee_m.F90" "src_main_pub/gpu_cpml_m.F90" "src_main_pub/gpu_sgbc_core_m.F90" "src_main_pub/gpu_sgbc_e_m.F90" "src_main_pub/gpu_sgbc_h_m.F90" PROPERTIES COMPILE_OPTIONS "-cuda;-gpu=pinned")
 		target_link_options(semba-main PRIVATE -cuda)
 	endif()
 	target_link_libraries(semba-main

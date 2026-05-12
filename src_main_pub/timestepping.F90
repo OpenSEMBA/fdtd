@@ -45,6 +45,11 @@ module Solver_m
    use sgbc_stoch
 #else
    use SGBC_nostoch_m
+#endif
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+   use gpu_sgbc_core_m
+   use gpu_sgbc_e_m
+   use gpu_sgbc_h_m
 #endif  
    use EDispersives_m
    use Mdispersives_m
@@ -121,7 +126,9 @@ module Solver_m
 
 #if defined(SEMBA_FDTD_ENABLE_ACC) || defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
       type(gpu_state_t) :: gpu
+      type(gpu_state_sgbc_t) :: gpu_sgbc
       logical :: gpu_initialized = .false.
+      logical :: gpu_sgbc_initialized = .false.
 #endif
 
    contains
@@ -486,7 +493,7 @@ module Solver_m
                         this%dxe, this%dye, this%dze, this%dxh, this%dyh, this%dzh)
           this%gpu_initialized = this%gpu%initialized
        endif
- #endif
+#endif
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! Init the local variables and observation stuff needed by each module, taking into account resume status
@@ -1078,23 +1085,55 @@ contains
                                   dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%eps0,this%mu0)
 
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-           if (this%gpu_initialized .and. this%thereAre%PMLBorders) then
-              write(dubuf,*) 'Init CPML GPU left boundary...';  call print11(this%control%layoutnumber,dubuf)
-              call gpu_init_pml_left(this%gpu, P_be_y, P_ce_y, P_bm_y, P_cm_y, &
-                                     PMLc(iEx)%XI(left), PMLc(iEx)%XE(left), PMLc(iEx)%YI(left), PMLc(iEx)%YE(left), PMLc(iEx)%ZI(left), PMLc(iEx)%ZE(left), &
-                                     PMLc(iEz)%XI(left), PMLc(iEz)%XE(left), PMLc(iEz)%YI(left), PMLc(iEz)%YE(left), PMLc(iEz)%ZI(left), PMLc(iEz)%ZE(left), &
-                                     PMLc(iHx)%XI(left), PMLc(iHx)%XE(left), PMLc(iHx)%YI(left), PMLc(iHx)%YE(left), PMLc(iHx)%ZI(left), PMLc(iHx)%ZE(left), &
-                                     PMLc(iHz)%XI(left), PMLc(iHz)%XE(left), PMLc(iHz)%YI(left), PMLc(iHz)%YE(left), PMLc(iHz)%ZI(left), PMLc(iHz)%ZE(left), &
-                                     this%gpu%Ex_ny, this%gpu%Ex_nz, this%gpu%Ez_ny, this%gpu%Ez_nz, this%gpu%Hx_ny, this%gpu%Hx_nz, this%gpu%Hz_ny, this%gpu%Hz_nz)
-              if (this%gpu%pml_left_initialized) then
-                 write(dubuf,*) 'Init CPML GPU right boundary...';  call print11(this%control%layoutnumber,dubuf)
-                 call gpu_init_pml_right(this%gpu, &
-                                        PMLc(iEx)%XI(right), PMLc(iEx)%XE(right), PMLc(iEx)%YI(right), PMLc(iEx)%YE(right), PMLc(iEx)%ZI(right), PMLc(iEx)%ZE(right), &
-                                        PMLc(iEz)%XI(right), PMLc(iEz)%XE(right), PMLc(iEz)%YI(right), PMLc(iEz)%YE(right), PMLc(iEz)%ZI(right), PMLc(iEz)%ZE(right), &
-                                        PMLc(iHx)%XI(right), PMLc(iHx)%XE(right), PMLc(iHx)%YI(right), PMLc(iHx)%YE(right), PMLc(iHx)%ZI(right), PMLc(iHx)%ZE(right), &
-                                        PMLc(iHz)%XI(right), PMLc(iHz)%XE(right), PMLc(iHz)%YI(right), PMLc(iHz)%YE(right), PMLc(iHz)%ZI(right), PMLc(iHz)%ZE(right))
-              endif
-           endif
+            if (this%gpu_initialized .and. this%thereAre%PMLBorders) then
+               write(dubuf,*) 'Init CPML GPU left boundary...';  call print11(this%control%layoutnumber,dubuf)
+               call gpu_init_pml_left(this%gpu, P_be_y, P_ce_y, P_bm_y, P_cm_y, &
+                                      PMLc(iEx)%XI(left), PMLc(iEx)%XE(left), PMLc(iEx)%YI(left), PMLc(iEx)%YE(left), PMLc(iEx)%ZI(left), PMLc(iEx)%ZE(left), &
+                                      PMLc(iEz)%XI(left), PMLc(iEz)%XE(left), PMLc(iEz)%YI(left), PMLc(iEz)%YE(left), PMLc(iEz)%ZI(left), PMLc(iEz)%ZE(left), &
+                                      PMLc(iHx)%XI(left), PMLc(iHx)%XE(left), PMLc(iHx)%YI(left), PMLc(iHx)%YE(left), PMLc(iHx)%ZI(left), PMLc(iHx)%ZE(left), &
+                                      PMLc(iHz)%XI(left), PMLc(iHz)%XE(left), PMLc(iHz)%YI(left), PMLc(iHz)%YE(left), PMLc(iHz)%ZI(left), PMLc(iHz)%ZE(left), &
+                                      this%gpu%Ex_ny, this%gpu%Ex_nz, this%gpu%Ez_ny, this%gpu%Ez_nz, this%gpu%Hx_ny, this%gpu%Hx_nz, this%gpu%Hz_ny, this%gpu%Hz_nz)
+               if (this%gpu%pml_left_initialized) then
+                  write(dubuf,*) 'Init CPML GPU right boundary...';  call print11(this%control%layoutnumber,dubuf)
+                  call gpu_init_pml_right(this%gpu, &
+                                         PMLc(iEx)%XI(right), PMLc(iEx)%XE(right), PMLc(iEx)%YI(right), PMLc(iEx)%YE(right), PMLc(iEx)%ZI(right), PMLc(iEx)%ZE(right), &
+                                         PMLc(iEz)%XI(right), PMLc(iEz)%XE(right), PMLc(iEz)%YI(right), PMLc(iEz)%YE(right), PMLc(iEz)%ZI(right), PMLc(iEz)%ZE(right), &
+                                         PMLc(iHx)%XI(right), PMLc(iHx)%XE(right), PMLc(iHx)%YI(right), PMLc(iHx)%YE(right), PMLc(iHx)%ZI(right), PMLc(iHx)%ZE(right), &
+                                         PMLc(iHz)%XI(right), PMLc(iHz)%XE(right), PMLc(iHz)%YI(right), PMLc(iHz)%YE(right), PMLc(iHz)%ZI(right), PMLc(iHz)%ZE(right))
+               endif
+               if (this%gpu%pml_right_initialized) then
+                  write(dubuf,*) 'Init CPML GPU down boundary...';  call print11(this%control%layoutnumber,dubuf)
+                  call gpu_init_pml_down(this%gpu, P_be_z, P_ce_z, P_bm_z, P_cm_z, &
+                                         PMLc(iEx)%XI(down), PMLc(iEx)%XE(down), PMLc(iEx)%YI(down), PMLc(iEx)%YE(down), PMLc(iEx)%ZI(down), PMLc(iEx)%ZE(down), &
+                                         PMLc(iEy)%XI(down), PMLc(iEy)%XE(down), PMLc(iEy)%YI(down), PMLc(iEy)%YE(down), PMLc(iEy)%ZI(down), PMLc(iEy)%ZE(down), &
+                                         PMLc(iHx)%XI(down), PMLc(iHx)%XE(down), PMLc(iHx)%YI(down), PMLc(iHx)%YE(down), PMLc(iHx)%ZI(down), PMLc(iHx)%ZE(down), &
+                                         PMLc(iHy)%XI(down), PMLc(iHy)%XE(down), PMLc(iHy)%YI(down), PMLc(iHy)%YE(down), PMLc(iHy)%ZI(down), PMLc(iHy)%ZE(down))
+                  if (this%gpu%pml_down_initialized) then
+                     write(dubuf,*) 'Init CPML GPU up boundary...';  call print11(this%control%layoutnumber,dubuf)
+                     call gpu_init_pml_up(this%gpu, &
+                                          PMLc(iEx)%XI(up), PMLc(iEx)%XE(up), PMLc(iEx)%YI(up), PMLc(iEx)%YE(up), PMLc(iEx)%ZI(up), PMLc(iEx)%ZE(up), &
+                                          PMLc(iEy)%XI(up), PMLc(iEy)%XE(up), PMLc(iEy)%YI(up), PMLc(iEy)%YE(up), PMLc(iEy)%ZI(up), PMLc(iEy)%ZE(up), &
+                                          PMLc(iHx)%XI(up), PMLc(iHx)%XE(up), PMLc(iHx)%YI(up), PMLc(iHx)%YE(up), PMLc(iHx)%ZI(up), PMLc(iHx)%ZE(up), &
+                                          PMLc(iHy)%XI(up), PMLc(iHy)%XE(up), PMLc(iHy)%YI(up), PMLc(iHy)%YE(up), PMLc(iHy)%ZI(up), PMLc(iHy)%ZE(up))
+                  endif
+                  if (this%gpu%pml_up_initialized) then
+                     write(dubuf,*) 'Init CPML GPU back boundary...';  call print11(this%control%layoutnumber,dubuf)
+                     call gpu_init_pml_back(this%gpu, P_be_x, P_ce_x, P_bm_x, P_cm_x, &
+                                            PMLc(iEz)%XI(back), PMLc(iEz)%XE(back), PMLc(iEz)%YI(back), PMLc(iEz)%YE(back), PMLc(iEz)%ZI(back), PMLc(iEz)%ZE(back), &
+                                            PMLc(iEy)%XI(back), PMLc(iEy)%XE(back), PMLc(iEy)%YI(back), PMLc(iEy)%YE(back), PMLc(iEy)%ZI(back), PMLc(iEy)%ZE(back), &
+                                            PMLc(iHz)%XI(back), PMLc(iHz)%XE(back), PMLc(iHz)%YI(back), PMLc(iHz)%YE(back), PMLc(iHz)%ZI(back), PMLc(iHz)%ZE(back), &
+                                            PMLc(iHy)%XI(back), PMLc(iHy)%XE(back), PMLc(iHy)%YI(back), PMLc(iHy)%YE(back), PMLc(iHy)%ZI(back), PMLc(iHy)%ZE(back))
+                     if (this%gpu%pml_back_initialized) then
+                        write(dubuf,*) 'Init CPML GPU front boundary...';  call print11(this%control%layoutnumber,dubuf)
+                        call gpu_init_pml_front(this%gpu, &
+                                               PMLc(iEz)%XI(front), PMLc(iEz)%XE(front), PMLc(iEz)%YI(front), PMLc(iEz)%YE(front), PMLc(iEz)%ZI(front), PMLc(iEz)%ZE(front), &
+                                               PMLc(iEy)%XI(front), PMLc(iEy)%XE(front), PMLc(iEy)%YI(front), PMLc(iEy)%YE(front), PMLc(iEy)%ZI(front), PMLc(iEy)%ZE(front), &
+                                               PMLc(iHz)%XI(front), PMLc(iHz)%XE(front), PMLc(iHz)%YI(front), PMLc(iHz)%YE(front), PMLc(iHz)%ZI(front), PMLc(iHz)%ZE(front), &
+                                               PMLc(iHy)%XI(front), PMLc(iHy)%XE(front), PMLc(iHy)%YI(front), PMLc(iHy)%YE(front), PMLc(iHy)%ZI(front), PMLc(iHy)%ZE(front))
+                     endif
+                  endif
+               endif
+            endif
 #endif
 
           l_auxinput=this%thereAre%PMLBorders
@@ -2256,12 +2295,12 @@ contains
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
-     #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+#ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
          if (this%gpu_initialized) then
             call gpu_advanceEx(this%gpu, this%bounds)
             return
          endif
-      #endif
+#endif
 
       Ex(0:this%bounds%Ex%NX-1,0:this%bounds%Ex%NY-1,0:this%bounds%Ex%NZ-1) => this%Ex
       Hy(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1) => this%Hy
@@ -2303,12 +2342,12 @@ contains
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
-  #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+#ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
       if (this%gpu_initialized) then
          call gpu_advanceEy(this%gpu, this%bounds)
          return
       endif
-   #endif
+#endif
 
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
       Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
@@ -2352,12 +2391,12 @@ contains
       integer(kind = 4) :: i, j, k
       integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
 
- #ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
+#ifdef SEMBA_FDTD_ENABLE_CUDA_FORTRAN
       if (this%gpu_initialized) then
          call gpu_advanceEz(this%gpu, this%bounds)
          return
       endif
-   #endif
+#endif
 
 
       Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
@@ -2424,7 +2463,7 @@ contains
          call gpu_advanceHx(this%gpu, this%bounds)
          return
       endif
-   #endif
+#endif
 
       Hx(0:this%bounds%Hx%NX-1,0:this%bounds%Hx%NY-1,0:this%bounds%Hx%NZ-1) => this%Hx
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
@@ -2471,7 +2510,7 @@ contains
          call gpu_advanceHy(this%gpu, this%bounds)
          return
       endif
-   #endif
+#endif
 
       Hy(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1) => this%Hy
       Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
@@ -2517,7 +2556,7 @@ contains
          call gpu_advanceHz(this%gpu, this%bounds)
          return
       endif
-   #endif
+#endif
 
       Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
       Ex(0:this%bounds%EX%NX-1,0:this%bounds%EX%NY-1,0:this%bounds%EX%NZ-1) => this%Ex
@@ -2625,14 +2664,22 @@ contains
       if (this%thereAre%PMLbodies) call AdvancePMLbodyH()
    end subroutine
 
-   subroutine solver_advanceMagneticCPML(this)
-        class(solver_t) :: this
-        If (this%thereAre%PMLBorders) then
+  subroutine solver_advanceMagneticCPML(this)
+         class(solver_t) :: this
+         If (this%thereAre%PMLBorders) then
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-            if (this%gpu_initialized .and. this%gpu%pml_left_initialized .and. this%gpu%pml_right_initialized) then
+            if (this%gpu_initialized .and. this%gpu%pml_left_initialized .and. this%gpu%pml_right_initialized .and. &
+                this%gpu%pml_down_initialized .and. this%gpu%pml_up_initialized .and. &
+                this%gpu%pml_back_initialized .and. this%gpu%pml_front_initialized) then
                call gpu_update_pml_left_coeffs(this%gpu, P_be_y, P_ce_y, P_bm_y, P_cm_y)
+               call gpu_update_pml_down_coeffs(this%gpu, P_be_z, P_ce_z, P_bm_z, P_cm_z)
+               call gpu_update_pml_back_coeffs(this%gpu, P_be_x, P_ce_x, P_bm_x, P_cm_x)
                call gpu_advanceCPML_H_left(this%gpu, this%bounds)
                call gpu_advanceCPML_H_right(this%gpu, this%bounds, this%sgg%numMedia)
+               call gpu_advanceCPML_H_down(this%gpu, this%bounds)
+               call gpu_advanceCPML_H_up(this%gpu, this%bounds)
+               call gpu_advanceCPML_H_back(this%gpu, this%bounds)
+               call gpu_advanceCPML_H_front(this%gpu, this%bounds)
             else
                call advanceMagneticCPML(this%sgg%numMedia, this%bounds, & 
                                         this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, & 
@@ -2662,40 +2709,259 @@ contains
 
 
    subroutine solver_advancePMLE(this)
-        class (solver_t) :: this
-        If (this%thereAre%PMLbodies) then !waveport absorbers
-           call AdvancePMLbodyE()
-        end if
-        If (this%thereAre%PMLBorders) then
+         class (solver_t) :: this
+         If (this%thereAre%PMLbodies) then !waveport absorbers
+            call AdvancePMLbodyE()
+         end if
+         If (this%thereAre%PMLBorders) then
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-           if (this%gpu_initialized .and. this%gpu%pml_left_initialized .and. this%gpu%pml_right_initialized) then
-              call gpu_advanceCPML_E_left(this%gpu, this%bounds)
-              call gpu_advanceCPML_E_right(this%gpu, this%bounds, this%sgg%numMedia)
-           else
-              call AdvanceelectricCPML(this%sgg%numMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, & 
-                                       this%g%G2, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
-           endif
+            if (this%gpu_initialized .and. this%gpu%pml_left_initialized .and. this%gpu%pml_right_initialized .and. &
+                this%gpu%pml_down_initialized .and. this%gpu%pml_up_initialized .and. &
+                this%gpu%pml_back_initialized .and. this%gpu%pml_front_initialized) then
+               call gpu_update_pml_down_coeffs(this%gpu, P_be_z, P_ce_z, P_bm_z, P_cm_z)
+               call gpu_update_pml_back_coeffs(this%gpu, P_be_x, P_ce_x, P_bm_x, P_cm_x)
+               call gpu_advanceCPML_E_left(this%gpu, this%bounds)
+               call gpu_advanceCPML_E_right(this%gpu, this%bounds, this%sgg%numMedia)
+               call gpu_advanceCPML_E_down(this%gpu, this%bounds)
+               call gpu_advanceCPML_E_up(this%gpu, this%bounds)
+               call gpu_advanceCPML_E_back(this%gpu, this%bounds)
+               call gpu_advanceCPML_E_front(this%gpu, this%bounds)
+            else
+               call AdvanceelectricCPML(this%sgg%numMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, & 
+                                        this%g%G2, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
+            endif
 #else
-           call AdvanceelectricCPML(this%sgg%numMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, & 
-                                    this%g%G2, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
+            call AdvanceelectricCPML(this%sgg%numMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, & 
+                                     this%g%G2, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
 #endif
-        end if
-     end subroutine
+         end if
+      end subroutine
 
    subroutine solver_advancesgbcE(this)
-      class(solver_t) :: this
-      if (this%thereAre%sgbcs.and.(this%control%sgbc)) then 
-         call AdvancesgbcE(real(this%sgg%dt,RKIND),this%control%sgbcDispersive, & 
-                                this%control%simu_devia,this%control%stochastic)
-      end if
+       class(solver_t) :: this
+       if (this%thereAre%sgbcs.and.(this%control%sgbc)) then 
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+          if (this%gpu_sgbc_initialized .and. .not.this%control%sgbcDispersive) then
+             call sgbc_gpu_advance(this)
+          else
+             call AdvancesgbcE(real(this%sgg%dt,RKIND),this%control%sgbcDispersive, & 
+                                    this%control%simu_devia,this%control%stochastic)
+          endif
+#else
+          call AdvancesgbcE(real(this%sgg%dt,RKIND),this%control%sgbcDispersive, & 
+                                 this%control%simu_devia,this%control%stochastic)
+#endif
+       end if
+    end subroutine
+
+    subroutine solver_advancesgbcH(this)
+       class(solver_t) :: this
+       if (this%thereAre%sgbcs.and.(this%control%sgbc)) then
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+          if (this%gpu_sgbc_initialized .and. .not.this%control%sgbcDispersive) then
+             call sgbc_gpu_advance_h(this)
+          else
+             call AdvancesgbcH()
+          endif
+#else
+          call AdvancesgbcH()
+#endif
+       end if
    end subroutine
 
-   subroutine solver_advancesgbcH(this)
-      class(solver_t) :: this
-      if (this%thereAre%sgbcs.and.(this%control%sgbc)) call AdvancesgbcH()
-   end subroutine
+    !--------------------------------------------------------------------------------
+    ! GPU SGBC wrapper - E-field advance
+    !--------------------------------------------------------------------------------
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+    subroutine sgbc_gpu_advance(this)
+       class(solver_t), intent(inout) :: this
+       integer(kind=4) :: numNodes, maxDepth, offset, i, j
+       real(kind=rkind), allocatable, dimension(:) :: Efield_arr, Ha_Plus_arr, Ha_Minu_arr
+       real(kind=rkind), allocatable, dimension(:) :: Hb_Plus_arr, Hb_Minu_arr
+       integer(kind=4), allocatable, dimension(:) :: depth_arr, jmed_arr, depth_node_arr
+       real(kind=rkind), allocatable, dimension(:) :: gm2_ext_arr
+       real(kind=rkind), allocatable, dimension(:) :: transE_arr, transH_arr, alignedH_arr
+       real(kind=rkind), allocatable, dimension(:) :: g1_arr, g2a_arr, g2b_arr, gm2_ext_val_arr
+       logical, allocatable, dimension(:) :: correct_ha_arr, correct_hb_arr, crank_arr, filo_placa_arr
+       real(kind=rkind), allocatable, dimension(:,:) :: G1_int_arr, G2_int_arr, GM1_int_arr, GM2_int_arr
+       real(kind=rkind), allocatable, dimension(:,:) :: a_arr, b_arr, c_arr, rb_arr, rh_arr, rhm1_arr
+       real(kind=rkind), allocatable, dimension(:) :: tridiag_a1_arr, tridiag_b1_arr, tridiag_c1_arr
+       real(kind=rkind), allocatable, dimension(:) :: tridiag_an_arr, tridiag_bn_arr, tridiag_cn_arr
+       integer(kind=4), allocatable, dimension(:,:) :: capa_arr
+       real(kind=rkind), allocatable, dimension(:,:) :: delta_arr
+       real(kind=rkind), allocatable, dimension(:) :: Hyee_left_arr, Hyee_right_arr
+       real(kind=rkind), allocatable, dimension(:,:) :: E_state_arr, H_state_arr, E_past_arr, D_state_arr
 
-   subroutine solver_advanceWiresE(this)
+       numNodes = malon%NumNodes
+       maxDepth = 0
+       do i = 1, numNodes
+          if (malon%Nodes(i)%depth > maxDepth) maxDepth = malon%Nodes(i)%depth
+       end do
+       maxDepth = max(maxDepth, 1)
+       offset = -maxDepth
+
+       ! Allocate host buffers
+       allocate(depth_arr(numNodes))
+       allocate(gm2_ext_arr(numNodes))
+       allocate(jmed_arr(numNodes))
+       allocate(transE_arr(numNodes))
+       allocate(transH_arr(numNodes))
+       allocate(alignedH_arr(numNodes))
+       allocate(g1_arr(numNodes))
+       allocate(g2a_arr(numNodes))
+       allocate(g2b_arr(numNodes))
+       allocate(gm2_ext_val_arr(numNodes))
+       allocate(correct_ha_arr(numNodes))
+       allocate(correct_hb_arr(numNodes))
+       allocate(crank_arr(numNodes))
+       allocate(filo_placa_arr(numNodes))
+       allocate(depth_node_arr(numNodes))
+       allocate(G1_int_arr(2*maxDepth+1, numNodes))
+       allocate(G2_int_arr(2*maxDepth+1, numNodes))
+       allocate(GM1_int_arr(2*maxDepth+1, numNodes))
+       allocate(GM2_int_arr(2*maxDepth+1, numNodes))
+       allocate(a_arr(2*maxDepth+1, numNodes))
+       allocate(b_arr(2*maxDepth+1, numNodes))
+       allocate(c_arr(2*maxDepth+1, numNodes))
+       allocate(rb_arr(2*maxDepth+1, numNodes))
+       allocate(rh_arr(2*maxDepth+1, numNodes))
+       allocate(rhm1_arr(2*maxDepth+1, numNodes))
+       allocate(tridiag_a1_arr(numNodes))
+       allocate(tridiag_b1_arr(numNodes))
+       allocate(tridiag_c1_arr(numNodes))
+       allocate(tridiag_an_arr(numNodes))
+       allocate(tridiag_bn_arr(numNodes))
+       allocate(tridiag_cn_arr(numNodes))
+       allocate(capa_arr(2*maxDepth+1, numNodes))
+       allocate(delta_arr(2*maxDepth+1, numNodes))
+       allocate(Hyee_left_arr(numNodes))
+       allocate(Hyee_right_arr(numNodes))
+       allocate(Efield_arr(numNodes))
+       allocate(Ha_Plus_arr(numNodes))
+       allocate(Ha_Minu_arr(numNodes))
+       allocate(Hb_Plus_arr(numNodes))
+       allocate(Hb_Minu_arr(numNodes))
+       allocate(E_state_arr(2*maxDepth+1, numNodes))
+       allocate(H_state_arr(2*maxDepth+1, numNodes))
+       allocate(E_past_arr(2*maxDepth+1, numNodes))
+       allocate(D_state_arr(2*maxDepth+1, numNodes))
+
+       ! Get constants
+       call GetSGBCConstants(depth_arr, gm2_ext_arr, jmed_arr, transE_arr, transH_arr, alignedH_arr, &
+                             g1_arr, g2a_arr, g2b_arr, gm2_ext_val_arr, &
+                             correct_ha_arr, correct_hb_arr, crank_arr, filo_placa_arr, &
+                             depth_node_arr, G1_int_arr, G2_int_arr, GM1_int_arr, GM2_int_arr, &
+                             a_arr, b_arr, c_arr, rb_arr, rh_arr, rhm1_arr, &
+                             tridiag_a1_arr, tridiag_b1_arr, tridiag_c1_arr, &
+                             tridiag_an_arr, tridiag_bn_arr, tridiag_cn_arr, &
+                             capa_arr, delta_arr, Hyee_left_arr, Hyee_right_arr, &
+                             numNodes, maxDepth)
+
+       ! Get state
+       call GetSGBCState(E_state_arr, H_state_arr, E_past_arr, D_state_arr, offset)
+
+       ! Get field pointers
+       call GetSGBCFieldPointers(Efield_arr, Ha_Plus_arr, Ha_Minu_arr, &
+                                  Hb_Plus_arr, Hb_Minu_arr, numNodes)
+
+       ! Upload to GPU
+       if (.not.this%gpu_sgbc_initialized) then
+          call gpu_init_sgbc(this%gpu_sgbc, numNodes, maxDepth, this%sgg%dt, 1e6, .false., .false.)
+          this%gpu_sgbc_initialized = this%gpu_sgbc%initialized
+       endif
+
+       if (this%gpu_sgbc_initialized) then
+          call gpu_upload_sgbc_constants(this%gpu_sgbc, depth_arr, gm2_ext_arr, jmed_arr, &
+                                          transE_arr, transH_arr, alignedH_arr, &
+                                          g1_arr, g2a_arr, g2b_arr, gm2_ext_val_arr, &
+                                          correct_ha_arr, correct_hb_arr, crank_arr, &
+                                          filo_placa_arr, depth_node_arr)
+          call gpu_upload_sgbc_state(this%gpu_sgbc, E_state_arr, H_state_arr, E_past_arr, D_state_arr, &
+                                      G1_int_arr, G2_int_arr, GM1_int_arr, GM2_int_arr, &
+                                      a_arr, b_arr, c_arr, rb_arr, rh_arr, rhm1_arr, &
+                                      capa_arr, delta_arr, &
+                                      tridiag_a1_arr, tridiag_b1_arr, tridiag_c1_arr, &
+                                      tridiag_an_arr, tridiag_bn_arr, tridiag_cn_arr, &
+                                      Hyee_left_arr, Hyee_right_arr, offset)
+          call gpu_upload_sgbc_fields(this%gpu_sgbc, Efield_arr, Ha_Plus_arr, Ha_Minu_arr, &
+                                       Hb_Plus_arr, Hb_Minu_arr)
+
+          ! Advance E on GPU
+          call gpu_advance_sgbc_e(this%gpu_sgbc, this%sgg%dt)
+
+          ! Download state
+          call gpu_download_sgbc_state(this%gpu_sgbc, E_state_arr, H_state_arr, E_past_arr, D_state_arr, &
+                                        Hyee_left_arr, Hyee_right_arr, offset)
+
+          ! Download fields
+          call gpu_download_sgbc_fields(this%gpu_sgbc, Ha_Plus_arr, Ha_Minu_arr, &
+                                         Hb_Plus_arr, Hb_Minu_arr, &
+                                         Hyee_left_arr, Hyee_right_arr, Efield_arr)
+
+          ! Write back to host state
+          do j = 1, numNodes
+             malon%Nodes(j)%Efield = Efield_arr(j)
+             malon%Nodes(j)%Ha_Plus = Ha_Plus_arr(j)
+             malon%Nodes(j)%Ha_Minu = Ha_Minu_arr(j)
+             malon%Nodes(j)%Hb_Plus = Hb_Plus_arr(j)
+             malon%Nodes(j)%Hb_Minu = Hb_Minu_arr(j)
+             malon%Nodes(j)%Hyee__left = Hyee_left_arr(j)
+             malon%Nodes(j)%Hyee_right = Hyee_right_arr(j)
+             do i = -malon%Nodes(j)%depth, malon%Nodes(j)%depth
+                malon%Nodes(j)%E(i) = E_state_arr(i + malon%Nodes(j)%depth + 1, j)
+                malon%Nodes(j)%E_past(i) = E_past_arr(i + malon%Nodes(j)%depth + 1, j)
+             end do
+             if (malon%Nodes(j)%depth > 0) then
+                do i = -malon%Nodes(j)%depth, malon%Nodes(j)%depth-1
+                   malon%Nodes(j)%H(i) = H_state_arr(i + malon%Nodes(j)%depth + 1, j)
+                end do
+             end if
+          end do
+       end if
+
+       deallocate(depth_arr, gm2_ext_arr, jmed_arr, transE_arr, transH_arr, alignedH_arr)
+       deallocate(g1_arr, g2a_arr, g2b_arr, gm2_ext_val_arr)
+       deallocate(correct_ha_arr, correct_hb_arr, crank_arr, filo_placa_arr)
+       deallocate(depth_node_arr)
+       deallocate(G1_int_arr, G2_int_arr, GM1_int_arr, GM2_int_arr)
+       deallocate(a_arr, b_arr, c_arr, rb_arr, rh_arr, rhm1_arr)
+       deallocate(tridiag_a1_arr, tridiag_b1_arr, tridiag_c1_arr)
+       deallocate(tridiag_an_arr, tridiag_bn_arr, tridiag_cn_arr)
+       deallocate(capa_arr, delta_arr, Hyee_left_arr, Hyee_right_arr)
+       deallocate(Efield_arr, Ha_Plus_arr, Ha_Minu_arr, Hb_Plus_arr, Hb_Minu_arr)
+       deallocate(E_state_arr, H_state_arr, E_past_arr, D_state_arr)
+
+    end subroutine sgbc_gpu_advance
+
+    !--------------------------------------------------------------------------------
+    ! GPU SGBC wrapper - H-field advance
+    !--------------------------------------------------------------------------------
+    subroutine sgbc_gpu_advance_h(this)
+       class(solver_t), intent(inout) :: this
+       integer(kind=4) :: numNodes, j
+
+       numNodes = malon%NumNodes
+
+       if (.not.this%gpu_sgbc_initialized .or. .not.this%gpu_sgbc%fields_on_device) return
+
+       ! Advance H on GPU (uses field values already on device from E-advance)
+       call gpu_advance_sgbc_h(this%gpu_sgbc, this%sgg%dt)
+
+       ! Download field values
+       do j = 1, numNodes
+          malon%Nodes(j)%Ha_Plus = this%gpu_sgbc%Ha_Plus_val(j)
+          malon%Nodes(j)%Ha_Minu = this%gpu_sgbc%Ha_Minu_val(j)
+          malon%Nodes(j)%Hb_Plus = this%gpu_sgbc%Hb_Plus_val(j)
+          malon%Nodes(j)%Hb_Minu = this%gpu_sgbc%Hb_Minu_val(j)
+          malon%Nodes(j)%Hyee__left = this%gpu_sgbc%Hyee_left(j)
+          malon%Nodes(j)%Hyee_right = this%gpu_sgbc%Hyee_right(j)
+          malon%Nodes(j)%Efield = this%gpu_sgbc%Efield_val(j)
+       end do
+
+    end subroutine sgbc_gpu_advance_h
+#endif
+
+    subroutine solver_advanceWiresE(this)
       class(solver_t) :: this
       character(len=bufsize) :: buff
 
@@ -2942,6 +3208,10 @@ contains
       if (this%gpu_initialized) then
          call gpu_destroy(this%gpu)
          this%gpu_initialized = .false.
+      endif
+      if (this%gpu_sgbc_initialized) then
+         call gpu_destroy_sgbc(this%gpu_sgbc)
+         this%gpu_sgbc_initialized = .false.
       endif
 #endif
 
