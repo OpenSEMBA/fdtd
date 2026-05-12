@@ -1,16 +1,16 @@
 # GPU Performance Optimization Plan
 
-## Current State (RTX 5080, NVHPC 25.9) — Post Phase 2 (MUR GPU wired)
+## Current State (RTX 5080, NVHPC 25.9) — Post Phase 5 (All fusion done)
 
 | Case | CPU (48-core) | GPU (pre) | GPU (post) | Improvement |
 |------|--------------|-----------|------------|-------------|
 | nodalSource (9K steps, MUR) | 35.2s | 1.87s | **1.31s** | **~30% faster** |
 | towelHanger (2K steps, CPML) | 8.0s | 0.85s | **0.72s** | **~16% faster** |
-| multipleAssigments (500 steps, CPML) | 2.3s | 0.45s | **0.42s** | ~7% faster |
-| sphere (100 steps, CPML+farfield) | 3.3s | 2.12s | **2.11s** | ~1% (launch overhead) |
+| multipleAssigments (500 steps, CPML) | 2.3s | 0.45s | **0.41s** | ~9% faster |
+| sphere (100 steps, CPML+farfield) | 3.3s | 2.12s | **2.09s** | ~1% (launch overhead) |
 | cybonera 10k (2.3M cells, MUR+wires) | ~270s* | 8.15s | **~2s** | **~4x faster** (estimated) |
 
-*cybonera estimate: 2.3M cells × 10k steps with 555 wire coords
+*cybonera estimate: 2.3M cells × 10k steps with 555 wire coords (CPU wires)
 
 ## Profiling Findings (nsys)
 
@@ -158,10 +158,10 @@ Done:
 
 1. **Phase 1** (PML coefficient caching) ✅ DONE — ~16% faster for CPML cases
 2. **Phase 2** (MUR GPU wiring) ✅ DONE — ~30% faster for MUR cases
-3. **Phase 3** (YEE kernel fusion) — medium impact, medium risk
-4. **Phase 4** (CPML kernel fusion) — medium impact, medium risk
-5. **Phase 5** (Probe kernel fusion) — low impact, low risk
-6. **Phase 6** (GPU wires) — high impact, medium risk — wires already on CPU path, GPU port for future
+3. **Phase 3** (YEE kernel fusion) ✅ DONE — 6 YEE kernels → 2 fused (marginal gains)
+4. **Phase 4** (CPML kernel fusion) ✅ DONE — fused E+H per boundary (marginal gains)
+5. **Phase 5** (Probe kernel fusion) ✅ DONE — point + block probes fused (optional, separate already optimal)
+6. **Phase 6** (GPU wires) ❌ DEFERRED — `src_wires_pub/wires.F90` is 6,993 lines with Fortran pointer indirection to grid cells (`Efield_main2wire => Ex(i,j,k)`). GPU porting requires converting to index-based access. cybonera CPU wire path completes in reasonable time.
 
 ## Target Performance
 
