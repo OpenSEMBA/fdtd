@@ -2206,21 +2206,31 @@ subroutine updateAndFlush()
                   end do
                end do
 
-               ! Sample point probes on GPU
-               if (pointCount > 0) then
-                  allocate(point_results(pointCount))
-                  call gpu_sample_point_probes(this%gpu, point_results, this%n)
-                  call UpdateProbeResultsFromGPU(this%sgg, this%n, this%ini_save, point_results, block_results, pointCount, 0)
-                  deallocate(point_results)
-               end if
+              ! Sample point probes on GPU
+                if (pointCount > 0) then
+                   allocate(point_results(pointCount))
+                   call gpu_sample_point_probes(this%gpu, point_results, this%n)
+                   call UpdateProbeResultsFromGPU(this%sgg, this%n, this%ini_save, point_results, block_results, pointCount, 0)
+                   deallocate(point_results)
+                end if
 
-               ! Sample block probes on GPU
-               if (blockCount > 0) then
-                  allocate(block_results(blockCount))
-                  call gpu_sample_block_probes(this%gpu, block_results, this%n)
-                  call UpdateProbeResultsFromGPU(this%sgg, this%n, this%ini_save, point_results, block_results, 0, blockCount)
-                  deallocate(block_results)
-               end if
+                ! Sample block probes on GPU
+                if (blockCount > 0) then
+                   allocate(block_results(blockCount))
+                   call gpu_sample_block_probes(this%gpu, block_results, this%n)
+                   call UpdateProbeResultsFromGPU(this%sgg, this%n, this%ini_save, point_results, block_results, 0, blockCount)
+                   deallocate(block_results)
+                end if
+
+                ! Fused probe sampling (alternative — single kernel launch for both types)
+                ! if (pointCount > 0 .or. blockCount > 0) then
+                !    if (pointCount > 0) allocate(point_results(pointCount))
+                !    if (blockCount > 0) allocate(block_results(blockCount))
+                !    call gpu_sample_all_probes(this%gpu, point_results, block_results, this%n)
+                !    call UpdateProbeResultsFromGPU(this%sgg, this%n, this%ini_save, point_results, block_results, pointCount, blockCount)
+                !    if (pointCount > 0) deallocate(point_results)
+                !    if (blockCount > 0) deallocate(block_results)
+                ! end if
 
             else
                ! CPU path — download fields and call UpdateObservation
