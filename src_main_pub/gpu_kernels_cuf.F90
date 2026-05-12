@@ -59,10 +59,17 @@ module gpu_kernels_m
        integer(kind=4) :: pml_left_Hx_ii, pml_left_Hx_ij, pml_left_Hx_ji, pml_left_Hx_jj, pml_left_Hx_ki, pml_left_Hx_kj
        integer(kind=4) :: pml_left_Hz_ii, pml_left_Hz_ij, pml_left_Hz_ji, pml_left_Hz_jj, pml_left_Hz_ki, pml_left_Hz_kj
 
+       ! CPML right boundary - same structure as left
+       integer(kind=4) :: pml_right_Ex_ii, pml_right_Ex_ij, pml_right_Ex_ji, pml_right_Ex_jj, pml_right_Ex_ki, pml_right_Ex_kj
+       integer(kind=4) :: pml_right_Ez_ii, pml_right_Ez_ij, pml_right_Ez_ji, pml_right_Ez_jj, pml_right_Ez_ki, pml_right_Ez_kj
+       integer(kind=4) :: pml_right_Hx_ii, pml_right_Hx_ij, pml_right_Hx_ji, pml_right_Hx_jj, pml_right_Hx_ki, pml_right_Hx_kj
+       integer(kind=4) :: pml_right_Hz_ii, pml_right_Hz_ij, pml_right_Hz_ji, pml_right_Hz_jj, pml_right_Hz_ki, pml_right_Hz_kj
+
        ! Flags
        logical :: initialized = .false.
        logical :: fields_on_device = .false.
        logical :: pml_left_initialized = .false.
+       logical :: pml_right_initialized = .false.
     end type
 
 contains
@@ -276,6 +283,42 @@ contains
       this%pml_left_initialized = .true.
 
    end subroutine gpu_init_pml_left
+
+    !--------------------------------------------------------------------------------
+    ! Initialize CPML right boundary on GPU
+    !--------------------------------------------------------------------------------
+    subroutine gpu_init_pml_right(this, &
+                                  Ex_iEx_ii, Ex_iEx_ij, Ex_iEx_ji, Ex_iEx_jj, Ex_iEx_ki, Ex_iEx_kj, &
+                                  Ex_iEz_ii, Ex_iEz_ij, Ex_iEz_ji, Ex_iEz_jj, Ex_iEz_ki, Ex_iEz_kj, &
+                                  Hx_iHx_ii, Hx_iHx_ij, Hx_iHx_ji, Hx_iHx_jj, Hx_iHx_ki, Hx_iHx_kj, &
+                                  Hx_iHz_ii, Hx_iHz_ij, Hx_iHz_ji, Hx_iHz_jj, Hx_iHz_ki, Hx_iHz_kj)
+       class(gpu_state_t), intent(inout) :: this
+       integer(kind=4), intent(in) :: Ex_iEx_ii, Ex_iEx_ij, Ex_iEx_ji, Ex_iEx_jj, Ex_iEx_ki, Ex_iEx_kj
+       integer(kind=4), intent(in) :: Ex_iEz_ii, Ex_iEz_ij, Ex_iEz_ji, Ex_iEz_jj, Ex_iEz_ki, Ex_iEz_kj
+       integer(kind=4), intent(in) :: Hx_iHx_ii, Hx_iHx_ij, Hx_iHx_ji, Hx_iHx_jj, Hx_iHx_ki, Hx_iHx_kj
+       integer(kind=4), intent(in) :: Hx_iHz_ii, Hx_iHz_ij, Hx_iHz_ji, Hx_iHz_jj, Hx_iHz_ki, Hx_iHz_kj
+
+       if (.not. this%initialized) return
+
+       this%pml_right_Ex_ii = Ex_iEx_ii + 1; this%pml_right_Ex_ij = Ex_iEx_ij + 1
+       this%pml_right_Ex_ji = Ex_iEx_ji + 1; this%pml_right_Ex_jj = Ex_iEx_jj + 1
+       this%pml_right_Ex_ki = Ex_iEx_ki + 1; this%pml_right_Ex_kj = Ex_iEx_kj + 1
+
+       this%pml_right_Ez_ii = Ex_iEz_ii + 1; this%pml_right_Ez_ij = Ex_iEz_ij + 1
+       this%pml_right_Ez_ji = Ex_iEz_ji + 1; this%pml_right_Ez_jj = Ex_iEz_jj + 1
+       this%pml_right_Ez_ki = Ex_iEz_ki + 1; this%pml_right_Ez_kj = Ex_iEz_kj + 1
+
+       this%pml_right_Hx_ii = Hx_iHx_ii + 1; this%pml_right_Hx_ij = Hx_iHx_ij + 1
+       this%pml_right_Hx_ji = Hx_iHx_ji + 1; this%pml_right_Hx_jj = Hx_iHx_jj + 1
+       this%pml_right_Hx_ki = Hx_iHx_ki + 1; this%pml_right_Hx_kj = Hx_iHx_kj + 1
+
+       this%pml_right_Hz_ii = Hx_iHz_ii + 1; this%pml_right_Hz_ij = Hx_iHz_ij + 1
+       this%pml_right_Hz_ji = Hx_iHz_ji + 1; this%pml_right_Hz_jj = Hx_iHz_jj + 1
+       this%pml_right_Hz_ki = Hx_iHz_ki + 1; this%pml_right_Hz_kj = Hx_iHz_kj + 1
+
+       this%pml_right_initialized = .true.
+
+    end subroutine gpu_init_pml_right
 
     !--------------------------------------------------------------------------------
     ! Download device data to host - called only when output/probes are needed
@@ -731,6 +774,51 @@ contains
 
     end subroutine gpu_advanceCPML_H_left
 
+    !--------------------------------------------------------------------------------
+    ! CPML Right boundary - wrapper subroutines
+    !--------------------------------------------------------------------------------
+    subroutine gpu_advanceCPML_E_right(this, b, numMedia)
+       class(gpu_state_t), intent(inout) :: this
+       type(bounds_t), intent(in) :: b
+       integer, intent(in) :: numMedia
+       if (.not. this%pml_right_initialized) return
+       call gpu_advanceCPML_Ex_right_kernel(this%Ex_d, this%Hz_d, this%sggMiEx_d, &
+                                           this%pml_psi_Exy_left, this%pml_P_be_y_left, this%pml_P_ce_y_left, &
+                                           this%g2_d, numMedia, &
+                                           this%pml_right_Ex_ii, this%pml_right_Ex_ij, &
+                                           this%pml_right_Ex_ji, this%pml_right_Ex_jj, &
+                                           this%pml_right_Ex_ki, this%pml_right_Ex_kj, &
+                                           b%Ex%XI-1)
+       call gpu_advanceCPML_Ez_right_kernel(this%Ez_d, this%Hx_d, this%sggMiEz_d, &
+                                           this%pml_psi_Ezy_left, this%pml_P_be_y_left, this%pml_P_ce_y_left, &
+                                           this%g2_d, numMedia, &
+                                           this%pml_right_Ez_ii, this%pml_right_Ez_ij, &
+                                           this%pml_right_Ez_ji, this%pml_right_Ez_jj, &
+                                           this%pml_right_Ez_ki, this%pml_right_Ez_kj, &
+                                           b%Ez%XI-1)
+    end subroutine gpu_advanceCPML_E_right
+
+    subroutine gpu_advanceCPML_H_right(this, b, numMedia)
+       class(gpu_state_t), intent(inout) :: this
+       type(bounds_t), intent(in) :: b
+       integer, intent(in) :: numMedia
+       if (.not. this%pml_right_initialized) return
+       call gpu_advanceCPML_Hx_right_kernel(this%Hx_d, this%Ez_d, this%sggMiHx_d, &
+                                           this%pml_psi_Hxy_left, this%pml_P_bm_y_left, this%pml_P_cm_y_left, &
+                                           this%gm2_d, numMedia, &
+                                           this%pml_right_Hx_ii, this%pml_right_Hx_ij, &
+                                           this%pml_right_Hx_ji, this%pml_right_Hx_jj, &
+                                           this%pml_right_Hx_ki, this%pml_right_Hx_kj, &
+                                           b%Hx%XI-1)
+       call gpu_advanceCPML_Hz_right_kernel(this%Hz_d, this%Ex_d, this%sggMiHz_d, &
+                                           this%pml_psi_Hzy_left, this%pml_P_bm_y_left, this%pml_P_cm_y_left, &
+                                           this%gm2_d, numMedia, &
+                                           this%pml_right_Hz_ii, this%pml_right_Hz_ij, &
+                                           this%pml_right_Hz_ji, this%pml_right_Hz_jj, &
+                                           this%pml_right_Hz_ki, this%pml_right_Hz_kj, &
+                                           b%Hz%XI-1)
+    end subroutine gpu_advanceCPML_H_right
+
     subroutine gpu_advanceCPML_Hx_left_kernel(Hx_d, Ez_d, sggMiHx_d, psi_Hxy_d, &
                                               P_bm_y_d, P_cm_y_d, gm2_d, &
                                               ii, ij, ji, jj, ki, kj, xi_offset)
@@ -778,5 +866,108 @@ contains
           end do
        end do
     end subroutine gpu_advanceCPML_Hz_left_kernel
+
+    !--------------------------------------------------------------------------------
+    ! CPML Right boundary - same pattern as left, uses PMLc(region=right) limits
+    !--------------------------------------------------------------------------------
+    subroutine gpu_advanceCPML_Ex_right_kernel(Ex_d, Hz_d, sggMiEx_d, psi_Exy_d, &
+                                               P_be_y_d, P_ce_y_d, g2_d, numMedia, &
+                                               ii, ij, ji, jj, ki, kj, xi_offset)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj, xi_offset
+       integer, intent(in) :: numMedia
+       real(kind=rkind), device, dimension(:,:,:) :: Ex_d, Hz_d, psi_Exy_d
+       integer(kind=integersizeofmediamatrices), device, dimension(:,:,:) :: sggMiEx_d
+       real(kind=rkind), device, dimension(:) :: P_be_y_d, P_ce_y_d, g2_d
+
+       integer(kind=4) :: i, j, k
+       integer(kind=integersizeofmediamatrices) :: medio
+
+       !$cuf kernel do(3) <<<*, *>>>
+       do k=ki,kj
+          do j=ji,jj
+             do i=ii,ij
+               medio = sggMiEx_d(i-xi_offset,j-xi_offset,k-xi_offset)
+               psi_Exy_d(i-ii+1,j-ji+1,k-ki+1) = P_be_y_d(j) * psi_Exy_d(i-ii+1,j-ji+1,k-ki+1) + &
+                  (Hz_d(i,j,k) - Hz_d(i,j-1,k)) * P_ce_y_d(j)
+               Ex_d(i,j,k) = Ex_d(i,j,k) + g2_d(medio) * psi_Exy_d(i-ii+1,j-ji+1,k-ki+1)
+             end do
+          end do
+       end do
+    end subroutine gpu_advanceCPML_Ex_right_kernel
+
+    subroutine gpu_advanceCPML_Ez_right_kernel(Ez_d, Hx_d, sggMiEz_d, psi_Ezy_d, &
+                                               P_be_y_d, P_ce_y_d, g2_d, numMedia, &
+                                               ii, ij, ji, jj, ki, kj, xi_offset)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj, xi_offset
+       integer, intent(in) :: numMedia
+       real(kind=rkind), device, dimension(:,:,:) :: Ez_d, Hx_d, psi_Ezy_d
+       integer(kind=integersizeofmediamatrices), device, dimension(:,:,:) :: sggMiEz_d
+       real(kind=rkind), device, dimension(:) :: P_be_y_d, P_ce_y_d, g2_d
+
+       integer(kind=4) :: i, j, k
+       integer(kind=integersizeofmediamatrices) :: medio
+
+       !$cuf kernel do(3) <<<*, *>>>
+       do k=ki,kj
+          do j=ji,jj
+             do i=ii,ij
+               medio = sggMiEz_d(i-xi_offset,j-xi_offset,k-xi_offset)
+               psi_Ezy_d(i-ii+1,j-ji+1,k-ki+1) = P_be_y_d(j) * psi_Ezy_d(i-ii+1,j-ji+1,k-ki+1) + &
+                  (Hx_d(i,j,k) - Hx_d(i,j-1,k)) * P_ce_y_d(j)
+               Ez_d(i,j,k) = Ez_d(i,j,k) - g2_d(medio) * psi_Ezy_d(i-ii+1,j-ji+1,k-ki+1)
+             end do
+          end do
+       end do
+    end subroutine gpu_advanceCPML_Ez_right_kernel
+
+    subroutine gpu_advanceCPML_Hx_right_kernel(Hx_d, Ez_d, sggMiHx_d, psi_Hxy_d, &
+                                               P_bm_y_d, P_cm_y_d, gm2_d, numMedia, &
+                                               ii, ij, ji, jj, ki, kj, xi_offset)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj, xi_offset
+       integer, intent(in) :: numMedia
+       real(kind=rkind), device, dimension(:,:,:) :: Hx_d, Ez_d, psi_Hxy_d
+       integer(kind=integersizeofmediamatrices), device, dimension(:,:,:) :: sggMiHx_d
+       real(kind=rkind), device, dimension(:) :: P_bm_y_d, P_cm_y_d, gm2_d
+
+       integer(kind=4) :: i, j, k
+       integer(kind=integersizeofmediamatrices) :: medio
+
+       !$cuf kernel do(3) <<<*, *>>>
+       do k=ki,kj
+          do j=ji,jj
+             do i=ii,ij
+               medio = sggMiHx_d(i-xi_offset,j-xi_offset,k-xi_offset)
+               psi_Hxy_d(i-ii+1,j-ji+1,k-ki+1) = P_bm_y_d(j) * psi_Hxy_d(i-ii+1,j-ji+1,k-ki+1) + &
+                  (Ez_d(i,j+1,k) - Ez_d(i,j,k)) * P_cm_y_d(j)
+               Hx_d(i,j,k) = Hx_d(i,j,k) - gm2_d(medio) * psi_Hxy_d(i-ii+1,j-ji+1,k-ki+1)
+             end do
+          end do
+       end do
+    end subroutine gpu_advanceCPML_Hx_right_kernel
+
+    subroutine gpu_advanceCPML_Hz_right_kernel(Hz_d, Ex_d, sggMiHz_d, psi_Hzy_d, &
+                                               P_bm_y_d, P_cm_y_d, gm2_d, numMedia, &
+                                               ii, ij, ji, jj, ki, kj, xi_offset)
+       integer(kind=4), intent(in) :: ii, ij, ji, jj, ki, kj, xi_offset
+       integer, intent(in) :: numMedia
+       real(kind=rkind), device, dimension(:,:,:) :: Hz_d, Ex_d, psi_Hzy_d
+       integer(kind=integersizeofmediamatrices), device, dimension(:,:,:) :: sggMiHz_d
+       real(kind=rkind), device, dimension(:) :: P_bm_y_d, P_cm_y_d, gm2_d
+
+       integer(kind=4) :: i, j, k
+       integer(kind=integersizeofmediamatrices) :: medio
+
+       !$cuf kernel do(3) <<<*, *>>>
+       do k=ki,kj
+          do j=ji,jj
+             do i=ii,ij
+               medio = sggMiHz_d(i-xi_offset,j-xi_offset,k-xi_offset)
+               psi_Hzy_d(i-ii+1,j-ji+1,k-ki+1) = P_bm_y_d(j) * psi_Hzy_d(i-ii+1,j-ji+1,k-ki+1) + &
+                  (Ex_d(i,j+1,k) - Ex_d(i,j,k)) * P_cm_y_d(j)
+               Hz_d(i,j,k) = Hz_d(i,j,k) + gm2_d(medio) * psi_Hzy_d(i-ii+1,j-ji+1,k-ki+1)
+             end do
+          end do
+       end do
+    end subroutine gpu_advanceCPML_Hz_right_kernel
 
 end module gpu_kernels_m

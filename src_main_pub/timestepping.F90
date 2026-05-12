@@ -1076,15 +1076,23 @@ contains
                                   dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%eps0,this%mu0)
 
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-          if (this%gpu_initialized .and. this%thereAre%PMLBorders) then
-             write(dubuf,*) 'Init CPML GPU left boundary...';  call print11(this%control%layoutnumber,dubuf)
-             call gpu_init_pml_left(this%gpu, P_be_y, P_ce_y, P_bm_y, P_cm_y, &
-                                    PMLc(iEx)%XI(left), PMLc(iEx)%XE(left), PMLc(iEx)%YI(left), PMLc(iEx)%YE(left), PMLc(iEx)%ZI(left), PMLc(iEx)%ZE(left), &
-                                    PMLc(iEz)%XI(left), PMLc(iEz)%XE(left), PMLc(iEz)%YI(left), PMLc(iEz)%YE(left), PMLc(iEz)%ZI(left), PMLc(iEz)%ZE(left), &
-                                    PMLc(iHx)%XI(left), PMLc(iHx)%XE(left), PMLc(iHx)%YI(left), PMLc(iHx)%YE(left), PMLc(iHx)%ZI(left), PMLc(iHx)%ZE(left), &
-                                    PMLc(iHz)%XI(left), PMLc(iHz)%XE(left), PMLc(iHz)%YI(left), PMLc(iHz)%YE(left), PMLc(iHz)%ZI(left), PMLc(iHz)%ZE(left), &
-                                    this%gpu%Ex_ny, this%gpu%Ex_nz, this%gpu%Ez_ny, this%gpu%Ez_nz, this%gpu%Hx_ny, this%gpu%Hx_nz, this%gpu%Hz_ny, this%gpu%Hz_nz)
-          endif
+           if (this%gpu_initialized .and. this%thereAre%PMLBorders) then
+              write(dubuf,*) 'Init CPML GPU left boundary...';  call print11(this%control%layoutnumber,dubuf)
+              call gpu_init_pml_left(this%gpu, P_be_y, P_ce_y, P_bm_y, P_cm_y, &
+                                     PMLc(iEx)%XI(left), PMLc(iEx)%XE(left), PMLc(iEx)%YI(left), PMLc(iEx)%YE(left), PMLc(iEx)%ZI(left), PMLc(iEx)%ZE(left), &
+                                     PMLc(iEz)%XI(left), PMLc(iEz)%XE(left), PMLc(iEz)%YI(left), PMLc(iEz)%YE(left), PMLc(iEz)%ZI(left), PMLc(iEz)%ZE(left), &
+                                     PMLc(iHx)%XI(left), PMLc(iHx)%XE(left), PMLc(iHx)%YI(left), PMLc(iHx)%YE(left), PMLc(iHx)%ZI(left), PMLc(iHx)%ZE(left), &
+                                     PMLc(iHz)%XI(left), PMLc(iHz)%XE(left), PMLc(iHz)%YI(left), PMLc(iHz)%YE(left), PMLc(iHz)%ZI(left), PMLc(iHz)%ZE(left), &
+                                     this%gpu%Ex_ny, this%gpu%Ex_nz, this%gpu%Ez_ny, this%gpu%Ez_nz, this%gpu%Hx_ny, this%gpu%Hx_nz, this%gpu%Hz_ny, this%gpu%Hz_nz)
+              if (this%gpu%pml_left_initialized) then
+                 write(dubuf,*) 'Init CPML GPU right boundary...';  call print11(this%control%layoutnumber,dubuf)
+                 call gpu_init_pml_right(this%gpu, &
+                                        PMLc(iEx)%XI(right), PMLc(iEx)%XE(right), PMLc(iEx)%YI(right), PMLc(iEx)%YE(right), PMLc(iEx)%ZI(right), PMLc(iEx)%ZE(right), &
+                                        PMLc(iEz)%XI(right), PMLc(iEz)%XE(right), PMLc(iEz)%YI(right), PMLc(iEz)%YE(right), PMLc(iEz)%ZI(right), PMLc(iEz)%ZE(right), &
+                                        PMLc(iHx)%XI(right), PMLc(iHx)%XE(right), PMLc(iHx)%YI(right), PMLc(iHx)%YE(right), PMLc(iHx)%ZI(right), PMLc(iHx)%ZE(right), &
+                                        PMLc(iHz)%XI(right), PMLc(iHz)%XE(right), PMLc(iHz)%YI(right), PMLc(iHz)%YE(right), PMLc(iHz)%ZI(right), PMLc(iHz)%ZE(right))
+              endif
+           endif
 #endif
 
           l_auxinput=this%thereAre%PMLBorders
@@ -2619,22 +2627,23 @@ contains
         class(solver_t) :: this
         If (this%thereAre%PMLBorders) then
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-           if (this%gpu_initialized .and. this%gpu%pml_left_initialized) then
-              call gpu_update_pml_left_coeffs(this%gpu, P_be_y, P_ce_y, P_bm_y, P_cm_y)
-              call gpu_advanceCPML_H_left(this%gpu, this%bounds)
-           else
-              call advanceMagneticCPML(this%sgg%numMedia, this%bounds, & 
-                                       this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, & 
-                                       this%g%gm2, this%Hx, this%Hy, this%Hz, & 
-                                       this%Ex, this%Ey, this%Ez)
-           endif
+            if (this%gpu_initialized .and. this%gpu%pml_left_initialized .and. this%gpu%pml_right_initialized) then
+               call gpu_update_pml_left_coeffs(this%gpu, P_be_y, P_ce_y, P_bm_y, P_cm_y)
+               call gpu_advanceCPML_H_left(this%gpu, this%bounds)
+               call gpu_advanceCPML_H_right(this%gpu, this%bounds, this%sgg%numMedia)
+            else
+               call advanceMagneticCPML(this%sgg%numMedia, this%bounds, & 
+                                        this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, & 
+                                        this%g%gm2, this%Hx, this%Hy, this%Hz, & 
+                                        this%Ex, this%Ey, this%Ez)
+            endif
 #else
-           call advanceMagneticCPML(this%sgg%numMedia, this%bounds, & 
-                                    this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, & 
-                                    this%g%gm2, this%Hx, this%Hy, this%Hz, & 
-                                    this%Ex, this%Ey, this%Ez)
+            call advanceMagneticCPML(this%sgg%numMedia, this%bounds, & 
+                                     this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, & 
+                                     this%g%gm2, this%Hx, this%Hy, this%Hz, & 
+                                     this%Ex, this%Ey, this%Ez)
 #endif
-        end if
+         end if
      end subroutine
 
    subroutine solver_MinusCloneMagneticPMC(this)
@@ -2657,8 +2666,9 @@ contains
         end if
         If (this%thereAre%PMLBorders) then
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-           if (this%gpu_initialized .and. this%gpu%pml_left_initialized) then
+           if (this%gpu_initialized .and. this%gpu%pml_left_initialized .and. this%gpu%pml_right_initialized) then
               call gpu_advanceCPML_E_left(this%gpu, this%bounds)
+              call gpu_advanceCPML_E_right(this%gpu, this%bounds, this%sgg%numMedia)
            else
               call AdvanceelectricCPML(this%sgg%numMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, & 
                                        this%g%G2, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
