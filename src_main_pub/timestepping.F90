@@ -1062,13 +1062,25 @@ contains
          end if
       end subroutine
 
-  subroutine initializeBorders()
-          character(len=BUFSIZE) :: dubuf
-          logical :: l_auxinput, l_auxoutput
- #ifdef CompileWithMPI
-          integer(kind=4) :: ierr
- #endif
-         write(dubuf,*) 'Init Other Borders...';  call print11(this%control%layoutnumber,dubuf)
+ subroutine initializeBorders()
+           character(len=BUFSIZE) :: dubuf
+           logical :: l_auxinput, l_auxoutput
+  #ifdef CompileWithMPI
+           integer(kind=4) :: ierr
+  #endif
+           integer(kind=4) :: left_Hx_ii, left_Hx_ij, left_Hx_ji, left_Hx_jj, left_Hx_ki, left_Hx_kj
+           integer(kind=4) :: left_Hz_ii, left_Hz_ij, left_Hz_ji, left_Hz_jj, left_Hz_ki, left_Hz_kj
+           integer(kind=4) :: right_Hx_ii, right_Hx_ij, right_Hx_ji, right_Hx_jj, right_Hx_ki, right_Hx_kj
+           integer(kind=4) :: right_Hz_ii, right_Hz_ij, right_Hz_ji, right_Hz_jj, right_Hz_ki, right_Hz_kj
+           integer(kind=4) :: down_Hy_ii, down_Hy_ij, down_Hy_ji, down_Hy_jj, down_Hy_ki, down_Hy_kj
+           integer(kind=4) :: down_Hx_ii, down_Hx_ij, down_Hx_ji, down_Hx_jj, down_Hx_ki, down_Hx_kj
+           integer(kind=4) :: up_Hy_ii, up_Hy_ij, up_Hy_ji, up_Hy_jj, up_Hy_ki, up_Hy_kj
+           integer(kind=4) :: up_Hx_ii, up_Hx_ij, up_Hx_ji, up_Hx_jj, up_Hx_ki, up_Hx_kj
+           integer(kind=4) :: back_Hz_ii, back_Hz_ij, back_Hz_ji, back_Hz_jj, back_Hz_ki, back_Hz_kj
+           integer(kind=4) :: back_Hy_ii, back_Hy_ij, back_Hy_ji, back_Hy_jj, back_Hy_ki, back_Hy_kj
+           integer(kind=4) :: front_Hz_ii, front_Hz_ij, front_Hz_ji, front_Hz_jj, front_Hz_ki, front_Hz_kj
+           integer(kind=4) :: front_Hy_ii, front_Hy_ij, front_Hy_ji, front_Hy_jj, front_Hy_ki, front_Hy_kj
+          write(dubuf,*) 'Init Other Borders...';  call print11(this%control%layoutnumber,dubuf)
          call InitOtherBorders    (this%sgg,this%thereAre)
          l_auxinput=this%thereAre%PECBorders.or.this%thereAre%PMCBorders.or.this%thereAre%PeriodicBorders
          l_auxoutput=l_auxinput
@@ -1173,10 +1185,102 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
      write(dubuf,*) 'Init Mur Borders...';  call print11(this%control%layoutnumber,dubuf)
-            call InitMURBorders      (this%sgg,this%thereAre%MURBorders,this%control%resume,Idxh,Idyh,Idzh,this%eps0,this%mu0)
-       ! MUR GPU init deferred — needs proper domain limit initialization
-       ! MUR GPU kernels exist in gpu_mur_m.F90 but are not yet wired
-       ! CPU MUR path (AdvanceMagneticMUR) is used as fallback
+             call InitMURBorders      (this%sgg,this%thereAre%MURBorders,this%control%resume,Idxh,Idyh,Idzh,this%eps0,this%mu0)
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+              if (this%gpu_initialized) then
+                 call gpu_init_mur_coeffs(this%gpu, this%sgg%numMedia, &
+                                          left_CAB1, left_CAB3, left_cab4, &
+                                          right_CAB1, right_CAB3, right_cab4, &
+                                          down_CAB1, down_CAB3, down_cab4, &
+                                          up_CAB1, up_CAB3, up_cab4, &
+                                          back_CAB1, back_CAB3, back_cab4, &
+                                          front_CAB1, front_CAB3, front_cab4)
+                ! Get MUR domain limits for GPU — each boundary uses 2 fields
+                  call get_mur_limits(4, 1, &
+                                       left_Hx_ii, left_Hx_ij, left_Hx_ji, left_Hx_jj, left_Hx_ki, left_Hx_kj)
+                  call get_mur_limits(5, 1, &
+                                      left_Hz_ii, left_Hz_ij, left_Hz_ji, left_Hz_jj, left_Hz_ki, left_Hz_kj)
+                 call get_mur_limits(4, 2, &
+                                      right_Hx_ii, right_Hx_ij, right_Hx_ji, right_Hx_jj, right_Hx_ki, right_Hx_kj)
+                 call get_mur_limits(5, 2, &
+                                      right_Hz_ii, right_Hz_ij, right_Hz_ji, right_Hz_jj, right_Hz_ki, right_Hz_kj)
+                 call get_mur_limits(6, 3, &
+                                      down_Hy_ii, down_Hy_ij, down_Hy_ji, down_Hy_jj, down_Hy_ki, down_Hy_kj)
+                 call get_mur_limits(4, 3, &
+                                      down_Hx_ii, down_Hx_ij, down_Hx_ji, down_Hx_jj, down_Hx_ki, down_Hx_kj)
+                 call get_mur_limits(6, 4, &
+                                      up_Hy_ii, up_Hy_ij, up_Hy_ji, up_Hy_jj, up_Hy_ki, up_Hy_kj)
+                 call get_mur_limits(4, 4, &
+                                      up_Hx_ii, up_Hx_ij, up_Hx_ji, up_Hx_jj, up_Hx_ki, up_Hx_kj)
+                 call get_mur_limits(5, 5, &
+                                      back_Hz_ii, back_Hz_ij, back_Hz_ji, back_Hz_jj, back_Hz_ki, back_Hz_kj)
+                 call get_mur_limits(6, 5, &
+                                      back_Hy_ii, back_Hy_ij, back_Hy_ji, back_Hy_jj, back_Hy_ki, back_Hy_kj)
+                 call get_mur_limits(5, 6, &
+                                      front_Hz_ii, front_Hz_ij, front_Hz_ji, front_Hz_jj, front_Hz_ki, front_Hz_kj)
+                 call get_mur_limits(6, 6, &
+                                      front_Hy_ii, front_Hy_ij, front_Hy_ji, front_Hy_jj, front_Hy_ki, front_Hy_kj)
+                 call gpu_init_mur_limits(this%gpu, &
+                                           left_Hx_ii, left_Hx_ij, left_Hx_ji, left_Hx_jj, left_Hx_ki, left_Hx_kj, &
+                                           left_Hz_ii, left_Hz_ij, left_Hz_ji, left_Hz_jj, left_Hz_ki, left_Hz_kj, &
+                                           right_Hx_ii, right_Hx_ij, right_Hx_ji, right_Hx_jj, right_Hx_ki, right_Hx_kj, &
+                                           right_Hz_ii, right_Hz_ij, right_Hz_ji, right_Hz_jj, right_Hz_ki, right_Hz_kj, &
+                                           down_Hy_ii, down_Hy_ij, down_Hy_ji, down_Hy_jj, down_Hy_ki, down_Hy_kj, &
+                                           down_Hx_ii, down_Hx_ij, down_Hx_ji, down_Hx_jj, down_Hx_ki, down_Hx_kj, &
+                                           up_Hy_ii, up_Hy_ij, up_Hy_ji, up_Hy_jj, up_Hy_ki, up_Hy_kj, &
+                                           up_Hx_ii, up_Hx_ij, up_Hx_ji, up_Hx_jj, up_Hx_ki, up_Hx_kj, &
+                                           back_Hz_ii, back_Hz_ij, back_Hz_ji, back_Hz_jj, back_Hz_ki, back_Hz_kj, &
+                                           back_Hy_ii, back_Hy_ij, back_Hy_ji, back_Hy_jj, back_Hy_ki, back_Hy_kj, &
+                                           front_Hz_ii, front_Hz_ij, front_Hz_ji, front_Hz_jj, front_Hz_ki, front_Hz_kj, &
+                                           front_Hy_ii, front_Hy_ij, front_Hy_ji, front_Hy_jj, front_Hy_ki, front_Hy_kj)
+                  write(dubuf,*) 'Init MUR GPU past fields...'
+                  call print11(this%control%layoutnumber,dubuf)
+                  call gpu_init_mur_past_fields(this%gpu, &
+                                                ubound(regLR(left)%Past_Hx,1)-lbound(regLR(left)%Past_Hx,1)+1, &
+                                                ubound(regLR(left)%Past_Hx,2)-lbound(regLR(left)%Past_Hx,2)+1, &
+                                                ubound(regLR(left)%Past_Hx,3)-lbound(regLR(left)%Past_Hx,3)+1, &
+                                                ubound(regLR(left)%Past_Hz,1)-lbound(regLR(left)%Past_Hz,1)+1, &
+                                                ubound(regLR(left)%Past_Hz,2)-lbound(regLR(left)%Past_Hz,2)+1, &
+                                                ubound(regLR(left)%Past_Hz,3)-lbound(regLR(left)%Past_Hz,3)+1, &
+                                                ubound(regLR(right)%Past_Hx,1)-lbound(regLR(right)%Past_Hx,1)+1, &
+                                                ubound(regLR(right)%Past_Hx,2)-lbound(regLR(right)%Past_Hx,2)+1, &
+                                                ubound(regLR(right)%Past_Hx,3)-lbound(regLR(right)%Past_Hx,3)+1, &
+                                                ubound(regLR(right)%Past_Hz,1)-lbound(regLR(right)%Past_Hz,1)+1, &
+                                                ubound(regLR(right)%Past_Hz,2)-lbound(regLR(right)%Past_Hz,2)+1, &
+                                                ubound(regLR(right)%Past_Hz,3)-lbound(regLR(right)%Past_Hz,3)+1, &
+                                                ubound(regDU(down)%Past_Hy,1)-lbound(regDU(down)%Past_Hy,1)+1, &
+                                                ubound(regDU(down)%Past_Hy,2)-lbound(regDU(down)%Past_Hy,2)+1, &
+                                                ubound(regDU(down)%Past_Hy,3)-lbound(regDU(down)%Past_Hy,3)+1, &
+                                                ubound(regDU(down)%Past_Hx,1)-lbound(regDU(down)%Past_Hx,1)+1, &
+                                                ubound(regDU(down)%Past_Hx,2)-lbound(regDU(down)%Past_Hx,2)+1, &
+                                                ubound(regDU(down)%Past_Hx,3)-lbound(regDU(down)%Past_Hx,3)+1, &
+                                                ubound(regDU(up)%Past_Hy,1)-lbound(regDU(up)%Past_Hy,1)+1, &
+                                                ubound(regDU(up)%Past_Hy,2)-lbound(regDU(up)%Past_Hy,2)+1, &
+                                                ubound(regDU(up)%Past_Hy,3)-lbound(regDU(up)%Past_Hy,3)+1, &
+                                                ubound(regDU(up)%Past_Hx,1)-lbound(regDU(up)%Past_Hx,1)+1, &
+                                                ubound(regDU(up)%Past_Hx,2)-lbound(regDU(up)%Past_Hx,2)+1, &
+                                                ubound(regDU(up)%Past_Hx,3)-lbound(regDU(up)%Past_Hx,3)+1, &
+                                                ubound(regBF(back)%Past_Hz,1)-lbound(regBF(back)%Past_Hz,1)+1, &
+                                                ubound(regBF(back)%Past_Hz,2)-lbound(regBF(back)%Past_Hz,2)+1, &
+                                                ubound(regBF(back)%Past_Hz,3)-lbound(regBF(back)%Past_Hz,3)+1, &
+                                                ubound(regBF(back)%Past_Hy,1)-lbound(regBF(back)%Past_Hy,1)+1, &
+                                                ubound(regBF(back)%Past_Hy,2)-lbound(regBF(back)%Past_Hy,2)+1, &
+                                                ubound(regBF(back)%Past_Hy,3)-lbound(regBF(back)%Past_Hy,3)+1, &
+                                                ubound(regBF(front)%Past_Hz,1)-lbound(regBF(front)%Past_Hz,1)+1, &
+                                                ubound(regBF(front)%Past_Hz,2)-lbound(regBF(front)%Past_Hz,2)+1, &
+                                                ubound(regBF(front)%Past_Hz,3)-lbound(regBF(front)%Past_Hz,3)+1, &
+                                                ubound(regBF(front)%Past_Hy,1)-lbound(regBF(front)%Past_Hy,1)+1, &
+                                                ubound(regBF(front)%Past_Hy,2)-lbound(regBF(front)%Past_Hy,2)+1, &
+                                                ubound(regBF(front)%Past_Hy,3)-lbound(regBF(front)%Past_Hy,3)+1, &
+                                                regLR(left)%Past_Hx, regLR(left)%Past_Hz, &
+                                                regLR(right)%Past_Hx, regLR(right)%Past_Hz, &
+                                                regDU(down)%Past_Hy, regDU(down)%Past_Hx, &
+                                                regDU(up)%Past_Hy, regDU(up)%Past_Hx, &
+                                                regBF(back)%Past_Hz, regBF(back)%Past_Hy, &
+                                                regBF(front)%Past_Hz, regBF(front)%Past_Hy)
+               endif
+#endif
+         ! CPU MUR path (AdvanceMagneticMUR) is used as fallback
           l_auxinput= this%thereAre%MURBorders
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -2854,26 +2958,47 @@ contains
    end subroutine
 
 subroutine solver_advanceMagneticMUR(this)
-       class(solver_t) :: this
- #ifdef CompileWithMPI
-       integer(kind=4) :: ierr
- #endif
-       If (this%thereAre%MURBorders) then
-           ! MUR GPU path deferred — needs proper domain limit initialization
-           call AdvanceMagneticMUR(this%bounds, this%sgg, &
-                                  this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
-                                  this%Hx, this%Hy, this%Hz, & 
-                                  this%control%mur_second)
- #ifdef CompileWithMPI
-          if (this%control%mur_second) then
-             if (this%control%num_procs>1) then
-                call MPI_Barrier(SUBCOMM_MPI,ierr)
-                call FlushMPI_H_Cray
-             end if
-          end if
- #endif
-       end if
-    end subroutine
+        class(solver_t) :: this
+  #ifdef CompileWithMPI
+        integer(kind=4) :: ierr
+  #endif
+        If (this%thereAre%MURBorders) then
+#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+            if (this%gpu_initialized) then
+               call gpu_advanceMUR_H_left(this%gpu, this%bounds)
+               call gpu_advanceMUR_H_right(this%gpu, this%bounds)
+               call gpu_advanceMUR_H_down(this%gpu, this%bounds)
+               call gpu_advanceMUR_H_up(this%gpu, this%bounds)
+               call gpu_advanceMUR_H_back(this%gpu, this%bounds)
+               call gpu_advanceMUR_H_front(this%gpu, this%bounds)
+               call gpu_update_mur_past_left(this%gpu, this%bounds)
+               call gpu_update_mur_past_right(this%gpu, this%bounds)
+               call gpu_update_mur_past_down(this%gpu, this%bounds)
+               call gpu_update_mur_past_up(this%gpu, this%bounds)
+               call gpu_update_mur_past_back(this%gpu, this%bounds)
+               call gpu_update_mur_past_front(this%gpu, this%bounds)
+            else
+               call AdvanceMagneticMUR(this%bounds, this%sgg, &
+                                      this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
+                                      this%Hx, this%Hy, this%Hz, & 
+                                      this%control%mur_second)
+            endif
+#else
+            call AdvanceMagneticMUR(this%bounds, this%sgg, &
+                                   this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
+                                   this%Hx, this%Hy, this%Hz, & 
+                                   this%control%mur_second)
+#endif
+  #ifdef CompileWithMPI
+           if (this%control%mur_second) then
+              if (this%control%num_procs>1) then
+                 call MPI_Barrier(SUBCOMM_MPI,ierr)
+                 call FlushMPI_H_Cray
+              end if
+           end if
+  #endif
+        end if
+     end subroutine
 
 
    subroutine solver_end(this)

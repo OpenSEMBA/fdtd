@@ -253,38 +253,38 @@ contains
       this%sggMi_ny = ubound(sggMiEx,2) - lbound(sggMiEx,2) + 1
       this%sggMi_nz = ubound(sggMiEx,3) - lbound(sggMiEx,3) + 1
 
-      ! Allocate persistent device memory - YEE fields
-      allocate(this%Ex_d(this%Ex_nx, this%Ex_ny, this%Ex_nz))
-      allocate(this%Ey_d(this%Ey_nx, this%Ey_ny, this%Ey_nz))
-      allocate(this%Ez_d(this%Ez_nx, this%Ez_ny, this%Ez_nz))
-      allocate(this%Hx_d(this%Hx_nx, this%Hx_ny, this%Hx_nz))
-      allocate(this%Hy_d(this%Hy_nx, this%Hy_ny, this%Hy_nz))
-      allocate(this%Hz_d(this%Hz_nx, this%Hz_ny, this%Hz_nz))
+      ! Allocate persistent device memory - YEE fields (0-based to match host arrays)
+       allocate(this%Ex_d(0:this%Ex_nx-1, 0:this%Ex_ny-1, 0:this%Ex_nz-1))
+       allocate(this%Ey_d(0:this%Ey_nx-1, 0:this%Ey_ny-1, 0:this%Ey_nz-1))
+       allocate(this%Ez_d(0:this%Ez_nx-1, 0:this%Ez_ny-1, 0:this%Ez_nz-1))
+       allocate(this%Hx_d(0:this%Hx_nx-1, 0:this%Hx_ny-1, 0:this%Hx_nz-1))
+       allocate(this%Hy_d(0:this%Hy_nx-1, 0:this%Hy_ny-1, 0:this%Hy_nz-1))
+       allocate(this%Hz_d(0:this%Hz_nx-1, 0:this%Hz_ny-1, 0:this%Hz_nz-1))
 
-      allocate(this%Idxe_d(this%Idxe_n))
-      allocate(this%Idye_d(this%Idye_n))
-      allocate(this%Idze_d(this%Idze_n))
-      allocate(this%Idxh_d(this%Idxh_n))
-      allocate(this%Idyh_d(this%Idyh_n))
-      allocate(this%Idzh_d(this%Idzh_n))
-      allocate(this%dxe_d(this%dxe_n))
-      allocate(this%dye_d(this%dye_n))
-      allocate(this%dze_d(this%dze_n))
-      allocate(this%dxh_d(this%dxh_n))
-      allocate(this%dyh_d(this%dyh_n))
-      allocate(this%dzh_d(this%dzh_n))
+       allocate(this%Idxe_d(0:this%Idxe_n-1))
+       allocate(this%Idye_d(0:this%Idye_n-1))
+       allocate(this%Idze_d(0:this%Idze_n-1))
+       allocate(this%Idxh_d(0:this%Idxh_n-1))
+       allocate(this%Idyh_d(0:this%Idyh_n-1))
+       allocate(this%Idzh_d(0:this%Idzh_n-1))
+       allocate(this%dxe_d(0:this%dxe_n-1))
+       allocate(this%dye_d(0:this%dye_n-1))
+       allocate(this%dze_d(0:this%dze_n-1))
+       allocate(this%dxh_d(0:this%dxh_n-1))
+       allocate(this%dyh_d(0:this%dyh_n-1))
+       allocate(this%dzh_d(0:this%dzh_n-1))
 
-      allocate(this%sggMiEx_d(this%sggMi_nx, this%sggMi_ny, this%sggMi_nz))
-      allocate(this%sggMiEy_d(this%sggMi_nx, this%sggMi_ny, this%sggMi_nz))
-      allocate(this%sggMiEz_d(this%sggMi_nx, this%sggMi_ny, this%sggMi_nz))
-      allocate(this%sggMiHx_d(this%sggMi_nx, this%sggMi_ny, this%sggMi_nz))
-      allocate(this%sggMiHy_d(this%sggMi_nx, this%sggMi_ny, this%sggMi_nz))
-      allocate(this%sggMiHz_d(this%sggMi_nx, this%sggMi_ny, this%sggMi_nz))
+      allocate(this%sggMiEx_d(0:this%sggMi_nx-1, 0:this%sggMi_ny-1, 0:this%sggMi_nz-1))
+       allocate(this%sggMiEy_d(0:this%sggMi_nx-1, 0:this%sggMi_ny-1, 0:this%sggMi_nz-1))
+       allocate(this%sggMiEz_d(0:this%sggMi_nx-1, 0:this%sggMi_ny-1, 0:this%sggMi_nz-1))
+       allocate(this%sggMiHx_d(0:this%sggMi_nx-1, 0:this%sggMi_ny-1, 0:this%sggMi_nz-1))
+       allocate(this%sggMiHy_d(0:this%sggMi_nx-1, 0:this%sggMi_ny-1, 0:this%sggMi_nz-1))
+       allocate(this%sggMiHz_d(0:this%sggMi_nx-1, 0:this%sggMi_ny-1, 0:this%sggMi_nz-1))
 
-      allocate(this%g1_d(this%g1_n))
-      allocate(this%g2_d(this%g2_n))
-      allocate(this%gm1_d(this%gm1_n))
-      allocate(this%gm2_d(this%gm2_n))
+       allocate(this%g1_d(0:this%g1_n-1))
+       allocate(this%g2_d(0:this%g2_n-1))
+       allocate(this%gm1_d(0:this%gm1_n-1))
+       allocate(this%gm2_d(0:this%gm2_n-1))
 
       ! Initial upload: host -> device (once at startup)
       this%Ex_d = this%Ex
@@ -970,20 +970,20 @@ this%pml_up_initialized = .false.
        real(kind=rkind), dimension(:,:,:), intent(in) :: down_Hy, down_Hx, up_Hy, up_Hx
        real(kind=rkind), dimension(:,:,:), intent(in) :: back_Hz, back_Hy, front_Hz, front_Hy
 
-       if (.not. this%initialized) return
+      if (.not. this%initialized) return
 
-       allocate(this%mur_past_Hx_left(left_Hx_nx, left_Hx_ny, left_Hx_nz))
-       allocate(this%mur_past_Hz_left(left_Hz_nx, left_Hz_ny, left_Hz_nz))
-       allocate(this%mur_past_Hx_right(right_Hx_nx, right_Hx_ny, right_Hx_nz))
-       allocate(this%mur_past_Hz_right(right_Hz_nx, right_Hz_ny, right_Hz_nz))
-       allocate(this%mur_past_Hy_down(down_Hy_nx, down_Hy_ny, down_Hy_nz))
-       allocate(this%mur_past_Hx_down(down_Hx_nx, down_Hx_ny, down_Hx_nz))
-       allocate(this%mur_past_Hy_up(up_Hy_nx, up_Hy_ny, up_Hy_nz))
-       allocate(this%mur_past_Hx_up(up_Hx_nx, up_Hx_ny, up_Hx_nz))
-       allocate(this%mur_past_Hz_back(back_Hz_nx, back_Hz_ny, back_Hz_nz))
-       allocate(this%mur_past_Hy_back(back_Hy_nx, back_Hy_ny, back_Hy_nz))
-       allocate(this%mur_past_Hz_front(front_Hz_nx, front_Hz_ny, front_Hz_nz))
-       allocate(this%mur_past_Hy_front(front_Hy_nx, front_Hy_ny, front_Hy_nz))
+        allocate(this%mur_past_Hx_left(lbound(left_Hx,1):ubound(left_Hx,1), lbound(left_Hx,2):ubound(left_Hx,2), lbound(left_Hx,3):ubound(left_Hx,3)))
+        allocate(this%mur_past_Hz_left(lbound(left_Hz,1):ubound(left_Hz,1), lbound(left_Hz,2):ubound(left_Hz,2), lbound(left_Hz,3):ubound(left_Hz,3)))
+        allocate(this%mur_past_Hx_right(lbound(right_Hx,1):ubound(right_Hx,1), lbound(right_Hx,2):ubound(right_Hx,2), lbound(right_Hx,3):ubound(right_Hx,3)))
+        allocate(this%mur_past_Hz_right(lbound(right_Hz,1):ubound(right_Hz,1), lbound(right_Hz,2):ubound(right_Hz,2), lbound(right_Hz,3):ubound(right_Hz,3)))
+        allocate(this%mur_past_Hy_down(lbound(down_Hy,1):ubound(down_Hy,1), lbound(down_Hy,2):ubound(down_Hy,2), lbound(down_Hy,3):ubound(down_Hy,3)))
+        allocate(this%mur_past_Hx_down(lbound(down_Hx,1):ubound(down_Hx,1), lbound(down_Hx,2):ubound(down_Hx,2), lbound(down_Hx,3):ubound(down_Hx,3)))
+        allocate(this%mur_past_Hy_up(lbound(up_Hy,1):ubound(up_Hy,1), lbound(up_Hy,2):ubound(up_Hy,2), lbound(up_Hy,3):ubound(up_Hy,3)))
+        allocate(this%mur_past_Hx_up(lbound(up_Hx,1):ubound(up_Hx,1), lbound(up_Hx,2):ubound(up_Hx,2), lbound(up_Hx,3):ubound(up_Hx,3)))
+        allocate(this%mur_past_Hz_back(lbound(back_Hz,1):ubound(back_Hz,1), lbound(back_Hz,2):ubound(back_Hz,2), lbound(back_Hz,3):ubound(back_Hz,3)))
+        allocate(this%mur_past_Hy_back(lbound(back_Hy,1):ubound(back_Hy,1), lbound(back_Hy,2):ubound(back_Hy,2), lbound(back_Hy,3):ubound(back_Hy,3)))
+        allocate(this%mur_past_Hz_front(lbound(front_Hz,1):ubound(front_Hz,1), lbound(front_Hz,2):ubound(front_Hz,2), lbound(front_Hz,3):ubound(front_Hz,3)))
+        allocate(this%mur_past_Hy_front(lbound(front_Hy,1):ubound(front_Hy,1), lbound(front_Hy,2):ubound(front_Hy,2), lbound(front_Hy,3):ubound(front_Hy,3)))
 
        this%mur_past_Hx_left = left_Hx; this%mur_past_Hz_left = left_Hz
        this%mur_past_Hx_right = right_Hx; this%mur_past_Hz_right = right_Hz
@@ -1046,42 +1046,42 @@ this%pml_up_initialized = .false.
 
         if (.not. this%initialized) return
 
-        this%mur_left_Hx_ii = left_Hx_ii; this%mur_left_Hx_ij = left_Hx_ij
-        this%mur_left_Hx_ji = left_Hx_ji; this%mur_left_Hx_jj = left_Hx_jj
-        this%mur_left_Hx_ki = left_Hx_ki; this%mur_left_Hx_kj = left_Hx_kj
-        this%mur_left_Hz_ii = left_Hz_ii; this%mur_left_Hz_ij = left_Hz_ij
-        this%mur_left_Hz_ji = left_Hz_ji; this%mur_left_Hz_jj = left_Hz_jj
-        this%mur_left_Hz_ki = left_Hz_ki; this%mur_left_Hz_kj = left_Hz_kj
-        this%mur_right_Hx_ii = right_Hx_ii; this%mur_right_Hx_ij = right_Hx_ij
-        this%mur_right_Hx_ji = right_Hx_ji; this%mur_right_Hx_jj = right_Hx_jj
-        this%mur_right_Hx_ki = right_Hx_ki; this%mur_right_Hx_kj = right_Hx_kj
-        this%mur_right_Hz_ii = right_Hz_ii; this%mur_right_Hz_ij = right_Hz_ij
-        this%mur_right_Hz_ji = right_Hz_ji; this%mur_right_Hz_jj = right_Hz_jj
-        this%mur_right_Hz_ki = right_Hz_ki; this%mur_right_Hz_kj = right_Hz_kj
-        this%mur_down_Hy_ii = down_Hy_ii; this%mur_down_Hy_ij = down_Hy_ij
-        this%mur_down_Hy_ji = down_Hy_ji; this%mur_down_Hy_jj = down_Hy_jj
-        this%mur_down_Hy_ki = down_Hy_ki; this%mur_down_Hy_kj = down_Hy_kj
-        this%mur_down_Hx_ii = down_Hx_ii; this%mur_down_Hx_ij = down_Hx_ij
-        this%mur_down_Hx_ji = down_Hx_ji; this%mur_down_Hx_jj = down_Hx_jj
-        this%mur_down_Hx_ki = down_Hx_ki; this%mur_down_Hx_kj = down_Hx_kj
-        this%mur_up_Hy_ii = up_Hy_ii; this%mur_up_Hy_ij = up_Hy_ij
-        this%mur_up_Hy_ji = up_Hy_ji; this%mur_up_Hy_jj = up_Hy_jj
-        this%mur_up_Hy_ki = up_Hy_ki; this%mur_up_Hy_kj = up_Hy_kj
-        this%mur_up_Hx_ii = up_Hx_ii; this%mur_up_Hx_ij = up_Hx_ij
-        this%mur_up_Hx_ji = up_Hx_ji; this%mur_up_Hx_jj = up_Hx_jj
-        this%mur_up_Hx_ki = up_Hx_ki; this%mur_up_Hx_kj = up_Hx_kj
-        this%mur_back_Hz_ii = back_Hz_ii; this%mur_back_Hz_ij = back_Hz_ij
-        this%mur_back_Hz_ji = back_Hz_ji; this%mur_back_Hz_jj = back_Hz_jj
-        this%mur_back_Hz_ki = back_Hz_ki; this%mur_back_Hz_kj = back_Hz_kj
-        this%mur_back_Hy_ii = back_Hy_ii; this%mur_back_Hy_ij = back_Hy_ij
-        this%mur_back_Hy_ji = back_Hy_ji; this%mur_back_Hy_jj = back_Hy_jj
-        this%mur_back_Hy_ki = back_Hy_ki; this%mur_back_Hy_kj = back_Hy_kj
-        this%mur_front_Hz_ii = front_Hz_ii; this%mur_front_Hz_ij = front_Hz_ij
-        this%mur_front_Hz_ji = front_Hz_ji; this%mur_front_Hz_jj = front_Hz_jj
-        this%mur_front_Hz_ki = front_Hz_ki; this%mur_front_Hz_kj = front_Hz_kj
-        this%mur_front_Hy_ii = front_Hy_ii; this%mur_front_Hy_ij = front_Hy_ij
-        this%mur_front_Hy_ji = front_Hy_ji; this%mur_front_Hy_jj = front_Hy_jj
-        this%mur_front_Hy_ki = front_Hy_ki; this%mur_front_Hy_kj = front_Hy_kj
+         this%mur_left_Hx_ii = left_Hx_ii; this%mur_left_Hx_ij = left_Hx_ij
+         this%mur_left_Hx_ji = left_Hx_ji; this%mur_left_Hx_jj = left_Hx_jj
+         this%mur_left_Hx_ki = left_Hx_ki; this%mur_left_Hx_kj = left_Hx_kj
+         this%mur_left_Hz_ii = left_Hz_ii; this%mur_left_Hz_ij = left_Hz_ij
+         this%mur_left_Hz_ji = left_Hz_ji; this%mur_left_Hz_jj = left_Hz_jj
+         this%mur_left_Hz_ki = left_Hz_ki; this%mur_left_Hz_kj = left_Hz_kj
+         this%mur_right_Hx_ii = right_Hx_ii; this%mur_right_Hx_ij = right_Hx_ij
+         this%mur_right_Hx_ji = right_Hx_ji; this%mur_right_Hx_jj = right_Hx_jj
+         this%mur_right_Hx_ki = right_Hx_ki; this%mur_right_Hx_kj = right_Hx_kj
+         this%mur_right_Hz_ii = right_Hz_ii; this%mur_right_Hz_ij = right_Hz_ij
+         this%mur_right_Hz_ji = right_Hz_ji; this%mur_right_Hz_jj = right_Hz_jj
+         this%mur_right_Hz_ki = right_Hz_ki; this%mur_right_Hz_kj = right_Hz_kj
+         this%mur_down_Hy_ii = down_Hy_ii; this%mur_down_Hy_ij = down_Hy_ij
+         this%mur_down_Hy_ji = down_Hy_ji; this%mur_down_Hy_jj = down_Hy_jj
+         this%mur_down_Hy_ki = down_Hy_ki; this%mur_down_Hy_kj = down_Hy_kj
+         this%mur_down_Hx_ii = down_Hx_ii; this%mur_down_Hx_ij = down_Hx_ij
+         this%mur_down_Hx_ji = down_Hx_ji; this%mur_down_Hx_jj = down_Hx_jj
+         this%mur_down_Hx_ki = down_Hx_ki; this%mur_down_Hx_kj = down_Hx_kj
+         this%mur_up_Hy_ii = up_Hy_ii; this%mur_up_Hy_ij = up_Hy_ij
+         this%mur_up_Hy_ji = up_Hy_ji; this%mur_up_Hy_jj = up_Hy_jj
+         this%mur_up_Hy_ki = up_Hy_ki; this%mur_up_Hy_kj = up_Hy_kj
+         this%mur_up_Hx_ii = up_Hx_ii; this%mur_up_Hx_ij = up_Hx_ij
+         this%mur_up_Hx_ji = up_Hx_ji; this%mur_up_Hx_jj = up_Hx_jj
+         this%mur_up_Hx_ki = up_Hx_ki; this%mur_up_Hx_kj = up_Hx_kj
+         this%mur_back_Hz_ii = back_Hz_ii; this%mur_back_Hz_ij = back_Hz_ij
+         this%mur_back_Hz_ji = back_Hz_ji; this%mur_back_Hz_jj = back_Hz_jj
+         this%mur_back_Hz_ki = back_Hz_ki; this%mur_back_Hz_kj = back_Hz_kj
+         this%mur_back_Hy_ii = back_Hy_ii; this%mur_back_Hy_ij = back_Hy_ij
+         this%mur_back_Hy_ji = back_Hy_ji; this%mur_back_Hy_jj = back_Hy_jj
+         this%mur_back_Hy_ki = back_Hy_ki; this%mur_back_Hy_kj = back_Hy_kj
+         this%mur_front_Hz_ii = front_Hz_ii; this%mur_front_Hz_ij = front_Hz_ij
+         this%mur_front_Hz_ji = front_Hz_ji; this%mur_front_Hz_jj = front_Hz_jj
+         this%mur_front_Hz_ki = front_Hz_ki; this%mur_front_Hz_kj = front_Hz_kj
+         this%mur_front_Hy_ii = front_Hy_ii; this%mur_front_Hy_ij = front_Hy_ij
+         this%mur_front_Hy_ji = front_Hy_ji; this%mur_front_Hy_jj = front_Hy_jj
+         this%mur_front_Hy_ki = front_Hy_ki; this%mur_front_Hy_kj = front_Hy_kj
 
      end subroutine gpu_init_mur_limits
 

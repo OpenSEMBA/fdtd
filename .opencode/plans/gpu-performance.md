@@ -1,14 +1,14 @@
 # GPU Performance Optimization Plan
 
-## Current State (RTX 5080, NVHPC 25.9) — Post Phase 1
+## Current State (RTX 5080, NVHPC 25.9) — Post Phase 2 (MUR GPU wired)
 
 | Case | CPU (48-core) | GPU (pre) | GPU (post) | Improvement |
 |------|--------------|-----------|------------|-------------|
-| nodalSource (9K steps, MUR) | 35.2s | 1.87s | **1.87s** | — (MUR GPU deferred) |
+| nodalSource (9K steps, MUR) | 35.2s | 1.87s | **1.31s** | **~30% faster** |
 | towelHanger (2K steps, CPML) | 8.0s | 0.85s | **0.72s** | **~16% faster** |
-| multipleAssigments (500 steps, CPML) | 2.3s | 0.45s | **0.45s** | — (small case) |
-| sphere (100 steps, CPML+farfield) | 3.3s | 2.12s | **2.09s** | ~1% (launch overhead) |
-| cybonera 10k (2.3M cells, MUR+wires) | ~270s* | 8.15s | **8.66s** | — (MUR GPU deferred) |
+| multipleAssigments (500 steps, CPML) | 2.3s | 0.45s | **0.42s** | ~7% faster |
+| sphere (100 steps, CPML+farfield) | 3.3s | 2.12s | **2.11s** | ~1% (launch overhead) |
+| cybonera 10k (2.3M cells, MUR+wires) | ~270s* | 8.15s | **~2s** | **~4x faster** (estimated) |
 
 *cybonera estimate: 2.3M cells × 10k steps with 555 wire coords
 
@@ -60,12 +60,17 @@
 
 Done: Removed 5 `gpu_update_pml_*_coeffs()` calls from timestep loop. PML coefficients are constant — already set once in `gpu_init_pml_*` at startup. Eliminated 40,000+ tiny H2D memcpys per CPML simulation.
 
-### Phase 2: Wire up MUR GPU path (HIGH) — DEFERRED
-**MUR GPU kernels exist but crash due to uninitialized domain limits.**
+### Phase 2: Wire up MUR GPU path (HIGH) ✅ DONE
+**MUR GPU now wired — 30% faster for nodalSource (1.87s → 1.31s)**
 
-Status: `gpu_init_mur_coeffs()` was wired but `gpu_init_mur_limits()` was never called, causing `cudaLaunchKernel status 700` (illegal memory access). The MUR GPU kernels use domain indices (`mur_left_Hx_ii` etc.) that are zero when uninitialized, leading to out-of-bounds device memory access.
-
-**Fix needed:** Wire `gpu_init_mur_limits()` call after `gpu_init_mur_coeffs()`. The `get_mur_limits()` function from `bordersmur.F90` provides the domain indices, but `ileft`, `iright`, etc. constants need to be declared in `timestepping.F90`.
+Done:
+- Exported `regLR`, `regDU`, `regBF` from `BORDERS_MUR_m` module for GPU past field initialization
+- Called `get_mur_limits()` 12 times (2 fields × 6 boundaries) to populate domain indices
+- Called `gpu_init_mur_limits()` to set GPU MUR domain limits
+- Called `gpu_init_mur_past_fields()` to copy CPU MUR past fields to GPU
+- Wired 12 GPU MUR kernels (6 advance + 6 past-field update) into `solver_advanceMagneticMUR`
+- Fixed GPU array indexing: changed from 1-based to 0-based to match host array indexing
+- MUR past fields now use host array bounds for allocation (e.g., `lbound(left_Hx,1):ubound(left_Hx,1)`)
 
 ### Phase 3: Fuse YEE E+H kernels (MEDIUM)
 **Expected impact: 10-15% faster (reduces kernel launch overhead)**
@@ -152,7 +157,7 @@ Status: `gpu_init_mur_coeffs()` was wired but `gpu_init_mur_limits()` was never 
 ## Implementation Order
 
 1. **Phase 1** (PML coefficient caching) ✅ DONE — ~16% faster for CPML cases
-2. **Phase 2** (MUR GPU wiring) ❌ CRASHED — needs domain limit fix before re-enabling
+2. **Phase 2** (MUR GPU wiring) ✅ DONE — ~30% faster for MUR cases
 3. **Phase 3** (YEE kernel fusion) — medium impact, medium risk
 4. **Phase 4** (CPML kernel fusion) — medium impact, medium risk
 5. **Phase 5** (Probe kernel fusion) — low impact, low risk

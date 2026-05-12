@@ -47,7 +47,8 @@ module BORDERS_MUR_m
 !!!
    !
    public  :: InitMURBorders, AdvanceMagneticMUR,StoreFieldsMURBorders,DestroyMURBorders,calc_murconstants
-    public  :: get_mur_limits
+     public  :: get_mur_limits
+     public  :: regLR, regDU, regBF
     public  :: left_CAB1, left_CAB3, left_cab4, right_CAB1, right_CAB3, right_cab4
     public  :: down_CAB1, down_CAB3, down_cab4, up_CAB1, up_CAB3, up_cab4
     public  :: back_CAB1, back_CAB3, back_cab4, front_CAB1, front_CAB3, front_cab4
