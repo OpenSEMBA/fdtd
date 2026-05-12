@@ -2,21 +2,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "ngspice/bool.h"
+
 #ifndef _MSC_VER
 #include <pthread.h>
 #else
+#undef bool
 #define bool int
 #define true 1
 #define false 0
 #define strdup _strdup
 #endif
 #include <signal.h>
-
-/* Include ngspice headers first - they define bool/BOOL/ngcomplex/ngcomplex_t
-   which would conflict with <stdbool.h> and ngspice_interface.h.
-   Strategy: include bool.h first for bool/BOOL types, then ngspice_interface.h
-   (defines struct+typedef), then guard ngspice_COMPLEX_H before fteext.h. */
-#include "ngspice/bool.h"
 #include "ngspice_interface.h"
 #define ngspice_COMPLEX_H
 #include "ngspice/fteext.h"
