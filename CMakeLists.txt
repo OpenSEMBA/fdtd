@@ -318,8 +318,12 @@ if(SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/timestepping.F90"
 	)
 	if (SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-		target_sources(semba-main PRIVATE "src_main_pub/gpu_kernels_cuf.F90")
-		set_source_files_properties("src_main_pub/gpu_kernels_cuf.F90" PROPERTIES COMPILE_OPTIONS "-cuda;-gpu=pinned")
+		target_sources(semba-main PRIVATE
+			"src_main_pub/gpu_core_m.F90"
+			"src_main_pub/gpu_yee_m.F90"
+			"src_main_pub/gpu_cpml_m.F90"
+		)
+		set_source_files_properties("src_main_pub/gpu_core_m.F90" "src_main_pub/gpu_yee_m.F90" "src_main_pub/gpu_cpml_m.F90" PROPERTIES COMPILE_OPTIONS "-cuda;-gpu=pinned")
 		target_link_options(semba-main PRIVATE -cuda)
 	endif()
 	target_link_libraries(semba-main

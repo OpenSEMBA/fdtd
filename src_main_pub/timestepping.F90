@@ -81,7 +81,9 @@ module Solver_m
    use nvtx
 #endif
 #if defined(SEMBA_FDTD_ENABLE_ACC) || defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-   use gpu_kernels_m
+   use gpu_core_m
+   use gpu_yee_m
+   use gpu_cpml_m
 #endif
    implicit none
 
