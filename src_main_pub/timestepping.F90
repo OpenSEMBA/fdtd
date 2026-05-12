@@ -485,15 +485,19 @@ module Solver_m
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
 
 #if defined(SEMBA_FDTD_ENABLE_ACC) || defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-       if (.not.this%gpu_initialized) then
-          call gpu_init(this%gpu, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz, &
-                        this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, &
-                        this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
-                        this%g%g1, this%g%g2, this%g%gm1, this%g%gm2, &
-                        this%Idxe, this%Idye, this%Idze, this%Idxh, this%Idyh, this%Idzh, &
-                        this%dxe, this%dye, this%dze, this%dxh, this%dyh, this%dzh)
-          this%gpu_initialized = this%gpu%initialized
-       endif
+if (.not.this%gpu_initialized) then
+           call gpu_init(this%gpu, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz, &
+                         this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, &
+                         this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
+                         this%g%g1, this%g%g2, this%g%gm1, this%g%gm2, &
+                         this%Idxe, this%Idye, this%Idze, this%Idxh, this%Idyh, this%Idzh, &
+                         this%dxe, this%dye, this%dze, this%dxh, this%dyh, this%dzh)
+           this%gpu_initialized = this%gpu%initialized
+           ! Initialize probe buffers for on-device sampling
+           if (this%gpu_initialized .and. this%thereAre%Observation) then
+              call gpu_init_probe_buffers(this%gpu, this%sgg)
+           end if
+        endif
 #endif
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2072,44 +2076,68 @@ contains
       end do ciclo_temporal ! End of the time-stepping loop
 
 contains
-     subroutine updateAndFlush()
-           integer(kind=4) :: mindum, ii, i
-           logical :: has_element_probes
-#if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-           ! GPU optimization: keep fields on device between timesteps.
-           ! For probes with cell-range bounds (XI/YI/ZI > 0), download only
-           ! the probe cells. For element-based probes (XI=0), fall back to
-           ! CPU observation path which handles element geometry lookup.
-           if (this%gpu_initialized .and. this%gpu%fields_on_device .and. this%thereAre%Observation) then
-              has_element_probes = .false.
-              do ii = 1, this%sgg%NumberRequest
-                 do i = 1, this%sgg%Observation(ii)%nP
-                    if (this%sgg%Observation(ii)%P(i)%XI == 0 .and. &
-                        this%sgg%Observation(ii)%P(i)%YI == 0 .and. &
-                        this%sgg%Observation(ii)%P(i)%ZI == 0) then
-                       has_element_probes = .true.
-                       exit
-                    end if
-                 end do
-                 if (has_element_probes) exit
-              end do
-              if (.not. has_element_probes) then
-                 ! Cell-range probes — download only probe cells
-                 call gpu_download_probes(this%gpu, this%sgg, Ex, Ey, Ez, Hx, Hy, Hz)
-              else
-                 ! Element-based probes — download all fields (fallback)
-                 call gpu_download(this%gpu)
-              endif
-           endif
-#endif
-           if (this%thereAre%Observation) then
-              call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
-             if (this%n>=this%ini_save+BuffObse)  then
-                mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
-                call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
-             end if
-          end if
-       end subroutine
+subroutine updateAndFlush()
+            integer(kind=4) :: mindum, ii, i, idx
+            real(kind=rkind), allocatable, dimension(:) :: point_results, block_results
+            integer(kind=4) :: pointCount, blockCount
+            integer(kind=4) :: pointObservationCases(6), blockObservationCases(6)
+ #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
+            ! GPU optimization: keep fields on device between timesteps.
+            ! Sample probes directly on GPU — no field download needed.
+            if (this%gpu_initialized .and. this%gpu%fields_on_device .and. this%thereAre%Observation) then
+               pointObservationCases = [iEx, iEy, iEz, iHx, iHy, iHz]
+               blockObservationCases = [iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz]
+               pointCount = 0
+               blockCount = 0
+
+               ! Count probes by type
+               do ii = 1, this%sgg%NumberRequest
+                  if (.not. this%sgg%Observation(ii)%TimeDomain) cycle
+                  do i = 1, this%sgg%Observation(ii)%nP
+                     if (this%sgg%Observation(ii)%P(i)%what == nothing) cycle
+                     if (any(this%sgg%Observation(ii)%P(i)%what == pointObservationCases)) then
+                        pointCount = pointCount + 1
+                     else if (any(this%sgg%Observation(ii)%P(i)%what == blockObservationCases)) then
+                        blockCount = blockCount + 1
+                     end if
+                  end do
+               end do
+
+               ! Sample point probes on GPU
+               if (pointCount > 0) then
+                  allocate(point_results(pointCount))
+                  call gpu_sample_point_probes(this%gpu, point_results, this%n)
+                  call UpdateProbeResultsFromGPU(this%sgg, this%n, this%ini_save, point_results, block_results, pointCount, 0)
+                  deallocate(point_results)
+               end if
+
+               ! Sample block probes on GPU
+               if (blockCount > 0) then
+                  allocate(block_results(blockCount))
+                  call gpu_sample_block_probes(this%gpu, block_results, this%n)
+                  call UpdateProbeResultsFromGPU(this%sgg, this%n, this%ini_save, point_results, block_results, 0, blockCount)
+                  deallocate(block_results)
+               end if
+
+            else
+               ! CPU path — download fields and call UpdateObservation
+               if (this%gpu_initialized .and. this%gpu%fields_on_device) then
+                  call gpu_download(this%gpu)
+               endif
+               if (this%thereAre%Observation) then
+                  call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
+               end if
+            endif
+ #else
+            if (this%thereAre%Observation) then
+               call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
+            endif
+ #endif
+            if (this%n>=this%ini_save+BuffObse)  then
+               mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
+               call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
+            end if
+         end subroutine
 
       subroutine singleUnpack()
          character(len=BUFSIZE) :: dubuf
@@ -3035,11 +3063,12 @@ subroutine solver_advanceMagneticMUR(this)
       this%finishedwithsuccess=.true.
 
 #if defined(SEMBA_FDTD_ENABLE_ACC) || defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-      if (this%gpu_initialized) then
-         call gpu_destroy(this%gpu)
-         this%gpu_initialized = .false.
-      endif
-#endif
+       if (this%gpu_initialized) then
+          call gpu_destroy_probe_buffers(this%gpu)
+          call gpu_destroy(this%gpu)
+          this%gpu_initialized = .false.
+       endif
+ #endif
 
       return
 

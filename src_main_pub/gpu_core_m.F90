@@ -153,9 +153,22 @@ module gpu_core_m
        logical :: pml_back_initialized = .false.
        logical :: pml_front_initialized = .false.
 
-       ! Download tracking for lazy field transfer
-       integer(kind=4) :: last_download_step = 0
-    end type
+    ! Download tracking for lazy field transfer
+        integer(kind=4) :: last_download_step = 0
+
+        ! Probe result buffers on device (for on-device probe sampling)
+        real(kind=rkind), pointer, device, dimension(:) :: probe_results_d
+        integer(kind=4), pointer, device, dimension(:) :: probe_field_ids_d
+        integer(kind=4), pointer, device, dimension(:) :: probe_I_d, probe_J_d, probe_K_d
+        integer(kind=4) :: num_probe_results = 0
+        ! Block probe buffers (bulkCurrent probes)
+        real(kind=rkind), pointer, device, dimension(:) :: block_probe_results_d
+        integer(kind=4), pointer, device, dimension(:) :: block_probe_field_ids_d
+        integer(kind=4), pointer, device, dimension(:) :: block_probe_I1_d, block_probe_J1_d, block_probe_K1_d
+        integer(kind=4), pointer, device, dimension(:) :: block_probe_I2_d, block_probe_J2_d, block_probe_K2_d
+        integer(kind=4) :: num_block_probe_results = 0
+        logical :: probe_buffers_initialized = .false.
+     end type
 
 contains
 
@@ -544,11 +557,26 @@ contains
        this%pml_left_initialized = .false.
        this%pml_right_initialized = .false.
        this%pml_down_initialized = .false.
-       this%pml_up_initialized = .false.
-       this%pml_back_initialized = .false.
-       this%pml_front_initialized = .false.
+this%pml_up_initialized = .false.
+        this%pml_back_initialized = .false.
+        this%pml_front_initialized = .false.
 
-    end subroutine gpu_destroy
+        ! Deallocate probe buffers
+        if (associated(this%probe_results_d)) deallocate(this%probe_results_d)
+        if (associated(this%probe_field_ids_d)) deallocate(this%probe_field_ids_d)
+        if (associated(this%probe_I_d)) deallocate(this%probe_I_d)
+        if (associated(this%probe_J_d)) deallocate(this%probe_J_d)
+        if (associated(this%probe_K_d)) deallocate(this%probe_K_d)
+        if (associated(this%block_probe_results_d)) deallocate(this%block_probe_results_d)
+        if (associated(this%block_probe_field_ids_d)) deallocate(this%block_probe_field_ids_d)
+        if (associated(this%block_probe_I1_d)) deallocate(this%block_probe_I1_d)
+        if (associated(this%block_probe_J1_d)) deallocate(this%block_probe_J1_d)
+        if (associated(this%block_probe_K1_d)) deallocate(this%block_probe_K1_d)
+        if (associated(this%block_probe_I2_d)) deallocate(this%block_probe_I2_d)
+        if (associated(this%block_probe_J2_d)) deallocate(this%block_probe_J2_d)
+        if (associated(this%block_probe_K2_d)) deallocate(this%block_probe_K2_d)
+
+     end subroutine gpu_destroy
 
     !--------------------------------------------------------------------------------
     ! Update CPML down/up boundary coefficients on device - called every step
@@ -1165,6 +1193,365 @@ contains
          end do
       end do
 
-   end subroutine gpu_download_probes
+end subroutine gpu_download_probes
 
-end module gpu_core_probe_m
+    !--------------------------------------------------------------------------------
+    ! GPU kernel: sample point probes (single cell)
+    !--------------------------------------------------------------------------------
+    attributes(global) subroutine gpu_sample_point_probes_kernel(probe_results_d, probe_field_ids_d, probe_I_d, probe_J_d, probe_K_d, &
+                                                                 Ex_d, Ey_d, Ez_d, Hx_d, Hy_d, Hz_d, numProbes)
+       real(kind=rkind), intent(out), dimension(:), device :: probe_results_d
+       integer(kind=4), intent(in), dimension(:), device :: probe_field_ids_d, probe_I_d, probe_J_d, probe_K_d
+       real(kind=rkind), dimension(:,:,:), device :: Ex_d, Ey_d, Ez_d, Hx_d, Hy_d, Hz_d
+       integer, value :: numProbes
+       integer :: idx, fieldId, i, j, k
+       real(kind=rkind) :: val
+
+       idx = (blockidx%x - 1) * blockdim%x + threadidx%x
+       if (idx > numProbes) return
+
+       fieldId = probe_field_ids_d(idx)
+       i = probe_I_d(idx)
+       j = probe_J_d(idx)
+       k = probe_K_d(idx)
+
+       select case(fieldId)
+       case(iEx); val = Ex_d(i,j,k)
+       case(iEy); val = Ey_d(i,j,k)
+       case(iEz); val = Ez_d(i,j,k)
+       case(iHx); val = Hx_d(i,j,k)
+       case(iHy); val = Hy_d(i,j,k)
+       case(iHz); val = Hz_d(i,j,k)
+       case default; val = 0.0_rkind
+       end select
+
+       probe_results_d(idx) = val
+
+    end subroutine gpu_sample_point_probes_kernel
+
+    !--------------------------------------------------------------------------------
+    ! GPU kernel: sample block probes (summation over block)
+    ! Each thread handles one block probe
+    !--------------------------------------------------------------------------------
+    attributes(global) subroutine gpu_sample_block_probes_kernel(probe_results_d, probe_field_ids_d, &
+                                                                   probe_I1_d, probe_J1_d, probe_K1_d, &
+                                                                   probe_I2_d, probe_J2_d, probe_K2_d, &
+                                                                   Ex_d, Ey_d, Ez_d, Hx_d, Hy_d, Hz_d, &
+                                                                   numBlockProbes)
+       real(kind=rkind), intent(out), dimension(:), device :: probe_results_d
+       integer(kind=4), intent(in), dimension(:), device :: probe_field_ids_d
+       integer(kind=4), intent(in), dimension(:), device :: probe_I1_d, probe_J1_d, probe_K1_d
+       integer(kind=4), intent(in), dimension(:), device :: probe_I2_d, probe_J2_d, probe_K2_d
+       real(kind=rkind), dimension(:,:,:), device :: Ex_d, Ey_d, Ez_d, Hx_d, Hy_d, Hz_d
+       integer, value :: numBlockProbes
+       integer :: idx, fieldId, ii, jj, kk, i1, i2, j1, j2, k1, k2
+       real(kind=rkind) :: val
+
+       idx = (blockidx%x - 1) * blockdim%x + threadidx%x
+       if (idx > numBlockProbes) return
+
+       fieldId = probe_field_ids_d(idx)
+       i1 = probe_I1_d(idx)
+       i2 = probe_I2_d(idx)
+       j1 = probe_J1_d(idx)
+       j2 = probe_J2_d(idx)
+       k1 = probe_K1_d(idx)
+       k2 = probe_K2_d(idx)
+
+       val = 0.0_rkind
+
+       select case(fieldId)
+       case(iBloqueJx)
+          do jj = j1, j2
+             val = val + (Hy_d(i1, jj, k1 - 1) - Hy_d(i1, jj, k2))
+          end do
+          do kk = k1, k2
+             val = val + (-Hz_d(i1, j1 - 1, kk) + Hz_d(i1, j2, kk))
+          end do
+       case(iBloqueJy)
+          do kk = k1, k2
+             val = val + (-Hz_d(i2, j1, kk) + Hz_d(i1 - 1, j1, kk))
+          end do
+          do ii = i1, i2
+             val = val + (Hx_d(ii, j1, k2) - Hx_d(ii, j1, k1 - 1))
+          end do
+       case(iBloqueJz)
+          do ii = i1, i2
+             val = val + (Hy_d(ii, j2, k1) - Hy_d(ii, j1, k1))
+          end do
+          do jj = j1, j2
+             val = val + (-Hx_d(i1 - 1, jj, k1) + Hx_d(i2, jj, k1))
+          end do
+       case(iBloqueMx)
+          do jj = j1, j2
+             val = val + (Hz_d(i1, jj, k1 - 1) - Hz_d(i1, jj, k2))
+          end do
+          do kk = k1, k2
+             val = val + (-Hy_d(i1, j1 - 1, kk) + Hy_d(i1, j2, kk))
+          end do
+       case(iBloqueMy)
+          do kk = k1, k2
+             val = val + (-Hx_d(i2, j1, kk) + Hx_d(i1 - 1, j1, kk))
+          end do
+          do ii = i1, i2
+             val = val + (Hz_d(ii, j1, k2) - Hz_d(ii, j1, k1 - 1))
+          end do
+       case(iBloqueMz)
+          do ii = i1, i2
+             val = val + (Hy_d(ii, j2, k1) - Hy_d(ii, j1, k1))
+          end do
+          do jj = j1, j2
+             val = val + (-Hx_d(i1 - 1, jj, k1) + Hx_d(i2, jj, k1))
+          end do
+       case default
+          val = 0.0_rkind
+       end select
+
+       probe_results_d(idx) = val
+
+    end subroutine gpu_sample_block_probes_kernel
+
+    !--------------------------------------------------------------------------------
+    ! Initialize probe buffers on device
+    !--------------------------------------------------------------------------------
+    subroutine gpu_init_probe_buffers(this, sgg)
+       class(gpu_state_t), intent(inout) :: this
+       type(SGGFDTDINFO_t), intent(in) :: sgg
+
+       integer(kind=4) :: ii, i, nProbes, pointCount, blockCount
+       integer(kind=4) :: pointObservationCases(6)
+       integer(kind=4) :: blockObservationCases(6)
+       integer(kind=4) :: cuda_status
+
+       pointObservationCases = [iEx, iEy, iEz, iHx, iHy, iHz]
+       blockObservationCases = [iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz]
+       pointCount = 0
+       blockCount = 0
+
+       ! Count probes by type
+       do ii = 1, sgg%NumberRequest
+          if (.not. sgg%Observation(ii)%TimeDomain) cycle
+          nProbes = sgg%Observation(ii)%nP
+          do i = 1, nProbes
+             if (sgg%Observation(ii)%P(i)%what == nothing) cycle
+             if (any(sgg%Observation(ii)%P(i)%what == pointObservationCases)) then
+                pointCount = pointCount + 1
+             else if (any(sgg%Observation(ii)%P(i)%what == blockObservationCases)) then
+                blockCount = blockCount + 1
+             end if
+          end do
+       end do
+
+       if (pointCount == 0 .and. blockCount == 0) return
+
+       this%num_probe_results = pointCount
+       this%num_block_probe_results = blockCount
+
+       ! Allocate device buffers for point probes
+       if (pointCount > 0) then
+          allocate(this%probe_field_ids_d(pointCount))
+          allocate(this%probe_I_d(pointCount))
+          allocate(this%probe_J_d(pointCount))
+          allocate(this%probe_K_d(pointCount))
+          allocate(this%probe_results_d(pointCount))
+          cuda_status = cudaMemcpy(this%probe_results_d, 0.0_rkind, pointCount * 4, cudaMemcpyHostToDevice)
+       end if
+
+       ! Allocate device buffers for block probes
+       if (blockCount > 0) then
+          allocate(this%block_probe_field_ids_d(blockCount))
+          allocate(this%block_probe_I1_d(blockCount))
+          allocate(this%block_probe_J1_d(blockCount))
+          allocate(this%block_probe_K1_d(blockCount))
+          allocate(this%block_probe_I2_d(blockCount))
+          allocate(this%block_probe_J2_d(blockCount))
+          allocate(this%block_probe_K2_d(blockCount))
+          allocate(this%block_probe_results_d(blockCount))
+          cuda_status = cudaMemcpy(this%block_probe_results_d, 0.0_rkind, blockCount * 4, cudaMemcpyHostToDevice)
+       end if
+
+       ! Populate point probe metadata
+       if (pointCount > 0) then
+          call gpu_populate_point_probes(this, sgg)
+       end if
+
+       ! Populate block probe metadata
+       if (blockCount > 0) then
+          call gpu_populate_block_probes(this, sgg)
+       end if
+
+       this%probe_buffers_initialized = .true.
+
+    end subroutine gpu_init_probe_buffers
+
+    !--------------------------------------------------------------------------------
+    ! Populate point probe metadata on device
+    !--------------------------------------------------------------------------------
+    subroutine gpu_populate_point_probes(this, sgg)
+       class(gpu_state_t), intent(inout) :: this
+       type(SGGFDTDINFO_t), intent(in) :: sgg
+
+       integer(kind=4) :: ii, i, idx, nProbes
+       integer(kind=4) :: pointObservationCases(6)
+       integer(kind=4), allocatable, dimension(:) :: tmp_field_ids, tmp_I, tmp_J, tmp_K
+       integer(kind=4) :: cuda_status
+
+       pointObservationCases = [iEx, iEy, iEz, iHx, iHy, iHz]
+       idx = 0
+       allocate(tmp_field_ids(this%num_probe_results))
+       allocate(tmp_I(this%num_probe_results))
+       allocate(tmp_J(this%num_probe_results))
+       allocate(tmp_K(this%num_probe_results))
+
+       do ii = 1, sgg%NumberRequest
+          if (.not. sgg%Observation(ii)%TimeDomain) cycle
+          nProbes = sgg%Observation(ii)%nP
+          do i = 1, nProbes
+             if (sgg%Observation(ii)%P(i)%what == nothing) cycle
+             if (any(sgg%Observation(ii)%P(i)%what == pointObservationCases)) then
+                idx = idx + 1
+                tmp_field_ids(idx) = sgg%Observation(ii)%P(i)%what
+                tmp_I(idx) = sgg%Observation(ii)%P(i)%XI
+                tmp_J(idx) = sgg%Observation(ii)%P(i)%YI
+                tmp_K(idx) = sgg%Observation(ii)%P(i)%ZI
+             end if
+          end do
+       end do
+
+       cuda_status = cudaMemcpy(this%probe_field_ids_d, tmp_field_ids, idx * 4, cudaMemcpyHostToDevice)
+       cuda_status = cudaMemcpy(this%probe_I_d, tmp_I, idx * 4, cudaMemcpyHostToDevice)
+       cuda_status = cudaMemcpy(this%probe_J_d, tmp_J, idx * 4, cudaMemcpyHostToDevice)
+       cuda_status = cudaMemcpy(this%probe_K_d, tmp_K, idx * 4, cudaMemcpyHostToDevice)
+
+       deallocate(tmp_field_ids, tmp_I, tmp_J, tmp_K)
+
+    end subroutine gpu_populate_point_probes
+
+    !--------------------------------------------------------------------------------
+    ! Populate block probe metadata on device
+    !--------------------------------------------------------------------------------
+    subroutine gpu_populate_block_probes(this, sgg)
+       class(gpu_state_t), intent(inout) :: this
+       type(SGGFDTDINFO_t), intent(in) :: sgg
+
+       integer(kind=4) :: ii, i, idx, nProbes
+       integer(kind=4) :: blockObservationCases(6)
+       integer(kind=4), allocatable, dimension(:) :: tmp_field_ids, tmp_I1, tmp_J1, tmp_K1
+       integer(kind=4), allocatable, dimension(:) :: tmp_I2, tmp_J2, tmp_K2
+       integer(kind=4) :: cuda_status
+
+       blockObservationCases = [iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz]
+       idx = 0
+       allocate(tmp_field_ids(this%num_block_probe_results))
+       allocate(tmp_I1(this%num_block_probe_results))
+       allocate(tmp_J1(this%num_block_probe_results))
+       allocate(tmp_K1(this%num_block_probe_results))
+       allocate(tmp_I2(this%num_block_probe_results))
+       allocate(tmp_J2(this%num_block_probe_results))
+       allocate(tmp_K2(this%num_block_probe_results))
+
+       do ii = 1, sgg%NumberRequest
+          if (.not. sgg%Observation(ii)%TimeDomain) cycle
+          nProbes = sgg%Observation(ii)%nP
+          do i = 1, nProbes
+             if (sgg%Observation(ii)%P(i)%what == nothing) cycle
+             if (any(sgg%Observation(ii)%P(i)%what == blockObservationCases)) then
+                idx = idx + 1
+                tmp_field_ids(idx) = sgg%Observation(ii)%P(i)%what
+                tmp_I1(idx) = sgg%Observation(ii)%P(i)%XI
+                tmp_J1(idx) = sgg%Observation(ii)%P(i)%YI
+                tmp_K1(idx) = sgg%Observation(ii)%P(i)%ZI
+                tmp_I2(idx) = sgg%Observation(ii)%P(i)%XE
+                tmp_J2(idx) = sgg%Observation(ii)%P(i)%YE
+                tmp_K2(idx) = sgg%Observation(ii)%P(i)%ZE
+             end if
+          end do
+       end do
+
+       cuda_status = cudaMemcpy(this%block_probe_field_ids_d, tmp_field_ids, idx * 4, cudaMemcpyHostToDevice)
+       cuda_status = cudaMemcpy(this%block_probe_I1_d, tmp_I1, idx * 4, cudaMemcpyHostToDevice)
+       cuda_status = cudaMemcpy(this%block_probe_J1_d, tmp_J1, idx * 4, cudaMemcpyHostToDevice)
+       cuda_status = cudaMemcpy(this%block_probe_K1_d, tmp_K1, idx * 4, cudaMemcpyHostToDevice)
+       cuda_status = cudaMemcpy(this%block_probe_I2_d, tmp_I2, idx * 4, cudaMemcpyHostToDevice)
+       cuda_status = cudaMemcpy(this%block_probe_J2_d, tmp_J2, idx * 4, cudaMemcpyHostToDevice)
+       cuda_status = cudaMemcpy(this%block_probe_K2_d, tmp_K2, idx * 4, cudaMemcpyHostToDevice)
+
+       deallocate(tmp_field_ids, tmp_I1, tmp_J1, tmp_K1, tmp_I2, tmp_J2, tmp_K2)
+
+    end subroutine gpu_populate_block_probes
+
+    !--------------------------------------------------------------------------------
+    ! Sample point probes on GPU (public interface)
+    !--------------------------------------------------------------------------------
+    subroutine gpu_sample_point_probes(this, results_h, nTime)
+       class(gpu_state_t), intent(inout) :: this
+       real(kind=rkind), dimension(:), intent(out) :: results_h
+       integer(kind=4), intent(in) :: nTime
+
+       integer(kind=4) :: pointCount, blockSize, gridSize
+       integer(kind=4) :: cuda_status
+
+       pointCount = this%num_probe_results
+       if (pointCount == 0) return
+
+       blockSize = 256
+       gridSize = (pointCount + blockSize - 1) / blockSize
+       call gpu_sample_point_probes_kernel<<<gridSize, blockSize>>>( &
+          this%probe_results_d, this%probe_field_ids_d, this%probe_I_d, this%probe_J_d, this%probe_K_d, &
+          this%Ex_d, this%Ey_d, this%Ez_d, this%Hx_d, this%Hy_d, this%Hz_d, pointCount)
+       cuda_status = cudaMemcpy(results_h, this%probe_results_d, pointCount * 4, cudaMemcpyDeviceToHost)
+
+    end subroutine gpu_sample_point_probes
+
+    !--------------------------------------------------------------------------------
+    ! Sample block probes on GPU (public interface)
+    !--------------------------------------------------------------------------------
+    subroutine gpu_sample_block_probes(this, results_h, nTime)
+       class(gpu_state_t), intent(inout) :: this
+       real(kind=rkind), dimension(:), intent(out) :: results_h
+       integer(kind=4), intent(in) :: nTime
+
+       integer(kind=4) :: blockCount, blockSize, gridSize
+       integer(kind=4) :: cuda_status
+
+       blockCount = this%num_block_probe_results
+       if (blockCount == 0) return
+
+       blockSize = 256
+       gridSize = (blockCount + blockSize - 1) / blockSize
+       call gpu_sample_block_probes_kernel<<<gridSize, blockSize>>>( &
+          this%block_probe_results_d, this%block_probe_field_ids_d, &
+          this%block_probe_I1_d, this%block_probe_J1_d, this%block_probe_K1_d, &
+          this%block_probe_I2_d, this%block_probe_J2_d, this%block_probe_K2_d, &
+          this%Ex_d, this%Ey_d, this%Ez_d, this%Hx_d, this%Hy_d, this%Hz_d, &
+          blockCount)
+       cuda_status = cudaMemcpy(results_h, this%block_probe_results_d, blockCount * 4, cudaMemcpyDeviceToHost)
+
+    end subroutine gpu_sample_block_probes
+
+    !--------------------------------------------------------------------------------
+    ! Destroy GPU probe buffers
+    !--------------------------------------------------------------------------------
+    subroutine gpu_destroy_probe_buffers(this)
+       class(gpu_state_t), intent(inout) :: this
+
+       if (this%probe_buffers_initialized) then
+          if (associated(this%probe_results_d)) deallocate(this%probe_results_d)
+          if (associated(this%probe_field_ids_d)) deallocate(this%probe_field_ids_d)
+          if (associated(this%probe_I_d)) deallocate(this%probe_I_d)
+          if (associated(this%probe_J_d)) deallocate(this%probe_J_d)
+          if (associated(this%probe_K_d)) deallocate(this%probe_K_d)
+          if (associated(this%block_probe_results_d)) deallocate(this%block_probe_results_d)
+          if (associated(this%block_probe_field_ids_d)) deallocate(this%block_probe_field_ids_d)
+          if (associated(this%block_probe_I1_d)) deallocate(this%block_probe_I1_d)
+          if (associated(this%block_probe_J1_d)) deallocate(this%block_probe_J1_d)
+          if (associated(this%block_probe_K1_d)) deallocate(this%block_probe_K1_d)
+          if (associated(this%block_probe_I2_d)) deallocate(this%block_probe_I2_d)
+          if (associated(this%block_probe_J2_d)) deallocate(this%block_probe_J2_d)
+          if (associated(this%block_probe_K2_d)) deallocate(this%block_probe_K2_d)
+          this%probe_buffers_initialized = .false.
+       end if
+
+    end subroutine gpu_destroy_probe_buffers
+
+ end module gpu_core_probe_m

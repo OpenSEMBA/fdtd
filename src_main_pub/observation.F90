@@ -108,8 +108,8 @@ module Observa_m
   real(kind=RKIND), pointer, dimension(:), save  :: InvEps, InvMu
   type(output_t), pointer, dimension(:), save  :: output
 
-  public InitObservation, FlushObservationFiles, UpdateObservation, DestroyObservation, CloseObservationFiles, unpacksinglefiles, &
-    GetOutput, preprocess_observation
+public InitObservation, FlushObservationFiles, UpdateObservation, DestroyObservation, CloseObservationFiles, unpacksinglefiles, &
+     GetOutput, preprocess_observation, UpdateProbeResultsFromGPU
   public output_t, item_t, Serialized_t, dtft
   !Required at least in tests
   public fieldo
@@ -3686,12 +3686,61 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         end select
       end subroutine
 
-    end subroutine UpdateObservation
+end subroutine UpdateObservation
 
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !!! Flushes the observed magnitudes to disk
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine FlushObservationFiles(sgg,nInit,FinalInstant,layoutnumber,num_procs, dxe,dye,dze,dxh,dyh,dzh,b,singlefilewrite,facesNF2FF,flushff)
+    !--------------------------------------------------------------------------------
+    ! Update probe results from GPU-sampled values
+    ! Called when GPU samples probes directly instead of using UpdateObservation
+    !--------------------------------------------------------------------------------
+    subroutine UpdateProbeResultsFromGPU(sgg, nTime, nInit, pointResults, blockResults, nPointProbes, nBlockProbes)
+       type(SGGFDTDINFO_t), intent(in) :: sgg
+       integer(kind=4), intent(in) :: nTime, nInit
+       real(kind=RKIND), dimension(:), intent(in) :: pointResults
+       real(kind=RKIND), dimension(:), intent(in) :: blockResults
+       integer(kind=4), intent(in) :: nPointProbes, nBlockProbes
+       integer(kind=4) :: ii, i, idx, nTimeOffset
+       integer(kind=4) :: pointObservationCases(6), blockObservationCases(6)
+
+       pointObservationCases = [iEx, iEy, iEz, iHx, iHy, iHz]
+       blockObservationCases = [iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz]
+       nTimeOffset = nTime - nInit
+
+       ! Update point probe results
+       if (nPointProbes > 0) then
+          idx = 0
+          do ii = 1, sgg%NumberRequest
+             if (.not. sgg%Observation(ii)%TimeDomain) cycle
+             do i = 1, sgg%Observation(ii)%nP
+                if (sgg%Observation(ii)%P(i)%what == nothing) cycle
+                if (any(sgg%Observation(ii)%P(i)%what == pointObservationCases)) then
+                   idx = idx + 1
+                   output(ii)%item(i)%valor(nTimeOffset) = pointResults(idx)
+                end if
+             end do
+          end do
+       end if
+
+       ! Update block probe results
+       if (nBlockProbes > 0) then
+          idx = 0
+          do ii = 1, sgg%NumberRequest
+             if (.not. sgg%Observation(ii)%TimeDomain) cycle
+             do i = 1, sgg%Observation(ii)%nP
+                if (sgg%Observation(ii)%P(i)%what == nothing) cycle
+                if (any(sgg%Observation(ii)%P(i)%what == blockObservationCases)) then
+                   idx = idx + 1
+                   output(ii)%item(i)%valor(nTimeOffset) = blockResults(idx)
+                end if
+             end do
+          end do
+       end if
+
+    end subroutine UpdateProbeResultsFromGPU
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!! Flushes the observed magnitudes to disk
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    subroutine FlushObservationFiles(sgg,nInit,FinalInstant,layoutnumber,num_procs, dxe,dye,dze,dxh,dyh,dzh,b,singlefilewrite,facesNF2FF,flushff)
       use ilumina_m !is needed to also calculate the incident field in the observed points
       !solo lo precisa de entrada farfield
       type(bounds_t) :: b
