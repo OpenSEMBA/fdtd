@@ -59,36 +59,6 @@
       }
     },
     {
-      "name": "nvhpc-rls",
-      "generator": "Ninja",
-      "binaryDir": "build-nvhpc-rls/",
-      "environment": {
-        "NVCOMPILERS": "/home/luis/nvidia_sdk/Linux_x86_64/26.3",
-        "FC": "/home/luis/nvidia_sdk/Linux_x86_64/26.3/compilers/bin/nvfortran",
-        "CC": "/home/luis/nvidia_sdk/Linux_x86_64/26.3/compilers/bin/nvc",
-        "CXX": "/home/luis/nvidia_sdk/Linux_x86_64/26.3/compilers/bin/nvc++"
-      },
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "SEMBA_FDTD_ENABLE_MPI": "OFF",
-        "SEMBA_FDTD_ENABLE_MTLN": "OFF",
-        "SEMBA_FDTD_ENABLE_HDF": "OFF",
-        "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "OFF",
-        "CMAKE_Fortran_LINKER": "/home/luis/nvidia_sdk/Linux_x86_64/26.3/compilers/bin/nvfortran"
-      }
-    },
-    {
-      "name": "nvhpc-dbg",
-      "inherits": "nvhpc-rls",
-      "binaryDir": "build-nvhpc-dbg/",
-      "environment": {
-        "CMAKE_Fortran_LINKER": "/home/luis/nvidia_sdk/Linux_x86_64/26.3/compilers/bin/nvfortran"
-      },
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
       "name": "gpu-rls",
       "generator": "Ninja",
       "binaryDir": "build-gpu-rls/",
@@ -102,7 +72,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "SEMBA_FDTD_ENABLE_MPI": "OFF",
-        "SEMBA_FDTD_ENABLE_MTLN": "OFF",
+        "SEMBA_FDTD_ENABLE_MTLN": "ON",
         "SEMBA_FDTD_ENABLE_HDF": "OFF",
         "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "OFF",
         "SEMBA_FDTD_ENABLE_CUDA_FORTRAN": "ON"
@@ -112,35 +82,6 @@
       "name": "gpu-dbg",
       "inherits": "gpu-rls",
       "binaryDir": "build-gpu-dbg/",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
-      "name": "cuda-rls",
-      "generator": "Ninja",
-      "binaryDir": "build-cuda-rls/",
-      "environment": {
-        "NVCOMPILERS": "/home/luis/nvidia_sdk/Linux_x86_64/26.3",
-        "FC": "/home/luis/nvidia_sdk/Linux_x86_64/26.3/compilers/bin/nvfortran",
-        "CC": "/home/luis/nvidia_sdk/Linux_x86_64/26.3/compilers/bin/nvc",
-        "CXX": "/home/luis/nvidia_sdk/Linux_x86_64/26.3/compilers/bin/nvc++",
-        "CMAKE_Fortran_LINKER": "/home/luis/nvidia_sdk/Linux_x86_64/26.3/compilers/bin/nvfortran"
-      },
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "SEMBA_FDTD_ENABLE_MPI": "OFF",
-        "SEMBA_FDTD_ENABLE_MTLN": "OFF",
-        "SEMBA_FDTD_ENABLE_HDF": "OFF",
-        "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "OFF",
-        "SEMBA_FDTD_ENABLE_TEST": "OFF",
-        "SEMBA_FDTD_ENABLE_CUDA_FORTRAN": "ON"
-      }
-    },
-    {
-      "name": "cuda-dbg",
-      "inherits": "cuda-rls",
-      "binaryDir": "build-cuda-dbg/",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
