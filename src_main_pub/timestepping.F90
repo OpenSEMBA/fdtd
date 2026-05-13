@@ -3022,19 +3022,13 @@ subroutine solver_advanceMagneticMUR(this)
 #endif
         If (this%thereAre%MURBorders) then
 #if defined(SEMBA_FDTD_ENABLE_CUDA_FORTRAN)
-            if (this%gpu_initialized) then
-               call gpu_advanceMUR_H_left(this%gpu, this%bounds)
-               call gpu_advanceMUR_H_right(this%gpu, this%bounds)
-               call gpu_advanceMUR_H_down(this%gpu, this%bounds)
-               call gpu_advanceMUR_H_up(this%gpu, this%bounds)
-               call gpu_advanceMUR_H_back(this%gpu, this%bounds)
-               call gpu_advanceMUR_H_front(this%gpu, this%bounds)
-               call gpu_update_mur_past_left(this%gpu, this%bounds)
-               call gpu_update_mur_past_right(this%gpu, this%bounds)
-               call gpu_update_mur_past_down(this%gpu, this%bounds)
-               call gpu_update_mur_past_up(this%gpu, this%bounds)
-               call gpu_update_mur_past_back(this%gpu, this%bounds)
-               call gpu_update_mur_past_front(this%gpu, this%bounds)
+           if (this%gpu_initialized) then
+                call gpu_fused_mur_advance_hx(this%gpu, this%bounds)
+                call gpu_fused_mur_advance_hy(this%gpu, this%bounds)
+                call gpu_fused_mur_advance_hz(this%gpu, this%bounds)
+                call gpu_fused_mur_update_past_hx(this%gpu, this%bounds)
+                call gpu_fused_mur_update_past_hy(this%gpu, this%bounds)
+                call gpu_fused_mur_update_past_hz(this%gpu, this%bounds)
             else
                call AdvanceMagneticMUR(this%bounds, this%sgg, &
                                       this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &

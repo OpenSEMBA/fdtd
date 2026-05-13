@@ -109,36 +109,47 @@ module gpu_core_m
        integer(kind=4) :: pml_front_Hz_ii, pml_front_Hz_ij, pml_front_Hz_ji, pml_front_Hz_jj, pml_front_Hz_ki, pml_front_Hz_kj
        integer(kind=4) :: pml_front_Hy_ii, pml_front_Hy_ij, pml_front_Hy_ji, pml_front_Hy_jj, pml_front_Hy_ki, pml_front_Hy_kj
 
-        ! MUR boundary - persistent device coefficient arrays (per media)
-        integer(kind=4) :: mur_numMedia
-        real(kind=rkind), pointer, device, dimension(:) :: mur_left_CAB1, mur_left_CAB3, mur_left_cab4
-        real(kind=rkind), pointer, device, dimension(:) :: mur_right_CAB1, mur_right_CAB3, mur_right_cab4
-        real(kind=rkind), pointer, device, dimension(:) :: mur_down_CAB1, mur_down_CAB3, mur_down_cab4
-        real(kind=rkind), pointer, device, dimension(:) :: mur_up_CAB1, mur_up_CAB3, mur_up_cab4
-        real(kind=rkind), pointer, device, dimension(:) :: mur_back_CAB1, mur_back_CAB3, mur_back_cab4
-        real(kind=rkind), pointer, device, dimension(:) :: mur_front_CAB1, mur_front_CAB3, mur_front_cab4
+       ! MUR boundary - persistent device coefficient arrays (per media)
+         integer(kind=4) :: mur_numMedia
+         real(kind=rkind), pointer, device, dimension(:) :: mur_left_CAB1, mur_left_CAB3, mur_left_cab4
+         real(kind=rkind), pointer, device, dimension(:) :: mur_right_CAB1, mur_right_CAB3, mur_right_cab4
+         real(kind=rkind), pointer, device, dimension(:) :: mur_down_CAB1, mur_down_CAB3, mur_down_cab4
+         real(kind=rkind), pointer, device, dimension(:) :: mur_up_CAB1, mur_up_CAB3, mur_up_cab4
+         real(kind=rkind), pointer, device, dimension(:) :: mur_back_CAB1, mur_back_CAB3, mur_back_cab4
+         real(kind=rkind), pointer, device, dimension(:) :: mur_front_CAB1, mur_front_CAB3, mur_front_cab4
 
-        ! MUR boundary - persistent device past-field arrays
-        real(kind=rkind), pointer, device, dimension(:,:,:) :: mur_past_Hx_left, mur_past_Hz_left
-        real(kind=rkind), pointer, device, dimension(:,:,:) :: mur_past_Hx_right, mur_past_Hz_right
-        real(kind=rkind), pointer, device, dimension(:,:,:) :: mur_past_Hy_down, mur_past_Hx_down
-        real(kind=rkind), pointer, device, dimension(:,:,:) :: mur_past_Hy_up, mur_past_Hx_up
-        real(kind=rkind), pointer, device, dimension(:,:,:) :: mur_past_Hz_back, mur_past_Hy_back
-        real(kind=rkind), pointer, device, dimension(:,:,:) :: mur_past_Hz_front, mur_past_Hy_front
+         ! MUR CAB1 coefficients — 1D flattened: mur_cab1_d(12 * numMedia)
+         ! Layout: cab1_d((bound_id-1)*numMedia + medio) for contiguous access
+         real(kind=rkind), pointer, device, dimension(:) :: mur_cab1_d
 
-        ! MUR boundary limits
-        integer(kind=4) :: mur_left_Hx_ii, mur_left_Hx_ij, mur_left_Hx_ji, mur_left_Hx_jj, mur_left_Hx_ki, mur_left_Hx_kj
-        integer(kind=4) :: mur_left_Hz_ii, mur_left_Hz_ij, mur_left_Hz_ji, mur_left_Hz_jj, mur_left_Hz_ki, mur_left_Hz_kj
-        integer(kind=4) :: mur_right_Hx_ii, mur_right_Hx_ij, mur_right_Hx_ji, mur_right_Hx_jj, mur_right_Hx_ki, mur_right_Hx_kj
-        integer(kind=4) :: mur_right_Hz_ii, mur_right_Hz_ij, mur_right_Hz_ji, mur_right_Hz_jj, mur_right_Hz_ki, mur_right_Hz_kj
-        integer(kind=4) :: mur_down_Hy_ii, mur_down_Hy_ij, mur_down_Hy_ji, mur_down_Hy_jj, mur_down_Hy_ki, mur_down_Hy_kj
-        integer(kind=4) :: mur_down_Hx_ii, mur_down_Hx_ij, mur_down_Hx_ji, mur_down_Hx_jj, mur_down_Hx_ki, mur_down_Hx_kj
-        integer(kind=4) :: mur_up_Hy_ii, mur_up_Hy_ij, mur_up_Hy_ji, mur_up_Hy_jj, mur_up_Hy_ki, mur_up_Hy_kj
-        integer(kind=4) :: mur_up_Hx_ii, mur_up_Hx_ij, mur_up_Hx_ji, mur_up_Hx_jj, mur_up_Hx_ki, mur_up_Hx_kj
-        integer(kind=4) :: mur_back_Hz_ii, mur_back_Hz_ij, mur_back_Hz_ji, mur_back_Hz_jj, mur_back_Hz_ki, mur_back_Hz_kj
-        integer(kind=4) :: mur_back_Hy_ii, mur_back_Hy_ij, mur_back_Hy_ji, mur_back_Hy_jj, mur_back_Hy_ki, mur_back_Hy_kj
-        integer(kind=4) :: mur_front_Hz_ii, mur_front_Hz_ij, mur_front_Hz_ji, mur_front_Hz_jj, mur_front_Hz_ki, mur_front_Hz_kj
-        integer(kind=4) :: mur_front_Hy_ii, mur_front_Hy_ij, mur_front_Hy_ji, mur_front_Hy_jj, mur_front_Hy_ki, mur_front_Hy_kj
+         ! MUR boundary - persistent device past-field arrays
+         real(kind=rkind), pointer, device, dimension(:,:,:) :: mur_past_Hx_left, mur_past_Hz_left
+         real(kind=rkind), pointer, device, dimension(:,:,:) :: mur_past_Hx_right, mur_past_Hz_right
+         real(kind=rkind), pointer, device, dimension(:,:,:) :: mur_past_Hy_down, mur_past_Hx_down
+         real(kind=rkind), pointer, device, dimension(:,:,:) :: mur_past_Hy_up, mur_past_Hx_up
+         real(kind=rkind), pointer, device, dimension(:,:,:) :: mur_past_Hz_back, mur_past_Hy_back
+         real(kind=rkind), pointer, device, dimension(:,:,:) :: mur_past_Hz_front, mur_past_Hy_front
+
+      ! MUR boundary limits — flattened array: mur_bounds(12, 6)
+          ! Boundary IDs: 1=left-Hx, 2=left-Hz, 3=right-Hx, 4=right-Hz,
+          !               5=down-Hy, 6=down-Hx, 7=up-Hy, 8=up-Hx,
+          !               9=back-Hz, 10=back-Hy, 11=front-Hz, 12=front-Hy
+          ! Column indices: 1=ii, 2=ij, 3=ji, 4=jj, 5=ki, 6=kj
+          integer(kind=4), pointer, device, dimension(:,:) :: mur_bounds_d
+
+         ! Individual limit members kept for backward compat with existing kernels
+         integer(kind=4) :: mur_left_Hx_ii, mur_left_Hx_ij, mur_left_Hx_ji, mur_left_Hx_jj, mur_left_Hx_ki, mur_left_Hx_kj
+         integer(kind=4) :: mur_left_Hz_ii, mur_left_Hz_ij, mur_left_Hz_ji, mur_left_Hz_jj, mur_left_Hz_ki, mur_left_Hz_kj
+         integer(kind=4) :: mur_right_Hx_ii, mur_right_Hx_ij, mur_right_Hx_ji, mur_right_Hx_jj, mur_right_Hx_ki, mur_right_Hx_kj
+         integer(kind=4) :: mur_right_Hz_ii, mur_right_Hz_ij, mur_right_Hz_ji, mur_right_Hz_jj, mur_right_Hz_ki, mur_right_Hz_kj
+         integer(kind=4) :: mur_down_Hy_ii, mur_down_Hy_ij, mur_down_Hy_ji, mur_down_Hy_jj, mur_down_Hy_ki, mur_down_Hy_kj
+         integer(kind=4) :: mur_down_Hx_ii, mur_down_Hx_ij, mur_down_Hx_ji, mur_down_Hx_jj, mur_down_Hx_ki, mur_down_Hx_kj
+         integer(kind=4) :: mur_up_Hy_ii, mur_up_Hy_ij, mur_up_Hy_ji, mur_up_Hy_jj, mur_up_Hy_ki, mur_up_Hy_kj
+         integer(kind=4) :: mur_up_Hx_ii, mur_up_Hx_ij, mur_up_Hx_ji, mur_up_Hx_jj, mur_up_Hx_ki, mur_up_Hx_kj
+         integer(kind=4) :: mur_back_Hz_ii, mur_back_Hz_ij, mur_back_Hz_ji, mur_back_Hz_jj, mur_back_Hz_ki, mur_back_Hz_kj
+         integer(kind=4) :: mur_back_Hy_ii, mur_back_Hy_ij, mur_back_Hy_ji, mur_back_Hy_jj, mur_back_Hy_ki, mur_back_Hy_kj
+         integer(kind=4) :: mur_front_Hz_ii, mur_front_Hz_ij, mur_front_Hz_ji, mur_front_Hz_jj, mur_front_Hz_ki, mur_front_Hz_kj
+         integer(kind=4) :: mur_front_Hy_ii, mur_front_Hy_ij, mur_front_Hy_ji, mur_front_Hy_jj, mur_front_Hy_ki, mur_front_Hy_kj
 
         ! MUR flags
         logical :: mur_initialized
@@ -627,9 +638,13 @@ this%pml_up_initialized = .false.
         if (associated(this%block_probe_K1_d)) deallocate(this%block_probe_K1_d)
         if (associated(this%block_probe_I2_d)) deallocate(this%block_probe_I2_d)
         if (associated(this%block_probe_J2_d)) deallocate(this%block_probe_J2_d)
-        if (associated(this%block_probe_K2_d)) deallocate(this%block_probe_K2_d)
+     if (associated(this%block_probe_K2_d)) deallocate(this%block_probe_K2_d)
 
-     end subroutine gpu_destroy
+      ! Deallocate flattened MUR arrays
+        if (associated(this%mur_bounds_d)) deallocate(this%mur_bounds_d)
+        if (associated(this%mur_cab1_d)) deallocate(this%mur_cab1_d)
+
+      end subroutine gpu_destroy
 
     !--------------------------------------------------------------------------------
     ! Update CPML down/up boundary coefficients on device - called every step
@@ -965,11 +980,28 @@ this%pml_up_initialized = .false.
        allocate(this%mur_back_CAB1(lo:hi)); this%mur_back_CAB1 = back_CAB1
        allocate(this%mur_back_CAB3(lo:hi)); this%mur_back_CAB3 = back_CAB3
        allocate(this%mur_back_cab4(lo:hi)); this%mur_back_cab4 = back_cab4
-       allocate(this%mur_front_CAB1(lo:hi)); this%mur_front_CAB1 = front_CAB1
-       allocate(this%mur_front_CAB3(lo:hi)); this%mur_front_CAB3 = front_CAB3
-       allocate(this%mur_front_cab4(lo:hi)); this%mur_front_cab4 = front_cab4
+      allocate(this%mur_front_CAB1(lo:hi)); this%mur_front_CAB1 = front_CAB1
+        allocate(this%mur_front_CAB3(lo:hi)); this%mur_front_CAB3 = front_CAB3
+        allocate(this%mur_front_cab4(lo:hi)); this%mur_front_cab4 = front_cab4
 
-       this%mur_initialized = .true.
+     ! Flattened CAB1 array: mur_cab1_d(12 * numMedia)
+        ! Layout: cab1_d((bound_id-1)*numMedia + medio) for contiguous access
+        if (associated(this%mur_cab1_d)) deallocate(this%mur_cab1_d)
+        allocate(this%mur_cab1_d(12 * numMedia))
+        this%mur_cab1_d(1:numMedia) = left_CAB1
+        this%mur_cab1_d(numMedia+1:2*numMedia) = left_CAB1
+        this%mur_cab1_d(2*numMedia+1:3*numMedia) = right_CAB1
+        this%mur_cab1_d(3*numMedia+1:4*numMedia) = right_CAB1
+        this%mur_cab1_d(4*numMedia+1:5*numMedia) = down_CAB1
+        this%mur_cab1_d(5*numMedia+1:6*numMedia) = down_CAB1
+        this%mur_cab1_d(6*numMedia+1:7*numMedia) = up_CAB1
+        this%mur_cab1_d(7*numMedia+1:8*numMedia) = up_CAB1
+        this%mur_cab1_d(8*numMedia+1:9*numMedia) = back_CAB1
+        this%mur_cab1_d(9*numMedia+1:10*numMedia) = back_CAB1
+        this%mur_cab1_d(10*numMedia+1:11*numMedia) = front_CAB1
+        this%mur_cab1_d(11*numMedia+1:12*numMedia) = front_CAB1
+
+        this%mur_initialized = .true.
 
     end subroutine gpu_init_mur_coeffs
 
@@ -1071,70 +1103,97 @@ this%pml_up_initialized = .false.
      ! Initialize MUR boundary limits on GPU
      !--------------------------------------------------------------------------------
      subroutine gpu_init_mur_limits(this, &
-                                    left_Hx_ii, left_Hx_ij, left_Hx_ji, left_Hx_jj, left_Hx_ki, left_Hx_kj, &
-                                    left_Hz_ii, left_Hz_ij, left_Hz_ji, left_Hz_jj, left_Hz_ki, left_Hz_kj, &
-                                    right_Hx_ii, right_Hx_ij, right_Hx_ji, right_Hx_jj, right_Hx_ki, right_Hx_kj, &
-                                    right_Hz_ii, right_Hz_ij, right_Hz_ji, right_Hz_jj, right_Hz_ki, right_Hz_kj, &
-                                    down_Hy_ii, down_Hy_ij, down_Hy_ji, down_Hy_jj, down_Hy_ki, down_Hy_kj, &
-                                    down_Hx_ii, down_Hx_ij, down_Hx_ji, down_Hx_jj, down_Hx_ki, down_Hx_kj, &
-                                    up_Hy_ii, up_Hy_ij, up_Hy_ji, up_Hy_jj, up_Hy_ki, up_Hy_kj, &
-                                    up_Hx_ii, up_Hx_ij, up_Hx_ji, up_Hx_jj, up_Hx_ki, up_Hx_kj, &
-                                    back_Hz_ii, back_Hz_ij, back_Hz_ji, back_Hz_jj, back_Hz_ki, back_Hz_kj, &
-                                    back_Hy_ii, back_Hy_ij, back_Hy_ji, back_Hy_jj, back_Hy_ki, back_Hy_kj, &
-                                    front_Hz_ii, front_Hz_ij, front_Hz_ji, front_Hz_jj, front_Hz_ki, front_Hz_kj, &
-                                    front_Hy_ii, front_Hy_ij, front_Hy_ji, front_Hy_jj, front_Hy_ki, front_Hy_kj)
-        class(gpu_state_t), intent(inout) :: this
-        integer(kind=4), intent(in) :: left_Hx_ii, left_Hx_ij, left_Hx_ji, left_Hx_jj, left_Hx_ki, left_Hx_kj
-        integer(kind=4), intent(in) :: left_Hz_ii, left_Hz_ij, left_Hz_ji, left_Hz_jj, left_Hz_ki, left_Hz_kj
-        integer(kind=4), intent(in) :: right_Hx_ii, right_Hx_ij, right_Hx_ji, right_Hx_jj, right_Hx_ki, right_Hx_kj
-        integer(kind=4), intent(in) :: right_Hz_ii, right_Hz_ij, right_Hz_ji, right_Hz_jj, right_Hz_ki, right_Hz_kj
-        integer(kind=4), intent(in) :: down_Hy_ii, down_Hy_ij, down_Hy_ji, down_Hy_jj, down_Hy_ki, down_Hy_kj
-        integer(kind=4), intent(in) :: down_Hx_ii, down_Hx_ij, down_Hx_ji, down_Hx_jj, down_Hx_ki, down_Hx_kj
-        integer(kind=4), intent(in) :: up_Hy_ii, up_Hy_ij, up_Hy_ji, up_Hy_jj, up_Hy_ki, up_Hy_kj
-        integer(kind=4), intent(in) :: up_Hx_ii, up_Hx_ij, up_Hx_ji, up_Hx_jj, up_Hx_ki, up_Hx_kj
-        integer(kind=4), intent(in) :: back_Hz_ii, back_Hz_ij, back_Hz_ji, back_Hz_jj, back_Hz_ki, back_Hz_kj
-        integer(kind=4), intent(in) :: back_Hy_ii, back_Hy_ij, back_Hy_ji, back_Hy_jj, back_Hy_ki, back_Hy_kj
-        integer(kind=4), intent(in) :: front_Hz_ii, front_Hz_ij, front_Hz_ji, front_Hz_jj, front_Hz_ki, front_Hz_kj
-        integer(kind=4), intent(in) :: front_Hy_ii, front_Hy_ij, front_Hy_ji, front_Hy_jj, front_Hy_ki, front_Hy_kj
+                                     left_Hx_ii, left_Hx_ij, left_Hx_ji, left_Hx_jj, left_Hx_ki, left_Hx_kj, &
+                                     left_Hz_ii, left_Hz_ij, left_Hz_ji, left_Hz_jj, left_Hz_ki, left_Hz_kj, &
+                                     right_Hx_ii, right_Hx_ij, right_Hx_ji, right_Hx_jj, right_Hx_ki, right_Hx_kj, &
+                                     right_Hz_ii, right_Hz_ij, right_Hz_ji, right_Hz_jj, right_Hz_ki, right_Hz_kj, &
+                                     down_Hy_ii, down_Hy_ij, down_Hy_ji, down_Hy_jj, down_Hy_ki, down_Hy_kj, &
+                                     down_Hx_ii, down_Hx_ij, down_Hx_ji, down_Hx_jj, down_Hx_ki, down_Hx_kj, &
+                                     up_Hy_ii, up_Hy_ij, up_Hy_ji, up_Hy_jj, up_Hy_ki, up_Hy_kj, &
+                                     up_Hx_ii, up_Hx_ij, up_Hx_ji, up_Hx_jj, up_Hx_ki, up_Hx_kj, &
+                                     back_Hz_ii, back_Hz_ij, back_Hz_ji, back_Hz_jj, back_Hz_ki, back_Hz_kj, &
+                                     back_Hy_ii, back_Hy_ij, back_Hy_ji, back_Hy_jj, back_Hy_ki, back_Hy_kj, &
+                                     front_Hz_ii, front_Hz_ij, front_Hz_ji, front_Hz_jj, front_Hz_ki, front_Hz_kj, &
+                                     front_Hy_ii, front_Hy_ij, front_Hy_ji, front_Hy_jj, front_Hy_ki, front_Hy_kj)
+         class(gpu_state_t), intent(inout) :: this
+         integer(kind=4), intent(in) :: left_Hx_ii, left_Hx_ij, left_Hx_ji, left_Hx_jj, left_Hx_ki, left_Hx_kj
+         integer(kind=4), intent(in) :: left_Hz_ii, left_Hz_ij, left_Hz_ji, left_Hz_jj, left_Hz_ki, left_Hz_kj
+         integer(kind=4), intent(in) :: right_Hx_ii, right_Hx_ij, right_Hx_ji, right_Hx_jj, right_Hx_ki, right_Hx_kj
+         integer(kind=4), intent(in) :: right_Hz_ii, right_Hz_ij, right_Hz_ji, right_Hz_jj, right_Hz_ki, right_Hz_kj
+         integer(kind=4), intent(in) :: down_Hy_ii, down_Hy_ij, down_Hy_ji, down_Hy_jj, down_Hy_ki, down_Hy_kj
+         integer(kind=4), intent(in) :: down_Hx_ii, down_Hx_ij, down_Hx_ji, down_Hx_jj, down_Hx_ki, down_Hx_kj
+         integer(kind=4), intent(in) :: up_Hy_ii, up_Hy_ij, up_Hy_ji, up_Hy_jj, up_Hy_ki, up_Hy_kj
+         integer(kind=4), intent(in) :: up_Hx_ii, up_Hx_ij, up_Hx_ji, up_Hx_jj, up_Hx_ki, up_Hx_kj
+         integer(kind=4), intent(in) :: back_Hz_ii, back_Hz_ij, back_Hz_ji, back_Hz_jj, back_Hz_ki, back_Hz_kj
+         integer(kind=4), intent(in) :: back_Hy_ii, back_Hy_ij, back_Hy_ji, back_Hy_jj, back_Hy_ki, back_Hy_kj
+         integer(kind=4), intent(in) :: front_Hz_ii, front_Hz_ij, front_Hz_ji, front_Hz_jj, front_Hz_ki, front_Hz_kj
+         integer(kind=4), intent(in) :: front_Hy_ii, front_Hy_ij, front_Hy_ji, front_Hy_jj, front_Hy_ki, front_Hy_kj
 
-        if (.not. this%initialized) return
+         ! Host-side bounds array: 12 boundaries x 6 limits (ii,ij,ji,jj,ki,kj)
+         integer(kind=4) :: host_bounds(12, 6)
+         integer(kind=4) :: i, j
 
-         this%mur_left_Hx_ii = left_Hx_ii; this%mur_left_Hx_ij = left_Hx_ij
-         this%mur_left_Hx_ji = left_Hx_ji; this%mur_left_Hx_jj = left_Hx_jj
-         this%mur_left_Hx_ki = left_Hx_ki; this%mur_left_Hx_kj = left_Hx_kj
-         this%mur_left_Hz_ii = left_Hz_ii; this%mur_left_Hz_ij = left_Hz_ij
-         this%mur_left_Hz_ji = left_Hz_ji; this%mur_left_Hz_jj = left_Hz_jj
-         this%mur_left_Hz_ki = left_Hz_ki; this%mur_left_Hz_kj = left_Hz_kj
-         this%mur_right_Hx_ii = right_Hx_ii; this%mur_right_Hx_ij = right_Hx_ij
-         this%mur_right_Hx_ji = right_Hx_ji; this%mur_right_Hx_jj = right_Hx_jj
-         this%mur_right_Hx_ki = right_Hx_ki; this%mur_right_Hx_kj = right_Hx_kj
-         this%mur_right_Hz_ii = right_Hz_ii; this%mur_right_Hz_ij = right_Hz_ij
-         this%mur_right_Hz_ji = right_Hz_ji; this%mur_right_Hz_jj = right_Hz_jj
-         this%mur_right_Hz_ki = right_Hz_ki; this%mur_right_Hz_kj = right_Hz_kj
-         this%mur_down_Hy_ii = down_Hy_ii; this%mur_down_Hy_ij = down_Hy_ij
-         this%mur_down_Hy_ji = down_Hy_ji; this%mur_down_Hy_jj = down_Hy_jj
-         this%mur_down_Hy_ki = down_Hy_ki; this%mur_down_Hy_kj = down_Hy_kj
-         this%mur_down_Hx_ii = down_Hx_ii; this%mur_down_Hx_ij = down_Hx_ij
-         this%mur_down_Hx_ji = down_Hx_ji; this%mur_down_Hx_jj = down_Hx_jj
-         this%mur_down_Hx_ki = down_Hx_ki; this%mur_down_Hx_kj = down_Hx_kj
-         this%mur_up_Hy_ii = up_Hy_ii; this%mur_up_Hy_ij = up_Hy_ij
-         this%mur_up_Hy_ji = up_Hy_ji; this%mur_up_Hy_jj = up_Hy_jj
-         this%mur_up_Hy_ki = up_Hy_ki; this%mur_up_Hy_kj = up_Hy_kj
-         this%mur_up_Hx_ii = up_Hx_ii; this%mur_up_Hx_ij = up_Hx_ij
-         this%mur_up_Hx_ji = up_Hx_ji; this%mur_up_Hx_jj = up_Hx_jj
-         this%mur_up_Hx_ki = up_Hx_ki; this%mur_up_Hx_kj = up_Hx_kj
-         this%mur_back_Hz_ii = back_Hz_ii; this%mur_back_Hz_ij = back_Hz_ij
-         this%mur_back_Hz_ji = back_Hz_ji; this%mur_back_Hz_jj = back_Hz_jj
-         this%mur_back_Hz_ki = back_Hz_ki; this%mur_back_Hz_kj = back_Hz_kj
-         this%mur_back_Hy_ii = back_Hy_ii; this%mur_back_Hy_ij = back_Hy_ij
-         this%mur_back_Hy_ji = back_Hy_ji; this%mur_back_Hy_jj = back_Hy_jj
-         this%mur_back_Hy_ki = back_Hy_ki; this%mur_back_Hy_kj = back_Hy_kj
-         this%mur_front_Hz_ii = front_Hz_ii; this%mur_front_Hz_ij = front_Hz_ij
-         this%mur_front_Hz_ji = front_Hz_ji; this%mur_front_Hz_jj = front_Hz_jj
-         this%mur_front_Hz_ki = front_Hz_ki; this%mur_front_Hz_kj = front_Hz_kj
-         this%mur_front_Hy_ii = front_Hy_ii; this%mur_front_Hy_ij = front_Hy_ij
-         this%mur_front_Hy_ji = front_Hy_ji; this%mur_front_Hy_jj = front_Hy_jj
-         this%mur_front_Hy_ki = front_Hy_ki; this%mur_front_Hy_kj = front_Hy_kj
+         if (.not. this%initialized) return
+
+         ! Populate host array with boundary limits
+         ! Boundary ID mapping: 1=left-Hx, 2=left-Hz, 3=right-Hx, 4=right-Hz,
+         !                       5=down-Hy, 6=down-Hx, 7=up-Hy, 8=up-Hx,
+         !                       9=back-Hz, 10=back-Hy, 11=front-Hz, 12=front-Hy
+         host_bounds(1, :) = [left_Hx_ii, left_Hx_ij, left_Hx_ji, left_Hx_jj, left_Hx_ki, left_Hx_kj]
+         host_bounds(2, :) = [left_Hz_ii, left_Hz_ij, left_Hz_ji, left_Hz_jj, left_Hz_ki, left_Hz_kj]
+         host_bounds(3, :) = [right_Hx_ii, right_Hx_ij, right_Hx_ji, right_Hx_jj, right_Hx_ki, right_Hx_kj]
+         host_bounds(4, :) = [right_Hz_ii, right_Hz_ij, right_Hz_ji, right_Hz_jj, right_Hz_ki, right_Hz_kj]
+         host_bounds(5, :) = [down_Hy_ii, down_Hy_ij, down_Hy_ji, down_Hy_jj, down_Hy_ki, down_Hy_kj]
+         host_bounds(6, :) = [down_Hx_ii, down_Hx_ij, down_Hx_ji, down_Hx_jj, down_Hx_ki, down_Hx_kj]
+         host_bounds(7, :) = [up_Hy_ii, up_Hy_ij, up_Hy_ji, up_Hy_jj, up_Hy_ki, up_Hy_kj]
+         host_bounds(8, :) = [up_Hx_ii, up_Hx_ij, up_Hx_ji, up_Hx_jj, up_Hx_ki, up_Hx_kj]
+         host_bounds(9, :) = [back_Hz_ii, back_Hz_ij, back_Hz_ji, back_Hz_jj, back_Hz_ki, back_Hz_kj]
+         host_bounds(10, :) = [back_Hy_ii, back_Hy_ij, back_Hy_ji, back_Hy_jj, back_Hy_ki, back_Hy_kj]
+         host_bounds(11, :) = [front_Hz_ii, front_Hz_ij, front_Hz_ji, front_Hz_jj, front_Hz_ki, front_Hz_kj]
+         host_bounds(12, :) = [front_Hy_ii, front_Hy_ij, front_Hy_ji, front_Hy_jj, front_Hy_ki, front_Hy_kj]
+
+         ! Allocate and copy to device
+         if (associated(this%mur_bounds_d)) deallocate(this%mur_bounds_d)
+         allocate(this%mur_bounds_d(12, 6))
+         this%mur_bounds_d(1:12, 1:6) = host_bounds(1:12, 1:6)
+
+         ! Also populate individual members for backward compatibility with existing kernel wrappers
+          this%mur_left_Hx_ii = left_Hx_ii; this%mur_left_Hx_ij = left_Hx_ij
+          this%mur_left_Hx_ji = left_Hx_ji; this%mur_left_Hx_jj = left_Hx_jj
+          this%mur_left_Hx_ki = left_Hx_ki; this%mur_left_Hx_kj = left_Hx_kj
+          this%mur_left_Hz_ii = left_Hz_ii; this%mur_left_Hz_ij = left_Hz_ij
+          this%mur_left_Hz_ji = left_Hz_ji; this%mur_left_Hz_jj = left_Hz_jj
+          this%mur_left_Hz_ki = left_Hz_ki; this%mur_left_Hz_kj = left_Hz_kj
+          this%mur_right_Hx_ii = right_Hx_ii; this%mur_right_Hx_ij = right_Hx_ij
+          this%mur_right_Hx_ji = right_Hx_ji; this%mur_right_Hx_jj = right_Hx_jj
+          this%mur_right_Hx_ki = right_Hx_ki; this%mur_right_Hx_kj = right_Hx_kj
+          this%mur_right_Hz_ii = right_Hz_ii; this%mur_right_Hz_ij = right_Hz_ij
+          this%mur_right_Hz_ji = right_Hz_ji; this%mur_right_Hz_jj = right_Hz_jj
+          this%mur_right_Hz_ki = right_Hz_ki; this%mur_right_Hz_kj = right_Hz_kj
+          this%mur_down_Hy_ii = down_Hy_ii; this%mur_down_Hy_ij = down_Hy_ij
+          this%mur_down_Hy_ji = down_Hy_ji; this%mur_down_Hy_jj = down_Hy_jj
+          this%mur_down_Hy_ki = down_Hy_ki; this%mur_down_Hy_kj = down_Hy_kj
+          this%mur_down_Hx_ii = down_Hx_ii; this%mur_down_Hx_ij = down_Hx_ij
+          this%mur_down_Hx_ji = down_Hx_ji; this%mur_down_Hx_jj = down_Hx_jj
+          this%mur_down_Hx_ki = down_Hx_ki; this%mur_down_Hx_kj = down_Hx_kj
+          this%mur_up_Hy_ii = up_Hy_ii; this%mur_up_Hy_ij = up_Hy_ij
+          this%mur_up_Hy_ji = up_Hy_ji; this%mur_up_Hy_jj = up_Hy_jj
+          this%mur_up_Hy_ki = up_Hy_ki; this%mur_up_Hy_kj = up_Hy_kj
+          this%mur_up_Hx_ii = up_Hx_ii; this%mur_up_Hx_ij = up_Hx_ij
+          this%mur_up_Hx_ji = up_Hx_ji; this%mur_up_Hx_jj = up_Hx_jj
+          this%mur_up_Hx_ki = up_Hx_ki; this%mur_up_Hx_kj = up_Hx_kj
+          this%mur_back_Hz_ii = back_Hz_ii; this%mur_back_Hz_ij = back_Hz_ij
+          this%mur_back_Hz_ji = back_Hz_ji; this%mur_back_Hz_jj = back_Hz_jj
+          this%mur_back_Hz_ki = back_Hz_ki; this%mur_back_Hz_kj = back_Hz_kj
+          this%mur_back_Hy_ii = back_Hy_ii; this%mur_back_Hy_ij = back_Hy_ij
+          this%mur_back_Hy_ji = back_Hy_ji; this%mur_back_Hy_jj = back_Hy_jj
+          this%mur_back_Hy_ki = back_Hy_ki; this%mur_back_Hy_kj = back_Hy_kj
+          this%mur_front_Hz_ii = front_Hz_ii; this%mur_front_Hz_ij = front_Hz_ij
+          this%mur_front_Hz_ji = front_Hz_ji; this%mur_front_Hz_jj = front_Hz_jj
+          this%mur_front_Hz_ki = front_Hz_ki; this%mur_front_Hz_kj = front_Hz_kj
+          this%mur_front_Hy_ii = front_Hy_ii; this%mur_front_Hy_ij = front_Hy_ij
+          this%mur_front_Hy_ji = front_Hy_ji; this%mur_front_Hy_jj = front_Hy_jj
+          this%mur_front_Hy_ki = front_Hy_ki; this%mur_front_Hy_kj = front_Hy_kj
 
     end subroutine gpu_init_mur_limits
 
