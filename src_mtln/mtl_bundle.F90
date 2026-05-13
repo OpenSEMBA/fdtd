@@ -12,6 +12,12 @@ module mtl_bundle_m
     use FDETYPES_m, only: RKIND, RKIND_TIEMPO
     implicit none
 
+    type :: external_field_segment_t
+        integer, dimension(3) :: position
+        integer :: direction = 0
+        real(kind=rkind), pointer :: field => null()
+    end type
+
     type, public :: mtl_bundle_t
         character(len=:), allocatable :: name
         real(kind=rkind), allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
@@ -65,12 +71,6 @@ module mtl_bundle_m
     interface mtl_bundle_t
         module procedure mtldCtor
     end interface
-
-    type :: external_field_segment_t
-        integer, dimension(3) ::position
-        integer :: direction = 0
-        real(kind=rkind) , pointer  :: field => null()
-    end type
 
 contains
 
