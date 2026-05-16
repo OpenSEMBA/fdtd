@@ -24,7 +24,7 @@ module Preprocess_m
 !!!
    private
    !
-   public read_geomData, read_limits_nogeom,AssigLossyOrPECtoNodes
+   public read_geomData, read_limits_nogeom,AssigLossyOrPECtoNodes,searchtag
    !
 contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -7204,9 +7204,9 @@ contains
    function searchtag(tagtype,tag) result(numertag)
 
 
-      character(len=BUFSIZE) :: tag
-      integer(Kind=4) :: i,numertag
-      type(tagtype_t) :: tagtype
+       character(len=*), intent(in) :: tag
+       integer(Kind=4) :: i,numertag
+       type(tagtype_t), intent(in) :: tagtype
 
       numertag=-1
       busca: do i=1,tagtype%numertags
