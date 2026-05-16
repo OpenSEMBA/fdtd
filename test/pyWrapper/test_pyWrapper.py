@@ -1,6 +1,8 @@
 from utils import *
 
 
+@pytest.mark.probes
+@pytest.mark.wires
 def test_read_wire_probe():
     p = Probe(OUTPUTS_FOLDER + 'fakeCurrentProbe.fdtd_mid_point_Wz_11_11_11_s2.dat')
 
@@ -20,12 +22,16 @@ def test_read_wire_probe():
     assert p['current'].iat[-1] == -0.000000000E+000
 
 
+@pytest.mark.probes
+@pytest.mark.wires
 def test_read_probe_from_NFDE():
     p = Probe(OUTPUTS_FOLDER + 'fakeCurrentProbe.fdtd_mid_point_Wz_11_11_11_s2.dat')
 
     assert p.type == 'wire'
 
 
+@pytest.mark.probes
+@pytest.mark.wires
 def test_read_frequency_probe_from_NFDE():
     p = Probe(OUTPUTS_FOLDER + 'edelcadfixZ_COR2_log__Wz_21_21_28_s10_df.dat')
 
@@ -35,6 +41,7 @@ def test_read_frequency_probe_from_NFDE():
     assert p.segment == 10
 
 
+@pytest.mark.probes
 def test_read_point_probe():
     p = Probe(OUTPUTS_FOLDER + 'shieldingEffectiveness.fdtd_front_Ex_1_1_1.dat')
 
@@ -59,6 +66,7 @@ def test_read_point_probe():
     assert p['incident'].iat[-1] == 0.0
 
 
+@pytest.mark.probes
 def test_read_point_probe_without_planewave():
     p = Probe(OUTPUTS_FOLDER + 'twoWires.fdtd_ProbeEnd_Ey_25_13_5.dat')
 
@@ -71,6 +79,7 @@ def test_read_point_probe_without_planewave():
     assert np.all(p.cell == np.array([25, 13, 5]))
 
 
+@pytest.mark.probes
 def test_read_bulk_current_probe():
     p = Probe(OUTPUTS_FOLDER +
               'twoWires.fdtd_Bulk probe_Jx_15_11_13__15_13_17.dat')
@@ -82,6 +91,7 @@ def test_read_bulk_current_probe():
     assert p.direction == 'x'
 
 
+@pytest.mark.planewave
 def test_fdtd_set_new_folder_to_run(tmp_path):
     input = os.path.join(CASES_FOLDER, 'planewave', 'pw-in-box.fdtd.json')
     solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -91,6 +101,7 @@ def test_fdtd_set_new_folder_to_run(tmp_path):
     solver.run()
 
 
+@pytest.mark.planewave
 def test_fdtd_with_string_args(tmp_path):
     input = os.path.join(CASES_FOLDER, 'planewave', 'pw-in-box.fdtd.json')
     solver = FDTD(input,
@@ -103,6 +114,8 @@ def test_fdtd_with_string_args(tmp_path):
 
 
 @no_mpi_skip
+@pytest.mark.mpi
+@pytest.mark.planewave
 def test_fdtd_with_mpi_run(tmp_path):
     input = os.path.join(CASES_FOLDER, 'planewave', 'pw-in-box.fdtd.json')
     solver = FDTD(input,
@@ -115,6 +128,7 @@ def test_fdtd_with_mpi_run(tmp_path):
     solver.run()
 
 
+@pytest.mark.planewave
 def test_fdtd_clean_up_after_run(tmp_path):
     input = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
     solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -131,6 +145,7 @@ def test_fdtd_clean_up_after_run(tmp_path):
     assert not os.path.isfile(pn[0])
 
 
+@pytest.mark.planewave
 def test_fdtd_clean_up_does_not_delete_other_cases_files(tmp_path):
     input = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
     solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -150,6 +165,8 @@ def test_fdtd_clean_up_does_not_delete_other_cases_files(tmp_path):
     assert os.path.isfile(other_file)
 
 
+@pytest.mark.spice
+@pytest.mark.mtln
 def test_fdtd_get_used_files():
     fn = CASES_FOLDER + 'multilines_opamp/multilines_opamp.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE)
