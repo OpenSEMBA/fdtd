@@ -1240,6 +1240,8 @@ def test_bulk_current_offset_normal_in_x(tmp_path):
     assert np.allclose(probe_at_x_20['current'].to_numpy(), 0.0, atol=1.5e-3)
     assert np.allclose(probe_at_x_22['current'].to_numpy(), 0.0, atol=1.5e-3)
 
+@pytest.mark.nodal_source
+@pytest.mark.probes
 def test_bulk_current_offset_normal_in_y(tmp_path):
     # This test verifies the positive offset along the normal vector (in y-direction) respect to the bulk plane
     # used to measure the current values of the system.
@@ -1268,6 +1270,8 @@ def test_bulk_current_offset_normal_in_y(tmp_path):
     assert np.allclose(probe_at_y_0['current'].to_numpy(), 0.0, atol=1.5e-3)
     assert np.allclose(probe_at_y_2['current'].to_numpy(), 0.0, atol=1.5e-3)
 
+@pytest.mark.nodal_source
+@pytest.mark.probes
 def test_bulk_current_offset_normal_in_z(tmp_path):
     # This test verifies the positive offset along the normal vector (in z-direction) respect to the bulk plane
     # used to measure the current values of the system.
@@ -1296,6 +1300,8 @@ def test_bulk_current_offset_normal_in_z(tmp_path):
     assert np.allclose(probe_at_z_20['current'].to_numpy(), 0.0, atol=1.5e-3)
     assert np.allclose(probe_at_z_22['current'].to_numpy(), 0.0, atol=1.5e-3)
 
+@pytest.mark.nodal_source
+@pytest.mark.probes
 def test_bulk_current_offset_perpendicular_in_x(tmp_path):
     # This test verifies the negative offset presented in the y and z directions when the bulk plane is defined
     # with a normal vector in the x-direction.
@@ -1369,6 +1375,8 @@ def test_bulk_current_offset_perpendicular_in_x(tmp_path):
     assert np.allclose(probe1_positive['current'].to_numpy(), 0.0, atol=1.5e-2)
     assert np.allclose(probe2_positive['current'].to_numpy(), 0.0, atol=1.5e-2)
 
+@pytest.mark.nodal_source
+@pytest.mark.probes
 def test_bulk_current_negative_offset_in_x(tmp_path):
     # Following the previous test, we have seen that the bulk surfaces has negative offsets in the directions
     # perpendicular to the normal vector of the bulk surface. The previous test checks the negative offset in the
@@ -1429,6 +1437,8 @@ def _run_four_probes(tmp_path, json_filename):
 
     return probe_LL, probe_LU, probe_UU, probe_UL, exc_interp
 
+@pytest.mark.nodal_source
+@pytest.mark.probes
 def test_bulk_current_four_probes_X_oriented(tmp_path):
     # A nodal current source runs along X through cell (23,23).
     # Four bulk-current probes are arranged in the YZ plane at x=4:
@@ -1442,6 +1452,8 @@ def test_bulk_current_four_probes_X_oriented(tmp_path):
     assert np.allclose(probe_LU["current"].to_numpy(), 0.0, atol=2e-3)
     assert np.allclose(probe_UL["current"].to_numpy(), 0.0, atol=2e-3)
 
+@pytest.mark.nodal_source
+@pytest.mark.probes
 def test_bulk_current_four_probes_Y_oriented(tmp_path):
     # A nodal current source runs along Y through cell (23,23).
     # Four bulk-current probes are arranged in the XZ plane at y=4:
@@ -1455,6 +1467,8 @@ def test_bulk_current_four_probes_Y_oriented(tmp_path):
     assert np.allclose(probe_LU["current"].to_numpy(), 0.0, atol=2e-3)
     assert np.allclose(probe_UL["current"].to_numpy(), 0.0, atol=2e-3)
 
+@pytest.mark.nodal_source
+@pytest.mark.probes
 def test_bulk_current_four_probes_Z_oriented(tmp_path):
     # A nodal current source runs along Z through cell (23,23).
     # Four bulk-current probes are arranged in the XY plane at z=4:
@@ -1471,6 +1485,9 @@ def test_bulk_current_four_probes_Z_oriented(tmp_path):
 
 # compiled without mtln uses classic wires
 # compiled with mtln, wire is treated as an unshielded multiwire
+@pytest.mark.conformal
+@pytest.mark.wires
+@pytest.mark.probes
 def test_conformal_impedance_cylinder_unshielded(tmp_path):
     case_name = 'conformal_impedance_cylinder_conformal'
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
@@ -1504,6 +1521,9 @@ def test_conformal_impedance_cylinder_unshielded(tmp_path):
     assert np.corrcoef(data['z'], np.abs(Vfexc/Ifbulk_conf))[0,1] > 0.999
 
     
+@pytest.mark.conformal
+@pytest.mark.farfield
+@pytest.mark.probes
 def test_conformal_sphere_rcs(tmp_path):
     case_name = 'conformal_sphere_rcs'
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
@@ -1525,6 +1545,8 @@ def test_conformal_sphere_rcs(tmp_path):
 
     assert np.corrcoef(rcs[5:150], rcs_interp[5:150])[0,1] > 0.98
 
+@pytest.mark.conformal
+@pytest.mark.probes
 def test_conformal_delay(tmp_path):
     fn = CASES_FOLDER + 'conformal/conformal.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -1562,6 +1584,9 @@ def test_conformal_delay(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
+@pytest.mark.wires
+@pytest.mark.nodal_source
+@pytest.mark.probes
 def test_current_generators_with_resistance(tmp_path):
     # Checks current and voltage of probes at the extremes of a wire
     # with a current generator in the middle of the wire
@@ -1582,6 +1607,9 @@ def test_current_generators_with_resistance(tmp_path):
     assert np.allclose(Vend['voltage_0'][-100:-1], 16.666, rtol=0.005)
     assert np.allclose(Vstart['voltage_0'][-100:-1], -16.666, rtol=0.005)
 
+@pytest.mark.wires
+@pytest.mark.nodal_source
+@pytest.mark.probes
 def test_current_generators_without_resistance(tmp_path):
     # Checks current probes at the extremes of a wire
     # with a current generator in the middle of the wire and on the extremes of the wire
@@ -1617,6 +1645,9 @@ def test_current_generators_without_resistance(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
+@pytest.mark.wires
+@pytest.mark.nodal_source
+@pytest.mark.probes
 def test_voltage_generators(tmp_path):
     # Checks current and voltage of probes at the extremes of bundle (1 conductor + 1 shield)
     # with a voltage generator in the middle of the inner conductor
@@ -1643,6 +1674,7 @@ def test_voltage_generators(tmp_path):
     assert np.allclose(Vend['voltage_1'][-100:-1],   -16.666, rtol=0.005)
     assert np.allclose(Vstart['voltage_1'][-100:-1], -16.666, rtol=0.005)
     
+@pytest.mark.probes
 def test_bulk_current_outputs(tmp_path):
     # This test uses bulk_probe_cases_over_nodal_source.fdtd from input_examples as input.
     # Verifies all kind of bulk probes are recognised and setted properly by checking outputFile format.
