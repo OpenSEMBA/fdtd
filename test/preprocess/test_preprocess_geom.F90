@@ -4,6 +4,8 @@
 integer function test_searchtag() bind(C, name="test_searchtag") result(status)
     use, intrinsic :: iso_c_binding
     use FDETYPES_m
+    use NFDETypes_m
+    use NFDETypes_m
     use Preprocess_m
     implicit none
     type(tagtype_t) :: test_tags
@@ -81,6 +83,7 @@ end function test_searchtag
 integer function test_searchtag_empty() bind(C, name="test_searchtag_empty") result(status)
     use, intrinsic :: iso_c_binding
     use FDETYPES_m
+    use NFDETypes_m
     use Preprocess_m
     implicit none
     type(tagtype_t) :: empty_tags
@@ -107,6 +110,7 @@ end function test_searchtag_empty
 integer function test_searchtag_single() bind(C, name="test_searchtag_single") result(status)
     use, intrinsic :: iso_c_binding
     use FDETYPES_m
+    use NFDETypes_m
     use Preprocess_m
     implicit none
     type(tagtype_t) :: single_tags
@@ -145,6 +149,7 @@ end function test_searchtag_single
 integer function test_searchtag_special_chars() bind(C, name="test_searchtag_special_chars") result(status)
     use, intrinsic :: iso_c_binding
     use FDETYPES_m
+    use NFDETypes_m
     use Preprocess_m
     implicit none
     type(tagtype_t) :: special_tags
@@ -192,3 +197,112 @@ integer function test_searchtag_special_chars() bind(C, name="test_searchtag_spe
         print *, 'test_searchtag_special_chars PASSED'
     end if
 end function test_searchtag_special_chars
+
+! Test checkDielectricTagForDuplicate - no duplicates
+integer function test_checkDielectricTag_no_dup() bind(C, name="test_checkDielectricTag_no_dup") result(status)
+    use, intrinsic :: iso_c_binding
+    use FDETYPES_m
+    use NFDETypes_m
+    use Preprocess_m
+    implicit none
+    type(Dielectric_t) :: diel_comp, prev_diel(1)
+    type(tagtype_t) :: tagtype
+    integer(c_int) :: numertag
+    character(len=100) :: error_msg
+    
+    status = 0
+    
+    ! Setup dielectric with unique tags in c1P
+    diel_comp%n_c1P = 2
+    allocate(diel_comp%c1P(2))
+    diel_comp%c1P(1)%tag = 'dielectric_tag1'
+    diel_comp%c1P(2)%tag = 'dielectric_tag2'
+    diel_comp%n_c2P = 0
+    
+    ! Setup empty previous dielectrics
+    prev_diel(1)%n_c1P = 0
+    prev_diel(1)%n_c2P = 0
+    
+    ! Setup tagtype for precounting
+    tagtype%numertags = 0
+    allocate(tagtype%tag(10))
+    
+    ! Test first tag (idx=1) - should not be duplicate
+    ! numertag is incremented by caller before calling helper
+    numertag = 0
+    numertag = numertag + 1
+    error_msg = 'Error in dielectric tag check'
+    call checkDielectricTagForDuplicate(diel_comp, prev_diel, 0, 1, 'c1P', numertag, tagtype, 1, error_msg)
+    if (numertag /= 1) then
+        print *, 'test_checkDielectricTag_no_dup FAILED: Expected numertag=1, got', numertag
+        status = 1
+    end if
+    
+    ! Test second tag (idx=2) - should not be duplicate
+    numertag = numertag + 1
+    call checkDielectricTagForDuplicate(diel_comp, prev_diel, 0, 2, 'c1P', numertag, tagtype, 1, error_msg)
+    if (numertag /= 2) then
+        print *, 'test_checkDielectricTag_no_dup FAILED: Expected numertag=2, got', numertag
+        status = 1
+    end if
+    
+    ! Cleanup
+    deallocate(diel_comp%c1P)
+    deallocate(tagtype%tag)
+    
+    if (status == 0) then
+        print *, 'test_checkDielectricTag_no_dup PASSED'
+    end if
+end function test_checkDielectricTag_no_dup
+
+! Test checkLossyTagForDuplicate - basic functionality
+integer function test_checkLossyTag_basic() bind(C, name="test_checkLossyTag_basic") result(status)
+    use, intrinsic :: iso_c_binding
+    use FDETYPES_m
+    use NFDETypes_m
+    use Preprocess_m
+    implicit none
+    type(LossyThinSurface_t) :: lossy_comp, prev_lossy(1)
+    type(tagtype_t) :: tagtype
+    integer(c_int) :: numertag
+    
+    status = 0
+    
+    ! Setup lossy surface with unique tags
+    lossy_comp%nc = 2
+    allocate(lossy_comp%C(2))
+    lossy_comp%C(1)%tag = 'lossy_tag1'
+    lossy_comp%C(2)%tag = 'lossy_tag2'
+    
+    ! Setup empty previous
+    prev_lossy(1)%nc = 0
+    
+    ! Setup tagtype
+    tagtype%numertags = 0
+    allocate(tagtype%tag(10))
+    
+    ! Test first tag - increment before calling helper
+    numertag = 0
+    numertag = numertag + 1
+    call checkLossyTagForDuplicate(lossy_comp, prev_lossy, 0, 1, numertag, tagtype, 1)
+    if (numertag /= 1) then
+        print *, 'test_checkLossyTag_basic FAILED: Expected numertag=1, got', numertag
+        status = 1
+    end if
+    
+    ! Test second tag
+    numertag = numertag + 1
+    call checkLossyTagForDuplicate(lossy_comp, prev_lossy, 0, 2, numertag, tagtype, 1)
+    if (numertag /= 2) then
+        print *, 'test_checkLossyTag_basic FAILED: Expected numertag=2, got', numertag
+        status = 1
+    end if
+    
+    ! Cleanup
+    deallocate(lossy_comp%C)
+    deallocate(tagtype%tag)
+    
+    if (status == 0) then
+        print *, 'test_checkLossyTag_basic PASSED'
+    end if
+end function test_checkLossyTag_basic
