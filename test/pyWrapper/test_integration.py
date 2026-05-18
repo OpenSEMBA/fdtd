@@ -1,5 +1,7 @@
 from utils import *
 
+@pytest.mark.wires
+@pytest.mark.termination
 def test_holland_case_checking_number_of_outputs_single_wire(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -17,6 +19,10 @@ def test_holland_case_checking_number_of_outputs_single_wire(tmp_path):
     assert len(p['current']) == 11
 
 @no_mtln_skip
+@pytest.mark.mtln
+@pytest.mark.wires
+@pytest.mark.multiwire
+@pytest.mark.termination
 def test_holland_case_checking_number_of_outputs_wire(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -35,6 +41,10 @@ def test_holland_case_checking_number_of_outputs_wire(tmp_path):
     assert len(p['current']) == 11
 
 @no_mtln_skip
+@pytest.mark.mtln
+@pytest.mark.wires
+@pytest.mark.multiwire
+@pytest.mark.termination
 def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -53,6 +63,9 @@ def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
 
 
 @mtln_skip
+@pytest.mark.wires
+@pytest.mark.probes
+@pytest.mark.termination
 def test_towel_hanger_case_creates_output_probes(tmp_path):
     fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -76,6 +89,8 @@ def test_towel_hanger_case_creates_output_probes(tmp_path):
     assert countLinesInFile(probe_end[0]) == 3
 
 @no_mpi_skip
+@pytest.mark.mpi
+@pytest.mark.wires
 def test_airplane_case_with_mpi(tmp_path):
     fn = CASES_FOLDER + 'airplane/airplane.fdtd.json'
     solver = FDTD(fn, 
@@ -89,6 +104,7 @@ def test_airplane_case_with_mpi(tmp_path):
     assert os.path.isfile(vtkmapfile)
 
 
+@pytest.mark.wires
 def test_simple_cabin_initialization(tmp_path):
     fn = CASES_FOLDER + 'simple_cabin/simple_cabin.fdtd.json'
     solver = FDTD(input_filename=fn, 
@@ -100,6 +116,8 @@ def test_simple_cabin_initialization(tmp_path):
 
 
 @no_mpi_skip
+@pytest.mark.mpi
+@pytest.mark.wires
 def test_simple_cabin_initialization_with_mpi(tmp_path):
     fn = CASES_FOLDER + 'simple_cabin/simple_cabin.fdtd.json'
     solver = FDTD(fn, 
@@ -113,6 +131,9 @@ def test_simple_cabin_initialization_with_mpi(tmp_path):
     assert os.path.isfile(vtkmapfile)
 
 
+@pytest.mark.probes
+@pytest.mark.hdf
+@pytest.mark.farfield
 def test_sphere_case_with_far_field_probe_launches(tmp_path):
     fn = CASES_FOLDER + 'sphere/sphere.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -131,6 +152,8 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
     assert p.type == 'movie'
     assert np.all(p.cell_init == np.array([2, 2, 2]))
 
+@pytest.mark.conformal
+@pytest.mark.vtk
 def test_fill_conformal_vtk_sphere(tmp_path):
     fn = CASES_FOLDER + 'conformal/conformal_sphere_1mm_rcs_delta.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -155,6 +178,8 @@ def test_fill_conformal_vtk_sphere(tmp_path):
     assert face_media_dict[1005] == 24  # Conformal PEC surface
     assert face_media_dict[1006] == 24  # Conformal PEC surface
 
+@pytest.mark.conformal
+@pytest.mark.vtk
 def test_fill_conformal_fL_0_005_vtk_large_sphere(tmp_path):
     fn = CASES_FOLDER + 'conformal/conformal_fL_sphere_rcs.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -176,6 +201,8 @@ def test_fill_conformal_fL_0_005_vtk_large_sphere(tmp_path):
 
     assert -1 not in face_media_dict.keys()
 
+@pytest.mark.conformal
+@pytest.mark.vtk
 def test_fill_conformal_fL_0_15_vtk_large_sphere(tmp_path):
     fn = CASES_FOLDER + 'conformal/conformal_fL_0.15_sphere_rcs.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -197,6 +224,8 @@ def test_fill_conformal_fL_0_15_vtk_large_sphere(tmp_path):
 
     assert -1 not in face_media_dict.keys()
 
+@pytest.mark.conformal
+@pytest.mark.vtk
 def test_fill_slanted_vtk_large_sphere(tmp_path):
     fn = CASES_FOLDER + 'conformal/slanted_sphere_rcs.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -219,6 +248,8 @@ def test_fill_slanted_vtk_large_sphere(tmp_path):
     assert -1 not in face_media_dict.keys()
 
     
+@pytest.mark.conformal
+@pytest.mark.vtk
 def test_fill_conformal_vtk_corner(tmp_path):
 #          /|
 #        5  |
@@ -254,6 +285,8 @@ def test_fill_conformal_vtk_corner(tmp_path):
     assert line_media_dict[0.5] == 1  # PEC line
     assert line_media_dict[2004] == 4  # Conformal line #1
     
+@pytest.mark.probes
+@pytest.mark.movie
 def test_movie_with_frequency_domain(tmp_path):
     fn = CASES_FOLDER + 'observation/movieFrequency.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -268,6 +301,8 @@ def test_movie_with_frequency_domain(tmp_path):
     assert p.type == 'movie'
     assert np.all(p.cell_init == np.array([1, 1, 1]))
 
+@pytest.mark.probes
+@pytest.mark.movie
 def test_movie_with_time_domain(tmp_path):
     fn = CASES_FOLDER + 'observation/movieTime.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -284,6 +319,8 @@ def test_movie_with_time_domain(tmp_path):
 
 
 
+@pytest.mark.sgbc
+@pytest.mark.vtk
 def test_three_surfaces(tmp_path):
     fn = CASES_FOLDER + 'observation/three_surfaces.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -318,6 +355,8 @@ def test_three_surfaces(tmp_path):
     assert line_media_dict[0.5] == 8  # PEC line
     assert line_media_dict[3.5] == 10  # SGBC line
 
+@pytest.mark.sgbc
+@pytest.mark.probes
 def test_three_surfaces_Jprobe(tmp_path):
     fn = CASES_FOLDER + 'observation/three_surfaces_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -339,6 +378,8 @@ def test_three_surfaces_Jprobe(tmp_path):
     assert line_tag_dict[128] == 10
     assert line_tag_dict[192] == 8
 
+@pytest.mark.sgbc
+@pytest.mark.probes
 def test_three_one_cell_surfaces_Jprobe(tmp_path):
     fn = CASES_FOLDER + 'observation/three_one_cell_surfaces_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -360,6 +401,7 @@ def test_three_one_cell_surfaces_Jprobe(tmp_path):
     assert line_tag_dict[128] == 3
     assert line_tag_dict[192] == 2
 
+@pytest.mark.probes
 def test_one_cell_PEC_surface_Jprobe(tmp_path):
     fn = CASES_FOLDER + 'observation/one_cell_surface_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
