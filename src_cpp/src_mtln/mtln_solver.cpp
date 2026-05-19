@@ -41,11 +41,19 @@ namespace mtl_bundle_m {
         std::vector<std::vector<double>> i;
         std::vector<std::vector<double>> i_diff;
         
-        // Mock methods for translation purposes
-        void setExternalLongitudinalField() {}
-        void updateGenerators(double time, double dt) {}
-        void advanceVoltage() {}
-        void advanceCurrent() {}
+        // MTLN solver methods (from mtln_solver.F90)
+        void setExternalLongitudinalField() {
+            /* TODO: Set external longitudinal field on MTLN. From mtln_solver.F90 */
+        }
+        void updateGenerators(double time, double dt) {
+            /* TODO: Update voltage/current generators. From mtln_solver.F90 */
+        }
+        void advanceVoltage() {
+            /* TODO: Advance node voltages. From mtln_solver.F90 */
+        }
+        void advanceCurrent() {
+            /* TODO: Advance branch currents. From mtln_solver.F90 */
+        }
         std::vector<double>& getProbes() { static std::vector<double> dummy; return dummy; } // Placeholder
     };
 }
@@ -68,7 +76,9 @@ namespace network_manager_m {
 
     struct network_manager_t {
         std::vector<network_t> networks;
-        void advanceVoltage() {}
+        void advanceVoltage() {
+            /* TODO: Advance network voltages. From mtln_solver.F90 */
+        }
     };
     
     constexpr int TERMINAL_NODE_SIDE_INI = 1;

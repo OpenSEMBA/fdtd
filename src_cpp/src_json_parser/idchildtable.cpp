@@ -25,9 +25,13 @@
 namespace json_module {
     class json_core {
     public:
-        void get(void* root, const std::string& path, void*& jentries, bool& found) {}
+        void get(void* root, const std::string& path, void*& jentries, bool& found) {
+            /* TODO: JSON get operation. From json-fortran submodule */
+        }
         int count(void* jentries) { return 0; }
-        void get_child(void* jentries, int i, void*& jentry) {}
+        void get_child(void* jentries, int i, void*& jentry) {
+            /* TODO: JSON get_child operation. From json-fortran submodule */
+        }
     };
     struct json_value {};
 }
@@ -44,8 +48,12 @@ namespace fhash {
     
     class fhash_tbl_t {
     public:
-        void allocate(int size) {}
-        void set(const key_t& k, void* val) {}
+        void allocate(int size) {
+            /* TODO: Allocate hash table. From fhash submodule */
+        }
+        void set(const key_t& k, void* val) {
+            /* TODO: Set hash table entry. From fhash submodule */
+        }
         void stats(int& num_items) { num_items = 0; }
         void check_key(const key_t& k, int& stat) { stat = 0; }
         void get_raw(const key_t& k, void*& d) { d = nullptr; }

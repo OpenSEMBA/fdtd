@@ -132,15 +132,15 @@ void print11(INT4 layoutnumber, const std::string& msg) {
 }
 
 void cuentatags(Parseador_t& this_, tagtype_t& tagtype, INT4 layoutnumber, const std::string& fichin) {
-    // Stub
+    /* TODO: Count tags from input file. From preprocess_geom.F90 */
 }
 
 void prepro_skindepth(Parseador_t& this_, const std::string& fichin) {
-    // Stub
+    /* TODO: Preprocess skin depth from input file. From preprocess_geom.F90 */
 }
 
 void populatePlaneWaveRC(PlaneWave_t& pw, bool simu_devia) {
-    // Stub
+    /* TODO: Populate plane wave random constants. From preprocess_geom.F90 */
 }
 
 // MPI stubs
@@ -604,27 +604,27 @@ namespace Preprocess_m {
     }
 
     void read_limits_nogeom() {
-        // Stub
+        /* TODO: Read geometry limits without full geometry parsing. From preprocess_geom.F90 */
     }
 
     void AssigLossyOrPECtoNodes() {
-        // Stub
+        /* TODO: Assign lossy or PEC material to nodes. From preprocess_geom.F90 */
     }
 
     void searchtag() {
-        // Stub
+        /* TODO: Search for tag definitions. From preprocess_geom.F90 */
     }
 
     void checkDielectricTagForDuplicate() {
-        // Stub
+        /* TODO: Check for duplicate dielectric tags. From preprocess_geom.F90 */
     }
 
     void checkAnimatedTagForDuplicate() {
-        // Stub
+        /* TODO: Check for duplicate animated tags. From preprocess_geom.F90 */
     }
 
     void checkLossyTagForDuplicate() {
-        // Stub
+        /* TODO: Check for duplicate lossy tags. From preprocess_geom.F90 */
     }
 
 } // namespace Preprocess_m

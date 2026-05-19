@@ -318,17 +318,31 @@ namespace mtln_preprocess_m {
     }
 
     network_manager_t preprocess_t::buildNetworkManager(const std::vector<network_t>& networks) {
-        // Stub implementation
+        /* TODO: Build network manager from network list. From preprocess.F90 */
         return network_manager_t();
     }
 
-    void preprocess_t::buildNetwork() {}
-    void preprocess_t::connectNodeToGround() {}
-    void preprocess_t::connectNodes() {}
-    void preprocess_t::connectNodesToNetworkCircuit() {}
-    void preprocess_t::addNodeWithId() {}
-    void preprocess_t::addProbesWithId(const std::vector<probe_t>& probes) {}
-    void preprocess_t::addGenerators(const std::vector<wire_generator_t>& generators) {}
+    void preprocess_t::buildNetwork() {
+        /* TODO: Build MTLN network from circuit definitions. From preprocess.F90 */
+    }
+    void preprocess_t::connectNodeToGround() {
+        /* TODO: Connect MTLN nodes to ground reference. From preprocess.F90 */
+    }
+    void preprocess_t::connectNodes() {
+        /* TODO: Connect MTLN nodes between bundles. From preprocess.F90 */
+    }
+    void preprocess_t::connectNodesToNetworkCircuit() {
+        /* TODO: Connect MTLN nodes to external circuit. From preprocess.F90 */
+    }
+    void preprocess_t::addNodeWithId() {
+        /* TODO: Add node with unique ID. From preprocess.F90 */
+    }
+    void preprocess_t::addProbesWithId(const std::vector<probe_t>& probes) {
+        /* TODO: Add observation probes for MTLN. From preprocess.F90 */
+    }
+    void preprocess_t::addGenerators(const std::vector<wire_generator_t>& generators) {
+        /* TODO: Add voltage/current generators. From preprocess.F90 */
+    }
 
     mtl_t buildLineFromCable(cable_t& cable, RKIND_TIEMPO dt, const std::optional<std::vector<std::vector<int>>>& layer_indices, const std::optional<bool>& bundle_in_layer, const std::optional<std::array<int, 2>>& alloc_z) {
         mtl_t res;
@@ -440,10 +454,10 @@ namespace mtln_preprocess_m {
         for (int i = 0; i < nb; ++i) {
             if (alloc.has_value()) {
                 if (!layer_indices.empty()) layer_indices.clear();
-                // isBundleInLayer stub
+                // TODO: Check if bundle is in specified layer. From preprocess.F90
                 bundle_in_layer = false; // Placeholder
                 if (bundle_in_layer) { 
-                    // findIndicesInLayer stub
+                    // TODO: Find indices of conductors in layer. From preprocess.F90
                     layer_indices = {}; 
                 } else { 
                     layer_indices = {{}};
@@ -481,10 +495,8 @@ namespace mtln_preprocess_m {
         res.levels[0] = level;
 
         while (findNextLevel(res.levels[0], cables) != 0) {
-            // appendLevel stub
+            // TODO: Append next cable level. From preprocess.F90
             // This logic is complex in Fortran with move_alloc. In C++, we'd use vector push_back or insert.
-            // Assuming appendLevel is implemented to extend the vector.
-            // Since I don't have the full implementation of appendLevel here, I'll simulate the loop condition.
             // In a real translation, appendLevel would be a helper function.
             break; // Placeholder to prevent infinite loop in this snippet
         }

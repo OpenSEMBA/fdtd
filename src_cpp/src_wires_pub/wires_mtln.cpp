@@ -46,11 +46,21 @@ struct mtln_t {
 };
 
 struct mtln_solver_t : public mtln_t {
-    void updatePULTerms() {}
-    void initObservation(const std::string& nEntradaRoot) {}
-    void run() {}
-    void closeObservation() {}
-    void step() {}
+    void updatePULTerms() {
+        /* TODO: Update PUL (per-unit-length) terms for MTLN. From wires_mtln.F90 */
+    }
+    void initObservation(const std::string& nEntradaRoot) {
+        /* TODO: Initialize observation probes for MTLN. From wires_mtln.F90 */
+    }
+    void run() {
+        /* TODO: Run MTLN solver. From wires_mtln.F90 */
+    }
+    void closeObservation() {
+        /* TODO: Close observation probes. From wires_mtln.F90 */
+    }
+    void step() {
+        /* TODO: Advance MTLN one time step. From wires_mtln.F90 */
+    }
 };
 
 // HollandWires_m / wiresHolland_constants_m placeholders
