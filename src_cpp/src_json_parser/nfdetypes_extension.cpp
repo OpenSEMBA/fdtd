@@ -1,6 +1,10 @@
 // This file corresponds to NFDETypes_extension_m.f90
 // Includes for types defined in NFDETypes_m should be added here.
 // #include "NFDETypes.h"
+#include <optional>
+#include <memory>
+#include <string>
+#include <vector>
 
 // Forward declarations or includes for types used in this module
 // Assuming NFDETypes.h contains definitions for Parseador_t, MatrizMedios_t, etc.

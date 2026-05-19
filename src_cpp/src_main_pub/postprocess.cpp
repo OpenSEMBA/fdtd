@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstring>
 #include <iomanip>
+#include <sstream>
 
 // Forward declarations for external modules/types
 // These would typically be in their respective headers

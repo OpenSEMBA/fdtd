@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cstdint>
 #include <optional>
+#include <sstream>
 
 // Includes for external modules/types referenced in the Fortran code
 // These would need to be implemented or included from their respective headers

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <optional>
 #include <memory>
+#include <array>
 
 // Forward declarations and includes for dependent modules
 // #include "mtl_bundle_m.hpp"

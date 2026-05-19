@@ -1,4 +1,3 @@
-```cpp
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -8,6 +7,7 @@
 #include <cstring>
 #include <algorithm>
 #include <iomanip>
+#include <sstream>
 
 // Forward declarations for external types/functions not defined in this snippet
 // These would typically come from FDETYPES_m, snapxdmf_m, and MPI headers

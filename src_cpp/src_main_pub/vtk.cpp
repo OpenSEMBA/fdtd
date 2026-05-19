@@ -5,6 +5,8 @@
 #include <cstring>
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
+#include <complex>
 
 // Forward declarations and includes for external modules/types
 // #include "FDETYPES_m.h"

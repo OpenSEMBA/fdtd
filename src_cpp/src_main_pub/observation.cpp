@@ -7,6 +7,9 @@
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+#include <sstream>
+#include <limits>
+#include <iomanip>
 
 // Forward declarations and includes for external modules would go here
 // #include "FDETYPES_m.h"

@@ -2,6 +2,8 @@
 #include <cmath>
 #include <algorithm>
 #include <iostream>
+#include <array>
+#include <memory>
 
 // Forward declarations and includes for external modules/types
 // These would typically be in their respective headers

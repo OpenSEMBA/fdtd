@@ -5,6 +5,8 @@
 #include <iostream>
 #include <algorithm>
 #include <stdexcept>
+#include <array>
+#include <iomanip>
 
 // Forward declarations and includes for external modules/types
 // #include "FDETYPES_m.h"

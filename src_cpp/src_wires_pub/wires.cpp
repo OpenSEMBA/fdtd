@@ -4,6 +4,9 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <sstream>
+#include <iomanip>
+#include <array>
 
 // Assuming these headers exist based on the Fortran 'use' statements
 // #include "Report_m.h"

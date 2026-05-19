@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <cstring>
+#include <sstream>
 
 // Assuming FDETYPES_m provides these types. 
 // In a real translation, these would be defined in a header or mapped to standard types.

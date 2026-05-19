@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <cstring>
+#include <sstream>
 
 // Forward declarations for external modules/types
 // #include "FDETYPES_m.h"

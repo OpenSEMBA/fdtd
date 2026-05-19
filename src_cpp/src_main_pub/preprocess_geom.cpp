@@ -5,6 +5,8 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <sstream>
+#include <array>
 
 // Assuming these types and constants are defined in other headers
 // For the purpose of this translation, we provide stubs or assume they exist.
