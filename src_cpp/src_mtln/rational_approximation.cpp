@@ -16,6 +16,18 @@
 
 namespace rational_approximation_m {
 
+    struct transfer_impedance_per_meter_t {
+        double r = 0.0, l = 0.0, c = 0.0;
+        double length = 0.0;
+        int direction = 0;
+        int number_of_poles = 0;
+        std::vector<std::complex<double>> q1, q2, q3;
+        double resistive_term = 0.0;
+        double inductive_term = 0.0;
+        std::vector<std::complex<double>> poles;
+        std::vector<std::complex<double>> residues;
+    };
+
     struct pol_res_t {
         std::vector<std::complex<double>> q1;
         std::vector<std::complex<double>> q2;

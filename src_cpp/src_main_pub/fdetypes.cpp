@@ -1,4 +1,3 @@
-```cpp
 #include <vector>
 #include <string>
 #include <complex>
@@ -38,6 +37,16 @@
 #endif
 
 // Define basic types based on flags
+#ifdef CompileWithInt1
+    using int1_t = int8_t;
+#elif defined(CompileWithInt2)
+    using int2_t = int16_t;
+#elif defined(CompileWithInt4)
+    using int4_t = int32_t;
+#else
+    using int4_t = int32_t;
+#endif
+
 #ifdef CompileWithReal16
     // Typically long double or a custom 128-bit float type
     using RealKind = long double;
@@ -163,10 +172,6 @@ namespace FDETYPES_m {
     const int2_t INTEGERSIZEOFMEDIAMATRICES_VAL = INTEGERSIZEOFMEDIAMATRICES;
     const int2_t IKINDMTAG_VAL = 4;
 
-    const int2_t SINGLE_VAL = 4;
-    const int2_t DOUBLE_VAL = 8;
-    const int2_t LONG_DOUBLE_VAL = 16;
-
     const int2_t RKIND_VAL_INT = 
 #ifdef CompileWithReal8
         DOUBLE_VAL;
@@ -208,7 +213,7 @@ namespace FDETYPES_m {
     const RealKind heurCFL = 0.8;
     const RealKind pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148;
     const RealKind unmedio = 0.5;
-    const ComplexKind mcPI2 = -ComplexKind(0.0, 1.0) * 2.0 * pi;
+    const ComplexKind mcPI2 = ComplexKind(0.0, -1.0) * static_cast<RealKind>(2.0) * pi;
 
     const int32_t Down = 1, Up = 2, Left = 3, Right = 4, Back = 5, Front = 6;
     const int32_t iEx = 1, iEy = 2, iEz = 3, iHx = 4, iHy = 5, iHz = 6, centroide = 8, Nothing = 666;
@@ -670,3 +675,6 @@ namespace FDETYPES_m {
         std::vector<RealKindTiempo> tiempo;
         RealKindTiempo dt = 0.0;
         std::string extraswitches;
+    };
+
+} // namespace FDETYPES_m

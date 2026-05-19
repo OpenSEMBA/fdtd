@@ -4,8 +4,14 @@
 
 // Forward declarations for types from other modules
 namespace mtl_bundle_m {
-    struct node_source_t;
-    struct terminal_connection_t;
+    struct node_source_t {
+        int type = 0;
+        double value = 0.0;
+    };
+    struct terminal_connection_t {
+        std::vector<int> nodes;
+        int conductor = 0;
+    };
 }
 
 namespace mtln_types_m {
@@ -14,7 +20,11 @@ namespace mtln_types_m {
 }
 
 namespace circuit_m {
-    struct string_t;
+   struct string_t {
+        std::string name;
+        std::string type;
+        int length = 0;
+    };
 }
 
 namespace FDETYPES_m {

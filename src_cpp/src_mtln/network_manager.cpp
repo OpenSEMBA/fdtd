@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <cstring>
 
 // Forward declarations for types defined in other modules
 // These would typically be in network_m.hpp, circuit_m.hpp, mtln_types_m.hpp, FDETYPES_m.hpp
@@ -8,11 +9,44 @@
 namespace network_manager_m {
 
     // Assuming these types exist from included modules
-    // struct network_t;
-    // struct circuit_t;
-    // struct node_source_t;
-    // struct string_t;
-    
+    struct network_t {
+        std::vector<std::shared_ptr<struct node_source_t>> sources;
+        std::vector<std::shared_ptr<struct string_t>> node_names;
+        std::vector<int> node_conductors;
+        std::vector<std::shared_ptr<struct node_source_t>> nodes;
+        int number_of_nodes = 0;
+    };
+    struct circuit_t {
+        std::vector<std::shared_ptr<struct network_t>> networks;
+        void init(const std::vector<std::shared_ptr<struct string_t>>&, const std::vector<std::shared_ptr<struct node_source_t>>&) {}
+        double dt = 0.0;
+        void readInput(const std::vector<std::string>&, bool&) {}
+        void setModStopTimes(double) {}
+        double getNodeVoltage(int) const { return 0.0; }
+        void updateNodeCurrent(int, double) {}
+        void step() {}
+        double time = 0.0;
+    };
+    struct node_source_t {
+        int type = 0;
+        double value = 0.0;
+        std::string path_to_excitation;
+        int source_type = 0;
+        double resistance = 0.0;
+        std::shared_ptr<struct node_source_t> source;
+        std::string name;
+        double v = 0.0;
+        double i = 0.0;
+    };
+  struct string_t {
+        std::string name;
+        std::string type;
+        int length = 0;
+        string_t() = default;
+        string_t(const std::string& n) : name(n) { length = static_cast<int>(n.length()); }
+        string_t(const char* n, int) : name(n) { length = static_cast<int>(std::strlen(n)); }
+    };
+
     // Constants from FDETYPES_m
     using RKIND = double;
     using RKIND_TIEMPO = double;
@@ -115,7 +149,7 @@ namespace network_manager_m {
     void network_manager_t::updateNetworkVoltages() {
         for (size_t i = 0; i < networks.size(); ++i) {
             for (size_t j = 0; j < networks[i]->number_of_nodes; ++j) {
-                networks[i]->nodes[j]->v = circuit.getNodeVoltage(networks[i]->nodes[j]->name);
+                networks[i]->nodes[j]->v = circuit.getNodeVoltage(static_cast<int>(networks[i]->nodes[j]->name[0]));
             }
         }
     }
@@ -123,7 +157,7 @@ namespace network_manager_m {
     void network_manager_t::updateCircuitCurrentsFromNetwork() {
         for (size_t i = 0; i < networks.size(); ++i) {
             for (size_t j = 0; j < networks[i]->number_of_nodes; ++j) {
-                circuit.updateNodeCurrent(networks[i]->nodes[j]->name, networks[i]->nodes[j]->i);
+                circuit.updateNodeCurrent(static_cast<int>(networks[i]->nodes[j]->name[0]), networks[i]->nodes[j]->i);
             }
         }
     }

@@ -1,0 +1,26 @@
+message(STATUS "Creating build system for mtlnsolver (C++)")
+
+add_library(mtlnsolver
+    "src_cpp/src_mtln/mtl.cpp"
+    "src_cpp/src_mtln/mtl_bundle.cpp"
+    "src_cpp/src_mtln/mtln_solver.cpp"
+    "src_cpp/src_mtln/multipolar_expansion.cpp"
+    "src_cpp/src_mtln/network.cpp"
+    "src_cpp/src_mtln/network_manager.cpp"
+    "src_cpp/src_mtln/utils.cpp"
+    "src_cpp/src_mtln/probes.cpp"
+    "src_cpp/src_mtln/generators.cpp"
+    "src_cpp/src_mtln/dispersive.cpp"
+    "src_cpp/src_mtln/rational_approximation.cpp"
+    "src_cpp/src_mtln/circuit.cpp"
+    "src_cpp/src_mtln/preprocess.cpp"
+)
+
+target_link_libraries(mtlnsolver PRIVATE
+    ${LAPACK_LIBRARIES}
+    ${BLAS_LIBRARIES}
+    ngspice_interface
+    semba-types
+    semba-reports
+    ${MPI_CXX_LIBRARIES}
+)

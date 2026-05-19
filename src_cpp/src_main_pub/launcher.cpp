@@ -3,50 +3,27 @@
 #include <vector>
 #include <memory>
 #include <cstdlib>
-
-// Forward declaration of the namespace and struct defined in SEMBA_FDTD_m
-namespace SEMBA_FDTD_m {
-
-    struct semba_fdtd_t {
-        void init();
-        void launch();
-        void end();
-    };
-
-}
-
-// Implementation of the methods for semba_fdtd_t
-// Note: In a real scenario, these would be implemented in a .cpp file 
-// corresponding to the SEMBA_FDTD_m module. 
-// For this translation, we assume they are declared/defined elsewhere or stubbed.
-
-namespace SEMBA_FDTD_m {
-
-    void semba_fdtd_t::init() {
-        // Initialize FDTD solver: parse input, setup geometry, allocate fields
-        // TODO: Implement from semba_fdtd.F90 init()
-        std::cout << "semba_fdtd_t::init() - placeholder" << std::endl;
-    }
-
-    void semba_fdtd_t::launch() {
-        // Run FDTD time-stepping loop
-        // TODO: Implement from semba_fdtd.F90 launch()
-        std::cout << "semba_fdtd_t::launch() - placeholder" << std::endl;
-    }
-
-    void semba_fdtd_t::end() {
-        // Finalize: write outputs, free memory
-        // TODO: Implement from semba_fdtd.F90 end()
-        std::cout << "semba_fdtd_t::end() - placeholder" << std::endl;
-    }
-
-}
+#include <algorithm>
+#include "semba_fdtd.cpp"
 
 int main(int argc, char* argv[]) {
-    // Parse command line arguments
-    std::string input_file = "input.fdtd";
-    if (argc > 1) {
-        input_file = argv[1];
+    std::string input_file = "input.fdtd.json";
+    for (int i = 1; i < argc; i++) {
+        if (std::string(argv[i]) == "-i" && i + 1 < argc) {
+            input_file = argv[i+1];
+            i++;
+        }
+    }
+    
+    // Extract case name from filename
+    std::string caseName = input_file;
+    size_t pos = caseName.find_last_of("/\\");
+    if (pos != std::string::npos) caseName = caseName.substr(pos + 1);
+    pos = caseName.find(".fdtd");
+    if (pos != std::string::npos) caseName = caseName.substr(0, pos);
+    else {
+        pos = caseName.find(".json");
+        if (pos != std::string::npos) caseName = caseName.substr(0, pos);
     }
     
     std::cout << "semba-fdtd C++ translator (first iteration)" << std::endl;
@@ -55,10 +32,9 @@ int main(int argc, char* argv[]) {
     std::cout << "Many functions are placeholder stubs requiring manual implementation." << std::endl;
     
     SEMBA_FDTD_m::semba_fdtd_t semba;
-
-    semba.init();
+    semba.init(input_file);
     semba.launch();
-    semba.end();
-
+    semba.end(caseName);
+    
     return 0;
 }

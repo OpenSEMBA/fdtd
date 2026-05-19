@@ -129,8 +129,9 @@ namespace utils_m {
         std::vector<real_type> eigvals_imag(n, 0.0);
         std::vector<real_type> eigvals(2 * n, 0.0);
         
-        std::vector<real_type> m1 = matrix; // Copy
-        std::vector<real_type> m2 = matrix; // Copy
+        std::vector<real_type> m1(n * n, 0.0); // Flattened copy
+        std::vector<real_type> m2(n * n, 0.0); // Flattened copy
+        for(int i=0; i<n; ++i) for(int j=0; j<n; ++j) m1[i*n+j] = matrix[i][j];
         
         // LAPACK expects column-major storage. 
         // If matrix is passed as row-major vector<vector>, we need to handle indexing carefully.
@@ -159,12 +160,12 @@ namespace utils_m {
 
         int info = 0;
         int lwork = -1;
+        int ldummy = 1;
         std::vector<real_type> dummy(1, 0.0);
         std::vector<real_type> work;
         
         // Query workspace
-        char jobvl = 'N';
-        char jobvr = 'N';
+        char jobvl = 'N', jobvr = 'N';
         
         // dgeev_ signature:
         // dgeev_(char* jobvl, char* jobvr, int* n, double* a, int* lda, 
@@ -173,7 +174,7 @@ namespace utils_m {
         
         dgeev_(&jobvl, &jobvr, &n, m1_flat.data(), &n, 
                eigvals_real.data(), eigvals_imag.data(), 
-               dummy.data(), &1, dummy.data(), &1, 
+               dummy.data(), &ldummy, dummy.data(), &ldummy, 
                dummy.data(), &lwork, &info);
         
         if (info != 0) {
@@ -185,7 +186,7 @@ namespace utils_m {
         
         dgeev_(&jobvl, &jobvr, &n, m2_flat.data(), &n, 
                eigvals_real.data(), eigvals_imag.data(), 
-               dummy.data(), &1, dummy.data(), &1, 
+               dummy.data(), &ldummy, dummy.data(), &ldummy, 
                work.data(), &lwork, &info);
                
         if (info != 0) {

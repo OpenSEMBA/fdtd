@@ -42,6 +42,7 @@ struct field_reconstruction_t {
     std::vector<multipolar_coefficient_t> ab;
     std::vector<RKIND> expansion_center;
     RKIND inner_region_average_potential;
+    std::vector<RKIND> conductor_potentials;
 };
 
 struct multipolar_expansion_t {

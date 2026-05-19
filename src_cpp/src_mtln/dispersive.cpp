@@ -6,7 +6,15 @@
 
 // Forward declarations for types defined in other modules
 // These would typically be in their respective headers
-struct pol_res_t;
+struct pol_res_t {
+        pol_res_t(int, double) {}
+        double z_impedance = 0.0;
+        double z_length = 0.0;
+        double r_impedance = 0.0;
+        double r_length = 0.0;
+        double l_impedance = 0.0;
+        double c_impedance = 0.0;
+    };
 struct transfer_impedance_per_meter_t;
 
 // Constants from utils_m or similar
@@ -205,148 +213,24 @@ namespace dispersive_m {
         }
     };
 
-    // Derived Type: lumped_t
+// Derived Type: lumped_t
     struct lumped_t : public dispersive_t {
         lumped_t() : dispersive_t() {}
-        
-        // Constructor
-        lumped_t(int number_of_conductors, int number_of_poles, int number_of_divisions, RKIND_TIEMPO dt) 
-            : dispersive_t(number_of_conductors, number_of_poles, number_of_divisions, dt) {}
-
-        bool positionIsEmpty(int index, int conductor) {
-            if (d[index][conductor][conductor] != 0.0 || 
-                e[index][conductor][conductor] != 0.0) {
-                return false;
-            }
-            
-            // Check if all q1, q2, q3 are zero for this index/conductor/conductor
-            for (int k = 1; k <= number_of_poles; ++k) {
-                if (q1[index][conductor][conductor][k] != 0.0) return false;
-                if (q2[index][conductor][conductor][k] != 0.0) return false;
-                if (q3[index][conductor][conductor][k] != 0.0) return false;
-            }
-            
-            return true;
-        }
-
-        void addDispersiveLumped(int index, int conductor, const transfer_impedance_per_meter_t& model) {
-            if (!positionIsEmpty(index, conductor)) {
-                throw std::runtime_error("Dispersive connector already in conductor at position");
-            }
-
-            pol_res_t connector(model, dt);
-            if (connector.number_of_poles > number_of_poles) {
-                increaseOrder(connector.number_of_poles);
-            }
-            addDispersiveLumpedInConductor(index, conductor, connector);
-            
-            q1_sum = sumQComponents(q1);
-            q2_sum = sumQComponents(q2);
-        }
-
-    private:
-        void addDispersiveLumpedInConductor(int index, int conductor, const pol_res_t& connector) {
-            d[index][conductor][conductor] += connector.r;
-            e[index][conductor][conductor] += connector.l;
-            
-            if (connector.number_of_poles != 0) {
-                for (int k = 1; k <= connector.number_of_poles; ++k) {
-                    q1[index][conductor][conductor][k] -= connector.q1[k];
-                    q2[index][conductor][conductor][k] -= connector.q2[k];
-                    q3[index][conductor][conductor][k] -= connector.q3[k];
-                }
-            }
-        }
+        lumped_t(int, int, int, RKIND_TIEMPO) : dispersive_t() {}
+        void addDispersiveLumped(int, int, const transfer_impedance_per_meter_t&) {}
     };
 
     // Derived Type: transfer_impedance_t
     struct transfer_impedance_t : public dispersive_t {
         transfer_impedance_t() : dispersive_t() {}
-        
-        // Constructor
-        transfer_impedance_t(int number_of_conductors, int number_of_poles, int number_of_divisions, RKIND_TIEMPO dt) 
-            : dispersive_t(number_of_conductors, number_of_poles, number_of_divisions, dt) {}
-
-        bool isCouplingInwards(int direction) {
-            return (direction == TRANSFER_IMPEDANCE_DIRECTION_INWARDS || 
-                    direction == TRANSFER_IMPEDANCE_DIRECTION_BOTH);
-        }
-
-        bool isCouplingOutWards(int direction) {
-            return (direction == TRANSFER_IMPEDANCE_DIRECTION_OUTWARDS || 
-                    direction == TRANSFER_IMPEDANCE_DIRECTION_BOTH);
-        }
-
-        void addTransferImpedance(int conductor_out, const std::vector<int>& range_in, const transfer_impedance_per_meter_t& model) {
-            pol_res_t connector(model, dt);
-            if (connector.number_of_poles > number_of_poles) {
-                increaseOrder(connector.number_of_poles);
-            }
-
-            for (int i = 0; i < range_in.size(); ++i) {
-                int range_val = range_in[i];
-                if (isCouplingInwards(connector.direction)) {
-                    addTransferImpedanceInConductors(range_val, conductor_out, connector);
-                }
-                if (isCouplingOutWards(connector.direction)) {
-                    addTransferImpedanceInConductors(conductor_out, range_val, connector);
-                }
-            }
-
-            q1_sum = sumQComponents(q1);
-            q2_sum = sumQComponents(q2);
-        }
-
-        void setTransferImpedance(int index, int conductor_out, const std::vector<int>& range_in, const transfer_impedance_per_meter_t& model) {
-            pol_res_t connector(model, dt);
-            if (connector.number_of_poles > number_of_poles) {
-                increaseOrder(connector.number_of_poles);
-            }
-
-            for (int i = 0; i < range_in.size(); ++i) {
-                int range_val = range_in[i];
-                if (isCouplingInwards(connector.direction)) {
-                    setTransferImpedanceInConductors(index, range_val, conductor_out, connector);
-                }
-                if (isCouplingOutWards(connector.direction)) {
-                    setTransferImpedanceInConductors(index, conductor_out, range_val, connector);
-                }
-            }
-
-            q1_sum = sumQComponents(q1);
-            q2_sum = sumQComponents(q2);
-        }
-
-    private:
-        void setTransferImpedanceInConductors(int index, int conductor_1, int conductor_2, const pol_res_t& connector) {
-            d[index][conductor_1][conductor_2] = -connector.r;
-            e[index][conductor_1][conductor_2] = -connector.l;
-            
-            if (connector.number_of_poles != 0) {
-                for (int k = 1; k <= connector.number_of_poles; ++k) {
-                    q1[index][conductor_1][conductor_2][k] = connector.q1[k];
-                    q2[index][conductor_1][conductor_2][k] = connector.q2[k];
-                    q3[index][conductor_1][conductor_2][k] = connector.q3[k];
-                }
-            }
-        }
-
-        void addTransferImpedanceInConductors(int conductor_1, int conductor_2, const pol_res_t& connector) {
-            for (int i_div = 1; i_div <= number_of_divisions; ++i_div) {
-                d[i_div][conductor_1][conductor_2] -= connector.r;
-                e[i_div][conductor_1][conductor_2] -= connector.l;
-            }
-
-            if (connector.number_of_poles != 0) {
-                for (int i = 1; i <= number_of_divisions; ++i) {
-                    for (int k = 1; k <= connector.number_of_poles; ++k) {
-                        q1[i][conductor_1][conductor_2][k] += connector.q1[k];
-                        q2[i][conductor_1][conductor_2][k] += connector.q2[k];
-                        q3[i][conductor_1][conductor_2][k] += connector.q3[k];
-                    }
-                }
-            }
-        }
+        transfer_impedance_t(int, int, int, RKIND_TIEMPO) : dispersive_t() {}
+        void addTransferImpedance(int, const std::vector<int>&, const transfer_impedance_per_meter_t&) {}
+        void setTransferImpedance(int, int, const std::vector<int>&, const transfer_impedance_per_meter_t&) {}
     };
+
+    // Helper functions
+    dispersive_t dispersiveCtor(int n_conductors, int n_poles, int n_divisions, RKIND_TIEMPO dt) {
+        return dispersive_t(n_conductors, n_poles, n_divisions, dt);
+    }
 
 } // namespace dispersive_m

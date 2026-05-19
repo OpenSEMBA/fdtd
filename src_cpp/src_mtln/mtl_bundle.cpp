@@ -9,7 +9,10 @@
 struct transmission_line_level_t;
 struct probe_t;
 struct generator_t;
-struct transfer_impedance_t;
+struct transfer_impedance_t {
+    std::vector<double> z_impedance;
+    std::vector<double> z_length;
+};
 struct transfer_impedance_per_meter_t;
 struct segment_t;
 struct comm_t;

@@ -1,0 +1,292 @@
+# CMakeLists_cpp.txt - Standalone C++ build for semba-fdtd
+# This file is included from a wrapper CMakeLists.txt that sets CPP_SOURCE_ROOT.
+# Usage: cmake -S cpp_src -B build_cpp -DCMAKE_BUILD_TYPE=Release
+# where cpp_src/CMakeLists.txt sets CPP_SOURCE_ROOT to project root.
+
+if(NOT DEFINED CPP_SOURCE_ROOT)
+    set(CPP_SOURCE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+
+cmake_minimum_required(VERSION 3.15)
+if(NOT DEFINED PROJECT_NAME)
+    project(semba-fdtd-cpp CXX)
+    enable_language(CXX)
+endif()
+
+# Output directories (same as Fortran build)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+message(STATUS "Compiler Id is: ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
+# === Options (1:1 with Fortran build) ===
+option(SEMBA_FDTD_ENABLE_MPI "Use MPI" OFF)
+option(SEMBA_FDTD_ENABLE_HDF "Use HDF" ON)
+option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
+option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
+option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
+
+option(SEMBA_FDTD_ENABLE_TEST "Compile tests" OFF)
+
+option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag" OFF)
+option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables interprocedural optimization" OFF)
+
+option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
+option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
+option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
+option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
+
+# === Compile definitions (same as Fortran) ===
+if(CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "release")
+    add_definitions(-DCompileWithRelease)
+else()
+    add_definitions(-DCompileWithDebug)
+endif()
+
+if(SEMBA_FDTD_ENABLE_SMBJSON)
+    add_definitions(-DCompileWithSMBJSON)
+endif()
+
+if(SEMBA_FDTD_ENABLE_MTLN)
+    add_definitions(-DCompileWithMTLN)
+endif()
+
+if(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION)
+    add_definitions(-DCompileWithReal8)
+else()
+    add_definitions(-DCompileWithReal4)
+endif()
+
+add_definitions(-DCompileWithInt2 -DCompileWithOpenMP)
+
+# === Find external dependencies ===
+if(SEMBA_FDTD_ENABLE_MPI)
+    find_package(MPI REQUIRED COMPONENTS CXX)
+    message(STATUS "MPI found: ${MPI_CXX_LIBRARIES}")
+endif()
+
+if(SEMBA_FDTD_ENABLE_HDF)
+    find_package(HDF5 REQUIRED COMPONENTS CXX HL)
+    message(STATUS "HDF5 found: ${HDF5_LIBRARIES}")
+endif()
+
+# nlohmann/json is used instead of json-fortran
+find_package(nlohmann_json REQUIRED)
+message(STATUS "nlohmann/json found: ${nlohmann_json_VERSION}")
+
+# LAPACK/BLAS for MTLN
+if(SEMBA_FDTD_ENABLE_MTLN)
+    find_package(LAPACK REQUIRED)
+    find_package(BLAS REQUIRED)
+    message(STATUS "LAPACK/BLAS found")
+endif()
+
+# === Compiler flags ===
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    message(STATUS "Using Linux flags")
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        message(STATUS "Using GNU flags")
+
+        set(CMAKE_CXX_STANDARD 17)
+        set(CMAKE_CXX_FLAGS "-std=c++17 -fopenmp")
+
+        set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
+        set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-inline")
+
+        # Also set C flags for ngspice
+        set(CMAKE_C_FLAGS "-fopenmp")
+        set(CMAKE_C_FLAGS_RELEASE "-Ofast")
+        set(CMAKE_C_FLAGS_DEBUG "-g -O0")
+
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
+        message(STATUS "Using IntelLLVM (ifx) flags")
+
+        set(CMAKE_CXX_STANDARD 17)
+        set(CMAKE_CXX_FLAGS "-std=c++17 -qopenmp")
+
+        if(CMAKE_BUILD_TYPE STREQUAL "Release")
+            set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
+            if(SEMBA_FDTD_ENABLE_INTEL_IPO)
+                include(CheckIPOSupported)
+                check_ipo_supported(RESULT iporesult)
+                if(iporesult)
+                    message(STATUS "IPO is supported and being enabled")
+                    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+                    set(CMAKE_CXX_FLAGS_RELEASE "-ipo")
+                else()
+                    message(FATAL_ERROR "IPO is not supported")
+                endif()
+            endif()
+
+            if(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION)
+                set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -xHost")
+            endif()
+        endif()
+
+        set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -check all,nouninit -debug full -traceback")
+
+        set(CMAKE_C_FLAGS "-qopenmp")
+        set(CMAKE_C_FLAGS_RELEASE "-O3")
+        set(CMAKE_C_FLAGS_DEBUG "-g -O0")
+
+    else()
+        message(FATAL_ERROR "Unrecognized compiler: ${CMAKE_CXX_COMPILER_ID}")
+    endif()
+
+elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    message(STATUS "Using Windows flags")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
+        message(STATUS "Using IntelLLVM (ifx) flags")
+        set(CMAKE_CXX_STANDARD 17)
+        set(CMAKE_CXX_FLAGS "/Qopenmp /std:c++17")
+        set(CMAKE_CXX_FLAGS_DEBUG "/Zi /Od /RTC1")
+        set(CMAKE_CXX_FLAGS_RELEASE "/O2")
+        set(CMAKE_C_FLAGS "/Qopenmp")
+        set(CMAKE_C_FLAGS_DEBUG "/Zi /Od /RTC1")
+        set(CMAKE_C_FLAGS_RELEASE "/O2")
+    else()
+        message(FATAL_ERROR "Unrecognized compiler id: ${CMAKE_CXX_COMPILER_ID}")
+    endif()
+else()
+    message(FATAL_ERROR "Unrecognized system name")
+endif()
+
+# === Include directories ===
+include_directories(${CPP_SOURCE_ROOT}/src_cpp)
+include_directories(${CPP_SOURCE_ROOT}/src_main_pub)
+include_directories(${HDF5_INCLUDE_DIRS})
+
+# =========================================
+# Library dependency chain (1:1 with Fortran)
+# =========================================
+
+# --- semba-types: type definitions (all .h headers) ---
+add_library(semba-types
+    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/nfde_types.h"
+    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/fdetypes.cpp"
+    "${CPP_SOURCE_ROOT}/src_cpp/src_mtln/mtln_types.h"
+    "${CPP_SOURCE_ROOT}/src_cpp/src_conformal/conformal_types.h"
+    "${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub/wires_types.h"
+    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/lumped_types.h"
+)
+target_link_libraries(semba-types PUBLIC ${MPI_CXX_LIBRARIES})
+
+# --- semba-reports: error reporting, XDMF snapshot I/O ---
+add_library(semba-reports
+    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/errorreport.cpp"
+    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/snapxdmf.cpp"
+)
+target_link_libraries(semba-reports PUBLIC semba-types)
+if(SEMBA_FDTD_ENABLE_HDF)
+    target_link_libraries(semba-reports PUBLIC ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+endif()
+
+# --- smbjson: JSON input parser (uses nlohmann/json instead of json-fortran) ---
+if(SEMBA_FDTD_ENABLE_SMBJSON)
+    add_subdirectory("${CPP_SOURCE_ROOT}/src_json_parser_cpp" "${CMAKE_CURRENT_BINARY_DIR}/smbjson")
+    if(PROJECT_IS_TOP_LEVEL)
+        set(SMBJSON_LIBRARIES smbjson)
+    else()
+        set(SMBJSON_LIBRARIES smbjson PARENT_SCOPE)
+    endif()
+endif()
+
+# --- ngspice (C/C++ library, no Fortran needed in C++ build) ---
+add_subdirectory("${CPP_SOURCE_ROOT}/external/ngspice" "${CMAKE_CURRENT_BINARY_DIR}/ngspice")
+
+# --- MTLN solver (C++ only, no Fortran compilation) ---
+if(SEMBA_FDTD_ENABLE_MTLN)
+    set(NGSPICE_LIB ngspice)
+    add_definitions(-DCompileWithMTLN)
+    add_subdirectory("${CPP_SOURCE_ROOT}/src_mtln_cpp" "${CMAKE_CURRENT_BINARY_DIR}/mtln")
+    if(PROJECT_IS_TOP_LEVEL)
+        set(MTLN_LIBRARIES mtlnsolver)
+    else()
+        set(MTLN_LIBRARIES mtlnsolver PARENT_SCOPE)
+    endif()
+endif()
+
+# --- conformal: conformal mapping ---
+add_subdirectory("${CPP_SOURCE_ROOT}/src_conformal_cpp" "${CMAKE_CURRENT_BINARY_DIR}/conformal")
+set(CONFORMAL_LIBRARIES conformal)
+
+# --- tests ---
+if(SEMBA_FDTD_ENABLE_TEST)
+    add_subdirectory("${CPP_SOURCE_ROOT}/external/googletest" "${CMAKE_CURRENT_BINARY_DIR}/googletest")
+    # TODO: C++ tests would go here
+endif()
+
+# --- semba-components: physics modules (PML, BCs, dispersive, wires, etc.) ---
+if(SEMBA_FDTD_COMPONENTS_LIB)
+    add_library(semba-components
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/anisotropic.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/borderscpml.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/bordersmur.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/bordersother.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/electricdispersive.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/magneticdispersive.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/nodalsources.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/planewaves.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/pml_bodies.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/maloney_nostoch.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/lumped.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/dmma_thin_slot.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/farfield.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub/wires.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub/wires_mtln.cpp"
+    )
+    target_link_libraries(semba-components PUBLIC semba-types semba-reports ${MTLN_LIBRARIES})
+endif()
+
+# --- semba-outputs: MPI comm, observation probes, VTK/XDMF/HDF5 output ---
+if(SEMBA_FDTD_OUTPUTS_LIB)
+    add_library(semba-outputs
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/mpicomm.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/observation.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/vtk.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/xdmf.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/xdmf_h5.cpp"
+    )
+    target_link_libraries(semba-outputs PUBLIC semba-components)
+    if(SEMBA_FDTD_ENABLE_HDF)
+        target_link_libraries(semba-outputs PUBLIC ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+    endif()
+    if(SEMBA_FDTD_ENABLE_MPI)
+        target_link_libraries(semba-outputs PUBLIC ${MPI_CXX_LIBRARIES})
+    endif()
+endif()
+
+# --- semba-main: time-stepping, preprocessing/postprocessing ---
+if(SEMBA_FDTD_MAIN_LIB)
+    add_library(semba-main
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/semba_fdtd.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/calc_constants.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/nfde_rotate.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/EpsMuTimeScale.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/getargs.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/healer.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/preprocess_geom.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/storegeom.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/version.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/postprocess.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/interpreta_switches.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/resuming.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/timestepping.cpp"
+    )
+    target_link_libraries(semba-main PUBLIC semba-outputs ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES})
+endif()
+
+# --- executable ---
+if(SEMBA_FDTD_EXECUTABLE)
+    add_executable(semba-fdtd-cpp
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/launcher.cpp"
+    )
+    target_link_libraries(semba-fdtd-cpp PRIVATE semba-main semba-reports)
+    if(SEMBA_FDTD_ENABLE_MPI)
+        target_link_libraries(semba-fdtd-cpp PRIVATE ${MPI_CXX_LIBRARIES})
+    endif()
+endif()

@@ -1,0 +1,2 @@
+/usr/bin/ar qc lib/libsemba-outputs.a "CMakeFiles/semba-outputs.dir/src_cpp/src_main_pub/mpicomm.cpp.o" "CMakeFiles/semba-outputs.dir/src_cpp/src_main_pub/observation.cpp.o" "CMakeFiles/semba-outputs.dir/src_cpp/src_main_pub/vtk.cpp.o" "CMakeFiles/semba-outputs.dir/src_cpp/src_main_pub/xdmf.cpp.o" "CMakeFiles/semba-outputs.dir/src_cpp/src_main_pub/xdmf_h5.cpp.o"
+/usr/bin/ranlib lib/libsemba-outputs.a

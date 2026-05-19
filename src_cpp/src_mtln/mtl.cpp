@@ -22,10 +22,28 @@
 // using transfer_impedance_per_meter_t = mtln_types_m::transfer_impedance_per_meter_t;
 // using generator_t = mtln_types_m::generator_t;
 
+// Stub type definitions for translation artifacts
+struct dispersive_lumped_t {
+    dispersive_lumped_t() = default;
+    dispersive_lumped_t(int, int, size_t, double) {}
+};
+struct segment_t {
+    std::vector<double> dualBox;
+    double d1 = 0.0, d2 = 0.0;
+};
+struct transfer_impedance_per_meter_t {};
+struct multipolar_expansion_t {
+    multipolar_expansion_t() {}
+};
+struct generator_t {};
+
 // Constants from FDETYPES_m
 // extern const double pi;
+const double pi = 3.14159265358979323846;
 // extern const double mu_vacuum;
 // extern const double c_vacuum;
+const double mu_vacuum = 4.0 * 3.14159265358979323846e-7;
+const double c_vacuum = 299792458.0;
 // extern const int RKIND_wires; // Assuming this maps to a specific float/double precision indicator or is just a tag
 // extern const int RKIND;
 // extern const int RKIND_TIEMPO;
@@ -73,7 +91,7 @@ namespace mtl_m {
         return res;
     }
 
-    inline std::vector<double> getEigenValues(const std::vector<double>& mat) {
+    inline std::vector<double> getEigenValues(const std::vector<std::vector<double>>& mat) {
         // Placeholder for eigenvalue calculation.
         // The input 'mat' in Fortran was a 2*N vector representing a 2N x 2N matrix? 
         // Or perhaps it's a flattened matrix. 
@@ -88,6 +106,10 @@ namespace mtl_m {
     // External functions from other modules
     // double getCellInductanceOnBox(const multipolar_expansion_t& mpe, const dualBox_t& box);
     // double getCellCapacitanceOnBox(const multipolar_expansion_t& mpe, const dualBox_t& box);
+
+    // Stub implementations
+    static std::vector<std::vector<double>> getCellInductanceOnBox(const multipolar_expansion_t&, const std::vector<double>&) { return {{0.0}}; }
+    static std::vector<std::vector<double>> getCellCapacitanceOnBox(const multipolar_expansion_t&, const std::vector<double>&) { return {{0.0}}; }
     // bool isSegmentZOriented(int j);
     // bool isSegmentNextToLayerEnd(int j, int z_end);
     // bool isSegmentBeforeLayerEnd(int j, int z_end);
