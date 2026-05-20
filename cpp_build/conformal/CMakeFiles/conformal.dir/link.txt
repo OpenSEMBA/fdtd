@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../lib/libconformal.a CMakeFiles/conformal.dir/__/src_cpp/src_conformal/cell_map.cpp.o CMakeFiles/conformal.dir/__/src_cpp/src_conformal/conformal.cpp.o CMakeFiles/conformal.dir/__/src_cpp/src_conformal/geometry.cpp.o
-/usr/bin/ranlib ../lib/libconformal.a

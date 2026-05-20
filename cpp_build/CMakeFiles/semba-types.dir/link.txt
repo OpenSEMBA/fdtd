@@ -1,2 +1,0 @@
-/usr/bin/ar qc lib/libsemba-types.a "CMakeFiles/semba-types.dir/src_cpp/src_main_pub/fdetypes.cpp.o"
-/usr/bin/ranlib lib/libsemba-types.a

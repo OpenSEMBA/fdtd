@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../lib/libsmbjson.a CMakeFiles/smbjson.dir/__/src_cpp/src_json_parser/smbjson_labels.cpp.o CMakeFiles/smbjson.dir/__/src_cpp/src_json_parser/cells.cpp.o CMakeFiles/smbjson.dir/__/src_cpp/src_json_parser/smbjson.cpp.o CMakeFiles/smbjson.dir/__/src_cpp/src_json_parser/idchildtable.cpp.o CMakeFiles/smbjson.dir/__/src_cpp/src_json_parser/mesh.cpp.o CMakeFiles/smbjson.dir/__/src_cpp/src_json_parser/parser_tools.cpp.o CMakeFiles/smbjson.dir/__/src_cpp/src_json_parser/nfdetypes_extension.cpp.o
-/usr/bin/ranlib ../lib/libsmbjson.a

@@ -1,2 +1,0 @@
-/usr/bin/ar qc lib/libsemba-reports.a "CMakeFiles/semba-reports.dir/src_cpp/src_main_pub/errorreport.cpp.o" "CMakeFiles/semba-reports.dir/src_cpp/src_main_pub/snapxdmf.cpp.o"
-/usr/bin/ranlib lib/libsemba-reports.a
