@@ -53,6 +53,7 @@ namespace conformal_types_m {
         bool isOnAnyFace() const;
         double length() const;
         bool isEquiv(const side_t& side) const;
+        int getFace() const;
     };
 
     struct side_list_t {

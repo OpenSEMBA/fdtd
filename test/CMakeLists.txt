@@ -29,6 +29,11 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
     endif()
 endif()
 
+if(SEMBA_FDTD_BUILD_CXX)
+    add_subdirectory(cpp)
+    set(CPP_TESTS_LIBRARY cpp_tests)
+endif()
+
 add_subdirectory(conformal)
 set(CONFORMAL_TESTS_LIBRARY conformal_tests)
 

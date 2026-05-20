@@ -164,44 +164,44 @@ namespace smbjson_m {
         // Stub implementations for other private methods to ensure compilation structure
         // In a real translation, these would be fully implemented based on the Fortran logic
 
-        std::vector<int> readAdditionalArguments() { return {}; }
-        General_t readGeneral() { return General_t(); }
-        Matrix_t readMediaMatrix() { return Matrix_t(); }
-        Grid_t readGrid() { return Grid_t(); }
-        Boundary_t readBoundary() { return Boundary_t(); }
-        void readBackgroundMaterial(std::vector<Material_t>& mats) {}
-        std::vector<PecRegion_t> readPECRegions() { return {}; }
-        std::vector<PmcRegion_t> readPMCRegions() { return {}; }
-        std::vector<DielectricRegion_t> readDielectricRegions() { return {}; }
-        std::vector<LossyThinSurface_t> readLossyThinSurfaces() { return {}; }
-        std::vector<Planewave_t> readPlanewaves() { return {}; }
-        std::vector<NodalSource_t> readNodalSources() { return {}; }
-        std::vector<Probe_t> readProbes() { return {}; }
-        std::vector<Probe_t> readMoreProbes() { return {}; }
-        std::vector<BlockProbe_t> readBlockProbes() { return {}; }
-        std::vector<VolumicProbe_t> readVolumicProbes() { return {}; }
-        std::vector<ConformalRegion_t> readConformalRegions() { return {}; }
+        std::vector<int> readAdditionalArguments() { return readAdditionalArguments(*this); }
+        General_t readGeneral() { return readGeneral(*this); }
+        Matrix_t readMediaMatrix() { return readMediaMatrix(*this); }
+        Grid_t readGrid() { return readGrid(*this); }
+        Boundary_t readBoundary() { return readBoundary(*this); }
+        void readBackgroundMaterial(std::vector<Material_t>& mats) { readBackgroundMaterial(*this, mats); }
+        std::vector<PecRegion_t> readPECRegions() { return readPECRegions(*this); }
+        std::vector<PmcRegion_t> readPMCRegions() { return readPMCRegions(*this); }
+        std::vector<DielectricRegion_t> readDielectricRegions() { return readDielectricRegions(*this); }
+        std::vector<LossyThinSurface_t> readLossyThinSurfaces() { return readLossyThinSurfaces(*this); }
+        std::vector<Planewave_t> readPlanewaves() { return readPlanewaves(*this); }
+        std::vector<NodalSource_t> readNodalSources() { return readNodalSources(*this); }
+        std::vector<Probe_t> readProbes() { return readProbes(*this); }
+        std::vector<Probe_t> readMoreProbes() { return readMoreProbes(*this); }
+        std::vector<BlockProbe_t> readBlockProbes() { return readBlockProbes(*this); }
+        std::vector<VolumicProbe_t> readVolumicProbes() { return readVolumicProbes(*this); }
+        std::vector<ConformalRegion_t> readConformalRegions() { return readConformalRegions(*this); }
 #ifdef CompileWithMTLN
-        MTLN_t readMTLN() { return MTLN_t(); }
+        MTLN_t readMTLN() { return readMTLN(*this); }
 #endif
-        void readThinWires(std::vector<ThinWire_t>& tWires, std::vector<Probe_t>& son) {}
-        std::vector<ThinSlot_t> readThinSlots() { return {}; }
+        void readThinWires(std::vector<ThinWire_t>& tWires, std::vector<Probe_t>& son) { readThinWires(*this, tWires, son); }
+        std::vector<ThinSlot_t> readThinSlots() { return readThinSlots(*this); }
 
-        bool getLogicalAt(json_value* jv, const char* key) { return false; }
-        int getIntAt(json_value* jv, const char* key) { return 0; }
-        std::vector<int> getIntsAt(json_value* jv, const char* key) { return {}; }
-        double getRealAt(json_value* jv, const char* key) { return 0.0; }
-        std::vector<double> getRealsAt(json_value* jv, const char* key) { return {}; }
+        bool getLogicalAt(json_value* jv, const char* key) { bool f=false; jv->core->get(jv, key, f); return f; }
+        int getIntAt(json_value* jv, const char* key) { return getIntAt(jv, key, *this); }
+        std::vector<int> getIntsAt(json_value* jv, const char* key) { return getIntsAt(jv, key, *this); }
+        double getRealAt(json_value* jv, const char* key) { return getRealAt(jv, key, *this); }
+        std::vector<double> getRealsAt(json_value* jv, const char* key) { return getRealsAt(jv, key, *this); }
         Matrix_t getMatrixAt(json_value* jv, const char* key) { return Matrix_t(); }
-        std::string getStrAt(json_value* jv, const char* key) { return ""; }
-        bool existsAt(json_value* jv, const char* key) { return false; }
-        int dimensionAt(json_value* jv, const char* key) { return 0; }
+        std::string getStrAt(json_value* jv, const char* key) { return getStrAt(jv, key, *this); }
+        bool existsAt(json_value* jv, const char* key) { bool f=false; jv->core->get(jv, key, f); return f; }
+        int dimensionAt(json_value* jv, const char* key) { bool f=false; jv->core->get(jv, key, f); return 0; }
         Domain_t getDomain(json_value* jv) { return Domain_t(); }
-        void buildPECPMCRegions() {}
-        void getMaterialAssociations() {}
-        void parseMaterialAssociation() {}
-        void matAssToCoords() {}
-        std::string buildTagName() { return ""; }
+        void buildPECPMCRegions() { buildPECPMCRegions(*this); }
+        void getMaterialAssociations() { getMaterialAssociations(*this); }
+        void parseMaterialAssociation() { parseMaterialAssociation(*this); }
+        void matAssToCoords() { matAssToCoords(*this); }
+        std::string buildTagName() { return buildTagName(*this); }
         std::vector<json_value*> jsonValueFilterByKeyValue(json_value* jv, const char* key, const char* val) { return {}; }
         std::vector<json_value*> jsonValueFilterByKeyValues(json_value* jv, const char* key, const std::vector<std::string>& vals) { return {}; }
         std::vector<int> getSingleVolumeInElementsIds() { return {}; }

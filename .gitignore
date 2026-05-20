@@ -40,6 +40,7 @@ venv/
 build/
 build-*/
 build_test/
+cpp_build/
 
 CMakeUserPresets.json
 CMakeSettings.json

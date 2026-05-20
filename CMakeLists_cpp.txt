@@ -216,8 +216,11 @@ set(CONFORMAL_LIBRARIES conformal)
 
 # --- tests ---
 if(SEMBA_FDTD_ENABLE_TEST)
+    find_package(GTest REQUIRED)
     add_subdirectory("${CPP_SOURCE_ROOT}/external/googletest" "${CMAKE_CURRENT_BINARY_DIR}/googletest")
-    # TODO: C++ tests would go here
+
+    # --- C++ unit tests (cells, idchildtable, mesh) ---
+    add_subdirectory("${CPP_SOURCE_ROOT}/test/cpp" "${CMAKE_CURRENT_BINARY_DIR}/cpp_tests")
 endif()
 
 # --- semba-components: physics modules (PML, BCs, dispersive, wires, etc.) ---
