@@ -1,7 +1,11 @@
+#ifndef NFDE_TYPES_H
+#define NFDE_TYPES_H
+
 #include <vector>
 #include <string>
 #include <complex>
 #include <cstdint>
+#include <utility>
 
 // Assuming FDETYPES_m provides RKIND
 // #include "FDETYPES_m.hpp" 
@@ -14,31 +18,12 @@
 // #include "mtln_types_m.hpp"
 // #endif
 
+
 namespace NFDETypes_m {
 
-    // Constants from FDETYPES_m or similar, assumed to be available
-    // In a real translation, these would be defined in the included headers
-    // extern const int RKIND; 
-    // For the purpose of this translation, we assume RKIND is defined elsewhere
-    // or we define a placeholder. Since the prompt asks to preserve names,
-    // we rely on the included headers to provide RKIND.
-    
-    // If RKIND is not found in headers, we might need to define it locally 
-    // or assume it's 8 (double) based on typical usage, but strict adherence 
-    // to "preserve names" means we shouldn't invent definitions. 
-    // However, C++ requires definitions. We will assume the headers provide it.
-    
-    // Placeholder for RKIND if not provided by headers, typically 8 for double
-    // Note: In a real project, this should come from FDETYPES_m
-    // const int RKIND = 8; 
-
-    using RK = double; // Assuming RKIND=8 maps to double. If RKIND=4, use float.
-                       // Standard Fortran real(kind=8) is double.
+    using RK = double;
 
     // CONSTANTS FOR THE PARSER
-    // global variable stochastic (commented out in Fortran, so ignored)
-
-    // MATERIALS
     constexpr double SIGMA_PEC = 1e19;
     constexpr double SIGMA_PMC = 1e19;
 
@@ -152,8 +137,8 @@ namespace NFDETypes_m {
 
     // Identifies conformal PEC "media"
     struct ConformalPECElements_t {
-        std::vector<triangle_t> triangles; // Assuming triangle_t is defined in conformal_types_m
-        std::vector<interval_t> intervals; // Assuming interval_t is defined in conformal_types_m
+        std::vector<std::vector<double>> triangles; // triangle_t = std::vector<double>
+        std::vector<std::pair<double, double>> intervals; // interval_t = std::pair<double, double>
         std::string tag;
     };
 
@@ -578,73 +563,25 @@ namespace NFDETypes_m {
         std::vector<int32_t> i;
         std::vector<int32_t> j;
         std::vector<int32_t> K;
+        std::vector<int32_t> node;
+        int32_t n_cord = 0;
+        int32_t n_cord_max = 0;
+        RK tstart = 0.0;
+        RK tstop = 0.0;
+        RK tstep = 0.0;
+        std::string outputrequest;
+        RK fstart = 0.0;
+        RK fstop = 0.0;
+        RK fstep = 0.0;
+        RK phistart = 0.0;
+        RK phistop = 0.0;
+        RK phistep = 0.0;
+        RK thetastart = 0.0;
+        RK thetastop = 0.0;
+        RK thetastep = 0.0;
+        std::string FileNormalize;
     };
 
-} // namespace NFDETypes_m
-
-#include <vector>
-#include <string>
-#include <memory>
-#include <cstdint>
-
-// Assuming these types are defined in previous chunks or headers
-// #include "coords_t.h"
-// #include "coords_scaled_t.h"
-// #include "Frontera_t.h"
-// #include "Materials_t.h"
-// #include "PECRegions_t.h"
-// #include "DielectricRegions_t.h"
-// #include "LossyThinSurfaces_t.h"
-// #include "FreqDepenMaterials_t.h"
-// #include "ANISOTROPICelements_t.h"
-// #include "ThinWires_t.h"
-// #include "SlantedWiresInfo_t.h"
-// #include "ThinSlots_t.h"
-// #include "ConformalPECRegions_t.h"
-// #include "mtln_t.h"
-// #include "MasSondas_t.h"
-
-// Constants and Types assumed from context
-#ifndef BUFSIZE
-#define BUFSIZE 256
-#endif
-
-#ifndef RK
-#define RK 8
-#endif
-
-#ifndef RKIND
-#define RKIND 8
-#endif
-
-using RK = double;
-
-// Forward declarations for types referenced in pointers
-struct NFDEGeneral_t;
-struct MatrizMedios_t;
-struct Desplazamiento_t;
-struct Frontera_t;
-struct Materials_t;
-struct PECRegions_t;
-struct DielectricRegions_t;
-struct LossyThinSurfaces_t;
-struct FreqDepenMaterials_t;
-struct ANISOTROPICelements_t;
-struct Boxes_t;
-struct PlaneWaves_t;
-struct NodSource_t;
-struct Sondas_t;
-struct MasSondas_t;
-struct BloqueProbes_t;
-struct VolProbes_t;
-struct ThinWires_t;
-struct SlantedWiresInfo_t;
-struct ThinSlots_t;
-struct ConformalPECRegions_t;
-struct mtln_t;
-
-// Helper to simulate Fortran NULL pointer for derived types
-template <typename T>
 struct FortranPointer {
     T* ptr = nullptr;
     FortranPointer() : ptr(nullptr) {}
@@ -652,27 +589,6 @@ struct FortranPointer {
     operator T*() const { return ptr; }
     T* operator->() const { return ptr; }
     T& operator*() const { return *ptr; }
-};
-
-// Type: Sonda_t
-struct Sonda_t {
-    std::vector<int32_t> node; // dimension(:), pointer
-    int32_t n_cord = 0;
-    int32_t n_cord_max = 0;
-    RK tstart = 0.0;
-    RK tstop = 0.0;
-    RK tstep = 0.0;
-    std::string outputrequest; // len=BUFSIZE
-    RK fstart = 0.0;
-    RK fstop = 0.0;
-    RK fstep = 0.0;
-    RK phistart = 0.0;
-    RK phistop = 0.0;
-    RK phistep = 0.0;
-    RK thetastart = 0.0;
-    RK thetastop = 0.0;
-    RK thetastep = 0.0;
-    std::string FileNormalize; // len=BUFSIZE
 };
 
 // Type: FarField_Sonda_t
@@ -788,7 +704,7 @@ struct BloqueProbes_t {
 
 // Type: VolProbe_t
 struct VolProbe_t {
-    std::vector<coords_t> cordinates; // dimension(:), pointer
+    std::vector<NFDETypes_m::coords_t> cordinates; // dimension(:), pointer
     RK tstart = 0.0;
     RK tstop = 0.0;
     RK tstep = 0.0;
@@ -847,8 +763,8 @@ struct PlaneWaves_t {
 
 // Type: Curr_Field_Src_t
 struct Curr_Field_Src_t {
-    std::vector<coords_scaled_t> c1P; // dimension(:), pointer
-    std::vector<coords_scaled_t> c2P; // dimension(:), pointer
+    std::vector<NFDETypes_m::coords_scaled_t> c1P; // dimension(:), pointer
+    std::vector<NFDETypes_m::coords_scaled_t> c2P; // dimension(:), pointer
     std::string nombre; // len=BUFSIZE
     int32_t n_C1P = 0;
     int32_t n_C2P = 0;
@@ -942,3 +858,7 @@ struct t_NFDE_FILE_t {
     std::vector<t_linea_t> lineas; // dimension(:), pointer
     bool thereare_stoch = false;
 };
+
+} // namespace NFDETypes_m
+
+#endif // NFDE_TYPES_H

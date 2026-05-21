@@ -28,7 +28,7 @@ option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
 option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
 
-option(SEMBA_FDTD_ENABLE_TEST "Compile tests" OFF)
+option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
 option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag" OFF)
 option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables interprocedural optimization" OFF)
@@ -187,7 +187,7 @@ endif()
 
 # --- smbjson: JSON input parser (uses nlohmann/json instead of json-fortran) ---
 if(SEMBA_FDTD_ENABLE_SMBJSON)
-    add_subdirectory("${CPP_SOURCE_ROOT}/src_json_parser_cpp" "${CMAKE_CURRENT_BINARY_DIR}/smbjson")
+    add_subdirectory("${CPP_SOURCE_ROOT}/src_cpp/src_json_parser" "${CMAKE_CURRENT_BINARY_DIR}/smbjson")
     if(PROJECT_IS_TOP_LEVEL)
         set(SMBJSON_LIBRARIES smbjson)
     else()

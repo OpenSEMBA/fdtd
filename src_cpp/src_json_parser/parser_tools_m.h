@@ -20,7 +20,7 @@ namespace json_module {
 
 namespace parser_tools_m {
 
-    constexpr int BUFSIZE = 256;
+    constexpr int PARSER_TOOLS_BUFSIZE = 256;
     using rkind = double;
 
     constexpr int iEx = 1;

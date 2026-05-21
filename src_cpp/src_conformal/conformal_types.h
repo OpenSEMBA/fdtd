@@ -1,3 +1,6 @@
+#ifndef CONFORMAL_TYPES_H
+#define CONFORMAL_TYPES_H
+
 #include <vector>
 #include <cmath>
 #include <algorithm>
@@ -324,3 +327,5 @@ namespace conformal_types_m {
     }
 
 } // namespace conformal_types_m
+
+#endif // CONFORMAL_TYPES_H

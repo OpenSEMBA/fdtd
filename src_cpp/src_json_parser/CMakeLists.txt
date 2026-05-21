@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.15)
+
+add_library(smbjson
+    cells.cpp
+    smbjson_labels.cpp
+    smbjson.cpp
+)
+
+target_include_directories(smbjson PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CPP_SOURCE_ROOT}/src_cpp/src_main_pub
+    ${CPP_SOURCE_ROOT}/src_cpp/src_conformal
+    ${CPP_SOURCE_ROOT}/src_cpp/src_mtln
+    ${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub
+)
+
+target_compile_features(smbjson PUBLIC cxx_std_17)
+
+# Find nlohmann_json
+find_package(nlohmann_json QUIET)
+if(nlohmann_json_FOUND)
+    target_link_libraries(smbjson PUBLIC nlohmann_json::nlohmann_json)
+endif()

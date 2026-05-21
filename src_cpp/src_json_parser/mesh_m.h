@@ -126,7 +126,7 @@ namespace mesh_m {
             elements[id] = std::make_shared<mesh_item<conformal_region_t>>(e);
         }
 
-        node_t getNode(int id, bool& found) {
+        node_t getNode(int id, bool& found) const {
             node_t res{};
             found = false;
             auto it = elements.find(id);
@@ -281,7 +281,7 @@ namespace mesh_m {
             return res;
         }
 
-        pixel_t nodeToPixel(const node_t& node) {
+        pixel_t nodeToPixel(const node_t& node) const {
             pixel_t res{};
             bool cf=false;
             coordinate_t c=getCoordinate(node.coordIds[0], cf);
