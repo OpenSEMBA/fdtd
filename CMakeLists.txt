@@ -19,6 +19,7 @@ option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
 option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
 
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
+option(SEMBA_FDTD_ENABLE_COVERAGE "Enable gcov coverage instrumentation (GNU only)" OFF)
 
 option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag (not supported in github actions)" OFF) 
 option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables the interprocedural optimization" OFF)
@@ -67,6 +68,15 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		set(CMAKE_C_FLAGS_DEBUG "-g -O0")
 		set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 		set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -fno-inline -fcheck=all -fbacktrace")
+
+		if(SEMBA_FDTD_ENABLE_COVERAGE)
+			message(STATUS "Enabling coverage instrumentation")
+			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+			set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} --coverage")
+			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+			set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
+		endif()
 
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		message(STATUS "Using IntelLLVM (ifx) flags")
