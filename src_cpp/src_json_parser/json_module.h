@@ -36,7 +36,7 @@ namespace json_module {
                         if (!current.empty()) {
                             if (current[0] == '(') {
                                 int idx = 0;
-                                try { idx = std::stoi(current); } catch (...) {}
+                                try { idx = std::stoi(current.substr(1, current.size() - 2)); } catch (...) {}
                                 if (j->is_array() && idx >= 0 && idx < (int)j->size()) {
                                     j = &(*j)[idx];
                                 } else { return; }
@@ -54,7 +54,7 @@ namespace json_module {
                 if (!current.empty()) {
                     if (current[0] == '(') {
                         int idx = 0;
-                        try { idx = std::stoi(current); } catch (...) {}
+                        try { idx = std::stoi(current.substr(1, current.size() - 2)); } catch (...) {}
                         if (j->is_array() && idx >= 0 && idx < (int)j->size()) {
                             j = &(*j)[idx];
                         } else { return; }
@@ -74,6 +74,19 @@ namespace json_module {
             bool found = false;
             get(root, path, out, found);
             if (!found) out = nullptr;
+        }
+
+        void get(json_value* root, const std::string& path, json_value*& out, bool& found) const {
+            if (root) get(*root, path, out, found); else found = false;
+        }
+        void get(json_value* root, const char* path, json_value*& out, bool& found) const {
+            get(root, std::string(path), out, found);
+        }
+        void get(const json_value* root, const std::string& path, json_value*& out, bool& found) const {
+            if (root) get(*root, path, out, found); else found = false;
+        }
+        void get(const json_value* root, const char* path, json_value*& out, bool& found) const {
+            get(root, std::string(path), out, found);
         }
 
         int count(const json_value* val) const {

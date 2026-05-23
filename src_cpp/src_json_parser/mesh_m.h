@@ -13,6 +13,8 @@
 #include "conformal_types.h"
 
 namespace mesh_m {
+    constexpr int REGION_TYPE_VOLUME = 3;
+    constexpr int REGION_TYPE_SURFACE = 2;
 
     // Constants (mesh uses 0-based directions)
     constexpr int DIR_X = 0;
@@ -91,7 +93,7 @@ namespace mesh_m {
             coordinates[id] = coord;
         }
 
-        coordinate_t getCoordinate(int id, bool& found) {
+        coordinate_t getCoordinate(int id, bool& found) const {
             coordinate_t res{};
             found = false;
             auto it = coordinates.find(id);
@@ -140,7 +142,7 @@ namespace mesh_m {
             return res;
         }
 
-        polyline_t getPolyline(int id, bool& found) {
+        polyline_t getPolyline(int id, bool& found) const {
             polyline_t res{};
             found = false;
             auto it = elements.find(id);
@@ -154,7 +156,7 @@ namespace mesh_m {
             return res;
         }
 
-        cells_m::cell_region_t getCellRegion(int id, bool& found) {
+        cells_m::cell_region_t getCellRegion(int id, bool& found) const {
             cells_m::cell_region_t res;
             found = false;
             auto it = elements.find(id);

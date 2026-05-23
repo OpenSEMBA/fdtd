@@ -26,6 +26,8 @@ namespace NFDETypes_m {
     // CONSTANTS FOR THE PARSER
     constexpr double SIGMA_PEC = 1e19;
     constexpr double SIGMA_PMC = 1e19;
+    constexpr double EPSILON_VACUUM = 8.854187817e-12;
+    constexpr double MU_VACUUM = 1.2566370614e-6;
 
     // PROBES
     constexpr int32_t NP_T1_PLAIN = 0;
@@ -47,6 +49,19 @@ namespace NFDETypes_m {
     constexpr int32_t NP_COR_DDP = 7;
     constexpr int32_t NP_COR_LINE = 8;
     constexpr int32_t NP_COR_CHARGE = 9;
+    // Probe field type constants
+    constexpr int32_t iEx = 1, iEy = 2, iEz = 3;
+    constexpr int32_t iHx = 4, iHy = 5, iHz = 6;
+    constexpr int32_t iMEC = 51, iMHC = 52;
+    constexpr int32_t iCur = 53, iCurX = 54, iCurY = 55, iCurZ = 56;
+    constexpr int32_t mapvtk = 57;
+    constexpr int32_t iExC = 61, iEyC = 62, iEzC = 63;
+    constexpr int32_t iHxC = 64, iHyC = 65, iHzC = 66;
+    constexpr int32_t farfield = 67, lineIntegral = 68;
+    constexpr int32_t centroide = 8, Nothing = 666;
+    constexpr int32_t iJx = 10*iEx, iJy = 10*iEy, iJz = 10*iEz;
+    constexpr int32_t iBloqueJx = 100*iEx, iBloqueJy = 100*iEy, iBloqueJz = 100*iEz;
+    constexpr int32_t iBloqueMx = 100*iHx, iBloqueMy = 100*iHy, iBloqueMz = 100*iHz;
     constexpr bool BcELECT = true;
     constexpr bool BcMAGNE = false;
 
@@ -95,6 +110,21 @@ namespace NFDETypes_m {
         int32_t Or = 0; // field orientation
         std::string tag; // Assuming BUFSIZE is handled by std::string or fixed char array. 
                          // std::string is safer and more C++ idiomatic.
+    bool operator==(const coords_t& other) const {
+        if (!(Xi == other.Xi)) return false;
+        if (!(Xe == other.Xe)) return false;
+        if (!(Yi == other.Yi)) return false;
+        if (!(Ye == other.Ye)) return false;
+        if (!(Zi == other.Zi)) return false;
+        if (!(Ze == other.Ze)) return false;
+        if (!(Xtrancos == other.Xtrancos)) return false;
+        if (!(Ytrancos == other.Ytrancos)) return false;
+        if (!(Ztrancos == other.Ztrancos)) return false;
+        if (!(Or == other.Or)) return false;
+        if (!(tag == other.tag)) return false;
+        return true;
+    }
+
     };
 
     struct coords_scaled_t {
@@ -109,6 +139,21 @@ namespace NFDETypes_m {
         double zc = 0.0;
         int32_t Or = 0; // field orientation nuevo 2015
         std::string tag;
+    bool operator==(const coords_scaled_t& other) const {
+        if (!(Xi == other.Xi)) return false;
+        if (!(Xe == other.Xe)) return false;
+        if (!(Yi == other.Yi)) return false;
+        if (!(Ye == other.Ye)) return false;
+        if (!(Zi == other.Zi)) return false;
+        if (!(Ze == other.Ze)) return false;
+        if (!(xc == other.xc)) return false;
+        if (!(yc == other.yc)) return false;
+        if (!(zc == other.zc)) return false;
+        if (!(Or == other.Or)) return false;
+        if (!(tag == other.tag)) return false;
+        return true;
+    }
+
     };
 
     // Basic constants for materials
@@ -118,6 +163,15 @@ namespace NFDETypes_m {
         double sigma = 0.0;
         double sigmam = 0.0;
         int32_t id = 0;
+    bool operator==(const Material_t& other) const {
+        if (!(eps == other.eps)) return false;
+        if (!(mu == other.mu)) return false;
+        if (!(sigma == other.sigma)) return false;
+        if (!(sigmam == other.sigmam)) return false;
+        if (!(id == other.id)) return false;
+        return true;
+    }
+
     };
 
     // New Class which is a collection of different materials
@@ -133,6 +187,13 @@ namespace NFDETypes_m {
                                       // However, to strictly mimic "pointer" behavior if needed:
                                       // std::vector<Material_t>* Mats = nullptr;
                                       // But std::vector is preferred.
+    bool operator==(const Materials_t& other) const {
+        if (!(n_Mats == other.n_Mats)) return false;
+        if (!(n_Mats_max == other.n_Mats_max)) return false;
+        if (!(Mats == other.Mats)) return false;
+        return true;
+    }
+
     };
 
     // Identifies conformal PEC "media"
@@ -192,6 +253,19 @@ namespace NFDETypes_m {
         std::vector<coords_t> Vols;
         std::vector<coords_t> Surfs;
         std::vector<coords_t> Lins;
+    bool operator==(const PECRegions_t& other) const {
+        if (!(nVols == other.nVols)) return false;
+        if (!(nSurfs == other.nSurfs)) return false;
+        if (!(nLins == other.nLins)) return false;
+        if (!(nVols_max == other.nVols_max)) return false;
+        if (!(nSurfs_max == other.nSurfs_max)) return false;
+        if (!(nLins_max == other.nLins_max)) return false;
+        if (!(Vols == other.Vols)) return false;
+        if (!(Surfs == other.Surfs)) return false;
+        if (!(Lins == other.Lins)) return false;
+        return true;
+    }
+
     };
 
     // Defines a Non Metal Body
@@ -226,6 +300,36 @@ namespace NFDETypes_m {
         bool diodo = false;
         bool plain = false;
         bool PMLbody = false;
+    bool operator==(const Dielectric_t& other) const {
+        if (!(c1P == other.c1P)) return false;
+        if (!(c2P == other.c2P)) return false;
+        if (!(sigma == other.sigma)) return false;
+        if (!(eps == other.eps)) return false;
+        if (!(mu == other.mu)) return false;
+        if (!(sigmam == other.sigmam)) return false;
+        if (!(n_C1P == other.n_C1P)) return false;
+        if (!(n_C2P == other.n_C2P)) return false;
+        if (!(Rtime_on == other.Rtime_on)) return false;
+        if (!(Rtime_off == other.Rtime_off)) return false;
+        if (!(R == other.R)) return false;
+        if (!(L == other.L)) return false;
+        if (!(C == other.C)) return false;
+        if (!(R_devia == other.R_devia)) return false;
+        if (!(L_devia == other.L_devia)) return false;
+        if (!(C_devia == other.C_devia)) return false;
+        if (!(DiodB == other.DiodB)) return false;
+        if (!(DiodIsat == other.DiodIsat)) return false;
+        if (!(DiodOri == other.DiodOri)) return false;
+        if (!(orient == other.orient)) return false;
+        if (!(resistor == other.resistor)) return false;
+        if (!(inductor == other.inductor)) return false;
+        if (!(capacitor == other.capacitor)) return false;
+        if (!(diodo == other.diodo)) return false;
+        if (!(plain == other.plain)) return false;
+        if (!(PMLbody == other.PMLbody)) return false;
+        return true;
+    }
+
     };
 
     // Locates all the different Non Metal Media found
@@ -241,6 +345,21 @@ namespace NFDETypes_m {
         int32_t nLins_max = 0;
         int32_t n_C1P_max = 0;
         int32_t n_C2P_max = 0;
+    bool operator==(const DielectricRegions_t& other) const {
+        if (!(Vols == other.Vols)) return false;
+        if (!(Surfs == other.Surfs)) return false;
+        if (!(Lins == other.Lins)) return false;
+        if (!(nVols == other.nVols)) return false;
+        if (!(nSurfs == other.nSurfs)) return false;
+        if (!(nLins == other.nLins)) return false;
+        if (!(nVols_max == other.nVols_max)) return false;
+        if (!(nSurfs_max == other.nSurfs_max)) return false;
+        if (!(nLins_max == other.nLins_max)) return false;
+        if (!(n_C1P_max == other.n_C1P_max)) return false;
+        if (!(n_C2P_max == other.n_C2P_max)) return false;
+        return true;
+    }
+
     };
 
     // type that defines the information of a frequency dependent material
@@ -377,6 +496,24 @@ namespace NFDETypes_m {
         int32_t nc = 0;
         std::string files = " ";
         int32_t numcapas;
+    bool operator==(const LossyThinSurface_t& other) const {
+        if (!(c == other.c)) return false;
+        if (!(sigma == other.sigma)) return false;
+        if (!(eps == other.eps)) return false;
+        if (!(mu == other.mu)) return false;
+        if (!(sigmam == other.sigmam)) return false;
+        if (!(thk == other.thk)) return false;
+        if (!(sigma_devia == other.sigma_devia)) return false;
+        if (!(eps_devia == other.eps_devia)) return false;
+        if (!(mu_devia == other.mu_devia)) return false;
+        if (!(sigmam_devia == other.sigmam_devia)) return false;
+        if (!(thk_devia == other.thk_devia)) return false;
+        if (!(nc == other.nc)) return false;
+        if (!(files == other.files)) return false;
+        if (!(numcapas == other.numcapas)) return false;
+        return true;
+    }
+
     };
 
     // Locates all the different Comp media found
@@ -385,6 +522,14 @@ namespace NFDETypes_m {
         int32_t length = 0;
         int32_t length_max = 0;
         int32_t nC_max = 0;
+    bool operator==(const LossyThinSurfaces_t& other) const {
+        if (!(cs == other.cs)) return false;
+        if (!(length == other.length)) return false;
+        if (!(length_max == other.length_max)) return false;
+        if (!(nC_max == other.nC_max)) return false;
+        return true;
+    }
+
     };
 
     // Component for Thin Wires
@@ -398,6 +543,19 @@ namespace NFDETypes_m {
         int32_t d = -1;
         double m = 0.0;
         std::string tag;
+    bool operator==(const ThinWireComp_t& other) const {
+        if (!(srctype == other.srctype)) return false;
+        if (!(srcfile == other.srcfile)) return false;
+        if (!(i == other.i)) return false;
+        if (!(j == other.j)) return false;
+        if (!(K == other.K)) return false;
+        if (!(nd == other.nd)) return false;
+        if (!(d == other.d)) return false;
+        if (!(m == other.m)) return false;
+        if (!(tag == other.tag)) return false;
+        return true;
+    }
+
     };
 
     // ThinWire component that defines the overall properties of the definition of ThinWires
@@ -437,6 +595,44 @@ namespace NFDETypes_m {
         int32_t tr = 0;
         int32_t n_twc = 0;
         int32_t n_twc_max = 0;
+    bool operator==(const ThinWire_t& other) const {
+        if (!(twc == other.twc)) return false;
+        if (!(rad == other.rad)) return false;
+        if (!(rad_devia == other.rad_devia)) return false;
+        if (!(disp == other.disp)) return false;
+        if (!(dispfile == other.dispfile)) return false;
+        if (!(res == other.res)) return false;
+        if (!(res_devia == other.res_devia)) return false;
+        if (!(ind == other.ind)) return false;
+        if (!(ind_devia == other.ind_devia)) return false;
+        if (!(cap == other.cap)) return false;
+        if (!(cap_devia == other.cap_devia)) return false;
+        if (!(P_res == other.P_res)) return false;
+        if (!(P_ind == other.P_ind)) return false;
+        if (!(P_cap == other.P_cap)) return false;
+        if (!(dispfile_LeftEnd == other.dispfile_LeftEnd)) return false;
+        if (!(R_LeftEnd == other.R_LeftEnd)) return false;
+        if (!(R_LeftEnd_devia == other.R_LeftEnd_devia)) return false;
+        if (!(L_LeftEnd == other.L_LeftEnd)) return false;
+        if (!(L_LeftEnd_devia == other.L_LeftEnd_devia)) return false;
+        if (!(C_LeftEnd == other.C_LeftEnd)) return false;
+        if (!(C_LeftEnd_devia == other.C_LeftEnd_devia)) return false;
+        if (!(dispfile_RightEnd == other.dispfile_RightEnd)) return false;
+        if (!(R_RightEnd == other.R_RightEnd)) return false;
+        if (!(R_RightEnd_devia == other.R_RightEnd_devia)) return false;
+        if (!(L_RightEnd == other.L_RightEnd)) return false;
+        if (!(L_RightEnd_devia == other.L_RightEnd_devia)) return false;
+        if (!(C_RightEnd == other.C_RightEnd)) return false;
+        if (!(C_RightEnd_devia == other.C_RightEnd_devia)) return false;
+        if (!(LeftEnd == other.LeftEnd)) return false;
+        if (!(RightEnd == other.RightEnd)) return false;
+        if (!(tl == other.tl)) return false;
+        if (!(tr == other.tr)) return false;
+        if (!(n_twc == other.n_twc)) return false;
+        if (!(n_twc_max == other.n_twc_max)) return false;
+        return true;
+    }
+
     };
 
     // List of the different thin wires that were found in the file
@@ -444,6 +640,13 @@ namespace NFDETypes_m {
         std::vector<ThinWire_t> tw;
         int32_t n_tw = 0;
         int32_t n_tw_max = 0;
+    bool operator==(const ThinWires_t& other) const {
+        if (!(tw == other.tw)) return false;
+        if (!(n_tw == other.n_tw)) return false;
+        if (!(n_tw_max == other.n_tw_max)) return false;
+        return true;
+    }
+
     };
 
     // Component for Slanted Wires
@@ -456,6 +659,18 @@ namespace NFDETypes_m {
         int32_t nd = -1;
         double m = 0.0;
         std::string tag;
+    bool operator==(const SlantedWireComp_t& other) const {
+        if (!(srctype == other.srctype)) return false;
+        if (!(srcfile == other.srcfile)) return false;
+        if (!(x == other.x)) return false;
+        if (!(y == other.y)) return false;
+        if (!(z == other.z)) return false;
+        if (!(nd == other.nd)) return false;
+        if (!(m == other.m)) return false;
+        if (!(tag == other.tag)) return false;
+        return true;
+    }
+
     };
 
     // ThinWire component that defines the overall properties of the definition of ThinWires (Slanted)
@@ -485,6 +700,34 @@ namespace NFDETypes_m {
         int32_t tr = 0;
         int32_t n_swc = 0;
         int32_t n_swc_max = 0;
+    bool operator==(const SlantedWire_t& other) const {
+        if (!(swc == other.swc)) return false;
+        if (!(rad == other.rad)) return false;
+        if (!(disp == other.disp)) return false;
+        if (!(dispfile == other.dispfile)) return false;
+        if (!(res == other.res)) return false;
+        if (!(ind == other.ind)) return false;
+        if (!(cap == other.cap)) return false;
+        if (!(P_res == other.P_res)) return false;
+        if (!(P_ind == other.P_ind)) return false;
+        if (!(P_cap == other.P_cap)) return false;
+        if (!(dispfile_LeftEnd == other.dispfile_LeftEnd)) return false;
+        if (!(R_LeftEnd == other.R_LeftEnd)) return false;
+        if (!(L_LeftEnd == other.L_LeftEnd)) return false;
+        if (!(C_LeftEnd == other.C_LeftEnd)) return false;
+        if (!(dispfile_RightEnd == other.dispfile_RightEnd)) return false;
+        if (!(R_RightEnd == other.R_RightEnd)) return false;
+        if (!(L_RightEnd == other.L_RightEnd)) return false;
+        if (!(C_RightEnd == other.C_RightEnd)) return false;
+        if (!(LeftEnd == other.LeftEnd)) return false;
+        if (!(RightEnd == other.RightEnd)) return false;
+        if (!(tl == other.tl)) return false;
+        if (!(tr == other.tr)) return false;
+        if (!(n_swc == other.n_swc)) return false;
+        if (!(n_swc_max == other.n_swc_max)) return false;
+        return true;
+    }
+
     };
 
     // List of the different thin wires that were found in the file (Slanted)
@@ -492,6 +735,13 @@ namespace NFDETypes_m {
         std::vector<SlantedWire_t> sw;
         int32_t n_sw = 0;
         int32_t n_sw_max = 0;
+    bool operator==(const SlantedWiresInfo_t& other) const {
+        if (!(sw == other.sw)) return false;
+        if (!(n_sw == other.n_sw)) return false;
+        if (!(n_sw_max == other.n_sw_max)) return false;
+        return true;
+    }
+
     };
 
     // Component for Thin Slots
@@ -503,6 +753,17 @@ namespace NFDETypes_m {
         int32_t dir = -1;
         int32_t Or = -1;
         std::string tag;
+    bool operator==(const ThinSlotComp_t& other) const {
+        if (!(i == other.i)) return false;
+        if (!(j == other.j)) return false;
+        if (!(K == other.K)) return false;
+        if (!(node == other.node)) return false;
+        if (!(dir == other.dir)) return false;
+        if (!(Or == other.Or)) return false;
+        if (!(tag == other.tag)) return false;
+        return true;
+    }
+
     };
 
     // ThinSlot component that defines the overall properties of the definition of ThinSlots in ORIGINAL
@@ -511,6 +772,14 @@ namespace NFDETypes_m {
         double width = 0;
         int32_t n_tgc = 0;
         int32_t n_tgc_max = 0;
+    bool operator==(const ThinSlot_t& other) const {
+        if (!(tgc == other.tgc)) return false;
+        if (!(width == other.width)) return false;
+        if (!(n_tgc == other.n_tgc)) return false;
+        if (!(n_tgc_max == other.n_tgc_max)) return false;
+        return true;
+    }
+
     };
 
     // List of the different thin Slots that were found in the file
@@ -518,6 +787,13 @@ namespace NFDETypes_m {
         std::vector<ThinSlot_t> tg;
         int32_t n_tg = 0;
         int32_t n_tg_max = 0;
+    bool operator==(const ThinSlots_t& other) const {
+        if (!(tg == other.tg)) return false;
+        if (!(n_tg == other.n_tg)) return false;
+        if (!(n_tg_max == other.n_tg_max)) return false;
+        return true;
+    }
+
     };
 
     // PML Border Type
@@ -525,12 +801,27 @@ namespace NFDETypes_m {
         double orden = 2.0;
         double refl = 1e-3;
         int32_t numCapas = 8;
+    bool operator==(const FronteraPML_t& other) const {
+        if (!(orden == other.orden)) return false;
+        if (!(refl == other.refl)) return false;
+        if (!(numCapas == other.numCapas)) return false;
+        return true;
+    }
+
     };
 
     // Tipo de la frontera
     struct Frontera_t {
         int32_t tipoFrontera[6];
         FronteraPML_t propiedadesPML[6];
+    bool operator==(const Frontera_t& other) const {
+        for (int _i = 0; _i < 6; ++_i) {
+            if (tipoFrontera[_i] != other.tipoFrontera[_i]) return false;
+            if (!(propiedadesPML[_i] == other.propiedadesPML[_i])) return false;
+        }
+        return true;
+    }
+
     };
 
     // type to define the new probe object
@@ -547,6 +838,22 @@ namespace NFDETypes_m {
         int32_t type2;
         int32_t len_cor = 0;
         std::string outputrequest;
+    bool operator==(const MasSonda_t& other) const {
+        if (!(filename == other.filename)) return false;
+        if (!(cordinates == other.cordinates)) return false;
+        if (!(tstart == other.tstart)) return false;
+        if (!(tstop == other.tstop)) return false;
+        if (!(tstep == other.tstep)) return false;
+        if (!(fstart == other.fstart)) return false;
+        if (!(fstop == other.fstop)) return false;
+        if (!(fstep == other.fstep)) return false;
+        if (!(type1 == other.type1)) return false;
+        if (!(type2 == other.type2)) return false;
+        if (!(len_cor == other.len_cor)) return false;
+        if (!(outputrequest == other.outputrequest)) return false;
+        return true;
+    }
+
     };
 
     // type that defines a list of probes to be appended and accessed
@@ -555,6 +862,14 @@ namespace NFDETypes_m {
         int32_t length = 0;
         int32_t length_max = 0;
         int32_t len_cor_max = 0;
+    bool operator==(const MasSondas_t& other) const {
+        if (!(collection == other.collection)) return false;
+        if (!(length == other.length)) return false;
+        if (!(length_max == other.length_max)) return false;
+        if (!(len_cor_max == other.len_cor_max)) return false;
+        return true;
+    }
+
     };
 
     // This type contains the basic information in nearly all the different PROBES
@@ -580,8 +895,34 @@ namespace NFDETypes_m {
         RK thetastop = 0.0;
         RK thetastep = 0.0;
         std::string FileNormalize;
+    bool operator==(const Sonda_t& other) const {
+        if (!(grname == other.grname)) return false;
+        if (!(i == other.i)) return false;
+        if (!(j == other.j)) return false;
+        if (!(K == other.K)) return false;
+        if (!(node == other.node)) return false;
+        if (!(n_cord == other.n_cord)) return false;
+        if (!(n_cord_max == other.n_cord_max)) return false;
+        if (!(tstart == other.tstart)) return false;
+        if (!(tstop == other.tstop)) return false;
+        if (!(tstep == other.tstep)) return false;
+        if (!(outputrequest == other.outputrequest)) return false;
+        if (!(fstart == other.fstart)) return false;
+        if (!(fstop == other.fstop)) return false;
+        if (!(fstep == other.fstep)) return false;
+        if (!(phistart == other.phistart)) return false;
+        if (!(phistop == other.phistop)) return false;
+        if (!(phistep == other.phistep)) return false;
+        if (!(thetastart == other.thetastart)) return false;
+        if (!(thetastop == other.thetastop)) return false;
+        if (!(thetastep == other.thetastep)) return false;
+        if (!(FileNormalize == other.FileNormalize)) return false;
+        return true;
+    }
+
     };
 
+template<typename T>
 struct FortranPointer {
     T* ptr = nullptr;
     FortranPointer() : ptr(nullptr) {}
@@ -594,16 +935,31 @@ struct FortranPointer {
 // Type: FarField_Sonda_t
 struct FarField_Sonda_t {
     Sonda_t probe;
+    bool operator==(const FarField_Sonda_t& other) const {
+        if (!(probe == other.probe)) return false;
+        return true;
+    }
+
 };
 
 // Type: Electric_Sonda_t
 struct Electric_Sonda_t {
     Sonda_t probe;
+    bool operator==(const Electric_Sonda_t& other) const {
+        if (!(probe == other.probe)) return false;
+        return true;
+    }
+
 };
 
 // Type: Magnetic_Sonda_t
 struct Magnetic_Sonda_t {
     Sonda_t probe;
+    bool operator==(const Magnetic_Sonda_t& other) const {
+        if (!(probe == other.probe)) return false;
+        return true;
+    }
+
 };
 
 // Type: NormalElectric_Sonda_t
@@ -612,6 +968,14 @@ struct NormalElectric_Sonda_t {
     std::vector<int32_t> nml; // dimension(:), pointer
     int32_t n_nml = 0;
     int32_t n_nml_max = 0;
+    bool operator==(const NormalElectric_Sonda_t& other) const {
+        if (!(probe == other.probe)) return false;
+        if (!(nml == other.nml)) return false;
+        if (!(n_nml == other.n_nml)) return false;
+        if (!(n_nml_max == other.n_nml_max)) return false;
+        return true;
+    }
+
 };
 
 // Type: NormalMagnetic_Sonda_t
@@ -620,6 +984,14 @@ struct NormalMagnetic_Sonda_t {
     std::vector<int32_t> nml; // dimension(:), pointer
     int32_t n_nml = 0;
     int32_t n_nml_max = 0;
+    bool operator==(const NormalMagnetic_Sonda_t& other) const {
+        if (!(probe == other.probe)) return false;
+        if (!(nml == other.nml)) return false;
+        if (!(n_nml == other.n_nml)) return false;
+        if (!(n_nml_max == other.n_nml_max)) return false;
+        return true;
+    }
+
 };
 
 // Type: SurfaceElectricCurrent_Sonda_t
@@ -628,6 +1000,14 @@ struct SurfaceElectricCurrent_Sonda_t {
     std::vector<int32_t> nml; // dimension(:), pointer
     int32_t n_nml = 0;
     int32_t n_nml_max = 0;
+    bool operator==(const SurfaceElectricCurrent_Sonda_t& other) const {
+        if (!(probe == other.probe)) return false;
+        if (!(nml == other.nml)) return false;
+        if (!(n_nml == other.n_nml)) return false;
+        if (!(n_nml_max == other.n_nml_max)) return false;
+        return true;
+    }
+
 };
 
 // Type: SurfaceMagneticCurrent_Sonda_t
@@ -636,6 +1016,14 @@ struct SurfaceMagneticCurrent_Sonda_t {
     std::vector<int32_t> nml; // dimension(:), pointer
     int32_t n_nml = 0;
     int32_t n_nml_max = 0;
+    bool operator==(const SurfaceMagneticCurrent_Sonda_t& other) const {
+        if (!(probe == other.probe)) return false;
+        if (!(nml == other.nml)) return false;
+        if (!(n_nml == other.n_nml)) return false;
+        if (!(n_nml_max == other.n_nml_max)) return false;
+        return true;
+    }
+
 };
 
 // Type: abstractSonda_t
@@ -663,6 +1051,31 @@ struct abstractSonda_t {
     std::vector<NormalMagnetic_Sonda_t> NormalMagnetic; // dimension(:), pointer
     std::vector<SurfaceElectricCurrent_Sonda_t> SurfaceElectricCurrent; // dimension(:), pointer
     std::vector<SurfaceMagneticCurrent_Sonda_t> SurfaceMagneticCurrent; // dimension(:), pointer
+    bool operator==(const abstractSonda_t& other) const {
+        if (!(n_FarField == other.n_FarField)) return false;
+        if (!(n_Electric == other.n_Electric)) return false;
+        if (!(n_Magnetic == other.n_Magnetic)) return false;
+        if (!(n_NormalElectric == other.n_NormalElectric)) return false;
+        if (!(n_NormalMagnetic == other.n_NormalMagnetic)) return false;
+        if (!(n_SurfaceElectricCurrent == other.n_SurfaceElectricCurrent)) return false;
+        if (!(n_SurfaceMagneticCurrent == other.n_SurfaceMagneticCurrent)) return false;
+        if (!(n_FarField_max == other.n_FarField_max)) return false;
+        if (!(n_Electric_max == other.n_Electric_max)) return false;
+        if (!(n_Magnetic_max == other.n_Magnetic_max)) return false;
+        if (!(n_NormalElectric_max == other.n_NormalElectric_max)) return false;
+        if (!(n_NormalMagnetic_max == other.n_NormalMagnetic_max)) return false;
+        if (!(n_SurfaceElectricCurrent_max == other.n_SurfaceElectricCurrent_max)) return false;
+        if (!(n_SurfaceMagneticCurrent_max == other.n_SurfaceMagneticCurrent_max)) return false;
+        if (!(FarField == other.FarField)) return false;
+        if (!(Electric == other.Electric)) return false;
+        if (!(Magnetic == other.Magnetic)) return false;
+        if (!(NormalElectric == other.NormalElectric)) return false;
+        if (!(NormalMagnetic == other.NormalMagnetic)) return false;
+        if (!(SurfaceElectricCurrent == other.SurfaceElectricCurrent)) return false;
+        if (!(SurfaceMagneticCurrent == other.SurfaceMagneticCurrent)) return false;
+        return true;
+    }
+
 };
 
 // Type: Sondas_t
@@ -670,6 +1083,13 @@ struct Sondas_t {
     std::vector<abstractSonda_t> probes; // dimension(:), pointer
     int32_t n_probes = 0;
     int32_t n_probes_max = 0;
+    bool operator==(const Sondas_t& other) const {
+        if (!(probes == other.probes)) return false;
+        if (!(n_probes == other.n_probes)) return false;
+        if (!(n_probes_max == other.n_probes_max)) return false;
+        return true;
+    }
+
 };
 
 // Type: BloqueProbe_t
@@ -693,6 +1113,29 @@ struct BloqueProbe_t {
     bool t = false;
     std::string outputrequest; // len=BUFSIZE
     std::string tag; // len=BUFSIZE
+    bool operator==(const BloqueProbe_t& other) const {
+        if (!(tstart == other.tstart)) return false;
+        if (!(tstop == other.tstop)) return false;
+        if (!(tstep == other.tstep)) return false;
+        if (!(fstart == other.fstart)) return false;
+        if (!(fstop == other.fstop)) return false;
+        if (!(fstep == other.fstep)) return false;
+        if (!(FileNormalize == other.FileNormalize)) return false;
+        if (!(type2 == other.type2)) return false;
+        if (!(i1 == other.i1)) return false;
+        if (!(i2 == other.i2)) return false;
+        if (!(j1 == other.j1)) return false;
+        if (!(j2 == other.j2)) return false;
+        if (!(k1 == other.k1)) return false;
+        if (!(k2 == other.k2)) return false;
+        if (!(skip == other.skip)) return false;
+        if (!(nml == other.nml)) return false;
+        if (!(t == other.t)) return false;
+        if (!(outputrequest == other.outputrequest)) return false;
+        if (!(tag == other.tag)) return false;
+        return true;
+    }
+
 };
 
 // Type: BloqueProbes_t
@@ -700,6 +1143,13 @@ struct BloqueProbes_t {
     std::vector<BloqueProbe_t> bp; // dimension(:), pointer
     int32_t n_bp = 0;
     int32_t n_bp_max = 0;
+    bool operator==(const BloqueProbes_t& other) const {
+        if (!(bp == other.bp)) return false;
+        if (!(n_bp == other.n_bp)) return false;
+        if (!(n_bp_max == other.n_bp_max)) return false;
+        return true;
+    }
+
 };
 
 // Type: VolProbe_t
@@ -715,6 +1165,21 @@ struct VolProbe_t {
     RK fstep = 0.0;
     int32_t type2 = 0;
     std::string filename; // len=BUFSIZE
+    bool operator==(const VolProbe_t& other) const {
+        if (!(cordinates == other.cordinates)) return false;
+        if (!(tstart == other.tstart)) return false;
+        if (!(tstop == other.tstop)) return false;
+        if (!(tstep == other.tstep)) return false;
+        if (!(outputrequest == other.outputrequest)) return false;
+        if (!(len_cor == other.len_cor)) return false;
+        if (!(fstart == other.fstart)) return false;
+        if (!(fstop == other.fstop)) return false;
+        if (!(fstep == other.fstep)) return false;
+        if (!(type2 == other.type2)) return false;
+        if (!(filename == other.filename)) return false;
+        return true;
+    }
+
 };
 
 // Type: VolProbes_t
@@ -723,6 +1188,14 @@ struct VolProbes_t {
     int32_t length = 0;
     int32_t length_max = 0;
     int32_t len_cor_max = 0;
+    bool operator==(const VolProbes_t& other) const {
+        if (!(collection == other.collection)) return false;
+        if (!(length == other.length)) return false;
+        if (!(length_max == other.length_max)) return false;
+        if (!(len_cor_max == other.len_cor_max)) return false;
+        return true;
+    }
+
 };
 
 // Type: Box_t
@@ -730,6 +1203,15 @@ struct Box_t {
     std::string nombre_fichero; // len=BUFSIZE
     int32_t coor1[3];
     int32_t coor2[3];
+    bool operator==(const Box_t& other) const {
+        if (nombre_fichero != other.nombre_fichero) return false;
+        for (int _i = 0; _i < 3; ++_i) {
+            if (coor1[_i] != other.coor1[_i]) return false;
+            if (coor2[_i] != other.coor2[_i]) return false;
+        }
+        return true;
+    }
+
 };
 
 // Type: Boxes_t
@@ -737,6 +1219,13 @@ struct Boxes_t {
     std::vector<Box_t> Vols; // dimension(:), pointer
     int32_t nVols = 0;
     int32_t nVols_max = 0;
+    bool operator==(const Boxes_t& other) const {
+        if (!(Vols == other.Vols)) return false;
+        if (!(nVols == other.nVols)) return false;
+        if (!(nVols_max == other.nVols_max)) return false;
+        return true;
+    }
+
 };
 
 // Type: PlaneWave_t
@@ -752,6 +1241,23 @@ struct PlaneWave_t {
     bool isRC = false;
     RK INCERTMAX = 0.0;
     int32_t numModes = 0;
+    bool operator==(const PlaneWave_t& other) const {
+        if (nombre_fichero != other.nombre_fichero) return false;
+        if (atributo != other.atributo) return false;
+        for (int _i = 0; _i < 3; ++_i) {
+            if (coor1[_i] != other.coor1[_i]) return false;
+            if (coor2[_i] != other.coor2[_i]) return false;
+        }
+        if (!(theta == other.theta)) return false;
+        if (!(phi == other.phi)) return false;
+        if (!(alpha == other.alpha)) return false;
+        if (!(beta == other.beta)) return false;
+        if (!(isRC == other.isRC)) return false;
+        if (!(INCERTMAX == other.INCERTMAX)) return false;
+        if (!(numModes == other.numModes)) return false;
+        return true;
+    }
+
 };
 
 // Type: PlaneWaves_t
@@ -759,6 +1265,13 @@ struct PlaneWaves_t {
     std::vector<PlaneWave_t> collection; // dimension(:), pointer
     int32_t nc = 0;
     int32_t nC_max = 0;
+    bool operator==(const PlaneWaves_t& other) const {
+        if (!(collection == other.collection)) return false;
+        if (!(nc == other.nc)) return false;
+        if (!(nC_max == other.nC_max)) return false;
+        return true;
+    }
+
 };
 
 // Type: Curr_Field_Src_t
@@ -771,6 +1284,18 @@ struct Curr_Field_Src_t {
     bool isElec = false;
     bool isHard = false;
     bool isInitialValue = false;
+    bool operator==(const Curr_Field_Src_t& other) const {
+        if (!(c1P == other.c1P)) return false;
+        if (!(c2P == other.c2P)) return false;
+        if (!(nombre == other.nombre)) return false;
+        if (!(n_C1P == other.n_C1P)) return false;
+        if (!(n_C2P == other.n_C2P)) return false;
+        if (!(isElec == other.isElec)) return false;
+        if (!(isHard == other.isHard)) return false;
+        if (!(isInitialValue == other.isInitialValue)) return false;
+        return true;
+    }
+
 };
 
 // Type: NodSource_t
@@ -780,6 +1305,15 @@ struct NodSource_t {
     int32_t n_nodSrc_max = 0;
     int32_t n_C1P_max = 0;
     int32_t n_C2P_max = 0;
+    bool operator==(const NodSource_t& other) const {
+        if (!(NodalSource == other.NodalSource)) return false;
+        if (!(n_nodSrc == other.n_nodSrc)) return false;
+        if (!(n_nodSrc_max == other.n_nodSrc_max)) return false;
+        if (!(n_C1P_max == other.n_C1P_max)) return false;
+        if (!(n_C2P_max == other.n_C2P_max)) return false;
+        return true;
+    }
+
 };
 
 // Type: MatrizMedios_t
@@ -787,6 +1321,13 @@ struct MatrizMedios_t {
     int32_t totalX = 0;
     int32_t totalY = 0;
     int32_t totalZ = 0;
+    bool operator==(const MatrizMedios_t& other) const {
+        if (!(totalX == other.totalX)) return false;
+        if (!(totalY == other.totalY)) return false;
+        if (!(totalZ == other.totalZ)) return false;
+        return true;
+    }
+
 };
 
 // Type: NFDEGeneral_t
@@ -794,6 +1335,13 @@ struct NFDEGeneral_t {
     RK dt = 0.0;
     int32_t nmax = 0;
     bool mtlnProblem = false;
+    bool operator==(const NFDEGeneral_t& other) const {
+        if (!(dt == other.dt)) return false;
+        if (!(nmax == other.nmax)) return false;
+        if (!(mtlnProblem == other.mtlnProblem)) return false;
+        return true;
+    }
+
 };
 
 // Type: Desplazamiento_t
@@ -813,6 +1361,25 @@ struct Desplazamiento_t {
     RK originx = 0.0;
     RK originy = 0.0;
     RK originz = 0.0;
+    bool operator==(const Desplazamiento_t& other) const {
+        if (!(desX == other.desX)) return false;
+        if (!(desY == other.desY)) return false;
+        if (!(desZ == other.desZ)) return false;
+        if (!(nX == other.nX)) return false;
+        if (!(mx1 == other.mx1)) return false;
+        if (!(mx2 == other.mx2)) return false;
+        if (!(nY == other.nY)) return false;
+        if (!(my1 == other.my1)) return false;
+        if (!(my2 == other.my2)) return false;
+        if (!(nZ == other.nZ)) return false;
+        if (!(mz1 == other.mz1)) return false;
+        if (!(mz2 == other.mz2)) return false;
+        if (!(originx == other.originx)) return false;
+        if (!(originy == other.originy)) return false;
+        if (!(originz == other.originz)) return false;
+        return true;
+    }
+
 };
 
 // Type: Parseador_t
@@ -849,6 +1416,12 @@ struct Parseador_t {
 struct t_linea_t {
     int32_t LEN = 0;
     std::string dato; // len=BUFSIZE
+    bool operator==(const t_linea_t& other) const {
+        if (!(LEN == other.LEN)) return false;
+        if (!(dato == other.dato)) return false;
+        return true;
+    }
+
 };
 
 // Type: t_NFDE_FILE_t
@@ -857,6 +1430,14 @@ struct t_NFDE_FILE_t {
     int64_t numero = 0;
     std::vector<t_linea_t> lineas; // dimension(:), pointer
     bool thereare_stoch = false;
+    bool operator==(const t_NFDE_FILE_t& other) const {
+        if (!(targ == other.targ)) return false;
+        if (!(numero == other.numero)) return false;
+        if (!(lineas == other.lineas)) return false;
+        if (!(thereare_stoch == other.thereare_stoch)) return false;
+        return true;
+    }
+
 };
 
 } // namespace NFDETypes_m

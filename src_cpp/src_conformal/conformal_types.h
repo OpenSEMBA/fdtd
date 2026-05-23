@@ -92,7 +92,7 @@ namespace conformal_types_m {
 
     // Implementation of coord_t methods
 
-    bool coord_t::isOnVertex() const {
+    inline bool coord_t::isOnVertex() const {
         std::vector<double> delta(3);
         for (int i = 0; i < 3; ++i) {
             delta[i] = position[i] - std::floor(position[i]);
@@ -100,7 +100,7 @@ namespace conformal_types_m {
         return (delta[0] == 0.0) && (delta[1] == 0.0) && (delta[2] == 0.0);
     }
 
-    bool coord_t::isOnEdge(int edge) const {
+    inline bool coord_t::isOnEdge(int edge) const {
         std::vector<double> delta(3);
         for (int i = 0; i < 3; ++i) {
             delta[i] = position[i] - std::floor(position[i]);
@@ -126,11 +126,11 @@ namespace conformal_types_m {
         return (delta[idx1] > POS_TOL) && (delta[idx2] < POS_TOL) && (delta[idx3] < POS_TOL);
     }
 
-    bool coord_t::isOnAnyEdge() const {
+    inline bool coord_t::isOnAnyEdge() const {
         return isOnEdge(EDGE_X) || isOnEdge(EDGE_Y) || isOnEdge(EDGE_Z);
     }
 
-    bool coord_t::isOnFace(int face) const {
+    inline bool coord_t::isOnFace(int face) const {
         std::vector<double> delta(3);
         for (int i = 0; i < 3; ++i) {
             delta[i] = position[i] - std::floor(position[i]);
@@ -143,11 +143,11 @@ namespace conformal_types_m {
         return (delta[idx1] < POS_TOL) && (delta[idx2] > POS_TOL) && (delta[idx3] > POS_TOL);
     }
 
-    bool coord_t::isOnAnyFace() const {
+    inline bool coord_t::isOnAnyFace() const {
         return isOnFace(FACE_X) || isOnFace(FACE_Y) || isOnFace(FACE_Z);
     }
 
-    int coord_t::getEdge() const {
+    inline int coord_t::getEdge() const {
         int res = NOT_ON_EDGE;
         if (!isOnVertex()) {
             for (int edge = EDGE_X; edge <= EDGE_Z; ++edge) {
@@ -161,7 +161,7 @@ namespace conformal_types_m {
 
     // Implementation of side_t methods
 
-    int side_t::getEdge() const {
+    inline int side_t::getEdge() const {
         int res = NOT_ON_EDGE;
         for (int edge = EDGE_X; edge <= EDGE_Z; ++edge) {
             if (isOnEdge(edge)) {
@@ -171,7 +171,7 @@ namespace conformal_types_m {
         return res;
     }
 
-    std::vector<int> side_t::getCell() const {
+    inline std::vector<int> side_t::getCell() const {
         std::vector<double> c(3);
         for (int i = 0; i < 3; ++i) {
             c[i] = 0.5 * (init.position[i] + end.position[i]);
@@ -183,12 +183,12 @@ namespace conformal_types_m {
         return res;
     }
 
-    bool side_t::isInCell(const std::vector<int>& cell) const {
+    inline bool side_t::isInCell(const std::vector<int>& cell) const {
         std::vector<int> myCell = getCell();
         return (myCell[0] == cell[0]) && (myCell[1] == cell[1]) && (myCell[2] == cell[2]);
     }
 
-    bool side_t::isOnEdge(int edge) const {
+    inline bool side_t::isOnEdge(int edge) const {
         coord_t c(std::vector<double>(3));
         for (int i = 0; i < 3; ++i) {
             c.position[i] = 0.5 * (end.position[i] + init.position[i]);
@@ -196,7 +196,7 @@ namespace conformal_types_m {
         return c.isOnEdge(edge);
     }
 
-    int side_t::getFace() const {
+    inline int side_t::getFace() const {
         int res = NOT_ON_FACE;
         for (int face = FACE_X; face <= FACE_Z; ++face) {
             if (isOnFace(face)) {
@@ -206,7 +206,7 @@ namespace conformal_types_m {
         return res;
     }
 
-    bool side_t::isOnFace(int face) const {
+    inline bool side_t::isOnFace(int face) const {
         coord_t mean;
         for (int i = 0; i < 3; ++i) {
             mean.position[i] = 0.5 * (init.position[i] + end.position[i]);
@@ -214,15 +214,15 @@ namespace conformal_types_m {
         return mean.getEdge() == NOT_ON_EDGE && mean.isOnFace(face);
     }
 
-    bool side_t::isOnAnyFace() const {
+    inline bool side_t::isOnAnyFace() const {
         return isOnFace(FACE_X) || isOnFace(FACE_Y) || isOnFace(FACE_Z);
     }
 
-    bool side_t::isOnAnyEdge() const {
+    inline bool side_t::isOnAnyEdge() const {
         return isOnEdge(EDGE_X) || isOnEdge(EDGE_Y) || isOnEdge(EDGE_Z);
     }
 
-    double side_t::length() const {
+    inline double side_t::length() const {
         double sum = 0.0;
         for (int i = 0; i < 3; ++i) {
             double diff = init.position[i] - end.position[i];
@@ -231,7 +231,7 @@ namespace conformal_types_m {
         return std::sqrt(sum);
     }
 
-    bool side_t::isEquiv(const side_t& side) const {
+    inline bool side_t::isEquiv(const side_t& side) const {
         bool eq = true;
         bool eq_inv = true;
         for (int i = 0; i < 3; ++i) {
@@ -245,7 +245,7 @@ namespace conformal_types_m {
 
     // Implementation of triangle_t methods
 
-    std::vector<double> triangle_t::getNormal() const {
+    inline std::vector<double> triangle_t::getNormal() const {
         std::vector<double> v1(3);
         std::vector<double> v2(3);
         for (int i = 0; i < 3; ++i) {
@@ -266,7 +266,7 @@ namespace conformal_types_m {
         return res;
     }
 
-    int triangle_t::getFace() const {
+    inline int triangle_t::getFace() const {
         int res = NOT_ON_FACE;
         for (int face = FACE_X; face <= FACE_Z; ++face) {
             if (isOnFace(face)) {
@@ -276,7 +276,7 @@ namespace conformal_types_m {
         return res;
     }
 
-    std::vector<side_t> triangle_t::getSides() const {
+    inline std::vector<side_t> triangle_t::getSides() const {
         std::vector<side_t> res(3);
         for (int i = 0; i < 3; ++i) {
             res[i].init.position = vertices[i].position;
@@ -289,7 +289,7 @@ namespace conformal_types_m {
         return res;
     }
 
-    std::vector<int> triangle_t::getCell() const {
+    inline std::vector<int> triangle_t::getCell() const {
         std::vector<int> res(3);
         // Fortran: min(a,b,c)
         res[0] = std::min({vertices[0].position[0], vertices[1].position[0], vertices[2].position[0]});
@@ -303,17 +303,17 @@ namespace conformal_types_m {
         return res;
     }
 
-    bool triangle_t::isOnFace(int face) const {
+    inline bool triangle_t::isOnFace(int face) const {
         coord_t c(std::vector<double>(3));
         c.position = centroid();
         return c.isOnFace(face);
     }
 
-    bool triangle_t::isOnAnyFace() const {
+    inline bool triangle_t::isOnAnyFace() const {
         return isOnFace(FACE_X) || isOnFace(FACE_Y) || isOnFace(FACE_Z);
     }
 
-    std::vector<double> triangle_t::centroid() const {
+    inline std::vector<double> triangle_t::centroid() const {
         std::vector<double> res(3, 0.0);
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {

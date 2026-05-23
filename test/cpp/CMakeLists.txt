@@ -14,6 +14,7 @@ target_include_directories(cpp_tests PRIVATE
 target_link_libraries(cpp_tests
     gtest_main
     nlohmann_json::nlohmann_json
+    smbjson
 )
 
 # Add test to CTest
