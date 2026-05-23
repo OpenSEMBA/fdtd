@@ -280,7 +280,7 @@ namespace conformal_types_m {
         std::vector<side_t> res(3);
         for (int i = 0; i < 3; ++i) {
             res[i].init.position = vertices[i].position;
-            int nextIdx = (i % 3) + 1; // 0->1, 1->2, 2->0
+            const int nextIdx = (i + 1) % 3;
             res[i].end.position = vertices[nextIdx].position;
             res[i].init.id = vertices[i].id;
             res[i].end.id = vertices[nextIdx].id;

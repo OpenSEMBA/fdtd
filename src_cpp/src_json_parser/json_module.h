@@ -37,8 +37,8 @@ namespace json_module {
                             if (current[0] == '(') {
                                 int idx = 0;
                                 try { idx = std::stoi(current.substr(1, current.size() - 2)); } catch (...) {}
-                                if (j->is_array() && idx >= 0 && idx < (int)j->size()) {
-                                    j = &(*j)[idx];
+                                if (j->is_array() && idx >= 1 && idx <= (int)j->size()) {
+                                    j = &(*j)[idx - 1];
                                 } else { return; }
                             } else {
                                 if (j->contains(current)) {
@@ -55,8 +55,8 @@ namespace json_module {
                     if (current[0] == '(') {
                         int idx = 0;
                         try { idx = std::stoi(current.substr(1, current.size() - 2)); } catch (...) {}
-                        if (j->is_array() && idx >= 0 && idx < (int)j->size()) {
-                            j = &(*j)[idx];
+                        if (j->is_array() && idx >= 1 && idx <= (int)j->size()) {
+                            j = &(*j)[idx - 1];
                         } else { return; }
                     } else {
                         if (j->contains(current)) {

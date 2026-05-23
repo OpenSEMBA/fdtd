@@ -1,230 +1,147 @@
-#include <vector>
-#include <string>
-#include <cmath>
-#include <optional>
-#include <memory>
-
-// Forward declarations for types defined in other modules
-// These would normally be in their respective headers
-struct transmission_line_level_t;
-struct probe_t;
-struct generator_t;
-struct transfer_impedance_t {
-    std::vector<double> z_impedance;
-    std::vector<double> z_length;
-};
-struct transfer_impedance_per_meter_t;
-struct segment_t;
-struct comm_t;
-
-// Constants from FDETYPES_m and mtln_types_m
-// Assuming RKIND is double, RKIND_TIEMPO is double (or long double)
-using RKIND = double;
-using RKIND_TIEMPO = double;
-
-enum SourceType {
-    SOURCE_TYPE_CURRENT = 0,
-    SOURCE_TYPE_VOLTAGE = 1
-};
-
-// MPI Constants (if CompileWithMPI is defined)
-#ifdef CompileWithMPI
-#include <mpi.h>
-#include <cstdint>
-
-extern MPI_Comm SUBCOMM_MPI;
-constexpr int REALSIZE = MPI_DOUBLE;
-constexpr int INTEGERSIZE = MPI_INT;
-constexpr int MPI_STATUS_SIZE = MPI_STATUS_SIZE;
-
-enum CommType {
-    COMM_V = 0,
-    COMM_FIELD = 1,
-    COMM_BOTH = 2
-};
-
-enum CommTask {
-    COMM_SEND = 0,
-    COMM_RECV = 1
-};
-#endif
+#include "mtl_bundle_m.h"
 
 namespace mtl_bundle_m {
 
-    struct external_field_segment_t {
-        std::vector<int> position; // Dimension 3
-        int direction = 0;
-        double* field = nullptr; // Pointer to external data
+namespace {
 
-        external_field_segment_t() : position(3, 0) {}
-    };
-
-    struct mtl_bundle_t {
-        std::string name;
-        // 3D arrays: [divisions, conductors, conductors]
-        // Note: Fortran is column-major, C++ is row-major. 
-        // To preserve indexing logic directly, we might keep the dimensions as [divisions, conductors, conductors]
-        // but access them carefully. std::vector is 1D, so we map (i,j,k) to index.
-        // However, for simplicity and direct translation of logic, we can use a flattened vector or a custom wrapper.
-        // Given the complexity, let's use a flattened vector with manual indexing or a struct of vectors.
-        // The prompt asks to convert arrays to std::vector. 
-        // Let's assume a helper function or macro for indexing if needed, or just use 1D vector with size = d1*d2*d3.
-        
-        // Using 1D vectors for 3D/2D arrays to simplify memory management
-        // Dimensions:
-        // lpul: [number_of_divisions, number_of_conductors, number_of_conductors]
-        // cpul: [number_of_divisions + 1, number_of_conductors, number_of_conductors]
-        // etc.
-        
-        std::vector<RKIND> lpul;
-        std::vector<RKIND> cpul;
-        std::vector<RKIND> rpul;
-        std::vector<RKIND> gpul;
-        
-        int number_of_conductors = 0;
-        int number_of_divisions = 0;
-        
-        std::vector<RKIND> step_size;
-        
-        // 2D arrays: [conductors, divisions+1] or [conductors, divisions]
-        std::vector<RKIND> v;
-        std::vector<RKIND> i;
-        std::vector<RKIND> i_prev;
-        
-        std::vector<RKIND> v_source;
-        std::vector<RKIND> i_source;
-        std::vector<RKIND> e_L;
-        
-        std::vector<RKIND> du;
-        
-        RKIND time = 0.0;
-        RKIND dt = 1e10;
-
-        std::vector<generator_t> generators;
-        std::vector<probe_t> probes;
-        transfer_impedance_t transfer_impedance;
-        
-        std::vector<int> conductors_in_level;
-        
-        std::vector<RKIND> v_term;
-        std::vector<RKIND> i_term;
-        
-        std::vector<RKIND> v_diff;
-        std::vector<RKIND> i_diff;
-
-        std::vector<external_field_segment_t> external_field_segments;
-        bool bundle_in_layer = true;
-
-#ifdef CompileWithMPI
-        std::vector<std::vector<int>> layer_indices; // 2D array
-        comm_t mpi_comm;
-#endif
-
-        // Helper to flatten 3D index: (i, j, k) -> index
-        // Fortran: lpul(i, j, k) where i is divisions, j,k are conductors
-        // C++ Vector: size = d1 * d2 * d3
-        // Index = i * (d2 * d3) + j * d3 + k
-        // Note: Fortran is column-major. If we map directly to 1D vector in row-major order,
-        // we must be careful. 
-        // Let's assume the user wants to preserve the logical indexing.
-        // We will provide helper methods or use a wrapper. 
-        // For simplicity in translation, we will use a 1D vector and manual indexing.
-        
-        // Helper to get 3D array size
-        int get_3d_size(int d1, int d2, int d3) const {
-            return d1 * d2 * d3;
+void copyBlock(std::vector<std::vector<std::vector<double>>>& dest, int destOffset,
+               const std::vector<std::vector<std::vector<double>>>& src, int srcN) {
+    const int nDiv = static_cast<int>(dest.size());
+    for (int seg = 0; seg < nDiv; ++seg) {
+        for (int i = 0; i < srcN; ++i) {
+            for (int j = 0; j < srcN; ++j) {
+                dest[static_cast<size_t>(seg)][static_cast<size_t>(destOffset + i)][static_cast<size_t>(destOffset + j)] =
+                    src[static_cast<size_t>(seg)][static_cast<size_t>(i)][static_cast<size_t>(j)];
+            }
         }
+    }
+}
 
-        // Helper to get 2D array size
-        int get_2d_size(int d1, int d2) const {
-            return d1 * d2;
+} // namespace
+
+int countNumberOfConductors(const std::vector<mtl_m::transmission_line_level_t>& levels) {
+    int res = 0;
+    for (const auto& level : levels) {
+        for (const auto& line : level.lines) {
+            res += line.number_of_conductors;
         }
+    }
+    return res;
+}
 
-        // Initialize arrays with zeros
-        void initialize_arrays() {
-            int n_div = number_of_divisions;
-            int n_cond = number_of_conductors;
-            int n_div1 = n_div + 1;
+std::vector<external_field_segment_t> buildExternalFieldSegments(
+    const std::vector<mtl_m::transmission_line_level_t>& levels) {
+    std::vector<external_field_segment_t> res;
+    if (levels.empty() || levels[0].lines.empty()) {
+        return res;
+    }
+    const auto& segments = levels[0].lines[0].segments;
+    res.resize(segments.size());
+    for (size_t i = 0; i < segments.size(); ++i) {
+        res[i].position = {segments[i].x, segments[i].y, segments[i].z};
+        res[i].direction = segments[i].orientation;
+    }
+    return res;
+}
 
-            lpul.assign(get_3d_size(n_div, n_cond, n_cond), 0.0);
-            cpul.assign(get_3d_size(n_div1, n_cond, n_cond), 0.0);
-            gpul.assign(get_3d_size(n_div1, n_cond, n_cond), 0.0);
-            rpul.assign(get_3d_size(n_div, n_cond, n_cond), 0.0);
-            du.assign(get_3d_size(n_div, n_cond, n_cond), 0.0);
+void mtl_bundle_t::initialAllocation() {
+    lpul.assign(static_cast<size_t>(number_of_divisions),
+                std::vector<std::vector<double>>(static_cast<size_t>(number_of_conductors),
+                                                 std::vector<double>(static_cast<size_t>(number_of_conductors), 0.0)));
+    cpul.assign(static_cast<size_t>(number_of_divisions + 1),
+                std::vector<std::vector<double>>(static_cast<size_t>(number_of_conductors),
+                                                 std::vector<double>(static_cast<size_t>(number_of_conductors), 0.0)));
+    gpul = cpul;
+    rpul = lpul;
+    du = lpul;
+    v.assign(static_cast<size_t>(number_of_conductors),
+             std::vector<double>(static_cast<size_t>(number_of_divisions + 1), 0.0));
+    i.assign(static_cast<size_t>(number_of_conductors),
+             std::vector<double>(static_cast<size_t>(number_of_divisions), 0.0));
+    i_prev = i;
+    e_L = i;
+    v_source = v;
+    i_source = i;
+}
 
-            v.assign(get_2d_size(n_cond, n_div1), 0.0);
-            i.assign(get_2d_size(n_cond, n_div), 0.0);
-            i_prev.assign(get_2d_size(n_cond, n_div), 0.0);
-            e_L.assign(get_2d_size(n_cond, n_div), 0.0);
-
-            v_source.assign(get_2d_size(n_cond, n_div1), 0.0);
-            i_source.assign(get_2d_size(n_cond, n_div), 0.0);
-
-            i_term.assign(get_3d_size(n_div, n_cond, n_cond), 0.0);
-            v_diff.assign(get_3d_size(n_div, n_cond, n_cond), 0.0);
-
-            v_term.assign(get_3d_size(n_div1, n_cond, n_cond), 0.0);
-            i_diff.assign(get_3d_size(n_div1, n_cond, n_cond), 0.0);
+void mtl_bundle_t::mergePULMatrices(const std::vector<mtl_m::transmission_line_level_t>& levels) {
+    int n_sum = 0;
+    for (const auto& level : levels) {
+        for (const auto& line : level.lines) {
+            const int n = line.number_of_conductors;
+            copyBlock(lpul, n_sum, line.lpul, n);
+            copyBlock(cpul, n_sum, line.cpul, n);
+            copyBlock(rpul, n_sum, line.rpul, n);
+            copyBlock(gpul, n_sum, line.gpul, n);
+            copyBlock(du, n_sum, line.du, n);
+            n_sum += n;
         }
-        
-        // Accessors for 3D arrays (Fortran style indexing: 1-based)
-        // We will use 0-based indexing in C++ but adjust calls.
-        // Let's assume the internal storage is 0-based.
-        
-        RKIND& get_3d(std::vector<RKIND>& arr, int i, int j, int k, int d1, int d2, int d3) {
-            return arr[i * d2 * d3 + j * d3 + k];
-        }
-        
-        const RKIND& get_3d(const std::vector<RKIND>& arr, int i, int j, int k, int d1, int d2, int d3) const {
-            return arr[i * d2 * d3 + j * d3 + k];
-        }
+    }
+}
 
-        RKIND& get_2d(std::vector<RKIND>& arr, int i, int j, int d1, int d2) {
-            return arr[i * d2 + j];
+void mtl_bundle_t::mergeDispersiveMatrices(const std::vector<mtl_m::transmission_line_level_t>& levels) {
+    int number_of_poles = 0;
+    for (const auto& level : levels) {
+        for (const auto& line : level.lines) {
+            number_of_poles = std::max(number_of_poles, line.lumped_elements.number_of_poles);
         }
-        
-        const RKIND& get_2d(const std::vector<RKIND>& arr, int i, int j, int d1, int d2) const {
-            return arr[i * d2 + j];
+    }
+    transfer_impedance =
+        dispersive_m::transfer_impedance_t(number_of_conductors, number_of_poles, number_of_divisions, dt);
+
+    int n_sum = 0;
+    for (const auto& level : levels) {
+        for (const auto& line : level.lines) {
+            const int n = line.number_of_conductors;
+            const auto& lumped = line.lumped_elements;
+            for (int div = 0; div < number_of_divisions; ++div) {
+                for (int i = 0; i < n; ++i) {
+                    for (int j = 0; j < n; ++j) {
+                        transfer_impedance.q1[static_cast<size_t>(div)][static_cast<size_t>(n_sum + i)]
+                            [static_cast<size_t>(n_sum + j)] = lumped.q1[static_cast<size_t>(div)][static_cast<size_t>(i)][static_cast<size_t>(j)];
+                        transfer_impedance.q2[static_cast<size_t>(div)][static_cast<size_t>(n_sum + i)]
+                            [static_cast<size_t>(n_sum + j)] = lumped.q2[static_cast<size_t>(div)][static_cast<size_t>(i)][static_cast<size_t>(j)];
+                        transfer_impedance.q3[static_cast<size_t>(div)][static_cast<size_t>(n_sum + i)]
+                            [static_cast<size_t>(n_sum + j)] = lumped.q3[static_cast<size_t>(div)][static_cast<size_t>(i)][static_cast<size_t>(j)];
+                        transfer_impedance.q1_sum[static_cast<size_t>(div)][static_cast<size_t>(n_sum + i)]
+                            [static_cast<size_t>(n_sum + j)] = lumped.q1_sum[static_cast<size_t>(div)][static_cast<size_t>(i)][static_cast<size_t>(j)];
+                        transfer_impedance.q2_sum[static_cast<size_t>(div)][static_cast<size_t>(n_sum + i)]
+                            [static_cast<size_t>(n_sum + j)] = lumped.q2_sum[static_cast<size_t>(div)][static_cast<size_t>(i)][static_cast<size_t>(j)];
+                        transfer_impedance.d[static_cast<size_t>(div)][static_cast<size_t>(n_sum + i)]
+                            [static_cast<size_t>(n_sum + j)] = lumped.d[static_cast<size_t>(div)][static_cast<size_t>(i)][static_cast<size_t>(j)];
+                        transfer_impedance.e[static_cast<size_t>(div)][static_cast<size_t>(n_sum + i)]
+                            [static_cast<size_t>(n_sum + j)] = lumped.e[static_cast<size_t>(div)][static_cast<size_t>(i)][static_cast<size_t>(j)];
+                    }
+                    transfer_impedance.q3_phi[static_cast<size_t>(div)][static_cast<size_t>(n_sum + i)] =
+                        lumped.q3_phi[static_cast<size_t>(div)][static_cast<size_t>(i)];
+                    transfer_impedance.phi[static_cast<size_t>(div)][static_cast<size_t>(n_sum + i)] =
+                        lumped.phi[static_cast<size_t>(div)][static_cast<size_t>(i)];
+                }
+            }
+            n_sum += n;
         }
-    };
+    }
+}
 
-    // Interface for constructor
-    mtl_bundle_t mtldCtor(const std::vector<transmission_line_level_t>& levels, const std::string* name = nullptr);
+void mtl_bundle_t::addTransferImpedance(int conductor_out, const std::vector<int>& range_in,
+                                        const mtln_types_m::transfer_impedance_per_meter_t& zt) {
+    transfer_impedance.addTransferImpedance(conductor_out, range_in, zt);
+}
 
-    // Subroutines and Functions
-    void initialAllocation(mtl_bundle_t& this_obj);
-    
-    int countNumberOfConductors(const std::vector<transmission_line_level_t>& levels);
-    
-    void mergePULMatrices(mtl_bundle_t& this_obj, const std::vector<transmission_line_level_t>& levels);
-    
-    void mergeDispersiveMatrices(mtl_bundle_t& this_obj, const std::vector<transmission_line_level_t>& levels);
-    
-    std::vector<external_field_segment_t> buildExternalFieldSegments(const std::vector<transmission_line_level_t>& levels);
-    
-    void addProbe(mtl_bundle_t& this_obj, int index, int probe_type, const std::string& name, const std::vector<double>& position, const std::optional<std::vector<std::vector<int>>>& layer_indices = std::nullopt);
-    
-    void addGenerator(mtl_bundle_t& this_obj, int index, int conductor, int gen_type, double resistance, const std::string& path, const std::optional<std::vector<std::vector<int>>>& layer_indices = std::nullopt);
-    
-    void bundle_setConnectorTransferImpedance(mtl_bundle_t& this_obj, int index, int conductor_out, const std::vector<int>& range_in, const transfer_impedance_per_meter_t& transfer_impedance);
-    
-    void bundle_addTransferImpedance(mtl_bundle_t& this_obj, int conductor_out, const std::vector<int>& range_in, const transfer_impedance_per_meter_t& transfer_impedance);
-    
-    void updateLRTerms(mtl_bundle_t& this_obj);
-    
-    void updateCGTerms(mtl_bundle_t& this_obj);
-    
-    void bundle_updateGenerators(mtl_bundle_t& this_obj, RKIND_TIEMPO time, RKIND_TIEMPO dt);
-    
-    void bundle_advanceVoltage(mtl_bundle_t& this_obj);
-    
-    void bundle_advanceCurrent(mtl_bundle_t& this_obj);
-    
-    void bundle_setExternalLongitudinalField(mtl_bundle_t& this_obj);
-
-#ifdef CompileWithMPI
-    void Comm_MPI_V(mtl_bundle_t& this_obj);
-    void Comm_MPI_Fields(mtl_bundle_t& this_obj);
-#endif
+mtl_bundle_t mtl_bundle_ctor(const std::vector<mtl_m::transmission_line_level_t>& levels,
+                             const std::string& name) {
+    mtl_bundle_t res;
+    res.name = name;
+    res.number_of_conductors = countNumberOfConductors(levels);
+    if (!levels.empty() && !levels[0].lines.empty()) {
+        res.dt = levels[0].lines[0].dt;
+        res.step_size = levels[0].lines[0].step_size;
+        res.number_of_divisions = static_cast<int>(res.step_size.size());
+    }
+    res.initialAllocation();
+    res.mergePULMatrices(levels);
+    res.mergeDispersiveMatrices(levels);
+    return res;
+}
 
 } // namespace mtl_bundle_m

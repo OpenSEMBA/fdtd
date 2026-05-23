@@ -1,3 +1,6 @@
+#ifndef MTLN_TYPES_H
+#define MTLN_TYPES_H
+
 #include <vector>
 #include <string>
 #include <complex>
@@ -5,43 +8,10 @@
 #include <algorithm>
 #include <iostream>
 
-// Forward declarations for types defined in other modules
-// Assuming FDETYPES_m provides direction_t, BUFSIZE, RKIND, RKIND_TIEMPO
-// Assuming cable_t is defined elsewhere or in a separate header
-// For this translation, we assume cable_t is a forward declared class or defined in another header.
-// If cable_t is not defined here, it must be included.
-// Since the prompt implies this is a single file translation request but uses external types,
-// we will assume necessary headers are included or types are forward declared.
-
-// Placeholder for external types if not provided in the snippet
-// In a real scenario, these would be in "FDETYPES_m.h" or similar.
-#ifndef FDETYPES_M_H
-#define FDETYPES_M_H
-#include <cstdint>
-
-// Assuming RKIND is double and RKIND_TIEMPO is double based on typical usage
-// BUFSIZE is likely an integer constant
-constexpr int BUFSIZE = 256; 
-using RKIND = double;
-using RKIND_TIEMPO = double;
-
-// direction_t is likely an enum or base class
-enum class direction_t {
-    // Values depend on FDETYPES_m, assuming standard directions or empty base
-    // Since segment_t extends direction_t, direction_t is likely a base class or enum
-    // If it's an enum, inheritance in C++ structs isn't direct. 
-    // Given segment_t has extra fields, direction_t is likely a base struct.
-    // We will define it as an empty base struct for inheritance purposes if needed,
-    // or assume it contains common direction fields. 
-    // Without FDETYPES_m content, we assume it's a base struct.
-};
-
-#endif
-
-// Forward declaration of cable_t as it is used as a pointer base class
-class cable_t;
-
 namespace mtln_types_m {
+
+    using RKIND = double;
+    using RKIND_TIEMPO = double;
 
     // Constants
     constexpr int TERMINATION_UNDEFINED = -1;
@@ -56,7 +26,7 @@ namespace mtln_types_m {
     constexpr int TERMINATION_RCsLp = 9;
     constexpr int TERMINATION_LCsRp = 10;
     constexpr int TERMINATION_CIRCUIT = 11;
-    constexpr int TERMINATION_NETWORK = 12
+    constexpr int TERMINATION_NETWORK = 12;
 
     constexpr int TERMINAL_NODE_SIDE_UNDEFINED = -1;
     constexpr int TERMINAL_NODE_SIDE_INI = 1;
@@ -81,6 +51,44 @@ namespace mtln_types_m {
     constexpr int DIRECTION_Y_NEG = -2;
     constexpr int DIRECTION_Z_POS = 3;
     constexpr int DIRECTION_Z_NEG = -3;
+
+    struct cable_t;
+    struct connector_t;
+    struct parsed_generator_t;
+    struct termination_t;
+    struct terminal_node_t;
+    struct terminal_connection_t;
+    struct terminal_network_t;
+    struct transfer_impedance_per_meter_t;
+    struct connector_t;
+    struct multipolar_coefficient_t;
+    struct field_reconstruction_t;
+    struct box_2d_t;
+    struct multipolar_expansion_t;
+    struct segment_t;
+    struct unshielded_multiwire_t;
+    struct shielded_multiwire_t;
+    struct probe_t;
+    struct cable_abstract_t;
+    struct mtln_t;
+
+    bool wire_source_eq(const parsed_generator_t& a, const parsed_generator_t& b);
+    bool termination_eq(const termination_t& a, const termination_t& b);
+    bool terminal_node_eq(const terminal_node_t& a, const terminal_node_t& b);
+    bool terminal_connection_eq(const terminal_connection_t& a, const terminal_connection_t& b);
+    void terminal_connection_add_node(terminal_connection_t& obj, const terminal_node_t& node);
+    bool terminal_network_eq(const terminal_network_t& a, const terminal_network_t& b);
+    void terminal_network_add_connection(terminal_network_t& obj, const terminal_connection_t& connection);
+    bool transfer_impedance_per_meter_eq(const transfer_impedance_per_meter_t& a, const transfer_impedance_per_meter_t& b);
+    bool has_transfer_impedance(const transfer_impedance_per_meter_t& obj);
+    bool connector_eq(const connector_t& a, const connector_t& b);
+    bool multipolar_coefficient_eq(const multipolar_coefficient_t& a, const multipolar_coefficient_t& b);
+    bool field_reconstruction_eq(const field_reconstruction_t& a, const field_reconstruction_t& b);
+    bool box_2d_eq(const box_2d_t& a, const box_2d_t& b);
+    bool multipolar_expansion_eq(const multipolar_expansion_t& a, const multipolar_expansion_t& b);
+    bool cable_eq(const cable_t& a, const cable_t& b);
+    bool probe_eq(const probe_t& a, const probe_t& b);
+    bool mtln_eq(const mtln_t& a, const mtln_t& b);
 
     // Derived Types
 
@@ -231,25 +239,29 @@ namespace mtln_types_m {
         }
     };
 
-    // segment_t extends direction_t. Since direction_t is likely a base struct,
-    // we inherit from it. If direction_t is just an enum, this mapping is tricky.
-    // Assuming direction_t is a struct with common direction fields.
-    struct segment_t : public direction_t {
+    struct segment_t {
+        int x = 0;
+        int y = 0;
+        int z = 0;
+        int orientation = 0;
         box_2d_t dualBox;
         RKIND d1 = 0.0;
         RKIND d2 = 0.0;
+
+        bool operator==(const segment_t& other) const {
+            return x == other.x && y == other.y && z == other.z &&
+                   orientation == other.orientation;
+        }
     };
 
-    // Forward declaration needed for cable_t methods
-    class cable_t;
-
     struct cable_t {
+        virtual ~cable_t() = default;
         std::string name;
         std::vector<RKIND> step_size;
         std::vector<segment_t> segments;
         connector_t* initial_connector = nullptr;
         connector_t* end_connector = nullptr;
-        std::string tag; // Fixed size buffer handled by std::string or char array
+        std::string tag;
         int n_segments = 0;
 
         bool operator==(const cable_t& other) const {
@@ -289,7 +301,12 @@ namespace mtln_types_m {
     };
 
     struct cable_abstract_t {
-        cable_t* ptr = nullptr;
+        std::unique_ptr<cable_t> ptr;
+        cable_abstract_t() = default;
+        cable_abstract_t(cable_abstract_t&&) = default;
+        cable_abstract_t& operator=(cable_abstract_t&&) = default;
+        cable_abstract_t(const cable_abstract_t&) = delete;
+        cable_abstract_t& operator=(const cable_abstract_t&) = delete;
     };
 
     struct mtln_t {
@@ -297,7 +314,7 @@ namespace mtln_types_m {
         std::vector<terminal_network_t> networks;
         std::vector<probe_t> probes;
         std::vector<parsed_generator_t> wireGenerators;
-        std::vector<connector_t>* connectors = nullptr; // Pointer to vector as in Fortran
+        std::vector<connector_t> connectors;
         RKIND_TIEMPO time_step = 0.0;
         int number_of_steps = 0;
         int n_sh = 0;
@@ -316,9 +333,8 @@ namespace mtln_types_m {
 
         if (a.cables.size() != b.cables.size()) return false;
         for (size_t i = 0; i < a.cables.size(); ++i) {
-            // Check if pointers are equal. Note: Fortran == on pointers checks association.
-            // In C++, we check if both are null or both point to the same object.
-            if (a.cables[i].ptr != b.cables[i].ptr) return false;
+            if (!a.cables[i].ptr || !b.cables[i].ptr) return false;
+            if (!cable_eq(*a.cables[i].ptr, *b.cables[i].ptr)) return false;
         }
 
         if (a.probes.size() != b.probes.size()) return false;
@@ -380,18 +396,18 @@ namespace mtln_types_m {
             res = res && (a.segments[i] == b.segments[i]);
         }
 
-        // Check initial_connector
+        // Check initial_connector (by value, not pointer identity)
         if (a.initial_connector && b.initial_connector) {
-            res = res && (a.initial_connector == b.initial_connector);
+            res = res && connector_eq(*a.initial_connector, *b.initial_connector);
         } else if (!a.initial_connector && !b.initial_connector) {
             res = res && true;
         } else {
             res = res && false;
         }
 
-        // Check end_connector
+        // Check end_connector (by value, not pointer identity)
         if (a.end_connector && b.end_connector) {
-            res = res && (a.end_connector == b.end_connector);
+            res = res && connector_eq(*a.end_connector, *b.end_connector);
         } else if (!a.end_connector && !b.end_connector) {
             res = res && true;
         } else {
@@ -414,7 +430,7 @@ namespace mtln_types_m {
                 res = res && (shielded_a->conductor_in_parent == shielded_b->conductor_in_parent);
                 
                 if (shielded_a->parent_cable && shielded_b->parent_cable) {
-                    res = res && (shielded_a->parent_cable == shielded_b->parent_cable);
+                    res = res && cable_eq(*shielded_a->parent_cable, *shielded_b->parent_cable);
                 } else if (!shielded_a->parent_cable && !shielded_b->parent_cable) {
                     res = res && true;
                 } else {
@@ -449,11 +465,9 @@ namespace mtln_types_m {
                    (a.index == b.index);
         
         if (!a.attached_to_cable || !b.attached_to_cable) {
-            res = res && false;
-        } else {
-            res = res && (a.attached_to_cable == b.attached_to_cable);
+            return false;
         }
-        return res;
+        return res && cable_eq(*a.attached_to_cable, *b.attached_to_cable);
     }
 
     inline bool termination_eq(const termination_t& a, const termination_t& b) {
@@ -476,7 +490,7 @@ namespace mtln_types_m {
         } else if ((a.attached_to_cable && !b.attached_to_cable) || (!a.attached_to_cable && b.attached_to_cable)) {
             res = res && false;
         } else {
-            res = res && (a.attached_to_cable == b.attached_to_cable);
+            res = res && cable_eq(*a.attached_to_cable, *b.attached_to_cable);
         }
         return res;
     }
@@ -491,7 +505,7 @@ namespace mtln_types_m {
         } else if ((a.belongs_to_cable && !b.belongs_to_cable) || (!a.belongs_to_cable && b.belongs_to_cable)) {
             res = res && false;
         } else {
-            res = res && (a.belongs_to_cable == b.belongs_to_cable);
+            res = res && cable_eq(*a.belongs_to_cable, *b.belongs_to_cable);
         }
         return res;
     }
@@ -526,3 +540,5 @@ namespace mtln_types_m {
     }
 
 } // namespace mtln_types_m
+
+#endif // MTLN_TYPES_H

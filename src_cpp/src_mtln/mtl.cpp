@@ -7,34 +7,21 @@
 #include <optional>
 #include <memory>
 
-// Forward declarations and includes for external modules/types
-// #include "utils_m.hpp"
-// #include "dispersive_m.hpp"
-// #include "mtln_types_m.hpp"
-// #include "multipolar_expansion_m.hpp"
-// #include "FDETYPES_m.hpp"
+#include "mtln_types.h"
+#include "mtl_m.h"
+#include "multipolar_expansion_m.h"
 
-// Assuming these types/functions are defined in the included headers
-// using namespace utils_m;
-// using dispersive_lumped_t = dispersive_m::lumped_t;
-// using segment_t = mtln_types_m::segment_t;
-// using multipolar_expansion_t = mtln_types_m::multipolar_expansion_t;
-// using transfer_impedance_per_meter_t = mtln_types_m::transfer_impedance_per_meter_t;
-// using generator_t = mtln_types_m::generator_t;
+namespace utils_m {
+    std::vector<std::vector<double>> inv(const std::vector<std::vector<double>>& A);
+    std::vector<std::vector<double>> element_wise_invert(int n, const std::vector<std::vector<double>>& x);
+    std::vector<std::vector<double>> eye(int dim);
+    std::vector<double> getEigenValues(const std::vector<std::vector<double>>& matrix);
+}
 
-// Stub type definitions for translation artifacts
-struct dispersive_lumped_t {
-    dispersive_lumped_t() = default;
-    dispersive_lumped_t(int, int, size_t, double) {}
-};
-struct segment_t {
-    std::vector<double> dualBox;
-    double d1 = 0.0, d2 = 0.0;
-};
-struct transfer_impedance_per_meter_t {};
-struct multipolar_expansion_t {
-    multipolar_expansion_t() {}
-};
+using mtln_types_m::multipolar_expansion_t;
+using mtln_types_m::segment_t;
+using mtln_types_m::transfer_impedance_per_meter_t;
+
 struct generator_t {};
 
 // Constants from FDETYPES_m
@@ -58,58 +45,10 @@ extern int INTEGERSIZE;
 
 namespace mtl_m {
 
-    // Helper functions that might be in utils_m or similar
-    // These are placeholders for intrinsic-like functions used in the code
-    inline std::vector<std::vector<double>> element_wise_invert(int n, const std::vector<std::vector<double>>& mat) {
-        // Placeholder for element-wise inversion logic if it exists, 
-        // but the code uses 'inv' which likely means matrix inverse.
-        // However, 'element_wise_invert' suggests 1/A_ij.
-        // Let's assume it returns 1.0/mat(i,j)
-        std::vector<std::vector<double>> res(n, std::vector<double>(n));
-        for(int i=0; i<n; ++i) {
-            for(int j=0; j<n; ++j) {
-                res[i][j] = 1.0 / mat[i][j];
-            }
-        }
-        return res;
-    }
+using mtln_types_m::multipolar_expansion_t;
+using mtln_types_m::segment_t;
+using mtln_types_m::transfer_impedance_per_meter_t;
 
-    inline std::vector<std::vector<double>> inv(const std::vector<std::vector<double>>& mat) {
-        // Placeholder for matrix inversion. 
-        // In a real scenario, this would use a linear algebra library like Eigen or LAPACK.
-        // For translation purposes, we assume a function exists that performs matrix inversion.
-        // Returning a zero matrix as a placeholder to compile.
-        int n = mat.size();
-        std::vector<std::vector<double>> res(n, std::vector<double>(n, 0.0));
-        // TODO: Implement actual matrix inversion
-        return res;
-    }
-
-    inline std::vector<std::vector<double>> eye(int n) {
-        std::vector<std::vector<double>> res(n, std::vector<double>(n, 0.0));
-        for(int i=0; i<n; ++i) res[i][i] = 1.0;
-        return res;
-    }
-
-    inline std::vector<double> getEigenValues(const std::vector<std::vector<double>>& mat) {
-        // Placeholder for eigenvalue calculation.
-        // The input 'mat' in Fortran was a 2*N vector representing a 2N x 2N matrix? 
-        // Or perhaps it's a flattened matrix. 
-        // Fortran: dble(matmul(this%lpul(k,:,:), this%cpul(k+1,:,:)))
-        // This results in a square matrix. 
-        // The function getEigenValues likely takes a matrix and returns eigenvalues.
-        // Since the signature in Fortran isn't fully visible, we assume it returns a vector of eigenvalues.
-        // Placeholder: returns zeros.
-        return std::vector<double>(2, 0.0); 
-    }
-
-    // External functions from other modules
-    // double getCellInductanceOnBox(const multipolar_expansion_t& mpe, const dualBox_t& box);
-    // double getCellCapacitanceOnBox(const multipolar_expansion_t& mpe, const dualBox_t& box);
-
-    // Stub implementations
-    static std::vector<std::vector<double>> getCellInductanceOnBox(const multipolar_expansion_t&, const std::vector<double>&) { return {{0.0}}; }
-    static std::vector<std::vector<double>> getCellCapacitanceOnBox(const multipolar_expansion_t&, const std::vector<double>&) { return {{0.0}}; }
     // bool isSegmentZOriented(int j);
     // bool isSegmentNextToLayerEnd(int j, int z_end);
     // bool isSegmentBeforeLayerEnd(int j, int z_end);
@@ -128,128 +67,22 @@ namespace mtl_m {
     constexpr int COMM_V = 2;
     constexpr int COMM_BOTH = 3;
 
-    struct communicator_t {
-        int field_index = -1;
-        int v_index = -1;
-        int comm_task = COMM_NONE;
-        int comm_type = COMM_NONE;
-        int delta_rank = 0;
-    };
-
-    struct comm_t {
-        std::vector<communicator_t> comms;
-        int rank = 0;
-    };
 #endif
-
-    struct mtl_t {
-        std::string name;
-        int number_of_conductors = 0;
-        // real(kind=rkind), allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
-        // Using 3D vector: [step_size_index][conductor_i][conductor_j]
-        std::vector<std::vector<std::vector<double>>> lpul;
-        std::vector<std::vector<std::vector<double>>> cpul;
-        std::vector<std::vector<std::vector<double>>> rpul;
-        std::vector<std::vector<std::vector<double>>> gpul;
-        
-        std::vector<double> step_size;
-        
-        // du is declared as real(kind=rkind), allocatable, dimension(:,:,:) :: du(:,:,:)
-        // This syntax is slightly ambiguous in Fortran. It likely means du is a 3D array.
-        std::vector<std::vector<std::vector<double>>> du;
-
-        dispersive_lumped_t lumped_elements;
-        double time = 0.0;
-        double dt = 0.0;
-
-        std::string parent_name;
-        int conductor_in_parent = 0;
-        transfer_impedance_per_meter_t transfer_impedance;
-        std::vector<transfer_impedance_per_meter_t> initial_connector_transfer_impedances;
-        std::vector<transfer_impedance_per_meter_t> end_connector_transfer_impedances;
-        std::vector<segment_t> segments;
-
-#ifdef CompileWithMPI
-        comm_t mpi_comm;
-        std::vector<std::vector<int>> layer_indices;
-        bool bundle_in_layer = true;
-#endif
-
-        // Methods
-        void setTimeStep(int numberOfSteps, double finalTime);
-        void checkTimeStep(bool getMax, std::optional<double> dt = std::nullopt);
-        void allocatePULMatrices();
-        void computeLCParameters(const multipolar_expansion_t& multipolar_expansion);
-        void computeLCParametersFromRadius(double rad);
-        void initLC(const std::vector<std::vector<double>>& lpul, const std::vector<std::vector<double>>& cpul);
-        void initRG(const std::vector<std::vector<double>>& rpul, const std::vector<std::vector<double>>& gpul);
-        void initDirections();
-        double getMaxTimeStep();
-        std::vector<std::vector<double>> getPhaseVelocities();
-        
-#ifdef CompileWithMPI
-        void initCommunicators(const std::vector<int>& alloc_z);
-        void initStepSizeAndFieldSegments(const std::vector<double>& step_size, const std::vector<segment_t>& segments, const std::vector<std::vector<int>>& layer_indices);
-#endif
-    };
-
-    struct transmission_line_level_t {
-        std::vector<mtl_t> lines;
-    };
-
-    struct transmission_line_bundle_t {
-        std::vector<transmission_line_level_t> levels;
-    };
-
-    // Interface functions
-    mtl_t mtl_shielded(
-        const std::vector<std::vector<double>>& lpul,
-        const std::vector<std::vector<double>>& cpul,
-        const std::vector<std::vector<double>>& rpul,
-        const std::vector<std::vector<double>>& gpul,
-        const std::vector<double>& step_size,
-        const std::string& name,
-        const std::vector<segment_t>& segments,
-        double dt,
-        const std::string& parent_name,
-        int conductor_in_parent,
-        const transfer_impedance_per_meter_t& transfer_impedance,
-        std::optional<std::vector<std::vector<int>>> layer_indices = std::nullopt,
-        std::optional<bool> bundle_in_layer = std::nullopt,
-        std::optional<std::vector<int>> alloc_z = std::nullopt
-    );
-
-    mtl_t mtl_unshielded(
-        const std::vector<std::vector<double>>& lpul,
-        const std::vector<std::vector<double>>& cpul,
-        const std::vector<std::vector<double>>& rpul,
-        const std::vector<std::vector<double>>& gpul,
-        const std::vector<double>& step_size,
-        const std::string& name,
-        const std::vector<segment_t>& segments,
-        double dt,
-        const std::vector<multipolar_expansion_t>& multipolar_expansion,
-        double radius,
-        std::optional<std::vector<std::vector<int>>> layer_indices = std::nullopt,
-        std::optional<bool> bundle_in_layer = std::nullopt,
-        std::optional<std::vector<int>> alloc_z = std::nullopt
-    );
-
-    void checkPULDimensions(
-        const std::vector<std::vector<double>>& lpul,
-        const std::vector<std::vector<double>>& cpul,
-        const std::vector<std::vector<double>>& rpul,
-        const std::vector<std::vector<double>>& gpul
-    );
 
     // Implementation of mtl_t methods
 
     void mtl_t::initLC(const std::vector<std::vector<double>>& lpul, const std::vector<std::vector<double>>& cpul) {
-        int n = lpul.size();
+        int n = static_cast<int>(lpul.size());
         for (int i = 0; i < static_cast<int>(this->lpul.size()); ++i) {
             for (int r = 0; r < n; ++r) {
                 for (int c = 0; c < n; ++c) {
                     this->lpul[i][r][c] = lpul[r][c];
+                }
+            }
+        }
+        for (int i = 0; i < static_cast<int>(this->cpul.size()); ++i) {
+            for (int r = 0; r < n; ++r) {
+                for (int c = 0; c < n; ++c) {
                     this->cpul[i][r][c] = cpul[r][c];
                 }
             }
@@ -275,11 +108,11 @@ namespace mtl_m {
             // Assuming getCellInductanceOnBox and getCellCapacitanceOnBox return 2D vectors
             // Note: The Fortran code assigns the result of these functions directly to 2D slices of 3D arrays
             // This implies the functions return a 2D matrix.
-            this->lpul[i] = getCellInductanceOnBox(multipolar_expansion, this->segments[i].dualBox);
-            this->cpul[i] = getCellCapacitanceOnBox(multipolar_expansion, this->segments[i].dualBox);
+            this->lpul[i] = multipolar_expansion_m::getCellInductanceOnBox(multipolar_expansion, this->segments[i].dualBox);
+            this->cpul[i] = multipolar_expansion_m::getCellCapacitanceOnBox(multipolar_expansion, this->segments[i].dualBox);
             
-            ppul = element_wise_invert(n, this->cpul[i]);
-            this->cpul[i] = inv(ppul);
+            ppul = utils_m::element_wise_invert(n, this->cpul[i]);
+            this->cpul[i] = utils_m::inv(ppul);
         }
         
         // Copy last slice to the extra slice
@@ -388,11 +221,17 @@ namespace mtl_m {
     }
 
     void mtl_t::initRG(const std::vector<std::vector<double>>& rpul, const std::vector<std::vector<double>>& gpul) {
-        int n = rpul.size();
+        int n = static_cast<int>(rpul.size());
         for (int i = 0; i < static_cast<int>(this->rpul.size()); ++i) {
             for (int r = 0; r < n; ++r) {
                 for (int c = 0; c < n; ++c) {
                     this->rpul[i][r][c] = rpul[r][c];
+                }
+            }
+        }
+        for (int i = 0; i < static_cast<int>(this->gpul.size()); ++i) {
+            for (int r = 0; r < n; ++r) {
+                for (int c = 0; c < n; ++c) {
                     this->gpul[i][r][c] = gpul[r][c];
                 }
             }
@@ -456,7 +295,7 @@ namespace mtl_m {
             // Assuming getEigenValues returns eigenvalues of the matrix.
             // The matrix is N x N. It should return N eigenvalues.
             // The Fortran code calls getEigenValues(dble(...)).
-            std::vector<double> ev = getEigenValues(matmul_res); // Placeholder implementation
+            std::vector<double> ev = utils_m::getEigenValues(matmul_res);
             
             // res(k,:) = 1.0/sqrt(ev(1:n))
             for (int i = 0; i < n; ++i) {
@@ -646,7 +485,8 @@ namespace mtl_m {
         res.parent_name = parent_name;
         res.conductor_in_parent = conductor_in_parent;
         res.transfer_impedance = transfer_impedance;
-        res.lumped_elements = dispersive_lumped_t(res.number_of_conductors, 0, res.step_size.size(), res.dt);
+        res.lumped_elements = dispersive_m::lumped_t(res.number_of_conductors, 0,
+                                                     static_cast<int>(res.step_size.size()), res.dt);
         
         return res;
     }
@@ -714,7 +554,8 @@ namespace mtl_m {
         bool getMax = (lpul[0][0] != 0.0);
         res.checkTimeStep(getMax, dt);
         
-        res.lumped_elements = dispersive_lumped_t(res.number_of_conductors, 0, res.step_size.size(), res.dt);
+        res.lumped_elements = dispersive_m::lumped_t(res.number_of_conductors, 0,
+                                                     static_cast<int>(res.step_size.size()), res.dt);
         
         return res;
     }

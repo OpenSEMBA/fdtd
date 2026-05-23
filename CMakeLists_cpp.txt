@@ -165,15 +165,14 @@ include_directories(${HDF5_INCLUDE_DIRS})
 # =========================================
 
 # --- semba-types: type definitions (all .h headers) ---
-add_library(semba-types
-    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/nfde_types.h"
-    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/fdetypes.cpp"
-    "${CPP_SOURCE_ROOT}/src_cpp/src_mtln/mtln_types.h"
-    "${CPP_SOURCE_ROOT}/src_cpp/src_conformal/conformal_types.h"
-    "${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub/wires_types.h"
-    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/lumped_types.h"
+add_library(semba-types INTERFACE)
+target_include_directories(semba-types INTERFACE
+    ${CPP_SOURCE_ROOT}/src_cpp/src_main_pub
+    ${CPP_SOURCE_ROOT}/src_cpp/src_mtln
+    ${CPP_SOURCE_ROOT}/src_cpp/src_conformal
+    ${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub
+    ${CPP_SOURCE_ROOT}/src_cpp/src_json_parser
 )
-target_link_libraries(semba-types PUBLIC ${MPI_CXX_LIBRARIES})
 
 # --- semba-reports: error reporting, XDMF snapshot I/O ---
 add_library(semba-reports
@@ -213,6 +212,10 @@ endif()
 # --- conformal: conformal mapping ---
 add_subdirectory("${CPP_SOURCE_ROOT}/src_conformal_cpp" "${CMAKE_CURRENT_BINARY_DIR}/conformal")
 set(CONFORMAL_LIBRARIES conformal)
+
+# --- test support (rotate headers, observation preprocess, preprocess tags) ---
+add_subdirectory("${CPP_SOURCE_ROOT}/src_cpp/src_test_support" "${CMAKE_CURRENT_BINARY_DIR}/semba_test_support")
+set(SEMBA_TEST_SUPPORT semba-test-support)
 
 # --- tests ---
 if(SEMBA_FDTD_ENABLE_TEST)

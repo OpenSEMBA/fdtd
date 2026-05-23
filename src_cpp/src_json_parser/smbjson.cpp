@@ -1,8 +1,27 @@
 #include "smbjson_m.h"
 #include "NFDETypes_extension_m.h"
 #include <iostream>
+#include <cmath>
 
 namespace smbjson {
+
+    namespace {
+        void appendRegion(std::vector<NFDE::coords_t>& dest, int& n, int& nMax,
+                          const std::vector<NFDE::coords_t>& cs) {
+            if (dest.empty()) {
+                dest = cs;
+                n = static_cast<int>(cs.size());
+                nMax = n;
+                return;
+            }
+            std::vector<NFDE::coords_t> aux = dest;
+            dest.resize(aux.size() + cs.size());
+            for (size_t i = 0; i < aux.size(); ++i) dest[i] = aux[i];
+            for (size_t i = 0; i < cs.size(); ++i) dest[aux.size() + i] = cs[i];
+            n = static_cast<int>(dest.size());
+            nMax = n;
+        }
+    }
 
     // ---- JSON accessor implementations ----
 
@@ -112,23 +131,108 @@ namespace smbjson {
 
     parser_t::domain_t parser_t::getDomain(const jmod::json_value* place, const std::string& path) {
         domain_t res;
-        res.tstart = getRealAt(place, path + ".tstart", 0.0);
-        res.tstop = getRealAt(place, path + ".tstop", 0.0);
-        res.tstep = getRealAt(place, path + ".tstep", 0.0);
-        res.fstart = getRealAt(place, path + ".fstart", 0.0);
-        res.fstop = getRealAt(place, path + ".fstop", 0.0);
-        res.fstep = getRealAt(place, path + ".fstep", 0.0);
-        res.filename = getStrAt(place, path + ".filename", "");
-        res.type1 = getIntAt(place, path + ".type1", NFDE::NP_T1_PLAIN);
-        res.type2 = getIntAt(place, path + ".type2", NFDE::NP_T2_TIME);
-        res.isLogarithmicFrequencySpacing = getLogicalAt(place, path + ".isLogarithmicFrequencySpacing", false);
+        jmod::json_value* domain = nullptr;
+        bool found = false;
+        core->get(place, path, domain, found);
+        if (!found) {
+            res.filename = " ";
+            return res;
+        }
+
+        bool transferFunctionFound = false;
+        std::string fn = getStrAt(domain, jlbl::J_PR_DOMAIN_MAGNITUDE_FILE, " ", &transferFunctionFound);
+        if (transferFunctionFound) {
+            while (!fn.empty() && (fn.front() == ' ' || fn.front() == '\t')) fn.erase(fn.begin());
+            while (!fn.empty() && (fn.back() == ' ' || fn.back() == '\t')) fn.pop_back();
+            res.filename = fn;
+            res.hasTransferFunction = true;
+        }
+
+        res.type1 = NFDE::NP_T1_PLAIN;
+        std::string domainType = getStrAt(domain, jlbl::J_PR_DOMAIN_TYPE, jlbl::J_PR_DOMAIN_TYPE_TIME);
+        res.type2 = getNPDomainType(domainType, transferFunctionFound);
+
+        res.tstart = getRealAt(domain, jlbl::J_PR_DOMAIN_TIME_START, 0.0);
+        res.tstop = getRealAt(domain, jlbl::J_PR_DOMAIN_TIME_STOP, 0.0);
+        res.tstep = getRealAt(domain, jlbl::J_PR_DOMAIN_TIME_STEP, 0.0);
+        res.fstart = getRealAt(domain, jlbl::J_PR_DOMAIN_FREQ_START, 0.0);
+        res.fstop = getRealAt(domain, jlbl::J_PR_DOMAIN_FREQ_STOP, 0.0);
+
+        int numberOfFrequencies = getIntAt(domain, jlbl::J_PR_DOMAIN_FREQ_NUMBER, 0);
+        if (numberOfFrequencies == 0) {
+            res.fstep = 0.0;
+        } else {
+            res.fstep = (res.fstop - res.fstart) / numberOfFrequencies;
+        }
+
+        std::string freqSpacing = getStrAt(domain, jlbl::J_PR_DOMAIN_FREQ_SPACING,
+                                           jlbl::J_PR_DOMAIN_FREQ_SPACING_LINEAR);
+        res.isLogarithmicFrequencySpacing =
+            (freqSpacing == jlbl::J_PR_DOMAIN_FREQ_SPACING_LOGARITHMIC);
         return res;
+    }
+
+    int parser_t::getNPDomainType(const std::string& typeLabel, bool hasTransferFunction) {
+        bool isTime = false;
+        bool isFrequency = false;
+        if (typeLabel == jlbl::J_PR_DOMAIN_TYPE_TIME) {
+            isTime = true;
+        } else if (typeLabel == jlbl::J_PR_DOMAIN_TYPE_FREQ) {
+            isFrequency = true;
+        } else if (typeLabel == jlbl::J_PR_DOMAIN_TYPE_TIMEFREQ) {
+            isTime = true;
+            isFrequency = true;
+        }
+
+        if (isTime && !isFrequency && !hasTransferFunction) return NFDE::NP_T2_TIME;
+        if (!isTime && isFrequency && !hasTransferFunction) return NFDE::NP_T2_FREQ;
+        if (!isTime && !isFrequency && hasTransferFunction) return NFDE::NP_T2_TRANSFER;
+        if (isTime && isFrequency && !hasTransferFunction) return NFDE::NP_T2_TIMEFREQ;
+        if (isTime && !isFrequency && hasTransferFunction) return NFDE::NP_T2_TIMETRANSF;
+        if (!isTime && isFrequency && hasTransferFunction) return NFDE::NP_T2_FREQTRANSF;
+        if (isTime && isFrequency && hasTransferFunction) return NFDE::NP_T2_TIMEFRECTRANSF;
+        Report::WarnErrReport("Invalid domain type for probe.", true);
+        return NFDE::NP_T2_TIME;
     }
 
     // ---- Missing method implementations ----
 
+    std::string parser_t::adaptName(const std::string& str) {
+        std::string res = str;
+        while (!res.empty() && (res.front() == ' ' || res.front() == '\t')) res.erase(res.begin());
+        while (!res.empty() && (res.back() == ' ' || res.back() == '\t')) res.pop_back();
+        for (char& c : res) {
+            if (c == ' ') c = '_';
+        }
+        return res;
+    }
+
+    void parser_t::checkIsValidName(const std::string& str) {
+        if (str.find('@') != std::string::npos) {
+            Report::WarnErrReport("ERROR in name: " + str + " contains invalid character @", true);
+        }
+    }
+
     std::string parser_t::buildTagName(int matId, int elementId) {
-        return std::to_string(matId) + "@" + std::to_string(elementId);
+        std::string matName;
+        {
+            IdTable::json_value_ptr_t mat = matTable.getId(matId);
+            bool found = false;
+            matName = getStrAt(mat, jlbl::J_NAME, "", &found);
+            if (!found) matName = "material" + std::to_string(matId);
+            matName = adaptName(matName);
+        }
+        std::string layerName;
+        {
+            IdTable::json_value_ptr_t elem = elementTable.getId(elementId);
+            bool found = false;
+            layerName = getStrAt(elem, jlbl::J_NAME, "", &found);
+            if (!found) layerName = "layer" + std::to_string(elementId);
+            layerName = adaptName(layerName);
+        }
+        checkIsValidName(matName);
+        checkIsValidName(layerName);
+        return matName + "@" + layerName;
     }
 
     std::vector<parser_t::materialAssociation_t> parser_t::getMaterialAssociations(
@@ -146,7 +250,7 @@ namespace smbjson {
             core->get_child(allMatAss, i + 1, mAPtr);
 
             materialAssociation_t mA = parseMaterialAssociation(mAPtr);
-            jmod::json_value_ptr_t mat = matTable.getId(mA.materialId);
+            jmod::json_value* mat = matTable.getId(mA.materialId);
             if (!mat) continue;
             std::string matType = getStrAt(mat, jlbl::J_TYPE, "");
 
@@ -156,24 +260,28 @@ namespace smbjson {
             }
             if (!typeMatch) continue;
 
-            // Element label filter (simplified, not used for wire/cable)
+            // Element label filter (matches Fortran isAssociatedWithElementLabel)
             bool labelMatch = true;
             if (!elementLabels.empty()) {
                 labelMatch = false;
                 for (int eid : mA.elementIds) {
-                    bool cRf = false;
-                    Cell::cell_region_t cR = mesh.getCellRegion(eid, cRf);
-                    if (!cRf) continue;
-                    jmod::json_value_ptr_t elm = elementTable.getId(eid);
+                    IdTable::json_value_ptr_t elm = elementTable.getId(eid);
                     if (!elm) continue;
                     std::string elemType = getStrAt(elm, jlbl::J_TYPE, "");
                     std::string elemSubtype = getStrAt(elm, jlbl::J_SUBTYPE, "");
-                    for (auto& el : elementLabels) {
-                        bool negative = (el[0] == '-');
+                    for (const auto& el : elementLabels) {
+                        bool negative = (!el.empty() && el[0] == '-');
                         std::string target = negative ? el.substr(1) : el;
+                        while (!target.empty() && (target.front() == ' ' || target.front() == '\t'))
+                            target.erase(target.begin());
+                        while (!target.empty() && (target.back() == ' ' || target.back() == '\t'))
+                            target.pop_back();
                         bool matches = (elemType == target || elemSubtype == target);
-                        if (negative) { labelMatch = labelMatch && !matches; }
-                        else { labelMatch = labelMatch || matches; }
+                        if (negative) {
+                            labelMatch = labelMatch && !matches;
+                        } else {
+                            labelMatch = labelMatch || matches;
+                        }
                     }
                 }
             }
@@ -212,15 +320,31 @@ namespace smbjson {
 
     std::vector<Cell::cell_interval_t> parser_t::getSingleVolumeInElementsIds(const jmod::json_value* pw) {
         std::vector<Cell::cell_interval_t> res;
-        std::vector<int> elemIds = getIntsAt(pw, jlbl::J_ELEMENTIDS);
-        if (elemIds.size() >= 1) {
-            bool cRf = false;
-            Cell::cell_region_t cR = mesh.getCellRegion(int(elemIds[0]), cRf);
-            if (cRf) {
-                for (auto& iv : cR.intervals) {
-                    if (iv.getType() == Cell::CELL_TYPE_VOXEL) res.push_back(iv);
-                }
-            }
+        bool found = false;
+        std::vector<int> elemIds = getIntsAt(pw, jlbl::J_ELEMENTIDS, &found);
+        if (!found) {
+            Report::WarnErrReport("Error reading single volume elementIds label not found.", true);
+            return res;
+        }
+        if (elemIds.empty()) {
+            Report::WarnErrReport("Entity elementIds must not be empty.", true);
+            return res;
+        }
+        if (elemIds.size() != 1) {
+            Report::WarnErrReport("Entity must contain a single elementId.", true);
+            return res;
+        }
+        bool cRf = false;
+        Cell::cell_region_t cR = mesh.getCellRegion(int(elemIds[0]), cRf);
+        if (!cRf) {
+            Report::WarnErrReport("Entity elementId " + std::to_string(elemIds[0]) + " not found.", true);
+            return res;
+        }
+        for (auto& iv : cR.intervals) {
+            if (iv.getType() == Cell::CELL_TYPE_VOXEL) res.push_back(iv);
+        }
+        if (res.size() != 1) {
+            Report::WarnErrReport("Entity must contain a single cell region defining a volume.", true);
         }
         return res;
     }
@@ -262,10 +386,69 @@ namespace smbjson {
         if (str == jlbl::J_BND_TYPE_PMC) return NFDE::F_PMC;
         if (str == jlbl::J_BND_TYPE_PML) return NFDE::F_PML;
         if (str == jlbl::J_BND_TYPE_PERIODIC) return NFDE::F_PER;
+        return NFDE::F_MUR;
     }
 
     void parser_t::readThinWires(NFDE::ThinWires_t& res, NFDE::MasSondas_t& sonda) {
-        // Stub: thin wires parsing deferred (MTLN feature)
+        auto mwires = getMaterialAssociations({
+            std::string(jlbl::J_MAT_TYPE_SHIELDED_MULTIWIRE) + "  ",
+            jlbl::J_MAT_TYPE_UNSHIELDED_MULTIWIRE
+        }, {});
+        if (!mwires.empty()) {
+            Report::WarnErrReport(
+                "ERROR: shieldedMultiwires and unshieldedMultiwires can only be defined if compiled with MTLN",
+                true);
+        }
+
+        wireMAs_ = getMaterialAssociations({jlbl::J_MAT_TYPE_WIRE}, {});
+        wireRes_ = &res;
+        wireNGlobal_ = 0;
+        wireNNodes_ = 0;
+        wireNodeCoordIds_.assign(std::max<size_t>(1, 2 * wireMAs_.size()), 0);
+        wireNodeNodeIdx_.assign(std::max<size_t>(1, 2 * wireMAs_.size()), 0);
+
+        int nTw = 0;
+        for (const auto& mA : wireMAs_) {
+            if (isThinWire(mA)) nTw++;
+        }
+        res.tw.resize(nTw);
+        res.n_tw = nTw;
+        res.n_tw_max = nTw;
+
+        int j = 0;
+        for (const auto& mA : wireMAs_) {
+            if (isThinWire(mA)) {
+                res.tw[j] = readThinWire(mA);
+                j++;
+            }
+        }
+
+        jmod::json_value* allProbes = nullptr;
+        bool probesFound = false;
+        core->get(root, jlbl::J_PROBES, allProbes, probesFound);
+        if (probesFound) {
+            auto wireProbePs = jsonValueFilterByKeyValue(allProbes, jlbl::J_TYPE, jlbl::J_PR_TYPE_WIRE);
+            int nWireProbes = static_cast<int>(wireProbePs.size());
+            if (nWireProbes > 0) {
+                int nExisting = sonda.length;
+                std::vector<NFDE::MasSonda_t> newCollection(nExisting + nWireProbes);
+                for (int k = 0; k < nExisting; ++k) newCollection[k] = sonda.collection[k];
+                for (int k = 0; k < nWireProbes; ++k) {
+                    newCollection[nExisting + k] = readWireProbe(wireProbePs[k]);
+                }
+                sonda.collection = std::move(newCollection);
+                sonda.length = nExisting + nWireProbes;
+                sonda.length_max = nExisting + nWireProbes;
+            }
+        }
+
+        for (const auto& probe : sonda.collection) {
+            if (static_cast<int>(probe.cordinates.size()) > sonda.len_cor_max) {
+                sonda.len_cor_max = static_cast<int>(probe.cordinates.size());
+            }
+        }
+
+        wireRes_ = nullptr;
     }
 
     parser_t::parser_t(const std::string& filename) {
@@ -442,8 +625,10 @@ namespace smbjson {
         std::vector<Cell::cell_interval_t> res(nIntervals);
         for (int i = 1; i <= nIntervals; ++i) {
             core->get_child(intervalsPlace, i, interval);
+            if (!interval) continue;
             std::vector<double> cellIni = getRealsAt(interval, "(1)");
             std::vector<double> cellEnd = getRealsAt(interval, "(2)");
+            if (cellIni.size() < 3 || cellEnd.size() < 3) continue;
             res[i-1].ini.cell[0] = cellIni[0];
             res[i-1].ini.cell[1] = cellIni[1];
             res[i-1].ini.cell[2] = cellIni[2];
@@ -493,9 +678,9 @@ namespace smbjson {
     NFDE::MatrizMedios_t parser_t::readMediaMatrix() {
         NFDE::MatrizMedios_t res;
         std::string P = std::string(jlbl::J_MESH) + "." + std::string(jlbl::J_GRID) + "." + jlbl::J_GRID_NUMBER_OF_CELLS;
-        res.totalX = getIntAt(root, P + ".(0)", 0) + 1;
-        res.totalY = getIntAt(root, P + ".(1)", 0) + 1;
-        res.totalZ = getIntAt(root, P + ".(2)", 0) + 1;
+        res.totalX = getIntAt(root, P + ".(1)", 0) + 1;
+        res.totalY = getIntAt(root, P + ".(2)", 0) + 1;
+        res.totalZ = getIntAt(root, P + ".(3)", 0) + 1;
         return res;
     }
 
@@ -503,9 +688,9 @@ namespace smbjson {
         NFDE::Desplazamiento_t res;
         std::string P = std::string(jlbl::J_MESH) + "." + std::string(jlbl::J_GRID);
         
-        int nX = getIntAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_NUMBER_OF_CELLS) + ".(0)", 0);
-        int nY = getIntAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_NUMBER_OF_CELLS) + ".(1)", 0);
-        int nZ = getIntAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_NUMBER_OF_CELLS) + ".(2)", 0);
+        int nX = getIntAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_NUMBER_OF_CELLS) + ".(1)", 0);
+        int nY = getIntAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_NUMBER_OF_CELLS) + ".(2)", 0);
+        int nZ = getIntAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_NUMBER_OF_CELLS) + ".(3)", 0);
 
         res.nX = nX;
         res.nY = nY;
@@ -533,9 +718,9 @@ namespace smbjson {
         assignDes(std::string(P) + "." + std::string(jlbl::J_GRID_STEPS) + ".y", res.desY, res.nY);
         assignDes(std::string(P) + "." + std::string(jlbl::J_GRID_STEPS) + ".z", res.desZ, res.nZ);
 
-        res.originx = getRealAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_ORIGIN) + ".(0)", 0.0);
-        res.originy = getRealAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_ORIGIN) + ".(1)", 0.0);
-        res.originz = getRealAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_ORIGIN) + ".(2)", 0.0);
+        res.originx = getRealAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_ORIGIN) + ".(1)", 0.0);
+        res.originy = getRealAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_ORIGIN) + ".(2)", 0.0);
+        res.originz = getRealAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_ORIGIN) + ".(3)", 0.0);
 
         res.mx1 = 0;
         res.my1 = 0;
@@ -571,7 +756,10 @@ namespace smbjson {
                 bool allPML = true;
                  for(int _pf=0; _pf<6; ++_pf) { if(res.tipoFrontera[_pf] != NFDE::F_PML) allPML = false; }
                  if (allPML) {
-                    // res.propiedadesPML = readPMLProperties(jlbl::J_BOUNDARY "." jlbl::J_BND_ALL);
+                    for (int _pf = 0; _pf < 6; ++_pf) {
+                        res.propiedadesPML[_pf] = readPMLProperties(
+                            std::string(jlbl::J_BOUNDARY) + "." + std::string(jlbl::J_BND_ALL));
+                    }
                 }
                 return res;
             }
@@ -588,7 +776,8 @@ namespace smbjson {
                 int j = labelToBoundaryPlace(placeLabels[i]);
                 res.tipoFrontera[j] = labelToBoundaryType(bdrType);
                 if (res.tipoFrontera[j] == NFDE::F_PML) {
-                    // res.propiedadesPML[j] = readPMLProperties(jlbl::J_BOUNDARY "." placeLabels[i]);
+                    res.propiedadesPML[j] = readPMLProperties(
+                        std::string(jlbl::J_BOUNDARY) + "." + placeLabels[i]);
                 }
             }
         }
@@ -621,50 +810,49 @@ namespace smbjson {
             {std::string("-") + jlbl::J_CONF_SUBTYPE_SURFACE, std::string(jlbl::J_ELEM_TYPE_CELL) + "    ", std::string("-") + jlbl::J_CONF_SUBTYPE_VOLUME + " "}
         );
         
-        if (mAs.empty()) { 
+        if (mAs.empty()) {
             std::vector<NFDE::coords_t> emptyCoords;
-            // appendRegion logic simplified for empty case
-            res.nLins = 0; res.nLins_max = 0;
-            res.nSurfs = 0; res.nSurfs_max = 0;
-            res.nVols = 0; res.nVols_max = 0;
+            appendRegion(res.Lins, res.nLins, res.nLins_max, emptyCoords);
+            appendRegion(res.Surfs, res.nSurfs, res.nSurfs_max, emptyCoords);
+            appendRegion(res.Vols, res.nVols, res.nVols_max, emptyCoords);
             return res;
         }
-      
+
         for (size_t i = 0; i < mAs.size(); ++i) {
             std::vector<NFDE::coords_t> cs;
             matAssToCoords(mAs[i], cs, Cell::CELL_TYPE_LINEL);
-            // appendRegion(res.Lins, res.nLins, res.nLins_max, cs);
+            appendRegion(res.Lins, res.nLins, res.nLins_max, cs);
             matAssToCoords(mAs[i], cs, Cell::CELL_TYPE_SURFEL);
-            // appendRegion(res.Surfs, res.nSurfs, res.nSurfs_max, cs);
+            appendRegion(res.Surfs, res.nSurfs, res.nSurfs_max, cs);
             matAssToCoords(mAs[i], cs, Cell::CELL_TYPE_VOXEL);
-            // appendRegion(res.Vols, res.nVols, res.nVols_max, cs);
-            // deallocate(cs);
+            appendRegion(res.Vols, res.nVols, res.nVols_max, cs);
         }
         return res;
     }
 
     void parser_t::matAssToCoords(const materialAssociation_t& mA, std::vector<NFDE::coords_t>& res, int cellType) {
-        std::vector<NFDE::coords_t> newCoords;
         int nCs = 0;
-        
-        // Precount
         for (size_t e = 0; e < mA.elementIds.size(); ++e) {
-            bool cRf; Cell::cell_region_t cR = mesh.getCellRegion(int(mA.elementIds[e]), cRf);
-            // newCoords = cellRegionToCoords(cR, cellType);
-            // nCs += newCoords.size();
+            bool cRf = false;
+            Cell::cell_region_t cR = mesh.getCellRegion(int(mA.elementIds[e]), cRf);
+            if (cRf) {
+                nCs += static_cast<int>(Pt::cellRegionToCoords(cR, cellType).size());
+            }
         }
 
-        // Fills coords
-        int jIni = 0;
         res.resize(nCs);
+        int jIni = 0;
         for (size_t e = 0; e < mA.elementIds.size(); ++e) {
-            bool cRf; Cell::cell_region_t cR = mesh.getCellRegion(int(mA.elementIds[e]), cRf);
+            bool cRf = false;
+            Cell::cell_region_t cR = mesh.getCellRegion(int(mA.elementIds[e]), cRf);
+            if (!cRf) continue;
             std::string tagName = buildTagName(mA.materialId, mA.elementIds[e]);
-            // newCoords = cellRegionToCoords(cR, cellType, tag=tagName);
+            auto newCoords = Pt::cellRegionToCoords(cR, cellType, tagName);
             if (newCoords.empty()) continue;
-            int jEnd = jIni + newCoords.size() - 1;
-            // res[jIni:jEnd] = newCoords;
-            jIni = jEnd + 1; 
+            for (size_t k = 0; k < newCoords.size(); ++k) {
+                res[jIni + static_cast<int>(k)] = newCoords[k];
+            }
+            jIni += static_cast<int>(newCoords.size());
         }
     }
 
@@ -753,7 +941,8 @@ namespace smbjson {
         res.n_C1P = 0;
         std::vector<NFDE::coords_t> c2p;
         matAssToCoords(mA, c2p, cellType);
-        res.n_C2P = c2p.size();
+        res.c2P = c2p;
+        res.n_C2P = static_cast<int32_t>(c2p.size());
         
         IdTable::json_value_ptr_t matPtr = matTable.getId(mA.materialId);
         res.sigma  = getRealAt(matPtr, jlbl::J_MAT_ELECTRIC_CONDUCTIVITY, 0.0);
@@ -769,7 +958,8 @@ namespace smbjson {
         res.n_C1P = 0;
         std::vector<NFDE::coords_t> c2p;
         matAssToCoords(mA, c2p, cellType);
-        res.n_C2P = c2p.size();
+        res.c2P = c2p;
+        res.n_C2P = static_cast<int32_t>(c2p.size());
         
         IdTable::json_value_ptr_t matPtr = matTable.getId(mA.materialId);
         
@@ -807,8 +997,9 @@ namespace smbjson {
 
     bool parser_t::containsCellRegionsWithType(const materialAssociation_t& mA, int cellType) {
         for (size_t e = 0; e < mA.elementIds.size(); ++e) {
-            bool cRf; Cell::cell_region_t cR = mesh.getCellRegion(int(mA.elementIds[e]), cRf);
-            // if (cellRegionToCoords(cR, cellType).size() != 0) return true;
+            bool cRf = false;
+            Cell::cell_region_t cR = mesh.getCellRegion(int(mA.elementIds[e]), cRf);
+            if (cRf && !Pt::cellRegionToCoords(cR, cellType).empty()) return true;
         }
         return false;
     }
@@ -878,17 +1069,17 @@ namespace smbjson {
             res.sigma[i] = getRealAt(layer, jlbl::J_MAT_ELECTRIC_CONDUCTIVITY, 0.0);
             res.sigmam[i] = getRealAt(layer, jlbl::J_MAT_MAGNETIC_CONDUCTIVITY, 0.0);
             bool hasAbsPermittivity = false;
-            res.eps[i] = getRealAt(layer, jlbl::J_MAT_ABS_PERMITTIVITY, hasAbsPermittivity);
+            res.eps[i] = getRealAt(layer, jlbl::J_MAT_ABS_PERMITTIVITY, 0.0, &hasAbsPermittivity);
             if (!hasAbsPermittivity) {
                 res.eps[i] = getRealAt(layer, jlbl::J_MAT_REL_PERMITTIVITY, 1.0) * NFDE::EPSILON_VACUUM;
             }
             bool hasAbsPermeability = false;
-            res.mu[i] = getRealAt(layer, jlbl::J_MAT_ABS_PERMEABILITY, hasAbsPermeability);
+            res.mu[i] = getRealAt(layer, jlbl::J_MAT_ABS_PERMEABILITY, 0.0, &hasAbsPermeability);
             if (!hasAbsPermeability) {
                 res.mu[i] = getRealAt(layer, jlbl::J_MAT_REL_PERMEABILITY, 1.0) * NFDE::MU_VACUUM;
             }
             bool found = false;
-            res.thk[i] = getRealAt(layer, jlbl::J_MAT_MULTILAYERED_SURF_THICKNESS, found);
+            res.thk[i] = getRealAt(layer, jlbl::J_MAT_MULTILAYERED_SURF_THICKNESS, 0.0, &found);
             if (!found) {
                 Report::WarnErrReport("ERROR reading lossy thin surface: jlbl::J_MAT_MULTILAYERED_SURF_THICKNESS in layer not found.", true);
             }
@@ -1094,23 +1285,25 @@ namespace smbjson {
         ff->fstop = domain.fstop;
         ff->fstep = domain.fstep;
 
-        {
+        if (domain.hasTransferFunction) {
+            ff->FileNormalize = domain.filename;
+        } else {
             bool transferFunctionFound = false;
-            std::string fn = getStrAt(p, std::string(jlbl::J_PR_DOMAIN) + jlbl::J_PR_DOMAIN_MAGNITUDE_FILE, "");
+            std::string fn = getStrAt(p, std::string(jlbl::J_PR_DOMAIN) + "." + jlbl::J_PR_DOMAIN_MAGNITUDE_FILE,
+                                      " ", &transferFunctionFound);
             if (!transferFunctionFound) {
                 jmod::json_value* sources = nullptr;
                 bool sourcesFound = false;
                 core->get(root, jlbl::J_SOURCES, sources, sourcesFound);
-                if (sourcesFound) {
-                    if (core->count(sources) == 1) {
-                        jmod::json_value* src = nullptr;
-                        core->get_child(sources, 1, src);
-                        fn = getStrAt(src, jlbl::J_SRC_MAGNITUDE_FILE, "");
-                    }
+                if (sourcesFound && core->count(sources) == 1) {
+                    jmod::json_value* src = nullptr;
+                    core->get_child(sources, 1, src);
+                    fn = getStrAt(src, jlbl::J_SRC_MAGNITUDE_FILE, " ", &transferFunctionFound);
                 }
             }
-
             if (transferFunctionFound) {
+                while (!fn.empty() && (fn.front() == ' ' || fn.front() == '\t')) fn.erase(fn.begin());
+                while (!fn.empty() && (fn.back() == ' ' || fn.back() == '\t')) fn.pop_back();
                 ff->FileNormalize = fn;
             } else {
                 ff->FileNormalize = " ";
@@ -1122,24 +1315,18 @@ namespace smbjson {
         }
 
         {
-            // nfdeCoords = Pt::cellIntervalsToCoords(getSingleVolumeInElementsIds(p));
-            // ff->n_cord = 2;
-            // ff->i.resize(2);
-            // ff->j.resize(2);
-            // ff->k.resize(2);
-            // ff->node.clear();
-            // ff->i[0] = nfdeCoords[0].Xi;
-            // ff->i[1] = nfdeCoords[0].Xe;
-            // ff->j[0] = nfdeCoords[0].Yi;
-            // ff->j[1] = nfdeCoords[0].Ye;
-            // ff->k[0] = nfdeCoords[0].Zi;
-            // ff->k[1] = nfdeCoords[0].Ze;
+            std::vector<NFDE::coords_t> nfdeCoords =
+                Pt::cellIntervalsToCoords(getSingleVolumeInElementsIds(p));
+            ff->n_cord = 2;
+            ff->n_cord_max = 2;
+            ff->i = {nfdeCoords[0].Xi, nfdeCoords[0].Xe};
+            ff->j = {nfdeCoords[0].Yi, nfdeCoords[0].Ye};
+            ff->K = {nfdeCoords[0].Zi, nfdeCoords[0].Ze};
+            ff->node.clear();
         }
 
-        {
-            // readDirection(p, jlbl::J_PR_FAR_FIELD_PHI, ff->phistart, ff->phistop, ff->phistep);
-            // readDirection(p, jlbl::J_PR_FAR_FIELD_THETA, ff->thetastart, ff->thetastop, ff->thetastep);
-        }
+        readDirection(p, jlbl::J_PR_FAR_FIELD_PHI, ff->phistart, ff->phistop, ff->phistep);
+        readDirection(p, jlbl::J_PR_FAR_FIELD_THETA, ff->thetastart, ff->thetastop, ff->thetastep);
         return res;
     }
 
@@ -1338,7 +1525,7 @@ namespace smbjson {
         res.fstart = domain.fstart;
         res.fstep = domain.fstep;
         res.fstop = domain.fstop;
-        if (!domain.filename.empty()) {
+        if (domain.hasTransferFunction) {
             res.filename = domain.filename;
         } else {
             res.filename = " ";
@@ -1448,7 +1635,7 @@ namespace smbjson {
         res.fstart = domain.fstart;
         res.fstep = domain.fstep;
         res.fstop = domain.fstop;
-        if (!domain.filename.empty()) {
+        if (domain.hasTransferFunction) {
             res.FileNormalize = domain.filename;
         } else {
             res.FileNormalize = " ";
@@ -1517,15 +1704,14 @@ namespace smbjson {
         core->get(p, jlbl::J_PR_MOVIE_COMPONENT, compsPtr, componentsFound);
         
         res.cordinates.resize(1);
+        res.cordinates[0] = cs[0];
         std::string component;
         if (componentsFound) {
             component = getStrAt(compsPtr, "");
-            res.cordinates[0] = cs[0];
-            res.cordinates[0].Or = buildVolProbeType(fieldType, component);
         } else {
             component = jlbl::J_DIR_M;
-            res.cordinates[0].Or = buildVolProbeType(fieldType, component);
         }
+        res.cordinates[0].Or = buildVolProbeType(fieldType, component);
         res.len_cor = res.cordinates.size();
         
         res.outputrequest = getStrAt(p, jlbl::J_NAME, " ");
@@ -1562,7 +1748,7 @@ namespace smbjson {
         res.fstart = domain.fstart;
         res.fstep = domain.fstep;
         res.fstop = domain.fstop;
-        if (!domain.filename.empty()) {
+        if (domain.hasTransferFunction) {
             res.filename = domain.filename;
         } else {
             res.filename = " ";
@@ -1599,21 +1785,51 @@ namespace smbjson {
         NFDE::ThinSlot_t res;
         IdTable::json_value_ptr_t mat = matTable.getId(mA.materialId);
         bool found = false;
-        res.width = getRealAt(mat, jlbl::J_MAT_THINSLOT_WIDTH, found);
+        res.width = getRealAt(mat, jlbl::J_MAT_THINSLOT_WIDTH, 0.0, &found);
         if (!found) {
             Report::WarnErrReport("Missing thin slot width for material " + std::to_string(mA.materialId), true);
         }
         std::vector<NFDE::coords_t> coords;
         matAssToCoords(mA, coords, Cell::CELL_TYPE_LINEL);
         coordsToThinSlotComp(coords, res.tgc);
+        res.n_tgc = static_cast<int32_t>(res.tgc.size());
         return res;
     }
 
     void parser_t::coordsToThinSlotComp(const std::vector<NFDE::coords_t>& cs,
                                          std::vector<NFDE::ThinSlotComp_t>& tc) {
-        tc.resize(cs.size());
-        for (size_t i = 0; i < cs.size(); ++i) {
-            tc[i] = buildBaseThinSlotComponent(cs[i]);
+        int nTgc = 0;
+        for (const auto& c : cs) {
+            nTgc += (c.Xe - c.Xi + 1) * (c.Ye - c.Yi + 1) * (c.Ze - c.Zi + 1);
+        }
+        tc.resize(nTgc);
+        int j = 0;
+        for (const auto& c : cs) {
+            switch (std::abs(c.Or)) {
+            case NFDE::iEx:
+                for (int k = 1; k <= c.Xe - c.Xi + 1; ++k) {
+                    tc[j] = buildBaseThinSlotComponent(c);
+                    tc[j].i = c.Xi + k - 1;
+                    ++j;
+                }
+                break;
+            case NFDE::iEy:
+                for (int k = 1; k <= c.Ye - c.Yi + 1; ++k) {
+                    tc[j] = buildBaseThinSlotComponent(c);
+                    tc[j].j = c.Yi + k - 1;
+                    ++j;
+                }
+                break;
+            case NFDE::iEz:
+                for (int k = 1; k <= c.Ze - c.Zi + 1; ++k) {
+                    tc[j] = buildBaseThinSlotComponent(c);
+                    tc[j].K = c.Zi + k - 1;
+                    ++j;
+                }
+                break;
+            default:
+                break;
+            }
         }
     }
 
@@ -1622,7 +1838,344 @@ namespace smbjson {
         res.i = cs.Xi;
         res.j = cs.Yi;
         res.K = cs.Zi;
-        res.Or = cs.Or;
+        res.dir = std::abs(cs.Or);
+        res.tag = cs.tag;
+        return res;
+    }
+
+    NFDE::FronteraPML_t parser_t::readPMLProperties(const std::string& path) {
+        NFDE::FronteraPML_t res;
+        res.numCapas = getIntAt(root, path + "." + std::string(jlbl::J_BND_PML_LAYERS), 8);
+        res.orden = getRealAt(root, path + "." + std::string(jlbl::J_BND_PML_ORDER), 2.0);
+        res.refl = getRealAt(root, path + "." + std::string(jlbl::J_BND_PML_REFLECTION), 0.001);
+        return res;
+    }
+
+    int parser_t::strToTerminationType(const std::string& label) {
+        if (label == jlbl::J_MAT_TERM_TYPE_OPEN) return NFDE::MATERIAL_CONS;
+        if (label == jlbl::J_MAT_TERM_TYPE_SERIES) return NFDE::SERIES_CONS;
+        if (label == jlbl::J_MAT_TERM_TYPE_SHORT) return NFDE::MATERIAL_CONS;
+        return NFDE::MATERIAL_CONS;
+    }
+
+    parser_t::thinwiretermination_t parser_t::readThinWireTermination(const jmod::json_value* terminal) {
+        thinwiretermination_t res;
+        jmod::json_value* tms = nullptr;
+        bool found = false;
+        core->get(terminal, jlbl::J_MAT_TERM_TERMINATIONS, tms, found);
+        if (!found) {
+            Report::WarnErrReport("Error reading wire terminal. terminations not found.", true);
+        }
+        if (core->count(tms) != 1) {
+            Report::WarnErrReport("Only terminals with a single termination are allowed for a wire.", true);
+        }
+        jmod::json_value* tm = nullptr;
+        core->get_child(tms, 1, tm);
+        bool labelFound = false;
+        std::string label = getStrAt(tm, jlbl::J_TYPE, "", &labelFound);
+        res.terminationType = strToTerminationType(label);
+        if (!labelFound) {
+            Report::WarnErrReport("Error reading wire terminal. termination must specify a type.", true);
+        }
+        if (label == jlbl::J_MAT_TERM_TYPE_OPEN || label == jlbl::J_MAT_TERM_TYPE_SHORT) {
+            res.r = 0.0; res.l = 0.0; res.c = 0.0;
+        } else if (label == jlbl::J_MAT_TERM_TYPE_SERIES) {
+            res.r = getRealAt(tm, jlbl::J_MAT_TERM_RESISTANCE, 0.0);
+            res.l = getRealAt(tm, jlbl::J_MAT_TERM_INDUCTANCE, 0.0);
+            res.c = getRealAt(tm, jlbl::J_MAT_TERM_CAPACITANCE, 1e22);
+        } else {
+            Report::WarnErrReport(
+                "Error reading wire terminal. Holland wires only support open, short, and series terminations",
+                true);
+        }
+        return res;
+    }
+
+    bool parser_t::isThinWire(const materialAssociation_t& mA) {
+        if (mA.elementIds.size() != 1) {
+            Report::WarnErrReport("Thin wires must be defined by a single element id.", true);
+        }
+        bool found = false;
+        auto pl = mesh.getPolyline(mA.elementIds[0], found);
+        if (!found || !mesh.arePolylineSegmentsStructured(pl)) {
+            Report::WarnErrReport("Thin wires must be defined by a structured polyline.", true);
+        }
+        return true;
+    }
+
+    int parser_t::getOrAssignNodeIndex(int coordId) {
+        for (int k = 0; k < wireNNodes_; ++k) {
+            if (wireNodeCoordIds_[k] == coordId) {
+                return wireNodeNodeIdx_[k];
+            }
+        }
+        wireNGlobal_++;
+        wireNNodes_++;
+        if (wireNNodes_ > static_cast<int>(wireNodeCoordIds_.size())) {
+            wireNodeCoordIds_.resize(wireNNodes_);
+            wireNodeNodeIdx_.resize(wireNNodes_);
+        }
+        wireNodeCoordIds_[wireNNodes_ - 1] = coordId;
+        wireNodeNodeIdx_[wireNNodes_ - 1] = wireNGlobal_;
+        return wireNGlobal_;
+    }
+
+    int parser_t::orientFieldFromGenerator(const std::vector<Mesh::linel_t>& linels, int position) {
+        int orient = linels[position - 1].orientation;
+        if (position == 1) {
+            return (orient >= 0) ? 1 : -1;
+        }
+        if (position == static_cast<int>(linels.size())) {
+            return (orient >= 0) ? -1 : 1;
+        }
+        return (orient >= 0) ? 1 : -1;
+    }
+
+    int parser_t::findSourcePositionInLinels(const std::vector<int>& srcElemIds,
+                                              const std::vector<Mesh::linel_t>& linels) {
+        bool found = false;
+        auto node = mesh.getNode(srcElemIds[0], found);
+        if (!found) {
+            Report::WarnErrReport("Source could not be found in linels.", true);
+        }
+        auto pixel = mesh.nodeToPixel(node);
+        for (size_t i = 0; i < linels.size(); ++i) {
+            if (linels[i].tag == pixel.tag) {
+                return static_cast<int>(i + 1);
+            }
+        }
+        Report::WarnErrReport("Source could not be found in linels.", true);
+        return 0;
+    }
+
+    std::vector<parser_t::generator_description_t> parser_t::readGeneratorOnThinWire(
+        const std::vector<Mesh::linel_t>& linels, const std::vector<int>& plineElemIds) {
+        std::vector<generator_description_t> res(linels.size());
+        for (auto& g : res) {
+            g.srcfile = "None";
+            g.srctype = "None";
+            g.multiplier = 0.0;
+        }
+
+        jmod::json_value* sources = nullptr;
+        bool found = false;
+        core->get(root, jlbl::J_SOURCES, sources, found);
+        if (!found) return res;
+
+        auto genSrcs = jsonValueFilterByKeyValues(sources, jlbl::J_TYPE, {jlbl::J_SRC_TYPE_GEN});
+        if (genSrcs.empty()) return res;
+
+        for (auto* genPtr : genSrcs) {
+            std::vector<int> sourceElemIds = getIntsAt(genPtr, jlbl::J_ELEMENTIDS);
+            bool nodeFound = false;
+            auto srcNode = mesh.getNode(sourceElemIds[0], nodeFound);
+            bool plFound = false;
+            auto polylineCoords = mesh.getPolyline(plineElemIds[0], plFound);
+            if (!nodeFound || !plFound) continue;
+            bool inPolyline = false;
+            for (int cid : polylineCoords.coordIds) {
+                if (!srcNode.coordIds.empty() && cid == srcNode.coordIds[0]) {
+                    inPolyline = true;
+                    break;
+                }
+            }
+            if (!inPolyline) continue;
+
+            int position = findSourcePositionInLinels(sourceElemIds, linels);
+            if (!existsAt(genPtr, jlbl::J_SRC_MAGNITUDE_FILE)) {
+                Report::WarnErrReport("magnitudeFile of source missing", true);
+            }
+            std::string field = getStrAt(genPtr, jlbl::J_FIELD);
+            if (field == jlbl::J_FIELD_VOLTAGE) {
+                res[position - 1].srctype = "VOLT";
+            } else if (field == jlbl::J_FIELD_CURRENT) {
+                res[position - 1].srctype = "CURR";
+            } else {
+                Report::WarnErrReport(
+                    "Field block of source of type generator must be current or voltage", true);
+            }
+            res[position - 1].srcfile = getStrAt(genPtr, jlbl::J_SRC_MAGNITUDE_FILE);
+            res[position - 1].multiplier = static_cast<double>(orientFieldFromGenerator(linels, position));
+        }
+        return res;
+    }
+
+    NFDE::ThinWire_t parser_t::readThinWire(const materialAssociation_t& cable) {
+        NFDE::ThinWire_t res;
+        IdTable::json_value_ptr_t mat = matTable.getId(cable.materialId);
+        res.rad = getRealAt(mat, jlbl::J_MAT_WIRE_RADIUS, 0.0);
+        res.res = getRealAt(mat, jlbl::J_MAT_WIRE_RESISTANCE, 0.0);
+        res.ind = getRealAt(mat, jlbl::J_MAT_WIRE_INDUCTANCE, 0.0);
+        res.dispfile = "";
+        res.dispfile_LeftEnd = "";
+        res.dispfile_RightEnd = "";
+
+        {
+            IdTable::json_value_ptr_t terminal = matTable.getId(cable.initialTerminalId);
+            auto term = readThinWireTermination(terminal);
+            res.tl = term.terminationType;
+            res.R_LeftEnd = term.r;
+            res.L_LeftEnd = term.l;
+            res.C_LeftEnd = term.c;
+            res.dispfile_LeftEnd = "";
+        }
+        {
+            IdTable::json_value_ptr_t terminal = matTable.getId(cable.endTerminalId);
+            auto term = readThinWireTermination(terminal);
+            res.tr = term.terminationType;
+            res.R_RightEnd = term.r;
+            res.L_RightEnd = term.l;
+            res.C_RightEnd = term.c;
+            res.dispfile_RightEnd = "";
+        }
+
+        bool plFound = false;
+        auto polyline = mesh.getPolyline(cable.elementIds[0], plFound);
+        auto linels = mesh.polylineToLinels(polyline);
+
+        if (cable.hasTotalResistance) {
+            auto despl = readGrid();
+            double totalLength = 0.0;
+            for (const auto& linel : linels) {
+                double stepSize = 0.0;
+                int dir = std::abs(linel.orientation);
+                if (dir == Mesh::DIR_X) {
+                    stepSize = (despl.desX.size() == 1) ? despl.desX[0] : despl.desX[linel.cell[0]];
+                } else if (dir == Mesh::DIR_Y) {
+                    stepSize = (despl.desY.size() == 1) ? despl.desY[0] : despl.desY[linel.cell[1]];
+                } else if (dir == Mesh::DIR_Z) {
+                    stepSize = (despl.desZ.size() == 1) ? despl.desZ[0] : despl.desZ[linel.cell[2]];
+                }
+                totalLength += stepSize;
+            }
+            res.res = cable.totalResistance[0] / totalLength;
+        }
+
+        std::string tagLabel = buildTagName(cable.materialId, cable.elementIds[0]);
+        auto genDesc = readGeneratorOnThinWire(linels, cable.elementIds);
+
+        res.n_twc = static_cast<int32_t>(linels.size());
+        res.n_twc_max = res.n_twc;
+        res.twc.resize(linels.size());
+        res.LeftEnd = getOrAssignNodeIndex(polyline.coordIds.front());
+        res.RightEnd = getOrAssignNodeIndex(polyline.coordIds.back());
+
+        int baseGlobal = wireNGlobal_;
+        for (size_t i = 0; i < linels.size(); ++i) {
+            res.twc[i].srcfile = genDesc[i].srcfile;
+            res.twc[i].srctype = genDesc[i].srctype;
+            res.twc[i].m = genDesc[i].multiplier;
+            res.twc[i].i = linels[i].cell[0];
+            res.twc[i].j = linels[i].cell[1];
+            res.twc[i].K = linels[i].cell[2];
+            res.twc[i].d = std::abs(linels[i].orientation);
+            res.twc[i].nd = baseGlobal + static_cast<int>(i) + 1;
+            res.twc[i].tag = tagLabel;
+        }
+        wireNGlobal_ = baseGlobal + static_cast<int>(linels.size());
+        return res;
+    }
+
+    void parser_t::setDomainOfWireProbe(NFDE::MasSonda_t& res, const domain_t& domain) {
+        res.tstart = domain.tstart;
+        res.tstep = domain.tstep;
+        res.tstop = domain.tstop;
+        res.fstart = domain.fstart;
+        res.fstep = domain.fstep;
+        res.fstop = domain.fstop;
+        res.filename = domain.filename.empty() ? " " : domain.filename;
+        res.type1 = domain.type1;
+        res.type2 = domain.type2;
+        if (domain.isLogarithmicFrequencySpacing) {
+            appendLogSufix(res.outputrequest);
+        }
+    }
+
+    int parser_t::getSegmentNdWhichMatchesCoord(int coordId, const Mesh::coordinate_t& probe_coord) {
+        for (size_t k = 0; k < wireMAs_.size(); ++k) {
+            bool plFound = false;
+            auto polyline = mesh.getPolyline(wireMAs_[k].elementIds[0], plFound);
+            if (!plFound) continue;
+            for (int cid : polyline.coordIds) {
+                if (cid != coordId) continue;
+                auto linels = mesh.polylineToLinels(polyline);
+                int n_linels = static_cast<int>(linels.size());
+                std::vector<Mesh::coordinate_t> linelCoords(n_linels + 1);
+                for (int i = 0; i < n_linels; ++i) {
+                    linelCoords[i].position[0] = linels[i].cell[0];
+                    linelCoords[i].position[1] = linels[i].cell[1];
+                    linelCoords[i].position[2] = linels[i].cell[2];
+                    if (linels[i].orientation < 0) {
+                        int orDir = std::abs(linels[i].orientation);
+                        linelCoords[i].position[orDir - 1] += 1.0;
+                    }
+                }
+                int orDir = linels[n_linels - 1].orientation;
+                linelCoords[n_linels] = linelCoords[n_linels - 1];
+                linelCoords[n_linels].position[std::abs(orDir) - 1] +=
+                    (orDir > 0) ? 1.0 : -1.0;
+
+                int bestIdx = 0;
+                double bestDist = 1e30;
+                for (int i = 0; i <= n_linels; ++i) {
+                    double dx = linelCoords[i].position[0] - probe_coord.position[0];
+                    double dy = linelCoords[i].position[1] - probe_coord.position[1];
+                    double dz = linelCoords[i].position[2] - probe_coord.position[2];
+                    double dist = std::sqrt(dx * dx + dy * dy + dz * dz);
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        bestIdx = i;
+                    }
+                }
+                int local_idx = std::min(bestIdx + 1, n_linels);
+                if (wireRes_ && k < wireRes_->tw.size()) {
+                    return wireRes_->tw[k].twc[local_idx - 1].nd;
+                }
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+    NFDE::MasSonda_t parser_t::readWireProbe(const jmod::json_value* p) {
+        NFDE::MasSonda_t res;
+        bool nameFound = false;
+        std::string outputName = getStrAt(p, jlbl::J_NAME, "", &nameFound);
+        if (!nameFound) {
+            Report::WarnErrReport("Wire probes must define a name.", true);
+        }
+        res.outputrequest = outputName;
+        setDomainOfWireProbe(res, getDomain(p, jlbl::J_PR_DOMAIN));
+
+        bool elementIdsFound = false;
+        std::vector<int> elemIds = getIntsAt(p, jlbl::J_ELEMENTIDS, &elementIdsFound);
+        if (!elementIdsFound) {
+            Report::WarnErrReport("Element ids entry not found for wire probe.", true);
+        }
+        if (elemIds.size() != 1) {
+            Report::WarnErrReport("Wire probe must contain a single element id.", true);
+        }
+
+        bool nodeFound = false;
+        auto node = mesh.getNode(elemIds[0], nodeFound);
+        bool coordFound = false;
+        auto probe_coord = mesh.getCoordinate(node.coordIds[0], coordFound);
+        std::string fieldLabel = getStrAt(p, jlbl::J_FIELD, jlbl::J_FIELD_VOLTAGE);
+
+        NFDE::coords_t cord;
+        cord.tag = outputName;
+        cord.Xi = getSegmentNdWhichMatchesCoord(node.coordIds[0], probe_coord);
+        cord.Yi = 0;
+        cord.Zi = 0;
+        if (fieldLabel == jlbl::J_FIELD_CURRENT) {
+            cord.Or = NFDE::NP_COR_WIRECURRENT;
+        } else if (fieldLabel == jlbl::J_FIELD_VOLTAGE) {
+            cord.Or = NFDE::NP_COR_DDP;
+        } else {
+            Report::WarnErrReport("Invalid field label for wire probe.", true);
+        }
+        res.cordinates = {cord};
+        res.len_cor = 1;
         return res;
     }
 

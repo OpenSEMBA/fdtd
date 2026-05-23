@@ -21,6 +21,5 @@ target_link_libraries(mtlnsolver PRIVATE
     ${BLAS_LIBRARIES}
     ngspice
     semba-types
-    semba-reports
     ${MPI_CXX_LIBRARIES}
 )

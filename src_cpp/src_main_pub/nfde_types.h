@@ -13,13 +13,15 @@
 // Assuming conformal_types_m provides triangle_t, interval_t, bufsize
 // #include "conformal_types_m.hpp"
 
-// Assuming mtln_types_m is used if CompileWithMTLN is defined
-// #ifdef CompileWithMTLN
-// #include "mtln_types_m.hpp"
-// #endif
-
+#ifdef CompileWithMTLN
+#include "mtln_types.h"
+#endif
 
 namespace NFDETypes_m {
+
+#ifdef CompileWithMTLN
+using mtln_t = mtln_types_m::mtln_t;
+#endif
 
     using RK = double;
 

@@ -10,10 +10,14 @@
 #include "json_module.h"
 #include "json_kinds.h"
 #include "conformal_types.h"
+#ifdef CompileWithMTLN
+#include "mtln_types.h"
+#endif
 
 #include <string>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 #include <algorithm>
 #include <cmath>
 #include <numeric>
@@ -35,6 +39,21 @@ namespace Conf = conformal_types_m;
 namespace smbjson {
 
 class parser_t {
+public:
+    struct materialAssociation_t {
+        std::string name;
+        int materialId = 0;
+        std::vector<int> elementIds;
+        std::string matAssType;
+        int initialTerminalId = -1;
+        int endTerminalId = -1;
+        int initialConnectorId = -1;
+        int endConnectorId = -1;
+        int containedWithinElementId = -1;
+        std::vector<double> totalResistance;
+        bool hasTotalResistance = false;
+    };
+
 private:
     std::string filename;
     jmod::json_file* jsonfile = nullptr;
@@ -51,27 +70,23 @@ private:
         std::string srctype, srcfile;
         double multiplier = 1.0;
     };
-    struct materialAssociation_t {
-        std::string name;
-        int materialId = 0;
-        std::vector<int> elementIds;
-        std::string matAssType;
-        int initialTerminalId = -1;
-        int endTerminalId = -1;
-        int initialConnectorId = -1;
-        int endConnectorId = -1;
-        int containedWithinElementId = -1;
-        std::vector<double> totalResistance;
-        bool hasTotalResistance = false;
-    };
     struct domain_t {
         double tstart = 0.0, tstop = 0.0, tstep = 0.0;
         double fstart = 0.0, fstop = 0.0, fstep = 0.0;
         std::string filename;
+        bool hasTransferFunction = false;
         int type1 = NFDE::NP_T1_PLAIN;
         int type2 = NFDE::NP_T2_TIME;
         bool isLogarithmicFrequencySpacing = false;
     };
+
+    // Transient state used while parsing thin wires
+    int wireNGlobal_ = 0;
+    int wireNNodes_ = 0;
+    std::vector<int> wireNodeCoordIds_;
+    std::vector<int> wireNodeNodeIdx_;
+    std::vector<materialAssociation_t> wireMAs_;
+    NFDE::ThinWires_t* wireRes_ = nullptr;
 
 public:
     bool isInitialized = false;
@@ -158,9 +173,9 @@ private:
     NFDE::ThinWire_t readThinWire(const materialAssociation_t& cable);
     int getOrAssignNodeIndex(int coordId);
     std::vector<generator_description_t> readGeneratorOnThinWire(
-        const std::vector<Cell::linel_t>& linels, const std::vector<int>& plineElemIds);
-    int orientFieldFromGenerator(const std::vector<Cell::linel_t>& linels, int position);
-    int findSourcePositionInLinels(const std::vector<int>& srcElemIds, const std::vector<Cell::linel_t>& linels);
+        const std::vector<Mesh::linel_t>& linels, const std::vector<int>& plineElemIds);
+    int orientFieldFromGenerator(const std::vector<Mesh::linel_t>& linels, int position);
+    int findSourcePositionInLinels(const std::vector<int>& srcElemIds, const std::vector<Mesh::linel_t>& linels);
     thinwiretermination_t readThinWireTermination(const jmod::json_value* terminal);
     int strToTerminationType(const std::string& label);
     bool isThinWire(const materialAssociation_t& mA);
@@ -175,6 +190,11 @@ private:
     bool isAssociatedWithElementLabel(const jmod::json_value* mAPtr, const std::vector<std::string>& elementLabels);
     std::string adaptName(const std::string& str);
     void checkIsValidName(const std::string& str);
+
+#ifdef CompileWithMTLN
+    class MtlnReader;
+    mtln_types_m::mtln_t readMTLN();
+#endif
 };
 
 } // namespace smbjson

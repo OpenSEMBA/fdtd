@@ -124,6 +124,7 @@ namespace parser_tools_m {
         return res;
     }
 
+
     inline std::vector<NFDETypes_m::coords_t> cellIntervalsToCoords(
         const std::vector<cells_m::cell_interval_t>& ivls, const std::string& tag = "") {
         std::vector<NFDETypes_m::coords_t> res;
@@ -152,6 +153,13 @@ namespace parser_tools_m {
             if (!tag.empty()) res[i].tag = tag;
         }
         return res;
+    }
+
+    inline std::vector<NFDETypes_m::coords_t> cellRegionToCoords(
+        const cells_m::cell_region_t& cellRegion, int cellType,
+        const std::string& tag = "") {
+        auto intervals = getIntervalsInCellRegions({cellRegion}, cellType);
+        return cellIntervalsToCoords(intervals, tag);
     }
 
     inline std::vector<NFDETypes_m::coords_scaled_t> coordsToScaledCoords(

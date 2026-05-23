@@ -6,6 +6,11 @@ add_library(smbjson
     smbjson.cpp
 )
 
+if(SEMBA_FDTD_ENABLE_MTLN)
+    target_sources(smbjson PRIVATE smbjson_mtln.cpp)
+    target_compile_definitions(smbjson PUBLIC CompileWithMTLN)
+endif()
+
 target_include_directories(smbjson PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CPP_SOURCE_ROOT}/src_cpp/src_main_pub

@@ -5,57 +5,35 @@
 #include <algorithm>
 #include <iostream>
 
-// Assuming these types are defined in conformal_types_m
-// We need to forward declare or include them. 
-// Since we don't have the content of conformal_types_m, we assume standard definitions 
-// or that they are available in the global namespace or another included header.
-// For the sake of translation, we assume:
-// - triangle_t has a method getSides() returning std::vector<side_t>
-// - side_t has members init and end of type coord_t
-// - coord_t has a method position(int) returning double, and isOnVertex(), isOnAnyFace(), getCell(), getFace(), getEdge(), isEquiv(side_t), normal
-// - NOT_ON_FACE, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z are integer constants
-
-// Placeholder definitions to make the code compile if conformal_types_m is not provided.
-// In a real scenario, these would come from the actual header.
-struct coord_t {
-    double position(int dim) const { return pos[dim]; }
-    void position(int dim, double val) { pos[dim] = val; }
-    bool isOnVertex() const { return false; } // Placeholder
-    bool isOnAnyFace() const { return false; } // Placeholder
-    std::vector<int> getCell() const { return {}; } // Placeholder
-    int getFace() const { return 0; } // Placeholder
-    int getEdge() const { return 0; } // Placeholder
-    bool isEquiv(const struct side_t& other) const { return false; } // Placeholder
-    double normal[3];
-    double pos[3];
-};
-
-struct side_t {
-    coord_t init;
-    coord_t end;
-    std::vector<side_t> getSides() const { return {}; } // Placeholder for triangle_t method
-    bool isOnAnyFace() const { return false; }
-    std::vector<int> getCell() const { return {}; }
-    int getFace() const { return 0; }
-    int getEdge() const { return 0; }
-    bool isEquiv(const side_t& other) const { return false; }
-};
-
-struct triangle_t {
-    std::vector<side_t> getSides() const { return {}; }
-    bool isOnFace(int face) const { return false; }
-};
-
-// Constants
-const int NOT_ON_FACE = -1;
-const int FACE_X = 0;
-const int FACE_Y = 1;
-const int FACE_Z = 2;
-const int EDGE_X = 0;
-const int EDGE_Y = 1;
-const int EDGE_Z = 2;
+#include "conformal_types.h"
 
 namespace geometry_m {
+
+    using namespace conformal_types_m;
+
+    bool positionsEqualTol(const std::vector<double>& a, const std::vector<double>& b) {
+        return a.size() == 3u && b.size() == 3u &&
+               std::abs(a[0] - b[0]) < POS_TOL && std::abs(a[1] - b[1]) < POS_TOL &&
+               std::abs(a[2] - b[2]) < POS_TOL;
+    }
+
+    double contourArea(const std::vector<side_t>& contour, int orientation = NOT_ON_FACE);
+    std::vector<side_t> getSidesOnFace(const std::vector<side_t>& sides, int face);
+    std::vector<side_t> buildSidesContour(const std::vector<side_t>& sides);
+    void addNewSides(std::vector<side_t>& sides, const std::vector<side_t>& new_sides);
+    bool isNewSide(const std::vector<side_t>& sides, const side_t& side);
+    void addNewSide(std::vector<side_t>& sides, const side_t& side);
+    std::vector<side_t> getSidesOnEdge(const std::vector<side_t>& sides, int edge);
+    std::vector<side_t> getPathOnFace(const std::vector<side_t>& sides);
+    std::vector<side_t> buildVertexToVertexContour(const std::vector<side_t>& inner_path);
+    std::vector<side_t> buildVertexToSideContour(const std::vector<side_t>& inner_path);
+    std::vector<side_t> buildSideToVertexContour(const std::vector<side_t>& inner_path);
+    std::vector<side_t> buildSideToSideContour(const std::vector<side_t>& inner_path);
+    std::vector<std::vector<int>> buildCorners(const side_t& side, int face);
+    int cornerIndex(const std::vector<std::vector<int>>& corners, const std::vector<double>& vertex);
+    side_t buildSide(const std::vector<double>& c1, const std::vector<double>& c2);
+    void addSide(std::vector<side_t>& sides, const side_t& side);
+    bool isClockwise(const side_t& side, int face);
 
     double getArea(const triangle_t& triangle) {
         std::vector<side_t> sides = triangle.getSides();
@@ -75,19 +53,19 @@ namespace geometry_m {
         double c;
         side_t res;
         for (int i = 0; i < (int)sides_copy.size(); ++i) {
-            if (sides_copy[i].init.position(edge) > sides_copy[i].end.position(edge)) { 
-                c = sides_copy[i].init.position(edge);
-                sides_copy[i].init.position(edge, sides_copy[i].end.position(edge));
-                sides_copy[i].end.position(edge, c);
+            if (sides_copy[i].init.position[edge - 1] > sides_copy[i].end.position[edge - 1]) { 
+                c = sides_copy[i].init.position[edge - 1];
+                sides_copy[i].init.position[edge - 1] = sides_copy[i].end.position[edge - 1];
+                sides_copy[i].end.position[edge - 1] = c;
             }
         }
         res = sides_copy[0];
         for (int i = 1; i < (int)sides_copy.size(); ++i) {
-            if (sides_copy[i].init.position(edge) < res.init.position(edge)) { 
-                res.init.position(edge, sides_copy[i].init.position(edge));
+            if (sides_copy[i].init.position[edge - 1] < res.init.position[edge - 1]) { 
+                res.init.position[edge - 1] = sides_copy[i].init.position[edge - 1];
             }
-            if (sides_copy[i].end.position(edge) > res.end.position(edge)) { 
-                res.end.position(edge, sides_copy[i].end.position(edge));
+            if (sides_copy[i].end.position[edge - 1] > res.end.position[edge - 1]) { 
+                res.end.position[edge - 1] = sides_copy[i].end.position[edge - 1];
             }
         }
         return res;
@@ -142,9 +120,7 @@ namespace geometry_m {
     bool isNewSide(const std::vector<side_t>& sides, const side_t& side) {
         bool result = true;
         for (int i = 0; i < (int)sides.size(); ++i) {
-            if (sides[i].init.isEquiv(side)) { // Assuming isEquiv is on coord_t or side_t. Based on context, likely side_t has isEquiv or coord_t does. 
-                // The Fortran code says sides(i)%isEquiv(side). side_t doesn't have isEquiv in my placeholder.
-                // Let's assume side_t has isEquiv.
+            if (sides[i].isEquiv(side)) {
                 result = false;
             }
         }
@@ -168,6 +144,9 @@ namespace geometry_m {
             res.clear();
         } else {
             std::vector<side_t> inner_path = getPathOnFace(sides);
+            if (inner_path.empty()) {
+                return res;
+            }
             coord_t init = inner_path[0].init;
             coord_t end = inner_path[inner_path.size()-1].end;
             if (init.isOnVertex() && end.isOnVertex()) { 
@@ -186,49 +165,45 @@ namespace geometry_m {
     std::vector<side_t> buildVertexToVertexContour(const std::vector<side_t>& inner_path) {
         std::vector<side_t> res;
         int mid_corner_idx;
-        std::vector<std::vector<double>> corners(3, std::vector<double>(4));
+        std::vector<std::vector<int>> corners;
 
         corners = buildCorners(inner_path[0], inner_path[0].getFace());
         
         res.resize(inner_path.size() + 2);
         for(size_t i=0; i<inner_path.size(); ++i) res[i] = inner_path[i];
         
-        // cornerIndex returns 1-based index in Fortran, so we need to adjust for 0-based C++
-        // mod(cornerIndex(...), 4) + 1 gives 1..4. 
-        // In C++, we want 0..3. So (cornerIndex(...) - 1) % 4.
-        int ci = cornerIndex(corners, inner_path[inner_path.size()-1].end.position); // Assuming position is accessible
-        // Wait, inner_path[inner_path.size()-1].end is a coord_t. 
-        // Let's assume coord_t has a method to get position as vector or we pass the vector.
-        // The Fortran code: cornerIndex(corners, inner_path(size(inner_path))%end%position)
-        // position is a function returning a real. But cornerIndex takes a real(3).
-        // So we need to extract the 3 coordinates.
         std::vector<double> vertex(3);
-        vertex[0] = inner_path[inner_path.size()-1].end.position(0);
-        vertex[1] = inner_path[inner_path.size()-1].end.position(1);
-        vertex[2] = inner_path[inner_path.size()-1].end.position(2);
+        vertex[0] = inner_path[inner_path.size()-1].end.position[0];
+        vertex[1] = inner_path[inner_path.size()-1].end.position[1];
+        vertex[2] = inner_path[inner_path.size()-1].end.position[2];
         
-        mid_corner_idx = (cornerIndex(corners, vertex) - 1) % 4; // 0-based index for corners(:, mid_corner_idx)
+        int corner_idx = cornerIndex(corners, vertex);
+        if (corner_idx < 0) {
+            corner_idx = 1;
+        }
+        // Fortran: mod(cornerIndex, 4) + 1 (1-based column) -> 0-based index corner_idx % 4
+        mid_corner_idx = corner_idx % 4;
         
         // buildSide takes two real(3) vectors
         std::vector<double> c1(3);
-        c1[0] = inner_path[inner_path.size()-1].end.position(0);
-        c1[1] = inner_path[inner_path.size()-1].end.position(1);
-        c1[2] = inner_path[inner_path.size()-1].end.position(2);
+        c1[0] = inner_path[inner_path.size()-1].end.position[0];
+        c1[1] = inner_path[inner_path.size()-1].end.position[1];
+        c1[2] = inner_path[inner_path.size()-1].end.position[2];
         
         std::vector<double> c2(3);
-        c2[0] = corners[0][mid_corner_idx];
-        c2[1] = corners[1][mid_corner_idx];
-        c2[2] = corners[2][mid_corner_idx];
+        c2[0] = static_cast<double>(corners[0][mid_corner_idx]);
+        c2[1] = static_cast<double>(corners[1][mid_corner_idx]);
+        c2[2] = static_cast<double>(corners[2][mid_corner_idx]);
         
         res[inner_path.size()] = buildSide(c1, c2);
         
-        c1[0] = corners[0][mid_corner_idx];
-        c1[1] = corners[1][mid_corner_idx];
-        c1[2] = corners[2][mid_corner_idx];
+        c1[0] = static_cast<double>(corners[0][mid_corner_idx]);
+        c1[1] = static_cast<double>(corners[1][mid_corner_idx]);
+        c1[2] = static_cast<double>(corners[2][mid_corner_idx]);
         
-        c2[0] = inner_path[0].init.position(0);
-        c2[1] = inner_path[0].init.position(1);
-        c2[2] = inner_path[0].init.position(2);
+        c2[0] = inner_path[0].init.position[0];
+        c2[1] = inner_path[0].init.position[1];
+        c2[2] = inner_path[0].init.position[2];
         
         res[inner_path.size() + 1] = buildSide(c1, c2);
         
@@ -236,185 +211,58 @@ namespace geometry_m {
     }
     
     std::vector<side_t> buildVertexToSideContour(const std::vector<side_t>& inner_path) {
-        std::vector<side_t> res;
         coord_t init = inner_path[0].init;
         coord_t end = inner_path[inner_path.size()-1].end;
-        std::vector<std::vector<double>> corners = buildCorners(inner_path[0], inner_path[0].getFace());
-        int idx = -1;
+        std::vector<std::vector<int>> corners = buildCorners(inner_path[0], inner_path[0].getFace());
+        int idx = 0;
 
-        res = inner_path;
-        
+        std::vector<side_t> res = inner_path;
+
         side_t cell_side;
-        for (int i = 0; i < 4; ++i) {
-            cell_side.init.position(0, corners[0][i]);
-            cell_side.init.position(1, corners[1][i]);
-            cell_side.init.position(2, corners[2][i]);
-            
-            int next_i = (i + 1) % 4;
-            cell_side.end.position(0, corners[0][next_i]);
-            cell_side.end.position(1, corners[1][next_i]);
-            cell_side.end.position(2, corners[2][next_i]);
-            
-            std::vector<int> cell = cell_side.getCell();
-            std::vector<int> floor_end(3);
-            floor_end[0] = std::floor(end.position(0));
-            floor_end[1] = std::floor(end.position(1));
-            floor_end[2] = std::floor(end.position(2));
-            
-            if (cell == floor_end && (cell_side.getEdge() == end.getEdge())) { 
+        for (int i = 1; i <= 4; ++i) {
+            const int col0 = i - 1;
+            const int col1 = i % 4;
+            cell_side.init.position[0] = static_cast<double>(corners[0][col0]);
+            cell_side.init.position[1] = static_cast<double>(corners[1][col0]);
+            cell_side.init.position[2] = static_cast<double>(corners[2][col0]);
+            cell_side.end.position[0] = static_cast<double>(corners[0][col1]);
+            cell_side.end.position[1] = static_cast<double>(corners[1][col1]);
+            cell_side.end.position[2] = static_cast<double>(corners[2][col1]);
+
+            const std::vector<int> cell = cell_side.getCell();
+            const std::vector<int> floor_end = {
+                static_cast<int>(std::floor(end.position[0])),
+                static_cast<int>(std::floor(end.position[1])),
+                static_cast<int>(std::floor(end.position[2])),
+            };
+
+            if (cell == floor_end && cell_side.getEdge() == end.getEdge()) {
                 idx = i;
                 break;
             }
         }
-        
-        std::vector<double> c1(3);
-        c1[0] = end.position(0);
-        c1[1] = end.position(1);
-        c1[2] = end.position(2);
-        
-        std::vector<double> c2(3);
-        int next_idx = (idx + 1) % 4;
-        c2[0] = corners[0][next_idx];
-        c2[1] = corners[1][next_idx];
-        c2[2] = corners[2][next_idx];
-        
-        addSide(res, buildSide(c1, c2));
-        
-        while (!(cell_side.getCell() == floor_end && cell_side.getEdge() == end.getEdge())) {
-             // Re-evaluate cell_side for the loop condition? 
-             // The Fortran code updates cell_side inside the loop.
-             // Let's replicate the logic.
-             
-             // Current cell_side is from the previous iteration or initial setup?
-             // In Fortran, cell_side is updated at the end of the loop.
-             // The condition checks the CURRENT cell_side.
-             // But wait, the loop condition is checked BEFORE the body.
-             // The first check uses the cell_side defined in the for-loop? No, that was local to the for-loop scope in C++ if declared there.
-             // In Fortran, cell_side is declared outside.
-             
-             // Let's restart the logic carefully.
-             // We need to track the current corner index.
-             int curr_idx = next_idx; // Start from the one we just added side to? 
-             // No, the next side to add is from corners(:, mod(idx,4)+1) to corners(:, mod(idx+1,4)+1).
-             // We already added side from end to corners(:, mod(idx,4)+1).
-             // Now we need to add sides along the edge until we hit init.
-             
-             // Let's use a variable for the current corner index.
-             int current_corner_idx = next_idx;
-             
-             while (true) {
-                 std::vector<double> start_c(3);
-                 start_c[0] = corners[0][current_corner_idx];
-                 start_c[1] = corners[1][current_corner_idx];
-                 start_c[2] = corners[2][current_corner_idx];
-                 
-                 int next_corner_idx = (current_corner_idx + 1) % 4;
-                 std::vector<double> end_c(3);
-                 end_c[0] = corners[0][next_corner_idx];
-                 end_c[1] = corners[1][next_corner_idx];
-                 end_c[2] = corners[2][next_corner_idx];
-                 
-                 cell_side.init.position(0, start_c[0]);
-                 cell_side.init.position(1, start_c[1]);
-                 cell_side.init.position(2, start_c[2]);
-                 cell_side.end.position(0, end_c[0]);
-                 cell_side.end.position(1, end_c[1]);
-                 cell_side.end.position(2, end_c[2]);
-                 
-                 std::vector<int> cell = cell_side.getCell();
-                 std::vector<int> floor_init(3);
-                 floor_init[0] = std::floor(init.position(0));
-                 floor_init[1] = std::floor(init.position(1));
-                 floor_init[2] = std::floor(init.position(2));
-                 
-                 if (cell == floor_init && cell_side.getEdge() == init.getEdge()) {
-                     break;
-                 }
-                 
-                 addSide(res, buildSide(start_c, end_c));
-                 current_corner_idx = next_corner_idx;
-             }
-             break; // Only one while loop needed
+
+        auto cornerPos = [&](int col0) {
+            return std::vector<double>{
+                static_cast<double>(corners[0][col0]),
+                static_cast<double>(corners[1][col0]),
+                static_cast<double>(corners[2][col0]),
+            };
+        };
+
+        addSide(res, buildSide(
+            std::vector<double>{end.position[0], end.position[1], end.position[2]},
+            cornerPos(idx % 4)));
+
+        while (cornerPos(idx % 4)[0] != init.position[0] ||
+               cornerPos(idx % 4)[1] != init.position[1] ||
+               cornerPos(idx % 4)[2] != init.position[2]) {
+            const int col0 = idx % 4;
+            const int col1 = (idx + 1) % 4;
+            addSide(res, buildSide(cornerPos(col0), cornerPos(col1)));
+            ++idx;
         }
-        
-        // The above logic is getting messy. Let's rewrite buildVertexToSideContour more cleanly.
-        res.clear();
-        res = inner_path;
-        
-        init = inner_path[0].init;
-        end = inner_path[inner_path.size()-1].end;
-        corners = buildCorners(inner_path[0], inner_path[0].getFace());
-        
-        int idx = -1;
-        side_t temp_side;
-        for (int i = 0; i < 4; ++i) {
-            temp_side.init.position(0, corners[0][i]);
-            temp_side.init.position(1, corners[1][i]);
-            temp_side.init.position(2, corners[2][i]);
-            int next_i = (i + 1) % 4;
-            temp_side.end.position(0, corners[0][next_i]);
-            temp_side.end.position(1, corners[1][next_i]);
-            temp_side.end.position(2, corners[2][next_i]);
-            
-            std::vector<int> cell = temp_side.getCell();
-            std::vector<int> floor_end(3);
-            floor_end[0] = std::floor(end.position(0));
-            floor_end[1] = std::floor(end.position(1));
-            floor_end[2] = std::floor(end.position(2));
-            
-            if (cell == floor_end && (temp_side.getEdge() == end.getEdge())) { 
-                idx = i;
-                break;
-            }
-        }
-        
-        std::vector<double> c1(3);
-        c1[0] = end.position(0);
-        c1[1] = end.position(1);
-        c1[2] = end.position(2);
-        
-        std::vector<double> c2(3);
-        int next_idx = (idx + 1) % 4;
-        c2[0] = corners[0][next_idx];
-        c2[1] = corners[1][next_idx];
-        c2[2] = corners[2][next_idx];
-        
-        addSide(res, buildSide(c1, c2));
-        
-        int curr = next_idx;
-        while (true) {
-            std::vector<double> start_c(3);
-            start_c[0] = corners[0][curr];
-            start_c[1] = corners[1][curr];
-            start_c[2] = corners[2][curr];
-            
-            int next_curr = (curr + 1) % 4;
-            std::vector<double> end_c(3);
-            end_c[0] = corners[0][next_curr];
-            end_c[1] = corners[1][next_curr];
-            end_c[2] = corners[2][next_curr];
-            
-            temp_side.init.position(0, start_c[0]);
-            temp_side.init.position(1, start_c[1]);
-            temp_side.init.position(2, start_c[2]);
-            temp_side.end.position(0, end_c[0]);
-            temp_side.end.position(1, end_c[1]);
-            temp_side.end.position(2, end_c[2]);
-            
-            std::vector<int> cell = temp_side.getCell();
-            std::vector<int> floor_init(3);
-            floor_init[0] = std::floor(init.position(0));
-            floor_init[1] = std::floor(init.position(1));
-            floor_init[2] = std::floor(init.position(2));
-            
-            if (cell == floor_init && temp_side.getEdge() == init.getEdge()) {
-                break;
-            }
-            
-            addSide(res, buildSide(start_c, end_c));
-            curr = next_curr;
-        }
-        
+
         return res;
     }
 
@@ -422,63 +270,66 @@ namespace geometry_m {
         std::vector<side_t> res;
         coord_t init = inner_path[0].init;
         coord_t end = inner_path[inner_path.size()-1].end;
-        std::vector<std::vector<double>> corners = buildCorners(inner_path[0], inner_path[0].getFace());
-        int idx = cornerIndex(corners, std::vector<double>{end.position(0), end.position(1), end.position(2)}) - 1; // 0-based
+        std::vector<std::vector<int>> corners = buildCorners(inner_path[0], inner_path[0].getFace());
+        int idx = cornerIndex(corners, std::vector<double>{end.position[0], end.position[1], end.position[2]}) - 1;
+        if (idx < 0) {
+            idx = 0;
+        }
 
         res = inner_path;
 
         side_t cell_side;
-        cell_side.init.position(0, corners[0][idx]);
-        cell_side.init.position(1, corners[1][idx]);
-        cell_side.init.position(2, corners[2][idx]);
+        cell_side.init.position[0] = static_cast<double>(corners[0][idx]);
+        cell_side.init.position[1] = static_cast<double>(corners[1][idx]);
+        cell_side.init.position[2] = static_cast<double>(corners[2][idx]);
         
         int next_idx = (idx + 1) % 4;
-        cell_side.end.position(0, corners[0][next_idx]);
-        cell_side.end.position(1, corners[1][next_idx]);
-        cell_side.end.position(2, corners[2][next_idx]);
+        cell_side.end.position[0] = static_cast<double>(corners[0][next_idx]);
+        cell_side.end.position[1] = static_cast<double>(corners[1][next_idx]);
+        cell_side.end.position[2] = static_cast<double>(corners[2][next_idx]);
         
         std::vector<int> floor_init(3);
-        floor_init[0] = std::floor(init.position(0));
-        floor_init[1] = std::floor(init.position(1));
-        floor_init[2] = std::floor(init.position(2));
+        floor_init[0] = static_cast<int>(std::floor(init.position[0]));
+        floor_init[1] = static_cast<int>(std::floor(init.position[1]));
+        floor_init[2] = static_cast<int>(std::floor(init.position[2]));
 
-        while (true) {
+        for (int step = 0; step < 4; ++step) {
             std::vector<int> cell = cell_side.getCell();
             if (cell == floor_init && cell_side.getEdge() == init.getEdge()) {
                 break;
             }
             
             std::vector<double> c1(3);
-            c1[0] = cell_side.init.position(0);
-            c1[1] = cell_side.init.position(1);
-            c1[2] = cell_side.init.position(2);
+            c1[0] = cell_side.init.position[0];
+            c1[1] = cell_side.init.position[1];
+            c1[2] = cell_side.init.position[2];
             
             std::vector<double> c2(3);
-            c2[0] = cell_side.end.position(0);
-            c2[1] = cell_side.end.position(1);
-            c2[2] = cell_side.end.position(2);
+            c2[0] = cell_side.end.position[0];
+            c2[1] = cell_side.end.position[1];
+            c2[2] = cell_side.end.position[2];
             
             addSide(res, buildSide(c1, c2));
             
             idx = next_idx;
             next_idx = (idx + 1) % 4;
-            cell_side.init.position(0, corners[0][idx]);
-            cell_side.init.position(1, corners[1][idx]);
-            cell_side.init.position(2, corners[2][idx]);
-            cell_side.end.position(0, corners[0][next_idx]);
-            cell_side.end.position(1, corners[1][next_idx]);
-            cell_side.end.position(2, corners[2][next_idx]);
+            cell_side.init.position[0] = static_cast<double>(corners[0][idx]);
+            cell_side.init.position[1] = static_cast<double>(corners[1][idx]);
+            cell_side.init.position[2] = static_cast<double>(corners[2][idx]);
+            cell_side.end.position[0] = static_cast<double>(corners[0][next_idx]);
+            cell_side.end.position[1] = static_cast<double>(corners[1][next_idx]);
+            cell_side.end.position[2] = static_cast<double>(corners[2][next_idx]);
         }
         
         std::vector<double> c1(3);
-        c1[0] = cell_side.init.position(0);
-        c1[1] = cell_side.init.position(1);
-        c1[2] = cell_side.init.position(2);
+        c1[0] = cell_side.init.position[0];
+        c1[1] = cell_side.init.position[1];
+        c1[2] = cell_side.init.position[2];
         
         std::vector<double> c2(3);
-        c2[0] = init.position(0);
-        c2[1] = init.position(1);
-        c2[2] = init.position(2);
+        c2[0] = init.position[0];
+        c2[1] = init.position[1];
+        c2[2] = init.position[2];
         
         addSide(res, buildSide(c1, c2));
 
@@ -489,7 +340,7 @@ namespace geometry_m {
         std::vector<side_t> res;
         side_t cell_side;
         int idx_i = -1, idx_e = -1;
-        std::vector<std::vector<double>> corners;
+        std::vector<std::vector<int>> corners;
         coord_t init = inner_path[0].init;
         coord_t end = inner_path[inner_path.size()-1].end;
 
@@ -497,28 +348,28 @@ namespace geometry_m {
         res = inner_path;
         
         for (int i = 0; i < 4; ++i) {
-            cell_side.init.position(0, corners[0][i]);
-            cell_side.init.position(1, corners[1][i]);
-            cell_side.init.position(2, corners[2][i]);
+            cell_side.init.position[0] = static_cast<double>(corners[0][i]);
+            cell_side.init.position[1] = static_cast<double>(corners[1][i]);
+            cell_side.init.position[2] = static_cast<double>(corners[2][i]);
             int next_i = (i + 1) % 4;
-            cell_side.end.position(0, corners[0][next_i]);
-            cell_side.end.position(1, corners[1][next_i]);
-            cell_side.end.position(2, corners[2][next_i]);
+            cell_side.end.position[0] = static_cast<double>(corners[0][next_i]);
+            cell_side.end.position[1] = static_cast<double>(corners[1][next_i]);
+            cell_side.end.position[2] = static_cast<double>(corners[2][next_i]);
             
             std::vector<int> cell = cell_side.getCell();
             std::vector<int> floor_init(3);
-            floor_init[0] = std::floor(init.position(0));
-            floor_init[1] = std::floor(init.position(1));
-            floor_init[2] = std::floor(init.position(2));
+            floor_init[0] = static_cast<int>(std::floor(init.position[0]));
+            floor_init[1] = static_cast<int>(std::floor(init.position[1]));
+            floor_init[2] = static_cast<int>(std::floor(init.position[2]));
             
             if (cell == floor_init && cell_side.getEdge() == init.getEdge()) { 
                 idx_i = i;
             }
             
             std::vector<int> floor_end(3);
-            floor_end[0] = std::floor(end.position(0));
-            floor_end[1] = std::floor(end.position(1));
-            floor_end[2] = std::floor(end.position(2));
+            floor_end[0] = static_cast<int>(std::floor(end.position[0]));
+            floor_end[1] = static_cast<int>(std::floor(end.position[1]));
+            floor_end[2] = static_cast<int>(std::floor(end.position[2]));
             
             if (cell == floor_end && cell_side.getEdge() == end.getEdge()) { 
                 idx_e = i;
@@ -528,68 +379,64 @@ namespace geometry_m {
         int idx = (idx_e + 1) % 4;
         
         std::vector<double> c1(3);
-        c1[0] = end.position(0);
-        c1[1] = end.position(1);
-        c1[2] = end.position(2);
+        c1[0] = end.position[0];
+        c1[1] = end.position[1];
+        c1[2] = end.position[2];
         
         std::vector<double> c2(3);
-        c2[0] = corners[0][idx];
-        c2[1] = corners[1][idx];
-        c2[2] = corners[2][idx];
+        c2[0] = static_cast<double>(corners[0][idx]);
+        c2[1] = static_cast<double>(corners[1][idx]);
+        c2[2] = static_cast<double>(corners[2][idx]);
         
         addSide(res, buildSide(c1, c2));
 
-        cell_side.init.position(0, corners[0][idx]);
-        cell_side.init.position(1, corners[1][idx]);
-        cell_side.init.position(2, corners[2][idx]);
+        cell_side.init.position[0] = static_cast<double>(corners[0][idx]);
+        cell_side.init.position[1] = static_cast<double>(corners[1][idx]);
+        cell_side.init.position[2] = static_cast<double>(corners[2][idx]);
         
         int next_idx = (idx + 1) % 4;
-        cell_side.end.position(0, corners[0][next_idx]);
-        cell_side.end.position(1, corners[1][next_idx]);
-        cell_side.end.position(2, corners[2][next_idx]);
+        cell_side.end.position[0] = static_cast<double>(corners[0][next_idx]);
+        cell_side.end.position[1] = static_cast<double>(corners[1][next_idx]);
+        cell_side.end.position[2] = static_cast<double>(corners[2][next_idx]);
         
         std::vector<int> floor_init(3);
-        floor_init[0] = std::floor(init.position(0));
-        floor_init[1] = std::floor(init.position(1));
-        floor_init[2] = std::floor(init.position(2));
+        floor_init[0] = static_cast<int>(std::floor(init.position[0]));
+        floor_init[1] = static_cast<int>(std::floor(init.position[1]));
+        floor_init[2] = static_cast<int>(std::floor(init.position[2]));
 
-        while (true) {
+        for (int step = 0; step < 4; ++step) {
             std::vector<int> cell = cell_side.getCell();
             if (cell == floor_init && cell_side.getEdge() == init.getEdge()) {
                 break;
             }
             
-            std::vector<double> c1(3);
-            c1[0] = cell_side.init.position(0);
-            c1[1] = cell_side.init.position(1);
-            c1[2] = cell_side.init.position(2);
+            c1[0] = cell_side.init.position[0];
+            c1[1] = cell_side.init.position[1];
+            c1[2] = cell_side.init.position[2];
             
-            std::vector<double> c2(3);
-            c2[0] = cell_side.end.position(0);
-            c2[1] = cell_side.end.position(1);
-            c2[2] = cell_side.end.position(2);
+            c2[0] = cell_side.end.position[0];
+            c2[1] = cell_side.end.position[1];
+            c2[2] = cell_side.end.position[2];
             
             addSide(res, buildSide(c1, c2));
             
             idx = next_idx;
             next_idx = (idx + 1) % 4;
-            cell_side.init.position(0, corners[0][idx]);
-            cell_side.init.position(1, corners[1][idx]);
-            cell_side.init.position(2, corners[2][idx]);
-            cell_side.end.position(0, corners[0][next_idx]);
-            cell_side.end.position(1, corners[1][next_idx]);
-            cell_side.end.position(2, corners[2][next_idx]);
+            cell_side.init.position[0] = static_cast<double>(corners[0][idx]);
+            cell_side.init.position[1] = static_cast<double>(corners[1][idx]);
+            cell_side.init.position[2] = static_cast<double>(corners[2][idx]);
+            cell_side.end.position[0] = static_cast<double>(corners[0][next_idx]);
+            cell_side.end.position[1] = static_cast<double>(corners[1][next_idx]);
+            cell_side.end.position[2] = static_cast<double>(corners[2][next_idx]);
         }
         
-        std::vector<double> c1(3);
-        c1[0] = cell_side.init.position(0);
-        c1[1] = cell_side.init.position(1);
-        c1[2] = cell_side.init.position(2);
+        c1[0] = cell_side.init.position[0];
+        c1[1] = cell_side.init.position[1];
+        c1[2] = cell_side.init.position[2];
         
-        std::vector<double> c2(3);
-        c2[0] = init.position(0);
-        c2[1] = init.position(1);
-        c2[2] = init.position(2);
+        c2[0] = init.position[0];
+        c2[1] = init.position[1];
+        c2[2] = init.position[2];
         
         addSide(res, buildSide(c1, c2));
 
@@ -604,28 +451,29 @@ namespace geometry_m {
 
     side_t buildSide(const std::vector<double>& c1, const std::vector<double>& c2) {
         side_t res;
-        res.init.position(0, c1[0]);
-        res.init.position(1, c1[1]);
-        res.init.position(2, c1[2]);
-        res.end.position(0, c2[0]);
-        res.end.position(1, c2[1]);
-        res.end.position(2, c2[2]);
+        res.init.position[0] = c1[0];
+        res.init.position[1] = c1[1];
+        res.init.position[2] = c1[2];
+        res.end.position[0] = c2[0];
+        res.end.position[1] = c2[1];
+        res.end.position[2] = c2[2];
         return res;
     }
 
-    int cornerIndex(const std::vector<std::vector<double>>& corners, const std::vector<double>& vertex) {
+    int cornerIndex(const std::vector<std::vector<int>>& corners, const std::vector<double>& vertex) {
         for (int i = 0; i < 4; ++i) {
-            if (vertex[0] == corners[0][i] && vertex[1] == corners[1][i] && vertex[2] == corners[2][i]) { 
-                return i + 1; // 1-based index
+            if (vertex[0] == static_cast<double>(corners[0][i]) &&
+                vertex[1] == static_cast<double>(corners[1][i]) &&
+                vertex[2] == static_cast<double>(corners[2][i])) {
+                return i + 1;
             }
         }
-        return -1; // Should not happen
+        return -1;
     }
 
     std::vector<std::vector<int>> buildCorners(const side_t& side, int face) {
         std::vector<std::vector<int>> res(3, std::vector<int>(4));
         std::vector<int> cell = side.getCell();
-        std::vector<int> aux(3);
 
         if (face == FACE_X) { 
             res[0][0] = cell[0]; res[1][0] = cell[1]; res[2][0] = cell[2];
@@ -644,10 +492,10 @@ namespace geometry_m {
             res[0][3] = cell[0]; res[1][3] = cell[1]+1; res[2][3] = cell[2];
         }
 
-        if (isClockwise(side, face)) { 
-            aux = res[1];
-            res[1] = res[3];
-            res[3] = aux;
+        if (isClockwise(side, face)) {
+            for (int r = 0; r < 3; ++r) {
+                std::swap(res[r][1], res[r][3]);
+            }
         }
         
         return res;
@@ -656,20 +504,13 @@ namespace geometry_m {
     bool isClockwise(const side_t& side, int face) {
         bool result = true;
         std::vector<double> diff(3);
-        diff[0] = side.end.position(0) - side.init.position(0);
-        diff[1] = side.end.position(1) - side.init.position(1);
-        diff[2] = side.end.position(2) - side.init.position(2);
+        diff[0] = side.end.position[0] - side.init.position[0];
+        diff[1] = side.end.position[1] - side.init.position[1];
+        diff[2] = side.end.position[2] - side.init.position[2];
         
-        std::vector<double> x_prod = cross(diff, std::vector<double>{side.init.normal[0], side.init.normal[1], side.init.normal[2]});
-        // Note: side.normal is an array in coord_t? Or side has a normal member?
-        // In Fortran: side%normal. In my placeholder, coord_t has normal.
-        // side.init is coord_t, side.end is coord_t.
-        // Let's assume side has a normal member or we use init.normal.
-        // The Fortran code uses side%normal.
-        // If side_t doesn't have normal, we might need to add it.
-        // For now, assuming side.init.normal is the normal.
+        std::vector<double> x_prod = cross(diff, side.normal);
         
-        if (x_prod[face] < 0) result = false;
+        if (x_prod[face - 1] < 0) result = false;
         return result;
     }
 
@@ -743,8 +584,8 @@ namespace geometry_m {
         
         double res = 0;
         for (int i = 0; i < (int)aux_contour.size(); ++i) {
-           res += aux_contour[i].init.position(dir1) * aux_contour[i].end.position(dir2) - 
-                       aux_contour[i].end.position(dir1) * aux_contour[i].init.position(dir2);
+           res += aux_contour[i].init.position[dir1 - 1] * aux_contour[i].end.position[dir2 - 1] - 
+                       aux_contour[i].end.position[dir1 - 1] * aux_contour[i].init.position[dir2 - 1];
         }
         res = 0.5 * res;
         return res;
@@ -752,23 +593,29 @@ namespace geometry_m {
   
 
     std::vector<side_t> getPathOnFace(const std::vector<side_t>& sides) {
+        if (sides.empty()) {
+            return {};
+        }
         std::vector<side_t> res(sides.size());
         int n = 0;
-        while (n < (int)res.size()) {
-           for (int i = 0; i < (int)sides.size(); ++i) { 
-              if (n == 0) { 
-                if(!sides[i].init.isOnAnyFace()) { 
-                 n = n + 1;
-                 res[n-1] = sides[i];
+        while (n < static_cast<int>(sides.size())) {
+            const int prev_n = n;
+            for (int i = 0; i < static_cast<int>(sides.size()); ++i) {
+                if (n == 0) {
+                    if (!sides[i].init.isOnAnyFace()) {
+                        n++;
+                        res[n - 1] = sides[i];
+                    }
+                } else if (positionsEqualTol(sides[i].init.position, res[n - 1].end.position)) {
+                    n++;
+                    res[n - 1] = sides[i];
                 }
-              } else if (n != 0 && sides[i].init.position(0) == res[n-1].end.position(0) &&
-                         sides[i].init.position(1) == res[n-1].end.position(1) &&
-                         sides[i].init.position(2) == res[n-1].end.position(2)) { 
-                 n = n + 1;
-                 res[n-1] = sides[i];
-              }
-           }
+            }
+            if (n == prev_n) {
+                break;
+            }
         }
+        res.resize(static_cast<std::size_t>(n));
         return res;
     }
 

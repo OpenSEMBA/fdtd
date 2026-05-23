@@ -53,6 +53,9 @@ inline void initializeProblemDescription(Parseador_t& pD) {
     pD.tWires = new ThinWires_t();
     pD.tSlots = new ThinSlots_t();
     pD.conformalRegs = new ConformalPECRegions_t();
+#ifdef CompileWithMTLN
+    pD.mtln = new mtln_t();
+#endif
 }
 
 // ============================================================================
@@ -80,8 +83,17 @@ inline bool parseador_eq(const Parseador_t& a, const Parseador_t& b, bool ignore
     if (!(*a.Sonda == *b.Sonda)) return false;
     if (!(*a.BloquePrb == *b.BloquePrb)) return false;
     if (!(*a.VolPrb == *b.VolPrb)) return false;
+#ifndef CompileWithMTLN
     if (!(*a.tWires == *b.tWires)) return false;
+#endif
     if (!(*a.tSlots == *b.tSlots)) return false;
+#ifdef CompileWithMTLN
+    if (a.mtln && b.mtln) {
+        if (!(*a.mtln == *b.mtln)) return false;
+    } else if (a.mtln || b.mtln) {
+        return false;
+    }
+#endif
     return true;
 }
 
