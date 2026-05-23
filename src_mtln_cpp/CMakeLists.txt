@@ -19,7 +19,11 @@ add_library(mtlnsolver
 target_link_libraries(mtlnsolver PRIVATE
     ${LAPACK_LIBRARIES}
     ${BLAS_LIBRARIES}
-    ngspice
+    ngspice_interface
     semba-types
     ${MPI_CXX_LIBRARIES}
+)
+
+target_include_directories(mtlnsolver PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/ngspice/src/include"
 )

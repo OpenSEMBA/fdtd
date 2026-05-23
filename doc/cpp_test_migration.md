@@ -10,10 +10,10 @@ Native GoogleTest coverage lives in `cpp_tests` (`-DSEMBA_FDTD_BUILD_CXX=ON`). F
 | `mesh` | 15 | |
 | `idchildtable` | 5 + `idchildtable_fhash` | |
 | `smbjson_cpp` | 23 (MTLN ON) / 17 (MTLN OFF) | Full `readProblemDescription` parity |
-| `conformal` | 34 | Geometry, cell_map, filling; 5 contour/filling cases pending C++ geometry parity |
+| `conformal` | 34 | Geometry, cell_map, filling |
 | `rotate` | 16 (OFF) / 17 (ON) | `nfde_rotate_m.h` inline ports |
-| `mtln` | 28 registered | 14 runnable + 14 skipped (dispersive/spice until ngspice C++ port) |
-| `observation` | 13 | 11 runnable + 2 skipped (init/update movie need full `Observa_m` harness) |
+| `mtln` | 28 | All runnable including dispersive + ngspice/circuit |
+| `observation` | 13 | Init/update movie harness |
 | `preprocess` | 6 | `searchtag` + tag checks via `preprocess_tags.h` |
 | **system** | **deferred** | Needs `SEMBA_FDTD_MAIN_LIB` + working C++ `semba_fdtd_t` solver |
 
@@ -31,13 +31,14 @@ cmake --build build_cpp_mtln -j --target cpp_tests
 ./build_cpp_mtln/bin/cpp_tests
 ```
 
+## Current counts (MTLN ON)
+
+- **152 pass, 0 skip, 0 fail**
+
 ## Known gaps
 
-- **Conformal (5 tests):** `geometry_vertex_vertex_contour`, `geometry_vertex_side_contour`, `geometry_areas`, `filling_edge_next_cell`, `filling_closed_corner` — C++ `buildSidesContour` / contour area parity with Fortran.
-- **MTLN multipolar (3 tests):** in-test numerical port; may need link to `multipolar_expansion.cpp`.
-- **MTLN dispersive + spice (12 tests):** `GTEST_SKIP` until `mtl_bundle` dispersive ctor and `circuit_m` ngspice interface are ported.
-- **Observation init/update (2 tests):** `GTEST_SKIP` until `InitObservation` / `UpdateObservation` C++ harness exists.
 - **System (2 tests):** deferred — full FDTD time step via C++ executable.
+- **Spice RC transient tests:** `spice_tran` and `spice_tran_2` run in isolated subprocesses on Linux to avoid ngspice shared-state interference between back-to-back `setStopTimes` runs with identical node names.
 
 ## Still Fortran-only
 

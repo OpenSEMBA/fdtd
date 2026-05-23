@@ -23,7 +23,10 @@ target_link_libraries(cpp_tests
 
 if(SEMBA_FDTD_ENABLE_MTLN)
     target_compile_definitions(cpp_tests PRIVATE CompileWithMTLN)
-    target_link_libraries(cpp_tests mtlnsolver ngspice ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    target_link_libraries(cpp_tests mtlnsolver ngspice_interface ngspice ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    target_include_directories(cpp_tests PRIVATE
+        ${CPP_SOURCE_ROOT}/external/ngspice/src/include
+    )
 endif()
 
 if(SEMBA_FDTD_ENABLE_MPI)
