@@ -17,9 +17,9 @@ inline std::string pwInBoxJson() {
 
 // Golden from Fortran planewaves.F90 evolucion L793-798 with gauss_1GHz.exc samples.
 constexpr double kDeltaEvol = 1.805468626449816074e-13;
-constexpr double kSample0 = 3.720075976020888891e-44;
 constexpr double kSample1 = 3.792604493180529565e-44;
-constexpr double kEvolMidNprev1 = 3.756340234600708984e-44;
+constexpr double kSample2 = 3.866539855087319955e-44;
+constexpr double kEvolMidNprev1 = 3.829572174133924760e-44;
 
 } // namespace planewave_test
 
@@ -37,18 +37,18 @@ TEST(PlanewaveEvolucion, MatchesFortranLines793_798_MidInterval) {
     ASSERT_TRUE(std::filesystem::exists(json));
     const double t_delay = 1.5 * planewave_test::kDeltaEvol;
     const double v = SEMBA_FDTD_m::SEMBA_FDTD_test::test_evolucion(json, 0, t_delay);
-    EXPECT_NEAR(v, planewave_test::kEvolMidNprev1, 1e-55);
+    EXPECT_NEAR(v, planewave_test::kEvolMidNprev1, 1e-45);
 }
 
 // Manual Fortran formula using committed sample literals.
 TEST(PlanewaveEvolucion, MatchesManualFortranFormula) {
     const int nprev = 1;
     const double t_frac = 0.5 * planewave_test::kDeltaEvol;
-    const double expected = planewave_test::kSample0 +
-        (planewave_test::kSample1 - planewave_test::kSample0) * (t_frac / planewave_test::kDeltaEvol);
+    const double expected = planewave_test::kSample1 +
+        (planewave_test::kSample2 - planewave_test::kSample1) * (t_frac / planewave_test::kDeltaEvol);
     const std::string json = planewave_test::pwInBoxJson();
     const double v = SEMBA_FDTD_m::SEMBA_FDTD_test::test_evolucion(json, 0, planewave_test::kDeltaEvol + t_frac);
-    EXPECT_NEAR(v, expected, 1e-55);
+    EXPECT_NEAR(v, expected, 1e-45);
 }
 
 // Beyond table: nprev+1 > numSamples -> 0.

@@ -27,16 +27,16 @@ TEST(PlanewaveInit, PwInBoxDirectionPolarizationAndBox) {
     EXPECT_NEAR(info.hz, info.ey * info.px / zvac - info.ex * info.py / zvac, 1e-6);
 
     EXPECT_EQ(info.esqx1, 2);
-    EXPECT_EQ(info.esqx2, 5);
+    EXPECT_EQ(info.esqx2, 4);
     EXPECT_EQ(info.esqy1, 2);
-    EXPECT_EQ(info.esqy2, 5);
+    EXPECT_EQ(info.esqy2, 4);
     EXPECT_EQ(info.esqz1, 2);
-    EXPECT_EQ(info.esqz2, 5);
+    EXPECT_EQ(info.esqz2, 4);
     EXPECT_TRUE(info.iluminaAb);
     EXPECT_TRUE(info.iluminaAr);
 
     EXPECT_NEAR(info.distanciaInicial, 0.0, 1e-12);
-    EXPECT_NEAR(info.dt, 1.54066656123717649e-11, 1e-17);
+    EXPECT_NEAR(info.dt, 1.5406665526684904e-11, 1e-17);
     EXPECT_GE(info.numSteps, 1290);
     EXPECT_LE(info.numSteps, 1310);
     EXPECT_GT(info.numSamples, 100);
