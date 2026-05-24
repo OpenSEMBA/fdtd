@@ -167,8 +167,10 @@ def test_fdtd_clean_up_does_not_delete_other_cases_files(tmp_path):
     assert os.path.isfile(other_file)
 
 
+@no_mtln_skip
 @pytest.mark.spice
 @pytest.mark.mtln
+@pytest.mark.mtln_standalone
 def test_fdtd_get_used_files():
     fn = CASES_FOLDER + 'multilines_opamp/multilines_opamp.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE)

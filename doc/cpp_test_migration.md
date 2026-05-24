@@ -144,32 +144,49 @@ cmake --build cpp_build_mtln -j --target cpp_tests
 ./cpp_build_mtln/bin/cpp_tests '--gtest_filter=smbjson_cpp.read_*mtln*:rotate.rotate_mtln_test'
 ```
 
-## MTLN integration pytest (`cpp_build_mtln` executable)
+## MTLN Tier 1 slim gate (`mtlnProblem: true`)
 
-Standalone MTLN problems use `semba-fdtd-core` + `mtlnsolver` (full preprocess/solver/wires in `src_cpp/src_mtln/`). Build:
+One command: unit tests, `semba-fdtd-cpp`, and standalone pytest (8 cases):
 
 ```bash
-cmake -S . -B cpp_build_mtln \
-  -DSEMBA_FDTD_BUILD_CXX=ON \
-  -DSEMBA_FDTD_ENABLE_MTLN=ON \
-  -DSEMBA_FDTD_ENABLE_HDF=OFF \
-  -DSEMBA_FDTD_ENABLE_MPI=OFF \
-  -DSEMBA_FDTD_COMPONENTS_LIB=OFF \
-  -DSEMBA_FDTD_MAIN_LIB=OFF \
-  -DSEMBA_FDTD_OUTPUTS_LIB=OFF \
-  -DSEMBA_FDTD_EXECUTABLE=ON \
-  -DSEMBA_FDTD_ENABLE_TEST=ON
-cmake --build cpp_build_mtln -j --target semba-fdtd-cpp
-export SEMBA_FDTD_ENABLE_MTLN=ON
-export SEMBA_EXE=$PWD/cpp_build_mtln/bin/semba-fdtd-cpp
-PYTHONPATH=. pytest test/pyWrapper/test_mtln_standalone.py -m mtln -v
+./scripts/test_cpp_mtln_slim.sh
 ```
 
-**Status (2026-05):** unit gate is green (28 `mtln.*` + smbjson/rotate). Integration waveforms run end-to-end; probe correlation vs Fortran references is still being tightened (ngspice ↔ line coupling). Full FDTD+MTLN (`cpp_build_mtln2` with `SEMBA_FDTD_MAIN_LIB=ON`) remains blocked until `semba-components` compiles.
+This runs GoogleTest (`mtln.*`, smbjson MTLN readers including `read_paul_8_6_square_no_endpoint_wire_generators`), then:
+
+```bash
+export SEMBA_FDTD_ENABLE_MTLN=ON
+export SEMBA_EXE=$PWD/cpp_build_mtln/bin/semba-fdtd-cpp
+PYTHONPATH=. pytest test/pyWrapper/test_mtln_standalone.py -m mtln_standalone -v
+```
+
+Manual build (if not using the script): same CMake flags as [`scripts/test_cpp_mtln_slim.sh`](scripts/test_cpp_mtln_slim.sh) — MTLN ON, executable ON, `COMPONENTS_LIB`/`MAIN_LIB` OFF.
+
+**Status (2026-05):** unit gate is green (28 `mtln.*` + smbjson/rotate). **Tier 1 standalone** (`test/pyWrapper/test_mtln_standalone.py`, 8 tests) passes on `cpp_build_mtln` (`corrcoef > 0.999` vs Fortran references). Fixes: `IsGeneratorOnWire` interior nodes only (endpoint sources via Spice only); full `writeNodeDescription` terminations; `connectNodesToNetworkCircuit` + opamp-style `TERMINATION_NETWORK` netlists.
+
+### Tier 1 vs Tier 2 (`-m mtln`)
+
+| Tier | Pytest target | JSON flag | C++ path today | `cpp_build_mtln` |
+|------|---------------|-----------|----------------|------------------|
+| **1 — standalone** | `test_mtln_standalone.py` | `"mtlnProblem": true` | `semba_fdtd_t` → `solveMTLNProblem()` only (no Yee grid coupling) | **pass** (8/8) |
+| **2 — in-grid** | `test_integration.py` / `test_full_system.py` with `@pytest.mark.mtln` or `@no_mtln_skip` | `"mtlnProblem": false` or omitted | Needs `InitWires_mtln` / `AdvanceWiresE_mtln` in full `timestepping` + `semba-components` | **blocked** |
+
+**Tier 2 examples (do not expect pass on slim `semba-fdtd-cpp`):**
+
+| Test | Case | `mtlnProblem` |
+|------|------|---------------|
+| `test_holland_case_checking_number_of_outputs_*` | `holland/holland1981.fdtd.json` | false |
+| `test_shieldedPair`, `test_unshielded_multiwires` | `shieldedPair`, `unshielded_multiwires_berenger` | false |
+| `test_bundles_mpi_*` | `mpi/bundles_for_mpi*.fdtd.json` | false |
+| `test_holland_mtln_mpi` | `holland/holland1981_unshielded.fdtd.json` | false |
+| `test_current_generators_*`, `test_voltage_generators` | `sources/sources_*.fdtd.json` | false |
+| `test_multiwire_z_collision_*` (`@no_mtln_skip`, mapvtk) | observation cases | false |
+
+**Unblock Tier 2:** build `cpp_build_mtln2` with `-DSEMBA_FDTD_MAIN_LIB=ON` and `-DSEMBA_FDTD_COMPONENTS_LIB=ON` so `timestepping.cpp` can call the Fortran-equivalent in-grid wire path. Until then, CI should run `./scripts/test_cpp_mtln_slim.sh` (or `-m mtln_standalone`), not `pytest -m mtln` over the whole `test/pyWrapper/` tree.
 
 ## Future expansion (after Tier 0 + Tier 1 green)
 
 1. Fix plane-wave TF/SF → add `test_planewave_in_box` to gate (Tier 2)
 2. Enable `SEMBA_FDTD_COMPONENTS_LIB=ON` with MTLN still OFF → classic wire tests (`@mtln_skip`)
 3. Enable `SEMBA_FDTD_OUTPUTS_LIB=ON` → HDF movie tests
-4. MTLN integration pytest correlation ≥ 0.999 on `test_mtln_standalone.py`, then `test_full_system.py -m mtln`
+4. ~~MTLN Tier 1~~ done; next: `cpp_build_mtln2` for in-grid `test_full_system.py -m mtln`

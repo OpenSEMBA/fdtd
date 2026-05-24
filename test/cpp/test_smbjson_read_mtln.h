@@ -61,6 +61,26 @@ TEST(smbjson_cpp, read_large_airplane_mtln) {
     });
 }
 
+// Endpoint voltage generators (e.g. paul start node) must not become TLM wireGenerators;
+// excitation is applied via Spice termination only (Fortran IsGeneratorOnWire interior-only).
+TEST(smbjson_cpp, read_paul_8_6_square_no_endpoint_wire_generators) {
+    auto actual = parseFile(testDataPathCases("paul/paul_8_6_square.fdtd.json"));
+    ASSERT_NE(actual.mtln, nullptr);
+    EXPECT_TRUE(actual.mtln->wireGenerators.empty());
+    ASSERT_FALSE(actual.mtln->networks.empty());
+    bool has_excitation_on_network = false;
+    for (const auto& net : actual.mtln->networks) {
+        for (const auto& conn : net.connections) {
+            for (const auto& node : conn.nodes) {
+                if (!node.termination.source.path_to_excitation.empty()) {
+                    has_excitation_on_network = true;
+                }
+            }
+        }
+    }
+    EXPECT_TRUE(has_excitation_on_network);
+}
+
 #endif // CompileWithMTLN
 
 #endif // TEST_SMBJSON_READ_MTLN_H

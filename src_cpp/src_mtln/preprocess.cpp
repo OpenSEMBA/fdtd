@@ -635,20 +635,274 @@ std::vector<std::string> writeShortNode(const nw_node_t& node, const termination
     return res;
 }
 
-std::vector<std::string> writeNodeDescription(const nw_node_t& node, const termination_t& termination,
-                                              const std::string& end_node) {
-    if (termination.termination_type == mtln_types_m::TERMINATION_SERIES) {
-        if (termination.capacitance >= 1e22) {
-            return writeSeriesRLnode(node, termination, end_node);
+std::vector<std::string> writeSeriesRLCnode(const nw_node_t& node, const termination_t& termination,
+                                            const std::string& end_node) {
+    std::vector<std::string> res;
+    const std::string termination_r = formatSpiceValue(termination.resistance);
+    const std::string termination_l = formatSpiceValue(termination.inductance);
+    const std::string termination_c = formatSpiceValue(termination.capacitance);
+    const std::string line_c = formatSpiceValue(node.line_c_per_meter * node.step / 2.0);
+    if (!termination.source.path_to_excitation.empty()) {
+        const std::string generator_r = formatSpiceValue(termination.source.resistance);
+        append_desc(res, "R" + node.name + " " + node.name + " " + node.name + "_S " + termination_r);
+        append_desc(res, "L" + node.name + " " + node.name + " " + node.name + "_S " + termination_l);
+        append_desc(res, "C" + node.name + " " + node.name + " " + node.name + "_S " + termination_c);
+        if (termination.source.source_type == mtln_types_m::SOURCE_TYPE_VOLTAGE) {
+            append_desc(res, "V" + node.name + "_S " + node.name + "_S " + node.name + "_genR dc 0");
+            append_desc(res, "R" + node.name + "_S " + node.name + "_genR " + end_node + " " + generator_r);
+        } else if (termination.source.source_type == mtln_types_m::SOURCE_TYPE_CURRENT) {
+            append_desc(res, "I" + node.name + "_S " + end_node + " " + node.name + "_S dc 0");
+            if (termination.source.resistance != 1.0e22) {
+                append_desc(res, "R" + node.name + "_S " + end_node + " " + node.name + "_S " + generator_r);
+            }
         }
+    } else {
+        append_desc(res, "R" + node.name + " " + node.name + " " + end_node + termination_r);
+        append_desc(res, "L" + node.name + " " + node.name + " " + end_node + termination_l);
+        append_desc(res, "C" + node.name + " " + node.name + " " + end_node + termination_c);
     }
-    if (termination.termination_type == mtln_types_m::TERMINATION_SHORT) {
-        return writeShortNode(node, termination, end_node);
+    append_desc(res, "I" + node.name + " " + node.name + " 0 dc 0");
+    append_desc(res, "CL" + node.name + " " + node.name + " 0 " + line_c);
+    if (node.line_g_per_meter != 0.0) {
+        const std::string line_g =
+            formatSpiceValue(1.0 / (node.line_g_per_meter * node.step / 2.0));
+        append_desc(res, "GL" + node.name + " " + node.name + " 0 " + line_g);
     }
-    if (termination.termination_type == mtln_types_m::TERMINATION_SERIES) {
+    return res;
+}
+
+std::vector<std::string> writeSeriesNode(const nw_node_t& node, const termination_t& termination,
+                                         const std::string& end_node) {
+    if (termination.capacitance >= 1e22) {
         return writeSeriesRLnode(node, termination, end_node);
     }
-    Report_m::WarnErrReport("writeNodeDescription: unsupported termination at " + node.name, true);
+    return writeSeriesRLCnode(node, termination, end_node);
+}
+
+std::vector<std::string> writeParallelRLCnode(const nw_node_t& /*node*/, const termination_t& /*termination*/,
+                                              const std::string& /*end_node*/) {
+    return {};
+}
+
+std::vector<std::string> writeNetwork_circuitNode(const nw_node_t& node, const termination_t& termination,
+                                                  const std::string& end_node) {
+    std::vector<std::string> res;
+    const std::string short_r = "1e-10";
+    const std::string line_c = formatSpiceValue(node.line_c_per_meter * node.step / 2.0);
+    if (!termination.source.path_to_excitation.empty()) {
+        const std::string generator_r = formatSpiceValue(termination.source.resistance);
+        append_desc(res, "R" + node.name + " " + node.name + " " + node.name + "_S " + short_r);
+        if (termination.source.source_type == mtln_types_m::SOURCE_TYPE_VOLTAGE) {
+            append_desc(res, "V" + node.name + "_S " + node.name + "_S " + node.name + "_genR dc 0");
+            append_desc(res, "R" + node.name + "_S " + node.name + "_genR " + end_node + " " + generator_r);
+        } else if (termination.source.source_type == mtln_types_m::SOURCE_TYPE_CURRENT) {
+            append_desc(res, "I" + node.name + "_S " + end_node + " " + node.name + "_S dc 0");
+            if (termination.source.resistance != 1.0e22) {
+                append_desc(res, "R" + node.name + "_S " + end_node + " " + node.name + "_S " + generator_r);
+            }
+        }
+    } else {
+        append_desc(res, "R" + node.name + " " + node.name + " " + end_node + " " + short_r);
+    }
+    append_desc(res, "I" + node.name + " " + node.name + " 0 dc 0");
+    append_desc(res, "CL" + node.name + " " + node.name + " 0 " + line_c);
+    if (node.line_g_per_meter != 0.0) {
+        const std::string line_g =
+            formatSpiceValue(1.0 / (node.line_g_per_meter * node.step / 2.0));
+        append_desc(res, "GL" + node.name + " " + node.name + " 0 " + line_g);
+    }
+    return res;
+}
+
+std::vector<std::string> writeModelNode(const nw_node_t& node, const termination_t& termination,
+                                        const std::string& end_node) {
+    std::vector<std::string> res;
+    const std::string line_c = formatSpiceValue(node.line_c_per_meter * node.step / 2.0);
+    append_desc(res, ".include " + termination.model.file);
+    if (!termination.source.path_to_excitation.empty()) {
+        const std::string generator_r = formatSpiceValue(termination.source.resistance);
+        if (termination.source.source_type == mtln_types_m::SOURCE_TYPE_VOLTAGE) {
+            append_desc(res, "V" + node.name + "_S " + node.name + " " + node.name + "_genR dc 0");
+            append_desc(res, "R" + node.name + "_S " + node.name + "_genR " + node.name + "_S " + generator_r);
+        } else if (termination.source.source_type == mtln_types_m::SOURCE_TYPE_CURRENT) {
+            append_desc(res, "I" + node.name + "_S " + node.name + "_S " + node.name + " dc 0");
+            if (termination.source.resistance != 1.0e22) {
+                append_desc(res, "R" + node.name + "_S " + node.name + "_S " + node.name + " " + generator_r);
+            }
+        }
+        append_desc(res, "x" + node.name + " " + node.name + "_S " + end_node + " " + termination.model.name);
+    } else {
+        append_desc(res, "x" + node.name + " " + node.name + " " + end_node + " " + termination.model.name);
+    }
+    append_desc(res, "I" + node.name + " " + node.name + " 0 dc 0");
+    append_desc(res, "CL" + node.name + " " + node.name + " 0 " + line_c);
+    if (node.line_g_per_meter != 0.0) {
+        const std::string line_g =
+            formatSpiceValue(1.0 / (node.line_g_per_meter * node.step / 2.0));
+        append_desc(res, "GL" + node.name + " " + node.name + " 0 " + line_g);
+    }
+    return res;
+}
+
+std::vector<std::string> writeOpenNode(const nw_node_t& node, const termination_t& /*termination*/,
+                                       const std::string& end_node) {
+    std::vector<std::string> res;
+    const std::string line_c = formatSpiceValue(node.line_c_per_meter * node.step / 2.0);
+    append_desc(res, "R" + node.name + " " + node.name + " " + end_node + " 1e22");
+    append_desc(res, "I" + node.name + " " + node.name + " 0 dc 0");
+    append_desc(res, "CL" + node.name + " " + node.name + " 0 " + line_c);
+    if (node.line_g_per_meter != 0.0) {
+        const std::string line_g =
+            formatSpiceValue(1.0 / (node.line_g_per_meter * node.step / 2.0));
+        append_desc(res, "GL" + node.name + " " + node.name + " 0 " + line_g);
+    }
+    return res;
+}
+
+void assignTerminationXYsZp(const std::string& xyz, const termination_t& termination, std::string& tx,
+                            std::string& ty, std::string& tz) {
+    if (xyz == "RLC" || xyz == "LRC") {
+        tx = formatSpiceValue(termination.resistance);
+        ty = formatSpiceValue(termination.inductance);
+        tz = formatSpiceValue(termination.capacitance);
+    } else if (xyz == "LCR" || xyz == "CLR") {
+        tx = formatSpiceValue(termination.inductance);
+        ty = formatSpiceValue(termination.capacitance);
+        tz = formatSpiceValue(termination.resistance);
+    } else if (xyz == "CRL" || xyz == "RCL") {
+        tx = formatSpiceValue(termination.capacitance);
+        ty = formatSpiceValue(termination.resistance);
+        tz = formatSpiceValue(termination.inductance);
+    }
+}
+
+void assignTerminationXsYZp(const std::string& xyz, const termination_t& termination, std::string& tx,
+                            std::string& ty, std::string& tz) {
+    if (xyz == "RLC" || xyz == "RCL") {
+        tx = formatSpiceValue(termination.resistance);
+        ty = formatSpiceValue(termination.inductance);
+        tz = formatSpiceValue(termination.capacitance);
+    } else if (xyz == "LRC" || xyz == "LCR") {
+        tx = formatSpiceValue(termination.inductance);
+        ty = formatSpiceValue(termination.resistance);
+        tz = formatSpiceValue(termination.capacitance);
+    } else if (xyz == "CLR" || xyz == "CRL") {
+        tx = formatSpiceValue(termination.capacitance);
+        ty = formatSpiceValue(termination.resistance);
+        tz = formatSpiceValue(termination.inductance);
+    }
+}
+
+void appendLineShunt(std::vector<std::string>& res, const nw_node_t& node) {
+    const std::string line_c = formatSpiceValue(node.line_c_per_meter * node.step / 2.0);
+    append_desc(res, "I" + node.name + " " + node.name + " 0 dc 0");
+    append_desc(res, "CL" + node.name + " " + node.name + " 0 " + line_c);
+    if (node.line_g_per_meter != 0.0) {
+        const std::string line_g =
+            formatSpiceValue(1.0 / (node.line_g_per_meter * node.step / 2.0));
+        append_desc(res, "GL" + node.name + " " + node.name + " 0 " + line_g);
+    }
+}
+
+std::vector<std::string> writeXYsZpNode(const nw_node_t& node, const termination_t& termination,
+                                        const std::string& end_node, const std::string& xyz) {
+    std::vector<std::string> res;
+    std::string tx;
+    std::string ty;
+    std::string tz;
+    assignTerminationXYsZp(xyz, termination, tx, ty, tz);
+    append_desc(res, std::string(1, xyz[0]) + node.name + " " + node.name + " " + node.name + "_X " + tx);
+    if (!termination.source.path_to_excitation.empty()) {
+        const std::string generator_r = formatSpiceValue(termination.source.resistance);
+        append_desc(res, std::string(1, xyz[1]) + node.name + " " + node.name + "_X " + node.name + "_S " + ty);
+        append_desc(res, std::string(1, xyz[2]) + node.name + " " + node.name + " " + node.name + "_S " + tz);
+        if (termination.source.source_type == mtln_types_m::SOURCE_TYPE_VOLTAGE) {
+            append_desc(res, "V" + node.name + "_S " + node.name + "_S " + node.name + "_genR dc 0");
+            append_desc(res, "R" + node.name + "_S " + node.name + "_genR " + end_node + " " + generator_r);
+        } else if (termination.source.source_type == mtln_types_m::SOURCE_TYPE_CURRENT) {
+            append_desc(res, "I" + node.name + "_S " + end_node + " " + node.name + "_S dc 0");
+            if (termination.source.resistance != 1.0e22) {
+                append_desc(res, "R" + node.name + "_S " + end_node + " " + node.name + "_S " + generator_r);
+            }
+        }
+    } else {
+        append_desc(res, std::string(1, xyz[1]) + node.name + " " + node.name + "_X " + end_node + " " + ty);
+        append_desc(res, std::string(1, xyz[2]) + node.name + " " + node.name + " " + end_node + " " + tz);
+    }
+    appendLineShunt(res, node);
+    return res;
+}
+
+std::vector<std::string> writeXsYZpNode(const nw_node_t& node, const termination_t& termination,
+                                        const std::string& end_node, const std::string& xyz) {
+    std::vector<std::string> res;
+    std::string tx;
+    std::string ty;
+    std::string tz;
+    assignTerminationXsYZp(xyz, termination, tx, ty, tz);
+    append_desc(res, std::string(1, xyz[0]) + node.name + " " + node.name + " " + node.name + "_p " + tx);
+    if (!termination.source.path_to_excitation.empty()) {
+        const std::string generator_r = formatSpiceValue(termination.source.resistance);
+        append_desc(res, std::string(1, xyz[1]) + node.name + " " + node.name + "_p " + node.name + "_S " + ty);
+        append_desc(res, std::string(1, xyz[2]) + node.name + " " + node.name + "_p " + node.name + "_S " + tz);
+        if (termination.source.source_type == mtln_types_m::SOURCE_TYPE_VOLTAGE) {
+            append_desc(res, "V" + node.name + "_S " + node.name + "_S " + node.name + "_genR dc 0");
+            append_desc(res, "R" + node.name + "_S " + node.name + "_genR " + end_node + " " + generator_r);
+        } else if (termination.source.source_type == mtln_types_m::SOURCE_TYPE_CURRENT) {
+            append_desc(res, "I" + node.name + "_S " + end_node + " " + node.name + "_S dc 0");
+            if (termination.source.resistance != 1.0e22) {
+                append_desc(res, "R" + node.name + "_S " + end_node + " " + node.name + "_S " + generator_r);
+            }
+        }
+    } else {
+        append_desc(res, std::string(1, xyz[1]) + node.name + " " + node.name + "_p " + end_node + " " + ty);
+        append_desc(res, std::string(1, xyz[2]) + node.name + " " + node.name + "_p " + end_node + " " + tz);
+    }
+    appendLineShunt(res, node);
+    return res;
+}
+
+std::vector<std::string> writeNodeDescription(const nw_node_t& node, const termination_t& termination,
+                                              const std::string& end_node) {
+    if (termination.termination_type == TERMINATION_SERIES) {
+        return writeSeriesNode(node, termination, end_node);
+    }
+    if (termination.termination_type == TERMINATION_PARALLEL) {
+        return writeParallelRLCnode(node, termination, end_node);
+    }
+    if (termination.termination_type == TERMINATION_RsLCp) {
+        return writeXsYZpNode(node, termination, end_node, "RLC");
+    }
+    if (termination.termination_type == TERMINATION_LsRCp) {
+        return writeXsYZpNode(node, termination, end_node, "LRC");
+    }
+    if (termination.termination_type == TERMINATION_CsLRp) {
+        return writeXsYZpNode(node, termination, end_node, "CLR");
+    }
+    if (termination.termination_type == TERMINATION_RLsCp) {
+        return writeXYsZpNode(node, termination, end_node, "RLC");
+    }
+    if (termination.termination_type == TERMINATION_RCsLp) {
+        return writeXYsZpNode(node, termination, end_node, "RCL");
+    }
+    if (termination.termination_type == TERMINATION_LCsRp) {
+        return writeXYsZpNode(node, termination, end_node, "LCR");
+    }
+    if (termination.termination_type == TERMINATION_SHORT) {
+        return writeShortNode(node, termination, end_node);
+    }
+    if (termination.termination_type == TERMINATION_OPEN) {
+        return writeOpenNode(node, termination, end_node);
+    }
+    if (termination.termination_type == TERMINATION_CIRCUIT) {
+        return writeModelNode(node, termination, end_node);
+    }
+    if (termination.termination_type == TERMINATION_NETWORK) {
+        return writeNetwork_circuitNode(node, termination, end_node);
+    }
+    if (termination.termination_type == TERMINATION_UNDEFINED) {
+        Report_m::WarnErrReport("writeNodeDescription: undefined termination at " + node.name, true);
+    }
     return {};
 }
 
@@ -783,12 +1037,58 @@ void preprocess_t::connectNodes(const terminal_connection_t& terminal_connection
     }
 }
 
-void preprocess_t::connectNodesToNetworkCircuit(const terminal_connection_t&, std::vector<nw_node_t>&,
-                                                std::vector<std::string>&) {}
+bool isModelIncluded(const std::vector<std::string>& list_of_models, const std::string& model) {
+    for (const auto& m : list_of_models) {
+        if (m == model) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void addCircuitModel(std::vector<std::string>& description, const network_circuit_t& network_circuit,
+                     std::vector<std::string>& list_of_models) {
+    const std::string model_file = trim(network_circuit.model_file);
+    if (isModelIncluded(list_of_models, model_file)) {
+        return;
+    }
+    list_of_models.push_back(model_file);
+    append_desc(description, ".include " + model_file);
+}
+
+void addCircuitInstance(std::vector<std::string>& description, const network_circuit_t& network_circuit) {
+    std::string ports;
+    for (int i = 0; i < network_circuit.number_of_nodes; ++i) {
+        ports += trim(network_circuit.circuit_name) + "_" + std::to_string(i + 1) + " ";
+    }
+    append_desc(description,
+                "x" + trim(network_circuit.circuit_name) + " " + ports + trim(network_circuit.model_name));
+}
+
+void preprocess_t::connectNodesToNetworkCircuit(const terminal_connection_t& terminal_connection,
+                                                std::vector<nw_node_t>& nodes,
+                                                std::vector<std::string>& description) {
+    const std::vector<nw_node_t> aux_nodes = nodes;
+    nodes.resize(aux_nodes.size() + terminal_connection.nodes.size());
+    for (size_t i = 0; i < terminal_connection.nodes.size(); ++i) {
+        const nw_node_t new_node = addNodeWithId(terminal_connection.nodes[i]);
+        nodes[aux_nodes.size() + i] = new_node;
+        const std::string network_circuit_node =
+            trim(terminal_connection.network_circuit.circuit_name) + "_" +
+            std::to_string(terminal_connection.nodes[i].termination.networkCircuitNode);
+        const auto node_description =
+            writeNodeDescription(new_node, terminal_connection.nodes[i].termination, network_circuit_node);
+        description.insert(description.end(), node_description.begin(), node_description.end());
+    }
+    for (size_t i = 0; i < aux_nodes.size(); ++i) {
+        nodes[i] = aux_nodes[i];
+    }
+}
 
 network_t preprocess_t::buildNetwork(const terminal_network_t& terminal_network) {
     std::vector<nw_node_t> nodes;
     std::vector<std::string> description;
+    std::vector<std::string> list_of_models;
     std::vector<terminal_connection_t> network_circuit_connections;
     std::vector<terminal_connection_t> node2node_connections;
     filterConnections(terminal_network.connections, network_circuit_connections, node2node_connections);
@@ -799,6 +1099,13 @@ network_t preprocess_t::buildNetwork(const terminal_network_t& terminal_network)
         } else if (conn.nodes.size() > 1) {
             connectNodes(conn, nodes, description);
         }
+    }
+    for (const auto& conn : network_circuit_connections) {
+        addCircuitModel(description, conn.network_circuit, list_of_models);
+        addCircuitInstance(description, conn.network_circuit);
+    }
+    for (const auto& conn : network_circuit_connections) {
+        connectNodesToNetworkCircuit(conn, nodes, description);
     }
     return network_m::networkCtor(nodes, description);
 }

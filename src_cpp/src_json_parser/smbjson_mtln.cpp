@@ -717,11 +717,12 @@ private:
                 if (!plFound || polyline.coordIds.size() < 2) {
                     continue;
                 }
-                for (size_t j = 0; j < polyline.coordIds.size(); ++j) {
+                // Match Fortran IsGeneratorOnWire: only interior polyline nodes (j=2..n-1).
+                for (size_t j = 1; j + 1 < polyline.coordIds.size(); ++j) {
                     if (polyline.coordIds[j] != cId) {
                         continue;
                     }
-                    const bool interior = (j > 0 && j + 1 < polyline.coordIds.size());
+                    const bool interior = true;
                     if (interior) {
                         if (fieldLabel == jlbl::J_FIELD_VOLTAGE &&
                             (mA.matAssType == jlbl::J_MAT_TYPE_WIRE ||
