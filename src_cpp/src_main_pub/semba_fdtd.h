@@ -65,6 +65,11 @@ int test_run_pw_in_box_probes(const std::string& json_path,
                               const std::string& ref_inbox,
                               const std::string& ref_after,
                               int max_steps = -1);
+int test_run_pw_in_box_probe_files_exact(const std::string& json_path,
+                                         const std::string& ref_before,
+                                         const std::string& ref_inbox,
+                                         const std::string& ref_after,
+                                         int max_steps = -1);
 
 } // namespace SEMBA_FDTD_test
 } // namespace SEMBA_FDTD_m

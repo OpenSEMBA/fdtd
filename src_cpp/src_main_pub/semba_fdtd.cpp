@@ -156,6 +156,15 @@ std::string trim(const std::string& s) {
 std::string adjustl(const std::string& s) { return trim(s); }
 std::string to_lower(const std::string& s) { std::string r = s; std::transform(r.begin(), r.end(), r.begin(), ::tolower); return r; }
 
+bool ends_with(const std::string& s, const std::string& suffix) {
+    return s.size() >= suffix.size() &&
+           s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+std::string probeOutputPrefix(const std::string& caseName) {
+    return caseName + (ends_with(caseName, ".fdtd") ? "_" : ".fdtd_");
+}
+
 std::string formatFortranE(double value, int width, int precision) {
     const bool negative = std::signbit(value);
     const double abs_value = std::abs(value);
@@ -405,8 +414,8 @@ public:
     MurZone murHyBack_, murHyFront_, murHzBack_, murHzFront_;
     MurZone murHxLeft_, murHxRight_, murHzLeft_, murHzRight_;
     MurZone murHyDown_, murHyUp_, murHxDown_, murHxUp_;
-    double backCab1 = 0.0, frontCab1 = 0.0, leftCab1 = 0.0, rightCab1 = 0.0;
-    double downCab1 = 0.0, upCab1 = 0.0;
+    fdtd_real backCab1 = 0.0, frontCab1 = 0.0, leftCab1 = 0.0, rightCab1 = 0.0;
+    fdtd_real downCab1 = 0.0, upCab1 = 0.0;
     // First-order magnetic Mur past fields (Fortran regLR/regDU/regBF Past_*).
     std::vector<fdtd_real> murPastHyBack, murPastHyBackInt, murPastHzBack, murPastHzBackInt;
     std::vector<fdtd_real> murPastHyFront, murPastHyFrontInt, murPastHzFront, murPastHzFrontInt;
@@ -469,8 +478,10 @@ public:
         pecMask.resize(max_n, 0);
         CeE.resize(max_n, 0.0); CmH.resize(max_n, 0.0);
 
-        const fdtd_real ce = static_cast<fdtd_real>(dt) / static_cast<fdtd_real>(eps0);
-        const fdtd_real ch = static_cast<fdtd_real>(dt) / static_cast<fdtd_real>(mu0);
+        const fdtd_real ce = static_cast<fdtd_real>(
+            dt / static_cast<double>(static_cast<fdtd_real>(eps0)));
+        const fdtd_real ch = static_cast<fdtd_real>(
+            dt / static_cast<double>(static_cast<fdtd_real>(mu0)));
         for (int i = 0; i < max_n; i++) { CeE[i] = ce; CmH[i] = ch; }
 
         sources = pd.sources.planeWaves;
@@ -506,16 +517,21 @@ public:
     }
 
     void calcMurConstants() {
-        const auto cab1 = [this](double cell_step) {
-            const double cnum = cell_step / (dt * C0);
-            return (1.0 - cnum) / (1.0 + cnum);
+        const fdtd_real one = static_cast<fdtd_real>(1.0);
+        const fdtd_real cluz = static_cast<fdtd_real>(1.0) /
+            std::sqrt(static_cast<fdtd_real>(eps0) * static_cast<fdtd_real>(mu0));
+        const auto cab1 = [this, one, cluz](fdtd_real inv_step) {
+            const fdtd_real cnum = static_cast<fdtd_real>(
+                static_cast<double>(one / inv_step) /
+                (dt * static_cast<double>(cluz)));
+            return (one - cnum) / (one + cnum);
         };
-        backCab1 = cab1(dx);
-        frontCab1 = cab1(dx);
-        leftCab1 = cab1(dy);
-        rightCab1 = cab1(dy);
-        downCab1 = cab1(dz);
-        upCab1 = cab1(dz);
+        backCab1 = cab1(fortranGridInverse(static_cast<fdtd_real>(dx)));
+        frontCab1 = cab1(fortranGridInverse(static_cast<fdtd_real>(dx)));
+        leftCab1 = cab1(fortranGridInverse(static_cast<fdtd_real>(dy)));
+        rightCab1 = cab1(fortranGridInverse(static_cast<fdtd_real>(dy)));
+        downCab1 = cab1(fortranGridInverse(static_cast<fdtd_real>(dz)));
+        upCab1 = cab1(fortranGridInverse(static_cast<fdtd_real>(dz)));
         murCx = backCab1;
         murCy = leftCab1;
         murCz = downCab1;
@@ -539,30 +555,30 @@ public:
         murHxDown_  = {0, NX - 1, 0, NY, 0, 0};
         murHxUp_    = {0, NX - 1, 0, NY, NZ, NZ};
         calcMurConstants();
-        murPastHyBack.assign(NY * (NZ + 1), 0.0);
-        murPastHyBackInt.assign(NY * (NZ + 1), 0.0);
-        murPastHzBack.assign((NY + 1) * NZ, 0.0);
-        murPastHzBackInt.assign((NY + 1) * NZ, 0.0);
-        murPastHyFront.assign(NY * (NZ + 1), 0.0);
-        murPastHyFrontInt.assign(NY * (NZ + 1), 0.0);
-        murPastHzFront.assign((NY + 1) * NZ, 0.0);
-        murPastHzFrontInt.assign((NY + 1) * NZ, 0.0);
-        murPastHxLeft.assign(NX * (NZ + 1), 0.0);
-        murPastHxLeftInt.assign(NX * (NZ + 1), 0.0);
-        murPastHzLeft.assign((NX + 1) * NZ, 0.0);
-        murPastHzLeftInt.assign((NX + 1) * NZ, 0.0);
-        murPastHxRight.assign(NX * (NZ + 1), 0.0);
-        murPastHxRightInt.assign(NX * (NZ + 1), 0.0);
-        murPastHzRight.assign((NX + 1) * NZ, 0.0);
-        murPastHzRightInt.assign((NX + 1) * NZ, 0.0);
-        murPastHyDown.assign((NX + 1) * NY, 0.0);
-        murPastHyDownInt.assign((NX + 1) * NY, 0.0);
-        murPastHxDown.assign(NX * (NY + 1), 0.0);
-        murPastHxDownInt.assign(NX * (NY + 1), 0.0);
-        murPastHyUp.assign((NX + 1) * NY, 0.0);
-        murPastHyUpInt.assign((NX + 1) * NY, 0.0);
-        murPastHxUp.assign(NX * (NY + 1), 0.0);
-        murPastHxUpInt.assign(NX * (NY + 1), 0.0);
+        murPastHyBack.assign((NY + 1) * NZ, 0.0);
+        murPastHyBackInt.assign((NY + 1) * NZ, 0.0);
+        murPastHzBack.assign(NY * (NZ + 1), 0.0);
+        murPastHzBackInt.assign(NY * (NZ + 1), 0.0);
+        murPastHyFront.assign((NY + 1) * NZ, 0.0);
+        murPastHyFrontInt.assign((NY + 1) * NZ, 0.0);
+        murPastHzFront.assign(NY * (NZ + 1), 0.0);
+        murPastHzFrontInt.assign(NY * (NZ + 1), 0.0);
+        murPastHxLeft.assign((NX + 1) * NZ, 0.0);
+        murPastHxLeftInt.assign((NX + 1) * NZ, 0.0);
+        murPastHzLeft.assign(NX * (NZ + 1), 0.0);
+        murPastHzLeftInt.assign(NX * (NZ + 1), 0.0);
+        murPastHxRight.assign((NX + 1) * NZ, 0.0);
+        murPastHxRightInt.assign((NX + 1) * NZ, 0.0);
+        murPastHzRight.assign(NX * (NZ + 1), 0.0);
+        murPastHzRightInt.assign(NX * (NZ + 1), 0.0);
+        murPastHyDown.assign(NX * (NY + 1), 0.0);
+        murPastHyDownInt.assign(NX * (NY + 1), 0.0);
+        murPastHxDown.assign((NX + 1) * NY, 0.0);
+        murPastHxDownInt.assign((NX + 1) * NY, 0.0);
+        murPastHyUp.assign(NX * (NY + 1), 0.0);
+        murPastHyUpInt.assign(NX * (NY + 1), 0.0);
+        murPastHxUp.assign((NX + 1) * NY, 0.0);
+        murPastHxUpInt.assign((NX + 1) * NY, 0.0);
     }
 
     int ex_nx() const { return NX + 3; }
@@ -661,7 +677,8 @@ public:
     }
 
     // i,j,k are 1-based Yee indices (Fortran convention).
-    fdtd_real computeIncid(int pwIdx, int nfield, double time, int i, int j, int k) {
+    fdtd_real computeIncid(int pwIdx, int nfield, double time, int i, int j, int k,
+                           bool calledFromObservation = false) {
         auto& pw = planeWaves[pwIdx];
         fdtd_real xf = 0.0, yf = 0.0, zf = 0.0;
         physCoord1(nfield, i, j, k, xf, yf, zf);
@@ -671,14 +688,20 @@ public:
         const fdtd_real d = (xf * pw.px[0] + yf * pw.py[0] + zf * pw.pz[0]) - pw.distanciaInicial;
         fdtd_real value = 0.0;
         if (pw.numSamples > 1 && pw.deltaevol > 0.0) {
-            const int nprev = static_cast<int>((timef - d / cluz) / pw.deltaevol);
+            const fdtd_real delay_f = timef - d / cluz;
+            const double delay_d = time -
+                static_cast<double>(d) / static_cast<double>(cluz);
+            const int nprev = calledFromObservation
+                                  ? static_cast<int>(delay_d /
+                                                     static_cast<double>(pw.deltaevol))
+                                  : static_cast<int>(delay_f / pw.deltaevol);
             if (nprev + 1 <= pw.numSamples) {
                 still_planewave_time = true;
                 if (nprev > 0) {
                     const fdtd_real y0 = pw.samples[static_cast<size_t>(nprev)];
                     const fdtd_real y1 = pw.samples[static_cast<size_t>(nprev + 1)];
                     value = ((y1 - y0) / pw.deltaevol) *
-                        ((timef - d / cluz) - static_cast<fdtd_real>(nprev) * pw.deltaevol) + y0;
+                        (delay_f - static_cast<fdtd_real>(nprev) * pw.deltaevol) + y0;
                 }
             }
         }
@@ -923,174 +946,167 @@ public:
 
     void applyMurH() {
         if (!useMur) return;
-        const bool skipLowerCompactMur = hasPlaneWaveSource();
         auto mur_face = [](fdtd_real& bnd, fdtd_real int_now, fdtd_real past_int,
-                           fdtd_real past_bnd, double cab) {
+                           fdtd_real past_bnd, fdtd_real cab) {
             bnd = static_cast<fdtd_real>(past_int + cab * (int_now - past_bnd));
         };
 
-        // Back (x min): Hy and Hz at i=0
-        if (!skipLowerCompactMur) {
-            for (int j = 0; j < NY; ++j) {
-                for (int k = 0; k <= NZ; ++k) {
-                    const size_t p = static_cast<size_t>(j * (NZ + 1) + k);
-                    const int idx0 = hy_idx(0, j, k);
-                    const int idx1 = hy_idx(1, j, k);
-                    mur_face(Hy[idx0], Hy[idx1], murPastHyBackInt[p], murPastHyBack[p], backCab1);
-                }
-            }
-            for (int j = 0; j <= NY; ++j) {
-                for (int k = 0; k < NZ; ++k) {
-                    const size_t p = static_cast<size_t>(j * NZ + k);
-                    const int idx0 = hz_idx(0, j, k);
-                    const int idx1 = hz_idx(1, j, k);
-                    mur_face(Hz[idx0], Hz[idx1], murPastHzBackInt[p], murPastHzBack[p], backCab1);
-                }
+        // Back (x min): Fortran MURc uses sweepXI-1, one plane below the H sweep.
+        for (int j = -1; j <= NY - 1; ++j) {
+            for (int k = -1; k <= NZ - 2; ++k) {
+                const size_t p = static_cast<size_t>((j + 1) * NZ + (k + 1));
+                const int idx0 = hy_idx(-2, j, k);
+                const int idx1 = hy_idx(-1, j, k);
+                mur_face(Hy[idx0], Hy[idx1], murPastHyBackInt[p], murPastHyBack[p], backCab1);
             }
         }
-        // Front (x max): Hy and Hz at i=NX
-        for (int j = 0; j < NY; ++j) {
-            for (int k = 0; k <= NZ; ++k) {
-                const size_t p = static_cast<size_t>(j * (NZ + 1) + k);
-                const int idxN = hy_idx(NX, j, k);
-                const int idxI = hy_idx(NX - 1, j, k);
+        for (int j = -1; j <= NY - 2; ++j) {
+            for (int k = -1; k <= NZ - 1; ++k) {
+                const size_t p = static_cast<size_t>((j + 1) * (NZ + 1) + (k + 1));
+                const int idx0 = hz_idx(-2, j, k);
+                const int idx1 = hz_idx(-1, j, k);
+                mur_face(Hz[idx0], Hz[idx1], murPastHzBackInt[p], murPastHzBack[p], backCab1);
+            }
+        }
+        // Front (x max): Fortran first-order Mur writes MURc%XE, one plane above the H sweep.
+        for (int j = -1; j <= NY - 1; ++j) {
+            for (int k = -1; k <= NZ - 2; ++k) {
+                const size_t p = static_cast<size_t>((j + 1) * NZ + (k + 1));
+                const int idxN = hy_idx(NX - 1, j, k);
+                const int idxI = hy_idx(NX - 2, j, k);
                 mur_face(Hy[idxN], Hy[idxI], murPastHyFrontInt[p], murPastHyFront[p], frontCab1);
             }
         }
-        for (int j = 0; j <= NY; ++j) {
-            for (int k = 0; k < NZ; ++k) {
-                const size_t p = static_cast<size_t>(j * NZ + k);
-                const int idxN = hz_idx(NX, j, k);
-                const int idxI = hz_idx(NX - 1, j, k);
+        for (int j = -1; j <= NY - 2; ++j) {
+            for (int k = -1; k <= NZ - 1; ++k) {
+                const size_t p = static_cast<size_t>((j + 1) * (NZ + 1) + (k + 1));
+                const int idxN = hz_idx(NX - 1, j, k);
+                const int idxI = hz_idx(NX - 2, j, k);
                 mur_face(Hz[idxN], Hz[idxI], murPastHzFrontInt[p], murPastHzFront[p], frontCab1);
             }
         }
-        // Left (y min): Hx and Hz at j=0
-        if (!skipLowerCompactMur) {
-            for (int i = 0; i < NX; ++i) {
-                for (int k = 0; k <= NZ; ++k) {
-                    const size_t p = static_cast<size_t>(i * (NZ + 1) + k);
-                    const int idx0 = hx_idx(i, 0, k);
-                    const int idx1 = hx_idx(i, 1, k);
-                    mur_face(Hx[idx0], Hx[idx1], murPastHxLeftInt[p], murPastHxLeft[p], leftCab1);
-                }
-            }
-            for (int i = 0; i <= NX; ++i) {
-                for (int k = 0; k < NZ; ++k) {
-                    const size_t p = static_cast<size_t>(i * NZ + k);
-                    const int idx0 = hz_idx(i, 0, k);
-                    const int idx1 = hz_idx(i, 1, k);
-                    mur_face(Hz[idx0], Hz[idx1], murPastHzLeftInt[p], murPastHzLeft[p], leftCab1);
-                }
+        // Left (y min): Fortran MURc uses sweepYI-1, one plane below the H sweep.
+        for (int i = -1; i <= NX - 1; ++i) {
+            for (int k = -1; k <= NZ - 2; ++k) {
+                const size_t p = static_cast<size_t>((i + 1) * NZ + (k + 1));
+                const int idx0 = hx_idx(i, -2, k);
+                const int idx1 = hx_idx(i, -1, k);
+                mur_face(Hx[idx0], Hx[idx1], murPastHxLeftInt[p], murPastHxLeft[p], leftCab1);
             }
         }
-        // Right (y max): Hx and Hz at j=NY
-        for (int i = 0; i < NX; ++i) {
-            for (int k = 0; k <= NZ; ++k) {
-                const size_t p = static_cast<size_t>(i * (NZ + 1) + k);
-                const int idxN = hx_idx(i, NY, k);
-                const int idxI = hx_idx(i, NY - 1, k);
+        for (int i = -1; i <= NX - 2; ++i) {
+            for (int k = -1; k <= NZ - 1; ++k) {
+                const size_t p = static_cast<size_t>((i + 1) * (NZ + 1) + (k + 1));
+                const int idx0 = hz_idx(i, -2, k);
+                const int idx1 = hz_idx(i, -1, k);
+                mur_face(Hz[idx0], Hz[idx1], murPastHzLeftInt[p], murPastHzLeft[p], leftCab1);
+            }
+        }
+        // Right (y max): Fortran first-order Mur writes MURc%YE, one plane above the H sweep.
+        for (int i = -1; i <= NX - 1; ++i) {
+            for (int k = -1; k <= NZ - 2; ++k) {
+                const size_t p = static_cast<size_t>((i + 1) * NZ + (k + 1));
+                const int idxN = hx_idx(i, NY - 1, k);
+                const int idxI = hx_idx(i, NY - 2, k);
                 mur_face(Hx[idxN], Hx[idxI], murPastHxRightInt[p], murPastHxRight[p], rightCab1);
             }
         }
-        for (int i = 0; i <= NX; ++i) {
-            for (int k = 0; k < NZ; ++k) {
-                const size_t p = static_cast<size_t>(i * NZ + k);
-                const int idxN = hz_idx(i, NY, k);
-                const int idxI = hz_idx(i, NY - 1, k);
+        for (int i = -1; i <= NX - 2; ++i) {
+            for (int k = -1; k <= NZ - 1; ++k) {
+                const size_t p = static_cast<size_t>((i + 1) * (NZ + 1) + (k + 1));
+                const int idxN = hz_idx(i, NY - 1, k);
+                const int idxI = hz_idx(i, NY - 2, k);
                 mur_face(Hz[idxN], Hz[idxI], murPastHzRightInt[p], murPastHzRight[p], rightCab1);
             }
         }
-        // Down (z min): Hy and Hx at k=0
-        if (!skipLowerCompactMur) {
-            for (int i = 0; i <= NX; ++i) {
-                for (int j = 0; j < NY; ++j) {
-                    const size_t p = static_cast<size_t>(i * NY + j);
-                    const int idx0 = hy_idx(i, j, 0);
-                    const int idx1 = hy_idx(i, j, 1);
-                    mur_face(Hy[idx0], Hy[idx1], murPastHyDownInt[p], murPastHyDown[p], downCab1);
-                }
-            }
-            for (int i = 0; i < NX; ++i) {
-                for (int j = 0; j <= NY; ++j) {
-                    const size_t p = static_cast<size_t>(i * (NY + 1) + j);
-                    const int idx0 = hx_idx(i, j, 0);
-                    const int idx1 = hx_idx(i, j, 1);
-                    mur_face(Hx[idx0], Hx[idx1], murPastHxDownInt[p], murPastHxDown[p], downCab1);
-                }
+        // Down (z min): Fortran MURc uses sweepZI-1, one plane below the H sweep.
+        for (int i = -1; i <= NX - 2; ++i) {
+            for (int j = -1; j <= NY - 1; ++j) {
+                const size_t p = static_cast<size_t>((i + 1) * (NY + 1) + (j + 1));
+                const int idx0 = hy_idx(i, j, -2);
+                const int idx1 = hy_idx(i, j, -1);
+                mur_face(Hy[idx0], Hy[idx1], murPastHyDownInt[p], murPastHyDown[p], downCab1);
             }
         }
-        // Up (z max): Hy and Hx at k=NZ
-        for (int i = 0; i <= NX; ++i) {
-            for (int j = 0; j < NY; ++j) {
-                const size_t p = static_cast<size_t>(i * NY + j);
-                const int idxN = hy_idx(i, j, NZ);
-                const int idxI = hy_idx(i, j, NZ - 1);
+        for (int i = -1; i <= NX - 1; ++i) {
+            for (int j = -1; j <= NY - 2; ++j) {
+                const size_t p = static_cast<size_t>((i + 1) * NY + (j + 1));
+                const int idx0 = hx_idx(i, j, -2);
+                const int idx1 = hx_idx(i, j, -1);
+                mur_face(Hx[idx0], Hx[idx1], murPastHxDownInt[p], murPastHxDown[p], downCab1);
+            }
+        }
+        // Up (z max): Fortran first-order Mur writes MURc%ZE, one plane above the H sweep.
+        for (int i = -1; i <= NX - 2; ++i) {
+            for (int j = -1; j <= NY - 1; ++j) {
+                const size_t p = static_cast<size_t>((i + 1) * (NY + 1) + (j + 1));
+                const int idxN = hy_idx(i, j, NZ - 1);
+                const int idxI = hy_idx(i, j, NZ - 2);
                 mur_face(Hy[idxN], Hy[idxI], murPastHyUpInt[p], murPastHyUp[p], upCab1);
             }
         }
-        for (int i = 0; i < NX; ++i) {
-            for (int j = 0; j <= NY; ++j) {
-                const size_t p = static_cast<size_t>(i * (NY + 1) + j);
-                const int idxN = hx_idx(i, j, NZ);
-                const int idxI = hx_idx(i, j, NZ - 1);
+        for (int i = -1; i <= NX - 1; ++i) {
+            for (int j = -1; j <= NY - 2; ++j) {
+                const size_t p = static_cast<size_t>((i + 1) * NY + (j + 1));
+                const int idxN = hx_idx(i, j, NZ - 1);
+                const int idxI = hx_idx(i, j, NZ - 2);
                 mur_face(Hx[idxN], Hx[idxI], murPastHxUpInt[p], murPastHxUp[p], upCab1);
             }
         }
 
         // Store past fields (Fortran AdvanceMagneticMUR tail).
-        for (int j = 0; j < NY; ++j) {
-            for (int k = 0; k <= NZ; ++k) {
-                const size_t p = static_cast<size_t>(j * (NZ + 1) + k);
-                murPastHyBack[p] = Hy[hy_idx(0, j, k)];
-                murPastHyBackInt[p] = Hy[hy_idx(1, j, k)];
-                murPastHyFront[p] = Hy[hy_idx(NX, j, k)];
-                murPastHyFrontInt[p] = Hy[hy_idx(NX - 1, j, k)];
+        for (int j = -1; j <= NY - 1; ++j) {
+            for (int k = -1; k <= NZ - 2; ++k) {
+                const size_t p = static_cast<size_t>((j + 1) * NZ + (k + 1));
+                murPastHyBack[p] = Hy[hy_idx(-2, j, k)];
+                murPastHyBackInt[p] = Hy[hy_idx(-1, j, k)];
+                murPastHyFront[p] = Hy[hy_idx(NX - 1, j, k)];
+                murPastHyFrontInt[p] = Hy[hy_idx(NX - 2, j, k)];
             }
         }
-        for (int j = 0; j <= NY; ++j) {
-            for (int k = 0; k < NZ; ++k) {
-                const size_t p = static_cast<size_t>(j * NZ + k);
-                murPastHzBack[p] = Hz[hz_idx(0, j, k)];
-                murPastHzBackInt[p] = Hz[hz_idx(1, j, k)];
-                murPastHzFront[p] = Hz[hz_idx(NX, j, k)];
-                murPastHzFrontInt[p] = Hz[hz_idx(NX - 1, j, k)];
+        for (int j = -1; j <= NY - 2; ++j) {
+            for (int k = -1; k <= NZ - 1; ++k) {
+                const size_t p = static_cast<size_t>((j + 1) * (NZ + 1) + (k + 1));
+                murPastHzBack[p] = Hz[hz_idx(-2, j, k)];
+                murPastHzBackInt[p] = Hz[hz_idx(-1, j, k)];
+                murPastHzFront[p] = Hz[hz_idx(NX - 1, j, k)];
+                murPastHzFrontInt[p] = Hz[hz_idx(NX - 2, j, k)];
             }
         }
-        for (int i = 0; i < NX; ++i) {
-            for (int k = 0; k <= NZ; ++k) {
-                const size_t p = static_cast<size_t>(i * (NZ + 1) + k);
-                murPastHxLeft[p] = Hx[hx_idx(i, 0, k)];
-                murPastHxLeftInt[p] = Hx[hx_idx(i, 1, k)];
-                murPastHxRight[p] = Hx[hx_idx(i, NY, k)];
-                murPastHxRightInt[p] = Hx[hx_idx(i, NY - 1, k)];
+        for (int i = -1; i <= NX - 1; ++i) {
+            for (int k = -1; k <= NZ - 2; ++k) {
+                const size_t p = static_cast<size_t>((i + 1) * NZ + (k + 1));
+                murPastHxLeft[p] = Hx[hx_idx(i, -2, k)];
+                murPastHxLeftInt[p] = Hx[hx_idx(i, -1, k)];
+                murPastHxRight[p] = Hx[hx_idx(i, NY - 1, k)];
+                murPastHxRightInt[p] = Hx[hx_idx(i, NY - 2, k)];
             }
         }
-        for (int i = 0; i <= NX; ++i) {
-            for (int k = 0; k < NZ; ++k) {
-                const size_t p = static_cast<size_t>(i * NZ + k);
-                murPastHzLeft[p] = Hz[hz_idx(i, 0, k)];
-                murPastHzLeftInt[p] = Hz[hz_idx(i, 1, k)];
-                murPastHzRight[p] = Hz[hz_idx(i, NY, k)];
-                murPastHzRightInt[p] = Hz[hz_idx(i, NY - 1, k)];
+        for (int i = -1; i <= NX - 2; ++i) {
+            for (int k = -1; k <= NZ - 1; ++k) {
+                const size_t p = static_cast<size_t>((i + 1) * (NZ + 1) + (k + 1));
+                murPastHzLeft[p] = Hz[hz_idx(i, -2, k)];
+                murPastHzLeftInt[p] = Hz[hz_idx(i, -1, k)];
+                murPastHzRight[p] = Hz[hz_idx(i, NY - 1, k)];
+                murPastHzRightInt[p] = Hz[hz_idx(i, NY - 2, k)];
             }
         }
-        for (int i = 0; i <= NX; ++i) {
-            for (int j = 0; j < NY; ++j) {
-                const size_t p = static_cast<size_t>(i * NY + j);
-                murPastHyDown[p] = Hy[hy_idx(i, j, 0)];
-                murPastHyDownInt[p] = Hy[hy_idx(i, j, 1)];
-                murPastHyUp[p] = Hy[hy_idx(i, j, NZ)];
-                murPastHyUpInt[p] = Hy[hy_idx(i, j, NZ - 1)];
+        for (int i = -1; i <= NX - 2; ++i) {
+            for (int j = -1; j <= NY - 1; ++j) {
+                const size_t p = static_cast<size_t>((i + 1) * (NY + 1) + (j + 1));
+                murPastHyDown[p] = Hy[hy_idx(i, j, -2)];
+                murPastHyDownInt[p] = Hy[hy_idx(i, j, -1)];
+                murPastHyUp[p] = Hy[hy_idx(i, j, NZ - 1)];
+                murPastHyUpInt[p] = Hy[hy_idx(i, j, NZ - 2)];
             }
         }
-        for (int i = 0; i < NX; ++i) {
-            for (int j = 0; j <= NY; ++j) {
-                const size_t p = static_cast<size_t>(i * (NY + 1) + j);
-                murPastHxDown[p] = Hx[hx_idx(i, j, 0)];
-                murPastHxDownInt[p] = Hx[hx_idx(i, j, 1)];
-                murPastHxUp[p] = Hx[hx_idx(i, j, NZ)];
-                murPastHxUpInt[p] = Hx[hx_idx(i, j, NZ - 1)];
+        for (int i = -1; i <= NX - 1; ++i) {
+            for (int j = -1; j <= NY - 2; ++j) {
+                const size_t p = static_cast<size_t>((i + 1) * NY + (j + 1));
+                murPastHxDown[p] = Hx[hx_idx(i, j, -2)];
+                murPastHxDownInt[p] = Hx[hx_idx(i, j, -1)];
+                murPastHxUp[p] = Hx[hx_idx(i, j, NZ - 1)];
+                murPastHxUpInt[p] = Hx[hx_idx(i, j, NZ - 2)];
             }
         }
     }
@@ -1156,7 +1172,8 @@ public:
         if (planewave_switched_off || planeWaves.empty()) return;
         still_planewave_time = false;
         const int XI = 1, XE = NX, YI = 1, YE = NY, ZI = 1, ZE = NZ;
-        const fdtd_real G2_1 = static_cast<fdtd_real>(dt) / static_cast<fdtd_real>(eps0);
+        const fdtd_real G2_1 = static_cast<fdtd_real>(
+            dt / static_cast<double>(static_cast<fdtd_real>(eps0)));
         for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
             const auto& pw = planeWaves[pwIdx];
             if (pw.iluminaTr) {
@@ -1274,7 +1291,8 @@ public:
         if (planewave_switched_off || planeWaves.empty()) return;
         still_planewave_time = false;
         const int XI = 1, XE = NX, YI = 1, YE = NY, ZI = 1, ZE = NZ;
-        const fdtd_real Gm2_1 = static_cast<fdtd_real>(dt) / static_cast<fdtd_real>(mu0);
+        const fdtd_real Gm2_1 = static_cast<fdtd_real>(
+            dt / static_cast<double>(static_cast<fdtd_real>(mu0)));
         const double timeH = currentTime + 0.5 * dt;
         for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
             const auto& pw = planeWaves[pwIdx];
@@ -1404,13 +1422,13 @@ public:
             for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
                 if (probe.field == "magnetic") {
                     const double timeH = currentTime + 0.5 * dt;
-                    inc_x += computeIncid(pwIdx, 3, timeH, ci, cj, ck);
-                    inc_y += computeIncid(pwIdx, 4, timeH, ci, cj, ck);
-                    inc_z += computeIncid(pwIdx, 5, timeH, ci, cj, ck);
+                    inc_x += computeIncid(pwIdx, 3, timeH, ci, cj, ck, true);
+                    inc_y += computeIncid(pwIdx, 4, timeH, ci, cj, ck, true);
+                    inc_z += computeIncid(pwIdx, 5, timeH, ci, cj, ck, true);
                 } else {
-                    inc_x += computeIncid(pwIdx, 0, currentTime, ci, cj, ck);
-                    inc_y += computeIncid(pwIdx, 1, currentTime, ci, cj, ck);
-                    inc_z += computeIncid(pwIdx, 2, currentTime, ci, cj, ck);
+                    inc_x += computeIncid(pwIdx, 0, currentTime, ci, cj, ck, true);
+                    inc_y += computeIncid(pwIdx, 1, currentTime, ci, cj, ck, true);
+                    inc_z += computeIncid(pwIdx, 2, currentTime, ci, cj, ck, true);
                 }
             }
             probe.timeData.push_back(currentTime);
@@ -1435,7 +1453,7 @@ public:
     void writeProbeOutputs(const std::string& caseName) {
         for (auto& probe : probes) {
             if (probe.domainType != "time") continue;
-            std::string fname = caseName + ".fdtd_" + probe.name + "_";
+            std::string fname = probeOutputPrefix(caseName) + probe.name + "_";
             std::string fieldDir = (probe.field == "magnetic") ? "H" : "E";
             for (size_t d = 0; d < probe.directions.size(); ++d) {
                 std::string fullname = fname + fieldDir + probe.directions[d] + "_";
@@ -1702,6 +1720,20 @@ ProbeSeries readProbeDat(const std::string& path) {
     return ps;
 }
 
+std::vector<std::string> readProbeLines(const std::string& path) {
+    std::vector<std::string> lines;
+    std::ifstream in(path);
+    if (!in.is_open()) return lines;
+    std::string line;
+    while (std::getline(in, line)) {
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        lines.push_back(line);
+    }
+    return lines;
+}
+
 double correlation(const std::vector<double>& a, const std::vector<double>& b) {
     if (a.size() != b.size() || a.empty()) return 0.0;
     const size_t n = a.size();
@@ -1728,17 +1760,23 @@ int compareProbeSeries(const char* name,
                        const ProbeSeries& got,
                        const ProbeSeries& ref,
                        int max_steps) {
-    if (got.field.empty() || ref.field.empty()) {
+    if (got.field.empty() || ref.field.empty() ||
+        got.incid.empty() || ref.incid.empty()) {
         std::cerr << "pw-in-box " << name << " probe missing data: got="
-                  << got.field.size() << " ref=" << ref.field.size() << std::endl;
+                  << got.field.size() << "/" << got.incid.size()
+                  << " ref=" << ref.field.size() << "/" << ref.incid.size()
+                  << std::endl;
         return 1;
     }
     const size_t wanted = max_steps >= 0
                               ? static_cast<size_t>(max_steps) + 1
                               : std::min(got.field.size(), ref.field.size());
-    if (got.field.size() < wanted || ref.field.size() < wanted) {
+    if (got.field.size() < wanted || ref.field.size() < wanted ||
+        got.incid.size() < wanted || ref.incid.size() < wanted ||
+        got.time.size() < wanted || ref.time.size() < wanted) {
         std::cerr << "pw-in-box " << name << " probe too short: got="
-                  << got.field.size() << " ref=" << ref.field.size()
+                  << got.field.size() << "/" << got.incid.size()
+                  << " ref=" << ref.field.size() << "/" << ref.incid.size()
                   << " wanted=" << wanted << std::endl;
         return 1;
     }
@@ -1746,17 +1784,106 @@ int compareProbeSeries(const char* name,
     constexpr double field_atol = 3e-4;
     constexpr double field_rtol = 1e-3;
     constexpr double time_atol = 1e-15;
+    size_t first_bad = wanted;
+    const char* first_kind = "";
+    double first_diff = 0.0;
+    double first_tol = 0.0;
+    size_t max_field_sample = 0;
+    size_t max_incid_sample = 0;
+    size_t max_time_sample = 0;
+    double max_field_diff = 0.0;
+    double max_incid_diff = 0.0;
+    double max_time_diff = 0.0;
     for (size_t s = 0; s < wanted; ++s) {
         const double dt = std::abs(got.time[s] - ref.time[s]);
         const double df = std::abs(got.field[s] - ref.field[s]);
-        const double tol = field_atol + field_rtol * std::abs(ref.field[s]);
-        if (dt > time_atol || df > tol) {
-            std::cerr << "pw-in-box " << name << " mismatch at sample " << s
-                      << ": t got=" << got.time[s] << " ref=" << ref.time[s]
-                      << ", field got=" << got.field[s] << " ref=" << ref.field[s]
-                      << ", diff=" << df << ", tol=" << tol << std::endl;
-            return 1;
+        const double di = std::abs(got.incid[s] - ref.incid[s]);
+        const double field_tol = field_atol + field_rtol * std::abs(ref.field[s]);
+        const double incid_tol = field_atol + field_rtol * std::abs(ref.incid[s]);
+        if (df > max_field_diff) {
+            max_field_diff = df;
+            max_field_sample = s;
         }
+        if (di > max_incid_diff) {
+            max_incid_diff = di;
+            max_incid_sample = s;
+        }
+        if (dt > max_time_diff) {
+            max_time_diff = dt;
+            max_time_sample = s;
+        }
+        if (first_bad == wanted) {
+            if (dt > time_atol) {
+                first_bad = s;
+                first_kind = "time";
+                first_diff = dt;
+                first_tol = time_atol;
+            } else if (df > field_tol) {
+                first_bad = s;
+                first_kind = "field";
+                first_diff = df;
+                first_tol = field_tol;
+            } else if (di > incid_tol) {
+                first_bad = s;
+                first_kind = "incident";
+                first_diff = di;
+                first_tol = incid_tol;
+            }
+        }
+    }
+    if (first_bad != wanted) {
+        std::cerr << "pw-in-box " << name << " " << first_kind
+                  << " mismatch at sample " << first_bad
+                  << ": t got=" << got.time[first_bad] << " ref=" << ref.time[first_bad]
+                  << ", field got=" << got.field[first_bad]
+                  << " ref=" << ref.field[first_bad]
+                  << ", incident got=" << got.incid[first_bad]
+                  << " ref=" << ref.incid[first_bad]
+                  << ", diff=" << first_diff << ", tol=" << first_tol
+                  << "; max field diff=" << max_field_diff
+                  << " at sample " << max_field_sample
+                  << ", max incident diff=" << max_incid_diff
+                  << " at sample " << max_incid_sample
+                  << ", max time diff=" << max_time_diff
+                  << " at sample " << max_time_sample
+                  << std::endl;
+        return 1;
+    }
+    return 0;
+}
+
+int compareProbeFileExact(const char* name,
+                          const std::string& got_path,
+                          const std::string& ref_path,
+                          int max_steps) {
+    const std::vector<std::string> got = readProbeLines(got_path);
+    const std::vector<std::string> ref = readProbeLines(ref_path);
+    if (got.empty() || ref.empty()) {
+        std::cerr << "pw-in-box " << name << " exact probe missing data: got="
+                  << got.size() << " ref=" << ref.size() << std::endl;
+        return 1;
+    }
+    const size_t wanted = max_steps >= 0
+                              ? static_cast<size_t>(max_steps) + 2
+                              : std::min(got.size(), ref.size());
+    if (got.size() < wanted || ref.size() < wanted) {
+        std::cerr << "pw-in-box " << name << " exact probe too short: got="
+                  << got.size() << " ref=" << ref.size()
+                  << " wanted=" << wanted << std::endl;
+        return 1;
+    }
+    for (size_t line = 0; line < wanted; ++line) {
+        if (got[line] == ref[line]) continue;
+        std::cerr << "pw-in-box " << name << " exact probe mismatch at line "
+                  << (line + 1) << ": got=\"" << got[line]
+                  << "\" ref=\"" << ref[line] << "\"" << std::endl;
+        return 1;
+    }
+    if (max_steps < 0 && got.size() != ref.size()) {
+        std::cerr << "pw-in-box " << name
+                  << " exact probe line count mismatch: got=" << got.size()
+                  << " ref=" << ref.size() << std::endl;
+        return 1;
     }
     return 0;
 }
@@ -1841,12 +1968,13 @@ double test_mur_apply_back_hy(const std::string& json_path) {
     if (solver.NY < 4 || solver.NZ < 4) return 0.0;
     const int j = 2;
     const int k = 2;
-    const int idx0 = solver.hy_idx(0, j, k);
-    const int idx1 = solver.hy_idx(1, j, k);
+    const int idx0 = solver.hy_idx(-2, j, k);
+    const int idx1 = solver.hy_idx(-1, j, k);
     solver.Hy[idx0] = 1.0;
     solver.Hy[idx1] = 0.5;
-    solver.murPastHyBack[static_cast<size_t>(j * (solver.NZ + 1) + k)] = 0.2;
-    solver.murPastHyBackInt[static_cast<size_t>(j * (solver.NZ + 1) + k)] = 0.4;
+    const size_t p = static_cast<size_t>((j + 1) * solver.NZ + (k + 1));
+    solver.murPastHyBack[p] = 0.2;
+    solver.murPastHyBackInt[p] = 0.4;
     solver.applyMurH();
     return solver.Hy[idx0];
 }
@@ -1927,10 +2055,11 @@ int test_run_pw_in_box_probes(const std::string& json_path,
     solver.launch();
     const std::string case_name = extractCaseNameFromInput(json_abs.string());
     solver.end(case_name);
+    const std::string probe_prefix = probeOutputPrefix(case_name);
 
-    const ProbeSeries got_b = readProbeDat(case_name + ".fdtd_before_Ex_3_3_1.dat");
-    const ProbeSeries got_i = readProbeDat(case_name + ".fdtd_inbox_Ex_3_3_3.dat");
-    const ProbeSeries got_a = readProbeDat(case_name + ".fdtd_after_Ex_3_3_5.dat");
+    const ProbeSeries got_b = readProbeDat(probe_prefix + "before_Ex_3_3_1.dat");
+    const ProbeSeries got_i = readProbeDat(probe_prefix + "inbox_Ex_3_3_3.dat");
+    const ProbeSeries got_a = readProbeDat(probe_prefix + "after_Ex_3_3_5.dat");
     const ProbeSeries expected_b = readProbeDat(ref_before_abs.string());
     const ProbeSeries expected_i = readProbeDat(ref_inbox_abs.string());
     const ProbeSeries expected_a = readProbeDat(ref_after_abs.string());
@@ -1971,6 +2100,59 @@ int test_run_pw_in_box_probes(const std::string& json_path,
         }
     }
 
+    return err;
+}
+
+int test_run_pw_in_box_probe_files_exact(const std::string& json_path,
+                                         const std::string& ref_before,
+                                         const std::string& ref_inbox,
+                                         const std::string& ref_after,
+                                         int max_steps) {
+    const std::filesystem::path json_abs = std::filesystem::absolute(json_path);
+    const std::filesystem::path ref_before_abs = std::filesystem::absolute(ref_before);
+    const std::filesystem::path ref_inbox_abs = std::filesystem::absolute(ref_inbox);
+    const std::filesystem::path ref_after_abs = std::filesystem::absolute(ref_after);
+    const std::filesystem::path case_dir = json_abs.parent_path();
+    const std::filesystem::path old_cwd = std::filesystem::current_path();
+    const std::filesystem::path work_dir =
+        std::filesystem::temp_directory_path() / "semba_pw_in_box_exact_test";
+    std::error_code ec;
+    std::filesystem::remove_all(work_dir, ec);
+    std::filesystem::create_directories(work_dir, ec);
+    std::filesystem::copy_file(json_abs, work_dir / json_abs.filename(),
+                               std::filesystem::copy_options::overwrite_existing, ec);
+    const std::filesystem::path exc_src = case_dir / "gauss_1GHz.exc";
+    if (std::filesystem::exists(exc_src)) {
+        std::filesystem::copy_file(exc_src, work_dir / exc_src.filename(),
+                                   std::filesystem::copy_options::overwrite_existing, ec);
+    }
+    std::filesystem::current_path(work_dir);
+
+    FDTD_Solver solver;
+    solver.init(json_abs.filename().string(), false);
+    if (max_steps >= 0) {
+        solver.numSteps = max_steps;
+    }
+    solver.launch();
+    const std::string case_name = extractCaseNameFromInput(json_abs.string());
+    solver.end(case_name);
+    const std::string probe_prefix = probeOutputPrefix(case_name);
+
+    const std::string got_b = probe_prefix + "before_Ex_3_3_1.dat";
+    const std::string got_i = probe_prefix + "inbox_Ex_3_3_3.dat";
+    const std::string got_a = probe_prefix + "after_Ex_3_3_5.dat";
+    int err = 0;
+    if (compareProbeFileExact("before", got_b, ref_before_abs.string(), max_steps) != 0) {
+        err += 16;
+    }
+    if (compareProbeFileExact("inbox", got_i, ref_inbox_abs.string(), max_steps) != 0) {
+        err += 32;
+    }
+    if (compareProbeFileExact("after", got_a, ref_after_abs.string(), max_steps) != 0) {
+        err += 64;
+    }
+
+    std::filesystem::current_path(old_cwd);
     return err;
 }
 

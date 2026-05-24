@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <filesystem>
+#include <limits>
 #include <string>
 
 namespace bordersmur_test {
@@ -18,7 +19,18 @@ inline std::string pulse1dJson() {
 }
 
 inline double expectedMurCx(double dt, double dx) {
-    return (C0 * dt - dx) / (C0 * dt + dx);
+#ifdef CompileWithReal8
+    const double cnum = dx / (dt * C0);
+    return (1.0 - cnum) / (1.0 + cnum);
+#else
+    const auto one = static_cast<float>(1.0f);
+    const auto inv = std::nextafter(one / static_cast<float>(dx),
+                                    -std::numeric_limits<float>::infinity());
+    const auto cluz = static_cast<float>(C0);
+    const auto cnum = static_cast<float>(
+        static_cast<double>(one / inv) / (dt * static_cast<double>(cluz)));
+    return static_cast<double>((one - cnum) / (one + cnum));
+#endif
 }
 
 } // namespace bordersmur_test
