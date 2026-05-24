@@ -116,6 +116,53 @@ struct probe_output_t {
     std::vector<std::vector<double>> fieldByDir;
     std::vector<std::vector<double>> incidentByDir;
 };
+
+struct HollandWireSegment_t {
+    int i = 0, j = 0, k = 0;
+    int direction = 3;
+    int nd = 0;
+    int chargeMinus = -1;
+    int chargePlus = -1;
+    double radius = 0.0;
+    double resistance = 0.0;
+    double inductance = 0.0;
+    double delta = 0.0;
+    double deltaTransv1 = 0.0;
+    double deltaTransv2 = 0.0;
+    double lind = 0.0;
+    double cte1 = 1.0;
+    double cte2 = 0.0;
+    double cte3 = 0.0;
+    double cte5 = 0.0;
+    double current = 0.0;
+    double currentpast = 0.0;
+    double qplus_qminus = 0.0;
+};
+
+struct HollandWireNode_t {
+    int i = 0, j = 0, k = 0;
+    double chargePresent = 0.0;
+    double chargePast = 0.0;
+    double ctePlain = 0.0;
+    double cteProp = 1.0;
+    std::vector<int> currentPlus;
+    std::vector<int> currentMinus;
+};
+
+struct HollandWireProbe_t {
+    std::string name;
+    int segmentIndex = -1;
+    int cellI = 0, cellJ = 0, cellK = 0;
+    int direction = 3;
+    int nd = 0;
+    int delaySteps = 0;
+    std::vector<double> timeData;
+    std::vector<double> currentData;
+    std::vector<double> eTimesDlData;
+    std::vector<double> vplusData;
+    std::vector<double> vminusData;
+    std::vector<double> vdropData;
+};
 struct boundary_t { std::string type = "mur"; int layers = 10; int order = 2; double reflection = 0.001; };
 
 struct PlaneWaveState_t {
@@ -405,6 +452,9 @@ public:
     std::map<std::string, ExcitationData> excitations;
     std::vector<PlaneWaveState_t> planeWaves;
     std::vector<probe_output_t> probes;
+    std::vector<HollandWireSegment_t> hollandSegments;
+    std::vector<HollandWireNode_t> hollandNodes;
+    std::vector<HollandWireProbe_t> hollandProbes;
     bool still_planewave_time = true;
     bool planewave_switched_off = false;
     bool useMur = true;
@@ -503,12 +553,14 @@ public:
             initPlaneWave(i);
         }
         probes = pd.probes.probes;
+        initHollandWires();
 
         useMur = true;
         usePec = false;
         if (!pd.boundaries.boundaries.empty()) {
             const std::string btype = pd.boundaries.boundaries[0].type;
-            useMur = (btype == "mur" || btype == "MUR");
+            useMur = (btype == "mur" || btype == "MUR" ||
+                      btype == "pml" || btype == "PML");
             usePec = (btype == "pec" || btype == "PEC");
         }
         initMurBorders();
@@ -829,6 +881,361 @@ public:
                   << " ilumina=" << pw.iluminaTr << pw.iluminaFr << pw.iluminaIz
                   << pw.iluminaDe << pw.iluminaAb << pw.iluminaAr
                   << " samples=" << pw.numSamples << std::endl;
+    }
+
+    double hollandStepForDirection(int direction) const {
+        if (direction == 1) return dx;
+        if (direction == 2) return dy;
+        return dz;
+    }
+
+    double hollandFieldValue(const HollandWireSegment_t& segment) const {
+        const int i = segment.i - 1;
+        const int j = segment.j - 1;
+        const int k = segment.k - 1;
+        if (segment.direction == 1 && in_ex(i, j, k)) return Ex[ex_idx(i, j, k)];
+        if (segment.direction == 2 && in_ey(i, j, k)) return Ey[ey_idx(i, j, k)];
+        if (segment.direction == 3 && in_ez(i, j, k)) return Ez[ez_idx(i, j, k)];
+        return 0.0;
+    }
+
+    void addToHollandField(const HollandWireSegment_t& segment, double value) {
+        const int i = segment.i - 1;
+        const int j = segment.j - 1;
+        const int k = segment.k - 1;
+        if (segment.direction == 1 && in_ex(i, j, k)) {
+            Ex[ex_idx(i, j, k)] = static_cast<fdtd_real>(static_cast<double>(Ex[ex_idx(i, j, k)]) + value);
+        } else if (segment.direction == 2 && in_ey(i, j, k)) {
+            Ey[ey_idx(i, j, k)] = static_cast<fdtd_real>(static_cast<double>(Ey[ey_idx(i, j, k)]) + value);
+        } else if (segment.direction == 3 && in_ez(i, j, k)) {
+            Ez[ez_idx(i, j, k)] = static_cast<fdtd_real>(static_cast<double>(Ez[ez_idx(i, j, k)]) + value);
+        }
+    }
+
+    static std::string hollandNodeKey(const std::array<int, 3>& p) {
+        return std::to_string(p[0]) + "," + std::to_string(p[1]) + "," + std::to_string(p[2]);
+    }
+
+    int getOrCreateHollandNode(std::map<std::string, int>& nodeByCoord,
+                               const std::array<int, 3>& p) {
+        const std::string key = hollandNodeKey(p);
+        auto it = nodeByCoord.find(key);
+        if (it != nodeByCoord.end()) return it->second;
+        HollandWireNode_t node;
+        node.i = p[0];
+        node.j = p[1];
+        node.k = p[2];
+        const int idx = static_cast<int>(hollandNodes.size());
+        hollandNodes.push_back(node);
+        nodeByCoord[key] = idx;
+        return idx;
+    }
+
+    double hollandSelfInductance(double radius, double deltaTransv1, double deltaTransv2) const {
+        const double invMu = 1.0 / mu0;
+        double lind = (1.0 / (4.0 * PI * invMu)) *
+            (std::log((deltaTransv1 * deltaTransv1 + deltaTransv2 * deltaTransv2) /
+                      (4.0 * radius * radius)) +
+             deltaTransv1 / deltaTransv2 * std::atan(deltaTransv2 / deltaTransv1) +
+             deltaTransv2 / deltaTransv1 * std::atan(deltaTransv1 / deltaTransv2) +
+             PI * radius * radius / (deltaTransv2 * deltaTransv1) - 3.0);
+        if (radius < 0.3 * deltaTransv1 || radius < 0.3 * deltaTransv2) {
+            lind -= 0.57 / (4.0 * PI * invMu);
+        }
+        if (radius > 0.3 * deltaTransv1 || radius > 0.3 * deltaTransv2) {
+            lind /= (1.0 - PI * radius * radius / (deltaTransv1 * deltaTransv2));
+        }
+        return lind;
+    }
+
+    void finishHollandConstants() {
+        const double invMu = 1.0 / mu0;
+        const double invEps = 1.0 / eps0;
+        const fdtd_real g2_real = static_cast<fdtd_real>(
+            dt / static_cast<double>(static_cast<fdtd_real>(eps0)));
+        const double g2 = static_cast<double>(g2_real);
+        for (auto& node : hollandNodes) {
+            double deltaSum = 0.0;
+            for (int segIdx : node.currentPlus) {
+                deltaSum += hollandSegments[static_cast<size_t>(segIdx)].delta * 0.5;
+            }
+            for (int segIdx : node.currentMinus) {
+                deltaSum += hollandSegments[static_cast<size_t>(segIdx)].delta * 0.5;
+            }
+            const int nConn = static_cast<int>(node.currentPlus.size() + node.currentMinus.size());
+            if (deltaSum > 0.0) {
+                node.ctePlain = (nConn == 1) ? dt / (2.0 * deltaSum) : dt / deltaSum;
+            }
+            node.cteProp = 1.0;
+        }
+        for (auto& seg : hollandSegments) {
+            seg.lind = hollandSelfInductance(seg.radius, seg.deltaTransv1, seg.deltaTransv2) +
+                       seg.inductance;
+            const double denom = seg.lind / dt + seg.resistance * 0.5;
+            seg.cte1 = (seg.lind / dt - seg.resistance * 0.5) / denom;
+            seg.cte3 = invMu * invEps / seg.delta * seg.lind / denom;
+            seg.cte2 = 1.0 / denom;
+            seg.cte5 = g2 / (seg.deltaTransv1 * seg.deltaTransv2);
+        }
+    }
+
+    void initHollandWires() {
+        hollandSegments.clear();
+        hollandNodes.clear();
+        hollandProbes.clear();
+        if (inputRoot.is_null() || !inputRoot.contains("materials") ||
+            !inputRoot.contains("mesh") || !inputRoot["mesh"].contains("coordinates") ||
+            !inputRoot["mesh"].contains("elements") || !inputRoot.contains("materialAssociations")) {
+            return;
+        }
+
+        struct WireMaterial {
+            bool isWire = false;
+            double radius = 0.0;
+            double resistance = 0.0;
+            double inductance = 0.0;
+        };
+        std::map<int, WireMaterial> wireMaterials;
+        for (const auto& mat : inputRoot["materials"]) {
+            if (mat.value("type", std::string()) != "wire") continue;
+            WireMaterial wm;
+            wm.isWire = true;
+            wm.radius = mat.value("radius", 0.0);
+            wm.resistance = mat.value("resistancePerMeter", 0.0);
+            wm.inductance = mat.value("inductancePerMeter", 0.0);
+            wireMaterials[mat.value("id", 0)] = wm;
+        }
+        if (wireMaterials.empty()) return;
+
+        std::map<int, std::array<int, 3>> coordPos;
+        for (const auto& c : inputRoot["mesh"]["coordinates"]) {
+            const int id = c.value("id", 0);
+            const auto& rp = c["relativePosition"];
+            coordPos[id] = {rp[0].get<int>(), rp[1].get<int>(), rp[2].get<int>()};
+        }
+        std::map<int, std::vector<int>> elementCoordIds;
+        std::map<int, std::string> elementTypes;
+        for (const auto& e : inputRoot["mesh"]["elements"]) {
+            const int id = e.value("id", 0);
+            elementTypes[id] = e.value("type", std::string());
+            if (e.contains("coordinateIds")) {
+                for (const auto& cid : e["coordinateIds"]) {
+                    elementCoordIds[id].push_back(cid.get<int>());
+                }
+            }
+        }
+
+        std::map<std::string, int> nodeByCoord;
+        for (const auto& assoc : inputRoot["materialAssociations"]) {
+            const int matId = assoc.value("materialId", 0);
+            auto matIt = wireMaterials.find(matId);
+            if (matIt == wireMaterials.end() || !matIt->second.isWire) continue;
+            if (!assoc.contains("elementIds")) continue;
+            for (const auto& elemIdJson : assoc["elementIds"]) {
+                const int elemId = elemIdJson.get<int>();
+                if (elementTypes[elemId] != "polyline") continue;
+                const auto elemIt = elementCoordIds.find(elemId);
+                if (elemIt == elementCoordIds.end() || elemIt->second.size() < 2) continue;
+                for (size_t cidx = 0; cidx + 1 < elemIt->second.size(); ++cidx) {
+                    const auto p0 = coordPos[elemIt->second[cidx]];
+                    const auto p1 = coordPos[elemIt->second[cidx + 1]];
+                    int axis = -1;
+                    int deltaCells = 0;
+                    for (int a = 0; a < 3; ++a) {
+                        const int diff = p1[a] - p0[a];
+                        if (diff != 0) {
+                            if (axis >= 0) {
+                                axis = -1;
+                                break;
+                            }
+                            axis = a;
+                            deltaCells = diff;
+                        }
+                    }
+                    if (axis < 0 || deltaCells == 0) continue;
+                    const int sign = (deltaCells > 0) ? 1 : -1;
+                    const int nCells = std::abs(deltaCells);
+                    for (int s = 0; s < nCells; ++s) {
+                        std::array<int, 3> minus = p0;
+                        minus[axis] = (sign > 0) ? p0[axis] + s : p0[axis] - s - 1;
+                        std::array<int, 3> plus = minus;
+                        plus[axis] += 1;
+                        HollandWireSegment_t seg;
+                        seg.i = minus[0];
+                        seg.j = minus[1];
+                        seg.k = minus[2];
+                        seg.direction = axis + 1;
+                        seg.nd = static_cast<int>(hollandSegments.size()) + 3;
+                        seg.radius = matIt->second.radius;
+                        seg.resistance = matIt->second.resistance;
+                        seg.inductance = matIt->second.inductance;
+                        seg.delta = hollandStepForDirection(seg.direction);
+                        if (seg.direction == 1) {
+                            seg.deltaTransv1 = dy;
+                            seg.deltaTransv2 = dz;
+                        } else if (seg.direction == 2) {
+                            seg.deltaTransv1 = dz;
+                            seg.deltaTransv2 = dx;
+                        } else {
+                            seg.deltaTransv1 = dx;
+                            seg.deltaTransv2 = dy;
+                        }
+                        seg.chargeMinus = getOrCreateHollandNode(nodeByCoord, minus);
+                        seg.chargePlus = getOrCreateHollandNode(nodeByCoord, plus);
+                        const int segIdx = static_cast<int>(hollandSegments.size());
+                        hollandNodes[static_cast<size_t>(seg.chargeMinus)].currentPlus.push_back(segIdx);
+                        hollandNodes[static_cast<size_t>(seg.chargePlus)].currentMinus.push_back(segIdx);
+                        hollandSegments.push_back(seg);
+                    }
+                }
+            }
+        }
+        if (hollandSegments.empty()) return;
+        finishHollandConstants();
+
+        for (const auto& probe : probes) {
+            if (probe.type != "wire" || probe.field != "current" || probe.elementIds.empty()) continue;
+            const int nodeElemId = probe.elementIds[0];
+            auto elemIt = elementCoordIds.find(nodeElemId);
+            if (elemIt == elementCoordIds.end() || elemIt->second.empty()) continue;
+            const auto posIt = coordPos.find(elemIt->second[0]);
+            if (posIt == coordPos.end()) continue;
+            const auto p = posIt->second;
+            int bestSeg = -1;
+            for (size_t s = 0; s < hollandSegments.size(); ++s) {
+                const auto& seg = hollandSegments[s];
+                if (seg.i == p[0] && seg.j == p[1] && seg.k == p[2]) {
+                    bestSeg = static_cast<int>(s);
+                    break;
+                }
+            }
+            if (bestSeg < 0) {
+                double bestDist2 = std::numeric_limits<double>::max();
+                for (size_t s = 0; s < hollandSegments.size(); ++s) {
+                    const auto& seg = hollandSegments[s];
+                    const double di = static_cast<double>(seg.i - p[0]);
+                    const double dj = static_cast<double>(seg.j - p[1]);
+                    const double dk = static_cast<double>(seg.k - p[2]);
+                    const double d2 = di * di + dj * dj + dk * dk;
+                    if (d2 < bestDist2) {
+                        bestDist2 = d2;
+                        bestSeg = static_cast<int>(s);
+                    }
+                }
+            }
+            if (bestSeg < 0) continue;
+            const auto& seg = hollandSegments[static_cast<size_t>(bestSeg)];
+            HollandWireProbe_t wp;
+            wp.name = probe.name;
+            wp.segmentIndex = bestSeg;
+            wp.cellI = p[0];
+            wp.cellJ = p[1];
+            wp.cellK = p[2];
+            wp.direction = seg.direction;
+            wp.nd = seg.nd;
+            wp.delaySteps = (dt > 0.0)
+                                ? static_cast<int>(std::floor(
+                                      hollandStepForDirection(seg.direction) / (C0 * dt)))
+                                : 0;
+            hollandProbes.push_back(wp);
+        }
+    }
+
+    void advanceHollandWiresE() {
+        if (hollandSegments.empty()) return;
+        for (auto& node : hollandNodes) {
+            node.chargePast = node.chargePresent;
+            double iPlus = 0.0;
+            double iMinus = 0.0;
+            for (int segIdx : node.currentPlus) {
+                iPlus += hollandSegments[static_cast<size_t>(segIdx)].current;
+            }
+            for (int segIdx : node.currentMinus) {
+                iMinus += hollandSegments[static_cast<size_t>(segIdx)].current;
+            }
+            if (node.currentMinus.size() == 1 && node.currentPlus.empty()) {
+                iPlus = -iMinus;
+            }
+            if (node.currentMinus.empty() && node.currentPlus.size() == 1) {
+                iMinus = -iPlus;
+            }
+            node.chargePresent = node.cteProp * node.chargePast -
+                                 node.ctePlain * (iPlus - iMinus);
+        }
+        for (const auto& seg : hollandSegments) {
+            addToHollandField(seg, -seg.cte5 * seg.current);
+        }
+        for (auto& seg : hollandSegments) {
+            seg.currentpast = seg.current;
+            const auto& qPlus = hollandNodes[static_cast<size_t>(seg.chargePlus)];
+            const auto& qMinus = hollandNodes[static_cast<size_t>(seg.chargeMinus)];
+            seg.qplus_qminus = qPlus.chargePresent - qMinus.chargePresent;
+            seg.current = seg.cte1 * seg.current -
+                          seg.cte3 * seg.qplus_qminus +
+                          seg.cte2 * hollandFieldValue(seg);
+        }
+    }
+
+    void sampleHollandProbes() {
+        if (hollandProbes.empty()) return;
+        const double invMuInvEps = (1.0 / mu0) * (1.0 / eps0);
+        for (auto& probe : hollandProbes) {
+            if (probe.segmentIndex < 0 ||
+                probe.segmentIndex >= static_cast<int>(hollandSegments.size())) {
+                continue;
+            }
+            const auto& seg = hollandSegments[static_cast<size_t>(probe.segmentIndex)];
+            const auto& qPlus = hollandNodes[static_cast<size_t>(seg.chargePlus)];
+            const auto& qMinus = hollandNodes[static_cast<size_t>(seg.chargeMinus)];
+            const double eTimesDl = -hollandFieldValue(seg) * seg.delta;
+            const double vplus = ((qPlus.chargePresent + qPlus.chargePast) * 0.5) *
+                                 seg.lind * invMuInvEps;
+            const double vminus = ((qMinus.chargePresent + qMinus.chargePast) * 0.5) *
+                                  seg.lind * invMuInvEps;
+            probe.timeData.push_back(currentTime);
+            probe.currentData.push_back(seg.currentpast);
+            probe.eTimesDlData.push_back(eTimesDl);
+            probe.vplusData.push_back(vplus);
+            probe.vminusData.push_back(vminus);
+            probe.vdropData.push_back(vplus - vminus);
+        }
+    }
+
+    static std::string hollandDirectionTag(int direction) {
+        if (direction == 1) return "Wx_";
+        if (direction == 2) return "Wy_";
+        return "Wz_";
+    }
+
+    void writeHollandProbeOutputs(const std::string& caseName) {
+        for (const auto& probe : hollandProbes) {
+            if (probe.segmentIndex < 0) continue;
+            std::string fullname = probeOutputPrefix(caseName) + probe.name + "_" +
+                hollandDirectionTag(probe.direction) +
+                std::to_string(probe.cellI) + "_" + std::to_string(probe.cellJ) + "_" +
+                std::to_string(probe.cellK) + "_s" + std::to_string(probe.nd) + ".dat";
+            std::ofstream out(fullname);
+            out << "t              " << fullname
+                << "       -E*dl Vplus Vminus Vplus-Vminus\n";
+            for (size_t t = 0; t < probe.timeData.size(); ++t) {
+                const bool hasDelayedSample = t >= static_cast<size_t>(probe.delaySteps);
+                const size_t src = hasDelayedSample
+                                       ? t - static_cast<size_t>(probe.delaySteps)
+                                       : 0;
+                const double current = hasDelayedSample ? probe.currentData[src] : 0.0;
+                const double eTimesDl = hasDelayedSample ? probe.eTimesDlData[src] : -0.0;
+                const double vplus = hasDelayedSample ? probe.vplusData[src] : 0.0;
+                const double vminus = hasDelayedSample ? probe.vminusData[src] : 0.0;
+                const double vdrop = hasDelayedSample ? probe.vdropData[src] : 0.0;
+                out << formatFortranE(probe.timeData[t], 27, 17)
+                    << formatFortranE(current, 19, 9)
+                    << formatFortranE(eTimesDl, 19, 9)
+                    << formatFortranE(vplus, 19, 9)
+                    << formatFortranE(vminus, 19, 9)
+                    << formatFortranE(vdrop, 19, 9)
+                    << "\n";
+            }
+        }
     }
 
     void advanceE() {
@@ -1400,6 +1807,7 @@ public:
     void applyPlaneWaveSource() {}
 
     void sampleProbes() {
+        sampleHollandProbes();
         for (auto& probe : probes) {
             if (probe.domainType != "time" || probe.directions.empty()) continue;
             const int ci = probe.cellI, cj = probe.cellJ, ck = probe.cellK;
@@ -1451,6 +1859,7 @@ public:
     }
 
     void writeProbeOutputs(const std::string& caseName) {
+        writeHollandProbeOutputs(caseName);
         for (auto& probe : probes) {
             if (probe.domainType != "time") continue;
             std::string fname = probeOutputPrefix(caseName) + probe.name + "_";
@@ -1551,6 +1960,7 @@ public:
             currentTime = step * dt;
             flushPlanewaveOff();
             advanceE();
+            advanceHollandWiresE();
             applyPecE();
             advancePlaneWaveE();
             applyPecE();
@@ -2153,6 +2563,54 @@ int test_run_pw_in_box_probe_files_exact(const std::string& json_path,
     }
 
     std::filesystem::current_path(old_cwd);
+    return err;
+}
+
+int test_run_holland_probe_output(const std::string& json_path,
+                                  int max_steps) {
+    const std::filesystem::path json_abs = std::filesystem::absolute(json_path);
+    const std::filesystem::path case_dir = json_abs.parent_path();
+    const std::filesystem::path old_cwd = std::filesystem::current_path();
+    const std::filesystem::path work_dir =
+        std::filesystem::temp_directory_path() / "semba_holland_probe_test";
+    std::error_code ec;
+    std::filesystem::remove_all(work_dir, ec);
+    std::filesystem::create_directories(work_dir, ec);
+    std::filesystem::copy_file(json_abs, work_dir / json_abs.filename(),
+                               std::filesystem::copy_options::overwrite_existing, ec);
+    const std::filesystem::path exc_src = case_dir / "holland.exc";
+    if (std::filesystem::exists(exc_src)) {
+        std::filesystem::copy_file(exc_src, work_dir / exc_src.filename(),
+                                   std::filesystem::copy_options::overwrite_existing, ec);
+    }
+    std::filesystem::current_path(work_dir);
+
+    FDTD_Solver solver;
+    solver.init(json_abs.filename().string(), false);
+    if (max_steps >= 0) {
+        solver.numSteps = max_steps;
+    }
+    solver.launch();
+    const std::string case_name = extractCaseNameFromInput(json_abs.string());
+    solver.end(case_name);
+
+    const std::string expected_name =
+        probeOutputPrefix(case_name) + "mid_point_Wz_11_11_12_s8.dat";
+    const std::vector<std::string> lines = readProbeLines(expected_name);
+    std::filesystem::current_path(old_cwd);
+
+    int err = 0;
+    if (lines.empty()) {
+        return 1;
+    }
+    if (max_steps >= 0 && lines.size() != static_cast<size_t>(max_steps + 2)) {
+        err += 2;
+    }
+    const std::string expected_header =
+        "t              " + expected_name + "       -E*dl Vplus Vminus Vplus-Vminus";
+    if (lines.front() != expected_header) {
+        err += 4;
+    }
     return err;
 }
 

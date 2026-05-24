@@ -31,6 +31,7 @@
 #include "test_planewave_tfsf.h"
 #include "test_bordersmur.h"
 #include "test_planewave_pw_in_box.h"
+#include "test_holland_wire.h"
 
 #ifdef CompileWithMTLN
 #include "test_mtln_mtl.h"
