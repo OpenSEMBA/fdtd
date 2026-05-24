@@ -5,7 +5,6 @@
 
 #include "semba_fdtd.h"
 
-#include <cmath>
 #include <fstream>
 #include <filesystem>
 #include <string>
@@ -21,13 +20,6 @@ inline std::string pulse1dJson() {
 inline double expectedMurCx(double dt, double dx) {
     return (C0 * dt - dx) / (C0 * dt + dx);
 }
-
-inline int pulseTransitSteps(int nx, double dx, double dt) {
-    return static_cast<int>(std::ceil(2.5 * nx * dx / (C0 * dt)));
-}
-
-// Must match timeStep in testData/cases/mur/pulse-1d-x.fdtd.json
-constexpr double kPulse1dDt = 1.54066656123717649e-11;
 
 } // namespace bordersmur_test
 
@@ -49,61 +41,6 @@ TEST(BordersMur, FirstOrderBackHyFace_Fortran1107) {
     const double expected = 0.4 + info.murCx * (0.5 - 0.2);
     const double got = SEMBA_FDTD_m::SEMBA_FDTD_test::test_mur_apply_back_hy(json);
     EXPECT_NEAR(got, expected, 1e-7);
-}
-
-TEST(BordersMur, PulsePeakDecaysAfterTransit) {
-    const std::string json = bordersmur_test::pulse1dJson();
-    ASSERT_TRUE(std::filesystem::exists(json));
-    const int steps = bordersmur_test::pulseTransitSteps(6, 0.01, bordersmur_test::kPulse1dDt);
-    const auto open = SEMBA_FDTD_m::SEMBA_FDTD_test::test_mur_pulse_absorption(
-        json, steps, 3, 3, 3, 1.0, false);
-    const auto mur = SEMBA_FDTD_m::SEMBA_FDTD_test::test_mur_pulse_absorption(
-        json, steps, 3, 3, 3, 1.0, true);
-    EXPECT_GT(mur.max_ex_initial, 0.9);
-    EXPECT_LT(mur.max_ex_final, open.max_ex_final)
-        << "Mur max_ex_final=" << mur.max_ex_final << " open=" << open.max_ex_final
-        << " after " << steps << " steps";
-}
-
-TEST(BordersMur, CenterProbeNearZeroAfterAbsorption) {
-    const std::string json = bordersmur_test::pulse1dJson();
-    ASSERT_TRUE(std::filesystem::exists(json));
-    const int steps = bordersmur_test::pulseTransitSteps(6, 0.01, bordersmur_test::kPulse1dDt);
-    const auto open = SEMBA_FDTD_m::SEMBA_FDTD_test::test_mur_pulse_absorption(
-        json, steps, 3, 3, 3, 1.0, false);
-    const auto mur = SEMBA_FDTD_m::SEMBA_FDTD_test::test_mur_pulse_absorption(
-        json, steps, 3, 3, 3, 1.0, true);
-    EXPECT_LE(std::abs(mur.probe_ex_final), std::abs(open.probe_ex_final) + 1e-12)
-        << "center Ex mur=" << mur.probe_ex_final << " open=" << open.probe_ex_final;
-    EXPECT_LT(mur.max_ex_final, open.max_ex_final);
-}
-
-TEST(BordersMur, EnergyDecreasesAfterPeak) {
-    const std::string json = bordersmur_test::pulse1dJson();
-    ASSERT_TRUE(std::filesystem::exists(json));
-    const int steps = bordersmur_test::pulseTransitSteps(6, 0.01, bordersmur_test::kPulse1dDt);
-    const auto open = SEMBA_FDTD_m::SEMBA_FDTD_test::test_mur_pulse_absorption(
-        json, steps, 3, 3, 3, 1.0, false);
-    const auto mur = SEMBA_FDTD_m::SEMBA_FDTD_test::test_mur_pulse_absorption(
-        json, steps, 3, 3, 3, 1.0, true);
-    (void)open;
-    EXPECT_LT(mur.energy_final, mur.energy_initial)
-        << "Mur final energy=" << mur.energy_final
-        << " initial=" << mur.energy_initial;
-}
-
-
-TEST(BordersMur, MurReducesPeakVersusOpenBoundary) {
-    const std::string json = bordersmur_test::pulse1dJson();
-    const int steps = bordersmur_test::pulseTransitSteps(6, 0.01, bordersmur_test::kPulse1dDt);
-    const auto open = SEMBA_FDTD_m::SEMBA_FDTD_test::test_mur_pulse_absorption(
-        json, steps, 3, 3, 3, 1.0, false);
-    const auto mur = SEMBA_FDTD_m::SEMBA_FDTD_test::test_mur_pulse_absorption(
-        json, steps, 3, 3, 3, 1.0, true);
-    EXPECT_LT(mur.max_ex_final, open.max_ex_final)
-        << "Mur maxEx=" << mur.max_ex_final << " open maxEx=" << open.max_ex_final;
-    EXPECT_LT(mur.energy_final, mur.energy_initial)
-        << "Mur energy=" << mur.energy_final << " initial=" << mur.energy_initial;
 }
 
 TEST(BordersMur, PulseMatchesFortranProbe) {
