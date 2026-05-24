@@ -51,6 +51,7 @@ int run_init_solver_test(const std::string& json_path);
 double test_evolucion(const std::string& json_path, int pw_idx, double t_delay);
 double test_compute_incid(const std::string& json_path, int pw_idx, int nfield,
                           double time, int i, int j, int k);
+double test_grid_inverse_z(const std::string& json_path, int k);
 PlaneWaveInitInfo test_plane_wave_init(const std::string& json_path, int pw_idx);
 double test_mur_apply_back_hy(const std::string& json_path);
 MurAbsorptionResult test_mur_pulse_absorption(const std::string& json_path,

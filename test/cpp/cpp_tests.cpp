@@ -27,6 +27,7 @@
 #include "test_system_init_solver.h"
 #include "test_planewave_evolucion.h"
 #include "test_planewave_init.h"
+#include "test_planewave_strict.h"
 #include "test_planewave_tfsf.h"
 #include "test_bordersmur.h"
 #include "test_planewave_pw_in_box.h"

@@ -1,6 +1,7 @@
 from utils import *
 from typing import Dict
 import os
+from pathlib import Path
 from sys import platform
 from scipy import signal
 
@@ -621,6 +622,64 @@ def test_planewave_in_box_with_pec_boundaries(tmp_path):
                 rtol=8e-3,
                 atol=3e-3,
             )
+
+
+def _normalized_probe_bytes(path):
+    return Path(path).read_bytes().replace(b'\r\n', b'\n')
+
+
+def _probe_file_diff_message(expected_path, solved_path):
+    expected_lines = _normalized_probe_bytes(expected_path).decode().splitlines()
+    solved_lines = _normalized_probe_bytes(solved_path).decode().splitlines()
+    for line_no, (expected, solved) in enumerate(zip(expected_lines, solved_lines), start=1):
+        if expected == solved:
+            continue
+        message = [
+            f"probe file differs at line {line_no}",
+            f"expected: {expected}",
+            f"solved:   {solved}",
+        ]
+        if line_no > 1:
+            try:
+                expected_values = [float(v) for v in expected.split()]
+                solved_values = [float(v) for v in solved.split()]
+                deltas = [
+                    solved_values[i] - expected_values[i]
+                    for i in range(min(len(expected_values), len(solved_values)))
+                ]
+                message.append(f"numeric deltas: {deltas}")
+            except ValueError:
+                pass
+        return "\n".join(message)
+    return (
+        f"probe file line count differs: expected {len(expected_lines)} "
+        f"solved {len(solved_lines)}"
+    )
+
+
+def _assert_probe_file_exact(expected_path, solved_path):
+    expected = _normalized_probe_bytes(expected_path)
+    solved = _normalized_probe_bytes(solved_path)
+    assert solved == expected, _probe_file_diff_message(expected_path, solved_path)
+
+
+@pytest.mark.planewave
+@pytest.mark.probes
+def test_planewave_in_box_with_pec_boundaries_probe_files_strict(tmp_path):
+    fn = CASES_FOLDER + 'planewave/pw-in-box-pec.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver.run()
+
+    probe_files = {
+        "before": 'pw-in-box-pec.fdtd_before_Ex_3_3_1.dat',
+        "inbox": 'pw-in-box-pec.fdtd_inbox_Ex_3_3_3.dat',
+        "after": 'pw-in-box-pec.fdtd_after_Ex_3_3_5.dat',
+    }
+
+    for probe_name, expected_file in probe_files.items():
+        solved_file = solver.getSolvedProbeFilenames(probe_name)[0]
+        _assert_probe_file_exact(OUTPUTS_FOLDER + expected_file, solved_file)
 
 
 @pytest.mark.planewave

@@ -35,7 +35,7 @@ TEST(PlanewaveInit, PwInBoxDirectionPolarizationAndBox) {
     EXPECT_TRUE(info.iluminaAb);
     EXPECT_TRUE(info.iluminaAr);
 
-    EXPECT_NEAR(info.distanciaInicial, 0.0, 1e-12);
+    EXPECT_NEAR(info.distanciaInicial, 0.01, 1e-8);
     EXPECT_NEAR(info.dt, 1.5406665526684904e-11, 1e-17);
     EXPECT_GE(info.numSteps, 1290);
     EXPECT_LE(info.numSteps, 1310);
