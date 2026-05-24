@@ -598,6 +598,33 @@ def test_planewave_in_box(tmp_path):
 
 @pytest.mark.planewave
 @pytest.mark.probes
+def test_planewave_in_box_with_pec_boundaries(tmp_path):
+    fn = CASES_FOLDER + 'planewave/pw-in-box-pec.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver.run()
+
+    probe_files = {
+        "before": 'pw-in-box-pec.fdtd_before_Ex_3_3_1.dat',
+        "inbox": 'pw-in-box-pec.fdtd_inbox_Ex_3_3_3.dat',
+        "after": 'pw-in-box-pec.fdtd_after_Ex_3_3_5.dat',
+    }
+
+    for probe_name, expected_file in probe_files.items():
+        solved = Probe(solver.getSolvedProbeFilenames(probe_name)[0])
+        expected = Probe(OUTPUTS_FOLDER + expected_file)
+
+        for column in expected.data.columns:
+            np.testing.assert_allclose(
+                solved.data[column].to_numpy(),
+                expected.data[column].to_numpy(),
+                rtol=8e-3,
+                atol=3e-3,
+            )
+
+
+@pytest.mark.planewave
+@pytest.mark.probes
 def test_planewave_with_periodic_boundaries(tmp_path):
     fn = CASES_FOLDER + 'planewave/pw-with-periodic.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)

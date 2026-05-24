@@ -321,6 +321,7 @@ public:
     bool still_planewave_time = true;
     bool planewave_switched_off = false;
     bool useMur = true;
+    bool usePec = false;
     // MURc zones (InitMURBorders bordersmur.F90 L94-137) — thin 1-cell face pads per component.
     struct MurZone { int xi = 0, xe = 0, yi = 0, ye = 0, zi = 0, ze = 0; };
     MurZone murHyBack_, murHyFront_, murHzBack_, murHzFront_;
@@ -371,8 +372,12 @@ public:
                       << ", steps " << steps_before << " -> " << numSteps << std::endl;
         }
 
-        int ex_n = (NX+1)*NY*NZ, ey_n = NX*(NY+1)*NZ, ez_n = NX*NY*(NZ+1);
-        int hx_n = NX*(NY+1)*(NZ+1), hy_n = (NX+1)*NY*(NZ+1), hz_n = (NX+1)*(NY+1)*NZ;
+        int ex_n = ex_nx()*ex_ny()*ex_nz();
+        int ey_n = ey_nx()*ey_ny()*ey_nz();
+        int ez_n = ez_nx()*ez_ny()*ez_nz();
+        int hx_n = hx_nx()*hx_ny()*hx_nz();
+        int hy_n = hy_nx()*hy_ny()*hy_nz();
+        int hz_n = hz_nx()*hz_ny()*hz_nz();
         Ex.resize(ex_n,0); Ey.resize(ey_n,0); Ez.resize(ez_n,0);
         Hx.resize(hx_n,0); Hy.resize(hy_n,0); Hz.resize(hz_n,0);
         int max_n = std::max({ex_n,ey_n,ez_n,hx_n,hy_n,hz_n});
@@ -402,9 +407,11 @@ public:
         probes = pd.probes.probes;
 
         useMur = true;
+        usePec = false;
         if (!pd.boundaries.boundaries.empty()) {
             const std::string btype = pd.boundaries.boundaries[0].type;
             useMur = (btype == "mur" || btype == "MUR");
+            usePec = (btype == "pec" || btype == "PEC");
         }
         initMurBorders();
 
@@ -471,12 +478,38 @@ public:
         murPastHxUpInt.assign(NX * (NY + 1), 0.0);
     }
 
-    int ex_idx(int i,int j,int k) const { return i*NY*NZ + j*NZ + k; }
-    int ey_idx(int i,int j,int k) const { return i*(NY+1)*NZ + j*NZ + k; }
-    int ez_idx(int i,int j,int k) const { return i*NY*(NZ+1) + j*(NZ+1) + k; }
-    int hx_idx(int i,int j,int k) const { return i*(NY+1)*(NZ+1) + j*(NZ+1) + k; }
-    int hy_idx(int i,int j,int k) const { return i*NY*(NZ+1) + j*(NZ+1) + k; }
-    int hz_idx(int i,int j,int k) const { return i*(NY+1)*NZ + j*NZ + k; }
+    int ex_nx() const { return NX + 2; }
+    int ex_ny() const { return NY + 3; }
+    int ex_nz() const { return NZ + 3; }
+    int ey_nx() const { return NX + 3; }
+    int ey_ny() const { return NY + 2; }
+    int ey_nz() const { return NZ + 3; }
+    int ez_nx() const { return NX + 3; }
+    int ez_ny() const { return NY + 3; }
+    int ez_nz() const { return NZ + 2; }
+    int hx_nx() const { return NX + 3; }
+    int hx_ny() const { return NY + 2; }
+    int hx_nz() const { return NZ + 2; }
+    int hy_nx() const { return NX + 2; }
+    int hy_ny() const { return NY + 3; }
+    int hy_nz() const { return NZ + 2; }
+    int hz_nx() const { return NX + 2; }
+    int hz_ny() const { return NY + 2; }
+    int hz_nz() const { return NZ + 3; }
+
+    int ex_idx(int i,int j,int k) const { return (i + 1)*ex_ny()*ex_nz() + (j + 1)*ex_nz() + (k + 1); }
+    int ey_idx(int i,int j,int k) const { return (i + 1)*ey_ny()*ey_nz() + (j + 1)*ey_nz() + (k + 1); }
+    int ez_idx(int i,int j,int k) const { return (i + 1)*ez_ny()*ez_nz() + (j + 1)*ez_nz() + (k + 1); }
+    int hx_idx(int i,int j,int k) const { return (i + 1)*hx_ny()*hx_nz() + (j + 1)*hx_nz() + (k + 1); }
+    int hy_idx(int i,int j,int k) const { return (i + 1)*hy_ny()*hy_nz() + (j + 1)*hy_nz() + (k + 1); }
+    int hz_idx(int i,int j,int k) const { return (i + 1)*hz_ny()*hz_nz() + (j + 1)*hz_nz() + (k + 1); }
+
+    bool in_ex(int i,int j,int k) const { return i >= -1 && i <= NX && j >= -1 && j <= NY + 1 && k >= -1 && k <= NZ + 1; }
+    bool in_ey(int i,int j,int k) const { return i >= -1 && i <= NX + 1 && j >= -1 && j <= NY && k >= -1 && k <= NZ + 1; }
+    bool in_ez(int i,int j,int k) const { return i >= -1 && i <= NX + 1 && j >= -1 && j <= NY + 1 && k >= -1 && k <= NZ; }
+    bool in_hx(int i,int j,int k) const { return i >= -1 && i <= NX + 1 && j >= -1 && j <= NY && k >= -1 && k <= NZ; }
+    bool in_hy(int i,int j,int k) const { return i >= -1 && i <= NX && j >= -1 && j <= NY + 1 && k >= -1 && k <= NZ; }
+    bool in_hz(int i,int j,int k) const { return i >= -1 && i <= NX && j >= -1 && j <= NY && k >= -1 && k <= NZ + 1; }
 
     double lineX1(int n) const { return (n - 1) * dx; }
     double lineY1(int n) const { return (n - 1) * dy; }
@@ -524,26 +557,31 @@ public:
     }
 
     // Fortran planewaves.F90 evolucion L793-798 (1-based evol -> 0-based samples).
-    double evolucion(int pwIdx, double t_delay) {
+    fdtd_real evolucion(int pwIdx, fdtd_real t_delay) {
         auto& pw = planeWaves[pwIdx];
         if (pw.numSamples <= 1 || pw.deltaevol <= 0.0) return 0.0;
         const int nprev = static_cast<int>(std::floor(t_delay / pw.deltaevol));
         if (nprev + 1 > pw.numSamples) return 0.0;
         still_planewave_time = true;
         if (nprev < 1) return 0.0;
-        const double t_frac = t_delay - static_cast<double>(nprev) * pw.deltaevol;
+        const fdtd_real t_frac = t_delay - static_cast<fdtd_real>(nprev) * pw.deltaevol;
         return pw.samples[static_cast<size_t>(nprev - 1)] +
                (pw.samples[static_cast<size_t>(nprev)] - pw.samples[static_cast<size_t>(nprev - 1)]) *
                    (t_frac / pw.deltaevol);
     }
 
     // i,j,k are 1-based Yee indices (Fortran convention).
-    double computeIncid(int pwIdx, int nfield, double time, int i, int j, int k) {
+    fdtd_real computeIncid(int pwIdx, int nfield, double time, int i, int j, int k) {
         auto& pw = planeWaves[pwIdx];
-        double xf = 0.0, yf = 0.0, zf = 0.0;
-        physCoord1(nfield, i, j, k, xf, yf, zf);
-        const double d = (xf * pw.px[0] + yf * pw.py[0] + zf * pw.pz[0]) - pw.distanciaInicial;
-        const double value = evolucion(pwIdx, time - d / C0);
+        double xd = 0.0, yd = 0.0, zd = 0.0;
+        physCoord1(nfield, i, j, k, xd, yd, zd);
+        const fdtd_real xf = static_cast<fdtd_real>(xd);
+        const fdtd_real yf = static_cast<fdtd_real>(yd);
+        const fdtd_real zf = static_cast<fdtd_real>(zd);
+        const fdtd_real timef = static_cast<fdtd_real>(time);
+        const fdtd_real cluz = static_cast<fdtd_real>(C0);
+        const fdtd_real d = (xf * pw.px[0] + yf * pw.py[0] + zf * pw.pz[0]) - pw.distanciaInicial;
+        const fdtd_real value = evolucion(pwIdx, timef - d / cluz);
         switch (nfield) {
             case 0: return value * pw.ex[0];
             case 1: return value * pw.ey[0];
@@ -656,29 +694,39 @@ public:
     }
 
     void advanceE() {
+        const fdtd_real ce = static_cast<fdtd_real>(dt / eps0);
+        const fdtd_real inv_dx = static_cast<fdtd_real>(1.0 / dx);
+        const fdtd_real inv_dy = static_cast<fdtd_real>(1.0 / dy);
+        const fdtd_real inv_dz = static_cast<fdtd_real>(1.0 / dz);
         for (int i = 0; i < NX; ++i)
-            for (int j = 0; j < NY - 1; ++j)
-                for (int k = 0; k < NZ - 1; ++k) {
+            for (int j = 0; j <= NY; ++j)
+                for (int k = 0; k <= NZ; ++k) {
                     const int idx = ex_idx(i, j, k);
-                    const double dHz_dy = Hz[hz_idx(i, j + 1, k)] - Hz[hz_idx(i, j, k)];
-                    const double dHy_dz = Hy[hy_idx(i, j, k + 1)] - Hy[hy_idx(i, j, k)];
-                    Ex[idx] += (dt / eps0) * (dHz_dy / dy - dHy_dz / dz);
+                    const fdtd_real dHz_dy =
+                        Hz[hz_idx(i, j, k)] - Hz[hz_idx(i, j - 1, k)];
+                    const fdtd_real dHy_dz =
+                        Hy[hy_idx(i, j, k)] - Hy[hy_idx(i, j, k - 1)];
+                    Ex[idx] += ce * (dHz_dy * inv_dy - dHy_dz * inv_dz);
                 }
-        for (int i = 0; i < NX - 1; ++i)
+        for (int i = 0; i <= NX; ++i)
             for (int j = 0; j < NY; ++j)
-                for (int k = 0; k < NZ - 1; ++k) {
+                for (int k = 0; k <= NZ; ++k) {
                     const int idx = ey_idx(i, j, k);
-                    const double dHx_dz = Hx[hx_idx(i, j, k + 1)] - Hx[hx_idx(i, j, k)];
-                    const double dHz_dx = Hz[hz_idx(i + 1, j, k)] - Hz[hz_idx(i, j, k)];
-                    Ey[idx] += (dt / eps0) * (dHx_dz / dz - dHz_dx / dx);
+                    const fdtd_real dHx_dz =
+                        Hx[hx_idx(i, j, k)] - Hx[hx_idx(i, j, k - 1)];
+                    const fdtd_real dHz_dx =
+                        Hz[hz_idx(i, j, k)] - Hz[hz_idx(i - 1, j, k)];
+                    Ey[idx] += ce * (dHx_dz * inv_dz - dHz_dx * inv_dx);
                 }
-        for (int i = 0; i < NX - 1; ++i)
-            for (int j = 0; j < NY - 1; ++j)
+        for (int i = 0; i <= NX; ++i)
+            for (int j = 0; j <= NY; ++j)
                 for (int k = 0; k < NZ; ++k) {
                     const int idx = ez_idx(i, j, k);
-                    const double dHy_dx = Hy[hy_idx(i + 1, j, k)] - Hy[hy_idx(i, j, k)];
-                    const double dHx_dy = Hx[hx_idx(i, j + 1, k)] - Hx[hx_idx(i, j, k)];
-                    Ez[idx] += (dt / eps0) * (dHy_dx / dx - dHx_dy / dy);
+                    const fdtd_real dHy_dx =
+                        Hy[hy_idx(i, j, k)] - Hy[hy_idx(i - 1, j, k)];
+                    const fdtd_real dHx_dy =
+                        Hx[hx_idx(i, j, k)] - Hx[hx_idx(i, j - 1, k)];
+                    Ez[idx] += ce * (dHy_dx * inv_dx - dHx_dy * inv_dy);
                 }
     }
 
@@ -686,28 +734,103 @@ public:
         (void)useMur;
     }
 
+    void applyPecE() {
+        if (!usePec) return;
+
+        // PEC border media have zero E-update coefficients in Fortran
+        // (healer.F90 marks only components tangent to each outer face).
+        for (int i = 0; i < NX; ++i) {
+            for (int k = 0; k <= NZ; ++k) {
+                Ex[ex_idx(i, 0, k)] = 0.0;
+                Ex[ex_idx(i, NY, k)] = 0.0;
+            }
+            for (int j = 0; j <= NY; ++j) {
+                Ex[ex_idx(i, j, 0)] = 0.0;
+                Ex[ex_idx(i, j, NZ)] = 0.0;
+            }
+        }
+
+        for (int j = 0; j < NY; ++j) {
+            for (int k = 0; k <= NZ; ++k) {
+                Ey[ey_idx(0, j, k)] = 0.0;
+                Ey[ey_idx(NX, j, k)] = 0.0;
+            }
+        }
+        for (int i = 0; i <= NX; ++i) {
+            for (int j = 0; j < NY; ++j) {
+                Ey[ey_idx(i, j, 0)] = 0.0;
+                Ey[ey_idx(i, j, NZ)] = 0.0;
+            }
+        }
+
+        for (int j = 0; j <= NY; ++j) {
+            for (int k = 0; k < NZ; ++k) {
+                Ez[ez_idx(0, j, k)] = 0.0;
+                Ez[ez_idx(NX, j, k)] = 0.0;
+            }
+        }
+        for (int i = 0; i <= NX; ++i) {
+            for (int k = 0; k < NZ; ++k) {
+                Ez[ez_idx(i, 0, k)] = 0.0;
+                Ez[ez_idx(i, NY, k)] = 0.0;
+            }
+        }
+    }
+
+    void applyPecH() {
+        if (!usePec) return;
+
+        for (int j = 0; j < NY; ++j) {
+            for (int k = 0; k < NZ; ++k) {
+                Hx[hx_idx(0, j, k)] = 0.0;
+                Hx[hx_idx(NX, j, k)] = 0.0;
+            }
+        }
+        for (int i = 0; i < NX; ++i) {
+            for (int k = 0; k < NZ; ++k) {
+                Hy[hy_idx(i, 0, k)] = 0.0;
+                Hy[hy_idx(i, NY, k)] = 0.0;
+            }
+        }
+        for (int i = 0; i < NX; ++i) {
+            for (int j = 0; j < NY; ++j) {
+                Hz[hz_idx(i, j, 0)] = 0.0;
+                Hz[hz_idx(i, j, NZ)] = 0.0;
+            }
+        }
+    }
+
+    bool hasPlaneWaveSource() const {
+        return std::any_of(sources.begin(), sources.end(), [](const source_t& src) {
+            return src.type == "planewave";
+        });
+    }
+
     void applyMurH() {
         if (!useMur) return;
+        const bool skipLowerCompactMur = hasPlaneWaveSource();
         auto mur_face = [](fdtd_real& bnd, fdtd_real int_now, fdtd_real past_int,
                            fdtd_real past_bnd, double cab) {
             bnd = static_cast<fdtd_real>(past_int + cab * (int_now - past_bnd));
         };
 
         // Back (x min): Hy and Hz at i=0
-        for (int j = 0; j < NY; ++j) {
-            for (int k = 0; k <= NZ; ++k) {
-                const size_t p = static_cast<size_t>(j * (NZ + 1) + k);
-                const int idx0 = hy_idx(0, j, k);
-                const int idx1 = hy_idx(1, j, k);
-                mur_face(Hy[idx0], Hy[idx1], murPastHyBackInt[p], murPastHyBack[p], backCab1);
+        if (!skipLowerCompactMur) {
+            for (int j = 0; j < NY; ++j) {
+                for (int k = 0; k <= NZ; ++k) {
+                    const size_t p = static_cast<size_t>(j * (NZ + 1) + k);
+                    const int idx0 = hy_idx(0, j, k);
+                    const int idx1 = hy_idx(1, j, k);
+                    mur_face(Hy[idx0], Hy[idx1], murPastHyBackInt[p], murPastHyBack[p], backCab1);
+                }
             }
-        }
-        for (int j = 0; j <= NY; ++j) {
-            for (int k = 0; k < NZ; ++k) {
-                const size_t p = static_cast<size_t>(j * NZ + k);
-                const int idx0 = hz_idx(0, j, k);
-                const int idx1 = hz_idx(1, j, k);
-                mur_face(Hz[idx0], Hz[idx1], murPastHzBackInt[p], murPastHzBack[p], backCab1);
+            for (int j = 0; j <= NY; ++j) {
+                for (int k = 0; k < NZ; ++k) {
+                    const size_t p = static_cast<size_t>(j * NZ + k);
+                    const int idx0 = hz_idx(0, j, k);
+                    const int idx1 = hz_idx(1, j, k);
+                    mur_face(Hz[idx0], Hz[idx1], murPastHzBackInt[p], murPastHzBack[p], backCab1);
+                }
             }
         }
         // Front (x max): Hy and Hz at i=NX
@@ -728,20 +851,22 @@ public:
             }
         }
         // Left (y min): Hx and Hz at j=0
-        for (int i = 0; i < NX; ++i) {
-            for (int k = 0; k <= NZ; ++k) {
-                const size_t p = static_cast<size_t>(i * (NZ + 1) + k);
-                const int idx0 = hx_idx(i, 0, k);
-                const int idx1 = hx_idx(i, 1, k);
-                mur_face(Hx[idx0], Hx[idx1], murPastHxLeftInt[p], murPastHxLeft[p], leftCab1);
+        if (!skipLowerCompactMur) {
+            for (int i = 0; i < NX; ++i) {
+                for (int k = 0; k <= NZ; ++k) {
+                    const size_t p = static_cast<size_t>(i * (NZ + 1) + k);
+                    const int idx0 = hx_idx(i, 0, k);
+                    const int idx1 = hx_idx(i, 1, k);
+                    mur_face(Hx[idx0], Hx[idx1], murPastHxLeftInt[p], murPastHxLeft[p], leftCab1);
+                }
             }
-        }
-        for (int i = 0; i <= NX; ++i) {
-            for (int k = 0; k < NZ; ++k) {
-                const size_t p = static_cast<size_t>(i * NZ + k);
-                const int idx0 = hz_idx(i, 0, k);
-                const int idx1 = hz_idx(i, 1, k);
-                mur_face(Hz[idx0], Hz[idx1], murPastHzLeftInt[p], murPastHzLeft[p], leftCab1);
+            for (int i = 0; i <= NX; ++i) {
+                for (int k = 0; k < NZ; ++k) {
+                    const size_t p = static_cast<size_t>(i * NZ + k);
+                    const int idx0 = hz_idx(i, 0, k);
+                    const int idx1 = hz_idx(i, 1, k);
+                    mur_face(Hz[idx0], Hz[idx1], murPastHzLeftInt[p], murPastHzLeft[p], leftCab1);
+                }
             }
         }
         // Right (y max): Hx and Hz at j=NY
@@ -762,20 +887,22 @@ public:
             }
         }
         // Down (z min): Hy and Hx at k=0
-        for (int i = 0; i <= NX; ++i) {
-            for (int j = 0; j < NY; ++j) {
-                const size_t p = static_cast<size_t>(i * NY + j);
-                const int idx0 = hy_idx(i, j, 0);
-                const int idx1 = hy_idx(i, j, 1);
-                mur_face(Hy[idx0], Hy[idx1], murPastHyDownInt[p], murPastHyDown[p], downCab1);
+        if (!skipLowerCompactMur) {
+            for (int i = 0; i <= NX; ++i) {
+                for (int j = 0; j < NY; ++j) {
+                    const size_t p = static_cast<size_t>(i * NY + j);
+                    const int idx0 = hy_idx(i, j, 0);
+                    const int idx1 = hy_idx(i, j, 1);
+                    mur_face(Hy[idx0], Hy[idx1], murPastHyDownInt[p], murPastHyDown[p], downCab1);
+                }
             }
-        }
-        for (int i = 0; i < NX; ++i) {
-            for (int j = 0; j <= NY; ++j) {
-                const size_t p = static_cast<size_t>(i * (NY + 1) + j);
-                const int idx0 = hx_idx(i, j, 0);
-                const int idx1 = hx_idx(i, j, 1);
-                mur_face(Hx[idx0], Hx[idx1], murPastHxDownInt[p], murPastHxDown[p], downCab1);
+            for (int i = 0; i < NX; ++i) {
+                for (int j = 0; j <= NY; ++j) {
+                    const size_t p = static_cast<size_t>(i * (NY + 1) + j);
+                    const int idx0 = hx_idx(i, j, 0);
+                    const int idx1 = hx_idx(i, j, 1);
+                    mur_face(Hx[idx0], Hx[idx1], murPastHxDownInt[p], murPastHxDown[p], downCab1);
+                }
             }
         }
         // Up (z max): Hy and Hx at k=NZ
@@ -854,94 +981,43 @@ public:
     }
 
     void advanceH() {
-        for (int i = 0; i < NX; ++i)
-            for (int j = 0; j <= NY; ++j)
-                for (int k = 0; k <= NZ; ++k) {
-                    if (j + 1 >= NY || k + 1 >= NZ) continue;
-                    const int idx = hx_idx(i, j, k);
-                    const double dEz_dy = Ez[ez_idx(i, j + 1, k)] - Ez[ez_idx(i, j, k)];
-                    const double dEy_dz = Ey[ey_idx(i, j, k + 1)] - Ey[ey_idx(i, j, k)];
-                    Hx[idx] += (dt / mu0) * (dEz_dy / dy - dEy_dz / dz);
-                }
+        const fdtd_real ch = static_cast<fdtd_real>(dt / mu0);
+        const fdtd_real inv_dx = static_cast<fdtd_real>(1.0 / dx);
+        const fdtd_real inv_dy = static_cast<fdtd_real>(1.0 / dy);
+        const fdtd_real inv_dz = static_cast<fdtd_real>(1.0 / dz);
         for (int i = 0; i <= NX; ++i)
             for (int j = 0; j < NY; ++j)
-                for (int k = 0; k <= NZ; ++k) {
-                    if (i + 1 >= NX || k + 1 >= NZ) continue;
-                    const int idx = hy_idx(i, j, k);
-                    const double dEx_dz = Ex[ex_idx(i, j, k + 1)] - Ex[ex_idx(i, j, k)];
-                    const double dEz_dx = Ez[ez_idx(i + 1, j, k)] - Ez[ez_idx(i, j, k)];
-                    Hy[idx] += (dt / mu0) * (dEx_dz / dz - dEz_dx / dx);
+                for (int k = 0; k < NZ; ++k) {
+                    const int idx = hx_idx(i, j, k);
+                    const fdtd_real dEz_dy = Ez[ez_idx(i, j + 1, k)] - Ez[ez_idx(i, j, k)];
+                    const fdtd_real dEy_dz = Ey[ey_idx(i, j, k + 1)] - Ey[ey_idx(i, j, k)];
+                    Hx[idx] += ch * (dEy_dz * inv_dz - dEz_dy * inv_dy);
                 }
-        for (int i = 0; i <= NX; ++i)
+        for (int i = 0; i < NX; ++i)
             for (int j = 0; j <= NY; ++j)
                 for (int k = 0; k < NZ; ++k) {
-                    if (i + 1 >= NX || j + 1 >= NY) continue;
+                    const int idx = hy_idx(i, j, k);
+                    const fdtd_real dEx_dz = Ex[ex_idx(i, j, k + 1)] - Ex[ex_idx(i, j, k)];
+                    const fdtd_real dEz_dx = Ez[ez_idx(i + 1, j, k)] - Ez[ez_idx(i, j, k)];
+                    Hy[idx] += ch * (dEz_dx * inv_dx - dEx_dz * inv_dz);
+                }
+        for (int i = 0; i < NX; ++i)
+            for (int j = 0; j < NY; ++j)
+                for (int k = 0; k <= NZ; ++k) {
                     const int idx = hz_idx(i, j, k);
-                    const double dEy_dx = Ey[ey_idx(i + 1, j, k)] - Ey[ey_idx(i, j, k)];
-                    const double dEx_dy = Ex[ex_idx(i, j + 1, k)] - Ex[ex_idx(i, j, k)];
-                    Hz[idx] += (dt / mu0) * (dEy_dx / dx - dEx_dy / dy);
+                    const fdtd_real dEy_dx = Ey[ey_idx(i + 1, j, k)] - Ey[ey_idx(i, j, k)];
+                    const fdtd_real dEx_dy = Ex[ex_idx(i, j + 1, k)] - Ex[ex_idx(i, j, k)];
+                    Hz[idx] += ch * (dEx_dy * inv_dy - dEy_dx * inv_dx);
                 }
     }
 
     // Full-domain stencils (timestepping.F90 / timestepping.cpp) for Mur absorption tests.
     void advanceE_fortran() {
-        for (int k = 0; k < NZ; ++k)
-            for (int j = 0; j < NY; ++j)
-                for (int i = 0; i < NX; ++i) {
-                    const double dHz_dy =
-                        (Hz[hz_idx(i, j, k)] - (j > 0 ? Hz[hz_idx(i, j - 1, k)] : 0.0)) / dy;
-                    const double dHy_dz =
-                        (Hy[hy_idx(i, j, k)] - (k > 0 ? Hy[hy_idx(i, j, k - 1)] : 0.0)) / dz;
-                    Ex[ex_idx(i, j, k)] += (dt / eps0) * (dHz_dy - dHy_dz);
-                }
-        for (int k = 0; k < NZ; ++k)
-            for (int j = 0; j < NY; ++j)
-                for (int i = 0; i < NX; ++i) {
-                    const double dHx_dz =
-                        (Hx[hx_idx(i, j, k)] - (k > 0 ? Hx[hx_idx(i, j, k - 1)] : 0.0)) / dz;
-                    const double dHz_dx =
-                        (Hz[hz_idx(i, j, k)] - (i > 0 ? Hz[hz_idx(i - 1, j, k)] : 0.0)) / dx;
-                    Ey[ey_idx(i, j, k)] += (dt / eps0) * (dHx_dz - dHz_dx);
-                }
-        for (int k = 0; k < NZ; ++k)
-            for (int j = 0; j < NY; ++j)
-                for (int i = 0; i < NX; ++i) {
-                    const double dHy_dx =
-                        (Hy[hy_idx(i, j, k)] - (i > 0 ? Hy[hy_idx(i - 1, j, k)] : 0.0)) / dx;
-                    const double dHx_dy =
-                        (Hx[hx_idx(i, j, k)] - (j > 0 ? Hx[hx_idx(i, j - 1, k)] : 0.0)) / dy;
-                    Ez[ez_idx(i, j, k)] += (dt / eps0) * (dHy_dx - dHx_dy);
-                }
+        advanceE();
     }
 
     void advanceH_fortran() {
-        for (int k = 0; k < NZ - 1; ++k)
-            for (int j = 0; j < NY - 1; ++j)
-                for (int i = 0; i < NX; ++i) {
-                    const double dEy_dz =
-                        (Ey[ey_idx(i, j, k + 1)] - Ey[ey_idx(i, j, k)]) / dz;
-                    const double dEz_dy =
-                        (Ez[ez_idx(i, j + 1, k)] - Ez[ez_idx(i, j, k)]) / dy;
-                    Hx[hx_idx(i, j, k)] += (dt / mu0) * (dEy_dz - dEz_dy);
-                }
-        for (int k = 0; k < NZ - 1; ++k)
-            for (int j = 0; j < NY; ++j)
-                for (int i = 0; i <= NX; ++i) {
-                    const double dEx_dz =
-                        (Ex[ex_idx(i, j, k + 1)] - Ex[ex_idx(i, j, k)]) / dz;
-                    const double dEz_dx =
-                        (Ez[ez_idx(i, j, k)] - (i > 0 ? Ez[ez_idx(i - 1, j, k)] : 0.0)) / dx;
-                    Hy[hy_idx(i, j, k)] += (dt / mu0) * (dEx_dz - dEz_dx);
-                }
-        for (int k = 0; k < NZ; ++k)
-            for (int j = 0; j < NY - 1; ++j)
-                for (int i = 0; i <= NX; ++i) {
-                    const double dEx_dy =
-                        (Ex[ex_idx(i, j + 1, k)] - Ex[ex_idx(i, j, k)]) / dy;
-                    const double dEy_dx =
-                        (Ey[ey_idx(i, j, k)] - (i > 0 ? Ey[ey_idx(i - 1, j, k)] : 0.0)) / dx;
-                    Hz[hz_idx(i, j, k)] += (dt / mu0) * (dEx_dy - dEy_dx);
-                }
+        advanceH();
     }
 
     // Fortran timestepping.F90 flushPlanewaveOff L2110-2131.
@@ -957,113 +1033,113 @@ public:
         if (planewave_switched_off || planeWaves.empty()) return;
         still_planewave_time = false;
         const int XI = 1, XE = NX, YI = 1, YE = NY, ZI = 1, ZE = NZ;
-        const double G2_1 = dt / eps0;
+        const fdtd_real G2_1 = static_cast<fdtd_real>(dt / eps0);
         for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
             const auto& pw = planeWaves[pwIdx];
             if (pw.iluminaTr) {
                 int i = std::max(XI, pw.esqx1);
-                double id = idxh1(i);
+                fdtd_real id = static_cast<fdtd_real>(idxh1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
-                        const double inc = computeIncid(pwIdx, 4, currentTime, i - 1, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i - 1, j, k);
                         Ez[ez_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
                     }
                 }
                 i = std::max(XI, pw.esqx1);
-                id = idxh1(i);
+                id = static_cast<fdtd_real>(idxh1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
-                        const double inc = computeIncid(pwIdx, 5, currentTime, i - 1, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i - 1, j, k);
                         Ey[ey_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
                     }
                 }
             }
             if (pw.iluminaFr) {
                 int i = std::min(XE, pw.esqx2);
-                double id = idxh1(i);
+                fdtd_real id = static_cast<fdtd_real>(idxh1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
-                        const double inc = computeIncid(pwIdx, 4, currentTime, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k);
                         Ez[ez_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
                     }
                 }
                 i = std::min(XE, pw.esqx2);
-                id = idxh1(i);
+                id = static_cast<fdtd_real>(idxh1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
-                        const double inc = computeIncid(pwIdx, 5, currentTime, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j, k);
                         Ey[ey_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
                     }
                 }
             }
             if (pw.iluminaIz) {
                 int j = std::max(YI, pw.esqy1);
-                double id = idyh1(j);
+                fdtd_real id = static_cast<fdtd_real>(idyh1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
-                        const double inc = computeIncid(pwIdx, 5, currentTime, i, j - 1, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j - 1, k);
                         Ex[ex_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
                     }
                 }
                 j = std::max(YI, pw.esqy1);
-                id = idyh1(j);
+                id = static_cast<fdtd_real>(idyh1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const double inc = computeIncid(pwIdx, 3, currentTime, i, j - 1, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j - 1, k);
                         Ez[ez_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
                     }
                 }
             }
             if (pw.iluminaDe) {
                 int j = std::min(YE, pw.esqy2);
-                double id = idyh1(j);
+                fdtd_real id = static_cast<fdtd_real>(idyh1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const double inc = computeIncid(pwIdx, 3, currentTime, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k);
                         Ez[ez_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
                     }
                 }
                 j = std::min(YE, pw.esqy2);
-                id = idyh1(j);
+                id = static_cast<fdtd_real>(idyh1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
-                        const double inc = computeIncid(pwIdx, 5, currentTime, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j, k);
                         Ex[ex_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
                     }
                 }
             }
             if (pw.iluminaAb) {
                 int k = std::max(ZI, pw.esqz1);
-                double id = idzh1(k);
+                fdtd_real id = static_cast<fdtd_real>(idzh1(k));
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
-                        const double inc = computeIncid(pwIdx, 4, currentTime, i, j, k - 1);
+                        const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k - 1);
                         Ex[ex_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
                     }
                 }
                 k = std::max(ZI, pw.esqz1);
-                id = idzh1(k);
+                id = static_cast<fdtd_real>(idzh1(k));
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const double inc = computeIncid(pwIdx, 3, currentTime, i, j, k - 1);
+                        const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k - 1);
                         Ey[ey_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
                     }
                 }
             }
             if (pw.iluminaAr) {
                 int k = std::min(ZE, pw.esqz2);
-                double id = idzh1(k);
+                fdtd_real id = static_cast<fdtd_real>(idzh1(k));
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
-                        const double inc = computeIncid(pwIdx, 4, currentTime, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k);
                         Ex[ex_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
                     }
                 }
                 k = std::min(ZE, pw.esqz2);
-                id = idzh1(k);
+                id = static_cast<fdtd_real>(idzh1(k));
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const double inc = computeIncid(pwIdx, 3, currentTime, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k);
                         Ey[ey_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
                     }
                 }
@@ -1075,104 +1151,104 @@ public:
         if (planewave_switched_off || planeWaves.empty()) return;
         still_planewave_time = false;
         const int XI = 1, XE = NX, YI = 1, YE = NY, ZI = 1, ZE = NZ;
-        const double Gm2_1 = dt / mu0;
+        const fdtd_real Gm2_1 = static_cast<fdtd_real>(dt / mu0);
         const double timeH = currentTime + 0.5 * dt;
         for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
             const auto& pw = planeWaves[pwIdx];
             if (pw.iluminaTr) {
                 const int i = std::max(XI, pw.esqx1) - 1;
-                const double id = idxh1(i + 1);
+                const fdtd_real id = static_cast<fdtd_real>(idxh1(i + 1));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
-                        const double inc = computeIncid(pwIdx, 4, timeH, i + 1, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 4, timeH, i + 1, j, k);
                         Hz[hz_idx(i, j - 1, k - 1)] += Gm2_1 * inc * id;
                     }
                 }
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
-                        const double inc = computeIncid(pwIdx, 2, timeH, i + 1, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i + 1, j, k);
                         Hy[hy_idx(i, j - 1, k - 1)] -= Gm2_1 * inc * id;
                     }
                 }
             }
             if (pw.iluminaFr) {
                 const int i = std::min(XE, pw.esqx2);
-                const double id = idxh1(i);
+                const fdtd_real id = static_cast<fdtd_real>(idxh1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
-                        const double inc = computeIncid(pwIdx, 4, timeH, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 4, timeH, i, j, k);
                         Hz[hz_idx(i - 1, j - 1, k - 1)] -= Gm2_1 * inc * id;
                     }
                 }
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
-                        const double inc = computeIncid(pwIdx, 2, timeH, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, j, k);
                         Hy[hy_idx(i - 1, j - 1, k)] += Gm2_1 * inc * id;
                     }
                 }
             }
             if (pw.iluminaIz) {
                 const int jHx = std::max(YI, pw.esqy1) - 1;
-                const double idHx = idyh1(jHx + 1);
+                const fdtd_real idHx = static_cast<fdtd_real>(idyh1(jHx + 1));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const double inc = computeIncid(pwIdx, 2, timeH, i, jHx + 1, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, jHx + 1, k);
                         Hx[hx_idx(i - 1, jHx - 1, k - 1)] += Gm2_1 * inc * idHx;
                     }
                 }
                 const int jHz = std::max(YI, pw.esqy1) - 1;
-                const double idHz = idyh1(jHz + 1);
+                const fdtd_real idHz = static_cast<fdtd_real>(idyh1(jHz + 1));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
-                        const double inc = computeIncid(pwIdx, 0, timeH, i, jHz + 1, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, jHz + 1, k);
                         Hz[hz_idx(i - 1, jHz - 1, k - 1)] -= Gm2_1 * inc * idHz;
                     }
                 }
             }
             if (pw.iluminaDe) {
                 const int j = std::min(YE, pw.esqy2);
-                const double id = idyh1(j);
+                const fdtd_real id = static_cast<fdtd_real>(idyh1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const double inc = computeIncid(pwIdx, 2, timeH, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, j, k);
                         Hx[hx_idx(i - 1, j - 1, k)] -= Gm2_1 * inc * id;
                     }
                 }
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
-                        const double inc = computeIncid(pwIdx, 0, timeH, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, j, k);
                         Hz[hz_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
                     }
                 }
             }
             if (pw.iluminaAb) {
                 const int k = std::max(ZI, pw.esqz1) - 1;
-                const double id = idzh1(k + 1);
+                const fdtd_real id = static_cast<fdtd_real>(idzh1(k + 1));
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const double inc = computeIncid(pwIdx, 4, timeH, i, j, k + 1);
-                        Hx[hx_idx(i - 1, j - 1, k)] -= Gm2_1 * inc * id;
+                        const fdtd_real inc = computeIncid(pwIdx, 4, timeH, i, j, k + 1);
+                        Hx[hx_idx(i - 1, j - 1, k - 1)] -= Gm2_1 * inc * id;
                     }
                 }
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const double inc = computeIncid(pwIdx, 0, timeH, i, j, k + 1);
-                        Hy[hy_idx(i - 1, j - 1, k)] += Gm2_1 * inc * id;
+                        const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, j, k + 1);
+                        Hy[hy_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
                     }
                 }
             }
             if (pw.iluminaAr) {
                 const int k = std::min(ZE, pw.esqz2);
-                const double id = idzh1(k);
+                const fdtd_real id = static_cast<fdtd_real>(idzh1(k));
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const double inc = computeIncid(pwIdx, 4, timeH, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 4, timeH, i, j, k);
                         Hx[hx_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
                     }
                 }
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const double inc = computeIncid(pwIdx, 0, timeH, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, j, k);
                         Hy[hy_idx(i - 1, j - 1, k - 1)] -= Gm2_1 * inc * id;
                     }
                 }
@@ -1242,17 +1318,17 @@ public:
                 for (int k = k1; k <= k2; ++k) {
                     const int ii = i - 1, jj = j - 1, kk = k - 1;
                     switch (component) {
-                        case 0: if (ii >= 0 && ii <= NX && jj >= 0 && jj < NY && kk >= 0 && kk < NZ)
+                        case 0: if (in_ex(ii, jj, kk))
                                     Ex[ex_idx(ii, jj, kk)] = value; break;
-                        case 1: if (ii >= 0 && ii < NX && jj >= 0 && jj <= NY && kk >= 0 && kk < NZ)
+                        case 1: if (in_ey(ii, jj, kk))
                                     Ey[ey_idx(ii, jj, kk)] = value; break;
-                        case 2: if (ii >= 0 && ii < NX && jj >= 0 && jj < NY && kk >= 0 && kk <= NZ)
+                        case 2: if (in_ez(ii, jj, kk))
                                     Ez[ez_idx(ii, jj, kk)] = value; break;
-                        case 3: if (ii >= 0 && ii < NX && jj >= 0 && jj <= NY && kk >= 0 && kk <= NZ)
+                        case 3: if (in_hx(ii, jj, kk))
                                     Hx[hx_idx(ii, jj, kk)] = value; break;
-                        case 4: if (ii >= 0 && ii <= NX && jj >= 0 && jj < NY && kk >= 0 && kk <= NZ)
+                        case 4: if (in_hy(ii, jj, kk))
                                     Hy[hy_idx(ii, jj, kk)] = value; break;
-                        case 5: if (ii >= 0 && ii <= NX && jj >= 0 && jj <= NY && kk >= 0 && kk < NZ)
+                        case 5: if (in_hz(ii, jj, kk))
                                     Hz[hz_idx(ii, jj, kk)] = value; break;
                     }
                 }
@@ -1315,9 +1391,13 @@ public:
             currentTime = step * dt;
             flushPlanewaveOff();
             advanceE();
+            applyPecE();
             advancePlaneWaveE();
+            applyPecE();
             advanceH();
+            applyPecH();
             advancePlaneWaveH();
+            applyPecH();
             applyMurH();
             sampleProbes();
             if (step % 500 == 0 || step == numSteps)
@@ -1572,6 +1652,7 @@ PlaneWaveInitInfo test_plane_wave_init(const std::string& json_path, int pw_idx)
 
 double test_mur_apply_back_hy(const std::string& json_path) {
     FDTD_Solver solver = makeSolverFromJson(json_path);
+    solver.sources.clear();
     if (solver.NY < 4 || solver.NZ < 4) return 0.0;
     const int j = 2;
     const int k = 2;
