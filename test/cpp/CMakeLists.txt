@@ -18,6 +18,7 @@ target_link_libraries(cpp_tests
     nlohmann_json::nlohmann_json
     smbjson
     conformal
+    semba-fdtd-core
     ${SEMBA_TEST_SUPPORT}
 )
 
@@ -37,3 +38,9 @@ endif()
 
 add_test(NAME cpp_tests COMMAND cpp_tests)
 set_tests_properties(cpp_tests PROPERTIES WORKING_DIRECTORY ${CPP_SOURCE_ROOT})
+
+add_test(NAME cpp_nomtln_system COMMAND cpp_tests --gtest_filter=SystemInitSolver.*)
+set_tests_properties(cpp_nomtln_system PROPERTIES WORKING_DIRECTORY ${CPP_SOURCE_ROOT})
+
+add_test(NAME cpp_planewave_mur COMMAND cpp_tests --gtest_filter=Planewave*:BordersMur*)
+set_tests_properties(cpp_planewave_mur PROPERTIES WORKING_DIRECTORY ${CPP_SOURCE_ROOT})

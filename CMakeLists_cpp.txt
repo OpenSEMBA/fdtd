@@ -176,7 +176,7 @@ target_include_directories(semba-types INTERFACE
 
 # --- semba-reports: error reporting, XDMF snapshot I/O ---
 add_library(semba-reports
-    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/errorreport.cpp"
+    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/errorreport_core.cpp"
     "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/snapxdmf.cpp"
 )
 target_link_libraries(semba-reports PUBLIC semba-types)
@@ -267,6 +267,17 @@ if(SEMBA_FDTD_OUTPUTS_LIB)
     endif()
 endif()
 
+# --- semba-fdtd core solver (JSON + time loop; used by semba-fdtd-cpp executable) ---
+add_library(semba-fdtd-core
+    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/semba_fdtd.cpp"
+    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/mapvtk_writer.cpp"
+)
+target_include_directories(semba-fdtd-core PUBLIC
+    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub"
+    "${CPP_SOURCE_ROOT}/external/json/single_include/nlohmann"
+)
+target_link_libraries(semba-fdtd-core PUBLIC semba-reports)
+
 # --- semba-main: time-stepping, preprocessing/postprocessing ---
 if(SEMBA_FDTD_MAIN_LIB)
     add_library(semba-main
@@ -287,12 +298,12 @@ if(SEMBA_FDTD_MAIN_LIB)
     target_link_libraries(semba-main PUBLIC semba-outputs ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES})
 endif()
 
-# --- executable ---
+# --- executable (slim: semba_fdtd.cpp solver, not full semba-main chain) ---
 if(SEMBA_FDTD_EXECUTABLE)
     add_executable(semba-fdtd-cpp
         "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/launcher.cpp"
     )
-    target_link_libraries(semba-fdtd-cpp PRIVATE semba-main semba-reports)
+    target_link_libraries(semba-fdtd-cpp PRIVATE semba-fdtd-core semba-reports)
     if(SEMBA_FDTD_ENABLE_MPI)
         target_link_libraries(semba-fdtd-cpp PRIVATE ${MPI_CXX_LIBRARIES})
     endif()

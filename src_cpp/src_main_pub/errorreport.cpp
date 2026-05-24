@@ -84,8 +84,31 @@ void get_secnds(tiempo_t& t) {
     std::strftime(t.fecha, BUFSIZE, "%Y-%m-%d", ltime);
 }
 
-// Helper function stub
-void openclosedelete(const std::string& filename) {
+// Helper matching errorreport.F90 openclosedelete (create, write !END, delete)
+void openclosedelete(const std::string& ficherin) {
+    int my_iostat = 0;
+retry_open:
+    if (my_iostat != 0) {
+        std::cout << '.' << std::flush;
+    }
+
+    std::string filename = ficherin;
+    const size_t start = filename.find_first_not_of(' ');
+    if (start == std::string::npos) {
+        filename.clear();
+    } else {
+        filename = filename.substr(start);
+    }
+
+    {
+        std::ofstream file(filename, std::ios::out);
+        if (!file.is_open()) {
+            my_iostat = 1;
+            goto retry_open;
+        }
+        file << "!END" << std::endl;
+        file.close();
+    }
     std::remove(filename.c_str());
 }
 
@@ -3313,7 +3336,6 @@ void reportmedia(SGGFDTDINFO_t& sgg) {
 void erasesignalingfiles(bool simu_devia) {
    std::string ficherito;
    if (!simu_devia) {
-      // force erasing the signaling files
       ficherito = "stop";
       openclosedelete(ficherito);
       ficherito = "stopflushing";
@@ -3331,76 +3353,36 @@ void erasesignalingfiles(bool simu_devia) {
       ficherito = "flushvtk";
       openclosedelete(ficherito);
       ficherito = "snap";
-      // Note: The original code cuts off here. Assuming openclosedelete is called for "snap" as well based on pattern.
+      openclosedelete(ficherito);
+      ficherito = "stop_only";
+      openclosedelete(ficherito);
+      ficherito = "stopflushing_only";
+      openclosedelete(ficherito);
+      ficherito = "flush_only";
+      openclosedelete(ficherito);
+      ficherito = "flushdata_only";
+      openclosedelete(ficherito);
+      ficherito = "stop_dontwritevtk";
+      openclosedelete(ficherito);
+      ficherito = "stop_only_dontwritevtk";
+      openclosedelete(ficherito);
+      ficherito = "stopflushing_dontwritevtk";
+      openclosedelete(ficherito);
+      ficherito = "stopflushing_only_dontwritevtk";
+      openclosedelete(ficherito);
+      ficherito = "flush_dontwritevtk";
+      openclosedelete(ficherito);
+      ficherito = "flush_only_dontwritevtk";
+      openclosedelete(ficherito);
+      ficherito = "unpack";
+      openclosedelete(ficherito);
+      ficherito = "postprocess";
+      openclosedelete(ficherito);
+      ficherito = "flushxdmf";
+      openclosedelete(ficherito);
+      ficherito = "flushvtk";
       openclosedelete(ficherito);
    }
-}
-
-openclosedelete(ficherito);
-        
-        ficherito = "stop_only";
-        openclosedelete(ficherito);
-        ficherito = "stopflushing_only";
-        openclosedelete(ficherito);
-        ficherito = "flush_only";
-        openclosedelete(ficherito);
-        ficherito = "flushdata_only";
-        openclosedelete(ficherito);
-        
-        
-        ficherito = "stop_dontwritevtk";
-        openclosedelete(ficherito);
-        ficherito = "stop_only_dontwritevtk";
-        openclosedelete(ficherito);
-        ficherito = "stopflushing_dontwritevtk";
-        openclosedelete(ficherito);
-        ficherito = "stopflushing_only_dontwritevtk";
-        openclosedelete(ficherito);
-        ficherito = "flush_dontwritevtk";
-        openclosedelete(ficherito);
-        ficherito = "flush_only_dontwritevtk";
-        openclosedelete(ficherito);
-        
-        ficherito = "unpack";
-        openclosedelete(ficherito);
-        ficherito = "postprocess";
-        openclosedelete(ficherito);
-        ficherito = "flushxdmf";
-        openclosedelete(ficherito);
-        ficherito = "flushvtk";
-        openclosedelete(ficherito);
-    }
-    return;
-}
-
-void openclosedelete(const std::string& ficherin) {
-    int my_iostat = 0;
-    int myunit = 0;
-    
-retry_open:
-    if (my_iostat != 0) {
-        std::cout << '.' << std::flush;
-    }
-    
-    std::string filename = ficherin;
-    // trim leading spaces (adjustl)
-    size_t start = filename.find_first_not_of(' ');
-    if (start == std::string::npos) {
-        filename = "";
-    } else {
-        filename = filename.substr(start);
-    }
-    
-    std::ofstream file(filename, std::ios::out);
-    if (!file.is_open()) {
-        my_iostat = 1; // Simulate error
-        goto retry_open;
-    }
-    file << "!END" << std::endl;
-    file.close();
-    
-    // Delete the file
-    std::remove(filename.c_str());
 }
 
 void openclose(const std::string& ficherin) {

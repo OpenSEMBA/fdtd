@@ -24,6 +24,13 @@
 
 #include "test_preprocess_geom.h"
 
+#include "test_system_init_solver.h"
+#include "test_planewave_evolucion.h"
+#include "test_planewave_init.h"
+#include "test_planewave_tfsf.h"
+#include "test_bordersmur.h"
+#include "test_planewave_pw_in_box.h"
+
 #ifdef CompileWithMTLN
 #include "test_mtln_mtl.h"
 #include "test_mtln_types.h"

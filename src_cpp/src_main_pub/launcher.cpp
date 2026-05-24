@@ -1,36 +1,37 @@
+#include "semba_fdtd.h"
+
+#include <cstdlib>
 #include <iostream>
 #include <string>
-#include <vector>
 
-// Forward declaration or inclusion of the module content
-// Since the module SEMBA_FDTD_m is not provided, we assume the class definition
-// based on the usage in the launcher. In a real scenario, this would be in a header.
-
-namespace SEMBA_FDTD_m {
-
-    class semba_fdtd_t {
-    public:
-        void init() {
-            // Implementation of init
-        }
-
-        void launch() {
-            // Implementation of launch
-        }
-
-        void end() {
-            // Implementation of end
-        }
-    };
-
+extern "C" {
+    struct semba_fdtd_t;
+    semba_fdtd_t* create_semba_fdtd();
+    void destroy_semba_fdtd(semba_fdtd_t* p);
+    void semba_fdtd_init(semba_fdtd_t* p, const char* flags);
+    void semba_fdtd_launch(semba_fdtd_t* p);
+    void semba_fdtd_end(semba_fdtd_t* p, const char* case_name);
 }
 
-int main() {
-    SEMBA_FDTD_m::semba_fdtd_t semba;
+int main(int argc, char** argv) {
+    std::string flags;
+    for (int i = 1; i < argc; ++i) {
+        if (i > 1) flags += ' ';
+        flags += argv[i];
+    }
 
-    semba.init();
-    semba.launch();
-    semba.end();
-
+    semba_fdtd_t* semba = create_semba_fdtd();
+    try {
+        semba_fdtd_init(semba, flags.c_str());
+        semba_fdtd_launch(semba);
+        const std::string input_file = SEMBA_FDTD_m::resolveInputFileFromFlags(flags);
+        const std::string case_name = SEMBA_FDTD_m::extractCaseNameFromInput(input_file);
+        semba_fdtd_end(semba, case_name.c_str());
+    } catch (const std::exception& ex) {
+        std::cerr << ex.what() << std::endl;
+        destroy_semba_fdtd(semba);
+        return 1;
+    }
+    destroy_semba_fdtd(semba);
     return 0;
 }

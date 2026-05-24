@@ -91,6 +91,7 @@ def test_read_bulk_current_probe():
     assert p.direction == 'x'
 
 
+@pytest.mark.cpp_slim
 @pytest.mark.planewave
 def test_fdtd_set_new_folder_to_run(tmp_path):
     input = os.path.join(CASES_FOLDER, 'planewave', 'pw-in-box.fdtd.json')
@@ -128,6 +129,7 @@ def test_fdtd_with_mpi_run(tmp_path):
     solver.run()
 
 
+@pytest.mark.cpp_slim
 @pytest.mark.planewave
 def test_fdtd_clean_up_after_run(tmp_path):
     input = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
