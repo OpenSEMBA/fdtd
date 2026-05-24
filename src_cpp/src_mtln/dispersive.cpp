@@ -117,6 +117,34 @@ void dispersive_t::increaseOrder(int number_of_poles_new) {
     number_of_poles = number_of_poles_new;
 }
 
+void dispersive_t::updatePhi(const std::vector<std::vector<RKIND>>& i_prev,
+                             const std::vector<std::vector<RKIND>>& i_now) {
+    for (int k = 0; k < number_of_poles; ++k) {
+        for (int i_div = 0; i_div < number_of_divisions; ++i_div) {
+            for (int i = 0; i < number_of_conductors; ++i) {
+                Complex sum = zeroComplex();
+                for (int j = 0; j < number_of_conductors; ++j) {
+                    Complex term1 = zeroComplex();
+                    Complex term2 = zeroComplex();
+                    Complex term3 = zeroComplex();
+                    for (int p = 0; p < number_of_poles; ++p) {
+                        if (p == k) {
+                            term3 += q3[static_cast<size_t>(i_div)][static_cast<size_t>(i)][static_cast<size_t>(j)][static_cast<size_t>(p)] *
+                                     phi[static_cast<size_t>(i_div)][static_cast<size_t>(j)][static_cast<size_t>(p)];
+                        }
+                    }
+                    term1 += q1[static_cast<size_t>(i_div)][static_cast<size_t>(i)][static_cast<size_t>(j)][static_cast<size_t>(k)] *
+                             Complex(i_now[static_cast<size_t>(j)][static_cast<size_t>(i_div)], 0.0);
+                    term2 += q2[static_cast<size_t>(i_div)][static_cast<size_t>(i)][static_cast<size_t>(j)][static_cast<size_t>(k)] *
+                             Complex(i_prev[static_cast<size_t>(j)][static_cast<size_t>(i_div)], 0.0);
+                    sum += term1 + term2 + term3;
+                }
+                phi[static_cast<size_t>(i_div)][static_cast<size_t>(i)][static_cast<size_t>(k)] = sum;
+            }
+        }
+    }
+}
+
 void dispersive_t::updateQ3Phi() {
     for (auto& row : q3_phi) {
         std::fill(row.begin(), row.end(), zeroComplex());

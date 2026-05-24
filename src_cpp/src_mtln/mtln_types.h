@@ -320,6 +320,12 @@ namespace mtln_types_m {
         int n_sh = 0;
         int n_unsh = 0;
 
+        mtln_t() = default;
+        mtln_t(mtln_t&&) = default;
+        mtln_t& operator=(mtln_t&&) = default;
+        mtln_t(const mtln_t&) = delete;
+        mtln_t& operator=(const mtln_t&) = delete;
+
         bool operator==(const mtln_t& other) const {
             return mtln_eq(*this, other);
         }

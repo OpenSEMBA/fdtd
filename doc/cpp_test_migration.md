@@ -118,9 +118,58 @@ Full `solver_t` / `timestepping.cpp` path remains blocked until `semba-component
 - **Plane-wave TF/SF:** inject on Huygens box faces (not domain boundaries); port `corrigeondaplanaH` + second-order Mur from Fortran for stable 400-step `pw-in-box`.
 - **Spice RC transient tests:** isolated subprocesses on Linux (ngspice shared state).
 
+## MTLN unit gate (GoogleTest, `cpp_build_mtln`)
+
+MTLN library + `cpp_tests` only (no `semba-fdtd-cpp` required):
+
+```bash
+./scripts/test_cpp_mtln_unit.sh
+```
+
+Equivalent manual steps:
+
+```bash
+cmake -S . -B cpp_build_mtln \
+  -DSEMBA_FDTD_BUILD_CXX=ON \
+  -DSEMBA_FDTD_ENABLE_MTLN=ON \
+  -DSEMBA_FDTD_ENABLE_MPI=OFF \
+  -DSEMBA_FDTD_ENABLE_HDF=OFF \
+  -DSEMBA_FDTD_COMPONENTS_LIB=OFF \
+  -DSEMBA_FDTD_MAIN_LIB=OFF \
+  -DSEMBA_FDTD_OUTPUTS_LIB=OFF \
+  -DSEMBA_FDTD_EXECUTABLE=OFF \
+  -DSEMBA_FDTD_ENABLE_TEST=ON
+cmake --build cpp_build_mtln -j --target cpp_tests
+./cpp_build_mtln/bin/cpp_tests '--gtest_filter=mtln.*'
+./cpp_build_mtln/bin/cpp_tests '--gtest_filter=smbjson_cpp.read_*mtln*:rotate.rotate_mtln_test'
+```
+
+## MTLN integration pytest (`cpp_build_mtln` executable)
+
+Standalone MTLN problems use `semba-fdtd-core` + `mtlnsolver` (full preprocess/solver/wires in `src_cpp/src_mtln/`). Build:
+
+```bash
+cmake -S . -B cpp_build_mtln \
+  -DSEMBA_FDTD_BUILD_CXX=ON \
+  -DSEMBA_FDTD_ENABLE_MTLN=ON \
+  -DSEMBA_FDTD_ENABLE_HDF=OFF \
+  -DSEMBA_FDTD_ENABLE_MPI=OFF \
+  -DSEMBA_FDTD_COMPONENTS_LIB=OFF \
+  -DSEMBA_FDTD_MAIN_LIB=OFF \
+  -DSEMBA_FDTD_OUTPUTS_LIB=OFF \
+  -DSEMBA_FDTD_EXECUTABLE=ON \
+  -DSEMBA_FDTD_ENABLE_TEST=ON
+cmake --build cpp_build_mtln -j --target semba-fdtd-cpp
+export SEMBA_FDTD_ENABLE_MTLN=ON
+export SEMBA_EXE=$PWD/cpp_build_mtln/bin/semba-fdtd-cpp
+PYTHONPATH=. pytest test/pyWrapper/test_mtln_standalone.py -m mtln -v
+```
+
+**Status (2026-05):** unit gate is green (28 `mtln.*` + smbjson/rotate). Integration waveforms run end-to-end; probe correlation vs Fortran references is still being tightened (ngspice ↔ line coupling). Full FDTD+MTLN (`cpp_build_mtln2` with `SEMBA_FDTD_MAIN_LIB=ON`) remains blocked until `semba-components` compiles.
+
 ## Future expansion (after Tier 0 + Tier 1 green)
 
 1. Fix plane-wave TF/SF → add `test_planewave_in_box` to gate (Tier 2)
 2. Enable `SEMBA_FDTD_COMPONENTS_LIB=ON` with MTLN still OFF → classic wire tests (`@mtln_skip`)
 3. Enable `SEMBA_FDTD_OUTPUTS_LIB=ON` → HDF movie tests
-4. Re-enable MTLN as separate build (`cpp_build_mtln`) and test matrix
+4. MTLN integration pytest correlation ≥ 0.999 on `test_mtln_standalone.py`, then `test_full_system.py -m mtln`

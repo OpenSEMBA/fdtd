@@ -717,8 +717,12 @@ private:
                 if (!plFound || polyline.coordIds.size() < 2) {
                     continue;
                 }
-                for (size_t j = 1; j + 1 < polyline.coordIds.size(); ++j) {
-                    if (polyline.coordIds[j] == cId) {
+                for (size_t j = 0; j < polyline.coordIds.size(); ++j) {
+                    if (polyline.coordIds[j] != cId) {
+                        continue;
+                    }
+                    const bool interior = (j > 0 && j + 1 < polyline.coordIds.size());
+                    if (interior) {
                         if (fieldLabel == jlbl::J_FIELD_VOLTAGE &&
                             (mA.matAssType == jlbl::J_MAT_TYPE_WIRE ||
                              mA.matAssType == jlbl::J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) {
@@ -730,8 +734,8 @@ private:
                             Report::WarnErrReport(
                                 "Current generators cannot be defined on shieldedMultiwire interior points", true);
                         }
-                        return true;
                     }
+                    return true;
                 }
             }
         }
@@ -928,12 +932,19 @@ private:
                 if (!plFound || polyline.coordIds.size() < 2) {
                     continue;
                 }
-                for (size_t j = 1; j + 1 < polyline.coordIds.size(); ++j) {
+                for (size_t j = 0; j < polyline.coordIds.size(); ++j) {
                     if (polyline.coordIds[j] == cId) {
                         res.first = mA.elementIds[k];
                         res.second = static_cast<int>(k) + 1;
+                        break;
                     }
                 }
+                if (res.first != 0) {
+                    break;
+                }
+            }
+            if (res.first != 0) {
+                break;
             }
         }
         if (res.first == 0 && res.second == 0) {

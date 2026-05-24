@@ -189,10 +189,19 @@ void circuit_t::readInput(const std::vector<std::string>& input, bool printInput
         }
     }
 
-    std::vector<std::string> tmp(input.size());
-    std::vector<char*> argv_c(input.size());
-    for (size_t i = 0; i < input.size(); ++i) {
-        tmp[i] = input[i];
+    std::vector<std::string> deck;
+    deck.reserve(input.size());
+    for (const auto& line : input) {
+        if (line == "NULL") {
+            break;
+        }
+        deck.push_back(line);
+    }
+
+    std::vector<std::string> tmp(deck.size());
+    std::vector<char*> argv_c(deck.size() + 1, nullptr);
+    for (size_t i = 0; i < deck.size(); ++i) {
+        tmp[i] = deck[i];
         tmp[i].push_back(kNullChar);
         argv_c[i] = tmp[i].data();
     }

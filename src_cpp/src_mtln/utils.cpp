@@ -1,28 +1,10 @@
-#include <vector>
-#include <complex>
+#include "utils_m.h"
+
+#include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <stdexcept>
-#include <algorithm>
 #include <numeric>
-
-// Assuming FDETYPES_m provides RKIND. 
-// Typically RKIND is 8 for double precision in Fortran context.
-#ifndef RKIND
-#define RKIND 8
-#endif
-
-// Map RKIND to C++ types
-#if RKIND == 4
-using real_type = float;
-#elif RKIND == 8
-using real_type = double;
-#else
-using real_type = double; // Default to double
-#endif
-
-// Complex type corresponding to Fortran complex (usually double precision components)
-using complex_type = std::complex<double>;
+#include <stdexcept>
 
 // LAPACK wrappers for DGETRF, DGETRI, SGETRF, SGETRI
 // Note: In a real project, you would link against LAPACK/BLAS libraries.
@@ -39,6 +21,9 @@ extern "C" {
 }
 
 namespace utils_m {
+
+using complex_type = std::complex<double>;
+using real_type = double;
 
     struct entry_t {
         std::vector<real_type> x;

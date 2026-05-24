@@ -277,6 +277,18 @@ target_include_directories(semba-fdtd-core PUBLIC
     "${CPP_SOURCE_ROOT}/external/json/single_include/nlohmann"
 )
 target_link_libraries(semba-fdtd-core PUBLIC semba-reports)
+if(SEMBA_FDTD_ENABLE_MTLN AND SEMBA_FDTD_ENABLE_SMBJSON)
+    target_sources(semba-fdtd-core PRIVATE
+        "${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub/wires_mtln.cpp")
+    target_include_directories(semba-fdtd-core PUBLIC
+        "${CPP_SOURCE_ROOT}/src_cpp/src_mtln"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_json_parser"
+        "${CPP_SOURCE_ROOT}/external/ngspice/src/include")
+    target_link_libraries(semba-fdtd-core PUBLIC
+        smbjson mtlnsolver ngspice_interface ngspice
+        ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+endif()
 
 # --- semba-main: time-stepping, preprocessing/postprocessing ---
 if(SEMBA_FDTD_MAIN_LIB)
@@ -298,12 +310,16 @@ if(SEMBA_FDTD_MAIN_LIB)
     target_link_libraries(semba-main PUBLIC semba-outputs ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES})
 endif()
 
-# --- executable (slim: semba_fdtd.cpp solver, not full semba-main chain) ---
+# --- executable ---
 if(SEMBA_FDTD_EXECUTABLE)
     add_executable(semba-fdtd-cpp
         "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/launcher.cpp"
     )
-    target_link_libraries(semba-fdtd-cpp PRIVATE semba-fdtd-core semba-reports)
+    if(SEMBA_FDTD_MAIN_LIB)
+        target_link_libraries(semba-fdtd-cpp PRIVATE semba-main semba-reports)
+    else()
+        target_link_libraries(semba-fdtd-cpp PRIVATE semba-fdtd-core semba-reports)
+    endif()
     if(SEMBA_FDTD_ENABLE_MPI)
         target_link_libraries(semba-fdtd-cpp PRIVATE ${MPI_CXX_LIBRARIES})
     endif()

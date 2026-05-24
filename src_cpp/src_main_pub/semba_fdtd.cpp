@@ -3,6 +3,10 @@
 
 #include <nlohmann/json.hpp>
 
+#ifdef CompileWithMTLN
+#include "smbjson_m.h"
+#include "wires_mtln_m.h"
+#endif
 #include <string>
 #include <vector>
 #include <memory>
@@ -19,6 +23,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <limits>
 
 const double PI = 3.14159265358979323846;
@@ -27,7 +32,9 @@ const double MU0 = 1.25663706143591729538505735331180115367886775975004232838997
 const double C0 = 299792458.0;
 const double ZVAC = std::sqrt(MU0/EPS0);
 const double heurCFL = 0.8;
-const int BUFSIZE = 1024;
+#ifndef BUFSIZE
+#define BUFSIZE 1024
+#endif
 
 #ifdef CompileWithReal8
 using fdtd_real = double;
@@ -77,7 +84,9 @@ struct SGGFDTDINFO_t {
 };
 struct taglist_t { int nTags = 0; };
 struct tagtype_t { int nTypes = 0; };
+#ifndef CompileWithMTLN
 struct mtln_t { int numWires = 0; };
+#endif
 struct sim_control_t { int layoutnumber = 0; int num_procs = 1; bool resume = false; bool stochastic = false; };
 
 struct Material_t {
@@ -1596,10 +1605,17 @@ struct semba_fdtd_t::Impl {
     double maxSourceValue = 0.0;
     char whoami[BUFSIZE];
     char whoamishort[BUFSIZE];
+#ifndef CompileWithMTLN
     mtln_t mtln_parsed;
+#endif
     taglist_t tag_numbers;
     tagtype_t tagtype;
     FDTD_Solver solver;
+#ifdef CompileWithMTLN
+    bool mtln_standalone = false;
+    mtln_types_m::mtln_t mtln_parsed;
+    std::string input_file;
+#endif
 
     Impl() {
         std::strcpy(whoami, "semba-fdtd-cpp");
@@ -1614,22 +1630,51 @@ semba_fdtd_t::~semba_fdtd_t() = default;
 void semba_fdtd_t::init(const std::string& input_flags) {
     impl_->l.input_flags = input_flags;
     const std::string filename = resolveInputFileFromFlags(input_flags);
+    impl_->l.layoutnumber = 0;
     if (filename.size() > 5) {
         impl_->l.extension = filename.substr(filename.size() - 5);
     }
+#ifdef CompileWithMTLN
+    impl_->input_file = filename;
+    if (impl_->l.extension == ".json") {
+        smbjson::parser_t parser(filename);
+        NFDETypes_m::Parseador_t pd = parser.readProblemDescription();
+        if (pd.general && pd.general->mtlnProblem && pd.mtln) {
+            impl_->mtln_standalone = true;
+            impl_->mtln_parsed = std::move(*pd.mtln);
+            return;
+        }
+    }
+#endif
     impl_->solver.init(filename, mapvtk::flagsContainMapVtk(input_flags));
     impl_->media.NumMed = impl_->solver.pd.Mats.nMaterials;
     impl_->media.totalX = impl_->solver.pd.matriz.totalX;
     impl_->media.totalY = impl_->solver.pd.matriz.totalY;
     impl_->media.totalZ = impl_->solver.pd.matriz.totalZ;
-    impl_->l.layoutnumber = 0;
 }
 
 void semba_fdtd_t::launch() {
+#ifdef CompileWithMTLN
+    if (impl_->mtln_standalone) {
+        const std::string case_name = extractCaseNameFromInput(impl_->input_file);
+        Wire_bundles_mtln_m::solveMTLNProblem(impl_->mtln_parsed, case_name);
+        Wire_bundles_mtln_m::reportSimulationEnd(impl_->l.layoutnumber);
+        return;
+    }
+#endif
     impl_->solver.launch();
 }
 
 void semba_fdtd_t::end(const std::string& case_name) {
+#ifdef CompileWithMTLN
+    if (impl_->mtln_standalone) {
+        (void)case_name;
+        finishedwithsuccess = true;
+        // Match Fortran STOP after launch_mtln_simulation: skip C++ teardown of
+        // ngspice-linked MTLN state (destroying bundles after circuit quit faults).
+        std::quick_exit(0);
+    }
+#endif
     impl_->solver.end(case_name);
     finishedwithsuccess = true;
 }

@@ -37,6 +37,8 @@ struct dispersive_t {
 
     void increaseOrder(int number_of_poles_new);
     void updateQ3Phi();
+    void updatePhi(const std::vector<std::vector<RKIND>>& i_prev,
+                   const std::vector<std::vector<RKIND>>& i_now);
 };
 
 struct lumped_t : dispersive_t {
