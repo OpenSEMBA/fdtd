@@ -319,13 +319,20 @@ void mtl_bundle_t::advanceCurrent() {
             }
             vsrc[static_cast<size_t>(c)] = src;
         }
+        std::vector<double> du_q3(nc, 0.0);
+        for (int j = 0; j < nc; ++j) {
+            for (int k = 0; k < nc; ++k) {
+                du_q3[static_cast<size_t>(j)] +=
+                    du[static_cast<size_t>(seg)][static_cast<size_t>(j)][static_cast<size_t>(k)] *
+                    std::real(transfer_impedance.q3_phi[static_cast<size_t>(seg)][static_cast<size_t>(k)]);
+            }
+        }
         std::vector<double> q3_term(nc, 0.0);
         for (int c = 0; c < nc; ++c) {
-            for (int k = 0; k < nc; ++k) {
+            for (int j = 0; j < nc; ++j) {
                 q3_term[static_cast<size_t>(c)] +=
-                    v_diff[static_cast<size_t>(seg)][static_cast<size_t>(c)][static_cast<size_t>(k)] *
-                    du[static_cast<size_t>(seg)][static_cast<size_t>(c)][static_cast<size_t>(k)] *
-                    std::real(transfer_impedance.q3_phi[static_cast<size_t>(seg)][static_cast<size_t>(k)]);
+                    v_diff[static_cast<size_t>(seg)][static_cast<size_t>(c)][static_cast<size_t>(j)] *
+                    du_q3[static_cast<size_t>(j)];
             }
         }
         for (int c = 0; c < nc; ++c) {
