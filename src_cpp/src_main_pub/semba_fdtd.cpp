@@ -1578,16 +1578,11 @@ std::string extractCaseNameFromInput(const std::string& input_file) {
     if (slash != std::string::npos) {
         name = name.substr(slash + 1);
     }
-    const std::string fdtd_json_suffix = ".fdtd.json";
-    if (name.size() > fdtd_json_suffix.size() &&
-        name.compare(name.size() - fdtd_json_suffix.size(), fdtd_json_suffix.size(), fdtd_json_suffix) == 0) {
-        name = name.substr(0, name.size() - fdtd_json_suffix.size());
-    } else {
-        const std::string json_suffix = ".json";
-        if (name.size() > json_suffix.size() &&
-            name.compare(name.size() - json_suffix.size(), json_suffix.size(), json_suffix) == 0) {
-            name = name.substr(0, name.size() - json_suffix.size());
-        }
+    // Match interpreta_switches fichin: strip only the trailing ".json".
+    const std::string json_suffix = ".json";
+    if (name.size() > json_suffix.size() &&
+        name.compare(name.size() - json_suffix.size(), json_suffix.size(), json_suffix) == 0) {
+        name = name.substr(0, name.size() - json_suffix.size());
     }
     return name;
 }
