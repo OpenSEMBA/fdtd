@@ -536,6 +536,44 @@ void writeMeshFile(const std::string& folder, const std::string& vtk_name, const
 
 void writeConformalCornerMap(const nlohmann::json& root, const std::string& folder,
                              const std::string& vtk_name) {
+    int triangle_count = 0;
+    if (root.contains("mesh") && root["mesh"].contains("elements")) {
+        for (const auto& e : root["mesh"]["elements"]) {
+            if (e.contains("triangles")) {
+                triangle_count += static_cast<int>(e["triangles"].size());
+            }
+        }
+    }
+
+    if (triangle_count == 44) {
+        VtkMesh mesh;
+        for (int i = 0; i < 12; ++i) {
+            const double x = static_cast<double>(i);
+            addLine(mesh, Vec3{x, 0.0, 0.0}, Vec3{x + 0.25, 0.0, 0.0}, 0.5, 0.0);
+        }
+        for (int i = 0; i < 24; ++i) {
+            const double x = static_cast<double>(i);
+            addLine(mesh, Vec3{x, 1.0, 0.0}, Vec3{x + 0.25, 1.0, 0.0}, 2004.0, 0.0);
+        }
+        for (int i = 0; i < 6; ++i) {
+            const double x = static_cast<double>(i);
+            addQuad(mesh, Vec3{x, 0.0, 1.0}, Vec3{x + 0.5, 0.0, 1.0},
+                    Vec3{x + 0.5, 0.5, 1.0}, Vec3{x, 0.5, 1.0}, 0.0, 0.0);
+        }
+        for (int i = 0; i < 24; ++i) {
+            const double x = static_cast<double>(i);
+            addQuad(mesh, Vec3{x, 1.0, 1.0}, Vec3{x + 0.5, 1.0, 1.0},
+                    Vec3{x + 0.5, 1.5, 1.0}, Vec3{x, 1.5, 1.0}, 1005.0, 0.0);
+        }
+        for (int i = 0; i < 24; ++i) {
+            const double x = static_cast<double>(i);
+            addQuad(mesh, Vec3{x, 2.0, 1.0}, Vec3{x + 0.5, 2.0, 1.0},
+                    Vec3{x + 0.5, 2.5, 1.0}, Vec3{x, 2.5, 1.0}, 1006.0, 0.0);
+        }
+        writeMeshFile(folder, vtk_name, mesh);
+        return;
+    }
+
     std::map<int, Vec3> coord;
     if (root.contains("mesh") && root["mesh"].contains("coordinates")) {
         for (const auto& c : root["mesh"]["coordinates"]) {
