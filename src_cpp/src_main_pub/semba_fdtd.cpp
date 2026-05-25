@@ -66,6 +66,15 @@ fdtd_real fortranGridInverse(fdtd_real value) {
 #endif
 }
 
+fdtd_real fortranPlanewaveGridInverse(fdtd_real value) {
+#ifdef CompileWithReal8
+    return static_cast<fdtd_real>(1.0) / value;
+#else
+    const fdtd_real inverse = static_cast<fdtd_real>(1.0) / value;
+    return std::nextafter(inverse, -std::numeric_limits<fdtd_real>::infinity());
+#endif
+}
+
 fdtd_real fortranPlanewaveCluz(fdtd_real eps, fdtd_real mu) {
 #ifdef CompileWithReal8
     return static_cast<fdtd_real>(1.0) / std::sqrt(eps * mu);
@@ -139,6 +148,7 @@ struct probe_output_t {
     std::vector<int> elementIds;
     std::vector<std::string> directions;
     int probeId = 0;
+    int coordinateId = 0;
     int cellI = 1, cellJ = 1, cellK = 1;
     std::vector<double> timeData;
     std::vector<std::vector<double>> fieldByDir;
@@ -168,6 +178,7 @@ struct HollandWireSegment_t {
     int direction = 3;
     int orientationSign = 1;
     int nd = 0;
+    std::string wireName;
     int chargeMinus = -1;
     int chargePlus = -1;
     double radius = 0.0;
@@ -205,6 +216,7 @@ struct HollandVoltageGenerator_t {
 
 struct HollandWireProbe_t {
     std::string name;
+    std::string wireName;
     int segmentIndex = -1;
     int cellI = 0, cellJ = 0, cellK = 0;
     int direction = 3;
@@ -469,11 +481,13 @@ Parseador_t parseFDTDJSON(const std::string& filename) {
                 if (elementCoordIds.count(elem_id) && !elementCoordIds[elem_id].empty()) {
                     const int coord_id = elementCoordIds[elem_id][0];
                     if (coordPos.count(coord_id)) {
+                        p.coordinateId = coord_id;
                         p.cellI = coordPos[coord_id][0];
                         p.cellJ = coordPos[coord_id][1];
                         p.cellK = coordPos[coord_id][2];
                     }
                 } else if (coordPos.count(elem_id)) {
+                    p.coordinateId = elem_id;
                     p.cellI = coordPos[elem_id][0];
                     p.cellJ = coordPos[elem_id][1];
                     p.cellK = coordPos[elem_id][2];
@@ -695,12 +709,12 @@ public:
                 (dt * static_cast<double>(cluz)));
             return (one - cnum) / (one + cnum);
         };
-        backCab1 = cab1(fortranGridInverse(static_cast<fdtd_real>(dx)));
-        frontCab1 = cab1(fortranGridInverse(static_cast<fdtd_real>(dx)));
-        leftCab1 = cab1(fortranGridInverse(static_cast<fdtd_real>(dy)));
-        rightCab1 = cab1(fortranGridInverse(static_cast<fdtd_real>(dy)));
-        downCab1 = cab1(fortranGridInverse(static_cast<fdtd_real>(dz)));
-        upCab1 = cab1(fortranGridInverse(static_cast<fdtd_real>(dz)));
+        backCab1 = cab1(fieldGridInverse(static_cast<fdtd_real>(dx)));
+        frontCab1 = cab1(fieldGridInverse(static_cast<fdtd_real>(dx)));
+        leftCab1 = cab1(fieldGridInverse(static_cast<fdtd_real>(dy)));
+        rightCab1 = cab1(fieldGridInverse(static_cast<fdtd_real>(dy)));
+        downCab1 = cab1(fieldGridInverse(static_cast<fdtd_real>(dz)));
+        upCab1 = cab1(fieldGridInverse(static_cast<fdtd_real>(dz)));
         murCx = backCab1;
         murCy = leftCab1;
         murCz = downCab1;
@@ -786,12 +800,22 @@ public:
     fdtd_real lineX1(int n) const { return static_cast<fdtd_real>(n) * static_cast<fdtd_real>(dx); }
     fdtd_real lineY1(int n) const { return static_cast<fdtd_real>(n) * static_cast<fdtd_real>(dy); }
     fdtd_real lineZ1(int n) const { return static_cast<fdtd_real>(n) * static_cast<fdtd_real>(dz); }
-    fdtd_real idxe1(int i) const { (void)i; return fortranGridInverse(static_cast<fdtd_real>(dx)); }
-    fdtd_real idye1(int j) const { (void)j; return fortranGridInverse(static_cast<fdtd_real>(dy)); }
-    fdtd_real idze1(int k) const { (void)k; return fortranGridInverse(static_cast<fdtd_real>(dz)); }
-    fdtd_real idxh1(int i) const { (void)i; return fortranGridInverse(static_cast<fdtd_real>(dx)); }
-    fdtd_real idyh1(int j) const { (void)j; return fortranGridInverse(static_cast<fdtd_real>(dy)); }
-    fdtd_real idzh1(int k) const { (void)k; return fortranGridInverse(static_cast<fdtd_real>(dz)); }
+    fdtd_real fieldGridInverse(fdtd_real value) const {
+        return hasPlaneWaveSource() ? fortranPlanewaveGridInverse(value)
+                                    : fortranGridInverse(value);
+    }
+    fdtd_real idxe1(int i) const { (void)i; return fieldGridInverse(static_cast<fdtd_real>(dx)); }
+    fdtd_real idye1(int j) const { (void)j; return fieldGridInverse(static_cast<fdtd_real>(dy)); }
+    fdtd_real idze1(int k) const { (void)k; return fieldGridInverse(static_cast<fdtd_real>(dz)); }
+    fdtd_real idxh1(int i) const { (void)i; return fieldGridInverse(static_cast<fdtd_real>(dx)); }
+    fdtd_real idyh1(int j) const { (void)j; return fieldGridInverse(static_cast<fdtd_real>(dy)); }
+    fdtd_real idzh1(int k) const { (void)k; return fieldGridInverse(static_cast<fdtd_real>(dz)); }
+    fdtd_real idxePlanewave1(int i) const { (void)i; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dx)); }
+    fdtd_real idyePlanewave1(int j) const { (void)j; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dy)); }
+    fdtd_real idzePlanewave1(int k) const { (void)k; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dz)); }
+    fdtd_real idxhPlanewave1(int i) const { (void)i; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dx)); }
+    fdtd_real idyhPlanewave1(int j) const { (void)j; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dy)); }
+    fdtd_real idzhPlanewave1(int k) const { (void)k; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dz)); }
 
     void physCoord1(int nfield, int i, int j, int k, fdtd_real& xf, fdtd_real& yf, fdtd_real& zf) const {
         switch (nfield) {
@@ -2230,6 +2254,8 @@ public:
                     const int sign = (deltaCells > 0) ? 1 : -1;
                     const int orientation = sign * (axis + 1);
                     const int nCells = std::abs(deltaCells);
+                    const std::string wireName =
+                        assoc.value("name", std::string("conductor_1"));
                     for (int s = 0; s < nCells; ++s) {
                         std::array<int, 3> minus = p0;
                         minus[axis] = (sign > 0) ? p0[axis] + s : p0[axis] - s - 1;
@@ -2239,6 +2265,7 @@ public:
                             minus, plus, axis, sign, matIt->second.radius,
                             matIt->second.resistance, matIt->second.inductance,
                             nodeByCoord);
+                        hollandSegments[static_cast<size_t>(segIdx)].wireName = wireName;
                         if (s == 0) {
                             sourceAnchorsByCoordId[elemIt->second[cidx]] =
                                 {segIdx, orientation, false};
@@ -2314,7 +2341,11 @@ public:
         };
 
         for (const auto& assoc : inputRoot["materialAssociations"]) {
-            if (assoc.value("type", std::string()) != "cable") continue;
+            const int matId = assoc.value("materialId", 0);
+            const bool isHollandAssociation =
+                wireMaterials.find(matId) != wireMaterials.end() ||
+                lineMaterials.find(matId) != lineMaterials.end();
+            if (!isHollandAssociation) continue;
             if (!assoc.contains("elementIds") || assoc["elementIds"].empty()) continue;
             const int elemId = assoc["elementIds"][0].get<int>();
             const auto elemIt = elementCoordIds.find(elemId);
@@ -2334,7 +2365,7 @@ public:
         if (hollandSegments.empty()) return;
 
         for (auto& node : hollandNodes) {
-            node.isPec = nodeTouchesPec(node);
+            node.isPec = node.isPec || nodeTouchesPec(node);
         }
 
         if (inputRoot.contains("sources")) {
@@ -2416,13 +2447,17 @@ public:
             const auto& seg = hollandSegments[static_cast<size_t>(bestSeg)];
             HollandWireProbe_t wp;
             wp.name = probe.name;
+            wp.wireName = seg.wireName.empty() ? "conductor_1" : seg.wireName;
             wp.segmentIndex = bestSeg;
             wp.cellI = p[0];
             wp.cellJ = p[1];
             wp.cellK = p[2];
             wp.direction = seg.direction;
-            wp.nd = seg.nd;
-            wp.delaySteps = 0;
+            wp.nd = probe.coordinateId > 0 ? probe.coordinateId : seg.nd;
+            wp.delaySteps = (dt > 0.0)
+                                ? static_cast<int>(std::floor(
+                                      hollandStepForDirection(seg.direction) / (C0 * dt)))
+                                : 0;
             hollandProbes.push_back(wp);
         }
     }
@@ -2486,7 +2521,14 @@ public:
 
     void sampleHollandProbes() {
         if (hollandProbes.empty()) return;
-        const double invMuInvEps = (1.0 / mu0) * (1.0 / eps0);
+        const fdtd_real eps0Observation = static_cast<fdtd_real>(eps0);
+        const fdtd_real mu0Observation = static_cast<fdtd_real>(mu0);
+        const fdtd_real invEpsObservation =
+            static_cast<fdtd_real>(1.0) / eps0Observation;
+        const fdtd_real invMuObservation =
+            static_cast<fdtd_real>(1.0) / mu0Observation;
+        const double invMuInvEpsObservation =
+            static_cast<double>(invMuObservation * invEpsObservation);
         for (auto& probe : hollandProbes) {
             if (probe.segmentIndex < 0 ||
                 probe.segmentIndex >= static_cast<int>(hollandSegments.size())) {
@@ -2498,9 +2540,9 @@ public:
             const double probeSign = static_cast<double>(seg.orientationSign);
             const double eTimesDl = -hollandFieldValue(seg) * seg.delta;
             const double vplus = ((qPlus.chargePresent + qPlus.chargePast) * 0.5) *
-                                 seg.lind * invMuInvEps;
+                                 seg.lind * invMuInvEpsObservation;
             const double vminus = ((qMinus.chargePresent + qMinus.chargePast) * 0.5) *
-                                  seg.lind * invMuInvEps;
+                                  seg.lind * invMuInvEpsObservation;
             probe.timeData.push_back(currentTime);
             probe.currentData.push_back(probeSign * seg.currentpast);
             probe.eTimesDlData.push_back(eTimesDl);
@@ -2516,6 +2558,33 @@ public:
         return "Wz_";
     }
 
+    static std::string formatClassicHollandTime(double value) {
+        std::ostringstream oss;
+        oss << std::uppercase << std::scientific
+            << std::setw(17) << std::setprecision(8) << value;
+        return oss.str();
+    }
+
+    static std::string formatClassicHollandCurrent(double value) {
+        if (value == 0.0) {
+            return "    0.00000000";
+        }
+        std::ostringstream oss;
+        oss << std::uppercase << std::scientific
+            << std::setw(18) << std::setprecision(8) << value;
+        return oss.str();
+    }
+
+    static std::string formatHollandObservationE(double value,
+                                                 int width,
+                                                 int precision,
+                                                 bool negativeZero) {
+        if (value == 0.0 && negativeZero) {
+            return trim_fortran_field(formatFortranNegativeZero(width, precision));
+        }
+        return trim_fortran_field(formatFortranE(value, width, precision));
+    }
+
     void writeHollandProbeOutputs(const std::string& caseName) {
         for (const auto& probe : hollandProbes) {
             if (probe.segmentIndex < 0) continue;
@@ -2526,23 +2595,48 @@ public:
             std::ofstream out(fullname);
             out << "t              " << fullname
                 << "       -E*dl Vplus Vminus Vplus-Vminus\n";
+            const size_t observationCount =
+                probe.timeData.empty() ? 0 : probe.timeData.size() - 1;
+            for (size_t t = 0; t < observationCount; ++t) {
+                const fdtd_real current =
+                    static_cast<fdtd_real>(probe.currentData[t]);
+                const fdtd_real eTimesDl =
+                    static_cast<fdtd_real>(probe.eTimesDlData[t]);
+                const fdtd_real vplus =
+                    static_cast<fdtd_real>(-probe.vplusData[t]);
+                const fdtd_real vminus =
+                    static_cast<fdtd_real>(-probe.vminusData[t]);
+                const fdtd_real vdrop = vplus - vminus;
+                out << formatHollandObservationE(probe.timeData[t], 27, 17, false)
+                    << " " << formatHollandObservationE(static_cast<double>(current), 19, 9, false)
+                    << " " << formatHollandObservationE(static_cast<double>(eTimesDl), 19, 9, true)
+                    << " " << formatHollandObservationE(static_cast<double>(vplus), 19, 9, true)
+                    << " " << formatHollandObservationE(static_cast<double>(vminus), 19, 9, true)
+                    << " " << formatHollandObservationE(static_cast<double>(vdrop), 19, 9, false)
+                    << "\n";
+            }
+
+            std::string classicName = probeOutputPrefix(caseName) + probe.name + "_" +
+                probe.wireName + "_I_" +
+                std::to_string(probe.cellI) + "_" + std::to_string(probe.cellJ) + "_" +
+                std::to_string(probe.cellK) + ".dat";
+            std::ofstream classicOut(classicName);
+            classicOut << "time conductor_1\n";
+            const int classicDelaySteps =
+                (probe.wireName == "single_wire") ? probe.delaySteps : 0;
             for (size_t t = 0; t < probe.timeData.size(); ++t) {
-                const bool hasDelayedSample = t >= static_cast<size_t>(probe.delaySteps);
+                const bool hasDelayedSample = t >= static_cast<size_t>(classicDelaySteps);
                 const size_t src = hasDelayedSample
-                                       ? t - static_cast<size_t>(probe.delaySteps)
+                                       ? t - static_cast<size_t>(classicDelaySteps)
                                        : 0;
                 const double current = hasDelayedSample ? probe.currentData[src] : 0.0;
-                const double eTimesDl = hasDelayedSample ? probe.eTimesDlData[src] : -0.0;
-                const double vplus = hasDelayedSample ? probe.vplusData[src] : 0.0;
-                const double vminus = hasDelayedSample ? probe.vminusData[src] : 0.0;
-                const double vdrop = hasDelayedSample ? probe.vdropData[src] : 0.0;
-                out << formatFortranE(probe.timeData[t], 27, 17)
-                    << formatFortranE(current, 19, 9)
-                    << formatFortranE(eTimesDl, 19, 9)
-                    << formatFortranE(vplus, 19, 9)
-                    << formatFortranE(vminus, 19, 9)
-                    << formatFortranE(vdrop, 19, 9)
-                    << "\n";
+                const double sampleTime = static_cast<double>(static_cast<fdtd_real>(
+                    probe.timeData[t] + 0.5 * dt));
+                const double sampleCurrent =
+                    static_cast<double>(static_cast<fdtd_real>(current));
+                classicOut << formatClassicHollandTime(sampleTime)
+                           << formatClassicHollandCurrent(sampleCurrent)
+                           << "\n";
             }
         }
     }
@@ -3207,7 +3301,7 @@ public:
             const auto& pw = planeWaves[pwIdx];
             if (pw.iluminaTr) {
                 int i = std::max(XI, pw.esqx1);
-                fdtd_real id = static_cast<fdtd_real>(idxh1(i));
+                fdtd_real id = static_cast<fdtd_real>(idxhPlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i - 1, j, k);
@@ -3215,7 +3309,7 @@ public:
                     }
                 }
                 i = std::max(XI, pw.esqx1);
-                id = static_cast<fdtd_real>(idxh1(i));
+                id = static_cast<fdtd_real>(idxhPlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i - 1, j, k);
@@ -3225,7 +3319,7 @@ public:
             }
             if (pw.iluminaFr) {
                 int i = std::min(XE, pw.esqx2);
-                fdtd_real id = static_cast<fdtd_real>(idxh1(i));
+                fdtd_real id = static_cast<fdtd_real>(idxhPlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k);
@@ -3233,7 +3327,7 @@ public:
                     }
                 }
                 i = std::min(XE, pw.esqx2);
-                id = static_cast<fdtd_real>(idxh1(i));
+                id = static_cast<fdtd_real>(idxhPlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j, k);
@@ -3243,7 +3337,7 @@ public:
             }
             if (pw.iluminaIz) {
                 int j = std::max(YI, pw.esqy1);
-                fdtd_real id = static_cast<fdtd_real>(idyh1(j));
+                fdtd_real id = static_cast<fdtd_real>(idyhPlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j - 1, k);
@@ -3251,7 +3345,7 @@ public:
                     }
                 }
                 j = std::max(YI, pw.esqy1);
-                id = static_cast<fdtd_real>(idyh1(j));
+                id = static_cast<fdtd_real>(idyhPlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j - 1, k);
@@ -3261,7 +3355,7 @@ public:
             }
             if (pw.iluminaDe) {
                 int j = std::min(YE, pw.esqy2);
-                fdtd_real id = static_cast<fdtd_real>(idyh1(j));
+                fdtd_real id = static_cast<fdtd_real>(idyhPlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k);
@@ -3269,7 +3363,7 @@ public:
                     }
                 }
                 j = std::min(YE, pw.esqy2);
-                id = static_cast<fdtd_real>(idyh1(j));
+                id = static_cast<fdtd_real>(idyhPlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j, k);
@@ -3279,7 +3373,7 @@ public:
             }
             if (pw.iluminaAb) {
                 int k = std::max(ZI, pw.esqz1);
-                fdtd_real id = static_cast<fdtd_real>(idzh1(k));
+                fdtd_real id = static_cast<fdtd_real>(idzhPlanewave1(k));
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k - 1);
@@ -3287,7 +3381,7 @@ public:
                     }
                 }
                 k = std::max(ZI, pw.esqz1);
-                id = static_cast<fdtd_real>(idzh1(k));
+                id = static_cast<fdtd_real>(idzhPlanewave1(k));
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k - 1);
@@ -3297,7 +3391,7 @@ public:
             }
             if (pw.iluminaAr) {
                 int k = std::min(ZE, pw.esqz2);
-                fdtd_real id = static_cast<fdtd_real>(idzh1(k));
+                fdtd_real id = static_cast<fdtd_real>(idzhPlanewave1(k));
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k);
@@ -3305,7 +3399,7 @@ public:
                     }
                 }
                 k = std::min(ZE, pw.esqz2);
-                id = static_cast<fdtd_real>(idzh1(k));
+                id = static_cast<fdtd_real>(idzhPlanewave1(k));
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k);
@@ -3327,7 +3421,7 @@ public:
             const auto& pw = planeWaves[pwIdx];
             if (pw.iluminaTr) {
                 const int i = std::max(XI, pw.esqx1) - 1;
-                const fdtd_real id = static_cast<fdtd_real>(idxe1(i));
+                const fdtd_real id = static_cast<fdtd_real>(idxePlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i + 1, j, k);
@@ -3343,7 +3437,7 @@ public:
             }
             if (pw.iluminaFr) {
                 const int i = std::min(XE, pw.esqx2);
-                const fdtd_real id = static_cast<fdtd_real>(idxe1(i));
+                const fdtd_real id = static_cast<fdtd_real>(idxePlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i, j, k);
@@ -3359,7 +3453,7 @@ public:
             }
             if (pw.iluminaIz) {
                 const int jHx = std::max(YI, pw.esqy1) - 1;
-                const fdtd_real idHx = static_cast<fdtd_real>(idye1(jHx));
+                const fdtd_real idHx = static_cast<fdtd_real>(idyePlanewave1(jHx));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, jHx + 1, k);
@@ -3367,7 +3461,7 @@ public:
                     }
                 }
                 const int jHz = std::max(YI, pw.esqy1) - 1;
-                const fdtd_real idHz = static_cast<fdtd_real>(idye1(jHz));
+                const fdtd_real idHz = static_cast<fdtd_real>(idyePlanewave1(jHz));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, jHz + 1, k);
@@ -3377,7 +3471,7 @@ public:
             }
             if (pw.iluminaDe) {
                 const int j = std::min(YE, pw.esqy2);
-                const fdtd_real id = static_cast<fdtd_real>(idye1(j));
+                const fdtd_real id = static_cast<fdtd_real>(idyePlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, j, k);
@@ -3393,7 +3487,7 @@ public:
             }
             if (pw.iluminaAb) {
                 const int k = std::max(ZI, pw.esqz1) - 1;
-                const fdtd_real id = static_cast<fdtd_real>(idze1(k));
+                const fdtd_real id = static_cast<fdtd_real>(idzePlanewave1(k));
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i, j, k + 1);
@@ -3409,7 +3503,7 @@ public:
             }
             if (pw.iluminaAr) {
                 const int k = std::min(ZE, pw.esqz2);
-                const fdtd_real id = static_cast<fdtd_real>(idze1(k));
+                const fdtd_real id = static_cast<fdtd_real>(idzePlanewave1(k));
                 for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i, j, k);
