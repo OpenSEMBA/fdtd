@@ -117,6 +117,16 @@ struct probe_output_t {
     std::vector<std::vector<double>> incidentByDir;
 };
 
+struct BulkCurrentProbe_t {
+    std::string name;
+    char direction = 'z';
+    int sign = 1;
+    int xi = 0, yi = 0, zi = 0;
+    int xe = 0, ye = 0, ze = 0;
+    std::vector<double> timeData;
+    std::vector<double> currentData;
+};
+
 struct HollandWireSegment_t {
     int i = 0, j = 0, k = 0;
     int direction = 3;
@@ -452,6 +462,7 @@ public:
     std::map<std::string, ExcitationData> excitations;
     std::vector<PlaneWaveState_t> planeWaves;
     std::vector<probe_output_t> probes;
+    std::vector<BulkCurrentProbe_t> bulkCurrentProbes;
     std::vector<HollandWireSegment_t> hollandSegments;
     std::vector<HollandWireNode_t> hollandNodes;
     std::vector<HollandWireProbe_t> hollandProbes;
@@ -553,6 +564,7 @@ public:
             initPlaneWave(i);
         }
         probes = pd.probes.probes;
+        initBulkCurrentProbes();
         initHollandWires();
 
         useMur = true;
@@ -881,6 +893,235 @@ public:
                   << " ilumina=" << pw.iluminaTr << pw.iluminaFr << pw.iluminaIz
                   << pw.iluminaDe << pw.iluminaAb << pw.iluminaAr
                   << " samples=" << pw.numSamples << std::endl;
+    }
+
+    static int jsonIndexToInt(const nlohmann::json& value) {
+        return static_cast<int>(std::llround(value.get<double>()));
+    }
+
+    std::vector<std::array<int, 6>> elementIntervals(int elementId) const {
+        std::vector<std::array<int, 6>> intervals;
+        if (inputRoot.is_null() || !inputRoot.contains("mesh") ||
+            !inputRoot["mesh"].contains("elements")) {
+            return intervals;
+        }
+        for (const auto& elem : inputRoot["mesh"]["elements"]) {
+            if (elem.value("id", 0) != elementId || !elem.contains("intervals")) {
+                continue;
+            }
+            for (const auto& iv : elem["intervals"]) {
+                intervals.push_back({
+                    jsonIndexToInt(iv[0][0]), jsonIndexToInt(iv[0][1]),
+                    jsonIndexToInt(iv[0][2]), jsonIndexToInt(iv[1][0]),
+                    jsonIndexToInt(iv[1][1]), jsonIndexToInt(iv[1][2])
+                });
+            }
+            break;
+        }
+        return intervals;
+    }
+
+    static char directionFromString(const std::string& direction) {
+        if (direction == "x" || direction == "X") return 'x';
+        if (direction == "y" || direction == "Y") return 'y';
+        return 'z';
+    }
+
+    static int axisFromDirection(char direction) {
+        if (direction == 'x') return 0;
+        if (direction == 'y') return 1;
+        return 2;
+    }
+
+    static char inferBulkDirection(const std::array<int, 6>& iv,
+                                   const std::string& explicitDirection) {
+        if (!explicitDirection.empty()) return directionFromString(explicitDirection);
+        const bool sameX = iv[0] == iv[3];
+        const bool sameY = iv[1] == iv[4];
+        const bool sameZ = iv[2] == iv[5];
+        if (sameX && !sameY && !sameZ) return 'x';
+        if (!sameX && sameY && !sameZ) return 'y';
+        if (!sameX && !sameY && sameZ) return 'z';
+        return '\0';
+    }
+
+    static int orientedSurfaceSign(const std::array<int, 6>& iv, char direction,
+                                   bool explicitDirection) {
+        if (explicitDirection) return 1;
+        const int dxs = iv[3] - iv[0];
+        const int dys = iv[4] - iv[1];
+        const int dzs = iv[5] - iv[2];
+        if (direction == 'x') return (dys * dzs >= 0) ? 1 : -1;
+        if (direction == 'y') return (dzs * dxs >= 0) ? 1 : -1;
+        return (dxs * dys >= 0) ? 1 : -1;
+    }
+
+    static std::pair<int, int> halfOpenBounds(int a, int b) {
+        if (a == b) return {a, a};
+        if (a < b) return {a, b - 1};
+        return {b, a - 1};
+    }
+
+    BulkCurrentProbe_t makeBulkCurrentProbe(const std::string& name,
+                                            const std::array<int, 6>& iv,
+                                            char direction,
+                                            int sign) const {
+        BulkCurrentProbe_t probe;
+        probe.name = name;
+        probe.direction = direction;
+        probe.sign = sign;
+        const int axis = axisFromDirection(direction);
+        const std::array<int, 3> a = {iv[0], iv[1], iv[2]};
+        const std::array<int, 3> b = {iv[3], iv[4], iv[5]};
+        std::array<int, 3> lo = {};
+        std::array<int, 3> hi = {};
+        for (int d = 0; d < 3; ++d) {
+            if (d == axis) {
+                lo[d] = a[d];
+                hi[d] = a[d];
+            } else {
+                const auto bounds = halfOpenBounds(a[d], b[d]);
+                lo[d] = bounds.first;
+                hi[d] = bounds.second;
+            }
+        }
+        probe.xi = lo[0]; probe.yi = lo[1]; probe.zi = lo[2];
+        probe.xe = hi[0]; probe.ye = hi[1]; probe.ze = hi[2];
+        return probe;
+    }
+
+    void addBulkCurrentProbeIntervals(const probe_output_t& probe,
+                                      const std::array<int, 6>& iv,
+                                      const std::string& explicitDirection) {
+        const char direction = inferBulkDirection(iv, explicitDirection);
+        if (direction == '\0') return;
+        const bool explicitDir = !explicitDirection.empty();
+        const int axis = axisFromDirection(direction);
+        const int a = iv[axis];
+        const int b = iv[axis + 3];
+        if (explicitDir && a != b) {
+            const int begin = std::min(a, b);
+            const int end = std::max(a, b) - 1;
+            for (int pos = begin; pos <= end; ++pos) {
+                std::array<int, 6> slice = iv;
+                slice[axis] = pos;
+                slice[axis + 3] = pos;
+                bulkCurrentProbes.push_back(
+                    makeBulkCurrentProbe(probe.name, slice, direction, 1));
+            }
+        } else {
+            const int sign = orientedSurfaceSign(iv, direction, explicitDir);
+            bulkCurrentProbes.push_back(
+                makeBulkCurrentProbe(probe.name, iv, direction, sign));
+        }
+    }
+
+    void initBulkCurrentProbes() {
+        bulkCurrentProbes.clear();
+        for (const auto& probe : probes) {
+            if (probe.type != "bulkCurrent" || probe.domainType != "time" ||
+                probe.elementIds.empty()) {
+                continue;
+            }
+            std::string explicitDirection;
+            if (!probe.directions.empty()) {
+                explicitDirection = probe.directions[0];
+            }
+            if (explicitDirection.empty() && inputRoot.contains("probes")) {
+                for (const auto& pr : inputRoot["probes"]) {
+                    if (pr.value("name", std::string()) == probe.name &&
+                        pr.value("type", std::string()) == "bulkCurrent" &&
+                        pr.contains("direction")) {
+                        explicitDirection = pr["direction"].get<std::string>();
+                        break;
+                    }
+                }
+            }
+            for (const int elementId : probe.elementIds) {
+                for (const auto& iv : elementIntervals(elementId)) {
+                    addBulkCurrentProbeIntervals(probe, iv, explicitDirection);
+                }
+            }
+        }
+    }
+
+    double hxValue0(int i, int j, int k) const {
+        return in_hx(i, j, k) ? static_cast<double>(Hx[hx_idx(i, j, k)]) : 0.0;
+    }
+
+    double hyValue0(int i, int j, int k) const {
+        return in_hy(i, j, k) ? static_cast<double>(Hy[hy_idx(i, j, k)]) : 0.0;
+    }
+
+    double hzValue0(int i, int j, int k) const {
+        return in_hz(i, j, k) ? static_cast<double>(Hz[hz_idx(i, j, k)]) : 0.0;
+    }
+
+    double sampleBulkCurrentValue(const BulkCurrentProbe_t& probe) const {
+        double current = 0.0;
+        if (probe.direction == 'x') {
+            const int i = probe.xi - 1;
+            for (int k = probe.zi; k <= probe.ze; ++k) {
+                current += dz * (hzValue0(i, probe.ye - 1, k - 1) -
+                                 hzValue0(i, probe.yi - 2, k - 1));
+            }
+            for (int j = probe.yi; j <= probe.ye; ++j) {
+                current -= dy * (hyValue0(i, j - 1, probe.ze - 1) -
+                                 hyValue0(i, j - 1, probe.zi - 2));
+            }
+        } else if (probe.direction == 'y') {
+            const int j = probe.yi - 1;
+            for (int i = probe.xi; i <= probe.xe; ++i) {
+                current += dx * (hxValue0(i - 1, j, probe.ze - 1) -
+                                 hxValue0(i - 1, j, probe.zi - 2));
+            }
+            for (int k = probe.zi; k <= probe.ze; ++k) {
+                current -= dz * (hzValue0(probe.xe - 1, j, k - 1) -
+                                 hzValue0(probe.xi - 2, j, k - 1));
+            }
+        } else {
+            const int k = probe.zi - 1;
+            for (int j = probe.yi; j <= probe.ye; ++j) {
+                current += dy * (hyValue0(probe.xe - 1, j - 1, k) -
+                                 hyValue0(probe.xi - 2, j - 1, k));
+            }
+            for (int i = probe.xi; i <= probe.xe; ++i) {
+                current -= dx * (hxValue0(i - 1, probe.ye - 1, k) -
+                                 hxValue0(i - 1, probe.yi - 2, k));
+            }
+        }
+        return static_cast<double>(probe.sign) * current;
+    }
+
+    void sampleBulkCurrentProbes() {
+        for (auto& probe : bulkCurrentProbes) {
+            probe.timeData.push_back(currentTime);
+            probe.currentData.push_back(sampleBulkCurrentValue(probe));
+        }
+    }
+
+    static std::string bulkDirectionTag(char direction) {
+        if (direction == 'x') return "Jx";
+        if (direction == 'y') return "Jy";
+        return "Jz";
+    }
+
+    void writeBulkCurrentProbeOutputs(const std::string& caseName) {
+        for (const auto& probe : bulkCurrentProbes) {
+            std::string fullname = probeOutputPrefix(caseName) + probe.name + "_" +
+                bulkDirectionTag(probe.direction) + "_" +
+                std::to_string(probe.xi) + "_" + std::to_string(probe.yi) + "_" +
+                std::to_string(probe.zi) + "__" +
+                std::to_string(probe.xe) + "_" + std::to_string(probe.ye) + "_" +
+                std::to_string(probe.ze) + ".dat";
+            std::ofstream out(fullname);
+            out << "t              " << fullname << "\n";
+            for (size_t t = 0; t < probe.timeData.size(); ++t) {
+                out << formatFortranE(probe.timeData[t], 27, 17)
+                    << formatFortranE(probe.currentData[t], 19, 9)
+                    << "\n";
+            }
+        }
     }
 
     double hollandStepForDirection(int direction) const {
@@ -1807,6 +2048,7 @@ public:
     void applyPlaneWaveSource() {}
 
     void sampleProbes() {
+        sampleBulkCurrentProbes();
         sampleHollandProbes();
         for (auto& probe : probes) {
             if (probe.domainType != "time" || probe.directions.empty()) continue;
@@ -1859,6 +2101,7 @@ public:
     }
 
     void writeProbeOutputs(const std::string& caseName) {
+        writeBulkCurrentProbeOutputs(caseName);
         writeHollandProbeOutputs(caseName);
         for (auto& probe : probes) {
             if (probe.domainType != "time") continue;
@@ -2608,6 +2851,52 @@ int test_run_holland_probe_output(const std::string& json_path,
     }
     const std::string expected_header =
         "t              " + expected_name + "       -E*dl Vplus Vminus Vplus-Vminus";
+    if (lines.front() != expected_header) {
+        err += 4;
+    }
+    return err;
+}
+
+int test_run_bulk_current_probe_output(const std::string& json_path,
+                                       const std::string& expected_name,
+                                       int max_steps) {
+    const std::filesystem::path json_abs = std::filesystem::absolute(json_path);
+    const std::filesystem::path case_dir = json_abs.parent_path();
+    const std::filesystem::path old_cwd = std::filesystem::current_path();
+    const std::filesystem::path work_dir =
+        std::filesystem::temp_directory_path() / "semba_bulk_current_probe_test";
+    std::error_code ec;
+    std::filesystem::remove_all(work_dir, ec);
+    std::filesystem::create_directories(work_dir, ec);
+    std::filesystem::copy_file(json_abs, work_dir / json_abs.filename(),
+                               std::filesystem::copy_options::overwrite_existing, ec);
+    for (const auto& entry : std::filesystem::directory_iterator(case_dir)) {
+        if (entry.path().extension() == ".exc") {
+            std::filesystem::copy_file(entry.path(), work_dir / entry.path().filename(),
+                                       std::filesystem::copy_options::overwrite_existing, ec);
+        }
+    }
+    std::filesystem::current_path(work_dir);
+
+    FDTD_Solver solver;
+    solver.init(json_abs.filename().string(), false);
+    if (max_steps >= 0) {
+        solver.numSteps = max_steps;
+    }
+    solver.launch();
+    solver.end(extractCaseNameFromInput(json_abs.string()));
+
+    const std::vector<std::string> lines = readProbeLines(expected_name);
+    std::filesystem::current_path(old_cwd);
+
+    int err = 0;
+    if (lines.empty()) {
+        return 1;
+    }
+    if (max_steps >= 0 && lines.size() != static_cast<size_t>(max_steps + 2)) {
+        err += 2;
+    }
+    const std::string expected_header = "t              " + expected_name;
     if (lines.front() != expected_header) {
         err += 4;
     }
