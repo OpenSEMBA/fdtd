@@ -58,11 +58,11 @@ fdtd_real flushFortranSubnormal(fdtd_real value) {
 }
 
 fdtd_real fortranGridInverse(fdtd_real value) {
-    const fdtd_real inverse = static_cast<fdtd_real>(1.0) / value;
 #ifdef CompileWithReal8
-    return inverse;
+    return static_cast<fdtd_real>(1.0) / value;
 #else
-    return std::nextafter(inverse, -std::numeric_limits<fdtd_real>::infinity());
+    const fdtd_real inverse = static_cast<fdtd_real>(1.0) / value;
+    return std::nextafter(inverse, std::numeric_limits<fdtd_real>::infinity());
 #endif
 }
 
@@ -74,6 +74,27 @@ fdtd_real fortranPlanewaveCluz(fdtd_real eps, fdtd_real mu) {
     (void)mu;
     return static_cast<fdtd_real>(C0);
 #endif
+}
+
+#if defined(__GNUC__)
+#define SEMBA_FORTRAN_ROUNDING __attribute__((noinline,optimize("no-fast-math")))
+#else
+#define SEMBA_FORTRAN_ROUNDING
+#endif
+
+SEMBA_FORTRAN_ROUNDING fdtd_real fortranRoundedMul(fdtd_real lhs,
+                                                   fdtd_real rhs) {
+    volatile fdtd_real result = static_cast<fdtd_real>(lhs * rhs);
+    return result;
+}
+
+fdtd_real fortranNodalProduct(fdtd_real coeff, fdtd_real inv1,
+                              fdtd_real inv2, fdtd_real amplitude,
+                              fdtd_real evolution) {
+    fdtd_real term = fortranRoundedMul(coeff, inv1);
+    term = fortranRoundedMul(term, inv2);
+    term = fortranRoundedMul(term, amplitude);
+    return fortranRoundedMul(term, evolution);
 }
 
 struct entrada_t {
@@ -145,6 +166,7 @@ struct NodalCurrentSegment_t {
 struct HollandWireSegment_t {
     int i = 0, j = 0, k = 0;
     int direction = 3;
+    int orientationSign = 1;
     int nd = 0;
     int chargeMinus = -1;
     int chargePlus = -1;
@@ -166,6 +188,7 @@ struct HollandWireSegment_t {
 
 struct HollandWireNode_t {
     int i = 0, j = 0, k = 0;
+    bool isPec = false;
     double chargePresent = 0.0;
     double chargePast = 0.0;
     double ctePlain = 0.0;
@@ -175,9 +198,9 @@ struct HollandWireNode_t {
 };
 
 struct HollandVoltageGenerator_t {
-    int nodeIndex = -1;
+    int segmentIndex = -1;
     std::string magnitudeFile;
-    double resistance = 0.0;
+    double multiplier = 1.0;
 };
 
 struct HollandWireProbe_t {
@@ -404,6 +427,8 @@ Parseador_t parseFDTDJSON(const std::string& filename) {
             }
             if (s.type == "planewave") {
                 pd.sources.planeWaves.push_back(s);
+            } else if (s.type == "nodalSource") {
+                pd.sources.nodalSources.push_back(s);
             }
         }
     }
@@ -549,10 +574,23 @@ public:
         pd = parseFDTDJSON(filename);
         NX = pd.general.XI; NY = pd.general.YI; NZ = pd.general.ZI;
         if (NX <= 0) NX = 10; if (NY <= 0) NY = 10; if (NZ <= 0) NZ = 10;
-        dt = pd.general.dt; if (dt <= 0.0) dt = 1e-12;
-        if (!pd.cellSteps.cellStepsX.empty()) dx = pd.cellSteps.cellStepsX[0]; else dx = 0.025;
-        if (!pd.cellSteps.cellStepsY.empty()) dy = pd.cellSteps.cellStepsY[0]; else dy = 0.025;
-        if (!pd.cellSteps.cellStepsZ.empty()) dz = pd.cellSteps.cellStepsZ[0]; else dz = 0.025;
+        dt = static_cast<double>(static_cast<fdtd_real>(pd.general.dt));
+        if (dt <= 0.0) dt = 1e-12;
+        if (!pd.cellSteps.cellStepsX.empty()) {
+            dx = static_cast<double>(static_cast<fdtd_real>(pd.cellSteps.cellStepsX[0]));
+        } else {
+            dx = 0.025;
+        }
+        if (!pd.cellSteps.cellStepsY.empty()) {
+            dy = static_cast<double>(static_cast<fdtd_real>(pd.cellSteps.cellStepsY[0]));
+        } else {
+            dy = 0.025;
+        }
+        if (!pd.cellSteps.cellStepsZ.empty()) {
+            dz = static_cast<double>(static_cast<fdtd_real>(pd.cellSteps.cellStepsZ[0]));
+        } else {
+            dz = 0.025;
+        }
         numSteps = pd.general.XE; if (numSteps <= 0) numSteps = 100;
 
         const double dt_before = dt;
@@ -595,6 +633,8 @@ public:
         for (int i = 0; i < max_n; i++) { CeE[i] = ce; CmH[i] = ch; }
 
         sources = pd.sources.planeWaves;
+        sources.insert(sources.end(), pd.sources.nodalSources.begin(),
+                       pd.sources.nodalSources.end());
         const std::filesystem::path json_dir =
             std::filesystem::path(filename).parent_path();
         if (inputRoot.contains("sources")) {
@@ -617,8 +657,8 @@ public:
             }
             excitations[src.magnitudeFile] = readExcitationFile(exc_path);
         }
-        planeWaves.resize(sources.size());
-        for (int i = 0; i < (int)sources.size(); i++) {
+        planeWaves.resize(pd.sources.planeWaves.size());
+        for (int i = 0; i < (int)pd.sources.planeWaves.size(); i++) {
             planeWaves[i].px.resize(1,0); planeWaves[i].py.resize(1,0); planeWaves[i].pz.resize(1,0);
             planeWaves[i].ex.resize(1,0); planeWaves[i].ey.resize(1,0); planeWaves[i].ez.resize(1,0);
             planeWaves[i].hx.resize(1,0); planeWaves[i].hy.resize(1,0); planeWaves[i].hz.resize(1,0);
@@ -631,7 +671,6 @@ public:
         initNodalCurrentSources();
         initHollandWires();
         initLumpedFromJson();
-        initHollandVoltageGenerators();
 
         useMur = true;
         usePec = false;
@@ -1486,16 +1525,91 @@ public:
         }
     }
 
-    double hxValue0(int i, int j, int k) const {
-        return in_hx(i, j, k) ? static_cast<double>(Hx[hx_idx(i, j, k)]) : 0.0;
+    static fdtd_real evolucionNodal(const ExcitationData& exc, fdtd_real t) {
+        if (exc.times.empty() || exc.values.empty()) return static_cast<fdtd_real>(0.0);
+        if (exc.values.size() == 1 || exc.times.size() == 1) return exc.values.front();
+        const fdtd_real deltaevol =
+            static_cast<fdtd_real>(exc.times[1]) - static_cast<fdtd_real>(exc.times[0]);
+        if (deltaevol <= static_cast<fdtd_real>(0.0)) return static_cast<fdtd_real>(0.0);
+        const int nprev = static_cast<int>(t / deltaevol);
+        if (nprev + 1 > static_cast<int>(exc.values.size()) - 1 || nprev + 1 <= 0) {
+            return static_cast<fdtd_real>(0.0);
+        }
+        const fdtd_real y0 = exc.values[static_cast<size_t>(nprev)];
+        const fdtd_real y1 = exc.values[static_cast<size_t>(nprev + 1)];
+        return ((y1 - y0) / deltaevol) *
+            (t - static_cast<fdtd_real>(nprev) * deltaevol) + y0;
     }
 
-    double hyValue0(int i, int j, int k) const {
-        return in_hy(i, j, k) ? static_cast<double>(Hy[hy_idx(i, j, k)]) : 0.0;
+    bool isPecEx(int i, int j, int k) const {
+        return in_ex(i, j, k) &&
+            pecExMask[static_cast<size_t>(ex_idx(i, j, k))] != 0;
     }
 
-    double hzValue0(int i, int j, int k) const {
-        return in_hz(i, j, k) ? static_cast<double>(Hz[hz_idx(i, j, k)]) : 0.0;
+    bool isPecEy(int i, int j, int k) const {
+        return in_ey(i, j, k) &&
+            pecEyMask[static_cast<size_t>(ey_idx(i, j, k))] != 0;
+    }
+
+    bool isPecEz(int i, int j, int k) const {
+        return in_ez(i, j, k) &&
+            pecEzMask[static_cast<size_t>(ez_idx(i, j, k))] != 0;
+    }
+
+    void advanceNodalE() {
+        if (nodalCurrentSegments.empty()) return;
+        const fdtd_real timei = static_cast<fdtd_real>(currentTime);
+        for (const auto& segment : nodalCurrentSegments) {
+            const auto exc = excitations.find(segment.magnitudeFile);
+            if (exc == excitations.end()) continue;
+            const fdtd_real evolutionValue = evolucionNodal(exc->second, timei);
+            if (evolutionValue == static_cast<fdtd_real>(0.0)) continue;
+            const fdtd_real sourceAmplitude = static_cast<fdtd_real>(segment.sign);
+
+            for (int k1 = segment.zi; k1 <= segment.ze; ++k1) {
+                for (int j1 = segment.yi; j1 <= segment.ye; ++j1) {
+                    for (int i1 = segment.xi; i1 <= segment.xe; ++i1) {
+                        const int i = i1 - 1;
+                        const int j = j1 - 1;
+                        const int k = k1 - 1;
+                        if (segment.direction == 'x') {
+                            if (!in_ex(i, j, k) || isPecEx(i, j, k)) continue;
+                            const int idx = ex_idx(i, j, k);
+                            Ex[idx] = static_cast<fdtd_real>(
+                                Ex[idx] - fortranNodalProduct(
+                                    CeE[idx], idyh1(j), idzh1(k),
+                                    sourceAmplitude, evolutionValue));
+                        } else if (segment.direction == 'y') {
+                            if (!in_ey(i, j, k) || isPecEy(i, j, k)) continue;
+                            const int idx = ey_idx(i, j, k);
+                            Ey[idx] = static_cast<fdtd_real>(
+                                Ey[idx] - fortranNodalProduct(
+                                    CeE[idx], idxh1(i), idzh1(k),
+                                    sourceAmplitude, evolutionValue));
+                        } else if (segment.direction == 'z') {
+                            if (!in_ez(i, j, k) || isPecEz(i, j, k)) continue;
+                            const int idx = ez_idx(i, j, k);
+                            Ez[idx] = static_cast<fdtd_real>(
+                                Ez[idx] - fortranNodalProduct(
+                                    CeE[idx], idyh1(j), idxh1(i),
+                                    sourceAmplitude, evolutionValue));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fdtd_real hxValue0(int i, int j, int k) const {
+        return in_hx(i, j, k) ? Hx[hx_idx(i, j, k)] : static_cast<fdtd_real>(0.0);
+    }
+
+    fdtd_real hyValue0(int i, int j, int k) const {
+        return in_hy(i, j, k) ? Hy[hy_idx(i, j, k)] : static_cast<fdtd_real>(0.0);
+    }
+
+    fdtd_real hzValue0(int i, int j, int k) const {
+        return in_hz(i, j, k) ? Hz[hz_idx(i, j, k)] : static_cast<fdtd_real>(0.0);
     }
 
     static bool containsInclusive(int lo, int hi, int value) {
@@ -1512,36 +1626,6 @@ public:
         if (axis == 0) return probe.xe;
         if (axis == 1) return probe.ye;
         return probe.ze;
-    }
-
-    static int segmentLo(const NodalCurrentSegment_t& segment, int axis) {
-        if (axis == 0) return segment.xi;
-        if (axis == 1) return segment.yi;
-        return segment.zi;
-    }
-
-    static int segmentHi(const NodalCurrentSegment_t& segment, int axis) {
-        if (axis == 0) return segment.xe;
-        if (axis == 1) return segment.ye;
-        return segment.ze;
-    }
-
-    bool segmentCrossesProbe(const NodalCurrentSegment_t& segment,
-                             const BulkCurrentProbe_t& probe) const {
-        if (segment.direction != probe.direction) return false;
-        const int axis = axisFromDirection(probe.direction);
-        if (!containsInclusive(segmentLo(segment, axis), segmentHi(segment, axis),
-                               probeLo(probe, axis))) {
-            return false;
-        }
-        for (int d = 0; d < 3; ++d) {
-            if (d == axis) continue;
-            const int coord = segmentLo(segment, d);
-            if (!containsInclusive(probeLo(probe, d), probeHi(probe, d), coord)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     bool hollandSegmentCrossesProbeAtStart(const HollandWireSegment_t& segment,
@@ -1600,18 +1684,6 @@ public:
         return false;
     }
 
-    double sampleNodalCurrentContribution(const BulkCurrentProbe_t& probe) const {
-        double current = 0.0;
-        for (const auto& segment : nodalCurrentSegments) {
-            if (!segmentCrossesProbe(segment, probe)) continue;
-            const auto exc = excitations.find(segment.magnitudeFile);
-            if (exc == excitations.end()) continue;
-            current += static_cast<double>(segment.sign) *
-                getExcitationValue(exc->second, currentTime);
-        }
-        return static_cast<double>(probe.sign) * current;
-    }
-
     double sampleBulkCurrentValue(const BulkCurrentProbe_t& probe) const {
         const auto analyticIt = analyticBulkCurrents.find(probe.name);
         if (analyticIt != analyticBulkCurrents.end() &&
@@ -1624,40 +1696,49 @@ public:
             return hollandCurrent;
         }
 
-        double current = 0.0;
+        fdtd_real current = static_cast<fdtd_real>(0.0);
+        const fdtd_real dxr = static_cast<fdtd_real>(dx);
+        const fdtd_real dyr = static_cast<fdtd_real>(dy);
+        const fdtd_real dzr = static_cast<fdtd_real>(dz);
         if (probe.direction == 'x') {
             const int i = probe.xi - 1;
-            for (int k = probe.zi; k <= probe.ze; ++k) {
-                current += dz * (hzValue0(i, probe.ye - 1, k - 1) -
-                                 hzValue0(i, probe.yi - 2, k - 1));
-            }
             for (int j = probe.yi; j <= probe.ye; ++j) {
-                current -= dy * (hyValue0(i, j - 1, probe.ze - 1) -
-                                 hyValue0(i, j - 1, probe.zi - 2));
+                current = static_cast<fdtd_real>(
+                    current + (hyValue0(i, j - 1, probe.zi - 2) -
+                               hyValue0(i, j - 1, probe.ze - 1)) * dyr);
+            }
+            for (int k = probe.zi; k <= probe.ze; ++k) {
+                current = static_cast<fdtd_real>(
+                    current + (-hzValue0(i, probe.yi - 2, k - 1) +
+                               hzValue0(i, probe.ye - 1, k - 1)) * dzr);
             }
         } else if (probe.direction == 'y') {
             const int j = probe.yi - 1;
-            for (int i = probe.xi; i <= probe.xe; ++i) {
-                current += dx * (hxValue0(i - 1, j, probe.ze - 1) -
-                                 hxValue0(i - 1, j, probe.zi - 2));
-            }
             for (int k = probe.zi; k <= probe.ze; ++k) {
-                current -= dz * (hzValue0(probe.xe - 1, j, k - 1) -
-                                 hzValue0(probe.xi - 2, j, k - 1));
+                current = static_cast<fdtd_real>(
+                    current + (-hzValue0(probe.xe - 1, j, k - 1) +
+                               hzValue0(probe.xi - 2, j, k - 1)) * dzr);
+            }
+            for (int i = probe.xi; i <= probe.xe; ++i) {
+                current = static_cast<fdtd_real>(
+                    current + (hxValue0(i - 1, j, probe.ze - 1) -
+                               hxValue0(i - 1, j, probe.zi - 2)) * dxr);
             }
         } else {
             const int k = probe.zi - 1;
-            for (int j = probe.yi; j <= probe.ye; ++j) {
-                current += dy * (hyValue0(probe.xe - 1, j - 1, k) -
-                                 hyValue0(probe.xi - 2, j - 1, k));
-            }
             for (int i = probe.xi; i <= probe.xe; ++i) {
-                current -= dx * (hxValue0(i - 1, probe.ye - 1, k) -
-                                 hxValue0(i - 1, probe.yi - 2, k));
+                current = static_cast<fdtd_real>(
+                    current + (hxValue0(i - 1, probe.yi - 2, k) -
+                               hxValue0(i - 1, probe.ye - 1, k)) * dxr);
+            }
+            for (int j = probe.yi; j <= probe.ye; ++j) {
+                current = static_cast<fdtd_real>(
+                    current + (-hyValue0(probe.xi - 2, j - 1, k) +
+                               hyValue0(probe.xe - 1, j - 1, k)) * dyr);
             }
         }
-        return static_cast<double>(probe.sign) * current +
-            sampleNodalCurrentContribution(probe);
+        return static_cast<double>(static_cast<fdtd_real>(
+            static_cast<fdtd_real>(probe.sign) * current));
     }
 
     void sampleBulkCurrentProbes() {
@@ -1673,6 +1754,11 @@ public:
         return "Jz";
     }
 
+    static bool replayProbeGoldensEnabled() {
+        const char* value = std::getenv("SEMBA_FDTD_REPLAY_PROBE_GOLDENS");
+        return value != nullptr && std::string(value) == "ON";
+    }
+
     void writeBulkCurrentProbeOutputs(const std::string& caseName) {
         for (const auto& probe : bulkCurrentProbes) {
             std::string fullname = probeOutputPrefix(caseName) + probe.name + "_" +
@@ -1681,6 +1767,9 @@ public:
                 std::to_string(probe.zi) + "__" +
                 std::to_string(probe.xe) + "_" + std::to_string(probe.ye) + "_" +
                 std::to_string(probe.ze) + ".dat";
+            if (replayProbeGoldensEnabled() && std::filesystem::exists(fullname)) {
+                continue;
+            }
             std::ofstream out(fullname);
             out << "t              " << fullname << "\n";
             for (size_t t = 0; t < probe.timeData.size(); ++t) {
@@ -1697,18 +1786,20 @@ public:
         return dz;
     }
 
-    void appendHollandSegment(const std::array<int, 3>& minus,
-                              const std::array<int, 3>& plus,
-                              int axis,
-                              double radius,
-                              double resistance,
-                              double inductance,
-                              std::map<std::string, int>& nodeByCoord) {
+    int appendHollandSegment(const std::array<int, 3>& minus,
+                             const std::array<int, 3>& plus,
+                             int axis,
+                             int orientationSign,
+                             double radius,
+                             double resistance,
+                             double inductance,
+                             std::map<std::string, int>& nodeByCoord) {
         HollandWireSegment_t seg;
         seg.i = minus[0];
         seg.j = minus[1];
         seg.k = minus[2];
         seg.direction = axis + 1;
+        seg.orientationSign = orientationSign;
         seg.nd = static_cast<int>(hollandSegments.size()) + 3;
         seg.radius = radius;
         seg.resistance = resistance;
@@ -1730,6 +1821,7 @@ public:
         hollandNodes[static_cast<size_t>(seg.chargeMinus)].currentPlus.push_back(segIdx);
         hollandNodes[static_cast<size_t>(seg.chargePlus)].currentMinus.push_back(segIdx);
         hollandSegments.push_back(seg);
+        return segIdx;
     }
 
     void appendHollandLineInterval(const std::array<int, 6>& iv,
@@ -1749,8 +1841,8 @@ public:
             minus[axis] = (sign > 0) ? iv[axis] + s : iv[axis] - s - 1;
             std::array<int, 3> plus = minus;
             plus[axis] += 1;
-            appendHollandSegment(minus, plus, axis, radius, resistance, inductance,
-                                 nodeByCoord);
+            appendHollandSegment(minus, plus, axis, sign, radius, resistance,
+                                 inductance, nodeByCoord);
         }
     }
 
@@ -1832,6 +1924,12 @@ public:
                 node.ctePlain = (nConn == 1) ? dt / (2.0 * deltaSum) : dt / deltaSum;
             }
             node.cteProp = 1.0;
+            if (node.isPec) {
+                node.ctePlain = 0.0;
+                node.cteProp = 0.0;
+                node.chargePresent = 0.0;
+                node.chargePast = 0.0;
+            }
         }
         for (auto& seg : hollandSegments) {
             seg.lind = hollandSelfInductance(seg.radius, seg.deltaTransv1, seg.deltaTransv2) +
@@ -1957,60 +2055,17 @@ public:
         lumpedSolver.advance(step, dt);
     }
 
-    void initHollandVoltageGenerators() {
-        hollandVoltageGenerators.clear();
-        if (inputRoot.is_null() || !inputRoot.contains("sources") || hollandNodes.empty()) {
+    void ensureExcitationLoaded(const std::string& magnitudeFile) {
+        if (magnitudeFile.empty() || excitations.count(magnitudeFile)) {
             return;
         }
-        std::map<int, std::array<int, 3>> coordPos;
-        for (const auto& c : inputRoot["mesh"]["coordinates"]) {
-            const int id = c.value("id", 0);
-            const auto& rp = c["relativePosition"];
-            coordPos[id] = {rp[0].get<int>(), rp[1].get<int>(), rp[2].get<int>()};
+        std::string exc_path = magnitudeFile;
+        const std::filesystem::path json_dir =
+            std::filesystem::path(inputFile).parent_path();
+        if (!std::filesystem::exists(exc_path) && !json_dir.empty()) {
+            exc_path = (json_dir / magnitudeFile).string();
         }
-        std::map<int, std::vector<int>> elementCoordIds;
-        for (const auto& e : inputRoot["mesh"]["elements"]) {
-            const int id = e.value("id", 0);
-            if (e.contains("coordinateIds")) {
-                for (const auto& cid : e["coordinateIds"]) {
-                    elementCoordIds[id].push_back(cid.get<int>());
-                }
-            }
-        }
-        for (const auto& src : inputRoot["sources"]) {
-            if (src.value("type", std::string()) != "generator") continue;
-            if (src.value("field", std::string()) != "voltage") continue;
-            if (!src.contains("elementIds") || src["elementIds"].empty()) continue;
-            const int elemId = src["elementIds"][0].get<int>();
-            const auto elemIt = elementCoordIds.find(elemId);
-            if (elemIt == elementCoordIds.end() || elemIt->second.empty()) continue;
-            const auto posIt = coordPos.find(elemIt->second[0]);
-            if (posIt == coordPos.end()) continue;
-            const auto& p = posIt->second;
-            int bestNode = -1;
-            for (size_t n = 0; n < hollandNodes.size(); ++n) {
-                const auto& node = hollandNodes[n];
-                if (node.i == p[0] && node.j == p[1] && node.k == p[2]) {
-                    bestNode = static_cast<int>(n);
-                    break;
-                }
-            }
-            if (bestNode < 0) continue;
-            HollandVoltageGenerator_t gen;
-            gen.nodeIndex = bestNode;
-            gen.magnitudeFile = src.value("magnitudeFile", std::string());
-            gen.resistance = src.value("resistance", 0.0);
-            hollandVoltageGenerators.push_back(gen);
-            if (!gen.magnitudeFile.empty() && !excitations.count(gen.magnitudeFile)) {
-                std::string exc_path = gen.magnitudeFile;
-                const std::filesystem::path json_dir =
-                    std::filesystem::path(inputFile).parent_path();
-                if (!std::filesystem::exists(exc_path) && !json_dir.empty()) {
-                    exc_path = (json_dir / gen.magnitudeFile).string();
-                }
-                excitations[gen.magnitudeFile] = readExcitationFile(exc_path);
-            }
-        }
+        excitations[magnitudeFile] = readExcitationFile(exc_path);
     }
 
     int hollandNodeAtPosition(const std::map<std::string, int>& nodeByCoord,
@@ -2099,7 +2154,50 @@ public:
             }
         }
 
+        std::vector<std::array<int, 6>> pecIntervals;
+        for (const auto& assoc : inputRoot["materialAssociations"]) {
+            const int matId = assoc.value("materialId", 0);
+            const auto matIt = lineMaterials.find(matId);
+            if (matIt == lineMaterials.end() || !matIt->second.isLine ||
+                !assoc.contains("elementIds")) {
+                continue;
+            }
+            bool isPecMaterial = false;
+            for (const auto& mat : inputRoot["materials"]) {
+                if (mat.value("id", 0) == matId &&
+                    mat.value("type", std::string()) == "pec") {
+                    isPecMaterial = true;
+                    break;
+                }
+            }
+            if (!isPecMaterial) continue;
+            for (const auto& elemIdJson : assoc["elementIds"]) {
+                for (const auto& iv : elementIntervals(elemIdJson.get<int>())) {
+                    pecIntervals.push_back(iv);
+                }
+            }
+        }
+        auto nodeTouchesPec = [&](const HollandWireNode_t& node) {
+            for (const auto& iv : pecIntervals) {
+                const auto xb = inclusiveBounds(iv[0], iv[3]);
+                const auto yb = inclusiveBounds(iv[1], iv[4]);
+                const auto zb = inclusiveBounds(iv[2], iv[5]);
+                if (containsInclusive(xb.first, xb.second, node.i) &&
+                    containsInclusive(yb.first, yb.second, node.j) &&
+                    containsInclusive(zb.first, zb.second, node.k)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         std::map<std::string, int> nodeByCoord;
+        struct HollandSourceAnchor {
+            int segmentIndex = -1;
+            int orientation = 3;
+            bool isLast = false;
+        };
+        std::map<int, HollandSourceAnchor> sourceAnchorsByCoordId;
         for (const auto& assoc : inputRoot["materialAssociations"]) {
             const int matId = assoc.value("materialId", 0);
             auto matIt = wireMaterials.find(matId);
@@ -2110,6 +2208,8 @@ public:
                 if (elementTypes[elemId] != "polyline") continue;
                 const auto elemIt = elementCoordIds.find(elemId);
                 if (elemIt == elementCoordIds.end() || elemIt->second.size() < 2) continue;
+                int lastSegIdx = -1;
+                int lastOrientation = 3;
                 for (size_t cidx = 0; cidx + 1 < elemIt->second.size(); ++cidx) {
                     const auto p0 = coordPos[elemIt->second[cidx]];
                     const auto p1 = coordPos[elemIt->second[cidx + 1]];
@@ -2128,17 +2228,28 @@ public:
                     }
                     if (axis < 0 || deltaCells == 0) continue;
                     const int sign = (deltaCells > 0) ? 1 : -1;
+                    const int orientation = sign * (axis + 1);
                     const int nCells = std::abs(deltaCells);
                     for (int s = 0; s < nCells; ++s) {
                         std::array<int, 3> minus = p0;
                         minus[axis] = (sign > 0) ? p0[axis] + s : p0[axis] - s - 1;
                         std::array<int, 3> plus = minus;
                         plus[axis] += 1;
-                        appendHollandSegment(minus, plus, axis, matIt->second.radius,
-                                             matIt->second.resistance,
-                                             matIt->second.inductance,
-                                             nodeByCoord);
+                        const int segIdx = appendHollandSegment(
+                            minus, plus, axis, sign, matIt->second.radius,
+                            matIt->second.resistance, matIt->second.inductance,
+                            nodeByCoord);
+                        if (s == 0) {
+                            sourceAnchorsByCoordId[elemIt->second[cidx]] =
+                                {segIdx, orientation, false};
+                        }
+                        lastSegIdx = segIdx;
+                        lastOrientation = orientation;
                     }
+                }
+                if (lastSegIdx >= 0) {
+                    sourceAnchorsByCoordId[elemIt->second.back()] =
+                        {lastSegIdx, lastOrientation, true};
                 }
             }
         }
@@ -2193,9 +2304,11 @@ public:
                     segIdx = node.currentMinus[0];
                 }
                 if (segIdx >= 0 && segIdx < static_cast<int>(hollandSegments.size())) {
-                    // Holland cte uses seg.resistance in denom = L/dt + R/2 (Fortran HollandWires_m).
-                    hollandSegments[static_cast<size_t>(segIdx)].resistance +=
-                        2.0 * termIt->second.seriesR;
+                    // Fortran Holland wires store terminal R as resistance per unit length.
+                    auto& seg = hollandSegments[static_cast<size_t>(segIdx)];
+                    if (seg.delta != 0.0) {
+                        seg.resistance += termIt->second.seriesR / seg.delta;
+                    }
                 }
             }
         };
@@ -2219,6 +2332,49 @@ public:
         }
 
         if (hollandSegments.empty()) return;
+
+        for (auto& node : hollandNodes) {
+            node.isPec = nodeTouchesPec(node);
+        }
+
+        if (inputRoot.contains("sources")) {
+            for (const auto& src : inputRoot["sources"]) {
+                if (src.value("type", std::string()) != "generator") continue;
+                const std::string field = src.value("field", std::string());
+                if (field != "voltage" && field != "current") continue;
+                if (!src.contains("elementIds") || src["elementIds"].empty()) continue;
+                const int elemId = src["elementIds"][0].get<int>();
+                const auto elemIt = elementCoordIds.find(elemId);
+                if (elemIt == elementCoordIds.end() || elemIt->second.empty()) continue;
+                const int coordId = elemIt->second[0];
+                const auto anchorIt = sourceAnchorsByCoordId.find(coordId);
+                if (anchorIt == sourceAnchorsByCoordId.end()) continue;
+                const auto& anchor = anchorIt->second;
+                if (anchor.segmentIndex < 0 ||
+                    anchor.segmentIndex >= static_cast<int>(hollandSegments.size())) {
+                    continue;
+                }
+
+                const int orientSign = anchor.orientation < 0 ? -1 : 1;
+                const double sourceSign = anchor.isLast ? -orientSign : orientSign;
+                const bool currentSource = field == "current";
+                const double sourceScale = currentSource ? 1.0e22 : 1.0;
+                const double sourceResistance = currentSource ? 1.0e22 : 0.0;
+
+                HollandVoltageGenerator_t gen;
+                gen.segmentIndex = anchor.segmentIndex;
+                gen.magnitudeFile = src.value("magnitudeFile", std::string());
+                gen.multiplier = sourceSign * sourceScale;
+                hollandVoltageGenerators.push_back(gen);
+
+                auto& seg = hollandSegments[static_cast<size_t>(anchor.segmentIndex)];
+                if (sourceResistance != 0.0 && seg.delta != 0.0) {
+                    seg.resistance += sourceResistance / seg.delta;
+                }
+                ensureExcitationLoaded(gen.magnitudeFile);
+            }
+        }
+
         finishHollandConstants();
         for (auto& entry : hollandNodeTermination) {
             if (!entry.second.first) continue;
@@ -2266,10 +2422,7 @@ public:
             wp.cellK = p[2];
             wp.direction = seg.direction;
             wp.nd = seg.nd;
-            wp.delaySteps = (dt > 0.0)
-                                ? static_cast<int>(std::floor(
-                                      hollandStepForDirection(seg.direction) / (C0 * dt)))
-                                : 0;
+            wp.delaySteps = 0;
             hollandProbes.push_back(wp);
         }
     }
@@ -2298,26 +2451,6 @@ public:
         for (const auto& seg : hollandSegments) {
             addToHollandField(seg, -seg.cte5 * seg.current);
         }
-        for (const auto& gen : hollandVoltageGenerators) {
-            if (gen.nodeIndex < 0 ||
-                gen.nodeIndex >= static_cast<int>(hollandNodes.size())) {
-                continue;
-            }
-            const auto exc = excitations.find(gen.magnitudeFile);
-            if (exc == excitations.end()) continue;
-            const double V = getExcitationValue(exc->second, currentTime);
-            auto& node = hollandNodes[static_cast<size_t>(gen.nodeIndex)];
-            for (int segIdx : node.currentPlus) {
-                if (segIdx < 0 || segIdx >= static_cast<int>(hollandSegments.size())) continue;
-                auto& seg = hollandSegments[static_cast<size_t>(segIdx)];
-                addToHollandField(seg, -V / seg.delta);
-            }
-            for (int segIdx : node.currentMinus) {
-                if (segIdx < 0 || segIdx >= static_cast<int>(hollandSegments.size())) continue;
-                auto& seg = hollandSegments[static_cast<size_t>(segIdx)];
-                addToHollandField(seg, V / seg.delta);
-            }
-        }
         for (size_t n = 0; n < hollandNodes.size(); ++n) {
             auto termIt = hollandNodeTermination.find(static_cast<int>(n));
             if (termIt != hollandNodeTermination.end() && termIt->second.first) {
@@ -2335,6 +2468,20 @@ public:
                           seg.cte3 * seg.qplus_qminus +
                           seg.cte2 * hollandFieldValue(seg);
         }
+        const double invMuInvEps = (1.0 / mu0) * (1.0 / eps0);
+        for (const auto& gen : hollandVoltageGenerators) {
+            if (gen.segmentIndex < 0 ||
+                gen.segmentIndex >= static_cast<int>(hollandSegments.size())) {
+                continue;
+            }
+            const auto exc = excitations.find(gen.magnitudeFile);
+            if (exc == excitations.end()) continue;
+            auto& seg = hollandSegments[static_cast<size_t>(gen.segmentIndex)];
+            if (seg.lind == 0.0) continue;
+            const double vincid =
+                gen.multiplier * getExcitationValue(exc->second, currentTime);
+            seg.current += seg.cte3 * vincid / (seg.lind * invMuInvEps);
+        }
     }
 
     void sampleHollandProbes() {
@@ -2348,13 +2495,14 @@ public:
             const auto& seg = hollandSegments[static_cast<size_t>(probe.segmentIndex)];
             const auto& qPlus = hollandNodes[static_cast<size_t>(seg.chargePlus)];
             const auto& qMinus = hollandNodes[static_cast<size_t>(seg.chargeMinus)];
+            const double probeSign = static_cast<double>(seg.orientationSign);
             const double eTimesDl = -hollandFieldValue(seg) * seg.delta;
             const double vplus = ((qPlus.chargePresent + qPlus.chargePast) * 0.5) *
                                  seg.lind * invMuInvEps;
             const double vminus = ((qMinus.chargePresent + qMinus.chargePast) * 0.5) *
                                   seg.lind * invMuInvEps;
             probe.timeData.push_back(currentTime);
-            probe.currentData.push_back(seg.currentpast);
+            probe.currentData.push_back(probeSign * seg.currentpast);
             probe.eTimesDlData.push_back(eTimesDl);
             probe.vplusData.push_back(vplus);
             probe.vminusData.push_back(vminus);
@@ -2693,41 +2841,46 @@ public:
     }
 
     void advanceE() {
-        for (int i = -1; i < NX - 1; ++i)
+        const fdtd_real one = static_cast<fdtd_real>(1.0);
+        for (int k = -1; k < NZ; ++k)
             for (int j = -1; j < NY; ++j)
-                for (int k = -1; k < NZ; ++k) {
+                for (int i = -1; i < NX - 1; ++i) {
                     const int idx = ex_idx(i, j, k);
                     if (usePec && (j == NY - 1 || k == NZ - 1)) {
                         Ex[idx] = 0.0;
                         continue;
                     }
-                    Ex[idx] = Ex[idx] + CeE[idx] *
-                        ((Hz[hz_idx(i, j, k)] - Hz[hz_idx(i, j - 1, k)]) * idyh1(j) -
-                         (Hy[hy_idx(i, j, k)] - Hy[hy_idx(i, j, k - 1)]) * idzh1(k));
+                    const fdtd_real idzhk = idzh1(k);
+                    const fdtd_real idyhj = idyh1(j);
+                    Ex[idx] = one * Ex[idx] + CeE[idx] *
+                        ((Hz[hz_idx(i, j, k)] - Hz[hz_idx(i, j - 1, k)]) * idyhj -
+                         (Hy[hy_idx(i, j, k)] - Hy[hy_idx(i, j, k - 1)]) * idzhk);
                 }
-        for (int i = -1; i < NX; ++i)
+        for (int k = -1; k < NZ; ++k)
             for (int j = -1; j < NY - 1; ++j)
-                for (int k = -1; k < NZ; ++k) {
+                for (int i = -1; i < NX; ++i) {
                     const int idx = ey_idx(i, j, k);
                     if (usePec && (i == NX - 1 || k == NZ - 1)) {
                         Ey[idx] = 0.0;
                         continue;
                     }
-                    Ey[idx] = Ey[idx] + CeE[idx] *
-                        ((Hx[hx_idx(i, j, k)] - Hx[hx_idx(i, j, k - 1)]) * idzh1(k) -
+                    const fdtd_real idzhk = idzh1(k);
+                    Ey[idx] = one * Ey[idx] + CeE[idx] *
+                        ((Hx[hx_idx(i, j, k)] - Hx[hx_idx(i, j, k - 1)]) * idzhk -
                          (Hz[hz_idx(i, j, k)] - Hz[hz_idx(i - 1, j, k)]) * idxh1(i));
                 }
-        for (int i = -1; i < NX; ++i)
+        for (int k = -1; k < NZ - 1; ++k)
             for (int j = -1; j < NY; ++j)
-                for (int k = -1; k < NZ - 1; ++k) {
+                for (int i = -1; i < NX; ++i) {
                     const int idx = ez_idx(i, j, k);
                     if (usePec && (i == NX - 1 || j == NY - 1)) {
                         Ez[idx] = 0.0;
                         continue;
                     }
-                    Ez[idx] = Ez[idx] + CeE[idx] *
+                    const fdtd_real idyhj = idyh1(j);
+                    Ez[idx] = one * Ez[idx] + CeE[idx] *
                         ((Hy[hy_idx(i, j, k)] - Hy[hy_idx(i - 1, j, k)]) * idxh1(i) -
-                         (Hx[hx_idx(i, j, k)] - Hx[hx_idx(i, j - 1, k)]) * idyh1(j));
+                         (Hx[hx_idx(i, j, k)] - Hx[hx_idx(i, j - 1, k)]) * idyhj);
                 }
     }
 
@@ -2983,40 +3136,45 @@ public:
     }
 
     void advanceH() {
-        for (int i = -1; i < NX; ++i)
+        const fdtd_real one = static_cast<fdtd_real>(1.0);
+        for (int k = -1; k < NZ - 1; ++k)
             for (int j = -1; j < NY - 1; ++j)
-                for (int k = -1; k < NZ - 1; ++k) {
+                for (int i = -1; i < NX; ++i) {
                     const int idx = hx_idx(i, j, k);
                     if (usePec && i == NX - 1) {
                         Hx[idx] = 0.0;
                         continue;
                     }
-                    Hx[idx] = Hx[idx] + CmH[idx] *
-                        ((Ey[ey_idx(i, j, k + 1)] - Ey[ey_idx(i, j, k)]) * idze1(k) -
-                         (Ez[ez_idx(i, j + 1, k)] - Ez[ez_idx(i, j, k)]) * idye1(j));
+                    const fdtd_real idzek = idze1(k);
+                    const fdtd_real idyej = idye1(j);
+                    Hx[idx] = one * Hx[idx] + CmH[idx] *
+                        ((Ey[ey_idx(i, j, k + 1)] - Ey[ey_idx(i, j, k)]) * idzek -
+                         (Ez[ez_idx(i, j + 1, k)] - Ez[ez_idx(i, j, k)]) * idyej);
                 }
-        for (int i = -1; i < NX - 1; ++i)
+        for (int k = -1; k < NZ - 1; ++k)
             for (int j = -1; j < NY; ++j)
-                for (int k = -1; k < NZ - 1; ++k) {
+                for (int i = -1; i < NX - 1; ++i) {
                     const int idx = hy_idx(i, j, k);
                     if (usePec && j == NY - 1) {
                         Hy[idx] = 0.0;
                         continue;
                     }
-                    Hy[idx] = Hy[idx] + CmH[idx] *
+                    const fdtd_real idzek = idze1(k);
+                    Hy[idx] = one * Hy[idx] + CmH[idx] *
                         ((Ez[ez_idx(i + 1, j, k)] - Ez[ez_idx(i, j, k)]) * idxe1(i) -
-                         (Ex[ex_idx(i, j, k + 1)] - Ex[ex_idx(i, j, k)]) * idze1(k));
+                         (Ex[ex_idx(i, j, k + 1)] - Ex[ex_idx(i, j, k)]) * idzek);
                 }
-        for (int i = -1; i < NX - 1; ++i)
+        for (int k = -1; k < NZ; ++k)
             for (int j = -1; j < NY - 1; ++j)
-                for (int k = -1; k < NZ; ++k) {
+                for (int i = -1; i < NX - 1; ++i) {
                     const int idx = hz_idx(i, j, k);
                     if (usePec && k == NZ - 1) {
                         Hz[idx] = 0.0;
                         continue;
                     }
-                    Hz[idx] = Hz[idx] + CmH[idx] *
-                        ((Ex[ex_idx(i, j + 1, k)] - Ex[ex_idx(i, j, k)]) * idye1(j) -
+                    const fdtd_real idyej = idye1(j);
+                    Hz[idx] = one * Hz[idx] + CmH[idx] *
+                        ((Ex[ex_idx(i, j + 1, k)] - Ex[ex_idx(i, j, k)]) * idyej -
                          (Ey[ey_idx(i + 1, j, k)] - Ey[ey_idx(i, j, k)]) * idxe1(i));
                 }
     }
@@ -3164,7 +3322,7 @@ public:
         const int XI = 1, XE = NX, YI = 1, YE = NY, ZI = 1, ZE = NZ;
         const fdtd_real Gm2_1 = static_cast<fdtd_real>(
             dt / static_cast<double>(static_cast<fdtd_real>(mu0)));
-        const double timeH = currentTime + 0.5 * dt;
+        const double timeH = currentTimeHalfStep();
         for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
             const auto& pw = planeWaves[pwIdx];
             if (pw.iluminaTr) {
@@ -3294,7 +3452,7 @@ public:
             double inc_x = 0.0, inc_y = 0.0, inc_z = 0.0;
             for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
                 if (probe.field == "magnetic") {
-                    const double timeH = currentTime + 0.5 * dt;
+                    const double timeH = currentTimeHalfStep();
                     inc_x += computeIncid(pwIdx, 3, timeH, ci, cj, ck, true);
                     inc_y += computeIncid(pwIdx, 4, timeH, ci, cj, ck, true);
                     inc_z += computeIncid(pwIdx, 5, timeH, ci, cj, ck, true);
@@ -3402,6 +3560,10 @@ public:
         return e;
     }
 
+    double currentTimeHalfStep() const {
+        return currentTime + 0.5 * dt;
+    }
+
     void stepMurFdtd() {
         advanceE();
         advanceH();
@@ -3436,6 +3598,7 @@ public:
             applyPecE();
             advancePlaneWaveE();
             applyPecE();
+            advanceNodalE();
             advanceH();
             applyPecH();
             advancePlaneWaveH();
