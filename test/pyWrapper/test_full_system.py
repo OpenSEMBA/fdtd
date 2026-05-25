@@ -684,6 +684,42 @@ def test_planewave_in_box_with_pec_boundaries_probe_files_strict(tmp_path):
 
 @pytest.mark.planewave
 @pytest.mark.probes
+def test_planewave_in_box_with_mur_boundaries_probe_files_strict(tmp_path):
+    fn = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver.run()
+
+    probe_files = {
+        "before": 'pw-in-box.fdtd_before_Ex_3_3_1.dat',
+        "inbox": 'pw-in-box.fdtd_inbox_Ex_3_3_3.dat',
+        "after": 'pw-in-box.fdtd_after_Ex_3_3_5.dat',
+    }
+
+    for probe_name, expected_file in probe_files.items():
+        solved_file = solver.getSolvedProbeFilenames(probe_name)[0]
+        _assert_probe_file_exact(CASES_FOLDER + 'planewave/' + expected_file, solved_file)
+
+
+@no_hdf_skip
+@pytest.mark.hdf
+@pytest.mark.farfield
+@pytest.mark.probes
+def test_sphere_farfield_probe_file_strict(tmp_path):
+    fn = CASES_FOLDER + 'sphere/sphere.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver.run()
+
+    solved_file = solver.getSolvedProbeFilenames("farfield")[0]
+    expected_file = CASES_FOLDER + (
+        'sphere/sphere.fdtd_farfield_log__FF_2_2_2__77_77_77.dat'
+    )
+    _assert_probe_file_exact(expected_file, solved_file)
+
+
+@pytest.mark.planewave
+@pytest.mark.probes
 def test_planewave_with_periodic_boundaries(tmp_path):
     fn = CASES_FOLDER + 'planewave/pw-with-periodic.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -1080,6 +1116,85 @@ def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
     assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
+
+
+_LUMPED_STRICT_XFAIL_REASON = (
+    "C++ reduced lumped model does not yet reproduce Fortran probe files exactly"
+)
+
+
+@mtln_skip
+@pytest.mark.lumped
+@pytest.mark.probes
+@pytest.mark.xfail(strict=True, reason=_LUMPED_STRICT_XFAIL_REASON)
+def test_lumped_resistor_probe_files_strict(tmp_path):
+    case_folder = CASES_FOLDER + 'lumped_lines/simple_loop_R/'
+    solver = FDTD(
+        case_folder + 'simple_loop_lumped.fdtd.json',
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+    )
+
+    solver.run()
+
+    probe_files = {
+        "Initial current": (
+            'simple_loop_lumped.fdtd_'
+            'Initial current_Jz_24_21_30__25_22_30.dat'
+        ),
+        "LumpedCellEnd": (
+            'simple_loop_lumped.fdtd_'
+            'LumpedCellEnd_Jx_36_21_44__36_22_45.dat'
+        ),
+        "PostLumpedCell": (
+            'simple_loop_lumped.fdtd_'
+            'PostLumpedCell_Jx_40_21_44__40_22_45.dat'
+        ),
+        "PreLumpedCell": (
+            'simple_loop_lumped.fdtd_'
+            'PreLumpedCell_Jx_30_21_44__30_22_45.dat'
+        ),
+    }
+
+    for probe_name, expected_file in probe_files.items():
+        solved_file = solver.getSolvedProbeFilenames(probe_name)[0]
+        _assert_probe_file_exact(case_folder + expected_file, solved_file)
+
+
+@mtln_skip
+@pytest.mark.lumped
+@pytest.mark.termination
+@pytest.mark.probes
+@pytest.mark.xfail(strict=True, reason=_LUMPED_STRICT_XFAIL_REASON)
+def test_lumped_resistor_parallel_terminal_resistor_probe_files_strict(tmp_path):
+    case_folder = CASES_FOLDER + 'lumped_lines/current_bifurcation/'
+    solver = FDTD(
+        case_folder + 'current_bifurcation_lumped.fdtd.json',
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+    )
+
+    solver.run()
+
+    probe_files = {
+        "Bulk Initial probe": (
+            'current_bifurcation_lumped.fdtd_'
+            'Bulk Initial probe_Jz_18_18_28__22_22_28.dat'
+        ),
+        "Bulk Top probe": (
+            'current_bifurcation_lumped.fdtd_'
+            'Bulk Top probe_Jx_30_18_48__30_22_52.dat'
+        ),
+        "Bulk Bottom probe": (
+            'current_bifurcation_lumped.fdtd_'
+            'Bulk Bottom probe_Jx_30_18_28__30_22_32.dat'
+        ),
+    }
+
+    for probe_name, expected_file in probe_files.items():
+        solved_file = solver.getSolvedProbeFilenames(probe_name)[0]
+        _assert_probe_file_exact(case_folder + expected_file, solved_file)
+
 
 @mtln_skip
 @pytest.mark.lumped

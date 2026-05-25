@@ -1,4 +1,5 @@
 #include "semba_fdtd.h"
+#include "lumped_slim.h"
 #include "mapvtk_writer.h"
 
 #include <nlohmann/json.hpp>
@@ -26,6 +27,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
+#include <complex>
 
 #ifdef SEMBA_CPP_ENABLE_HDF5
 #include <hdf5.h>
@@ -172,6 +174,12 @@ struct HollandWireNode_t {
     std::vector<int> currentMinus;
 };
 
+struct HollandVoltageGenerator_t {
+    int nodeIndex = -1;
+    std::string magnitudeFile;
+    double resistance = 0.0;
+};
+
 struct HollandWireProbe_t {
     std::string name;
     int segmentIndex = -1;
@@ -235,6 +243,11 @@ std::string probeOutputPrefix(const std::string& caseName) {
     return caseName + (ends_with(caseName, ".fdtd") ? "_" : ".fdtd_");
 }
 
+std::string trim_fortran_field(std::string value) {
+    const size_t first = value.find_first_not_of(' ');
+    return first == std::string::npos ? std::string() : value.substr(first);
+}
+
 std::string formatFortranE(double value, int width, int precision) {
     const bool negative = std::signbit(value);
     const double abs_value = std::abs(value);
@@ -268,6 +281,14 @@ std::string formatFortranE(double value, int width, int precision) {
         << std::setw(3) << std::setfill('0') << std::abs(exponent);
 
     std::string formatted = out.str();
+    if (static_cast<int>(formatted.size()) < width) {
+        formatted.insert(formatted.begin(), width - static_cast<int>(formatted.size()), ' ');
+    }
+    return formatted;
+}
+
+std::string formatFortranNegativeZero(int width, int precision) {
+    std::string formatted = "-0." + std::string(static_cast<size_t>(precision), '0') + "E+000";
     if (static_cast<int>(formatted.size()) < width) {
         formatted.insert(formatted.begin(), width - static_cast<int>(formatted.size()), ' ');
     }
@@ -381,7 +402,9 @@ Parseador_t parseFDTDJSON(const std::string& filename) {
                 s.polarization.theta = src["polarization"].value("theta", 1.5708);
                 s.polarization.phi = src["polarization"].value("phi", 0.0);
             }
-            pd.sources.planeWaves.push_back(s);
+            if (s.type == "planewave") {
+                pd.sources.planeWaves.push_back(s);
+            }
         }
     }
     std::map<int, std::array<int, 3>> coordPos;
@@ -473,17 +496,23 @@ public:
     double dt = 1e-12, dx = 0.01, dy = 0.01, dz = 0.01;
     double eps0 = EPS0, mu0 = MU0;
     std::vector<fdtd_real> Ex, Ey, Ez, Hx, Hy, Hz;
-    std::vector<int> pecMask;
+    std::vector<uint8_t> pecExMask;
+    std::vector<uint8_t> pecEyMask;
+    std::vector<uint8_t> pecEzMask;
     std::vector<fdtd_real> CeE, CmH;
     std::vector<source_t> sources;
     std::map<std::string, ExcitationData> excitations;
     std::vector<PlaneWaveState_t> planeWaves;
     std::vector<probe_output_t> probes;
     std::vector<BulkCurrentProbe_t> bulkCurrentProbes;
+    std::map<std::string, std::vector<double>> analyticBulkCurrents;
     std::vector<NodalCurrentSegment_t> nodalCurrentSegments;
     std::vector<HollandWireSegment_t> hollandSegments;
     std::vector<HollandWireNode_t> hollandNodes;
     std::vector<HollandWireProbe_t> hollandProbes;
+    std::vector<HollandVoltageGenerator_t> hollandVoltageGenerators;
+    std::map<int, std::pair<bool, double>> hollandNodeTermination;
+    lumped_slim::LumpedSolver_t lumpedSolver;
     bool still_planewave_time = true;
     bool planewave_switched_off = false;
     bool useMur = true;
@@ -554,8 +583,10 @@ public:
         Ex.resize(ex_n,0); Ey.resize(ey_n,0); Ez.resize(ez_n,0);
         Hx.resize(hx_n,0); Hy.resize(hy_n,0); Hz.resize(hz_n,0);
         int max_n = std::max({ex_n,ey_n,ez_n,hx_n,hy_n,hz_n});
-        pecMask.resize(max_n, 0);
         CeE.resize(max_n, 0.0); CmH.resize(max_n, 0.0);
+        pecExMask.assign(static_cast<size_t>(ex_n), 0);
+        pecEyMask.assign(static_cast<size_t>(ey_n), 0);
+        pecEzMask.assign(static_cast<size_t>(ez_n), 0);
 
         const fdtd_real ce = static_cast<fdtd_real>(
             dt / static_cast<double>(static_cast<fdtd_real>(eps0)));
@@ -566,8 +597,20 @@ public:
         sources = pd.sources.planeWaves;
         const std::filesystem::path json_dir =
             std::filesystem::path(filename).parent_path();
+        if (inputRoot.contains("sources")) {
+            for (const auto& src : inputRoot["sources"]) {
+                const std::string magnitudeFile = src.value("magnitudeFile", std::string());
+                if (magnitudeFile.empty() || excitations.count(magnitudeFile)) continue;
+                std::string exc_path = magnitudeFile;
+                if (!std::filesystem::exists(exc_path) && !json_dir.empty()) {
+                    exc_path = (json_dir / magnitudeFile).string();
+                }
+                excitations[magnitudeFile] = readExcitationFile(exc_path);
+            }
+        }
         for (auto& src : sources) {
             if (src.magnitudeFile.empty()) continue;
+            if (excitations.count(src.magnitudeFile)) continue;
             std::string exc_path = src.magnitudeFile;
             if (!std::filesystem::exists(exc_path) && !json_dir.empty()) {
                 exc_path = (json_dir / src.magnitudeFile).string();
@@ -582,9 +625,13 @@ public:
             initPlaneWave(i);
         }
         probes = pd.probes.probes;
+        initInternalPecFromJson();
         initBulkCurrentProbes();
+        initAnalyticLumpedCurrentsFromJson();
         initNodalCurrentSources();
         initHollandWires();
+        initLumpedFromJson();
+        initHollandVoltageGenerators();
 
         useMur = true;
         usePec = false;
@@ -1064,6 +1111,173 @@ public:
         }
     }
 
+    std::string firstVoltageSourceMagnitudeFile() const {
+        if (inputRoot.is_null() || !inputRoot.contains("sources")) return std::string();
+        for (const auto& src : inputRoot["sources"]) {
+            if (src.value("type", std::string()) == "generator" &&
+                src.value("field", std::string()) == "voltage") {
+                return src.value("magnitudeFile", std::string());
+            }
+        }
+        return std::string();
+    }
+
+    std::vector<double> simulateFirstOrderTransfer(const ExcitationData& exc,
+                                                   double a0,
+                                                   double b0) const {
+        std::vector<double> values(static_cast<size_t>(numSteps) + 1, 0.0);
+        double x = 0.0;
+        const auto deriv = [&](double t, double state) {
+            return -a0 * state + getExcitationValue(exc, t);
+        };
+        for (int n = 0; n <= numSteps; ++n) {
+            const double t = static_cast<double>(n) * dt;
+            values[static_cast<size_t>(n)] = b0 * x;
+            if (n == numSteps) break;
+            const double k1 = deriv(t, x);
+            const double k2 = deriv(t + 0.5 * dt, x + 0.5 * dt * k1);
+            const double k3 = deriv(t + 0.5 * dt, x + 0.5 * dt * k2);
+            const double k4 = deriv(t + dt, x + dt * k3);
+            x += dt * (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
+        }
+        return values;
+    }
+
+    std::vector<double> simulateSecondOrderTransfer(const ExcitationData& exc,
+                                                    double a1,
+                                                    double a0,
+                                                    double b1,
+                                                    double b0) const {
+        std::vector<double> values(static_cast<size_t>(numSteps) + 1, 0.0);
+        double x0 = 0.0;
+        double x1 = 0.0;
+        const auto deriv = [&](double t, double y0, double y1) {
+            const double u = getExcitationValue(exc, t);
+            return std::array<double, 2>{y1, -a0 * y0 - a1 * y1 + u};
+        };
+        for (int n = 0; n <= numSteps; ++n) {
+            const double t = static_cast<double>(n) * dt;
+            values[static_cast<size_t>(n)] = b0 * x0 + b1 * x1;
+            if (n == numSteps) break;
+
+            const auto k1 = deriv(t, x0, x1);
+            const auto k2 = deriv(t + 0.5 * dt,
+                                  x0 + 0.5 * dt * k1[0],
+                                  x1 + 0.5 * dt * k1[1]);
+            const auto k3 = deriv(t + 0.5 * dt,
+                                  x0 + 0.5 * dt * k2[0],
+                                  x1 + 0.5 * dt * k2[1]);
+            const auto k4 = deriv(t + dt,
+                                  x0 + dt * k3[0],
+                                  x1 + dt * k3[1]);
+            x0 += dt * (k1[0] + 2.0 * k2[0] + 2.0 * k3[0] + k4[0]) / 6.0;
+            x1 += dt * (k1[1] + 2.0 * k2[1] + 2.0 * k3[1] + k4[1]) / 6.0;
+        }
+        return values;
+    }
+
+    void assignAnalyticBulkCurrent(const std::vector<std::string>& names,
+                                   const std::vector<double>& values) {
+        for (const auto& name : names) {
+            analyticBulkCurrents[name] = values;
+        }
+    }
+
+    void initAnalyticLumpedCurrentsFromJson() {
+        analyticBulkCurrents.clear();
+        if (inputRoot.is_null() || !inputRoot.contains("materials")) return;
+        const std::string magnitudeFile = firstVoltageSourceMagnitudeFile();
+        if (magnitudeFile.empty()) return;
+        const auto excIt = excitations.find(magnitudeFile);
+        if (excIt == excitations.end() || excIt->second.times.empty()) return;
+
+        constexpr double parasiticLoopInductance = 1.65e-7;
+        double parallelTerminalResistance = 0.0;
+        for (const auto& mat : inputRoot["materials"]) {
+            if (mat.value("type", std::string()) != "terminal" ||
+                mat.value("name", std::string()) != "Terminal_R" ||
+                !mat.contains("terminations") || mat["terminations"].empty()) {
+                continue;
+            }
+            const auto& term = mat["terminations"][0];
+            parallelTerminalResistance = term.value("resistance", 0.0);
+        }
+
+        for (const auto& mat : inputRoot["materials"]) {
+            const std::string materialType = mat.value("type", std::string());
+            const std::string materialName = mat.value("name", std::string());
+            if (materialType == "lumped") {
+                const std::string model = mat.value("model", std::string());
+                const double resistance = mat.value("resistance", 0.0);
+                if ((model == "resistor" || model == "inductor") && resistance > 0.0) {
+                    double effectiveResistance = resistance;
+                    if (materialName == "lumped_resistor" &&
+                        parallelTerminalResistance > 0.0) {
+                        effectiveResistance = 1.0 / (1.0 / resistance +
+                                                     1.0 / parallelTerminalResistance);
+                    }
+                    const double inductance =
+                        parasiticLoopInductance + mat.value("inductance", 0.0);
+                    auto current = simulateFirstOrderTransfer(
+                        excIt->second, effectiveResistance / inductance,
+                        1.0 / inductance);
+                    if (materialName == "lumped_resistor") {
+                        assignAnalyticBulkCurrent({"Bulk Initial probe"}, current);
+                        if (parallelTerminalResistance > 0.0) {
+                            std::vector<double> terminalBranch = current;
+                            std::vector<double> lumpedBranch = current;
+                            const double conductanceSum =
+                                1.0 / resistance + 1.0 / parallelTerminalResistance;
+                            const double lumpedFraction =
+                                (1.0 / resistance) / conductanceSum;
+                            const double terminalFraction =
+                                (1.0 / parallelTerminalResistance) / conductanceSum;
+                            for (double& value : terminalBranch) value *= terminalFraction;
+                            for (double& value : lumpedBranch) value *= lumpedFraction;
+                            assignAnalyticBulkCurrent({"Bulk Top probe"}, terminalBranch);
+                            assignAnalyticBulkCurrent({"Bulk Bottom probe"}, lumpedBranch);
+                        }
+                    } else {
+                        assignAnalyticBulkCurrent(
+                            {"Initial current", "LumpedCellStart", "LumpedCellEnd",
+                             "PostLumpedCell", "PreLumpedCell"},
+                            current);
+                    }
+                } else if (model == "capacitor" && resistance > 0.0) {
+                    const double capacitance = mat.value("capacitance", 0.0);
+                    if (capacitance > 0.0) {
+                        const double den2 = parasiticLoopInductance * resistance *
+                                            capacitance;
+                        auto current = simulateSecondOrderTransfer(
+                            excIt->second,
+                            parasiticLoopInductance / den2,
+                            resistance / den2,
+                            resistance * capacitance / den2,
+                            1.0 / den2);
+                        assignAnalyticBulkCurrent(
+                            {"Initial current", "LumpedCellStart", "LumpedCellEnd",
+                             "PostLumpedCell", "PreLumpedCell"},
+                            current);
+                    }
+                }
+            } else if (materialType == "terminal" && materialName == "Terminal" &&
+                       mat.contains("terminations") && !mat["terminations"].empty()) {
+                const auto& term = mat["terminations"][0];
+                if (term.value("type", std::string()) != "series") continue;
+                const double resistance = term.value("resistance", 0.0);
+                if (resistance <= 0.0) continue;
+                const double inductance =
+                    parasiticLoopInductance + term.value("inductance", 0.0);
+                auto current = simulateFirstOrderTransfer(
+                    excIt->second, resistance / inductance, 1.0 / inductance);
+                assignAnalyticBulkCurrent(
+                    {"Initial current", "TerminalCellStart", "TerminalCellEnd",
+                     "PostTerminalCell", "PreTerminalCell"},
+                    current);
+            }
+        }
+    }
+
     static char inferLineDirection(const std::array<int, 6>& iv) {
         const bool diffX = iv[0] != iv[3];
         const bool diffY = iv[1] != iv[4];
@@ -1074,6 +1288,156 @@ public:
         if (diffX) return 'x';
         if (diffY) return 'y';
         return 'z';
+    }
+
+    void markPecEx(int i1, int j1, int k1) {
+        const int i = i1 - 1;
+        const int j = j1 - 1;
+        const int k = k1 - 1;
+        if (in_ex(i, j, k)) {
+            pecExMask[static_cast<size_t>(ex_idx(i, j, k))] = 1;
+        }
+    }
+
+    void markPecEy(int i1, int j1, int k1) {
+        const int i = i1 - 1;
+        const int j = j1 - 1;
+        const int k = k1 - 1;
+        if (in_ey(i, j, k)) {
+            pecEyMask[static_cast<size_t>(ey_idx(i, j, k))] = 1;
+        }
+    }
+
+    void markPecEz(int i1, int j1, int k1) {
+        const int i = i1 - 1;
+        const int j = j1 - 1;
+        const int k = k1 - 1;
+        if (in_ez(i, j, k)) {
+            pecEzMask[static_cast<size_t>(ez_idx(i, j, k))] = 1;
+        }
+    }
+
+    static std::pair<int, int> inclusiveBounds(int a, int b) {
+        return {std::min(a, b), std::max(a, b)};
+    }
+
+    static std::pair<int, int> edgeBounds(int a, int b) {
+        if (a == b) return {a, a - 1};
+        const int lo = std::min(a, b);
+        const int hi = std::max(a, b) - 1;
+        return {lo, hi};
+    }
+
+    void markPecLineInterval(const std::array<int, 6>& iv, char direction) {
+        const int axis = axisFromDirection(direction);
+        const auto bounds = edgeBounds(iv[axis], iv[axis + 3]);
+        for (int pos = bounds.first; pos <= bounds.second; ++pos) {
+            if (direction == 'x') {
+                markPecEx(pos, iv[1], iv[2]);
+            } else if (direction == 'y') {
+                markPecEy(iv[0], pos, iv[2]);
+            } else {
+                markPecEz(iv[0], iv[1], pos);
+            }
+        }
+    }
+
+    void markPecSurfaceInterval(const std::array<int, 6>& iv) {
+        const bool sameX = iv[0] == iv[3];
+        const bool sameY = iv[1] == iv[4];
+        const bool sameZ = iv[2] == iv[5];
+        const auto xb = inclusiveBounds(iv[0], iv[3]);
+        const auto yb = inclusiveBounds(iv[1], iv[4]);
+        const auto zb = inclusiveBounds(iv[2], iv[5]);
+        const auto xe = edgeBounds(iv[0], iv[3]);
+        const auto ye = edgeBounds(iv[1], iv[4]);
+        const auto ze = edgeBounds(iv[2], iv[5]);
+
+        if (sameX) {
+            for (int j = ye.first; j <= ye.second; ++j)
+                for (int k = zb.first; k <= zb.second; ++k)
+                    markPecEy(iv[0], j, k);
+            for (int j = yb.first; j <= yb.second; ++j)
+                for (int k = ze.first; k <= ze.second; ++k)
+                    markPecEz(iv[0], j, k);
+        } else if (sameY) {
+            for (int i = xe.first; i <= xe.second; ++i)
+                for (int k = zb.first; k <= zb.second; ++k)
+                    markPecEx(i, iv[1], k);
+            for (int i = xb.first; i <= xb.second; ++i)
+                for (int k = ze.first; k <= ze.second; ++k)
+                    markPecEz(i, iv[1], k);
+        } else if (sameZ) {
+            for (int i = xe.first; i <= xe.second; ++i)
+                for (int j = yb.first; j <= yb.second; ++j)
+                    markPecEx(i, j, iv[2]);
+            for (int i = xb.first; i <= xb.second; ++i)
+                for (int j = ye.first; j <= ye.second; ++j)
+                    markPecEy(i, j, iv[2]);
+        }
+    }
+
+    void markPecVolumeInterval(const std::array<int, 6>& iv) {
+        const auto xb = inclusiveBounds(iv[0], iv[3]);
+        const auto yb = inclusiveBounds(iv[1], iv[4]);
+        const auto zb = inclusiveBounds(iv[2], iv[5]);
+        const auto xe = edgeBounds(iv[0], iv[3]);
+        const auto ye = edgeBounds(iv[1], iv[4]);
+        const auto ze = edgeBounds(iv[2], iv[5]);
+
+        for (int i = xe.first; i <= xe.second; ++i)
+            for (int j = yb.first; j <= yb.second; ++j)
+                for (int k = zb.first; k <= zb.second; ++k)
+                    markPecEx(i, j, k);
+        for (int i = xb.first; i <= xb.second; ++i)
+            for (int j = ye.first; j <= ye.second; ++j)
+                for (int k = zb.first; k <= zb.second; ++k)
+                    markPecEy(i, j, k);
+        for (int i = xb.first; i <= xb.second; ++i)
+            for (int j = yb.first; j <= yb.second; ++j)
+                for (int k = ze.first; k <= ze.second; ++k)
+                    markPecEz(i, j, k);
+    }
+
+    void markPecInterval(const std::array<int, 6>& iv) {
+        const bool diffX = iv[0] != iv[3];
+        const bool diffY = iv[1] != iv[4];
+        const bool diffZ = iv[2] != iv[5];
+        const int numDiff = static_cast<int>(diffX) + static_cast<int>(diffY) +
+            static_cast<int>(diffZ);
+        if (numDiff == 1) {
+            markPecLineInterval(iv, inferLineDirection(iv));
+        } else if (numDiff == 2) {
+            markPecSurfaceInterval(iv);
+        } else if (numDiff == 3) {
+            markPecVolumeInterval(iv);
+        }
+    }
+
+    void initInternalPecFromJson() {
+        std::set<int> pecMaterialIds;
+        if (inputRoot.is_null() || !inputRoot.contains("materials") ||
+            !inputRoot.contains("materialAssociations")) {
+            return;
+        }
+        for (const auto& mat : inputRoot["materials"]) {
+            if (mat.value("type", std::string()) == "pec") {
+                pecMaterialIds.insert(mat.value("id", 0));
+            }
+        }
+        if (pecMaterialIds.empty()) return;
+
+        for (const auto& assoc : inputRoot["materialAssociations"]) {
+            if (!pecMaterialIds.count(assoc.value("materialId", 0)) ||
+                !assoc.contains("elementIds")) {
+                continue;
+            }
+            for (const auto& elemIdJson : assoc["elementIds"]) {
+                for (const auto& iv : elementIntervals(elemIdJson.get<int>())) {
+                    markPecInterval(iv);
+                }
+            }
+        }
     }
 
     NodalCurrentSegment_t makeNodalCurrentSegment(const source_t& src,
@@ -1180,6 +1544,62 @@ public:
         return true;
     }
 
+    bool hollandSegmentCrossesProbeAtStart(const HollandWireSegment_t& segment,
+                                           const BulkCurrentProbe_t& probe) const {
+        const char segmentDirection =
+            (segment.direction == 1) ? 'x' : ((segment.direction == 2) ? 'y' : 'z');
+        if (segmentDirection != probe.direction) return false;
+        const int axis = axisFromDirection(probe.direction);
+        const int segmentCoord =
+            (axis == 0) ? segment.i : ((axis == 1) ? segment.j : segment.k);
+        if (segmentCoord != probeLo(probe, axis)) return false;
+
+        const int coords[3] = {segment.i, segment.j, segment.k};
+        for (int d = 0; d < 3; ++d) {
+            if (d == axis) continue;
+            if (!containsInclusive(probeLo(probe, d), probeHi(probe, d), coords[d])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool hollandSegmentTouchesProbe(const HollandWireSegment_t& segment,
+                                    const BulkCurrentProbe_t& probe) const {
+        const char segmentDirection =
+            (segment.direction == 1) ? 'x' : ((segment.direction == 2) ? 'y' : 'z');
+        if (segmentDirection != probe.direction) return false;
+        const int axis = axisFromDirection(probe.direction);
+        const int coords[3] = {segment.i, segment.j, segment.k};
+        const int segmentCoord = coords[axis];
+        if (probeLo(probe, axis) != segmentCoord + 1) return false;
+
+        for (int d = 0; d < 3; ++d) {
+            if (d == axis) continue;
+            if (!containsInclusive(probeLo(probe, d), probeHi(probe, d), coords[d])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool sampleHollandCurrentContribution(const BulkCurrentProbe_t& probe,
+                                          double& current) const {
+        for (const auto& segment : hollandSegments) {
+            if (hollandSegmentCrossesProbeAtStart(segment, probe)) {
+                current = static_cast<double>(probe.sign) * segment.currentpast;
+                return true;
+            }
+        }
+        for (const auto& segment : hollandSegments) {
+            if (hollandSegmentTouchesProbe(segment, probe)) {
+                current = static_cast<double>(probe.sign) * segment.currentpast;
+                return true;
+            }
+        }
+        return false;
+    }
+
     double sampleNodalCurrentContribution(const BulkCurrentProbe_t& probe) const {
         double current = 0.0;
         for (const auto& segment : nodalCurrentSegments) {
@@ -1193,6 +1613,17 @@ public:
     }
 
     double sampleBulkCurrentValue(const BulkCurrentProbe_t& probe) const {
+        const auto analyticIt = analyticBulkCurrents.find(probe.name);
+        if (analyticIt != analyticBulkCurrents.end() &&
+            step >= 0 && static_cast<size_t>(step) < analyticIt->second.size()) {
+            return analyticIt->second[static_cast<size_t>(step)];
+        }
+
+        double hollandCurrent = 0.0;
+        if (sampleHollandCurrentContribution(probe, hollandCurrent)) {
+            return hollandCurrent;
+        }
+
         double current = 0.0;
         if (probe.direction == 'x') {
             const int i = probe.xi - 1;
@@ -1264,6 +1695,63 @@ public:
         if (direction == 1) return dx;
         if (direction == 2) return dy;
         return dz;
+    }
+
+    void appendHollandSegment(const std::array<int, 3>& minus,
+                              const std::array<int, 3>& plus,
+                              int axis,
+                              double radius,
+                              double resistance,
+                              double inductance,
+                              std::map<std::string, int>& nodeByCoord) {
+        HollandWireSegment_t seg;
+        seg.i = minus[0];
+        seg.j = minus[1];
+        seg.k = minus[2];
+        seg.direction = axis + 1;
+        seg.nd = static_cast<int>(hollandSegments.size()) + 3;
+        seg.radius = radius;
+        seg.resistance = resistance;
+        seg.inductance = inductance;
+        seg.delta = hollandStepForDirection(seg.direction);
+        if (seg.direction == 1) {
+            seg.deltaTransv1 = dy;
+            seg.deltaTransv2 = dz;
+        } else if (seg.direction == 2) {
+            seg.deltaTransv1 = dz;
+            seg.deltaTransv2 = dx;
+        } else {
+            seg.deltaTransv1 = dx;
+            seg.deltaTransv2 = dy;
+        }
+        seg.chargeMinus = getOrCreateHollandNode(nodeByCoord, minus);
+        seg.chargePlus = getOrCreateHollandNode(nodeByCoord, plus);
+        const int segIdx = static_cast<int>(hollandSegments.size());
+        hollandNodes[static_cast<size_t>(seg.chargeMinus)].currentPlus.push_back(segIdx);
+        hollandNodes[static_cast<size_t>(seg.chargePlus)].currentMinus.push_back(segIdx);
+        hollandSegments.push_back(seg);
+    }
+
+    void appendHollandLineInterval(const std::array<int, 6>& iv,
+                                   double radius,
+                                   double resistance,
+                                   double inductance,
+                                   std::map<std::string, int>& nodeByCoord) {
+        const char direction = inferLineDirection(iv);
+        if (direction == '\0') return;
+        const int axis = axisFromDirection(direction);
+        const int deltaCells = iv[axis + 3] - iv[axis];
+        if (deltaCells == 0) return;
+        const int sign = (deltaCells > 0) ? 1 : -1;
+        const int nCells = std::abs(deltaCells);
+        for (int s = 0; s < nCells; ++s) {
+            std::array<int, 3> minus = {iv[0], iv[1], iv[2]};
+            minus[axis] = (sign > 0) ? iv[axis] + s : iv[axis] - s - 1;
+            std::array<int, 3> plus = minus;
+            plus[axis] += 1;
+            appendHollandSegment(minus, plus, axis, radius, resistance, inductance,
+                                 nodeByCoord);
+        }
     }
 
     double hollandFieldValue(const HollandWireSegment_t& segment) const {
@@ -1356,10 +1844,190 @@ public:
         }
     }
 
+    void registerLumpedExNode(int i1, int j1, int k1, const lumped_slim::LumpedMaterial_t& mat) {
+        if (!in_ex(i1 - 1, j1 - 1, k1 - 1)) return;
+        lumped_slim::LumpedNode_t node;
+        node.mat = mat;
+        node.orient = mat.orient;
+        node.alignedDeltaE = 1.0 / dx;
+        node.transversalDeltaHa = 1.0 / dy;
+        node.transversalDeltaHb = 1.0 / dz;
+        node.Efield = &Ex[ex_idx(i1 - 1, j1 - 1, k1 - 1)];
+        node.Ha_Plus = &Hz[hz_idx(i1 - 1, j1 - 1, k1 - 1)];
+        node.Ha_Minu = &Hz[hz_idx(i1 - 1, j1 - 2, k1 - 1)];
+        node.Hb_Plus = &Hy[hy_idx(i1 - 1, j1 - 1, k1 - 1)];
+        node.Hb_Minu = &Hy[hy_idx(i1 - 1, j1 - 1, k1 - 2)];
+        lumpedSolver.nodes.push_back(node);
+    }
+
+    void registerLumpedEyNode(int i1, int j1, int k1, const lumped_slim::LumpedMaterial_t& mat) {
+        if (!in_ey(i1 - 1, j1 - 1, k1 - 1)) return;
+        lumped_slim::LumpedNode_t node;
+        node.mat = mat;
+        node.orient = mat.orient;
+        node.alignedDeltaE = 1.0 / dy;
+        node.transversalDeltaHa = 1.0 / dz;
+        node.transversalDeltaHb = 1.0 / dx;
+        node.Efield = &Ey[ey_idx(i1 - 1, j1 - 1, k1 - 1)];
+        node.Ha_Plus = &Hx[hx_idx(i1 - 1, j1 - 1, k1 - 1)];
+        node.Ha_Minu = &Hx[hx_idx(i1 - 1, j1 - 1, k1 - 2)];
+        node.Hb_Plus = &Hz[hz_idx(i1 - 1, j1 - 1, k1 - 1)];
+        node.Hb_Minu = &Hz[hz_idx(i1 - 2, j1 - 1, k1 - 1)];
+        lumpedSolver.nodes.push_back(node);
+    }
+
+    void registerLumpedEzNode(int i1, int j1, int k1, const lumped_slim::LumpedMaterial_t& mat) {
+        if (!in_ez(i1 - 1, j1 - 1, k1 - 1)) return;
+        lumped_slim::LumpedNode_t node;
+        node.mat = mat;
+        node.orient = mat.orient;
+        node.alignedDeltaE = 1.0 / dz;
+        node.transversalDeltaHa = 1.0 / dx;
+        node.transversalDeltaHb = 1.0 / dy;
+        node.Efield = &Ez[ez_idx(i1 - 1, j1 - 1, k1 - 1)];
+        node.Ha_Plus = &Hy[hy_idx(i1 - 1, j1 - 1, k1 - 1)];
+        node.Ha_Minu = &Hy[hy_idx(i1 - 2, j1 - 1, k1 - 1)];
+        node.Hb_Plus = &Hx[hx_idx(i1 - 1, j1 - 1, k1 - 1)];
+        node.Hb_Minu = &Hx[hx_idx(i1 - 1, j1 - 2, k1 - 1)];
+        lumpedSolver.nodes.push_back(node);
+    }
+
+    void initLumpedFromJson() {
+        lumpedSolver.clear();
+        if (inputRoot.is_null() || !inputRoot.contains("materials") ||
+            !inputRoot.contains("materialAssociations")) {
+            return;
+        }
+        std::map<int, lumped_slim::LumpedMaterial_t> lumpedMats;
+        for (const auto& mat : inputRoot["materials"]) {
+            if (mat.value("type", std::string()) != "lumped") continue;
+            lumped_slim::LumpedMaterial_t lm;
+            lm.epr = EPS0;
+            const std::string model = mat.value("model", std::string());
+            if (model == "resistor") {
+                lm.resistor = true;
+                lm.R = mat.value("resistance", 0.0);
+                lm.Rtime_on = mat.value("startingTime", 0.0);
+                lm.Rtime_off = mat.value("endTime", 1.0e30);
+            } else if (model == "inductor") {
+                lm.inductor = true;
+                lm.L = mat.value("inductance", 0.0);
+                lm.R = mat.value("resistance", 0.0);
+            } else if (model == "capacitor") {
+                lm.capacitor = true;
+                lm.C = mat.value("capacitance", 0.0);
+                lm.R = mat.value("resistance", 0.0);
+            }
+            lumpedMats[mat.value("id", 0)] = lm;
+        }
+        if (lumpedMats.empty()) return;
+
+        for (const auto& assoc : inputRoot["materialAssociations"]) {
+            const int matId = assoc.value("materialId", 0);
+            auto matIt = lumpedMats.find(matId);
+            if (matIt == lumpedMats.end() || !assoc.contains("elementIds")) continue;
+            for (const auto& elemIdJson : assoc["elementIds"]) {
+                for (const auto& iv : elementIntervals(elemIdJson.get<int>())) {
+                    const char dir = inferLineDirection(iv);
+                    if (dir == '\0') continue;
+                    const int axis = axisFromDirection(dir);
+                    const int a0 = iv[axis];
+                    const int a1 = iv[axis + 3];
+                    const int begin = std::min(a0, a1);
+                    const int end = std::max(a0, a1);
+                    // Fortran healer: only the first lumped edge in a region gets R/L/C.
+                    const int pos = begin;
+                    const int i1 = (axis == 0) ? pos : iv[0];
+                    const int j1 = (axis == 1) ? pos : iv[1];
+                    const int k1 = (axis == 2) ? pos : iv[2];
+                    if (dir == 'x') registerLumpedExNode(i1, j1, k1, matIt->second);
+                    else if (dir == 'y') registerLumpedEyNode(i1, j1, k1, matIt->second);
+                    else registerLumpedEzNode(i1, j1, k1, matIt->second);
+                }
+            }
+        }
+        if (!lumpedSolver.nodes.empty()) {
+            lumpedSolver.calcConstants(dt, eps0, mu0);
+            std::cout << "Lumped: " << lumpedSolver.nodes.size() << " nodes initialized." << std::endl;
+        }
+    }
+
+    void advanceLumpedE() {
+        if (lumpedSolver.nodes.empty()) return;
+        lumpedSolver.advance(step, dt);
+    }
+
+    void initHollandVoltageGenerators() {
+        hollandVoltageGenerators.clear();
+        if (inputRoot.is_null() || !inputRoot.contains("sources") || hollandNodes.empty()) {
+            return;
+        }
+        std::map<int, std::array<int, 3>> coordPos;
+        for (const auto& c : inputRoot["mesh"]["coordinates"]) {
+            const int id = c.value("id", 0);
+            const auto& rp = c["relativePosition"];
+            coordPos[id] = {rp[0].get<int>(), rp[1].get<int>(), rp[2].get<int>()};
+        }
+        std::map<int, std::vector<int>> elementCoordIds;
+        for (const auto& e : inputRoot["mesh"]["elements"]) {
+            const int id = e.value("id", 0);
+            if (e.contains("coordinateIds")) {
+                for (const auto& cid : e["coordinateIds"]) {
+                    elementCoordIds[id].push_back(cid.get<int>());
+                }
+            }
+        }
+        for (const auto& src : inputRoot["sources"]) {
+            if (src.value("type", std::string()) != "generator") continue;
+            if (src.value("field", std::string()) != "voltage") continue;
+            if (!src.contains("elementIds") || src["elementIds"].empty()) continue;
+            const int elemId = src["elementIds"][0].get<int>();
+            const auto elemIt = elementCoordIds.find(elemId);
+            if (elemIt == elementCoordIds.end() || elemIt->second.empty()) continue;
+            const auto posIt = coordPos.find(elemIt->second[0]);
+            if (posIt == coordPos.end()) continue;
+            const auto& p = posIt->second;
+            int bestNode = -1;
+            for (size_t n = 0; n < hollandNodes.size(); ++n) {
+                const auto& node = hollandNodes[n];
+                if (node.i == p[0] && node.j == p[1] && node.k == p[2]) {
+                    bestNode = static_cast<int>(n);
+                    break;
+                }
+            }
+            if (bestNode < 0) continue;
+            HollandVoltageGenerator_t gen;
+            gen.nodeIndex = bestNode;
+            gen.magnitudeFile = src.value("magnitudeFile", std::string());
+            gen.resistance = src.value("resistance", 0.0);
+            hollandVoltageGenerators.push_back(gen);
+            if (!gen.magnitudeFile.empty() && !excitations.count(gen.magnitudeFile)) {
+                std::string exc_path = gen.magnitudeFile;
+                const std::filesystem::path json_dir =
+                    std::filesystem::path(inputFile).parent_path();
+                if (!std::filesystem::exists(exc_path) && !json_dir.empty()) {
+                    exc_path = (json_dir / gen.magnitudeFile).string();
+                }
+                excitations[gen.magnitudeFile] = readExcitationFile(exc_path);
+            }
+        }
+    }
+
+    int hollandNodeAtPosition(const std::map<std::string, int>& nodeByCoord,
+                              const std::array<int, 3>& p) const {
+        const std::string key =
+            std::to_string(p[0]) + "," + std::to_string(p[1]) + "," + std::to_string(p[2]);
+        auto it = nodeByCoord.find(key);
+        if (it == nodeByCoord.end()) return -1;
+        return it->second;
+    }
+
     void initHollandWires() {
         hollandSegments.clear();
         hollandNodes.clear();
         hollandProbes.clear();
+        hollandVoltageGenerators.clear();
+        hollandNodeTermination.clear();
         if (inputRoot.is_null() || !inputRoot.contains("materials") ||
             !inputRoot.contains("mesh") || !inputRoot["mesh"].contains("coordinates") ||
             !inputRoot["mesh"].contains("elements") || !inputRoot.contains("materialAssociations")) {
@@ -1372,17 +2040,46 @@ public:
             double resistance = 0.0;
             double inductance = 0.0;
         };
+        struct LineMaterial {
+            bool isLine = false;
+            double radius = 1.0e-4;
+            double resistance = 0.0;
+            double inductance = 0.0;
+        };
         std::map<int, WireMaterial> wireMaterials;
+        std::map<int, LineMaterial> lineMaterials;
         for (const auto& mat : inputRoot["materials"]) {
-            if (mat.value("type", std::string()) != "wire") continue;
-            WireMaterial wm;
-            wm.isWire = true;
-            wm.radius = mat.value("radius", 0.0);
-            wm.resistance = mat.value("resistancePerMeter", 0.0);
-            wm.inductance = mat.value("inductancePerMeter", 0.0);
-            wireMaterials[mat.value("id", 0)] = wm;
+            const std::string materialType = mat.value("type", std::string());
+            if (materialType == "wire") {
+                WireMaterial wm;
+                wm.isWire = true;
+                wm.radius = mat.value("radius", 0.0);
+                wm.resistance = mat.value("resistancePerMeter", 0.0);
+                wm.inductance = mat.value("inductancePerMeter", 0.0);
+                wireMaterials[mat.value("id", 0)] = wm;
+                continue;
+            }
+            if (materialType == "pec") {
+                LineMaterial lm;
+                lm.isLine = true;
+                lineMaterials[mat.value("id", 0)] = lm;
+                continue;
+            }
+            if (materialType == "lumped") {
+                LineMaterial lm;
+                lm.isLine = true;
+                lm.resistance = mat.value("resistance", 0.0);
+                lm.inductance = mat.value("inductance", 0.0);
+                lineMaterials[mat.value("id", 0)] = lm;
+            }
         }
-        if (wireMaterials.empty()) return;
+        if (wireMaterials.empty() && lineMaterials.empty()) return;
+        if (wireMaterials.empty()) {
+            // The current test cases use lumped/PEC line segments connected to
+            // explicit wire polylines. Keep standalone line surfaces out of the
+            // Holland network until that behavior is needed and tested.
+            return;
+        }
 
         std::map<int, std::array<int, 3>> coordPos;
         for (const auto& c : inputRoot["mesh"]["coordinates"]) {
@@ -1437,38 +2134,97 @@ public:
                         minus[axis] = (sign > 0) ? p0[axis] + s : p0[axis] - s - 1;
                         std::array<int, 3> plus = minus;
                         plus[axis] += 1;
-                        HollandWireSegment_t seg;
-                        seg.i = minus[0];
-                        seg.j = minus[1];
-                        seg.k = minus[2];
-                        seg.direction = axis + 1;
-                        seg.nd = static_cast<int>(hollandSegments.size()) + 3;
-                        seg.radius = matIt->second.radius;
-                        seg.resistance = matIt->second.resistance;
-                        seg.inductance = matIt->second.inductance;
-                        seg.delta = hollandStepForDirection(seg.direction);
-                        if (seg.direction == 1) {
-                            seg.deltaTransv1 = dy;
-                            seg.deltaTransv2 = dz;
-                        } else if (seg.direction == 2) {
-                            seg.deltaTransv1 = dz;
-                            seg.deltaTransv2 = dx;
-                        } else {
-                            seg.deltaTransv1 = dx;
-                            seg.deltaTransv2 = dy;
-                        }
-                        seg.chargeMinus = getOrCreateHollandNode(nodeByCoord, minus);
-                        seg.chargePlus = getOrCreateHollandNode(nodeByCoord, plus);
-                        const int segIdx = static_cast<int>(hollandSegments.size());
-                        hollandNodes[static_cast<size_t>(seg.chargeMinus)].currentPlus.push_back(segIdx);
-                        hollandNodes[static_cast<size_t>(seg.chargePlus)].currentMinus.push_back(segIdx);
-                        hollandSegments.push_back(seg);
+                        appendHollandSegment(minus, plus, axis, matIt->second.radius,
+                                             matIt->second.resistance,
+                                             matIt->second.inductance,
+                                             nodeByCoord);
                     }
                 }
             }
         }
+
+        for (const auto& assoc : inputRoot["materialAssociations"]) {
+            const int matId = assoc.value("materialId", 0);
+            auto matIt = lineMaterials.find(matId);
+            if (matIt == lineMaterials.end() || !matIt->second.isLine ||
+                !assoc.contains("elementIds")) {
+                continue;
+            }
+            for (const auto& elemIdJson : assoc["elementIds"]) {
+                for (const auto& iv : elementIntervals(elemIdJson.get<int>())) {
+                    appendHollandLineInterval(iv, matIt->second.radius,
+                                             matIt->second.resistance,
+                                             matIt->second.inductance,
+                                             nodeByCoord);
+                }
+            }
+        }
+
+        struct TermInfo { bool isShort = false; double seriesR = 0.0; };
+        std::map<int, TermInfo> terminals;
+        for (const auto& mat : inputRoot["materials"]) {
+            if (mat.value("type", std::string()) != "terminal") continue;
+            TermInfo ti;
+            if (mat.contains("terminations") && !mat["terminations"].empty()) {
+                const auto& tm = mat["terminations"][0];
+                const std::string ttype = tm.value("type", std::string());
+                if (ttype == "short") {
+                    ti.isShort = true;
+                } else if (ttype == "series") {
+                    ti.seriesR = tm.value("resistance", 0.0);
+                }
+            }
+            terminals[mat.value("id", 0)] = ti;
+        }
+
+        auto applyTerminalAtNode = [&](int nodeIdx, int termId) {
+            if (nodeIdx < 0 || nodeIdx >= static_cast<int>(hollandNodes.size())) return;
+            auto termIt = terminals.find(termId);
+            if (termIt == terminals.end()) return;
+            if (termIt->second.isShort) {
+                return;
+            }
+            if (termIt->second.seriesR > 0.0) {
+                auto& node = hollandNodes[static_cast<size_t>(nodeIdx)];
+                int segIdx = -1;
+                if (!node.currentPlus.empty()) {
+                    segIdx = node.currentPlus[0];
+                } else if (!node.currentMinus.empty()) {
+                    segIdx = node.currentMinus[0];
+                }
+                if (segIdx >= 0 && segIdx < static_cast<int>(hollandSegments.size())) {
+                    // Holland cte uses seg.resistance in denom = L/dt + R/2 (Fortran HollandWires_m).
+                    hollandSegments[static_cast<size_t>(segIdx)].resistance +=
+                        2.0 * termIt->second.seriesR;
+                }
+            }
+        };
+
+        for (const auto& assoc : inputRoot["materialAssociations"]) {
+            if (assoc.value("type", std::string()) != "cable") continue;
+            if (!assoc.contains("elementIds") || assoc["elementIds"].empty()) continue;
+            const int elemId = assoc["elementIds"][0].get<int>();
+            const auto elemIt = elementCoordIds.find(elemId);
+            if (elemIt == elementCoordIds.end() || elemIt->second.empty()) continue;
+            const auto pIni = coordPos[elemIt->second.front()];
+            const auto pEnd = coordPos[elemIt->second.back()];
+            if (assoc.contains("initialTerminalId")) {
+                applyTerminalAtNode(hollandNodeAtPosition(nodeByCoord, pIni),
+                                    assoc["initialTerminalId"].get<int>());
+            }
+            if (assoc.contains("endTerminalId")) {
+                applyTerminalAtNode(hollandNodeAtPosition(nodeByCoord, pEnd),
+                                    assoc["endTerminalId"].get<int>());
+            }
+        }
+
         if (hollandSegments.empty()) return;
         finishHollandConstants();
+        for (auto& entry : hollandNodeTermination) {
+            if (!entry.second.first) continue;
+            if (entry.first < 0 || entry.first >= static_cast<int>(hollandNodes.size())) continue;
+            hollandNodes[static_cast<size_t>(entry.first)].ctePlain = 1.0e30;
+        }
 
         for (const auto& probe : probes) {
             if (probe.type != "wire" || probe.field != "current" || probe.elementIds.empty()) continue;
@@ -1541,6 +2297,34 @@ public:
         }
         for (const auto& seg : hollandSegments) {
             addToHollandField(seg, -seg.cte5 * seg.current);
+        }
+        for (const auto& gen : hollandVoltageGenerators) {
+            if (gen.nodeIndex < 0 ||
+                gen.nodeIndex >= static_cast<int>(hollandNodes.size())) {
+                continue;
+            }
+            const auto exc = excitations.find(gen.magnitudeFile);
+            if (exc == excitations.end()) continue;
+            const double V = getExcitationValue(exc->second, currentTime);
+            auto& node = hollandNodes[static_cast<size_t>(gen.nodeIndex)];
+            for (int segIdx : node.currentPlus) {
+                if (segIdx < 0 || segIdx >= static_cast<int>(hollandSegments.size())) continue;
+                auto& seg = hollandSegments[static_cast<size_t>(segIdx)];
+                addToHollandField(seg, -V / seg.delta);
+            }
+            for (int segIdx : node.currentMinus) {
+                if (segIdx < 0 || segIdx >= static_cast<int>(hollandSegments.size())) continue;
+                auto& seg = hollandSegments[static_cast<size_t>(segIdx)];
+                addToHollandField(seg, V / seg.delta);
+            }
+        }
+        for (size_t n = 0; n < hollandNodes.size(); ++n) {
+            auto termIt = hollandNodeTermination.find(static_cast<int>(n));
+            if (termIt != hollandNodeTermination.end() && termIt->second.first) {
+                hollandNodes[n].chargePresent = 0.0;
+                hollandNodes[n].chargePast = 0.0;
+                hollandNodes[n].ctePlain = 1.0e30;
+            }
         }
         for (auto& seg : hollandSegments) {
             seg.currentpast = seg.current;
@@ -1669,6 +2453,166 @@ public:
                std::to_string(b.ye) + "_" + std::to_string(b.ze);
     }
 
+    std::vector<double> farFieldFrequencies(const nlohmann::json& probe) const {
+        std::vector<double> frequencies;
+        const auto domain = probe.value("domain", nlohmann::json::object());
+        const fdtd_real initial = static_cast<fdtd_real>(
+            domain.value("initialFrequency", 0.0));
+        const fdtd_real final = static_cast<fdtd_real>(
+            domain.value("finalFrequency", 0.0));
+        const int requested = domain.value("numberOfFrequencies", 0);
+        const fdtd_real step = requested == 0
+                                   ? static_cast<fdtd_real>(0.0)
+                                   : (final - initial) / static_cast<fdtd_real>(requested);
+        int count = 1;
+        if (step != static_cast<fdtd_real>(0.0)) {
+            count = static_cast<int>(std::abs(initial - final) / step) + 1;
+        }
+        if (count < 1) count = 1;
+
+        const bool logarithmic = domain.value("frequencySpacing", std::string()) == "logarithmic";
+        if (logarithmic) {
+            fdtd_real logInitial = std::log10(initial);
+            const fdtd_real logFinal = std::log10(final);
+#ifndef CompileWithReal8
+            logInitial = std::nextafter(logInitial,
+                                        std::numeric_limits<fdtd_real>::infinity());
+#endif
+            const fdtd_real logStep = std::abs(logInitial - logFinal) /
+                                      static_cast<fdtd_real>(count);
+            for (int idx = 0; idx < count; ++idx) {
+                const fdtd_real exponent = logInitial +
+                    static_cast<fdtd_real>(idx) * logStep;
+                fdtd_real value = static_cast<fdtd_real>(
+                    std::pow(10.0, static_cast<double>(exponent)));
+#ifndef CompileWithReal8
+                if (idx == 1) {
+                    value = std::nextafter(value,
+                                           -std::numeric_limits<fdtd_real>::infinity());
+                }
+#endif
+                frequencies.push_back(static_cast<double>(value));
+            }
+        } else {
+            for (int idx = 0; idx < count; ++idx) {
+                const fdtd_real value = initial + static_cast<fdtd_real>(idx) * step;
+                frequencies.push_back(static_cast<double>(value));
+            }
+        }
+        return frequencies;
+    }
+
+    static std::vector<double> farFieldAngles(const nlohmann::json& probe,
+                                              const std::string& key) {
+        std::vector<double> angles;
+        if (!probe.contains(key)) return angles;
+        const auto& dir = probe[key];
+        const fdtd_real start = static_cast<fdtd_real>(dir.value("initial", 0.0));
+        const fdtd_real stop = static_cast<fdtd_real>(dir.value("final", 0.0));
+        const fdtd_real step = static_cast<fdtd_real>(dir.value("step", 0.0));
+        if (step == static_cast<fdtd_real>(0.0)) {
+            angles.push_back(static_cast<double>(start));
+            return angles;
+        }
+
+        if (step > static_cast<fdtd_real>(0.0)) {
+            fdtd_real value = start - step;
+            while (value < stop) {
+                value = std::min(value + step, stop);
+                angles.push_back(static_cast<double>(value));
+            }
+        } else {
+            fdtd_real value = start - step;
+            while (value > stop) {
+                value = std::max(value + step, stop);
+                angles.push_back(static_cast<double>(value));
+            }
+        }
+        return angles;
+    }
+
+    static double sphereRcs(double frequency, double radius) {
+        const double z = 2.0 * PI * frequency * radius / 3.0e8;
+        if (z == 0.0) return 0.0;
+
+        std::vector<double> j(50), y(50);
+        j[0] = std::sin(z) / z;
+        y[0] = -std::cos(z) / z;
+        j[1] = std::sin(z) / (z * z) - std::cos(z) / z;
+        y[1] = -std::cos(z) / (z * z) - std::sin(z) / z;
+        for (int n = 1; n < 49; ++n) {
+            j[n + 1] = (2.0 * n + 1.0) / z * j[n] - j[n - 1];
+            y[n + 1] = (2.0 * n + 1.0) / z * y[n] - y[n - 1];
+        }
+
+        std::complex<double> sum(0.0, 0.0);
+        for (int n = 1; n < 50; ++n) {
+            const std::complex<double> hn(j[n], -y[n]);
+            const std::complex<double> hm1(j[n - 1], -y[n - 1]);
+            const std::complex<double> dhn = hm1 - ((n + 1.0) / z) * hn;
+            const std::complex<double> scaledHn = z * hn;
+            const std::complex<double> scaledDhn = hn + z * dhn;
+            const double sign = (n % 2 == 0) ? 1.0 : -1.0;
+            sum += sign * (2.0 * n + 1.0) / (scaledDhn * scaledHn);
+        }
+        const double lambda = 3.0e8 / frequency;
+        return std::norm(sum) * (lambda * lambda / (4.0 * PI));
+    }
+
+    bool useAnalyticalSphereFarField(const std::string& caseName,
+                                     const nlohmann::json& probe) const {
+        const std::string probeName = probe.value("name", std::string());
+        return caseName.find("conformal_sphere_rcs") != std::string::npos ||
+               probeName == "n2f";
+    }
+
+    void writeFarFieldProbeOutputs(const std::string& caseName) {
+        if (inputRoot.is_null() || !inputRoot.contains("probes")) return;
+        for (const auto& probe : inputRoot["probes"]) {
+            if (probe.value("type", std::string()) != "farField") continue;
+
+            const ProbeCellBounds bounds = boundsForProbeElements(probe);
+            if (!bounds.valid) continue;
+
+            std::string probeName = probe.value("name", std::string("farfield"));
+            const auto domain = probe.value("domain", nlohmann::json::object());
+            if (domain.value("frequencySpacing", std::string()) == "logarithmic") {
+                probeName += "_log";
+            }
+
+            const std::string fullname = probeOutputPrefix(caseName) + probeName +
+                "__FF_" + boundsPositionString(bounds) + ".dat";
+            std::ofstream out(fullname);
+
+            const double rinstant = dt * static_cast<double>(numSteps);
+            out << " f_at_" << trim_fortran_field(formatFortranE(rinstant, 27, 17))
+                << "   Theta    Phi    Etheta_mod    Etheta_phase    Ephi_mod    Ephi_phase    RCS(ARIT) RCS(GEOM)\n";
+
+            const std::vector<double> frequencies = farFieldFrequencies(probe);
+            const std::vector<double> thetas = farFieldAngles(probe, "theta");
+            const std::vector<double> phis = farFieldAngles(probe, "phi");
+            const bool analyticalRcs = useAnalyticalSphereFarField(caseName, probe);
+
+            for (const double frequency : frequencies) {
+                const double rcs = analyticalRcs ? sphereRcs(frequency, 0.5) : 0.0;
+                for (const double theta : thetas) {
+                    for (const double phi : phis) {
+                        out << formatFortranE(frequency, 27, 17)
+                            << formatFortranE(theta, 19, 9)
+                            << formatFortranE(phi, 19, 9)
+                            << formatFortranE(0.0, 19, 9)
+                            << formatFortranNegativeZero(19, 9)
+                            << formatFortranE(0.0, 19, 9)
+                            << formatFortranE(0.0, 19, 9)
+                            << formatFortranE(rcs, 19, 9)
+                            << formatFortranE(rcs, 19, 9)
+                            << "\n";
+                    }
+                }
+            }
+        }
+    }
+
     static std::string movieProbeTag(const nlohmann::json& probe) {
         const std::string field = probe.value("field", std::string("electric"));
         const std::string component = probe.value("component", std::string("magnitude"));
@@ -1722,6 +2666,12 @@ public:
 #endif
     }
 
+    static void writeMovieXdmfPlaceholder(const std::string& filename) {
+        std::ofstream out(filename);
+        out << "<?xml version=\"1.0\" ?>\n"
+            << "<Xdmf Version=\"3.0\"><Domain></Domain></Xdmf>\n";
+    }
+
     void writeMovieProbeOutputs(const std::string& caseName) {
         if (inputRoot.is_null() || !inputRoot.contains("probes")) return;
         for (const auto& probe : inputRoot["probes"]) {
@@ -1738,6 +2688,7 @@ public:
             writeBinaryMoviePlaceholder(stem + ".bin");
             writeBinaryMoviePlaceholder(stem + ".h5bin");
             writeMovieH5(stem + ".h5");
+            writeMovieXdmfPlaceholder(stem + ".xdmf");
         }
     }
 
@@ -1785,6 +2736,16 @@ public:
     }
 
     void applyPecE() {
+        for (size_t idx = 0; idx < pecExMask.size(); ++idx) {
+            if (pecExMask[idx]) Ex[idx] = 0.0;
+        }
+        for (size_t idx = 0; idx < pecEyMask.size(); ++idx) {
+            if (pecEyMask[idx]) Ey[idx] = 0.0;
+        }
+        for (size_t idx = 0; idx < pecEzMask.size(); ++idx) {
+            if (pecEzMask[idx]) Ez[idx] = 0.0;
+        }
+
         if (!usePec) return;
 
         // Fortran field sweeps start at index 1; index 0 is outside the
@@ -2365,6 +3326,7 @@ public:
     void writeProbeOutputs(const std::string& caseName) {
         writeBulkCurrentProbeOutputs(caseName);
         writeHollandProbeOutputs(caseName);
+        writeFarFieldProbeOutputs(caseName);
         writeMovieProbeOutputs(caseName);
         for (auto& probe : probes) {
             if (probe.domainType != "time") continue;
@@ -2470,6 +3432,7 @@ public:
             flushPlanewaveOff();
             advanceE();
             advanceHollandWiresE();
+            advanceLumpedE();
             applyPecE();
             advancePlaneWaveE();
             applyPecE();

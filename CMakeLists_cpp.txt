@@ -270,6 +270,7 @@ endif()
 # --- semba-fdtd core solver (JSON + time loop; used by semba-fdtd-cpp executable) ---
 add_library(semba-fdtd-core
     "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/semba_fdtd.cpp"
+    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/lumped_slim.cpp"
     "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/mapvtk_writer.cpp"
 )
 target_include_directories(semba-fdtd-core PUBLIC
