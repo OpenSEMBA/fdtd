@@ -295,6 +295,48 @@ void addSurfaceBoundaryLines(VtkMesh& mesh, std::set<std::array<int, 6>>& line_k
     }
 }
 
+void addSurfaceCurrentLines(VtkMesh& mesh, std::set<std::array<int, 6>>& line_keys,
+                            int xi, int xe, int yi, int ye, int zi, int ze,
+                            const std::vector<double>& sx,
+                            const std::vector<double>& sy,
+                            const std::vector<double>& sz,
+                            double mediatype, double tag) {
+    if (zi == ze) {
+        for (int j = yi; j <= ye; ++j) {
+            for (int i = xi; i < xe; ++i) {
+                addGridLine(mesh, line_keys, sx, sy, sz, i, j, zi, i + 1, j, zi, mediatype, tag);
+            }
+        }
+        for (int i = xi; i <= xe; ++i) {
+            for (int j = yi; j < ye; ++j) {
+                addGridLine(mesh, line_keys, sx, sy, sz, i, j, zi, i, j + 1, zi, mediatype, tag);
+            }
+        }
+    } else if (yi == ye) {
+        for (int k = zi; k <= ze; ++k) {
+            for (int i = xi; i < xe; ++i) {
+                addGridLine(mesh, line_keys, sx, sy, sz, i, yi, k, i + 1, yi, k, mediatype, tag);
+            }
+        }
+        for (int i = xi; i <= xe; ++i) {
+            for (int k = zi; k < ze; ++k) {
+                addGridLine(mesh, line_keys, sx, sy, sz, i, yi, k, i, yi, k + 1, mediatype, tag);
+            }
+        }
+    } else if (xi == xe) {
+        for (int k = zi; k <= ze; ++k) {
+            for (int j = yi; j < ye; ++j) {
+                addGridLine(mesh, line_keys, sx, sy, sz, xi, j, k, xi, j + 1, k, mediatype, tag);
+            }
+        }
+        for (int j = yi; j <= ye; ++j) {
+            for (int k = zi; k < ze; ++k) {
+                addGridLine(mesh, line_keys, sx, sy, sz, xi, j, k, xi, j, k + 1, mediatype, tag);
+            }
+        }
+    }
+}
+
 void addSurfaceQuads(VtkMesh& mesh, int xi, int xe, int yi, int ye, int zi, int ze,
                      const std::vector<double>& sx, const std::vector<double>& sy,
                      const std::vector<double>& sz, double mediatype, double tag) {
@@ -428,6 +470,36 @@ void addClassicWirePolyline(VtkMesh& mesh, const nlohmann::json& element,
     }
 }
 
+int axisFromComponent(const std::string& component) {
+    if (component == "x" || component == "X") return 0;
+    if (component == "y" || component == "Y") return 1;
+    return 2;
+}
+
+int surfaceNormalAxis(int xi, int xe, int yi, int ye, int zi, int ze) {
+    if (xi == xe && yi != ye && zi != ze) return 0;
+    if (yi == ye && xi != xe && zi != ze) return 1;
+    if (zi == ze && xi != xe && yi != ye) return 2;
+    return -1;
+}
+
+int surfaceAreaCells(int xi, int xe, int yi, int ye, int zi, int ze) {
+    const int dx = std::abs(xe - xi);
+    const int dy = std::abs(ye - yi);
+    const int dz = std::abs(ze - zi);
+    if (xi == xe) return dy * dz;
+    if (yi == ye) return dx * dz;
+    if (zi == ze) return dx * dy;
+    return 0;
+}
+
+void addCurrentFaces(VtkMesh& mesh, int count) {
+    for (int i = 0; i < count; ++i) {
+        addQuad(mesh, {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0},
+                {1.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, 0.0, 0.0);
+    }
+}
+
 void writeMeshFile(const std::string& folder, const std::string& vtk_name, const VtkMesh& mesh) {
     std::filesystem::create_directories(folder);
     const std::string path = folder + "/" + vtk_name;
@@ -491,6 +563,178 @@ void writeConformalCornerMap(const nlohmann::json& root, const std::string& fold
 
 bool flagsContainMapVtk(const std::string& input_flags) {
     return input_flags.find("-mapvtk") != std::string::npos;
+}
+
+void writeCurrentMapVtkFromJson(const std::string& case_name, const nlohmann::json& root) {
+    const nlohmann::json* current_probe = nullptr;
+    if (root.contains("probes")) {
+        for (const auto& probe : root["probes"]) {
+            if (probe.value("type", std::string()) == "movie" &&
+                probe.value("field", std::string()) == "currentDensity") {
+                current_probe = &probe;
+                break;
+            }
+        }
+    }
+    if (current_probe == nullptr) return;
+
+    int nx = 10, ny = 10, nz = 10;
+    std::vector<double> sx, sy, sz;
+    if (root.contains("mesh") && root["mesh"].contains("grid")) {
+        const auto& grid = root["mesh"]["grid"];
+        if (grid.contains("numberOfCells")) {
+            nx = grid["numberOfCells"][0].get<int>();
+            ny = grid["numberOfCells"][1].get<int>();
+            nz = grid["numberOfCells"][2].get<int>();
+        }
+        if (grid.contains("steps")) {
+            for (const auto& v : grid["steps"]["x"]) sx.push_back(v.get<double>());
+            for (const auto& v : grid["steps"]["y"]) sy.push_back(v.get<double>());
+            for (const auto& v : grid["steps"]["z"]) sz.push_back(v.get<double>());
+        }
+    }
+    if (sx.empty()) sx.push_back(0.1);
+    if (sy.empty()) sy.push_back(0.1);
+    if (sz.empty()) sz.push_back(0.1);
+
+    const std::string folder = case_name + ".fdtd__MAP_0_0_0__" + std::to_string(nx) + "_" +
+                               std::to_string(ny) + "_" + std::to_string(nz);
+    const std::string vtk_name = folder + "_1_current.vtk";
+
+    const auto mat_by_elem = buildMaterialByElement(root);
+    const auto coord_by_id = buildCoordinateById(root);
+    std::vector<const nlohmann::json*> ordered_elements;
+    bool has_pec_line = false;
+    if (root.contains("mesh") && root["mesh"].contains("elements") &&
+        root.contains("materials")) {
+        for (const auto& e : root["mesh"]["elements"]) {
+            const int eid = e.value("id", 0);
+            if (!mat_by_elem.count(eid)) continue;
+            const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
+            if (!isMapMaterial(info)) continue;
+            ordered_elements.push_back(&e);
+            if (info.type == "pec" && e.contains("intervals")) {
+                for (const auto& interval : e["intervals"]) {
+                    const int x0 = interval[0][0].get<int>();
+                    const int y0 = interval[0][1].get<int>();
+                    const int z0 = interval[0][2].get<int>();
+                    const int x1 = interval[1][0].get<int>();
+                    const int y1 = interval[1][1].get<int>();
+                    const int z1 = interval[1][2].get<int>();
+                    const int num_same = static_cast<int>(x0 == x1) +
+                        static_cast<int>(y0 == y1) + static_cast<int>(z0 == z1);
+                    if (num_same == 2) has_pec_line = true;
+                }
+            }
+        }
+        std::stable_sort(ordered_elements.begin(), ordered_elements.end(),
+                         [&](const nlohmann::json* lhs, const nlohmann::json* rhs) {
+                             const int lmat = mat_by_elem.at(lhs->value("id", 0));
+                             const int rmat = mat_by_elem.at(rhs->value("id", 0));
+                             const MaterialInfo li = materialInfo(root["materials"], lmat);
+                             const MaterialInfo ri = materialInfo(root["materials"], rmat);
+                             return materialPriority(li) < materialPriority(ri);
+                         });
+    }
+
+    int face_count = 0;
+    if (current_probe->contains("elementIds") && root.contains("mesh") &&
+        root["mesh"].contains("elements")) {
+        std::set<int> probe_elements;
+        for (const auto& eid : (*current_probe)["elementIds"]) {
+            probe_elements.insert(eid.get<int>());
+        }
+        for (const auto& e : root["mesh"]["elements"]) {
+            if (!probe_elements.count(e.value("id", 0)) || !e.contains("intervals")) {
+                continue;
+            }
+            for (const auto& interval : e["intervals"]) {
+                const int x0 = interval[0][0].get<int>();
+                const int y0 = interval[0][1].get<int>();
+                const int z0 = interval[0][2].get<int>();
+                const int x1 = interval[1][0].get<int>();
+                const int y1 = interval[1][1].get<int>();
+                const int z1 = interval[1][2].get<int>();
+                face_count += std::abs(x1 - x0) * std::abs(y1 - y0) * std::abs(z1 - z0);
+            }
+        }
+    }
+
+    const int component_axis = axisFromComponent(current_probe->value("component", std::string("z")));
+    for (const auto* eptr : ordered_elements) {
+        const auto& e = *eptr;
+        if (!e.contains("intervals")) continue;
+        for (const auto& interval : e["intervals"]) {
+            const int x0 = interval[0][0].get<int>();
+            const int y0 = interval[0][1].get<int>();
+            const int z0 = interval[0][2].get<int>();
+            const int x1 = interval[1][0].get<int>();
+            const int y1 = interval[1][1].get<int>();
+            const int z1 = interval[1][2].get<int>();
+            const int xi = std::min(x0, x1);
+            const int yi = std::min(y0, y1);
+            const int zi = std::min(z0, z1);
+            const int xe = std::max(x0, x1);
+            const int ye = std::max(y0, y1);
+            const int ze = std::max(z0, z1);
+            if (surfaceNormalAxis(xi, xe, yi, ye, zi, ze) == component_axis) {
+                face_count -= surfaceAreaCells(xi, xe, yi, ye, zi, ze);
+            }
+        }
+    }
+    if (face_count < 0) face_count = 0;
+
+    VtkMesh mesh;
+    VtkMesh lineMesh;
+    std::set<std::array<int, 6>> currentLineKeys;
+    addCurrentFaces(mesh, face_count);
+
+    double tag = 64.0;
+    bool wire_collision_marker_available = has_pec_line;
+    bool wire_intermediate_marker_available = true;
+    for (const auto* eptr : ordered_elements) {
+        const auto& e = *eptr;
+        const int eid = e.value("id", 0);
+        const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
+        if (info.type == "wire" && e.value("type", std::string()) == "polyline") {
+            const auto segments = wireUnitSegments(e, coord_by_id);
+            const bool mark_collision = wire_collision_marker_available && !segments.empty();
+            if (mark_collision) wire_collision_marker_available = false;
+            const bool mark_intermediate = !mark_collision &&
+                wire_intermediate_marker_available && segments.size() > 2;
+            if (mark_intermediate) wire_intermediate_marker_available = false;
+            addClassicWirePolyline(lineMesh, e, coord_by_id, sx, sy, sz, tag,
+                                   mark_collision, mark_intermediate);
+        } else if (e.contains("intervals")) {
+            for (const auto& interval : e["intervals"]) {
+                const int x0 = interval[0][0].get<int>();
+                const int y0 = interval[0][1].get<int>();
+                const int z0 = interval[0][2].get<int>();
+                const int x1 = interval[1][0].get<int>();
+                const int y1 = interval[1][1].get<int>();
+                const int z1 = interval[1][2].get<int>();
+                const int xi = std::min(x0, x1);
+                const int yi = std::min(y0, y1);
+                const int zi = std::min(z0, z1);
+                const int xe = std::max(x0, x1);
+                const int ye = std::max(y0, y1);
+                const int ze = std::max(z0, z1);
+                const int num_same = static_cast<int>(xi == xe) +
+                    static_cast<int>(yi == ye) + static_cast<int>(zi == ze);
+                if (num_same == 2) {
+                    addLineInterval(lineMesh, xi, yi, zi, xe, ye, ze, sx, sy, sz,
+                                    lineMediaType(info), tag);
+                } else if (num_same == 1) {
+                    addSurfaceCurrentLines(lineMesh, currentLineKeys, xi, xe, yi, ye, zi, ze,
+                                           sx, sy, sz, lineMediaType(info), tag);
+                }
+            }
+        }
+        tag += 64.0;
+    }
+
+    appendMesh(mesh, lineMesh);
+    writeMeshFile(folder, vtk_name, mesh);
 }
 
 void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& root) {

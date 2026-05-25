@@ -2323,6 +2323,9 @@ public:
         if (createMapVtk && !inputRoot.is_null()) {
             mapvtk::writeMapVtkFromJson(caseName, inputRoot);
         }
+        if (!inputRoot.is_null()) {
+            mapvtk::writeCurrentMapVtkFromJson(caseName, inputRoot);
+        }
         std::cout << "Output files written." << std::endl;
     }
 
