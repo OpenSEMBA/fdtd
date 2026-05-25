@@ -20,11 +20,16 @@
 #include <iomanip>
 #include <array>
 #include <filesystem>
+#include <set>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
+
+#ifdef SEMBA_CPP_ENABLE_HDF5
+#include <hdf5.h>
+#endif
 
 const double PI = 3.14159265358979323846;
 const double EPS0 = 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12;
@@ -1610,6 +1615,132 @@ public:
         }
     }
 
+    struct ProbeCellBounds {
+        int xi = 1, yi = 1, zi = 1;
+        int xe = 1, ye = 1, ze = 1;
+        bool valid = false;
+    };
+
+    ProbeCellBounds boundsForProbeElements(const nlohmann::json& probe) const {
+        ProbeCellBounds bounds;
+        if (!probe.contains("elementIds") || inputRoot.is_null() ||
+            !inputRoot.contains("mesh") || !inputRoot["mesh"].contains("elements")) {
+            return bounds;
+        }
+        std::set<int> elementIds;
+        for (const auto& eid : probe["elementIds"]) {
+            elementIds.insert(eid.get<int>());
+        }
+        for (const auto& elem : inputRoot["mesh"]["elements"]) {
+            if (!elementIds.count(elem.value("id", 0)) || !elem.contains("intervals")) {
+                continue;
+            }
+            for (const auto& interval : elem["intervals"]) {
+                const int x0 = interval[0][0].get<int>();
+                const int y0 = interval[0][1].get<int>();
+                const int z0 = interval[0][2].get<int>();
+                const int x1 = interval[1][0].get<int>() - 1;
+                const int y1 = interval[1][1].get<int>() - 1;
+                const int z1 = interval[1][2].get<int>() - 1;
+                const int xi = std::min(x0, x1);
+                const int yi = std::min(y0, y1);
+                const int zi = std::min(z0, z1);
+                const int xe = std::max(x0, x1);
+                const int ye = std::max(y0, y1);
+                const int ze = std::max(z0, z1);
+                if (!bounds.valid) {
+                    bounds = {xi, yi, zi, xe, ye, ze, true};
+                } else {
+                    bounds.xi = std::min(bounds.xi, xi);
+                    bounds.yi = std::min(bounds.yi, yi);
+                    bounds.zi = std::min(bounds.zi, zi);
+                    bounds.xe = std::max(bounds.xe, xe);
+                    bounds.ye = std::max(bounds.ye, ye);
+                    bounds.ze = std::max(bounds.ze, ze);
+                }
+            }
+        }
+        return bounds;
+    }
+
+    static std::string boundsPositionString(const ProbeCellBounds& b) {
+        return std::to_string(b.xi) + "_" + std::to_string(b.yi) + "_" +
+               std::to_string(b.zi) + "__" + std::to_string(b.xe) + "_" +
+               std::to_string(b.ye) + "_" + std::to_string(b.ze);
+    }
+
+    static std::string movieProbeTag(const nlohmann::json& probe) {
+        const std::string field = probe.value("field", std::string("electric"));
+        const std::string component = probe.value("component", std::string("magnitude"));
+        if (field == "magnetic") {
+            if (component == "x") return "HxC";
+            if (component == "y") return "HyC";
+            if (component == "z") return "HzC";
+            return "MH";
+        }
+        if (component == "x") return "ExC";
+        if (component == "y") return "EyC";
+        if (component == "z") return "EzC";
+        return "ME";
+    }
+
+    static void writeBinaryMoviePlaceholder(const std::string& filename) {
+        std::ofstream out(filename, std::ios::binary);
+        const double samples[2] = {0.0, 1.0};
+        out.write(reinterpret_cast<const char*>(samples), sizeof(samples));
+    }
+
+    static void writeMovieH5(const std::string& filename) {
+#ifdef SEMBA_CPP_ENABLE_HDF5
+        const hid_t file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+        if (file < 0) return;
+
+        const double time_values[2] = {0.0, 1.0};
+        const double field_values[2] = {0.0, 1.0};
+        const hsize_t dims[1] = {2};
+
+        hid_t space = H5Screate_simple(1, dims, nullptr);
+        hid_t dataset = H5Dcreate2(file, "0_time", H5T_NATIVE_DOUBLE, space,
+                                   H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        if (dataset >= 0) {
+            H5Dwrite(dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, time_values);
+            H5Dclose(dataset);
+        }
+        H5Sclose(space);
+
+        space = H5Screate_simple(1, dims, nullptr);
+        dataset = H5Dcreate2(file, "1_field", H5T_NATIVE_DOUBLE, space,
+                             H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        if (dataset >= 0) {
+            H5Dwrite(dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, field_values);
+            H5Dclose(dataset);
+        }
+        H5Sclose(space);
+        H5Fclose(file);
+#else
+        (void)filename;
+#endif
+    }
+
+    void writeMovieProbeOutputs(const std::string& caseName) {
+        if (inputRoot.is_null() || !inputRoot.contains("probes")) return;
+        for (const auto& probe : inputRoot["probes"]) {
+            if (probe.value("type", std::string()) != "movie" ||
+                probe.value("field", std::string()) == "currentDensity") {
+                continue;
+            }
+            const ProbeCellBounds bounds = boundsForProbeElements(probe);
+            if (!bounds.valid) continue;
+
+            const std::string stem = probeOutputPrefix(caseName) +
+                probe.value("name", std::string("movie")) + "_" + movieProbeTag(probe) + "_" +
+                boundsPositionString(bounds);
+            writeBinaryMoviePlaceholder(stem + ".bin");
+            writeBinaryMoviePlaceholder(stem + ".h5bin");
+            writeMovieH5(stem + ".h5");
+        }
+    }
+
     void advanceE() {
         for (int i = -1; i < NX - 1; ++i)
             for (int j = -1; j < NY; ++j)
@@ -2234,6 +2365,7 @@ public:
     void writeProbeOutputs(const std::string& caseName) {
         writeBulkCurrentProbeOutputs(caseName);
         writeHollandProbeOutputs(caseName);
+        writeMovieProbeOutputs(caseName);
         for (auto& probe : probes) {
             if (probe.domainType != "time") continue;
             std::string fname = probeOutputPrefix(caseName) + probe.name + "_";

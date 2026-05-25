@@ -277,6 +277,10 @@ target_include_directories(semba-fdtd-core PUBLIC
     "${CPP_SOURCE_ROOT}/external/json/single_include/nlohmann"
 )
 target_link_libraries(semba-fdtd-core PUBLIC semba-reports)
+if(SEMBA_FDTD_ENABLE_HDF)
+    target_compile_definitions(semba-fdtd-core PRIVATE SEMBA_CPP_ENABLE_HDF5)
+    target_link_libraries(semba-fdtd-core PUBLIC ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+endif()
 if(SEMBA_FDTD_ENABLE_MTLN AND SEMBA_FDTD_ENABLE_SMBJSON)
     target_sources(semba-fdtd-core PRIVATE
         "${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub/wires_mtln.cpp")
@@ -308,6 +312,10 @@ if(SEMBA_FDTD_MAIN_LIB)
         "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/timestepping.cpp"
     )
     target_link_libraries(semba-main PUBLIC semba-outputs ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES})
+    if(SEMBA_FDTD_ENABLE_HDF)
+        target_compile_definitions(semba-main PRIVATE SEMBA_CPP_ENABLE_HDF5)
+        target_link_libraries(semba-main PUBLIC ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+    endif()
 endif()
 
 # --- executable ---
