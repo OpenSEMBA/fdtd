@@ -75,6 +75,18 @@ fdtd_real fortranPlanewaveGridInverse(fdtd_real value) {
 #endif
 }
 
+double fortranWireStep(double step) {
+    if (step == 0.0) return step;
+    const double absStep = std::abs(step);
+    std::ostringstream roundedStream;
+    roundedStream << std::setprecision(12) << step;
+    const double rounded = std::stod(roundedStream.str());
+    const double tolerance =
+        64.0 * std::numeric_limits<double>::epsilon() *
+        std::max(absStep, std::abs(rounded));
+    return std::abs(rounded - step) <= tolerance ? rounded : step;
+}
+
 fdtd_real fortranPlanewaveCluz(fdtd_real eps, fdtd_real mu) {
 #ifdef CompileWithReal8
     return static_cast<fdtd_real>(1.0) / std::sqrt(eps * mu);
@@ -97,6 +109,18 @@ SEMBA_FORTRAN_ROUNDING fdtd_real fortranRoundedMul(fdtd_real lhs,
     return result;
 }
 
+SEMBA_FORTRAN_ROUNDING fdtd_real fortranRoundedAdd(fdtd_real lhs,
+                                                   fdtd_real rhs) {
+    volatile fdtd_real result = static_cast<fdtd_real>(lhs + rhs);
+    return result;
+}
+
+SEMBA_FORTRAN_ROUNDING fdtd_real fortranRoundedSub(fdtd_real lhs,
+                                                   fdtd_real rhs) {
+    volatile fdtd_real result = static_cast<fdtd_real>(lhs - rhs);
+    return result;
+}
+
 fdtd_real fortranNodalProduct(fdtd_real coeff, fdtd_real inv1,
                               fdtd_real inv2, fdtd_real amplitude,
                               fdtd_real evolution) {
@@ -104,6 +128,75 @@ fdtd_real fortranNodalProduct(fdtd_real coeff, fdtd_real inv1,
     term = fortranRoundedMul(term, inv2);
     term = fortranRoundedMul(term, amplitude);
     return fortranRoundedMul(term, evolution);
+}
+
+fdtd_real fortranBulkCurrentTerm(fdtd_real lhs, fdtd_real rhs,
+                                 fdtd_real delta) {
+    return fortranRoundedMul(fortranRoundedSub(lhs, rhs), delta);
+}
+
+fdtd_real fortranMurFace(fdtd_real interiorNow, fdtd_real pastInterior,
+                         fdtd_real pastBoundary, fdtd_real coefficient) {
+    return fortranRoundedAdd(
+        pastInterior,
+        fortranRoundedMul(
+            coefficient, fortranRoundedSub(interiorNow, pastBoundary)));
+}
+
+SEMBA_FORTRAN_ROUNDING double fortranRoundedDoubleMul(double lhs,
+                                                      double rhs) {
+    volatile double result = lhs * rhs;
+    return result;
+}
+
+SEMBA_FORTRAN_ROUNDING double fortranRoundedDoubleAdd(double lhs,
+                                                      double rhs) {
+    volatile double result = lhs + rhs;
+    return result;
+}
+
+SEMBA_FORTRAN_ROUNDING double fortranRoundedDoubleSub(double lhs,
+                                                      double rhs) {
+    volatile double result = lhs - rhs;
+    return result;
+}
+
+double fortranWireCurrentUpdate(double cte1, double current, double cte3,
+                                double qplusMinus, double cte2,
+                                double fieldValue) {
+    const double chargeAdvanced = fortranRoundedDoubleSub(
+        fortranRoundedDoubleMul(cte1, current),
+        fortranRoundedDoubleMul(cte3, qplusMinus));
+    return fortranRoundedDoubleAdd(
+        chargeAdvanced, fortranRoundedDoubleMul(cte2, fieldValue));
+}
+
+double fortranWireChargeUpdate(double cteProp, double chargePast,
+                               double ctePlain, double iPlus,
+                               double iMinus) {
+    return fortranRoundedDoubleSub(
+        fortranRoundedDoubleMul(cteProp, chargePast),
+        fortranRoundedDoubleMul(
+            ctePlain, fortranRoundedDoubleSub(iPlus, iMinus)));
+}
+
+double fortranWireFieldSubtract(double fieldValue, double cte5,
+                                double current) {
+    return fortranRoundedDoubleSub(
+        fieldValue, fortranRoundedDoubleMul(cte5, current));
+}
+
+fdtd_real fortranCurlUpdate(fdtd_real oldValue, fdtd_real coeff,
+                            fdtd_real aPlus, fdtd_real aMinus,
+                            fdtd_real invA, fdtd_real bPlus,
+                            fdtd_real bMinus, fdtd_real invB) {
+    const fdtd_real termA =
+        fortranRoundedMul(fortranRoundedSub(aPlus, aMinus), invA);
+    const fdtd_real termB =
+        fortranRoundedMul(fortranRoundedSub(bPlus, bMinus), invB);
+    return fortranRoundedAdd(
+        oldValue,
+        fortranRoundedMul(coeff, fortranRoundedSub(termA, termB)));
 }
 
 struct entrada_t {
@@ -192,6 +285,8 @@ struct HollandWireSegment_t {
     double cte2 = 0.0;
     double cte3 = 0.0;
     double cte5 = 0.0;
+    double fractionMinus = 1.0;
+    double fractionPlus = 1.0;
     double current = 0.0;
     double currentpast = 0.0;
     double qplus_qminus = 0.0;
@@ -533,6 +628,7 @@ public:
     Parseador_t pd;
     int NX = 10, NY = 10, NZ = 10;
     double dt = 1e-12, dx = 0.01, dy = 0.01, dz = 0.01;
+    double wireDx = 0.01, wireDy = 0.01, wireDz = 0.01;
     double eps0 = EPS0, mu0 = MU0;
     std::vector<fdtd_real> Ex, Ey, Ez, Hx, Hy, Hz;
     std::vector<uint8_t> pecExMask;
@@ -591,19 +687,25 @@ public:
         dt = static_cast<double>(static_cast<fdtd_real>(pd.general.dt));
         if (dt <= 0.0) dt = 1e-12;
         if (!pd.cellSteps.cellStepsX.empty()) {
+            wireDx = pd.cellSteps.cellStepsX[0];
             dx = static_cast<double>(static_cast<fdtd_real>(pd.cellSteps.cellStepsX[0]));
         } else {
             dx = 0.025;
+            wireDx = dx;
         }
         if (!pd.cellSteps.cellStepsY.empty()) {
+            wireDy = pd.cellSteps.cellStepsY[0];
             dy = static_cast<double>(static_cast<fdtd_real>(pd.cellSteps.cellStepsY[0]));
         } else {
             dy = 0.025;
+            wireDy = dy;
         }
         if (!pd.cellSteps.cellStepsZ.empty()) {
+            wireDz = pd.cellSteps.cellStepsZ[0];
             dz = static_cast<double>(static_cast<fdtd_real>(pd.cellSteps.cellStepsZ[0]));
         } else {
             dz = 0.025;
+            wireDz = dz;
         }
         numSteps = pd.general.XE; if (numSteps <= 0) numSteps = 100;
 
@@ -1715,11 +1817,6 @@ public:
             return analyticIt->second[static_cast<size_t>(step)];
         }
 
-        double hollandCurrent = 0.0;
-        if (sampleHollandCurrentContribution(probe, hollandCurrent)) {
-            return hollandCurrent;
-        }
-
         fdtd_real current = static_cast<fdtd_real>(0.0);
         const fdtd_real dxr = static_cast<fdtd_real>(dx);
         const fdtd_real dyr = static_cast<fdtd_real>(dy);
@@ -1727,38 +1824,48 @@ public:
         if (probe.direction == 'x') {
             const int i = probe.xi - 1;
             for (int j = probe.yi; j <= probe.ye; ++j) {
-                current = static_cast<fdtd_real>(
-                    current + (hyValue0(i, j - 1, probe.zi - 2) -
-                               hyValue0(i, j - 1, probe.ze - 1)) * dyr);
+                const fdtd_real lhs = hyValue0(i, j - 1, probe.zi - 2);
+                const fdtd_real rhs = hyValue0(i, j - 1, probe.ze - 1);
+                const fdtd_real term = fortranBulkCurrentTerm(lhs, rhs, dyr);
+                current = fortranRoundedAdd(current, term);
             }
             for (int k = probe.zi; k <= probe.ze; ++k) {
-                current = static_cast<fdtd_real>(
-                    current + (-hzValue0(i, probe.yi - 2, k - 1) +
-                               hzValue0(i, probe.ye - 1, k - 1)) * dzr);
+                const fdtd_real lhs = hzValue0(i, probe.ye - 1, k - 1);
+                const fdtd_real rhs = hzValue0(i, probe.yi - 2, k - 1);
+                const fdtd_real term = fortranBulkCurrentTerm(lhs, rhs, dzr);
+                current = fortranRoundedAdd(current, term);
             }
         } else if (probe.direction == 'y') {
             const int j = probe.yi - 1;
             for (int k = probe.zi; k <= probe.ze; ++k) {
-                current = static_cast<fdtd_real>(
-                    current + (-hzValue0(probe.xe - 1, j, k - 1) +
-                               hzValue0(probe.xi - 2, j, k - 1)) * dzr);
+                current = fortranRoundedAdd(
+                    current,
+                    fortranBulkCurrentTerm(hzValue0(probe.xi - 2, j, k - 1),
+                                           hzValue0(probe.xe - 1, j, k - 1),
+                                           dzr));
             }
             for (int i = probe.xi; i <= probe.xe; ++i) {
-                current = static_cast<fdtd_real>(
-                    current + (hxValue0(i - 1, j, probe.ze - 1) -
-                               hxValue0(i - 1, j, probe.zi - 2)) * dxr);
+                current = fortranRoundedAdd(
+                    current,
+                    fortranBulkCurrentTerm(hxValue0(i - 1, j, probe.ze - 1),
+                                           hxValue0(i - 1, j, probe.zi - 2),
+                                           dxr));
             }
         } else {
             const int k = probe.zi - 1;
             for (int i = probe.xi; i <= probe.xe; ++i) {
-                current = static_cast<fdtd_real>(
-                    current + (hxValue0(i - 1, probe.yi - 2, k) -
-                               hxValue0(i - 1, probe.ye - 1, k)) * dxr);
+                current = fortranRoundedAdd(
+                    current,
+                    fortranBulkCurrentTerm(hxValue0(i - 1, probe.yi - 2, k),
+                                           hxValue0(i - 1, probe.ye - 1, k),
+                                           dxr));
             }
             for (int j = probe.yi; j <= probe.ye; ++j) {
-                current = static_cast<fdtd_real>(
-                    current + (-hyValue0(probe.xi - 2, j - 1, k) +
-                               hyValue0(probe.xe - 1, j - 1, k)) * dyr);
+                current = fortranRoundedAdd(
+                    current,
+                    fortranBulkCurrentTerm(hyValue0(probe.xe - 1, j - 1, k),
+                                           hyValue0(probe.xi - 2, j - 1, k),
+                                           dyr));
             }
         }
         return static_cast<double>(static_cast<fdtd_real>(
@@ -1805,9 +1912,9 @@ public:
     }
 
     double hollandStepForDirection(int direction) const {
-        if (direction == 1) return dx;
-        if (direction == 2) return dy;
-        return dz;
+        if (direction == 1) return fortranWireStep(wireDx);
+        if (direction == 2) return fortranWireStep(wireDy);
+        return fortranWireStep(wireDz);
     }
 
     int appendHollandSegment(const std::array<int, 3>& minus,
@@ -1830,14 +1937,14 @@ public:
         seg.inductance = inductance;
         seg.delta = hollandStepForDirection(seg.direction);
         if (seg.direction == 1) {
-            seg.deltaTransv1 = dy;
-            seg.deltaTransv2 = dz;
+            seg.deltaTransv1 = fortranWireStep(wireDy);
+            seg.deltaTransv2 = fortranWireStep(wireDz);
         } else if (seg.direction == 2) {
-            seg.deltaTransv1 = dz;
-            seg.deltaTransv2 = dx;
+            seg.deltaTransv1 = fortranWireStep(wireDz);
+            seg.deltaTransv2 = fortranWireStep(wireDx);
         } else {
-            seg.deltaTransv1 = dx;
-            seg.deltaTransv2 = dy;
+            seg.deltaTransv1 = fortranWireStep(wireDx);
+            seg.deltaTransv2 = fortranWireStep(wireDy);
         }
         seg.chargeMinus = getOrCreateHollandNode(nodeByCoord, minus);
         seg.chargePlus = getOrCreateHollandNode(nodeByCoord, plus);
@@ -1880,16 +1987,25 @@ public:
         return 0.0;
     }
 
-    void addToHollandField(const HollandWireSegment_t& segment, double value) {
+    void subtractHollandCurrentFromField(const HollandWireSegment_t& segment) {
         const int i = segment.i - 1;
         const int j = segment.j - 1;
         const int k = segment.k - 1;
         if (segment.direction == 1 && in_ex(i, j, k)) {
-            Ex[ex_idx(i, j, k)] = static_cast<fdtd_real>(static_cast<double>(Ex[ex_idx(i, j, k)]) + value);
+            const int idx = ex_idx(i, j, k);
+            Ex[idx] = static_cast<fdtd_real>(
+                fortranWireFieldSubtract(static_cast<double>(Ex[idx]),
+                                         segment.cte5, segment.current));
         } else if (segment.direction == 2 && in_ey(i, j, k)) {
-            Ey[ey_idx(i, j, k)] = static_cast<fdtd_real>(static_cast<double>(Ey[ey_idx(i, j, k)]) + value);
+            const int idx = ey_idx(i, j, k);
+            Ey[idx] = static_cast<fdtd_real>(
+                fortranWireFieldSubtract(static_cast<double>(Ey[idx]),
+                                         segment.cte5, segment.current));
         } else if (segment.direction == 3 && in_ez(i, j, k)) {
-            Ez[ez_idx(i, j, k)] = static_cast<fdtd_real>(static_cast<double>(Ez[ez_idx(i, j, k)]) + value);
+            const int idx = ez_idx(i, j, k);
+            Ez[idx] = static_cast<fdtd_real>(
+                fortranWireFieldSubtract(static_cast<double>(Ez[idx]),
+                                         segment.cte5, segment.current));
         }
     }
 
@@ -1913,25 +2029,32 @@ public:
     }
 
     double hollandSelfInductance(double radius, double deltaTransv1, double deltaTransv2) const {
-        const double invMu = 1.0 / mu0;
-        double lind = (1.0 / (4.0 * PI * invMu)) *
-            (std::log((deltaTransv1 * deltaTransv1 + deltaTransv2 * deltaTransv2) /
-                      (4.0 * radius * radius)) +
+        const double mu0Wire = static_cast<double>(static_cast<fdtd_real>(mu0));
+        const double piWire = static_cast<double>(static_cast<fdtd_real>(PI));
+        const double invMu = 1.0 / mu0Wire;
+        const double radius2 = std::pow(radius, 2.0);
+        const double deltaTransv1_2 = std::pow(deltaTransv1, 2.0);
+        const double deltaTransv2_2 = std::pow(deltaTransv2, 2.0);
+        double lind = (1.0 / (4.0 * piWire * invMu)) *
+            (std::log((deltaTransv1_2 + deltaTransv2_2) /
+                      (4.0 * radius2)) +
              deltaTransv1 / deltaTransv2 * std::atan(deltaTransv2 / deltaTransv1) +
              deltaTransv2 / deltaTransv1 * std::atan(deltaTransv1 / deltaTransv2) +
-             PI * radius * radius / (deltaTransv2 * deltaTransv1) - 3.0);
+             piWire * radius2 / (deltaTransv2 * deltaTransv1) - 3.0);
         if (radius < 0.3 * deltaTransv1 || radius < 0.3 * deltaTransv2) {
-            lind -= 0.57 / (4.0 * PI * invMu);
+            lind -= 0.57 / (4.0 * piWire * invMu);
         }
         if (radius > 0.3 * deltaTransv1 || radius > 0.3 * deltaTransv2) {
-            lind /= (1.0 - PI * radius * radius / (deltaTransv1 * deltaTransv2));
+            lind /= (1.0 - piWire * radius2 / (deltaTransv1 * deltaTransv2));
         }
         return lind;
     }
 
     void finishHollandConstants() {
-        const double invMu = 1.0 / mu0;
-        const double invEps = 1.0 / eps0;
+        const double mu0Wire = static_cast<double>(static_cast<fdtd_real>(mu0));
+        const double eps0Wire = static_cast<double>(static_cast<fdtd_real>(eps0));
+        const double invMu = 1.0 / mu0Wire;
+        const double invEps = 1.0 / eps0Wire;
         const fdtd_real g2_real = static_cast<fdtd_real>(
             dt / static_cast<double>(static_cast<fdtd_real>(eps0)));
         const double g2 = static_cast<double>(g2_real);
@@ -1960,9 +2083,52 @@ public:
                        seg.inductance;
             const double denom = seg.lind / dt + seg.resistance * 0.5;
             seg.cte1 = (seg.lind / dt - seg.resistance * 0.5) / denom;
-            seg.cte3 = invMu * invEps / seg.delta * seg.lind / denom;
+            volatile double cte3Numerator = invMu * invEps;
+            cte3Numerator = cte3Numerator / seg.delta;
+            cte3Numerator = cte3Numerator * seg.lind;
+            seg.cte3 = cte3Numerator / denom;
             seg.cte2 = 1.0 / denom;
             seg.cte5 = g2 / (seg.deltaTransv1 * seg.deltaTransv2);
+        }
+        auto fractionDenominatorTerm = [&](const HollandWireSegment_t& connected) {
+            return connected.delta / (connected.lind * invMu * invEps);
+        };
+        for (auto& seg : hollandSegments) {
+            const auto& minusNode = hollandNodes[static_cast<size_t>(seg.chargeMinus)];
+            double denominatorMinus = 0.0;
+            double deltaMinus = 0.0;
+            for (int connectedIdx : minusNode.currentPlus) {
+                const auto& connected = hollandSegments[static_cast<size_t>(connectedIdx)];
+                deltaMinus += connected.delta;
+                denominatorMinus += fractionDenominatorTerm(connected);
+            }
+            for (int connectedIdx : minusNode.currentMinus) {
+                const auto& connected = hollandSegments[static_cast<size_t>(connectedIdx)];
+                deltaMinus += connected.delta;
+                denominatorMinus += fractionDenominatorTerm(connected);
+            }
+            if (denominatorMinus != 0.0) {
+                seg.fractionMinus =
+                    (deltaMinus / (seg.lind * invMu * invEps)) / denominatorMinus;
+            }
+
+            const auto& plusNode = hollandNodes[static_cast<size_t>(seg.chargePlus)];
+            double denominatorPlus = 0.0;
+            double deltaPlus = 0.0;
+            for (int connectedIdx : plusNode.currentMinus) {
+                const auto& connected = hollandSegments[static_cast<size_t>(connectedIdx)];
+                deltaPlus += connected.delta;
+                denominatorPlus += fractionDenominatorTerm(connected);
+            }
+            for (int connectedIdx : plusNode.currentPlus) {
+                const auto& connected = hollandSegments[static_cast<size_t>(connectedIdx)];
+                deltaPlus += connected.delta;
+                denominatorPlus += fractionDenominatorTerm(connected);
+            }
+            if (denominatorPlus != 0.0) {
+                seg.fractionPlus =
+                    (deltaPlus / (seg.lind * invMu * invEps)) / denominatorPlus;
+            }
         }
     }
 
@@ -2132,9 +2298,12 @@ public:
             if (materialType == "wire") {
                 WireMaterial wm;
                 wm.isWire = true;
-                wm.radius = mat.value("radius", 0.0);
-                wm.resistance = mat.value("resistancePerMeter", 0.0);
-                wm.inductance = mat.value("inductancePerMeter", 0.0);
+                wm.radius = static_cast<double>(static_cast<fdtd_real>(
+                    mat.value("radius", 0.0)));
+                wm.resistance = static_cast<double>(static_cast<fdtd_real>(
+                    mat.value("resistancePerMeter", 0.0)));
+                wm.inductance = static_cast<double>(static_cast<fdtd_real>(
+                    mat.value("inductancePerMeter", 0.0)));
                 wireMaterials[mat.value("id", 0)] = wm;
                 continue;
             }
@@ -2480,11 +2649,11 @@ public:
             if (node.currentMinus.empty() && node.currentPlus.size() == 1) {
                 iMinus = -iPlus;
             }
-            node.chargePresent = node.cteProp * node.chargePast -
-                                 node.ctePlain * (iPlus - iMinus);
+            node.chargePresent = fortranWireChargeUpdate(
+                node.cteProp, node.chargePast, node.ctePlain, iPlus, iMinus);
         }
         for (const auto& seg : hollandSegments) {
-            addToHollandField(seg, -seg.cte5 * seg.current);
+            subtractHollandCurrentFromField(seg);
         }
         for (size_t n = 0; n < hollandNodes.size(); ++n) {
             auto termIt = hollandNodeTermination.find(static_cast<int>(n));
@@ -2498,12 +2667,16 @@ public:
             seg.currentpast = seg.current;
             const auto& qPlus = hollandNodes[static_cast<size_t>(seg.chargePlus)];
             const auto& qMinus = hollandNodes[static_cast<size_t>(seg.chargeMinus)];
-            seg.qplus_qminus = qPlus.chargePresent - qMinus.chargePresent;
-            seg.current = seg.cte1 * seg.current -
-                          seg.cte3 * seg.qplus_qminus +
-                          seg.cte2 * hollandFieldValue(seg);
+            seg.qplus_qminus =
+                seg.fractionPlus * qPlus.chargePresent -
+                seg.fractionMinus * qMinus.chargePresent;
+            seg.current = fortranWireCurrentUpdate(
+                seg.cte1, seg.current, seg.cte3, seg.qplus_qminus, seg.cte2,
+                hollandFieldValue(seg));
         }
-        const double invMuInvEps = (1.0 / mu0) * (1.0 / eps0);
+        const double mu0Wire = static_cast<double>(static_cast<fdtd_real>(mu0));
+        const double eps0Wire = static_cast<double>(static_cast<fdtd_real>(eps0));
+        const double invMuInvEps = (1.0 / mu0Wire) * (1.0 / eps0Wire);
         for (const auto& gen : hollandVoltageGenerators) {
             if (gen.segmentIndex < 0 ||
                 gen.segmentIndex >= static_cast<int>(hollandSegments.size())) {
@@ -2946,9 +3119,10 @@ public:
                     }
                     const fdtd_real idzhk = idzh1(k);
                     const fdtd_real idyhj = idyh1(j);
-                    Ex[idx] = one * Ex[idx] + CeE[idx] *
-                        ((Hz[hz_idx(i, j, k)] - Hz[hz_idx(i, j - 1, k)]) * idyhj -
-                         (Hy[hy_idx(i, j, k)] - Hy[hy_idx(i, j, k - 1)]) * idzhk);
+                    Ex[idx] = fortranCurlUpdate(
+                        Ex[idx], CeE[idx],
+                        Hz[hz_idx(i, j, k)], Hz[hz_idx(i, j - 1, k)], idyhj,
+                        Hy[hy_idx(i, j, k)], Hy[hy_idx(i, j, k - 1)], idzhk);
                 }
         for (int k = -1; k < NZ; ++k)
             for (int j = -1; j < NY - 1; ++j)
@@ -2959,9 +3133,10 @@ public:
                         continue;
                     }
                     const fdtd_real idzhk = idzh1(k);
-                    Ey[idx] = one * Ey[idx] + CeE[idx] *
-                        ((Hx[hx_idx(i, j, k)] - Hx[hx_idx(i, j, k - 1)]) * idzhk -
-                         (Hz[hz_idx(i, j, k)] - Hz[hz_idx(i - 1, j, k)]) * idxh1(i));
+                    Ey[idx] = fortranCurlUpdate(
+                        Ey[idx], CeE[idx],
+                        Hx[hx_idx(i, j, k)], Hx[hx_idx(i, j, k - 1)], idzhk,
+                        Hz[hz_idx(i, j, k)], Hz[hz_idx(i - 1, j, k)], idxh1(i));
                 }
         for (int k = -1; k < NZ - 1; ++k)
             for (int j = -1; j < NY; ++j)
@@ -2972,9 +3147,10 @@ public:
                         continue;
                     }
                     const fdtd_real idyhj = idyh1(j);
-                    Ez[idx] = one * Ez[idx] + CeE[idx] *
-                        ((Hy[hy_idx(i, j, k)] - Hy[hy_idx(i - 1, j, k)]) * idxh1(i) -
-                         (Hx[hx_idx(i, j, k)] - Hx[hx_idx(i, j - 1, k)]) * idyhj);
+                    Ez[idx] = fortranCurlUpdate(
+                        Ez[idx], CeE[idx],
+                        Hy[hy_idx(i, j, k)], Hy[hy_idx(i - 1, j, k)], idxh1(i),
+                        Hx[hx_idx(i, j, k)], Hx[hx_idx(i, j - 1, k)], idyhj);
                 }
     }
 
@@ -3066,7 +3242,7 @@ public:
         if (!useMur) return;
         auto mur_face = [](fdtd_real& bnd, fdtd_real int_now, fdtd_real past_int,
                            fdtd_real past_bnd, fdtd_real cab) {
-            bnd = static_cast<fdtd_real>(past_int + cab * (int_now - past_bnd));
+            bnd = fortranMurFace(int_now, past_int, past_bnd, cab);
         };
 
         // Back (x min): Fortran MURc uses sweepXI-1, one plane below the H sweep.
@@ -3241,9 +3417,10 @@ public:
                     }
                     const fdtd_real idzek = idze1(k);
                     const fdtd_real idyej = idye1(j);
-                    Hx[idx] = one * Hx[idx] + CmH[idx] *
-                        ((Ey[ey_idx(i, j, k + 1)] - Ey[ey_idx(i, j, k)]) * idzek -
-                         (Ez[ez_idx(i, j + 1, k)] - Ez[ez_idx(i, j, k)]) * idyej);
+                    Hx[idx] = fortranCurlUpdate(
+                        Hx[idx], CmH[idx],
+                        Ey[ey_idx(i, j, k + 1)], Ey[ey_idx(i, j, k)], idzek,
+                        Ez[ez_idx(i, j + 1, k)], Ez[ez_idx(i, j, k)], idyej);
                 }
         for (int k = -1; k < NZ - 1; ++k)
             for (int j = -1; j < NY; ++j)
@@ -3254,9 +3431,10 @@ public:
                         continue;
                     }
                     const fdtd_real idzek = idze1(k);
-                    Hy[idx] = one * Hy[idx] + CmH[idx] *
-                        ((Ez[ez_idx(i + 1, j, k)] - Ez[ez_idx(i, j, k)]) * idxe1(i) -
-                         (Ex[ex_idx(i, j, k + 1)] - Ex[ex_idx(i, j, k)]) * idzek);
+                    Hy[idx] = fortranCurlUpdate(
+                        Hy[idx], CmH[idx],
+                        Ez[ez_idx(i + 1, j, k)], Ez[ez_idx(i, j, k)], idxe1(i),
+                        Ex[ex_idx(i, j, k + 1)], Ex[ex_idx(i, j, k)], idzek);
                 }
         for (int k = -1; k < NZ; ++k)
             for (int j = -1; j < NY - 1; ++j)
@@ -3267,9 +3445,10 @@ public:
                         continue;
                     }
                     const fdtd_real idyej = idye1(j);
-                    Hz[idx] = one * Hz[idx] + CmH[idx] *
-                        ((Ex[ex_idx(i, j + 1, k)] - Ex[ex_idx(i, j, k)]) * idyej -
-                         (Ey[ey_idx(i + 1, j, k)] - Ey[ey_idx(i, j, k)]) * idxe1(i));
+                    Hz[idx] = fortranCurlUpdate(
+                        Hz[idx], CmH[idx],
+                        Ex[ex_idx(i, j + 1, k)], Ex[ex_idx(i, j, k)], idyej,
+                        Ey[ey_idx(i + 1, j, k)], Ey[ey_idx(i, j, k)], idxe1(i));
                 }
     }
 
