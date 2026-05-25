@@ -197,7 +197,7 @@ struct PlaneWaveState_t {
 
 struct Parseador_t {
     int switches = 0;
-    struct { int XI = 0, XE = 0, YI = 0, YE = 0, ZI = 0, ZE = 0; int NumMedia = 0; double dt = 0.0; } general;
+    struct { int XI = 0, XE = 0, YI = 0, YE = 0, ZI = 0, ZE = 0; int NumMedia = 0; double dt = 0.0; std::string additionalArguments; } general;
     struct { int nMedia = 0; int totalX = 0, totalY = 0, totalZ = 0; } matriz;
     struct { int XI = 0, XE = 0, YI = 0, YE = 0, ZI = 0, ZE = 0; } despl;
     struct { int type = 0; } front;
@@ -303,6 +303,9 @@ Parseador_t parseFDTDJSON(const std::string& filename) {
         auto& g = root["general"];
         if (g.contains("timeStep")) pd.general.dt = g["timeStep"].get<double>();
         if (g.contains("numberOfSteps")) pd.general.XE = g["numberOfSteps"].get<int>();
+        if (g.contains("additionalArguments")) {
+            pd.general.additionalArguments = g["additionalArguments"].get<std::string>();
+        }
         if (g.contains("grid")) {
             auto& grid = g["grid"];
             if (grid.contains("numberOfCells")) {
@@ -2440,7 +2443,10 @@ void semba_fdtd_t::init(const std::string& input_flags) {
         }
     }
 #endif
-    impl_->solver.init(filename, mapvtk::flagsContainMapVtk(input_flags));
+    const bool cli_mapvtk = mapvtk::flagsContainMapVtk(input_flags);
+    Parseador_t pd_for_flags = parseFDTDJSON(filename);
+    const bool json_mapvtk = mapvtk::flagsContainMapVtk(pd_for_flags.general.additionalArguments);
+    impl_->solver.init(filename, cli_mapvtk || json_mapvtk);
     impl_->media.NumMed = impl_->solver.pd.Mats.nMaterials;
     impl_->media.totalX = impl_->solver.pd.matriz.totalX;
     impl_->media.totalY = impl_->solver.pd.matriz.totalY;

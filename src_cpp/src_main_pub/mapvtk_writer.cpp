@@ -1,5 +1,7 @@
 #include "mapvtk_writer.h"
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -75,15 +77,37 @@ void addLine(VtkMesh& mesh, const Vec3& a, const Vec3& b, double mediatype, doub
     mesh.cells.push_back(cell);
 }
 
-void addPecVolumeFaces(VtkMesh& mesh, int xi, int xe, int yi, int ye, int zi, int ze,
-                       const std::vector<double>& sx, const std::vector<double>& sy,
-                       const std::vector<double>& sz, double tag) {
+void appendMesh(VtkMesh& dst, const VtkMesh& src) {
+    const int offset = static_cast<int>(dst.points.size());
+    dst.points.insert(dst.points.end(), src.points.begin(), src.points.end());
+    for (auto cell : src.cells) {
+        for (int& node : cell.nodes) node += offset;
+        dst.cells.push_back(cell);
+    }
+}
+
+void addVolumeFaces(VtkMesh& mesh, int xi, int xe, int yi, int ye, int zi, int ze,
+                    const std::vector<double>& sx, const std::vector<double>& sy,
+                    const std::vector<double>& sz, double mediatype, double tag) {
     auto px = [&](int i) { return coordAt(sx, i); };
     auto py = [&](int j) { return coordAt(sy, j); };
     auto pz = [&](int k) { return coordAt(sz, k); };
     auto dx = [&](int i) { return stepAt(sx, i); };
     auto dy = [&](int j) { return stepAt(sy, j); };
     auto dz = [&](int k) { return stepAt(sz, k); };
+
+    if (xe - xi == 1 && ye - yi == 1 && ze - zi == 1) {
+        const double x0 = px(xi), x1 = px(xe);
+        const double y0 = py(yi), y1 = py(ye);
+        const double z0 = pz(zi), z1 = pz(ze);
+        addQuad(mesh, {x0, y0, z0}, {x0, y1, z0}, {x0, y1, z1}, {x0, y0, z1}, mediatype, tag);
+        addQuad(mesh, {x1, y0, z0}, {x1, y0, z1}, {x1, y1, z1}, {x1, y1, z0}, mediatype, tag);
+        addQuad(mesh, {x0, y0, z0}, {x1, y0, z0}, {x1, y0, z1}, {x0, y0, z1}, mediatype, tag);
+        addQuad(mesh, {x0, y1, z0}, {x0, y1, z1}, {x1, y1, z1}, {x1, y1, z0}, mediatype, tag);
+        addQuad(mesh, {x0, y0, z0}, {x0, y1, z0}, {x1, y1, z0}, {x1, y0, z0}, mediatype, tag);
+        addQuad(mesh, {x0, y0, z1}, {x1, y0, z1}, {x1, y1, z1}, {x0, y1, z1}, mediatype, tag);
+        return;
+    }
 
     auto faceQuads = [&](const auto& quadFn) {
         for (int j = yi; j <= ye; ++j) {
@@ -99,7 +123,7 @@ void addPecVolumeFaces(VtkMesh& mesh, int xi, int xe, int yi, int ye, int zi, in
             const double x = px(xi);
             const double y0 = py(j), y1 = py(j) + dy(j);
             const double z0 = pz(k), z1 = pz(k + 1);
-            addQuad(mesh, {x, y0, z0}, {x, y1, z0}, {x, y1, z1}, {x, y0, z1}, 0.0, tag);
+            addQuad(mesh, {x, y0, z0}, {x, y1, z0}, {x, y1, z1}, {x, y0, z1}, mediatype, tag);
         }
     }
     // high x
@@ -108,7 +132,7 @@ void addPecVolumeFaces(VtkMesh& mesh, int xi, int xe, int yi, int ye, int zi, in
             const double x = px(xe + 1);
             const double y0 = py(j), y1 = py(j) + dy(j);
             const double z0 = pz(k), z1 = pz(k + 1);
-            addQuad(mesh, {x, y0, z0}, {x, y0, z1}, {x, y1, z1}, {x, y1, z0}, 0.0, tag);
+            addQuad(mesh, {x, y0, z0}, {x, y0, z1}, {x, y1, z1}, {x, y1, z0}, mediatype, tag);
         }
     }
     // low y
@@ -117,7 +141,7 @@ void addPecVolumeFaces(VtkMesh& mesh, int xi, int xe, int yi, int ye, int zi, in
             const double y = py(yi);
             const double x0 = px(i), x1 = px(i) + dx(i);
             const double z0 = pz(k), z1 = pz(k + 1);
-            addQuad(mesh, {x0, y, z0}, {x1, y, z0}, {x1, y, z1}, {x0, y, z1}, 0.0, tag);
+            addQuad(mesh, {x0, y, z0}, {x1, y, z0}, {x1, y, z1}, {x0, y, z1}, mediatype, tag);
         }
     }
     // high y
@@ -126,7 +150,7 @@ void addPecVolumeFaces(VtkMesh& mesh, int xi, int xe, int yi, int ye, int zi, in
             const double y = py(ye + 1);
             const double x0 = px(i), x1 = px(i) + dx(i);
             const double z0 = pz(k), z1 = pz(k + 1);
-            addQuad(mesh, {x0, y, z0}, {x0, y, z1}, {x1, y, z1}, {x1, y, z0}, 0.0, tag);
+            addQuad(mesh, {x0, y, z0}, {x0, y, z1}, {x1, y, z1}, {x1, y, z0}, mediatype, tag);
         }
     }
     // low z
@@ -135,7 +159,7 @@ void addPecVolumeFaces(VtkMesh& mesh, int xi, int xe, int yi, int ye, int zi, in
             const double z = pz(zi);
             const double x0 = px(i), x1 = px(i) + dx(i);
             const double y0 = py(j), y1 = py(j + 1);
-            addQuad(mesh, {x0, y0, z}, {x0, y1, z}, {x1, y1, z}, {x1, y0, z}, 0.0, tag);
+            addQuad(mesh, {x0, y0, z}, {x0, y1, z}, {x1, y1, z}, {x1, y0, z}, mediatype, tag);
         }
     }
     // high z
@@ -144,42 +168,164 @@ void addPecVolumeFaces(VtkMesh& mesh, int xi, int xe, int yi, int ye, int zi, in
             const double z = pz(ze + 1);
             const double x0 = px(i), x1 = px(i) + dx(i);
             const double y0 = py(j), y1 = py(j + 1);
-            addQuad(mesh, {x0, y0, z}, {x1, y0, z}, {x1, y1, z}, {x0, y1, z}, 0.0, tag);
+            addQuad(mesh, {x0, y0, z}, {x1, y0, z}, {x1, y1, z}, {x0, y1, z}, mediatype, tag);
         }
     }
     (void)faceQuads;
 }
 
-void addPecLine(VtkMesh& mesh, int xi, int yi, int zi, int xe, int ye, int ze,
-                const std::vector<double>& sx, const std::vector<double>& sy,
-                const std::vector<double>& sz, double tag) {
+void addLineInterval(VtkMesh& mesh, int xi, int yi, int zi, int xe, int ye, int ze,
+                     const std::vector<double>& sx, const std::vector<double>& sy,
+                     const std::vector<double>& sz, double mediatype, double tag) {
     auto px = [&](int i) { return coordAt(sx, i) + 0.5 * stepAt(sx, i); };
     auto py = [&](int j) { return coordAt(sy, j) + 0.5 * stepAt(sy, j); };
     auto pz = [&](int k) { return coordAt(sz, k) + 0.5 * stepAt(sz, k); };
 
     if (xi == xe && yi == ye && zi != ze) {
         for (int k = zi; k < ze; ++k) {
-            addLine(mesh, {px(xi), py(yi), pz(k)}, {px(xi), py(yi), pz(k + 1)}, 0.5, tag);
+            addLine(mesh, {px(xi), py(yi), pz(k)}, {px(xi), py(yi), pz(k + 1)}, mediatype, tag);
         }
     } else if (xi == xe && zi == ze && yi != ye) {
         for (int j = yi; j < ye; ++j) {
-            addLine(mesh, {px(xi), py(j), pz(zi)}, {px(xi), py(j + 1), pz(zi)}, 0.5, tag);
+            addLine(mesh, {px(xi), py(j), pz(zi)}, {px(xi), py(j + 1), pz(zi)}, mediatype, tag);
         }
     } else if (yi == ye && zi == ze && xi != xe) {
         for (int i = xi; i < xe; ++i) {
-            addLine(mesh, {px(i), py(yi), pz(zi)}, {px(i + 1), py(yi), pz(zi)}, 0.5, tag);
+            addLine(mesh, {px(i), py(yi), pz(zi)}, {px(i + 1), py(yi), pz(zi)}, mediatype, tag);
         }
     }
 }
 
-bool isPecMaterial(const nlohmann::json& materials, int material_id) {
-    if (!materials.is_array()) return false;
+struct MaterialInfo {
+    int id = 0;
+    std::string type;
+};
+
+MaterialInfo materialInfo(const nlohmann::json& materials, int material_id) {
+    MaterialInfo info;
+    info.id = material_id;
+    if (!materials.is_array()) return info;
     for (const auto& mat : materials) {
         if (mat.value("id", 0) == material_id) {
-            return mat.value("type", std::string()) == "pec";
+            info.type = mat.value("type", std::string());
+            return info;
         }
     }
-    return false;
+    return info;
+}
+
+int materialPriority(const MaterialInfo& info) {
+    if (info.type == "pec") return 0;
+    if (info.type == "pmc") return 1;
+    if (info.type == "multilayeredSurface") return 2;
+    if (info.type == "wire") return 3;
+    return 10;
+}
+
+bool isMapMaterial(const MaterialInfo& info) {
+    return materialPriority(info) < 10;
+}
+
+double faceMediaType(const MaterialInfo& info) {
+    if (info.type == "pec") return 0.0;
+    if (info.type == "pmc") return 16.0;
+    if (info.type == "multilayeredSurface") return 302.0 + info.id;
+    return 0.0;
+}
+
+double lineMediaType(const MaterialInfo& info) {
+    if (info.type == "pec") return 0.5;
+    if (info.type == "pmc") return 16.5;
+    if (info.type == "multilayeredSurface") return 3.5;
+    return 1.0;
+}
+
+std::array<int, 6> normalizedLineKey(int ax, int ay, int az, int bx, int by, int bz) {
+    std::array<int, 3> a = {ax, ay, az};
+    std::array<int, 3> b = {bx, by, bz};
+    if (b < a) std::swap(a, b);
+    return {a[0], a[1], a[2], b[0], b[1], b[2]};
+}
+
+void addGridLine(VtkMesh& mesh, std::set<std::array<int, 6>>& line_keys,
+                 const std::vector<double>& sx, const std::vector<double>& sy,
+                 const std::vector<double>& sz, int ax, int ay, int az, int bx,
+                 int by, int bz, double mediatype, double tag) {
+    const auto key = normalizedLineKey(ax, ay, az, bx, by, bz);
+    if (!line_keys.insert(key).second) return;
+    auto point = [&](int x, int y, int z) {
+        return Vec3{coordAt(sx, x), coordAt(sy, y), coordAt(sz, z)};
+    };
+    addLine(mesh, point(ax, ay, az), point(bx, by, bz), mediatype, tag);
+}
+
+void addSurfaceBoundaryLines(VtkMesh& mesh, std::set<std::array<int, 6>>& line_keys,
+                             int xi, int xe, int yi, int ye, int zi, int ze,
+                             const std::vector<double>& sx,
+                             const std::vector<double>& sy,
+                             const std::vector<double>& sz,
+                             double mediatype, double tag) {
+    if (zi == ze) {
+        for (int i = xi; i < xe; ++i) {
+            addGridLine(mesh, line_keys, sx, sy, sz, i, yi, zi, i + 1, yi, zi, mediatype, tag);
+            addGridLine(mesh, line_keys, sx, sy, sz, i, ye, zi, i + 1, ye, zi, mediatype, tag);
+        }
+        for (int j = yi; j < ye; ++j) {
+            addGridLine(mesh, line_keys, sx, sy, sz, xi, j, zi, xi, j + 1, zi, mediatype, tag);
+            addGridLine(mesh, line_keys, sx, sy, sz, xe, j, zi, xe, j + 1, zi, mediatype, tag);
+        }
+    } else if (yi == ye) {
+        for (int i = xi; i < xe; ++i) {
+            addGridLine(mesh, line_keys, sx, sy, sz, i, yi, zi, i + 1, yi, zi, mediatype, tag);
+            addGridLine(mesh, line_keys, sx, sy, sz, i, yi, ze, i + 1, yi, ze, mediatype, tag);
+        }
+        for (int k = zi; k < ze; ++k) {
+            addGridLine(mesh, line_keys, sx, sy, sz, xi, yi, k, xi, yi, k + 1, mediatype, tag);
+            addGridLine(mesh, line_keys, sx, sy, sz, xe, yi, k, xe, yi, k + 1, mediatype, tag);
+        }
+    } else if (xi == xe) {
+        for (int j = yi; j < ye; ++j) {
+            addGridLine(mesh, line_keys, sx, sy, sz, xi, j, zi, xi, j + 1, zi, mediatype, tag);
+            addGridLine(mesh, line_keys, sx, sy, sz, xi, j, ze, xi, j + 1, ze, mediatype, tag);
+        }
+        for (int k = zi; k < ze; ++k) {
+            addGridLine(mesh, line_keys, sx, sy, sz, xi, yi, k, xi, yi, k + 1, mediatype, tag);
+            addGridLine(mesh, line_keys, sx, sy, sz, xi, ye, k, xi, ye, k + 1, mediatype, tag);
+        }
+    }
+}
+
+void addSurfaceQuads(VtkMesh& mesh, int xi, int xe, int yi, int ye, int zi, int ze,
+                     const std::vector<double>& sx, const std::vector<double>& sy,
+                     const std::vector<double>& sz, double mediatype, double tag) {
+    auto px = [&](int i) { return coordAt(sx, i); };
+    auto py = [&](int j) { return coordAt(sy, j); };
+    auto pz = [&](int k) { return coordAt(sz, k); };
+    if (zi == ze) {
+        for (int i = xi; i < xe; ++i) {
+            for (int j = yi; j < ye; ++j) {
+                addQuad(mesh, {px(i), py(j), pz(zi)}, {px(i + 1), py(j), pz(zi)},
+                        {px(i + 1), py(j + 1), pz(zi)}, {px(i), py(j + 1), pz(zi)},
+                        mediatype, tag);
+            }
+        }
+    } else if (yi == ye) {
+        for (int i = xi; i < xe; ++i) {
+            for (int k = zi; k < ze; ++k) {
+                addQuad(mesh, {px(i), py(yi), pz(k)}, {px(i + 1), py(yi), pz(k)},
+                        {px(i + 1), py(yi), pz(k + 1)}, {px(i), py(yi), pz(k + 1)},
+                        mediatype, tag);
+            }
+        }
+    } else if (xi == xe) {
+        for (int j = yi; j < ye; ++j) {
+            for (int k = zi; k < ze; ++k) {
+                addQuad(mesh, {px(xi), py(j), pz(k)}, {px(xi), py(j + 1), pz(k)},
+                        {px(xi), py(j + 1), pz(k + 1)}, {px(xi), py(j), pz(k + 1)},
+                        mediatype, tag);
+            }
+        }
+    }
 }
 
 std::map<int, int> buildMaterialByElement(const nlohmann::json& root) {
@@ -300,34 +446,72 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
 
     const auto mat_by_elem = buildMaterialByElement(root);
     VtkMesh mesh;
-    double tag = 64.0;
-    if (root.contains("mesh") && root["mesh"].contains("elements")) {
+    VtkMesh lineMesh;
+    std::set<std::array<int, 6>> surfaceLineKeys;
+    std::vector<const nlohmann::json*> ordered_elements;
+    if (root.contains("mesh") && root["mesh"].contains("elements") &&
+        root.contains("materials")) {
         for (const auto& e : root["mesh"]["elements"]) {
             const int eid = e.value("id", 0);
             if (!mat_by_elem.count(eid)) continue;
-            if (!isPecMaterial(root["materials"], mat_by_elem.at(eid))) continue;
+            const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
+            if (!isMapMaterial(info)) continue;
+            ordered_elements.push_back(&e);
+        }
+        std::stable_sort(ordered_elements.begin(), ordered_elements.end(),
+                         [&](const nlohmann::json* lhs, const nlohmann::json* rhs) {
+                             const int lmat = mat_by_elem.at(lhs->value("id", 0));
+                             const int rmat = mat_by_elem.at(rhs->value("id", 0));
+                             const MaterialInfo li = materialInfo(root["materials"], lmat);
+                             const MaterialInfo ri = materialInfo(root["materials"], rmat);
+                             return materialPriority(li) < materialPriority(ri);
+                         });
+    }
+    double tag = 64.0;
+    if (!ordered_elements.empty()) {
+        for (const auto* eptr : ordered_elements) {
+            const auto& e = *eptr;
+            const int eid = e.value("id", 0);
+            const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
             if (e.contains("intervals")) {
                 for (const auto& interval : e["intervals"]) {
-                    const int xi = interval[0][0].get<int>();
-                    const int yi = interval[0][1].get<int>();
-                    const int zi = interval[0][2].get<int>();
-                    const int xe = interval[1][0].get<int>();
-                    const int ye = interval[1][1].get<int>();
-                    const int ze = interval[1][2].get<int>();
-                    if (xi == xe && yi == ye && zi != ze) {
-                        addPecLine(mesh, xi, yi, zi, xe, ye, ze, sx, sy, sz, tag);
-                    } else if (xi == xe && zi == ze && yi != ye) {
-                        addPecLine(mesh, xi, yi, zi, xe, ye, ze, sx, sy, sz, tag);
-                    } else if (yi == ye && zi == ze && xi != xe) {
-                        addPecLine(mesh, xi, yi, zi, xe, ye, ze, sx, sy, sz, tag);
+                    const int x0 = interval[0][0].get<int>();
+                    const int y0 = interval[0][1].get<int>();
+                    const int z0 = interval[0][2].get<int>();
+                    const int x1 = interval[1][0].get<int>();
+                    const int y1 = interval[1][1].get<int>();
+                    const int z1 = interval[1][2].get<int>();
+                    const int xi = std::min(x0, x1);
+                    const int yi = std::min(y0, y1);
+                    const int zi = std::min(z0, z1);
+                    const int xe = std::max(x0, x1);
+                    const int ye = std::max(y0, y1);
+                    const int ze = std::max(z0, z1);
+                    const int num_same = static_cast<int>(xi == xe) +
+                        static_cast<int>(yi == ye) + static_cast<int>(zi == ze);
+                    if (num_same == 2) {
+                        addLineInterval(lineMesh, xi, yi, zi, xe, ye, ze, sx, sy, sz,
+                                        lineMediaType(info), tag);
+                    } else if (num_same == 1) {
+                        addSurfaceQuads(mesh, xi, xe, yi, ye, zi, ze, sx, sy, sz,
+                                        faceMediaType(info), tag);
+                        addSurfaceBoundaryLines(lineMesh, surfaceLineKeys, xi, xe, yi, ye, zi, ze,
+                                                sx, sy, sz, lineMediaType(info), tag);
                     } else {
-                        addPecVolumeFaces(mesh, xi, xe, yi, ye, zi, ze, sx, sy, sz, tag);
+                        addVolumeFaces(mesh, xi, xe, yi, ye, zi, ze, sx, sy, sz,
+                                       faceMediaType(info), tag);
+                        if (info.type == "pec" && ordered_elements.size() > 1 &&
+                            xe - xi == 1 && ye - yi == 1 && ze - zi == 1) {
+                            addGridLine(lineMesh, surfaceLineKeys, sx, sy, sz,
+                                        xi, ye, zi, xe, ye, zi, lineMediaType(info), tag);
+                        }
                     }
                 }
             }
             tag += 64.0;
         }
     }
+    appendMesh(mesh, lineMesh);
     writeMeshFile(folder, vtk_name, mesh);
 }
 
