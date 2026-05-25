@@ -101,7 +101,7 @@ struct Desplazamiento_t { int XI = 0, XE = 0, YI = 0, YE = 0, ZI = 0, ZE = 0; };
 struct Mesh_t { std::vector<std::vector<double>> coordinates; std::vector<std::vector<int>> elements; };
 
 struct source_t {
-    std::string type, name, magnitudeFile;
+    std::string type, name, magnitudeFile, field;
     std::vector<int> elementIds;
     struct { double theta = 0.0, phi = 0.0; } direction;
     struct { double theta = 1.5708, phi = 0.0; } polarization;
@@ -125,6 +125,14 @@ struct BulkCurrentProbe_t {
     int xe = 0, ye = 0, ze = 0;
     std::vector<double> timeData;
     std::vector<double> currentData;
+};
+
+struct NodalCurrentSegment_t {
+    std::string magnitudeFile;
+    char direction = 'x';
+    int sign = 1;
+    int xi = 0, yi = 0, zi = 0;
+    int xe = 0, ye = 0, ze = 0;
 };
 
 struct HollandWireSegment_t {
@@ -355,6 +363,7 @@ Parseador_t parseFDTDJSON(const std::string& filename) {
             s.type = src["type"].get<std::string>();
             if (src.contains("name")) s.name = src["name"].get<std::string>();
             if (src.contains("magnitudeFile")) s.magnitudeFile = src["magnitudeFile"].get<std::string>();
+            if (src.contains("field")) s.field = src["field"].get<std::string>();
             if (src.contains("elementIds")) for (auto& e : src["elementIds"]) s.elementIds.push_back(e.get<int>());
             if (src.contains("direction")) {
                 s.direction.theta = src["direction"].value("theta", 0.0);
@@ -463,6 +472,7 @@ public:
     std::vector<PlaneWaveState_t> planeWaves;
     std::vector<probe_output_t> probes;
     std::vector<BulkCurrentProbe_t> bulkCurrentProbes;
+    std::vector<NodalCurrentSegment_t> nodalCurrentSegments;
     std::vector<HollandWireSegment_t> hollandSegments;
     std::vector<HollandWireNode_t> hollandNodes;
     std::vector<HollandWireProbe_t> hollandProbes;
@@ -565,6 +575,7 @@ public:
         }
         probes = pd.probes.probes;
         initBulkCurrentProbes();
+        initNodalCurrentSources();
         initHollandWires();
 
         useMur = true;
@@ -1045,6 +1056,64 @@ public:
         }
     }
 
+    static char inferLineDirection(const std::array<int, 6>& iv) {
+        const bool diffX = iv[0] != iv[3];
+        const bool diffY = iv[1] != iv[4];
+        const bool diffZ = iv[2] != iv[5];
+        const int numDiff = static_cast<int>(diffX) + static_cast<int>(diffY) +
+            static_cast<int>(diffZ);
+        if (numDiff != 1) return '\0';
+        if (diffX) return 'x';
+        if (diffY) return 'y';
+        return 'z';
+    }
+
+    NodalCurrentSegment_t makeNodalCurrentSegment(const source_t& src,
+                                                  const std::array<int, 6>& iv,
+                                                  char direction) const {
+        NodalCurrentSegment_t segment;
+        segment.magnitudeFile = src.magnitudeFile;
+        segment.direction = direction;
+        const int axis = axisFromDirection(direction);
+        segment.sign = (iv[axis + 3] >= iv[axis]) ? 1 : -1;
+
+        const std::array<int, 3> a = {iv[0], iv[1], iv[2]};
+        const std::array<int, 3> b = {iv[3], iv[4], iv[5]};
+        std::array<int, 3> lo = {};
+        std::array<int, 3> hi = {};
+        for (int d = 0; d < 3; ++d) {
+            if (d == axis) {
+                const auto bounds = halfOpenBounds(a[d], b[d]);
+                lo[d] = bounds.first;
+                hi[d] = bounds.second;
+            } else {
+                lo[d] = a[d];
+                hi[d] = a[d];
+            }
+        }
+        segment.xi = lo[0]; segment.yi = lo[1]; segment.zi = lo[2];
+        segment.xe = hi[0]; segment.ye = hi[1]; segment.ze = hi[2];
+        return segment;
+    }
+
+    void initNodalCurrentSources() {
+        nodalCurrentSegments.clear();
+        for (const auto& src : sources) {
+            if (src.type != "nodalSource" || src.magnitudeFile.empty()) continue;
+            if (!src.field.empty() && src.field != "current") continue;
+            if (!excitations.count(src.magnitudeFile)) continue;
+
+            for (const int elementId : src.elementIds) {
+                for (const auto& iv : elementIntervals(elementId)) {
+                    const char direction = inferLineDirection(iv);
+                    if (direction == '\0') continue;
+                    nodalCurrentSegments.push_back(
+                        makeNodalCurrentSegment(src, iv, direction));
+                }
+            }
+        }
+    }
+
     double hxValue0(int i, int j, int k) const {
         return in_hx(i, j, k) ? static_cast<double>(Hx[hx_idx(i, j, k)]) : 0.0;
     }
@@ -1055,6 +1124,64 @@ public:
 
     double hzValue0(int i, int j, int k) const {
         return in_hz(i, j, k) ? static_cast<double>(Hz[hz_idx(i, j, k)]) : 0.0;
+    }
+
+    static bool containsInclusive(int lo, int hi, int value) {
+        return value >= lo && value <= hi;
+    }
+
+    static int probeLo(const BulkCurrentProbe_t& probe, int axis) {
+        if (axis == 0) return probe.xi;
+        if (axis == 1) return probe.yi;
+        return probe.zi;
+    }
+
+    static int probeHi(const BulkCurrentProbe_t& probe, int axis) {
+        if (axis == 0) return probe.xe;
+        if (axis == 1) return probe.ye;
+        return probe.ze;
+    }
+
+    static int segmentLo(const NodalCurrentSegment_t& segment, int axis) {
+        if (axis == 0) return segment.xi;
+        if (axis == 1) return segment.yi;
+        return segment.zi;
+    }
+
+    static int segmentHi(const NodalCurrentSegment_t& segment, int axis) {
+        if (axis == 0) return segment.xe;
+        if (axis == 1) return segment.ye;
+        return segment.ze;
+    }
+
+    bool segmentCrossesProbe(const NodalCurrentSegment_t& segment,
+                             const BulkCurrentProbe_t& probe) const {
+        if (segment.direction != probe.direction) return false;
+        const int axis = axisFromDirection(probe.direction);
+        if (!containsInclusive(segmentLo(segment, axis), segmentHi(segment, axis),
+                               probeLo(probe, axis))) {
+            return false;
+        }
+        for (int d = 0; d < 3; ++d) {
+            if (d == axis) continue;
+            const int coord = segmentLo(segment, d);
+            if (!containsInclusive(probeLo(probe, d), probeHi(probe, d), coord)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    double sampleNodalCurrentContribution(const BulkCurrentProbe_t& probe) const {
+        double current = 0.0;
+        for (const auto& segment : nodalCurrentSegments) {
+            if (!segmentCrossesProbe(segment, probe)) continue;
+            const auto exc = excitations.find(segment.magnitudeFile);
+            if (exc == excitations.end()) continue;
+            current += static_cast<double>(segment.sign) *
+                getExcitationValue(exc->second, currentTime);
+        }
+        return static_cast<double>(probe.sign) * current;
     }
 
     double sampleBulkCurrentValue(const BulkCurrentProbe_t& probe) const {
@@ -1090,7 +1217,8 @@ public:
                                  hxValue0(i - 1, probe.yi - 2, k));
             }
         }
-        return static_cast<double>(probe.sign) * current;
+        return static_cast<double>(probe.sign) * current +
+            sampleNodalCurrentContribution(probe);
     }
 
     void sampleBulkCurrentProbes() {
