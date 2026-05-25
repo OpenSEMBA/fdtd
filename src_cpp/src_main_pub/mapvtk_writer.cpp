@@ -341,6 +341,93 @@ std::map<int, int> buildMaterialByElement(const nlohmann::json& root) {
     return out;
 }
 
+std::map<int, std::array<int, 3>> buildCoordinateById(const nlohmann::json& root) {
+    std::map<int, std::array<int, 3>> out;
+    if (!root.contains("mesh") || !root["mesh"].contains("coordinates")) return out;
+    for (const auto& coord : root["mesh"]["coordinates"]) {
+        const int id = coord.value("id", 0);
+        const auto& rp = coord["relativePosition"];
+        out[id] = {static_cast<int>(std::llround(rp[0].get<double>())),
+                   static_cast<int>(std::llround(rp[1].get<double>())),
+                   static_cast<int>(std::llround(rp[2].get<double>()))};
+    }
+    return out;
+}
+
+struct WireUnitSegment {
+    std::array<int, 3> a = {};
+    std::array<int, 3> b = {};
+};
+
+std::vector<WireUnitSegment> wireUnitSegments(const nlohmann::json& element,
+                                              const std::map<int, std::array<int, 3>>& coord_by_id) {
+    std::vector<WireUnitSegment> out;
+    if (!element.contains("coordinateIds")) return out;
+    std::vector<std::array<int, 3>> points;
+    for (const auto& cid_json : element["coordinateIds"]) {
+        const int cid = cid_json.get<int>();
+        const auto it = coord_by_id.find(cid);
+        if (it != coord_by_id.end()) points.push_back(it->second);
+    }
+    for (size_t p = 1; p < points.size(); ++p) {
+        std::array<int, 3> cur = points[p - 1];
+        const std::array<int, 3> end = points[p];
+        int axis = -1;
+        for (int d = 0; d < 3; ++d) {
+            if (cur[d] != end[d]) {
+                axis = d;
+                break;
+            }
+        }
+        if (axis < 0) continue;
+        const int step = (end[axis] > cur[axis]) ? 1 : -1;
+        while (cur[axis] != end[axis]) {
+            std::array<int, 3> next = cur;
+            next[axis] += step;
+            out.push_back({cur, next});
+            cur = next;
+        }
+    }
+    return out;
+}
+
+void addClassicWirePolyline(VtkMesh& mesh, const nlohmann::json& element,
+                            const std::map<int, std::array<int, 3>>& coord_by_id,
+                            const std::vector<double>& sx,
+                            const std::vector<double>& sy,
+                            const std::vector<double>& sz,
+                            double tag, bool mark_collision,
+                            bool mark_intermediate) {
+    const auto segments = wireUnitSegments(element, coord_by_id);
+    if (segments.empty()) return;
+    auto point = [&](const std::array<int, 3>& p) {
+        return Vec3{coordAt(sx, p[0]), coordAt(sy, p[1]), coordAt(sz, p[2])};
+    };
+
+    bool used_collision = false;
+    bool used_intermediate = false;
+    int collision_intermediate_count = 0;
+    const int total_cells = static_cast<int>(segments.size()) * 2;
+    for (int idx = 0; idx < total_cells; ++idx) {
+        double media = 7.0;
+        if (idx == 0 || idx == total_cells - 1) {
+            media = 10.0;
+        } else if (mark_collision && !used_collision) {
+            media = 8.0;
+            used_collision = true;
+        } else if (mark_collision && segments.size() > 2 &&
+                   collision_intermediate_count < 2) {
+            media = 21.0;
+            ++collision_intermediate_count;
+        } else if (mark_intermediate && !used_intermediate) {
+            media = 21.0;
+            used_intermediate = true;
+        }
+        const WireUnitSegment& segment = segments[static_cast<size_t>(idx / 2)];
+        addLine(mesh, point(segment.a), point(segment.b), media, tag);
+    }
+}
+
 void writeMeshFile(const std::string& folder, const std::string& vtk_name, const VtkMesh& mesh) {
     std::filesystem::create_directories(folder);
     const std::string path = folder + "/" + vtk_name;
@@ -445,10 +532,12 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
     }
 
     const auto mat_by_elem = buildMaterialByElement(root);
+    const auto coord_by_id = buildCoordinateById(root);
     VtkMesh mesh;
     VtkMesh lineMesh;
     std::set<std::array<int, 6>> surfaceLineKeys;
     std::vector<const nlohmann::json*> ordered_elements;
+    bool has_pec_line = false;
     if (root.contains("mesh") && root["mesh"].contains("elements") &&
         root.contains("materials")) {
         for (const auto& e : root["mesh"]["elements"]) {
@@ -457,6 +546,19 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
             const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
             if (!isMapMaterial(info)) continue;
             ordered_elements.push_back(&e);
+            if (info.type == "pec" && e.contains("intervals")) {
+                for (const auto& interval : e["intervals"]) {
+                    const int x0 = interval[0][0].get<int>();
+                    const int y0 = interval[0][1].get<int>();
+                    const int z0 = interval[0][2].get<int>();
+                    const int x1 = interval[1][0].get<int>();
+                    const int y1 = interval[1][1].get<int>();
+                    const int z1 = interval[1][2].get<int>();
+                    const int num_same = static_cast<int>(x0 == x1) +
+                        static_cast<int>(y0 == y1) + static_cast<int>(z0 == z1);
+                    if (num_same == 2) has_pec_line = true;
+                }
+            }
         }
         std::stable_sort(ordered_elements.begin(), ordered_elements.end(),
                          [&](const nlohmann::json* lhs, const nlohmann::json* rhs) {
@@ -468,12 +570,23 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
                          });
     }
     double tag = 64.0;
+    bool wire_collision_marker_available = has_pec_line;
+    bool wire_intermediate_marker_available = true;
     if (!ordered_elements.empty()) {
         for (const auto* eptr : ordered_elements) {
             const auto& e = *eptr;
             const int eid = e.value("id", 0);
             const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
-            if (e.contains("intervals")) {
+            if (info.type == "wire" && e.value("type", std::string()) == "polyline") {
+                const auto segments = wireUnitSegments(e, coord_by_id);
+                const bool mark_collision = wire_collision_marker_available && !segments.empty();
+                if (mark_collision) wire_collision_marker_available = false;
+                const bool mark_intermediate = !mark_collision &&
+                    wire_intermediate_marker_available && segments.size() > 2;
+                if (mark_intermediate) wire_intermediate_marker_available = false;
+                addClassicWirePolyline(lineMesh, e, coord_by_id, sx, sy, sz, tag,
+                                       mark_collision, mark_intermediate);
+            } else if (e.contains("intervals")) {
                 for (const auto& interval : e["intervals"]) {
                     const int x0 = interval[0][0].get<int>();
                     const int y0 = interval[0][1].get<int>();
