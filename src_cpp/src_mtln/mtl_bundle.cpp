@@ -340,9 +340,10 @@ void mtl_bundle_t::advanceCurrent() {
             double term2 = 0.0;
             for (int k = 0; k < nc; ++k) {
                 term2 += v_diff[static_cast<size_t>(seg)][static_cast<size_t>(c)][static_cast<size_t>(k)] *
-                         (dv[static_cast<size_t>(k)] - vsrc[static_cast<size_t>(k)] + q3_term[static_cast<size_t>(k)]);
+                         (dv[static_cast<size_t>(k)] - vsrc[static_cast<size_t>(k)]);
             }
-            i[static_cast<size_t>(c)][static_cast<size_t>(seg)] = term1 - term2;
+            i[static_cast<size_t>(c)][static_cast<size_t>(seg)] =
+                term1 - term2 - q3_term[static_cast<size_t>(c)];
         }
     }
     transfer_impedance.updatePhi(i_prev, i);

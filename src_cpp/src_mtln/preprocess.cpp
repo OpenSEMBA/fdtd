@@ -220,14 +220,7 @@ std::vector<cable_bundle_t> buildCableBundles(const std::vector<cable_abstract_t
         int start = findConductorsBeforeCable(line.name, level) + conductors_in_level;
         std::vector<int> res(line.number_of_conductors);
         for (int k = 0; k < line.number_of_conductors; ++k) {
-            res[k] = start + k + 1; // 1-based indexing implied by Fortran logic usually, but vector is 0-based. 
-            // Fortran: [(k, k = 1, line%number_of_conductors)] generates 1, 2, ..., N
-            // If we want to preserve exact values, we generate 1..N.
-            // However, the previous calculation `findConductorsBeforeCable` returns a count.
-            // Let's assume the range is relative to the start of the cable's conductors in the bundle.
-            // The Fortran code: `findConductorsBeforeCable(...) + conductors_in_level + [(k, k = 1, N)]`
-            // This implies the result is a vector of indices.
-            res[k] = start + k; 
+            res[k] = start + k + 1;
         }
         return res;
     }

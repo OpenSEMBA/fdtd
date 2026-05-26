@@ -6,6 +6,7 @@
 
 #ifdef CompileWithMTLN
 #include "smbjson_m.h"
+#include "mtln_solver_m.h"
 #include "wires_mtln_m.h"
 #endif
 #include <string>
@@ -264,6 +265,7 @@ struct probe_output_t {
     int probeId = 0;
     int coordinateId = 0;
     int cellI = 1, cellJ = 1, cellK = 1;
+    int outputCellI = 1, outputCellJ = 1, outputCellK = 1;
     std::vector<double> timeData;
     std::vector<std::vector<double>> fieldByDir;
     std::vector<std::vector<double>> incidentByDir;
@@ -615,6 +617,9 @@ Parseador_t parseFDTDJSON(const std::string& filename) {
             }
             p.fieldByDir.resize(p.directions.size());
             p.incidentByDir.resize(p.directions.size());
+            p.outputCellI = p.cellI;
+            p.outputCellJ = p.cellJ;
+            p.outputCellK = p.cellK;
             p.probeId = pid++;
             pd.probes.probes.push_back(p);
         }
@@ -675,6 +680,12 @@ public:
     std::vector<HollandVoltageGenerator_t> hollandVoltageGenerators;
     std::map<int, std::pair<bool, double>> hollandNodeTermination;
     Lumped_m::LumpedSolver_t lumpedSolver;
+#ifdef CompileWithMTLN
+    mtln_solver_m::mtln_t mtlnSolver;
+    bool hasMtlnSolver = false;
+    bool mtlnObservationOpen = false;
+    std::vector<double> mtlnExternalFields;
+#endif
     bool still_planewave_time = true;
     bool planewave_switched_off = false;
     bool useMur = true;
@@ -708,6 +719,8 @@ public:
     bool createMapVtk = false;
     nlohmann::json inputRoot;
     std::string inputFile;
+    bool mtlnPmlPaddingActive = false;
+    int pmlPadX = 0, pmlPadY = 0, pmlPadZ = 0;
 
     void init(const std::string& filename, bool map_vtk = false) {
         inputFile = filename;
@@ -718,6 +731,7 @@ public:
             jf.close();
         }
         pd = parseFDTDJSON(filename);
+        applyMtlnPmlPaddingIfNeeded();
         NX = pd.general.XI; NY = pd.general.YI; NZ = pd.general.ZI;
         if (NX <= 0) NX = 10; if (NY <= 0) NY = 10; if (NZ <= 0) NZ = 10;
         dt = static_cast<double>(static_cast<fdtd_real>(pd.general.dt));
@@ -834,12 +848,330 @@ public:
         initAnalyticLumpedCurrentsFromJson();
         initAnalyticSurfaceImpedanceCurrentsFromJson();
         initNodalCurrentSources();
-        initHollandWires();
+#ifdef CompileWithMTLN
+        initMtlnFromJson(filename);
+#endif
+        if (!mtlnOwnsWires()) {
+            initHollandWires();
+        }
         initLumpedFromJson();
         initMurBorders();
 
         std::cout << "FDTD: grid=" << NX << "x" << NY << "x" << NZ << " dt=" << dt << " steps=" << numSteps << std::endl;
     }
+
+    static void shiftJsonCoordinate(nlohmann::json& coord, int dx, int dy, int dz) {
+        if (!coord.is_array() || coord.size() < 3) return;
+        const int delta[3] = {dx, dy, dz};
+        for (int axis = 0; axis < 3; ++axis) {
+            if (coord[axis].is_number_integer()) {
+                coord[axis] = coord[axis].get<int>() + delta[axis];
+            } else if (coord[axis].is_number()) {
+                coord[axis] = coord[axis].get<double>() + static_cast<double>(delta[axis]);
+            }
+        }
+    }
+
+    bool hasMtlnCableInJson() const {
+        if (inputRoot.is_null()) return false;
+        if (inputRoot.contains("materialAssociations")) {
+            for (const auto& assoc : inputRoot["materialAssociations"]) {
+                if (to_lower(assoc.value("type", std::string())) == "cable") {
+                    return true;
+                }
+            }
+        }
+        if (inputRoot.contains("materials")) {
+            for (const auto& mat : inputRoot["materials"]) {
+                const std::string type = to_lower(mat.value("type", std::string()));
+                if (type == "unshieldedmultiwire" || type == "shieldedmultiwire") {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    int pmlPaddingLayersFromJson() const {
+        if (inputRoot.is_null() || !inputRoot.contains("boundary")) return 0;
+        const auto& boundary = inputRoot["boundary"];
+        if (!boundary.contains("all")) return 0;
+        const auto& all = boundary["all"];
+        if (to_lower(all.value("type", std::string())) != "pml") return 0;
+        return std::max(0, static_cast<int>(std::lround(all.value("layers", 0.0))));
+    }
+
+    void padInputRootForMtlnPml() {
+        if (!inputRoot.contains("mesh")) return;
+        auto& mesh = inputRoot["mesh"];
+        if (mesh.contains("grid") && mesh["grid"].contains("numberOfCells")) {
+            auto& n = mesh["grid"]["numberOfCells"];
+            if (n.is_array() && n.size() >= 3) {
+                n[0] = n[0].get<int>() + 2 * pmlPadX;
+                n[1] = n[1].get<int>() + 2 * pmlPadY;
+                n[2] = n[2].get<int>() + 2 * pmlPadZ;
+            }
+        }
+        if (mesh.contains("coordinates")) {
+            for (auto& coord : mesh["coordinates"]) {
+                if (coord.contains("relativePosition")) {
+                    shiftJsonCoordinate(coord["relativePosition"], pmlPadX, pmlPadY, pmlPadZ);
+                }
+            }
+        }
+        if (mesh.contains("elements")) {
+            for (auto& elem : mesh["elements"]) {
+                if (!elem.contains("intervals")) continue;
+                for (auto& interval : elem["intervals"]) {
+                    if (!interval.is_array() || interval.size() < 2) continue;
+                    shiftJsonCoordinate(interval[0], pmlPadX, pmlPadY, pmlPadZ);
+                    shiftJsonCoordinate(interval[1], pmlPadX, pmlPadY, pmlPadZ);
+                }
+            }
+        }
+    }
+
+    void padParsedDataForMtlnPml() {
+        pd.general.XI += 2 * pmlPadX;
+        pd.general.YI += 2 * pmlPadY;
+        pd.general.ZI += 2 * pmlPadZ;
+        pd.matriz.totalX = pd.general.XI;
+        pd.matriz.totalY = pd.general.YI;
+        pd.matriz.totalZ = pd.general.ZI;
+        pd.despl.XI = pd.general.XI;
+        pd.despl.YI = pd.general.YI;
+        pd.despl.ZI = pd.general.ZI;
+        for (auto& probe : pd.probes.probes) {
+            probe.cellI += pmlPadX;
+            probe.cellJ += pmlPadY;
+            probe.cellK += pmlPadZ;
+        }
+        for (auto& interval : pd.elements.intervals) {
+            if (interval.size() >= 6) {
+                interval[0] += pmlPadX;
+                interval[1] += pmlPadY;
+                interval[2] += pmlPadZ;
+                interval[3] += pmlPadX;
+                interval[4] += pmlPadY;
+                interval[5] += pmlPadZ;
+            }
+        }
+    }
+
+    void applyMtlnPmlPaddingIfNeeded() {
+        mtlnPmlPaddingActive = false;
+        pmlPadX = pmlPadY = pmlPadZ = 0;
+#ifndef CompileWithMTLN
+        return;
+#else
+        const int layers = pmlPaddingLayersFromJson();
+        if (layers <= 0 || !hasMtlnCableInJson()) return;
+
+        mtlnPmlPaddingActive = true;
+        pmlPadX = pmlPadY = pmlPadZ = layers;
+        padInputRootForMtlnPml();
+        padParsedDataForMtlnPml();
+#endif
+    }
+
+    bool mtlnOwnsWires() const {
+#ifdef CompileWithMTLN
+        return hasMtlnSolver;
+#else
+        return false;
+#endif
+    }
+
+#ifdef CompileWithMTLN
+    std::string caseNameStem() const {
+        std::string name = std::filesystem::path(inputFile).filename().string();
+        const std::string jsonSuffix = ".json";
+        if (name.size() > jsonSuffix.size() &&
+            name.compare(name.size() - jsonSuffix.size(), jsonSuffix.size(), jsonSuffix) == 0) {
+            name.resize(name.size() - jsonSuffix.size());
+        }
+        return name;
+    }
+
+    void initMtlnFromJson(const std::string& filename) {
+        hasMtlnSolver = false;
+        mtlnObservationOpen = false;
+        mtlnExternalFields.clear();
+
+        smbjson::parser_t parser(filename);
+        NFDETypes_m::Parseador_t parsed = parser.readProblemDescription();
+        if (!parsed.mtln || parsed.mtln->cables.empty()) {
+            return;
+        }
+
+        parsed.mtln->time_step = dt;
+        parsed.mtln->number_of_steps = numSteps;
+        mtlnSolver = mtln_solver_m::mtlnCtor(*parsed.mtln);
+        hasMtlnSolver = mtlnSolver.number_of_bundles > 0;
+        if (!hasMtlnSolver) {
+            return;
+        }
+        shiftMtlnExternalFieldSegmentsForPmlPadding();
+        mtlnSolver.updatePULTerms();
+        setupMtlnExternalFieldPointers();
+    }
+
+    void shiftMtlnExternalFieldSegmentsForPmlPadding() {
+        if (!mtlnPmlPaddingActive) return;
+        for (auto& bundle : mtlnSolver.bundles) {
+            for (auto& segment : bundle.external_field_segments) {
+                if (segment.position.size() < 3) continue;
+                segment.position[0] += pmlPadX;
+                segment.position[1] += pmlPadY;
+                segment.position[2] += pmlPadZ;
+            }
+        }
+    }
+
+    void setupMtlnExternalFieldPointers() {
+        size_t count = 0;
+        for (const auto& bundle : mtlnSolver.bundles) {
+            count += bundle.external_field_segments.size();
+        }
+        mtlnExternalFields.assign(count, 0.0);
+
+        size_t idx = 0;
+        for (auto& bundle : mtlnSolver.bundles) {
+            for (auto& segment : bundle.external_field_segments) {
+                segment.field = &mtlnExternalFields[idx++];
+            }
+        }
+    }
+
+    double electricFieldForMtlnSegment(const mtl_bundle_m::external_field_segment_t& segment) const {
+        if (segment.position.size() < 3) return 0.0;
+        const int i = segment.position[0] - 1;
+        const int j = segment.position[1] - 1;
+        const int k = segment.position[2] - 1;
+        switch (std::abs(segment.direction)) {
+            case mtln_types_m::DIRECTION_X_POS:
+                return in_ex(i, j, k) ? static_cast<double>(Ex[ex_idx(i, j, k)]) : 0.0;
+            case mtln_types_m::DIRECTION_Y_POS:
+                return in_ey(i, j, k) ? static_cast<double>(Ey[ey_idx(i, j, k)]) : 0.0;
+            case mtln_types_m::DIRECTION_Z_POS:
+                return in_ez(i, j, k) ? static_cast<double>(Ez[ez_idx(i, j, k)]) : 0.0;
+            default:
+                return 0.0;
+        }
+    }
+
+    void syncMtlnExternalFields() {
+        size_t idx = 0;
+        for (const auto& bundle : mtlnSolver.bundles) {
+            for (const auto& segment : bundle.external_field_segments) {
+                if (idx < mtlnExternalFields.size()) {
+                    mtlnExternalFields[idx] = electricFieldForMtlnSegment(segment);
+                }
+                ++idx;
+            }
+        }
+    }
+
+    double orientedMtlnCurrent(const mtl_bundle_m::mtl_bundle_t& bundle, size_t segmentIdx) const {
+        const auto& segment = bundle.external_field_segments[segmentIdx];
+        const int numConductors = bundle.conductors_in_level.empty()
+                                      ? bundle.number_of_conductors
+                                      : bundle.conductors_in_level[0];
+        double current = 0.0;
+        for (int c = 0; c < numConductors; ++c) {
+            if (c >= static_cast<int>(bundle.i.size())) break;
+            const auto& conductorCurrent = bundle.i[static_cast<size_t>(c)];
+            if (segmentIdx >= conductorCurrent.size()) continue;
+            current += conductorCurrent[segmentIdx];
+        }
+        return current * std::copysign(1.0, static_cast<double>(segment.direction));
+    }
+
+    double mtlnFieldSubtractForSegment(const mtl_bundle_m::mtl_bundle_t& bundle,
+                                       size_t segmentIdx) const {
+        const auto& segment = bundle.external_field_segments[segmentIdx];
+        if (segment.position.size() < 3) return 0.0;
+        const int i = segment.position[0] - 1;
+        const int j = segment.position[1] - 1;
+        const int k = segment.position[2] - 1;
+        double dSInverse = 0.0;
+        switch (std::abs(segment.direction)) {
+            case mtln_types_m::DIRECTION_X_POS:
+                dSInverse = static_cast<double>(idyh1(j)) * static_cast<double>(idzh1(k));
+                break;
+            case mtln_types_m::DIRECTION_Y_POS:
+                dSInverse = static_cast<double>(idxh1(i)) * static_cast<double>(idzh1(k));
+                break;
+            case mtln_types_m::DIRECTION_Z_POS:
+                dSInverse = static_cast<double>(idxh1(i)) * static_cast<double>(idyh1(j));
+                break;
+            default:
+                return 0.0;
+        }
+        return (dt / eps0) * dSInverse * orientedMtlnCurrent(bundle, segmentIdx);
+    }
+
+    void subtractMtlnCurrentsFromFields() {
+        for (const auto& bundle : mtlnSolver.bundles) {
+            if (!bundle.bundle_in_layer) continue;
+            for (size_t segmentIdx = 0; segmentIdx < bundle.external_field_segments.size(); ++segmentIdx) {
+                const auto& segment = bundle.external_field_segments[segmentIdx];
+                if (segment.position.size() < 3) continue;
+                const double subtractValue = mtlnFieldSubtractForSegment(bundle, segmentIdx);
+                const int i = segment.position[0] - 1;
+                const int j = segment.position[1] - 1;
+                const int k = segment.position[2] - 1;
+                switch (std::abs(segment.direction)) {
+                    case mtln_types_m::DIRECTION_X_POS:
+                        if (in_ex(i, j, k) && !isPecEx(i, j, k)) {
+                            const int idx = ex_idx(i, j, k);
+                            Ex[static_cast<size_t>(idx)] = static_cast<fdtd_real>(
+                                static_cast<double>(Ex[static_cast<size_t>(idx)]) - subtractValue);
+                        }
+                        break;
+                    case mtln_types_m::DIRECTION_Y_POS:
+                        if (in_ey(i, j, k) && !isPecEy(i, j, k)) {
+                            const int idx = ey_idx(i, j, k);
+                            Ey[static_cast<size_t>(idx)] = static_cast<fdtd_real>(
+                                static_cast<double>(Ey[static_cast<size_t>(idx)]) - subtractValue);
+                        }
+                        break;
+                    case mtln_types_m::DIRECTION_Z_POS:
+                        if (in_ez(i, j, k) && !isPecEz(i, j, k)) {
+                            const int idx = ez_idx(i, j, k);
+                            Ez[static_cast<size_t>(idx)] = static_cast<fdtd_real>(
+                                static_cast<double>(Ez[static_cast<size_t>(idx)]) - subtractValue);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+
+    void openMtlnObservation() {
+        if (!hasMtlnSolver || mtlnObservationOpen) return;
+        mtlnSolver.initObservation(caseNameStem());
+        mtlnObservationOpen = true;
+    }
+
+    void advanceMtlnE() {
+        if (!hasMtlnSolver) return;
+        subtractMtlnCurrentsFromFields();
+        syncMtlnExternalFields();
+        mtlnSolver.step();
+        if (mtlnObservationOpen) {
+            mtlnSolver.updateObservation(step);
+        }
+    }
+
+    void closeMtlnObservation() {
+        if (!mtlnObservationOpen) return;
+        mtlnSolver.closeObservation();
+        mtlnObservationOpen = false;
+    }
+#endif
 
     void calcMurConstants() {
         const fdtd_real one = static_cast<fdtd_real>(1.0);
@@ -4933,8 +5265,8 @@ public:
             std::string fieldDir = (probe.field == "magnetic") ? "H" : "E";
             for (size_t d = 0; d < probe.directions.size(); ++d) {
                 std::string fullname = fname + fieldDir + probe.directions[d] + "_";
-                fullname += std::to_string(probe.cellI) + "_" + std::to_string(probe.cellJ) + "_" +
-                            std::to_string(probe.cellK) + ".dat";
+                fullname += std::to_string(probe.outputCellI) + "_" + std::to_string(probe.outputCellJ) + "_" +
+                            std::to_string(probe.outputCellK) + ".dat";
                 std::ofstream out(fullname);
                 out << "t              " << fullname << "       incid\n";
                 for (size_t t = 0; t < probe.timeData.size(); ++t) {
@@ -5019,6 +5351,9 @@ public:
         applyAnalyticConformalDelayProbeFields();
         applyAnalyticSurfaceImpedanceProbeFields();
         writeProbeOutputs(caseName);
+#ifdef CompileWithMTLN
+        closeMtlnObservation();
+#endif
         if (createMapVtk && !inputRoot.is_null()) {
             mapvtk::writeMapVtkFromJson(caseName, inputRoot);
         }
@@ -5032,10 +5367,16 @@ public:
         still_planewave_time = true;
         planewave_switched_off = false;
         std::cout << "Running FDTD: " << numSteps << " steps..." << std::endl;
+#ifdef CompileWithMTLN
+        openMtlnObservation();
+#endif
         for (step = 0; step <= numSteps; step++) {
             currentTime = step * dt;
             flushPlanewaveOff();
             advanceE();
+#ifdef CompileWithMTLN
+            advanceMtlnE();
+#endif
             advanceHollandWiresE();
             advanceLumpedE();
             applyPecE();

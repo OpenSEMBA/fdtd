@@ -27,7 +27,7 @@ bool isCouplingOutwards(int direction) {
 
 std::vector<std::vector<std::vector<Complex>>> sumQComponents(
     const std::vector<std::vector<std::vector<std::vector<Complex>>>>& a) {
-    if (a.empty() || a[0].empty() || a[0][0].empty() || a[0][0][0].empty()) {
+    if (a.empty() || a[0].empty() || a[0][0].empty()) {
         return {};
     }
     const int nd = static_cast<int>(a.size());
@@ -35,6 +35,9 @@ std::vector<std::vector<std::vector<Complex>>> sumQComponents(
     std::vector<std::vector<std::vector<Complex>>> res(
         static_cast<size_t>(nd),
         std::vector<std::vector<Complex>>(static_cast<size_t>(nc), std::vector<Complex>(static_cast<size_t>(nc), zeroComplex())));
+    if (a[0][0][0].empty()) {
+        return res;
+    }
     for (int i = 0; i < nd; ++i) {
         for (int j = 0; j < nc; ++j) {
             for (int k = 0; k < nc; ++k) {
