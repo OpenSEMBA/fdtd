@@ -54,8 +54,10 @@ using fdtd_real = float;
 
 #if defined(__GNUC__)
 #define SEMBA_FORTRAN_ROUNDING __attribute__((noinline,optimize("no-fast-math")))
+#define SEMBA_FORTRAN_INLINE_ROUNDING inline __attribute__((always_inline,optimize("no-fast-math")))
 #else
 #define SEMBA_FORTRAN_ROUNDING
+#define SEMBA_FORTRAN_INLINE_ROUNDING inline
 #endif
 
 fdtd_real flushFortranSubnormal(fdtd_real value) {
@@ -113,20 +115,20 @@ fdtd_real fortranPlanewaveCluz(fdtd_real eps, fdtd_real mu) {
 #endif
 }
 
-SEMBA_FORTRAN_ROUNDING fdtd_real fortranRoundedMul(fdtd_real lhs,
-                                                   fdtd_real rhs) {
+SEMBA_FORTRAN_INLINE_ROUNDING fdtd_real fortranRoundedMul(fdtd_real lhs,
+                                                          fdtd_real rhs) {
     volatile fdtd_real result = static_cast<fdtd_real>(lhs * rhs);
     return result;
 }
 
-SEMBA_FORTRAN_ROUNDING fdtd_real fortranRoundedAdd(fdtd_real lhs,
-                                                   fdtd_real rhs) {
+SEMBA_FORTRAN_INLINE_ROUNDING fdtd_real fortranRoundedAdd(fdtd_real lhs,
+                                                          fdtd_real rhs) {
     volatile fdtd_real result = static_cast<fdtd_real>(lhs + rhs);
     return result;
 }
 
-SEMBA_FORTRAN_ROUNDING fdtd_real fortranRoundedSub(fdtd_real lhs,
-                                                   fdtd_real rhs) {
+SEMBA_FORTRAN_INLINE_ROUNDING fdtd_real fortranRoundedSub(fdtd_real lhs,
+                                                          fdtd_real rhs) {
     volatile fdtd_real result = static_cast<fdtd_real>(lhs - rhs);
     return result;
 }
@@ -655,7 +657,9 @@ public:
     std::vector<uint8_t> pecExMask;
     std::vector<uint8_t> pecEyMask;
     std::vector<uint8_t> pecEzMask;
+    bool hasAnyPecMask = false;
     std::vector<fdtd_real> CeEx, CeEy, CeEz, CmH;
+    std::vector<fdtd_real> Idxe, Idye, Idze, Idxh, Idyh, Idzh;
     std::vector<source_t> sources;
     std::map<std::string, ExcitationData> excitations;
     std::vector<PlaneWaveState_t> planeWaves;
@@ -774,6 +778,7 @@ public:
         pecExMask.assign(static_cast<size_t>(ex_n), 0);
         pecEyMask.assign(static_cast<size_t>(ey_n), 0);
         pecEzMask.assign(static_cast<size_t>(ez_n), 0);
+        hasAnyPecMask = false;
 
         const fdtd_real ce = static_cast<fdtd_real>(
             dt / static_cast<double>(static_cast<fdtd_real>(eps0)));
@@ -812,6 +817,7 @@ public:
             }
             excitations[src.magnitudeFile] = readExcitationFile(exc_path);
         }
+        initGridInverses();
         planeWaves.resize(pd.sources.planeWaves.size());
         for (int i = 0; i < (int)pd.sources.planeWaves.size(); i++) {
             planeWaves[i].px.resize(1,0); planeWaves[i].py.resize(1,0); planeWaves[i].pz.resize(1,0);
@@ -960,12 +966,51 @@ public:
         return fieldGridInverse(value);
 #endif
     }
-    fdtd_real idxe1(int i) const { (void)i; return fieldGridInverse(static_cast<fdtd_real>(dx)); }
-    fdtd_real idye1(int j) const { (void)j; return fieldGridInverse(static_cast<fdtd_real>(dy)); }
-    fdtd_real idze1(int k) const { (void)k; return fieldGridInverse(static_cast<fdtd_real>(dz)); }
-    fdtd_real idxh1(int i) const { return hDistanceGridInverse(static_cast<fdtd_real>(dx), i, NX); }
-    fdtd_real idyh1(int j) const { return hDistanceGridInverse(static_cast<fdtd_real>(dy), j, NY); }
-    fdtd_real idzh1(int k) const { return hDistanceGridInverse(static_cast<fdtd_real>(dz), k, NZ); }
+    void initGridInverses() {
+        const auto fillElectric = [](std::vector<fdtd_real>& target,
+                                     int cells, fdtd_real value) {
+            target.assign(static_cast<size_t>(cells + 4), value);
+        };
+        const auto fillMagnetic = [this](std::vector<fdtd_real>& target,
+                                         int cells, fdtd_real value) {
+            target.resize(static_cast<size_t>(cells + 4));
+            for (int i = -2; i <= cells + 1; ++i) {
+                target[static_cast<size_t>(i + 2)] =
+                    hDistanceGridInverse(value, i, cells);
+            }
+        };
+
+        fillElectric(Idxe, NX, fieldGridInverse(static_cast<fdtd_real>(dx)));
+        fillElectric(Idye, NY, fieldGridInverse(static_cast<fdtd_real>(dy)));
+        fillElectric(Idze, NZ, fieldGridInverse(static_cast<fdtd_real>(dz)));
+        fillMagnetic(Idxh, NX, static_cast<fdtd_real>(dx));
+        fillMagnetic(Idyh, NY, static_cast<fdtd_real>(dy));
+        fillMagnetic(Idzh, NZ, static_cast<fdtd_real>(dz));
+    }
+    fdtd_real idxe1(int i) const {
+        return Idxe.empty() ? fieldGridInverse(static_cast<fdtd_real>(dx))
+                            : Idxe[static_cast<size_t>(i + 2)];
+    }
+    fdtd_real idye1(int j) const {
+        return Idye.empty() ? fieldGridInverse(static_cast<fdtd_real>(dy))
+                            : Idye[static_cast<size_t>(j + 2)];
+    }
+    fdtd_real idze1(int k) const {
+        return Idze.empty() ? fieldGridInverse(static_cast<fdtd_real>(dz))
+                            : Idze[static_cast<size_t>(k + 2)];
+    }
+    fdtd_real idxh1(int i) const {
+        return Idxh.empty() ? hDistanceGridInverse(static_cast<fdtd_real>(dx), i, NX)
+                            : Idxh[static_cast<size_t>(i + 2)];
+    }
+    fdtd_real idyh1(int j) const {
+        return Idyh.empty() ? hDistanceGridInverse(static_cast<fdtd_real>(dy), j, NY)
+                            : Idyh[static_cast<size_t>(j + 2)];
+    }
+    fdtd_real idzh1(int k) const {
+        return Idzh.empty() ? hDistanceGridInverse(static_cast<fdtd_real>(dz), k, NZ)
+                            : Idzh[static_cast<size_t>(k + 2)];
+    }
     fdtd_real idxePlanewave1(int i) const { (void)i; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dx)); }
     fdtd_real idyePlanewave1(int j) const { (void)j; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dy)); }
     fdtd_real idzePlanewave1(int k) const { (void)k; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dz)); }
@@ -2033,6 +2078,7 @@ public:
         const int k = k1 - 1;
         if (in_ex(i, j, k)) {
             pecExMask[static_cast<size_t>(ex_idx(i, j, k))] = 1;
+            hasAnyPecMask = true;
         }
     }
 
@@ -2042,6 +2088,7 @@ public:
         const int k = k1 - 1;
         if (in_ey(i, j, k)) {
             pecEyMask[static_cast<size_t>(ey_idx(i, j, k))] = 1;
+            hasAnyPecMask = true;
         }
     }
 
@@ -2051,6 +2098,7 @@ public:
         const int k = k1 - 1;
         if (in_ez(i, j, k)) {
             pecEzMask[static_cast<size_t>(ez_idx(i, j, k))] = 1;
+            hasAnyPecMask = true;
         }
     }
 
@@ -3711,7 +3759,11 @@ public:
     }
 
     void advanceE() {
-        const fdtd_real one = static_cast<fdtd_real>(1.0);
+#ifdef _OPENMP
+#pragma omp parallel
+        {
+#pragma omp for collapse(2) schedule(static)
+#endif
         for (int k = -1; k < NZ; ++k)
             for (int j = -1; j < NY; ++j)
                 for (int i = -1; i < NX - 1; ++i) {
@@ -3727,6 +3779,9 @@ public:
                         Hz[hz_idx(i, j, k)], Hz[hz_idx(i, j - 1, k)], idyhj,
                         Hy[hy_idx(i, j, k)], Hy[hy_idx(i, j, k - 1)], idzhk);
                 }
+#ifdef _OPENMP
+#pragma omp for collapse(2) schedule(static)
+#endif
         for (int k = -1; k < NZ; ++k)
             for (int j = -1; j < NY - 1; ++j)
                 for (int i = -1; i < NX; ++i) {
@@ -3741,6 +3796,9 @@ public:
                         Hx[hx_idx(i, j, k)], Hx[hx_idx(i, j, k - 1)], idzhk,
                         Hz[hz_idx(i, j, k)], Hz[hz_idx(i - 1, j, k)], idxh1(i));
                 }
+#ifdef _OPENMP
+#pragma omp for collapse(2) schedule(static)
+#endif
         for (int k = -1; k < NZ - 1; ++k)
             for (int j = -1; j < NY; ++j)
                 for (int i = -1; i < NX; ++i) {
@@ -3755,6 +3813,9 @@ public:
                         Hy[hy_idx(i, j, k)], Hy[hy_idx(i - 1, j, k)], idxh1(i),
                         Hx[hx_idx(i, j, k)], Hx[hx_idx(i, j - 1, k)], idyhj);
                 }
+#ifdef _OPENMP
+        }
+#endif
     }
 
     void applyMurE() {
@@ -3762,14 +3823,25 @@ public:
     }
 
     void applyPecE() {
-        for (size_t idx = 0; idx < pecExMask.size(); ++idx) {
-            if (pecExMask[idx]) Ex[idx] = 0.0;
-        }
-        for (size_t idx = 0; idx < pecEyMask.size(); ++idx) {
-            if (pecEyMask[idx]) Ey[idx] = 0.0;
-        }
-        for (size_t idx = 0; idx < pecEzMask.size(); ++idx) {
-            if (pecEzMask[idx]) Ez[idx] = 0.0;
+        if (hasAnyPecMask) {
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static)
+#endif
+            for (long long idx = 0; idx < static_cast<long long>(pecExMask.size()); ++idx) {
+                if (pecExMask[static_cast<size_t>(idx)]) Ex[static_cast<size_t>(idx)] = 0.0;
+            }
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static)
+#endif
+            for (long long idx = 0; idx < static_cast<long long>(pecEyMask.size()); ++idx) {
+                if (pecEyMask[static_cast<size_t>(idx)]) Ey[static_cast<size_t>(idx)] = 0.0;
+            }
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static)
+#endif
+            for (long long idx = 0; idx < static_cast<long long>(pecEzMask.size()); ++idx) {
+                if (pecEzMask[static_cast<size_t>(idx)]) Ez[static_cast<size_t>(idx)] = 0.0;
+            }
         }
 
         if (!usePec) return;
@@ -4051,7 +4123,11 @@ public:
     }
 
     void advanceH() {
-        const fdtd_real one = static_cast<fdtd_real>(1.0);
+#ifdef _OPENMP
+#pragma omp parallel
+        {
+#pragma omp for collapse(2) schedule(static)
+#endif
         for (int k = -1; k < NZ - 1; ++k)
             for (int j = -1; j < NY - 1; ++j)
                 for (int i = -1; i < NX; ++i) {
@@ -4067,6 +4143,9 @@ public:
                         Ey[ey_idx(i, j, k + 1)], Ey[ey_idx(i, j, k)], idzek,
                         Ez[ez_idx(i, j + 1, k)], Ez[ez_idx(i, j, k)], idyej);
                 }
+#ifdef _OPENMP
+#pragma omp for collapse(2) schedule(static)
+#endif
         for (int k = -1; k < NZ - 1; ++k)
             for (int j = -1; j < NY; ++j)
                 for (int i = -1; i < NX - 1; ++i) {
@@ -4081,6 +4160,9 @@ public:
                         Ez[ez_idx(i + 1, j, k)], Ez[ez_idx(i, j, k)], idxe1(i),
                         Ex[ex_idx(i, j, k + 1)], Ex[ex_idx(i, j, k)], idzek);
                 }
+#ifdef _OPENMP
+#pragma omp for collapse(2) schedule(static)
+#endif
         for (int k = -1; k < NZ; ++k)
             for (int j = -1; j < NY - 1; ++j)
                 for (int i = -1; i < NX - 1; ++i) {
@@ -4095,6 +4177,9 @@ public:
                         Ex[ex_idx(i, j + 1, k)], Ex[ex_idx(i, j, k)], idyej,
                         Ey[ey_idx(i + 1, j, k)], Ey[ey_idx(i, j, k)], idxe1(i));
                 }
+#ifdef _OPENMP
+        }
+#endif
     }
 
     void minusCloneMagneticPmc() {
