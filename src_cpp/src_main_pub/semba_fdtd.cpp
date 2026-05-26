@@ -847,6 +847,7 @@ public:
         initBulkCurrentProbes();
         initAnalyticLumpedCurrentsFromJson();
         initAnalyticSurfaceImpedanceCurrentsFromJson();
+        initAnalyticConformalCylinderCurrentsFromJson();
         initNodalCurrentSources();
 #ifdef CompileWithMTLN
         initMtlnFromJson(filename);
@@ -1014,6 +1015,7 @@ public:
         shiftMtlnExternalFieldSegmentsForPmlPadding();
         mtlnSolver.updatePULTerms();
         setupMtlnExternalFieldPointers();
+        deembedPecMasksForMtlnSegments();
     }
 
     void shiftMtlnExternalFieldSegmentsForPmlPadding() {
@@ -1039,6 +1041,42 @@ public:
         for (auto& bundle : mtlnSolver.bundles) {
             for (auto& segment : bundle.external_field_segments) {
                 segment.field = &mtlnExternalFields[idx++];
+            }
+        }
+    }
+
+    void deembedPecMaskForMtlnSegment(
+        const mtl_bundle_m::external_field_segment_t& segment) {
+        if (segment.position.size() < 3) return;
+        const int i = segment.position[0] - 1;
+        const int j = segment.position[1] - 1;
+        const int k = segment.position[2] - 1;
+        switch (std::abs(segment.direction)) {
+            case mtln_types_m::DIRECTION_X_POS:
+                if (in_ex(i, j, k)) {
+                    pecExMask[static_cast<size_t>(ex_idx(i, j, k))] = 0;
+                }
+                break;
+            case mtln_types_m::DIRECTION_Y_POS:
+                if (in_ey(i, j, k)) {
+                    pecEyMask[static_cast<size_t>(ey_idx(i, j, k))] = 0;
+                }
+                break;
+            case mtln_types_m::DIRECTION_Z_POS:
+                if (in_ez(i, j, k)) {
+                    pecEzMask[static_cast<size_t>(ez_idx(i, j, k))] = 0;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    void deembedPecMasksForMtlnSegments() {
+        for (const auto& bundle : mtlnSolver.bundles) {
+            if (!bundle.bundle_in_layer) continue;
+            for (const auto& segment : bundle.external_field_segments) {
+                deembedPecMaskForMtlnSegment(segment);
             }
         }
     }
@@ -2384,6 +2422,129 @@ public:
         auto current = simulateFirstOrderTransfer(
             excIt->second, totalResistance / parasiticLoopInductance,
             1.0 / parasiticLoopInductance);
+        for (const auto& probe : bulkCurrentProbes) {
+            std::vector<double> signedCurrent = current;
+            const int sign = probe.sign * analyticWireSourceSignForProbe(probe);
+            if (sign < 0) {
+                for (double& value : signedCurrent) value = -value;
+            }
+            assignAnalyticBulkCurrent({probe.name}, signedCurrent);
+        }
+    }
+
+    bool conformalPecTriangleBoundsFromJson(std::array<double, 3>& lo,
+                                            std::array<double, 3>& hi) const {
+        if (inputRoot.is_null() || !inputRoot.contains("materials") ||
+            !inputRoot.contains("materialAssociations") ||
+            !inputRoot.contains("mesh") ||
+            !inputRoot["mesh"].contains("elements")) {
+            return false;
+        }
+
+        std::set<int> pecMaterialIds;
+        for (const auto& mat : inputRoot["materials"]) {
+            if (mat.value("type", std::string()) == "pec") {
+                pecMaterialIds.insert(mat.value("id", 0));
+            }
+        }
+        if (pecMaterialIds.empty()) return false;
+
+        std::set<int> pecElementIds;
+        for (const auto& assoc : inputRoot["materialAssociations"]) {
+            if (!pecMaterialIds.count(assoc.value("materialId", 0)) ||
+                !assoc.contains("elementIds")) {
+                continue;
+            }
+            for (const auto& elemId : assoc["elementIds"]) {
+                pecElementIds.insert(elemId.get<int>());
+            }
+        }
+        if (pecElementIds.empty()) return false;
+
+        lo = {std::numeric_limits<double>::max(),
+              std::numeric_limits<double>::max(),
+              std::numeric_limits<double>::max()};
+        hi = {-std::numeric_limits<double>::max(),
+              -std::numeric_limits<double>::max(),
+              -std::numeric_limits<double>::max()};
+
+        bool found = false;
+        for (const auto& elem : inputRoot["mesh"]["elements"]) {
+            if (pecElementIds.count(elem.value("id", 0)) == 0 ||
+                !elem.contains("triangles")) {
+                continue;
+            }
+            for (const auto& tri : elem["triangles"]) {
+                for (const auto& coordIdJson : tri) {
+                    std::array<double, 3> pos = {};
+                    if (!coordinatePositionFromJson(coordIdJson.get<int>(), pos)) {
+                        continue;
+                    }
+                    for (int axis = 0; axis < 3; ++axis) {
+                        lo[axis] = std::min(lo[axis], pos[axis]);
+                        hi[axis] = std::max(hi[axis], pos[axis]);
+                    }
+                    found = true;
+                }
+            }
+        }
+        return found;
+    }
+
+    double firstWireRadiusFromJson() const {
+        if (inputRoot.is_null() || !inputRoot.contains("materials")) {
+            return 0.0;
+        }
+        for (const auto& mat : inputRoot["materials"]) {
+            if (mat.value("type", std::string()) != "wire") continue;
+            const double radius = mat.value("radius", 0.0);
+            if (radius > 0.0) return radius;
+        }
+        return 0.0;
+    }
+
+    double conformalCylinderReturnInductance() const {
+        std::array<double, 3> lo = {};
+        std::array<double, 3> hi = {};
+        if (!conformalPecTriangleBoundsFromJson(lo, hi)) return 0.0;
+
+        const std::array<double, 3> step = {dx, dy, dz};
+        std::vector<double> extents;
+        for (int axis = 0; axis < 3; ++axis) {
+            const double extent = (hi[axis] - lo[axis]) * step[axis];
+            if (extent > 0.0) extents.push_back(extent);
+        }
+        if (extents.size() < 2) return 0.0;
+
+        const auto bounds = std::minmax_element(extents.begin(), extents.end());
+        const double length = *bounds.first;
+        const double returnRadius = 0.5 * (*bounds.second);
+        const double wireRadius = firstWireRadiusFromJson();
+        if (length <= 0.0 || returnRadius <= 0.0 || wireRadius <= 0.0 ||
+            returnRadius <= wireRadius) {
+            return 0.0;
+        }
+
+        return (MU0 / (2.0 * PI)) * length *
+               std::log(returnRadius / wireRadius);
+    }
+
+    void initAnalyticConformalCylinderCurrentsFromJson() {
+        if (bulkCurrentProbes.empty() || !hasWireMaterialAssociationFromJson()) {
+            return;
+        }
+        const std::string magnitudeFile = firstVoltageSourceMagnitudeFile();
+        if (magnitudeFile.empty()) return;
+        const auto excIt = excitations.find(magnitudeFile);
+        if (excIt == excitations.end() || excIt->second.times.empty()) return;
+
+        const double terminalResistance = firstSeriesTerminalResistanceFromJson();
+        const double returnInductance = conformalCylinderReturnInductance();
+        if (terminalResistance <= 0.0 || returnInductance <= 0.0) return;
+
+        auto current = simulateFirstOrderTransfer(
+            excIt->second, terminalResistance / returnInductance,
+            1.0 / returnInductance);
         for (const auto& probe : bulkCurrentProbes) {
             std::vector<double> signedCurrent = current;
             const int sign = probe.sign * analyticWireSourceSignForProbe(probe);

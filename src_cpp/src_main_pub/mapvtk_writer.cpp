@@ -214,11 +214,22 @@ MaterialInfo materialInfo(const nlohmann::json& materials, int material_id) {
     return info;
 }
 
+bool isWireLikeMaterial(const MaterialInfo& info) {
+    return info.type == "wire" ||
+           info.type == "unshieldedMultiwire" ||
+           info.type == "shieldedMultiwire";
+}
+
+bool isMultiwireMaterial(const MaterialInfo& info) {
+    return info.type == "unshieldedMultiwire" ||
+           info.type == "shieldedMultiwire";
+}
+
 int materialPriority(const MaterialInfo& info) {
     if (info.type == "pec") return 0;
     if (info.type == "pmc") return 1;
     if (info.type == "multilayeredSurface") return 2;
-    if (info.type == "wire") return 3;
+    if (isWireLikeMaterial(info)) return 3;
     return 10;
 }
 
@@ -439,30 +450,36 @@ void addClassicWirePolyline(VtkMesh& mesh, const nlohmann::json& element,
                             const std::vector<double>& sy,
                             const std::vector<double>& sz,
                             double tag, bool mark_collision,
-                            bool mark_intermediate) {
+                            bool mark_intermediate,
+                            bool multiwire) {
     const auto segments = wireUnitSegments(element, coord_by_id);
     if (segments.empty()) return;
     auto point = [&](const std::array<int, 3>& p) {
         return Vec3{coordAt(sx, p[0]), coordAt(sy, p[1]), coordAt(sz, p[2])};
     };
 
+    const double normal_media = multiwire ? 12.0 : 7.0;
+    const double collision_media = multiwire ? 13.0 : 8.0;
+    const double end_media = multiwire ? 14.0 : 10.0;
+    const double intermediate_media = multiwire ? 61.0 : 21.0;
+
     bool used_collision = false;
     bool used_intermediate = false;
     int collision_intermediate_count = 0;
     const int total_cells = static_cast<int>(segments.size()) * 2;
     for (int idx = 0; idx < total_cells; ++idx) {
-        double media = 7.0;
+        double media = normal_media;
         if (idx == 0 || idx == total_cells - 1) {
-            media = 10.0;
+            media = end_media;
         } else if (mark_collision && !used_collision) {
-            media = 8.0;
+            media = collision_media;
             used_collision = true;
         } else if (mark_collision && segments.size() > 2 &&
                    collision_intermediate_count < 2) {
-            media = 21.0;
+            media = intermediate_media;
             ++collision_intermediate_count;
         } else if (mark_intermediate && !used_intermediate) {
-            media = 21.0;
+            media = intermediate_media;
             used_intermediate = true;
         }
         const WireUnitSegment& segment = segments[static_cast<size_t>(idx / 2)];
@@ -734,7 +751,7 @@ void writeCurrentMapVtkFromJson(const std::string& case_name, const nlohmann::js
         const auto& e = *eptr;
         const int eid = e.value("id", 0);
         const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
-        if (info.type == "wire" && e.value("type", std::string()) == "polyline") {
+        if (isWireLikeMaterial(info) && e.value("type", std::string()) == "polyline") {
             const auto segments = wireUnitSegments(e, coord_by_id);
             const bool mark_collision = wire_collision_marker_available && !segments.empty();
             if (mark_collision) wire_collision_marker_available = false;
@@ -742,7 +759,8 @@ void writeCurrentMapVtkFromJson(const std::string& case_name, const nlohmann::js
                 wire_intermediate_marker_available && segments.size() > 2;
             if (mark_intermediate) wire_intermediate_marker_available = false;
             addClassicWirePolyline(lineMesh, e, coord_by_id, sx, sy, sz, tag,
-                                   mark_collision, mark_intermediate);
+                                   mark_collision, mark_intermediate,
+                                   isMultiwireMaterial(info));
         } else if (e.contains("intervals")) {
             for (const auto& interval : e["intervals"]) {
                 const int x0 = interval[0][0].get<int>();
@@ -859,7 +877,7 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
             const auto& e = *eptr;
             const int eid = e.value("id", 0);
             const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
-            if (info.type == "wire" && e.value("type", std::string()) == "polyline") {
+            if (isWireLikeMaterial(info) && e.value("type", std::string()) == "polyline") {
                 const auto segments = wireUnitSegments(e, coord_by_id);
                 const bool mark_collision = wire_collision_marker_available && !segments.empty();
                 if (mark_collision) wire_collision_marker_available = false;
@@ -867,7 +885,8 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
                     wire_intermediate_marker_available && segments.size() > 2;
                 if (mark_intermediate) wire_intermediate_marker_available = false;
                 addClassicWirePolyline(lineMesh, e, coord_by_id, sx, sy, sz, tag,
-                                       mark_collision, mark_intermediate);
+                                       mark_collision, mark_intermediate,
+                                       isMultiwireMaterial(info));
             } else if (e.contains("intervals")) {
                 for (const auto& interval : e["intervals"]) {
                     const int x0 = interval[0][0].get<int>();
