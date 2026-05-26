@@ -297,6 +297,7 @@ struct HollandWireSegment_t {
     double cte5 = 0.0;
     double fractionMinus = 1.0;
     double fractionPlus = 1.0;
+    bool deembedFromPec = false;
     double current = 0.0;
     double currentpast = 0.0;
     double qplus_qminus = 0.0;
@@ -1948,6 +1949,7 @@ public:
                              double radius,
                              double resistance,
                              double inductance,
+                             bool deembedFromPec,
                              std::map<std::string, int>& nodeByCoord) {
         HollandWireSegment_t seg;
         seg.i = minus[0];
@@ -1959,6 +1961,7 @@ public:
         seg.radius = radius;
         seg.resistance = resistance;
         seg.inductance = inductance;
+        seg.deembedFromPec = deembedFromPec;
         seg.delta = hollandStepForDirection(seg.direction);
         if (seg.direction == 1) {
             seg.deltaTransv1 = fortranWireStep(wireDy);
@@ -1997,7 +2000,20 @@ public:
             std::array<int, 3> plus = minus;
             plus[axis] += 1;
             appendHollandSegment(minus, plus, axis, sign, radius, resistance,
-                                 inductance, nodeByCoord);
+                                 inductance, false, nodeByCoord);
+        }
+    }
+
+    void deembedPecMaskForHollandSegment(const HollandWireSegment_t& segment) {
+        const int i = segment.i - 1;
+        const int j = segment.j - 1;
+        const int k = segment.k - 1;
+        if (segment.direction == 1 && in_ex(i, j, k)) {
+            pecExMask[static_cast<size_t>(ex_idx(i, j, k))] = 0;
+        } else if (segment.direction == 2 && in_ey(i, j, k)) {
+            pecEyMask[static_cast<size_t>(ey_idx(i, j, k))] = 0;
+        } else if (segment.direction == 3 && in_ez(i, j, k)) {
+            pecEzMask[static_cast<size_t>(ez_idx(i, j, k))] = 0;
         }
     }
 
@@ -2311,6 +2327,7 @@ public:
         };
         struct LineMaterial {
             bool isLine = false;
+            bool isPec = false;
             double radius = 1.0e-4;
             double resistance = 0.0;
             double inductance = 0.0;
@@ -2334,6 +2351,7 @@ public:
             if (materialType == "pec") {
                 LineMaterial lm;
                 lm.isLine = true;
+                lm.isPec = true;
                 lineMaterials[mat.value("id", 0)] = lm;
                 continue;
             }
@@ -2379,15 +2397,7 @@ public:
                 !assoc.contains("elementIds")) {
                 continue;
             }
-            bool isPecMaterial = false;
-            for (const auto& mat : inputRoot["materials"]) {
-                if (mat.value("id", 0) == matId &&
-                    mat.value("type", std::string()) == "pec") {
-                    isPecMaterial = true;
-                    break;
-                }
-            }
-            if (!isPecMaterial) continue;
+            if (!matIt->second.isPec) continue;
             for (const auto& elemIdJson : assoc["elementIds"]) {
                 for (const auto& iv : elementIntervals(elemIdJson.get<int>())) {
                     pecIntervals.push_back(iv);
@@ -2409,6 +2419,7 @@ public:
         };
 
         std::map<std::string, int> nodeByCoord;
+        std::set<int> wireTerminalNodes;
         struct HollandSourceAnchor {
             int segmentIndex = -1;
             int orientation = 3;
@@ -2457,7 +2468,7 @@ public:
                         const int segIdx = appendHollandSegment(
                             minus, plus, axis, sign, matIt->second.radius,
                             matIt->second.resistance, matIt->second.inductance,
-                            nodeByCoord);
+                            true, nodeByCoord);
                         hollandSegments[static_cast<size_t>(segIdx)].wireName = wireName;
                         if (s == 0) {
                             sourceAnchorsByCoordId[elemIt->second[cidx]] =
@@ -2470,6 +2481,12 @@ public:
                 if (lastSegIdx >= 0) {
                     sourceAnchorsByCoordId[elemIt->second.back()] =
                         {lastSegIdx, lastOrientation, true};
+                    const auto firstNode = hollandNodeAtPosition(
+                        nodeByCoord, coordPos[elemIt->second.front()]);
+                    const auto lastNode = hollandNodeAtPosition(
+                        nodeByCoord, coordPos[elemIt->second.back()]);
+                    if (firstNode >= 0) wireTerminalNodes.insert(firstNode);
+                    if (lastNode >= 0) wireTerminalNodes.insert(lastNode);
                 }
             }
         }
@@ -2481,6 +2498,7 @@ public:
                 !assoc.contains("elementIds")) {
                 continue;
             }
+            if (matIt->second.isPec) continue;
             for (const auto& elemIdJson : assoc["elementIds"]) {
                 for (const auto& iv : elementIntervals(elemIdJson.get<int>())) {
                     appendHollandLineInterval(iv, matIt->second.radius,
@@ -2557,8 +2575,21 @@ public:
 
         if (hollandSegments.empty()) return;
 
-        for (auto& node : hollandNodes) {
-            node.isPec = node.isPec || nodeTouchesPec(node);
+        for (size_t idx = 0; idx < hollandNodes.size(); ++idx) {
+            auto& node = hollandNodes[idx];
+            const int nConn = static_cast<int>(node.currentPlus.size() +
+                                               node.currentMinus.size());
+            const bool isTerminalNode =
+                wireTerminalNodes.count(static_cast<int>(idx)) != 0 || nConn < 2;
+            // Fortran wires.F90 un-grounds non-terminal nodes that touch PEC.
+            if (isTerminalNode && nodeTouchesPec(node)) {
+                node.isPec = true;
+            }
+        }
+        for (const auto& segment : hollandSegments) {
+            if (segment.deembedFromPec) {
+                deembedPecMaskForHollandSegment(segment);
+            }
         }
 
         if (inputRoot.contains("sources")) {
