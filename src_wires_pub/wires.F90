@@ -33,7 +33,7 @@ module HollandWires_m
 !!!
    private
 
-   public InitWires,AdvanceWiresE,AdvanceWiresH,AdvanceWiresEcrank,StoreFieldsWires,DestroyWires,DestroyWireMedia, GetHwires,ReportWireJunctions,calc_wirehollandconstants
+   public InitWires,AdvanceWiresE,AdvanceWiresH,AdvanceWiresEcrank,StoreFieldsWires,DestroyWires,DestroyWireMedia, GetHwires,ReportWireJunctions,calc_wirehollandconstants,evolucion
 
 
 

@@ -76,3 +76,5 @@ git_info.txt
 
 .venv/build2/
 build2/
+
+.venv/
