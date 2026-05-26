@@ -185,6 +185,26 @@ def test_planewave_in_box_with_mur_boundaries_probe_files_strict(tmp_path):
                                       expected_file, solved_file)
 
 
+@pytest.mark.planewave
+@pytest.mark.probes
+def test_planewave_with_periodic_boundaries_probe_files_strict(tmp_path):
+    fn = CASES_FOLDER + 'planewave/pw-with-periodic.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver.run()
+
+    probe_files = {
+        "before": 'pw-with-periodic.fdtd_before_Ex_3_3_1.dat',
+        "inbox": 'pw-with-periodic.fdtd_inbox_Ex_3_3_3.dat',
+        "after": 'pw-with-periodic.fdtd_after_Ex_3_3_5.dat',
+    }
+
+    for probe_name, expected_file in probe_files.items():
+        solved_file = _solved_probe_paths(solver, probe_name)[0]
+        _assert_probe_file_byte_exact(CASES_FOLDER + 'planewave/' +
+                                      expected_file, solved_file)
+
+
 @no_hdf_skip
 @pytest.mark.hdf
 @pytest.mark.farfield

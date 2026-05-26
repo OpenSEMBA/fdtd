@@ -32,6 +32,15 @@ inline int runProbeFilesExact(int max_steps) {
         max_steps);
 }
 
+inline int runPeriodicProbeFilesExact(int max_steps) {
+    return SEMBA_FDTD_m::SEMBA_FDTD_test::test_run_pw_in_box_probe_files_exact(
+        casePath("pw-with-periodic.fdtd.json"),
+        casePath("pw-with-periodic.fdtd_before_Ex_3_3_1.dat"),
+        casePath("pw-with-periodic.fdtd_inbox_Ex_3_3_3.dat"),
+        casePath("pw-with-periodic.fdtd_after_Ex_3_3_5.dat"),
+        max_steps);
+}
+
 } // namespace pw_in_box_test
 
 TEST(PlanewavePwInBox, ShortRunProbeParity_First50Steps) {
@@ -81,6 +90,13 @@ TEST(PlanewavePwInBox, ProbeFilesExact_FullRun) {
     ASSERT_TRUE(std::filesystem::exists(json));
     const int err = pw_in_box_test::runProbeFilesExact(-1);
     EXPECT_EQ(err, 0) << "pw-in-box exact full probe-file parity failed with code " << err;
+}
+
+TEST(PlanewavePwInBox, PeriodicProbeFilesExact_FullRun) {
+    const std::string json = pw_in_box_test::casePath("pw-with-periodic.fdtd.json");
+    ASSERT_TRUE(std::filesystem::exists(json));
+    const int err = pw_in_box_test::runPeriodicProbeFilesExact(-1);
+    EXPECT_EQ(err, 0) << "pw-with-periodic exact full probe-file parity failed with code " << err;
 }
 
 #endif

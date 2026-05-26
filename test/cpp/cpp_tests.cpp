@@ -33,6 +33,7 @@
 #include "test_planewave_pw_in_box.h"
 #include "test_holland_wire.h"
 #include "test_bulk_current_probe.h"
+#include "test_maloney_nostoch.h"
 
 #ifdef CompileWithMTLN
 #include "test_mtln_mtl.h"
