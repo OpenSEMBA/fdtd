@@ -202,13 +202,13 @@ fdtd_real fortranCurlUpdate(fdtd_real oldValue, fdtd_real coeff,
                             fdtd_real aPlus, fdtd_real aMinus,
                             fdtd_real invA, fdtd_real bPlus,
                             fdtd_real bMinus, fdtd_real invB) {
-    const fdtd_real termA =
-        fortranRoundedMul(fortranRoundedSub(aPlus, aMinus), invA);
-    const fdtd_real termB =
-        fortranRoundedMul(fortranRoundedSub(bPlus, bMinus), invB);
-    return fortranRoundedAdd(
-        oldValue,
-        fortranRoundedMul(coeff, fortranRoundedSub(termA, termB)));
+    const fdtd_real diffA = static_cast<fdtd_real>(aPlus - aMinus);
+    const fdtd_real termA = static_cast<fdtd_real>(diffA * invA);
+    const fdtd_real diffB = static_cast<fdtd_real>(bPlus - bMinus);
+    const fdtd_real termB = static_cast<fdtd_real>(diffB * invB);
+    const fdtd_real curl = static_cast<fdtd_real>(termA - termB);
+    const fdtd_real scaled = static_cast<fdtd_real>(coeff * curl);
+    return static_cast<fdtd_real>(oldValue + scaled);
 }
 
 struct entrada_t {
@@ -3764,9 +3764,9 @@ public:
         {
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int k = -1; k < NZ; ++k)
+        for (int i = -1; i < NX - 1; ++i)
             for (int j = -1; j < NY; ++j)
-                for (int i = -1; i < NX - 1; ++i) {
+                for (int k = -1; k < NZ; ++k) {
                     const int idx = ex_idx(i, j, k);
                     if (usePec && (j == NY - 1 || k == NZ - 1)) {
                         Ex[idx] = 0.0;
@@ -3782,9 +3782,9 @@ public:
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int k = -1; k < NZ; ++k)
+        for (int i = -1; i < NX; ++i)
             for (int j = -1; j < NY - 1; ++j)
-                for (int i = -1; i < NX; ++i) {
+                for (int k = -1; k < NZ; ++k) {
                     const int idx = ey_idx(i, j, k);
                     if (usePec && (i == NX - 1 || k == NZ - 1)) {
                         Ey[idx] = 0.0;
@@ -3799,9 +3799,9 @@ public:
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int k = -1; k < NZ - 1; ++k)
+        for (int i = -1; i < NX; ++i)
             for (int j = -1; j < NY; ++j)
-                for (int i = -1; i < NX; ++i) {
+                for (int k = -1; k < NZ - 1; ++k) {
                     const int idx = ez_idx(i, j, k);
                     if (usePec && (i == NX - 1 || j == NY - 1)) {
                         Ez[idx] = 0.0;
@@ -4128,9 +4128,9 @@ public:
         {
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int k = -1; k < NZ - 1; ++k)
+        for (int i = -1; i < NX; ++i)
             for (int j = -1; j < NY - 1; ++j)
-                for (int i = -1; i < NX; ++i) {
+                for (int k = -1; k < NZ - 1; ++k) {
                     const int idx = hx_idx(i, j, k);
                     if (usePec && i == NX - 1) {
                         Hx[idx] = 0.0;
@@ -4146,9 +4146,9 @@ public:
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int k = -1; k < NZ - 1; ++k)
+        for (int i = -1; i < NX - 1; ++i)
             for (int j = -1; j < NY; ++j)
-                for (int i = -1; i < NX - 1; ++i) {
+                for (int k = -1; k < NZ - 1; ++k) {
                     const int idx = hy_idx(i, j, k);
                     if (usePec && j == NY - 1) {
                         Hy[idx] = 0.0;
@@ -4163,9 +4163,9 @@ public:
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int k = -1; k < NZ; ++k)
+        for (int i = -1; i < NX - 1; ++i)
             for (int j = -1; j < NY - 1; ++j)
-                for (int i = -1; i < NX - 1; ++i) {
+                for (int k = -1; k < NZ; ++k) {
                     const int idx = hz_idx(i, j, k);
                     if (usePec && k == NZ - 1) {
                         Hz[idx] = 0.0;
