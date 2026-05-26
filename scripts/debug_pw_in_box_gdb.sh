@@ -17,7 +17,7 @@ if [[ ! -x "$BUILD_DIR/bin/semba-fdtd-cpp" ]]; then
     -DSEMBA_FDTD_ENABLE_HDF=OFF \
     -DSEMBA_FDTD_COMPONENTS_LIB=OFF \
     -DSEMBA_FDTD_OUTPUTS_LIB=OFF \
-    -DSEMBA_FDTD_MAIN_LIB=OFF \
+    -DSEMBA_FDTD_MAIN_LIB=ON \
     -DSEMBA_FDTD_EXECUTABLE=ON \
   -DCMAKE_BUILD_TYPE=Debug
   cmake --build "$BUILD_DIR" -j --target semba-fdtd-cpp

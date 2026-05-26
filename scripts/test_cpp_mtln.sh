@@ -9,14 +9,14 @@ BUILD_DIR="${BUILD_DIR:-$ROOT/cpp_build_mtln}"
 
 cd "$ROOT"
 
-echo "==> Configuring MTLN slim build in $BUILD_DIR"
+echo "==> Configuring MTLN C++ migration build in $BUILD_DIR"
 cmake -S . -B "$BUILD_DIR" \
   -DSEMBA_FDTD_BUILD_CXX=ON \
   -DSEMBA_FDTD_ENABLE_MTLN=ON \
   -DSEMBA_FDTD_ENABLE_MPI=OFF \
   -DSEMBA_FDTD_ENABLE_HDF=OFF \
   -DSEMBA_FDTD_COMPONENTS_LIB=OFF \
-  -DSEMBA_FDTD_MAIN_LIB=OFF \
+  -DSEMBA_FDTD_MAIN_LIB=ON \
   -DSEMBA_FDTD_OUTPUTS_LIB=OFF \
   -DSEMBA_FDTD_EXECUTABLE=ON \
   -DSEMBA_FDTD_ENABLE_TEST=ON
@@ -39,4 +39,4 @@ export SEMBA_EXE="$BUILD_DIR/bin/semba-fdtd-cpp"
 echo "==> Tier 1: pytest (mtlnProblem:true standalone)"
 PYTHONPATH=. pytest test/pyWrapper/test_mtln_standalone.py -m mtln_standalone -v
 
-echo "All MTLN Tier 1 slim gate tests passed."
+echo "All MTLN Tier 1 migration gate tests passed."

@@ -218,13 +218,8 @@ set(CONFORMAL_LIBRARIES conformal)
 add_subdirectory("${CPP_SOURCE_ROOT}/src_cpp/src_test_support" "${CMAKE_CURRENT_BINARY_DIR}/semba_test_support")
 set(SEMBA_TEST_SUPPORT semba-test-support)
 
-# --- tests ---
-if(SEMBA_FDTD_ENABLE_TEST)
-    find_package(GTest REQUIRED)
-    add_subdirectory("${CPP_SOURCE_ROOT}/external/googletest" "${CMAKE_CURRENT_BINARY_DIR}/googletest")
-
-    # --- C++ unit tests (cells, idchildtable, mesh) ---
-    add_subdirectory("${CPP_SOURCE_ROOT}/test/cpp" "${CMAKE_CURRENT_BINARY_DIR}/cpp_tests")
+if((SEMBA_FDTD_EXECUTABLE OR SEMBA_FDTD_ENABLE_TEST) AND NOT SEMBA_FDTD_MAIN_LIB)
+    message(FATAL_ERROR "C++ executable and tests require SEMBA_FDTD_MAIN_LIB=ON")
 endif()
 
 # --- semba-components: physics modules (PML, BCs, dispersive, wires, etc.) ---
@@ -267,55 +262,37 @@ if(SEMBA_FDTD_OUTPUTS_LIB)
     endif()
 endif()
 
-# --- semba-fdtd core solver (JSON + time loop; used by semba-fdtd-cpp executable) ---
-add_library(semba-fdtd-core
-    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/semba_fdtd.cpp"
-    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/lumped_slim.cpp"
-    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/mapvtk_writer.cpp"
-)
-target_include_directories(semba-fdtd-core PUBLIC
-    "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub"
-    "${CPP_SOURCE_ROOT}/external/json/single_include/nlohmann"
-)
-target_link_libraries(semba-fdtd-core PUBLIC semba-reports)
-if(SEMBA_FDTD_ENABLE_HDF)
-    target_compile_definitions(semba-fdtd-core PRIVATE SEMBA_CPP_ENABLE_HDF5)
-    target_link_libraries(semba-fdtd-core PUBLIC ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
-endif()
-if(SEMBA_FDTD_ENABLE_MTLN AND SEMBA_FDTD_ENABLE_SMBJSON)
-    target_sources(semba-fdtd-core PRIVATE
-        "${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub/wires_mtln.cpp")
-    target_include_directories(semba-fdtd-core PUBLIC
-        "${CPP_SOURCE_ROOT}/src_cpp/src_mtln"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_json_parser"
-        "${CPP_SOURCE_ROOT}/external/ngspice/src/include")
-    target_link_libraries(semba-fdtd-core PUBLIC
-        smbjson mtlnsolver ngspice_interface ngspice
-        ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
-endif()
-
-# --- semba-main: time-stepping, preprocessing/postprocessing ---
+# --- semba-main: active C++ executable runtime ---
 if(SEMBA_FDTD_MAIN_LIB)
     add_library(semba-main
         "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/semba_fdtd.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/calc_constants.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/nfde_rotate.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/EpsMuTimeScale.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/getargs.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/healer.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/preprocess_geom.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/storegeom.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/version.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/postprocess.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/interpreta_switches.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/resuming.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/timestepping.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/lumped.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/mapvtk_writer.cpp"
     )
-    target_link_libraries(semba-main PUBLIC semba-outputs ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES})
+    target_include_directories(semba-main PUBLIC
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub"
+        "${CPP_SOURCE_ROOT}/external/json/single_include/nlohmann"
+    )
+    target_link_libraries(semba-main PUBLIC
+        semba-reports
+        nlohmann_json::nlohmann_json
+        ${SMBJSON_LIBRARIES}
+    )
     if(SEMBA_FDTD_ENABLE_HDF)
         target_compile_definitions(semba-main PRIVATE SEMBA_CPP_ENABLE_HDF5)
         target_link_libraries(semba-main PUBLIC ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+    endif()
+    if(SEMBA_FDTD_ENABLE_MTLN AND SEMBA_FDTD_ENABLE_SMBJSON)
+        target_sources(semba-main PRIVATE
+            "${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub/wires_mtln.cpp")
+        target_include_directories(semba-main PUBLIC
+            "${CPP_SOURCE_ROOT}/src_cpp/src_mtln"
+            "${CPP_SOURCE_ROOT}/src_cpp/src_wires_pub"
+            "${CPP_SOURCE_ROOT}/src_cpp/src_json_parser"
+            "${CPP_SOURCE_ROOT}/external/ngspice/src/include")
+        target_link_libraries(semba-main PUBLIC
+            smbjson mtlnsolver ngspice_interface ngspice
+            ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
     endif()
 endif()
 
@@ -324,12 +301,17 @@ if(SEMBA_FDTD_EXECUTABLE)
     add_executable(semba-fdtd-cpp
         "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/launcher.cpp"
     )
-    if(SEMBA_FDTD_MAIN_LIB)
-        target_link_libraries(semba-fdtd-cpp PRIVATE semba-main semba-reports)
-    else()
-        target_link_libraries(semba-fdtd-cpp PRIVATE semba-fdtd-core semba-reports)
-    endif()
+    target_link_libraries(semba-fdtd-cpp PRIVATE semba-main semba-reports)
     if(SEMBA_FDTD_ENABLE_MPI)
         target_link_libraries(semba-fdtd-cpp PRIVATE ${MPI_CXX_LIBRARIES})
     endif()
+endif()
+
+# --- tests ---
+if(SEMBA_FDTD_ENABLE_TEST)
+    find_package(GTest REQUIRED)
+    add_subdirectory("${CPP_SOURCE_ROOT}/external/googletest" "${CMAKE_CURRENT_BINARY_DIR}/googletest")
+
+    # --- C++ unit tests (cells, idchildtable, mesh) ---
+    add_subdirectory("${CPP_SOURCE_ROOT}/test/cpp" "${CMAKE_CURRENT_BINARY_DIR}/cpp_tests")
 endif()

@@ -248,7 +248,7 @@ def test_fill_slanted_vtk_large_sphere(tmp_path):
     assert -1 not in face_media_dict.keys()
 
     
-@pytest.mark.cpp_slim
+@pytest.mark.cpp_migration
 @pytest.mark.conformal
 @pytest.mark.vtk
 def test_fill_conformal_vtk_corner(tmp_path):
@@ -478,7 +478,7 @@ def test_one_cell_SGBC_surface_Jprobe(tmp_path):
 
 
 
-@pytest.mark.cpp_slim
+@pytest.mark.cpp_migration
 def test_1_volume(tmp_path):
     fn = CASES_FOLDER + 'observation/pec_volume.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -507,7 +507,7 @@ def test_1_volume(tmp_path):
     assert len(line_media_dict) == 0
 
 
-@pytest.mark.cpp_slim
+@pytest.mark.cpp_migration
 def test_2_volumes(tmp_path):
     fn = CASES_FOLDER + 'observation/pec_volumes.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -537,7 +537,7 @@ def test_2_volumes(tmp_path):
     assert len(line_media_dict) == 0
 
 
-@pytest.mark.cpp_slim
+@pytest.mark.cpp_migration
 def test_1_line(tmp_path):
     fn = CASES_FOLDER + 'observation/pec_line.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,

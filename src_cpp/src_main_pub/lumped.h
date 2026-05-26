@@ -1,9 +1,15 @@
-#ifndef LUMPED_SLIM_H
-#define LUMPED_SLIM_H
+#ifndef LUMPED_H
+#define LUMPED_H
 
 #include <vector>
 
-namespace lumped_slim {
+namespace Lumped_m {
+
+#ifdef CompileWithReal8
+using field_real = double;
+#else
+using field_real = float;
+#endif
 
 struct LumpedMaterial_t {
     bool resistor = false;
@@ -21,11 +27,11 @@ struct LumpedMaterial_t {
 };
 
 struct LumpedNode_t {
-    float* Efield = nullptr;
-    float* Ha_Plus = nullptr;
-    float* Ha_Minu = nullptr;
-    float* Hb_Plus = nullptr;
-    float* Hb_Minu = nullptr;
+    field_real* Efield = nullptr;
+    field_real* Ha_Plus = nullptr;
+    field_real* Ha_Minu = nullptr;
+    field_real* Hb_Plus = nullptr;
+    field_real* Hb_Minu = nullptr;
 
     double alignedDeltaE = 0.0;
     double transversalDeltaHa = 0.0;
@@ -60,6 +66,6 @@ public:
     void advance(int timestep, double dt);
 };
 
-} // namespace lumped_slim
+} // namespace Lumped_m
 
 #endif

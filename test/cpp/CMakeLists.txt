@@ -4,6 +4,10 @@ add_executable(cpp_tests
     cpp_tests.cpp
 )
 
+target_sources(cpp_tests PRIVATE
+    ${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/maloney_nostoch.cpp
+)
+
 target_include_directories(cpp_tests PRIVATE
     ${CPP_SOURCE_ROOT}/src_cpp/src_json_parser
     ${CPP_SOURCE_ROOT}/src_cpp/src_conformal
@@ -18,7 +22,7 @@ target_link_libraries(cpp_tests
     nlohmann_json::nlohmann_json
     smbjson
     conformal
-    semba-fdtd-core
+    semba-main
     ${SEMBA_TEST_SUPPORT}
 )
 

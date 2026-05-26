@@ -1,0 +1,90 @@
+name: cpp
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - cpp
+    paths:
+      - 'src_cpp/**'
+      - 'src_conformal/**'
+      - 'src_conformal_cpp/**'
+      - 'src_mtln/**'
+      - 'src_mtln_cpp/**'
+      - 'src_wires_pub/**'
+      - 'src_json_parser/**'
+      - 'CMakeLists_cpp.txt'
+      - 'CMakeLists.txt'
+      - 'scripts/test_cpp_*.sh'
+      - 'test/cpp/**'
+      - 'test/pyWrapper/**'
+      - 'pytest.ini'
+      - 'requirements.txt'
+      - '.github/workflows/cpp.yml'
+  pull_request:
+    branches:
+      - main
+      - dev
+      - cpp
+    paths:
+      - 'src_cpp/**'
+      - 'src_conformal/**'
+      - 'src_conformal_cpp/**'
+      - 'src_mtln/**'
+      - 'src_mtln_cpp/**'
+      - 'src_wires_pub/**'
+      - 'src_json_parser/**'
+      - 'CMakeLists_cpp.txt'
+      - 'CMakeLists.txt'
+      - 'scripts/test_cpp_*.sh'
+      - 'test/cpp/**'
+      - 'test/pyWrapper/**'
+      - 'pytest.ini'
+      - 'requirements.txt'
+      - '.github/workflows/cpp.yml'
+
+concurrency:
+  group: cpp-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  nomtln-migration:
+    name: no-MTLN migration gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++
+
+      - name: Install Python test dependencies
+        run: python3 -m pip install -r requirements.txt
+
+      - name: Run no-MTLN C++ gate
+        run: ./scripts/test_cpp_nomtln.sh
+
+  mtln-migration:
+    name: MTLN Tier 1 migration gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ liblapack-dev libblas-dev
+
+      - name: Install Python test dependencies
+        run: python3 -m pip install -r requirements.txt
+
+      - name: Run MTLN C++ gate
+        run: ./scripts/test_cpp_mtln.sh

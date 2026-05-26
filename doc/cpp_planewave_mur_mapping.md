@@ -1,10 +1,10 @@
-# Plane-wave TF/SF and Mur: Fortran to C++ slim mapping
+# Plane-wave TF/SF and Mur: Fortran to C++ migration mapping
 
-Active C++ path: [`semba_fdtd.cpp`](../src_cpp/src_main_pub/semba_fdtd.cpp) (`FDTD_Solver` in `semba-fdtd-core`).
+Active C++ path: [`semba_fdtd.cpp`](../src_cpp/src_main_pub/semba_fdtd.cpp) (`FDTD_Solver` in `semba-main`).
 
 Fortran reference: [`planewaves.F90`](../src_main_pub/planewaves.F90), [`bordersmur.F90`](../src_main_pub/bordersmur.F90), [`timestepping.F90`](../src_main_pub/timestepping.F90) `step()`.
 
-Dormant fuller port (not linked in slim build): [`planewaves.cpp`](../src_cpp/src_main_pub/planewaves.cpp), [`bordersmur.cpp`](../src_cpp/src_main_pub/bordersmur.cpp).
+Dormant fuller port (not linked in the current executable gate): [`planewaves.cpp`](../src_cpp/src_main_pub/planewaves.cpp), [`bordersmur.cpp`](../src_cpp/src_main_pub/bordersmur.cpp).
 
 ## Time loop order
 
@@ -23,7 +23,7 @@ There is **no** Fortran electric Mur. `applyMurE()` in C++ is unused; tangential
 
 ### `evolucion` — planewaves.F90 L783–810
 
-| Fortran | C++ slim |
+| Fortran | C++ migration |
 |---------|----------|
 | `nprev = int((t-d/cluz)/deltaevol)` | `nprev = floor(t_delay / deltaevol)` |
 | `(nprev+1 <= numus)` | `(nprev + 1 <= numSamples)` |
@@ -32,7 +32,7 @@ There is **no** Fortran electric Mur. `applyMurE()` in C++ is unused; tangential
 
 ### `Incid` — planewaves.F90 L737–812
 
-| Fortran | C++ slim |
+| Fortran | C++ migration |
 |---------|----------|
 | `Punto%PhysCoor` | `physCoord1()` |
 | `d = x*px+y*py+z*pz - distanciaInicial` | same in `computeIncid()` |
@@ -40,7 +40,7 @@ There is **no** Fortran electric Mur. `applyMurE()` in C++ is unused; tangential
 
 ### `InitPlaneWave` — planewaves.F90 L38–729
 
-| Fortran | C++ slim |
+| Fortran | C++ migration |
 |---------|----------|
 | Direction/polarization unit vectors | `initPlaneWave()` L501–515 |
 | H from E×k/Z₀ | L513–515 |
@@ -50,7 +50,7 @@ There is **no** Fortran electric Mur. `applyMurE()` in C++ is unused; tangential
 
 ### `AdvancePlaneWaveE` — planewaves.F90 L837–1133
 
-| Face | Fortran flag | C++ slim |
+| Face | Fortran flag | C++ migration |
 |------|--------------|----------|
 | x− | `IluminaTr` | `pw.iluminaTr` L833+ |
 | x+ | `IluminaFr` | `pw.iluminaFr` |
@@ -67,7 +67,7 @@ Same face flags; time `sgg%tiempo(n) + 0.5*dt` → `currentTime + 0.5*dt`. Coeff
 
 ### `calc_murconstants` / `AdvanceMagneticMUR` — bordersmur.F90 L294–341, L1107+
 
-| Fortran | C++ slim |
+| Fortran | C++ migration |
 |---------|----------|
 | `CAB1 = (1-CNUM)/(1+CNUM)`, `CNUM = (1/dx)/(dt*cluz/sqrt(Epr*Mur))` | `murCx = (C0*dt-dx)/(C0*dt+dx)` (vacuum uniform) |
 | `H_bnd = H_past_int + CAB1*(H_int - H_past_bnd)` | `mur_face()` lambda L634 |
@@ -75,7 +75,7 @@ Same face flags; time `sgg%tiempo(n) + 0.5*dt` → `currentTime + 0.5*dt`. Coeff
 
 ## Known parity gap (pw-in-box)
 
-The slim solver uses **interior-only** backward/forward FDTD stencils and **H-face-only** TF/SF in `launch()` (no `advancePlaneWaveE` in the time loop). Probe parity passes through ~90 steps (`MediumRunProbeParity_First90Steps`) but the full 1298-step run diverges after the excitation peak (~step 100+).
+The migration solver uses **interior-only** backward/forward FDTD stencils and **H-face-only** TF/SF in `launch()` (no `advancePlaneWaveE` in the time loop). Probe parity passes through ~90 steps (`MediumRunProbeParity_First90Steps`) but the full 1298-step run diverges after the excitation peak (~step 100+).
 
 Fortran pairs full-domain `advanceEx/Ey/Ez` with six-face `AdvancePlaneWaveE/H`. Re-enabling E-face TF/SF with partial `advanceE` over-injects (~1.85×); full ghost-cell sweeps need Fortran-matched boundary indexing.
 
@@ -90,14 +90,14 @@ cmake -S . -B cpp_build_dbg \
   -DSEMBA_FDTD_ENABLE_HDF=OFF \
   -DSEMBA_FDTD_COMPONENTS_LIB=OFF \
   -DSEMBA_FDTD_OUTPUTS_LIB=OFF \
-  -DSEMBA_FDTD_MAIN_LIB=OFF \
+  -DSEMBA_FDTD_MAIN_LIB=ON \
   -DCMAKE_BUILD_TYPE=Debug
 cmake --build cpp_build_dbg -j --target semba-fdtd-cpp cpp_tests
 ```
 
 Or run `./scripts/debug_pw_in_box_gdb.sh`.
 
-### Breakpoints (slim solver)
+### Breakpoints (migration solver)
 
 | Location | Purpose |
 |----------|---------|
@@ -153,11 +153,11 @@ GoogleTests in `test_bordersmur.h`:
 | `MurReducesPeakVersusOpenBoundary` | Same comparison explicitly |
 | `PulseMatchesFortranProbe` | **Optional** — skipped unless golden `.dat` exists |
 
-Strict absolute decay (`max_ex_final < 0.05·max_ex_initial`) requires full-domain FDTD sweeps (phase 3); the slim solver uses interior-only `advanceE/H` for `launch()` parity with pw-in-box.
+Strict absolute decay (`max_ex_final < 0.05·max_ex_initial`) requires full-domain FDTD sweeps (phase 3); the migration solver uses interior-only `advanceE/H` for `launch()` parity with pw-in-box.
 
 ### Fortran line map (first-order magnetic Mur)
 
-| Face | Fortran `AdvanceMagneticMUR` | C++ slim `applyMurH()` |
+| Face | Fortran `AdvanceMagneticMUR` | C++ migration `applyMurH()` |
 |------|------------------------------|-------------------------|
 | Back (x−) Hy | L1305–1312 | Hy at `i=0`, `Past_Hy(i+1)` formula |
 | Back Hz | L1287–1294 | Hz at `i=0` |
