@@ -46,10 +46,23 @@ def _assert_probe_file_byte_exact(expected_path, solved_path):
     assert solved == expected, _probe_file_diff_message(expected_path, solved_path)
 
 
-def _fortran_semba_exe():
+def _fortran_semba_exe(prefer_nomtln=False):
     executable = "semba-fdtd.exe" if platform == "win32" else "semba-fdtd"
-    default = Path(TEST_DATA_FOLDER).parent / "build" / "bin" / executable
-    return Path(os.environ.get("SEMBA_FORTRAN_EXE", default))
+    if os.environ.get("SEMBA_FORTRAN_EXE"):
+        return Path(os.environ["SEMBA_FORTRAN_EXE"])
+
+    repo_root = Path(TEST_DATA_FOLDER).parent
+    if prefer_nomtln:
+        for build_dir in (
+            "build_fortran_nomtln",
+            "build_fortran_nomtln_rel",
+            "build_fortran_nomtln_rel_dbgprint",
+        ):
+            candidate = repo_root / build_dir / "bin" / executable
+            if candidate.exists():
+                return candidate
+
+    return repo_root / "build" / "bin" / executable
 
 
 def _solved_probe_paths(solver, probe_name):
@@ -194,7 +207,7 @@ def test_sphere_farfield_probe_file_strict(tmp_path):
 @pytest.mark.nodal_source
 @pytest.mark.probes
 def test_nodal_source_probe_files_match_fortran_exact(tmp_path):
-    fortran_exe = _fortran_semba_exe().resolve()
+    fortran_exe = _fortran_semba_exe(prefer_nomtln=True).resolve()
     cpp_exe = Path(SEMBA_EXE).resolve()
     if not fortran_exe.exists():
         pytest.skip(f"Fortran executable not found: {fortran_exe}")

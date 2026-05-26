@@ -28,6 +28,9 @@
 #include <cstdlib>
 #include <limits>
 #include <complex>
+#if defined(__SSE__)
+#include <xmmintrin.h>
+#endif
 
 #ifdef SEMBA_CPP_ENABLE_HDF5
 #include <hdf5.h>
@@ -49,6 +52,12 @@ using fdtd_real = double;
 using fdtd_real = float;
 #endif
 
+#if defined(__GNUC__)
+#define SEMBA_FORTRAN_ROUNDING __attribute__((noinline,optimize("no-fast-math")))
+#else
+#define SEMBA_FORTRAN_ROUNDING
+#endif
+
 fdtd_real flushFortranSubnormal(fdtd_real value) {
     if (value != static_cast<fdtd_real>(0.0) &&
         std::abs(value) < std::numeric_limits<fdtd_real>::min()) {
@@ -57,22 +66,29 @@ fdtd_real flushFortranSubnormal(fdtd_real value) {
     return value;
 }
 
-fdtd_real fortranGridInverse(fdtd_real value) {
+SEMBA_FORTRAN_ROUNDING fdtd_real fortranScalarGridInverse(fdtd_real value) {
 #ifdef CompileWithReal8
     return static_cast<fdtd_real>(1.0) / value;
 #else
-    const fdtd_real inverse = static_cast<fdtd_real>(1.0) / value;
-    return std::nextafter(inverse, std::numeric_limits<fdtd_real>::infinity());
+    return static_cast<fdtd_real>(static_cast<fdtd_real>(1.0) / value);
+#endif
+}
+
+SEMBA_FORTRAN_ROUNDING fdtd_real fortranGridInverse(fdtd_real value) {
+#ifdef CompileWithReal8
+    return static_cast<fdtd_real>(1.0) / value;
+#elif defined(__SSE__)
+    const __m128 v = _mm_set1_ps(value);
+    const __m128 r = _mm_rcp_ps(v);
+    const __m128 correction = _mm_mul_ps(_mm_mul_ps(v, r), r);
+    return _mm_cvtss_f32(_mm_sub_ps(_mm_add_ps(r, r), correction));
+#else
+    return fortranScalarGridInverse(value);
 #endif
 }
 
 fdtd_real fortranPlanewaveGridInverse(fdtd_real value) {
-#ifdef CompileWithReal8
-    return static_cast<fdtd_real>(1.0) / value;
-#else
-    const fdtd_real inverse = static_cast<fdtd_real>(1.0) / value;
-    return std::nextafter(inverse, -std::numeric_limits<fdtd_real>::infinity());
-#endif
+    return fortranGridInverse(value);
 }
 
 double fortranWireStep(double step) {
@@ -96,12 +112,6 @@ fdtd_real fortranPlanewaveCluz(fdtd_real eps, fdtd_real mu) {
     return static_cast<fdtd_real>(C0);
 #endif
 }
-
-#if defined(__GNUC__)
-#define SEMBA_FORTRAN_ROUNDING __attribute__((noinline,optimize("no-fast-math")))
-#else
-#define SEMBA_FORTRAN_ROUNDING
-#endif
 
 SEMBA_FORTRAN_ROUNDING fdtd_real fortranRoundedMul(fdtd_real lhs,
                                                    fdtd_real rhs) {
@@ -906,12 +916,26 @@ public:
         return hasPlaneWaveSource() ? fortranPlanewaveGridInverse(value)
                                     : fortranGridInverse(value);
     }
+    fdtd_real hDistanceGridInverse(fdtd_real value, int index, int cells) const {
+#ifdef CompileWithReal8
+        (void)index;
+        (void)cells;
+        return fieldGridInverse(value);
+#else
+        // gfortran -Ofast vectorizes the reciprocal array assignment but uses
+        // scalar division for the odd tail element.
+        if ((cells & 1) != 0 && index == cells - 1) {
+            return fortranScalarGridInverse(value);
+        }
+        return fieldGridInverse(value);
+#endif
+    }
     fdtd_real idxe1(int i) const { (void)i; return fieldGridInverse(static_cast<fdtd_real>(dx)); }
     fdtd_real idye1(int j) const { (void)j; return fieldGridInverse(static_cast<fdtd_real>(dy)); }
     fdtd_real idze1(int k) const { (void)k; return fieldGridInverse(static_cast<fdtd_real>(dz)); }
-    fdtd_real idxh1(int i) const { (void)i; return fieldGridInverse(static_cast<fdtd_real>(dx)); }
-    fdtd_real idyh1(int j) const { (void)j; return fieldGridInverse(static_cast<fdtd_real>(dy)); }
-    fdtd_real idzh1(int k) const { (void)k; return fieldGridInverse(static_cast<fdtd_real>(dz)); }
+    fdtd_real idxh1(int i) const { return hDistanceGridInverse(static_cast<fdtd_real>(dx), i, NX); }
+    fdtd_real idyh1(int j) const { return hDistanceGridInverse(static_cast<fdtd_real>(dy), j, NY); }
+    fdtd_real idzh1(int k) const { return hDistanceGridInverse(static_cast<fdtd_real>(dz), k, NZ); }
     fdtd_real idxePlanewave1(int i) const { (void)i; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dx)); }
     fdtd_real idyePlanewave1(int j) const { (void)j; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dy)); }
     fdtd_real idzePlanewave1(int k) const { (void)k; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dz)); }
