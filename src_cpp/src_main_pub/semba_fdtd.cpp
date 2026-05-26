@@ -55,9 +55,11 @@ using fdtd_real = float;
 #if defined(__GNUC__)
 #define SEMBA_FORTRAN_ROUNDING __attribute__((noinline,optimize("no-fast-math")))
 #define SEMBA_FORTRAN_INLINE_ROUNDING inline __attribute__((always_inline,optimize("no-fast-math")))
+#define SEMBA_RESTRICT __restrict__
 #else
 #define SEMBA_FORTRAN_ROUNDING
 #define SEMBA_FORTRAN_INLINE_ROUNDING inline
+#define SEMBA_RESTRICT
 #endif
 
 fdtd_real flushFortranSubnormal(fdtd_real value) {
@@ -3759,60 +3761,104 @@ public:
     }
 
     void advanceE() {
+        if (Idxh.empty() || Idyh.empty() || Idzh.empty()) {
+            initGridInverses();
+        }
+        fdtd_real* SEMBA_RESTRICT ex = Ex.data();
+        fdtd_real* SEMBA_RESTRICT ey = Ey.data();
+        fdtd_real* SEMBA_RESTRICT ez = Ez.data();
+        const fdtd_real* SEMBA_RESTRICT hx = Hx.data();
+        const fdtd_real* SEMBA_RESTRICT hy = Hy.data();
+        const fdtd_real* SEMBA_RESTRICT hz = Hz.data();
+        const fdtd_real* SEMBA_RESTRICT ceEx = CeEx.data();
+        const fdtd_real* SEMBA_RESTRICT ceEy = CeEy.data();
+        const fdtd_real* SEMBA_RESTRICT ceEz = CeEz.data();
+        const fdtd_real* SEMBA_RESTRICT idxh = Idxh.data();
+        const fdtd_real* SEMBA_RESTRICT idyh = Idyh.data();
+        const fdtd_real* SEMBA_RESTRICT idzh = Idzh.data();
+        const bool pec = usePec;
 #ifdef _OPENMP
 #pragma omp parallel
         {
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int i = -1; i < NX - 1; ++i)
-            for (int j = -1; j < NY; ++j)
+        for (int i = -1; i < NX - 1; ++i) {
+            for (int j = -1; j < NY; ++j) {
+                const int exBase = ex_idx(i, j, -1);
+                const int hzBase = hz_idx(i, j, -1);
+                const int hzYmBase = hz_idx(i, j - 1, -1);
+                const int hyBase = hy_idx(i, j, -1);
+                const int hyKmBase = hyBase - 1;
+                const fdtd_real idyhj = idyh[j + 2];
+                const bool pecPlane = pec && j == NY - 1;
                 for (int k = -1; k < NZ; ++k) {
-                    const int idx = ex_idx(i, j, k);
-                    if (usePec && (j == NY - 1 || k == NZ - 1)) {
-                        Ex[idx] = 0.0;
+                    const int off = k + 1;
+                    const int idx = exBase + off;
+                    if (pecPlane || (pec && k == NZ - 1)) {
+                        ex[idx] = 0.0;
                         continue;
                     }
-                    const fdtd_real idzhk = idzh1(k);
-                    const fdtd_real idyhj = idyh1(j);
-                    Ex[idx] = fortranCurlUpdate(
-                        Ex[idx], CeEx[idx],
-                        Hz[hz_idx(i, j, k)], Hz[hz_idx(i, j - 1, k)], idyhj,
-                        Hy[hy_idx(i, j, k)], Hy[hy_idx(i, j, k - 1)], idzhk);
+                    ex[idx] = fortranCurlUpdate(
+                        ex[idx], ceEx[idx],
+                        hz[hzBase + off], hz[hzYmBase + off], idyhj,
+                        hy[hyBase + off], hy[hyKmBase + off], idzh[k + 2]);
                 }
+            }
+        }
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int i = -1; i < NX; ++i)
-            for (int j = -1; j < NY - 1; ++j)
+        for (int i = -1; i < NX; ++i) {
+            for (int j = -1; j < NY - 1; ++j) {
+                const fdtd_real idxhi = idxh[i + 2];
+                const bool pecPlane = pec && i == NX - 1;
+                const int eyBase = ey_idx(i, j, -1);
+                const int hxBase = hx_idx(i, j, -1);
+                const int hxKmBase = hxBase - 1;
+                const int hzBase = hz_idx(i, j, -1);
+                const int hzXmBase = hz_idx(i - 1, j, -1);
                 for (int k = -1; k < NZ; ++k) {
-                    const int idx = ey_idx(i, j, k);
-                    if (usePec && (i == NX - 1 || k == NZ - 1)) {
-                        Ey[idx] = 0.0;
+                    const int off = k + 1;
+                    const int idx = eyBase + off;
+                    if (pecPlane || (pec && k == NZ - 1)) {
+                        ey[idx] = 0.0;
                         continue;
                     }
-                    const fdtd_real idzhk = idzh1(k);
-                    Ey[idx] = fortranCurlUpdate(
-                        Ey[idx], CeEy[idx],
-                        Hx[hx_idx(i, j, k)], Hx[hx_idx(i, j, k - 1)], idzhk,
-                        Hz[hz_idx(i, j, k)], Hz[hz_idx(i - 1, j, k)], idxh1(i));
+                    ey[idx] = fortranCurlUpdate(
+                        ey[idx], ceEy[idx],
+                        hx[hxBase + off], hx[hxKmBase + off], idzh[k + 2],
+                        hz[hzBase + off], hz[hzXmBase + off], idxhi);
                 }
+            }
+        }
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int i = -1; i < NX; ++i)
-            for (int j = -1; j < NY; ++j)
+        for (int i = -1; i < NX; ++i) {
+            for (int j = -1; j < NY; ++j) {
+                const fdtd_real idxhi = idxh[i + 2];
+                const bool pecIPlane = pec && i == NX - 1;
+                const int ezBase = ez_idx(i, j, -1);
+                const int hyBase = hy_idx(i, j, -1);
+                const int hyXmBase = hy_idx(i - 1, j, -1);
+                const int hxBase = hx_idx(i, j, -1);
+                const int hxYmBase = hx_idx(i, j - 1, -1);
+                const fdtd_real idyhj = idyh[j + 2];
+                const bool pecPlane = pecIPlane || (pec && j == NY - 1);
                 for (int k = -1; k < NZ - 1; ++k) {
-                    const int idx = ez_idx(i, j, k);
-                    if (usePec && (i == NX - 1 || j == NY - 1)) {
-                        Ez[idx] = 0.0;
+                    const int off = k + 1;
+                    const int idx = ezBase + off;
+                    if (pecPlane) {
+                        ez[idx] = 0.0;
                         continue;
                     }
-                    const fdtd_real idyhj = idyh1(j);
-                    Ez[idx] = fortranCurlUpdate(
-                        Ez[idx], CeEz[idx],
-                        Hy[hy_idx(i, j, k)], Hy[hy_idx(i - 1, j, k)], idxh1(i),
-                        Hx[hx_idx(i, j, k)], Hx[hx_idx(i, j - 1, k)], idyhj);
+                    ez[idx] = fortranCurlUpdate(
+                        ez[idx], ceEz[idx],
+                        hy[hyBase + off], hy[hyXmBase + off], idxhi,
+                        hx[hxBase + off], hx[hxYmBase + off], idyhj);
                 }
+            }
+        }
 #ifdef _OPENMP
         }
 #endif
@@ -4123,60 +4169,98 @@ public:
     }
 
     void advanceH() {
+        if (Idxe.empty() || Idye.empty() || Idze.empty()) {
+            initGridInverses();
+        }
+        const fdtd_real* SEMBA_RESTRICT ex = Ex.data();
+        const fdtd_real* SEMBA_RESTRICT ey = Ey.data();
+        const fdtd_real* SEMBA_RESTRICT ez = Ez.data();
+        fdtd_real* SEMBA_RESTRICT hx = Hx.data();
+        fdtd_real* SEMBA_RESTRICT hy = Hy.data();
+        fdtd_real* SEMBA_RESTRICT hz = Hz.data();
+        const fdtd_real* SEMBA_RESTRICT cmH = CmH.data();
+        const fdtd_real* SEMBA_RESTRICT idxe = Idxe.data();
+        const fdtd_real* SEMBA_RESTRICT idye = Idye.data();
+        const fdtd_real* SEMBA_RESTRICT idze = Idze.data();
+        const bool pec = usePec;
 #ifdef _OPENMP
 #pragma omp parallel
         {
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int i = -1; i < NX; ++i)
-            for (int j = -1; j < NY - 1; ++j)
+        for (int i = -1; i < NX; ++i) {
+            for (int j = -1; j < NY - 1; ++j) {
+                const bool pecPlane = pec && i == NX - 1;
+                const int hxBase = hx_idx(i, j, -1);
+                const int eyBase = ey_idx(i, j, -1);
+                const int ezBase = ez_idx(i, j, -1);
+                const int ezYpBase = ez_idx(i, j + 1, -1);
+                const fdtd_real idyej = idye[j + 2];
                 for (int k = -1; k < NZ - 1; ++k) {
-                    const int idx = hx_idx(i, j, k);
-                    if (usePec && i == NX - 1) {
-                        Hx[idx] = 0.0;
+                    const int off = k + 1;
+                    const int idx = hxBase + off;
+                    if (pecPlane) {
+                        hx[idx] = 0.0;
                         continue;
                     }
-                    const fdtd_real idzek = idze1(k);
-                    const fdtd_real idyej = idye1(j);
-                    Hx[idx] = fortranCurlUpdate(
-                        Hx[idx], CmH[idx],
-                        Ey[ey_idx(i, j, k + 1)], Ey[ey_idx(i, j, k)], idzek,
-                        Ez[ez_idx(i, j + 1, k)], Ez[ez_idx(i, j, k)], idyej);
+                    hx[idx] = fortranCurlUpdate(
+                        hx[idx], cmH[idx],
+                        ey[eyBase + off + 1], ey[eyBase + off], idze[k + 2],
+                        ez[ezYpBase + off], ez[ezBase + off], idyej);
                 }
+            }
+        }
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int i = -1; i < NX - 1; ++i)
-            for (int j = -1; j < NY; ++j)
+        for (int i = -1; i < NX - 1; ++i) {
+            for (int j = -1; j < NY; ++j) {
+                const fdtd_real idxei = idxe[i + 2];
+                const int hyBase = hy_idx(i, j, -1);
+                const int ezBase = ez_idx(i, j, -1);
+                const int ezXpBase = ez_idx(i + 1, j, -1);
+                const int exBase = ex_idx(i, j, -1);
+                const bool pecPlane = pec && j == NY - 1;
                 for (int k = -1; k < NZ - 1; ++k) {
-                    const int idx = hy_idx(i, j, k);
-                    if (usePec && j == NY - 1) {
-                        Hy[idx] = 0.0;
+                    const int off = k + 1;
+                    const int idx = hyBase + off;
+                    if (pecPlane) {
+                        hy[idx] = 0.0;
                         continue;
                     }
-                    const fdtd_real idzek = idze1(k);
-                    Hy[idx] = fortranCurlUpdate(
-                        Hy[idx], CmH[idx],
-                        Ez[ez_idx(i + 1, j, k)], Ez[ez_idx(i, j, k)], idxe1(i),
-                        Ex[ex_idx(i, j, k + 1)], Ex[ex_idx(i, j, k)], idzek);
+                    hy[idx] = fortranCurlUpdate(
+                        hy[idx], cmH[idx],
+                        ez[ezXpBase + off], ez[ezBase + off], idxei,
+                        ex[exBase + off + 1], ex[exBase + off], idze[k + 2]);
                 }
+            }
+        }
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int i = -1; i < NX - 1; ++i)
-            for (int j = -1; j < NY - 1; ++j)
+        for (int i = -1; i < NX - 1; ++i) {
+            for (int j = -1; j < NY - 1; ++j) {
+                const fdtd_real idxei = idxe[i + 2];
+                const int hzBase = hz_idx(i, j, -1);
+                const int exBase = ex_idx(i, j, -1);
+                const int exYpBase = ex_idx(i, j + 1, -1);
+                const int eyBase = ey_idx(i, j, -1);
+                const int eyXpBase = ey_idx(i + 1, j, -1);
+                const fdtd_real idyej = idye[j + 2];
                 for (int k = -1; k < NZ; ++k) {
-                    const int idx = hz_idx(i, j, k);
-                    if (usePec && k == NZ - 1) {
-                        Hz[idx] = 0.0;
+                    const int off = k + 1;
+                    const int idx = hzBase + off;
+                    if (pec && k == NZ - 1) {
+                        hz[idx] = 0.0;
                         continue;
                     }
-                    const fdtd_real idyej = idye1(j);
-                    Hz[idx] = fortranCurlUpdate(
-                        Hz[idx], CmH[idx],
-                        Ex[ex_idx(i, j + 1, k)], Ex[ex_idx(i, j, k)], idyej,
-                        Ey[ey_idx(i + 1, j, k)], Ey[ey_idx(i, j, k)], idxe1(i));
+                    hz[idx] = fortranCurlUpdate(
+                        hz[idx], cmH[idx],
+                        ex[exYpBase + off], ex[exBase + off], idyej,
+                        ey[eyXpBase + off], ey[eyBase + off], idxei);
                 }
+            }
+        }
 #ifdef _OPENMP
         }
 #endif
