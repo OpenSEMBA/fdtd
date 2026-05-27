@@ -1008,7 +1008,7 @@ public:
     std::vector<fdtd_real> murPastHyDown, murPastHyDownInt, murPastHxDown, murPastHxDownInt;
     std::vector<fdtd_real> murPastHyUp, murPastHyUpInt, murPastHxUp, murPastHxUpInt;
     double murCx = 0.0, murCy = 0.0, murCz = 0.0;
-    int numSteps = 100, step = 0;
+    int numSteps = 100, n = 0;
     double currentTime = 0.0;
     bool createMapVtk = false;
     nlohmann::json inputRoot;
@@ -1511,7 +1511,7 @@ public:
         syncMtlnExternalFields();
         mtlnSolver.step();
         if (mtlnObservationOpen) {
-            mtlnSolver.updateObservation(step);
+            mtlnSolver.updateObservation(n);
         }
     }
 
@@ -4042,8 +4042,8 @@ public:
     double sampleBulkCurrentValue(const BulkCurrentProbe_t& probe) const {
         const auto analyticIt = analyticBulkCurrents.find(probe.name);
         if (analyticIt != analyticBulkCurrents.end() &&
-            step >= 0 && static_cast<size_t>(step) < analyticIt->second.size()) {
-            return analyticIt->second[static_cast<size_t>(step)];
+            n >= 0 && static_cast<size_t>(n) < analyticIt->second.size()) {
+            return analyticIt->second[static_cast<size_t>(n)];
         }
 
         fdtd_real current = static_cast<fdtd_real>(0.0);
@@ -4486,7 +4486,7 @@ public:
 
     void advanceLumpedE() {
         if (lumpedSolver.nodes.empty()) return;
-        lumpedSolver.advance(step, dt);
+        lumpedSolver.advance(n, dt);
     }
 
     void ensureExcitationLoaded(const std::string& magnitudeFile) {
@@ -5405,7 +5405,7 @@ public:
         for (auto& movie : movieProbes) {
             if (currentTime + dt * 0.5 < movie.initialTime) continue;
             if (currentTime > movie.finalTime + dt * 0.5) continue;
-            if (step % movie.trancos != 0) continue;
+            if (n % movie.trancos != 0) continue;
             movie.times.push_back(currentTime);
             const size_t slab = static_cast<size_t>(movie.nx * movie.ny * movie.nz);
             const size_t offset = movie.samples.size();
@@ -7331,8 +7331,8 @@ public:
         advanceE();
         advanceH();
         applyMurH();
-        step += 1;
-        currentTime = step * dt;
+        n += 1;
+        currentTime = n * dt;
     }
 
     void step_once() { advanceH(); }
@@ -7364,60 +7364,7 @@ public:
         mpiBarrier();
     }
 
-    void launch() {
-        still_planewave_time = true;
-        planewave_switched_off = false;
-        std::cout << "Running FDTD: " << numSteps << " steps..." << std::endl;
-#ifdef CompileWithMTLN
-        if (isMpiRoot()) openMtlnObservation();
-#endif
-        for (step = 0; step <= numSteps; step++) {
-            currentTime = step * dt;
-            timestepping();
-            if (step % 500 == 0 || step == numSteps)
-                std::cout << "  Step " << step << "/" << numSteps << " (t=" << currentTime << "s)" << std::endl;
-        }
-        std::cout << "Simulation complete." << std::endl;
-    }
-
-    void timestepping() {
-        flushPlanewaveOff();
-        advanceElectricFieldsFortranOrder();
-        flushMpiElectricFieldsOneAxis();
-        advanceMagneticFieldsFortranOrder();
-        flushMpiMagneticFieldsOneAxis();
-        sampleProbes();
-        sampleMovieProbes();
-    }
-
-    void advanceElectricFieldsFortranOrder() {
-        advanceE();
-#ifdef CompileWithMTLN
-        advanceMtlnE();
-#endif
-        advanceHollandWiresE();
-        advancePmlE();
-        advanceSgbcE();
-        advanceLumpedE();
-        applyPecE();
-        advancePlaneWaveE();
-        applyPecE();
-        advanceNodalE();
-    }
-
-    void advanceMagneticFieldsFortranOrder() {
-        advanceH();
-        advancePmlBodyH();
-        advanceMagneticCpml();
-        minusCloneMagneticPmc();
-        cloneMagneticPeriodic();
-        advanceSgbcH();
-        advancePlaneWaveH();
-        minusCloneMagneticPmc();
-        cloneMagneticPeriodic();
-        applyPecH();
-        applyMurH();
-    }
+#include "timestepping.cpp"
 };
 
 namespace SEMBA_FDTD_m {
@@ -8005,8 +7952,8 @@ MurAbsorptionResult test_mur_pulse_absorption(const std::string& json_path,
         solver.advanceE();
         solver.advanceH();
         if (apply_mur && solver.useMur) solver.applyMurH();
-        solver.step += 1;
-        solver.currentTime = solver.step * solver.dt;
+        solver.n += 1;
+        solver.currentTime = solver.n * solver.dt;
     }
     result.max_ex_final = solver.maxAbsEx();
     result.probe_ex_final = solver.probeEx(pulse_i, pulse_j, pulse_k);
@@ -8020,7 +7967,7 @@ double test_field_after_tfsf_e_step(const std::string& json_path, int component,
     solver.planewave_switched_off = false;
     constexpr int kSteps = 15;
     for (int s = 1; s <= kSteps; ++s) {
-        solver.step = s;
+        solver.n = s;
         solver.currentTime = s * solver.dt;
         solver.flushPlanewaveOff();
         solver.advanceE();
