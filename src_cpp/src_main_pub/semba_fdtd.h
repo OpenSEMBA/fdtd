@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace SEMBA_FDTD_m {
 
@@ -33,6 +34,34 @@ struct MurAbsorptionResult {
     double energy_final = 0.0;
 };
 
+struct BoundaryModeInfo {
+    bool useMur = false;
+    bool usePml = false;
+    bool murBack = false, murFront = false, murLeft = false;
+    bool murRight = false, murDown = false, murUp = false;
+    bool pmlBack = false, pmlFront = false, pmlLeft = false;
+    bool pmlRight = false, pmlDown = false, pmlUp = false;
+    int pmlElectricCalls = 0;
+    int pmlBodyHCalls = 0;
+    int pmlMagneticCpmlCalls = 0;
+};
+
+struct MpiSliceInfo {
+    int rank = 0;
+    int ranks = 1;
+    int axis = 3;
+    int com = 0;
+    int fin = 0;
+    int sweepZI = 0;
+    int sweepZE = 0;
+    int allocZI = 0;
+    int allocZE = 0;
+    bool physicalDown = true;
+    bool physicalUp = true;
+    bool pmlDown = false;
+    bool pmlUp = false;
+};
+
 struct PlaneWaveInitInfo {
     double px = 0.0, py = 0.0, pz = 0.0;
     double ex = 0.0, ey = 0.0, ez = 0.0;
@@ -53,6 +82,17 @@ double test_compute_incid(const std::string& json_path, int pw_idx, int nfield,
                           double time, int i, int j, int k);
 double test_grid_inverse_z(const std::string& json_path, int k);
 PlaneWaveInitInfo test_plane_wave_init(const std::string& json_path, int pw_idx);
+BoundaryModeInfo test_boundary_mode(const std::string& json_path,
+                                    bool step_once = false);
+int test_mpi_axis_from_flags(const std::string& flags);
+std::vector<MpiSliceInfo> test_mpi_one_axis_slices(int cells,
+                                                   int ranks,
+                                                   int pml_down_layers = 0,
+                                                   int pml_up_layers = 0,
+                                                   int forced_cut = -1,
+                                                   int axis = 3);
+int test_mpi_exchange_electric_ghost_planes(int axis);
+int test_mpi_exchange_magnetic_ghost_planes(int axis);
 double test_mur_apply_back_hy(const std::string& json_path);
 MurAbsorptionResult test_mur_pulse_absorption(const std::string& json_path,
                                               int num_steps,

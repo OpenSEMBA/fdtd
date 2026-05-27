@@ -2214,10 +2214,24 @@ contains
             Do i=1,this%bounds%sweepEx%NX
                Idzhk=Idzh(k)
                Idyhj=Idyh(j)
-               medio =sggMiEx(i,j,k)
-               Ex(i,j,k)=this%g%g1(MEDIO)*Ex(i,j,k)+this%g%g2(MEDIO)* &
-               ((Hz(i,j,k)-Hz(i,j-1,k))*Idyhj-(Hy(i,j,k)-Hy(i,j,k-1))*Idzhk)
-            End do
+	               medio =sggMiEx(i,j,k)
+	               Ex(i,j,k)=this%g%g1(MEDIO)*Ex(i,j,k)+this%g%g2(MEDIO)* &
+	               ((Hz(i,j,k)-Hz(i,j-1,k))*Idyhj-(Hy(i,j,k)-Hy(i,j,k-1))*Idzhk)
+	               if ((this%control%layoutnumber == 1).and.(this%n <= 20).and. &
+	                  (((i == 4).and.(j == 4).and.(k == 1)).or. &
+	                   ((j == 3).and.(k == 3).and.(i >= 1).and.(i <= 4)))) then
+	                  write(*,'(A,I4,1X,3I4,1X,18I5,1P,9E25.16,5(1X,Z8.8))') 'FTNDBG AdvEx', this%n, i, j, k, &
+	                     this%bounds%Ex%XI, this%bounds%Ex%YI, this%bounds%Ex%ZI, &
+	                     this%bounds%Ex%XE, this%bounds%Ex%YE, this%bounds%Ex%ZE, &
+	                     this%bounds%sweepEx%XI, this%bounds%sweepEx%YI, this%bounds%sweepEx%ZI, &
+	                     this%bounds%sweepEx%XE, this%bounds%sweepEx%YE, this%bounds%sweepEx%ZE, &
+	                     this%sgg%alloc(iEx)%XI, this%sgg%alloc(iEx)%YI, this%sgg%alloc(iEx)%ZI, &
+	                     this%sgg%sweep(iEx)%XI, this%sgg%sweep(iEx)%YI, this%sgg%sweep(iEx)%ZI, &
+	                     Ex(i,j,k), Hz(i,j,k), Hz(i,j-1,k), Hy(i,j,k), Hy(i,j,k-1), &
+	                     Idyhj, Idzhk, this%g%g2(MEDIO), (Hz(i,j,k)-Hz(i,j-1,k))*Idyhj-(Hy(i,j,k)-Hy(i,j,k-1))*Idzhk, &
+	                     transfer(Ex(i,j,k),0_4), transfer(Idyhj,0_4), transfer(Idzhk,0_4), transfer(Hz(i,j,k),0_4), transfer(Hy(i,j,k),0_4)
+	               end if
+	            End do
          End do
       End do
 #ifdef CompileWithOpenMP   
@@ -2301,10 +2315,16 @@ contains
       Do k=1,this%bounds%sweepEz%NZ
          Do j=1,this%bounds%sweepEz%NY
             Do i=1,this%bounds%sweepEz%NX
-               Idyhj=Idyh(j)
-               medio =sggMiEz(i,j,k)
-               Ez(i,j,k)=this%g%g1(MEDIO)*Ez(i,j,k)+this%g%g2(MEDIO)*((Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj)
-            End do
+	               Idyhj=Idyh(j)
+	               medio =sggMiEz(i,j,k)
+	               Ez(i,j,k)=this%g%g1(MEDIO)*Ez(i,j,k)+this%g%g2(MEDIO)*((Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj)
+	               if ((this%control%layoutnumber == 0).and.(this%n <= 20).and.(i == 5).and.(j == 4).and.(k == 3)) then
+	                  write(*,'(A,I4,1X,3I4,1P,9E25.16,5(1X,Z8.8))') 'FTNDBG AdvEz', this%n, i, j, k, &
+	                     Ez(i,j,k), Hy(i,j,k), Hy(i-1,j,k), Hx(i,j,k), Hx(i,j-1,k), &
+	                     Idxh(i), Idyhj, this%g%g2(MEDIO), (Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj, &
+	                     transfer(Ez(i,j,k),0_4), transfer(Idxh(i),0_4), transfer(Idyhj,0_4), transfer(Hy(i,j,k),0_4), transfer(Hx(i,j,k),0_4)
+	               end if
+	            End do
          End do
       End do
 #ifdef CompileWithOpenMP
@@ -2406,10 +2426,16 @@ contains
       Do k=1,this%bounds%sweepHy%NZ
          Do j=1,this%bounds%sweepHy%NY
             Do i=1,this%bounds%sweepHy%NX
-               Idzek=Idze(k)
-               medio =sggMiHy(i,j,k)
-               Hy(i,j,k)=this%g%gm1(medio)*Hy(i,j,k)+this%g%gm2(medio)*((Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek)
-            End do
+	               Idzek=Idze(k)
+	               medio =sggMiHy(i,j,k)
+	               Hy(i,j,k)=this%g%gm1(medio)*Hy(i,j,k)+this%g%gm2(medio)*((Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek)
+	               if ((this%control%layoutnumber == 0).and.(this%n <= 20).and.((i == 4).or.(i == 5)).and.(j == 4).and.(k == 3)) then
+	                  write(*,'(A,I4,1X,3I4,1P,9E25.16,5(1X,Z8.8))') 'FTNDBG AdvHy', this%n, i, j, k, &
+	                     Hy(i,j,k), Ez(i+1,j,k), Ez(i,j,k), Ex(i,j,k+1), Ex(i,j,k), &
+	                     Idxe(i), Idzek, this%g%gm2(MEDIO), (Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek, &
+	                     transfer(Hy(i,j,k),0_4), transfer(Idxe(i),0_4), transfer(Idzek,0_4), transfer(Ex(i,j,k+1),0_4), transfer(Ex(i,j,k),0_4)
+	               end if
+	            End do
          End do
       End do
 #ifdef CompileWithOpenMP

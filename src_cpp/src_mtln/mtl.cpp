@@ -352,13 +352,40 @@ using mtln_types_m::transfer_impedance_per_meter_t;
     }
 
     void mtl_t::initCommunicators(const std::vector<int>& alloc_z) {
-        int rank, ierr;
-        MPI_Comm_rank(SUBCOMM_MPI, &rank, &ierr);
+        int rank = 0;
+        MPI_Comm_rank(SUBCOMM_MPI, &rank);
         this->mpi_comm.rank = rank;
         this->mpi_comm.comms.clear();
         
         int z_init = alloc_z[0];
         int z_end = alloc_z[1];
+
+        auto isSegmentZOriented = [this](int j) {
+            return std::abs(this->segments[static_cast<size_t>(j)].orientation) == 3;
+        };
+        auto isSegmentZPositive = [this](int j) {
+            return this->segments[static_cast<size_t>(j)].orientation == 3;
+        };
+        auto isSegmentBeforeLayerEnd = [this](int j, int end) {
+            return this->segments[static_cast<size_t>(j)].z == end - 1;
+        };
+        auto isSegmentAfterLayerEnd = [this](int j, int end) {
+            return this->segments[static_cast<size_t>(j)].z == end;
+        };
+        auto isSegmentBeforeLayerInit = [this](int j, int init) {
+            return this->segments[static_cast<size_t>(j)].z == init;
+        };
+        auto isSegmentAfterLayerInit = [this](int j, int init) {
+            return this->segments[static_cast<size_t>(j)].z == init + 1;
+        };
+        auto isSegmentNextToLayerEnd = [this](int j, int end) {
+            const int z = this->segments[static_cast<size_t>(j)].z;
+            return z == end || z == end - 1;
+        };
+        auto isSegmentNextToLayerInit = [this](int j, int init) {
+            const int z = this->segments[static_cast<size_t>(j)].z;
+            return z == init || z == init + 1;
+        };
 
         for (int j = 0; j < static_cast<int>(this->segments.size()); ++j) {
             if (this->segments[j].orientation == -1) continue;
@@ -463,7 +490,7 @@ using mtln_types_m::transfer_impedance_per_meter_t;
             }
         } else {
             res.step_size = step_size;
-            res.layer_indices.resize(0, 0);
+            res.layer_indices.clear();
             res.mpi_comm.comms.resize(0);
             res.segments = segments;
         }
@@ -527,7 +554,7 @@ using mtln_types_m::transfer_impedance_per_meter_t;
             }
         } else {
             res.step_size = step_size;
-            res.layer_indices.resize(0, 0);
+            res.layer_indices.clear();
             res.mpi_comm.comms.resize(0);
             res.segments = segments;
         }

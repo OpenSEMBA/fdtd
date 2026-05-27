@@ -2,9 +2,22 @@
 
 #include "utils_m.h"
 
+#ifdef CompileWithMPI
+#include <mpi.h>
+extern MPI_Comm SUBCOMM_MPI;
+#endif
+
 namespace mtl_bundle_m {
 
 namespace {
+
+#ifdef CompileWithMPI
+constexpr int COMM_SEND = 1;
+constexpr int COMM_RECV = -1;
+constexpr int COMM_FIELD = 1;
+constexpr int COMM_V = 2;
+constexpr int COMM_BOTH = 3;
+#endif
 
 void copyBlock(std::vector<std::vector<std::vector<double>>>& dest, int destOffset,
                const std::vector<std::vector<std::vector<double>>>& src, int srcN) {
@@ -300,6 +313,13 @@ void mtl_bundle_t::advanceVoltage() {
 }
 
 void mtl_bundle_t::advanceCurrent() {
+#ifdef CompileWithMPI
+    int comm_size = 1;
+    MPI_Comm_size(SUBCOMM_MPI, &comm_size);
+    if (comm_size > 1) {
+        Comm_MPI_V();
+    }
+#endif
     transfer_impedance.updateQ3Phi();
     i_prev = i;
     const int nc = number_of_conductors;
@@ -350,6 +370,13 @@ void mtl_bundle_t::advanceCurrent() {
 }
 
 void mtl_bundle_t::setExternalLongitudinalField() {
+#ifdef CompileWithMPI
+    int comm_size = 1;
+    MPI_Comm_size(SUBCOMM_MPI, &comm_size);
+    if (comm_size > 1) {
+        Comm_MPI_Fields();
+    }
+#endif
     if (conductors_in_level.empty()) {
         return;
     }
@@ -363,6 +390,71 @@ void mtl_bundle_t::setExternalLongitudinalField() {
         }
     }
 }
+
+#ifdef CompileWithMPI
+void mtl_bundle_t::Comm_MPI_V() {
+    int rank = 0;
+    MPI_Comm_rank(SUBCOMM_MPI, &rank);
+    const int number_of_conductors = static_cast<int>(v.size());
+
+    for (const auto& comm : mpi_comm.comms) {
+        if (comm.comm_type != COMM_V && comm.comm_type != COMM_BOTH) {
+            continue;
+        }
+        const int peer = rank + comm.delta_rank;
+        const int v_index = comm.v_index;
+        if (v_index < 0) {
+            continue;
+        }
+        if (comm.comm_task == COMM_SEND) {
+            for (int c = 0; c < number_of_conductors; ++c) {
+                if (v_index >= static_cast<int>(v[static_cast<size_t>(c)].size())) {
+                    continue;
+                }
+                const int tag = 200 * (peer + 1) + (c + 1);
+                MPI_Send(&v[static_cast<size_t>(c)][static_cast<size_t>(v_index)], 1, MPI_DOUBLE,
+                         peer, tag, SUBCOMM_MPI);
+            }
+        } else if (comm.comm_task == COMM_RECV) {
+            for (int c = 0; c < number_of_conductors; ++c) {
+                if (v_index >= static_cast<int>(v[static_cast<size_t>(c)].size())) {
+                    continue;
+                }
+                const int tag = 200 * (rank + 1) + (c + 1);
+                MPI_Recv(&v[static_cast<size_t>(c)][static_cast<size_t>(v_index)], 1, MPI_DOUBLE,
+                         peer, tag, SUBCOMM_MPI, MPI_STATUS_IGNORE);
+            }
+        }
+    }
+}
+
+void mtl_bundle_t::Comm_MPI_Fields() {
+    int rank = 0;
+    MPI_Comm_rank(SUBCOMM_MPI, &rank);
+
+    for (const auto& comm : mpi_comm.comms) {
+        if (comm.comm_type != COMM_FIELD && comm.comm_type != COMM_BOTH) {
+            continue;
+        }
+        const int peer = rank + comm.delta_rank;
+        const int field_index = comm.field_index;
+        if (field_index < 0 || field_index >= static_cast<int>(external_field_segments.size())) {
+            continue;
+        }
+        double* field = external_field_segments[static_cast<size_t>(field_index)].field;
+        if (field == nullptr) {
+            continue;
+        }
+        if (comm.comm_task == COMM_SEND) {
+            const int tag = 100 * (peer + 1);
+            MPI_Send(field, 1, MPI_DOUBLE, peer, tag, SUBCOMM_MPI);
+        } else if (comm.comm_task == COMM_RECV) {
+            const int tag = 100 * (rank + 1);
+            MPI_Recv(field, 1, MPI_DOUBLE, peer, tag, SUBCOMM_MPI, MPI_STATUS_IGNORE);
+        }
+    }
+}
+#endif
 
 void mtl_bundle_t::addProbe(int index, int probe_type, const std::string& name,
                             const std::vector<double>& position,

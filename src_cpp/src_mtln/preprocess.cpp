@@ -7,6 +7,7 @@
 #include <iostream>
 #include <numeric>
 #include <iomanip>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <cstdio>
@@ -311,11 +312,7 @@ std::vector<mtl_bundle_t> preprocess_t::buildMTLBundles(const std::vector<transm
         fhash_m::fhash_tbl_t conductors_before_cable;
         int i;
 #ifdef CompileWithMPI
-        int ierr;
-#endif
-
-#ifdef CompileWithMPI
-        MPI_Barrier(subcomm_mpi, &ierr);
+        MPI_Barrier(subcomm_mpi);
 #endif
         res.resize(lines.size());
         for (i = 0; i < lines.size(); i++) {
@@ -330,7 +327,10 @@ std::vector<mtl_bundle_t> preprocess_t::buildMTLBundles(const std::vector<transm
         return res;
     }
 
-    mtl_t buildLineFromCable(cable_t& cable, double dt, const std::vector<std::vector<int>>& layer_indices, bool bundle_in_layer, const std::vector<int>& alloc_z) {
+    mtl_t buildLineFromCable(cable_t& cable, double dt,
+                             std::optional<std::vector<std::vector<int>>> layer_indices = std::nullopt,
+                             std::optional<bool> bundle_in_layer = std::nullopt,
+                             std::optional<std::vector<int>> alloc_z = std::nullopt) {
         mtl_t res;
         
         int conductor_in_parent = 0;
@@ -348,20 +348,20 @@ std::vector<mtl_bundle_t> preprocess_t::buildMTLBundles(const std::vector<transm
                 shielded->inductance_per_meter, shielded->capacitance_per_meter, shielded->resistance_per_meter,
                 shielded->conductance_per_meter, shielded->step_size, shielded->name, shielded->segments, dt,
                 parent_name, conductor_in_parent, shielded->transfer_impedance
-#ifdef CompileWithMPI
-                , layer_indices, bundle_in_layer, alloc_z
-#endif
-            );
-        } else if (auto* unshielded = dynamic_cast<unshielded_multiwire_t*>(&cable)) {
+	#ifdef CompileWithMPI
+	                , layer_indices, bundle_in_layer, alloc_z
+	#endif
+	            );
+	        } else if (auto* unshielded = dynamic_cast<unshielded_multiwire_t*>(&cable)) {
             res = mtl_m::mtl_unshielded(
                 unshielded->cell_inductance_per_meter, unshielded->cell_capacitance_per_meter,
                 unshielded->resistance_per_meter, unshielded->conductance_per_meter, unshielded->step_size,
                 unshielded->name, unshielded->segments, dt, unshielded->multipolar_expansion, unshielded->radius
-#ifdef CompileWithMPI
-                , layer_indices, bundle_in_layer, alloc_z
-#endif
-            );
-        }
+	#ifdef CompileWithMPI
+	                , layer_indices, bundle_in_layer, alloc_z
+	#endif
+	            );
+	        }
         if (cable.initial_connector) {
             addInitialConnector(res, *cable.initial_connector);
         } else {
@@ -375,12 +375,6 @@ std::vector<mtl_bundle_t> preprocess_t::buildMTLBundles(const std::vector<transm
         
         return res;
     }
-
-mtl_t buildLineFromCable(cable_t& cable, double dt) {
-    std::vector<std::vector<int>> layer_indices;
-    std::vector<int> alloc_z;
-    return buildLineFromCable(cable, dt, layer_indices, true, alloc_z);
-}
 
 bool isSegmentWithinAllocBox(const std::vector<segment_t>& segs, int i, const std::vector<int>& z) {
     if (i < 1 || i > static_cast<int>(segs.size())) {
@@ -1106,8 +1100,34 @@ network_t preprocess_t::buildNetwork(const terminal_network_t& terminal_network)
 network_manager_m::network_manager_t preprocess_t::buildNetworkManager(
     const std::vector<terminal_network_t>& terminal_networks) {
     std::vector<network_t> networks;
-    for (const auto& tn : terminal_networks) {
-        networks.push_back(buildNetwork(tn));
+    std::vector<bool> network_in_MPIslice(terminal_networks.size(), true);
+#ifdef CompileWithMPI
+    for (size_t i = 0; i < terminal_networks.size(); ++i) {
+        for (const auto& connection : terminal_networks[i].connections) {
+            for (const auto& node : connection.nodes) {
+                if (!node.belongs_to_cable) {
+                    network_in_MPIslice[i] = false;
+                    continue;
+                }
+
+                int d = 0;
+                if (!fhash_get_int(cable_name_to_bundle_id, fhash_m::key(node.belongs_to_cable->name), d) ||
+                    d <= 0 || d > static_cast<int>(bundles.size())) {
+                    network_in_MPIslice[i] = false;
+                    continue;
+                }
+
+                if (!bundles[static_cast<size_t>(d - 1)].bundle_in_layer) {
+                    network_in_MPIslice[i] = false;
+                }
+            }
+        }
+    }
+#endif
+    for (size_t i = 0; i < terminal_networks.size(); ++i) {
+        if (network_in_MPIslice[i]) {
+            networks.push_back(buildNetwork(terminal_networks[i]));
+        }
     }
     std::vector<std::string> description;
     append_desc(description, "* network description message");
@@ -1126,19 +1146,18 @@ preprocess_t preprocess(const parsed_mtln_t& parsed) {
 preprocess_t preprocess(const parsed_mtln_t& parsed, const std::array<FDETYPES_m::XYZlimit_t, 6>& alloc) {
     preprocess_t res;
 #ifdef CompileWithMPI
-    int ierr;
-    MPI_Barrier(subcomm_mpi, &ierr);
+    MPI_Barrier(subcomm_mpi);
 #endif
     res.final_time = parsed.time_step * static_cast<double>(parsed.number_of_steps);
     res.dt = parsed.time_step;
 
     const auto cable_bundles = buildCableBundles(parsed.cables);
 #ifdef CompileWithMPI
-    MPI_Barrier(subcomm_mpi, &ierr);
+    MPI_Barrier(subcomm_mpi);
 #endif
     const auto line_bundles = buildLineBundles(cable_bundles, res.dt, alloc);
 #ifdef CompileWithMPI
-    MPI_Barrier(subcomm_mpi, &ierr);
+    MPI_Barrier(subcomm_mpi);
 #endif
     res.bundles = res.buildMTLBundles(line_bundles);
     if (res.bundles.empty()) {

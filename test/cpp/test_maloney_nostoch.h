@@ -3,6 +3,19 @@
 
 #include "maloney_nostoch.h"
 
+namespace {
+double expectedSgbcReal(double value) {
+    return static_cast<double>(
+        static_cast<SGBC_nostoch_m::SGBCReal>(value));
+}
+
+double expectedSgbcRealDivision(double value, double divisor) {
+    using SGBCReal = SGBC_nostoch_m::SGBCReal;
+    return static_cast<double>(
+        static_cast<SGBCReal>(value) / static_cast<SGBCReal>(divisor));
+}
+}
+
 TEST(MaloneyNostoch, G1G2MatchesFortranFormula) {
     double g1 = 0.0;
     double g2 = 0.0;
@@ -109,7 +122,7 @@ TEST(MaloneyNostoch, LayerDepthMatchesFortranDepthZeroSingleLayer) {
     ASSERT_EQ(result.capa.size(), 1u);
     ASSERT_EQ(result.delta_entreEinterno.size(), 1u);
     EXPECT_EQ(result.capa[0], 1);
-    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[0], 0.010);
+    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[0], expectedSgbcReal(0.010));
 }
 
 TEST(MaloneyNostoch, LayerDepthMatchesFortranPositiveDepthRounding) {
@@ -121,7 +134,7 @@ TEST(MaloneyNostoch, LayerDepthMatchesFortranPositiveDepthRounding) {
     ASSERT_EQ(result.delta_entreEinterno.size(), 4u);
     EXPECT_EQ(result.capa, (std::vector<int32_t>{1, 1, 1, 1}));
     for (double delta : result.delta_entreEinterno) {
-        EXPECT_DOUBLE_EQ(delta, 0.0025);
+        EXPECT_DOUBLE_EQ(delta, expectedSgbcRealDivision(0.010, 4.0));
     }
 
     result = SGBC_nostoch_m::calculate_sgbc_layer_depth(
@@ -131,12 +144,52 @@ TEST(MaloneyNostoch, LayerDepthMatchesFortranPositiveDepthRounding) {
     ASSERT_EQ(result.capa.size(), 6u);
     ASSERT_EQ(result.delta_entreEinterno.size(), 6u);
     EXPECT_EQ(result.capa, (std::vector<int32_t>{1, 1, 1, 2, 2, 2}));
-    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[0], 0.010 / 3.0);
-    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[1], 0.010 / 3.0);
-    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[2], 0.010 / 3.0);
-    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[3], 0.020 / 3.0);
-    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[4], 0.020 / 3.0);
-    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[5], 0.020 / 3.0);
+    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[0],
+                     expectedSgbcRealDivision(0.010, 3.0));
+    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[1],
+                     expectedSgbcRealDivision(0.010, 3.0));
+    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[2],
+                     expectedSgbcRealDivision(0.010, 3.0));
+    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[3],
+                     expectedSgbcRealDivision(0.020, 3.0));
+    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[4],
+                     expectedSgbcRealDivision(0.020, 3.0));
+    EXPECT_DOUBLE_EQ(result.delta_entreEinterno[5],
+                     expectedSgbcRealDivision(0.020, 3.0));
+}
+
+TEST(MaloneyNostoch, DepthZeroAdvanceMatchesFortranSurfaceUpdate) {
+    SGBC_nostoch_m::SGBCDepthZeroConstants_t constants;
+    constants.g1 = 0.5;
+    constants.g2a = 2.0;
+    constants.g2b = 3.0;
+    constants.gm2_externo = 4.0;
+
+    auto surface =
+        SGBC_nostoch_m::make_depth_zero_sgbc_surface(constants, true, 1.0);
+    SGBC_nostoch_m::AdvanceSGBCE(surface, 10.0, 7.0, 5.0, 1.0);
+    EXPECT_DOUBLE_EQ(surface.E, -5.5);
+    EXPECT_DOUBLE_EQ(surface.E_left, -5.5);
+    EXPECT_DOUBLE_EQ(surface.E_right, -5.5);
+
+    const auto correction = SGBC_nostoch_m::AdvanceSGBCH(surface, -4.5);
+    EXPECT_DOUBLE_EQ(correction.ha_plus, 4.0);
+    EXPECT_DOUBLE_EQ(correction.ha_minus, -4.0);
+    EXPECT_DOUBLE_EQ(correction.hb_plus, 0.0);
+    EXPECT_DOUBLE_EQ(correction.hb_minus, 0.0);
+}
+
+TEST(MaloneyNostoch, DepthZeroHbCorrectionUsesFortranSigns) {
+    SGBC_nostoch_m::SGBCDepthZeroConstants_t constants;
+    constants.gm2_externo = 2.5;
+
+    auto surface =
+        SGBC_nostoch_m::make_depth_zero_sgbc_surface(constants, false, 3.0);
+    const auto correction = SGBC_nostoch_m::AdvanceSGBCH(surface, 5.0);
+    EXPECT_DOUBLE_EQ(correction.ha_plus, 0.0);
+    EXPECT_DOUBLE_EQ(correction.ha_minus, 0.0);
+    EXPECT_DOUBLE_EQ(correction.hb_plus, -5.0);
+    EXPECT_DOUBLE_EQ(correction.hb_minus, 5.0);
 }
 
 #endif // TEST_MALONEY_NOSTOCH_H

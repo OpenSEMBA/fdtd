@@ -3,6 +3,7 @@ import json
 import os
 import re
 import shutil
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -43,7 +44,10 @@ class BenchmarkResult:
     executable: str
     exe_path: str
     build_type: str
+    ranks: int
     threads: int
+    total_workers: int
+    mpi_command: str
     repeat: int
     requested_steps: int
     reported_steps: int
@@ -163,16 +167,26 @@ def _run_one(
     input_file: Path,
     requested_steps: int,
     executable: BenchmarkExecutable,
+    ranks: int,
     threads: int,
     repeat: int,
     timeout_s: float,
     run_dir: Path,
+    mpi_command_template: str | None,
 ) -> BenchmarkResult:
     env = os.environ.copy()
     env["OMP_NUM_THREADS"] = str(threads)
     env.setdefault("OMP_PROC_BIND", "false")
 
-    command = [str(executable.path.resolve()), "-i", input_file.name]
+    if ranks > 1 or mpi_command_template:
+        template = mpi_command_template or "mpirun -np {ranks}"
+        mpi_command = template.format(ranks=ranks)
+        command = shlex.split(mpi_command) + [
+            str(executable.path.resolve()), "-i", input_file.name
+        ]
+    else:
+        mpi_command = ""
+        command = [str(executable.path.resolve()), "-i", input_file.name]
     start = time.perf_counter()
     completed = subprocess.run(
         command,
@@ -195,7 +209,10 @@ def _run_one(
         executable=executable.name,
         exe_path=str(executable.path.resolve()),
         build_type=_build_type_for_exe(executable.path),
+        ranks=ranks,
         threads=threads,
+        total_workers=ranks * threads,
+        mpi_command=mpi_command,
         repeat=repeat,
         requested_steps=requested_steps,
         reported_steps=reported_steps,
@@ -212,12 +229,16 @@ def run_benchmark_matrix(
     cases: dict[str, Path],
     executables: list[BenchmarkExecutable],
     threads: list[int],
+    ranks: list[int] | None = None,
     max_steps: int = DEFAULT_MAX_STEPS,
     repeats: int = 1,
     timeout_s: float = 600.0,
     work_dir: Path | None = None,
     keep_workdirs: bool = False,
+    mpi_command: str | None = None,
 ) -> list[BenchmarkResult]:
+    if ranks is None:
+        ranks = [1]
     if work_dir is None:
         manager = tempfile.TemporaryDirectory(prefix="semba_perf_")
         root = Path(manager.name)
@@ -238,27 +259,34 @@ def run_benchmark_matrix(
                         f"{executable.name} executable not found: {executable.path}"
                     )
 
-                for thread_count in threads:
-                    for repeat in range(1, repeats + 1):
-                        run_dir = root / case_name / executable.name / f"t{thread_count}" / f"r{repeat}"
-                        prepared = _prepare_case_run(case_input, run_dir, max_steps)
-                        result = _run_one(
-                            case_name=case_name,
-                            input_file=prepared.input_file,
-                            requested_steps=prepared.steps,
-                            executable=executable,
-                            threads=thread_count,
-                            repeat=repeat,
-                            timeout_s=timeout_s,
-                            run_dir=run_dir,
-                        )
-                        results.append(result)
-                        if result.returncode != 0:
-                            raise RuntimeError(
-                                f"{result.executable} failed for {result.case} "
-                                f"with OMP_NUM_THREADS={result.threads}; "
-                                f"see {result.run_dir}"
+                for rank_count in ranks:
+                    for thread_count in threads:
+                        for repeat in range(1, repeats + 1):
+                            run_dir = (
+                                root / case_name / executable.name /
+                                f"np{rank_count}_t{thread_count}" / f"r{repeat}"
                             )
+                            prepared = _prepare_case_run(case_input, run_dir, max_steps)
+                            result = _run_one(
+                                case_name=case_name,
+                                input_file=prepared.input_file,
+                                requested_steps=prepared.steps,
+                                executable=executable,
+                                ranks=rank_count,
+                                threads=thread_count,
+                                repeat=repeat,
+                                timeout_s=timeout_s,
+                                run_dir=run_dir,
+                                mpi_command_template=mpi_command,
+                            )
+                            results.append(result)
+                            if result.returncode != 0:
+                                raise RuntimeError(
+                                    f"{result.executable} failed for {result.case} "
+                                    f"with ranks={result.ranks} and "
+                                    f"OMP_NUM_THREADS={result.threads}; "
+                                    f"see {result.run_dir}"
+                                )
 
         if keep_workdirs:
             manager = None
@@ -290,6 +318,12 @@ def _parse_threads(value: str) -> list[int]:
     return threads
 
 
+def _default_ranks() -> list[int]:
+    if os.environ.get("SEMBA_PERF_RANKS"):
+        return _parse_threads(os.environ["SEMBA_PERF_RANKS"])
+    return [1]
+
+
 def _parse_case_args(case_args: list[str]) -> dict[str, Path]:
     if not case_args:
         return DEFAULT_CASES
@@ -315,14 +349,15 @@ def _results_as_dict(results: list[BenchmarkResult]) -> list[dict]:
 
 def _format_markdown(results: list[BenchmarkResult]) -> str:
     lines = [
-        "| case | executable | build | threads | repeat | steps | elapsed_s | steps_per_s |",
-        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
+        "| case | executable | build | ranks | threads | workers | repeat | steps | elapsed_s | steps_per_s |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for result in results:
         lines.append(
             f"| {result.case} | {result.executable} | {result.build_type} | "
-            f"{result.threads} | {result.repeat} | {result.reported_steps} | "
-            f"{result.elapsed_s:.6f} | {result.steps_per_s:.3f} |"
+            f"{result.ranks} | {result.threads} | {result.total_workers} | "
+            f"{result.repeat} | {result.reported_steps} | {result.elapsed_s:.6f} | "
+            f"{result.steps_per_s:.3f} |"
         )
     return "\n".join(lines) + "\n"
 
@@ -349,11 +384,13 @@ def test_fortran_cpp_performance_metrics(tmp_path):
             BenchmarkExecutable("cpp", _default_cpp_exe()),
         ],
         threads=_default_threads(),
+        ranks=_default_ranks(),
         max_steps=int(os.environ.get("SEMBA_PERF_MAX_STEPS", DEFAULT_MAX_STEPS)),
         repeats=int(os.environ.get("SEMBA_PERF_REPEATS", "1")),
         timeout_s=float(os.environ.get("SEMBA_PERF_TIMEOUT", "600")),
         work_dir=tmp_path,
         keep_workdirs=True,
+        mpi_command=os.environ.get("SEMBA_PERF_MPI_COMMAND"),
     )
     _print_release_warnings(results)
     print(_format_markdown(results))
@@ -380,6 +417,19 @@ def main(argv: list[str] | None = None) -> int:
         default=",".join(str(v) for v in _default_threads()),
         help="Comma-separated OMP_NUM_THREADS values.",
     )
+    parser.add_argument(
+        "--ranks",
+        default=",".join(str(v) for v in _default_ranks()),
+        help="Comma-separated MPI rank counts.",
+    )
+    parser.add_argument(
+        "--mpi-command",
+        default=os.environ.get("SEMBA_PERF_MPI_COMMAND"),
+        help=(
+            "MPI launcher template, for example 'mpirun -np {ranks}'. "
+            "Defaults to no launcher for ranks=1 and 'mpirun -np {ranks}' for ranks>1."
+        ),
+    )
     parser.add_argument("--max-steps", type=int, default=DEFAULT_MAX_STEPS)
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--timeout", type=float, default=600.0)
@@ -401,11 +451,13 @@ def main(argv: list[str] | None = None) -> int:
             BenchmarkExecutable("cpp", Path(args.cpp_exe)),
         ],
         threads=_parse_threads(args.threads),
+        ranks=_parse_threads(args.ranks),
         max_steps=args.max_steps,
         repeats=args.repeats,
         timeout_s=args.timeout,
         work_dir=args.work_dir,
         keep_workdirs=args.keep_workdirs,
+        mpi_command=args.mpi_command,
     )
 
     _print_release_warnings(results)

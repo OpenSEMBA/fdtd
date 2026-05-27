@@ -4,6 +4,10 @@
 #include <iostream>
 #include <string>
 
+#ifdef CompileWithMPI
+#include <mpi.h>
+#endif
+
 extern "C" {
     struct semba_fdtd_t;
     semba_fdtd_t* create_semba_fdtd();
@@ -14,6 +18,14 @@ extern "C" {
 }
 
 int main(int argc, char** argv) {
+#ifdef CompileWithMPI
+    int mpi_initialized = 0;
+    MPI_Initialized(&mpi_initialized);
+    if (!mpi_initialized) {
+        MPI_Init(&argc, &argv);
+    }
+#endif
+
     std::string flags;
     for (int i = 1; i < argc; ++i) {
         if (i > 1) flags += ' ';
@@ -30,8 +42,22 @@ int main(int argc, char** argv) {
     } catch (const std::exception& ex) {
         std::cerr << ex.what() << std::endl;
         destroy_semba_fdtd(semba);
+#ifdef CompileWithMPI
+        int mpi_finalized = 0;
+        MPI_Finalized(&mpi_finalized);
+        if (!mpi_finalized && !mpi_initialized) {
+            MPI_Finalize();
+        }
+#endif
         return 1;
     }
     destroy_semba_fdtd(semba);
+#ifdef CompileWithMPI
+    int mpi_finalized = 0;
+    MPI_Finalized(&mpi_finalized);
+    if (!mpi_finalized && !mpi_initialized) {
+        MPI_Finalize();
+    }
+#endif
     return 0;
 }

@@ -39,8 +39,7 @@ mtln_t mtlnCtor(const parsed_mtln_t& parsed) {
 mtln_t mtlnCtor(const parsed_mtln_t& parsed, const std::array<FDETYPES_m::XYZlimit_t, 6>& alloc) {
     mtln_t res;
 #ifdef CompileWithMPI
-    int ierr = 0;
-    MPI_Barrier(SUBCOMM_MPI, &ierr);
+    MPI_Barrier(SUBCOMM_MPI);
 #endif
     preprocess_t pre = mtln_preprocess_m::preprocess(parsed, alloc);
     if (pre.bundles.empty()) {
@@ -88,8 +87,7 @@ void mtln_t::step_alone() {
 
 void mtln_t::setExternalLongitudinalField() {
 #ifdef CompileWithMPI
-    int ierr = 0;
-    MPI_Barrier(SUBCOMM_MPI, &ierr);
+    MPI_Barrier(SUBCOMM_MPI);
 #endif
     for (int i = 0; i < number_of_bundles; ++i) {
         if (bundles[static_cast<size_t>(i)].bundle_in_layer) {
@@ -167,8 +165,7 @@ void mtln_t::advanceNWVoltage() {
 
 void mtln_t::advanceBundlesCurrent() {
 #ifdef CompileWithMPI
-    int ierr = 0;
-    MPI_Barrier(SUBCOMM_MPI, &ierr);
+    MPI_Barrier(SUBCOMM_MPI);
 #endif
     for (int i = 0; i < number_of_bundles; ++i) {
         if (bundles[static_cast<size_t>(i)].bundle_in_layer) {

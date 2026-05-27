@@ -627,6 +627,77 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 
     assert np.allclose(fdtd_s21_db, anal_s21_db, rtol=0.05)
 
+
+@pytest.mark.sgbc
+@pytest.mark.planewave
+def test_sgbc_surface_impedance_frequency_points_require_maloney_depth(tmp_path):
+    """Raw SGBC fields must match slab transmission at multiple frequencies.
+
+    The standalone C++ solver currently rewrites the probe named "back" with an
+    analytic SGBC response.  This test adds an equivalent probe with a different
+    name so the assertion exercises the actual time-stepped Maloney fields.
+    Depth-zero Maloney is too flat with frequency and should fail here until
+    nonzero-depth/internal sheet propagation is translated.  The z boundaries
+    are set to MUR here so this test isolates SGBC from the separate CPML
+    migration.
+    """
+    fn = CASES_FOLDER + 'sgbcShieldingEffectiveness/shieldingEffectiveness.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver._input['boundary'] = {
+        'xLower': {'type': 'pec'},
+        'xUpper': {'type': 'pec'},
+        'yLower': {'type': 'pmc'},
+        'yUpper': {'type': 'pmc'},
+        'zLower': {'type': 'mur'},
+        'zUpper': {'type': 'mur'},
+    }
+    raw_back_probe = dict(solver['probes'][1])
+    raw_back_probe['name'] = 'raw_back'
+    solver['probes'].append(raw_back_probe)
+
+    solver.run()
+
+    raw_back = Probe(solver.getSolvedProbeFilenames("raw_back")[0])
+    t = raw_back.data['time'].to_numpy()
+    dt = t[1] - t[0]
+    fq = fftfreq(len(t)) / dt
+    inc = fft(raw_back.data['incident'].to_numpy())
+    field = fft(raw_back.data['field'].to_numpy())
+    s21 = field / inc
+
+    frequency_points = np.array([50e6, 100e6, 250e6, 500e6])
+    sampled_s21_db = []
+    for frequency in frequency_points:
+        idx = (np.abs(fq - frequency)).argmin()
+        sampled_s21_db.append(20 * np.log10(np.abs(s21[idx])))
+    sampled_s21_db = np.array(sampled_s21_db)
+
+    from skrf.media import Freespace
+    from skrf.frequency import Frequency
+    import scipy.constants
+
+    freq = Frequency.from_f(frequency_points, unit='Hz')
+    air = Freespace(freq)
+
+    sigma = 100
+    width = 10e-3
+    mat_ep_r = (1 + sigma / (1j * freq.w * scipy.constants.epsilon_0))
+    conductive_material = Freespace(freq, ep_r=mat_ep_r)
+    slab = air.thru() ** conductive_material.line(width, unit='m') ** air.thru()
+    analytic_s21_db = 20 * np.log10(np.abs(slab.s[:, 0, 1]))
+
+    np.testing.assert_allclose(
+        sampled_s21_db,
+        analytic_s21_db,
+        atol=1.0,
+        rtol=0.0,
+        err_msg=(
+            "Raw SGBC transmission must match analytical slab S21 at several "
+            "frequencies; depth-zero Maloney is expected to fail this."
+        ),
+    )
+
+
 def test_current_orientation(tmp_path):
     fn = CASES_FOLDER + 'current_orientation/currentOrientation.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)

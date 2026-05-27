@@ -40,7 +40,7 @@ namespace SGBC_nostoch_m {
         std::vector<CKIND> Current;
     };
 
-    struct SGBCSurface_t {
+    struct LegacySGBCSurface_t {
         std::vector<RKIND> E;
         std::vector<RKIND> H;
         std::vector<RKIND> E_past;
@@ -114,13 +114,13 @@ namespace SGBC_nostoch_m {
     struct Malon_t {
         logical SGBCDispersive;
         integer4 NumNodes;
-        std::vector<SGBCSurface_t> nodes;
+        std::vector<LegacySGBCSurface_t> nodes;
         std::vector<MalDisp_t> mediosDis;
     };
 
     Malon_t malon;
-    RKIND eps0 = 8.854187817e-12;
-    RKIND mu0 = 1.25663706212e-6;
+    RKIND eps0 = 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12;
+    RKIND mu0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6;
     RKIND zvac = 376.730313461;
     RKIND cluz = 299792458.0;
     constexpr RKIND Pi = 3.141592653589793238462643383279502884;
@@ -144,11 +144,43 @@ namespace SGBC_nostoch_m {
         logical, logical, RKIND, RKIND, logical,
         RKIND, RKIND, RKIND, integer4, logical, logical&) {}
     void calc_SGBCconstants(SGGFDTDINFO_t&, constants_t&, RKIND, RKIND, logical) {}
-    void AdvanceSGBCE(RKIND, logical, logical, logical) {}
-    void AdvanceSGBCH() {}
+    void AdvanceSGBCE(RKIND, logical, logical, logical) {
+        for (auto& compo : malon.nodes) {
+            if (compo.depth != 0 || compo.E.empty() || compo.g1.empty() ||
+                compo.g2a.empty() || compo.g2b.empty() ||
+                compo.Ha_Plus == nullptr || compo.Ha_Minu == nullptr ||
+                compo.Hb_Plus == nullptr || compo.Hb_Minu == nullptr) {
+                continue;
+            }
+            compo.E[0] =
+                compo.g1[0] * compo.E[0] +
+                compo.g2a[0] * (*compo.Ha_Plus - *compo.Ha_Minu) -
+                compo.g2b[0] * (*compo.Hb_Plus - *compo.Hb_Minu);
+            if (compo.Efield != nullptr) {
+                *compo.Efield = compo.E[0];
+            }
+        }
+    }
+    void AdvanceSGBCH() {
+        for (auto& compo : malon.nodes) {
+            if (compo.depth != 0 || compo.E.empty() ||
+                compo.Efield == nullptr || compo.Ha_Plus == nullptr ||
+                compo.Ha_Minu == nullptr || compo.Hb_Plus == nullptr ||
+                compo.Hb_Minu == nullptr) {
+                continue;
+            }
+            if (compo.correct_ha) {
+                *compo.Ha_Plus += compo.GM2_externo * (*compo.Efield - compo.E[0]);
+                *compo.Ha_Minu -= compo.GM2_externo * (*compo.Efield - compo.E[0]);
+            } else if (compo.correct_hb) {
+                *compo.Hb_Plus -= compo.GM2_externo * (*compo.Efield - compo.E[0]);
+                *compo.Hb_Minu += compo.GM2_externo * (*compo.Efield - compo.E[0]);
+            }
+        }
+    }
     void StoreFieldsSGBCs(logical) {}
     void DestroySGBCs(SGGFDTDINFO_t&) {}
-    void calc_g1g2gm1gm2_compo(SGGFDTDINFO_t&, SGBCSurface_t&, RKIND, RKIND, logical) {}
+    void calc_g1g2gm1gm2_compo(SGGFDTDINFO_t&, LegacySGBCSurface_t&, RKIND, RKIND, logical) {}
     void g1g2(RKIND dt, RKIND epsilon, RKIND sigma, RKIND& G1, RKIND& G2) {
         G1 = (1.0 - sigma * dt / (2.0 * epsilon)) /
              (1.0 + sigma * dt / (2.0 * epsilon));
@@ -169,6 +201,650 @@ namespace SGBC_nostoch_m {
             Gm1 = std::exp(-sigmam * dt / mu);
             Gm2 = (1.0 - Gm1) / sigmam;
         }
+    }
+
+    SGBCDepthZeroConstants_t calc_depth_zero_sgbc_constants(
+        RKIND dt,
+        RKIND eps0Value,
+        RKIND mu0Value,
+        RKIND thickness,
+        RKIND relativePermittivity,
+        RKIND electricConductivity,
+        RKIND transversalDeltaE,
+        RKIND transversalDeltaH,
+        RKIND alignedDeltaH,
+        bool correctHa) {
+        const RKIND sigma =
+            electricConductivity * thickness / transversalDeltaH;
+        const RKIND epsilon =
+            (eps0Value * (transversalDeltaH - thickness) +
+             relativePermittivity * eps0Value * thickness) /
+            transversalDeltaH;
+
+        RKIND g1 = 1.0;
+        RKIND g2 = 0.0;
+        g1g2(dt, epsilon, sigma, g1, g2);
+
+        SGBCDepthZeroConstants_t constants;
+        constants.g1 = g1;
+        if (correctHa) {
+            constants.g2a = g2 / transversalDeltaH;
+            constants.g2b = g2 / alignedDeltaH;
+        } else {
+            constants.g2a = g2 / alignedDeltaH;
+            constants.g2b = g2 / transversalDeltaH;
+        }
+        constants.gm2_externo = (dt / mu0Value) / transversalDeltaE;
+        return constants;
+    }
+
+    SGBCDepthZeroSurface_t make_depth_zero_sgbc_surface(
+        const SGBCDepthZeroConstants_t& constants,
+        bool correctHa,
+        RKIND initialE) {
+        SGBCDepthZeroSurface_t surface;
+        surface.correct_ha = correctHa;
+        surface.correct_hb = !correctHa;
+        surface.depth = 0;
+        surface.E = initialE;
+        surface.E_left = initialE;
+        surface.E_right = initialE;
+        surface.constants = constants;
+        return surface;
+    }
+
+    void AdvanceSGBCE(SGBCDepthZeroSurface_t& surface,
+                      RKIND haPlus,
+                      RKIND haMinus,
+                      RKIND hbPlus,
+                      RKIND hbMinus) {
+        surface.E =
+            surface.constants.g1 * surface.E +
+            surface.constants.g2a * (haPlus - haMinus) -
+            surface.constants.g2b * (hbPlus - hbMinus);
+        surface.E_left = surface.E;
+        surface.E_right = surface.E;
+    }
+
+    SGBCHCorrection_t AdvanceSGBCH(const SGBCDepthZeroSurface_t& surface,
+                                   RKIND eField) {
+        SGBCHCorrection_t correction;
+        if (surface.correct_ha) {
+            correction.ha_plus =
+                surface.constants.gm2_externo * (eField - surface.E_right);
+            correction.ha_minus =
+                -surface.constants.gm2_externo * (eField - surface.E_left);
+        } else if (surface.correct_hb) {
+            correction.hb_plus =
+                -surface.constants.gm2_externo * (eField - surface.E_right);
+            correction.hb_minus =
+                surface.constants.gm2_externo * (eField - surface.E_left);
+        }
+        return correction;
+    }
+
+    static size_t e_index(const SGBCSurface_t& surface, integer4 i) {
+        return static_cast<size_t>(i + surface.depth);
+    }
+
+    static size_t h_index(const SGBCSurface_t& surface, integer4 i) {
+        return static_cast<size_t>(i + surface.depth);
+    }
+
+    static SGBCReal sgbc_real(double value) {
+        return static_cast<SGBCReal>(value);
+    }
+
+    static void g1g2_sgbc(double dt,
+                          SGBCReal epsilon,
+                          SGBCReal sigma,
+                          SGBCReal& G1,
+                          SGBCReal& G2) {
+        const double epsilonValue = static_cast<double>(epsilon);
+        const double sigmaValue = static_cast<double>(sigma);
+        const double g1Value =
+            (1.0 - sigmaValue * dt / (2.0 * epsilonValue)) /
+            (1.0 + sigmaValue * dt / (2.0 * epsilonValue));
+        double g2Value =
+            dt / epsilonValue /
+            (1.0 + sigmaValue * dt / (2.0 * epsilonValue));
+        G1 = sgbc_real(g1Value);
+        if (G1 < SGBCReal{0.0}) {
+            G1 = sgbc_real(std::exp(-sigmaValue * dt / epsilonValue));
+            g2Value = static_cast<double>((SGBCReal{1.0} - G1) / sigma);
+        }
+        G2 = sgbc_real(g2Value);
+    }
+
+    static void gm1gm2_sgbc(double dt,
+                            SGBCReal mu,
+                            SGBCReal sigmam,
+                            SGBCReal& GM1,
+                            SGBCReal& GM2) {
+        const double muValue = static_cast<double>(mu);
+        const double sigmamValue = static_cast<double>(sigmam);
+        const double gm1Value =
+            (1.0 - sigmamValue * dt / (2.0 * muValue)) /
+            (1.0 + sigmamValue * dt / (2.0 * muValue));
+        double gm2Value =
+            dt / muValue /
+            (1.0 + sigmamValue * dt / (2.0 * muValue));
+        GM1 = sgbc_real(gm1Value);
+        if (GM1 < SGBCReal{0.0}) {
+            GM1 = sgbc_real(std::exp(-sigmamValue * dt / muValue));
+            gm2Value = static_cast<double>((SGBCReal{1.0} - GM1) / sigmam);
+        }
+        GM2 = sgbc_real(gm2Value);
+    }
+
+    static const SGBCLayer_t& layer_at(const std::vector<SGBCLayer_t>& layers,
+                                       integer4 oneBasedIndex) {
+        if (oneBasedIndex < 1 ||
+            static_cast<size_t>(oneBasedIndex) > layers.size()) {
+            throw std::out_of_range("SGBC layer index out of range");
+        }
+        return layers[static_cast<size_t>(oneBasedIndex - 1)];
+    }
+
+    static void solve_tridiag_sgbc(const std::vector<SGBCReal>& aa,
+                                   const std::vector<SGBCReal>& bb,
+                                   const std::vector<SGBCReal>& cc,
+                                   SGBCReal a1, SGBCReal b1, SGBCReal c1,
+                                   SGBCReal an, SGBCReal bn, SGBCReal cn,
+                                   const std::vector<SGBCReal>& d,
+                                   std::vector<SGBCReal>& x,
+                                   integer4 n) {
+        if (n <= 0) {
+            x.clear();
+            return;
+        }
+        const auto count = static_cast<size_t>(n);
+        std::vector<SGBCReal> a(count), b(count), c(count), cp(count), dp(count);
+        a[0] = a1;
+        b[0] = b1;
+        c[0] = c1;
+        a[count - 1] = an;
+        b[count - 1] = bn;
+        c[count - 1] = cn;
+        for (size_t i = 1; i + 1 < count; ++i) {
+            a[i] = aa[i];
+            b[i] = bb[i];
+            c[i] = cc[i];
+        }
+        cp[0] = c[0] / b[0];
+        dp[0] = d[0] / b[0];
+        for (size_t i = 1; i < count; ++i) {
+            const SGBCReal m = b[i] - cp[i - 1] * a[i];
+            cp[i] = c[i] / m;
+            dp[i] = (d[i] - dp[i - 1] * a[i]) / m;
+        }
+        x.assign(count, SGBCReal{0.0});
+        x[count - 1] = dp[count - 1];
+        for (size_t i = count - 1; i-- > 0;) {
+            x[i] = dp[i] - cp[i] * x[i + 1];
+        }
+    }
+
+    static void calculate_sgbc_constants(SGBCSurface_t& surface,
+                                         const std::vector<SGBCLayer_t>& layers,
+                                         RKIND dt,
+                                         RKIND eps0Value,
+                                         RKIND mu0Value) {
+        SGBCReal gm1External = 1.0;
+        SGBCReal gm2External = 0.0;
+        gm1gm2_sgbc(dt, sgbc_real(mu0Value), SGBCReal{0.0},
+                    gm1External, gm2External);
+        surface.gm2_externo = gm2External / surface.transversalDeltaE;
+
+        if (surface.depth == 0) {
+            const auto& layer = layers.front();
+            const SGBCReal width = sgbc_real(layer.width);
+            const SGBCReal sigmatemp = sgbc_real(layer.electricConductivity);
+            const SGBCReal eprtemp = sgbc_real(layer.relativePermittivity);
+            SGBCReal epsilon = 0.0;
+            SGBCReal sigma = 0.0;
+            if (surface.es_unfilo_placa) {
+                epsilon =
+                    (sgbc_real(eps0Value) * (surface.transversalDeltaH - width / SGBCReal{2.0}) +
+                     eprtemp * sgbc_real(eps0Value) * width / SGBCReal{2.0}) /
+                    surface.transversalDeltaH;
+                sigma =
+                    (sigmatemp * width / SGBCReal{2.0}) / surface.transversalDeltaH;
+            } else {
+                epsilon =
+                    (sgbc_real(eps0Value) * (surface.transversalDeltaH - width) +
+                     eprtemp * sgbc_real(eps0Value) * width) /
+                    surface.transversalDeltaH;
+                sigma = sigmatemp * width / surface.transversalDeltaH;
+            }
+
+            SGBCReal g1Value = 1.0;
+            SGBCReal g2Value = 0.0;
+            g1g2_sgbc(dt, epsilon, sigma, g1Value, g2Value);
+            surface.g1[0] = g1Value;
+            surface.g1[1] = g1Value;
+            if (surface.correct_ha) {
+                surface.g2a[0] = g2Value / surface.transversalDeltaH;
+                surface.g2b[0] = g2Value / surface.alignedDeltaH;
+            } else {
+                surface.g2a[0] = g2Value / surface.alignedDeltaH;
+                surface.g2b[0] = g2Value / surface.transversalDeltaH;
+            }
+            surface.g2a[1] = surface.g2a[0];
+            surface.g2b[1] = surface.g2b[0];
+
+            g1g2_sgbc(dt, eprtemp * sgbc_real(eps0Value), sigmatemp,
+                      g1Value, g2Value);
+            surface.G1_interno[0] = g1Value;
+            surface.G2_interno[0] = g2Value;
+            SGBCReal gm1Value = 1.0;
+            SGBCReal gm2Value = 0.0;
+            gm1gm2_sgbc(dt, sgbc_real(mu0Value), SGBCReal{0.0},
+                        gm1Value, gm2Value);
+            surface.GM1_interno[0] = gm1Value;
+            surface.GM2_interno[0] = gm2Value;
+            return;
+        }
+
+        for (integer4 side = 0; side <= 1; ++side) {
+            const integer4 layerIndex =
+                (side == 0) ? 1 : static_cast<integer4>(layers.size());
+            const auto& layer = layer_at(layers, layerIndex);
+            const SGBCReal delta =
+                (side == 0)
+                    ? surface.delta_entreEinterno[h_index(surface, -surface.depth)]
+                    : surface.delta_entreEinterno[h_index(surface, surface.depth - 1)];
+            SGBCReal epsilon = 0.0;
+            SGBCReal sigma = 0.0;
+            const SGBCReal eprtemp = sgbc_real(layer.relativePermittivity);
+            const SGBCReal sigmatemp = sgbc_real(layer.electricConductivity);
+            if (surface.es_unfilo_placa) {
+                epsilon =
+                    (sgbc_real(eps0Value) * (surface.transversalDeltaH + delta / SGBCReal{2.0}) +
+                     eprtemp * sgbc_real(eps0Value) * (delta / SGBCReal{2.0})) /
+                    (surface.transversalDeltaH + delta);
+                sigma =
+                    (sigmatemp * (delta / SGBCReal{2.0})) /
+                    (surface.transversalDeltaH + delta);
+            } else {
+                epsilon =
+                    (sgbc_real(eps0Value) * surface.transversalDeltaH +
+                     eprtemp * sgbc_real(eps0Value) * delta) /
+                    (surface.transversalDeltaH + delta);
+                sigma =
+                    (sigmatemp * delta) /
+                    (surface.transversalDeltaH + delta);
+            }
+
+            SGBCReal g1Value = 1.0;
+            SGBCReal g2Value = 0.0;
+            g1g2_sgbc(dt, epsilon, sigma, g1Value, g2Value);
+            surface.g1[static_cast<size_t>(side)] = g1Value;
+            if (surface.correct_ha) {
+                surface.g2a[static_cast<size_t>(side)] =
+                    g2Value / (SGBCReal{0.5} * surface.transversalDeltaH + SGBCReal{0.5} * delta);
+                surface.g2b[static_cast<size_t>(side)] =
+                    g2Value / surface.alignedDeltaH;
+            } else {
+                surface.g2a[static_cast<size_t>(side)] =
+                    g2Value / surface.alignedDeltaH;
+                surface.g2b[static_cast<size_t>(side)] =
+                    g2Value / (SGBCReal{0.5} * surface.transversalDeltaH + SGBCReal{0.5} * delta);
+            }
+        }
+
+        for (integer4 i = -surface.depth + 1; i <= surface.depth - 1; ++i) {
+            const auto& layer = layer_at(
+                layers, surface.capa[h_index(surface, i)]);
+            const auto& adjacentLayer = layer_at(
+                layers, surface.capa[h_index(surface, i - 1)]);
+            const SGBCReal deltaLeft =
+                surface.delta_entreEinterno[h_index(surface, i - 1)];
+            const SGBCReal deltaRight =
+                surface.delta_entreEinterno[h_index(surface, i)];
+            const SGBCReal eprtemp =
+                (sgbc_real(adjacentLayer.relativePermittivity) * deltaLeft +
+                 sgbc_real(layer.relativePermittivity) * deltaRight) /
+                (deltaLeft + deltaRight);
+            const SGBCReal sigmatemp =
+                (sgbc_real(adjacentLayer.electricConductivity) * deltaLeft +
+                 sgbc_real(layer.electricConductivity) * deltaRight) /
+                (deltaLeft + deltaRight);
+            SGBCReal g1Value = 1.0;
+            SGBCReal g2Value = 0.0;
+            g1g2_sgbc(dt, eprtemp * sgbc_real(eps0Value), sigmatemp,
+                      g1Value, g2Value);
+            surface.G1_interno[e_index(surface, i)] = g1Value;
+            surface.G2_interno[e_index(surface, i)] =
+                g2Value / ((deltaRight + deltaLeft) / SGBCReal{2.0});
+        }
+
+        for (integer4 i = -surface.depth; i <= surface.depth - 1; ++i) {
+            const auto& layer = layer_at(
+                layers, surface.capa[h_index(surface, i)]);
+            SGBCReal gm1Value = 1.0;
+            SGBCReal gm2Value = 0.0;
+            gm1gm2_sgbc(dt,
+                        sgbc_real(layer.relativePermeability) * sgbc_real(mu0Value),
+                        sgbc_real(layer.magneticConductivity),
+                        gm1Value,
+                        gm2Value);
+            surface.GM1_interno[h_index(surface, i)] = gm1Value;
+            surface.GM2_interno[h_index(surface, i)] =
+                gm2Value / surface.delta_entreEinterno[h_index(surface, i)];
+        }
+
+        const SGBCReal signo = surface.correct_ha ? SGBCReal{1.0} : SGBCReal{-1.0};
+        const SGBCReal g1eff_0 = surface.g1[0];
+        const SGBCReal g1eff_1 = surface.g1[1];
+        const SGBCReal g2eff_0 =
+            signo * (surface.correct_ha ? surface.g2a[0] : surface.g2b[0]);
+        const SGBCReal g2eff_1 =
+            signo * (surface.correct_ha ? surface.g2a[1] : surface.g2b[1]);
+
+        for (integer4 i = -surface.depth; i <= surface.depth - 1; ++i) {
+            surface.GM2_interno[h_index(surface, i)] =
+                signo * surface.GM2_interno[h_index(surface, i)];
+        }
+        for (integer4 i = -surface.depth + 1; i <= surface.depth - 1; ++i) {
+            surface.G2_interno[e_index(surface, i)] =
+                signo * surface.G2_interno[e_index(surface, i)];
+        }
+
+        for (integer4 i = -surface.depth + 1; i <= surface.depth - 1; ++i) {
+            surface.a[e_index(surface, i)] =
+                -surface.G2_interno[e_index(surface, i)] *
+                surface.GM2_interno[h_index(surface, i - 1)] / SGBCReal{4.0};
+            surface.b[e_index(surface, i)] =
+                SGBCReal{1.0} +
+                surface.G2_interno[e_index(surface, i)] *
+                    surface.GM2_interno[h_index(surface, i - 1)] / SGBCReal{4.0} +
+                surface.G2_interno[e_index(surface, i)] *
+                    surface.GM2_interno[h_index(surface, i)] / SGBCReal{4.0};
+            surface.c[e_index(surface, i)] =
+                -surface.G2_interno[e_index(surface, i)] *
+                surface.GM2_interno[h_index(surface, i)] / SGBCReal{4.0};
+            surface.rb[e_index(surface, i)] =
+                surface.G1_interno[e_index(surface, i)] -
+                surface.G2_interno[e_index(surface, i)] *
+                    surface.GM2_interno[h_index(surface, i - 1)] / SGBCReal{4.0} -
+                surface.G2_interno[e_index(surface, i)] *
+                    surface.GM2_interno[h_index(surface, i)] / SGBCReal{4.0};
+            surface.rh[e_index(surface, i)] =
+                (surface.G2_interno[e_index(surface, i)] *
+                     surface.GM1_interno[h_index(surface, i)] +
+                 surface.G2_interno[e_index(surface, i)]) /
+                SGBCReal{2.0};
+            surface.rhm1[e_index(surface, i)] =
+                (surface.G2_interno[e_index(surface, i)] *
+                     surface.GM1_interno[h_index(surface, i - 1)] +
+                 surface.G2_interno[e_index(surface, i)]) /
+                SGBCReal{2.0};
+        }
+
+        integer4 i = -surface.depth;
+        surface.a1 = 0.0;
+        surface.c1 =
+            -g2eff_0 * surface.GM2_interno[h_index(surface, i)] / SGBCReal{4.0};
+        surface.b1 =
+            SGBCReal{1.0} + g2eff_0 * surface.GM2_interno[h_index(surface, i)] / SGBCReal{4.0};
+        surface.rb1 =
+            g1eff_0 - g2eff_0 * surface.GM2_interno[h_index(surface, i)] / SGBCReal{4.0};
+        surface.rh1 =
+            (g2eff_0 * surface.GM1_interno[h_index(surface, i)] + g2eff_0) /
+            SGBCReal{2.0};
+
+        i = surface.depth;
+        surface.cn = 0.0;
+        surface.an =
+            -g2eff_1 * surface.GM2_interno[h_index(surface, i - 1)] / SGBCReal{4.0};
+        surface.bn =
+            SGBCReal{1.0} + g2eff_1 * surface.GM2_interno[h_index(surface, i - 1)] / SGBCReal{4.0};
+        surface.rbn =
+            g1eff_1 - g2eff_1 * surface.GM2_interno[h_index(surface, i - 1)] / SGBCReal{4.0};
+        surface.rhn =
+            (g2eff_1 * surface.GM1_interno[h_index(surface, i - 1)] +
+             g2eff_1) /
+            SGBCReal{2.0};
+    }
+
+    SGBCSurface_t make_sgbc_surface(
+        const std::vector<SGBCLayer_t>& layers,
+        RKIND dtValue,
+        RKIND eps0Value,
+        RKIND mu0Value,
+        RKIND SGBCFreqValue,
+        RKIND SGBCresolValue,
+        integer4 SGBCdepthValue,
+        bool SGBCCrankValue,
+        bool correctHa,
+        bool esUnfiloPlaca,
+        RKIND transversalDeltaE,
+        RKIND transversalDeltaH,
+        RKIND alignedDeltaH,
+        RKIND initialE) {
+        if (layers.empty()) {
+            throw std::invalid_argument("SGBC surface requires at least one layer");
+        }
+        std::vector<RKIND> widths;
+        std::vector<RKIND> sigmas;
+        std::vector<RKIND> eprs;
+        widths.reserve(layers.size());
+        sigmas.reserve(layers.size());
+        eprs.reserve(layers.size());
+        for (const auto& layer : layers) {
+            widths.push_back(layer.width);
+            sigmas.push_back(layer.electricConductivity);
+            eprs.push_back(layer.relativePermittivity);
+        }
+
+        const auto depthResult = calculate_sgbc_layer_depth(
+            widths, sigmas, eprs, SGBCFreqValue, SGBCresolValue,
+            SGBCdepthValue);
+
+        SGBCSurface_t surface;
+        surface.correct_ha = correctHa;
+        surface.correct_hb = !correctHa;
+        surface.es_unfilo_placa = esUnfiloPlaca;
+        surface.depth = depthResult.depth;
+        surface.SGBCCrank = SGBCCrankValue && surface.depth >= 2;
+        surface.transversalDeltaE = transversalDeltaE;
+        surface.transversalDeltaH = transversalDeltaH;
+        surface.alignedDeltaH = alignedDeltaH;
+        surface.capa = depthResult.capa;
+        surface.delta_entreEinterno.assign(
+            depthResult.delta_entreEinterno.begin(),
+            depthResult.delta_entreEinterno.end());
+
+        const size_t eCount = static_cast<size_t>(2 * surface.depth + 1);
+        const size_t hCount =
+            (surface.depth > 0) ? static_cast<size_t>(2 * surface.depth) : 1u;
+        surface.g1.assign(2, 1.0);
+        surface.g2a.assign(2, 0.0);
+        surface.g2b.assign(2, 0.0);
+        surface.E.assign(eCount, sgbc_real(initialE));
+        surface.H.assign(hCount, SGBCReal{0.0});
+        surface.E_past.assign(eCount, sgbc_real(initialE));
+        surface.G1_interno.assign(eCount, SGBCReal{1.0});
+        surface.G2_interno.assign(eCount, SGBCReal{0.0});
+        surface.GM1_interno.assign(hCount, SGBCReal{1.0});
+        surface.GM2_interno.assign(hCount, SGBCReal{0.0});
+        surface.a.assign(eCount, SGBCReal{0.0});
+        surface.b.assign(eCount, SGBCReal{1.0});
+        surface.c.assign(eCount, SGBCReal{0.0});
+        surface.rb.assign(eCount, SGBCReal{0.0});
+        surface.rh.assign(eCount, SGBCReal{0.0});
+        surface.rhm1.assign(eCount, SGBCReal{0.0});
+        surface.D.assign(eCount, SGBCReal{0.0});
+        surface.Efield = sgbc_real(initialE);
+
+        calculate_sgbc_constants(surface, layers, dtValue, eps0Value, mu0Value);
+        return surface;
+    }
+
+    void AdvanceSGBCE(SGBCSurface_t& surface,
+                      RKIND haPlus,
+                      RKIND haMinus,
+                      RKIND hbPlus,
+                      RKIND hbMinus) {
+        const SGBCReal haPlusValue = sgbc_real(haPlus);
+        const SGBCReal haMinusValue = sgbc_real(haMinus);
+        const SGBCReal hbPlusValue = sgbc_real(hbPlus);
+        const SGBCReal hbMinusValue = sgbc_real(hbMinus);
+        const integer4 depth = surface.depth;
+        if (depth > 0) {
+            if (!surface.SGBCCrank) {
+                if (surface.correct_ha) {
+                    surface.E[e_index(surface, depth)] =
+                        surface.g1[1] * surface.E[e_index(surface, depth)] +
+                        surface.g2a[1] * (haPlusValue - surface.Hyee_right) -
+                        surface.g2b[1] * (hbPlusValue - hbMinusValue);
+                    surface.E[e_index(surface, -depth)] =
+                        surface.g1[0] * surface.E[e_index(surface, -depth)] +
+                        surface.g2a[0] * (surface.Hyee_left - haMinusValue) -
+                        surface.g2b[0] * (hbPlusValue - hbMinusValue);
+                } else if (surface.correct_hb) {
+                    surface.E[e_index(surface, depth)] =
+                        surface.g1[1] * surface.E[e_index(surface, depth)] +
+                        surface.g2a[1] * (haPlusValue - haMinusValue) -
+                        surface.g2b[1] * (hbPlusValue - surface.Hyee_right);
+                    surface.E[e_index(surface, -depth)] =
+                        surface.g1[0] * surface.E[e_index(surface, -depth)] +
+                        surface.g2a[0] * (haPlusValue - haMinusValue) -
+                        surface.g2b[0] * (surface.Hyee_left - hbMinusValue);
+                }
+            }
+        } else {
+            surface.E[e_index(surface, 0)] =
+                surface.g1[0] * surface.E[e_index(surface, 0)] +
+                surface.g2a[0] * (haPlusValue - haMinusValue) -
+                surface.g2b[0] * (hbPlusValue - hbMinusValue);
+        }
+
+        if (surface.SGBCCrank) {
+            surface.E_past = surface.E;
+            if (surface.correct_ha) {
+                integer4 i = depth;
+                surface.D[e_index(surface, i)] =
+                    -surface.an * surface.E_past[e_index(surface, i - 1)] +
+                    surface.rbn * surface.E_past[e_index(surface, i)] +
+                    surface.g2a[1] * (haPlusValue - surface.Hyee_right) -
+                    surface.g2b[1] * (hbPlusValue - hbMinusValue);
+                i = -depth;
+                surface.D[e_index(surface, i)] =
+                    -surface.c1 * surface.E_past[e_index(surface, i + 1)] +
+                    surface.rb1 * surface.E_past[e_index(surface, i)] +
+                    surface.g2a[0] * (surface.Hyee_left - haMinusValue) -
+                    surface.g2b[0] * (hbPlusValue - hbMinusValue);
+            } else if (surface.correct_hb) {
+                integer4 i = depth;
+                surface.D[e_index(surface, i)] =
+                    -surface.an * surface.E_past[e_index(surface, i - 1)] +
+                    surface.rbn * surface.E_past[e_index(surface, i)] +
+                    surface.g2a[1] * (haPlusValue - haMinusValue) -
+                    surface.g2b[1] * (hbPlusValue - surface.Hyee_right);
+                i = -depth;
+                surface.D[e_index(surface, i)] =
+                    -surface.c1 * surface.E_past[e_index(surface, i + 1)] +
+                    surface.rb1 * surface.E_past[e_index(surface, i)] +
+                    surface.g2a[0] * (haPlusValue - haMinusValue) -
+                    surface.g2b[0] * (surface.Hyee_left - hbMinusValue);
+            }
+
+            for (integer4 i = -depth + 1; i <= depth - 1; ++i) {
+                surface.D[e_index(surface, i)] =
+                    -surface.a[e_index(surface, i)] *
+                        surface.E_past[e_index(surface, i - 1)] -
+                    surface.c[e_index(surface, i)] *
+                        surface.E_past[e_index(surface, i + 1)] +
+                    surface.rb[e_index(surface, i)] *
+                        surface.E_past[e_index(surface, i)] +
+                    surface.rh[e_index(surface, i)] *
+                        surface.H[h_index(surface, i)] -
+                    surface.rhm1[e_index(surface, i)] *
+                        surface.H[h_index(surface, i - 1)];
+            }
+
+            const size_t count = surface.E.size();
+            std::vector<SGBCReal> aa(count, SGBCReal{0.0});
+            std::vector<SGBCReal> bb(count, SGBCReal{1.0});
+            std::vector<SGBCReal> cc(count, SGBCReal{0.0});
+            for (integer4 i = -depth + 1; i <= depth - 1; ++i) {
+                aa[e_index(surface, i)] = surface.a[e_index(surface, i)];
+                bb[e_index(surface, i)] = surface.b[e_index(surface, i)];
+                cc[e_index(surface, i)] = surface.c[e_index(surface, i)];
+            }
+            std::vector<SGBCReal> solved;
+            solve_tridiag_sgbc(
+                aa, bb, cc,
+                surface.a1, surface.b1, surface.c1,
+                surface.an, surface.bn, surface.cn,
+                surface.D, solved, static_cast<integer4>(count));
+            surface.E = solved;
+        } else {
+            for (integer4 i = -depth + 1; i <= depth - 1; ++i) {
+                surface.E[e_index(surface, i)] =
+                    surface.G1_interno[e_index(surface, i)] *
+                        surface.E[e_index(surface, i)] +
+                    surface.G2_interno[e_index(surface, i)] *
+                        (surface.H[h_index(surface, i)] -
+                         surface.H[h_index(surface, i - 1)]);
+            }
+        }
+
+        if (surface.SGBCCrank) {
+            for (integer4 i = -depth; i <= depth - 1; ++i) {
+                surface.H[h_index(surface, i)] =
+                    surface.GM1_interno[h_index(surface, i)] *
+                        surface.H[h_index(surface, i)] +
+                    surface.GM2_interno[h_index(surface, i)] / SGBCReal{2.0} *
+                        (surface.E[e_index(surface, i + 1)] -
+                         surface.E[e_index(surface, i)] +
+                         surface.E_past[e_index(surface, i + 1)] -
+                         surface.E_past[e_index(surface, i)]);
+            }
+            surface.Hyee_left = surface.H[h_index(surface, -depth)];
+            surface.Hyee_right = surface.H[h_index(surface, depth - 1)];
+        } else if (depth != 0) {
+            for (integer4 i = -depth; i <= depth - 1; ++i) {
+                surface.H[h_index(surface, i)] =
+                    surface.GM1_interno[h_index(surface, i)] *
+                        surface.H[h_index(surface, i)] +
+                    surface.GM2_interno[h_index(surface, i)] *
+                        (surface.E[e_index(surface, i + 1)] -
+                         surface.E[e_index(surface, i)]);
+            }
+            surface.Hyee_left = surface.H[h_index(surface, -depth)];
+            surface.Hyee_right = surface.H[h_index(surface, depth - 1)];
+        }
+
+        surface.Efield =
+            (surface.E[e_index(surface, -depth)] +
+             surface.E[e_index(surface, depth)]) /
+            SGBCReal{2.0};
+    }
+
+    SGBCHCorrection_t AdvanceSGBCH(const SGBCSurface_t& surface,
+                                   RKIND eField) {
+        SGBCHCorrection_t correction;
+        const integer4 depth = surface.depth;
+        const SGBCReal eFieldValue = sgbc_real(eField);
+        if (surface.correct_ha) {
+            correction.ha_plus =
+                surface.gm2_externo *
+                (eFieldValue - surface.E[e_index(surface, depth)]);
+            correction.ha_minus =
+                -surface.gm2_externo *
+                (eFieldValue - surface.E[e_index(surface, -depth)]);
+        } else if (surface.correct_hb) {
+            correction.hb_plus =
+                -surface.gm2_externo *
+                (eFieldValue - surface.E[e_index(surface, depth)]);
+            correction.hb_minus =
+                surface.gm2_externo *
+                (eFieldValue - surface.E[e_index(surface, -depth)]);
+        }
+        return correction;
     }
 
     void g1g2_Dispersive(RKIND dt, RKIND epsilon, RKIND sigma,
@@ -239,20 +915,25 @@ namespace SGBC_nostoch_m {
             }
 
             for (size_t layer = 0; layer < numcapas; ++layer) {
-                const RKIND width = widths[layer];
-                const RKIND sigma = sigmas[layer];
-                const RKIND epsilon = eprs[layer] * eps0;
-                const RKIND skin_depth =
-                    1.0 /
-                    (std::sqrt(2.0) * SGBCFreqValue * Pi *
-                     std::pow(mu0 * mu0 *
-                                  (4.0 * epsilon * epsilon +
+                const SGBCReal width = sgbc_real(widths[layer]);
+                const SGBCReal sigma = sgbc_real(sigmas[layer]);
+                const SGBCReal sgbcFreq = sgbc_real(SGBCFreqValue);
+                const SGBCReal sgbcResol = sgbc_real(SGBCresolValue);
+                const SGBCReal piValue = sgbc_real(Pi);
+                const SGBCReal mu0Value = sgbc_real(mu0);
+                const SGBCReal epsilon =
+                    sgbc_real(eprs[layer]) * sgbc_real(eps0);
+                const SGBCReal skin_depth =
+                    SGBCReal{1.0} /
+                    (std::sqrt(SGBCReal{2.0}) * sgbcFreq * piValue *
+                     std::pow(mu0Value * mu0Value *
+                                  (SGBCReal{4.0} * epsilon * epsilon +
                                    sigma * sigma /
-                                       (SGBCFreqValue * SGBCFreqValue * Pi * Pi)),
-                              0.25) *
-                     std::sin(std::atan2(2.0 * Pi * epsilon * mu0,
-                                         -(mu0 * sigma) / SGBCFreqValue) /
-                              2.0));
+                                       (sgbcFreq * sgbcFreq * piValue * piValue)),
+                              SGBCReal{0.25}) *
+                     std::sin(std::atan2(SGBCReal{2.0} * piValue * epsilon * mu0Value,
+                                         -(mu0Value * sigma) / sgbcFreq) /
+                              SGBCReal{2.0}));
 
                 integer4 anchocapa = 0;
                 if (SGBCdepthValue == 0) {
@@ -265,7 +946,7 @@ namespace SGBC_nostoch_m {
                     anchocapa = SGBCdepthValue;
                 } else {
                     anchocapa = 1 + static_cast<integer4>(
-                                        SGBCresolValue * width / skin_depth);
+                                        sgbcResol * width / skin_depth);
                 }
                 if (anchocapa < 2) anchocapa = 2;
 
@@ -286,12 +967,14 @@ namespace SGBC_nostoch_m {
                             anchocapa += 1;
                             celdafinal += 1;
                         }
-                        const RKIND delta = width / anchocapa;
+                        const SGBCReal delta =
+                            width / static_cast<SGBCReal>(anchocapa);
                         for (int cell = celdainicial; cell <= celdafinal; ++cell) {
                             const size_t idx =
                                 static_cast<size_t>(cell + result.depth);
                             result.capa[idx] = static_cast<integer4>(layer + 1);
-                            result.delta_entreEinterno[idx] = delta;
+                            result.delta_entreEinterno[idx] =
+                                static_cast<RKIND>(delta);
                         }
                     }
                 }
@@ -305,7 +988,7 @@ namespace SGBC_nostoch_m {
         return result;
     }
 
-    void depth(SGBCSurface_t&, SGGFDTDINFO_t&, integer4, RKIND, RKIND, integer4) {}
+    void depth(LegacySGBCSurface_t&, SGGFDTDINFO_t&, integer4, RKIND, RKIND, integer4) {}
     Malon_t* GetSGBCs() { return &malon; }
     void solve_tridiag_distintos(const std::vector<RKIND>& aa,
                                  const std::vector<RKIND>& bb,

@@ -37,7 +37,7 @@ artifact or whether it must be translated from the original Fortran source.
 | Bulk-current observation | `src_main_pub/observation.cpp`: public-interface stub comments; standalone bulk-current implementation lives in `semba_fdtd.cpp` | `src_main_pub/observation.F90` | required | Migrate exact Fortran orientation and output naming. Keep the existing strict tests for probe bytes and add cases for each current orientation. |
 | Classic wires | `src_wires_pub/wires.cpp`: `WarnErrReport`, `calc_wirehollandconstants`, `AdvanceWiresE`, `AdvanceWiresH`, `AdvanceWiresEcrank`, `StoreFieldsWires`, `DestroyWires`, `GetHwires`, `ReportWireJunctions` | `src_wires_pub/wires.F90` | required | Current standalone solver has a partial Holland path. Full migration still requires the original wire module. Coordinate with MTLN work only where wire/MTLN ownership overlaps. |
 | Lumped elements | `src_main_pub/lumped.cpp`: current executable-gate update logic plus remaining restart/file-I/O gaps | `src_main_pub/lumped.F90` | required | Continue translating the full original module while keeping lumped tests strict against Fortran outputs. |
-| CPML borders | `src_main_pub/borderscpml.cpp`: placeholder constants and incomplete routines | `src_main_pub/borderscpml.F90` | required | Needed for PML/CPML full-system tests and exact boundary behavior. Independent from SGBC if tests use MUR/PEC. |
+| CPML borders | `src_main_pub/borderscpml.cpp`: placeholder constants and incomplete routines; active `semba_fdtd.cpp` has translated CPML border coefficient/state hooks and E/H updates, but the active region/sweep alignment is not byte-identical to Fortran yet | `src_main_pub/borderscpml.F90` | required | Finish matching Fortran `PMLc(...)`, `SINPML_fullsize(...)`, and full-size padded sweep behavior. PML must not fall back to MUR. |
 | Other borders | `src_main_pub/bordersother.cpp`: minimal type stubs | `src_main_pub/bordersother.F90` | required | Translate periodic/PEC/PMC helpers and compare against current standalone boundary code. |
 | MUR borders | `src_main_pub/bordersmur.cpp`: placeholder file-read hook | `src_main_pub/bordersmur.F90` | required | Mostly implemented in standalone solver; finish by migrating original serialization/restart hooks. |
 | PML bodies | `src_main_pub/pml_bodies.cpp`: placeholder branch for material/body data | `src_main_pub/pml_bodies.F90` | required | Translate after CPML, because both touch absorbing regions. |
@@ -51,9 +51,9 @@ artifact or whether it must be translated from the original Fortran source.
 | Postprocess | `src_main_pub/postprocess.cpp`: simplified DTFT placeholder and generic I/O comments | `src_main_pub/postprocess.F90` | required | Translate after time-domain probes are exact. |
 | Far field | `src_main_pub/farfield.cpp`: local `stoponerror`/`print11` empty stubs and placeholder for snippet-start code | `src_main_pub/farfield.F90` | required | Existing sphere/farfield tests use the standalone path, but full module migration remains required. |
 | XDMF/observation facade | `src_main_pub/xdmf.cpp`: dummy `SGGFDTDINFO_t`, dummy output structures, and many no-op `createxdmf*`/observation calls | `src_main_pub/xdmf.F90` | artifact now, required later | Artifact for standalone compilation today. Replace with real translation before enabling the full `semba-outputs` path. |
-| HDF5 XDMF writer | `src_main_pub/xdmf_h5.cpp`: comment says HDF5 calls are stubbed | `src_main_pub/xdmf_h5.F90` | required | HDF5 movie tests currently pass through `semba_fdtd.cpp`; migrate original writer for full output compatibility. |
+| HDF5 XDMF writer | `src_main_pub/xdmf_h5.cpp`: real HDF5 C API (`openh5file` / `writeh5file` / `closeh5file`), linked in `semba-main` when `SEMBA_FDTD_ENABLE_HDF=ON` | `src_main_pub/xdmf_h5.F90` | required | Movie sampling in `semba_fdtd.cpp`; `test_movie_in_planewave_in_box` and `test_hdf_movie_dataset_shape_matches_fortran`. |
 | VTK writer | `src_main_pub/vtk.cpp`: implementation placeholders | `src_main_pub/vtk.F90` | required | Translate for map/VTK output tests. |
-| Map VTK writer | `src_main_pub/mapvtk_writer.cpp`: no real stub found, mostly implemented | none direct | artifact | Keep as standalone support code unless it diverges from Fortran map output. |
+| Map VTK writer | `src_main_pub/mapvtk_writer.cpp`: JSON-driven `-mapvtk` in active exe | `src_main_pub/vtk.F90` (`what==mapvtk`) | required | Byte parity: `test_mapvtk_vtk_file_matches_fortran_exact` on `pec_volume.fdtd.json`. |
 | Error reporting core | `src_main_pub/errorreport_core.cpp`: empty `reportmedia`, help/default switch routines | `src_main_pub/errorreport.F90`, `interpresenta_switches.F90` | required | Low physics risk, but needed for CLI/report parity. |
 | Error reporting full module | `src_main_pub/errorreport.cpp`: helper and MPI placeholders | `src_main_pub/errorreport.F90` | required | Translate or consolidate with `errorreport_core.cpp`; avoid two divergent reporting implementations. |
 | CLI argument parsing | `src_main_pub/getargs.cpp`: placeholder argument string handling | `src_main_pub/getargs.F90` | required | Needed when C++ executable stops depending only on JSON wrapper calls. |
@@ -82,18 +82,103 @@ artifact or whether it must be translated from the original Fortran source.
 - [ ] Attach the translated SGBC depth helper to `depth(...)` once the migrated
       C++ modules share one `SGGFDTDINFO_t`/`MediaData_t` definition instead of
       per-file generated stand-ins.
-- [ ] Wire SGBC initialization into the standalone solver or switch the
-      executable to the migrated component path once equivalent.
-- [ ] Re-run `test_sgbc_shielding_effectiveness`,
+- [x] Wire the migrated depth-zero SGBC/Maloney update into the standalone
+      solver timestep (`advanceSgbcE` after wire E, `advanceSgbcH` before
+      planewave H).
+- [ ] Replace the standalone depth-zero SGBC node builder with the full
+      translated `InitSGBCs`/`depth` path once the generated C++ modules share
+      the executable's real field/media types.
+- [ ] Translate and enable nonzero-depth SGBC, Crank-Nicolson SGBC, and
+      dispersive SGBC internals from `maloney_nostoch.F90`.
+- [x] Add hard failing C++ TODO tests for the remaining Maloney gaps:
+      `MaloneyMissing.InitSgbcsBuildsFullFortranSurfaceState`,
+      `MaloneyMissing.NonZeroDepthAdvancesInternalOneDimensionalFields`,
+      `MaloneyMissing.CrankNicolsonSgbcMatchesFortranSheetSolve`, and
+      `MaloneyMissing.DispersiveSgbcUpdatesPolarizationState`.
+- [x] Add a hard failing full-system SGBC frequency sweep,
+      `test_sgbc_surface_impedance_frequency_points_require_maloney_depth`,
+      which samples a raw probe at several frequencies so depth-zero Maloney
+      cannot pass by matching only the low-frequency response.
+- [x] Add a hard failing byte-exact Fortran-vs-C++ probe comparison,
+      `test_sgbc_surface_impedance_raw_probe_matches_fortran_exact`, for the
+      same raw surface-impedance probe.
+- [x] Stop aliasing JSON `"pml"` boundaries to Mur in the active standalone
+      solver.
+- [x] Add active timestep PML call sites in Fortran order:
+      `advancePmlE()` after wire E, and `advancePmlBodyH()` plus
+      `advanceMagneticCpml()` immediately after magnetic Yee H.
+- [x] Add PML boundary classification and timestep-hook tests:
+      `PmlBoundary.*`.
+- [x] Add a hard failing byte-exact PML regression,
+      `test_planewave_pml_probe_files_match_fortran_exact`, comparing Fortran
+      and C++ probe files for a small planewave case with PML boundaries.
+- [x] Replace the current PML no-op hooks with translated CPML border state
+      initialization and E/H updates from `borderscpml.F90`.
+- [ ] Match active CPML region/sweep bounds to Fortran `PMLc(...)` and
+      `SINPML_fullsize(...)` exactly enough for byte-identical probe files.
+- [ ] Translate PML body state initialization and H updates from
+      `pml_bodies.F90`.
+- [x] Re-run `test_sgbc_shielding_effectiveness`,
       `test_sgbc_structured_resistance_single_wire`,
       `test_pec_overlapping_sgbcs`, and `test_sgbc_overlapping_sgbc`.
 - [ ] Move to the planewave TF/SF work package after SGBC has strict tests.
 
+## Active Timestepping Coverage
+
+The active C++ executable currently uses the standalone `timestepping()`
+wrapper in `src_cpp/src_main_pub/semba_fdtd.cpp`, not the generated
+`src_cpp/src_main_pub/timestepping.cpp`.  The wrapper keeps separate E and H
+phase helpers ordered after `src_main_pub/timestepping.F90`.
+
+- Present in the active loop: Yee E/H updates, MTLN E when enabled, Holland wire
+  E, translated CPML border E/H hooks, PML-body H placeholder, depth-zero SGBC/Maloney E/H, lumped E, PEC E/H,
+  planewave E/H, nodal E, magnetic PMC/periodic cloning, Mur H, and probe
+  sampling.
+- TODO: align active CPML bounds and padded-domain sweeps with Fortran exactly,
+  then translate PML-body H if needed by cases with PML media bodies.
+- TODO: migrate electric and magnetic dispersive material E/H phases.
+- TODO: migrate Fortran multiport phases beyond the MTLN hook.
+- TODO: migrate nodal H if cases require magnetic nodal source behavior.
+- TODO: migrate full wire H/Crank paths from `src_wires_pub/wires.F90`; the
+  active solver has only the current standalone Holland E path.
+- TODO: replace depth-zero SGBC with full Maloney internals once the generated
+  SGBC module shares the active solver field/media types.
+
 ## Verification Log
 
-- `cpp_build_nomtln/bin/cpp_tests`: 149 passed, 1 skipped
+- `/tmp/semba_cpp_mtln_check/bin/cpp_tests`: 187 passed, 1 skipped
   (`BordersMur.PulseMatchesFortranProbe`, missing golden probe).
-- `pytest test/pyWrapper/test_full_system.py::test_sgbc_shielding_effectiveness`
-  still fails. The C++ standalone solver currently behaves like the SGBC panel
-  is transparent, so the next SGBC task is wiring the translated SGBC state and
-  update routines into the executable path.
+- After adding the hard failing Maloney TODO tests,
+  `/tmp/semba_cpp_mtln_check/bin/cpp_tests '--gtest_filter=MaloneyMissing.*'`
+  is expected to fail until full SGBC/Maloney translation is completed.
+- The hard failing full-system SGBC frequency sweep
+  `test_sgbc_surface_impedance_frequency_points_require_maloney_depth` is also
+  expected to fail until the nonzero-depth/internal Maloney propagation is
+  translated.  Current depth-zero output is nearly flat from 50 MHz to 900 MHz
+  (`-45.55 dB` to `-45.83 dB`) while the analytical slab response falls to
+  about `-73.0 dB`.
+- The byte-exact migration regression
+  `test_sgbc_surface_impedance_raw_probe_matches_fortran_exact` currently fails
+  against C++ at the first differing raw probe sample, confirming the active
+  time-domain SGBC output is not yet Fortran-identical.
+- `/tmp/semba_cpp_mtln_check/bin/cpp_tests '--gtest_filter=PmlBoundary.*'`:
+  4 passed.  These tests verify PML no longer enables Mur and that the active
+  timestep reaches the PML E/H hook functions.
+- `test_planewave_pml_probe_files_match_fortran_exact` is still a strict xfail.
+  Active CPML border updates are translated, but the forced run first differs
+  at line 21 of `pw-in-box.fdtd_before_Ex_3_3_1.dat`
+  (`0.235246427E-033` Fortran vs `0.237195566E-033` C++).  The likely remaining
+  work is exact Fortran `PMLc(...)`/padded-sweep alignment, not MUR fallback.
+- Focused SGBC Python checks passed:
+  `test_sgbc_shielding_effectiveness`,
+  `test_sgbc_structured_resistance_single_wire`,
+  `test_pec_overlapping_sgbcs`, `test_sgbc_overlapping_sgbc`,
+  `test_can_assign_same_surface_impedance_to_multiple_geometries`, and
+  `test_one_cell_SGBC_surface_Jprobe`.
+- `pytest test/pyWrapper/test_integration.py -m sgbc`: 3 passed, 50 deselected.
+- `pytest -q test/pyWrapper`: 93 passed, 37 skipped.
+- Active executable path now initializes depth-zero SGBC nodes from
+  `multilayeredSurface` material associations and calls the migrated
+  `SGBC_nostoch_m::AdvanceSGBCE/H` depth-zero routines in the timestep loop.
+  This is intentionally not the full Fortran Maloney translation yet:
+  nonzero-depth, Crank-Nicolson, and dispersive SGBC remain open items.

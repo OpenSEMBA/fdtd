@@ -65,6 +65,7 @@ add_definitions(-DCompileWithInt2 -DCompileWithOpenMP)
 if(SEMBA_FDTD_ENABLE_MPI)
     find_package(MPI REQUIRED COMPONENTS CXX)
     message(STATUS "MPI found: ${MPI_CXX_LIBRARIES}")
+    add_definitions(-DCompileWithMPI)
 endif()
 
 if(SEMBA_FDTD_ENABLE_HDF)
@@ -247,12 +248,15 @@ endif()
 # --- semba-outputs: MPI comm, observation probes, VTK/XDMF/HDF5 output ---
 if(SEMBA_FDTD_OUTPUTS_LIB)
     add_library(semba-outputs
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/mpicomm.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/observation.cpp"
-        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/vtk.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/observation_stub.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/vtk_stub.cpp"
         "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/xdmf.cpp"
         "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/xdmf_h5.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/snapxdmf.cpp"
     )
+    if(SEMBA_FDTD_ENABLE_HDF)
+        target_compile_definitions(semba-outputs PRIVATE SEMBA_CPP_ENABLE_HDF5)
+    endif()
     target_link_libraries(semba-outputs PUBLIC semba-components)
     if(SEMBA_FDTD_ENABLE_HDF)
         target_link_libraries(semba-outputs PUBLIC ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
@@ -266,6 +270,7 @@ endif()
 if(SEMBA_FDTD_MAIN_LIB)
     add_library(semba-main
         "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/semba_fdtd.cpp"
+        "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/maloney_nostoch.cpp"
         "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/lumped.cpp"
         "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/mapvtk_writer.cpp"
     )
@@ -278,7 +283,18 @@ if(SEMBA_FDTD_MAIN_LIB)
         nlohmann_json::nlohmann_json
         ${SMBJSON_LIBRARIES}
     )
+    if(SEMBA_FDTD_ENABLE_MPI)
+        target_compile_definitions(semba-main PUBLIC CompileWithMPI)
+        target_include_directories(semba-main PUBLIC ${MPI_CXX_INCLUDE_DIRS})
+        if(TARGET MPI::MPI_CXX)
+            target_link_libraries(semba-main PUBLIC MPI::MPI_CXX)
+        else()
+            target_link_libraries(semba-main PUBLIC ${MPI_CXX_LIBRARIES})
+        endif()
+    endif()
     if(SEMBA_FDTD_ENABLE_HDF)
+        target_sources(semba-main PRIVATE
+            "${CPP_SOURCE_ROOT}/src_cpp/src_main_pub/xdmf_h5.cpp")
         target_compile_definitions(semba-main PRIVATE SEMBA_CPP_ENABLE_HDF5)
         target_link_libraries(semba-main PUBLIC ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
     endif()
@@ -303,12 +319,18 @@ if(SEMBA_FDTD_EXECUTABLE)
     )
     target_link_libraries(semba-fdtd-cpp PRIVATE semba-main semba-reports)
     if(SEMBA_FDTD_ENABLE_MPI)
-        target_link_libraries(semba-fdtd-cpp PRIVATE ${MPI_CXX_LIBRARIES})
+        target_compile_definitions(semba-fdtd-cpp PRIVATE CompileWithMPI)
+        if(TARGET MPI::MPI_CXX)
+            target_link_libraries(semba-fdtd-cpp PRIVATE MPI::MPI_CXX)
+        else()
+            target_link_libraries(semba-fdtd-cpp PRIVATE ${MPI_CXX_LIBRARIES})
+        endif()
     endif()
 endif()
 
 # --- tests ---
 if(SEMBA_FDTD_ENABLE_TEST)
+    enable_testing()
     find_package(GTest REQUIRED)
     add_subdirectory("${CPP_SOURCE_ROOT}/external/googletest" "${CMAKE_CURRENT_BINARY_DIR}/googletest")
 

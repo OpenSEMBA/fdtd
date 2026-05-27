@@ -87,8 +87,7 @@ generator_t generatorCtor(int index, int conductor, int gen_type, RKIND resistan
 #ifdef CompileWithMPI
     if (!layer_indices_opt.empty()) {
         int sizeof_comm = 0;
-        int ierr = 0;
-        MPI_Comm_size(SUBCOMM_MPI, &sizeof_comm, &ierr);
+        MPI_Comm_size(SUBCOMM_MPI, &sizeof_comm);
         if (sizeof_comm > 1) {
             res.in_layer = false;
             int slice = 0;

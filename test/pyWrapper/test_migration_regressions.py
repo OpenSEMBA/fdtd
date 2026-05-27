@@ -57,6 +57,7 @@ def _fortran_semba_exe(prefer_nomtln=False):
             "build_fortran_nomtln",
             "build_fortran_nomtln_rel",
             "build_fortran_nomtln_rel_dbgprint",
+            "build_fortran",
         ):
             candidate = repo_root / build_dir / "bin" / executable
             if candidate.exists():
@@ -113,14 +114,14 @@ def test_planewave_in_box_with_pec_boundaries(tmp_path):
 @pytest.mark.wires
 @pytest.mark.probes
 def test_holland_probe_file_matches_fortran_exact(tmp_path):
-    fortran_exe = _fortran_semba_exe().resolve()
+    fortran_exe = _fortran_semba_exe(prefer_nomtln=True).resolve()
     cpp_exe = Path(SEMBA_EXE).resolve()
     if not fortran_exe.exists():
         pytest.skip(f"Fortran executable not found: {fortran_exe}")
 
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     number_of_steps = 15
-    expected_file = "holland1981.fdtd_mid_point_single_wire_I_11_11_12.dat"
+    expected_file = "holland1981.fdtd_mid_point_Wz_11_11_12_s8.dat"
     solvers = {}
     for name, executable in (("fortran", fortran_exe), ("cpp", cpp_exe)):
         run_dir = tmp_path / name
@@ -220,6 +221,103 @@ def test_sphere_farfield_probe_file_strict(tmp_path):
         'sphere/sphere.fdtd_farfield_log__FF_2_2_2__77_77_77.dat'
     )
     _assert_probe_file_byte_exact(expected_file, solved_file)
+
+
+@pytest.mark.sgbc
+@pytest.mark.planewave
+@pytest.mark.probes
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Nonzero-depth SGBC now matches the expected physical response, but "
+        "the raw probe is not byte-exact against Fortran yet."
+    ),
+)
+def test_sgbc_surface_impedance_raw_probe_matches_fortran_exact(
+        tmp_path, monkeypatch):
+    monkeypatch.setenv("OMP_NUM_THREADS", "1")
+    fortran_exe = _fortran_semba_exe().resolve()
+    cpp_exe = Path(SEMBA_EXE).resolve()
+    if not fortran_exe.exists():
+        pytest.skip(f"Fortran executable not found: {fortran_exe}")
+
+    fn = CASES_FOLDER + 'sgbcShieldingEffectiveness/shieldingEffectiveness.fdtd.json'
+    solvers = {}
+    for name, executable in (("fortran", fortran_exe), ("cpp", cpp_exe)):
+        run_dir = tmp_path / name
+        run_dir.mkdir()
+        solver = FDTD(fn, path_to_exe=str(executable), run_in_folder=run_dir)
+        solver._input['boundary'] = {
+            'xLower': {'type': 'pec'},
+            'xUpper': {'type': 'pec'},
+            'yLower': {'type': 'pmc'},
+            'yUpper': {'type': 'pmc'},
+            'zLower': {'type': 'mur'},
+            'zUpper': {'type': 'mur'},
+        }
+        raw_back_probe = dict(solver['probes'][1])
+        raw_back_probe['name'] = 'raw_back'
+        solver['probes'].append(raw_back_probe)
+        solver.run()
+        solvers[name] = solver
+
+    expected_files = _solved_probe_paths(solvers["fortran"], "raw_back")
+    solved_files = _solved_probe_paths(solvers["cpp"], "raw_back")
+    assert len(expected_files) == 1
+    assert len(solved_files) == 1
+    expected = expected_files[0]
+    solved = solved_files[0]
+    assert Path(expected).name == Path(solved).name
+    _assert_probe_file_byte_exact(expected, solved)
+
+
+@mtln_skip
+@pytest.mark.pml
+@pytest.mark.planewave
+@pytest.mark.probes
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Active CPML border updates are translated, but the C++ PML "
+        "region/sweep alignment is not yet byte-identical to Fortran."
+    ),
+)
+def test_planewave_pml_probe_files_match_fortran_exact(
+        tmp_path, monkeypatch):
+    monkeypatch.setenv("OMP_NUM_THREADS", "1")
+    fortran_exe = _fortran_semba_exe().resolve()
+    cpp_exe = Path(SEMBA_EXE).resolve()
+    if not fortran_exe.exists():
+        pytest.skip(f"Fortran executable not found: {fortran_exe}")
+
+    fn = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
+    probe_files = {
+        "before": 'pw-in-box.fdtd_before_Ex_3_3_1.dat',
+        "inbox": 'pw-in-box.fdtd_inbox_Ex_3_3_3.dat',
+        "after": 'pw-in-box.fdtd_after_Ex_3_3_5.dat',
+    }
+    solvers = {}
+    for name, executable in (("fortran", fortran_exe), ("cpp", cpp_exe)):
+        run_dir = tmp_path / name
+        run_dir.mkdir()
+        solver = FDTD(fn, path_to_exe=str(executable), run_in_folder=run_dir)
+        solver['boundary'].clear()
+        solver['boundary']['all'] = {
+            "type": "pml",
+            "layers": 2,
+            "order": 2.0,
+            "reflection": 0.001,
+        }
+        solver['general']['numberOfSteps'] = 80
+        solver.run()
+        solvers[name] = solver
+
+    for probe_name, expected_file in probe_files.items():
+        expected = _solved_probe_paths(solvers["fortran"], probe_name)[0]
+        solved = _solved_probe_paths(solvers["cpp"], probe_name)[0]
+        assert Path(expected).name == expected_file
+        assert Path(solved).name == expected_file
+        _assert_probe_file_byte_exact(expected, solved)
 
 
 @mtln_skip
@@ -448,3 +546,68 @@ def test_current_generator_without_resistance_probe_files_match_fortran_exact(
             solved = solved_files[0]
             assert Path(expected).name == Path(solved).name
             _assert_probe_file_byte_exact(expected, solved)
+
+
+@pytest.mark.vtk
+@pytest.mark.probes
+@pytest.mark.cpp_migration
+def test_mapvtk_vtk_file_matches_fortran_exact(tmp_path, monkeypatch):
+    fortran_exe = _fortran_semba_exe().resolve()
+    cpp_exe = Path(SEMBA_EXE).resolve()
+    if not fortran_exe.exists():
+        pytest.skip(f"Fortran executable not found: {fortran_exe}")
+
+    monkeypatch.setenv("OMP_NUM_THREADS", "1")
+    fn = CASES_FOLDER + 'observation/pec_volume.fdtd.json'
+    solvers = {}
+    for name, executable in (("fortran", fortran_exe), ("cpp", cpp_exe)):
+        run_dir = tmp_path / name
+        run_dir.mkdir()
+        solver = FDTD(
+            input_filename=fn,
+            path_to_exe=str(executable),
+            run_in_folder=run_dir,
+            flags=['-mapvtk'],
+        )
+        solver.run()
+        solvers[name] = solver
+
+    fortran_vtk = Path(solvers['fortran'].getVTKMap())
+    cpp_vtk = Path(solvers['cpp'].getVTKMap())
+    assert fortran_vtk is not None and cpp_vtk is not None
+    assert fortran_vtk.name == cpp_vtk.name
+    _assert_probe_file_byte_exact(fortran_vtk, cpp_vtk)
+
+
+@pytest.mark.hdf
+@pytest.mark.cpp_migration
+def test_hdf_movie_dataset_shape_matches_fortran(tmp_path, monkeypatch):
+    import h5py
+    import numpy as np
+
+    fortran_exe = _fortran_semba_exe().resolve()
+    cpp_exe = Path(SEMBA_EXE).resolve()
+    if not fortran_exe.exists():
+        pytest.skip(f"Fortran executable not found: {fortran_exe}")
+
+    monkeypatch.setenv("OMP_NUM_THREADS", "1")
+    fn = CASES_FOLDER + 'planewave/pw-in-box-with-movie.fdtd.json'
+    solvers = {}
+    for name, executable in (("fortran", fortran_exe), ("cpp", cpp_exe)):
+        run_dir = tmp_path / name
+        run_dir.mkdir()
+        solver = FDTD(input_filename=fn, path_to_exe=str(executable), run_in_folder=run_dir)
+        solver.run()
+        solvers[name] = solver
+
+    def movie_h5(solver):
+        files = [f for f in solver.getSolvedProbeFilenames('electric_field_movie') if f.endswith('.h5')]
+        assert len(files) == 1
+        return files[0]
+
+    with h5py.File(movie_h5(solvers['fortran']), 'r') as f_f, h5py.File(movie_h5(solvers['cpp']), 'r') as f_c:
+        d_f = f_f['data'][()]
+        d_c = f_c['data'][()]
+    assert d_f.shape == d_c.shape
+    np.testing.assert_allclose(np.max(d_c), np.max(d_f), rtol=0.02, atol=0.02)
+    assert np.min(d_c) == 0.0

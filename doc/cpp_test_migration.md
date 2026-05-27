@@ -16,12 +16,14 @@ Workflow: [`.github/workflows/cpp.yml`](../.github/workflows/cpp.yml).
 | Job | Script | Scope |
 | --- | --- | --- |
 | `nomtln-migration` | `./scripts/test_cpp_nomtln.sh` | `pytest -m cpp_migration` plus no-MTLN `cpp_tests` |
+| `hdf-output` | `./scripts/test_cpp_hdf.sh` | `XdmfH5` gtest plus `pytest -m hdf` (HDF5 build) |
 | `mtln-migration` | `./scripts/test_cpp_mtln.sh` | MTLN GoogleTest plus `pytest -m mtln_standalone` |
 
 Local equivalent:
 
 ```bash
 ./scripts/test_cpp_nomtln.sh
+./scripts/test_cpp_hdf.sh      # needs libhdf5-dev; HDF movie output
 ./scripts/test_cpp_mtln.sh   # needs liblapack-dev; builds ngspice submodule
 ```
 

@@ -88,8 +88,7 @@ void InitWires_mtln(
 
 #ifdef CompileWithMPI
     mtln_solver = mtln_solver_m::mtlnCtor(mtln_parsed, alloc);
-    int ierr = 0;
-    MPI_Barrier(subcomm_mpi, &ierr);
+    MPI_Barrier(subcomm_mpi);
 #else
     (void)alloc;
     mtln_solver = mtln_solver_m::mtlnCtor(mtln_parsed);

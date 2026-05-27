@@ -1,6 +1,8 @@
 #include "semba_fdtd.h"
 #include "lumped.h"
+#include "maloney_nostoch.h"
 #include "mapvtk_writer.h"
+#include "xdmf_h5.h"
 
 #include <nlohmann/json.hpp>
 
@@ -8,6 +10,9 @@
 #include "smbjson_m.h"
 #include "mtln_solver_m.h"
 #include "wires_mtln_m.h"
+#endif
+#ifdef CompileWithMPI
+#include <mpi.h>
 #endif
 #include <string>
 #include <vector>
@@ -29,12 +34,22 @@
 #include <cstdlib>
 #include <limits>
 #include <complex>
+#include <cctype>
+#include <stdexcept>
 #if defined(__SSE__)
 #include <xmmintrin.h>
+#endif
+#if defined(__SSE3__)
+#include <pmmintrin.h>
 #endif
 
 #ifdef SEMBA_CPP_ENABLE_HDF5
 #include <hdf5.h>
+#endif
+
+#ifdef CompileWithMPI
+MPI_Comm SUBCOMM_MPI = MPI_COMM_WORLD;
+MPI_Comm subcomm_mpi = MPI_COMM_WORLD;
 #endif
 
 const double PI = 3.14159265358979323846;
@@ -62,6 +77,221 @@ using fdtd_real = float;
 #define SEMBA_FORTRAN_INLINE_ROUNDING inline
 #define SEMBA_RESTRICT
 #endif
+
+namespace {
+
+using MpiSliceInfo = SEMBA_FDTD_m::SEMBA_FDTD_test::MpiSliceInfo;
+
+std::string lowercaseToken(std::string value) {
+    for (char& ch : value) {
+        ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+    }
+    return value;
+}
+
+int mpiAxisFromToken(const std::string& token) {
+    const std::string value = lowercaseToken(token);
+    if (value == "x" || value == "1") return 1;
+    if (value == "y" || value == "2") return 2;
+    if (value == "z" || value == "3") return 3;
+    throw std::runtime_error("Invalid -mpidir option: " + token);
+}
+
+int mpiAxisFromFlagsLocal(const std::string& flags) {
+    std::istringstream iss(flags);
+    std::string token;
+    int axis = 3;
+    bool seen = false;
+    while (iss >> token) {
+        if (token == "-mpidir") {
+            std::string value;
+            if (!(iss >> value)) {
+                throw std::runtime_error("Missing value after -mpidir");
+            }
+            const int parsed = mpiAxisFromToken(value);
+            if (seen && parsed != axis) {
+                throw std::runtime_error("Duplicate incoherent -mpidir option");
+            }
+            axis = parsed;
+            seen = true;
+        } else if (token.rfind("-mpidir=", 0) == 0) {
+            const int parsed = mpiAxisFromToken(token.substr(8));
+            if (seen && parsed != axis) {
+                throw std::runtime_error("Duplicate incoherent -mpidir option");
+            }
+            axis = parsed;
+            seen = true;
+        }
+    }
+    return axis;
+}
+
+std::vector<MpiSliceInfo> buildMpiOneAxisSlicesLocal(int cells,
+                                                    int ranks,
+                                                    int pml_down_layers,
+                                                    int pml_up_layers,
+                                                    int forced_cut,
+                                                    int axis) {
+    if (cells <= 0) {
+        throw std::runtime_error("MPI slicing requires a positive cell count");
+    }
+    if (ranks <= 0) {
+        throw std::runtime_error("MPI slicing requires at least one rank");
+    }
+    axis = (axis >= 1 && axis <= 3) ? axis : 3;
+
+    std::vector<MpiSliceInfo> slices(static_cast<size_t>(ranks));
+    if (ranks == 1) {
+        slices[0].rank = 0;
+        slices[0].ranks = 1;
+        slices[0].axis = axis;
+        slices[0].com = 0;
+        slices[0].fin = cells;
+        slices[0].sweepZI = 0;
+        slices[0].sweepZE = cells;
+        slices[0].allocZI = -1;
+        slices[0].allocZE = cells + 1;
+        slices[0].physicalDown = true;
+        slices[0].physicalUp = true;
+        slices[0].pmlDown = pml_down_layers > 0;
+        slices[0].pmlUp = pml_up_layers > 0;
+        return slices;
+    }
+
+    if (forced_cut >= 0 && ranks != 2) {
+        throw std::runtime_error("Forced MPI cuts are only supported for two ranks");
+    }
+    if (forced_cut >= 0 && (forced_cut <= 0 || forced_cut >= cells)) {
+        throw std::runtime_error("Forced MPI cut is outside the domain");
+    }
+
+    constexpr double plusCPU_PML_local = 2.0;
+    const double fullZI = 0.0;
+    const double fullZE = static_cast<double>(cells);
+    const double sinpmlZI = static_cast<double>(std::max(0, pml_down_layers));
+    const double sinpmlZE = static_cast<double>(std::max(0, cells - std::max(0, pml_up_layers)));
+
+    std::vector<double> cZI(static_cast<size_t>(ranks) + 1, 0.0);
+    std::vector<double> cZE(static_cast<size_t>(ranks), 0.0);
+    std::vector<int> trancos(static_cast<size_t>(ranks), 0);
+
+    const double carga =
+        (fullZE - fullZI) / static_cast<double>(ranks) +
+        (plusCPU_PML_local - 1.0) *
+            ((sinpmlZI - fullZI) + (fullZE - sinpmlZE)) /
+            static_cast<double>(ranks);
+    cZI[0] = fullZI;
+    for (int ilay = 0; ilay < ranks; ++ilay) {
+        const double guess =
+            carga + cZI[static_cast<size_t>(ilay)] +
+            (plusCPU_PML_local - 1.0) *
+                (std::min(cZI[static_cast<size_t>(ilay)], sinpmlZI) +
+                 std::max(cZI[static_cast<size_t>(ilay)], sinpmlZE));
+        const double zeCandidates[3] = {
+            (guess - (plusCPU_PML_local - 1.0) * sinpmlZI) /
+                (1.0 + (plusCPU_PML_local - 1.0)),
+            (guess - (plusCPU_PML_local - 1.0) * sinpmlZE) /
+                (1.0 + (plusCPU_PML_local - 1.0)),
+            guess - (plusCPU_PML_local - 1.0) * sinpmlZE -
+                (plusCPU_PML_local - 1.0) * sinpmlZI,
+        };
+        double bestError = std::numeric_limits<double>::infinity();
+        double bestZE = zeCandidates[0];
+        for (double ze : zeCandidates) {
+            const double weighted =
+                (ze - cZI[static_cast<size_t>(ilay)]) +
+                (plusCPU_PML_local - 1.0) *
+                    ((std::min(sinpmlZI, ze) -
+                      std::min(sinpmlZI, cZI[static_cast<size_t>(ilay)])) +
+                     (std::max(sinpmlZE, ze) -
+                      std::max(sinpmlZE, cZI[static_cast<size_t>(ilay)])));
+            const double error = std::abs(weighted - carga);
+            if (error < bestError) {
+                bestError = error;
+                bestZE = ze;
+            }
+        }
+        cZE[static_cast<size_t>(ilay)] = bestZE;
+        cZI[static_cast<size_t>(ilay) + 1] = bestZE;
+    }
+
+    if (forced_cut >= 0) {
+        cZI[0] = fullZI;
+        cZE[0] = static_cast<double>(forced_cut);
+        cZI[1] = cZE[0];
+        cZE[1] = fullZE;
+    }
+
+    for (int ilay = 0; ilay < ranks; ++ilay) {
+        cZE[static_cast<size_t>(ilay)] = static_cast<double>(
+            std::lround(cZE[static_cast<size_t>(ilay)]));
+        cZI[static_cast<size_t>(ilay) + 1] = cZE[static_cast<size_t>(ilay)];
+        trancos[static_cast<size_t>(ilay)] =
+            static_cast<int>(cZE[static_cast<size_t>(ilay)] - fullZI);
+    }
+
+    const int minSlice = [&]() {
+        int value = cells;
+        int previous = 0;
+        for (int ilay = 0; ilay < ranks; ++ilay) {
+            const int end = (ilay == ranks - 1) ? cells : trancos[static_cast<size_t>(ilay)];
+            value = std::min(value, end - previous);
+            previous = end;
+        }
+        return value;
+    }();
+    if (minSlice <= 2) {
+        throw std::runtime_error("Number of cells per processor less than 2");
+    }
+    const int maxOriginalPml = std::max(std::max(0, pml_down_layers),
+                                        std::max(0, pml_up_layers));
+    if (maxOriginalPml > 0 && minSlice <= maxOriginalPml) {
+        throw std::runtime_error("Minimum slice size must be larger than PML layers");
+    }
+
+    for (int rank = 0; rank < ranks; ++rank) {
+        MpiSliceInfo info;
+        info.rank = rank;
+        info.ranks = ranks;
+        info.axis = axis;
+        if (rank == 0) {
+            info.com = 0;
+            info.fin = trancos[0];
+        } else if (rank == ranks - 1) {
+            info.com = trancos[static_cast<size_t>(rank) - 1];
+            info.fin = cells;
+        } else {
+            info.com = trancos[static_cast<size_t>(rank) - 1];
+            info.fin = trancos[static_cast<size_t>(rank)];
+        }
+        info.sweepZI = info.com;
+        info.sweepZE = (rank == ranks - 1) ? info.fin : info.fin - 1;
+        info.allocZI = info.sweepZI - 1;
+        info.allocZE = info.sweepZE + 1;
+        info.physicalDown = (rank == 0);
+        info.physicalUp = (rank == ranks - 1);
+        info.pmlDown = info.physicalDown && pml_down_layers > 0;
+        info.pmlUp = info.physicalUp && pml_up_layers > 0;
+        if (rank > 0 && rank < ranks - 1) {
+            info.pmlDown = info.sweepZI < pml_down_layers;
+            info.pmlUp = info.sweepZE > cells - pml_up_layers;
+        }
+        slices[static_cast<size_t>(rank)] = info;
+    }
+
+    return slices;
+}
+
+} // namespace
+
+void preserveFortranSubnormalArithmetic() {
+#if defined(__SSE__)
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
+#endif
+#if defined(__SSE3__) && defined(_MM_DENORMALS_ZERO_MASK)
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_OFF);
+#endif
+}
 
 fdtd_real flushFortranSubnormal(fdtd_real value) {
     if (value != static_cast<fdtd_real>(0.0) &&
@@ -93,7 +323,7 @@ SEMBA_FORTRAN_ROUNDING fdtd_real fortranGridInverse(fdtd_real value) {
 }
 
 fdtd_real fortranPlanewaveGridInverse(fdtd_real value) {
-    return fortranGridInverse(value);
+    return fortranScalarGridInverse(value);
 }
 
 double fortranWireStep(double step) {
@@ -201,10 +431,10 @@ double fortranWireFieldSubtract(double fieldValue, double cte5,
         fieldValue, fortranRoundedDoubleMul(cte5, current));
 }
 
-fdtd_real fortranCurlUpdate(fdtd_real oldValue, fdtd_real coeff,
-                            fdtd_real aPlus, fdtd_real aMinus,
-                            fdtd_real invA, fdtd_real bPlus,
-                            fdtd_real bMinus, fdtd_real invB) {
+SEMBA_FORTRAN_INLINE_ROUNDING fdtd_real fortranCurlUpdate(fdtd_real oldValue, fdtd_real coeff,
+                                                          fdtd_real aPlus, fdtd_real aMinus,
+                                                          fdtd_real invA, fdtd_real bPlus,
+                                                          fdtd_real bMinus, fdtd_real invB) {
     const fdtd_real diffA = static_cast<fdtd_real>(aPlus - aMinus);
     const fdtd_real termA = static_cast<fdtd_real>(diffA * invA);
     const fdtd_real diffB = static_cast<fdtd_real>(bPlus - bMinus);
@@ -215,7 +445,7 @@ fdtd_real fortranCurlUpdate(fdtd_real oldValue, fdtd_real coeff,
 }
 
 struct entrada_t {
-    int layoutnumber = 0; int ierr = 0;
+    int layoutnumber = 0; int num_procs = 1; int mpidir = 3; int ierr = 0;
     std::string extension = "", input_flags = "";
     bool thereare_stoch = false, resume = false;
 };
@@ -247,6 +477,19 @@ struct SurfaceImpedanceMaterial_t {
     double relativePermittivity = 1.0;
     double relativePermeability = 1.0;
     double electricConductivity = 0.0;
+    double magneticConductivity = 0.0;
+    std::vector<SGBC_nostoch_m::SGBCLayer_t> layers;
+};
+struct SgbcFieldRef_t {
+    int component = 0; // 0=Hx, 1=Hy, 2=Hz
+    int i = 0, j = 0, k = 0;
+};
+struct SgbcNode_t {
+    int component = 0; // 0=Ex, 1=Ey, 2=Ez
+    int i = 0, j = 0, k = 0;
+    int normalAxis = 0;
+    SGBC_nostoch_m::SGBCSurface_t maloney;
+    SgbcFieldRef_t haPlus, haMinus, hbPlus, hbMinus;
 };
 struct NFDEGeneral_t { int XI = 0, XE = 0, YI = 0, YE = 0, ZI = 0, ZE = 0; int NumMedia = 0; double dt = 0.0; };
 struct Desplazamiento_t { int XI = 0, XE = 0, YI = 0, YE = 0, ZI = 0, ZE = 0; };
@@ -655,6 +898,12 @@ Parseador_t parseFDTDJSON(const std::string& filename) {
 
 class FDTD_Solver {
 public:
+    struct ProbeCellBounds {
+        int xi = 1, yi = 1, zi = 1;
+        int xe = 1, ye = 1, ze = 1;
+        bool valid = false;
+    };
+
     Parseador_t pd;
     int NX = 10, NY = 10, NZ = 10;
     double dt = 1e-12, dx = 0.01, dy = 0.01, dz = 0.01;
@@ -674,11 +923,26 @@ public:
     std::vector<BulkCurrentProbe_t> bulkCurrentProbes;
     std::map<std::string, std::vector<double>> analyticBulkCurrents;
     std::vector<NodalCurrentSegment_t> nodalCurrentSegments;
+    std::vector<SgbcNode_t> sgbcNodes;
     std::vector<HollandWireSegment_t> hollandSegments;
     std::vector<HollandWireNode_t> hollandNodes;
     std::vector<HollandWireProbe_t> hollandProbes;
     std::vector<HollandVoltageGenerator_t> hollandVoltageGenerators;
     std::map<int, std::pair<bool, double>> hollandNodeTermination;
+    struct MovieProbeState {
+        std::string stem;
+        ProbeCellBounds bounds;
+        enum class FieldMode { ElectricMagnitude, Ex, Ey, Ez, Hx, Hy, Hz } mode =
+            FieldMode::ElectricMagnitude;
+        int nx = 0, ny = 0, nz = 0;
+        double initialTime = 0.0;
+        double finalTime = 0.0;
+        double samplingPeriod = 0.0;
+        int trancos = 1;
+        std::vector<float> samples;
+        std::vector<double> times;
+    };
+    std::vector<MovieProbeState> movieProbes;
     Lumped_m::LumpedSolver_t lumpedSolver;
 #ifdef CompileWithMTLN
     mtln_solver_m::mtln_t mtlnSolver;
@@ -689,6 +953,7 @@ public:
     bool still_planewave_time = true;
     bool planewave_switched_off = false;
     bool useMur = true;
+    bool usePml = false;
     bool usePec = false;
     bool periodicBack = false, periodicFront = false;
     bool periodicLeft = false, periodicRight = false;
@@ -696,9 +961,31 @@ public:
     bool murBack = true, murFront = true;
     bool murLeft = true, murRight = true;
     bool murDown = true, murUp = true;
+    bool pmlBack = false, pmlFront = false;
+    bool pmlLeft = false, pmlRight = false;
+    bool pmlDown = false, pmlUp = false;
+    struct PmlFaceConfig {
+        bool enabled = false;
+        int layers = 0;
+        double order = 2.0;
+        double reflection = 0.001;
+    };
+    PmlFaceConfig pmlFaceBack, pmlFaceFront;
+    PmlFaceConfig pmlFaceLeft, pmlFaceRight;
+    PmlFaceConfig pmlFaceDown, pmlFaceUp;
+    bool cpmlBordersInitialized = false;
+    std::vector<fdtd_real> pmlPceX, pmlPceY, pmlPceZ;
+    std::vector<fdtd_real> pmlPbeX, pmlPbeY, pmlPbeZ;
+    std::vector<fdtd_real> pmlPcmX, pmlPcmY, pmlPcmZ;
+    std::vector<fdtd_real> pmlPbmX, pmlPbmY, pmlPbmZ;
+    std::vector<fdtd_real> psiExy, psiExz, psiEyz, psiEyx, psiEzx, psiEzy;
+    std::vector<fdtd_real> psiHxy, psiHxz, psiHyz, psiHyx, psiHzx, psiHzy;
     bool pmcBack = false, pmcFront = false;
     bool pmcLeft = false, pmcRight = false;
     bool pmcDown = false, pmcUp = false;
+    int pmlElectricCalls = 0;
+    int pmlBodyHCalls = 0;
+    int pmlMagneticCpmlCalls = 0;
     // MURc zones (InitMURBorders bordersmur.F90 L94-137) — thin 1-cell face pads per component.
     struct MurZone { int xi = 0, xe = 0, yi = 0, ye = 0, zi = 0, ze = 0; };
     MurZone murHyBack_, murHyFront_, murHzBack_, murHzFront_;
@@ -721,9 +1008,21 @@ public:
     std::string inputFile;
     bool mtlnPmlPaddingActive = false;
     int pmlPadX = 0, pmlPadY = 0, pmlPadZ = 0;
+    int fieldHalo = 2;
+    int mpiLayoutNumber = 0;
+    int mpiNumProcs = 1;
+    int mpiAxis = 3;
+    bool mpiEnabled = false;
+    std::vector<MpiSliceInfo> mpiSlices;
 
-    void init(const std::string& filename, bool map_vtk = false) {
+    void init(const std::string& filename, bool map_vtk = false,
+              int mpi_rank = 0, int mpi_size = 1, int mpi_axis = 3) {
+        preserveFortranSubnormalArithmetic();
         inputFile = filename;
+        mpiLayoutNumber = mpi_rank;
+        mpiNumProcs = std::max(1, mpi_size);
+        mpiAxis = (mpi_axis >= 1 && mpi_axis <= 3) ? mpi_axis : 3;
+        mpiEnabled = mpiNumProcs > 1;
         createMapVtk = map_vtk;
         std::ifstream jf(filename);
         if (jf.is_open()) {
@@ -778,6 +1077,9 @@ public:
                       << ", steps " << steps_before << " -> " << numSteps << std::endl;
         }
 
+        initBoundaryFlagsFromJson();
+        initMpiOneAxisDecomposition();
+
         int ex_n = ex_nx()*ex_ny()*ex_nz();
         int ey_n = ey_nx()*ey_ny()*ey_nz();
         int ez_n = ez_nx()*ez_ny()*ez_nz();
@@ -805,7 +1107,6 @@ public:
         std::fill(CeEz.begin(), CeEz.end(), ce);
         std::fill(CmH.begin(), CmH.end(), ch);
 
-        initBoundaryFlagsFromJson();
         initIsotropicMaterialCoefficientsFromJson();
 
         sources = pd.sources.planeWaves;
@@ -834,6 +1135,7 @@ public:
             excitations[src.magnitudeFile] = readExcitationFile(exc_path);
         }
         initGridInverses();
+        initCpmlBorders();
         planeWaves.resize(pd.sources.planeWaves.size());
         for (int i = 0; i < (int)pd.sources.planeWaves.size(); i++) {
             planeWaves[i].px.resize(1,0); planeWaves[i].py.resize(1,0); planeWaves[i].pz.resize(1,0);
@@ -844,6 +1146,7 @@ public:
         probes = pd.probes.probes;
         initInternalPecFromJson();
         initBoundaryPecMasksFromJson();
+        initSgbcFromJson();
         initBulkCurrentProbes();
         initAnalyticLumpedCurrentsFromJson();
         initAnalyticSurfaceImpedanceCurrentsFromJson();
@@ -857,6 +1160,7 @@ public:
         }
         initLumpedFromJson();
         initMurBorders();
+        initMovieProbesFromJson(SEMBA_FDTD_m::extractCaseNameFromInput(filename));
 
         std::cout << "FDTD: grid=" << NX << "x" << NY << "x" << NZ << " dt=" << dt << " steps=" << numSteps << std::endl;
     }
@@ -1284,46 +1588,45 @@ public:
         murPastHxUpInt.assign((NX + 1) * NY, 0.0);
     }
 
-    int ex_nx() const { return NX + 3; }
-    int ex_ny() const { return NY + 4; }
-    int ex_nz() const { return NZ + 4; }
-    int ey_nx() const { return NX + 4; }
-    int ey_ny() const { return NY + 3; }
-    int ey_nz() const { return NZ + 4; }
-    int ez_nx() const { return NX + 4; }
-    int ez_ny() const { return NY + 4; }
-    int ez_nz() const { return NZ + 3; }
-    int hx_nx() const { return NX + 4; }
-    int hx_ny() const { return NY + 3; }
-    int hx_nz() const { return NZ + 3; }
-    int hy_nx() const { return NX + 3; }
-    int hy_ny() const { return NY + 4; }
-    int hy_nz() const { return NZ + 3; }
-    int hz_nx() const { return NX + 3; }
-    int hz_ny() const { return NY + 3; }
-    int hz_nz() const { return NZ + 4; }
+    int ex_nx() const { return NX + 2 * fieldHalo - 1; }
+    int ex_ny() const { return NY + 2 * fieldHalo; }
+    int ex_nz() const { return NZ + 2 * fieldHalo; }
+    int ey_nx() const { return NX + 2 * fieldHalo; }
+    int ey_ny() const { return NY + 2 * fieldHalo - 1; }
+    int ey_nz() const { return NZ + 2 * fieldHalo; }
+    int ez_nx() const { return NX + 2 * fieldHalo; }
+    int ez_ny() const { return NY + 2 * fieldHalo; }
+    int ez_nz() const { return NZ + 2 * fieldHalo - 1; }
+    int hx_nx() const { return NX + 2 * fieldHalo; }
+    int hx_ny() const { return NY + 2 * fieldHalo - 1; }
+    int hx_nz() const { return NZ + 2 * fieldHalo - 1; }
+    int hy_nx() const { return NX + 2 * fieldHalo - 1; }
+    int hy_ny() const { return NY + 2 * fieldHalo; }
+    int hy_nz() const { return NZ + 2 * fieldHalo - 1; }
+    int hz_nx() const { return NX + 2 * fieldHalo - 1; }
+    int hz_ny() const { return NY + 2 * fieldHalo - 1; }
+    int hz_nz() const { return NZ + 2 * fieldHalo; }
 
-    int ex_idx(int i,int j,int k) const { return (i + 2)*ex_ny()*ex_nz() + (j + 2)*ex_nz() + (k + 2); }
-    int ey_idx(int i,int j,int k) const { return (i + 2)*ey_ny()*ey_nz() + (j + 2)*ey_nz() + (k + 2); }
-    int ez_idx(int i,int j,int k) const { return (i + 2)*ez_ny()*ez_nz() + (j + 2)*ez_nz() + (k + 2); }
-    int hx_idx(int i,int j,int k) const { return (i + 2)*hx_ny()*hx_nz() + (j + 2)*hx_nz() + (k + 2); }
-    int hy_idx(int i,int j,int k) const { return (i + 2)*hy_ny()*hy_nz() + (j + 2)*hy_nz() + (k + 2); }
-    int hz_idx(int i,int j,int k) const { return (i + 2)*hz_ny()*hz_nz() + (j + 2)*hz_nz() + (k + 2); }
+    int ex_idx(int i,int j,int k) const { return (i + fieldHalo)*ex_ny()*ex_nz() + (j + fieldHalo)*ex_nz() + (k + fieldHalo); }
+    int ey_idx(int i,int j,int k) const { return (i + fieldHalo)*ey_ny()*ey_nz() + (j + fieldHalo)*ey_nz() + (k + fieldHalo); }
+    int ez_idx(int i,int j,int k) const { return (i + fieldHalo)*ez_ny()*ez_nz() + (j + fieldHalo)*ez_nz() + (k + fieldHalo); }
+    int hx_idx(int i,int j,int k) const { return (i + fieldHalo)*hx_ny()*hx_nz() + (j + fieldHalo)*hx_nz() + (k + fieldHalo); }
+    int hy_idx(int i,int j,int k) const { return (i + fieldHalo)*hy_ny()*hy_nz() + (j + fieldHalo)*hy_nz() + (k + fieldHalo); }
+    int hz_idx(int i,int j,int k) const { return (i + fieldHalo)*hz_ny()*hz_nz() + (j + fieldHalo)*hz_nz() + (k + fieldHalo); }
 
-    bool in_ex(int i,int j,int k) const { return i >= -2 && i <= NX && j >= -2 && j <= NY + 1 && k >= -2 && k <= NZ + 1; }
-    bool in_ey(int i,int j,int k) const { return i >= -2 && i <= NX + 1 && j >= -2 && j <= NY && k >= -2 && k <= NZ + 1; }
-    bool in_ez(int i,int j,int k) const { return i >= -2 && i <= NX + 1 && j >= -2 && j <= NY + 1 && k >= -2 && k <= NZ; }
-    bool in_hx(int i,int j,int k) const { return i >= -2 && i <= NX + 1 && j >= -2 && j <= NY && k >= -2 && k <= NZ; }
-    bool in_hy(int i,int j,int k) const { return i >= -2 && i <= NX && j >= -2 && j <= NY + 1 && k >= -2 && k <= NZ; }
-    bool in_hz(int i,int j,int k) const { return i >= -2 && i <= NX && j >= -2 && j <= NY && k >= -2 && k <= NZ + 1; }
+    bool in_ex(int i,int j,int k) const { return i >= -fieldHalo && i <= NX + fieldHalo - 2 && j >= -fieldHalo && j <= NY + fieldHalo - 1 && k >= -fieldHalo && k <= NZ + fieldHalo - 1; }
+    bool in_ey(int i,int j,int k) const { return i >= -fieldHalo && i <= NX + fieldHalo - 1 && j >= -fieldHalo && j <= NY + fieldHalo - 2 && k >= -fieldHalo && k <= NZ + fieldHalo - 1; }
+    bool in_ez(int i,int j,int k) const { return i >= -fieldHalo && i <= NX + fieldHalo - 1 && j >= -fieldHalo && j <= NY + fieldHalo - 1 && k >= -fieldHalo && k <= NZ + fieldHalo - 2; }
+    bool in_hx(int i,int j,int k) const { return i >= -fieldHalo && i <= NX + fieldHalo - 1 && j >= -fieldHalo && j <= NY + fieldHalo - 2 && k >= -fieldHalo && k <= NZ + fieldHalo - 2; }
+    bool in_hy(int i,int j,int k) const { return i >= -fieldHalo && i <= NX + fieldHalo - 2 && j >= -fieldHalo && j <= NY + fieldHalo - 1 && k >= -fieldHalo && k <= NZ + fieldHalo - 2; }
+    bool in_hz(int i,int j,int k) const { return i >= -fieldHalo && i <= NX + fieldHalo - 2 && j >= -fieldHalo && j <= NY + fieldHalo - 2 && k >= -fieldHalo && k <= NZ + fieldHalo - 1; }
 
     fdtd_real lineX1(int n) const { return static_cast<fdtd_real>(n) * static_cast<fdtd_real>(dx); }
     fdtd_real lineY1(int n) const { return static_cast<fdtd_real>(n) * static_cast<fdtd_real>(dy); }
     fdtd_real lineZ1(int n) const { return static_cast<fdtd_real>(n) * static_cast<fdtd_real>(dz); }
-    fdtd_real fieldGridInverse(fdtd_real value) const {
-        return hasPlaneWaveSource() ? fortranPlanewaveGridInverse(value)
-                                    : fortranGridInverse(value);
-    }
+	    fdtd_real fieldGridInverse(fdtd_real value) const {
+	        return fortranGridInverse(value);
+	    }
     fdtd_real hDistanceGridInverse(fdtd_real value, int index, int cells) const {
 #ifdef CompileWithReal8
         (void)index;
@@ -1340,48 +1643,48 @@ public:
     }
     void initGridInverses() {
         const auto fillElectric = [](std::vector<fdtd_real>& target,
-                                     int cells, fdtd_real value) {
-            target.assign(static_cast<size_t>(cells + 4), value);
+                                     int cells, int halo, fdtd_real value) {
+            target.assign(static_cast<size_t>(cells + 2 * halo), value);
         };
         const auto fillMagnetic = [this](std::vector<fdtd_real>& target,
                                          int cells, fdtd_real value) {
-            target.resize(static_cast<size_t>(cells + 4));
-            for (int i = -2; i <= cells + 1; ++i) {
-                target[static_cast<size_t>(i + 2)] =
+            target.resize(static_cast<size_t>(cells + 2 * fieldHalo));
+            for (int i = -fieldHalo; i <= cells + fieldHalo - 1; ++i) {
+                target[static_cast<size_t>(i + fieldHalo)] =
                     hDistanceGridInverse(value, i, cells);
             }
         };
 
-        fillElectric(Idxe, NX, fieldGridInverse(static_cast<fdtd_real>(dx)));
-        fillElectric(Idye, NY, fieldGridInverse(static_cast<fdtd_real>(dy)));
-        fillElectric(Idze, NZ, fieldGridInverse(static_cast<fdtd_real>(dz)));
+        fillElectric(Idxe, NX, fieldHalo, fieldGridInverse(static_cast<fdtd_real>(dx)));
+        fillElectric(Idye, NY, fieldHalo, fieldGridInverse(static_cast<fdtd_real>(dy)));
+        fillElectric(Idze, NZ, fieldHalo, fieldGridInverse(static_cast<fdtd_real>(dz)));
         fillMagnetic(Idxh, NX, static_cast<fdtd_real>(dx));
         fillMagnetic(Idyh, NY, static_cast<fdtd_real>(dy));
         fillMagnetic(Idzh, NZ, static_cast<fdtd_real>(dz));
     }
     fdtd_real idxe1(int i) const {
         return Idxe.empty() ? fieldGridInverse(static_cast<fdtd_real>(dx))
-                            : Idxe[static_cast<size_t>(i + 2)];
+                            : Idxe[axisCoeffIndex(i)];
     }
     fdtd_real idye1(int j) const {
         return Idye.empty() ? fieldGridInverse(static_cast<fdtd_real>(dy))
-                            : Idye[static_cast<size_t>(j + 2)];
+                            : Idye[axisCoeffIndex(j)];
     }
     fdtd_real idze1(int k) const {
         return Idze.empty() ? fieldGridInverse(static_cast<fdtd_real>(dz))
-                            : Idze[static_cast<size_t>(k + 2)];
+                            : Idze[axisCoeffIndex(k)];
     }
     fdtd_real idxh1(int i) const {
         return Idxh.empty() ? hDistanceGridInverse(static_cast<fdtd_real>(dx), i, NX)
-                            : Idxh[static_cast<size_t>(i + 2)];
+                            : Idxh[axisCoeffIndex(i)];
     }
     fdtd_real idyh1(int j) const {
         return Idyh.empty() ? hDistanceGridInverse(static_cast<fdtd_real>(dy), j, NY)
-                            : Idyh[static_cast<size_t>(j + 2)];
+                            : Idyh[axisCoeffIndex(j)];
     }
     fdtd_real idzh1(int k) const {
         return Idzh.empty() ? hDistanceGridInverse(static_cast<fdtd_real>(dz), k, NZ)
-                            : Idzh[static_cast<size_t>(k + 2)];
+                            : Idzh[axisCoeffIndex(k)];
     }
     fdtd_real idxePlanewave1(int i) const { (void)i; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dx)); }
     fdtd_real idyePlanewave1(int j) const { (void)j; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dy)); }
@@ -1389,6 +1692,160 @@ public:
     fdtd_real idxhPlanewave1(int i) const { (void)i; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dx)); }
     fdtd_real idyhPlanewave1(int j) const { (void)j; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dy)); }
     fdtd_real idzhPlanewave1(int k) const { (void)k; return fortranPlanewaveGridInverse(static_cast<fdtd_real>(dz)); }
+
+    size_t axisCoeffIndex(int idx) const {
+        return static_cast<size_t>(idx + fieldHalo);
+    }
+
+    fdtd_real cpmlSigmaMax(const PmlFaceConfig& face,
+                           fdtd_real delta) const {
+        const fdtd_real order = static_cast<fdtd_real>(face.order);
+        const fdtd_real zvac = static_cast<fdtd_real>(
+            std::sqrt(static_cast<fdtd_real>(mu0) /
+                      static_cast<fdtd_real>(eps0)));
+        if (face.layers == 10 || face.layers == 5) {
+            return static_cast<fdtd_real>(0.8) *
+                   static_cast<fdtd_real>(order + static_cast<fdtd_real>(1.0)) /
+                   static_cast<fdtd_real>(zvac * delta);
+        }
+        const fdtd_real refl = static_cast<fdtd_real>(face.reflection);
+        const fdtd_real layers = static_cast<fdtd_real>(face.layers);
+        return static_cast<fdtd_real>(
+            -((std::log(refl) * (order + static_cast<fdtd_real>(1.0))) /
+              (static_cast<fdtd_real>(2.0) * zvac * layers * delta)));
+    }
+
+    void setCpmlCoeffAt(std::vector<fdtd_real>& pB,
+                        std::vector<fdtd_real>& pC,
+                        std::vector<fdtd_real>& inv,
+                        int axisIndex,
+                        const PmlFaceConfig& face,
+                        fdtd_real delta,
+                        fdtd_real normalizedDepth) {
+        if (!face.enabled || face.layers <= 0) return;
+
+        const fdtd_real order = static_cast<fdtd_real>(face.order);
+        const fdtd_real sigmaMax = cpmlSigmaMax(face, delta);
+        const fdtd_real alphaMax = static_cast<fdtd_real>(0.0) * sigmaMax;
+        const fdtd_real alphaOrder = static_cast<fdtd_real>(1.0);
+        const fdtd_real kappaMax = static_cast<fdtd_real>(1.0);
+        fdtd_real sigma = sigmaMax;
+        fdtd_real kappa = kappaMax;
+        if (order != static_cast<fdtd_real>(0.0)) {
+            const fdtd_real depthPow = static_cast<fdtd_real>(
+                std::pow(normalizedDepth, order));
+            sigma = static_cast<fdtd_real>(sigmaMax * depthPow);
+            kappa = static_cast<fdtd_real>(
+                static_cast<fdtd_real>(1.0) +
+                (kappaMax - static_cast<fdtd_real>(1.0)) * depthPow);
+        }
+        const fdtd_real invDepth = static_cast<fdtd_real>(
+            std::max(static_cast<fdtd_real>(0.0),
+                     static_cast<fdtd_real>(1.0) - normalizedDepth));
+        const fdtd_real alpha = static_cast<fdtd_real>(
+            alphaMax * std::pow(invDepth, alphaOrder));
+        const fdtd_real exponent = static_cast<fdtd_real>(
+            -static_cast<fdtd_real>((sigma / kappa) + alpha) *
+            static_cast<fdtd_real>(dt) / static_cast<fdtd_real>(eps0));
+        const fdtd_real b = static_cast<fdtd_real>(std::exp(exponent));
+
+        fdtd_real c = static_cast<fdtd_real>(0.0);
+        const fdtd_real denom = static_cast<fdtd_real>(sigma + kappa * alpha);
+        if (denom != static_cast<fdtd_real>(0.0)) {
+            c = static_cast<fdtd_real>(
+                ((sigma * (b - static_cast<fdtd_real>(1.0)) / denom) /
+                 kappa) / delta);
+        }
+
+        const size_t idx = axisCoeffIndex(axisIndex);
+        if (idx < pB.size()) pB[idx] = b;
+        if (idx < pC.size()) pC[idx] = c;
+        if (idx < inv.size()) {
+            inv[idx] = static_cast<fdtd_real>(
+                static_cast<fdtd_real>(1.0) / (kappa * delta));
+        }
+    }
+
+    void initCpmlAxis(int cells,
+                      fdtd_real delta,
+                      const PmlFaceConfig& lower,
+                      const PmlFaceConfig& upper,
+                      std::vector<fdtd_real>& pCe,
+                      std::vector<fdtd_real>& pBe,
+                      std::vector<fdtd_real>& pCm,
+                      std::vector<fdtd_real>& pBm,
+                      std::vector<fdtd_real>& invElectricCurl,
+                      std::vector<fdtd_real>& invMagneticCurl) {
+        const size_t n = static_cast<size_t>(cells + 2 * fieldHalo);
+        pCe.assign(n, static_cast<fdtd_real>(0.0));
+        pCm.assign(n, static_cast<fdtd_real>(0.0));
+        pBe.assign(n, static_cast<fdtd_real>(1.0));
+        pBm.assign(n, static_cast<fdtd_real>(1.0));
+
+        for (int i = -fieldHalo; i <= cells + fieldHalo - 1; ++i) {
+            if (lower.enabled && lower.layers > 0 && i <= -1) {
+                const fdtd_real depthE = static_cast<fdtd_real>(
+                    static_cast<fdtd_real>(-i) /
+                    static_cast<fdtd_real>(lower.layers));
+                setCpmlCoeffAt(pBe, pCe, invElectricCurl, i, lower, delta, depthE);
+            } else if (upper.enabled && upper.layers > 0 && i >= cells) {
+                const fdtd_real depthE = static_cast<fdtd_real>(
+                    static_cast<fdtd_real>(i - cells + 1) /
+                    static_cast<fdtd_real>(upper.layers));
+                setCpmlCoeffAt(pBe, pCe, invElectricCurl, i, upper, delta, depthE);
+            }
+
+            if (lower.enabled && lower.layers > 0 && i <= -1) {
+                const fdtd_real depthH = static_cast<fdtd_real>(
+                    (static_cast<fdtd_real>(-i) -
+                     static_cast<fdtd_real>(0.5)) /
+                    static_cast<fdtd_real>(lower.layers));
+                setCpmlCoeffAt(pBm, pCm, invMagneticCurl, i, lower, delta, depthH);
+            } else if (upper.enabled && upper.layers > 0 && i >= cells - 1) {
+                const fdtd_real depthH = static_cast<fdtd_real>(
+                    (static_cast<fdtd_real>(i - cells) +
+                     static_cast<fdtd_real>(1.5)) /
+                    static_cast<fdtd_real>(upper.layers));
+                setCpmlCoeffAt(pBm, pCm, invMagneticCurl, i, upper, delta, depthH);
+            }
+        }
+    }
+
+    void initCpmlBorders() {
+        cpmlBordersInitialized = false;
+        if (!usePml) return;
+        if (Idxh.empty() || Idyh.empty() || Idzh.empty() ||
+            Idxe.empty() || Idye.empty() || Idze.empty()) {
+            initGridInverses();
+        }
+
+        initCpmlAxis(NX, static_cast<fdtd_real>(dx),
+                     pmlFaceBack, pmlFaceFront,
+                     pmlPceX, pmlPbeX, pmlPcmX, pmlPbmX,
+                     Idxh, Idxe);
+        initCpmlAxis(NY, static_cast<fdtd_real>(dy),
+                     pmlFaceLeft, pmlFaceRight,
+                     pmlPceY, pmlPbeY, pmlPcmY, pmlPbmY,
+                     Idyh, Idye);
+        initCpmlAxis(NZ, static_cast<fdtd_real>(dz),
+                     pmlFaceDown, pmlFaceUp,
+                     pmlPceZ, pmlPbeZ, pmlPcmZ, pmlPbmZ,
+                     Idzh, Idze);
+
+        psiExy.assign(Ex.size(), static_cast<fdtd_real>(0.0));
+        psiExz.assign(Ex.size(), static_cast<fdtd_real>(0.0));
+        psiEyz.assign(Ey.size(), static_cast<fdtd_real>(0.0));
+        psiEyx.assign(Ey.size(), static_cast<fdtd_real>(0.0));
+        psiEzx.assign(Ez.size(), static_cast<fdtd_real>(0.0));
+        psiEzy.assign(Ez.size(), static_cast<fdtd_real>(0.0));
+        psiHxy.assign(Hx.size(), static_cast<fdtd_real>(0.0));
+        psiHxz.assign(Hx.size(), static_cast<fdtd_real>(0.0));
+        psiHyz.assign(Hy.size(), static_cast<fdtd_real>(0.0));
+        psiHyx.assign(Hy.size(), static_cast<fdtd_real>(0.0));
+        psiHzx.assign(Hz.size(), static_cast<fdtd_real>(0.0));
+        psiHzy.assign(Hz.size(), static_cast<fdtd_real>(0.0));
+        cpmlBordersInitialized = true;
+    }
 
     std::string boundaryTypeForFace(const std::string& face) const {
         if (!inputRoot.is_null() && inputRoot.contains("boundary")) {
@@ -1407,7 +1864,11 @@ public:
     }
 
     static bool isMurLikeBoundary(const std::string& type) {
-        return type == "mur" || type == "pml";
+        return type == "mur";
+    }
+
+    static bool isPmlBoundary(const std::string& type) {
+        return type == "pml";
     }
 
     static bool isPecBoundary(const std::string& type) {
@@ -1420,6 +1881,36 @@ public:
 
     static bool isPmcBoundary(const std::string& type) {
         return type == "pmc";
+    }
+
+    PmlFaceConfig pmlFaceConfigForJson(const std::string& face,
+                                       bool enabled) const {
+        PmlFaceConfig config;
+        config.enabled = enabled;
+        if (!enabled) return config;
+
+        if (!inputRoot.is_null() && inputRoot.contains("boundary")) {
+            const auto& bd = inputRoot["boundary"];
+            const nlohmann::json* src = nullptr;
+            if (bd.contains(face)) {
+                src = &bd[face];
+            } else if (bd.contains("all")) {
+                src = &bd["all"];
+            }
+            if (src != nullptr) {
+                config.layers = std::max(0, static_cast<int>(
+                    std::lround(src->value("layers", 8.0))));
+                config.order = src->value("order", 2.0);
+                config.reflection = src->value("reflection", 0.001);
+                if (config.reflection >= 1.0) {
+                    config.reflection = 0.99999;
+                }
+                return config;
+            }
+        }
+
+        config.layers = 8;
+        return config;
     }
 
     void initBoundaryFlagsFromJson() {
@@ -1437,6 +1928,26 @@ public:
         murDown = isMurLikeBoundary(zLower);
         murUp = isMurLikeBoundary(zUpper);
         useMur = murBack || murFront || murLeft || murRight || murDown || murUp;
+        pmlBack = isPmlBoundary(xLower);
+        pmlFront = isPmlBoundary(xUpper);
+        pmlLeft = isPmlBoundary(yLower);
+        pmlRight = isPmlBoundary(yUpper);
+        pmlDown = isPmlBoundary(zLower);
+        pmlUp = isPmlBoundary(zUpper);
+        usePml = pmlBack || pmlFront || pmlLeft || pmlRight || pmlDown || pmlUp;
+        pmlFaceBack = pmlFaceConfigForJson("xLower", pmlBack);
+        pmlFaceFront = pmlFaceConfigForJson("xUpper", pmlFront);
+        pmlFaceLeft = pmlFaceConfigForJson("yLower", pmlLeft);
+        pmlFaceRight = pmlFaceConfigForJson("yUpper", pmlRight);
+        pmlFaceDown = pmlFaceConfigForJson("zLower", pmlDown);
+        pmlFaceUp = pmlFaceConfigForJson("zUpper", pmlUp);
+        fieldHalo = 2;
+        if (usePml) {
+            fieldHalo = std::max({fieldHalo,
+                                  pmlFaceBack.layers, pmlFaceFront.layers,
+                                  pmlFaceLeft.layers, pmlFaceRight.layers,
+                                  pmlFaceDown.layers, pmlFaceUp.layers});
+        }
         usePec = isPecBoundary(xLower) && isPecBoundary(xUpper) &&
                  isPecBoundary(yLower) && isPecBoundary(yUpper) &&
                  isPecBoundary(zLower) && isPecBoundary(zUpper);
@@ -1453,6 +1964,128 @@ public:
         pmcRight = isPmcBoundary(yUpper);
         pmcDown = isPmcBoundary(zLower);
         pmcUp = isPmcBoundary(zUpper);
+    }
+
+    int mpiSliceCellCount() const {
+        if (mpiAxis == 1) return NX;
+        if (mpiAxis == 2) return NY;
+        return NZ;
+    }
+
+    const MpiSliceInfo* currentMpiSlice() const {
+        if (!mpiEnabled || mpiLayoutNumber < 0 ||
+            mpiLayoutNumber >= static_cast<int>(mpiSlices.size())) {
+            return nullptr;
+        }
+        return &mpiSlices[static_cast<size_t>(mpiLayoutNumber)];
+    }
+
+    bool mpiOwnsAxisCoordinate(int coord) const {
+        const MpiSliceInfo* slice = currentMpiSlice();
+        if (slice == nullptr) return true;
+        return coord >= slice->sweepZI && coord <= slice->sweepZE;
+    }
+
+    bool mpiComponentKeepsUpperCut(int component) const {
+        if (!mpiEnabled || mpiAxis < 1 || mpiAxis > 3) return false;
+        const int normalElectric = mpiAxis - 1;
+        const int normalMagnetic = 3 + normalElectric;
+        if (component >= 0 && component <= 2) {
+            return component != normalElectric;
+        }
+        return component == normalMagnetic;
+    }
+
+    int mpiComponentAxisLowerCoord(const MpiSliceInfo& slice) const {
+        return slice.com - 1;
+    }
+
+    int mpiComponentAxisUpperCoord(const MpiSliceInfo& slice, int component) const {
+        return slice.fin - (mpiComponentKeepsUpperCut(component) ? 1 : 2);
+    }
+
+    bool mpiOwnsComponentAxisCoordinate(int component, int coord) const {
+        const MpiSliceInfo* slice = currentMpiSlice();
+        if (slice == nullptr) return true;
+        if (coord < mpiComponentAxisLowerCoord(*slice)) return false;
+        const int upper = mpiComponentAxisUpperCoord(*slice, component);
+        return coord <= upper;
+    }
+
+    bool mpiOwnsComponentCoordinate(int component, int i, int j, int k) const {
+        if (!mpiEnabled) return true;
+        if (mpiAxis == 1) return mpiOwnsComponentAxisCoordinate(component, i);
+        if (mpiAxis == 2) return mpiOwnsComponentAxisCoordinate(component, j);
+        return mpiOwnsComponentAxisCoordinate(component, k);
+    }
+
+    bool mpiOwnsPlaneWaveFace(int faceAxis, int coord) const {
+        if (!mpiEnabled || faceAxis != mpiAxis) return true;
+        const int normalMagnetic = 3 + faceAxis - 1;
+        return mpiOwnsComponentAxisCoordinate(normalMagnetic, coord - 1);
+    }
+
+    bool mpiOwnsFieldCoordinate(int i, int j, int k) const {
+        if (!mpiEnabled) return true;
+        if (mpiAxis == 1) return mpiOwnsAxisCoordinate(i);
+        if (mpiAxis == 2) return mpiOwnsAxisCoordinate(j);
+        return mpiOwnsAxisCoordinate(k);
+    }
+
+    bool mpiOwnsProbe(const probe_output_t& probe) const {
+        if (!mpiEnabled) return true;
+        const MpiSliceInfo* slice = currentMpiSlice();
+        if (slice == nullptr) return true;
+        const int coord = (mpiAxis == 1) ? probe.cellI :
+                          ((mpiAxis == 2) ? probe.cellJ : probe.cellK);
+        if (coord < slice->com) return false;
+        if (mpiLayoutNumber + 1 < mpiNumProcs) {
+            return coord < slice->fin;
+        }
+        return coord <= slice->fin;
+    }
+
+    void clampMpiAxisRange(int coordAxis, int& first, int& last) const {
+        const MpiSliceInfo* slice = currentMpiSlice();
+        if (slice == nullptr || coordAxis != mpiAxis) return;
+        first = std::max(first, slice->sweepZI);
+        last = std::min(last, slice->sweepZE);
+    }
+
+    void clampMpiComponentAxisRange(int component, int coordAxis, int& first, int& last) const {
+        const MpiSliceInfo* slice = currentMpiSlice();
+        if (slice == nullptr || coordAxis != mpiAxis) return;
+        first = std::max(first, mpiComponentAxisLowerCoord(*slice));
+        const int upper = mpiComponentAxisUpperCoord(*slice, component);
+        last = std::min(last, upper);
+    }
+
+    std::pair<int, int> mpiSlicePmlLayers() const {
+        if (mpiAxis == 1) {
+            return {pmlFaceBack.layers, pmlFaceFront.layers};
+        }
+        if (mpiAxis == 2) {
+            return {pmlFaceLeft.layers, pmlFaceRight.layers};
+        }
+        return {pmlFaceDown.layers, pmlFaceUp.layers};
+    }
+
+    void initMpiOneAxisDecomposition() {
+        const auto pmlLayers = mpiSlicePmlLayers();
+        mpiSlices = buildMpiOneAxisSlicesLocal(mpiSliceCellCount(),
+                                               mpiNumProcs,
+                                               pmlLayers.first,
+                                               pmlLayers.second,
+                                               -1,
+                                               mpiAxis);
+        if (mpiEnabled && mpiLayoutNumber == 0) {
+            std::ostringstream slices;
+            slices << "!SLICES";
+            for (const auto& slice : mpiSlices) {
+                slices << "_" << (slice.fin - slice.com);
+            }
+            std::cout << slices.str() << std::endl;
+        }
     }
 
     std::map<int, double> isotropicPermittivityByMaterialId() const {
@@ -1636,6 +2269,13 @@ public:
         auto& pw = planeWaves[pwIdx];
         fdtd_real xf = 0.0, yf = 0.0, zf = 0.0;
         physCoord1(nfield, i, j, k, xf, yf, zf);
+        return computeIncidFromPhys(pwIdx, nfield, time, xf, yf, zf, calledFromObservation);
+    }
+
+    SEMBA_FORTRAN_ROUNDING fdtd_real computeIncidFromPhys(int pwIdx, int nfield, double time,
+                                                          fdtd_real xf, fdtd_real yf, fdtd_real zf,
+                                                          bool calledFromObservation = false) {
+        auto& pw = planeWaves[pwIdx];
         const fdtd_real timef = static_cast<fdtd_real>(time);
         const fdtd_real cluz = fortranPlanewaveCluz(
             static_cast<fdtd_real>(eps0), static_cast<fdtd_real>(mu0));
@@ -1671,6 +2311,42 @@ public:
         }
         return flushFortranSubnormal(result);
     }
+
+    fdtd_real computeIncidWithZOverride(int pwIdx, int nfield, double time,
+                                        int i, int j, int k, fdtd_real zOverride) {
+        fdtd_real xf = 0.0, yf = 0.0, zf = 0.0;
+        physCoord1(nfield, i, j, k, xf, yf, zf);
+        return computeIncidFromPhys(pwIdx, nfield, time, xf, yf, zOverride);
+    }
+
+	    fdtd_real computeFortranMpiUpperCutZIncident(int pwIdx, int nfield,
+	                                                 double time, int i, int j, int k) {
+	        return computeIncidWithZOverride(
+	            pwIdx, nfield, time, i, j, k, static_cast<fdtd_real>(0.0));
+	    }
+	
+	    bool mpiFortranInternalUpperCutPlanewaveZFace(const PlaneWaveState_t& pw) const {
+	        const MpiSliceInfo* slice = currentMpiSlice();
+	        return slice != nullptr && mpiAxis == 3 &&
+	               mpiLayoutNumber + 1 < mpiNumProcs &&
+	               pw.esqz1 <= slice->fin && pw.esqz2 > slice->fin;
+	    }
+
+	    int mpiFortranPlanewaveUpperZFace(const PlaneWaveState_t& pw) const {
+	        if (mpiFortranInternalUpperCutPlanewaveZFace(pw)) {
+	            return currentMpiSlice()->fin;
+	        }
+	        return std::min(NZ, pw.esqz2);
+	    }
+
+	    bool mpiFortranUpperCutPlanewaveZCoordinateBug(const PlaneWaveState_t& pw,
+	                                                   int k) const {
+	        const MpiSliceInfo* slice = currentMpiSlice();
+	        return mpiFortranInternalUpperCutPlanewaveZFace(pw) ||
+	               (slice != nullptr && mpiAxis == 3 &&
+	                mpiLayoutNumber + 1 < mpiNumProcs &&
+	                k == slice->fin && k == pw.esqz2);
+	    }
 
     void initPlaneWave(int srcIdx) {
         auto& src = sources[srcIdx];
@@ -1709,31 +2385,31 @@ public:
                     continue;
                 }
                 const auto& iv = elem["intervals"][0];
-                const auto convertInterval = [](int a, int b) {
-                    if (a < b) {
-                        return std::pair<int, int>{a, b - 1};
-                    }
-                    if (a == b) return std::pair<int, int>{a, b};
-                    return std::pair<int, int>{b, a - 1};
-                };
-                auto [x1, x2] = convertInterval(
-                    iv[0][0].get<int>(), iv[1][0].get<int>());
-                auto [y1, y2] = convertInterval(
-                    iv[0][1].get<int>(), iv[1][1].get<int>());
-                auto [z1, z2] = convertInterval(
-                    iv[0][2].get<int>(), iv[1][2].get<int>());
-                if (x1 == 0) x1 = -5;
-                if (x2 == NX) x2 = NX + 5;
-                if (y1 == 0) y1 = -5;
-                if (y2 == NY) y2 = NY + 5;
-                if (z1 == 0) z1 = -5;
-                if (z2 == NZ) z2 = NZ + 5;
-                pw.esqx1 = x1;
-                pw.esqx2 = x2;
-                pw.esqy1 = y1;
-                pw.esqy2 = y2;
-                pw.esqz1 = z1;
-                pw.esqz2 = z2;
+                // Match preprocess_geom.F90: Min/Max of raw JSON interval endpoints.
+                const int x0 = iv[0][0].get<int>();
+                const int x1 = iv[1][0].get<int>();
+                const int y0 = iv[0][1].get<int>();
+                const int y1 = iv[1][1].get<int>();
+                const int z0 = iv[0][2].get<int>();
+                const int z1 = iv[1][2].get<int>();
+                int esqx1 = std::min(x0, x1);
+                int esqx2 = std::max(x0, x1);
+                int esqy1 = std::min(y0, y1);
+                int esqy2 = std::max(y0, y1);
+                int esqz1 = std::min(z0, z1);
+                int esqz2 = std::max(z0, z1);
+                if (esqx1 == 0) esqx1 = -5;
+                if (esqx2 == NX) esqx2 = NX + 5;
+                if (esqy1 == 0) esqy1 = -5;
+                if (esqy2 == NY) esqy2 = NY + 5;
+                if (esqz1 == 0) esqz1 = -5;
+                if (esqz2 == NZ) esqz2 = NZ + 5;
+                pw.esqx1 = esqx1;
+                pw.esqx2 = esqx2;
+                pw.esqy1 = esqy1;
+                pw.esqy2 = esqy2;
+                pw.esqz1 = esqz1;
+                pw.esqz2 = esqz2;
                 break;
             }
         } else {
@@ -2250,22 +2926,431 @@ public:
                 !mat.contains("layers") || mat["layers"].empty()) {
                 continue;
             }
-            const auto& layer = mat["layers"][0];
             SurfaceImpedanceMaterial_t surf;
             surf.id = mat.value("id", 0);
-            surf.thickness = layer.value("thickness", 0.0);
-            surf.relativePermittivity =
-                layer.value("relativePermittivity", 1.0);
-            surf.relativePermeability =
-                layer.value("relativePermeability", 1.0);
-            surf.electricConductivity =
-                layer.value("electricConductivity", 0.0);
-            if (surf.id != 0 && surf.thickness > 0.0 &&
+            for (const auto& layer : mat["layers"]) {
+                SGBC_nostoch_m::SGBCLayer_t sgbcLayer;
+                sgbcLayer.width = layer.value("thickness", 0.0);
+                sgbcLayer.relativePermittivity =
+                    layer.value("relativePermittivity", 1.0);
+                sgbcLayer.relativePermeability =
+                    layer.value("relativePermeability", 1.0);
+                sgbcLayer.electricConductivity =
+                    layer.value("electricConductivity", 0.0);
+                sgbcLayer.magneticConductivity =
+                    layer.value("magneticConductivity", 0.0);
+                if (sgbcLayer.width > 0.0) {
+                    surf.layers.push_back(sgbcLayer);
+                }
+            }
+            if (!surf.layers.empty()) {
+                const auto& first = surf.layers.front();
+                surf.thickness = first.width;
+                surf.relativePermittivity = first.relativePermittivity;
+                surf.relativePermeability = first.relativePermeability;
+                surf.electricConductivity = first.electricConductivity;
+                surf.magneticConductivity = first.magneticConductivity;
+            }
+            if (surf.id != 0 && !surf.layers.empty() &&
                 surf.electricConductivity > 0.0) {
                 materials[surf.id] = surf;
             }
         }
         return materials;
+    }
+
+    double sgbcGridStep(int axis) const {
+        if (axis == 0) return dx;
+        if (axis == 1) return dy;
+        return dz;
+    }
+
+    double sgbcElectricStep(int axis, int i, int j, int k) const {
+        const fdtd_real inv =
+            (axis == 0) ? idxe1(i) : ((axis == 1) ? idye1(j) : idze1(k));
+        return static_cast<double>(static_cast<fdtd_real>(1.0) / inv);
+    }
+
+    double sgbcMagneticStep(int axis, int i, int j, int k) const {
+        const fdtd_real inv =
+            (axis == 0) ? idxh1(i) : ((axis == 1) ? idyh1(j) : idzh1(k));
+        return static_cast<double>(static_cast<fdtd_real>(1.0) / inv);
+    }
+
+    static int sgbcAlignedAxis(int component, int normalAxis) {
+        return 3 - component - normalAxis;
+    }
+
+    static bool sgbcCorrectHa(int component, int normalAxis) {
+        return (component == 0 && normalAxis == 1) ||
+               (component == 1 && normalAxis == 2) ||
+               (component == 2 && normalAxis == 0);
+    }
+
+    static int sgbcFallbackNormalAxis(int component) {
+        return (component + 1) % 3;
+    }
+
+    static std::string sgbcNodeKey(int component, int i, int j, int k) {
+        return std::to_string(component) + ":" + std::to_string(i) + ":" +
+               std::to_string(j) + ":" + std::to_string(k);
+    }
+
+    bool sgbcEInBounds(int component, int i, int j, int k) const {
+        if (component == 0) return in_ex(i, j, k);
+        if (component == 1) return in_ey(i, j, k);
+        return in_ez(i, j, k);
+    }
+
+    bool sgbcEIsPec(int component, int i, int j, int k) const {
+        if (component == 0) return isPecEx(i, j, k);
+        if (component == 1) return isPecEy(i, j, k);
+        return isPecEz(i, j, k);
+    }
+
+    void collectSgbcCandidateNode(int component, int i1, int j1, int k1,
+                                  std::set<std::string>& candidates) const {
+        const int i = i1 - 1;
+        const int j = j1 - 1;
+        const int k = k1 - 1;
+        if (!sgbcEInBounds(component, i, j, k) || sgbcEIsPec(component, i, j, k)) {
+            return;
+        }
+        candidates.insert(sgbcNodeKey(component, i, j, k));
+    }
+
+    bool hasSgbcCandidateNode(const std::set<std::string>& candidates,
+                              int component, int i1, int j1, int k1) const {
+        const int i = i1 - 1;
+        const int j = j1 - 1;
+        const int k = k1 - 1;
+        return candidates.find(sgbcNodeKey(component, i, j, k)) != candidates.end();
+    }
+
+    bool sgbcEsUnfiloPlaca(const std::set<std::string>& candidates,
+                           int component, int i1, int j1, int k1) const {
+        int filoPlacas = 0;
+        if (component == 0) {
+            if (hasSgbcCandidateNode(candidates, component, i1, j1, k1 + 1)) ++filoPlacas;
+            if (hasSgbcCandidateNode(candidates, component, i1, j1, k1 - 1)) ++filoPlacas;
+            if (hasSgbcCandidateNode(candidates, component, i1, j1 + 1, k1)) ++filoPlacas;
+            if (hasSgbcCandidateNode(candidates, component, i1, j1 - 1, k1)) ++filoPlacas;
+        } else if (component == 1) {
+            if (hasSgbcCandidateNode(candidates, component, i1 + 1, j1, k1)) ++filoPlacas;
+            if (hasSgbcCandidateNode(candidates, component, i1 - 1, j1, k1)) ++filoPlacas;
+            if (hasSgbcCandidateNode(candidates, component, i1, j1, k1 + 1)) ++filoPlacas;
+            if (hasSgbcCandidateNode(candidates, component, i1, j1, k1 - 1)) ++filoPlacas;
+        } else {
+            if (hasSgbcCandidateNode(candidates, component, i1, j1 + 1, k1)) ++filoPlacas;
+            if (hasSgbcCandidateNode(candidates, component, i1, j1 - 1, k1)) ++filoPlacas;
+            if (hasSgbcCandidateNode(candidates, component, i1 + 1, j1, k1)) ++filoPlacas;
+            if (hasSgbcCandidateNode(candidates, component, i1 - 1, j1, k1)) ++filoPlacas;
+        }
+        return filoPlacas < 2;
+    }
+
+    fdtd_real sgbcEValue(const SgbcNode_t& node) const {
+        if (node.component == 0 && in_ex(node.i, node.j, node.k)) {
+            return Ex[ex_idx(node.i, node.j, node.k)];
+        }
+        if (node.component == 1 && in_ey(node.i, node.j, node.k)) {
+            return Ey[ey_idx(node.i, node.j, node.k)];
+        }
+        if (node.component == 2 && in_ez(node.i, node.j, node.k)) {
+            return Ez[ez_idx(node.i, node.j, node.k)];
+        }
+        return static_cast<fdtd_real>(0.0);
+    }
+
+    void setSgbcEValue(const SgbcNode_t& node, fdtd_real value) {
+        if (node.component == 0 && in_ex(node.i, node.j, node.k)) {
+            Ex[ex_idx(node.i, node.j, node.k)] = value;
+        } else if (node.component == 1 && in_ey(node.i, node.j, node.k)) {
+            Ey[ey_idx(node.i, node.j, node.k)] = value;
+        } else if (node.component == 2 && in_ez(node.i, node.j, node.k)) {
+            Ez[ez_idx(node.i, node.j, node.k)] = value;
+        }
+    }
+
+    fdtd_real sgbcHValue(const SgbcFieldRef_t& ref) const {
+        if (ref.component == 0) return hxValue0(ref.i, ref.j, ref.k);
+        if (ref.component == 1) return hyValue0(ref.i, ref.j, ref.k);
+        return hzValue0(ref.i, ref.j, ref.k);
+    }
+
+    void addSgbcHValue(const SgbcFieldRef_t& ref, fdtd_real delta) {
+        if (ref.component == 0 && in_hx(ref.i, ref.j, ref.k)) {
+            Hx[hx_idx(ref.i, ref.j, ref.k)] += delta;
+        } else if (ref.component == 1 && in_hy(ref.i, ref.j, ref.k)) {
+            Hy[hy_idx(ref.i, ref.j, ref.k)] += delta;
+        } else if (ref.component == 2 && in_hz(ref.i, ref.j, ref.k)) {
+            Hz[hz_idx(ref.i, ref.j, ref.k)] += delta;
+        }
+    }
+
+    void fillSgbcFieldRefs(SgbcNode_t& node) {
+        const int i = node.i;
+        const int j = node.j;
+        const int k = node.k;
+        if (node.component == 0) {
+            node.haPlus = {2, i, j, k};
+            node.haMinus = {2, i, j - 1, k};
+            node.hbPlus = {1, i, j, k};
+            node.hbMinus = {1, i, j, k - 1};
+        } else if (node.component == 1) {
+            node.haPlus = {0, i, j, k};
+            node.haMinus = {0, i, j, k - 1};
+            node.hbPlus = {2, i, j, k};
+            node.hbMinus = {2, i - 1, j, k};
+        } else {
+            node.haPlus = {1, i, j, k};
+            node.haMinus = {1, i - 1, j, k};
+            node.hbPlus = {0, i, j, k};
+            node.hbMinus = {0, i, j - 1, k};
+        }
+    }
+
+    void addSgbcNode(int component, int i1, int j1, int k1, int normalAxis,
+                     const SurfaceImpedanceMaterial_t& surface,
+                     std::set<std::string>& assigned,
+                     bool esUnfiloPlaca = false) {
+        const int i = i1 - 1;
+        const int j = j1 - 1;
+        const int k = k1 - 1;
+        if (component == normalAxis) normalAxis = sgbcFallbackNormalAxis(component);
+        if (!sgbcEInBounds(component, i, j, k) || sgbcEIsPec(component, i, j, k)) {
+            return;
+        }
+        const std::string key = sgbcNodeKey(component, i, j, k);
+        if (!assigned.insert(key).second) return;
+
+        SgbcNode_t node;
+        node.component = component;
+        node.i = i;
+        node.j = j;
+        node.k = k;
+        node.normalAxis = normalAxis;
+        fillSgbcFieldRefs(node);
+
+        const double transversalDeltaE =
+            sgbcElectricStep(normalAxis, i, j, k);
+        const double transversalDeltaH =
+            sgbcMagneticStep(normalAxis, i, j, k);
+        const int alignedAxis = sgbcAlignedAxis(component, normalAxis);
+        const double alignedDeltaH =
+            (alignedAxis >= 0 && alignedAxis <= 2)
+                ? sgbcMagneticStep(alignedAxis, i, j, k)
+                : transversalDeltaH;
+        const bool correctHa = sgbcCorrectHa(component, normalAxis);
+        node.maloney = SGBC_nostoch_m::make_sgbc_surface(
+            surface.layers,
+            dt,
+            eps0,
+            mu0,
+            1.0e9,
+            1.0,
+            -1,
+            true,
+            correctHa,
+            esUnfiloPlaca,
+            transversalDeltaE,
+            transversalDeltaH,
+            alignedDeltaH,
+            static_cast<double>(sgbcEValue(node)));
+        sgbcNodes.push_back(node);
+    }
+
+    void collectSgbcLineIntervalCandidates(const std::array<int, 6>& iv,
+                                           std::set<std::string>& candidates) const {
+        const char direction = inferLineDirection(iv);
+        if (direction == '\0') return;
+        const int component = axisFromDirection(direction);
+        const auto bounds = edgeBounds(iv[component], iv[component + 3]);
+        for (int pos = bounds.first; pos <= bounds.second; ++pos) {
+            const int i1 = (component == 0) ? pos : iv[0];
+            const int j1 = (component == 1) ? pos : iv[1];
+            const int k1 = (component == 2) ? pos : iv[2];
+            collectSgbcCandidateNode(component, i1, j1, k1, candidates);
+        }
+    }
+
+    void collectSgbcSurfaceIntervalCandidates(const std::array<int, 6>& iv,
+                                              std::set<std::string>& candidates) const {
+        const bool sameX = iv[0] == iv[3];
+        const bool sameY = iv[1] == iv[4];
+        const bool sameZ = iv[2] == iv[5];
+        const auto xb = inclusiveBounds(iv[0], iv[3]);
+        const auto yb = inclusiveBounds(iv[1], iv[4]);
+        const auto zb = inclusiveBounds(iv[2], iv[5]);
+        const auto xe = edgeBounds(iv[0], iv[3]);
+        const auto ye = edgeBounds(iv[1], iv[4]);
+        const auto ze = edgeBounds(iv[2], iv[5]);
+
+        if (sameX) {
+            for (int k = zb.first; k <= zb.second; ++k)
+                for (int j = ye.first; j <= ye.second; ++j)
+                    collectSgbcCandidateNode(1, iv[0], j, k, candidates);
+            for (int k = ze.first; k <= ze.second; ++k)
+                for (int j = yb.first; j <= yb.second; ++j)
+                    collectSgbcCandidateNode(2, iv[0], j, k, candidates);
+        } else if (sameY) {
+            for (int k = zb.first; k <= zb.second; ++k)
+                for (int i = xe.first; i <= xe.second; ++i)
+                    collectSgbcCandidateNode(0, i, iv[1], k, candidates);
+            for (int k = ze.first; k <= ze.second; ++k)
+                for (int i = xb.first; i <= xb.second; ++i)
+                    collectSgbcCandidateNode(2, i, iv[1], k, candidates);
+        } else if (sameZ) {
+            for (int j = yb.first; j <= yb.second; ++j)
+                for (int i = xe.first; i <= xe.second; ++i)
+                    collectSgbcCandidateNode(0, i, j, iv[2], candidates);
+            for (int j = ye.first; j <= ye.second; ++j)
+                for (int i = xb.first; i <= xb.second; ++i)
+                    collectSgbcCandidateNode(1, i, j, iv[2], candidates);
+        }
+    }
+
+    void addSgbcLineInterval(const std::array<int, 6>& iv,
+                             const SurfaceImpedanceMaterial_t& surface,
+                             std::set<std::string>& assigned,
+                             const std::set<std::string>& candidates) {
+        const char direction = inferLineDirection(iv);
+        if (direction == '\0') return;
+        const int component = axisFromDirection(direction);
+        const int normalAxis = sgbcFallbackNormalAxis(component);
+        const auto bounds = edgeBounds(iv[component], iv[component + 3]);
+        for (int pos = bounds.first; pos <= bounds.second; ++pos) {
+            const int i1 = (component == 0) ? pos : iv[0];
+            const int j1 = (component == 1) ? pos : iv[1];
+            const int k1 = (component == 2) ? pos : iv[2];
+            addSgbcNode(component, i1, j1, k1, normalAxis, surface, assigned,
+                        sgbcEsUnfiloPlaca(candidates, component, i1, j1, k1));
+        }
+    }
+
+    void addSgbcSurfaceInterval(const std::array<int, 6>& iv,
+                                const SurfaceImpedanceMaterial_t& surface,
+                                std::set<std::string>& assigned,
+                                const std::set<std::string>& candidates) {
+        const bool sameX = iv[0] == iv[3];
+        const bool sameY = iv[1] == iv[4];
+        const bool sameZ = iv[2] == iv[5];
+        const auto xb = inclusiveBounds(iv[0], iv[3]);
+        const auto yb = inclusiveBounds(iv[1], iv[4]);
+        const auto zb = inclusiveBounds(iv[2], iv[5]);
+        const auto xe = edgeBounds(iv[0], iv[3]);
+        const auto ye = edgeBounds(iv[1], iv[4]);
+        const auto ze = edgeBounds(iv[2], iv[5]);
+
+        if (sameX) {
+            for (int k = zb.first; k <= zb.second; ++k)
+                for (int j = ye.first; j <= ye.second; ++j)
+                    addSgbcNode(1, iv[0], j, k, 0, surface, assigned,
+                                sgbcEsUnfiloPlaca(candidates, 1, iv[0], j, k));
+            for (int k = ze.first; k <= ze.second; ++k)
+                for (int j = yb.first; j <= yb.second; ++j)
+                    addSgbcNode(2, iv[0], j, k, 0, surface, assigned,
+                                sgbcEsUnfiloPlaca(candidates, 2, iv[0], j, k));
+        } else if (sameY) {
+            for (int k = zb.first; k <= zb.second; ++k)
+                for (int i = xe.first; i <= xe.second; ++i)
+                    addSgbcNode(0, i, iv[1], k, 1, surface, assigned,
+                                sgbcEsUnfiloPlaca(candidates, 0, i, iv[1], k));
+            for (int k = ze.first; k <= ze.second; ++k)
+                for (int i = xb.first; i <= xb.second; ++i)
+                    addSgbcNode(2, i, iv[1], k, 1, surface, assigned,
+                                sgbcEsUnfiloPlaca(candidates, 2, i, iv[1], k));
+        } else if (sameZ) {
+            for (int j = yb.first; j <= yb.second; ++j)
+                for (int i = xe.first; i <= xe.second; ++i)
+                    addSgbcNode(0, i, j, iv[2], 2, surface, assigned,
+                                sgbcEsUnfiloPlaca(candidates, 0, i, j, iv[2]));
+            for (int j = ye.first; j <= ye.second; ++j)
+                for (int i = xb.first; i <= xb.second; ++i)
+                    addSgbcNode(1, i, j, iv[2], 2, surface, assigned,
+                                sgbcEsUnfiloPlaca(candidates, 1, i, j, iv[2]));
+        }
+    }
+
+    void initSgbcFromJson() {
+        sgbcNodes.clear();
+        if (inputRoot.is_null() || !inputRoot.contains("materialAssociations")) {
+            return;
+        }
+        const auto surfaces = surfaceImpedanceMaterialsById();
+        if (surfaces.empty()) return;
+
+        std::set<std::string> candidates;
+        for (const auto& assoc : inputRoot["materialAssociations"]) {
+            const int matId = assoc.value("materialId", 0);
+            const auto surfIt = surfaces.find(matId);
+            if (surfIt == surfaces.end() || !assoc.contains("elementIds")) continue;
+            for (const auto& elemIdJson : assoc["elementIds"]) {
+                for (const auto& iv : elementIntervals(elemIdJson.get<int>())) {
+                    const bool diffX = iv[0] != iv[3];
+                    const bool diffY = iv[1] != iv[4];
+                    const bool diffZ = iv[2] != iv[5];
+                    const int numDiff = static_cast<int>(diffX) +
+                        static_cast<int>(diffY) + static_cast<int>(diffZ);
+                    if (numDiff == 1) {
+                        collectSgbcLineIntervalCandidates(iv, candidates);
+                    } else if (numDiff == 2) {
+                        collectSgbcSurfaceIntervalCandidates(iv, candidates);
+                    }
+                }
+            }
+        }
+
+        std::set<std::string> assigned;
+        for (const auto& assoc : inputRoot["materialAssociations"]) {
+            const int matId = assoc.value("materialId", 0);
+            const auto surfIt = surfaces.find(matId);
+            if (surfIt == surfaces.end() || !assoc.contains("elementIds")) continue;
+            for (const auto& elemIdJson : assoc["elementIds"]) {
+                for (const auto& iv : elementIntervals(elemIdJson.get<int>())) {
+                    const bool diffX = iv[0] != iv[3];
+                    const bool diffY = iv[1] != iv[4];
+                    const bool diffZ = iv[2] != iv[5];
+                    const int numDiff = static_cast<int>(diffX) +
+                        static_cast<int>(diffY) + static_cast<int>(diffZ);
+                    if (numDiff == 1) {
+                        addSgbcLineInterval(iv, surfIt->second, assigned, candidates);
+                    } else if (numDiff == 2) {
+                        addSgbcSurfaceInterval(iv, surfIt->second, assigned, candidates);
+                    }
+                }
+            }
+        }
+        if (!sgbcNodes.empty()) {
+            std::cout << "SGBC: " << sgbcNodes.size()
+                      << " Maloney nodes initialized." << std::endl;
+        }
+    }
+
+    void advanceSgbcE() {
+        if (sgbcNodes.empty()) return;
+        for (auto& node : sgbcNodes) {
+            if (sgbcEIsPec(node.component, node.i, node.j, node.k)) continue;
+            SGBC_nostoch_m::AdvanceSGBCE(
+                node.maloney,
+                static_cast<double>(sgbcHValue(node.haPlus)),
+                static_cast<double>(sgbcHValue(node.haMinus)),
+                static_cast<double>(sgbcHValue(node.hbPlus)),
+                static_cast<double>(sgbcHValue(node.hbMinus)));
+            setSgbcEValue(node, static_cast<fdtd_real>(node.maloney.Efield));
+        }
+    }
+
+    void advanceSgbcH() {
+        if (sgbcNodes.empty()) return;
+        for (auto& node : sgbcNodes) {
+            const auto correction = SGBC_nostoch_m::AdvanceSGBCH(
+                node.maloney, static_cast<double>(sgbcEValue(node)));
+            addSgbcHValue(node.haPlus, static_cast<fdtd_real>(correction.ha_plus));
+            addSgbcHValue(node.haMinus, static_cast<fdtd_real>(correction.ha_minus));
+            addSgbcHValue(node.hbPlus, static_cast<fdtd_real>(correction.hb_plus));
+            addSgbcHValue(node.hbMinus, static_cast<fdtd_real>(correction.hb_minus));
+        }
     }
 
     static void addAssociationElementIdsToSet(const nlohmann::json& assoc,
@@ -3960,12 +5045,6 @@ public:
         }
     }
 
-    struct ProbeCellBounds {
-        int xi = 1, yi = 1, zi = 1;
-        int xe = 1, ye = 1, ze = 1;
-        bool valid = false;
-    };
-
     ProbeCellBounds boundsForProbeElements(const nlohmann::json& probe) const {
         ProbeCellBounds bounds;
         if (!probe.contains("elementIds") || inputRoot.is_null() ||
@@ -4233,7 +5312,8 @@ public:
             << "<Xdmf Version=\"3.0\"><Domain></Domain></Xdmf>\n";
     }
 
-    void writeMovieProbeOutputs(const std::string& caseName) {
+    void initMovieProbesFromJson(const std::string& caseName) {
+        movieProbes.clear();
         if (inputRoot.is_null() || !inputRoot.contains("probes")) return;
         for (const auto& probe : inputRoot["probes"]) {
             if (probe.value("type", std::string()) != "movie" ||
@@ -4242,15 +5322,135 @@ public:
             }
             const ProbeCellBounds bounds = boundsForProbeElements(probe);
             if (!bounds.valid) continue;
-
-            const std::string stem = probeOutputPrefix(caseName) +
-                probe.value("name", std::string("movie")) + "_" + movieProbeTag(probe) + "_" +
-                boundsPositionString(bounds);
-            writeBinaryMoviePlaceholder(stem + ".bin");
-            writeBinaryMoviePlaceholder(stem + ".h5bin");
-            writeMovieH5(stem + ".h5");
-            writeMovieXdmfPlaceholder(stem + ".xdmf");
+            MovieProbeState state;
+            state.bounds = bounds;
+            state.stem = probeOutputPrefix(caseName) + probe.value("name", std::string("movie")) +
+                           "_" + movieProbeTag(probe) + "_" + boundsPositionString(bounds);
+            state.nx = bounds.xe - bounds.xi + 1;
+            state.ny = bounds.ye - bounds.yi + 1;
+            state.nz = bounds.ze - bounds.zi + 1;
+            const std::string field = probe.value("field", std::string("electric"));
+            const std::string component = probe.value("component", std::string("magnitude"));
+            if (field == "magnetic") {
+                if (component == "x") state.mode = MovieProbeState::FieldMode::Hx;
+                else if (component == "y") state.mode = MovieProbeState::FieldMode::Hy;
+                else if (component == "z") state.mode = MovieProbeState::FieldMode::Hz;
+                else state.mode = MovieProbeState::FieldMode::Hx;
+            } else if (component == "x") {
+                state.mode = MovieProbeState::FieldMode::Ex;
+            } else if (component == "y") {
+                state.mode = MovieProbeState::FieldMode::Ey;
+            } else if (component == "z") {
+                state.mode = MovieProbeState::FieldMode::Ez;
+            } else {
+                state.mode = MovieProbeState::FieldMode::ElectricMagnitude;
+            }
+            const auto domain = probe.value("domain", nlohmann::json::object());
+            state.initialTime = domain.value("initialTime", 0.0);
+            state.finalTime = domain.value("finalTime", 1e30);
+            state.samplingPeriod = domain.value("samplingPeriod", dt);
+            if (state.samplingPeriod < dt) {
+                state.samplingPeriod = dt;
+            }
+            if (state.initialTime < state.samplingPeriod) {
+                state.initialTime = 0.0;
+            }
+            if (state.samplingPeriod > state.finalTime - state.initialTime) {
+                state.finalTime = state.initialTime + state.samplingPeriod;
+            }
+            state.trancos = std::max(1, static_cast<int>(state.samplingPeriod / dt));
+            movieProbes.push_back(std::move(state));
         }
+    }
+
+    float sampleMovieField(const MovieProbeState& movie, int icell, int jcell, int kcell) const {
+        // JSON interval indices match relativePosition / Fortran observation (1-based cell labels).
+        const int i1 = icell + 1;
+        const int j1 = jcell + 1;
+        const int k1 = kcell + 1;
+        (void)movie;
+        auto read_ex = [&]() { return static_cast<float>(probeEx(i1, j1, k1)); };
+        auto read_ey = [&]() { return static_cast<float>(get_field_value(1, i1, j1, k1)); };
+        auto read_ez = [&]() { return static_cast<float>(get_field_value(2, i1, j1, k1)); };
+        auto read_hx = [&]() { return static_cast<float>(get_field_value(3, i1, j1, k1)); };
+        auto read_hy = [&]() { return static_cast<float>(get_field_value(4, i1, j1, k1)); };
+        auto read_hz = [&]() { return static_cast<float>(get_field_value(5, i1, j1, k1)); };
+        switch (movie.mode) {
+        case MovieProbeState::FieldMode::Ex: return read_ex();
+        case MovieProbeState::FieldMode::Ey: return read_ey();
+        case MovieProbeState::FieldMode::Ez: return read_ez();
+        case MovieProbeState::FieldMode::Hx: return read_hx();
+        case MovieProbeState::FieldMode::Hy: return read_hy();
+        case MovieProbeState::FieldMode::Hz: return read_hz();
+        case MovieProbeState::FieldMode::ElectricMagnitude:
+        default: {
+            const float ex = read_ex();
+            const float ey = read_ey();
+            const float ez = read_ez();
+            return std::sqrt(ex * ex + ey * ey + ez * ez);
+        }
+        }
+    }
+
+    void sampleMovieProbes() {
+        if (movieProbes.empty()) return;
+        for (auto& movie : movieProbes) {
+            if (currentTime + dt * 0.5 < movie.initialTime) continue;
+            if (currentTime > movie.finalTime + dt * 0.5) continue;
+            if (step % movie.trancos != 0) continue;
+            movie.times.push_back(currentTime);
+            const size_t slab = static_cast<size_t>(movie.nx * movie.ny * movie.nz);
+            const size_t offset = movie.samples.size();
+            movie.samples.resize(offset + slab);
+            size_t idx = 0;
+            // Layout matches HDF5 (time, z, y, x): x is the fastest spatial index.
+            for (int k = movie.bounds.zi; k <= movie.bounds.ze; ++k) {
+                for (int j = movie.bounds.yi; j <= movie.bounds.ye; ++j) {
+                    for (int i = movie.bounds.xi; i <= movie.bounds.xe; ++i) {
+                        movie.samples[offset + idx++] = sampleMovieField(movie, i, j, k);
+                    }
+                }
+            }
+        }
+    }
+
+    void writeMovieProbeOutputs(const std::string& caseName) {
+        (void)caseName;
+        if (movieProbes.empty()) return;
+#ifdef SEMBA_CPP_ENABLE_HDF5
+        for (auto& movie : movieProbes) {
+            const int finalstep = static_cast<int>(movie.times.size());
+            if (finalstep <= 0) continue;
+            const int minXabs = movie.bounds.xi;
+            const int maxXabs = movie.bounds.xe;
+            const int minYabs = movie.bounds.yi;
+            const int maxYabs = movie.bounds.ye;
+            const int minZabs = movie.bounds.zi;
+            const int maxZabs = movie.bounds.ze;
+            const std::string h5Stem = movie.stem + "_time";
+            xdmf_h5_m::openh5file(h5Stem, finalstep, minXabs, maxXabs, minYabs, maxYabs,
+                                  minZabs, maxZabs);
+            for (int stepIndex = 1; stepIndex <= finalstep; ++stepIndex) {
+                const size_t offset =
+                    static_cast<size_t>((stepIndex - 1) * movie.nx * movie.ny * movie.nz);
+                xdmf_h5_m::writeh5file(h5Stem, movie.samples.data() + offset, movie.nx,
+                                        movie.ny, movie.nz, stepIndex, movie.times[stepIndex - 1],
+                                        minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs,
+                                        static_cast<double>(minZabs) * dz,
+                                        static_cast<double>(minYabs) * dy,
+                                        static_cast<double>(minXabs) * dx, dz, dy, dx, minZabs,
+                                        minYabs, minXabs, finalstep, true);
+            }
+            xdmf_h5_m::closeh5file(finalstep, movie.times);
+        }
+#else
+        for (const auto& movie : movieProbes) {
+            writeBinaryMoviePlaceholder(movie.stem + ".bin");
+            writeBinaryMoviePlaceholder(movie.stem + ".h5bin");
+            writeMovieH5(movie.stem + "_time.h5");
+            writeMovieXdmfPlaceholder(movie.stem + "_time.xdmf");
+        }
+#endif
     }
 
     void advanceE() {
@@ -4270,22 +5470,51 @@ public:
         const fdtd_real* SEMBA_RESTRICT idyh = Idyh.data();
         const fdtd_real* SEMBA_RESTRICT idzh = Idzh.data();
         const bool pec = usePec;
+        const bool pml = usePml;
+        const int h = fieldHalo;
+        int exI0 = pml ? -h : -1;
+        int exI1 = pml ? NX + h - 2 : NX - 2;
+        int exJ0 = pml ? -h + 1 : -1;
+        int exJ1 = pml ? NY + h - 2 : NY - 1;
+        int exK0 = pml ? -h + 1 : -1;
+        int exK1 = pml ? NZ + h - 2 : NZ - 1;
+        int eyI0 = pml ? -h + 1 : -1;
+        int eyI1 = pml ? NX + h - 2 : NX - 1;
+        int eyJ0 = pml ? -h : -1;
+        int eyJ1 = pml ? NY + h - 2 : NY - 2;
+        int eyK0 = pml ? -h + 1 : -1;
+        int eyK1 = pml ? NZ + h - 2 : NZ - 1;
+        int ezI0 = pml ? -h + 1 : -1;
+        int ezI1 = pml ? NX + h - 2 : NX - 1;
+        int ezJ0 = pml ? -h + 1 : -1;
+        int ezJ1 = pml ? NY + h - 2 : NY - 1;
+        int ezK0 = pml ? -h : -1;
+        int ezK1 = pml ? NZ + h - 2 : NZ - 2;
+        clampMpiComponentAxisRange(0, 1, exI0, exI1);
+        clampMpiComponentAxisRange(0, 2, exJ0, exJ1);
+        clampMpiComponentAxisRange(0, 3, exK0, exK1);
+        clampMpiComponentAxisRange(1, 1, eyI0, eyI1);
+        clampMpiComponentAxisRange(1, 2, eyJ0, eyJ1);
+        clampMpiComponentAxisRange(1, 3, eyK0, eyK1);
+        clampMpiComponentAxisRange(2, 1, ezI0, ezI1);
+        clampMpiComponentAxisRange(2, 2, ezJ0, ezJ1);
+        clampMpiComponentAxisRange(2, 3, ezK0, ezK1);
 #ifdef _OPENMP
 #pragma omp parallel
         {
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int i = -1; i < NX - 1; ++i) {
-            for (int j = -1; j < NY; ++j) {
-                const int exBase = ex_idx(i, j, -1);
-                const int hzBase = hz_idx(i, j, -1);
-                const int hzYmBase = hz_idx(i, j - 1, -1);
-                const int hyBase = hy_idx(i, j, -1);
+        for (int i = exI0; i <= exI1; ++i) {
+            for (int j = exJ0; j <= exJ1; ++j) {
+                const int exBase = ex_idx(i, j, exK0);
+                const int hzBase = hz_idx(i, j, exK0);
+                const int hzYmBase = hz_idx(i, j - 1, exK0);
+                const int hyBase = hy_idx(i, j, exK0);
                 const int hyKmBase = hyBase - 1;
-                const fdtd_real idyhj = idyh[j + 2];
+                const fdtd_real idyhj = idyh[axisCoeffIndex(j)];
                 const bool pecPlane = pec && j == NY - 1;
-                for (int k = -1; k < NZ; ++k) {
-                    const int off = k + 1;
+                for (int k = exK0; k <= exK1; ++k) {
+                    const int off = k - exK0;
                     const int idx = exBase + off;
                     if (pecPlane || (pec && k == NZ - 1)) {
                         ex[idx] = 0.0;
@@ -4294,24 +5523,46 @@ public:
                     ex[idx] = fortranCurlUpdate(
                         ex[idx], ceEx[idx],
                         hz[hzBase + off], hz[hzYmBase + off], idyhj,
-                        hy[hyBase + off], hy[hyKmBase + off], idzh[k + 2]);
+                        hy[hyBase + off], hy[hyKmBase + off], idzh[axisCoeffIndex(k)]);
+                    if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
+                        mpiLayoutNumber == 1 && step <= 20 &&
+	                        (i == 2 || i == 3) && j == 2 && k == 2) {
+                        const fdtd_real idzhk = idzh[axisCoeffIndex(k)];
+                        const fdtd_real curl = static_cast<fdtd_real>(
+                            static_cast<fdtd_real>(
+                                static_cast<fdtd_real>(hz[hzBase + off] - hz[hzYmBase + off]) * idyhj) -
+                            static_cast<fdtd_real>(
+                                static_cast<fdtd_real>(hy[hyBase + off] - hy[hyKmBase + off]) * idzhk));
+                        std::fprintf(stderr,
+                                     "CPPDBG AdvEx step=%d i=%d j=%d k=%d Ex=%.17e Hz=%.17e HzYm=%.17e Hy=%.17e HyKm=%.17e Idy=%.17e Idz=%.17e Ce=%.17e curl=%.17e\n",
+                                     step, i, j, k,
+                                     static_cast<double>(ex[idx]),
+                                     static_cast<double>(hz[hzBase + off]),
+                                     static_cast<double>(hz[hzYmBase + off]),
+                                     static_cast<double>(hy[hyBase + off]),
+                                     static_cast<double>(hy[hyKmBase + off]),
+                                     static_cast<double>(idyhj),
+                                     static_cast<double>(idzhk),
+                                     static_cast<double>(ceEx[idx]),
+                                     static_cast<double>(curl));
+                    }
                 }
             }
         }
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int i = -1; i < NX; ++i) {
-            for (int j = -1; j < NY - 1; ++j) {
-                const fdtd_real idxhi = idxh[i + 2];
+        for (int i = eyI0; i <= eyI1; ++i) {
+            for (int j = eyJ0; j <= eyJ1; ++j) {
+                const fdtd_real idxhi = idxh[axisCoeffIndex(i)];
                 const bool pecPlane = pec && i == NX - 1;
-                const int eyBase = ey_idx(i, j, -1);
-                const int hxBase = hx_idx(i, j, -1);
+                const int eyBase = ey_idx(i, j, eyK0);
+                const int hxBase = hx_idx(i, j, eyK0);
                 const int hxKmBase = hxBase - 1;
-                const int hzBase = hz_idx(i, j, -1);
-                const int hzXmBase = hz_idx(i - 1, j, -1);
-                for (int k = -1; k < NZ; ++k) {
-                    const int off = k + 1;
+                const int hzBase = hz_idx(i, j, eyK0);
+                const int hzXmBase = hz_idx(i - 1, j, eyK0);
+                for (int k = eyK0; k <= eyK1; ++k) {
+                    const int off = k - eyK0;
                     const int idx = eyBase + off;
                     if (pecPlane || (pec && k == NZ - 1)) {
                         ey[idx] = 0.0;
@@ -4319,7 +5570,7 @@ public:
                     }
                     ey[idx] = fortranCurlUpdate(
                         ey[idx], ceEy[idx],
-                        hx[hxBase + off], hx[hxKmBase + off], idzh[k + 2],
+                        hx[hxBase + off], hx[hxKmBase + off], idzh[axisCoeffIndex(k)],
                         hz[hzBase + off], hz[hzXmBase + off], idxhi);
                 }
             }
@@ -4327,29 +5578,50 @@ public:
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int i = -1; i < NX; ++i) {
-            for (int j = -1; j < NY; ++j) {
-                const fdtd_real idxhi = idxh[i + 2];
+        for (int i = ezI0; i <= ezI1; ++i) {
+            for (int j = ezJ0; j <= ezJ1; ++j) {
+                const fdtd_real idxhi = idxh[axisCoeffIndex(i)];
                 const bool pecIPlane = pec && i == NX - 1;
-                const int ezBase = ez_idx(i, j, -1);
-                const int hyBase = hy_idx(i, j, -1);
-                const int hyXmBase = hy_idx(i - 1, j, -1);
-                const int hxBase = hx_idx(i, j, -1);
-                const int hxYmBase = hx_idx(i, j - 1, -1);
-                const fdtd_real idyhj = idyh[j + 2];
+                const int ezBase = ez_idx(i, j, ezK0);
+                const int hyBase = hy_idx(i, j, ezK0);
+                const int hyXmBase = hy_idx(i - 1, j, ezK0);
+                const int hxBase = hx_idx(i, j, ezK0);
+                const int hxYmBase = hx_idx(i, j - 1, ezK0);
+                const fdtd_real idyhj = idyh[axisCoeffIndex(j)];
                 const bool pecPlane = pecIPlane || (pec && j == NY - 1);
-                for (int k = -1; k < NZ - 1; ++k) {
-                    const int off = k + 1;
+                for (int k = ezK0; k <= ezK1; ++k) {
+                    const int off = k - ezK0;
                     const int idx = ezBase + off;
                     if (pecPlane) {
                         ez[idx] = 0.0;
                         continue;
                     }
-                    ez[idx] = fortranCurlUpdate(
-                        ez[idx], ceEz[idx],
-                        hy[hyBase + off], hy[hyXmBase + off], idxhi,
-                        hx[hxBase + off], hx[hxYmBase + off], idyhj);
-                }
+	                    ez[idx] = fortranCurlUpdate(
+	                        ez[idx], ceEz[idx],
+	                        hy[hyBase + off], hy[hyXmBase + off], idxhi,
+	                        hx[hxBase + off], hx[hxYmBase + off], idyhj);
+	                    if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
+	                        mpiLayoutNumber == 0 && step <= 20 &&
+	                        i == 3 && j == 2 && k == 1) {
+	                        const fdtd_real curl = static_cast<fdtd_real>(
+	                            static_cast<fdtd_real>(
+	                                static_cast<fdtd_real>(hy[hyBase + off] - hy[hyXmBase + off]) * idxhi) -
+	                            static_cast<fdtd_real>(
+	                                static_cast<fdtd_real>(hx[hxBase + off] - hx[hxYmBase + off]) * idyhj));
+	                        std::fprintf(stderr,
+	                                     "CPPDBG AdvEz step=%d i=%d j=%d k=%d Ez=%.17e Hy=%.17e HyXm=%.17e Hx=%.17e HxYm=%.17e Idx=%.17e Idy=%.17e Ce=%.17e curl=%.17e\n",
+	                                     step, i, j, k,
+	                                     static_cast<double>(ez[idx]),
+	                                     static_cast<double>(hy[hyBase + off]),
+	                                     static_cast<double>(hy[hyXmBase + off]),
+	                                     static_cast<double>(hx[hxBase + off]),
+	                                     static_cast<double>(hx[hxYmBase + off]),
+	                                     static_cast<double>(idxhi),
+	                                     static_cast<double>(idyhj),
+	                                     static_cast<double>(ceEz[idx]),
+	                                     static_cast<double>(curl));
+	                    }
+	                }
             }
         }
 #ifdef _OPENMP
@@ -4359,6 +5631,252 @@ public:
 
     void applyMurE() {
         (void)useMur;
+    }
+
+    void advancePmlE() {
+        if (!usePml) return;
+        ++pmlElectricCalls;
+        if (!cpmlBordersInitialized) initCpmlBorders();
+        if (!cpmlBordersInitialized) return;
+
+        auto advancePsi = [](fdtd_real oldPsi, fdtd_real pB,
+                             fdtd_real diff, fdtd_real pC) {
+            const fdtd_real damped = static_cast<fdtd_real>(pB * oldPsi);
+            const fdtd_real driven = static_cast<fdtd_real>(diff * pC);
+            return static_cast<fdtd_real>(damped + driven);
+        };
+        const int h = fieldHalo;
+        const int exI0 = -h, exI1 = NX + h - 2;
+        const int exJ0 = -h + 1, exJ1 = NY + h - 2;
+        const int exK0 = -h + 1, exK1 = NZ + h - 2;
+        const int eyI0 = -h + 1, eyI1 = NX + h - 2;
+        const int eyJ0 = -h, eyJ1 = NY + h - 2;
+        const int eyK0 = -h + 1, eyK1 = NZ + h - 2;
+        const int ezI0 = -h + 1, ezI1 = NX + h - 2;
+        const int ezJ0 = -h + 1, ezJ1 = NY + h - 2;
+        const int ezK0 = -h, ezK1 = NZ + h - 2;
+
+        for (int i = exI0; i <= exI1; ++i) {
+            for (int j = exJ0; j <= exJ1; ++j) {
+                const fdtd_real pceY = pmlPceY[axisCoeffIndex(j)];
+                if (pceY == static_cast<fdtd_real>(0.0)) continue;
+                const fdtd_real pbeY = pmlPbeY[axisCoeffIndex(j)];
+                for (int k = exK0; k <= exK1; ++k) {
+                    const int idx = ex_idx(i, j, k);
+                    const fdtd_real diff = static_cast<fdtd_real>(
+                        Hz[hz_idx(i, j, k)] - Hz[hz_idx(i, j - 1, k)]);
+                    psiExy[idx] = advancePsi(psiExy[idx], pbeY, diff, pceY);
+                    Ex[idx] = static_cast<fdtd_real>(
+                        Ex[idx] + static_cast<fdtd_real>(CeEx[idx] * psiExy[idx]));
+                }
+            }
+        }
+
+        for (int i = exI0; i <= exI1; ++i) {
+            for (int j = exJ0; j <= exJ1; ++j) {
+                for (int k = exK0; k <= exK1; ++k) {
+                    const fdtd_real pceZ = pmlPceZ[axisCoeffIndex(k)];
+                    if (pceZ == static_cast<fdtd_real>(0.0)) continue;
+                    const fdtd_real pbeZ = pmlPbeZ[axisCoeffIndex(k)];
+                    const int idx = ex_idx(i, j, k);
+                    const fdtd_real diff = static_cast<fdtd_real>(
+                        Hy[hy_idx(i, j, k)] - Hy[hy_idx(i, j, k - 1)]);
+                    psiExz[idx] = advancePsi(psiExz[idx], pbeZ, diff, pceZ);
+                    Ex[idx] = static_cast<fdtd_real>(
+                        Ex[idx] - static_cast<fdtd_real>(CeEx[idx] * psiExz[idx]));
+                }
+            }
+        }
+
+        for (int i = eyI0; i <= eyI1; ++i) {
+            const fdtd_real pceX = pmlPceX[axisCoeffIndex(i)];
+            if (pceX == static_cast<fdtd_real>(0.0)) continue;
+            const fdtd_real pbeX = pmlPbeX[axisCoeffIndex(i)];
+            for (int j = eyJ0; j <= eyJ1; ++j) {
+                for (int k = eyK0; k <= eyK1; ++k) {
+                    const int idx = ey_idx(i, j, k);
+                    const fdtd_real diff = static_cast<fdtd_real>(
+                        Hz[hz_idx(i, j, k)] - Hz[hz_idx(i - 1, j, k)]);
+                    psiEyx[idx] = advancePsi(psiEyx[idx], pbeX, diff, pceX);
+                    Ey[idx] = static_cast<fdtd_real>(
+                        Ey[idx] - static_cast<fdtd_real>(CeEy[idx] * psiEyx[idx]));
+                }
+            }
+        }
+
+        for (int i = eyI0; i <= eyI1; ++i) {
+            for (int j = eyJ0; j <= eyJ1; ++j) {
+                for (int k = eyK0; k <= eyK1; ++k) {
+                    const fdtd_real pceZ = pmlPceZ[axisCoeffIndex(k)];
+                    if (pceZ == static_cast<fdtd_real>(0.0)) continue;
+                    const fdtd_real pbeZ = pmlPbeZ[axisCoeffIndex(k)];
+                    const int idx = ey_idx(i, j, k);
+                    const fdtd_real diff = static_cast<fdtd_real>(
+                        Hx[hx_idx(i, j, k)] - Hx[hx_idx(i, j, k - 1)]);
+                    psiEyz[idx] = advancePsi(psiEyz[idx], pbeZ, diff, pceZ);
+                    Ey[idx] = static_cast<fdtd_real>(
+                        Ey[idx] + static_cast<fdtd_real>(CeEy[idx] * psiEyz[idx]));
+                }
+            }
+        }
+
+        for (int i = ezI0; i <= ezI1; ++i) {
+            const fdtd_real pceX = pmlPceX[axisCoeffIndex(i)];
+            if (pceX == static_cast<fdtd_real>(0.0)) continue;
+            const fdtd_real pbeX = pmlPbeX[axisCoeffIndex(i)];
+            for (int j = ezJ0; j <= ezJ1; ++j) {
+                for (int k = ezK0; k <= ezK1; ++k) {
+                    const int idx = ez_idx(i, j, k);
+                    const fdtd_real diff = static_cast<fdtd_real>(
+                        Hy[hy_idx(i, j, k)] - Hy[hy_idx(i - 1, j, k)]);
+                    psiEzx[idx] = advancePsi(psiEzx[idx], pbeX, diff, pceX);
+                    Ez[idx] = static_cast<fdtd_real>(
+                        Ez[idx] + static_cast<fdtd_real>(CeEz[idx] * psiEzx[idx]));
+                }
+            }
+        }
+
+        for (int i = ezI0; i <= ezI1; ++i) {
+            for (int j = ezJ0; j <= ezJ1; ++j) {
+                const fdtd_real pceY = pmlPceY[axisCoeffIndex(j)];
+                if (pceY == static_cast<fdtd_real>(0.0)) continue;
+                const fdtd_real pbeY = pmlPbeY[axisCoeffIndex(j)];
+                for (int k = ezK0; k <= ezK1; ++k) {
+                    const int idx = ez_idx(i, j, k);
+                    const fdtd_real diff = static_cast<fdtd_real>(
+                        Hx[hx_idx(i, j, k)] - Hx[hx_idx(i, j - 1, k)]);
+                    psiEzy[idx] = advancePsi(psiEzy[idx], pbeY, diff, pceY);
+                    Ez[idx] = static_cast<fdtd_real>(
+                        Ez[idx] - static_cast<fdtd_real>(CeEz[idx] * psiEzy[idx]));
+                }
+            }
+        }
+    }
+
+    void advancePmlBodyH() {
+        if (!usePml) return;
+        ++pmlBodyHCalls;
+        // TODO: wire translated PML-body H updates to active solver fields.
+    }
+
+    void advanceMagneticCpml() {
+        if (!usePml) return;
+        ++pmlMagneticCpmlCalls;
+        if (!cpmlBordersInitialized) initCpmlBorders();
+        if (!cpmlBordersInitialized) return;
+
+        auto advancePsi = [](fdtd_real oldPsi, fdtd_real pB,
+                             fdtd_real diff, fdtd_real pC) {
+            const fdtd_real damped = static_cast<fdtd_real>(pB * oldPsi);
+            const fdtd_real driven = static_cast<fdtd_real>(diff * pC);
+            return static_cast<fdtd_real>(damped + driven);
+        };
+        const int h = fieldHalo;
+        const int hxI0 = -h, hxI1 = NX + h - 1;
+        const int hxJ0 = -h, hxJ1 = NY + h - 2;
+        const int hxK0 = -h, hxK1 = NZ + h - 2;
+        const int hyI0 = -h, hyI1 = NX + h - 2;
+        const int hyJ0 = -h, hyJ1 = NY + h - 1;
+        const int hyK0 = -h, hyK1 = NZ + h - 2;
+        const int hzI0 = -h, hzI1 = NX + h - 2;
+        const int hzJ0 = -h, hzJ1 = NY + h - 2;
+        const int hzK0 = -h, hzK1 = NZ + h - 1;
+
+        for (int i = hxI0; i <= hxI1; ++i) {
+            for (int j = hxJ0; j <= hxJ1; ++j) {
+                const fdtd_real pcmY = pmlPcmY[axisCoeffIndex(j)];
+                if (pcmY == static_cast<fdtd_real>(0.0)) continue;
+                const fdtd_real pbmY = pmlPbmY[axisCoeffIndex(j)];
+                for (int k = hxK0; k <= hxK1; ++k) {
+                    const int idx = hx_idx(i, j, k);
+                    const fdtd_real diff = static_cast<fdtd_real>(
+                        Ez[ez_idx(i, j + 1, k)] - Ez[ez_idx(i, j, k)]);
+                    psiHxy[idx] = advancePsi(psiHxy[idx], pbmY, diff, pcmY);
+                    Hx[idx] = static_cast<fdtd_real>(
+                        Hx[idx] - static_cast<fdtd_real>(CmH[idx] * psiHxy[idx]));
+                }
+            }
+        }
+
+        for (int i = hxI0; i <= hxI1; ++i) {
+            for (int j = hxJ0; j <= hxJ1; ++j) {
+                for (int k = hxK0; k <= hxK1; ++k) {
+                    const fdtd_real pcmZ = pmlPcmZ[axisCoeffIndex(k)];
+                    if (pcmZ == static_cast<fdtd_real>(0.0)) continue;
+                    const fdtd_real pbmZ = pmlPbmZ[axisCoeffIndex(k)];
+                    const int idx = hx_idx(i, j, k);
+                    const fdtd_real diff = static_cast<fdtd_real>(
+                        Ey[ey_idx(i, j, k + 1)] - Ey[ey_idx(i, j, k)]);
+                    psiHxz[idx] = advancePsi(psiHxz[idx], pbmZ, diff, pcmZ);
+                    Hx[idx] = static_cast<fdtd_real>(
+                        Hx[idx] + static_cast<fdtd_real>(CmH[idx] * psiHxz[idx]));
+                }
+            }
+        }
+
+        for (int i = hyI0; i <= hyI1; ++i) {
+            const fdtd_real pcmX = pmlPcmX[axisCoeffIndex(i)];
+            if (pcmX == static_cast<fdtd_real>(0.0)) continue;
+            const fdtd_real pbmX = pmlPbmX[axisCoeffIndex(i)];
+            for (int j = hyJ0; j <= hyJ1; ++j) {
+                for (int k = hyK0; k <= hyK1; ++k) {
+                    const int idx = hy_idx(i, j, k);
+                    const fdtd_real diff = static_cast<fdtd_real>(
+                        Ez[ez_idx(i + 1, j, k)] - Ez[ez_idx(i, j, k)]);
+                    psiHyx[idx] = advancePsi(psiHyx[idx], pbmX, diff, pcmX);
+                    Hy[idx] = static_cast<fdtd_real>(
+                        Hy[idx] + static_cast<fdtd_real>(CmH[idx] * psiHyx[idx]));
+                }
+            }
+        }
+
+        for (int i = hyI0; i <= hyI1; ++i) {
+            for (int j = hyJ0; j <= hyJ1; ++j) {
+                for (int k = hyK0; k <= hyK1; ++k) {
+                    const fdtd_real pcmZ = pmlPcmZ[axisCoeffIndex(k)];
+                    if (pcmZ == static_cast<fdtd_real>(0.0)) continue;
+                    const fdtd_real pbmZ = pmlPbmZ[axisCoeffIndex(k)];
+                    const int idx = hy_idx(i, j, k);
+                    const fdtd_real diff = static_cast<fdtd_real>(
+                        Ex[ex_idx(i, j, k + 1)] - Ex[ex_idx(i, j, k)]);
+                    psiHyz[idx] = advancePsi(psiHyz[idx], pbmZ, diff, pcmZ);
+                    Hy[idx] = static_cast<fdtd_real>(
+                        Hy[idx] - static_cast<fdtd_real>(CmH[idx] * psiHyz[idx]));
+                }
+            }
+        }
+
+        for (int i = hzI0; i <= hzI1; ++i) {
+            const fdtd_real pcmX = pmlPcmX[axisCoeffIndex(i)];
+            if (pcmX == static_cast<fdtd_real>(0.0)) continue;
+            const fdtd_real pbmX = pmlPbmX[axisCoeffIndex(i)];
+            for (int j = hzJ0; j <= hzJ1; ++j) {
+                for (int k = hzK0; k <= hzK1; ++k) {
+                    const int idx = hz_idx(i, j, k);
+                    const fdtd_real diff = static_cast<fdtd_real>(
+                        Ey[ey_idx(i + 1, j, k)] - Ey[ey_idx(i, j, k)]);
+                    psiHzx[idx] = advancePsi(psiHzx[idx], pbmX, diff, pcmX);
+                    Hz[idx] = static_cast<fdtd_real>(
+                        Hz[idx] - static_cast<fdtd_real>(CmH[idx] * psiHzx[idx]));
+                }
+            }
+        }
+
+        for (int i = hzI0; i <= hzI1; ++i) {
+            for (int j = hzJ0; j <= hzJ1; ++j) {
+                const fdtd_real pcmY = pmlPcmY[axisCoeffIndex(j)];
+                if (pcmY == static_cast<fdtd_real>(0.0)) continue;
+                const fdtd_real pbmY = pmlPbmY[axisCoeffIndex(j)];
+                for (int k = hzK0; k <= hzK1; ++k) {
+                    const int idx = hz_idx(i, j, k);
+                    const fdtd_real diff = static_cast<fdtd_real>(
+                        Ex[ex_idx(i, j + 1, k)] - Ex[ex_idx(i, j, k)]);
+                    psiHzy[idx] = advancePsi(psiHzy[idx], pbmY, diff, pcmY);
+                    Hz[idx] = static_cast<fdtd_real>(
+                        Hz[idx] + static_cast<fdtd_real>(CmH[idx] * psiHzy[idx]));
+                }
+            }
+        }
     }
 
     void applyPecE() {
@@ -4676,21 +6194,50 @@ public:
         const fdtd_real* SEMBA_RESTRICT idye = Idye.data();
         const fdtd_real* SEMBA_RESTRICT idze = Idze.data();
         const bool pec = usePec;
+        const bool pml = usePml;
+        const int h = fieldHalo;
+        int hxI0 = pml ? -h : -1;
+        int hxI1 = pml ? NX + h - 1 : NX - 1;
+        int hxJ0 = pml ? -h : -1;
+        int hxJ1 = pml ? NY + h - 2 : NY - 2;
+        int hxK0 = pml ? -h : -1;
+        int hxK1 = pml ? NZ + h - 2 : NZ - 2;
+        int hyI0 = pml ? -h : -1;
+        int hyI1 = pml ? NX + h - 2 : NX - 2;
+        int hyJ0 = pml ? -h : -1;
+        int hyJ1 = pml ? NY + h - 1 : NY - 1;
+        int hyK0 = pml ? -h : -1;
+        int hyK1 = pml ? NZ + h - 2 : NZ - 2;
+        int hzI0 = pml ? -h : -1;
+        int hzI1 = pml ? NX + h - 2 : NX - 2;
+        int hzJ0 = pml ? -h : -1;
+        int hzJ1 = pml ? NY + h - 2 : NY - 2;
+        int hzK0 = pml ? -h : -1;
+        int hzK1 = pml ? NZ + h - 1 : NZ - 1;
+        clampMpiComponentAxisRange(3, 1, hxI0, hxI1);
+        clampMpiComponentAxisRange(3, 2, hxJ0, hxJ1);
+        clampMpiComponentAxisRange(3, 3, hxK0, hxK1);
+        clampMpiComponentAxisRange(4, 1, hyI0, hyI1);
+        clampMpiComponentAxisRange(4, 2, hyJ0, hyJ1);
+        clampMpiComponentAxisRange(4, 3, hyK0, hyK1);
+        clampMpiComponentAxisRange(5, 1, hzI0, hzI1);
+        clampMpiComponentAxisRange(5, 2, hzJ0, hzJ1);
+        clampMpiComponentAxisRange(5, 3, hzK0, hzK1);
 #ifdef _OPENMP
 #pragma omp parallel
         {
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int i = -1; i < NX; ++i) {
-            for (int j = -1; j < NY - 1; ++j) {
+        for (int i = hxI0; i <= hxI1; ++i) {
+            for (int j = hxJ0; j <= hxJ1; ++j) {
                 const bool pecPlane = pec && i == NX - 1;
-                const int hxBase = hx_idx(i, j, -1);
-                const int eyBase = ey_idx(i, j, -1);
-                const int ezBase = ez_idx(i, j, -1);
-                const int ezYpBase = ez_idx(i, j + 1, -1);
-                const fdtd_real idyej = idye[j + 2];
-                for (int k = -1; k < NZ - 1; ++k) {
-                    const int off = k + 1;
+                const int hxBase = hx_idx(i, j, hxK0);
+                const int eyBase = ey_idx(i, j, hxK0);
+                const int ezBase = ez_idx(i, j, hxK0);
+                const int ezYpBase = ez_idx(i, j + 1, hxK0);
+                const fdtd_real idyej = idye[axisCoeffIndex(j)];
+                for (int k = hxK0; k <= hxK1; ++k) {
+                    const int off = k - hxK0;
                     const int idx = hxBase + off;
                     if (pecPlane) {
                         hx[idx] = 0.0;
@@ -4698,7 +6245,7 @@ public:
                     }
                     hx[idx] = fortranCurlUpdate(
                         hx[idx], cmH[idx],
-                        ey[eyBase + off + 1], ey[eyBase + off], idze[k + 2],
+                        ey[eyBase + off + 1], ey[eyBase + off], idze[axisCoeffIndex(k)],
                         ez[ezYpBase + off], ez[ezBase + off], idyej);
                 }
             }
@@ -4706,42 +6253,64 @@ public:
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int i = -1; i < NX - 1; ++i) {
-            for (int j = -1; j < NY; ++j) {
-                const fdtd_real idxei = idxe[i + 2];
-                const int hyBase = hy_idx(i, j, -1);
-                const int ezBase = ez_idx(i, j, -1);
-                const int ezXpBase = ez_idx(i + 1, j, -1);
-                const int exBase = ex_idx(i, j, -1);
+        for (int i = hyI0; i <= hyI1; ++i) {
+            for (int j = hyJ0; j <= hyJ1; ++j) {
+                const fdtd_real idxei = idxe[axisCoeffIndex(i)];
+                const int hyBase = hy_idx(i, j, hyK0);
+                const int ezBase = ez_idx(i, j, hyK0);
+                const int ezXpBase = ez_idx(i + 1, j, hyK0);
+                const int exBase = ex_idx(i, j, hyK0);
                 const bool pecPlane = pec && j == NY - 1;
-                for (int k = -1; k < NZ - 1; ++k) {
-                    const int off = k + 1;
+                for (int k = hyK0; k <= hyK1; ++k) {
+                    const int off = k - hyK0;
                     const int idx = hyBase + off;
                     if (pecPlane) {
                         hy[idx] = 0.0;
                         continue;
                     }
-                    hy[idx] = fortranCurlUpdate(
-                        hy[idx], cmH[idx],
-                        ez[ezXpBase + off], ez[ezBase + off], idxei,
-                        ex[exBase + off + 1], ex[exBase + off], idze[k + 2]);
-                }
-            }
-        }
+	                    hy[idx] = fortranCurlUpdate(
+	                        hy[idx], cmH[idx],
+	                        ez[ezXpBase + off], ez[ezBase + off], idxei,
+	                        ex[exBase + off + 1], ex[exBase + off], idze[axisCoeffIndex(k)]);
+	                    if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
+	                        mpiLayoutNumber == 0 && step <= 20 &&
+	                        (i == 2 || i == 3) && j == 2 && k == 1) {
+	                        const fdtd_real idzek = idze[axisCoeffIndex(k)];
+	                        const fdtd_real curl = static_cast<fdtd_real>(
+	                            static_cast<fdtd_real>(
+	                                static_cast<fdtd_real>(ez[ezXpBase + off] - ez[ezBase + off]) * idxei) -
+	                            static_cast<fdtd_real>(
+	                                static_cast<fdtd_real>(ex[exBase + off + 1] - ex[exBase + off]) * idzek));
+	                        std::fprintf(stderr,
+	                                     "CPPDBG AdvHy step=%d i=%d j=%d k=%d Hy=%.17e EzP=%.17e Ez=%.17e ExP=%.17e Ex=%.17e Idx=%.17e Idz=%.17e Cm=%.17e curl=%.17e\n",
+	                                     step, i, j, k,
+	                                     static_cast<double>(hy[idx]),
+	                                     static_cast<double>(ez[ezXpBase + off]),
+	                                     static_cast<double>(ez[ezBase + off]),
+	                                     static_cast<double>(ex[exBase + off + 1]),
+	                                     static_cast<double>(ex[exBase + off]),
+	                                     static_cast<double>(idxei),
+	                                     static_cast<double>(idzek),
+	                                     static_cast<double>(cmH[idx]),
+	                                     static_cast<double>(curl));
+	                    }
+	                }
+	            }
+	        }
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
-        for (int i = -1; i < NX - 1; ++i) {
-            for (int j = -1; j < NY - 1; ++j) {
-                const fdtd_real idxei = idxe[i + 2];
-                const int hzBase = hz_idx(i, j, -1);
-                const int exBase = ex_idx(i, j, -1);
-                const int exYpBase = ex_idx(i, j + 1, -1);
-                const int eyBase = ey_idx(i, j, -1);
-                const int eyXpBase = ey_idx(i + 1, j, -1);
-                const fdtd_real idyej = idye[j + 2];
-                for (int k = -1; k < NZ; ++k) {
-                    const int off = k + 1;
+        for (int i = hzI0; i <= hzI1; ++i) {
+            for (int j = hzJ0; j <= hzJ1; ++j) {
+                const fdtd_real idxei = idxe[axisCoeffIndex(i)];
+                const int hzBase = hz_idx(i, j, hzK0);
+                const int exBase = ex_idx(i, j, hzK0);
+                const int exYpBase = ex_idx(i, j + 1, hzK0);
+                const int eyBase = ey_idx(i, j, hzK0);
+                const int eyXpBase = ey_idx(i + 1, j, hzK0);
+                const fdtd_real idyej = idye[axisCoeffIndex(j)];
+                for (int k = hzK0; k <= hzK1; ++k) {
+                    const int off = k - hzK0;
                     const int idx = hzBase + off;
                     if (pec && k == NZ - 1) {
                         hz[idx] = 0.0;
@@ -4771,10 +6340,10 @@ public:
         if (pmcUp) {
             for (int i = -1; i <= NX - 1; ++i)
                 for (int j = -1; j <= NY - 2; ++j)
-                    Hx[hx_idx(i, j, NZ)] = -Hx[hx_idx(i, j, NZ - 1)];
+                    Hx[hx_idx(i, j, NZ - 1)] = -Hx[hx_idx(i, j, NZ - 2)];
             for (int i = -1; i <= NX - 2; ++i)
                 for (int j = -1; j <= NY - 1; ++j)
-                    Hy[hy_idx(i, j, NZ)] = -Hy[hy_idx(i, j, NZ - 1)];
+                    Hy[hy_idx(i, j, NZ - 1)] = -Hy[hy_idx(i, j, NZ - 2)];
         }
         if (pmcBack) {
             for (int j = -1; j <= NY - 1; ++j)
@@ -4787,10 +6356,10 @@ public:
         if (pmcFront) {
             for (int j = -1; j <= NY - 1; ++j)
                 for (int k = -1; k <= NZ - 2; ++k)
-                    Hy[hy_idx(NX, j, k)] = -Hy[hy_idx(NX - 1, j, k)];
+                    Hy[hy_idx(NX - 1, j, k)] = -Hy[hy_idx(NX - 2, j, k)];
             for (int j = -1; j <= NY - 2; ++j)
                 for (int k = -1; k <= NZ - 1; ++k)
-                    Hz[hz_idx(NX, j, k)] = -Hz[hz_idx(NX - 1, j, k)];
+                    Hz[hz_idx(NX - 1, j, k)] = -Hz[hz_idx(NX - 2, j, k)];
         }
         if (pmcLeft) {
             for (int i = -1; i <= NX - 1; ++i)
@@ -4803,10 +6372,10 @@ public:
         if (pmcRight) {
             for (int i = -1; i <= NX - 1; ++i)
                 for (int k = -1; k <= NZ - 2; ++k)
-                    Hx[hx_idx(i, NY, k)] = -Hx[hx_idx(i, NY - 1, k)];
+                    Hx[hx_idx(i, NY - 1, k)] = -Hx[hx_idx(i, NY - 2, k)];
             for (int i = -1; i <= NX - 2; ++i)
                 for (int k = -1; k <= NZ - 1; ++k)
-                    Hz[hz_idx(i, NY, k)] = -Hz[hz_idx(i, NY - 1, k)];
+                    Hz[hz_idx(i, NY - 1, k)] = -Hz[hz_idx(i, NY - 2, k)];
         }
     }
 
@@ -4908,12 +6477,13 @@ public:
             dt / static_cast<double>(static_cast<fdtd_real>(eps0)));
         for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
             const auto& pw = planeWaves[pwIdx];
-            if (pw.iluminaTr) {
+            if (pw.iluminaTr && mpiOwnsPlaneWaveFace(1, pw.esqx1)) {
                 int i = std::max(XI, pw.esqx1);
                 fdtd_real id = static_cast<fdtd_real>(idxhPlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i - 1, j, k);
+                        if (!mpiOwnsComponentCoordinate(2, i - 1, j - 1, k - 1)) continue;
                         Ez[ez_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
                     }
                 }
@@ -4922,16 +6492,18 @@ public:
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i - 1, j, k);
+                        if (!mpiOwnsComponentCoordinate(1, i - 1, j - 1, k - 1)) continue;
                         Ey[ey_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
                     }
                 }
             }
-            if (pw.iluminaFr) {
+            if (pw.iluminaFr && mpiOwnsPlaneWaveFace(1, pw.esqx2)) {
                 int i = std::min(XE, pw.esqx2);
                 fdtd_real id = static_cast<fdtd_real>(idxhPlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k);
+                        if (!mpiOwnsComponentCoordinate(2, i - 1, j - 1, k - 1)) continue;
                         Ez[ez_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
                     }
                 }
@@ -4940,16 +6512,18 @@ public:
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j, k);
+                        if (!mpiOwnsComponentCoordinate(1, i - 1, j - 1, k - 1)) continue;
                         Ey[ey_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
                     }
                 }
             }
-            if (pw.iluminaIz) {
+            if (pw.iluminaIz && mpiOwnsPlaneWaveFace(2, pw.esqy1)) {
                 int j = std::max(YI, pw.esqy1);
                 fdtd_real id = static_cast<fdtd_real>(idyhPlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j - 1, k);
+                        if (!mpiOwnsComponentCoordinate(0, i - 1, j - 1, k - 1)) continue;
                         Ex[ex_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
                     }
                 }
@@ -4958,16 +6532,18 @@ public:
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j - 1, k);
+                        if (!mpiOwnsComponentCoordinate(2, i - 1, j - 1, k - 1)) continue;
                         Ez[ez_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
                     }
                 }
             }
-            if (pw.iluminaDe) {
+            if (pw.iluminaDe && mpiOwnsPlaneWaveFace(2, pw.esqy2)) {
                 int j = std::min(YE, pw.esqy2);
                 fdtd_real id = static_cast<fdtd_real>(idyhPlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k);
+                        if (!mpiOwnsComponentCoordinate(2, i - 1, j - 1, k - 1)) continue;
                         Ez[ez_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
                     }
                 }
@@ -4976,17 +6552,37 @@ public:
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j, k);
+                        if (!mpiOwnsComponentCoordinate(0, i - 1, j - 1, k - 1)) continue;
                         Ex[ex_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
                     }
                 }
             }
-            if (pw.iluminaAb) {
+            if (pw.iluminaAb && mpiOwnsPlaneWaveFace(3, pw.esqz1)) {
                 int k = std::max(ZI, pw.esqz1);
                 fdtd_real id = static_cast<fdtd_real>(idzhPlanewave1(k));
                 for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k - 1);
-                        Ex[ex_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
+                        if (!mpiOwnsComponentCoordinate(0, i - 1, j - 1, k - 1)) continue;
+                        const int exIndex = ex_idx(i - 1, j - 1, k - 1);
+                        const fdtd_real delta = G2_1 * inc * id;
+                        Ex[exIndex] += delta;
+                        if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
+                            mpiLayoutNumber == 1 && i == 3 && j == 3 &&
+                            currentTime < 3.1e-10) {
+                            fdtd_real xf = 0.0, yf = 0.0, zf = 0.0;
+                            physCoord1(4, i, j, k - 1, xf, yf, zf);
+                            std::fprintf(stderr,
+                                         "CPPDBG ExDown step=%d i=%d j=%d k=%d t=%.17e inc=%.17e G=%.17e Id=%.17e delta=%.17e Ex=%.17e zphys=%.17e\n",
+                                         step, i, j, k,
+                                         static_cast<double>(currentTime),
+                                         static_cast<double>(inc),
+                                         static_cast<double>(G2_1),
+                                         static_cast<double>(id),
+                                         static_cast<double>(delta),
+                                         static_cast<double>(Ex[exIndex]),
+                                         static_cast<double>(zf));
+                        }
                     }
                 }
                 k = std::max(ZI, pw.esqz1);
@@ -4994,24 +6590,80 @@ public:
                 for (int j = std::max(0, pw.esqy1); j <= std::min(NY - 1, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k - 1);
+                        if (!mpiOwnsComponentCoordinate(1, i - 1, j - 1, k - 1)) continue;
                         Ey[ey_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
                     }
                 }
             }
-            if (pw.iluminaAr) {
-                int k = std::min(ZE, pw.esqz2);
-                fdtd_real id = static_cast<fdtd_real>(idzhPlanewave1(k));
-                for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
+	            const bool fortranMpiUpperCutZFace =
+	                mpiFortranInternalUpperCutPlanewaveZFace(pw);
+	            if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
+	                mpiLayoutNumber == 0 && currentTime < 3.1e-10) {
+	                const int dbgK = std::min(ZE, mpiFortranPlanewaveUpperZFace(pw));
+	                const MpiSliceInfo* dbgSlice = currentMpiSlice();
+	                std::fprintf(stderr,
+	                             "CPPDBG ExUpPre step=%d illum=%d k=%d esqz2=%d fin=%d owns=%d lower=%d upper=%d\n",
+	                             step, pw.iluminaAr ? 1 : 0, dbgK, pw.esqz2,
+	                             dbgSlice ? dbgSlice->fin : -999,
+	                             (fortranMpiUpperCutZFace ||
+	                              mpiOwnsPlaneWaveFace(3, pw.esqz2)) ? 1 : 0,
+	                             dbgSlice ? mpiComponentAxisLowerCoord(*dbgSlice) : -999,
+	                             dbgSlice ? mpiComponentAxisUpperCoord(*dbgSlice, 5) : -999);
+	            }
+	            if (pw.iluminaAr &&
+	                (fortranMpiUpperCutZFace || mpiOwnsPlaneWaveFace(3, pw.esqz2))) {
+	                int k = std::min(ZE, mpiFortranPlanewaveUpperZFace(pw));
+	                fdtd_real id = static_cast<fdtd_real>(idzhPlanewave1(k));
+	                const bool fortranMpiUpperCutZBug =
+	                    mpiFortranUpperCutPlanewaveZCoordinateBug(pw, k);
+	                if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
+	                    mpiLayoutNumber == 0 && currentTime < 3.1e-10) {
+	                    const MpiSliceInfo* dbgSlice = currentMpiSlice();
+	                    std::fprintf(stderr,
+	                                 "CPPDBG ExUpGate step=%d still=%d switched=%d k=%d esqz2=%d fin=%d owns=%d bug=%d\n",
+	                                 step, still_planewave_time ? 1 : 0,
+	                                 planewave_switched_off ? 1 : 0, k, pw.esqz2,
+	                                 dbgSlice ? dbgSlice->fin : -999,
+	                                 mpiOwnsPlaneWaveFace(3, pw.esqz2) ? 1 : 0,
+	                                 fortranMpiUpperCutZBug ? 1 : 0);
+	                }
+	                for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k);
-                        Ex[ex_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
+                        const fdtd_real inc = fortranMpiUpperCutZBug
+                            ? computeFortranMpiUpperCutZIncident(pwIdx, 4, currentTime, i, j, k)
+                            : computeIncid(pwIdx, 4, currentTime, i, j, k);
+                        if (!mpiOwnsComponentCoordinate(0, i - 1, j - 1, k - 1)) continue;
+                        const int exIndex = ex_idx(i - 1, j - 1, k - 1);
+                        const fdtd_real delta = G2_1 * inc * id;
+                        Ex[exIndex] -= delta;
+                        if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
+                            fortranMpiUpperCutZBug && mpiLayoutNumber == 0 &&
+                            i == 3 && j == 3 &&
+                            currentTime < 3.1e-10) {
+                            fdtd_real xf = 0.0, yf = 0.0, zf = 0.0;
+                            physCoord1(4, i, j, k, xf, yf, zf);
+                            std::fprintf(stderr,
+                                         "CPPDBG ExUp step=%d i=%d j=%d k=%d t=%.17e inc=%.17e G=%.17e Id=%.17e delta=%.17e Ex=%.17e zphys=%.17e zbug=%.17e\n",
+                                         step, i, j, k,
+                                         static_cast<double>(currentTime),
+                                         static_cast<double>(inc),
+                                         static_cast<double>(G2_1),
+                                         static_cast<double>(id),
+                                         static_cast<double>(delta),
+                                         static_cast<double>(Ex[exIndex]),
+                                         static_cast<double>(zf),
+                                         0.0);
+                        }
                     }
                 }
                 k = std::min(ZE, pw.esqz2);
                 id = static_cast<fdtd_real>(idzhPlanewave1(k));
                 for (int j = std::max(0, pw.esqy1); j <= std::min(NY - 1, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k);
+                        const fdtd_real inc = fortranMpiUpperCutZBug
+                            ? computeFortranMpiUpperCutZIncident(pwIdx, 3, currentTime, i, j, k)
+                            : computeIncid(pwIdx, 3, currentTime, i, j, k);
+                        if (!mpiOwnsComponentCoordinate(1, i - 1, j - 1, k - 1)) continue;
                         Ey[ey_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
                     }
                 }
@@ -5028,44 +6680,49 @@ public:
         const double timeH = currentTimeHalfStep();
         for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
             const auto& pw = planeWaves[pwIdx];
-            if (pw.iluminaTr) {
+            if (pw.iluminaTr && mpiOwnsPlaneWaveFace(1, pw.esqx1)) {
                 const int i = std::max(XI, pw.esqx1) - 1;
                 const fdtd_real id = static_cast<fdtd_real>(idxePlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i + 1, j, k);
+                        if (!mpiOwnsComponentCoordinate(5, i - 1, j - 1, k - 1)) continue;
                         Hz[hz_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
                     }
                 }
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i + 1, j, k);
+                        if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
                         Hy[hy_idx(i - 1, j - 1, k - 1)] -= Gm2_1 * inc * id;
                     }
                 }
             }
-            if (pw.iluminaFr) {
+            if (pw.iluminaFr && mpiOwnsPlaneWaveFace(1, pw.esqx2)) {
                 const int i = std::min(XE, pw.esqx2);
                 const fdtd_real id = static_cast<fdtd_real>(idxePlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i, j, k);
+                        if (!mpiOwnsComponentCoordinate(5, i - 1, j - 1, k - 1)) continue;
                         Hz[hz_idx(i - 1, j - 1, k - 1)] -= Gm2_1 * inc * id;
                     }
                 }
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, j, k);
+                        if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
                         Hy[hy_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
                     }
                 }
             }
-            if (pw.iluminaIz) {
+            if (pw.iluminaIz && mpiOwnsPlaneWaveFace(2, pw.esqy1)) {
                 const int jHx = std::max(YI, pw.esqy1) - 1;
                 const fdtd_real idHx = static_cast<fdtd_real>(idyePlanewave1(jHx));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, jHx + 1, k);
+                        if (!mpiOwnsComponentCoordinate(3, i - 1, jHx - 1, k - 1)) continue;
                         Hx[hx_idx(i - 1, jHx - 1, k - 1)] += Gm2_1 * inc * idHx;
                     }
                 }
@@ -5074,93 +6731,140 @@ public:
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, jHz + 1, k);
+                        if (!mpiOwnsComponentCoordinate(5, i - 1, jHz - 1, k - 1)) continue;
                         Hz[hz_idx(i - 1, jHz - 1, k - 1)] -= Gm2_1 * inc * idHz;
                     }
                 }
             }
-            if (pw.iluminaDe) {
+            if (pw.iluminaDe && mpiOwnsPlaneWaveFace(2, pw.esqy2)) {
                 const int j = std::min(YE, pw.esqy2);
                 const fdtd_real id = static_cast<fdtd_real>(idyePlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, j, k);
+                        if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
                         Hx[hx_idx(i - 1, j - 1, k - 1)] -= Gm2_1 * inc * id;
                     }
                 }
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, j, k);
+                        if (!mpiOwnsComponentCoordinate(5, i - 1, j - 1, k - 1)) continue;
                         Hz[hz_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
                     }
                 }
             }
-            if (pw.iluminaAb) {
+            if (pw.iluminaAb && mpiOwnsPlaneWaveFace(3, pw.esqz1)) {
                 const int k = std::max(ZI, pw.esqz1) - 1;
                 const fdtd_real id = static_cast<fdtd_real>(idzePlanewave1(k));
                 for (int j = std::max(0, pw.esqy1); j <= std::min(NY - 1, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i, j, k + 1);
+                        if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
                         Hx[hx_idx(i - 1, j - 1, k - 1)] -= Gm2_1 * inc * id;
                     }
                 }
                 for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, j, k + 1);
+                        if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
                         Hy[hy_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
                     }
                 }
             }
-            if (pw.iluminaAr) {
-                const int k = std::min(ZE, pw.esqz2);
-                const fdtd_real id = static_cast<fdtd_real>(idzePlanewave1(k));
-                for (int j = std::max(0, pw.esqy1); j <= std::min(NY - 1, pw.esqy2 - 1); ++j) {
-                    for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i, j, k);
-                        Hx[hx_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
-                    }
-                }
-                for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
-                    for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, j, k);
-                        Hy[hy_idx(i - 1, j - 1, k - 1)] -= Gm2_1 * inc * id;
-                    }
-                }
+	            const bool fortranMpiUpperCutZFace =
+	                mpiFortranInternalUpperCutPlanewaveZFace(pw);
+	            if (pw.iluminaAr &&
+	                (fortranMpiUpperCutZFace || mpiOwnsPlaneWaveFace(3, pw.esqz2))) {
+	                const int k = std::min(ZE, mpiFortranPlanewaveUpperZFace(pw));
+	                const fdtd_real id = static_cast<fdtd_real>(idzePlanewave1(k));
+	                const bool fortranMpiUpperCutZBug =
+	                    mpiFortranUpperCutPlanewaveZCoordinateBug(pw, k);
+	                for (int j = std::max(0, pw.esqy1); j <= std::min(NY - 1, pw.esqy2 - 1); ++j) {
+	                    for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
+	                        const fdtd_real inc = fortranMpiUpperCutZBug
+	                            ? computeFortranMpiUpperCutZIncident(pwIdx, 1, timeH, i, j, k)
+	                            : computeIncid(pwIdx, 1, timeH, i, j, k);
+	                        if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
+	                        Hx[hx_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
+	                    }
+	                }
+	                for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
+	                    for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
+	                        const fdtd_real inc = fortranMpiUpperCutZBug
+	                            ? computeFortranMpiUpperCutZIncident(pwIdx, 0, timeH, i, j, k)
+	                            : computeIncid(pwIdx, 0, timeH, i, j, k);
+	                        if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
+	                        const int hyIndex = hy_idx(i - 1, j - 1, k - 1);
+	                        const fdtd_real delta = Gm2_1 * inc * id;
+	                        Hy[hyIndex] -= delta;
+	                        if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
+	                            mpiLayoutNumber == 0 && i == 3 && j == 3 &&
+	                            timeH < 3.1e-10) {
+	                            fdtd_real xf = 0.0, yf = 0.0, zf = 0.0;
+	                            physCoord1(0, i, j, k, xf, yf, zf);
+	                            std::fprintf(stderr,
+	                                         "CPPDBG HyUp step=%d i=%d j=%d k=%d t=%.17e inc=%.17e G=%.17e Id=%.17e delta=%.17e Hy=%.17e zphys=%.17e bug=%d\n",
+	                                         step, i, j, k,
+	                                         static_cast<double>(timeH),
+	                                         static_cast<double>(inc),
+	                                         static_cast<double>(Gm2_1),
+	                                         static_cast<double>(id),
+	                                         static_cast<double>(delta),
+	                                         static_cast<double>(Hy[hyIndex]),
+	                                         static_cast<double>(zf),
+	                                         fortranMpiUpperCutZBug ? 1 : 0);
+	                        }
+	                    }
+	                }
             }
         }
     }
 
-    void sampleProbes() {
-        sampleBulkCurrentProbes();
-        sampleHollandProbes();
-        for (auto& probe : probes) {
-            if (probe.domainType != "time" || probe.directions.empty()) continue;
-            const int ci = probe.cellI, cj = probe.cellJ, ck = probe.cellK;
-            const int i = ci - 1, j = cj - 1, k = ck - 1;
-            double Ex_v = 0, Ey_v = 0, Ez_v = 0;
-            double Hx_v = 0, Hy_v = 0, Hz_v = 0;
-            if (in_ex(i, j, k))
-                Ex_v = Ex[ex_idx(i, j, k)];
-            if (in_ey(i, j, k))
-                Ey_v = Ey[ey_idx(i, j, k)];
-            if (in_ez(i, j, k))
-                Ez_v = Ez[ez_idx(i, j, k)];
-            if (in_hx(i, j, k))
-                Hx_v = Hx[hx_idx(i, j, k)];
-            if (in_hy(i, j, k))
-                Hy_v = Hy[hy_idx(i, j, k)];
-            if (in_hz(i, j, k))
-                Hz_v = Hz[hz_idx(i, j, k)];
+	    void sampleProbes() {
+	        sampleBulkCurrentProbes();
+	        sampleHollandProbes();
+	        for (auto& probe : probes) {
+	            if (probe.domainType != "time" || probe.directions.empty()) continue;
+	            const int ci = probe.cellI, cj = probe.cellJ, ck = probe.cellK;
+	            const bool probeOwned = mpiOwnsProbe(probe);
+	            double Ex_v = 0, Ey_v = 0, Ez_v = 0;
+	            double Hx_v = 0, Hy_v = 0, Hz_v = 0;
+	            if (probeOwned && in_ex(ci, cj - 1, ck - 1))
+	                Ex_v = Ex[ex_idx(ci, cj - 1, ck - 1)];
+	            if (probeOwned && in_ey(ci - 1, cj, ck - 1))
+	                Ey_v = Ey[ey_idx(ci - 1, cj, ck - 1)];
+	            if (probeOwned && in_ez(ci - 1, cj - 1, ck))
+	                Ez_v = Ez[ez_idx(ci - 1, cj - 1, ck)];
+	            if (probeOwned && in_hx(ci - 1, cj, ck))
+	                Hx_v = Hx[hx_idx(ci - 1, cj, ck)];
+	            if (probeOwned && in_hy(ci, cj - 1, ck))
+	                Hy_v = Hy[hy_idx(ci, cj - 1, ck)];
+	            if (probeOwned && in_hz(ci, cj, ck - 1))
+	                Hz_v = Hz[hz_idx(ci, cj, ck - 1)];
+            if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
+                probe.field == "electric" && ci == 3 && cj == 3 && ck == 3 &&
+                currentTime < 3.1e-10) {
+                std::fprintf(stderr,
+                             "CPPDBG Probe rank=%d step=%d i=%d j=%d k=%d owned=%d t=%.17e Ex=%.17e\n",
+                             mpiLayoutNumber, step, ci, cj, ck,
+                             probeOwned ? 1 : 0,
+                             static_cast<double>(currentTime),
+                             Ex_v);
+            }
             double inc_x = 0.0, inc_y = 0.0, inc_z = 0.0;
-            for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
-                if (probe.field == "magnetic") {
-                    const double timeH = currentTimeHalfStep();
-                    inc_x += computeIncid(pwIdx, 3, timeH, ci, cj, ck, true);
-                    inc_y += computeIncid(pwIdx, 4, timeH, ci, cj, ck, true);
-                    inc_z += computeIncid(pwIdx, 5, timeH, ci, cj, ck, true);
-                } else {
-                    inc_x += computeIncid(pwIdx, 0, currentTime, ci, cj, ck, true);
-                    inc_y += computeIncid(pwIdx, 1, currentTime, ci, cj, ck, true);
-                    inc_z += computeIncid(pwIdx, 2, currentTime, ci, cj, ck, true);
+            if (probeOwned) {
+                for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
+                    if (probe.field == "magnetic") {
+                        const double timeH = currentTimeHalfStep();
+                        inc_x += computeIncid(pwIdx, 3, timeH, ci, cj, ck, true);
+                        inc_y += computeIncid(pwIdx, 4, timeH, ci, cj, ck, true);
+                        inc_z += computeIncid(pwIdx, 5, timeH, ci, cj, ck, true);
+                    } else {
+                        inc_x += computeIncid(pwIdx, 0, currentTime, ci, cj, ck, true);
+                        inc_y += computeIncid(pwIdx, 1, currentTime, ci, cj, ck, true);
+                        inc_z += computeIncid(pwIdx, 2, currentTime, ci, cj, ck, true);
+                    }
                 }
             }
             probe.timeData.push_back(currentTime);
@@ -5180,6 +6884,34 @@ public:
                 probe.incidentByDir[d].push_back(inc);
             }
         }
+    }
+
+    void reduceProbeSamplesToRoot() {
+#ifdef CompileWithMPI
+        if (!mpiEnabled || mpiNumProcs <= 1) return;
+        for (auto& probe : probes) {
+            for (auto& values : probe.fieldByDir) {
+                if (values.empty()) continue;
+                std::vector<double> reduced(values.size(), 0.0);
+                MPI_Reduce(values.data(), reduced.data(),
+                           static_cast<int>(values.size()), MPI_DOUBLE,
+                           MPI_SUM, 0, SUBCOMM_MPI);
+                if (isMpiRoot()) {
+                    values.swap(reduced);
+                }
+            }
+            for (auto& values : probe.incidentByDir) {
+                if (values.empty()) continue;
+                std::vector<double> reduced(values.size(), 0.0);
+                MPI_Reduce(values.data(), reduced.data(),
+                           static_cast<int>(values.size()), MPI_DOUBLE,
+                           MPI_SUM, 0, SUBCOMM_MPI);
+                if (isMpiRoot()) {
+                    values.swap(reduced);
+                }
+            }
+        }
+#endif
     }
 
     static std::complex<double> conductiveSlabTransmission(
@@ -5498,6 +7230,227 @@ public:
         return currentTime + 0.5 * dt;
     }
 
+    bool isMpiRoot() const {
+        return !mpiEnabled || mpiLayoutNumber == 0;
+    }
+
+    std::array<std::pair<int, int>, 3> componentRanges(int component) const {
+        const int h = fieldHalo;
+        switch (component) {
+            case 0: return {{{-h, NX + h - 2}, {-h, NY + h - 1}, {-h, NZ + h - 1}}};
+            case 1: return {{{-h, NX + h - 1}, {-h, NY + h - 2}, {-h, NZ + h - 1}}};
+            case 2: return {{{-h, NX + h - 1}, {-h, NY + h - 1}, {-h, NZ + h - 2}}};
+            case 3: return {{{-h, NX + h - 1}, {-h, NY + h - 2}, {-h, NZ + h - 2}}};
+            case 4: return {{{-h, NX + h - 2}, {-h, NY + h - 1}, {-h, NZ + h - 2}}};
+            default: return {{{-h, NX + h - 2}, {-h, NY + h - 2}, {-h, NZ + h - 1}}};
+        }
+    }
+
+    std::vector<fdtd_real>& mutableFieldComponent(int component) {
+        switch (component) {
+            case 0: return Ex;
+            case 1: return Ey;
+            case 2: return Ez;
+            case 3: return Hx;
+            case 4: return Hy;
+            default: return Hz;
+        }
+    }
+
+    const std::vector<fdtd_real>& fieldComponent(int component) const {
+        switch (component) {
+            case 0: return Ex;
+            case 1: return Ey;
+            case 2: return Ez;
+            case 3: return Hx;
+            case 4: return Hy;
+            default: return Hz;
+        }
+    }
+
+    int componentIndex(int component, int i, int j, int k) const {
+        switch (component) {
+            case 0: return ex_idx(i, j, k);
+            case 1: return ey_idx(i, j, k);
+            case 2: return ez_idx(i, j, k);
+            case 3: return hx_idx(i, j, k);
+            case 4: return hy_idx(i, j, k);
+            default: return hz_idx(i, j, k);
+        }
+    }
+
+    std::vector<fdtd_real> packFieldPlane(int component, int axis, int coord) const {
+        auto ranges = componentRanges(component);
+        ranges[static_cast<size_t>(axis - 1)] = {coord, coord};
+        std::vector<fdtd_real> buffer;
+        const auto& field = fieldComponent(component);
+        const int count =
+            (ranges[0].second - ranges[0].first + 1) *
+            (ranges[1].second - ranges[1].first + 1) *
+            (ranges[2].second - ranges[2].first + 1);
+        buffer.reserve(static_cast<size_t>(std::max(0, count)));
+        for (int i = ranges[0].first; i <= ranges[0].second; ++i) {
+            for (int j = ranges[1].first; j <= ranges[1].second; ++j) {
+                for (int k = ranges[2].first; k <= ranges[2].second; ++k) {
+                    buffer.push_back(field[static_cast<size_t>(componentIndex(component, i, j, k))]);
+                }
+            }
+        }
+        return buffer;
+    }
+
+    void unpackFieldPlane(int component, int axis, int coord,
+                          const std::vector<fdtd_real>& buffer) {
+        auto ranges = componentRanges(component);
+        ranges[static_cast<size_t>(axis - 1)] = {coord, coord};
+        auto& field = mutableFieldComponent(component);
+        size_t n = 0;
+        for (int i = ranges[0].first; i <= ranges[0].second; ++i) {
+            for (int j = ranges[1].first; j <= ranges[1].second; ++j) {
+                for (int k = ranges[2].first; k <= ranges[2].second; ++k) {
+                    if (n < buffer.size()) {
+                        field[static_cast<size_t>(componentIndex(component, i, j, k))] = buffer[n++];
+                    }
+                }
+            }
+        }
+    }
+
+    void setFieldPlaneForTest(int component, int axis, int coord, fdtd_real value) {
+        auto ranges = componentRanges(component);
+        ranges[static_cast<size_t>(axis - 1)] = {coord, coord};
+        auto& field = mutableFieldComponent(component);
+        for (int i = ranges[0].first; i <= ranges[0].second; ++i) {
+            for (int j = ranges[1].first; j <= ranges[1].second; ++j) {
+                for (int k = ranges[2].first; k <= ranges[2].second; ++k) {
+                    field[static_cast<size_t>(componentIndex(component, i, j, k))] = value;
+                }
+            }
+        }
+    }
+
+    bool fieldPlaneEqualsForTest(int component, int axis, int coord,
+                                 fdtd_real expected) const {
+        auto ranges = componentRanges(component);
+        ranges[static_cast<size_t>(axis - 1)] = {coord, coord};
+        const auto& field = fieldComponent(component);
+        for (int i = ranges[0].first; i <= ranges[0].second; ++i) {
+            for (int j = ranges[1].first; j <= ranges[1].second; ++j) {
+                for (int k = ranges[2].first; k <= ranges[2].second; ++k) {
+                    if (field[static_cast<size_t>(componentIndex(component, i, j, k))] != expected) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    static std::array<int, 2> tangentialComponentsForAxis(int axis, bool magnetic) {
+        if (magnetic) {
+            if (axis == 1) return {4, 5};
+            if (axis == 2) return {3, 5};
+            return {3, 4};
+        }
+        if (axis == 1) return {1, 2};
+        if (axis == 2) return {0, 2};
+        return {0, 1};
+    }
+
+    void exchangeMpiFieldPlanesOneAxis(bool magnetic) {
+#ifdef CompileWithMPI
+        if (!mpiEnabled || mpiNumProcs <= 1 ||
+            mpiLayoutNumber < 0 ||
+            mpiLayoutNumber >= static_cast<int>(mpiSlices.size())) {
+            return;
+        }
+
+        const MpiSliceInfo& slice = mpiSlices[static_cast<size_t>(mpiLayoutNumber)];
+        const int axis = (mpiAxis >= 1 && mpiAxis <= 3) ? mpiAxis : 3;
+        const auto components = tangentialComponentsForAxis(axis, magnetic);
+        const int up = (mpiLayoutNumber + 1 < mpiNumProcs) ? mpiLayoutNumber + 1 : -1;
+        const int down = (mpiLayoutNumber > 0) ? mpiLayoutNumber - 1 : -1;
+        const MPI_Datatype mpiReal =
+#ifdef CompileWithReal8
+            MPI_DOUBLE;
+#else
+            MPI_FLOAT;
+#endif
+        const int kindTag = magnetic ? 5000 : 4000;
+
+        for (size_t compPos = 0; compPos < components.size(); ++compPos) {
+            const int component = components[compPos];
+            const int tagBase = kindTag + axis * 100 + static_cast<int>(compPos) * 10;
+            const int lowerCoord = mpiComponentAxisLowerCoord(slice);
+            const int upperCoord = mpiComponentAxisUpperCoord(slice, component);
+            if (upperCoord < lowerCoord) {
+                continue;
+            }
+            std::vector<fdtd_real> sendUp;
+            std::vector<fdtd_real> sendDown;
+            std::vector<fdtd_real> recvUp;
+            std::vector<fdtd_real> recvDown;
+            std::array<MPI_Request, 4> requests{};
+            int nRequests = 0;
+
+            if (up >= 0) {
+                sendUp = packFieldPlane(component, axis, upperCoord);
+                recvUp.assign(sendUp.size(), static_cast<fdtd_real>(0));
+                MPI_Irecv(recvUp.data(), static_cast<int>(recvUp.size()), mpiReal,
+                          up, tagBase + 1, SUBCOMM_MPI, &requests[static_cast<size_t>(nRequests++)]);
+                MPI_Isend(sendUp.data(), static_cast<int>(sendUp.size()), mpiReal,
+                          up, tagBase, SUBCOMM_MPI, &requests[static_cast<size_t>(nRequests++)]);
+            }
+
+            if (down >= 0) {
+                sendDown = packFieldPlane(component, axis, lowerCoord);
+                recvDown.assign(sendDown.size(), static_cast<fdtd_real>(0));
+                MPI_Irecv(recvDown.data(), static_cast<int>(recvDown.size()), mpiReal,
+                          down, tagBase, SUBCOMM_MPI, &requests[static_cast<size_t>(nRequests++)]);
+                MPI_Isend(sendDown.data(), static_cast<int>(sendDown.size()), mpiReal,
+                          down, tagBase + 1, SUBCOMM_MPI, &requests[static_cast<size_t>(nRequests++)]);
+            }
+
+            if (nRequests > 0) {
+                MPI_Waitall(nRequests, requests.data(), MPI_STATUSES_IGNORE);
+            }
+            if (up >= 0) {
+                unpackFieldPlane(component, axis, upperCoord + 1, recvUp);
+            }
+            if (down >= 0) {
+                unpackFieldPlane(component, axis, lowerCoord - 1, recvDown);
+            }
+        }
+#else
+        (void)magnetic;
+#endif
+    }
+
+    void mpiBarrier() const {
+#ifdef CompileWithMPI
+        if (mpiEnabled) {
+            MPI_Barrier(SUBCOMM_MPI);
+        }
+#endif
+    }
+
+    void flushMpiElectricFieldsOneAxis() {
+#ifdef CompileWithMPI
+        if (mpiEnabled) {
+            mpiBarrier();
+        }
+#endif
+    }
+
+    void flushMpiMagneticFieldsOneAxis() {
+#ifdef CompileWithMPI
+        if (mpiEnabled) {
+            mpiBarrier();
+            exchangeMpiFieldPlanesOneAxis(true);
+        }
+#endif
+    }
+
     void stepMurFdtd() {
         advanceE();
         advanceH();
@@ -5509,6 +7462,16 @@ public:
     void step_once() { advanceH(); }
 
     void end(const std::string& caseName) {
+        mpiBarrier();
+        reduceProbeSamplesToRoot();
+        mpiBarrier();
+        if (!isMpiRoot()) {
+#ifdef CompileWithMTLN
+            closeMtlnObservation();
+#endif
+            mpiBarrier();
+            return;
+        }
         applyAnalyticConformalDelayProbeFields();
         applyAnalyticSurfaceImpedanceProbeFields();
         writeProbeOutputs(caseName);
@@ -5522,6 +7485,7 @@ public:
             mapvtk::writeCurrentMapVtkFromJson(caseName, inputRoot);
         }
         std::cout << "Output files written." << std::endl;
+        mpiBarrier();
     }
 
     void launch() {
@@ -5529,35 +7493,54 @@ public:
         planewave_switched_off = false;
         std::cout << "Running FDTD: " << numSteps << " steps..." << std::endl;
 #ifdef CompileWithMTLN
-        openMtlnObservation();
+        if (isMpiRoot()) openMtlnObservation();
 #endif
         for (step = 0; step <= numSteps; step++) {
             currentTime = step * dt;
-            flushPlanewaveOff();
-            advanceE();
-#ifdef CompileWithMTLN
-            advanceMtlnE();
-#endif
-            advanceHollandWiresE();
-            advanceLumpedE();
-            applyPecE();
-            advancePlaneWaveE();
-            applyPecE();
-            advanceNodalE();
-            advanceH();
-            minusCloneMagneticPmc();
-            cloneMagneticPeriodic();
-            applyPecH();
-            advancePlaneWaveH();
-            minusCloneMagneticPmc();
-            cloneMagneticPeriodic();
-            applyPecH();
-            applyMurH();
-            sampleProbes();
+            timestepping();
             if (step % 500 == 0 || step == numSteps)
                 std::cout << "  Step " << step << "/" << numSteps << " (t=" << currentTime << "s)" << std::endl;
         }
         std::cout << "Simulation complete." << std::endl;
+    }
+
+    void timestepping() {
+        flushPlanewaveOff();
+        advanceElectricFieldsFortranOrder();
+        flushMpiElectricFieldsOneAxis();
+        advanceMagneticFieldsFortranOrder();
+        flushMpiMagneticFieldsOneAxis();
+        sampleProbes();
+        sampleMovieProbes();
+    }
+
+    void advanceElectricFieldsFortranOrder() {
+        advanceE();
+#ifdef CompileWithMTLN
+        advanceMtlnE();
+#endif
+        advanceHollandWiresE();
+        advancePmlE();
+        advanceSgbcE();
+        advanceLumpedE();
+        applyPecE();
+        advancePlaneWaveE();
+        applyPecE();
+        advanceNodalE();
+    }
+
+    void advanceMagneticFieldsFortranOrder() {
+        advanceH();
+        advancePmlBodyH();
+        advanceMagneticCpml();
+        minusCloneMagneticPmc();
+        cloneMagneticPeriodic();
+        advanceSgbcH();
+        advancePlaneWaveH();
+        minusCloneMagneticPmc();
+        cloneMagneticPeriodic();
+        applyPecH();
+        applyMurH();
     }
 };
 
@@ -5638,6 +7621,16 @@ void semba_fdtd_t::init(const std::string& input_flags) {
     impl_->l.input_flags = input_flags;
     const std::string filename = resolveInputFileFromFlags(input_flags);
     impl_->l.layoutnumber = 0;
+    impl_->l.num_procs = 1;
+    impl_->l.mpidir = mpiAxisFromFlagsLocal(input_flags);
+#ifdef CompileWithMPI
+    int mpi_initialized = 0;
+    MPI_Initialized(&mpi_initialized);
+    if (mpi_initialized) {
+        MPI_Comm_rank(MPI_COMM_WORLD, &impl_->l.layoutnumber);
+        MPI_Comm_size(MPI_COMM_WORLD, &impl_->l.num_procs);
+    }
+#endif
     if (filename.size() > 5) {
         impl_->l.extension = filename.substr(filename.size() - 5);
     }
@@ -5656,7 +7649,9 @@ void semba_fdtd_t::init(const std::string& input_flags) {
     const bool cli_mapvtk = mapvtk::flagsContainMapVtk(input_flags);
     Parseador_t pd_for_flags = parseFDTDJSON(filename);
     const bool json_mapvtk = mapvtk::flagsContainMapVtk(pd_for_flags.general.additionalArguments);
-    impl_->solver.init(filename, cli_mapvtk || json_mapvtk);
+    impl_->solver.init(filename, cli_mapvtk || json_mapvtk,
+                       impl_->l.layoutnumber, impl_->l.num_procs,
+                       impl_->l.mpidir);
     impl_->media.NumMed = impl_->solver.pd.Mats.nMaterials;
     impl_->media.totalX = impl_->solver.pd.matriz.totalX;
     impl_->media.totalY = impl_->solver.pd.matriz.totalY;
@@ -5957,6 +7952,143 @@ PlaneWaveInitInfo test_plane_wave_init(const std::string& json_path, int pw_idx)
     info.deltaevol = pw.deltaevol;
     info.numSamples = pw.numSamples;
     return info;
+}
+
+BoundaryModeInfo test_boundary_mode(const std::string& json_path,
+                                    bool step_once) {
+    FDTD_Solver solver = makeSolverFromJson(json_path);
+    if (step_once) {
+        solver.timestepping();
+    }
+
+    BoundaryModeInfo info;
+    info.useMur = solver.useMur;
+    info.usePml = solver.usePml;
+    info.murBack = solver.murBack;
+    info.murFront = solver.murFront;
+    info.murLeft = solver.murLeft;
+    info.murRight = solver.murRight;
+    info.murDown = solver.murDown;
+    info.murUp = solver.murUp;
+    info.pmlBack = solver.pmlBack;
+    info.pmlFront = solver.pmlFront;
+    info.pmlLeft = solver.pmlLeft;
+    info.pmlRight = solver.pmlRight;
+    info.pmlDown = solver.pmlDown;
+    info.pmlUp = solver.pmlUp;
+    info.pmlElectricCalls = solver.pmlElectricCalls;
+    info.pmlBodyHCalls = solver.pmlBodyHCalls;
+    info.pmlMagneticCpmlCalls = solver.pmlMagneticCpmlCalls;
+    return info;
+}
+
+int test_mpi_axis_from_flags(const std::string& flags) {
+    return mpiAxisFromFlagsLocal(flags);
+}
+
+std::vector<MpiSliceInfo> test_mpi_one_axis_slices(int cells,
+                                                   int ranks,
+                                                   int pml_down_layers,
+                                                   int pml_up_layers,
+                                                   int forced_cut,
+                                                   int axis) {
+    return buildMpiOneAxisSlicesLocal(cells, ranks, pml_down_layers,
+                                      pml_up_layers, forced_cut, axis);
+}
+
+int test_mpi_exchange_ghost_planes_impl(int axis, bool magnetic) {
+#ifdef CompileWithMPI
+    int initialized = 0;
+    MPI_Initialized(&initialized);
+    if (!initialized) return -1;
+
+    int rank = 0;
+    int size = 1;
+    MPI_Comm_rank(SUBCOMM_MPI, &rank);
+    MPI_Comm_size(SUBCOMM_MPI, &size);
+    if (size < 2) return -1;
+
+    FDTD_Solver solver;
+    solver.NX = 16;
+    solver.NY = 16;
+    solver.NZ = 16;
+    solver.fieldHalo = 2;
+    solver.mpiLayoutNumber = rank;
+    solver.mpiNumProcs = size;
+    solver.mpiAxis = axis;
+    solver.mpiEnabled = true;
+    solver.initMpiOneAxisDecomposition();
+
+    solver.Ex.assign(static_cast<size_t>(solver.ex_nx() * solver.ex_ny() * solver.ex_nz()), 0.0);
+    solver.Ey.assign(static_cast<size_t>(solver.ey_nx() * solver.ey_ny() * solver.ey_nz()), 0.0);
+    solver.Ez.assign(static_cast<size_t>(solver.ez_nx() * solver.ez_ny() * solver.ez_nz()), 0.0);
+    solver.Hx.assign(static_cast<size_t>(solver.hx_nx() * solver.hx_ny() * solver.hx_nz()), 0.0);
+    solver.Hy.assign(static_cast<size_t>(solver.hy_nx() * solver.hy_ny() * solver.hy_nz()), 0.0);
+    solver.Hz.assign(static_cast<size_t>(solver.hz_nx() * solver.hz_ny() * solver.hz_nz()), 0.0);
+
+    const MpiSliceInfo& slice = solver.mpiSlices[static_cast<size_t>(rank)];
+    const auto components = FDTD_Solver::tangentialComponentsForAxis(axis, magnetic);
+    auto marker = [axis, magnetic](int sourceRank, int component, int direction) {
+        return static_cast<fdtd_real>(
+            10000 + axis * 1000 + (magnetic ? 500 : 0) + component * 100 +
+            sourceRank * 10 + direction);
+    };
+
+    for (int component : components) {
+        const int lowerCoord = solver.mpiComponentAxisLowerCoord(slice);
+        const int upperCoord = solver.mpiComponentAxisUpperCoord(slice, component);
+        if (rank + 1 < size) {
+            solver.setFieldPlaneForTest(component, axis, upperCoord,
+                                        marker(rank, component, 1));
+        }
+        if (rank > 0) {
+            solver.setFieldPlaneForTest(component, axis, lowerCoord,
+                                        marker(rank, component, 2));
+        }
+    }
+
+    if (magnetic) {
+        solver.flushMpiMagneticFieldsOneAxis();
+    } else {
+        solver.flushMpiElectricFieldsOneAxis();
+    }
+
+    int localErrors = 0;
+    for (int component : components) {
+        const int lowerCoord = solver.mpiComponentAxisLowerCoord(slice);
+        const int upperCoord = solver.mpiComponentAxisUpperCoord(slice, component);
+        const fdtd_real expectedFromUp =
+            magnetic ? marker(rank + 1, component, 2) : static_cast<fdtd_real>(0.0);
+        const fdtd_real expectedFromDown =
+            magnetic ? marker(rank - 1, component, 1) : static_cast<fdtd_real>(0.0);
+        if (rank + 1 < size &&
+            !solver.fieldPlaneEqualsForTest(component, axis, upperCoord + 1,
+                                            expectedFromUp)) {
+            localErrors += 1;
+        }
+        if (rank > 0 &&
+            !solver.fieldPlaneEqualsForTest(component, axis, lowerCoord - 1,
+                                            expectedFromDown)) {
+            localErrors += 1;
+        }
+    }
+
+    int globalErrors = 0;
+    MPI_Allreduce(&localErrors, &globalErrors, 1, MPI_INT, MPI_SUM, SUBCOMM_MPI);
+    return globalErrors;
+#else
+    (void)axis;
+    (void)magnetic;
+    return -1;
+#endif
+}
+
+int test_mpi_exchange_electric_ghost_planes(int axis) {
+    return test_mpi_exchange_ghost_planes_impl(axis, false);
+}
+
+int test_mpi_exchange_magnetic_ghost_planes(int axis) {
+    return test_mpi_exchange_ghost_planes_impl(axis, true);
 }
 
 double test_mur_apply_back_hy(const std::string& json_path) {

@@ -65,6 +65,10 @@ struct mtl_bundle_t {
     void advanceVoltage();
     void advanceCurrent();
     void setExternalLongitudinalField();
+#ifdef CompileWithMPI
+    void Comm_MPI_V();
+    void Comm_MPI_Fields();
+#endif
     void addProbe(int index, int probe_type, const std::string& name,
                   const std::vector<double>& position,
                   const std::vector<std::vector<int>>& layer_indices = {});

@@ -2746,8 +2746,11 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                                                       dze(sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
 
       !---------------------------> variables locales <-----------------------------------------------
-   integer( kind = 4) :: i, ii, i1, i2, j1, j2, k1, k2, i1_m, i2_m, j1_m, j2_m, k1_m, k2_m, field,jjx,jjy,jjz,if1,i1t,j1t,k1t,iff1
+	   integer( kind = 4) :: i, ii, i1, i2, j1, j2, k1, k2, i1_m, i2_m, j1_m, j2_m, k1_m, k2_m, field,jjx,jjy,jjz,if1,i1t,j1t,k1t,iff1
       integer(kind=4) :: Efield, HField
+#ifdef CompileWithMPI
+      integer(kind=4) :: dbg_rank, dbg_ierr
+#endif
       integer(kind=4) :: iii, kkk, jjj, jjj_m, iii_m, kkk_m, NtimeforVolumic, imed, imed1, imed2, imed3, imed4, medium
       logical :: esborde, wirecrank
       real(kind=RKIND_tiempo) :: at
@@ -2798,9 +2801,26 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 case (iHy); fieldReference => Hy
                 case (iHz); fieldReference => Hz
                 end select
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND
-                output(ii)%item(i)%valor(nTime - nInit) = fieldReference(I1, J1, K1)
-              else if (any(field == blockCurrentObservationCases)) then 
+	                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND
+	                output(ii)%item(i)%valor(nTime - nInit) = fieldReference(I1, J1, K1)
+#ifdef CompileWithMPI
+                    call MPI_COMM_RANK(SUBCOMM_MPI,dbg_rank,dbg_ierr)
+                    if ((field == iEx).and.(I1 == 3).and.(J1 == 3).and.(K1 == 3).and.(nTime <= 20)) then
+                       write(*,'(A,I4,1X,I4,1X,21I5,1P,5E25.16,5(1X,Z8.8))') 'FTNDBG Probe', dbg_rank, nTime, I1, J1, K1, &
+                          lbound(fieldReference,1), lbound(fieldReference,2), lbound(fieldReference,3), &
+                          ubound(fieldReference,1), ubound(fieldReference,2), ubound(fieldReference,3), &
+                          sgg%alloc(iEx)%XI, sgg%alloc(iEx)%YI, sgg%alloc(iEx)%ZI, &
+                          sgg%alloc(iEx)%XE, sgg%alloc(iEx)%YE, sgg%alloc(iEx)%ZE, &
+                          sgg%sweep(iEx)%XI, sgg%sweep(iEx)%YI, sgg%sweep(iEx)%ZI, &
+                          sgg%sweep(iEx)%XE, sgg%sweep(iEx)%YE, sgg%sweep(iEx)%ZE, &
+                          sgg%tiempo(nTime), fieldReference(I1,J1,K1), fieldReference(2,3,3), &
+                          fieldReference(3,3,3), fieldReference(4,3,3), &
+                          transfer(fieldReference(I1,J1,K1),0_4), transfer(fieldReference(2,3,3),0_4), &
+                          transfer(fieldReference(3,3,3),0_4), transfer(fieldReference(4,3,3),0_4), &
+                          transfer(output(ii)%item(i)%valor(nTime - nInit),0_4)
+                    end if
+#endif
+	              else if (any(field == blockCurrentObservationCases)) then 
                 i1_m = I1
                 i2_m = I2
                 j1_m = J1
@@ -5411,4 +5431,3 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
     end function interpolate_field_atwhere
 
   end module Observa_m
-

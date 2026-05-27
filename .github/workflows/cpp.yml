@@ -69,6 +69,26 @@ jobs:
       - name: Run no-MTLN C++ gate
         run: ./scripts/test_cpp_nomtln.sh
 
+  hdf-output:
+    name: HDF movie output gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ libhdf5-dev
+
+      - name: Install Python test dependencies
+        run: python3 -m pip install -r requirements.txt
+
+      - name: Run HDF C++ gate
+        run: chmod +x scripts/test_cpp_hdf.sh && ./scripts/test_cpp_hdf.sh
+
   mtln-migration:
     name: MTLN Tier 1 migration gate
     runs-on: ubuntu-latest

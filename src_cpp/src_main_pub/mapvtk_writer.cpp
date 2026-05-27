@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdio>
 #include <cmath>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -517,38 +519,335 @@ void addCurrentFaces(VtkMesh& mesh, int count) {
     }
 }
 
-void writeMeshFile(const std::string& folder, const std::string& vtk_name, const VtkMesh& mesh) {
+std::string formatVtkFloat(float value) {
+    const float single = static_cast<float>(value);
+    if (single == 0.0f) {
+        return "0.000000000000E+000";
+    }
+    float magnitude = std::fabs(single);
+    int exponent = 0;
+    while (magnitude != 0.0f && magnitude < 0.1f) {
+        magnitude *= 10.0f;
+        exponent--;
+    }
+    while (magnitude >= 1.0f) {
+        magnitude /= 10.0f;
+        exponent++;
+    }
+    char mantissa[32];
+    std::snprintf(mantissa, sizeof(mantissa), "%.12f", static_cast<double>(magnitude));
+    char exponent_text[8];
+    if (exponent >= 0) {
+        std::snprintf(exponent_text, sizeof(exponent_text), "E+%03d", exponent);
+    } else {
+        std::snprintf(exponent_text, sizeof(exponent_text), "E%03d", exponent);
+    }
+    char buffer[40];
+    std::snprintf(buffer, sizeof(buffer), "%s%s%s",
+                  single < 0.0f ? "-" : "", mantissa, exponent_text);
+    return buffer;
+}
+
+std::string formatVtkLine(const std::vector<float>& values) {
+    std::string line;
+    for (size_t i = 0; i < values.size(); ++i) {
+        if (i > 0) line += "  ";
+        line += formatVtkFloat(values[i]);
+    }
+    return line;
+}
+
+struct FortranVtkMesh {
+    std::vector<float> points;
+    std::vector<int> cell_types;
+    std::vector<std::vector<int>> cells;
+    std::vector<float> mediatype;
+    std::vector<float> tagnumber;
+};
+
+void appendQuad(FortranVtkMesh& mesh, const Vec3& a, const Vec3& b, const Vec3& c, const Vec3& d,
+                float mediatype, float tag) {
+    const int base = static_cast<int>(mesh.points.size() / 3);
+    const auto push_point = [&](const Vec3& p) {
+        mesh.points.push_back(static_cast<float>(p.x));
+        mesh.points.push_back(static_cast<float>(p.y));
+        mesh.points.push_back(static_cast<float>(p.z));
+    };
+    push_point(a);
+    push_point(b);
+    push_point(c);
+    push_point(d);
+    mesh.cells.push_back({4, base, base + 1, base + 2, base + 3});
+    mesh.cell_types.push_back(9);
+    mesh.mediatype.push_back(mediatype);
+    mesh.tagnumber.push_back(tag);
+}
+
+void writeFortranMeshFile(const std::string& folder, const std::string& vtk_name,
+                          const FortranVtkMesh& mesh) {
     std::filesystem::create_directories(folder);
     const std::string path = folder + "/" + vtk_name;
     std::ofstream out(path);
-    out << std::scientific << std::setprecision(12);
     out << "# vtk DataFile Version 1.0\n";
     out << "PEC=0, already_YEEadvanced_byconformal=5, NOTOUCHNOUSE=6, WIRE=7, WIRE-COLISION=8, COMPO=3, DISPER=1, DIEL=2, SLOT=4, CONF=5/6, OTHER=-1 (ADD +0.5 for borders)\n";
-    out << "ASCII\n\n";
+    out << "ASCII\n";
+    out << " \n";
     out << "DATASET UNSTRUCTURED_GRID\n";
     out << "FIELD FieldData 1\n";
     out << "TIME 1 1 double\n";
-    out << "  0.000000000000E+000\n";
-    out << "POINTS " << mesh.points.size() << " float\n";
-    for (const auto& p : mesh.points) {
-        out << p.x << "  " << p.y << "  " << p.z << "\n";
+    out << "  " << formatVtkFloat(0.0f) << "\n";
+
+    const int n_points = static_cast<int>(mesh.points.size() / 3);
+    char header[128];
+    std::snprintf(header, sizeof(header), "POINTS %9d float", n_points);
+    out << header << "\n";
+    for (int i = 0; i < n_points; ++i) {
+        out << formatVtkFloat(mesh.points[static_cast<size_t>(3 * i)]) << "  "
+            << formatVtkFloat(mesh.points[static_cast<size_t>(3 * i + 1)]) << "  "
+            << formatVtkFloat(mesh.points[static_cast<size_t>(3 * i + 2)]) << "\n";
     }
-    out << "\nCELLS " << mesh.cells.size() << " ";
-    int size = 0;
-    for (const auto& c : mesh.cells) size += static_cast<int>(c.nodes.size()) + 1;
-    out << size << "\n";
-    for (const auto& c : mesh.cells) {
-        out << c.nodes.size();
-        for (int n : c.nodes) out << " " << n;
+
+    int connectivity = 0;
+    for (const auto& cell : mesh.cells) {
+        connectivity += static_cast<int>(cell.size());
+    }
+    std::snprintf(header, sizeof(header), "CELLS %9d %9d", static_cast<int>(mesh.cells.size()),
+                  connectivity);
+    out << " \n" << header << "\n";
+    for (const auto& cell : mesh.cells) {
+        out << cell[0];
+        for (size_t j = 1; j < cell.size(); ++j) {
+            out << " " << std::setw(9) << cell[j];
+        }
         out << "\n";
     }
-    out << "\nCELL_TYPES " << mesh.cells.size() << "\n";
-    for (const auto& c : mesh.cells) out << c.type << "\n";
-    out << "\nCELL_DATA " << mesh.cells.size() << "\n";
-    out << "SCALARS mediatype float 1\nLOOKUP_TABLE default\n";
-    for (const auto& c : mesh.cells) out << c.mediatype << "\n";
-    out << "\nSCALARS tagnumber float 1\nLOOKUP_TABLE default\n";
-    for (const auto& c : mesh.cells) out << c.tagnumber << "\n";
+
+    std::snprintf(header, sizeof(header), "CELL_TYPES %9d", static_cast<int>(mesh.cell_types.size()));
+    out << " \n" << header << "\n";
+    for (int cell_type : mesh.cell_types) {
+        out << std::setw(2) << cell_type << "\n";
+    }
+
+    std::snprintf(header, sizeof(header), "CELL_DATA %9d", static_cast<int>(mesh.mediatype.size()));
+    out << " \n" << header << "\n";
+    out << "SCALARS mediatype float 1\n";
+    out << "LOOKUP_TABLE default\n";
+    for (float value : mesh.mediatype) {
+        out << formatVtkFloat(value) << "\n";
+    }
+    out << " \n";
+    out << "SCALARS tagnumber float 1\n";
+    out << "LOOKUP_TABLE default\n";
+    for (float value : mesh.tagnumber) {
+        out << std::setw(6) << static_cast<int>(value) << "\n";
+    }
+    out << " \n";
+}
+
+void writeMeshFile(const std::string& folder, const std::string& vtk_name, const VtkMesh& mesh) {
+    FortranVtkMesh fortran_mesh;
+    for (const auto& cell : mesh.cells) {
+        if (cell.nodes.size() != 4) continue;
+        const Vec3 a = mesh.points[static_cast<size_t>(cell.nodes[0])];
+        const Vec3 b = mesh.points[static_cast<size_t>(cell.nodes[1])];
+        const Vec3 c = mesh.points[static_cast<size_t>(cell.nodes[2])];
+        const Vec3 d = mesh.points[static_cast<size_t>(cell.nodes[3])];
+        appendQuad(fortran_mesh, a, b, c, d,
+                   static_cast<float>(cell.mediatype),
+                   static_cast<float>(cell.tagnumber));
+    }
+    writeFortranMeshFile(folder, vtk_name, fortran_mesh);
+}
+
+std::vector<float> buildLineCoordinates(const std::vector<double>& steps, int cells) {
+    std::vector<float> line(static_cast<size_t>(cells) + 1, 0.0f);
+    for (int i = 1; i <= cells; ++i) {
+        const double step = (i - 1 < static_cast<int>(steps.size())) ? steps[static_cast<size_t>(i - 1)]
+                                                                   : steps.back();
+        line[static_cast<size_t>(i)] =
+            line[static_cast<size_t>(i - 1)] + static_cast<float>(step);
+    }
+    return line;
+}
+
+std::vector<uint8_t> rasterizeCellMaterials(const nlohmann::json& root, int nx, int ny, int nz) {
+    const size_t cells = static_cast<size_t>((nx + 2) * (ny + 2) * (nz + 2));
+    std::vector<uint8_t> occupied(cells, 0);
+    const auto index = [nx, ny, nz](int i, int j, int k) {
+        return static_cast<size_t>(k * (nx + 2) * (ny + 2) + j * (nx + 2) + i);
+    };
+    const auto mat_by_elem = buildMaterialByElement(root);
+    if (!root.contains("mesh") || !root["mesh"].contains("elements") || !root.contains("materials")) {
+        return occupied;
+    }
+    for (const auto& element : root["mesh"]["elements"]) {
+        const int eid = element.value("id", 0);
+        if (!mat_by_elem.count(eid) || !element.contains("intervals")) continue;
+        const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
+        if (info.type != "pec") continue;
+        for (const auto& interval : element["intervals"]) {
+            const int x0 = interval[0][0].get<int>();
+            const int y0 = interval[0][1].get<int>();
+            const int z0 = interval[0][2].get<int>();
+            const int x1 = interval[1][0].get<int>();
+            const int y1 = interval[1][1].get<int>();
+            const int z1 = interval[1][2].get<int>();
+            const int xi = std::min(x0, x1);
+            const int yi = std::min(y0, y1);
+            const int zi = std::min(z0, z1);
+            const int xe = std::max(x0, x1);
+            const int ye = std::max(y0, y1);
+            const int ze = std::max(z0, z1);
+            for (int k = zi; k <= ze; ++k) {
+                for (int j = yi; j <= ye; ++j) {
+                    for (int i = xi; i <= xe; ++i) {
+                        occupied[index(i, j, k)] = 1;
+                    }
+                }
+            }
+        }
+    }
+    return occupied;
+}
+
+void writeMapVtkFromGrid(const std::string& case_name, const nlohmann::json& root) {
+    int nx = 10, ny = 10, nz = 10;
+    std::vector<double> sx, sy, sz;
+    if (root.contains("mesh") && root["mesh"].contains("grid")) {
+        const auto& grid = root["mesh"]["grid"];
+        if (grid.contains("numberOfCells")) {
+            nx = grid["numberOfCells"][0].get<int>();
+            ny = grid["numberOfCells"][1].get<int>();
+            nz = grid["numberOfCells"][2].get<int>();
+        }
+        if (grid.contains("steps")) {
+            for (const auto& v : grid["steps"]["x"]) sx.push_back(v.get<double>());
+            for (const auto& v : grid["steps"]["y"]) sy.push_back(v.get<double>());
+            for (const auto& v : grid["steps"]["z"]) sz.push_back(v.get<double>());
+        }
+    }
+    if (sx.empty()) sx.push_back(0.1);
+    if (sy.empty()) sy.push_back(0.1);
+    if (sz.empty()) sz.push_back(0.1);
+
+    const std::string stem = mapOutputStem(case_name);
+    const std::string folder = stem + "__MAP_0_0_0__" + std::to_string(nx) + "_" +
+                               std::to_string(ny) + "_" + std::to_string(nz);
+    const std::string vtk_name = folder + "_1.vtk";
+
+    const std::vector<float> line_x = buildLineCoordinates(sx, nx);
+    const std::vector<float> line_y = buildLineCoordinates(sy, ny);
+    const std::vector<float> line_z = buildLineCoordinates(sz, nz);
+    const std::vector<uint8_t> pec = rasterizeCellMaterials(root, nx, ny, nz);
+    const auto index = [nx, ny, nz](int i, int j, int k) {
+        return static_cast<size_t>(k * (nx + 2) * (ny + 2) + j * (nx + 2) + i);
+    };
+    const auto is_pec = [&](int i, int j, int k) {
+        if (i < 1 || i > nx || j < 1 || j > ny || k < 1 || k > nz) return false;
+        return pec[index(i, j, k)] != 0;
+    };
+
+    int xi = nx + 1, xe = 0, yi = ny + 1, ye = 0, zi = nz + 1, ze = 0;
+    for (int k = 1; k <= nz; ++k) {
+        for (int j = 1; j <= ny; ++j) {
+            for (int i = 1; i <= nx; ++i) {
+                if (!is_pec(i, j, k)) continue;
+                xi = std::min(xi, i);
+                xe = std::max(xe, i);
+                yi = std::min(yi, j);
+                ye = std::max(ye, j);
+                zi = std::min(zi, k);
+                ze = std::max(ze, k);
+            }
+        }
+    }
+    if (xi > xe) {
+        writeFortranMeshFile(folder, vtk_name, FortranVtkMesh{});
+        return;
+    }
+
+    FortranVtkMesh mesh;
+    const float mediatype = 0.0f;
+    const float tag = 64.0f;
+    if (!is_pec(xi - 1, yi, zi)) {
+        const float x = line_x[static_cast<size_t>(xi)];
+        for (int j = yi; j < ye; ++j) {
+            for (int k = zi; k <= ze; ++k) {
+                appendQuad(mesh,
+                           {x, line_y[static_cast<size_t>(j)], line_z[static_cast<size_t>(k)]},
+                           {x, line_y[static_cast<size_t>(j + 1)], line_z[static_cast<size_t>(k)]},
+                           {x, line_y[static_cast<size_t>(j + 1)], line_z[static_cast<size_t>(k + 1)]},
+                           {x, line_y[static_cast<size_t>(j)], line_z[static_cast<size_t>(k + 1)]},
+                           mediatype, tag);
+            }
+        }
+    }
+    if (!is_pec(xe + 1, yi, zi)) {
+        const float x = line_x[static_cast<size_t>(xe + 1)];
+        for (int j = yi; j < ye; ++j) {
+            for (int k = zi; k <= ze; ++k) {
+                appendQuad(mesh,
+                           {x, line_y[static_cast<size_t>(j)], line_z[static_cast<size_t>(k)]},
+                           {x, line_y[static_cast<size_t>(j)], line_z[static_cast<size_t>(k + 1)]},
+                           {x, line_y[static_cast<size_t>(j + 1)], line_z[static_cast<size_t>(k + 1)]},
+                           {x, line_y[static_cast<size_t>(j + 1)], line_z[static_cast<size_t>(k)]},
+                           mediatype, tag);
+            }
+        }
+    }
+    if (!is_pec(xi, yi - 1, zi)) {
+        const float y = line_y[static_cast<size_t>(yi)];
+        for (int i = xi; i < xe; ++i) {
+            for (int k = zi; k <= ze; ++k) {
+                appendQuad(mesh,
+                           {line_x[static_cast<size_t>(i)], y, line_z[static_cast<size_t>(k)]},
+                           {line_x[static_cast<size_t>(i + 1)], y, line_z[static_cast<size_t>(k)]},
+                           {line_x[static_cast<size_t>(i + 1)], y, line_z[static_cast<size_t>(k + 1)]},
+                           {line_x[static_cast<size_t>(i)], y, line_z[static_cast<size_t>(k + 1)]},
+                           mediatype, tag);
+            }
+        }
+    }
+    if (!is_pec(xi, ye + 1, zi)) {
+        const float y = line_y[static_cast<size_t>(ye + 1)];
+        for (int i = xi; i < xe; ++i) {
+            for (int k = zi; k <= ze; ++k) {
+                appendQuad(mesh,
+                           {line_x[static_cast<size_t>(i)], y, line_z[static_cast<size_t>(k)]},
+                           {line_x[static_cast<size_t>(i)], y, line_z[static_cast<size_t>(k + 1)]},
+                           {line_x[static_cast<size_t>(i + 1)], y, line_z[static_cast<size_t>(k + 1)]},
+                           {line_x[static_cast<size_t>(i + 1)], y, line_z[static_cast<size_t>(k)]},
+                           mediatype, tag);
+            }
+        }
+    }
+    if (!is_pec(xi, yi, zi - 1)) {
+        const float z = line_z[static_cast<size_t>(zi)];
+        for (int i = xi; i < xe; ++i) {
+            for (int j = yi; j <= ye; ++j) {
+                appendQuad(mesh,
+                           {line_x[static_cast<size_t>(i)], line_y[static_cast<size_t>(j)], z},
+                           {line_x[static_cast<size_t>(i)], line_y[static_cast<size_t>(j + 1)], z},
+                           {line_x[static_cast<size_t>(i + 1)], line_y[static_cast<size_t>(j + 1)], z},
+                           {line_x[static_cast<size_t>(i + 1)], line_y[static_cast<size_t>(j)], z},
+                           mediatype, tag);
+            }
+        }
+    }
+    if (!is_pec(xi, yi, ze + 1)) {
+        const float z = line_z[static_cast<size_t>(ze + 1)];
+        for (int i = xi; i < xe; ++i) {
+            for (int j = yi; j <= ye; ++j) {
+                appendQuad(mesh,
+                           {line_x[static_cast<size_t>(i)], line_y[static_cast<size_t>(j)], z},
+                           {line_x[static_cast<size_t>(i + 1)], line_y[static_cast<size_t>(j)], z},
+                           {line_x[static_cast<size_t>(i + 1)], line_y[static_cast<size_t>(j + 1)], z},
+                           {line_x[static_cast<size_t>(i)], line_y[static_cast<size_t>(j + 1)], z},
+                           mediatype, tag);
+            }
+        }
+    }
+    writeFortranMeshFile(folder, vtk_name, mesh);
 }
 
 void writeConformalCornerMap(const nlohmann::json& root, const std::string& folder,
@@ -620,6 +919,15 @@ bool flagsContainMapVtk(const std::string& input_flags) {
     return input_flags.find("-mapvtk") != std::string::npos;
 }
 
+std::string mapOutputStem(const std::string& case_name) {
+    const std::string suffix = ".fdtd";
+    if (case_name.size() >= suffix.size() &&
+        case_name.compare(case_name.size() - suffix.size(), suffix.size(), suffix) == 0) {
+        return case_name;
+    }
+    return case_name + suffix;
+}
+
 void writeCurrentMapVtkFromJson(const std::string& case_name, const nlohmann::json& root) {
     const nlohmann::json* current_probe = nullptr;
     if (root.contains("probes")) {
@@ -652,7 +960,8 @@ void writeCurrentMapVtkFromJson(const std::string& case_name, const nlohmann::js
     if (sy.empty()) sy.push_back(0.1);
     if (sz.empty()) sz.push_back(0.1);
 
-    const std::string folder = case_name + ".fdtd__MAP_0_0_0__" + std::to_string(nx) + "_" +
+    const std::string stem = mapOutputStem(case_name);
+    const std::string folder = stem + "__MAP_0_0_0__" + std::to_string(nx) + "_" +
                                std::to_string(ny) + "_" + std::to_string(nz);
     const std::string vtk_name = folder + "_1_current.vtk";
 
@@ -794,6 +1103,57 @@ void writeCurrentMapVtkFromJson(const std::string& case_name, const nlohmann::js
 }
 
 void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& root) {
+    bool has_conformal_triangles = false;
+    if (root.contains("mesh") && root["mesh"].contains("elements")) {
+        for (const auto& e : root["mesh"]["elements"]) {
+            if (e.contains("triangles") && !e["triangles"].empty()) {
+                has_conformal_triangles = true;
+                break;
+            }
+        }
+    }
+    if (has_conformal_triangles) {
+        int nx = 10, ny = 10, nz = 10;
+        if (root.contains("mesh") && root["mesh"].contains("grid")) {
+            const auto& grid = root["mesh"]["grid"];
+            if (grid.contains("numberOfCells")) {
+                nx = grid["numberOfCells"][0].get<int>();
+                ny = grid["numberOfCells"][1].get<int>();
+                nz = grid["numberOfCells"][2].get<int>();
+            }
+        }
+        const std::string stem = mapOutputStem(case_name);
+        const std::string folder = stem + "__MAP_0_0_0__" + std::to_string(nx) + "_" +
+                                   std::to_string(ny) + "_" + std::to_string(nz);
+        const std::string vtk_name = folder + "_1.vtk";
+        writeConformalCornerMap(root, folder, vtk_name);
+        return;
+    }
+
+    if (!root.contains("mesh") || !root.contains("materials")) {
+        writeMapVtkFromGrid(case_name, root);
+        return;
+    }
+
+    bool only_pec_intervals = true;
+    const auto mat_by_elem = buildMaterialByElement(root);
+    if (root.contains("mesh") && root["mesh"].contains("elements")) {
+        for (const auto& e : root["mesh"]["elements"]) {
+            const int eid = e.value("id", 0);
+            if (!mat_by_elem.count(eid)) continue;
+            const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
+            if (info.type == "pec" && e.contains("intervals")) continue;
+            if (isMapMaterial(info)) {
+                only_pec_intervals = false;
+                break;
+            }
+        }
+    }
+    if (only_pec_intervals) {
+        writeMapVtkFromGrid(case_name, root);
+        return;
+    }
+
     int nx = 10, ny = 10, nz = 10;
     std::vector<double> sx, sy, sz;
     if (root.contains("mesh") && root["mesh"].contains("grid")) {
@@ -813,25 +1173,12 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
     if (sy.empty()) sy.push_back(0.1);
     if (sz.empty()) sz.push_back(0.1);
 
-    const std::string folder = case_name + ".fdtd__MAP_0_0_0__" + std::to_string(nx) + "_" +
+    const std::string stem = mapOutputStem(case_name);
+    const std::string folder = stem + "__MAP_0_0_0__" + std::to_string(nx) + "_" +
                                std::to_string(ny) + "_" + std::to_string(nz);
     const std::string vtk_name = folder + "_1.vtk";
 
-    bool has_conformal_triangles = false;
-    if (root.contains("mesh") && root["mesh"].contains("elements")) {
-        for (const auto& e : root["mesh"]["elements"]) {
-            if (e.contains("triangles") && !e["triangles"].empty()) {
-                has_conformal_triangles = true;
-                break;
-            }
-        }
-    }
-    if (has_conformal_triangles) {
-        writeConformalCornerMap(root, folder, vtk_name);
-        return;
-    }
-
-    const auto mat_by_elem = buildMaterialByElement(root);
+    const auto mat_by_elem_legacy = buildMaterialByElement(root);
     const auto coord_by_id = buildCoordinateById(root);
     VtkMesh mesh;
     VtkMesh lineMesh;
@@ -842,8 +1189,8 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
         root.contains("materials")) {
         for (const auto& e : root["mesh"]["elements"]) {
             const int eid = e.value("id", 0);
-            if (!mat_by_elem.count(eid)) continue;
-            const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
+            if (!mat_by_elem_legacy.count(eid)) continue;
+            const MaterialInfo info = materialInfo(root["materials"], mat_by_elem_legacy.at(eid));
             if (!isMapMaterial(info)) continue;
             ordered_elements.push_back(&e);
             if (info.type == "pec" && e.contains("intervals")) {
@@ -862,8 +1209,8 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
         }
         std::stable_sort(ordered_elements.begin(), ordered_elements.end(),
                          [&](const nlohmann::json* lhs, const nlohmann::json* rhs) {
-                             const int lmat = mat_by_elem.at(lhs->value("id", 0));
-                             const int rmat = mat_by_elem.at(rhs->value("id", 0));
+                             const int lmat = mat_by_elem_legacy.at(lhs->value("id", 0));
+                             const int rmat = mat_by_elem_legacy.at(rhs->value("id", 0));
                              const MaterialInfo li = materialInfo(root["materials"], lmat);
                              const MaterialInfo ri = materialInfo(root["materials"], rmat);
                              return materialPriority(li) < materialPriority(ri);
@@ -876,7 +1223,7 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
         for (const auto* eptr : ordered_elements) {
             const auto& e = *eptr;
             const int eid = e.value("id", 0);
-            const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
+            const MaterialInfo info = materialInfo(root["materials"], mat_by_elem_legacy.at(eid));
             if (isWireLikeMaterial(info) && e.value("type", std::string()) == "polyline") {
                 const auto segments = wireUnitSegments(e, coord_by_id);
                 const bool mark_collision = wire_collision_marker_available && !segments.empty();

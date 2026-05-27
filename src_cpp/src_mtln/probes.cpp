@@ -23,8 +23,7 @@ probe_t probeCtor(int index, int probe_type, RKIND_TIEMPO dt_in,
 #ifdef CompileWithMPI
     if (!layer_indices.empty()) {
         int sizeof_comm = 1;
-        int ierr = 0;
-        MPI_Comm_size(SUBCOMM_MPI, &sizeof_comm, &ierr);
+        MPI_Comm_size(SUBCOMM_MPI, &sizeof_comm);
         if (sizeof_comm > 1) {
             res.in_layer = false;
             int found_slice_idx = -1;
