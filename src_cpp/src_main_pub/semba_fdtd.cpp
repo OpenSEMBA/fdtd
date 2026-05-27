@@ -37,6 +37,9 @@
 #include <cctype>
 #include <stdexcept>
 #include <unistd.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #if defined(__SSE__)
 #include <xmmintrin.h>
 #endif
@@ -920,6 +923,9 @@ public:
     std::vector<uint8_t> pecExMask;
     std::vector<uint8_t> pecEyMask;
     std::vector<uint8_t> pecEzMask;
+    std::vector<int> pecExIndices;
+    std::vector<int> pecEyIndices;
+    std::vector<int> pecEzIndices;
     bool hasAnyPecMask = false;
     std::vector<fdtd_real> CeEx, CeEy, CeEz, CmH;
     std::vector<fdtd_real> Idxe, Idye, Idze, Idxh, Idyh, Idzh;
@@ -1021,6 +1027,7 @@ public:
     int mpiAxis = 3;
     bool mpiEnabled = false;
     std::vector<MpiSliceInfo> mpiSlices;
+    std::array<std::vector<fdtd_real>, 4> mpiPlaneBuffers;
 
     void init(const std::string& filename, bool map_vtk = false,
               int mpi_rank = 0, int mpi_size = 1, int mpi_axis = 3) {
@@ -1165,6 +1172,7 @@ public:
         if (!mtlnOwnsWires()) {
             initHollandWires();
         }
+        rebuildPecMaskIndexLists();
         initLumpedFromJson();
         initMurBorders();
         initMovieProbesFromJson(SEMBA_FDTD_m::extractCaseNameFromInput(filename));
@@ -5508,7 +5516,7 @@ public:
         clampMpiComponentAxisRange(2, 2, ezJ0, ezJ1);
         clampMpiComponentAxisRange(2, 3, ezK0, ezK1);
 #ifdef _OPENMP
-#pragma omp parallel
+#pragma omp parallel if(omp_get_max_threads() > 1)
         {
 #pragma omp for collapse(2) schedule(static)
 #endif
@@ -5611,15 +5619,24 @@ public:
             return static_cast<fdtd_real>(damped + driven);
         };
         const int h = fieldHalo;
-        const int exI0 = -h, exI1 = NX + h - 2;
-        const int exJ0 = -h + 1, exJ1 = NY + h - 2;
-        const int exK0 = -h + 1, exK1 = NZ + h - 2;
-        const int eyI0 = -h + 1, eyI1 = NX + h - 2;
-        const int eyJ0 = -h, eyJ1 = NY + h - 2;
-        const int eyK0 = -h + 1, eyK1 = NZ + h - 2;
-        const int ezI0 = -h + 1, ezI1 = NX + h - 2;
-        const int ezJ0 = -h + 1, ezJ1 = NY + h - 2;
-        const int ezK0 = -h, ezK1 = NZ + h - 2;
+        int exI0 = -h, exI1 = NX + h - 2;
+        int exJ0 = -h + 1, exJ1 = NY + h - 2;
+        int exK0 = -h + 1, exK1 = NZ + h - 2;
+        int eyI0 = -h + 1, eyI1 = NX + h - 2;
+        int eyJ0 = -h, eyJ1 = NY + h - 2;
+        int eyK0 = -h + 1, eyK1 = NZ + h - 2;
+        int ezI0 = -h + 1, ezI1 = NX + h - 2;
+        int ezJ0 = -h + 1, ezJ1 = NY + h - 2;
+        int ezK0 = -h, ezK1 = NZ + h - 2;
+        clampMpiComponentAxisRange(0, 1, exI0, exI1);
+        clampMpiComponentAxisRange(0, 2, exJ0, exJ1);
+        clampMpiComponentAxisRange(0, 3, exK0, exK1);
+        clampMpiComponentAxisRange(1, 1, eyI0, eyI1);
+        clampMpiComponentAxisRange(1, 2, eyJ0, eyJ1);
+        clampMpiComponentAxisRange(1, 3, eyK0, eyK1);
+        clampMpiComponentAxisRange(2, 1, ezI0, ezI1);
+        clampMpiComponentAxisRange(2, 2, ezJ0, ezJ1);
+        clampMpiComponentAxisRange(2, 3, ezK0, ezK1);
 
         for (int i = exI0; i <= exI1; ++i) {
             for (int j = exJ0; j <= exJ1; ++j) {
@@ -5737,15 +5754,24 @@ public:
             return static_cast<fdtd_real>(damped + driven);
         };
         const int h = fieldHalo;
-        const int hxI0 = -h, hxI1 = NX + h - 1;
-        const int hxJ0 = -h, hxJ1 = NY + h - 2;
-        const int hxK0 = -h, hxK1 = NZ + h - 2;
-        const int hyI0 = -h, hyI1 = NX + h - 2;
-        const int hyJ0 = -h, hyJ1 = NY + h - 1;
-        const int hyK0 = -h, hyK1 = NZ + h - 2;
-        const int hzI0 = -h, hzI1 = NX + h - 2;
-        const int hzJ0 = -h, hzJ1 = NY + h - 2;
-        const int hzK0 = -h, hzK1 = NZ + h - 1;
+        int hxI0 = -h, hxI1 = NX + h - 1;
+        int hxJ0 = -h, hxJ1 = NY + h - 2;
+        int hxK0 = -h, hxK1 = NZ + h - 2;
+        int hyI0 = -h, hyI1 = NX + h - 2;
+        int hyJ0 = -h, hyJ1 = NY + h - 1;
+        int hyK0 = -h, hyK1 = NZ + h - 2;
+        int hzI0 = -h, hzI1 = NX + h - 2;
+        int hzJ0 = -h, hzJ1 = NY + h - 2;
+        int hzK0 = -h, hzK1 = NZ + h - 1;
+        clampMpiComponentAxisRange(3, 1, hxI0, hxI1);
+        clampMpiComponentAxisRange(3, 2, hxJ0, hxJ1);
+        clampMpiComponentAxisRange(3, 3, hxK0, hxK1);
+        clampMpiComponentAxisRange(4, 1, hyI0, hyI1);
+        clampMpiComponentAxisRange(4, 2, hyJ0, hyJ1);
+        clampMpiComponentAxisRange(4, 3, hyK0, hyK1);
+        clampMpiComponentAxisRange(5, 1, hzI0, hzI1);
+        clampMpiComponentAxisRange(5, 2, hzJ0, hzJ1);
+        clampMpiComponentAxisRange(5, 3, hzK0, hzK1);
 
         for (int i = hxI0; i <= hxI1; ++i) {
             for (int j = hxJ0; j <= hxJ1; ++j) {
@@ -5844,26 +5870,56 @@ public:
         }
     }
 
+    void appendPecMaskIndicesForComponent(int component,
+                                          const std::vector<uint8_t>& mask,
+                                          std::vector<int>& indices) const {
+        auto ranges = componentRanges(component);
+        for (int i = ranges[0].first; i <= ranges[0].second; ++i) {
+            for (int j = ranges[1].first; j <= ranges[1].second; ++j) {
+                for (int k = ranges[2].first; k <= ranges[2].second; ++k) {
+                    if (!mpiOwnsComponentCoordinate(component, i, j, k)) continue;
+                    const int idx = componentIndex(component, i, j, k);
+                    if (mask[static_cast<size_t>(idx)] != 0) {
+                        indices.push_back(idx);
+                    }
+                }
+            }
+        }
+    }
+
+    void rebuildPecMaskIndexLists() {
+        pecExIndices.clear();
+        pecEyIndices.clear();
+        pecEzIndices.clear();
+        appendPecMaskIndicesForComponent(0, pecExMask, pecExIndices);
+        appendPecMaskIndicesForComponent(1, pecEyMask, pecEyIndices);
+        appendPecMaskIndicesForComponent(2, pecEzMask, pecEzIndices);
+        hasAnyPecMask =
+            !pecExIndices.empty() || !pecEyIndices.empty() || !pecEzIndices.empty();
+    }
+
+    static void zeroSparseFieldValues(std::vector<fdtd_real>& field,
+                                      const std::vector<int>& indices) {
+        const long long count = static_cast<long long>(indices.size());
+#ifdef _OPENMP
+        if (count >= 4096 && omp_get_max_threads() > 1) {
+#pragma omp parallel for schedule(static)
+            for (long long nidx = 0; nidx < count; ++nidx) {
+                field[static_cast<size_t>(indices[static_cast<size_t>(nidx)])] = 0.0;
+            }
+            return;
+        }
+#endif
+        for (int idx : indices) {
+            field[static_cast<size_t>(idx)] = 0.0;
+        }
+    }
+
     void applyPecE() {
         if (hasAnyPecMask) {
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static)
-#endif
-            for (long long idx = 0; idx < static_cast<long long>(pecExMask.size()); ++idx) {
-                if (pecExMask[static_cast<size_t>(idx)]) Ex[static_cast<size_t>(idx)] = 0.0;
-            }
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static)
-#endif
-            for (long long idx = 0; idx < static_cast<long long>(pecEyMask.size()); ++idx) {
-                if (pecEyMask[static_cast<size_t>(idx)]) Ey[static_cast<size_t>(idx)] = 0.0;
-            }
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static)
-#endif
-            for (long long idx = 0; idx < static_cast<long long>(pecEzMask.size()); ++idx) {
-                if (pecEzMask[static_cast<size_t>(idx)]) Ez[static_cast<size_t>(idx)] = 0.0;
-            }
+            zeroSparseFieldValues(Ex, pecExIndices);
+            zeroSparseFieldValues(Ey, pecEyIndices);
+            zeroSparseFieldValues(Ez, pecEzIndices);
         }
 
         if (!usePec) return;
@@ -5929,6 +5985,17 @@ public:
         (void)usePec;
     }
 
+    void clampMpiMurKRange(int component, int& k0, int& k1) const {
+        if (mpiEnabled && mpiAxis == 3) {
+            clampMpiComponentAxisRange(component, 3, k0, k1);
+        }
+    }
+
+    bool mpiOwnsMurK(int component, int k) const {
+        return !mpiEnabled || mpiAxis != 3 ||
+               mpiOwnsComponentAxisCoordinate(component, k);
+    }
+
     bool hasPlaneWaveSource() const {
         return std::any_of(sources.begin(), sources.end(), [](const source_t& src) {
             return src.type == "planewave";
@@ -5944,16 +6011,20 @@ public:
 
         // Back (x min): Fortran MURc uses sweepXI-1, one plane below the H sweep.
         if (murBack) {
+            int hyK0 = -1, hyK1 = NZ - 2;
+            clampMpiMurKRange(4, hyK0, hyK1);
             for (int j = -1; j <= NY - 1; ++j) {
-                for (int k = -1; k <= NZ - 2; ++k) {
+                for (int k = hyK0; k <= hyK1; ++k) {
                     const size_t p = static_cast<size_t>((j + 1) * NZ + (k + 1));
                     const int idx0 = hy_idx(-2, j, k);
                     const int idx1 = hy_idx(-1, j, k);
                     mur_face(Hy[idx0], Hy[idx1], murPastHyBackInt[p], murPastHyBack[p], backCab1);
                 }
             }
+            int hzK0 = -1, hzK1 = NZ - 1;
+            clampMpiMurKRange(5, hzK0, hzK1);
             for (int j = -1; j <= NY - 2; ++j) {
-                for (int k = -1; k <= NZ - 1; ++k) {
+                for (int k = hzK0; k <= hzK1; ++k) {
                     const size_t p = static_cast<size_t>((j + 1) * (NZ + 1) + (k + 1));
                     const int idx0 = hz_idx(-2, j, k);
                     const int idx1 = hz_idx(-1, j, k);
@@ -5963,16 +6034,20 @@ public:
         }
         // Front (x max): Fortran first-order Mur writes MURc%XE, one plane above the H sweep.
         if (murFront) {
+            int hyK0 = -1, hyK1 = NZ - 2;
+            clampMpiMurKRange(4, hyK0, hyK1);
             for (int j = -1; j <= NY - 1; ++j) {
-                for (int k = -1; k <= NZ - 2; ++k) {
+                for (int k = hyK0; k <= hyK1; ++k) {
                     const size_t p = static_cast<size_t>((j + 1) * NZ + (k + 1));
                     const int idxN = hy_idx(NX - 1, j, k);
                     const int idxI = hy_idx(NX - 2, j, k);
                     mur_face(Hy[idxN], Hy[idxI], murPastHyFrontInt[p], murPastHyFront[p], frontCab1);
                 }
             }
+            int hzK0 = -1, hzK1 = NZ - 1;
+            clampMpiMurKRange(5, hzK0, hzK1);
             for (int j = -1; j <= NY - 2; ++j) {
-                for (int k = -1; k <= NZ - 1; ++k) {
+                for (int k = hzK0; k <= hzK1; ++k) {
                     const size_t p = static_cast<size_t>((j + 1) * (NZ + 1) + (k + 1));
                     const int idxN = hz_idx(NX - 1, j, k);
                     const int idxI = hz_idx(NX - 2, j, k);
@@ -5982,16 +6057,20 @@ public:
         }
         // Left (y min): Fortran MURc uses sweepYI-1, one plane below the H sweep.
         if (murLeft) {
+            int hxK0 = -1, hxK1 = NZ - 2;
+            clampMpiMurKRange(3, hxK0, hxK1);
             for (int i = -1; i <= NX - 1; ++i) {
-                for (int k = -1; k <= NZ - 2; ++k) {
+                for (int k = hxK0; k <= hxK1; ++k) {
                     const size_t p = static_cast<size_t>((i + 1) * NZ + (k + 1));
                     const int idx0 = hx_idx(i, -2, k);
                     const int idx1 = hx_idx(i, -1, k);
                     mur_face(Hx[idx0], Hx[idx1], murPastHxLeftInt[p], murPastHxLeft[p], leftCab1);
                 }
             }
+            int hzK0 = -1, hzK1 = NZ - 1;
+            clampMpiMurKRange(5, hzK0, hzK1);
             for (int i = -1; i <= NX - 2; ++i) {
-                for (int k = -1; k <= NZ - 1; ++k) {
+                for (int k = hzK0; k <= hzK1; ++k) {
                     const size_t p = static_cast<size_t>((i + 1) * (NZ + 1) + (k + 1));
                     const int idx0 = hz_idx(i, -2, k);
                     const int idx1 = hz_idx(i, -1, k);
@@ -6001,16 +6080,20 @@ public:
         }
         // Right (y max): Fortran first-order Mur writes MURc%YE, one plane above the H sweep.
         if (murRight) {
+            int hxK0 = -1, hxK1 = NZ - 2;
+            clampMpiMurKRange(3, hxK0, hxK1);
             for (int i = -1; i <= NX - 1; ++i) {
-                for (int k = -1; k <= NZ - 2; ++k) {
+                for (int k = hxK0; k <= hxK1; ++k) {
                     const size_t p = static_cast<size_t>((i + 1) * NZ + (k + 1));
                     const int idxN = hx_idx(i, NY - 1, k);
                     const int idxI = hx_idx(i, NY - 2, k);
                     mur_face(Hx[idxN], Hx[idxI], murPastHxRightInt[p], murPastHxRight[p], rightCab1);
                 }
             }
+            int hzK0 = -1, hzK1 = NZ - 1;
+            clampMpiMurKRange(5, hzK0, hzK1);
             for (int i = -1; i <= NX - 2; ++i) {
-                for (int k = -1; k <= NZ - 1; ++k) {
+                for (int k = hzK0; k <= hzK1; ++k) {
                     const size_t p = static_cast<size_t>((i + 1) * (NZ + 1) + (k + 1));
                     const int idxN = hz_idx(i, NY - 1, k);
                     const int idxI = hz_idx(i, NY - 2, k);
@@ -6019,7 +6102,9 @@ public:
             }
         }
         // Down (z min): Fortran MURc uses sweepZI-1, one plane below the H sweep.
-        if (murDown) {
+        const bool localMurDownHy = murDown && mpiOwnsMurK(4, -1);
+        const bool localMurDownHx = murDown && mpiOwnsMurK(3, -1);
+        if (localMurDownHy) {
             for (int i = -1; i <= NX - 2; ++i) {
                 for (int j = -1; j <= NY - 1; ++j) {
                     const size_t p = static_cast<size_t>((i + 1) * (NY + 1) + (j + 1));
@@ -6028,6 +6113,8 @@ public:
                     mur_face(Hy[idx0], Hy[idx1], murPastHyDownInt[p], murPastHyDown[p], downCab1);
                 }
             }
+        }
+        if (localMurDownHx) {
             for (int i = -1; i <= NX - 1; ++i) {
                 for (int j = -1; j <= NY - 2; ++j) {
                     const size_t p = static_cast<size_t>((i + 1) * NY + (j + 1));
@@ -6038,7 +6125,9 @@ public:
             }
         }
         // Up (z max): Fortran first-order Mur writes MURc%ZE, one plane above the H sweep.
-        if (murUp) {
+        const bool localMurUpHy = murUp && mpiOwnsMurK(4, NZ - 2);
+        const bool localMurUpHx = murUp && mpiOwnsMurK(3, NZ - 2);
+        if (localMurUpHy) {
             for (int i = -1; i <= NX - 2; ++i) {
                 for (int j = -1; j <= NY - 1; ++j) {
                     const size_t p = static_cast<size_t>((i + 1) * (NY + 1) + (j + 1));
@@ -6047,6 +6136,8 @@ public:
                     mur_face(Hy[idxN], Hy[idxI], murPastHyUpInt[p], murPastHyUp[p], upCab1);
                 }
             }
+        }
+        if (localMurUpHx) {
             for (int i = -1; i <= NX - 1; ++i) {
                 for (int j = -1; j <= NY - 2; ++j) {
                     const size_t p = static_cast<size_t>((i + 1) * NY + (j + 1));
@@ -6059,8 +6150,10 @@ public:
 
         // Store past fields (Fortran AdvanceMagneticMUR tail).
         if (murBack || murFront) {
+            int hyK0 = -1, hyK1 = NZ - 2;
+            clampMpiMurKRange(4, hyK0, hyK1);
             for (int j = -1; j <= NY - 1; ++j) {
-                for (int k = -1; k <= NZ - 2; ++k) {
+                for (int k = hyK0; k <= hyK1; ++k) {
                     const size_t p = static_cast<size_t>((j + 1) * NZ + (k + 1));
                     if (murBack) {
                         murPastHyBack[p] = Hy[hy_idx(-2, j, k)];
@@ -6072,8 +6165,10 @@ public:
                     }
                 }
             }
+            int hzK0 = -1, hzK1 = NZ - 1;
+            clampMpiMurKRange(5, hzK0, hzK1);
             for (int j = -1; j <= NY - 2; ++j) {
-                for (int k = -1; k <= NZ - 1; ++k) {
+                for (int k = hzK0; k <= hzK1; ++k) {
                     const size_t p = static_cast<size_t>((j + 1) * (NZ + 1) + (k + 1));
                     if (murBack) {
                         murPastHzBack[p] = Hz[hz_idx(-2, j, k)];
@@ -6087,8 +6182,10 @@ public:
             }
         }
         if (murLeft || murRight) {
+            int hxK0 = -1, hxK1 = NZ - 2;
+            clampMpiMurKRange(3, hxK0, hxK1);
             for (int i = -1; i <= NX - 1; ++i) {
-                for (int k = -1; k <= NZ - 2; ++k) {
+                for (int k = hxK0; k <= hxK1; ++k) {
                     const size_t p = static_cast<size_t>((i + 1) * NZ + (k + 1));
                     if (murLeft) {
                         murPastHxLeft[p] = Hx[hx_idx(i, -2, k)];
@@ -6100,8 +6197,10 @@ public:
                     }
                 }
             }
+            int hzK0 = -1, hzK1 = NZ - 1;
+            clampMpiMurKRange(5, hzK0, hzK1);
             for (int i = -1; i <= NX - 2; ++i) {
-                for (int k = -1; k <= NZ - 1; ++k) {
+                for (int k = hzK0; k <= hzK1; ++k) {
                     const size_t p = static_cast<size_t>((i + 1) * (NZ + 1) + (k + 1));
                     if (murLeft) {
                         murPastHzLeft[p] = Hz[hz_idx(i, -2, k)];
@@ -6114,28 +6213,30 @@ public:
                 }
             }
         }
-        if (murDown || murUp) {
+        if (localMurDownHy || localMurUpHy) {
             for (int i = -1; i <= NX - 2; ++i) {
                 for (int j = -1; j <= NY - 1; ++j) {
                     const size_t p = static_cast<size_t>((i + 1) * (NY + 1) + (j + 1));
-                    if (murDown) {
+                    if (localMurDownHy) {
                         murPastHyDown[p] = Hy[hy_idx(i, j, -2)];
                         murPastHyDownInt[p] = Hy[hy_idx(i, j, -1)];
                     }
-                    if (murUp) {
+                    if (localMurUpHy) {
                         murPastHyUp[p] = Hy[hy_idx(i, j, NZ - 1)];
                         murPastHyUpInt[p] = Hy[hy_idx(i, j, NZ - 2)];
                     }
                 }
             }
+        }
+        if (localMurDownHx || localMurUpHx) {
             for (int i = -1; i <= NX - 1; ++i) {
                 for (int j = -1; j <= NY - 2; ++j) {
                     const size_t p = static_cast<size_t>((i + 1) * NY + (j + 1));
-                    if (murDown) {
+                    if (localMurDownHx) {
                         murPastHxDown[p] = Hx[hx_idx(i, j, -2)];
                         murPastHxDownInt[p] = Hx[hx_idx(i, j, -1)];
                     }
-                    if (murUp) {
+                    if (localMurUpHx) {
                         murPastHxUp[p] = Hx[hx_idx(i, j, NZ - 1)];
                         murPastHxUpInt[p] = Hx[hx_idx(i, j, NZ - 2)];
                     }
@@ -6189,7 +6290,7 @@ public:
         clampMpiComponentAxisRange(5, 2, hzJ0, hzJ1);
         clampMpiComponentAxisRange(5, 3, hzK0, hzK1);
 #ifdef _OPENMP
-#pragma omp parallel
+#pragma omp parallel if(omp_get_max_threads() > 1)
         {
 #pragma omp for collapse(2) schedule(static)
 #endif
@@ -7155,41 +7256,159 @@ public:
         }
     }
 
-    std::vector<fdtd_real> packFieldPlane(int component, int axis, int coord) const {
+    std::pair<int, int> componentShapeYZ(int component) const {
+        switch (component) {
+            case 0: return {ex_ny(), ex_nz()};
+            case 1: return {ey_ny(), ey_nz()};
+            case 2: return {ez_ny(), ez_nz()};
+            case 3: return {hx_ny(), hx_nz()};
+            case 4: return {hy_ny(), hy_nz()};
+            default: return {hz_ny(), hz_nz()};
+        }
+    }
+
+    int componentLinearIndex(int component, int i, int j, int k) const {
+        const auto [ny, nz] = componentShapeYZ(component);
+        return (i + fieldHalo) * ny * nz +
+               (j + fieldHalo) * nz +
+               (k + fieldHalo);
+    }
+
+    size_t packedFieldPlaneSize(int component, int axis) const {
         auto ranges = componentRanges(component);
-        ranges[static_cast<size_t>(axis - 1)] = {coord, coord};
-        std::vector<fdtd_real> buffer;
-        const auto& field = fieldComponent(component);
+        ranges[static_cast<size_t>(axis - 1)] = {0, 0};
         const int count =
             (ranges[0].second - ranges[0].first + 1) *
             (ranges[1].second - ranges[1].first + 1) *
             (ranges[2].second - ranges[2].first + 1);
-        buffer.reserve(static_cast<size_t>(std::max(0, count)));
+        return static_cast<size_t>(std::max(0, count));
+    }
+
+    void packFieldPlaneRaw(int component, int axis, int coord,
+                           fdtd_real* SEMBA_RESTRICT dst) const {
+        if (dst == nullptr) return;
+        auto ranges = componentRanges(component);
+        ranges[static_cast<size_t>(axis - 1)] = {coord, coord};
+        const auto& field = fieldComponent(component);
+        const fdtd_real* SEMBA_RESTRICT src = field.data();
+        const auto [ny, nz] = componentShapeYZ(component);
+        const int count =
+            (ranges[0].second - ranges[0].first + 1) *
+            (ranges[1].second - ranges[1].first + 1) *
+            (ranges[2].second - ranges[2].first + 1);
+        if (count <= 0) return;
+        size_t n = 0;
+        if (axis == 1) {
+            const int start = (coord + fieldHalo) * ny * nz +
+                              (ranges[1].first + fieldHalo) * nz +
+                              (ranges[2].first + fieldHalo);
+            std::copy_n(src + start, static_cast<size_t>(count), dst);
+            return;
+        }
+        if (axis == 2) {
+            const int nk = ranges[2].second - ranges[2].first + 1;
+            for (int i = ranges[0].first; i <= ranges[0].second; ++i) {
+                const int start = (i + fieldHalo) * ny * nz +
+                                  (coord + fieldHalo) * nz +
+                                  (ranges[2].first + fieldHalo);
+                std::copy_n(src + start, static_cast<size_t>(nk), dst + n);
+                n += static_cast<size_t>(nk);
+            }
+            return;
+        }
+        if (axis == 3) {
+            const int kOffset = coord + fieldHalo;
+            for (int i = ranges[0].first; i <= ranges[0].second; ++i) {
+                int index = (i + fieldHalo) * ny * nz +
+                            (ranges[1].first + fieldHalo) * nz +
+                            kOffset;
+                for (int j = ranges[1].first; j <= ranges[1].second; ++j) {
+                    dst[n++] = src[static_cast<size_t>(index)];
+                    index += nz;
+                }
+            }
+            return;
+        }
         for (int i = ranges[0].first; i <= ranges[0].second; ++i) {
             for (int j = ranges[1].first; j <= ranges[1].second; ++j) {
                 for (int k = ranges[2].first; k <= ranges[2].second; ++k) {
-                    buffer.push_back(field[static_cast<size_t>(componentIndex(component, i, j, k))]);
+                    dst[n++] = src[static_cast<size_t>(
+                        componentLinearIndex(component, i, j, k))];
                 }
             }
         }
+    }
+
+    std::vector<fdtd_real> packFieldPlane(int component, int axis, int coord) const {
+        std::vector<fdtd_real> buffer(packedFieldPlaneSize(component, axis));
+        packFieldPlaneRaw(component, axis, coord, buffer.data());
         return buffer;
     }
 
-    void unpackFieldPlane(int component, int axis, int coord,
-                          const std::vector<fdtd_real>& buffer) {
+    void packFieldPlaneInto(int component, int axis, int coord,
+                            std::vector<fdtd_real>& buffer) const {
+        buffer.resize(packedFieldPlaneSize(component, axis));
+        packFieldPlaneRaw(component, axis, coord, buffer.data());
+    }
+
+    void unpackFieldPlaneRaw(int component, int axis, int coord,
+                             const fdtd_real* SEMBA_RESTRICT src,
+                             size_t bufferSize) {
+        if (src == nullptr || bufferSize == 0) return;
         auto ranges = componentRanges(component);
         ranges[static_cast<size_t>(axis - 1)] = {coord, coord};
         auto& field = mutableFieldComponent(component);
+        fdtd_real* SEMBA_RESTRICT dst = field.data();
+        const auto [ny, nz] = componentShapeYZ(component);
         size_t n = 0;
+        if (axis == 1) {
+            const int start = (coord + fieldHalo) * ny * nz +
+                              (ranges[1].first + fieldHalo) * nz +
+                              (ranges[2].first + fieldHalo);
+            std::copy_n(src, bufferSize, dst + start);
+            return;
+        }
+        if (axis == 2) {
+            const int nk = ranges[2].second - ranges[2].first + 1;
+            for (int i = ranges[0].first; i <= ranges[0].second; ++i) {
+                const int start = (i + fieldHalo) * ny * nz +
+                                  (coord + fieldHalo) * nz +
+                                  (ranges[2].first + fieldHalo);
+                if (n + static_cast<size_t>(nk) > bufferSize) return;
+                std::copy_n(src + n, static_cast<size_t>(nk), dst + start);
+                n += static_cast<size_t>(nk);
+            }
+            return;
+        }
+        if (axis == 3) {
+            const int kOffset = coord + fieldHalo;
+            for (int i = ranges[0].first; i <= ranges[0].second; ++i) {
+                int index = (i + fieldHalo) * ny * nz +
+                            (ranges[1].first + fieldHalo) * nz +
+                            kOffset;
+                for (int j = ranges[1].first; j <= ranges[1].second; ++j) {
+                    if (n >= bufferSize) return;
+                    dst[static_cast<size_t>(index)] = src[n++];
+                    index += nz;
+                }
+            }
+            return;
+        }
         for (int i = ranges[0].first; i <= ranges[0].second; ++i) {
             for (int j = ranges[1].first; j <= ranges[1].second; ++j) {
                 for (int k = ranges[2].first; k <= ranges[2].second; ++k) {
-                    if (n < buffer.size()) {
-                        field[static_cast<size_t>(componentIndex(component, i, j, k))] = buffer[n++];
+                    if (n < bufferSize) {
+                        dst[static_cast<size_t>(
+                            componentLinearIndex(component, i, j, k))] = src[n++];
                     }
                 }
             }
         }
+    }
+
+    void unpackFieldPlane(int component, int axis, int coord,
+                          const std::vector<fdtd_real>& buffer) {
+        unpackFieldPlaneRaw(component, axis, coord, buffer.data(), buffer.size());
     }
 
     void setFieldPlaneForTest(int component, int axis, int coord, fdtd_real value) {
@@ -7262,29 +7481,33 @@ public:
             if (upperCoord < lowerCoord) {
                 continue;
             }
-            std::vector<fdtd_real> sendUp;
-            std::vector<fdtd_real> sendDown;
-            std::vector<fdtd_real> recvUp;
-            std::vector<fdtd_real> recvDown;
+            auto& sendUp = mpiPlaneBuffers[0];
+            auto& sendDown = mpiPlaneBuffers[1];
+            auto& recvUp = mpiPlaneBuffers[2];
+            auto& recvDown = mpiPlaneBuffers[3];
             std::array<MPI_Request, 4> requests{};
             int nRequests = 0;
 
             if (up >= 0) {
-                sendUp = packFieldPlane(component, axis, upperCoord);
-                recvUp.assign(sendUp.size(), static_cast<fdtd_real>(0));
+                packFieldPlaneInto(component, axis, upperCoord, sendUp);
+                recvUp.resize(sendUp.size());
                 MPI_Irecv(recvUp.data(), static_cast<int>(recvUp.size()), mpiReal,
-                          up, tagBase + 1, SUBCOMM_MPI, &requests[static_cast<size_t>(nRequests++)]);
+                          up, tagBase + 1, SUBCOMM_MPI,
+                          &requests[static_cast<size_t>(nRequests++)]);
                 MPI_Isend(sendUp.data(), static_cast<int>(sendUp.size()), mpiReal,
-                          up, tagBase, SUBCOMM_MPI, &requests[static_cast<size_t>(nRequests++)]);
+                          up, tagBase, SUBCOMM_MPI,
+                          &requests[static_cast<size_t>(nRequests++)]);
             }
 
             if (down >= 0) {
-                sendDown = packFieldPlane(component, axis, lowerCoord);
-                recvDown.assign(sendDown.size(), static_cast<fdtd_real>(0));
+                packFieldPlaneInto(component, axis, lowerCoord, sendDown);
+                recvDown.resize(sendDown.size());
                 MPI_Irecv(recvDown.data(), static_cast<int>(recvDown.size()), mpiReal,
-                          down, tagBase, SUBCOMM_MPI, &requests[static_cast<size_t>(nRequests++)]);
+                          down, tagBase, SUBCOMM_MPI,
+                          &requests[static_cast<size_t>(nRequests++)]);
                 MPI_Isend(sendDown.data(), static_cast<int>(sendDown.size()), mpiReal,
-                          down, tagBase + 1, SUBCOMM_MPI, &requests[static_cast<size_t>(nRequests++)]);
+                          down, tagBase + 1, SUBCOMM_MPI,
+                          &requests[static_cast<size_t>(nRequests++)]);
             }
 
             if (nRequests > 0) {
@@ -7312,16 +7535,13 @@ public:
 
     void flushMpiElectricFieldsOneAxis() {
 #ifdef CompileWithMPI
-        if (mpiEnabled) {
-            mpiBarrier();
-        }
+        (void)mpiEnabled;
 #endif
     }
 
     void flushMpiMagneticFieldsOneAxis() {
 #ifdef CompileWithMPI
         if (mpiEnabled) {
-            mpiBarrier();
             exchangeMpiFieldPlanesOneAxis(true);
         }
 #endif
