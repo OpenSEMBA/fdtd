@@ -380,6 +380,12 @@ fdtd_real fortranBulkCurrentTerm(fdtd_real lhs, fdtd_real rhs,
     return fortranRoundedMul(fortranRoundedSub(lhs, rhs), delta);
 }
 
+SEMBA_FORTRAN_INLINE_ROUNDING fdtd_real fortranTripleProduct(fdtd_real lhs,
+                                                             fdtd_real mid,
+                                                             fdtd_real rhs) {
+    return fortranRoundedMul(fortranRoundedMul(lhs, mid), rhs);
+}
+
 fdtd_real fortranMurFace(fdtd_real interiorNow, fdtd_real pastInterior,
                          fdtd_real pastBoundary, fdtd_real coefficient) {
     return fortranRoundedAdd(
@@ -1624,9 +1630,9 @@ public:
     fdtd_real lineX1(int n) const { return static_cast<fdtd_real>(n) * static_cast<fdtd_real>(dx); }
     fdtd_real lineY1(int n) const { return static_cast<fdtd_real>(n) * static_cast<fdtd_real>(dy); }
     fdtd_real lineZ1(int n) const { return static_cast<fdtd_real>(n) * static_cast<fdtd_real>(dz); }
-	    fdtd_real fieldGridInverse(fdtd_real value) const {
-	        return fortranGridInverse(value);
-	    }
+    fdtd_real fieldGridInverse(fdtd_real value) const {
+        return fortranGridInverse(value);
+    }
     fdtd_real hDistanceGridInverse(fdtd_real value, int index, int cells) const {
 #ifdef CompileWithReal8
         (void)index;
@@ -2319,34 +2325,34 @@ public:
         return computeIncidFromPhys(pwIdx, nfield, time, xf, yf, zOverride);
     }
 
-	    fdtd_real computeFortranMpiUpperCutZIncident(int pwIdx, int nfield,
-	                                                 double time, int i, int j, int k) {
-	        return computeIncidWithZOverride(
-	            pwIdx, nfield, time, i, j, k, static_cast<fdtd_real>(0.0));
-	    }
-	
-	    bool mpiFortranInternalUpperCutPlanewaveZFace(const PlaneWaveState_t& pw) const {
-	        const MpiSliceInfo* slice = currentMpiSlice();
-	        return slice != nullptr && mpiAxis == 3 &&
-	               mpiLayoutNumber + 1 < mpiNumProcs &&
-	               pw.esqz1 <= slice->fin && pw.esqz2 > slice->fin;
-	    }
+    fdtd_real computeFortranMpiUpperCutZIncident(int pwIdx, int nfield,
+                                                 double time, int i, int j, int k) {
+        return computeIncidWithZOverride(
+            pwIdx, nfield, time, i, j, k, static_cast<fdtd_real>(0.0));
+    }
 
-	    int mpiFortranPlanewaveUpperZFace(const PlaneWaveState_t& pw) const {
-	        if (mpiFortranInternalUpperCutPlanewaveZFace(pw)) {
-	            return currentMpiSlice()->fin;
-	        }
-	        return std::min(NZ, pw.esqz2);
-	    }
+    bool mpiFortranInternalUpperCutPlanewaveZFace(const PlaneWaveState_t& pw) const {
+        const MpiSliceInfo* slice = currentMpiSlice();
+        return slice != nullptr && mpiAxis == 3 &&
+               mpiLayoutNumber + 1 < mpiNumProcs &&
+               pw.esqz1 <= slice->fin && pw.esqz2 > slice->fin;
+    }
 
-	    bool mpiFortranUpperCutPlanewaveZCoordinateBug(const PlaneWaveState_t& pw,
-	                                                   int k) const {
-	        const MpiSliceInfo* slice = currentMpiSlice();
-	        return mpiFortranInternalUpperCutPlanewaveZFace(pw) ||
-	               (slice != nullptr && mpiAxis == 3 &&
-	                mpiLayoutNumber + 1 < mpiNumProcs &&
-	                k == slice->fin && k == pw.esqz2);
-	    }
+    int mpiFortranPlanewaveUpperZFace(const PlaneWaveState_t& pw) const {
+        if (mpiFortranInternalUpperCutPlanewaveZFace(pw)) {
+            return currentMpiSlice()->fin;
+        }
+        return std::min(NZ, pw.esqz2);
+    }
+
+    bool mpiFortranUpperCutPlanewaveZCoordinateBug(const PlaneWaveState_t& pw,
+                                                   int k) const {
+        const MpiSliceInfo* slice = currentMpiSlice();
+        return mpiFortranInternalUpperCutPlanewaveZFace(pw) ||
+               (slice != nullptr && mpiAxis == 3 &&
+                mpiLayoutNumber + 1 < mpiNumProcs &&
+                k == slice->fin && k == pw.esqz2);
+    }
 
     void initPlaneWave(int srcIdx) {
         auto& src = sources[srcIdx];
@@ -5524,28 +5530,6 @@ public:
                         ex[idx], ceEx[idx],
                         hz[hzBase + off], hz[hzYmBase + off], idyhj,
                         hy[hyBase + off], hy[hyKmBase + off], idzh[axisCoeffIndex(k)]);
-                    if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
-                        mpiLayoutNumber == 1 && step <= 20 &&
-	                        (i == 2 || i == 3) && j == 2 && k == 2) {
-                        const fdtd_real idzhk = idzh[axisCoeffIndex(k)];
-                        const fdtd_real curl = static_cast<fdtd_real>(
-                            static_cast<fdtd_real>(
-                                static_cast<fdtd_real>(hz[hzBase + off] - hz[hzYmBase + off]) * idyhj) -
-                            static_cast<fdtd_real>(
-                                static_cast<fdtd_real>(hy[hyBase + off] - hy[hyKmBase + off]) * idzhk));
-                        std::fprintf(stderr,
-                                     "CPPDBG AdvEx step=%d i=%d j=%d k=%d Ex=%.17e Hz=%.17e HzYm=%.17e Hy=%.17e HyKm=%.17e Idy=%.17e Idz=%.17e Ce=%.17e curl=%.17e\n",
-                                     step, i, j, k,
-                                     static_cast<double>(ex[idx]),
-                                     static_cast<double>(hz[hzBase + off]),
-                                     static_cast<double>(hz[hzYmBase + off]),
-                                     static_cast<double>(hy[hyBase + off]),
-                                     static_cast<double>(hy[hyKmBase + off]),
-                                     static_cast<double>(idyhj),
-                                     static_cast<double>(idzhk),
-                                     static_cast<double>(ceEx[idx]),
-                                     static_cast<double>(curl));
-                    }
                 }
             }
         }
@@ -5596,32 +5580,11 @@ public:
                         ez[idx] = 0.0;
                         continue;
                     }
-	                    ez[idx] = fortranCurlUpdate(
-	                        ez[idx], ceEz[idx],
-	                        hy[hyBase + off], hy[hyXmBase + off], idxhi,
-	                        hx[hxBase + off], hx[hxYmBase + off], idyhj);
-	                    if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
-	                        mpiLayoutNumber == 0 && step <= 20 &&
-	                        i == 3 && j == 2 && k == 1) {
-	                        const fdtd_real curl = static_cast<fdtd_real>(
-	                            static_cast<fdtd_real>(
-	                                static_cast<fdtd_real>(hy[hyBase + off] - hy[hyXmBase + off]) * idxhi) -
-	                            static_cast<fdtd_real>(
-	                                static_cast<fdtd_real>(hx[hxBase + off] - hx[hxYmBase + off]) * idyhj));
-	                        std::fprintf(stderr,
-	                                     "CPPDBG AdvEz step=%d i=%d j=%d k=%d Ez=%.17e Hy=%.17e HyXm=%.17e Hx=%.17e HxYm=%.17e Idx=%.17e Idy=%.17e Ce=%.17e curl=%.17e\n",
-	                                     step, i, j, k,
-	                                     static_cast<double>(ez[idx]),
-	                                     static_cast<double>(hy[hyBase + off]),
-	                                     static_cast<double>(hy[hyXmBase + off]),
-	                                     static_cast<double>(hx[hxBase + off]),
-	                                     static_cast<double>(hx[hxYmBase + off]),
-	                                     static_cast<double>(idxhi),
-	                                     static_cast<double>(idyhj),
-	                                     static_cast<double>(ceEz[idx]),
-	                                     static_cast<double>(curl));
-	                    }
-	                }
+                    ez[idx] = fortranCurlUpdate(
+                        ez[idx], ceEz[idx],
+                        hy[hyBase + off], hy[hyXmBase + off], idxhi,
+                        hx[hxBase + off], hx[hxYmBase + off], idyhj);
+                }
             }
         }
 #ifdef _OPENMP
@@ -6268,35 +6231,13 @@ public:
                         hy[idx] = 0.0;
                         continue;
                     }
-	                    hy[idx] = fortranCurlUpdate(
-	                        hy[idx], cmH[idx],
-	                        ez[ezXpBase + off], ez[ezBase + off], idxei,
-	                        ex[exBase + off + 1], ex[exBase + off], idze[axisCoeffIndex(k)]);
-	                    if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
-	                        mpiLayoutNumber == 0 && step <= 20 &&
-	                        (i == 2 || i == 3) && j == 2 && k == 1) {
-	                        const fdtd_real idzek = idze[axisCoeffIndex(k)];
-	                        const fdtd_real curl = static_cast<fdtd_real>(
-	                            static_cast<fdtd_real>(
-	                                static_cast<fdtd_real>(ez[ezXpBase + off] - ez[ezBase + off]) * idxei) -
-	                            static_cast<fdtd_real>(
-	                                static_cast<fdtd_real>(ex[exBase + off + 1] - ex[exBase + off]) * idzek));
-	                        std::fprintf(stderr,
-	                                     "CPPDBG AdvHy step=%d i=%d j=%d k=%d Hy=%.17e EzP=%.17e Ez=%.17e ExP=%.17e Ex=%.17e Idx=%.17e Idz=%.17e Cm=%.17e curl=%.17e\n",
-	                                     step, i, j, k,
-	                                     static_cast<double>(hy[idx]),
-	                                     static_cast<double>(ez[ezXpBase + off]),
-	                                     static_cast<double>(ez[ezBase + off]),
-	                                     static_cast<double>(ex[exBase + off + 1]),
-	                                     static_cast<double>(ex[exBase + off]),
-	                                     static_cast<double>(idxei),
-	                                     static_cast<double>(idzek),
-	                                     static_cast<double>(cmH[idx]),
-	                                     static_cast<double>(curl));
-	                    }
-	                }
-	            }
-	        }
+                    hy[idx] = fortranCurlUpdate(
+                        hy[idx], cmH[idx],
+                        ez[ezXpBase + off], ez[ezBase + off], idxei,
+                        ex[exBase + off + 1], ex[exBase + off], idze[axisCoeffIndex(k)]);
+                }
+            }
+        }
 #ifdef _OPENMP
 #pragma omp for collapse(2) schedule(static)
 #endif
@@ -6464,6 +6405,14 @@ public:
     void flushPlanewaveOff() {
         if (planewave_switched_off || planeWaves.empty()) return;
         still_planewave_time = still_planewave_time && !planeWaves.empty();
+#ifdef CompileWithMPI
+        if (mpiEnabled) {
+            const int localStill = still_planewave_time ? 1 : 0;
+            int globalStill = 0;
+            MPI_Allreduce(&localStill, &globalStill, 1, MPI_INT, MPI_LOR, SUBCOMM_MPI);
+            still_planewave_time = globalStill != 0;
+        }
+#endif
         if (!still_planewave_time) {
             planewave_switched_off = true;
         }
@@ -6475,6 +6424,12 @@ public:
         const int XI = 1, XE = NX, YI = 1, YE = NY, ZI = 1, ZE = NZ;
         const fdtd_real G2_1 = static_cast<fdtd_real>(
             dt / static_cast<double>(static_cast<fdtd_real>(eps0)));
+        auto addPw = [](fdtd_real& value, fdtd_real coeff, fdtd_real inc, fdtd_real inv) {
+            value = fortranRoundedAdd(value, fortranTripleProduct(coeff, inc, inv));
+        };
+        auto subPw = [](fdtd_real& value, fdtd_real coeff, fdtd_real inc, fdtd_real inv) {
+            value = fortranRoundedSub(value, fortranTripleProduct(coeff, inc, inv));
+        };
         for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
             const auto& pw = planeWaves[pwIdx];
             if (pw.iluminaTr && mpiOwnsPlaneWaveFace(1, pw.esqx1)) {
@@ -6484,7 +6439,7 @@ public:
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i - 1, j, k);
                         if (!mpiOwnsComponentCoordinate(2, i - 1, j - 1, k - 1)) continue;
-                        Ez[ez_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
+                        subPw(Ez[ez_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
                 }
                 i = std::max(XI, pw.esqx1);
@@ -6493,7 +6448,7 @@ public:
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i - 1, j, k);
                         if (!mpiOwnsComponentCoordinate(1, i - 1, j - 1, k - 1)) continue;
-                        Ey[ey_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
+                        addPw(Ey[ey_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
                 }
             }
@@ -6504,7 +6459,7 @@ public:
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k);
                         if (!mpiOwnsComponentCoordinate(2, i - 1, j - 1, k - 1)) continue;
-                        Ez[ez_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
+                        addPw(Ez[ez_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
                 }
                 i = std::min(XE, pw.esqx2);
@@ -6513,7 +6468,7 @@ public:
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j, k);
                         if (!mpiOwnsComponentCoordinate(1, i - 1, j - 1, k - 1)) continue;
-                        Ey[ey_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
+                        subPw(Ey[ey_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
                 }
             }
@@ -6524,7 +6479,7 @@ public:
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j - 1, k);
                         if (!mpiOwnsComponentCoordinate(0, i - 1, j - 1, k - 1)) continue;
-                        Ex[ex_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
+                        subPw(Ex[ex_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
                 }
                 j = std::max(YI, pw.esqy1);
@@ -6533,7 +6488,7 @@ public:
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j - 1, k);
                         if (!mpiOwnsComponentCoordinate(2, i - 1, j - 1, k - 1)) continue;
-                        Ez[ez_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
+                        addPw(Ez[ez_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
                 }
             }
@@ -6544,7 +6499,7 @@ public:
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k);
                         if (!mpiOwnsComponentCoordinate(2, i - 1, j - 1, k - 1)) continue;
-                        Ez[ez_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
+                        subPw(Ez[ez_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
                 }
                 j = std::min(YE, pw.esqy2);
@@ -6553,7 +6508,7 @@ public:
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j, k);
                         if (!mpiOwnsComponentCoordinate(0, i - 1, j - 1, k - 1)) continue;
-                        Ex[ex_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
+                        addPw(Ex[ex_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
                 }
             }
@@ -6565,24 +6520,7 @@ public:
                         const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k - 1);
                         if (!mpiOwnsComponentCoordinate(0, i - 1, j - 1, k - 1)) continue;
                         const int exIndex = ex_idx(i - 1, j - 1, k - 1);
-                        const fdtd_real delta = G2_1 * inc * id;
-                        Ex[exIndex] += delta;
-                        if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
-                            mpiLayoutNumber == 1 && i == 3 && j == 3 &&
-                            currentTime < 3.1e-10) {
-                            fdtd_real xf = 0.0, yf = 0.0, zf = 0.0;
-                            physCoord1(4, i, j, k - 1, xf, yf, zf);
-                            std::fprintf(stderr,
-                                         "CPPDBG ExDown step=%d i=%d j=%d k=%d t=%.17e inc=%.17e G=%.17e Id=%.17e delta=%.17e Ex=%.17e zphys=%.17e\n",
-                                         step, i, j, k,
-                                         static_cast<double>(currentTime),
-                                         static_cast<double>(inc),
-                                         static_cast<double>(G2_1),
-                                         static_cast<double>(id),
-                                         static_cast<double>(delta),
-                                         static_cast<double>(Ex[exIndex]),
-                                         static_cast<double>(zf));
-                        }
+                        addPw(Ex[exIndex], G2_1, inc, id);
                     }
                 }
                 k = std::max(ZI, pw.esqz1);
@@ -6591,69 +6529,26 @@ public:
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k - 1);
                         if (!mpiOwnsComponentCoordinate(1, i - 1, j - 1, k - 1)) continue;
-                        Ey[ey_idx(i - 1, j - 1, k - 1)] -= G2_1 * inc * id;
+                        subPw(Ey[ey_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
                 }
             }
-	            const bool fortranMpiUpperCutZFace =
-	                mpiFortranInternalUpperCutPlanewaveZFace(pw);
-	            if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
-	                mpiLayoutNumber == 0 && currentTime < 3.1e-10) {
-	                const int dbgK = std::min(ZE, mpiFortranPlanewaveUpperZFace(pw));
-	                const MpiSliceInfo* dbgSlice = currentMpiSlice();
-	                std::fprintf(stderr,
-	                             "CPPDBG ExUpPre step=%d illum=%d k=%d esqz2=%d fin=%d owns=%d lower=%d upper=%d\n",
-	                             step, pw.iluminaAr ? 1 : 0, dbgK, pw.esqz2,
-	                             dbgSlice ? dbgSlice->fin : -999,
-	                             (fortranMpiUpperCutZFace ||
-	                              mpiOwnsPlaneWaveFace(3, pw.esqz2)) ? 1 : 0,
-	                             dbgSlice ? mpiComponentAxisLowerCoord(*dbgSlice) : -999,
-	                             dbgSlice ? mpiComponentAxisUpperCoord(*dbgSlice, 5) : -999);
-	            }
-	            if (pw.iluminaAr &&
-	                (fortranMpiUpperCutZFace || mpiOwnsPlaneWaveFace(3, pw.esqz2))) {
-	                int k = std::min(ZE, mpiFortranPlanewaveUpperZFace(pw));
-	                fdtd_real id = static_cast<fdtd_real>(idzhPlanewave1(k));
-	                const bool fortranMpiUpperCutZBug =
-	                    mpiFortranUpperCutPlanewaveZCoordinateBug(pw, k);
-	                if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
-	                    mpiLayoutNumber == 0 && currentTime < 3.1e-10) {
-	                    const MpiSliceInfo* dbgSlice = currentMpiSlice();
-	                    std::fprintf(stderr,
-	                                 "CPPDBG ExUpGate step=%d still=%d switched=%d k=%d esqz2=%d fin=%d owns=%d bug=%d\n",
-	                                 step, still_planewave_time ? 1 : 0,
-	                                 planewave_switched_off ? 1 : 0, k, pw.esqz2,
-	                                 dbgSlice ? dbgSlice->fin : -999,
-	                                 mpiOwnsPlaneWaveFace(3, pw.esqz2) ? 1 : 0,
-	                                 fortranMpiUpperCutZBug ? 1 : 0);
-	                }
-	                for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
+            const bool fortranMpiUpperCutZFace =
+                mpiFortranInternalUpperCutPlanewaveZFace(pw);
+            if (pw.iluminaAr &&
+                (fortranMpiUpperCutZFace || mpiOwnsPlaneWaveFace(3, pw.esqz2))) {
+                int k = std::min(ZE, mpiFortranPlanewaveUpperZFace(pw));
+                fdtd_real id = static_cast<fdtd_real>(idzhPlanewave1(k));
+                const bool fortranMpiUpperCutZBug =
+                    mpiFortranUpperCutPlanewaveZCoordinateBug(pw, k);
+                for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = fortranMpiUpperCutZBug
                             ? computeFortranMpiUpperCutZIncident(pwIdx, 4, currentTime, i, j, k)
                             : computeIncid(pwIdx, 4, currentTime, i, j, k);
                         if (!mpiOwnsComponentCoordinate(0, i - 1, j - 1, k - 1)) continue;
                         const int exIndex = ex_idx(i - 1, j - 1, k - 1);
-                        const fdtd_real delta = G2_1 * inc * id;
-                        Ex[exIndex] -= delta;
-                        if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
-                            fortranMpiUpperCutZBug && mpiLayoutNumber == 0 &&
-                            i == 3 && j == 3 &&
-                            currentTime < 3.1e-10) {
-                            fdtd_real xf = 0.0, yf = 0.0, zf = 0.0;
-                            physCoord1(4, i, j, k, xf, yf, zf);
-                            std::fprintf(stderr,
-                                         "CPPDBG ExUp step=%d i=%d j=%d k=%d t=%.17e inc=%.17e G=%.17e Id=%.17e delta=%.17e Ex=%.17e zphys=%.17e zbug=%.17e\n",
-                                         step, i, j, k,
-                                         static_cast<double>(currentTime),
-                                         static_cast<double>(inc),
-                                         static_cast<double>(G2_1),
-                                         static_cast<double>(id),
-                                         static_cast<double>(delta),
-                                         static_cast<double>(Ex[exIndex]),
-                                         static_cast<double>(zf),
-                                         0.0);
-                        }
+                        subPw(Ex[exIndex], G2_1, inc, id);
                     }
                 }
                 k = std::min(ZE, pw.esqz2);
@@ -6664,7 +6559,7 @@ public:
                             ? computeFortranMpiUpperCutZIncident(pwIdx, 3, currentTime, i, j, k)
                             : computeIncid(pwIdx, 3, currentTime, i, j, k);
                         if (!mpiOwnsComponentCoordinate(1, i - 1, j - 1, k - 1)) continue;
-                        Ey[ey_idx(i - 1, j - 1, k - 1)] += G2_1 * inc * id;
+                        addPw(Ey[ey_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
                 }
             }
@@ -6678,6 +6573,12 @@ public:
         const fdtd_real Gm2_1 = static_cast<fdtd_real>(
             dt / static_cast<double>(static_cast<fdtd_real>(mu0)));
         const double timeH = currentTimeHalfStep();
+        auto addPw = [](fdtd_real& value, fdtd_real coeff, fdtd_real inc, fdtd_real inv) {
+            value = fortranRoundedAdd(value, fortranTripleProduct(coeff, inc, inv));
+        };
+        auto subPw = [](fdtd_real& value, fdtd_real coeff, fdtd_real inc, fdtd_real inv) {
+            value = fortranRoundedSub(value, fortranTripleProduct(coeff, inc, inv));
+        };
         for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
             const auto& pw = planeWaves[pwIdx];
             if (pw.iluminaTr && mpiOwnsPlaneWaveFace(1, pw.esqx1)) {
@@ -6687,14 +6588,14 @@ public:
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i + 1, j, k);
                         if (!mpiOwnsComponentCoordinate(5, i - 1, j - 1, k - 1)) continue;
-                        Hz[hz_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
+                        addPw(Hz[hz_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
                 }
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i + 1, j, k);
                         if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
-                        Hy[hy_idx(i - 1, j - 1, k - 1)] -= Gm2_1 * inc * id;
+                        subPw(Hy[hy_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
                 }
             }
@@ -6705,14 +6606,14 @@ public:
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i, j, k);
                         if (!mpiOwnsComponentCoordinate(5, i - 1, j - 1, k - 1)) continue;
-                        Hz[hz_idx(i - 1, j - 1, k - 1)] -= Gm2_1 * inc * id;
+                        subPw(Hz[hz_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
                 }
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
                         const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, j, k);
                         if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
-                        Hy[hy_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
+                        addPw(Hy[hy_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
                 }
             }
@@ -6723,7 +6624,7 @@ public:
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, jHx + 1, k);
                         if (!mpiOwnsComponentCoordinate(3, i - 1, jHx - 1, k - 1)) continue;
-                        Hx[hx_idx(i - 1, jHx - 1, k - 1)] += Gm2_1 * inc * idHx;
+                        addPw(Hx[hx_idx(i - 1, jHx - 1, k - 1)], Gm2_1, inc, idHx);
                     }
                 }
                 const int jHz = std::max(YI, pw.esqy1) - 1;
@@ -6732,7 +6633,7 @@ public:
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, jHz + 1, k);
                         if (!mpiOwnsComponentCoordinate(5, i - 1, jHz - 1, k - 1)) continue;
-                        Hz[hz_idx(i - 1, jHz - 1, k - 1)] -= Gm2_1 * inc * idHz;
+                        subPw(Hz[hz_idx(i - 1, jHz - 1, k - 1)], Gm2_1, inc, idHz);
                     }
                 }
             }
@@ -6743,14 +6644,14 @@ public:
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, j, k);
                         if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
-                        Hx[hx_idx(i - 1, j - 1, k - 1)] -= Gm2_1 * inc * id;
+                        subPw(Hx[hx_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
                 }
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, j, k);
                         if (!mpiOwnsComponentCoordinate(5, i - 1, j - 1, k - 1)) continue;
-                        Hz[hz_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
+                        addPw(Hz[hz_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
                 }
             }
@@ -6761,97 +6662,69 @@ public:
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i, j, k + 1);
                         if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
-                        Hx[hx_idx(i - 1, j - 1, k - 1)] -= Gm2_1 * inc * id;
+                        subPw(Hx[hx_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
                 }
                 for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, j, k + 1);
                         if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
-                        Hy[hy_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
+                        addPw(Hy[hy_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
                 }
             }
-	            const bool fortranMpiUpperCutZFace =
-	                mpiFortranInternalUpperCutPlanewaveZFace(pw);
-	            if (pw.iluminaAr &&
-	                (fortranMpiUpperCutZFace || mpiOwnsPlaneWaveFace(3, pw.esqz2))) {
-	                const int k = std::min(ZE, mpiFortranPlanewaveUpperZFace(pw));
-	                const fdtd_real id = static_cast<fdtd_real>(idzePlanewave1(k));
-	                const bool fortranMpiUpperCutZBug =
-	                    mpiFortranUpperCutPlanewaveZCoordinateBug(pw, k);
-	                for (int j = std::max(0, pw.esqy1); j <= std::min(NY - 1, pw.esqy2 - 1); ++j) {
-	                    for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
-	                        const fdtd_real inc = fortranMpiUpperCutZBug
-	                            ? computeFortranMpiUpperCutZIncident(pwIdx, 1, timeH, i, j, k)
-	                            : computeIncid(pwIdx, 1, timeH, i, j, k);
-	                        if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
-	                        Hx[hx_idx(i - 1, j - 1, k - 1)] += Gm2_1 * inc * id;
-	                    }
-	                }
-	                for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
-	                    for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
-	                        const fdtd_real inc = fortranMpiUpperCutZBug
-	                            ? computeFortranMpiUpperCutZIncident(pwIdx, 0, timeH, i, j, k)
-	                            : computeIncid(pwIdx, 0, timeH, i, j, k);
-	                        if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
-	                        const int hyIndex = hy_idx(i - 1, j - 1, k - 1);
-	                        const fdtd_real delta = Gm2_1 * inc * id;
-	                        Hy[hyIndex] -= delta;
-	                        if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
-	                            mpiLayoutNumber == 0 && i == 3 && j == 3 &&
-	                            timeH < 3.1e-10) {
-	                            fdtd_real xf = 0.0, yf = 0.0, zf = 0.0;
-	                            physCoord1(0, i, j, k, xf, yf, zf);
-	                            std::fprintf(stderr,
-	                                         "CPPDBG HyUp step=%d i=%d j=%d k=%d t=%.17e inc=%.17e G=%.17e Id=%.17e delta=%.17e Hy=%.17e zphys=%.17e bug=%d\n",
-	                                         step, i, j, k,
-	                                         static_cast<double>(timeH),
-	                                         static_cast<double>(inc),
-	                                         static_cast<double>(Gm2_1),
-	                                         static_cast<double>(id),
-	                                         static_cast<double>(delta),
-	                                         static_cast<double>(Hy[hyIndex]),
-	                                         static_cast<double>(zf),
-	                                         fortranMpiUpperCutZBug ? 1 : 0);
-	                        }
-	                    }
-	                }
+            const bool fortranMpiUpperCutZFace =
+                mpiFortranInternalUpperCutPlanewaveZFace(pw);
+            if (pw.iluminaAr &&
+                (fortranMpiUpperCutZFace || mpiOwnsPlaneWaveFace(3, pw.esqz2))) {
+                const int k = std::min(ZE, mpiFortranPlanewaveUpperZFace(pw));
+                const fdtd_real id = static_cast<fdtd_real>(idzePlanewave1(k));
+                const bool fortranMpiUpperCutZBug =
+                    mpiFortranUpperCutPlanewaveZCoordinateBug(pw, k);
+                for (int j = std::max(0, pw.esqy1); j <= std::min(NY - 1, pw.esqy2 - 1); ++j) {
+                    for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
+                        const fdtd_real inc = fortranMpiUpperCutZBug
+                            ? computeFortranMpiUpperCutZIncident(pwIdx, 1, timeH, i, j, k)
+                            : computeIncid(pwIdx, 1, timeH, i, j, k);
+                        if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
+                        addPw(Hx[hx_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
+                    }
+                }
+                for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
+                    for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
+                        const fdtd_real inc = fortranMpiUpperCutZBug
+                            ? computeFortranMpiUpperCutZIncident(pwIdx, 0, timeH, i, j, k)
+                            : computeIncid(pwIdx, 0, timeH, i, j, k);
+                        if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
+                        const int hyIndex = hy_idx(i - 1, j - 1, k - 1);
+                        subPw(Hy[hyIndex], Gm2_1, inc, id);
+                    }
+                }
             }
         }
     }
 
-	    void sampleProbes() {
-	        sampleBulkCurrentProbes();
-	        sampleHollandProbes();
-	        for (auto& probe : probes) {
-	            if (probe.domainType != "time" || probe.directions.empty()) continue;
-	            const int ci = probe.cellI, cj = probe.cellJ, ck = probe.cellK;
-	            const bool probeOwned = mpiOwnsProbe(probe);
-	            double Ex_v = 0, Ey_v = 0, Ez_v = 0;
-	            double Hx_v = 0, Hy_v = 0, Hz_v = 0;
-	            if (probeOwned && in_ex(ci, cj - 1, ck - 1))
-	                Ex_v = Ex[ex_idx(ci, cj - 1, ck - 1)];
-	            if (probeOwned && in_ey(ci - 1, cj, ck - 1))
-	                Ey_v = Ey[ey_idx(ci - 1, cj, ck - 1)];
-	            if (probeOwned && in_ez(ci - 1, cj - 1, ck))
-	                Ez_v = Ez[ez_idx(ci - 1, cj - 1, ck)];
-	            if (probeOwned && in_hx(ci - 1, cj, ck))
-	                Hx_v = Hx[hx_idx(ci - 1, cj, ck)];
-	            if (probeOwned && in_hy(ci, cj - 1, ck))
-	                Hy_v = Hy[hy_idx(ci, cj - 1, ck)];
-	            if (probeOwned && in_hz(ci, cj, ck - 1))
-	                Hz_v = Hz[hz_idx(ci, cj, ck - 1)];
-            if (std::getenv("SEMBA_DEBUG_MPI_PARITY") != nullptr &&
-                probe.field == "electric" && ci == 3 && cj == 3 && ck == 3 &&
-                currentTime < 3.1e-10) {
-                std::fprintf(stderr,
-                             "CPPDBG Probe rank=%d step=%d i=%d j=%d k=%d owned=%d t=%.17e Ex=%.17e\n",
-                             mpiLayoutNumber, step, ci, cj, ck,
-                             probeOwned ? 1 : 0,
-                             static_cast<double>(currentTime),
-                             Ex_v);
-            }
+    void sampleProbes() {
+        sampleBulkCurrentProbes();
+        sampleHollandProbes();
+        for (auto& probe : probes) {
+            if (probe.domainType != "time" || probe.directions.empty()) continue;
+            const int ci = probe.cellI, cj = probe.cellJ, ck = probe.cellK;
+            const bool probeOwned = mpiOwnsProbe(probe);
+            double Ex_v = 0, Ey_v = 0, Ez_v = 0;
+            double Hx_v = 0, Hy_v = 0, Hz_v = 0;
+            if (probeOwned && in_ex(ci, cj - 1, ck - 1))
+                Ex_v = Ex[ex_idx(ci, cj - 1, ck - 1)];
+            if (probeOwned && in_ey(ci - 1, cj, ck - 1))
+                Ey_v = Ey[ey_idx(ci - 1, cj, ck - 1)];
+            if (probeOwned && in_ez(ci - 1, cj - 1, ck))
+                Ez_v = Ez[ez_idx(ci - 1, cj - 1, ck)];
+            if (probeOwned && in_hx(ci - 1, cj, ck))
+                Hx_v = Hx[hx_idx(ci - 1, cj, ck)];
+            if (probeOwned && in_hy(ci, cj - 1, ck))
+                Hy_v = Hy[hy_idx(ci, cj - 1, ck)];
+            if (probeOwned && in_hz(ci, cj, ck - 1))
+                Hz_v = Hz[hz_idx(ci, cj, ck - 1)];
             double inc_x = 0.0, inc_y = 0.0, inc_z = 0.0;
             if (probeOwned) {
                 for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {

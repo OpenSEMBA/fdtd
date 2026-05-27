@@ -855,9 +855,6 @@ contains
       !---------------------------> variables locales <-----------------------------------------------
       real(kind = RKIND) :: timei, G2_1, Id,incidente
       integer  :: i, j, k, i_m, j_m, k_m,jjj
-#ifdef CompileWithMPI
-      integer(kind=4) :: dbg_rank, dbg_ierr
-#endif
       character(len=BUFSIZE) :: dubuf
       !---------------------------> empieza AdvancePlaneWaveE <---------------------------------------
 !!!!
@@ -1061,14 +1058,6 @@ contains
                    !--->
                    incidente = Incid(sgg,jjj, iHy, timei, i, j, k-1,still_planewave_time,called_fromobservation)
                    Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) + G2_1 * incidente * Id
-#ifdef CompileWithMPI
-                   call MPI_COMM_RANK(SUBCOMM_MPI,dbg_rank,dbg_ierr)
-                   if ((dbg_rank == 1).and.(jjj == 1).and.(i == 3).and.(j == 3).and.(timei < 3.1e-10_RKIND)) then
-                      write(*,'(A,I4,1X,3I4,1P,7E25.16,4(1X,Z8.8))') 'FTNDBG ExDown', timeinstant, i, j, k, &
-                         timei, incidente, G2_1, Id, G2_1*incidente*Id, Ex(i_m,j_m,k_m), Punto%PhysCoor(iHy)%z(k-1), &
-                         transfer(incidente,0_4), transfer(G2_1,0_4), transfer(Id,0_4), transfer(Punto%PhysCoor(iHy)%z(k-1),0_4)
-                   end if
-#endif
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -1112,14 +1101,6 @@ contains
                    !--->
                    incidente = Incid(sgg,jjj, iHy, timei, i, j, k,still_planewave_time,called_fromobservation)
                    Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) - G2_1 * incidente * Id
-#ifdef CompileWithMPI
-                   call MPI_COMM_RANK(SUBCOMM_MPI,dbg_rank,dbg_ierr)
-                   if ((dbg_rank == 0).and.(jjj == 1).and.(i == 3).and.(j == 3).and.(timei < 3.1e-10_RKIND)) then
-                      write(*,'(A,I4,1X,3I4,1P,7E25.16,4(1X,Z8.8))') 'FTNDBG ExUp', timeinstant, i, j, k, &
-                         timei, incidente, G2_1, Id, G2_1*incidente*Id, Ex(i_m,j_m,k_m), Punto%PhysCoor(iHy)%z(k), &
-                         transfer(incidente,0_4), transfer(G2_1,0_4), transfer(Id,0_4), transfer(Punto%PhysCoor(iHy)%z(k),0_4)
-                   end if
-#endif
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -1177,9 +1158,6 @@ contains
       !---------------------------> variables locales <-----------------------------------------------
 	      real(kind = RKIND) :: timei, Gm2_1, Id,incidente
 	      integer(kind=4) :: i, j, k, i_m, j_m, k_m,jjj
-#ifdef CompileWithMPI
-	      integer(kind=4) :: dbg_rank, dbg_ierr
-#endif
 	      character(len=BUFSIZE) :: dubuf
       !---------------------------> empieza AdvancePlaneWaveH <---------------------------------------
       still_planewave_time=.false. !por defecto no va a haber mas actividad de onda plana, a menos que pase por algun incid no trivial
@@ -1444,14 +1422,6 @@ contains
 	                       !--->
 	                       incidente = Incid(sgg,jjj,  iEx, timei, i, j, k,still_planewave_time,called_fromobservation)
 	                       Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - Gm2_1 * incidente * Id
-#ifdef CompileWithMPI
-	                       call MPI_COMM_RANK(SUBCOMM_MPI,dbg_rank,dbg_ierr)
-	                       if ((dbg_rank == 0).and.(jjj == 1).and.(i == 3).and.(j == 3).and.(timei < 3.1e-10_RKIND)) then
-	                          write(*,'(A,I4,1X,4I4,1P,7E25.16,4(1X,Z8.8))') 'FTNDBG HyUp', timeinstant, i, j, k, k_m, &
-	                             timei, incidente, Gm2_1, Id, Gm2_1*incidente*Id, Hy(i_m,j_m,k_m), Punto%PhysCoor(iEx)%z(k), &
-	                             transfer(incidente,0_4), transfer(Gm2_1,0_4), transfer(Id,0_4), transfer(Punto%PhysCoor(iEx)%z(k),0_4)
-	                       end if
-#endif
 	                    end do
                  end do
 #ifdef CompileWithOpenMP
