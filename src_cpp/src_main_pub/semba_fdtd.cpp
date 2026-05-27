@@ -36,6 +36,7 @@
 #include <complex>
 #include <cctype>
 #include <stdexcept>
+#include <unistd.h>
 #if defined(__SSE__)
 #include <xmmintrin.h>
 #endif
@@ -323,7 +324,7 @@ SEMBA_FORTRAN_ROUNDING fdtd_real fortranGridInverse(fdtd_real value) {
 }
 
 fdtd_real fortranPlanewaveGridInverse(fdtd_real value) {
-    return fortranScalarGridInverse(value);
+    return fortranGridInverse(value);
 }
 
 double fortranWireStep(double step) {
@@ -437,10 +438,10 @@ double fortranWireFieldSubtract(double fieldValue, double cte5,
         fieldValue, fortranRoundedDoubleMul(cte5, current));
 }
 
-SEMBA_FORTRAN_INLINE_ROUNDING fdtd_real fortranCurlUpdate(fdtd_real oldValue, fdtd_real coeff,
-                                                          fdtd_real aPlus, fdtd_real aMinus,
-                                                          fdtd_real invA, fdtd_real bPlus,
-                                                          fdtd_real bMinus, fdtd_real invB) {
+fdtd_real fortranCurlUpdate(fdtd_real oldValue, fdtd_real coeff,
+                            fdtd_real aPlus, fdtd_real aMinus,
+                            fdtd_real invA, fdtd_real bPlus,
+                            fdtd_real bMinus, fdtd_real invB) {
     const fdtd_real diffA = static_cast<fdtd_real>(aPlus - aMinus);
     const fdtd_real termA = static_cast<fdtd_real>(diffA * invA);
     const fdtd_real diffB = static_cast<fdtd_real>(bPlus - bMinus);
@@ -1631,7 +1632,8 @@ public:
     fdtd_real lineY1(int n) const { return static_cast<fdtd_real>(n) * static_cast<fdtd_real>(dy); }
     fdtd_real lineZ1(int n) const { return static_cast<fdtd_real>(n) * static_cast<fdtd_real>(dz); }
     fdtd_real fieldGridInverse(fdtd_real value) const {
-        return fortranGridInverse(value);
+        return hasPlaneWaveSource() ? fortranPlanewaveGridInverse(value)
+                                    : fortranGridInverse(value);
     }
     fdtd_real hDistanceGridInverse(fdtd_real value, int index, int cells) const {
 #ifdef CompileWithReal8
@@ -2278,9 +2280,9 @@ public:
         return computeIncidFromPhys(pwIdx, nfield, time, xf, yf, zf, calledFromObservation);
     }
 
-    SEMBA_FORTRAN_ROUNDING fdtd_real computeIncidFromPhys(int pwIdx, int nfield, double time,
-                                                          fdtd_real xf, fdtd_real yf, fdtd_real zf,
-                                                          bool calledFromObservation = false) {
+    fdtd_real computeIncidFromPhys(int pwIdx, int nfield, double time,
+                                   fdtd_real xf, fdtd_real yf, fdtd_real zf,
+                                   bool calledFromObservation = false) {
         auto& pw = planeWaves[pwIdx];
         const fdtd_real timef = static_cast<fdtd_real>(time);
         const fdtd_real cluz = fortranPlanewaveCluz(
@@ -2391,31 +2393,31 @@ public:
                     continue;
                 }
                 const auto& iv = elem["intervals"][0];
-                // Match preprocess_geom.F90: Min/Max of raw JSON interval endpoints.
-                const int x0 = iv[0][0].get<int>();
-                const int x1 = iv[1][0].get<int>();
-                const int y0 = iv[0][1].get<int>();
-                const int y1 = iv[1][1].get<int>();
-                const int z0 = iv[0][2].get<int>();
-                const int z1 = iv[1][2].get<int>();
-                int esqx1 = std::min(x0, x1);
-                int esqx2 = std::max(x0, x1);
-                int esqy1 = std::min(y0, y1);
-                int esqy2 = std::max(y0, y1);
-                int esqz1 = std::min(z0, z1);
-                int esqz2 = std::max(z0, z1);
-                if (esqx1 == 0) esqx1 = -5;
-                if (esqx2 == NX) esqx2 = NX + 5;
-                if (esqy1 == 0) esqy1 = -5;
-                if (esqy2 == NY) esqy2 = NY + 5;
-                if (esqz1 == 0) esqz1 = -5;
-                if (esqz2 == NZ) esqz2 = NZ + 5;
-                pw.esqx1 = esqx1;
-                pw.esqx2 = esqx2;
-                pw.esqy1 = esqy1;
-                pw.esqy2 = esqy2;
-                pw.esqz1 = esqz1;
-                pw.esqz2 = esqz2;
+                const auto convertInterval = [](int a, int b) {
+                    if (a < b) {
+                        return std::pair<int, int>{a, b - 1};
+                    }
+                    if (a == b) return std::pair<int, int>{a, b};
+                    return std::pair<int, int>{b, a - 1};
+                };
+                auto [x1, x2] = convertInterval(
+                    iv[0][0].get<int>(), iv[1][0].get<int>());
+                auto [y1, y2] = convertInterval(
+                    iv[0][1].get<int>(), iv[1][1].get<int>());
+                auto [z1, z2] = convertInterval(
+                    iv[0][2].get<int>(), iv[1][2].get<int>());
+                if (x1 == 0) x1 = -5;
+                if (x2 == NX) x2 = NX + 5;
+                if (y1 == 0) y1 = -5;
+                if (y2 == NY) y2 = NY + 5;
+                if (z1 == 0) z1 = -5;
+                if (z2 == NZ) z2 = NZ + 5;
+                pw.esqx1 = x1;
+                pw.esqx2 = x2;
+                pw.esqy1 = y1;
+                pw.esqy2 = y2;
+                pw.esqz1 = z1;
+                pw.esqz2 = z2;
                 break;
             }
         } else {
@@ -6425,10 +6427,10 @@ public:
         const fdtd_real G2_1 = static_cast<fdtd_real>(
             dt / static_cast<double>(static_cast<fdtd_real>(eps0)));
         auto addPw = [](fdtd_real& value, fdtd_real coeff, fdtd_real inc, fdtd_real inv) {
-            value = fortranRoundedAdd(value, fortranTripleProduct(coeff, inc, inv));
+            value += coeff * inc * inv;
         };
         auto subPw = [](fdtd_real& value, fdtd_real coeff, fdtd_real inc, fdtd_real inv) {
-            value = fortranRoundedSub(value, fortranTripleProduct(coeff, inc, inv));
+            value -= coeff * inc * inv;
         };
         for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
             const auto& pw = planeWaves[pwIdx];
@@ -6574,10 +6576,10 @@ public:
             dt / static_cast<double>(static_cast<fdtd_real>(mu0)));
         const double timeH = currentTimeHalfStep();
         auto addPw = [](fdtd_real& value, fdtd_real coeff, fdtd_real inc, fdtd_real inv) {
-            value = fortranRoundedAdd(value, fortranTripleProduct(coeff, inc, inv));
+            value += coeff * inc * inv;
         };
         auto subPw = [](fdtd_real& value, fdtd_real coeff, fdtd_real inc, fdtd_real inv) {
-            value = fortranRoundedSub(value, fortranTripleProduct(coeff, inc, inv));
+            value -= coeff * inc * inv;
         };
         for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
             const auto& pw = planeWaves[pwIdx];
@@ -6710,21 +6712,22 @@ public:
         for (auto& probe : probes) {
             if (probe.domainType != "time" || probe.directions.empty()) continue;
             const int ci = probe.cellI, cj = probe.cellJ, ck = probe.cellK;
+            const int i = ci - 1, j = cj - 1, k = ck - 1;
             const bool probeOwned = mpiOwnsProbe(probe);
             double Ex_v = 0, Ey_v = 0, Ez_v = 0;
             double Hx_v = 0, Hy_v = 0, Hz_v = 0;
-            if (probeOwned && in_ex(ci, cj - 1, ck - 1))
-                Ex_v = Ex[ex_idx(ci, cj - 1, ck - 1)];
-            if (probeOwned && in_ey(ci - 1, cj, ck - 1))
-                Ey_v = Ey[ey_idx(ci - 1, cj, ck - 1)];
-            if (probeOwned && in_ez(ci - 1, cj - 1, ck))
-                Ez_v = Ez[ez_idx(ci - 1, cj - 1, ck)];
-            if (probeOwned && in_hx(ci - 1, cj, ck))
-                Hx_v = Hx[hx_idx(ci - 1, cj, ck)];
-            if (probeOwned && in_hy(ci, cj - 1, ck))
-                Hy_v = Hy[hy_idx(ci, cj - 1, ck)];
-            if (probeOwned && in_hz(ci, cj, ck - 1))
-                Hz_v = Hz[hz_idx(ci, cj, ck - 1)];
+            if (probeOwned && in_ex(i, j, k))
+                Ex_v = Ex[ex_idx(i, j, k)];
+            if (probeOwned && in_ey(i, j, k))
+                Ey_v = Ey[ey_idx(i, j, k)];
+            if (probeOwned && in_ez(i, j, k))
+                Ez_v = Ez[ez_idx(i, j, k)];
+            if (probeOwned && in_hx(i, j, k))
+                Hx_v = Hx[hx_idx(i, j, k)];
+            if (probeOwned && in_hy(i, j, k))
+                Hy_v = Hy[hy_idx(i, j, k)];
+            if (probeOwned && in_hz(i, j, k))
+                Hz_v = Hz[hz_idx(i, j, k)];
             double inc_x = 0.0, inc_y = 0.0, inc_z = 0.0;
             if (probeOwned) {
                 for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
@@ -7585,6 +7588,11 @@ ProbeSeries readProbeDat(const std::string& path) {
     return ps;
 }
 
+std::filesystem::path testWorkDir(const std::string& stem) {
+    return std::filesystem::temp_directory_path() /
+           (stem + "_" + std::to_string(static_cast<long long>(getpid())));
+}
+
 std::vector<std::string> readProbeLines(const std::string& path) {
     std::vector<std::string> lines;
     std::ifstream in(path);
@@ -8035,8 +8043,7 @@ int test_run_pw_in_box_probes(const std::string& json_path,
     const std::filesystem::path ref_after_abs = std::filesystem::absolute(ref_after);
     const std::filesystem::path case_dir = json_abs.parent_path();
     const std::filesystem::path old_cwd = std::filesystem::current_path();
-    const std::filesystem::path work_dir =
-        std::filesystem::temp_directory_path() / "semba_pw_in_box_test";
+    const std::filesystem::path work_dir = testWorkDir("semba_pw_in_box_test");
     std::error_code ec;
     std::filesystem::remove_all(work_dir, ec);
     std::filesystem::create_directories(work_dir, ec);
@@ -8116,8 +8123,7 @@ int test_run_pw_in_box_probe_files_exact(const std::string& json_path,
     const std::filesystem::path ref_after_abs = std::filesystem::absolute(ref_after);
     const std::filesystem::path case_dir = json_abs.parent_path();
     const std::filesystem::path old_cwd = std::filesystem::current_path();
-    const std::filesystem::path work_dir =
-        std::filesystem::temp_directory_path() / "semba_pw_in_box_exact_test";
+    const std::filesystem::path work_dir = testWorkDir("semba_pw_in_box_exact_test");
     std::error_code ec;
     std::filesystem::remove_all(work_dir, ec);
     std::filesystem::create_directories(work_dir, ec);

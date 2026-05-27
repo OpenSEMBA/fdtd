@@ -645,18 +645,37 @@ void writeFortranMeshFile(const std::string& folder, const std::string& vtk_name
 }
 
 void writeMeshFile(const std::string& folder, const std::string& vtk_name, const VtkMesh& mesh) {
-    FortranVtkMesh fortran_mesh;
-    for (const auto& cell : mesh.cells) {
-        if (cell.nodes.size() != 4) continue;
-        const Vec3 a = mesh.points[static_cast<size_t>(cell.nodes[0])];
-        const Vec3 b = mesh.points[static_cast<size_t>(cell.nodes[1])];
-        const Vec3 c = mesh.points[static_cast<size_t>(cell.nodes[2])];
-        const Vec3 d = mesh.points[static_cast<size_t>(cell.nodes[3])];
-        appendQuad(fortran_mesh, a, b, c, d,
-                   static_cast<float>(cell.mediatype),
-                   static_cast<float>(cell.tagnumber));
+    std::filesystem::create_directories(folder);
+    const std::string path = folder + "/" + vtk_name;
+    std::ofstream out(path);
+    out << std::scientific << std::setprecision(12);
+    out << "# vtk DataFile Version 1.0\n";
+    out << "PEC=0, already_YEEadvanced_byconformal=5, NOTOUCHNOUSE=6, WIRE=7, WIRE-COLISION=8, COMPO=3, DISPER=1, DIEL=2, SLOT=4, CONF=5/6, OTHER=-1 (ADD +0.5 for borders)\n";
+    out << "ASCII\n\n";
+    out << "DATASET UNSTRUCTURED_GRID\n";
+    out << "FIELD FieldData 1\n";
+    out << "TIME 1 1 double\n";
+    out << "  0.000000000000E+000\n";
+    out << "POINTS " << mesh.points.size() << " float\n";
+    for (const auto& p : mesh.points) {
+        out << p.x << "  " << p.y << "  " << p.z << "\n";
     }
-    writeFortranMeshFile(folder, vtk_name, fortran_mesh);
+    out << "\nCELLS " << mesh.cells.size() << " ";
+    int size = 0;
+    for (const auto& c : mesh.cells) size += static_cast<int>(c.nodes.size()) + 1;
+    out << size << "\n";
+    for (const auto& c : mesh.cells) {
+        out << c.nodes.size();
+        for (int n : c.nodes) out << " " << n;
+        out << "\n";
+    }
+    out << "\nCELL_TYPES " << mesh.cells.size() << "\n";
+    for (const auto& c : mesh.cells) out << c.type << "\n";
+    out << "\nCELL_DATA " << mesh.cells.size() << "\n";
+    out << "SCALARS mediatype float 1\nLOOKUP_TABLE default\n";
+    for (const auto& c : mesh.cells) out << c.mediatype << "\n";
+    out << "\nSCALARS tagnumber float 1\nLOOKUP_TABLE default\n";
+    for (const auto& c : mesh.cells) out << c.tagnumber << "\n";
 }
 
 std::vector<float> buildLineCoordinates(const std::vector<double>& steps, int cells) {
