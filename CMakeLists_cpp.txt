@@ -202,7 +202,7 @@ if(SEMBA_FDTD_ENABLE_MTLN)
     set(NGSPICE_LIB ngspice)
     add_definitions(-DCompileWithMTLN)
     add_subdirectory("${CPP_SOURCE_ROOT}/src_mtln/interface" "${CMAKE_CURRENT_BINARY_DIR}/ngspice_interface")
-    add_subdirectory("${CPP_SOURCE_ROOT}/src_mtln_cpp" "${CMAKE_CURRENT_BINARY_DIR}/mtln")
+    add_subdirectory("${CPP_SOURCE_ROOT}/src_cpp/src_mtln" "${CMAKE_CURRENT_BINARY_DIR}/mtln")
     if(PROJECT_IS_TOP_LEVEL)
         set(MTLN_LIBRARIES mtlnsolver)
     else()
@@ -211,7 +211,7 @@ if(SEMBA_FDTD_ENABLE_MTLN)
 endif()
 
 # --- conformal: conformal mapping ---
-add_subdirectory("${CPP_SOURCE_ROOT}/src_conformal_cpp" "${CMAKE_CURRENT_BINARY_DIR}/conformal")
+add_subdirectory("${CPP_SOURCE_ROOT}/src_cpp/src_conformal" "${CMAKE_CURRENT_BINARY_DIR}/conformal")
 set(CONFORMAL_LIBRARIES conformal)
 
 # --- test support (rotate headers, observation preprocess, preprocess tags) ---

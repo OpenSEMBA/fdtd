@@ -1,9 +1,0 @@
-message(STATUS "Creating build system for conformal (C++)")
-
-add_library(conformal
-    "src_cpp/src_conformal/cell_map.cpp"
-    "src_cpp/src_conformal/conformal.cpp"
-    "src_cpp/src_conformal/geometry.cpp"
-)
-
-target_link_libraries(conformal PRIVATE semba-types)

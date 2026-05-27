@@ -64,9 +64,9 @@ artifact or whether it must be translated from the original Fortran source.
 | Snapshot XDMF | `src_main_pub/snapxdmf.cpp`: placeholder constants/types | `src_main_pub/snapxdmf.F90` | required | Translate with XDMF/HDF output package. |
 | Thin slot | `src_main_pub/dmma_thin_slot.cpp`: placeholder constants/types | `src_main_pub/dmma_thin_slot.F90` | required | Translate when DMMA/thin-slot tests are in scope. |
 | Timestepping full module | `src_main_pub/timestepping.cpp`: forward declarations for methods not implemented in snippet | `src_main_pub/timestepping.F90` | required | Needed before `semba-main` can switch from the current executable-gate loop to the full translated Fortran time loop. |
-| Conformal mapping | `src_conformal/conformal.cpp`: `addFaceRatio`, `addEdgeRatio`, `buildCellMap`, `buildSideMap` | `src_conformal/conformal.F90`, `cell_map.F90` | required | Independent package. Affects conformal/curved geometry tests. |
+| Conformal mapping | `src_cpp/src_conformal/conformal.cpp`: `addFaceRatio`, `addEdgeRatio`, `buildCellMap`, `buildSideMap` | `src_conformal/conformal.F90`, `cell_map.F90` | required | Independent package. Affects conformal/curved geometry tests. |
 | JSON mesh helpers | `src_json_parser/mesh_m.h`: `allocateCoordinates`, `allocateElements` | JSON parser Fortran equivalents | artifact | Resolved as C++ `unordered_map::reserve()` calls. No Fortran translation needed because storage is map-backed, not array-backed. |
-| MTLN utilities | `src_mtln/utils.cpp`, `src_mtln/preprocess.cpp`, MTLN headers with default empty vectors | `src_mtln/*.F90` | defer | Real migration, but keep as a separate MTLN package to avoid interference with non-MTLN work. |
+| MTLN utilities | `src_cpp/src_mtln/utils.cpp`, `src_cpp/src_mtln/preprocess.cpp`, MTLN headers with default empty vectors | `src_mtln/*.F90` | defer | Real migration, but keep as a separate MTLN package to avoid interference with non-MTLN work. |
 
 ## Current Checklist
 
