@@ -57,11 +57,11 @@ def _fortran_semba_exe(prefer_nomtln=False):
             "build_fortran_nomtln",
             "build_fortran_nomtln_rel",
             "build_fortran_nomtln_rel_dbgprint",
-            "build_fortran",
         ):
             candidate = repo_root / build_dir / "bin" / executable
             if candidate.exists():
                 return candidate
+        return repo_root / "build_fortran_nomtln" / "bin" / executable
 
     return repo_root / "build" / "bin" / executable
 

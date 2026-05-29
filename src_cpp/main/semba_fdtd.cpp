@@ -376,6 +376,12 @@ SEMBA_FORTRAN_INLINE_ROUNDING fdtd_real fortranRoundedSub(fdtd_real lhs,
     return result;
 }
 
+SEMBA_FORTRAN_INLINE_ROUNDING fdtd_real fortranRoundedDiv(fdtd_real lhs,
+                                                          fdtd_real rhs) {
+    volatile fdtd_real result = static_cast<fdtd_real>(lhs / rhs);
+    return result;
+}
+
 fdtd_real fortranNodalProduct(fdtd_real coeff, fdtd_real inv1,
                               fdtd_real inv2, fdtd_real amplitude,
                               fdtd_real evolution) {
@@ -419,6 +425,12 @@ SEMBA_FORTRAN_ROUNDING double fortranRoundedDoubleAdd(double lhs,
 SEMBA_FORTRAN_ROUNDING double fortranRoundedDoubleSub(double lhs,
                                                       double rhs) {
     volatile double result = lhs - rhs;
+    return result;
+}
+
+SEMBA_FORTRAN_ROUNDING double fortranRoundedDoubleDiv(double lhs,
+                                                      double rhs) {
+    volatile double result = lhs / rhs;
     return result;
 }
 
@@ -3897,17 +3909,22 @@ public:
     static fdtd_real evolucionNodal(const ExcitationData& exc, fdtd_real t) {
         if (exc.times.empty() || exc.values.empty()) return static_cast<fdtd_real>(0.0);
         if (exc.values.size() == 1 || exc.times.size() == 1) return exc.values.front();
-        const fdtd_real deltaevol =
-            static_cast<fdtd_real>(exc.times[1]) - static_cast<fdtd_real>(exc.times[0]);
+        const fdtd_real deltaevol = fortranRoundedSub(
+            static_cast<fdtd_real>(exc.times[1]),
+            static_cast<fdtd_real>(exc.times[0]));
         if (deltaevol <= static_cast<fdtd_real>(0.0)) return static_cast<fdtd_real>(0.0);
-        const int nprev = static_cast<int>(t / deltaevol);
+        const int nprev = static_cast<int>(fortranRoundedDiv(t, deltaevol));
         if (nprev + 1 > static_cast<int>(exc.values.size()) - 1 || nprev + 1 <= 0) {
             return static_cast<fdtd_real>(0.0);
         }
         const fdtd_real y0 = exc.values[static_cast<size_t>(nprev)];
         const fdtd_real y1 = exc.values[static_cast<size_t>(nprev + 1)];
-        return ((y1 - y0) / deltaevol) *
-            (t - static_cast<fdtd_real>(nprev) * deltaevol) + y0;
+        const fdtd_real slope = fortranRoundedDiv(
+            fortranRoundedSub(y1, y0), deltaevol);
+        const fdtd_real nt = fortranRoundedMul(
+            static_cast<fdtd_real>(nprev), deltaevol);
+        const fdtd_real dtlocal = fortranRoundedSub(t, nt);
+        return fortranRoundedAdd(fortranRoundedMul(slope, dtlocal), y0);
     }
 
     bool isPecEx(int i, int j, int k) const {
@@ -3944,24 +3961,24 @@ public:
                         if (segment.direction == 'x') {
                             if (!in_ex(i, j, k) || isPecEx(i, j, k)) continue;
                             const int idx = ex_idx(i, j, k);
-                            Ex[idx] = static_cast<fdtd_real>(
-                                Ex[idx] - fortranNodalProduct(
-                                    CeEx[idx], idyh1(j), idzh1(k),
-                                    sourceAmplitude, evolutionValue));
+                            Ex[idx] = fortranRoundedSub(
+                                Ex[idx], fortranNodalProduct(
+                                             CeEx[idx], idyh1(j), idzh1(k),
+                                             sourceAmplitude, evolutionValue));
                         } else if (segment.direction == 'y') {
                             if (!in_ey(i, j, k) || isPecEy(i, j, k)) continue;
                             const int idx = ey_idx(i, j, k);
-                            Ey[idx] = static_cast<fdtd_real>(
-                                Ey[idx] - fortranNodalProduct(
-                                    CeEy[idx], idxh1(i), idzh1(k),
-                                    sourceAmplitude, evolutionValue));
+                            Ey[idx] = fortranRoundedSub(
+                                Ey[idx], fortranNodalProduct(
+                                             CeEy[idx], idxh1(i), idzh1(k),
+                                             sourceAmplitude, evolutionValue));
                         } else if (segment.direction == 'z') {
                             if (!in_ez(i, j, k) || isPecEz(i, j, k)) continue;
                             const int idx = ez_idx(i, j, k);
-                            Ez[idx] = static_cast<fdtd_real>(
-                                Ez[idx] - fortranNodalProduct(
-                                    CeEz[idx], idyh1(j), idxh1(i),
-                                    sourceAmplitude, evolutionValue));
+                            Ez[idx] = fortranRoundedSub(
+                                Ez[idx], fortranNodalProduct(
+                                             CeEz[idx], idyh1(j), idxh1(i),
+                                             sourceAmplitude, evolutionValue));
                         }
                     }
                 }
@@ -4111,8 +4128,9 @@ public:
                                            dyr));
             }
         }
-        return static_cast<double>(static_cast<fdtd_real>(
-            static_cast<fdtd_real>(probe.sign) * current));
+        const fdtd_real signedCurrent = fortranRoundedMul(
+            static_cast<fdtd_real>(probe.sign), current);
+        return static_cast<double>(signedCurrent);
     }
 
     void sampleBulkCurrentProbes() {
@@ -4913,16 +4931,18 @@ public:
             double iPlus = 0.0;
             double iMinus = 0.0;
             for (int segIdx : node.currentPlus) {
-                iPlus += hollandSegments[static_cast<size_t>(segIdx)].current;
+                iPlus = fortranRoundedDoubleAdd(
+                    iPlus, hollandSegments[static_cast<size_t>(segIdx)].current);
             }
             for (int segIdx : node.currentMinus) {
-                iMinus += hollandSegments[static_cast<size_t>(segIdx)].current;
+                iMinus = fortranRoundedDoubleAdd(
+                    iMinus, hollandSegments[static_cast<size_t>(segIdx)].current);
             }
             if (node.currentMinus.size() == 1 && node.currentPlus.empty()) {
-                iPlus = -iMinus;
+                iPlus = fortranRoundedDoubleSub(0.0, iMinus);
             }
             if (node.currentMinus.empty() && node.currentPlus.size() == 1) {
-                iMinus = -iPlus;
+                iMinus = fortranRoundedDoubleSub(0.0, iPlus);
             }
             node.chargePresent = fortranWireChargeUpdate(
                 node.cteProp, node.chargePast, node.ctePlain, iPlus, iMinus);
@@ -4942,9 +4962,11 @@ public:
             seg.currentpast = seg.current;
             const auto& qPlus = hollandNodes[static_cast<size_t>(seg.chargePlus)];
             const auto& qMinus = hollandNodes[static_cast<size_t>(seg.chargeMinus)];
-            seg.qplus_qminus =
-                seg.fractionPlus * qPlus.chargePresent -
-                seg.fractionMinus * qMinus.chargePresent;
+            const double qPlusTerm = fortranRoundedDoubleMul(
+                seg.fractionPlus, qPlus.chargePresent);
+            const double qMinusTerm = fortranRoundedDoubleMul(
+                seg.fractionMinus, qMinus.chargePresent);
+            seg.qplus_qminus = fortranRoundedDoubleSub(qPlusTerm, qMinusTerm);
             seg.current = fortranWireCurrentUpdate(
                 seg.cte1, seg.current, seg.cte3, seg.qplus_qminus, seg.cte2,
                 hollandFieldValue(seg));
@@ -4963,7 +4985,10 @@ public:
             if (seg.lind == 0.0) continue;
             const double vincid =
                 gen.multiplier * getExcitationValue(exc->second, currentTime);
-            seg.current += seg.cte3 * vincid / (seg.lind * invMuInvEps);
+            const double denom = fortranRoundedDoubleMul(seg.lind, invMuInvEps);
+            const double sourceTerm = fortranRoundedDoubleMul(
+                seg.cte3, fortranRoundedDoubleDiv(vincid, denom));
+            seg.current = fortranRoundedDoubleAdd(seg.current, sourceTerm);
         }
     }
 
