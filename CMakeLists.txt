@@ -5,7 +5,7 @@ option(SEMBA_FDTD_BUILD_CXX "Build C++ version instead of Fortran" OFF)
 
 if(SEMBA_FDTD_BUILD_CXX)
     message(STATUS "Building C++ version of semba-fdtd")
-    include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists_cpp.txt")
+    include("${CMAKE_CURRENT_SOURCE_DIR}/cpp_build.cmake")
     return()
 endif()
 
