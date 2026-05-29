@@ -6,7 +6,7 @@ integer function test_init_solver() bind (C) result(err)
    type(solver_t) :: solver
    real(kind=RKIND) :: field_value = 1.0
    err = 0
-   call chdir("./test/system/")
+   call chdir("./test/fortran/system/")
 
    call semba%init("-i init_solver.fdtd.json")
    solver = semba%create_solver()
@@ -17,7 +17,7 @@ integer function test_init_solver() bind (C) result(err)
    if (solver%get_field_value(iHz, 2,2,2) == 0) err = err + 1
 
    call solver%destroy_and_deallocate()
-   call chdir("../../")
+   call chdir("../../../")
 end function
 
 
@@ -31,7 +31,7 @@ integer function test_rank_remapping() bind (C) result(err)
    real(kind=RKIND) :: field_value = 1.0
    
    err = 0
-   call chdir("./test/system/")
+   call chdir("./test/fortran/system/")
 
    call semba%init("-i init_solver.fdtd.json")
    solver = semba%create_solver()
@@ -43,6 +43,6 @@ integer function test_rank_remapping() bind (C) result(err)
 
    call solver%destroy_and_deallocate()
 
-   call chdir("../../")
+   call chdir("../../../")
 
 end function

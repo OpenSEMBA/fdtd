@@ -1,15 +1,17 @@
 message(STATUS "Creating build system for test/cpp")
 
+add_subdirectory(support)
+
 add_executable(cpp_tests
     cpp_tests.cpp
 )
 
 target_include_directories(cpp_tests PRIVATE
-    ${CPP_SOURCE_ROOT}/src_cpp/src_json_parser
-    ${CPP_SOURCE_ROOT}/src_cpp/src_conformal
-    ${CPP_SOURCE_ROOT}/src_cpp/src_main_pub
-    ${CPP_SOURCE_ROOT}/src_cpp/src_mtln
-    ${CPP_SOURCE_ROOT}/src_cpp/src_test_support
+    ${CPP_SOURCE_ROOT}/src_cpp/json_parser
+    ${CPP_SOURCE_ROOT}/src_cpp/conformal
+    ${CPP_SOURCE_ROOT}/src_cpp/main
+    ${CPP_SOURCE_ROOT}/src_cpp/mtln
+    ${CPP_SOURCE_ROOT}/test/cpp/support
     ${CPP_SOURCE_ROOT}/test/cpp
 )
 
@@ -19,7 +21,7 @@ target_link_libraries(cpp_tests
     smbjson
     conformal
     semba-main
-    ${SEMBA_TEST_SUPPORT}
+    semba-test-support
 )
 
 if(SEMBA_FDTD_ENABLE_MTLN)

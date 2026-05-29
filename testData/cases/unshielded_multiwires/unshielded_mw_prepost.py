@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import shutil 
 
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../', 'src_pyWrapper'))
+
 SEMBA_EXE = '../../../build/bin/semba-fdtd'
 
 from pyWrapper import *

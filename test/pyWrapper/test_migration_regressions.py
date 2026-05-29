@@ -579,6 +579,7 @@ def test_mapvtk_vtk_file_matches_fortran_exact(tmp_path, monkeypatch):
     _assert_probe_file_byte_exact(fortran_vtk, cpp_vtk)
 
 
+@no_hdf_skip
 @pytest.mark.hdf
 @pytest.mark.cpp_migration
 def test_hdf_movie_dataset_shape_matches_fortran(tmp_path, monkeypatch):

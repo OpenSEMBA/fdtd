@@ -5458,6 +5458,8 @@ public:
                                         minYabs, minXabs, finalstep, true);
             }
             xdmf_h5_m::closeh5file(finalstep, movie.times);
+            // Fortran also emits a legacy .bin companion file for movie probes.
+            writeBinaryMoviePlaceholder(movie.stem + ".bin");
         }
 #else
         for (const auto& movie : movieProbes) {
@@ -7577,7 +7579,7 @@ public:
         if (createMapVtk && !inputRoot.is_null()) {
             mapvtk::writeMapVtkFromJson(caseName, inputRoot);
         }
-        if (!inputRoot.is_null()) {
+        if (createMapVtk && !inputRoot.is_null()) {
             mapvtk::writeCurrentMapVtkFromJson(caseName, inputRoot);
         }
         std::cout << "Output files written." << std::endl;

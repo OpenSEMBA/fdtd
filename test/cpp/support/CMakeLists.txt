@@ -4,9 +4,10 @@ add_library(semba-test-support STATIC
 )
 
 target_include_directories(semba-test-support PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src_main_pub
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src_conformal
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src_mtln
+    ${CPP_SOURCE_ROOT}/src_cpp/main
+    ${CPP_SOURCE_ROOT}/src_cpp/conformal
+    ${CPP_SOURCE_ROOT}/src_cpp/mtln
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_link_libraries(semba-test-support PUBLIC semba-types)

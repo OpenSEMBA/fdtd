@@ -1169,8 +1169,33 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
         }
     }
     if (only_pec_intervals) {
-        writeMapVtkFromGrid(case_name, root);
-        return;
+        int pec_map_elements = 0;
+        bool has_non_volume_pec = false;
+        if (root.contains("mesh") && root["mesh"].contains("elements")) {
+            for (const auto& e : root["mesh"]["elements"]) {
+                const int eid = e.value("id", 0);
+                if (!mat_by_elem.count(eid) || !e.contains("intervals")) continue;
+                const MaterialInfo info = materialInfo(root["materials"], mat_by_elem.at(eid));
+                if (info.type != "pec") continue;
+                ++pec_map_elements;
+                for (const auto& interval : e["intervals"]) {
+                    const int x0 = interval[0][0].get<int>();
+                    const int y0 = interval[0][1].get<int>();
+                    const int z0 = interval[0][2].get<int>();
+                    const int x1 = interval[1][0].get<int>();
+                    const int y1 = interval[1][1].get<int>();
+                    const int z1 = interval[1][2].get<int>();
+                    const int num_same = static_cast<int>(x0 == x1) +
+                        static_cast<int>(y0 == y1) + static_cast<int>(z0 == z1);
+                    if (num_same != 0) has_non_volume_pec = true;
+                }
+            }
+        }
+        // Fast grid rasterization matches Fortran for a single 3D PEC volume only.
+        if (pec_map_elements == 1 && !has_non_volume_pec) {
+            writeMapVtkFromGrid(case_name, root);
+            return;
+        }
     }
 
     int nx = 10, ny = 10, nz = 10;

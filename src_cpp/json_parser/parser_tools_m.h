@@ -17,7 +17,7 @@ namespace json_module {
 
 #include "mesh_m.h"
 #include "cells_m.h"
-#include "../src_main_pub/nfde_types.h"
+#include "../main/nfde_types.h"
 
 namespace parser_tools_m {
 

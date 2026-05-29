@@ -1,5 +1,5 @@
 // Included inside FDTD_Solver in semba_fdtd.cpp.
-// Mirrors the active time-loop structure from src_main_pub/timestepping.F90.
+// Mirrors the active time-loop structure from src/main/timestepping.F90.
 
 void launch_simulation() {
     still_planewave_time = true;

@@ -7,14 +7,10 @@ on:
       - dev
       - cpp
     paths:
+      - 'src/**'
       - 'src_cpp/**'
-      - 'src_conformal/**'
-      - 'src_conformal_cpp/**'
-      - 'src_mtln/**'
-      - 'src_mtln_cpp/**'
-      - 'src_wires_pub/**'
-      - 'src_json_parser/**'
-      - 'CMakeLists_cpp.txt'
+      - 'pyWrapper/**'
+      - 'cpp_build.cmake'
       - 'CMakeLists.txt'
       - 'scripts/test_cpp_*.sh'
       - 'test/cpp/**'
@@ -28,14 +24,10 @@ on:
       - dev
       - cpp
     paths:
+      - 'src/**'
       - 'src_cpp/**'
-      - 'src_conformal/**'
-      - 'src_conformal_cpp/**'
-      - 'src_mtln/**'
-      - 'src_mtln_cpp/**'
-      - 'src_wires_pub/**'
-      - 'src_json_parser/**'
-      - 'CMakeLists_cpp.txt'
+      - 'pyWrapper/**'
+      - 'cpp_build.cmake'
       - 'CMakeLists.txt'
       - 'scripts/test_cpp_*.sh'
       - 'test/cpp/**'

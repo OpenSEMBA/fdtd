@@ -1,7 +1,7 @@
 #ifndef NFDE_TYPES_EXTENSION_M_H
 #define NFDE_TYPES_EXTENSION_M_H
 
-#include "../src_main_pub/nfde_types.h"
+#include "../main/nfde_types.h"
 
 namespace NFDETypes_extension_m {
 

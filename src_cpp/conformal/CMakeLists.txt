@@ -7,7 +7,7 @@ add_library(conformal
 )
 
 target_include_directories(conformal PUBLIC
-    ${CPP_SOURCE_ROOT}/src_cpp/src_main_pub
+    ${CPP_SOURCE_ROOT}/src_cpp/main
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 target_link_libraries(conformal PUBLIC semba-types)

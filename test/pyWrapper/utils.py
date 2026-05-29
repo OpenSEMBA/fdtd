@@ -1,4 +1,4 @@
-from src_pyWrapper.pyWrapper import *
+from pyWrapper import *
 import shutil
 import glob
 import re

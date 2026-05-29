@@ -1,7 +1,7 @@
 #ifndef SMBJSON_M_H
 #define SMBJSON_M_H
 
-#include "../src_main_pub/nfde_types.h"
+#include "../main/nfde_types.h"
 #include "smbjson_labels_m.h"
 #include "mesh_m.h"
 #include "parser_tools_m.h"

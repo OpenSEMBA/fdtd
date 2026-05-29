@@ -50,8 +50,8 @@ Additionally, it may contain the following optional entry:
 ### `[background]`
 This object sets the background electromagnetic media properties to an specified value it can contain the following objects entries:
 
-+ `[absolutePermittivity]`: a real number indicating the value of background permittivity. Defaults to the value specified in EPSILON_VACUUM at [fdtypes.F90](../src_main_pub/fdetypes.F90).
-+ `[absolutePermeability]`: a real number indicating the value of background permeability. Defaults to the value specified in MU_VACUUM at [fdtypes.F90](../src_main_pub/fdetypes.F90).
++ `[absolutePermittivity]`: a real number indicating the value of background permittivity. Defaults to the value specified in EPSILON_VACUUM at [fdtypes.F90](../src/main/fdetypes.F90).
++ `[absolutePermeability]`: a real number indicating the value of background permeability. Defaults to the value specified in MU_VACUUM at [fdtypes.F90](../src/main/fdetypes.F90).
 
 ### `[boundary]`
 This specifies the boundaries which will be used to terminate the computational domain. 
