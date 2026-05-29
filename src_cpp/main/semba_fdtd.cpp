@@ -68,8 +68,14 @@ const double heurCFL = 0.8;
 
 #ifdef CompileWithReal8
 using fdtd_real = double;
+// Match Fortran probe format `(12(e27.17e3))` when CompileWithReal8 is set.
+constexpr int PROBE_FIELD_WIDTH = 27;
+constexpr int PROBE_FIELD_PRECISION = 17;
 #else
 using fdtd_real = float;
+// Match Fortran probe format `(e27.17e3,11(e19.9e3))` for single precision.
+constexpr int PROBE_FIELD_WIDTH = 19;
+constexpr int PROBE_FIELD_PRECISION = 9;
 #endif
 
 #if defined(__GNUC__)
@@ -4142,7 +4148,8 @@ public:
             out << "t              " << fullname << "\n";
             for (size_t t = 0; t < probe.timeData.size(); ++t) {
                 out << formatFortranE(probe.timeData[t], 27, 17)
-                    << formatFortranE(probe.currentData[t], 19, 9)
+                    << formatFortranE(probe.currentData[t],
+                                      PROBE_FIELD_WIDTH, PROBE_FIELD_PRECISION)
                     << "\n";
             }
         }
@@ -5029,9 +5036,10 @@ public:
     static std::string formatHollandObservationField(double value,
                                                      bool negativeZero) {
         if (value == 0.0 && negativeZero) {
-            return formatFortranNegativeZero(19, 9);
+            return formatFortranNegativeZero(PROBE_FIELD_WIDTH,
+                                             PROBE_FIELD_PRECISION);
         }
-        return formatFortranE(value, 19, 9);
+        return formatFortranE(value, PROBE_FIELD_WIDTH, PROBE_FIELD_PRECISION);
     }
 
     void writeHollandProbeOutputs(const std::string& caseName) {
@@ -5055,7 +5063,9 @@ public:
                                  probe.vplusData[t], negativeSegmentZero)
                           << formatHollandObservationField(
                                  probe.vminusData[t], negativeSegmentZero)
-                          << formatFortranE(probe.vdropData[t], 19, 9)
+                          << formatFortranE(probe.vdropData[t],
+                                            PROBE_FIELD_WIDTH,
+                                            PROBE_FIELD_PRECISION)
                           << "\n";
             }
         }
@@ -5254,14 +5264,14 @@ public:
                 for (const double theta : thetas) {
                     for (const double phi : phis) {
                         out << formatFortranE(frequency, 27, 17)
-                            << formatFortranE(theta, 19, 9)
-                            << formatFortranE(phi, 19, 9)
-                            << formatFortranE(0.0, 19, 9)
-                            << formatFortranNegativeZero(19, 9)
-                            << formatFortranE(0.0, 19, 9)
-                            << formatFortranE(0.0, 19, 9)
-                            << formatFortranE(rcs, 19, 9)
-                            << formatFortranE(rcs, 19, 9)
+                            << formatFortranE(theta, PROBE_FIELD_WIDTH, PROBE_FIELD_PRECISION)
+                            << formatFortranE(phi, PROBE_FIELD_WIDTH, PROBE_FIELD_PRECISION)
+                            << formatFortranE(0.0, PROBE_FIELD_WIDTH, PROBE_FIELD_PRECISION)
+                            << formatFortranNegativeZero(PROBE_FIELD_WIDTH, PROBE_FIELD_PRECISION)
+                            << formatFortranE(0.0, PROBE_FIELD_WIDTH, PROBE_FIELD_PRECISION)
+                            << formatFortranE(0.0, PROBE_FIELD_WIDTH, PROBE_FIELD_PRECISION)
+                            << formatFortranE(rcs, PROBE_FIELD_WIDTH, PROBE_FIELD_PRECISION)
+                            << formatFortranE(rcs, PROBE_FIELD_WIDTH, PROBE_FIELD_PRECISION)
                             << "\n";
                     }
                 }
@@ -7143,8 +7153,12 @@ public:
                 out << "t              " << fullname << "       incid\n";
                 for (size_t t = 0; t < probe.timeData.size(); ++t) {
                     out << formatFortranE(probe.timeData[t], 27, 17)
-                        << formatFortranE(probe.fieldByDir[d][t], 19, 9)
-                        << formatFortranE(probe.incidentByDir[d][t], 19, 9)
+                        << formatFortranE(probe.fieldByDir[d][t],
+                                          PROBE_FIELD_WIDTH,
+                                          PROBE_FIELD_PRECISION)
+                        << formatFortranE(probe.incidentByDir[d][t],
+                                          PROBE_FIELD_WIDTH,
+                                          PROBE_FIELD_PRECISION)
                         << "\n";
                 }
                 out.close();
