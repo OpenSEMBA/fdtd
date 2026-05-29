@@ -43,15 +43,27 @@ python3 -m venv .venv
 source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 
-pytest test/ --durations=20
+# Fortran full suite (set feature flags to match the binary)
+export SEMBA_EXE=$PWD/build/bin/semba-fdtd
+export SEMBA_FDTD_ENABLE_MTLN=ON
+export SEMBA_FDTD_ENABLE_HDF=ON
+export SEMBA_FDTD_ENABLE_MPI=ON
+PYTHONPATH=. pytest test/ --durations=20
 
-# Run by marker
-pytest test/ -m mtln
-pytest test/ -m hdf
-pytest test/ -m mpi
+# C++ migration gates (build semba-fdtd-cpp first, then pytest by marker)
+cmake -S . -B cpp_build_nomtln -DSEMBA_FDTD_BUILD_CXX=ON \
+  -DSEMBA_FDTD_ENABLE_MTLN=OFF -DSEMBA_FDTD_ENABLE_MPI=OFF -DSEMBA_FDTD_ENABLE_HDF=OFF \
+  -DSEMBA_FDTD_MAIN_LIB=ON -DSEMBA_FDTD_EXECUTABLE=ON -DSEMBA_FDTD_ENABLE_TEST=ON
+cmake --build cpp_build_nomtln -j --target semba-fdtd-cpp
+export SEMBA_EXE=$PWD/cpp_build_nomtln/bin/semba-fdtd-cpp
+export SEMBA_FDTD_ENABLE_MTLN=OFF SEMBA_FDTD_ENABLE_MPI=OFF SEMBA_FDTD_ENABLE_HDF=OFF
+PYTHONPATH=. pytest test/pyWrapper/ -m cpp_migration
+
+# HDF / MTLN: same pattern with cpp_build_hdf or cpp_build_mtln and -m hdf or
+# test/pyWrapper/test_mtln_standalone.py -m mtln_standalone
 ```
 
-Test markers are defined in `pytest.ini`: `mtln`, `codemodel`, `hdf`, `mpi`.
+Test markers are defined in `pytest.ini` (`cpp_migration`, `hdf`, `mtln_standalone`, `mtln`, `mpi`, …).
 
 Unit test source: Fortran/C++ GoogleTest under `test/fortran/` (`mtln/`, `smbjson/`, etc.); C++ solver tests under `test/cpp/`; Python integration tests under `test/pyWrapper/`.
 
