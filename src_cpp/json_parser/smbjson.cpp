@@ -2,10 +2,78 @@
 #include "NFDETypes_extension_m.h"
 #include <iostream>
 #include <cmath>
+#include <fstream>
 
 namespace smbjson {
 
     namespace {
+        bool parseOneBasedArrayIndex(const std::string& token, int& idx) {
+            if (token.size() < 3 || token.front() != '(' || token.back() != ')') return false;
+            try {
+                idx = std::stoi(token.substr(1, token.size() - 2));
+            } catch (...) {
+                return false;
+            }
+            return idx >= 1;
+        }
+
+        const nlohmann::json* findPathNode(const nlohmann::json* root, const std::string& path) {
+            if (root == nullptr) return nullptr;
+            if (path.empty()) return root;
+
+            const nlohmann::json* current = root;
+            size_t pos = 0;
+            while (pos <= path.size()) {
+                const size_t dot = path.find('.', pos);
+                const std::string token =
+                    path.substr(pos, dot == std::string::npos ? std::string::npos : dot - pos);
+
+                if (!token.empty()) {
+                    int idx = 0;
+                    if (parseOneBasedArrayIndex(token, idx)) {
+                        if (!current->is_array() || idx > static_cast<int>(current->size())) {
+                            return nullptr;
+                        }
+                        current = &(*current)[static_cast<size_t>(idx - 1)];
+                    } else {
+                        if (!current->is_object()) return nullptr;
+                        auto it = current->find(token);
+                        if (it == current->end()) return nullptr;
+                        current = &(*it);
+                    }
+                }
+
+                if (dot == std::string::npos) break;
+                pos = dot + 1;
+            }
+            return current;
+        }
+
+        void jsonGet(const nlohmann::json* val, const std::string& key,
+                     const nlohmann::json*& out, bool& found) {
+            out = findPathNode(val, key);
+            found = (out != nullptr);
+        }
+
+        int jsonCount(const nlohmann::json* val) {
+            if (val == nullptr) return 0;
+            if (val->is_array() || val->is_object()) {
+                return static_cast<int>(val->size());
+            }
+            return 0;
+        }
+
+        bool jsonGetChild(const nlohmann::json* val, int oneBasedIndex,
+                          const nlohmann::json*& out) {
+            out = nullptr;
+            if (val == nullptr || !val->is_array()) return false;
+            if (oneBasedIndex < 1 || oneBasedIndex > static_cast<int>(val->size())) {
+                return false;
+            }
+            out = &(*val)[static_cast<size_t>(oneBasedIndex - 1)];
+            return true;
+        }
+
         void appendRegion(std::vector<NFDE::coords_t>& dest, int& n, int& nMax,
                           const std::vector<NFDE::coords_t>& cs) {
             if (dest.empty()) {
@@ -25,115 +93,100 @@ namespace smbjson {
 
     // ---- JSON accessor implementations ----
 
-    bool parser_t::getLogicalAt(const jmod::json_value* val, const std::string& key, bool default_val, bool* foundOut) {
-        jmod::json_value* ptr = nullptr;
+    bool parser_t::getLogicalAt(const nlohmann::json* val, const std::string& key, bool default_val, bool* foundOut) {
+        const nlohmann::json* ptr = nullptr;
         bool found = false;
-        core->get(val, key, ptr, found);
+        jsonGet(val, key, ptr, found);
         if (foundOut) *foundOut = found;
-        if (found && ptr) return ptr->data.get<bool>();
+        if (found && ptr) return ptr->get<bool>();
         return default_val;
     }
 
-    int parser_t::getIntAt(const jmod::json_value* val, const std::string& key, int default_val, bool* foundOut) {
-        jmod::json_value* ptr = nullptr;
+    int parser_t::getIntAt(const nlohmann::json* val, const std::string& key, int default_val, bool* foundOut) {
+        const nlohmann::json* ptr = nullptr;
         bool found = false;
-        core->get(val, key, ptr, found);
+        jsonGet(val, key, ptr, found);
         if (foundOut) *foundOut = found;
-        if (found && ptr) return ptr->data.get<int>();
+        if (found && ptr) return ptr->get<int>();
         return default_val;
     }
 
-    std::vector<int> parser_t::getIntsAt(const jmod::json_value* val, const std::string& key, bool* foundOut) {
+    std::vector<int> parser_t::getIntsAt(const nlohmann::json* val, const std::string& key, bool* foundOut) {
         std::vector<int> res;
-        jmod::json_value* arr = nullptr;
+        const nlohmann::json* arr = nullptr;
         bool found = false;
-        core->get(val, key, arr, found);
+        jsonGet(val, key, arr, found);
         if (foundOut) *foundOut = found;
         if (found && arr) {
-            int n = core->count(arr);
+            int n = jsonCount(arr);
             res.resize(n);
             for (int i = 0; i < n; ++i) {
-                jmod::json_value* child = nullptr;
-                core->get_child(arr, i + 1, child);
-                if (child) res[i] = child->data.get<int>();
+                const nlohmann::json* child = nullptr;
+                jsonGetChild(arr, i + 1, child);
+                if (child) res[i] = child->get<int>();
             }
         }
         return res;
     }
 
-    double parser_t::getRealAt(const jmod::json_value* val, const std::string& key, double default_val, bool* foundOut) {
-        jmod::json_value* ptr = nullptr;
+    double parser_t::getRealAt(const nlohmann::json* val, const std::string& key, double default_val, bool* foundOut) {
+        const nlohmann::json* ptr = nullptr;
         bool found = false;
-        core->get(val, key, ptr, found);
+        jsonGet(val, key, ptr, found);
         if (foundOut) *foundOut = found;
-        if (found && ptr) return ptr->data.get<double>();
+        if (found && ptr) return ptr->get<double>();
         return default_val;
     }
 
-    std::vector<double> parser_t::getRealsAt(const jmod::json_value* val, const std::string& key, bool* foundOut) {
+    std::vector<double> parser_t::getRealsAt(const nlohmann::json* val, const std::string& key, bool* foundOut) {
         std::vector<double> res;
-        jmod::json_value* arr = nullptr;
+        const nlohmann::json* arr = nullptr;
         bool found = false;
-        core->get(val, key, arr, found);
+        jsonGet(val, key, arr, found);
         if (foundOut) *foundOut = found;
         if (found && arr) {
-            int n = core->count(arr);
+            int n = jsonCount(arr);
             res.resize(n);
             for (int i = 0; i < n; ++i) {
-                jmod::json_value* child = nullptr;
-                core->get_child(arr, i + 1, child);
-                if (child) res[i] = child->data.get<double>();
+                const nlohmann::json* child = nullptr;
+                jsonGetChild(arr, i + 1, child);
+                if (child) res[i] = child->get<double>();
             }
         }
         return res;
     }
 
-    std::vector<std::vector<double>> parser_t::getMatrixAt(const jmod::json_value* val, const std::string& key, bool* foundOut) {
+    std::vector<std::vector<double>> parser_t::getMatrixAt(const nlohmann::json* val, const std::string& key, bool* foundOut) {
         std::vector<std::vector<double>> res;
-        jmod::json_value* arr = nullptr;
+        const nlohmann::json* arr = nullptr;
         bool found = false;
-        core->get(val, key, arr, found);
+        jsonGet(val, key, arr, found);
         if (foundOut) *foundOut = found;
         if (found && arr) {
-            int n = core->count(arr);
+            int n = jsonCount(arr);
             for (int i = 0; i < n; ++i) {
-                jmod::json_value* child = nullptr;
-                core->get_child(arr, i + 1, child);
+                const nlohmann::json* child = nullptr;
+                jsonGetChild(arr, i + 1, child);
                 res.push_back(getRealsAt(child, ""));
             }
         }
         return res;
     }
 
-    std::string parser_t::getStrAt(const jmod::json_value* val, const std::string& key, const std::string& default_val, bool* foundOut) {
-        jmod::json_value* ptr = nullptr;
+    std::string parser_t::getStrAt(const nlohmann::json* val, const std::string& key, const std::string& default_val, bool* foundOut) {
+        const nlohmann::json* ptr = nullptr;
         bool found = false;
-        core->get(val, key, ptr, found);
+        jsonGet(val, key, ptr, found);
         if (foundOut) *foundOut = found;
-        if (found && ptr) return ptr->data.get<std::string>();
+        if (found && ptr) return ptr->get<std::string>();
         return default_val;
     }
 
-    bool parser_t::existsAt(const jmod::json_value* val, const std::string& key) {
-        jmod::json_value* ptr = nullptr;
-        bool found = false;
-        core->get(val, key, ptr, found);
-        return found;
-    }
-
-    int parser_t::dimensionAt(const jmod::json_value* val, const std::string& key) {
-        jmod::json_value* ptr = nullptr;
-        bool found = false;
-        core->get(val, key, ptr, found);
-        if (found) return core->count(ptr);
-        return 0;
-    }
-
-    parser_t::domain_t parser_t::getDomain(const jmod::json_value* place, const std::string& path) {
+    parser_t::domain_t parser_t::getDomain(const nlohmann::json* place, const std::string& path) {
         domain_t res;
-        jmod::json_value* domain = nullptr;
+        const nlohmann::json* domain = nullptr;
         bool found = false;
-        core->get(place, path, domain, found);
+        jsonGet(place, path, domain, found);
         if (!found) {
             res.filename = " ";
             return res;
@@ -216,7 +269,7 @@ namespace smbjson {
     std::string parser_t::buildTagName(int matId, int elementId) {
         std::string matName;
         {
-            IdTable::json_value_ptr_t mat = matTable.getId(matId);
+            const nlohmann::json* mat = id_map_m::findById(matTable, matId);
             bool found = false;
             matName = getStrAt(mat, jlbl::J_NAME, "", &found);
             if (!found) matName = "material" + std::to_string(matId);
@@ -224,7 +277,7 @@ namespace smbjson {
         }
         std::string layerName;
         {
-            IdTable::json_value_ptr_t elem = elementTable.getId(elementId);
+            const nlohmann::json* elem = id_map_m::findById(elementTable, elementId);
             bool found = false;
             layerName = getStrAt(elem, jlbl::J_NAME, "", &found);
             if (!found) layerName = "layer" + std::to_string(elementId);
@@ -239,18 +292,18 @@ namespace smbjson {
         const std::vector<std::string>& materialTypes,
         const std::vector<std::string>& elementLabels) {
         std::vector<materialAssociation_t> res;
-        jmod::json_value* allMatAss = nullptr;
+        const nlohmann::json* allMatAss = nullptr;
         bool found = false;
-        core->get(root, jlbl::J_MATERIAL_ASSOCIATIONS, allMatAss, found);
+        jsonGet(&rootJson, jlbl::J_MATERIAL_ASSOCIATIONS, allMatAss, found);
         if (!found) return res;
 
-        int nMatAss = core->count(allMatAss);
+        int nMatAss = jsonCount(allMatAss);
         for (int i = 0; i < nMatAss; ++i) {
-            jmod::json_value* mAPtr = nullptr;
-            core->get_child(allMatAss, i + 1, mAPtr);
+            const nlohmann::json* mAPtr = nullptr;
+            jsonGetChild(allMatAss, i + 1, mAPtr);
 
             materialAssociation_t mA = parseMaterialAssociation(mAPtr);
-            jmod::json_value* mat = matTable.getId(mA.materialId);
+            const nlohmann::json* mat = id_map_m::findById(matTable, mA.materialId);
             if (!mat) continue;
             std::string matType = getStrAt(mat, jlbl::J_TYPE, "");
 
@@ -265,7 +318,7 @@ namespace smbjson {
             if (!elementLabels.empty()) {
                 labelMatch = false;
                 for (int eid : mA.elementIds) {
-                    IdTable::json_value_ptr_t elm = elementTable.getId(eid);
+                    const nlohmann::json* elm = id_map_m::findById(elementTable, eid);
                     if (!elm) continue;
                     std::string elemType = getStrAt(elm, jlbl::J_TYPE, "");
                     std::string elemSubtype = getStrAt(elm, jlbl::J_SUBTYPE, "");
@@ -293,7 +346,7 @@ namespace smbjson {
         return res;
     }
 
-    parser_t::materialAssociation_t parser_t::parseMaterialAssociation(const jmod::json_value* matAss) {
+    parser_t::materialAssociation_t parser_t::parseMaterialAssociation(const nlohmann::json* matAss) {
         materialAssociation_t mA;
         bool found = false;
 
@@ -306,9 +359,11 @@ namespace smbjson {
         mA.initialConnectorId = getIntAt(matAss, jlbl::J_MAT_ASS_CAB_INI_CONN_ID, -1);
         mA.endConnectorId = getIntAt(matAss, jlbl::J_MAT_ASS_CAB_END_CONN_ID, -1);
         mA.containedWithinElementId = getIntAt(matAss, jlbl::J_MAT_ASS_CAB_CONTAINED_WITHIN_ID, -1);
-        mA.hasTotalResistance = existsAt(matAss, jlbl::J_MAT_ASS_TOTAL_RESISTANCE);
+        const nlohmann::json* totalResistance =
+            findPathNode(matAss, jlbl::J_MAT_ASS_TOTAL_RESISTANCE);
+        mA.hasTotalResistance = (totalResistance != nullptr);
         if (mA.hasTotalResistance) {
-            int dim = dimensionAt(matAss, jlbl::J_MAT_ASS_TOTAL_RESISTANCE);
+            int dim = jsonCount(totalResistance);
             if (dim == 0) {
                 mA.totalResistance = {getRealAt(matAss, jlbl::J_MAT_ASS_TOTAL_RESISTANCE, 0.0)};
             } else {
@@ -318,7 +373,7 @@ namespace smbjson {
         return mA;
     }
 
-    std::vector<Cell::cell_interval_t> parser_t::getSingleVolumeInElementsIds(const jmod::json_value* pw) {
+    std::vector<Cell::cell_interval_t> parser_t::getSingleVolumeInElementsIds(const nlohmann::json* pw) {
         std::vector<Cell::cell_interval_t> res;
         bool found = false;
         std::vector<int> elemIds = getIntsAt(pw, jlbl::J_ELEMENTIDS, &found);
@@ -349,19 +404,19 @@ namespace smbjson {
         return res;
     }
 
-    std::vector<jmod::json_value*> parser_t::jsonValueFilterByKeyValue(
-        const jmod::json_value* place, const std::string& key, const std::string& value) {
+    std::vector<const nlohmann::json*> parser_t::jsonValueFilterByKeyValue(
+        const nlohmann::json* place, const std::string& key, const std::string& value) {
         return jsonValueFilterByKeyValues(place, key, {value});
     }
 
-    std::vector<jmod::json_value*> parser_t::jsonValueFilterByKeyValues(
-        const jmod::json_value* place, const std::string& key, const std::vector<std::string>& values) {
-        std::vector<jmod::json_value*> res;
+    std::vector<const nlohmann::json*> parser_t::jsonValueFilterByKeyValues(
+        const nlohmann::json* place, const std::string& key, const std::vector<std::string>& values) {
+        std::vector<const nlohmann::json*> res;
         if (!place) return res;
-        int n = core->count(place);
+        int n = jsonCount(place);
         for (int i = 0; i < n; ++i) {
-            jmod::json_value* child = nullptr;
-            core->get_child(place, i + 1, child);
+            const nlohmann::json* child = nullptr;
+            jsonGetChild(place, i + 1, child);
             std::string v = getStrAt(child, key, "");
             for (auto& target : values) {
                 if (v == target) { res.push_back(child); break; }
@@ -423,9 +478,9 @@ namespace smbjson {
             }
         }
 
-        jmod::json_value* allProbes = nullptr;
+        const nlohmann::json* allProbes = nullptr;
         bool probesFound = false;
-        core->get(root, jlbl::J_PROBES, allProbes, probesFound);
+        jsonGet(&rootJson, jlbl::J_PROBES, allProbes, probesFound);
         if (probesFound) {
             auto wireProbePs = jsonValueFilterByKeyValue(allProbes, jlbl::J_TYPE, jlbl::J_PR_TYPE_WIRE);
             int nWireProbes = static_cast<int>(wireProbePs.size());
@@ -453,25 +508,17 @@ namespace smbjson {
 
     parser_t::parser_t(const std::string& filename) {
         this->filename = filename;
-        
-        jsonfile = new jmod::json_file();
-        jsonfile->initialize();
-        if (jsonfile->failed()) {
-            Report::WarnErrReport("Failed to initialize JSONfile", true);
-            return;
-        }
-
-        jsonfile->load(filename);
-        if (jsonfile->failed()) {
+        std::ifstream input(filename);
+        if (!input.is_open()) {
             Report::WarnErrReport("Failed to load JSON file: " + filename, true);
             return;
         }
-
-        core = new jmod::json_core();
-        jsonfile->get_core(*core);
-        root = new jmod::json_value();
-        jsonfile->get(".", *root);
-
+        try {
+            input >> rootJson;
+        } catch (...) {
+            Report::WarnErrReport("Failed to parse JSON file: " + filename, true);
+            return;
+        }
         isInitialized = true;
     }
 
@@ -479,8 +526,10 @@ namespace smbjson {
         NFDE::Parseador_t res;
         
         mesh = readMesh();
-        matTable = IdTable::IdChildTable_t::ctor(*core, *root, jlbl::J_MATERIALS);
-        elementTable = IdTable::IdChildTable_t::ctor(*core, *root, std::string(jlbl::J_MESH) + "." + std::string(jlbl::J_ELEMENTS));
+        matTable = id_map_m::buildIdMap(rootJson, jlbl::J_MATERIALS);
+        elementTable = id_map_m::buildIdMap(
+            rootJson, std::string(jlbl::J_MESH) + "." +
+                          std::string(jlbl::J_ELEMENTS));
         
         NFDETypes_extension_m::initializeProblemDescription(res);
         
@@ -531,16 +580,16 @@ namespace smbjson {
     }
 
     void parser_t::addCoordinates(Mesh::mesh_t& mesh) {
-        jmod::json_value* jcs = nullptr;
-        jmod::json_value* jc = nullptr;
+        const nlohmann::json* jcs = nullptr;
+        const nlohmann::json* jc = nullptr;
         bool found = false;
         
-        core->get(root, std::string(jlbl::J_MESH) + "." + std::string(jlbl::J_COORDINATES), jcs, found);
+        jsonGet(&rootJson, std::string(jlbl::J_MESH) + "." + std::string(jlbl::J_COORDINATES), jcs, found);
         if (found) {
-            int numberOfCoordinates = core->count(jcs);
+            int numberOfCoordinates = jsonCount(jcs);
             mesh.allocateCoordinates(50 * numberOfCoordinates);
             for (int i = 1; i <= numberOfCoordinates; ++i) {
-                core->get_child(jcs, i, jc);
+                jsonGetChild(jcs, i, jc);
                 int id = getIntAt(jc, jlbl::J_ID, 0);
                 std::vector<double> pos = getRealsAt(jc, jlbl::J_COORDINATE_POS);
                 Mesh::coordinate_t c;
@@ -552,17 +601,17 @@ namespace smbjson {
 
     void parser_t::addElements(Mesh::mesh_t& mesh) {
         std::string elementType;
-        jmod::json_value* jes = nullptr;
-        jmod::json_value* je = nullptr;
+        const nlohmann::json* jes = nullptr;
+        const nlohmann::json* je = nullptr;
         bool found = false;
         
-        core->get(root, std::string(jlbl::J_MESH) + "." + std::string(jlbl::J_ELEMENTS), jes, found);
-        int numberOfElements = core->count(jes);
+        jsonGet(&rootJson, std::string(jlbl::J_MESH) + "." + std::string(jlbl::J_ELEMENTS), jes, found);
+        int numberOfElements = jsonCount(jes);
         mesh.allocateElements(50 * numberOfElements);
             
         if (found) {
             for (int i = 1; i <= numberOfElements; ++i) {
-                core->get_child(jes, i, je);
+                jsonGetChild(jes, i, je);
                 int id = getIntAt(je, jlbl::J_ID, 0);
                 elementType = getStrAt(je, jlbl::J_TYPE);
                 
@@ -578,8 +627,8 @@ namespace smbjson {
                     mesh.addElement(id, polyline);
                 } else if (elementType == jlbl::J_ELEM_TYPE_CELL) {
                     bool isConformal = false;
-                    jmod::json_value* triangles = nullptr;
-                    core->get(je, jlbl::J_CONF_VOLUME_TRIANGLES, triangles, isConformal);
+                    const nlohmann::json* triangles = nullptr;
+                    jsonGet(je, jlbl::J_CONF_VOLUME_TRIANGLES, triangles, isConformal);
                     
                     if (!isConformal) {
                         Cell::cell_region_t cR;
@@ -612,19 +661,19 @@ namespace smbjson {
         }
     }
 
-    std::vector<Cell::cell_interval_t> parser_t::readCellIntervals(const jmod::json_value* place, const std::string& path) {
-        jmod::json_value* intervalsPlace = nullptr;
-        jmod::json_value* interval = nullptr;
+    std::vector<Cell::cell_interval_t> parser_t::readCellIntervals(const nlohmann::json* place, const std::string& path) {
+        const nlohmann::json* intervalsPlace = nullptr;
+        const nlohmann::json* interval = nullptr;
         bool containsInterval = false;
         
-        core->get(place, path, intervalsPlace, containsInterval);
+        jsonGet(place, path, intervalsPlace, containsInterval);
         if (!containsInterval) {
             return std::vector<Cell::cell_interval_t>();
         }
-        int nIntervals = core->count(intervalsPlace);
+        int nIntervals = jsonCount(intervalsPlace);
         std::vector<Cell::cell_interval_t> res(nIntervals);
         for (int i = 1; i <= nIntervals; ++i) {
-            core->get_child(intervalsPlace, i, interval);
+            jsonGetChild(intervalsPlace, i, interval);
             if (!interval) continue;
             std::vector<double> cellIni = getRealsAt(interval, "(1)");
             std::vector<double> cellEnd = getRealsAt(interval, "(2)");
@@ -639,19 +688,19 @@ namespace smbjson {
         return res;
     }
 
-    std::vector<Conf::triangle_t> parser_t::readTriangles(const jmod::json_value* place, const std::string& path) {
-        jmod::json_value* triangles = nullptr;
-        jmod::json_value* triangle_ptr = nullptr;
+    std::vector<Conf::triangle_t> parser_t::readTriangles(const nlohmann::json* place, const std::string& path) {
+        const nlohmann::json* triangles = nullptr;
+        const nlohmann::json* triangle_ptr = nullptr;
         bool containsTriangles = false;
         
-        core->get(place, path, triangles, containsTriangles);
+        jsonGet(place, path, triangles, containsTriangles);
         if (!containsTriangles) {
             return std::vector<Conf::triangle_t>();
         }
-        int nTriangles = core->count(triangles);
+        int nTriangles = jsonCount(triangles);
         std::vector<Conf::triangle_t> res(nTriangles);
         for (int i = 1; i <= nTriangles; ++i) {
-            core->get_child(triangles, i, triangle_ptr);
+            jsonGetChild(triangles, i, triangle_ptr);
             std::vector<double> triangle = getRealsAt(triangle_ptr, ""); // Assuming get returns vector for array
             // Note: json-fortran get to vector might need specific handling, assuming helper exists
             for (int j = 1; j <= 3; ++j) {
@@ -662,25 +711,25 @@ namespace smbjson {
     }
 
     std::string parser_t::readAdditionalArguments() {
-        return getStrAt(root, std::string(jlbl::J_GENERAL) + "." + std::string(jlbl::J_GEN_ADDITIONAL_ARGUMENTS), " ");
+        return getStrAt(&rootJson, std::string(jlbl::J_GENERAL) + "." + std::string(jlbl::J_GEN_ADDITIONAL_ARGUMENTS), " ");
     }
 
     NFDE::NFDEGeneral_t parser_t::readGeneral() {
         NFDE::NFDEGeneral_t res;
-        res.dt = getRealAt(root, std::string(jlbl::J_GENERAL) + "." + std::string(jlbl::J_GEN_TIME_STEP), 0.0);
+        res.dt = getRealAt(&rootJson, std::string(jlbl::J_GENERAL) + "." + std::string(jlbl::J_GEN_TIME_STEP), 0.0);
         if (res.dt < 0) Report::WarnErrReport("timStep cannot be negative", true);
-        res.nmax = getRealAt(root, std::string(jlbl::J_GENERAL) + "." + std::string(jlbl::J_GEN_NUMBER_OF_STEPS), 0.0);
+        res.nmax = getRealAt(&rootJson, std::string(jlbl::J_GENERAL) + "." + std::string(jlbl::J_GEN_NUMBER_OF_STEPS), 0.0);
         if (res.nmax <= 0) Report::WarnErrReport("numberOfSteps has to be positive", true);
-        res.mtlnProblem = getLogicalAt(root, std::string(jlbl::J_GENERAL) + "." + std::string(jlbl::J_GEN_MTLN_PROBLEM), false);
+        res.mtlnProblem = getLogicalAt(&rootJson, std::string(jlbl::J_GENERAL) + "." + std::string(jlbl::J_GEN_MTLN_PROBLEM), false);
         return res;
     }
 
     NFDE::MatrizMedios_t parser_t::readMediaMatrix() {
         NFDE::MatrizMedios_t res;
         std::string P = std::string(jlbl::J_MESH) + "." + std::string(jlbl::J_GRID) + "." + jlbl::J_GRID_NUMBER_OF_CELLS;
-        res.totalX = getIntAt(root, P + ".(1)", 0) + 1;
-        res.totalY = getIntAt(root, P + ".(2)", 0) + 1;
-        res.totalZ = getIntAt(root, P + ".(3)", 0) + 1;
+        res.totalX = getIntAt(&rootJson, P + ".(1)", 0) + 1;
+        res.totalY = getIntAt(&rootJson, P + ".(2)", 0) + 1;
+        res.totalZ = getIntAt(&rootJson, P + ".(3)", 0) + 1;
         return res;
     }
 
@@ -688,9 +737,9 @@ namespace smbjson {
         NFDE::Desplazamiento_t res;
         std::string P = std::string(jlbl::J_MESH) + "." + std::string(jlbl::J_GRID);
         
-        int nX = getIntAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_NUMBER_OF_CELLS) + ".(1)", 0);
-        int nY = getIntAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_NUMBER_OF_CELLS) + ".(2)", 0);
-        int nZ = getIntAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_NUMBER_OF_CELLS) + ".(3)", 0);
+        int nX = getIntAt(&rootJson, std::string(P) + "." + std::string(jlbl::J_GRID_NUMBER_OF_CELLS) + ".(1)", 0);
+        int nY = getIntAt(&rootJson, std::string(P) + "." + std::string(jlbl::J_GRID_NUMBER_OF_CELLS) + ".(2)", 0);
+        int nZ = getIntAt(&rootJson, std::string(P) + "." + std::string(jlbl::J_GRID_NUMBER_OF_CELLS) + ".(3)", 0);
 
         res.nX = nX;
         res.nY = nY;
@@ -698,7 +747,7 @@ namespace smbjson {
 
         // Helper lambda for assignDes logic
         auto assignDes = [&](const std::string& path, std::vector<double>& dest, int& n) {
-            std::vector<double> vec = getRealsAt(root, path);
+            std::vector<double> vec = getRealsAt(&rootJson, path);
             if (vec.empty()) {
                 Report::WarnErrReport("Error reading grid: steps not found at path: " + path, true);
             }
@@ -718,9 +767,9 @@ namespace smbjson {
         assignDes(std::string(P) + "." + std::string(jlbl::J_GRID_STEPS) + ".y", res.desY, res.nY);
         assignDes(std::string(P) + "." + std::string(jlbl::J_GRID_STEPS) + ".z", res.desZ, res.nZ);
 
-        res.originx = getRealAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_ORIGIN) + ".(1)", 0.0);
-        res.originy = getRealAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_ORIGIN) + ".(2)", 0.0);
-        res.originz = getRealAt(root, std::string(P) + "." + std::string(jlbl::J_GRID_ORIGIN) + ".(3)", 0.0);
+        res.originx = getRealAt(&rootJson, std::string(P) + "." + std::string(jlbl::J_GRID_ORIGIN) + ".(1)", 0.0);
+        res.originy = getRealAt(&rootJson, std::string(P) + "." + std::string(jlbl::J_GRID_ORIGIN) + ".(2)", 0.0);
+        res.originz = getRealAt(&rootJson, std::string(P) + "." + std::string(jlbl::J_GRID_ORIGIN) + ".(3)", 0.0);
 
         res.mx1 = 0;
         res.my1 = 0;
@@ -735,10 +784,10 @@ namespace smbjson {
     NFDE::Frontera_t parser_t::readBoundary() {
         NFDE::Frontera_t res;
         std::string bdrType;
-        jmod::json_value* bdrs = nullptr;
+        const nlohmann::json* bdrs = nullptr;
         bool found = false;
         
-        core->get(root, jlbl::J_BOUNDARY, bdrs, found);
+        jsonGet(&rootJson, jlbl::J_BOUNDARY, bdrs, found);
         if (!found) {
             Report::WarnErrReport("Error reading boundary: " + std::string(jlbl::J_BOUNDARY) + " not found.", true);
         }
@@ -787,11 +836,11 @@ namespace smbjson {
 
     void parser_t::readBackgroundMaterial(NFDE::Materials_t& mats) {
         bool found = false;
-        double val = getRealAt(root, std::string(jlbl::J_BACKGROUND) + "." + std::string(jlbl::J_BKG_ABS_PERMITTIVITY), 0.0, &found);
+        double val = getRealAt(&rootJson, std::string(jlbl::J_BACKGROUND) + "." + std::string(jlbl::J_BKG_ABS_PERMITTIVITY), 0.0, &found);
         if (found) mats.Mats[0].eps = val;
 
         found = false;
-        val = getRealAt(root, std::string(jlbl::J_BACKGROUND) + "." + std::string(jlbl::J_BKG_ABS_PERMEABILITY), 0.0, &found);
+        val = getRealAt(&rootJson, std::string(jlbl::J_BACKGROUND) + "." + std::string(jlbl::J_BKG_ABS_PERMEABILITY), 0.0, &found);
         if (found) mats.Mats[0].mu = val;
     }
 
@@ -944,7 +993,7 @@ namespace smbjson {
         res.c2P = c2p;
         res.n_C2P = static_cast<int32_t>(c2p.size());
         
-        IdTable::json_value_ptr_t matPtr = matTable.getId(mA.materialId);
+        const nlohmann::json* matPtr = id_map_m::findById(matTable, mA.materialId);
         res.sigma  = getRealAt(matPtr, jlbl::J_MAT_ELECTRIC_CONDUCTIVITY, 0.0);
         res.sigmam = getRealAt(matPtr, jlbl::J_MAT_MAGNETIC_CONDUCTIVITY, 0.0);
         res.eps    = getRealAt(matPtr, jlbl::J_MAT_REL_PERMITTIVITY, 1.0) * NFDE::EPSILON_VACUUM;
@@ -961,7 +1010,7 @@ namespace smbjson {
         res.c2P = c2p;
         res.n_C2P = static_cast<int32_t>(c2p.size());
         
-        IdTable::json_value_ptr_t matPtr = matTable.getId(mA.materialId);
+        const nlohmann::json* matPtr = id_map_m::findById(matTable, mA.materialId);
         
         std::string model = getStrAt(matPtr, jlbl::J_MAT_LUMPED_MODEL);
         if (model.empty()) {
@@ -1045,13 +1094,13 @@ namespace smbjson {
         matAssToCoords(mA, res.c, Cell::CELL_TYPE_SURFEL);
         res.nc = res.c.size();
 
-        IdTable::json_value_ptr_t mat = matTable.getId(mA.materialId);
+        const nlohmann::json* mat = id_map_m::findById(matTable, mA.materialId);
         res.files = getStrAt(mat, jlbl::J_NAME, " ");
         
-        jmod::json_value* layers = nullptr;
-        bool tmpFound; core->get(mat, std::string(jlbl::J_MAT_MULTILAYERED_SURF_LAYERS), layers, tmpFound);
+        const nlohmann::json* layers = nullptr;
+        bool tmpFound; jsonGet(mat, std::string(jlbl::J_MAT_MULTILAYERED_SURF_LAYERS), layers, tmpFound);
 
-        res.numcapas = core->count(layers);
+        res.numcapas = jsonCount(layers);
         res.sigma.resize(res.numcapas);
         res.eps.resize(res.numcapas);
         res.mu.resize(res.numcapas);
@@ -1064,8 +1113,8 @@ namespace smbjson {
         res.thk_devia.resize(res.numcapas);
 
         for (int i = 0; i < res.numcapas; ++i) {
-            jmod::json_value* layer = nullptr;
-            core->get_child(layers, i + 1, layer);
+            const nlohmann::json* layer = nullptr;
+            jsonGetChild(layers, i + 1, layer);
             res.sigma[i] = getRealAt(layer, jlbl::J_MAT_ELECTRIC_CONDUCTIVITY, 0.0);
             res.sigmam[i] = getRealAt(layer, jlbl::J_MAT_MAGNETIC_CONDUCTIVITY, 0.0);
             bool hasAbsPermittivity = false;
@@ -1103,10 +1152,10 @@ namespace smbjson {
 
     NFDE::PlaneWaves_t parser_t::readPlanewaves() {
         NFDE::PlaneWaves_t res;
-        jmod::json_value* sources = nullptr;
+        const nlohmann::json* sources = nullptr;
         bool found = false;
 
-        core->get(root, jlbl::J_SOURCES, sources, found);
+        jsonGet(&rootJson, jlbl::J_SOURCES, sources, found);
         
         if (!found) {
             res.collection.clear();
@@ -1115,7 +1164,7 @@ namespace smbjson {
             return res;
         }
 
-        std::vector<IdTable::json_value_ptr_t> pws = jsonValueFilterByKeyValue(sources, jlbl::J_TYPE, jlbl::J_SRC_TYPE_PW);
+        std::vector<const nlohmann::json*> pws = jsonValueFilterByKeyValue(sources, jlbl::J_TYPE, jlbl::J_SRC_TYPE_PW);
 
         res.collection.resize(pws.size());
         for (size_t i = 0; i < pws.size(); ++i) {
@@ -1127,7 +1176,7 @@ namespace smbjson {
         return res;
     }
 
-    NFDE::PlaneWave_t parser_t::readPlanewave(const jmod::json_value* pw) {
+    NFDE::PlaneWave_t parser_t::readPlanewave(const nlohmann::json* pw) {
         NFDE::PlaneWave_t res;
         res.nombre_fichero = getStrAt(pw, jlbl::J_SRC_MAGNITUDE_FILE);
         res.atributo = "LOCKED";
@@ -1158,16 +1207,16 @@ namespace smbjson {
 
     NFDE::NodSource_t parser_t::readNodalSources() {
         NFDE::NodSource_t res;
-        jmod::json_value* sources = nullptr;
+        const nlohmann::json* sources = nullptr;
         bool found = false;
 
-        core->get(root, jlbl::J_SOURCES, sources, found);
+        jsonGet(&rootJson, jlbl::J_SOURCES, sources, found);
         if (!found) {
             res.NodalSource.clear();
             return res;
         }
 
-        std::vector<IdTable::json_value_ptr_t> nodSrcs = jsonValueFilterByKeyValues(sources, jlbl::J_TYPE, {jlbl::J_SRC_TYPE_NS});
+        std::vector<const nlohmann::json*> nodSrcs = jsonValueFilterByKeyValues(sources, jlbl::J_TYPE, {jlbl::J_SRC_TYPE_NS});
         if (nodSrcs.empty()) {
             res.NodalSource.clear();
             return res;
@@ -1190,7 +1239,7 @@ namespace smbjson {
         return res;
     }
 
-    NFDE::Curr_Field_Src_t parser_t::readField(const jmod::json_value* jns) {
+    NFDE::Curr_Field_Src_t parser_t::readField(const nlohmann::json* jns) {
         NFDE::Curr_Field_Src_t res;
         std::string field = getStrAt(jns, jlbl::J_FIELD, jlbl::J_FIELD_CURRENT);
         
@@ -1241,10 +1290,10 @@ namespace smbjson {
 
     NFDE::Sondas_t parser_t::readProbes() {
         NFDE::Sondas_t res;
-        jmod::json_value* allProbes = nullptr;
+        const nlohmann::json* allProbes = nullptr;
         bool found = false;
 
-        core->get(root, jlbl::J_PROBES, allProbes, found);
+        jsonGet(&rootJson, jlbl::J_PROBES, allProbes, found);
         if (!found) {
             res.probes.clear();
             res.n_probes = 0;
@@ -1253,7 +1302,7 @@ namespace smbjson {
         }
 
         std::vector<std::string> validTypes = {jlbl::J_PR_TYPE_FARFIELD};
-        std::vector<IdTable::json_value_ptr_t> ps = jsonValueFilterByKeyValues(allProbes, jlbl::J_TYPE, validTypes);
+        std::vector<const nlohmann::json*> ps = jsonValueFilterByKeyValues(allProbes, jlbl::J_TYPE, validTypes);
 
         res.n_probes = ps.size();
         res.n_probes_max = ps.size();
@@ -1264,7 +1313,7 @@ namespace smbjson {
         return res;
     }
 
-    NFDE::abstractSonda_t parser_t::readFarFieldProbe(const jmod::json_value* p) {
+    NFDE::abstractSonda_t parser_t::readFarFieldProbe(const nlohmann::json* p) {
         NFDE::abstractSonda_t res;
         res.n_FarField = 1;
         res.n_FarField_max = 1;
@@ -1292,12 +1341,12 @@ namespace smbjson {
             std::string fn = getStrAt(p, std::string(jlbl::J_PR_DOMAIN) + "." + jlbl::J_PR_DOMAIN_MAGNITUDE_FILE,
                                       " ", &transferFunctionFound);
             if (!transferFunctionFound) {
-                jmod::json_value* sources = nullptr;
+                const nlohmann::json* sources = nullptr;
                 bool sourcesFound = false;
-                core->get(root, jlbl::J_SOURCES, sources, sourcesFound);
-                if (sourcesFound && core->count(sources) == 1) {
-                    jmod::json_value* src = nullptr;
-                    core->get_child(sources, 1, src);
+                jsonGet(&rootJson, jlbl::J_SOURCES, sources, sourcesFound);
+                if (sourcesFound && jsonCount(sources) == 1) {
+                    const nlohmann::json* src = nullptr;
+                    jsonGetChild(sources, 1, src);
                     fn = getStrAt(src, jlbl::J_SRC_MAGNITUDE_FILE, " ", &transferFunctionFound);
                 }
             }
@@ -1330,10 +1379,10 @@ namespace smbjson {
         return res;
     }
 
-    void parser_t::readDirection(const jmod::json_value* p, const std::string& label, double& initial, double& final, double& step) {
-        jmod::json_value* dir = nullptr;
+    void parser_t::readDirection(const nlohmann::json* p, const std::string& label, double& initial, double& final, double& step) {
+        const nlohmann::json* dir = nullptr;
         bool found = false;
-        core->get(p, label, dir, found);
+        jsonGet(p, label, dir, found);
         if (!found) {
             Report::WarnErrReport("Error reading far field probe. Direction label not found.", true);
         }
@@ -1344,10 +1393,10 @@ namespace smbjson {
 
     NFDE::MasSondas_t parser_t::readMoreProbes() {
         NFDE::MasSondas_t res;
-        jmod::json_value* allProbes = nullptr;
+        const nlohmann::json* allProbes = nullptr;
         bool found = false;
 
-        core->get(root, jlbl::J_PROBES, allProbes, found);
+        jsonGet(&rootJson, jlbl::J_PROBES, allProbes, found);
         if (!found) {
             res.collection.clear();
             res.length = 0;
@@ -1357,7 +1406,7 @@ namespace smbjson {
         }
 
         std::vector<std::string> validTypes = {jlbl::J_PR_TYPE_POINT, jlbl::J_PR_TYPE_LINE};
-        std::vector<IdTable::json_value_ptr_t> ps = jsonValueFilterByKeyValues(allProbes, jlbl::J_TYPE, validTypes);
+        std::vector<const nlohmann::json*> ps = jsonValueFilterByKeyValues(allProbes, jlbl::J_TYPE, validTypes);
         
         int filtered_size = 0;
         for (size_t i = 0; i < ps.size(); ++i) {
@@ -1391,15 +1440,15 @@ namespace smbjson {
         return res;
     }
 
-    bool parser_t::isMoreProbe(const jmod::json_value* p) {
+    bool parser_t::isMoreProbe(const nlohmann::json* p) {
         return isPointProbe(p) || isLineProbe(p);
     }
 
-    bool parser_t::isLineProbe(const jmod::json_value* p) {
+    bool parser_t::isLineProbe(const nlohmann::json* p) {
         return getStrAt(p, jlbl::J_TYPE) == jlbl::J_PR_TYPE_LINE;
     }
 
-    bool parser_t::isPointProbe(const jmod::json_value* p) {
+    bool parser_t::isPointProbe(const nlohmann::json* p) {
         bool found = false;
         std::string typeLabel = getStrAt(p, jlbl::J_TYPE, "", &found);
         if (!found) {
@@ -1413,7 +1462,7 @@ namespace smbjson {
         return (fieldLabel == jlbl::J_FIELD_ELECTRIC || fieldLabel == jlbl::J_FIELD_MAGNETIC);
     }
 
-    NFDE::MasSonda_t parser_t::readLineProbe(const jmod::json_value* p) {
+    NFDE::MasSonda_t parser_t::readLineProbe(const nlohmann::json* p) {
         NFDE::MasSonda_t res;
         bool nameFound = false;
         std::string outputName = getStrAt(p, jlbl::J_NAME, "", &nameFound);
@@ -1452,7 +1501,7 @@ namespace smbjson {
         return res;
     }
 
-    NFDE::MasSonda_t parser_t::readPointProbe(const jmod::json_value* p) {
+    NFDE::MasSonda_t parser_t::readPointProbe(const nlohmann::json* p) {
         NFDE::MasSonda_t res;
         bool nameFound = false;
         std::string outputName = getStrAt(p, jlbl::J_NAME, "", &nameFound);
@@ -1481,9 +1530,9 @@ namespace smbjson {
         }
         
         if (typeLabel == jlbl::J_PR_TYPE_POINT) {
-            jmod::json_value* dirLabelPtr = nullptr;
+            const nlohmann::json* dirLabelPtr = nullptr;
             bool dirLabelsFound = false;
-            core->get(p, jlbl::J_PR_POINT_DIRECTIONS, dirLabelPtr, dirLabelsFound);
+            jsonGet(p, jlbl::J_PR_POINT_DIRECTIONS, dirLabelPtr, dirLabelsFound);
             std::vector<char> dirLabels;
             if (dirLabelsFound) {
                 dirLabels = buildDirLabels(dirLabelPtr);
@@ -1507,11 +1556,11 @@ namespace smbjson {
         return res;
     }
 
-    std::vector<char> parser_t::buildDirLabels(const jmod::json_value* dirLabelsPtr) {
-        std::vector<char> res(core->count(dirLabelsPtr));
-        for (int i = 0; i < core->count(dirLabelsPtr); ++i) {
-            jmod::json_value* child = nullptr;
-            core->get_child(dirLabelsPtr, i + 1, child);
+    std::vector<char> parser_t::buildDirLabels(const nlohmann::json* dirLabelsPtr) {
+        std::vector<char> res(jsonCount(dirLabelsPtr));
+        for (int i = 0; i < jsonCount(dirLabelsPtr); ++i) {
+            const nlohmann::json* child = nullptr;
+            jsonGetChild(dirLabelsPtr, i + 1, child);
             std::string str = getStrAt(child, "");
             res[i] = str[0];
         }
@@ -1563,11 +1612,11 @@ namespace smbjson {
 
     NFDE::BloqueProbes_t parser_t::readBlockProbes() {
         NFDE::BloqueProbes_t res;
-        std::vector<IdTable::json_value_ptr_t> bps;
-        jmod::json_value* probes = nullptr;
+        std::vector<const nlohmann::json*> bps;
+        const nlohmann::json* probes = nullptr;
         bool found = false;
 
-        core->get(root, jlbl::J_PROBES, probes, found);
+        jsonGet(&rootJson, jlbl::J_PROBES, probes, found);
         if (!found) {
             res.bp.clear();
             return res;
@@ -1588,7 +1637,7 @@ namespace smbjson {
         return res;
     }
 
-    NFDE::BloqueProbe_t parser_t::readBlockProbe(const jmod::json_value* bp) {
+    NFDE::BloqueProbe_t parser_t::readBlockProbe(const nlohmann::json* bp) {
         NFDE::BloqueProbe_t res;
         std::vector<int> elemIds = getIntsAt(bp, jlbl::J_ELEMENTIDS);
         std::vector<Cell::cell_region_t> cRs = mesh.getCellRegions(elemIds);
@@ -1649,11 +1698,11 @@ namespace smbjson {
 
     NFDE::VolProbes_t parser_t::readVolumicProbes() {
         NFDE::VolProbes_t res;
-        std::vector<IdTable::json_value_ptr_t> ps;
-        jmod::json_value* probes = nullptr;
+        std::vector<const nlohmann::json*> ps;
+        const nlohmann::json* probes = nullptr;
         bool found = false;
 
-        core->get(root, jlbl::J_PROBES, probes, found);
+        jsonGet(&rootJson, jlbl::J_PROBES, probes, found);
         if (!found) {
             return buildNoVolProbes();
         }
@@ -1682,7 +1731,7 @@ namespace smbjson {
         return res;
     }
 
-    NFDE::VolProbe_t parser_t::readVolProbe(const jmod::json_value* p) {
+    NFDE::VolProbe_t parser_t::readVolProbe(const nlohmann::json* p) {
         NFDE::VolProbe_t res;
         bool found = false;
         std::vector<int> elemIds = getIntsAt(p, jlbl::J_ELEMENTIDS, &found);
@@ -1699,9 +1748,9 @@ namespace smbjson {
         std::vector<NFDE::coords_t> cs = Pt::cellIntervalsToCoords(cRs[0].intervals);
 
         std::string fieldType = getStrAt(p, jlbl::J_FIELD, jlbl::J_FIELD_ELECTRIC);
-        jmod::json_value* compsPtr = nullptr;
+        const nlohmann::json* compsPtr = nullptr;
         bool componentsFound = false;
-        core->get(p, jlbl::J_PR_MOVIE_COMPONENT, compsPtr, componentsFound);
+        jsonGet(p, jlbl::J_PR_MOVIE_COMPONENT, compsPtr, componentsFound);
         
         res.cordinates.resize(1);
         res.cordinates[0] = cs[0];
@@ -1783,7 +1832,7 @@ namespace smbjson {
 
     NFDE::ThinSlot_t parser_t::readThinSlot(const materialAssociation_t& mA) {
         NFDE::ThinSlot_t res;
-        IdTable::json_value_ptr_t mat = matTable.getId(mA.materialId);
+        const nlohmann::json* mat = id_map_m::findById(matTable, mA.materialId);
         bool found = false;
         res.width = getRealAt(mat, jlbl::J_MAT_THINSLOT_WIDTH, 0.0, &found);
         if (!found) {
@@ -1845,9 +1894,9 @@ namespace smbjson {
 
     NFDE::FronteraPML_t parser_t::readPMLProperties(const std::string& path) {
         NFDE::FronteraPML_t res;
-        res.numCapas = getIntAt(root, path + "." + std::string(jlbl::J_BND_PML_LAYERS), 8);
-        res.orden = getRealAt(root, path + "." + std::string(jlbl::J_BND_PML_ORDER), 2.0);
-        res.refl = getRealAt(root, path + "." + std::string(jlbl::J_BND_PML_REFLECTION), 0.001);
+        res.numCapas = getIntAt(&rootJson, path + "." + std::string(jlbl::J_BND_PML_LAYERS), 8);
+        res.orden = getRealAt(&rootJson, path + "." + std::string(jlbl::J_BND_PML_ORDER), 2.0);
+        res.refl = getRealAt(&rootJson, path + "." + std::string(jlbl::J_BND_PML_REFLECTION), 0.001);
         return res;
     }
 
@@ -1858,19 +1907,19 @@ namespace smbjson {
         return NFDE::MATERIAL_CONS;
     }
 
-    parser_t::thinwiretermination_t parser_t::readThinWireTermination(const jmod::json_value* terminal) {
+    parser_t::thinwiretermination_t parser_t::readThinWireTermination(const nlohmann::json* terminal) {
         thinwiretermination_t res;
-        jmod::json_value* tms = nullptr;
+        const nlohmann::json* tms = nullptr;
         bool found = false;
-        core->get(terminal, jlbl::J_MAT_TERM_TERMINATIONS, tms, found);
+        jsonGet(terminal, jlbl::J_MAT_TERM_TERMINATIONS, tms, found);
         if (!found) {
             Report::WarnErrReport("Error reading wire terminal. terminations not found.", true);
         }
-        if (core->count(tms) != 1) {
+        if (jsonCount(tms) != 1) {
             Report::WarnErrReport("Only terminals with a single termination are allowed for a wire.", true);
         }
-        jmod::json_value* tm = nullptr;
-        core->get_child(tms, 1, tm);
+        const nlohmann::json* tm = nullptr;
+        jsonGetChild(tms, 1, tm);
         bool labelFound = false;
         std::string label = getStrAt(tm, jlbl::J_TYPE, "", &labelFound);
         res.terminationType = strToTerminationType(label);
@@ -1957,9 +2006,9 @@ namespace smbjson {
             g.multiplier = 0.0;
         }
 
-        jmod::json_value* sources = nullptr;
+        const nlohmann::json* sources = nullptr;
         bool found = false;
-        core->get(root, jlbl::J_SOURCES, sources, found);
+        jsonGet(&rootJson, jlbl::J_SOURCES, sources, found);
         if (!found) return res;
 
         auto genSrcs = jsonValueFilterByKeyValues(sources, jlbl::J_TYPE, {jlbl::J_SRC_TYPE_GEN});
@@ -1982,7 +2031,7 @@ namespace smbjson {
             if (!inPolyline) continue;
 
             int position = findSourcePositionInLinels(sourceElemIds, linels);
-            if (!existsAt(genPtr, jlbl::J_SRC_MAGNITUDE_FILE)) {
+            if (findPathNode(genPtr, jlbl::J_SRC_MAGNITUDE_FILE) == nullptr) {
                 Report::WarnErrReport("magnitudeFile of source missing", true);
             }
             std::string field = getStrAt(genPtr, jlbl::J_FIELD);
@@ -2002,7 +2051,7 @@ namespace smbjson {
 
     NFDE::ThinWire_t parser_t::readThinWire(const materialAssociation_t& cable) {
         NFDE::ThinWire_t res;
-        IdTable::json_value_ptr_t mat = matTable.getId(cable.materialId);
+        const nlohmann::json* mat = id_map_m::findById(matTable, cable.materialId);
         res.rad = getRealAt(mat, jlbl::J_MAT_WIRE_RADIUS, 0.0);
         res.res = getRealAt(mat, jlbl::J_MAT_WIRE_RESISTANCE, 0.0);
         res.ind = getRealAt(mat, jlbl::J_MAT_WIRE_INDUCTANCE, 0.0);
@@ -2011,7 +2060,8 @@ namespace smbjson {
         res.dispfile_RightEnd = "";
 
         {
-            IdTable::json_value_ptr_t terminal = matTable.getId(cable.initialTerminalId);
+            const nlohmann::json* terminal =
+                id_map_m::findById(matTable, cable.initialTerminalId);
             auto term = readThinWireTermination(terminal);
             res.tl = term.terminationType;
             res.R_LeftEnd = term.r;
@@ -2020,7 +2070,8 @@ namespace smbjson {
             res.dispfile_LeftEnd = "";
         }
         {
-            IdTable::json_value_ptr_t terminal = matTable.getId(cable.endTerminalId);
+            const nlohmann::json* terminal =
+                id_map_m::findById(matTable, cable.endTerminalId);
             auto term = readThinWireTermination(terminal);
             res.tr = term.terminationType;
             res.R_RightEnd = term.r;
@@ -2137,7 +2188,7 @@ namespace smbjson {
         return 0;
     }
 
-    NFDE::MasSonda_t parser_t::readWireProbe(const jmod::json_value* p) {
+    NFDE::MasSonda_t parser_t::readWireProbe(const nlohmann::json* p) {
         NFDE::MasSonda_t res;
         bool nameFound = false;
         std::string outputName = getStrAt(p, jlbl::J_NAME, "", &nameFound);

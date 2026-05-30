@@ -2,11 +2,11 @@
 #define TEST_IDCHILDTABLE_H
 
 #include <gtest/gtest.h>
+#include <cstring>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <unistd.h>
-#include "json_module.h"
-#include "idchildtable_m.h"
+#include "id_map_m.h"
 
 static std::string create_temp_json(const std::string& content) {
     std::string path = "/tmp/test_idchildtable_XXXXXX.json";
@@ -24,8 +24,14 @@ static void cleanup_temp(const std::string& path) {
     std::remove(path.c_str());
 }
 
-// Test IdChildTable_t construction and basic operations
-TEST(idchildtable, basic_construction) {
+static nlohmann::json load_json_file(const std::string& path) {
+    std::ifstream input(path);
+    nlohmann::json root;
+    input >> root;
+    return root;
+}
+
+TEST(id_map, basic_construction) {
     std::string json = R"({
         "materials": [
             {"id": 1, "type": "wire"},
@@ -34,57 +40,39 @@ TEST(idchildtable, basic_construction) {
     })";
     std::string path = create_temp_json(json);
 
-    json_module::json_file jsonfile;
-    jsonfile.initialize();
-    jsonfile.load(path);
-    json_module::json_core core;
-    jsonfile.get_core(core);
+    nlohmann::json root = load_json_file(path);
 
-    json_module::json_value root;
-    jsonfile.get(".", root);
+    id_map_m::id_map_t table = id_map_m::buildIdMap(root, "materials");
 
-    idchildtable_m::IdChildTable_t table =
-        idchildtable_m::IdChildTable_t::ctor(core, root, "materials");
+    EXPECT_EQ(table.size(), 2U);
+    EXPECT_TRUE(id_map_m::containsId(table, 1));
+    EXPECT_TRUE(id_map_m::containsId(table, 2));
+    EXPECT_FALSE(id_map_m::containsId(table, 999));
 
-    EXPECT_EQ(table.totalSize(), 2);
-    EXPECT_EQ(table.checkId(1), 0);
-    EXPECT_EQ(table.checkId(2), 0);
-    EXPECT_EQ(table.checkId(999), 1);
-
-    auto val1 = table.getId(1);
+    auto val1 = id_map_m::findById(table, 1);
     EXPECT_NE(val1, nullptr);
-    auto val2 = table.getId(2);
+    auto val2 = id_map_m::findById(table, 2);
     EXPECT_NE(val2, nullptr);
 
     cleanup_temp(path);
 }
 
-// Test IdChildTable_t with non-existent path
-TEST(idchildtable, empty_path) {
+TEST(id_map, empty_path) {
     std::string json = R"({
         "other": [1, 2, 3]
     })";
     std::string path = create_temp_json(json);
 
-    json_module::json_file jsonfile;
-    jsonfile.initialize();
-    jsonfile.load(path);
-    json_module::json_core core;
-    jsonfile.get_core(core);
+    nlohmann::json root = load_json_file(path);
 
-    json_module::json_value root;
-    jsonfile.get(".", root);
+    id_map_m::id_map_t table = id_map_m::buildIdMap(root, "nonexistent");
 
-    idchildtable_m::IdChildTable_t table =
-        idchildtable_m::IdChildTable_t::ctor(core, root, "nonexistent");
-
-    EXPECT_EQ(table.totalSize(), 0);
+    EXPECT_EQ(table.size(), 0U);
 
     cleanup_temp(path);
 }
 
-// Test IdChildTable_t with single entry
-TEST(idchildtable, single_entry) {
+TEST(id_map, single_entry) {
     std::string json = R"({
         "items": [
             {"id": 42, "name": "test"}
@@ -92,31 +80,22 @@ TEST(idchildtable, single_entry) {
     })";
     std::string path = create_temp_json(json);
 
-    json_module::json_file jsonfile;
-    jsonfile.initialize();
-    jsonfile.load(path);
-    json_module::json_core core;
-    jsonfile.get_core(core);
+    nlohmann::json root = load_json_file(path);
 
-    json_module::json_value root;
-    jsonfile.get(".", root);
+    id_map_m::id_map_t table = id_map_m::buildIdMap(root, "items");
 
-    idchildtable_m::IdChildTable_t table =
-        idchildtable_m::IdChildTable_t::ctor(core, root, "items");
+    EXPECT_EQ(table.size(), 1U);
+    EXPECT_TRUE(id_map_m::containsId(table, 42));
+    EXPECT_FALSE(id_map_m::containsId(table, 41));
+    EXPECT_FALSE(id_map_m::containsId(table, 43));
 
-    EXPECT_EQ(table.totalSize(), 1);
-    EXPECT_EQ(table.checkId(42), 0);
-    EXPECT_EQ(table.checkId(41), 1);
-    EXPECT_EQ(table.checkId(43), 1);
-
-    auto val = table.getId(42);
+    auto val = id_map_m::findById(table, 42);
     EXPECT_NE(val, nullptr);
 
     cleanup_temp(path);
 }
 
-// Test IdChildTable_t with many entries
-TEST(idchildtable, many_entries) {
+TEST(id_map, many_entries) {
     std::string json = R"({
         "data": [
             {"id": 1, "val": "a"},
@@ -128,32 +107,23 @@ TEST(idchildtable, many_entries) {
     })";
     std::string path = create_temp_json(json);
 
-    json_module::json_file jsonfile;
-    jsonfile.initialize();
-    jsonfile.load(path);
-    json_module::json_core core;
-    jsonfile.get_core(core);
+    nlohmann::json root = load_json_file(path);
 
-    json_module::json_value root;
-    jsonfile.get(".", root);
+    id_map_m::id_map_t table = id_map_m::buildIdMap(root, "data");
 
-    idchildtable_m::IdChildTable_t table =
-        idchildtable_m::IdChildTable_t::ctor(core, root, "data");
-
-    EXPECT_EQ(table.totalSize(), 5);
+    EXPECT_EQ(table.size(), 5U);
     for (int i = 1; i <= 5; i++) {
-        EXPECT_EQ(table.checkId(i), 0);
-        auto val = table.getId(i);
+        EXPECT_TRUE(id_map_m::containsId(table, i));
+        auto val = id_map_m::findById(table, i);
         EXPECT_NE(val, nullptr);
     }
-    EXPECT_EQ(table.checkId(0), 1);
-    EXPECT_EQ(table.checkId(6), 1);
+    EXPECT_FALSE(id_map_m::containsId(table, 0));
+    EXPECT_FALSE(id_map_m::containsId(table, 6));
 
     cleanup_temp(path);
 }
 
-// Test getId returns non-null for existing IDs and null for non-existing
-TEST(idchildtable, get_id_null) {
+TEST(id_map, find_by_id_null_on_missing_key) {
     std::string json = R"({
         "items": [
             {"id": 10, "type": "foo"}
@@ -161,22 +131,35 @@ TEST(idchildtable, get_id_null) {
     })";
     std::string path = create_temp_json(json);
 
-    json_module::json_file jsonfile;
-    jsonfile.initialize();
-    jsonfile.load(path);
-    json_module::json_core core;
-    jsonfile.get_core(core);
+    nlohmann::json root = load_json_file(path);
 
-    json_module::json_value root;
-    jsonfile.get(".", root);
+    id_map_m::id_map_t table = id_map_m::buildIdMap(root, "items");
 
-    idchildtable_m::IdChildTable_t table =
-        idchildtable_m::IdChildTable_t::ctor(core, root, "items");
-
-    auto val10 = table.getId(10);
+    auto val10 = id_map_m::findById(table, 10);
     EXPECT_NE(val10, nullptr);
-    auto val99 = table.getId(99);
+    auto val99 = id_map_m::findById(table, 99);
     EXPECT_EQ(val99, nullptr);
+
+    cleanup_temp(path);
+}
+
+TEST(id_map, duplicate_ids_keep_last_entry) {
+    std::string json = R"({
+        "items": [
+            {"id": 1, "type": "wire"},
+            {"id": 1, "type": "terminal"}
+        ]
+    })";
+    std::string path = create_temp_json(json);
+
+    nlohmann::json root = load_json_file(path);
+    id_map_m::id_map_t table = id_map_m::buildIdMap(root, "items");
+
+    EXPECT_EQ(table.size(), 1U);
+    auto val = id_map_m::findById(table, 1);
+    ASSERT_NE(val, nullptr);
+    ASSERT_TRUE(val->contains("type"));
+    EXPECT_EQ((*val)["type"].get<std::string>(), "terminal");
 
     cleanup_temp(path);
 }
