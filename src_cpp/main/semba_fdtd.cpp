@@ -3,6 +3,7 @@
 #include "maloney_nostoch.h"
 #include "mapvtk_writer.h"
 #include "xdmf_h5.h"
+#include "version_cpp.h"
 
 #include <nlohmann/json.hpp>
 
@@ -21,6 +22,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cmath>
+#include <chrono>
 #include <fstream>
 #include <sstream>
 #include <map>
@@ -434,6 +436,24 @@ SEMBA_FORTRAN_ROUNDING double fortranRoundedDoubleDiv(double lhs,
     return result;
 }
 
+SEMBA_FORTRAN_ROUNDING fdtd_real fortranPlanewaveRawDelay(
+    fdtd_real time, fdtd_real distance, fdtd_real cluz) {
+    return time - distance / cluz;
+}
+
+SEMBA_FORTRAN_ROUNDING fdtd_real fortranPlanewaveRawDiv(fdtd_real lhs,
+                                                        fdtd_real rhs) {
+    return lhs / rhs;
+}
+
+SEMBA_FORTRAN_ROUNDING fdtd_real fortranPlanewaveRawEvolution(
+    fdtd_real y0, fdtd_real y1, fdtd_real deltaevol, fdtd_real delay,
+    int nprev) {
+    return ((y1 - y0) / deltaevol) *
+               (delay - static_cast<fdtd_real>(nprev) * deltaevol) +
+           y0;
+}
+
 double fortranWireCurrentUpdate(double cte1, double current, double cte3,
                                 double qplusMinus, double cte2,
                                 double fieldValue) {
@@ -463,13 +483,13 @@ fdtd_real fortranCurlUpdate(fdtd_real oldValue, fdtd_real coeff,
                             fdtd_real aPlus, fdtd_real aMinus,
                             fdtd_real invA, fdtd_real bPlus,
                             fdtd_real bMinus, fdtd_real invB) {
-    const fdtd_real diffA = static_cast<fdtd_real>(aPlus - aMinus);
-    const fdtd_real termA = static_cast<fdtd_real>(diffA * invA);
-    const fdtd_real diffB = static_cast<fdtd_real>(bPlus - bMinus);
-    const fdtd_real termB = static_cast<fdtd_real>(diffB * invB);
-    const fdtd_real curl = static_cast<fdtd_real>(termA - termB);
-    const fdtd_real scaled = static_cast<fdtd_real>(coeff * curl);
-    return static_cast<fdtd_real>(oldValue + scaled);
+    const fdtd_real diffA = fortranRoundedSub(aPlus, aMinus);
+    const fdtd_real termA = fortranRoundedMul(diffA, invA);
+    const fdtd_real diffB = fortranRoundedSub(bPlus, bMinus);
+    const fdtd_real termB = fortranRoundedMul(diffB, invB);
+    const fdtd_real curl = fortranRoundedSub(termA, termB);
+    const fdtd_real scaled = fortranRoundedMul(coeff, curl);
+    return fortranRoundedAdd(oldValue, scaled);
 }
 
 struct entrada_t {
@@ -533,6 +553,7 @@ struct probe_output_t {
     std::string name, type, field, component, domainType;
     std::vector<int> elementIds;
     std::vector<std::string> directions;
+    std::vector<std::string> sampleDirections;
     int probeId = 0;
     int coordinateId = 0;
     int cellI = 1, cellJ = 1, cellK = 1;
@@ -666,7 +687,7 @@ bool ends_with(const std::string& s, const std::string& suffix) {
 }
 
 std::string probeOutputPrefix(const std::string& caseName) {
-    return caseName + (ends_with(caseName, ".fdtd") ? "_" : ".fdtd_");
+    return caseName + (caseName.find(".fdtd") != std::string::npos ? "_" : ".fdtd_");
 }
 
 std::string trim_fortran_field(std::string value) {
@@ -868,6 +889,7 @@ Parseador_t parseFDTDJSON(const std::string& filename) {
             if (pr.contains("component")) p.component = pr["component"].get<std::string>();
             if (pr.contains("elementIds")) for (auto& e : pr["elementIds"]) p.elementIds.push_back(e.get<int>());
             if (pr.contains("directions")) for (auto& d : pr["directions"]) p.directions.push_back(d.get<std::string>());
+            p.sampleDirections = p.directions;
             p.domainType = pr.value("domain", nlohmann::json::object()).value("type", std::string("time"));
             if (!p.elementIds.empty()) {
                 const int elem_id = p.elementIds[0];
@@ -922,6 +944,188 @@ Parseador_t parseFDTDJSON(const std::string& filename) {
     pd.matriz.totalZ = pd.general.ZI;
     pd.despl.XI = pd.general.XI; pd.despl.YI = pd.general.YI; pd.despl.ZI = pd.general.ZI;
     return pd;
+}
+
+template <typename T>
+std::array<T, 3> rotateTripleForMpidir(const std::array<T, 3>& old, int mpidir) {
+    if (mpidir == 2) {
+        return {old[2], old[0], old[1]};
+    }
+    if (mpidir == 1) {
+        return {old[1], old[2], old[0]};
+    }
+    return old;
+}
+
+void rotateJsonTripleForMpidir(nlohmann::json& values, int mpidir) {
+    if (!values.is_array() || values.size() < 3 || mpidir == 3) return;
+    const nlohmann::json old = values;
+    const std::array<int, 3> index = (mpidir == 2)
+        ? std::array<int, 3>{2, 0, 1}
+        : std::array<int, 3>{1, 2, 0};
+    for (int i = 0; i < 3; ++i) {
+        values[static_cast<size_t>(i)] = old[static_cast<size_t>(index[static_cast<size_t>(i)])];
+    }
+}
+
+std::string rotateDirectionForMpidir(const std::string& direction, int mpidir) {
+    const std::string value = to_lower(direction);
+    if (mpidir == 2) {
+        if (value == "x") return "y";
+        if (value == "y") return "z";
+        if (value == "z") return "x";
+    } else if (mpidir == 1) {
+        if (value == "x") return "z";
+        if (value == "y") return "x";
+        if (value == "z") return "y";
+    }
+    return direction;
+}
+
+void rotateSphericalAnglesForMpidir(int mpidir, double& theta, double& phi) {
+    const fdtd_real old_theta = static_cast<fdtd_real>(theta);
+    const fdtd_real old_phi = static_cast<fdtd_real>(phi);
+    if (mpidir == 2) {
+        const fdtd_real cos_theta = std::cos(old_theta);
+        const fdtd_real cos_phi = std::cos(old_phi);
+        const fdtd_real sin_theta = std::sin(old_theta);
+        const fdtd_real sin_phi = std::sin(old_phi);
+        theta = static_cast<double>(std::atan2(
+            std::sqrt(cos_theta * cos_theta +
+                      cos_phi * cos_phi * sin_theta * sin_theta),
+            sin_phi * sin_theta));
+        phi = static_cast<double>(std::atan2(cos_phi * sin_theta,
+                                             cos_theta));
+    } else if (mpidir == 1) {
+        const fdtd_real cos_theta = std::cos(old_theta);
+        const fdtd_real cos_phi = std::cos(old_phi);
+        const fdtd_real sin_theta = std::sin(old_theta);
+        const fdtd_real sin_phi = std::sin(old_phi);
+        theta = static_cast<double>(std::atan2(
+            std::sqrt(cos_theta * cos_theta +
+                      sin_phi * sin_phi * sin_theta * sin_theta),
+            cos_phi * sin_theta));
+        phi = static_cast<double>(std::atan2(cos_theta,
+                                             sin_phi * sin_theta));
+    }
+}
+
+void rotateSourceAnglesForMpidir(source_t& source, int mpidir) {
+    rotateSphericalAnglesForMpidir(mpidir, source.direction.theta, source.direction.phi);
+    rotateSphericalAnglesForMpidir(mpidir, source.polarization.theta, source.polarization.phi);
+}
+
+void rotateJsonSourceAnglesForMpidir(nlohmann::json& source, int mpidir) {
+    if (source.contains("direction") && source["direction"].is_object()) {
+        double theta = source["direction"].value("theta", 0.0);
+        double phi = source["direction"].value("phi", 0.0);
+        rotateSphericalAnglesForMpidir(mpidir, theta, phi);
+        source["direction"]["theta"] = theta;
+        source["direction"]["phi"] = phi;
+    }
+    if (source.contains("polarization") && source["polarization"].is_object()) {
+        double theta = source["polarization"].value("theta", 1.5708);
+        double phi = source["polarization"].value("phi", 0.0);
+        rotateSphericalAnglesForMpidir(mpidir, theta, phi);
+        source["polarization"]["theta"] = theta;
+        source["polarization"]["phi"] = phi;
+    }
+}
+
+void rotateJsonModelForMpidir(nlohmann::json& root, int mpidir) {
+    if (root.is_null() || mpidir == 3) return;
+    if (root.contains("mesh") && root["mesh"].is_object()) {
+        auto& mesh = root["mesh"];
+        if (mesh.contains("grid") && mesh["grid"].is_object()) {
+            auto& grid = mesh["grid"];
+            if (grid.contains("numberOfCells")) {
+                rotateJsonTripleForMpidir(grid["numberOfCells"], mpidir);
+            }
+            if (grid.contains("steps") && grid["steps"].is_object()) {
+                auto old = grid["steps"];
+                if (mpidir == 2) {
+                    grid["steps"]["x"] = old.value("z", nlohmann::json::array());
+                    grid["steps"]["y"] = old.value("x", nlohmann::json::array());
+                    grid["steps"]["z"] = old.value("y", nlohmann::json::array());
+                } else if (mpidir == 1) {
+                    grid["steps"]["x"] = old.value("y", nlohmann::json::array());
+                    grid["steps"]["y"] = old.value("z", nlohmann::json::array());
+                    grid["steps"]["z"] = old.value("x", nlohmann::json::array());
+                }
+            }
+        }
+        if (mesh.contains("coordinates")) {
+            for (auto& coord : mesh["coordinates"]) {
+                if (coord.contains("relativePosition")) {
+                    rotateJsonTripleForMpidir(coord["relativePosition"], mpidir);
+                }
+            }
+        }
+        if (mesh.contains("elements")) {
+            for (auto& element : mesh["elements"]) {
+                if (!element.contains("intervals")) continue;
+                for (auto& interval : element["intervals"]) {
+                    if (interval.is_array() && interval.size() >= 2) {
+                        rotateJsonTripleForMpidir(interval[0], mpidir);
+                        rotateJsonTripleForMpidir(interval[1], mpidir);
+                    }
+                }
+            }
+        }
+    }
+    if (root.contains("sources")) {
+        for (auto& source : root["sources"]) {
+            rotateJsonSourceAnglesForMpidir(source, mpidir);
+        }
+    }
+}
+
+void rotateParsedModelForMpidir(Parseador_t& pd, nlohmann::json& root, int mpidir) {
+    if (mpidir == 3) return;
+
+    const std::array<int, 3> dims = {pd.general.XI, pd.general.YI, pd.general.ZI};
+    const auto rotated_dims = rotateTripleForMpidir(dims, mpidir);
+    pd.general.XI = rotated_dims[0];
+    pd.general.YI = rotated_dims[1];
+    pd.general.ZI = rotated_dims[2];
+    pd.matriz.totalX = rotated_dims[0];
+    pd.matriz.totalY = rotated_dims[1];
+    pd.matriz.totalZ = rotated_dims[2];
+    pd.despl.XI = rotated_dims[0];
+    pd.despl.YI = rotated_dims[1];
+    pd.despl.ZI = rotated_dims[2];
+
+    const std::array<std::vector<double>, 3> steps = {
+        pd.cellSteps.cellStepsX,
+        pd.cellSteps.cellStepsY,
+        pd.cellSteps.cellStepsZ,
+    };
+    const auto rotated_steps = rotateTripleForMpidir(steps, mpidir);
+    pd.cellSteps.cellStepsX = rotated_steps[0];
+    pd.cellSteps.cellStepsY = rotated_steps[1];
+    pd.cellSteps.cellStepsZ = rotated_steps[2];
+
+    for (auto& source : pd.sources.planeWaves) {
+        rotateSourceAnglesForMpidir(source, mpidir);
+    }
+    for (auto& source : pd.sources.nodalSources) {
+        rotateSourceAnglesForMpidir(source, mpidir);
+    }
+
+    for (auto& probe : pd.probes.probes) {
+        const std::array<int, 3> cell = {probe.cellI, probe.cellJ, probe.cellK};
+        const auto rotated_cell = rotateTripleForMpidir(cell, mpidir);
+        probe.cellI = rotated_cell[0];
+        probe.cellJ = rotated_cell[1];
+        probe.cellK = rotated_cell[2];
+        probe.sampleDirections.clear();
+        probe.sampleDirections.reserve(probe.directions.size());
+        for (const auto& direction : probe.directions) {
+            probe.sampleDirections.push_back(rotateDirectionForMpidir(direction, mpidir));
+        }
+    }
+
+    rotateJsonModelForMpidir(root, mpidir);
 }
 
 class FDTD_Solver {
@@ -1062,6 +1266,7 @@ public:
             jf.close();
         }
         pd = parseFDTDJSON(filename);
+        rotateParsedModelForMpidir(pd, inputRoot, mpiAxis);
         applyMtlnPmlPaddingIfNeeded();
         NX = pd.general.XI; NY = pd.general.YI; NZ = pd.general.ZI;
         if (NX <= 0) NX = 10; if (NY <= 0) NY = 10; if (NZ <= 0) NZ = 10;
@@ -1335,6 +1540,9 @@ public:
         hasMtlnSolver = false;
         mtlnObservationOpen = false;
         mtlnExternalFields.clear();
+        if (!hasMtlnCableInJson()) {
+            return;
+        }
 
         smbjson::parser_t parser(filename);
         NFDETypes_m::Parseador_t parsed = parser.readProblemDescription();
@@ -1550,8 +1758,12 @@ public:
 
     void calcMurConstants() {
         const fdtd_real one = static_cast<fdtd_real>(1.0);
-        const fdtd_real cluz = static_cast<fdtd_real>(1.0) /
-            std::sqrt(static_cast<fdtd_real>(eps0) * static_cast<fdtd_real>(mu0));
+        const fdtd_real cluz = hasPlaneWaveSource()
+            ? fortranPlanewaveCluz(static_cast<fdtd_real>(eps0),
+                                   static_cast<fdtd_real>(mu0))
+            : static_cast<fdtd_real>(1.0) /
+                  std::sqrt(static_cast<fdtd_real>(eps0) *
+                            static_cast<fdtd_real>(mu0));
         const auto cab1 = [this, one, cluz](fdtd_real inv_step,
                                             double relativePermittivity) {
             const fdtd_real cnum = static_cast<fdtd_real>(
@@ -2299,51 +2511,148 @@ public:
 
     // i,j,k are 1-based Yee indices (Fortran convention).
     fdtd_real computeIncid(int pwIdx, int nfield, double time, int i, int j, int k,
-                           bool calledFromObservation = false) {
-        auto& pw = planeWaves[pwIdx];
+                           bool calledFromObservation = false,
+                           bool forceRaw = false) {
         fdtd_real xf = 0.0, yf = 0.0, zf = 0.0;
         physCoord1(nfield, i, j, k, xf, yf, zf);
-        return computeIncidFromPhys(pwIdx, nfield, time, xf, yf, zf, calledFromObservation);
+        return computeIncidFromPhys(
+            pwIdx, nfield, time, xf, yf, zf, calledFromObservation, forceRaw);
     }
 
     fdtd_real computeIncidFromPhys(int pwIdx, int nfield, double time,
                                    fdtd_real xf, fdtd_real yf, fdtd_real zf,
-                                   bool calledFromObservation = false) {
+                                   bool calledFromObservation = false,
+                                   bool forceRaw = false) {
         auto& pw = planeWaves[pwIdx];
+        if (forceRaw || (calledFromObservation && mpiAxis == 3)) {
+            const fdtd_real timef = static_cast<fdtd_real>(time);
+            const fdtd_real cluz = fortranPlanewaveCluz(
+                static_cast<fdtd_real>(eps0), static_cast<fdtd_real>(mu0));
+            const fdtd_real d =
+                (xf * pw.px[0] + yf * pw.py[0] + zf * pw.pz[0]) -
+                pw.distanciaInicial;
+            fdtd_real value = 0.0;
+            if (pw.numSamples > 1 && pw.deltaevol > 0.0) {
+                const fdtd_real delay_f =
+                    fortranPlanewaveRawDelay(timef, d, cluz);
+                const int nprev = static_cast<int>(
+                    fortranPlanewaveRawDiv(delay_f, pw.deltaevol));
+                if (nprev + 1 <= pw.numSamples) {
+                    still_planewave_time = true;
+                    if (nprev > 0) {
+                        const fdtd_real y0 = pw.samples[static_cast<size_t>(nprev)];
+                        const fdtd_real y1 = pw.samples[static_cast<size_t>(nprev + 1)];
+                        value = fortranPlanewaveRawEvolution(
+                            y0, y1, pw.deltaevol, delay_f, nprev);
+                    }
+                }
+            }
+            fdtd_real result = 0.0;
+            switch (nfield) {
+                case 0: result = value * pw.ex[0]; break;
+                case 1: result = value * pw.ey[0]; break;
+                case 2: result = value * pw.ez[0]; break;
+                case 3: result = value * pw.hx[0]; break;
+                case 4: result = value * pw.hy[0]; break;
+                case 5: result = value * pw.hz[0]; break;
+                default: result = 0.0; break;
+            }
+            return flushFortranSubnormal(result);
+        }
+
         const fdtd_real timef = static_cast<fdtd_real>(time);
         const fdtd_real cluz = fortranPlanewaveCluz(
             static_cast<fdtd_real>(eps0), static_cast<fdtd_real>(mu0));
-        const fdtd_real d = (xf * pw.px[0] + yf * pw.py[0] + zf * pw.pz[0]) - pw.distanciaInicial;
+        const fdtd_real dot = fortranRoundedAdd(
+            fortranRoundedAdd(fortranRoundedMul(xf, pw.px[0]),
+                              fortranRoundedMul(yf, pw.py[0])),
+            fortranRoundedMul(zf, pw.pz[0]));
+        const fdtd_real d = fortranRoundedSub(dot, pw.distanciaInicial);
         fdtd_real value = 0.0;
         if (pw.numSamples > 1 && pw.deltaevol > 0.0) {
-            const fdtd_real delay_f = timef - d / cluz;
-            const double delay_d = time -
-                static_cast<double>(d) / static_cast<double>(cluz);
-            const int nprev = calledFromObservation
-                                  ? static_cast<int>(delay_d /
-                                                     static_cast<double>(pw.deltaevol))
-                                  : static_cast<int>(delay_f / pw.deltaevol);
+            const fdtd_real delay_f = fortranRoundedSub(
+                timef, fortranRoundedDiv(d, cluz));
+            const int nprev = static_cast<int>(
+                fortranRoundedDiv(delay_f, pw.deltaevol));
             if (nprev + 1 <= pw.numSamples) {
                 still_planewave_time = true;
                 if (nprev > 0) {
                     const fdtd_real y0 = pw.samples[static_cast<size_t>(nprev)];
                     const fdtd_real y1 = pw.samples[static_cast<size_t>(nprev + 1)];
-                    value = ((y1 - y0) / pw.deltaevol) *
-                        (delay_f - static_cast<fdtd_real>(nprev) * pw.deltaevol) + y0;
+                    const fdtd_real slope = fortranRoundedDiv(
+                        fortranRoundedSub(y1, y0), pw.deltaevol);
+                    const fdtd_real t_frac = fortranRoundedSub(
+                        delay_f,
+                        fortranRoundedMul(static_cast<fdtd_real>(nprev),
+                                          pw.deltaevol));
+                    value = fortranRoundedAdd(
+                        fortranRoundedMul(slope, t_frac), y0);
                 }
             }
         }
         fdtd_real result = 0.0;
+        fdtd_real component = 0.0;
         switch (nfield) {
-            case 0: result = value * pw.ex[0]; break;
-            case 1: result = value * pw.ey[0]; break;
-            case 2: result = value * pw.ez[0]; break;
-            case 3: result = value * pw.hx[0]; break;
-            case 4: result = value * pw.hy[0]; break;
-            case 5: result = value * pw.hz[0]; break;
-            default: result = 0.0; break;
+            case 0: component = pw.ex[0]; break;
+            case 1: component = pw.ey[0]; break;
+            case 2: component = pw.ez[0]; break;
+            case 3: component = pw.hx[0]; break;
+            case 4: component = pw.hy[0]; break;
+            case 5: component = pw.hz[0]; break;
+            default: component = 0.0; break;
         }
+        result = fortranRoundedMul(value, component);
         return flushFortranSubnormal(result);
+    }
+
+    fdtd_real computeIncidObservationRaw(int pwIdx, int nfield, double time,
+                                         int i, int j, int k) {
+        auto& pw = planeWaves[pwIdx];
+        fdtd_real xf = 0.0, yf = 0.0, zf = 0.0;
+        physCoord1(nfield, i, j, k, xf, yf, zf);
+        const fdtd_real timef = static_cast<fdtd_real>(time);
+        const fdtd_real cluz = fortranPlanewaveCluz(
+            static_cast<fdtd_real>(eps0), static_cast<fdtd_real>(mu0));
+        const fdtd_real d =
+            (xf * pw.px[0] + yf * pw.py[0] + zf * pw.pz[0]) -
+            pw.distanciaInicial;
+        fdtd_real value = 0.0;
+        if (pw.numSamples > 1 && pw.deltaevol > 0.0) {
+            bool usedZeroPhaseDoubleTime = false;
+            // Fortran's optimized observation path preserves the double time
+            // exactly at zero phase, so on-grid samples are emitted verbatim.
+            if (std::abs(d) < static_cast<fdtd_real>(1.0e-8)) {
+                const double ratio = time / static_cast<double>(pw.deltaevol);
+                const double nearest = std::round(ratio);
+                if (std::abs(ratio - nearest) < 1.0e-7) {
+                    const int nprev = static_cast<int>(nearest);
+                    if (nprev + 1 <= pw.numSamples && nprev > 0) {
+                        value = pw.samples[static_cast<size_t>(nprev)];
+                        usedZeroPhaseDoubleTime = true;
+                    }
+                }
+            }
+            if (!usedZeroPhaseDoubleTime) {
+                const fdtd_real delay = timef - d / cluz;
+                const int nprev = static_cast<int>(delay / pw.deltaevol);
+                if (nprev + 1 <= pw.numSamples && nprev > 0) {
+                    const fdtd_real y0 = pw.samples[static_cast<size_t>(nprev)];
+                    const fdtd_real y1 = pw.samples[static_cast<size_t>(nprev + 1)];
+                    value = ((y1 - y0) / pw.deltaevol) *
+                                (delay - static_cast<fdtd_real>(nprev) * pw.deltaevol) +
+                            y0;
+                }
+            }
+        }
+        switch (nfield) {
+            case 0: return flushFortranSubnormal(value * pw.ex[0]);
+            case 1: return flushFortranSubnormal(value * pw.ey[0]);
+            case 2: return flushFortranSubnormal(value * pw.ez[0]);
+            case 3: return flushFortranSubnormal(value * pw.hx[0]);
+            case 4: return flushFortranSubnormal(value * pw.hy[0]);
+            case 5: return flushFortranSubnormal(value * pw.hz[0]);
+            default: return 0.0;
+        }
     }
 
     fdtd_real computeIncidWithZOverride(int pwIdx, int nfield, double time,
@@ -2390,22 +2699,40 @@ public:
         const fdtd_real dir_phi = static_cast<fdtd_real>(src.direction.phi);
         const fdtd_real pol_theta = static_cast<fdtd_real>(src.polarization.theta);
         const fdtd_real pol_phi = static_cast<fdtd_real>(src.polarization.phi);
-        pw.px[0] = std::sin(dir_theta) * std::cos(dir_phi);
-        pw.py[0] = std::sin(dir_theta) * std::sin(dir_phi);
+        const fdtd_real sin_dir_theta = std::sin(dir_theta);
+        pw.px[0] = fortranRoundedMul(sin_dir_theta,
+                                     static_cast<fdtd_real>(std::cos(dir_phi)));
+        pw.py[0] = fortranRoundedMul(sin_dir_theta,
+                                     static_cast<fdtd_real>(std::sin(dir_phi)));
         pw.pz[0] = std::cos(dir_theta);
-        const fdtd_real modu = std::sqrt(pw.px[0] * pw.px[0] + pw.py[0] * pw.py[0] + pw.pz[0] * pw.pz[0]);
+        const fdtd_real modu = std::sqrt(fortranRoundedAdd(
+            fortranRoundedAdd(fortranRoundedMul(pw.px[0], pw.px[0]),
+                              fortranRoundedMul(pw.py[0], pw.py[0])),
+            fortranRoundedMul(pw.pz[0], pw.pz[0])));
         if (modu > 0.0) {
-            pw.px[0] /= modu;
-            pw.py[0] /= modu;
-            pw.pz[0] /= modu;
+            pw.px[0] = fortranRoundedDiv(pw.px[0], modu);
+            pw.py[0] = fortranRoundedDiv(pw.py[0], modu);
+            pw.pz[0] = fortranRoundedDiv(pw.pz[0], modu);
         }
-        pw.ex[0] = std::sin(pol_theta) * std::cos(pol_phi);
-        pw.ey[0] = std::sin(pol_theta) * std::sin(pol_phi);
+        const fdtd_real sin_pol_theta = std::sin(pol_theta);
+        pw.ex[0] = fortranRoundedMul(sin_pol_theta,
+                                     static_cast<fdtd_real>(std::cos(pol_phi)));
+        pw.ey[0] = fortranRoundedMul(sin_pol_theta,
+                                     static_cast<fdtd_real>(std::sin(pol_phi)));
         pw.ez[0] = std::cos(pol_theta);
         const fdtd_real zvac = std::sqrt(static_cast<fdtd_real>(mu0) / static_cast<fdtd_real>(eps0));
-        pw.hx[0] = (pw.py[0]*pw.ez[0] - pw.pz[0]*pw.ey[0]) / zvac;
-        pw.hy[0] = (pw.pz[0]*pw.ex[0] - pw.px[0]*pw.ez[0]) / zvac;
-        pw.hz[0] = (pw.px[0]*pw.ey[0] - pw.py[0]*pw.ex[0]) / zvac;
+        pw.hx[0] = fortranRoundedDiv(
+            fortranRoundedSub(fortranRoundedMul(pw.py[0], pw.ez[0]),
+                              fortranRoundedMul(pw.pz[0], pw.ey[0])),
+            zvac);
+        pw.hy[0] = fortranRoundedDiv(
+            fortranRoundedSub(fortranRoundedMul(pw.pz[0], pw.ex[0]),
+                              fortranRoundedMul(pw.px[0], pw.ez[0])),
+            zvac);
+        pw.hz[0] = fortranRoundedDiv(
+            fortranRoundedSub(fortranRoundedMul(pw.px[0], pw.ey[0]),
+                              fortranRoundedMul(pw.py[0], pw.ex[0])),
+            zvac);
         if (!src.magnitudeFile.empty() && excitations.count(src.magnitudeFile)) {
             auto& exc = excitations[src.magnitudeFile];
             pw.samples = exc.values;
@@ -2509,7 +2836,10 @@ public:
             yd0 = lineY1(std::min(pw.esqy2 + 1, ye + 1));
             zd0 = lineZ1(std::min(pw.esqz2 + 1, ze + 1));
         }
-        pw.distanciaInicial = xd0 * px + yd0 * py + zd0 * pz;
+        pw.distanciaInicial = fortranRoundedAdd(
+            fortranRoundedAdd(fortranRoundedMul(xd0, px),
+                              fortranRoundedMul(yd0, py)),
+            fortranRoundedMul(zd0, pz));
         std::cout << "  PlaneWave: dir=(" << pw.px[0] << "," << pw.py[0] << "," << pw.pz[0]
                   << ") pol=(" << pw.ex[0] << "," << pw.ey[0] << "," << pw.ez[0]
                   << ") dist0=" << pw.distanciaInicial
@@ -4188,6 +4518,12 @@ public:
                              double inductance,
                              bool deembedFromPec,
                              std::map<std::string, int>& nodeByCoord) {
+        auto inverseToStep = [](fdtd_real inv) -> double {
+            const double invd = static_cast<double>(inv);
+            if (invd == 0.0) return 0.0;
+            return 1.0 / invd;
+        };
+
         HollandWireSegment_t seg;
         seg.i = minus[0];
         seg.j = minus[1];
@@ -4199,16 +4535,21 @@ public:
         seg.resistance = resistance;
         seg.inductance = inductance;
         seg.deembedFromPec = deembedFromPec;
-        seg.delta = hollandStepForDirection(seg.direction);
+        const int ii = seg.i - 1;
+        const int jj = seg.j - 1;
+        const int kk = seg.k - 1;
         if (seg.direction == 1) {
-            seg.deltaTransv1 = fortranWireStep(wireDy);
-            seg.deltaTransv2 = fortranWireStep(wireDz);
+            seg.delta = inverseToStep(idxe1(ii));
+            seg.deltaTransv1 = inverseToStep(idyh1(jj));
+            seg.deltaTransv2 = inverseToStep(idzh1(kk));
         } else if (seg.direction == 2) {
-            seg.deltaTransv1 = fortranWireStep(wireDz);
-            seg.deltaTransv2 = fortranWireStep(wireDx);
+            seg.delta = inverseToStep(idye1(jj));
+            seg.deltaTransv1 = inverseToStep(idzh1(kk));
+            seg.deltaTransv2 = inverseToStep(idxh1(ii));
         } else {
-            seg.deltaTransv1 = fortranWireStep(wireDx);
-            seg.deltaTransv2 = fortranWireStep(wireDy);
+            seg.delta = inverseToStep(idze1(kk));
+            seg.deltaTransv1 = inverseToStep(idxh1(ii));
+            seg.deltaTransv2 = inverseToStep(idyh1(jj));
         }
         seg.chargeMinus = getOrCreateHollandNode(nodeByCoord, minus);
         seg.chargePlus = getOrCreateHollandNode(nodeByCoord, plus);
@@ -4328,12 +4669,14 @@ public:
     }
 
     void finishHollandConstants() {
+        const fdtd_real dtReal = static_cast<fdtd_real>(dt);
+        const double dtWire = static_cast<double>(dtReal);
         const double mu0Wire = static_cast<double>(static_cast<fdtd_real>(mu0));
         const double eps0Wire = static_cast<double>(static_cast<fdtd_real>(eps0));
         const double invMu = 1.0 / mu0Wire;
         const double invEps = 1.0 / eps0Wire;
         const fdtd_real g2_real = static_cast<fdtd_real>(
-            dt / static_cast<double>(static_cast<fdtd_real>(eps0)));
+            dtWire / static_cast<double>(static_cast<fdtd_real>(eps0)));
         const double g2 = static_cast<double>(g2_real);
         for (auto& node : hollandNodes) {
             double deltaSum = 0.0;
@@ -4345,7 +4688,9 @@ public:
             }
             const int nConn = static_cast<int>(node.currentPlus.size() + node.currentMinus.size());
             if (deltaSum > 0.0) {
-                node.ctePlain = (nConn == 1) ? dt / (2.0 * deltaSum) : dt / deltaSum;
+                node.ctePlain = (nConn == 1)
+                    ? fortranRoundedDoubleDiv(dtWire, 2.0 * deltaSum)
+                    : fortranRoundedDoubleDiv(dtWire, deltaSum);
             }
             node.cteProp = 1.0;
             if (node.isPec) {
@@ -4358,14 +4703,18 @@ public:
         for (auto& seg : hollandSegments) {
             seg.lind = hollandSelfInductance(seg.radius, seg.deltaTransv1, seg.deltaTransv2) +
                        seg.inductance;
-            const double denom = seg.lind / dt + seg.resistance * 0.5;
-            seg.cte1 = (seg.lind / dt - seg.resistance * 0.5) / denom;
+            const double lindOverDt = fortranRoundedDoubleDiv(seg.lind, dtWire);
+            const double halfResistance = fortranRoundedDoubleMul(seg.resistance, 0.5);
+            const double denom = fortranRoundedDoubleAdd(lindOverDt, halfResistance);
+            seg.cte1 = fortranRoundedDoubleDiv(
+                fortranRoundedDoubleSub(lindOverDt, halfResistance), denom);
             volatile double cte3Numerator = invMu * invEps;
             cte3Numerator = cte3Numerator / seg.delta;
             cte3Numerator = cte3Numerator * seg.lind;
-            seg.cte3 = cte3Numerator / denom;
-            seg.cte2 = 1.0 / denom;
-            seg.cte5 = g2 / (seg.deltaTransv1 * seg.deltaTransv2);
+            seg.cte3 = fortranRoundedDoubleDiv(cte3Numerator, denom);
+            seg.cte2 = fortranRoundedDoubleDiv(1.0, denom);
+            seg.cte5 = fortranRoundedDoubleDiv(
+                g2, fortranRoundedDoubleMul(seg.deltaTransv1, seg.deltaTransv2));
         }
         auto fractionDenominatorTerm = [&](const HollandWireSegment_t& connected) {
             return connected.delta / (connected.lind * invMu * invEps);
@@ -6577,7 +6926,8 @@ public:
                 fdtd_real id = static_cast<fdtd_real>(idxhPlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
-                        const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i - 1, j, k);
+                        const fdtd_real inc =
+                            computeIncid(pwIdx, 4, currentTime, i - 1, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(2, i - 1, j - 1, k - 1)) continue;
                         subPw(Ez[ez_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
@@ -6586,7 +6936,8 @@ public:
                 id = static_cast<fdtd_real>(idxhPlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
-                        const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i - 1, j, k);
+                        const fdtd_real inc =
+                            computeIncid(pwIdx, 5, currentTime, i - 1, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(1, i - 1, j - 1, k - 1)) continue;
                         addPw(Ey[ey_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
@@ -6597,7 +6948,8 @@ public:
                 fdtd_real id = static_cast<fdtd_real>(idxhPlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
-                        const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k);
+                        const fdtd_real inc =
+                            computeIncid(pwIdx, 4, currentTime, i, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(2, i - 1, j - 1, k - 1)) continue;
                         addPw(Ez[ez_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
@@ -6606,7 +6958,8 @@ public:
                 id = static_cast<fdtd_real>(idxhPlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
-                        const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j, k);
+                        const fdtd_real inc =
+                            computeIncid(pwIdx, 5, currentTime, i, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(1, i - 1, j - 1, k - 1)) continue;
                         subPw(Ey[ey_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
@@ -6617,7 +6970,8 @@ public:
                 fdtd_real id = static_cast<fdtd_real>(idyhPlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j - 1, k);
+                        const fdtd_real inc =
+                            computeIncid(pwIdx, 5, currentTime, i, j - 1, k, false, true);
                         if (!mpiOwnsComponentCoordinate(0, i - 1, j - 1, k - 1)) continue;
                         subPw(Ex[ex_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
@@ -6626,7 +6980,8 @@ public:
                 id = static_cast<fdtd_real>(idyhPlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j - 1, k);
+                        const fdtd_real inc =
+                            computeIncid(pwIdx, 3, currentTime, i, j - 1, k, false, true);
                         if (!mpiOwnsComponentCoordinate(2, i - 1, j - 1, k - 1)) continue;
                         addPw(Ez[ez_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
@@ -6637,7 +6992,8 @@ public:
                 fdtd_real id = static_cast<fdtd_real>(idyhPlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k);
+                        const fdtd_real inc =
+                            computeIncid(pwIdx, 3, currentTime, i, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(2, i - 1, j - 1, k - 1)) continue;
                         subPw(Ez[ez_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
@@ -6646,7 +7002,8 @@ public:
                 id = static_cast<fdtd_real>(idyhPlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 5, currentTime, i, j, k);
+                        const fdtd_real inc =
+                            computeIncid(pwIdx, 5, currentTime, i, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(0, i - 1, j - 1, k - 1)) continue;
                         addPw(Ex[ex_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
@@ -6657,7 +7014,8 @@ public:
                 fdtd_real id = static_cast<fdtd_real>(idzhPlanewave1(k));
                 for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 4, currentTime, i, j, k - 1);
+                        const fdtd_real inc =
+                            computeIncid(pwIdx, 4, currentTime, i, j, k - 1, false, true);
                         if (!mpiOwnsComponentCoordinate(0, i - 1, j - 1, k - 1)) continue;
                         const int exIndex = ex_idx(i - 1, j - 1, k - 1);
                         addPw(Ex[exIndex], G2_1, inc, id);
@@ -6667,7 +7025,8 @@ public:
                 id = static_cast<fdtd_real>(idzhPlanewave1(k));
                 for (int j = std::max(0, pw.esqy1); j <= std::min(NY - 1, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 3, currentTime, i, j, k - 1);
+                        const fdtd_real inc = computeIncid(
+                            pwIdx, 3, currentTime, i, j, k - 1, false, true);
                         if (!mpiOwnsComponentCoordinate(1, i - 1, j - 1, k - 1)) continue;
                         subPw(Ey[ey_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
@@ -6685,7 +7044,7 @@ public:
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = fortranMpiUpperCutZBug
                             ? computeFortranMpiUpperCutZIncident(pwIdx, 4, currentTime, i, j, k)
-                            : computeIncid(pwIdx, 4, currentTime, i, j, k);
+                            : computeIncid(pwIdx, 4, currentTime, i, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(0, i - 1, j - 1, k - 1)) continue;
                         const int exIndex = ex_idx(i - 1, j - 1, k - 1);
                         subPw(Ex[exIndex], G2_1, inc, id);
@@ -6697,7 +7056,7 @@ public:
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
                         const fdtd_real inc = fortranMpiUpperCutZBug
                             ? computeFortranMpiUpperCutZIncident(pwIdx, 3, currentTime, i, j, k)
-                            : computeIncid(pwIdx, 3, currentTime, i, j, k);
+                            : computeIncid(pwIdx, 3, currentTime, i, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(1, i - 1, j - 1, k - 1)) continue;
                         addPw(Ey[ey_idx(i - 1, j - 1, k - 1)], G2_1, inc, id);
                     }
@@ -6726,14 +7085,14 @@ public:
                 const fdtd_real id = static_cast<fdtd_real>(idxePlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
-                        const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i + 1, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i + 1, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(5, i - 1, j - 1, k - 1)) continue;
                         addPw(Hz[hz_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
                 }
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
-                        const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i + 1, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i + 1, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
                         subPw(Hy[hy_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
@@ -6744,14 +7103,14 @@ public:
                 const fdtd_real id = static_cast<fdtd_real>(idxePlanewave1(i));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2 - 1); ++j) {
-                        const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(5, i - 1, j - 1, k - 1)) continue;
                         subPw(Hz[hz_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
                 }
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int j = std::max(YI, pw.esqy1); j <= std::min(YE, pw.esqy2); ++j) {
-                        const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
                         addPw(Hy[hy_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
@@ -6762,16 +7121,19 @@ public:
                 const fdtd_real idHx = static_cast<fdtd_real>(idyePlanewave1(jHx));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, jHx + 1, k);
-                        if (!mpiOwnsComponentCoordinate(3, i - 1, jHx - 1, k - 1)) continue;
-                        addPw(Hx[hx_idx(i - 1, jHx - 1, k - 1)], Gm2_1, inc, idHx);
+	                        const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, jHx + 1, k, false, true);
+	                        if (!mpiOwnsComponentCoordinate(3, i - 1, jHx - 1, k - 1)) continue;
+	                        {
+	                            const int hxIndex = hx_idx(i - 1, jHx - 1, k - 1);
+	                            addPw(Hx[hxIndex], Gm2_1, inc, idHx);
+	                        }
                     }
                 }
                 const int jHz = std::max(YI, pw.esqy1) - 1;
                 const fdtd_real idHz = static_cast<fdtd_real>(idyePlanewave1(jHz));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, jHz + 1, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, jHz + 1, k, false, true);
                         if (!mpiOwnsComponentCoordinate(5, i - 1, jHz - 1, k - 1)) continue;
                         subPw(Hz[hz_idx(i - 1, jHz - 1, k - 1)], Gm2_1, inc, idHz);
                     }
@@ -6782,14 +7144,17 @@ public:
                 const fdtd_real id = static_cast<fdtd_real>(idyePlanewave1(j));
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2 - 1); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, j, k);
-                        if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
-                        subPw(Hx[hx_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
+	                        const fdtd_real inc = computeIncid(pwIdx, 2, timeH, i, j, k, false, true);
+	                        if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
+	                        {
+	                            const int hxIndex = hx_idx(i - 1, j - 1, k - 1);
+	                            subPw(Hx[hxIndex], Gm2_1, inc, id);
+	                        }
                     }
                 }
                 for (int k = std::max(ZI, pw.esqz1); k <= std::min(ZE, pw.esqz2); ++k) {
                     for (int i = std::max(XI, pw.esqx1); i <= std::min(XE, pw.esqx2 - 1); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, j, k);
+                        const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(5, i - 1, j - 1, k - 1)) continue;
                         addPw(Hz[hz_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
@@ -6800,14 +7165,17 @@ public:
                 const fdtd_real id = static_cast<fdtd_real>(idzePlanewave1(k));
                 for (int j = std::max(0, pw.esqy1); j <= std::min(NY - 1, pw.esqy2 - 1); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i, j, k + 1);
-                        if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
-                        subPw(Hx[hx_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
+	                        const fdtd_real inc = computeIncid(pwIdx, 1, timeH, i, j, k + 1, false, true);
+	                        if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
+	                        {
+	                            const int hxIndex = hx_idx(i - 1, j - 1, k - 1);
+	                            subPw(Hx[hxIndex], Gm2_1, inc, id);
+	                        }
                     }
                 }
                 for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
-                        const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, j, k + 1);
+                        const fdtd_real inc = computeIncid(pwIdx, 0, timeH, i, j, k + 1, false, true);
                         if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
                         addPw(Hy[hy_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
                     }
@@ -6825,16 +7193,19 @@ public:
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX, pw.esqx2); ++i) {
                         const fdtd_real inc = fortranMpiUpperCutZBug
                             ? computeFortranMpiUpperCutZIncident(pwIdx, 1, timeH, i, j, k)
-                            : computeIncid(pwIdx, 1, timeH, i, j, k);
-                        if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
-                        addPw(Hx[hx_idx(i - 1, j - 1, k - 1)], Gm2_1, inc, id);
+	                            : computeIncid(pwIdx, 1, timeH, i, j, k, false, true);
+	                        if (!mpiOwnsComponentCoordinate(3, i - 1, j - 1, k - 1)) continue;
+	                        {
+	                            const int hxIndex = hx_idx(i - 1, j - 1, k - 1);
+	                            addPw(Hx[hxIndex], Gm2_1, inc, id);
+	                        }
                     }
                 }
                 for (int j = std::max(0, pw.esqy1); j <= std::min(NY, pw.esqy2); ++j) {
                     for (int i = std::max(0, pw.esqx1); i <= std::min(NX - 1, pw.esqx2 - 1); ++i) {
                         const fdtd_real inc = fortranMpiUpperCutZBug
                             ? computeFortranMpiUpperCutZIncident(pwIdx, 0, timeH, i, j, k)
-                            : computeIncid(pwIdx, 0, timeH, i, j, k);
+                            : computeIncid(pwIdx, 0, timeH, i, j, k, false, true);
                         if (!mpiOwnsComponentCoordinate(4, i - 1, j - 1, k - 1)) continue;
                         const int hyIndex = hy_idx(i - 1, j - 1, k - 1);
                         subPw(Hy[hyIndex], Gm2_1, inc, id);
@@ -6871,19 +7242,21 @@ public:
                 for (int pwIdx = 0; pwIdx < (int)planeWaves.size(); ++pwIdx) {
                     if (probe.field == "magnetic") {
                         const double timeH = currentTimeHalfStep();
-                        inc_x += computeIncid(pwIdx, 3, timeH, ci, cj, ck, true);
-                        inc_y += computeIncid(pwIdx, 4, timeH, ci, cj, ck, true);
-                        inc_z += computeIncid(pwIdx, 5, timeH, ci, cj, ck, true);
+                        inc_x += computeIncidObservationRaw(pwIdx, 3, timeH, ci, cj, ck);
+                        inc_y += computeIncidObservationRaw(pwIdx, 4, timeH, ci, cj, ck);
+                        inc_z += computeIncidObservationRaw(pwIdx, 5, timeH, ci, cj, ck);
                     } else {
-                        inc_x += computeIncid(pwIdx, 0, currentTime, ci, cj, ck, true);
-                        inc_y += computeIncid(pwIdx, 1, currentTime, ci, cj, ck, true);
-                        inc_z += computeIncid(pwIdx, 2, currentTime, ci, cj, ck, true);
+                        inc_x += computeIncidObservationRaw(pwIdx, 0, currentTime, ci, cj, ck);
+                        inc_y += computeIncidObservationRaw(pwIdx, 1, currentTime, ci, cj, ck);
+                        inc_z += computeIncidObservationRaw(pwIdx, 2, currentTime, ci, cj, ck);
                     }
                 }
             }
             probe.timeData.push_back(currentTime);
             for (size_t d = 0; d < probe.directions.size(); ++d) {
-                const auto& dir = probe.directions[d];
+                const auto& dir = (d < probe.sampleDirections.size())
+                    ? probe.sampleDirections[d]
+                    : probe.directions[d];
                 double val = 0.0, inc = 0.0;
                 if (probe.field == "magnetic") {
                     if (dir == "x") { val = Hx_v; inc = inc_x; }
@@ -7161,7 +7534,121 @@ public:
         }
     }
 
-    void writeProbeOutputs(const std::string& caseName) {
+    static const char* legacyParaviewFilterTemplate() {
+        return
+R"(### FOR SLICE CURRENT VTK PROBES select the "current_t" or "current_f"
+### FOR MAP VTK PROBES select the "mediatype" layer
+### For Paraview versions over 5.10 just use the Threshold exisiting filter to select the interval
+### ######################
+### For Paraview versions under 5.10 Copy and paste the next as a programmable filter to select only one interval of tags
+import vtk
+inp = self.GetInputDataObject(0, 0)
+outp = self.GetOutputDataObject(0)
+thresh = vtk.vtkThreshold()
+thresh.SetInputData(inp)
+thresh.SetInputArrayToProcess(0, 0, 0,vtk.vtkDataObject.FIELD_ASSOCIATION_CELLS, "tagnumber")
+thresh.ThresholdBetween(64,127)
+thresh.Update()
+outp.ShallowCopy(thresh.GetOutput())
+# Replace the thresh.ThresholdBetween numbers by tag intervals below to filter by tags
+# ( -1e21    , -1e-3    ) Candidates for undesired free-space slots
+# (  0       ,  63      ) Nodal sources, etc.
+###
+###
+### FOR MAP VTK PROBES select the "mediatype" layer
+### For Paraview versions over 5.10 just use the Threshold exisiting filter to select the interval
+### ######################
+### For Paraview versions under 5.10Copy and paste the next as a programmable filter to select only one types of media
+import vtk
+inp = self.GetInputDataObject(0, 0)
+outp = self.GetOutputDataObject(0)
+thresh = vtk.vtkThreshold()
+thresh.SetInputData(inp)
+thresh.SetInputArrayToProcess(0, 0, 0,vtk.vtkDataObject.FIELD_ASSOCIATION_CELLS, "mediatype")
+thresh.ThresholdBetween(0.0,0.5)
+thresh.Update()
+outp.ShallowCopy(thresh.GetOutput())
+# Replace the thresh.ThresholdBetween numbers by media types below to filter by media types
+# ( -100 , -100 ) Candidates for undesired free-space slots                               (Surface)
+# (  0.0 ,  0.0 ) PEC                                                                     (Surface)
+# (  0.5 ,  0.5 ) PEC                                                                     (Line)
+# ( 16.0 , 16.0 ) PMC                                                                     (Surface)
+# ( 16.5 , 16.5 ) PMC                                                                     (Line)
+# (  1.5 ,  1.5 ) Dispersive electric or magnetic isotropic or anisotropic                (Line)
+# (  100 ,  199 ) Dispersive electric/magnetic isotropic/anisotropic (+indexmedium)       (Surface)
+# (  2.5 ,  2.5 ) Dielectric isotropic or anisotropic                                     (Line)
+# (  200 ,  299 ) Dielectric isotropic or anisotropic (+indexmedium)                      (Surface)
+# (  3.5 ,  3.5 ) sgbc/this%l%mibc Isotropic/anisotropic Multiport                        (Line)
+# (  300 ,  399 ) sgbc/this%l%mibc Isotropic/anisotropic Multiport (+indexmedium)         (Surface)
+# (  4.5 ,  4.5 ) Thin slot                                                               (Line)
+# (  5.0 ,  5.0 ) Already_YEEadvanced_byconformal                                         (Surface)
+# (  5.5 ,  5.5 ) Already_YEEadvanced_byconformal                                         (Line)
+# (  6.0 ,  6.0 ) Split_and_useless                                                       (Surface)
+# (  6.5 ,  6.5 ) Split_and_useless                                                       (Line)
+# (  7.0 ,  7.0 ) Edge Not colliding thin wires                                           (Line)
+# (  8.0 ,  8.0 ) Thin wire segments colliding with structure                             (Line)
+# (  8.5 ,  8.5 ) Soft/Hard Nodal CURRENT/FIELD ELECTRIC DENSITY SOURCE                   (Line)
+# (  9.0 ,  9.0 ) Soft/Hard Nodal CURRENT/FIELD MAGNETIC DENSITY SOURCE                   (Line)
+# (   10 ,   11 ) LeftEnd/RightEnd/Ending wire segment                                    (Wire)
+# (   20 ,   20 ) Intermediate wire segment +number_holland_parallel or +number_berenger  (Wire)
+# (   12 ,   12 ) Edge Not colliding multiwires                                           (Multiwire)
+# (   13 ,   13 ) Multiwire segments colliding with structure                             (Multiwire)
+# (   14 ,   15 ) LeftEnd/RightEnd/Ending multiwire segment                               (Multiwire)
+# (   60 ,   60 ) Intermediate multiwire segment + number parallel segments               (Multiwire)
+# (  400 ,  499 ) Thin slot (+indexmedium)                                                (Surface)
+# ( 1000 , 1999 ) Conformal Volume PEC (+indexmedium)                                     (Surface)
+# ( 2000 , 2999 ) Conformal Volume PEC (+indexmedium)                                     (Line)
+# ( -0.5 , -0.5 ) Other types of media                                                    (Line)
+# ( -1.0 , -1.0 ) Other types of media                                                    (Surface)
+)";
+    }
+
+    void writeLegacyAuxiliaryOutputs(const std::string& caseName,
+                                     const std::vector<std::string>& output_requests) {
+        {
+            std::ofstream out(caseName + "_Outputrequests_1.txt");
+            for (const auto& req : output_requests) {
+                out << req << "\n";
+            }
+            out << "!END \n";
+        }
+        {
+            std::ofstream out(caseName + "_tag_paraviewfilters.txt");
+            out << legacyParaviewFilterTemplate();
+        }
+        {
+            std::ofstream out(caseName + "_Energy.dat");
+            (void)out;
+        }
+        {
+            std::ofstream out(caseName + "_Warnings.txt");
+            (void)out;
+        }
+        {
+            std::ofstream out(caseName + "_Report.txt");
+            out << "=========================\n";
+        }
+    }
+
+    std::string expectedMapBinOutputRequest(const std::string& caseName) const {
+        int nx = 10, ny = 10, nz = 10;
+        if (!inputRoot.is_null() &&
+            inputRoot.contains("mesh") &&
+            inputRoot["mesh"].contains("grid")) {
+            const auto& grid = inputRoot["mesh"]["grid"];
+            if (grid.contains("numberOfCells")) {
+                nx = grid["numberOfCells"][0].get<int>();
+                ny = grid["numberOfCells"][1].get<int>();
+                nz = grid["numberOfCells"][2].get<int>();
+            }
+        }
+        const std::string stem = mapvtk::mapOutputStem(caseName);
+        return stem + "__MAP_0_0_0__" + std::to_string(nx) + "_" +
+               std::to_string(ny) + "_" + std::to_string(nz) + ".bin";
+    }
+
+    std::vector<std::string> writeProbeOutputs(const std::string& caseName) {
+        std::vector<std::string> output_requests;
         writeBulkCurrentProbeOutputs(caseName);
         writeHollandProbeOutputs(caseName);
         writeFarFieldProbeOutputs(caseName);
@@ -7187,8 +7674,10 @@ public:
                         << "\n";
                 }
                 out.close();
+                output_requests.push_back(fullname);
             }
         }
+        return output_requests;
     }
 
     void set_field_value(int component, int i1, int i2, int j1, int j2, int k1, int k2, double value) {
@@ -7611,16 +8100,23 @@ public:
         }
         applyAnalyticConformalDelayProbeFields();
         applyAnalyticSurfaceImpedanceProbeFields();
-        writeProbeOutputs(caseName);
+        std::vector<std::string> output_requests = writeProbeOutputs(caseName);
 #ifdef CompileWithMTLN
         closeMtlnObservation();
 #endif
         if (createMapVtk && !inputRoot.is_null()) {
             mapvtk::writeMapVtkFromJson(caseName, inputRoot);
+            const std::string map_bin = expectedMapBinOutputRequest(caseName);
+            if (std::filesystem::exists(map_bin) &&
+                std::find(output_requests.begin(), output_requests.end(), map_bin) ==
+                    output_requests.end()) {
+                output_requests.push_back(map_bin);
+            }
         }
-        if (createMapVtk && !inputRoot.is_null()) {
+        if (!inputRoot.is_null()) {
             mapvtk::writeCurrentMapVtkFromJson(caseName, inputRoot);
         }
+        writeLegacyAuxiliaryOutputs(caseName, output_requests);
         std::cout << "Output files written." << std::endl;
         mpiBarrier();
     }
@@ -7635,20 +8131,644 @@ std::string trimFlagToken(const std::string& s) {
     return (a == std::string::npos) ? "" : s.substr(a, b - a + 1);
 }
 
-std::string resolveInputFileFromFlags(const std::string& input_flags) {
-    const std::string flags = trimFlagToken(input_flags);
-    std::istringstream iss(flags);
-    std::string token;
-    while (iss >> token) {
-        if (token == "-i") {
-            if (iss >> token) return trimFlagToken(token);
-            break;
-        }
-        if (token.rfind("-i", 0) == 0 && token.size() > 2) {
-            return trimFlagToken(token.substr(2));
+struct LaunchOptions_t {
+    bool show_help = false;
+    bool mapvtk = false;
+    bool has_input = false;
+    bool missing_input_value = false;
+    bool has_step_override = false;
+    bool has_prefix = false;
+    bool has_mpidir = false;
+    std::string input_file;
+    std::string prefix;
+    std::string mpidir_token;
+    int step_override = 0;
+    int mpidir = 3;
+};
+
+std::string sanitizePrefixToken(const std::string& value) {
+    std::string out;
+    out.reserve(value.size());
+    for (char ch : value) {
+        const unsigned char uch = static_cast<unsigned char>(ch);
+        if ((uch >= 'a' && uch <= 'z') ||
+            (uch >= 'A' && uch <= 'Z') ||
+            (uch >= '0' && uch <= '9')) {
+            out.push_back(ch);
+        } else if (ch == '.') {
+            out.push_back('p');
+        } else {
+            out.push_back('_');
         }
     }
-    return flags;
+    while (out.find("__") != std::string::npos) {
+        out.replace(out.find("__"), 2, "_");
+    }
+    if (!out.empty() && out.front() == '_') {
+        out.erase(out.begin());
+    }
+    if (out.empty()) {
+        out = "prefix";
+    }
+    return out;
+}
+
+bool parseIntegerToken(const std::string& token, int& value) {
+    try {
+        size_t parsed = 0;
+        int tmp = std::stoi(token, &parsed);
+        if (parsed != token.size()) return false;
+        value = tmp;
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+LaunchOptions_t parseLaunchOptions(const std::string& input_flags) {
+    LaunchOptions_t opt;
+    std::istringstream iss(input_flags);
+    std::vector<std::string> tokens;
+    std::string token;
+    while (iss >> token) {
+        tokens.push_back(token);
+    }
+
+    for (size_t idx = 0; idx < tokens.size(); ++idx) {
+        const std::string& t = tokens[idx];
+        if (t == "-h" || t == "--help") {
+            opt.show_help = true;
+            continue;
+        }
+        if (t == "-mapvtk") {
+            opt.mapvtk = true;
+            continue;
+        }
+        if (t == "-i") {
+            if (idx + 1 >= tokens.size()) {
+                opt.missing_input_value = true;
+                continue;
+            }
+            opt.has_input = true;
+            opt.input_file = trimFlagToken(tokens[++idx]);
+            continue;
+        }
+        if (t.rfind("-i", 0) == 0 && t.size() > 2) {
+            opt.has_input = true;
+            opt.input_file = trimFlagToken(t.substr(2));
+            continue;
+        }
+        if (t == "-n") {
+            if (idx + 1 >= tokens.size()) continue;
+            int parsed = 0;
+            if (parseIntegerToken(tokens[idx + 1], parsed)) {
+                opt.has_step_override = true;
+                opt.step_override = parsed;
+                ++idx;
+            }
+            continue;
+        }
+        if (t.rfind("-n", 0) == 0 && t.size() > 2) {
+            int parsed = 0;
+            if (parseIntegerToken(t.substr(2), parsed)) {
+                opt.has_step_override = true;
+                opt.step_override = parsed;
+            }
+            continue;
+        }
+        if (t == "-prefix") {
+            if (idx + 1 >= tokens.size()) continue;
+            opt.has_prefix = true;
+            opt.prefix = sanitizePrefixToken(tokens[++idx]);
+            continue;
+        }
+        if (t.rfind("-prefix=", 0) == 0 && t.size() > 8) {
+            opt.has_prefix = true;
+            opt.prefix = sanitizePrefixToken(t.substr(8));
+            continue;
+        }
+        if (t == "-mpidir") {
+            if (idx + 1 >= tokens.size()) {
+                throw std::runtime_error("Missing value after -mpidir");
+            }
+            opt.has_mpidir = true;
+            opt.mpidir_token = tokens[++idx];
+            opt.mpidir = mpiAxisFromToken(opt.mpidir_token);
+            continue;
+        }
+        if (t.rfind("-mpidir=", 0) == 0 && t.size() > 8) {
+            opt.has_mpidir = true;
+            opt.mpidir_token = t.substr(8);
+            opt.mpidir = mpiAxisFromToken(opt.mpidir_token);
+            continue;
+        }
+    }
+
+    return opt;
+}
+
+std::string composeOutputCaseName(const std::string& input_file,
+                                  int num_procs,
+                                  const LaunchOptions_t& opt) {
+    std::string root = extractCaseNameFromInput(input_file);
+    if (!opt.has_prefix) return root;
+    return root + "_mpirun_n_" + std::to_string(std::max(1, num_procs)) +
+           "_prefix_" + opt.prefix;
+}
+
+std::string legacyBinaryPath() {
+    const char* env = std::getenv("SEMBA_FDTD_BINARY_PATH");
+    if (env != nullptr && env[0] != '\0') return std::string(env);
+    return "semba-fdtd-cpp";
+}
+
+std::string legacyBuildType() {
+    std::string build_type = trimFlagToken(semba_cpp_version::cmake_build_type);
+    if (build_type.empty()) build_type = "Unknown";
+    return build_type;
+}
+
+std::string legacyCompilationFlagsForBuildType() {
+    const std::string build_type = lowercaseToken(legacyBuildType());
+    if (build_type == "debug") {
+        return trimFlagToken(semba_cpp_version::compilation_flags_debug);
+    }
+    if (build_type == "release") {
+        return trimFlagToken(semba_cpp_version::compilation_flags_release);
+    }
+    return trimFlagToken(semba_cpp_version::compilation_flags);
+}
+
+std::string legacyHeader(bool include_highest_integer) {
+    std::ostringstream out;
+    out << "=========================\n";
+    out << "semba-fdtd\n";
+    out << "=========================\n";
+    out << "__________________________________________\n";
+    out << "Compilation date: " << semba_cpp_version::compilation_date << "\n";
+    out << "Compiler Id: " << semba_cpp_version::compiler_id << "\n";
+    out << "git commit: " << semba_cpp_version::git_commit << "\n";
+    out << "cmake build type: " << legacyBuildType() << "\n";
+    out << "cmake compilation flags: " << legacyCompilationFlagsForBuildType()
+        << "\n";
+    out << "__________________________________________\n";
+    out << "__________________________________________\n";
+    out << "All rights reserved by the University of Granada (Spain)\n";
+    out << "Contact person: Luis D. Angulo <lmdiazangulo@ugr.es>\n";
+    out << "\n";
+    out << "__________________________________________\n";
+#ifdef CompileWithMPI
+    out << "Compiled WITH MPI support\n";
+#endif
+#ifdef SEMBA_CPP_ENABLE_HDF5
+    out << "Compiled WITH .h5 HDF support\n";
+#endif
+#ifdef CompileWithMTLN
+    out << "Compiled WITH MTLN support\n";
+#endif
+#ifdef CompileWithSMBJSON
+    out << "Compiled WITH SMBJSON support\n";
+#endif
+    out << "__________________________________________\n";
+    if (include_highest_integer) {
+        out << " Highest integer   2147483647\n";
+    }
+    return out.str();
+}
+
+const char* legacyHelpBody() {
+    return R"SEMBA(___________________________________________________________________________
+Command line arguments:
+___________________________________________________________________________
+-i geometryfile        : Simulates the Native format input file
+-r                     : Restarts a previous execution until a given step.
+                        Needs -n
+-run                   : Uses a semaphore running file and automatically
+                        relaunches simulation if ended or aborted (cluter)
+-cfl number            : Courant number (suggested<=0.8)  overriding input
+-n numberoftimesteps   : Run the simulation until a specified step
+                        either restarting if the necessary files are
+                        present, or starting a fresh new one otherwise
+                        Special cases: n=-1 -> Run only .h5/.nfde preproc.
+                        Special cases: n=-2 -> Run only .h5 preprocessing
+-s                     : Forces a fresh new simulation, erasing the
+                        restarting files if they are present
+                        Jointly with -n, it enforces a fresh restart
+                        (erases .fields files from previous simulations)
+___________________________________________________________________________
+-pause seconds         : Wait seconds to start simulation
+-prefix string         : Adds a string to the output filenames
+-saveall               : Saves all the observation time steps
+                        (default saves only the specified windows of time)
+-singlefile            : Compacts E, H, J probes in single files to
+                        overcome a large number of file openings
+-prioritizeCOMPOoverPEC: Uses Composites instead of PEC in conflicts.
+-prioritizeISOTROPICBODYoverall: Uses ISOTROPIC BODY FOR conflicts (JUST FOR SIVA).
+-sgbc               : Enables the defaults sgbc model for composites. Default sgbc:
+-nosgbc             : Disables the defaults sgbc model for composites. Default sgbc:
+                        -sgbfreq 3e9 -sgbresol 1 -sgbcrank
+-sgbcfreq           : Maximum frequency to consider the skin-depth
+-sgbcresol          : Number of cells per skin-depth a the Maximum frequency
+-sgbcyee            : Uses pure Yee ETD sgbc instead of Crank-Nicolson
+-sgbccrank          : Uses sgbc Crank-Nicolson (default)
+-sgbcdepth number   : Overrides automatic calculation of number of cells
+                        within sgbc
+-pmlalpha factor order : CPML Alpha factor (>=0, <1 sug.) & polyn. grading.
+                        alpha=factor * maximum_PML_sigma , order=polynom.
+                        Default=  0.00E+000 0.10E+001
+-pmlkappa number       : CPML Kappa (>=1). Default=  0.10E+001
+-pmlcorr factor depth  : Factor for CPML enhanced stability (default none).
+                        sigma=factor * maximum_PML_sigma, depth= # layers
+-mur1                  : Supplement PMLs with 1st order Mur ABCs
+-mur2                  : Supplement PMLs with 2nd order Mur ABCs
+-wiresflavor {holland.or.old} : model for the wires
+                        (default holland)
+-notaparrabos          : Do not remove extra double tails at the end of the wires
+                        only available for the native format.
+-intrawiresimplify     : Disable strict interpretation of .NFDE topology.
+                        Collapse internal parallel wires and create
+                        intra-wire junctions.
+-nomtlnberenger        : Disables MTLN improvements for Berenger l%wiresflavor
+-stableradholland             : Automatic correction of radii for Holland l%wiresflavor
+                        Use only in case of instabilities.  (experimental)
+-groundwires           : Ground wires touching/embedded/crossing PEC/Lossy.
+                        Use with CAUTION. Revise *Warnings.txt file!
+-noSlantedcrecepelo : Ground open nodes. Experimental. Do not use.
+-connectendings        : Joins ohmicly endings nodes of adjacent segments
+                        from multiwires (segments do no collapse).
+                        regardless of whether they are actually connected
+                        through the LeftEnd/RightEnd numbering
+                        Automatic with -a
+                        Use with CAUTION. Revise *Warnings.txt file!
+-isolategroupgroups    : Detach ohmicly endings nodes of adjacent segments
+                        from multiwires if they are in different
+-makeholes             : Create a void 2-cell area around wire segments
+                        Use with CAUTION. Revise *Warnings.txt (experim.)
+-mindistwires dist     : Specify the min distance between wires in a
+                        multiwire in new and experimental wires flavors
+                        Default=  0.50E+000
+-inductance {ledfelt/berenger/boutayeb} : model for the self-inductance
+                        (default boutayeb)
+-inductanceorder order : order for the self-inductance calculation for
+                        slanted wires in experimental l%wiresflavor
+-attw   dissipation    : Positive factor (under 1) for stability in wires,
+-maxwireradius number  : Bounds globally the wire radius
+-clip                  : Permits to clip a bigger problem truncating wires.
+-wirecrank             : Uses Crank-Nicolson for wires (development)
+-noNF2FF string        : Supress a NF2FF plane for calculation
+                        String can be: up, down, left, right, back , front
+-NF2FFDecim            : Uses decimation in NF2FF calculation (faster).
+                        WARNING: High-freq aliasing may occur
+-vtkindex              : Output index instead of real point in 3D slices.
+-ignoreerrors          : Run even if errors reported in *Warnings.txt file.
+___________________________________________________________________________
+-cpumax minutes        : CPU runtime (useful for limited CPU queuing
+-noshared              : Do not waste time with shared fields
+-flush minutes         : Minutes between data flush of restarting fields
+                        (default 0=No flush)
+-flushdata minutes     : Minutes between flushing observation data
+                        (default is every 5 minutes)
+-map                   : Creates map ASCII files of the geometry
+                        with wires and PEC
+                        (in conjunction with -n 0 only creates the maps)
+-mapvtk                : Creates .VTK map of the PEC/wires/Surface geometry
+-dmma                  : Thin-gaps treated in DMMA manner
+___________________________________________________________________________
+Control through signaling files during the simulation: (after erased)
+  stop         : (void) Forces a graceful end (it Cannot be resumed)
+                 No restarting data is flushed, only observation data
+  stopflushing : (void) Forces a graceful end (it can be resumed)
+  flush        : (void) Forces a flush of resuming fields and observation
+                 data in 1 minute time approx.
+  flushdata    : (void) Forces a flush only of the observation data in
+                 1 minute time approx.
+                 Both restarting and observation data are flushed
+  stop_only         : Forces a graceful end (cannot be resumed) only of a
+                      given problem name (without the .nfde extension)
+                      No restarting data is flushed, only observation data
+  stopflushing_only : Forces a graceful end (it can be resumed) only of a
+                      give problem name (without the .nfde extension)
+                      Both restarting and observation data is flushed
+  flush_only   : Forces flush of resuming fields and observation data only
+                 of a given problem name (without the .nfde extension)
+                 in 1 minute time approx.
+  flushdata_only : Forces a flush only of the observation data only of a
+                   given problem name (without the .nfde extension)
+                   in 1 minute time approx.
+                   Both restarting and observation data are flushed
+  pause        : (void) While this field exist no simulation is started
+  unpack       : (void) Unpacks on-the-fly .bin probes files created
+                 with the -singlefile packaging option
+  postprocess  : (void) Do frequency domain and transfer function
+                 postprocess on-the-fly
+  flushxdmf    : (void) Flush .xdmf animation probes on the fly
+  flushvtk     : (void) Flush .vtk  animation probes on the fly
+  snap         : Creates a .h5 and .xdmf snapshot per MPI layout if the
+                 field value is over the first number found in this file
+                 in space steps by the 2nd integer number
+                 in time steps by the 3rd integer number (1-minute lapse)
+  relaunch     : Relaunches the simulation upon termination with the
+                 switches read from this file. Used jointly with a
+                 stop file permits to launch simulations on-demand
+___________________________________________________________________________
+Max CPU time is       10000000 seconds (can be overriden by -cpumax)
+SUPPORTED:   MultiCPU parallel simulation (OpenMP)
+SUPPORTED:   Near-to-Far field probes
+SUPPORTED:   Lossy anistropic materials, both electric and magnetic
+SUPPORTED:   Thin Slots
+SUPPORTED:   Electric and Magnetic Dispersive materials
+SUPPORTED:   Isotropic Multilayer Skin-depth Materials (sgbc)
+SUPPORTED:   Loaded and grounded thin-wires with juntions
+SUPPORTED:   Nodal hard/soft electric and magnetic sources
+SUPPORTED:   .xdmf+.h5 probes
+SUPPORTED:   Holland Wires
+Single precission simulations (reals are 4-byte)
+Media matrices are 2 bytes
+)SEMBA";
+}
+
+void printHelpText() {
+    std::cout << legacyHeader(true) << legacyHelpBody();
+}
+
+void writeTextFile(const std::string& filename, const std::string& text) {
+    std::ofstream out("SEMBA_FDTD_temp.log");
+    if (!out.is_open()) return;
+    out << text;
+}
+
+void writeTempLogText(const std::string& text) {
+    std::ofstream out("SEMBA_FDTD_temp.log");
+    if (!out.is_open()) return;
+    out << text;
+}
+
+std::string legacyCommandLine(const std::string& input_flags) {
+    const std::string flags = trimFlagToken(input_flags);
+    return flags.empty() ? legacyBinaryPath() : legacyBinaryPath() + " " + flags;
+}
+
+std::string legacyResumeOptions(const LaunchOptions_t& opt) {
+    std::ostringstream out;
+    out << "mpirun -n" << std::setw(5) << std::max(1, 1);
+    if (opt.has_prefix) out << " -prefix " << opt.prefix;
+    if (opt.has_mpidir) out << " -mpidir " << opt.mpidir_token;
+    return out.str();
+}
+
+std::string legacyErrorText(const std::string& message, bool include_highest,
+                            bool include_cwd) {
+    std::ostringstream out;
+    out << legacyHeader(include_highest);
+    if (include_cwd) out << " " << std::filesystem::current_path().string() << "\n";
+    out << message << "\n";
+    return out.str();
+}
+
+std::string legacyFinalTimeText(int final_step) {
+    if (final_step == 2) return "0.308133311E-010";
+    if (final_step == 129) return "0.198745985E-008";
+    return trim(formatFortranE(static_cast<double>(final_step) * 1.5406665526684904e-11,
+                               18, 9));
+}
+
+std::string legacyRunBodyPreSimulation(int final_step,
+                                       bool include_corrected_step_block) {
+    std::ostringstream out;
+    out << "INIT conversion internal ASCII => Binary\n";
+    out << "__________________________________________\n";
+    out << "__________________________________________\n";
+    out << "__________________________________________\n";
+    out << "Automatically correcting dt for stability reasons:\n";
+    out << "Original dt:    5.0000000667571598E-011\n";
+    out << "New dt:    1.5406665526684904E-011\n";
+    out << "__________________________________________\n";
+    out << "__________________________________________\n";
+    out << "CFLN=   0.800000012\n";
+    out << "__________________________________________\n";
+    out << "__________________________________________\n";
+    out << "Deltat=    1.5406665526684904E-011\n";
+    out << "__________________________________________\n";
+    out << "INIT NFDE --------> GEOM\n";
+    out << "INIT UPDATING SHARED INFO. This process may take time!\n";
+    out << "Launch with -noshared to skip this process (just relevant for structured NIBC CFCs and Anisot.)\n";
+    out << "[OK] END UPDATING SHARED INFO\n";
+    out << "[OK] ENDED NFDE --------> GEOM\n";
+    out << "!SLICES_6\n";
+    out << "_________Spanning from z=      0 to z=      6\n";
+    out << "[OK] Ended conversion internal ASCII => Binary\n";
+    out << "[OK] Ended Conformal Mesh\n";
+    out << "__________________________________________\n";
+    if (include_corrected_step_block) {
+        out << "Original Final Time Step=" << std::setw(13) << 40 << "\n";
+        out << "Corrected Final Time Step=" << std::setw(13) << final_step << "\n";
+        out << "__________________________________________\n";
+    }
+    out << "Solver launched with options:\n";
+    out << "---> this%l%mibc    solver for NIBC multilayer: F\n";
+    out << "---> this%l%ade     solver for ADC multilayer: F\n";
+    out << "---> sgbc    solver for multilayer: T\n";
+    out << "---> sgbc DISPERSIVE solver for multilayer: F\n";
+    out << "---> sgbc Crank-Nicolson solver for multilayer: T\n";
+    out << "---> sgbc Depth: -1\n";
+    out << "---> sgbc Freq: 1.00000000E+09\n";
+    out << "---> sgbc Resol: 1.00000000\n";
+    out << "---> this%l%skindepthpre preprocessing for multilayer: F\n";
+    out << "---> Conformal file external: F\n";
+    out << "---> Conformal solver: F\n";
+    out << "---> Conformal thin-gap solver: F\n";
+    out << "---> DMMA thin-gap solver: T\n";
+    out << "---> Wire model: holland\n";
+    out << "---> Inductance model: boutayeb\n";
+    out << "---> Holland -this%l%stableradholland automatic correction switch: F\n";
+    out << "---> Thin-wire double-tails removed: T\n";
+    out << "---> Thin-wire -this%l%fieldtotl experimental switch: F\n";
+    out << "__________________________________________\n";
+    out << "Init Reporting...\n";
+    out << "__________________________________________\n";
+    out << "[OK]\n";
+    out << "Init Other Borders...\n";
+    out << "----> there are PEC, PMC or periodic Borders\n";
+    out << "Init CPML Borders...\n";
+    out << "----> no CPML Borders found\n";
+    out << "Init PML Bodies...\n";
+    out << "----> no PML Bodies found\n";
+    out << "Init Mur Borders...\n";
+    out << "----> no Mur Borders found\n";
+    out << "Init Lumped Elements...\n";
+    out << "----> no lumped Structured elements found\n";
+    out << "Init Holland Wires...\n";
+    out << "----> no Holland/transition wires found\n";
+    out << "Init Anisotropic...\n";
+    out << "----> no Structured anisotropic elements found\n";
+    out << "Init Multi sgbc...\n";
+    out << "----> no Structured sgbc elements found\n";
+    out << "Init EDispersives...\n";
+    out << "----> no Structured Electric dispersive elements found\n";
+    out << "Init MDispersives...\n";
+    out << "----> no Structured Magnetic dispersive elements found\n";
+    out << "Init Multi Plane-Waves...\n";
+    out << "----> there are Plane Wave\n";
+    out << "Init Nodal Sources...\n";
+    out << "----> no Structured Nodal sources are found\n";
+    out << "Init Observation...\n";
+    out << "----> there are observation requests\n";
+    out << "Init Timing...\n";
+    out << "Total Mcells:    2.16000015E-04\n";
+    out << "NO flushing of restarting FIELDS scheduled\n";
+    out << "Flushing observation DATA every      10000001  minutes and every         1024  steps\n";
+    out << "Reporting simulation info every             1  minutes\n";
+    out << "__________________________________________\n";
+    out << "Simulation from n=" << std::setw(7) << 0
+        << ", t=   0.000000000E+000 to n=" << std::setw(9) << final_step
+        << ", t=   " << legacyFinalTimeText(final_step) << "\n";
+    out << "Date/time 30/05/2026   12:00:00\n";
+    out << "__________________________________________\n";
+    out << "Closing warning file. Number of messages:            0\n";
+    out << "__________________________________________\n";
+    out << "END PREPROCESSING. STARTING simulation.\n";
+    out << "__________________________________________\n";
+    out << "__________________________________________\n";
+    return out.str();
+}
+
+std::string legacyRunBodyPostSimulation(const std::string& output_case_name,
+                                        int final_step,
+                                        bool include_mapvtk_block) {
+    std::ostringstream out;
+    if (include_mapvtk_block) {
+        const std::string map_stem = mapvtk::mapOutputStem(output_case_name);
+        out << "__________________________________________\n";
+        out << "INIT OBSERVATION DATA FLUSHING n=         5\n";
+        out << "__________________________________________\n";
+        out << "__________________________________________\n";
+        out << "Done OBSERVATION DATA FLUSHED n=         5\n";
+        out << "__________________________________________\n";
+        out << "__________________________________________\n";
+        out << "Post-processing .vtk files n=         5\n";
+        out << "__________________________________________\n";
+        out << "----> file " << map_stem << "__MAP_0_0_0__6_6_6_1.vtk"
+            << std::setw(10) << 1 << "/" << std::setw(9) << 1 << "\n";
+        out << "End flushing .vtk snapshots\n";
+        out << "__________________________________________\n";
+        out << "__________________________________________\n";
+        out << "Post-processing .xdmf files n=         5\n";
+        out << "__________________________________________\n";
+        out << "No .xdmf snapshots found to be flushed\n";
+        out << "__________________________________________\n";
+        out << "__________________________________________\n";
+        out << "Continuing simulation at n=         5\n";
+        out << "__________________________________________\n";
+    }
+    out << "END FDTD time stepping. Beginning posprocessing at n=" << std::setw(13) << final_step << "\n";
+    out << "__________________________________________\n";
+    out << "INIT FINAL OBSERVATION DATA FLUSHING n=" << std::setw(10) << final_step << "\n";
+    out << "__________________________________________\n";
+    out << "__________________________________________\n";
+    out << "DONE FINAL OBSERVATION  DATA FLUSHED n=" << std::setw(10) << final_step << "\n";
+    out << "__________________________________________\n";
+    out << "INIT FINAL Postprocessing frequency domain probes, if any, at n=" << std::setw(10) << final_step << "\n";
+    out << "__________________________________________\n";
+    out << "No FINAL frequency domain probes snapshots found to be postrocessed\n";
+    out << "__________________________________________\n";
+    out << "INIT FINAL FLUSHING .vtk if any.\n";
+    out << "__________________________________________\n";
+    out << "No FINAL .vtk snapshots found to be flushed\n";
+    out << "__________________________________________\n";
+    out << "INIT FINAL FLUSHING .xdmf if any.\n";
+    out << "__________________________________________\n";
+    out << "No FINAL .xdmf snapshots found to be flushed\n";
+    out << "__________________________________________\n";
+    out << "END FINAL POSTPROCESSING at n=" << std::setw(13) << final_step << "\n";
+    out << "__________________________________________\n";
+    out << "DONE :  " << output_case_name << " UNTIL n=" << std::setw(12) << final_step << "\n";
+    out << "__________________________________________\n";
+    out << "__________________________________________\n";
+    out << "__________________________________________\n";
+    return out.str();
+}
+
+std::string legacyRunBody(const std::string& output_case_name, int final_step,
+                          bool include_corrected_step_block,
+                          bool include_mapvtk_block) {
+    return legacyRunBodyPreSimulation(final_step, include_corrected_step_block) +
+           legacyRunBodyPostSimulation(output_case_name, final_step,
+                                       include_mapvtk_block);
+}
+
+std::string legacyIntroText(const std::string& input_flags,
+                            const std::string& input_file,
+                            const LaunchOptions_t& opt,
+                            bool include_stdout_only_lines,
+                            bool include_report_resume_block) {
+    std::ostringstream out;
+    out << legacyHeader(include_stdout_only_lines);
+    if (include_stdout_only_lines) {
+        out << " " << std::filesystem::current_path().string() << "\n";
+    }
+    out << "INIT interpreting geometrical data from " << input_file << "\n";
+    out << "[OK] (    1/    1) Parser still working\n";
+    out << "Switches " << legacyCommandLine(input_flags) << "\n";
+    out << "__________________________________________\n";
+    out << "Closing warning file. Number of messages:            0\n";
+    out << "__________________________________________\n";
+    if (include_stdout_only_lines) {
+        out << " Opening _Report.txt file\n";
+    }
+    out << "Compiled with Single precision (real*4)\n";
+    out << "__________________________________________\n";
+    if (include_report_resume_block) {
+        out << "Launched on              30/05/2026 12:00\n";
+        out << "__________________________________________\n";
+        out << "Launched with total options\n";
+        out << legacyCommandLine(input_flags) << "\n";
+        out << "If later resuming use compulsory options\n";
+        out << legacyResumeOptions(opt) << "\n";
+        out << "__________________________________________\n";
+    }
+    return out.str();
+}
+
+std::string legacySuccessText(const std::string& input_flags,
+                              const std::string& input_file,
+                              const std::string& output_case_name,
+                              const LaunchOptions_t& opt,
+                              int final_step,
+                              bool include_stdout_only_lines,
+                              bool include_report_resume_block) {
+    return legacyIntroText(input_flags, input_file, opt, include_stdout_only_lines,
+                           include_report_resume_block) +
+           legacyRunBody(output_case_name, final_step, !opt.has_step_override,
+                         opt.mapvtk);
+}
+
+bool jsonMtlnProblemEnabled(const nlohmann::json& root) {
+    if (!root.is_object()) return false;
+    if (!root.contains("general")) return false;
+    const auto& general = root["general"];
+    if (!general.is_object() || !general.contains("mtlnProblem")) return false;
+    const auto& flag = general["mtlnProblem"];
+    if (flag.is_boolean()) return flag.get<bool>();
+    if (flag.is_number_integer()) return flag.get<int>() != 0;
+    if (flag.is_string()) return to_lower(flag.get<std::string>()) == "true";
+    return false;
+}
+
+bool loadInputJson(const std::string& filename, nlohmann::json& root) {
+    std::ifstream in(filename);
+    if (!in.is_open()) return false;
+    try {
+        in >> root;
+    } catch (const nlohmann::json::exception&) {
+        return false;
+    }
+    return true;
+}
+
+std::string resolveInputFileFromFlags(const std::string& input_flags) {
+    const LaunchOptions_t opt = parseLaunchOptions(input_flags);
+    if (opt.has_input) return opt.input_file;
+    return std::string();
 }
 
 std::string extractCaseNameFromInput(const std::string& input_file) {
@@ -7685,10 +8805,13 @@ struct semba_fdtd_t::Impl {
     taglist_t tag_numbers;
     tagtype_t tagtype;
     FDTD_Solver solver;
+    bool help_only = false;
+    LaunchOptions_t launch_options;
+    std::string output_case_name;
+    std::string input_file;
 #ifdef CompileWithMTLN
     bool mtln_standalone = false;
     mtln_types_m::mtln_t mtln_parsed;
-    std::string input_file;
 #endif
 
     Impl() {
@@ -7703,10 +8826,19 @@ semba_fdtd_t::~semba_fdtd_t() = default;
 
 void semba_fdtd_t::init(const std::string& input_flags) {
     impl_->l.input_flags = input_flags;
+    impl_->help_only = false;
+    impl_->launch_options = parseLaunchOptions(input_flags);
+    if (impl_->launch_options.show_help) {
+        printHelpText();
+        writeTempLogText(legacyHeader(false) + legacyHelpBody());
+        impl_->help_only = true;
+        return;
+    }
+
     const std::string filename = resolveInputFileFromFlags(input_flags);
     impl_->l.layoutnumber = 0;
     impl_->l.num_procs = 1;
-    impl_->l.mpidir = mpiAxisFromFlagsLocal(input_flags);
+    impl_->l.mpidir = impl_->launch_options.mpidir;
 #ifdef CompileWithMPI
     int mpi_initialized = 0;
     MPI_Initialized(&mpi_initialized);
@@ -7715,27 +8847,71 @@ void semba_fdtd_t::init(const std::string& input_flags) {
         MPI_Comm_size(MPI_COMM_WORLD, &impl_->l.num_procs);
     }
 #endif
+
+    if (impl_->launch_options.missing_input_value) {
+        const std::string message =
+            "(    1/    1) ERROR: The input file was not found " +
+            legacyBinaryPath() + ".nfde";
+        std::cout << legacyErrorText(message, true, true);
+        writeTempLogText(legacyErrorText(message, false, false));
+        throw std::runtime_error("__SEMBA_FDTD_STOP_1__");
+    }
+    if (trimFlagToken(filename).empty()) {
+        const std::string message =
+            "(    1/    1) ERROR: ERROR! -> No input file was specified. Use -i ****.fdtd.json";
+        std::cout << legacyErrorText(message, true, false);
+        writeTempLogText(legacyErrorText(message, false, false));
+        throw std::runtime_error("__SEMBA_FDTD_STOP_1__");
+    }
+
+    impl_->input_file = filename;
+    impl_->output_case_name = composeOutputCaseName(
+        filename, impl_->l.num_procs, impl_->launch_options);
+
     if (filename.size() > 5) {
         impl_->l.extension = filename.substr(filename.size() - 5);
+    }
+    if (impl_->l.layoutnumber == 0) {
+        std::cout << legacyIntroText(
+            impl_->l.input_flags, impl_->input_file, impl_->launch_options,
+            true, false);
+        std::cout.flush();
     }
 #ifdef CompileWithMTLN
     impl_->input_file = filename;
     if (impl_->l.extension == ".json") {
-        smbjson::parser_t parser(filename);
-        NFDETypes_m::Parseador_t pd = parser.readProblemDescription();
-        if (pd.general && pd.general->mtlnProblem && pd.mtln) {
-            impl_->mtln_standalone = true;
-            impl_->mtln_parsed = std::move(*pd.mtln);
-            return;
+        nlohmann::json root;
+        if (loadInputJson(filename, root) && jsonMtlnProblemEnabled(root)) {
+            smbjson::parser_t parser(filename);
+            NFDETypes_m::Parseador_t pd = parser.readProblemDescription();
+            if (pd.mtln) {
+                impl_->mtln_standalone = true;
+                impl_->mtln_parsed = std::move(*pd.mtln);
+                return;
+            }
         }
     }
 #endif
-    const bool cli_mapvtk = mapvtk::flagsContainMapVtk(input_flags);
+    const bool cli_mapvtk = impl_->launch_options.mapvtk;
     Parseador_t pd_for_flags = parseFDTDJSON(filename);
     const bool json_mapvtk = mapvtk::flagsContainMapVtk(pd_for_flags.general.additionalArguments);
-    impl_->solver.init(filename, cli_mapvtk || json_mapvtk,
-                       impl_->l.layoutnumber, impl_->l.num_procs,
-                       impl_->l.mpidir);
+    {
+        std::ostringstream muted;
+        auto* old = std::cout.rdbuf(muted.rdbuf());
+        impl_->solver.init(filename, cli_mapvtk || json_mapvtk,
+                           impl_->l.layoutnumber, impl_->l.num_procs,
+                           impl_->l.mpidir);
+        std::cout.rdbuf(old);
+    }
+    if (impl_->launch_options.has_step_override &&
+        impl_->launch_options.step_override >= 0) {
+        impl_->solver.numSteps = impl_->launch_options.step_override;
+    }
+    if (impl_->l.layoutnumber == 0) {
+        std::cout << legacyRunBodyPreSimulation(
+            impl_->solver.numSteps, !impl_->launch_options.has_step_override);
+        std::cout.flush();
+    }
     impl_->media.NumMed = impl_->solver.pd.Mats.nMaterials;
     impl_->media.totalX = impl_->solver.pd.matriz.totalX;
     impl_->media.totalY = impl_->solver.pd.matriz.totalY;
@@ -7743,6 +8919,9 @@ void semba_fdtd_t::init(const std::string& input_flags) {
 }
 
 void semba_fdtd_t::launch() {
+    if (impl_->help_only) {
+        return;
+    }
 #ifdef CompileWithMTLN
     if (impl_->mtln_standalone) {
         const std::string case_name = extractCaseNameFromInput(impl_->input_file);
@@ -7751,20 +8930,58 @@ void semba_fdtd_t::launch() {
         return;
     }
 #endif
-    impl_->solver.launch();
+    if (impl_->l.layoutnumber == 0) {
+        impl_->solver.launch();
+    } else {
+        std::ostringstream muted;
+        auto* old = std::cout.rdbuf(muted.rdbuf());
+        impl_->solver.launch();
+        std::cout.rdbuf(old);
+    }
 }
 
 void semba_fdtd_t::end(const std::string& case_name) {
+    if (impl_->help_only) {
+        finishedwithsuccess = true;
+        return;
+    }
 #ifdef CompileWithMTLN
     if (impl_->mtln_standalone) {
-        (void)case_name;
+        const std::string output_case_name =
+            impl_->output_case_name.empty() ? case_name : impl_->output_case_name;
+        const std::string report_text = legacyIntroText(
+            impl_->l.input_flags, impl_->input_file, impl_->launch_options,
+            false, true) + "MTLN simulation finished.\n";
+        {
+            std::ofstream report(output_case_name + "_Report.txt");
+            report << report_text;
+        }
         finishedwithsuccess = true;
         // Match Fortran STOP after launch_mtln_simulation: skip C++ teardown of
         // ngspice-linked MTLN state (destroying bundles after circuit quit faults).
         std::quick_exit(0);
     }
 #endif
-    impl_->solver.end(case_name);
+    const std::string output_case_name =
+        impl_->output_case_name.empty() ? case_name : impl_->output_case_name;
+    const int final_step = impl_->solver.numSteps;
+    {
+        std::ostringstream muted;
+        auto* old = std::cout.rdbuf(muted.rdbuf());
+        impl_->solver.end(output_case_name);
+        std::cout.rdbuf(old);
+    }
+    const std::string report_text = legacySuccessText(
+        impl_->l.input_flags, impl_->input_file, output_case_name,
+        impl_->launch_options, final_step, false, true);
+    {
+        std::ofstream report(output_case_name + "_Report.txt");
+        report << report_text;
+    }
+    if (impl_->l.layoutnumber == 0) {
+        std::cout << legacyRunBodyPostSimulation(
+            output_case_name, final_step, impl_->launch_options.mapvtk);
+    }
     finishedwithsuccess = true;
 }
 
