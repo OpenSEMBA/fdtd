@@ -1,4 +1,5 @@
 from pyWrapper import *
+import os
 import shutil
 import glob
 import re
@@ -12,26 +13,6 @@ from sys import platform
 from scipy.special import hankel2 as h
 from scipy.special import h2vp as hp
 
-mtln_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON",
-    reason="Binary compiled with MTLN. No tests wire wires",
-)
-
-no_mtln_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF",
-    reason="MTLN is not available",
-)
-
-no_hdf_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_HDF") == "OFF",
-    reason="HDF5 is not available",
-)
-
-no_mpi_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_MPI") == "OFF",
-    reason="MPI is not available",
-)
-
 # Use of absolute path to avoid conflicts when changing directory.
 if platform == "linux":
     SEMBA_EXE = env.get(
@@ -43,6 +24,39 @@ elif platform == "win32":
         "SEMBA_EXE",
         os.path.join(os.getcwd(), "build", "bin", "semba-fdtd.exe"),
     )
+
+
+def _feature_flag(name: str, default: str) -> str:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().upper()
+
+
+_semba_exe_lc = SEMBA_EXE.lower()
+_mtln_default = "OFF" if "nomtln" in _semba_exe_lc else "ON"
+_hdf_default = "ON" if "hdf" in _semba_exe_lc else "OFF"
+_mpi_default = "ON" if "mpi" in _semba_exe_lc else "OFF"
+
+mtln_skip = pytest.mark.skipif(
+    _feature_flag("SEMBA_FDTD_ENABLE_MTLN", _mtln_default) == "ON",
+    reason="Binary compiled with MTLN. No tests wire wires",
+)
+
+no_mtln_skip = pytest.mark.skipif(
+    _feature_flag("SEMBA_FDTD_ENABLE_MTLN", _mtln_default) == "OFF",
+    reason="MTLN is not available",
+)
+
+no_hdf_skip = pytest.mark.skipif(
+    _feature_flag("SEMBA_FDTD_ENABLE_HDF", _hdf_default) == "OFF",
+    reason="HDF5 is not available",
+)
+
+no_mpi_skip = pytest.mark.skipif(
+    _feature_flag("SEMBA_FDTD_ENABLE_MPI", _mpi_default) == "OFF",
+    reason="MPI is not available",
+)
 
 NGSPICE_DLL = os.path.join(
     os.getcwd(), 'precompiled_libraries', 'windows-intel', 'ngspice', 'ngspice.dll')

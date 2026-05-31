@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdio>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -31,6 +32,127 @@ struct VtkMesh {
     std::vector<Vec3> points;
     std::vector<VtkCell> cells;
 };
+
+struct MapDescriptor {
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    int code = 0;
+    int tag = 0;
+};
+
+void writeLegacyMapBin(const std::string& stem, int nx, int ny, int nz) {
+    const std::string bin_name = stem + "__MAP_0_0_0__" +
+                                 std::to_string(nx) + "_" +
+                                 std::to_string(ny) + "_" +
+                                 std::to_string(nz) + ".bin";
+    std::ofstream out(bin_name, std::ios::binary);
+    if (!out.is_open()) return;
+
+    const char magic[8] = {'S', 'E', 'M', 'B', 'A', 'M', 'A', 'P'};
+    out.write(magic, sizeof(magic));
+    out.write(reinterpret_cast<const char*>(&nx), sizeof(nx));
+    out.write(reinterpret_cast<const char*>(&ny), sizeof(ny));
+    out.write(reinterpret_cast<const char*>(&nz), sizeof(nz));
+    const int cell_count = nx * ny * nz;
+    out.write(reinterpret_cast<const char*>(&cell_count), sizeof(cell_count));
+}
+
+void writeFortranRecord(std::ofstream& out, const void* data, int32_t bytes) {
+    out.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
+    out.write(static_cast<const char*>(data), bytes);
+    out.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
+}
+
+std::vector<MapDescriptor> buildPecBoundaryDescriptors(int nx, int ny, int nz) {
+    std::vector<MapDescriptor> descriptors;
+    descriptors.reserve(static_cast<size_t>(
+        4 * (nx * ny + nx * nz + ny * nz)));
+
+    for (int k = 0; k <= nz; ++k) {
+        for (int j = 0; j <= ny; ++j) {
+            for (int i = 0; i <= nx; ++i) {
+                if (i < nx && ((j == ny && k > 0 && k < nz) ||
+                               (k == nz && j > 0 && j < ny))) {
+                    descriptors.push_back({i, j, k, 10, 0});
+                }
+                if (j < ny && ((i == nx && k > 0 && k < nz) ||
+                               (k == nz && i > 0 && i < nx))) {
+                    descriptors.push_back({i, j, k, 20, 0});
+                }
+                if (k < nz && ((i == nx && j > 0 && j < ny) ||
+                               (j == ny && i > 0 && i < nx))) {
+                    descriptors.push_back({i, j, k, 30, 0});
+                }
+            }
+        }
+    }
+
+    for (int k = 0; k <= nz; ++k) {
+        for (int j = 0; j <= ny; ++j) {
+            for (int i = 0; i <= nx; ++i) {
+                if ((i == 0 || i == nx) && j < ny && k < nz) {
+                    descriptors.push_back({i, j, k, 100, 0});
+                }
+                if ((j == 0 || j == ny) && i < nx && k < nz) {
+                    descriptors.push_back({i, j, k, 200, 0});
+                }
+                if ((k == 0 || k == nz) && i < nx && j < ny) {
+                    descriptors.push_back({i, j, k, 300, 0});
+                }
+            }
+        }
+    }
+
+    return descriptors;
+}
+
+void writePecBoundaryMapBin(const std::string& stem,
+                            int nx,
+                            int ny,
+                            int nz,
+                            const std::vector<MapDescriptor>& descriptors) {
+    const std::string bin_name = stem + "__MAP_0_0_0__" +
+                                 std::to_string(nx) + "_" +
+                                 std::to_string(ny) + "_" +
+                                 std::to_string(nz) + ".bin";
+    std::ofstream out(bin_name, std::ios::binary);
+    if (!out.is_open()) return;
+
+    const int32_t descriptor_count = static_cast<int32_t>(descriptors.size());
+    writeFortranRecord(out, &descriptor_count, sizeof(descriptor_count));
+    for (const auto& descriptor : descriptors) {
+        const std::array<int32_t, 5> payload = {
+            static_cast<int32_t>(descriptor.i),
+            static_cast<int32_t>(descriptor.j),
+            static_cast<int32_t>(descriptor.k),
+            static_cast<int32_t>(descriptor.code),
+            static_cast<int32_t>(descriptor.tag),
+        };
+        writeFortranRecord(out, payload.data(),
+                           static_cast<int32_t>(payload.size() * sizeof(payload[0])));
+    }
+
+    const std::array<int32_t, 2> zero_ints = {0, 0};
+    writeFortranRecord(out, zero_ints.data(),
+                       static_cast<int32_t>(zero_ints.size() * sizeof(zero_ints[0])));
+
+    const std::array<float, 4> zero_floats = {0.0f, 0.0f, 0.0f, 0.0f};
+    for (const auto& descriptor : descriptors) {
+        const std::array<float, 4> media = {
+            descriptor.code < 100 ? 0.5f : 0.0f,
+            0.0f,
+            0.0f,
+            0.0f,
+        };
+        writeFortranRecord(out, media.data(),
+                           static_cast<int32_t>(media.size() * sizeof(media[0])));
+        writeFortranRecord(out, zero_floats.data(),
+                           static_cast<int32_t>(zero_floats.size() * sizeof(zero_floats[0])));
+        writeFortranRecord(out, zero_floats.data(),
+                           static_cast<int32_t>(zero_floats.size() * sizeof(zero_floats[0])));
+    }
+}
 
 int addPoint(std::vector<Vec3>& pts, const Vec3& p) {
     const double tol = 1e-9;
@@ -524,14 +646,14 @@ std::string formatVtkFloat(float value) {
     if (single == 0.0f) {
         return "0.000000000000E+000";
     }
-    float magnitude = std::fabs(single);
+    double magnitude = std::fabs(static_cast<double>(single));
     int exponent = 0;
-    while (magnitude != 0.0f && magnitude < 0.1f) {
-        magnitude *= 10.0f;
+    while (magnitude != 0.0 && magnitude < 0.1) {
+        magnitude *= 10.0;
         exponent--;
     }
-    while (magnitude >= 1.0f) {
-        magnitude /= 10.0f;
+    while (magnitude >= 1.0) {
+        magnitude /= 10.0;
         exponent++;
     }
     char mantissa[32];
@@ -540,7 +662,7 @@ std::string formatVtkFloat(float value) {
     if (exponent >= 0) {
         std::snprintf(exponent_text, sizeof(exponent_text), "E+%03d", exponent);
     } else {
-        std::snprintf(exponent_text, sizeof(exponent_text), "E%03d", exponent);
+        std::snprintf(exponent_text, sizeof(exponent_text), "E-%03d", -exponent);
     }
     char buffer[40];
     std::snprintf(buffer, sizeof(buffer), "%s%s%s",
@@ -555,6 +677,14 @@ std::string formatVtkLine(const std::vector<float>& values) {
         line += formatVtkFloat(values[i]);
     }
     return line;
+}
+
+std::string formatFortranE21(float value) {
+    std::string text = formatVtkFloat(value);
+    if (text.size() < 21) {
+        text.insert(text.begin(), 21 - text.size(), ' ');
+    }
+    return text;
 }
 
 struct FortranVtkMesh {
@@ -583,6 +713,22 @@ void appendQuad(FortranVtkMesh& mesh, const Vec3& a, const Vec3& b, const Vec3& 
     mesh.tagnumber.push_back(tag);
 }
 
+void appendLine(FortranVtkMesh& mesh, const Vec3& a, const Vec3& b,
+                float mediatype, float tag) {
+    const int base = static_cast<int>(mesh.points.size() / 3);
+    const auto push_point = [&](const Vec3& p) {
+        mesh.points.push_back(static_cast<float>(p.x));
+        mesh.points.push_back(static_cast<float>(p.y));
+        mesh.points.push_back(static_cast<float>(p.z));
+    };
+    push_point(a);
+    push_point(b);
+    mesh.cells.push_back({2, base, base + 1});
+    mesh.cell_types.push_back(3);
+    mesh.mediatype.push_back(mediatype);
+    mesh.tagnumber.push_back(tag);
+}
+
 void writeFortranMeshFile(const std::string& folder, const std::string& vtk_name,
                           const FortranVtkMesh& mesh) {
     std::filesystem::create_directories(folder);
@@ -595,7 +741,7 @@ void writeFortranMeshFile(const std::string& folder, const std::string& vtk_name
     out << "DATASET UNSTRUCTURED_GRID\n";
     out << "FIELD FieldData 1\n";
     out << "TIME 1 1 double\n";
-    out << "  " << formatVtkFloat(0.0f) << "\n";
+    out << formatFortranE21(0.0f) << "\n";
 
     const int n_points = static_cast<int>(mesh.points.size() / 3);
     char header[128];
@@ -611,13 +757,13 @@ void writeFortranMeshFile(const std::string& folder, const std::string& vtk_name
     for (const auto& cell : mesh.cells) {
         connectivity += static_cast<int>(cell.size());
     }
-    std::snprintf(header, sizeof(header), "CELLS %9d %9d", static_cast<int>(mesh.cells.size()),
+    std::snprintf(header, sizeof(header), "CELLS %9d%9d", static_cast<int>(mesh.cells.size()),
                   connectivity);
     out << " \n" << header << "\n";
     for (const auto& cell : mesh.cells) {
-        out << cell[0];
+        out << std::setw(2) << cell[0];
         for (size_t j = 1; j < cell.size(); ++j) {
-            out << " " << std::setw(9) << cell[j];
+            out << std::setw(9) << cell[j];
         }
         out << "\n";
     }
@@ -633,13 +779,13 @@ void writeFortranMeshFile(const std::string& folder, const std::string& vtk_name
     out << "SCALARS mediatype float 1\n";
     out << "LOOKUP_TABLE default\n";
     for (float value : mesh.mediatype) {
-        out << formatVtkFloat(value) << "\n";
+        out << formatFortranE21(value) << "\n";
     }
     out << " \n";
     out << "SCALARS tagnumber float 1\n";
     out << "LOOKUP_TABLE default\n";
     for (float value : mesh.tagnumber) {
-        out << std::setw(6) << static_cast<int>(value) << "\n";
+        out << std::setw(7) << static_cast<int>(value) << "\n";
     }
     out << " \n";
 }
@@ -680,13 +826,123 @@ void writeMeshFile(const std::string& folder, const std::string& vtk_name, const
 
 std::vector<float> buildLineCoordinates(const std::vector<double>& steps, int cells) {
     std::vector<float> line(static_cast<size_t>(cells) + 1, 0.0f);
-    for (int i = 1; i <= cells; ++i) {
+    double total = 0.0;
+    for (int i = 0; i < cells; ++i) {
+        total += (i < static_cast<int>(steps.size())) ? steps[static_cast<size_t>(i)]
+                                                      : steps.back();
+    }
+    for (int i = 1; i < cells; ++i) {
         const double step = (i - 1 < static_cast<int>(steps.size())) ? steps[static_cast<size_t>(i - 1)]
                                                                    : steps.back();
         line[static_cast<size_t>(i)] =
             line[static_cast<size_t>(i - 1)] + static_cast<float>(step);
     }
+    if (cells > 0) {
+        line[static_cast<size_t>(cells)] = static_cast<float>(total);
+    }
     return line;
+}
+
+void readGridSteps(const nlohmann::json& root,
+                   std::vector<double>& sx,
+                   std::vector<double>& sy,
+                   std::vector<double>& sz) {
+    if (!root.contains("mesh") || !root["mesh"].contains("grid")) return;
+    const auto& grid = root["mesh"]["grid"];
+    if (!grid.contains("steps")) return;
+    if (grid["steps"].contains("x")) {
+        for (const auto& v : grid["steps"]["x"]) sx.push_back(v.get<double>());
+    }
+    if (grid["steps"].contains("y")) {
+        for (const auto& v : grid["steps"]["y"]) sy.push_back(v.get<double>());
+    }
+    if (grid["steps"].contains("z")) {
+        for (const auto& v : grid["steps"]["z"]) sz.push_back(v.get<double>());
+    }
+}
+
+bool isPecOuterBoundaryOnlyMap(const nlohmann::json& root) {
+    if (root.contains("materials")) return false;
+    if (!root.contains("boundary") || !root["boundary"].contains("all")) return false;
+    const auto& all = root["boundary"]["all"];
+    if (!all.is_object()) return false;
+    return all.value("type", std::string()) == "pec";
+}
+
+void writePecBoundaryMapVtk(const std::string& stem,
+                            const nlohmann::json& root,
+                            int nx,
+                            int ny,
+                            int nz) {
+    std::vector<double> sx, sy, sz;
+    readGridSteps(root, sx, sy, sz);
+    if (sx.empty()) sx.push_back(0.1);
+    if (sy.empty()) sy.push_back(0.1);
+    if (sz.empty()) sz.push_back(0.1);
+
+    const std::vector<MapDescriptor> descriptors =
+        buildPecBoundaryDescriptors(nx, ny, nz);
+    writePecBoundaryMapBin(stem, nx, ny, nz, descriptors);
+
+    const std::vector<float> line_x = buildLineCoordinates(sx, nx);
+    const std::vector<float> line_y = buildLineCoordinates(sy, ny);
+    const std::vector<float> line_z = buildLineCoordinates(sz, nz);
+    const auto point = [&](int i, int j, int k) {
+        return Vec3{
+            line_x[static_cast<size_t>(i)],
+            line_y[static_cast<size_t>(j)],
+            line_z[static_cast<size_t>(k)],
+        };
+    };
+
+    FortranVtkMesh mesh;
+    for (const auto& descriptor : descriptors) {
+        const int i = descriptor.i;
+        const int j = descriptor.j;
+        const int k = descriptor.k;
+        switch (descriptor.code) {
+        case 10:
+            appendLine(mesh, point(i, j, k), point(i + 1, j, k), 0.5f, 0.0f);
+            break;
+        case 20:
+            appendLine(mesh, point(i, j, k), point(i, j + 1, k), 0.5f, 0.0f);
+            break;
+        case 30:
+            appendLine(mesh, point(i, j, k), point(i, j, k + 1), 0.5f, 0.0f);
+            break;
+        case 100:
+            appendQuad(mesh,
+                       point(i, j, k),
+                       point(i, j + 1, k),
+                       point(i, j + 1, k + 1),
+                       point(i, j, k + 1),
+                       0.0f, 0.0f);
+            break;
+        case 200:
+            appendQuad(mesh,
+                       point(i, j, k),
+                       point(i + 1, j, k),
+                       point(i + 1, j, k + 1),
+                       point(i, j, k + 1),
+                       0.0f, 0.0f);
+            break;
+        case 300:
+            appendQuad(mesh,
+                       point(i, j, k),
+                       point(i + 1, j, k),
+                       point(i + 1, j + 1, k),
+                       point(i, j + 1, k),
+                       0.0f, 0.0f);
+            break;
+        default:
+            break;
+        }
+    }
+
+    const std::string folder = stem + "__MAP_0_0_0__" + std::to_string(nx) + "_" +
+                               std::to_string(ny) + "_" + std::to_string(nz);
+    const std::string vtk_name = folder + "_1.vtk";
+    writeFortranMeshFile(folder, vtk_name, mesh);
 }
 
 std::vector<uint8_t> rasterizeCellMaterials(const nlohmann::json& root, int nx, int ny, int nz) {
@@ -1122,6 +1378,22 @@ void writeCurrentMapVtkFromJson(const std::string& case_name, const nlohmann::js
 }
 
 void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& root) {
+    int nx = 10, ny = 10, nz = 10;
+    if (root.contains("mesh") && root["mesh"].contains("grid")) {
+        const auto& grid = root["mesh"]["grid"];
+        if (grid.contains("numberOfCells")) {
+            nx = grid["numberOfCells"][0].get<int>();
+            ny = grid["numberOfCells"][1].get<int>();
+            nz = grid["numberOfCells"][2].get<int>();
+        }
+    }
+    const std::string stem = mapOutputStem(case_name);
+    if (isPecOuterBoundaryOnlyMap(root)) {
+        writePecBoundaryMapVtk(stem, root, nx, ny, nz);
+        return;
+    }
+    writeLegacyMapBin(stem, nx, ny, nz);
+
     bool has_conformal_triangles = false;
     if (root.contains("mesh") && root["mesh"].contains("elements")) {
         for (const auto& e : root["mesh"]["elements"]) {
@@ -1132,16 +1404,6 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
         }
     }
     if (has_conformal_triangles) {
-        int nx = 10, ny = 10, nz = 10;
-        if (root.contains("mesh") && root["mesh"].contains("grid")) {
-            const auto& grid = root["mesh"]["grid"];
-            if (grid.contains("numberOfCells")) {
-                nx = grid["numberOfCells"][0].get<int>();
-                ny = grid["numberOfCells"][1].get<int>();
-                nz = grid["numberOfCells"][2].get<int>();
-            }
-        }
-        const std::string stem = mapOutputStem(case_name);
         const std::string folder = stem + "__MAP_0_0_0__" + std::to_string(nx) + "_" +
                                    std::to_string(ny) + "_" + std::to_string(nz);
         const std::string vtk_name = folder + "_1.vtk";
@@ -1198,7 +1460,6 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
         }
     }
 
-    int nx = 10, ny = 10, nz = 10;
     std::vector<double> sx, sy, sz;
     if (root.contains("mesh") && root["mesh"].contains("grid")) {
         const auto& grid = root["mesh"]["grid"];
@@ -1217,7 +1478,6 @@ void writeMapVtkFromJson(const std::string& case_name, const nlohmann::json& roo
     if (sy.empty()) sy.push_back(0.1);
     if (sz.empty()) sz.push_back(0.1);
 
-    const std::string stem = mapOutputStem(case_name);
     const std::string folder = stem + "__MAP_0_0_0__" + std::to_string(nx) + "_" +
                                std::to_string(ny) + "_" + std::to_string(nz);
     const std::string vtk_name = folder + "_1.vtk";

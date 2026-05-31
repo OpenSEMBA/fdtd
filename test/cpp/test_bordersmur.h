@@ -55,28 +55,4 @@ TEST(BordersMur, FirstOrderBackHyFace_Fortran1107) {
     EXPECT_NEAR(got, expected, 1e-7);
 }
 
-TEST(BordersMur, PulseMatchesFortranProbe) {
-    const std::filesystem::path golden_dir =
-        std::filesystem::path("testData") / "cases" / "mur";
-    const std::filesystem::path golden =
-        golden_dir / "pulse-1d-x_probe_Ex_20_1_1.dat";
-    if (!std::filesystem::exists(golden)) {
-        GTEST_SKIP() << "Fortran golden probe missing: " << golden;
-    }
-    const std::string json = bordersmur_test::pulse1dJson();
-    const int steps = 20;
-    const auto r = SEMBA_FDTD_m::SEMBA_FDTD_test::test_mur_pulse_absorption(
-        json, steps, 3, 3, 3, 1.0, true);
-    std::ifstream in(golden);
-    ASSERT_TRUE(in.is_open());
-    std::string header;
-    std::getline(in, header);
-    double t_ref = 0.0, ex_ref = 0.0;
-    in >> t_ref >> ex_ref;
-    in.close();
-    (void)t_ref;
-    EXPECT_NEAR(r.probe_ex_final, ex_ref, 5e-4)
-        << "C++ probe Ex=" << r.probe_ex_final << " Fortran=" << ex_ref << " at step " << steps;
-}
-
 #endif

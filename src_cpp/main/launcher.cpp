@@ -26,6 +26,10 @@ int main(int argc, char** argv) {
     }
 #endif
 
+    if (argc > 0 && argv[0] != nullptr) {
+        setenv("SEMBA_FDTD_BINARY_PATH", argv[0], 1);
+    }
+
     std::string flags;
     for (int i = 1; i < argc; ++i) {
         if (i > 1) flags += ' ';
@@ -36,11 +40,13 @@ int main(int argc, char** argv) {
     try {
         semba_fdtd_init(semba, flags.c_str());
         semba_fdtd_launch(semba);
-        const std::string input_file = SEMBA_FDTD_m::resolveInputFileFromFlags(flags);
-        const std::string case_name = SEMBA_FDTD_m::extractCaseNameFromInput(input_file);
-        semba_fdtd_end(semba, case_name.c_str());
+        semba_fdtd_end(semba, "");
     } catch (const std::exception& ex) {
-        std::cerr << ex.what() << std::endl;
+        if (std::string(ex.what()) == "__SEMBA_FDTD_STOP_1__") {
+            std::cerr << "STOP 1" << std::endl;
+        } else {
+            std::cerr << ex.what() << std::endl;
+        }
         destroy_semba_fdtd(semba);
 #ifdef CompileWithMPI
         int mpi_finalized = 0;

@@ -51,10 +51,14 @@ public:
             mtln_res.n_sh = static_cast<int>(shielded.size());
         }
 
-        mtln_res.time_step = p.getRealAt(
-            p.root, std::string(jlbl::J_GENERAL) + "." + jlbl::J_GEN_TIME_STEP, 0.0);
-        mtln_res.number_of_steps = static_cast<int>(p.getRealAt(
-            p.root, std::string(jlbl::J_GENERAL) + "." + jlbl::J_GEN_NUMBER_OF_STEPS, 0.0));
+        if (p.rootJson.contains(jlbl::J_GENERAL) && p.rootJson[jlbl::J_GENERAL].is_object()) {
+            const auto& general = p.rootJson[jlbl::J_GENERAL];
+            mtln_res.time_step = jsonReal(general, jlbl::J_GEN_TIME_STEP, 0.0);
+            mtln_res.number_of_steps = jsonInt(general, jlbl::J_GEN_NUMBER_OF_STEPS, 0);
+        } else {
+            mtln_res.time_step = 0.0;
+            mtln_res.number_of_steps = 0;
+        }
 
         mtln_res.cables.resize(cables.size());
         for (size_t i = 0; i < cables.size(); ++i) {
@@ -84,6 +88,115 @@ private:
     std::unordered_map<int, int> elemIdToCable;
     std::unordered_map<int, int> elemIdToPosition;
     std::unordered_map<int, int> connIdToConnector;
+
+    static std::string jsonString(const nlohmann::json& obj, const char* key, const std::string& fallback = "") {
+        if (!obj.is_object() || !obj.contains(key)) return fallback;
+        const auto& v = obj[key];
+        return v.is_string() ? v.get<std::string>() : fallback;
+    }
+
+    static int jsonInt(const nlohmann::json& obj, const char* key, int fallback = 0) {
+        if (!obj.is_object() || !obj.contains(key)) return fallback;
+        const auto& v = obj[key];
+        return v.is_number_integer() ? v.get<int>() : fallback;
+    }
+
+    static double jsonReal(const nlohmann::json& obj, const char* key, double fallback = 0.0) {
+        if (!obj.is_object() || !obj.contains(key)) return fallback;
+        const auto& v = obj[key];
+        return v.is_number() ? v.get<double>() : fallback;
+    }
+
+    static std::vector<double> jsonRealVector(const nlohmann::json& obj, const char* key) {
+        std::vector<double> out;
+        if (!obj.is_object() || !obj.contains(key)) return out;
+        const auto& arr = obj[key];
+        if (!arr.is_array()) return out;
+        out.reserve(arr.size());
+        for (const auto& v : arr) {
+            if (v.is_number()) out.push_back(v.get<double>());
+        }
+        return out;
+    }
+
+    static std::vector<int> jsonIntVector(const nlohmann::json& obj, const char* key) {
+        std::vector<int> out;
+        if (!obj.is_object() || !obj.contains(key)) return out;
+        const auto& arr = obj[key];
+        if (!arr.is_array()) return out;
+        out.reserve(arr.size());
+        for (const auto& v : arr) {
+            if (v.is_number_integer()) out.push_back(v.get<int>());
+        }
+        return out;
+    }
+
+    static std::vector<std::vector<double>> jsonMatrix(const nlohmann::json& obj, const char* key) {
+        std::vector<std::vector<double>> out;
+        if (!obj.is_object() || !obj.contains(key)) return out;
+        const auto& arr = obj[key];
+        if (!arr.is_array()) return out;
+        out.reserve(arr.size());
+        for (const auto& row : arr) {
+            std::vector<double> rowVals;
+            if (row.is_array()) {
+                rowVals.reserve(row.size());
+                for (const auto& v : row) {
+                    if (v.is_number()) rowVals.push_back(v.get<double>());
+                }
+            }
+            out.push_back(std::move(rowVals));
+        }
+        return out;
+    }
+
+    static int jsonDimension(const nlohmann::json& obj, const char* key) {
+        if (!obj.is_object() || !obj.contains(key)) return -1;
+        const auto& v = obj[key];
+        if (!v.is_array()) return 0;
+        if (v.empty()) return 1;
+        return v.front().is_array() ? 2 : 1;
+    }
+
+    const nlohmann::json* materialsArray() const {
+        if (!p.rootJson.is_object() || !p.rootJson.contains(jlbl::J_MATERIALS)) return nullptr;
+        const auto& mats = p.rootJson[jlbl::J_MATERIALS];
+        return mats.is_array() ? &mats : nullptr;
+    }
+
+    const nlohmann::json* sourcesArray() const {
+        if (!p.rootJson.is_object() || !p.rootJson.contains(jlbl::J_SOURCES)) return nullptr;
+        const auto& src = p.rootJson[jlbl::J_SOURCES];
+        return src.is_array() ? &src : nullptr;
+    }
+
+    const nlohmann::json* probesArray() const {
+        if (!p.rootJson.is_object() || !p.rootJson.contains(jlbl::J_PROBES)) return nullptr;
+        const auto& pr = p.rootJson[jlbl::J_PROBES];
+        return pr.is_array() ? &pr : nullptr;
+    }
+
+    const nlohmann::json* materialAssociationsArray() const {
+        if (!p.rootJson.is_object() || !p.rootJson.contains(jlbl::J_MATERIAL_ASSOCIATIONS)) return nullptr;
+        const auto& ass = p.rootJson[jlbl::J_MATERIAL_ASSOCIATIONS];
+        return ass.is_array() ? &ass : nullptr;
+    }
+
+    const nlohmann::json* materialById(int materialId) const {
+        const auto* mats = materialsArray();
+        if (!mats) return nullptr;
+        for (const auto& mat : *mats) {
+            if (jsonInt(mat, jlbl::J_ID, 0) == materialId) {
+                return &mat;
+            }
+        }
+        return nullptr;
+    }
+
+    std::string materialTypeById(int materialId) const {
+        const auto* mat = materialById(materialId);
+        return mat ? jsonString(*mat, jlbl::J_TYPE) : std::string();
+    }
 
     static void addConnIdToConnectorMap(
         std::unordered_map<int, int>& map, const std::vector<Mtln::connector_t>& conn) {
@@ -118,32 +231,26 @@ private:
     }
 
     std::vector<Mtln::connector_t> readConnectors() {
-        jmod::json_value* mat = nullptr;
-        bool materialsFound = false;
-        p.core->get(p.root, jlbl::J_MATERIALS, mat, materialsFound);
-        if (!materialsFound || !mat) {
+        const auto* mats = materialsArray();
+        if (!mats) {
             return {};
         }
 
-        auto connectorPtrs = p.jsonValueFilterByKeyValue(mat, jlbl::J_TYPE, jlbl::J_MAT_TYPE_CONNECTOR);
-        std::vector<Mtln::connector_t> res(connectorPtrs.size());
-        for (size_t i = 0; i < connectorPtrs.size(); ++i) {
-            res[i].id = p.getIntAt(connectorPtrs[i], jlbl::J_ID, 0);
-            if (p.existsAt(connectorPtrs[i], jlbl::J_MAT_CONN_RESISTANCES)) {
-                res[i].resistances = p.getRealsAt(connectorPtrs[i], jlbl::J_MAT_CONN_RESISTANCES);
+        std::vector<Mtln::connector_t> res;
+        for (const auto& mat : *mats) {
+            if (jsonString(mat, jlbl::J_TYPE) != jlbl::J_MAT_TYPE_CONNECTOR) {
+                continue;
             }
-            if (p.existsAt(connectorPtrs[i], jlbl::J_MAT_CONN_TRANSFER_IMPEDANCES)) {
-                jmod::json_value* zs = nullptr;
-                bool zsFound = false;
-                p.core->get(connectorPtrs[i], jlbl::J_MAT_CONN_TRANSFER_IMPEDANCES, zs, zsFound);
-                int n = p.core->count(zs);
-                res[i].transfer_impedances_per_meter.resize(n);
-                for (int j = 1; j <= n; ++j) {
-                    jmod::json_value* z = nullptr;
-                    p.core->get_child(zs, j, z);
-                    res[i].transfer_impedances_per_meter[static_cast<size_t>(j - 1)] = readTransferImpedance(z);
+            Mtln::connector_t connector;
+            connector.id = jsonInt(mat, jlbl::J_ID, 0);
+            connector.resistances = jsonRealVector(mat, jlbl::J_MAT_CONN_RESISTANCES);
+            if (mat.contains(jlbl::J_MAT_CONN_TRANSFER_IMPEDANCES) &&
+                mat[jlbl::J_MAT_CONN_TRANSFER_IMPEDANCES].is_array()) {
+                for (const auto& z : mat[jlbl::J_MAT_CONN_TRANSFER_IMPEDANCES]) {
+                    connector.transfer_impedances_per_meter.push_back(readTransferImpedance(z));
                 }
             }
+            res.push_back(std::move(connector));
         }
         return res;
     }
@@ -160,11 +267,10 @@ private:
         allCables.insert(allCables.end(), cables3.begin(), cables3.end());
 
         for (const auto& cable : allCables) {
-            auto* cableMat = p.matTable.getId(cable.materialId);
-            std::string cableType = p.getStrAt(cableMat, jlbl::J_TYPE);
+            const std::string cableType = materialTypeById(cable.materialId);
             bool isShieldedCable = (cableType == jlbl::J_MAT_TYPE_SHIELDED_MULTIWIRE);
-            jmod::json_value* terminations_ini = getTerminationsOnSide(cable.initialTerminalId);
-            jmod::json_value* terminations_end = getTerminationsOnSide(cable.endTerminalId);
+            const nlohmann::json* terminations_ini = getTerminationsOnSide(cable.initialTerminalId);
+            const nlohmann::json* terminations_end = getTerminationsOnSide(cable.endTerminalId);
             for (size_t j = 0; j < cable.elementIds.size(); ++j) {
                 int elemId = cable.elementIds[j];
                 int conductorIndex = static_cast<int>(j) + 1;
@@ -333,35 +439,34 @@ private:
         }
     }
 
-    jmod::json_value* getTerminationsOnSide(int terminationId) {
+    const nlohmann::json* getTerminationsOnSide(int terminationId) {
         if (terminationId == -1) {
             Report::WarnErrReport("Error: missing terminal on cable side", true);
             return nullptr;
         }
-        auto* terminal = p.matTable.getId(terminationId);
-        if (!p.existsAt(terminal, jlbl::J_MAT_TERM_TERMINATIONS)) {
+        const auto* terminal = materialById(terminationId);
+        if (!terminal || !terminal->contains(jlbl::J_MAT_TERM_TERMINATIONS) ||
+            !(*terminal)[jlbl::J_MAT_TERM_TERMINATIONS].is_array()) {
             Report::WarnErrReport("Error: missing terminations on terminal", true);
             return nullptr;
         }
-        jmod::json_value* res = nullptr;
-        bool termFound = false;
-        p.core->get(terminal, jlbl::J_MAT_TERM_TERMINATIONS, res, termFound);
-        return res;
+        return &(*terminal)[jlbl::J_MAT_TERM_TERMINATIONS];
     }
 
     aux_node_t buildNode(
-        jmod::json_value* termination_list,
+        const nlohmann::json* termination_list,
         int label,
         int index,
         int id,
         bool isShieldedCable) {
         aux_node_t res;
-        if (!termination_list) {
+        if (!termination_list || !termination_list->is_array()) {
             return res;
         }
-
-        jmod::json_value* termination = nullptr;
-        p.core->get_child(termination_list, index, termination);
+        if (index < 1 || static_cast<size_t>(index) > termination_list->size()) {
+            return res;
+        }
+        const auto& termination = (*termination_list)[static_cast<size_t>(index - 1)];
         res.node.termination.termination_type = readTerminationType(termination);
         res.node.termination.capacitance = readTerminationRLC(termination, jlbl::J_MAT_TERM_CAPACITANCE, 1e22);
         res.node.termination.resistance = readTerminationRLC(termination, jlbl::J_MAT_TERM_RESISTANCE, 0.0);
@@ -435,29 +540,27 @@ private:
         int iy = static_cast<int>(std::lround(relPos.position[1]));
         int iz = static_cast<int>(std::lround(relPos.position[2]));
 
-        jmod::json_value* allMatAss = nullptr;
-        bool found = false;
-        p.core->get(p.root, jlbl::J_MATERIAL_ASSOCIATIONS, allMatAss, found);
-        if (!found || !allMatAss) {
+        const auto* allMatAss = materialAssociationsArray();
+        if (!allMatAss) {
             return false;
         }
 
-        int count = p.core->count(allMatAss);
-        for (int i = 1; i <= count; ++i) {
-            jmod::json_value* mAPtr = nullptr;
-            p.core->get_child(allMatAss, i, mAPtr);
-            auto mA = p.parseMaterialAssociation(mAPtr);
-            auto* mat = p.matTable.getId(mA.materialId);
-            std::string matType = p.getStrAt(mat, jlbl::J_TYPE);
+        for (const auto& mA : *allMatAss) {
+            const int materialId = jsonInt(mA, jlbl::J_MATERIAL_ID, 0);
+            const std::string matType = materialTypeById(materialId);
             if (matType == jlbl::J_MAT_TYPE_WIRE || matType == jlbl::J_MAT_TYPE_UNSHIELDED_MULTIWIRE ||
                 matType == jlbl::J_MAT_TYPE_SHIELDED_MULTIWIRE || matType == jlbl::J_MAT_TYPE_TERMINAL ||
                 matType == jlbl::J_MAT_TYPE_CONNECTOR) {
                 continue;
             }
-            if (matType == jlbl::J_MAT_TYPE_ISOTROPIC && isVacuumIsotropic(mat)) {
+            const auto* mat = materialById(materialId);
+            if (!mat) {
                 continue;
             }
-            for (int elemId : mA.elementIds) {
+            if (matType == jlbl::J_MAT_TYPE_ISOTROPIC && isVacuumIsotropic(*mat)) {
+                continue;
+            }
+            for (int elemId : jsonIntVector(mA, jlbl::J_ELEMENTIDS)) {
                 if (elementTouchesCoordinate(elemId, cId, ix, iy, iz)) {
                     return true;
                 }
@@ -507,14 +610,14 @@ private:
         return ix >= ax && ix <= bx && iy >= ay && iy <= by && iz >= az && iz <= bz;
     }
 
-    bool isVacuumIsotropic(jmod::json_value* matPtr) {
+    bool isVacuumIsotropic(const nlohmann::json& mat) {
         constexpr double tol = 1.0e-12;
-        double relEps = p.getRealAt(matPtr, jlbl::J_MAT_REL_PERMITTIVITY, 1.0);
-        double relMu = p.getRealAt(matPtr, jlbl::J_MAT_REL_PERMEABILITY, 1.0);
-        double sigmaE = p.getRealAt(matPtr, jlbl::J_MAT_ELECTRIC_CONDUCTIVITY, 0.0);
-        double sigmaM = p.getRealAt(matPtr, jlbl::J_MAT_MAGNETIC_CONDUCTIVITY, 0.0);
-        double absEps = p.getRealAt(matPtr, jlbl::J_MAT_ABS_PERMITTIVITY, relEps * NFDE::EPSILON_VACUUM);
-        double absMu = p.getRealAt(matPtr, jlbl::J_MAT_ABS_PERMEABILITY, relMu * NFDE::MU_VACUUM);
+        double relEps = jsonReal(mat, jlbl::J_MAT_REL_PERMITTIVITY, 1.0);
+        double relMu = jsonReal(mat, jlbl::J_MAT_REL_PERMEABILITY, 1.0);
+        double sigmaE = jsonReal(mat, jlbl::J_MAT_ELECTRIC_CONDUCTIVITY, 0.0);
+        double sigmaM = jsonReal(mat, jlbl::J_MAT_MAGNETIC_CONDUCTIVITY, 0.0);
+        double absEps = jsonReal(mat, jlbl::J_MAT_ABS_PERMITTIVITY, relEps * NFDE::EPSILON_VACUUM);
+        double absMu = jsonReal(mat, jlbl::J_MAT_ABS_PERMEABILITY, relMu * NFDE::MU_VACUUM);
         return std::abs(relEps - 1.0) <= tol && std::abs(relMu - 1.0) <= tol &&
                std::abs(absEps - NFDE::EPSILON_VACUUM) <= std::max(tol, tol * NFDE::EPSILON_VACUUM) &&
                std::abs(absMu - NFDE::MU_VACUUM) <= std::max(tol, tol * NFDE::MU_VACUUM) &&
@@ -533,29 +636,28 @@ private:
 
     Mtln::node_source_t readGeneratorOnTermination(int id, int label) {
         Mtln::node_source_t res;
-        jmod::json_value* sources = nullptr;
-        bool found = false;
-        p.core->get(p.root, jlbl::J_SOURCES, sources, found);
-        if (!found || !sources) {
-            return res;
-        }
-        auto genSrcs = p.jsonValueFilterByKeyValues(sources, jlbl::J_TYPE, {jlbl::J_SRC_TYPE_GEN});
-        if (genSrcs.empty()) {
+        if (!p.rootJson.contains(jlbl::J_SOURCES) || !p.rootJson[jlbl::J_SOURCES].is_array()) {
             return res;
         }
 
         bool plFound = false;
         auto poly = p.mesh.getPolyline(id, plFound);
-        for (auto* gen : genSrcs) {
-            if (!p.existsAt(gen, jlbl::J_SRC_MAGNITUDE_FILE)) {
+        if (!plFound) {
+            return res;
+        }
+        for (const auto& gen : p.rootJson[jlbl::J_SOURCES]) {
+            if (jsonString(gen, jlbl::J_TYPE) != jlbl::J_SRC_TYPE_GEN) {
+                continue;
+            }
+            if (!gen.contains(jlbl::J_SRC_MAGNITUDE_FILE) || !gen[jlbl::J_SRC_MAGNITUDE_FILE].is_string()) {
                 Report::WarnErrReport("magnitudeFile of source missing", true);
                 return res;
             }
-            if (!p.existsAt(gen, jlbl::J_FIELD)) {
+            if (!gen.contains(jlbl::J_FIELD) || !gen[jlbl::J_FIELD].is_string()) {
                 Report::WarnErrReport("Type of generator is ambigous", true);
                 return res;
             }
-            std::string field = p.getStrAt(gen, jlbl::J_FIELD);
+            std::string field = gen[jlbl::J_FIELD].get<std::string>();
             if (field != jlbl::J_FIELD_VOLTAGE && field != jlbl::J_FIELD_CURRENT) {
                 Report::WarnErrReport("Only voltage and current generators are supported", true);
                 return res;
@@ -563,12 +665,12 @@ private:
             if (isSourceAttachedToLine(gen, poly, id, label)) {
                 if (field == jlbl::J_FIELD_VOLTAGE) {
                     res.source_type = Mtln::SOURCE_TYPE_VOLTAGE;
-                    res.resistance = p.getRealAt(gen, jlbl::J_SRC_RESISTANCE_GEN, 0.0);
+                    res.resistance = jsonReal(gen, jlbl::J_SRC_RESISTANCE_GEN, 0.0);
                 } else {
                     res.source_type = Mtln::SOURCE_TYPE_CURRENT;
-                    res.resistance = p.getRealAt(gen, jlbl::J_SRC_RESISTANCE_GEN, 1.0e22);
+                    res.resistance = jsonReal(gen, jlbl::J_SRC_RESISTANCE_GEN, 1.0e22);
                 }
-                res.path_to_excitation = p.getStrAt(gen, jlbl::J_SRC_MAGNITUDE_FILE);
+                res.path_to_excitation = gen[jlbl::J_SRC_MAGNITUDE_FILE].get<std::string>();
                 return res;
             }
         }
@@ -576,20 +678,29 @@ private:
     }
 
     bool isSourceAttachedToLine(
-        jmod::json_value* src, const Mesh::polyline_t& polyline, int id, int label) {
-        auto sourceElemIds = p.getIntsAt(src, jlbl::J_ELEMENTIDS);
+        const nlohmann::json& src, const Mesh::polyline_t& polyline, int id, int label) {
+        if (!src.contains(jlbl::J_ELEMENTIDS) || !src[jlbl::J_ELEMENTIDS].is_array() ||
+            src[jlbl::J_ELEMENTIDS].empty() || !src[jlbl::J_ELEMENTIDS][0].is_number_integer()) {
+            return false;
+        }
+        std::vector<int> sourceElemIds;
+        for (const auto& v : src[jlbl::J_ELEMENTIDS]) {
+            if (v.is_number_integer()) sourceElemIds.push_back(v.get<int>());
+        }
+        if (sourceElemIds.empty()) return false;
         bool nodeFound = false;
         auto srcCoord = p.mesh.getNode(sourceElemIds[0], nodeFound);
+        if (!nodeFound || srcCoord.coordIds.empty() || polyline.coordIds.empty()) return false;
         int index = (label == Mtln::TERMINAL_NODE_SIDE_INI) ? 0 : static_cast<int>(polyline.coordIds.size()) - 1;
-        if (p.existsAt(src, jlbl::J_SRC_ATTACHED_ID)) {
+        if (src.contains(jlbl::J_SRC_ATTACHED_ID) && src[jlbl::J_SRC_ATTACHED_ID].is_number_integer()) {
             return !srcCoord.coordIds.empty() && srcCoord.coordIds[0] == polyline.coordIds[static_cast<size_t>(index)] &&
-                   p.getIntAt(src, jlbl::J_SRC_ATTACHED_ID, -1) == id;
+                   src[jlbl::J_SRC_ATTACHED_ID].get<int>() == id;
         }
         return !srcCoord.coordIds.empty() && srcCoord.coordIds[0] == polyline.coordIds[static_cast<size_t>(index)];
     }
 
-    static int readTerminationType(jmod::json_value* termination, parser_t& parser) {
-        std::string type = parser.getStrAt(termination, jlbl::J_TYPE);
+    static int readTerminationType(const nlohmann::json& termination) {
+        std::string type = jsonString(termination, jlbl::J_TYPE);
         if (type == jlbl::J_MAT_TERM_TYPE_OPEN) return Mtln::TERMINATION_OPEN;
         if (type == jlbl::J_MAT_TERM_TYPE_SHORT) return Mtln::TERMINATION_SHORT;
         if (type == jlbl::J_MAT_TERM_TYPE_SERIES) return Mtln::TERMINATION_SERIES;
@@ -605,77 +716,68 @@ private:
         return Mtln::TERMINATION_UNDEFINED;
     }
 
-    int readTerminationType(jmod::json_value* termination) {
-        return readTerminationType(termination, p);
-    }
-
-    static Mtln::terminal_circuit_t readTerminationModel(jmod::json_value* termination, parser_t& parser) {
+    static Mtln::terminal_circuit_t readTerminationModel(const nlohmann::json& termination) {
         Mtln::terminal_circuit_t res;
-        if (parser.existsAt(termination, jlbl::J_MAT_TERM_MODEL_FILE)) {
-            res.file = parser.getStrAt(termination, jlbl::J_MAT_TERM_MODEL_FILE);
+        if (termination.contains(jlbl::J_MAT_TERM_MODEL_FILE) &&
+            termination[jlbl::J_MAT_TERM_MODEL_FILE].is_string()) {
+            res.file = termination[jlbl::J_MAT_TERM_MODEL_FILE].get<std::string>();
         }
-        if (parser.existsAt(termination, jlbl::J_MAT_TERM_MODEL_NAME)) {
-            res.name = parser.getStrAt(termination, jlbl::J_MAT_TERM_MODEL_NAME);
+        if (termination.contains(jlbl::J_MAT_TERM_MODEL_NAME) &&
+            termination[jlbl::J_MAT_TERM_MODEL_NAME].is_string()) {
+            res.name = termination[jlbl::J_MAT_TERM_MODEL_NAME].get<std::string>();
         }
         return res;
     }
 
-    Mtln::terminal_circuit_t readTerminationModel(jmod::json_value* termination) {
-        return readTerminationModel(termination, p);
-    }
-
-    static int readTerminationNetworkCircuitNode(jmod::json_value* termination, int defaultVal, parser_t& parser) {
-        if (parser.existsAt(termination, jlbl::J_MAT_TERM_MODEL_NODE)) {
-            return parser.getIntAt(termination, jlbl::J_MAT_TERM_MODEL_NODE, defaultVal);
+    static int readTerminationNetworkCircuitNode(const nlohmann::json& termination, int defaultVal) {
+        if (termination.contains(jlbl::J_MAT_TERM_MODEL_NODE) &&
+            termination[jlbl::J_MAT_TERM_MODEL_NODE].is_number_integer()) {
+            return termination[jlbl::J_MAT_TERM_MODEL_NODE].get<int>();
         }
         return defaultVal;
-    }
-
-    int readTerminationNetworkCircuitNode(jmod::json_value* termination, int defaultVal) {
-        return readTerminationNetworkCircuitNode(termination, defaultVal, p);
     }
 
     static double readTerminationRLC(
-        jmod::json_value* termination, const std::string& label, double defaultVal, parser_t& parser) {
-        if (parser.existsAt(termination, label)) {
-            return parser.getRealAt(termination, label, defaultVal);
+        const nlohmann::json& termination, const std::string& label, double defaultVal) {
+        if (termination.contains(label) && termination[label].is_number()) {
+            return termination[label].get<double>();
         }
         return defaultVal;
     }
 
-    double readTerminationRLC(jmod::json_value* termination, const char* label, double defaultVal) {
-        return readTerminationRLC(termination, std::string(label), defaultVal, p);
+    double readTerminationRLC(const nlohmann::json& termination, const char* label, double defaultVal) {
+        return readTerminationRLC(termination, std::string(label), defaultVal);
     }
 
     std::vector<Mtln::parsed_generator_t> readWireGenerators() {
-        jmod::json_value* sources = nullptr;
-        bool found = false;
-        p.core->get(p.root, jlbl::J_SOURCES, sources, found);
-        if (!found || !sources) {
+        const auto* sources = sourcesArray();
+        if (!sources) {
             return {};
         }
-        auto gens = p.jsonValueFilterByKeyValue(sources, jlbl::J_TYPE, jlbl::J_SRC_TYPE_GEN);
         std::vector<Mtln::parsed_generator_t> res;
-        for (auto* gen : gens) {
+        for (const auto& gen : *sources) {
+            if (jsonString(gen, jlbl::J_TYPE) != jlbl::J_SRC_TYPE_GEN) {
+                continue;
+            }
             if (!isGeneratorOnWire(gen)) {
                 continue;
             }
-            if (!p.existsAt(gen, jlbl::J_SRC_MAGNITUDE_FILE)) {
+            if (!gen.contains(jlbl::J_SRC_MAGNITUDE_FILE) || !gen[jlbl::J_SRC_MAGNITUDE_FILE].is_string()) {
                 Report::WarnErrReport("magnitudeFile of source missing", true);
             }
             Mtln::parsed_generator_t g;
-            std::string field = p.getStrAt(gen, jlbl::J_FIELD);
+            std::string field = jsonString(gen, jlbl::J_FIELD);
             if (field == jlbl::J_FIELD_VOLTAGE) {
                 g.generator_type = Mtln::SOURCE_TYPE_VOLTAGE;
-                g.resistance = p.getRealAt(gen, jlbl::J_SRC_RESISTANCE_GEN, 0.0);
+                g.resistance = jsonReal(gen, jlbl::J_SRC_RESISTANCE_GEN, 0.0);
             } else if (field == jlbl::J_FIELD_CURRENT) {
                 g.generator_type = Mtln::SOURCE_TYPE_CURRENT;
-                g.resistance = p.getRealAt(gen, jlbl::J_SRC_RESISTANCE_GEN, 1.0e22);
+                g.resistance = jsonReal(gen, jlbl::J_SRC_RESISTANCE_GEN, 1.0e22);
             } else {
                 Report::WarnErrReport(
                     "Field block of source of type generator must be current or voltage", true);
             }
-            g.path_to_excitation = p.getStrAt(gen, jlbl::J_SRC_MAGNITUDE_FILE);
+            g.path_to_excitation = jsonString(gen, jlbl::J_SRC_MAGNITUDE_FILE);
             auto idAndPos = getPolylineElemIdAndConductorOfGenerator(gen);
             auto it = elemIdToCable.find(idAndPos.first);
             if (it == elemIdToCable.end()) {
@@ -685,6 +787,9 @@ private:
             auto coord = getCoordinateFromElemIdNode(gen);
             bool plFound = false;
             auto pl = p.mesh.getPolyline(idAndPos.first, plFound);
+            if (!plFound) {
+                continue;
+            }
             auto linels = p.mesh.polylineToLinels(pl);
             g.conductor = idAndPos.second;
             g.index = findIndexInLinels(coord, linels);
@@ -694,14 +799,15 @@ private:
         return res;
     }
 
-    bool isGeneratorOnWire(jmod::json_value* src) {
-        bool found = false;
-        std::string fieldLabel = p.getStrAt(src, jlbl::J_FIELD, "", &found);
-        if (!found || (fieldLabel != jlbl::J_FIELD_CURRENT && fieldLabel != jlbl::J_FIELD_VOLTAGE)) {
+    bool isGeneratorOnWire(const nlohmann::json& src) {
+        std::string fieldLabel = jsonString(src, jlbl::J_FIELD);
+        if (fieldLabel.empty() ||
+            (fieldLabel != jlbl::J_FIELD_CURRENT && fieldLabel != jlbl::J_FIELD_VOLTAGE)) {
             Report::WarnErrReport("field type not recognized", true);
             return false;
         }
-        auto eIds = p.getIntsAt(src, jlbl::J_ELEMENTIDS);
+        auto eIds = jsonIntVector(src, jlbl::J_ELEMENTIDS);
+        if (eIds.empty()) return false;
         auto pixel = Pt::getPixelFromElementId(p.mesh, eIds[0]);
         int cId = pixel.tag;
 
@@ -744,26 +850,29 @@ private:
     }
 
     std::vector<Mtln::probe_t> readMultiwireProbes() {
-        jmod::json_value* probesRoot = nullptr;
-        bool found = false;
-        p.core->get(p.root, jlbl::J_PROBES, probesRoot, found);
-        if (!found || !probesRoot) {
+        const auto* probesRoot = probesArray();
+        if (!probesRoot) {
             return {};
         }
-        auto wire_probes = p.jsonValueFilterByKeyValue(probesRoot, jlbl::J_TYPE, jlbl::J_PR_TYPE_WIRE);
+        std::vector<const nlohmann::json*> wire_probes;
+        for (const auto& probe : *probesRoot) {
+            if (jsonString(probe, jlbl::J_TYPE) == jlbl::J_PR_TYPE_WIRE) {
+                wire_probes.push_back(&probe);
+            }
+        }
         int n = countNumberOfMultiwireProbes(wire_probes);
         std::vector<Mtln::probe_t> res;
         res.reserve(static_cast<size_t>(n));
-        for (auto* probePtr : wire_probes) {
-            if (!isProbeDefinedOnMultiwire(probePtr)) {
+        for (const auto* probePtr : wire_probes) {
+            if (!probePtr || !isProbeDefinedOnMultiwire(*probePtr)) {
                 continue;
             }
-            auto ids = getPolylineElemIdOfMultiwireProbe(probePtr);
-            auto probe_node_coord = getCoordinateFromElemIdNode(probePtr);
+            auto ids = getPolylineElemIdOfMultiwireProbe(*probePtr);
+            auto probe_node_coord = getCoordinateFromElemIdNode(*probePtr);
             for (int elemId : ids) {
                 Mtln::probe_t probe;
-                probe.probe_name = readProbeName(probePtr);
-                probe.probe_type = readProbeType(probePtr);
+                probe.probe_name = readProbeName(*probePtr);
+                probe.probe_type = readProbeType(*probePtr);
                 probe.probe_position = {
                     probe_node_coord.position[0],
                     probe_node_coord.position[1],
@@ -799,10 +908,16 @@ private:
         return res;
     }
 
-    Mesh::coordinate_t getCoordinateFromElemIdNode(jmod::json_value* object) {
-        auto elemIds = p.getIntsAt(object, jlbl::J_ELEMENTIDS);
+    Mesh::coordinate_t getCoordinateFromElemIdNode(const nlohmann::json& object) {
+        auto elemIds = jsonIntVector(object, jlbl::J_ELEMENTIDS);
         bool found = false;
+        if (elemIds.empty()) {
+            return Mesh::coordinate_t{};
+        }
         auto node = p.mesh.getNode(elemIds[0], found);
+        if (!found || node.coordIds.empty()) {
+            return Mesh::coordinate_t{};
+        }
         return p.mesh.getCoordinate(node.coordIds[0], found);
     }
 
@@ -846,13 +961,16 @@ private:
         return best;
     }
 
-    bool isProbeDefinedOnMultiwire(jmod::json_value* probePtr) {
-        bool found = false;
-        std::string fieldLabel = p.getStrAt(probePtr, jlbl::J_FIELD, "", &found);
-        if (!found || (fieldLabel != jlbl::J_FIELD_CURRENT && fieldLabel != jlbl::J_FIELD_VOLTAGE)) {
+    bool isProbeDefinedOnMultiwire(const nlohmann::json& probePtr) {
+        std::string fieldLabel = jsonString(probePtr, jlbl::J_FIELD);
+        if (fieldLabel.empty() ||
+            (fieldLabel != jlbl::J_FIELD_CURRENT && fieldLabel != jlbl::J_FIELD_VOLTAGE)) {
             return false;
         }
-        auto eIds = p.getIntsAt(probePtr, jlbl::J_ELEMENTIDS);
+        auto eIds = jsonIntVector(probePtr, jlbl::J_ELEMENTIDS);
+        if (eIds.empty()) {
+            return false;
+        }
         auto pixel = Pt::getPixelFromElementId(p.mesh, eIds[0]);
         int cId = pixel.tag;
         auto mAs = p.getMaterialAssociations(
@@ -878,18 +996,21 @@ private:
         return false;
     }
 
-    int countNumberOfMultiwireProbes(const std::vector<jmod::json_value*>& probes) {
+    int countNumberOfMultiwireProbes(const std::vector<const nlohmann::json*>& probes) {
         int count = 0;
-        for (auto* probePtr : probes) {
-            if (isProbeDefinedOnMultiwire(probePtr)) {
-                count += static_cast<int>(getPolylineElemIdOfMultiwireProbe(probePtr).size());
+        for (const auto* probePtr : probes) {
+            if (probePtr && isProbeDefinedOnMultiwire(*probePtr)) {
+                count += static_cast<int>(getPolylineElemIdOfMultiwireProbe(*probePtr).size());
             }
         }
         return count;
     }
 
-    std::vector<int> getPolylineElemIdOfMultiwireProbe(jmod::json_value* probePtr) {
-        auto eIds = p.getIntsAt(probePtr, jlbl::J_ELEMENTIDS);
+    std::vector<int> getPolylineElemIdOfMultiwireProbe(const nlohmann::json& probePtr) {
+        auto eIds = jsonIntVector(probePtr, jlbl::J_ELEMENTIDS);
+        if (eIds.empty()) {
+            return {};
+        }
         auto pixel = Pt::getPixelFromElementId(p.mesh, eIds[0]);
         int cId = pixel.tag;
         std::vector<int> res;
@@ -916,8 +1037,13 @@ private:
         return res;
     }
 
-    std::pair<int, int> getPolylineElemIdAndConductorOfGenerator(jmod::json_value* src) {
-        auto eIds = p.getIntsAt(src, jlbl::J_ELEMENTIDS);
+    std::pair<int, int> getPolylineElemIdAndConductorOfGenerator(const nlohmann::json& src) {
+        auto eIds = jsonIntVector(src, jlbl::J_ELEMENTIDS);
+        if (eIds.empty()) {
+            Report::WarnErrReport(
+                "Generator does not define elementIds on wire, unshielded multiwire or shielded multiwire", true);
+            return {0, 0};
+        }
         auto pixel = Pt::getPixelFromElementId(p.mesh, eIds[0]);
         int cId = pixel.tag;
         std::pair<int, int> res{0, 0};
@@ -955,8 +1081,8 @@ private:
         return res;
     }
 
-    int readProbeType(jmod::json_value* probePtr) {
-        std::string probe_type = p.getStrAt(probePtr, jlbl::J_FIELD);
+    int readProbeType(const nlohmann::json& probePtr) {
+        std::string probe_type = jsonString(probePtr, jlbl::J_FIELD);
         if (probe_type == jlbl::J_FIELD_VOLTAGE) {
             return Mtln::PROBE_TYPE_VOLTAGE;
         }
@@ -967,16 +1093,15 @@ private:
         return Mtln::PROBE_TYPE_UNDEFINED;
     }
 
-    std::string readProbeName(jmod::json_value* probePtr) {
-        if (p.existsAt(probePtr, jlbl::J_NAME)) {
-            return p.getStrAt(probePtr, jlbl::J_NAME);
+    std::string readProbeName(const nlohmann::json& probePtr) {
+        if (probePtr.contains(jlbl::J_NAME) && probePtr[jlbl::J_NAME].is_string()) {
+            return probePtr[jlbl::J_NAME].get<std::string>();
         }
         return "";
     }
 
     Mtln::cable_t* assignParentCable(const parser_t::materialAssociation_t& cable) {
-        auto* mat = p.matTable.getId(cable.materialId);
-        std::string matType = p.getStrAt(mat, jlbl::J_TYPE);
+        const std::string matType = materialTypeById(cable.materialId);
         if (matType == jlbl::J_MAT_TYPE_SHIELDED_MULTIWIRE) {
             if (cable.containedWithinElementId == -1) {
                 return nullptr;
@@ -991,8 +1116,7 @@ private:
     }
 
     int assignConductorInParent(const parser_t::materialAssociation_t& cable) {
-        auto* mat = p.matTable.getId(cable.materialId);
-        std::string matType = p.getStrAt(mat, jlbl::J_TYPE);
+        const std::string matType = materialTypeById(cable.materialId);
         if (matType == jlbl::J_MAT_TYPE_SHIELDED_MULTIWIRE) {
             if (cable.containedWithinElementId == -1) {
                 return 0;
@@ -1034,8 +1158,12 @@ private:
     }
 
     std::unique_ptr<Mtln::cable_t> readMTLNCable(const parser_t::materialAssociation_t& j_cable) {
-        auto* material = p.matTable.getId(j_cable.materialId);
-        std::string materialType = p.getStrAt(material, jlbl::J_TYPE);
+        const nlohmann::json* material = materialById(j_cable.materialId);
+        if (!material) {
+            Report::WarnErrReport("Error reading cable: material not found", true);
+            return std::make_unique<Mtln::unshielded_multiwire_t>();
+        }
+        std::string materialType = jsonString(*material, jlbl::J_TYPE);
         auto mtln_despl = buildMTLNDespl();
         auto cable_segments = buildSegments(j_cable, mtln_despl);
         auto cable_step_size = buildStepSize(cable_segments, mtln_despl);
@@ -1047,8 +1175,8 @@ private:
         std::unique_ptr<Mtln::cable_t> res;
         if (materialType == jlbl::J_MAT_TYPE_SHIELDED_MULTIWIRE) {
             auto sh = std::make_unique<Mtln::shielded_multiwire_t>();
-            sh->transfer_impedance = buildTransferImpedance(material);
-            assignPULProperties(*sh, material, static_cast<int>(j_cable.elementIds.size()));
+            sh->transfer_impedance = buildTransferImpedance(*material);
+            assignPULProperties(*sh, *material, static_cast<int>(j_cable.elementIds.size()));
             if (j_cable.hasTotalResistance) {
                 sh->resistance_per_meter =
                     Pt::vectorToDiagonalMatrix(scaleVector(j_cable.totalResistance, 1.0 / totalLength));
@@ -1057,7 +1185,7 @@ private:
         } else if (materialType == jlbl::J_MAT_TYPE_UNSHIELDED_MULTIWIRE ||
                    materialType == jlbl::J_MAT_TYPE_WIRE) {
             auto unsh = std::make_unique<Mtln::unshielded_multiwire_t>();
-            assignInCellProperties(*unsh, material, static_cast<int>(j_cable.elementIds.size()));
+            assignInCellProperties(*unsh, *material, static_cast<int>(j_cable.elementIds.size()));
             if (j_cable.hasTotalResistance) {
                 unsh->resistance_per_meter =
                     Pt::vectorToDiagonalMatrix(scaleVector(j_cable.totalResistance, 1.0 / totalLength));
@@ -1114,51 +1242,48 @@ private:
         }
     }
 
-    Mtln::transfer_impedance_per_meter_t buildTransferImpedance(jmod::json_value* mat) {
-        if (p.existsAt(mat, jlbl::J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE)) {
-            jmod::json_value* z = nullptr;
-            bool zFound = false;
-            p.core->get(mat, jlbl::J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE, z, zFound);
-            return readTransferImpedance(z);
+    Mtln::transfer_impedance_per_meter_t buildTransferImpedance(const nlohmann::json& mat) {
+        if (mat.contains(jlbl::J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE)) {
+            return readTransferImpedance(mat[jlbl::J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE]);
         }
         return noTransferImpedance();
     }
 
-    void assignPULProperties(Mtln::shielded_multiwire_t& res, jmod::json_value* mat, int n) {
+    void assignPULProperties(Mtln::shielded_multiwire_t& res, const nlohmann::json& mat, int n) {
         std::vector<std::vector<double>> null_matrix(n, std::vector<double>(n, 0.0));
-        if (p.existsAt(mat, jlbl::J_MAT_MULTIWIRE_INDUCTANCE)) {
-            res.inductance_per_meter = p.getMatrixAt(mat, jlbl::J_MAT_MULTIWIRE_INDUCTANCE);
+        if (mat.contains(jlbl::J_MAT_MULTIWIRE_INDUCTANCE)) {
+            res.inductance_per_meter = jsonMatrix(mat, jlbl::J_MAT_MULTIWIRE_INDUCTANCE);
         } else {
             Report::WarnErrReport("Error reading material region: inductancePerMeter label not found.", true);
             res.inductance_per_meter = null_matrix;
         }
-        if (p.existsAt(mat, jlbl::J_MAT_MULTIWIRE_CAPACITANCE)) {
-            res.capacitance_per_meter = p.getMatrixAt(mat, jlbl::J_MAT_MULTIWIRE_CAPACITANCE);
+        if (mat.contains(jlbl::J_MAT_MULTIWIRE_CAPACITANCE)) {
+            res.capacitance_per_meter = jsonMatrix(mat, jlbl::J_MAT_MULTIWIRE_CAPACITANCE);
         } else {
             Report::WarnErrReport("Error reading material region: capacitancePerMeter label not found.", true);
             res.capacitance_per_meter = null_matrix;
         }
-        if (p.existsAt(mat, jlbl::J_MAT_MULTIWIRE_RESISTANCE)) {
+        if (mat.contains(jlbl::J_MAT_MULTIWIRE_RESISTANCE)) {
             res.resistance_per_meter =
-                Pt::vectorToDiagonalMatrix(p.getRealsAt(mat, jlbl::J_MAT_MULTIWIRE_RESISTANCE));
+                Pt::vectorToDiagonalMatrix(jsonRealVector(mat, jlbl::J_MAT_MULTIWIRE_RESISTANCE));
         } else {
             res.resistance_per_meter = null_matrix;
         }
-        if (p.existsAt(mat, jlbl::J_MAT_MULTIWIRE_CONDUCTANCE)) {
+        if (mat.contains(jlbl::J_MAT_MULTIWIRE_CONDUCTANCE)) {
             res.conductance_per_meter =
-                Pt::vectorToDiagonalMatrix(p.getRealsAt(mat, jlbl::J_MAT_MULTIWIRE_CONDUCTANCE));
+                Pt::vectorToDiagonalMatrix(jsonRealVector(mat, jlbl::J_MAT_MULTIWIRE_CONDUCTANCE));
         } else {
             res.conductance_per_meter = null_matrix;
         }
     }
 
-    void assignInCellProperties(Mtln::unshielded_multiwire_t& res, jmod::json_value* mat, int n) {
+    void assignInCellProperties(Mtln::unshielded_multiwire_t& res, const nlohmann::json& mat, int n) {
         std::vector<std::vector<double>> null_matrix(n, std::vector<double>(n, 0.0));
-        bool areFixedInCell = p.existsAt(mat, jlbl::J_MAT_MULTIWIRE_INDUCTANCE) &&
-                              p.existsAt(mat, jlbl::J_MAT_MULTIWIRE_CAPACITANCE);
-        bool areMultipolarInCell = p.existsAt(mat, jlbl::J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION);
-        bool hasRadius = p.existsAt(mat, jlbl::J_MAT_WIRE_RADIUS) &&
-                         p.getRealAt(mat, jlbl::J_MAT_WIRE_RADIUS, 0.0) != 0.0;
+        bool areFixedInCell = mat.contains(jlbl::J_MAT_MULTIWIRE_INDUCTANCE) &&
+                              mat.contains(jlbl::J_MAT_MULTIWIRE_CAPACITANCE);
+        bool areMultipolarInCell = mat.contains(jlbl::J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION);
+        bool hasRadius = mat.contains(jlbl::J_MAT_WIRE_RADIUS) &&
+                         jsonReal(mat, jlbl::J_MAT_WIRE_RADIUS, 0.0) != 0.0;
         if (!hasRadius) {
             if ((areFixedInCell && areMultipolarInCell) || (!areFixedInCell && !areMultipolarInCell)) {
                 Report::WarnErrReport(
@@ -1167,42 +1292,39 @@ private:
             }
         }
         if (areFixedInCell) {
-            res.cell_inductance_per_meter = p.getMatrixAt(mat, jlbl::J_MAT_MULTIWIRE_INDUCTANCE);
-            res.cell_capacitance_per_meter = p.getMatrixAt(mat, jlbl::J_MAT_MULTIWIRE_CAPACITANCE);
+            res.cell_inductance_per_meter = jsonMatrix(mat, jlbl::J_MAT_MULTIWIRE_INDUCTANCE);
+            res.cell_capacitance_per_meter = jsonMatrix(mat, jlbl::J_MAT_MULTIWIRE_CAPACITANCE);
             res.multipolar_expansion.clear();
         } else if (areMultipolarInCell) {
             res.cell_inductance_per_meter = null_matrix;
             res.cell_capacitance_per_meter = null_matrix;
-            jmod::json_value* multipolarExpansionPtr = nullptr;
-            bool meFound = false;
-            p.core->get(mat, jlbl::J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION, multipolarExpansionPtr, meFound);
             res.multipolar_expansion.resize(1);
-            res.multipolar_expansion[0] = readMultipolarExpansion(multipolarExpansionPtr);
+            res.multipolar_expansion[0] = readMultipolarExpansion(mat[jlbl::J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION]);
         } else if (hasRadius) {
             res.cell_inductance_per_meter = null_matrix;
             res.cell_capacitance_per_meter = null_matrix;
             res.multipolar_expansion.clear();
-            res.radius = p.getRealAt(mat, jlbl::J_MAT_WIRE_RADIUS, 0.0);
+            res.radius = jsonReal(mat, jlbl::J_MAT_WIRE_RADIUS, 0.0);
         }
-        if (p.existsAt(mat, jlbl::J_MAT_MULTIWIRE_RESISTANCE)) {
-            int m = p.dimensionAt(mat, jlbl::J_MAT_MULTIWIRE_RESISTANCE);
+        if (mat.contains(jlbl::J_MAT_MULTIWIRE_RESISTANCE)) {
+            int m = jsonDimension(mat, jlbl::J_MAT_MULTIWIRE_RESISTANCE);
             std::vector<double> r;
             if (m == 0) {
-                r = {p.getRealAt(mat, jlbl::J_MAT_MULTIWIRE_RESISTANCE, 0.0)};
+                r = {jsonReal(mat, jlbl::J_MAT_MULTIWIRE_RESISTANCE, 0.0)};
             } else {
-                r = p.getRealsAt(mat, jlbl::J_MAT_MULTIWIRE_RESISTANCE);
+                r = jsonRealVector(mat, jlbl::J_MAT_MULTIWIRE_RESISTANCE);
             }
             res.resistance_per_meter = Pt::vectorToDiagonalMatrix(r);
         } else {
             res.resistance_per_meter = null_matrix;
         }
-        if (p.existsAt(mat, jlbl::J_MAT_MULTIWIRE_CONDUCTANCE)) {
-            int m = p.dimensionAt(mat, jlbl::J_MAT_MULTIWIRE_CONDUCTANCE);
+        if (mat.contains(jlbl::J_MAT_MULTIWIRE_CONDUCTANCE)) {
+            int m = jsonDimension(mat, jlbl::J_MAT_MULTIWIRE_CONDUCTANCE);
             std::vector<double> c;
             if (m == 0) {
-                c = {p.getRealAt(mat, jlbl::J_MAT_MULTIWIRE_CONDUCTANCE, 0.0)};
+                c = {jsonReal(mat, jlbl::J_MAT_MULTIWIRE_CONDUCTANCE, 0.0)};
             } else {
-                c = p.getRealsAt(mat, jlbl::J_MAT_MULTIWIRE_CONDUCTANCE);
+                c = jsonRealVector(mat, jlbl::J_MAT_MULTIWIRE_CONDUCTANCE);
             }
             res.conductance_per_meter = Pt::vectorToDiagonalMatrix(c);
         } else {
@@ -1210,61 +1332,58 @@ private:
         }
     }
 
-    Mtln::multipolar_expansion_t readMultipolarExpansion(jmod::json_value* multipolarExpansionPtr) {
+    Mtln::multipolar_expansion_t readMultipolarExpansion(const nlohmann::json& multipolarExpansionPtr) {
         Mtln::multipolar_expansion_t res;
-        jmod::json_value* jvPtr = nullptr;
-        bool found = false;
-        p.core->get(multipolarExpansionPtr, jlbl::J_MAT_MULTIWIRE_ME_INNER_REGION_BOX, jvPtr, found);
-        if (!found) {
+        if (!multipolarExpansionPtr.contains(jlbl::J_MAT_MULTIWIRE_ME_INNER_REGION_BOX)) {
             Report::WarnErrReport("Error reading multipolar expansion: innerRegionBox label not found", true);
         }
-        res.inner_region = readInnerRegionBox(jvPtr);
-        p.core->get(multipolarExpansionPtr, jlbl::J_MAT_MULTIWIRE_ME_ELECTRIC, jvPtr, found);
-        if (!found) {
+        res.inner_region = readInnerRegionBox(multipolarExpansionPtr[jlbl::J_MAT_MULTIWIRE_ME_INNER_REGION_BOX]);
+        if (!multipolarExpansionPtr.contains(jlbl::J_MAT_MULTIWIRE_ME_ELECTRIC)) {
             Report::WarnErrReport("Error reading multipolar expansion electric reconstruction not found", true);
         }
-        res.electric = readFieldReconstruction(jvPtr);
-        p.core->get(multipolarExpansionPtr, jlbl::J_MAT_MULTIWIRE_ME_MAGNETIC, jvPtr, found);
-        if (!found) {
+        res.electric = readFieldReconstruction(multipolarExpansionPtr[jlbl::J_MAT_MULTIWIRE_ME_ELECTRIC]);
+        if (!multipolarExpansionPtr.contains(jlbl::J_MAT_MULTIWIRE_ME_MAGNETIC)) {
             Report::WarnErrReport("Error reading multipolar expansion magnetic reconstruction not found", true);
         }
-        res.magnetic = readFieldReconstruction(jvPtr);
+        res.magnetic = readFieldReconstruction(multipolarExpansionPtr[jlbl::J_MAT_MULTIWIRE_ME_MAGNETIC]);
         return res;
     }
 
-    Mtln::box_2d_t readInnerRegionBox(jmod::json_value* ptr) {
+    Mtln::box_2d_t readInnerRegionBox(const nlohmann::json& ptr) {
         Mtln::box_2d_t inner_region;
-        inner_region.min = p.getRealsAt(ptr, jlbl::J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MIN);
-        inner_region.max = p.getRealsAt(ptr, jlbl::J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX);
+        inner_region.min = jsonRealVector(ptr, jlbl::J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MIN);
+        inner_region.max = jsonRealVector(ptr, jlbl::J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX);
         return inner_region;
     }
 
-    std::vector<Mtln::field_reconstruction_t> readFieldReconstruction(jmod::json_value* ptr) {
-        int count = p.core->count(ptr);
+    std::vector<Mtln::field_reconstruction_t> readFieldReconstruction(const nlohmann::json& ptr) {
+        if (!ptr.is_array()) {
+            return {};
+        }
+        int count = static_cast<int>(ptr.size());
         std::vector<Mtln::field_reconstruction_t> res(count);
         for (int j = 1; j <= count; ++j) {
-            jmod::json_value* frPtr = nullptr;
-            p.core->get_child(ptr, j, frPtr);
+            const auto& frPtr = ptr[static_cast<size_t>(j - 1)];
             res[static_cast<size_t>(j - 1)].inner_region_average_potential =
-                p.getRealAt(frPtr, jlbl::J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL, 0.0);
+                jsonReal(frPtr, jlbl::J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL, 0.0);
             res[static_cast<size_t>(j - 1)].expansion_center =
-                p.getRealsAt(frPtr, jlbl::J_MAT_MULTIWIRE_MEFR_EXPANSION_CENTER);
+                jsonRealVector(frPtr, jlbl::J_MAT_MULTIWIRE_MEFR_EXPANSION_CENTER);
             res[static_cast<size_t>(j - 1)].conductor_potentials =
-                p.getRealsAt(frPtr, jlbl::J_MAT_MULTIWIRE_MEFR_CONDUCTOR_POTENTIALS);
-            jmod::json_value* absPtr = nullptr;
-            bool found = false;
-            p.core->get(frPtr, jlbl::J_MAT_MULTIWIRE_MEFR_AB, absPtr, found);
-            if (!found) {
+                jsonRealVector(frPtr, jlbl::J_MAT_MULTIWIRE_MEFR_CONDUCTOR_POTENTIALS);
+            if (!frPtr.contains(jlbl::J_MAT_MULTIWIRE_MEFR_AB) ||
+                !frPtr[jlbl::J_MAT_MULTIWIRE_MEFR_AB].is_array()) {
                 Report::WarnErrReport("Error reading multipolar expansion: ab label not found", true);
+                continue;
             }
-            int abCount = p.core->count(absPtr);
+            const auto& absPtr = frPtr[jlbl::J_MAT_MULTIWIRE_MEFR_AB];
+            int abCount = static_cast<int>(absPtr.size());
             res[static_cast<size_t>(j - 1)].ab.resize(abCount);
             for (int i = 1; i <= abCount; ++i) {
-                jmod::json_value* abPtr = nullptr;
-                p.core->get_child(absPtr, i, abPtr);
-                if (abPtr && abPtr->data.is_array() && abPtr->data.size() >= 2) {
-                    res[static_cast<size_t>(j - 1)].ab[static_cast<size_t>(i - 1)].a = abPtr->data[0].get<double>();
-                    res[static_cast<size_t>(j - 1)].ab[static_cast<size_t>(i - 1)].b = abPtr->data[1].get<double>();
+                const auto& abPtr = absPtr[static_cast<size_t>(i - 1)];
+                if (abPtr.is_array() && abPtr.size() >= 2 &&
+                    abPtr[0].is_number() && abPtr[1].is_number()) {
+                    res[static_cast<size_t>(j - 1)].ab[static_cast<size_t>(i - 1)].a = abPtr[0].get<double>();
+                    res[static_cast<size_t>(j - 1)].ab[static_cast<size_t>(i - 1)].b = abPtr[1].get<double>();
                 }
             }
         }
@@ -1376,17 +1495,20 @@ private:
         return res;
     }
 
-    Mtln::transfer_impedance_per_meter_t readTransferImpedance(jmod::json_value* z) {
+    Mtln::transfer_impedance_per_meter_t readTransferImpedance(const nlohmann::json& z) {
         Mtln::transfer_impedance_per_meter_t res;
-        if (p.existsAt(z, jlbl::J_MAT_TRANSFER_IMPEDANCE_RESISTANCE)) {
-            res.resistive_term = p.getRealAt(z, jlbl::J_MAT_TRANSFER_IMPEDANCE_RESISTANCE, 0.0);
+        if (z.contains(jlbl::J_MAT_TRANSFER_IMPEDANCE_RESISTANCE) &&
+            z[jlbl::J_MAT_TRANSFER_IMPEDANCE_RESISTANCE].is_number()) {
+            res.resistive_term = z[jlbl::J_MAT_TRANSFER_IMPEDANCE_RESISTANCE].get<double>();
         }
-        if (p.existsAt(z, jlbl::J_MAT_TRANSFER_IMPEDANCE_INDUCTANCE)) {
-            res.inductive_term = p.getRealAt(z, jlbl::J_MAT_TRANSFER_IMPEDANCE_INDUCTANCE, 0.0);
+        if (z.contains(jlbl::J_MAT_TRANSFER_IMPEDANCE_INDUCTANCE) &&
+            z[jlbl::J_MAT_TRANSFER_IMPEDANCE_INDUCTANCE].is_number()) {
+            res.inductive_term = z[jlbl::J_MAT_TRANSFER_IMPEDANCE_INDUCTANCE].get<double>();
         }
         std::string direction;
-        if (p.existsAt(z, jlbl::J_MAT_TRANSFER_IMPEDANCE_DIRECTION)) {
-            direction = p.getStrAt(z, jlbl::J_MAT_TRANSFER_IMPEDANCE_DIRECTION);
+        if (z.contains(jlbl::J_MAT_TRANSFER_IMPEDANCE_DIRECTION) &&
+            z[jlbl::J_MAT_TRANSFER_IMPEDANCE_DIRECTION].is_string()) {
+            direction = z[jlbl::J_MAT_TRANSFER_IMPEDANCE_DIRECTION].get<std::string>();
         } else {
             Report::WarnErrReport(
                 "Error reading material: direction of transferImpedancePerMeter missing", true);
@@ -1398,28 +1520,34 @@ private:
         } else if (direction == "both") {
             res.direction = Mtln::TRANSFER_IMPEDANCE_DIRECTION_BOTH;
         }
-        if (p.existsAt(z, jlbl::J_MAT_TRANSFER_IMPEDANCE_POLES)) {
-            int n = p.getIntAt(z, jlbl::J_MAT_TRANSFER_IMPEDANCE_NUMBER_POLES, 0);
+        if (z.contains(jlbl::J_MAT_TRANSFER_IMPEDANCE_POLES) &&
+            z[jlbl::J_MAT_TRANSFER_IMPEDANCE_POLES].is_array()) {
+            int n = 0;
+            if (z.contains(jlbl::J_MAT_TRANSFER_IMPEDANCE_NUMBER_POLES) &&
+                z[jlbl::J_MAT_TRANSFER_IMPEDANCE_NUMBER_POLES].is_number_integer()) {
+                n = z[jlbl::J_MAT_TRANSFER_IMPEDANCE_NUMBER_POLES].get<int>();
+            }
             res.poles.resize(n);
             res.residues.resize(n);
-            jmod::json_value* poles = nullptr;
-            jmod::json_value* residues = nullptr;
-            bool polesFound = false;
-            bool residuesFound = false;
-            p.core->get(z, jlbl::J_MAT_TRANSFER_IMPEDANCE_POLES, poles, polesFound);
-            p.core->get(z, jlbl::J_MAT_TRANSFER_IMPEDANCE_RESIDUES, residues, residuesFound);
+            const auto& poles = z[jlbl::J_MAT_TRANSFER_IMPEDANCE_POLES];
+            const auto* residuesPtr = z.contains(jlbl::J_MAT_TRANSFER_IMPEDANCE_RESIDUES)
+                                          ? &z[jlbl::J_MAT_TRANSFER_IMPEDANCE_RESIDUES]
+                                          : nullptr;
+            if (!residuesPtr || !residuesPtr->is_array()) {
+                return res;
+            }
+            const auto& residues = *residuesPtr;
             for (int i = 1; i <= n; ++i) {
-                jmod::json_value* poleChild = nullptr;
-                jmod::json_value* resChild = nullptr;
-                p.core->get_child(poles, i, poleChild);
-                p.core->get_child(residues, i, resChild);
-                if (poleChild && poleChild->data.is_array() && poleChild->data.size() >= 2) {
+                const size_t idx = static_cast<size_t>(i - 1);
+                if (idx < poles.size() && poles[idx].is_array() && poles[idx].size() >= 2 &&
+                    poles[idx][0].is_number() && poles[idx][1].is_number()) {
                     res.poles[static_cast<size_t>(i - 1)] = {
-                        poleChild->data[0].get<double>(), poleChild->data[1].get<double>()};
+                        poles[idx][0].get<double>(), poles[idx][1].get<double>()};
                 }
-                if (resChild && resChild->data.is_array() && resChild->data.size() >= 2) {
+                if (idx < residues.size() && residues[idx].is_array() && residues[idx].size() >= 2 &&
+                    residues[idx][0].is_number() && residues[idx][1].is_number()) {
                     res.residues[static_cast<size_t>(i - 1)] = {
-                        resChild->data[0].get<double>(), resChild->data[1].get<double>()};
+                        residues[idx][0].get<double>(), residues[idx][1].get<double>()};
                 }
             }
         }

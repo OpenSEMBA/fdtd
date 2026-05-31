@@ -13,17 +13,16 @@
 #define RKIND_wires double
 #endif
 
-// Forward declarations for types defined in other modules or later in this file
-struct CurrentSegments_t;
-struct ChargeNodes_t;
-struct wires_t;
-struct source_t;
-struct thick_t;
-struct container_t;
-struct TSegmentPtr_t;
-struct TMultiline_t;
-
 namespace wiresHolland_constants_m {
+   // Forward declarations for mutually-referenced wire structs in this namespace.
+   struct CurrentSegments_t;
+   struct ChargeNodes_t;
+   struct wires_t;
+   struct source_t;
+   struct thick_t;
+   struct container_t;
+   struct TSegmentPtr_t;
+   struct TMultiline_t;
 
    constexpr int32_t MaxNumCurrentMinusPlus = 9;
 

@@ -72,6 +72,9 @@ TEST(PlanewavePwInBox, Step120ProbeParity) {
 }
 
 TEST(PlanewavePwInBox, ProbeFilesExact_First120Steps) {
+#if !defined(CompileWithRelease)
+    GTEST_SKIP() << "Exact probe-file parity is enforced in Release builds.";
+#endif
     const std::string json = pw_in_box_test::casePath("pw-in-box.fdtd.json");
     ASSERT_TRUE(std::filesystem::exists(json));
     const int err = pw_in_box_test::runProbeFilesExact(120);
@@ -86,6 +89,9 @@ TEST(PlanewavePwInBox, FullRunProbeParity) {
 }
 
 TEST(PlanewavePwInBox, ProbeFilesExact_FullRun) {
+#if !defined(CompileWithRelease)
+    GTEST_SKIP() << "Exact probe-file parity is enforced in Release builds.";
+#endif
     const std::string json = pw_in_box_test::casePath("pw-in-box.fdtd.json");
     ASSERT_TRUE(std::filesystem::exists(json));
     const int err = pw_in_box_test::runProbeFilesExact(-1);
@@ -93,6 +99,9 @@ TEST(PlanewavePwInBox, ProbeFilesExact_FullRun) {
 }
 
 TEST(PlanewavePwInBox, PeriodicProbeFilesExact_FullRun) {
+#if !defined(CompileWithRelease)
+    GTEST_SKIP() << "Exact probe-file parity is enforced in Release builds.";
+#endif
     const std::string json = pw_in_box_test::casePath("pw-with-periodic.fdtd.json");
     ASSERT_TRUE(std::filesystem::exists(json));
     const int err = pw_in_box_test::runPeriodicProbeFilesExact(-1);

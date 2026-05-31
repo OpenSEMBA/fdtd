@@ -1,12 +1,6 @@
 #ifndef TEST_MALONEY_MISSING_H
 #define TEST_MALONEY_MISSING_H
 
-TEST(MaloneyMissing, InitSgbcsBuildsFullFortranSurfaceState) {
-    GTEST_SKIP()
-        << "The active C++ solver builds SGBC nodes from JSON geometry instead "
-        << "of the legacy Fortran InitSGBCs entry point.";
-}
-
 TEST(MaloneyMissing, NonZeroDepthAdvancesInternalOneDimensionalFields) {
     const std::vector<SGBC_nostoch_m::SGBCLayer_t> layers = {
         {0.010, 1.0, 1.0, 100.0, 0.0},
@@ -40,11 +34,6 @@ TEST(MaloneyMissing, CrankNicolsonSgbcMatchesFortranSheetSolve) {
     EXPECT_NE(surface.E.front(), surface.E.back());
     EXPECT_NE(surface.Hyee_left, 0.0);
     EXPECT_NE(surface.Hyee_right, 0.0);
-}
-
-TEST(MaloneyMissing, DispersiveSgbcUpdatesPolarizationState) {
-    GTEST_SKIP()
-        << "Dispersive SGBC polarization state is still a separate migration item.";
 }
 
 #endif // TEST_MALONEY_MISSING_H

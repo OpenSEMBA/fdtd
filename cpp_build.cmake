@@ -137,8 +137,17 @@ else()
     message(FATAL_ERROR "Unrecognized system name")
 endif()
 
+set(PROGRAM_NAME "semba-fdtd")
+include("${CPP_SOURCE_ROOT}/get_commit_info.cmake")
+configure_file(
+    "${CPP_SOURCE_ROOT}/src_cpp/main/version_cpp.h.in"
+    "${CMAKE_BINARY_DIR}/generated/version_cpp.h"
+    @ONLY
+)
+
 include_directories(${CPP_SOURCE_ROOT}/src_cpp)
 include_directories(${HDF5_INCLUDE_DIRS})
+include_directories(${CMAKE_BINARY_DIR}/generated)
 
 add_library(semba-types INTERFACE)
 target_include_directories(semba-types INTERFACE
@@ -172,7 +181,7 @@ add_subdirectory("${CPP_SOURCE_ROOT}/external/ngspice" "${CMAKE_CURRENT_BINARY_D
 if(SEMBA_FDTD_ENABLE_MTLN)
     set(NGSPICE_LIB ngspice)
     add_definitions(-DCompileWithMTLN)
-    add_subdirectory("${CPP_SOURCE_ROOT}/src/mtln/interface" "${CMAKE_CURRENT_BINARY_DIR}/ngspice_interface")
+    add_subdirectory("${CPP_SOURCE_ROOT}/src_cpp/mtln/interface" "${CMAKE_CURRENT_BINARY_DIR}/ngspice_interface")
     add_subdirectory("${CPP_SOURCE_ROOT}/src_cpp/mtln" "${CMAKE_CURRENT_BINARY_DIR}/mtln")
     if(PROJECT_IS_TOP_LEVEL)
         set(MTLN_LIBRARIES mtlnsolver)
@@ -239,6 +248,7 @@ if(SEMBA_FDTD_MAIN_LIB)
     target_include_directories(semba-main PUBLIC
         "${CPP_SOURCE_ROOT}/src_cpp/main"
         "${CPP_SOURCE_ROOT}/external/json/single_include/nlohmann"
+        "${CMAKE_BINARY_DIR}/generated"
     )
     target_link_libraries(semba-main PUBLIC
         semba-reports

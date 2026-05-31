@@ -9,12 +9,6 @@
 #include <iostream>
 #include <cstdlib>
 
-// Forward declarations
-namespace json_module {
-    class json_core;
-    class json_value;
-}
-
 #include "mesh_m.h"
 #include "cells_m.h"
 #include "../main/nfde_types.h"

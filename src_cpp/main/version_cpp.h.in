@@ -1,0 +1,20 @@
+#ifndef SEMBA_CPP_VERSION_H
+#define SEMBA_CPP_VERSION_H
+
+namespace semba_cpp_version {
+
+constexpr const char* program_name = "semba-fdtd";
+constexpr const char* compilation_date = __DATE__ " " __TIME__;
+constexpr const char* git_commit = "@GIT_COMMIT@";
+constexpr const char* compiler_id =
+    "@CMAKE_CXX_COMPILER_ID@ @CMAKE_CXX_COMPILER_VERSION@";
+constexpr const char* cmake_build_type = "@CMAKE_BUILD_TYPE@";
+constexpr const char* compilation_flags = "@CMAKE_CXX_FLAGS@";
+constexpr const char* compilation_flags_debug =
+    "@CMAKE_CXX_FLAGS@ @CMAKE_CXX_FLAGS_DEBUG@";
+constexpr const char* compilation_flags_release =
+    "@CMAKE_CXX_FLAGS@ @CMAKE_CXX_FLAGS_RELEASE@";
+
+}  // namespace semba_cpp_version
+
+#endif  // SEMBA_CPP_VERSION_H
