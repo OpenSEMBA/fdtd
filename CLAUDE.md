@@ -43,23 +43,35 @@ python3 -m venv .venv
 source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 
-pytest test/ --durations=20
+# Fortran full suite (set feature flags to match the binary)
+export SEMBA_EXE=$PWD/build/bin/semba-fdtd
+export SEMBA_FDTD_ENABLE_MTLN=ON
+export SEMBA_FDTD_ENABLE_HDF=ON
+export SEMBA_FDTD_ENABLE_MPI=ON
+PYTHONPATH=. pytest test/ --durations=20
 
-# Run by marker
-pytest test/ -m mtln
-pytest test/ -m hdf
-pytest test/ -m mpi
+# C++ migration gates (build semba-fdtd-cpp first, then pytest by marker)
+cmake -S . -B cpp_build_nomtln -DSEMBA_FDTD_BUILD_CXX=ON \
+  -DSEMBA_FDTD_ENABLE_MTLN=OFF -DSEMBA_FDTD_ENABLE_MPI=OFF -DSEMBA_FDTD_ENABLE_HDF=OFF \
+  -DSEMBA_FDTD_MAIN_LIB=ON -DSEMBA_FDTD_EXECUTABLE=ON -DSEMBA_FDTD_ENABLE_TEST=ON
+cmake --build cpp_build_nomtln -j --target semba-fdtd-cpp
+export SEMBA_EXE=$PWD/cpp_build_nomtln/bin/semba-fdtd-cpp
+export SEMBA_FDTD_ENABLE_MTLN=OFF SEMBA_FDTD_ENABLE_MPI=OFF SEMBA_FDTD_ENABLE_HDF=OFF
+PYTHONPATH=. pytest test/pyWrapper/ -m cpp_migration
+
+# HDF / MTLN: same pattern with cpp_build_hdf or cpp_build_mtln and -m hdf or
+# test/pyWrapper/test_mtln_standalone.py -m mtln_standalone
 ```
 
-Test markers are defined in `pytest.ini`: `mtln`, `codemodel`, `hdf`, `mpi`.
+Test markers are defined in `pytest.ini` (`cpp_migration`, `hdf`, `mtln_standalone`, `mtln`, `mpi`, …).
 
-Unit test source is under `test/` in subdirectories: `mtln/`, `smbjson/`, `conformal/`, `observation/`, `rotate/`, `vtk/`, `pyWrapper/`.
+Unit test source: Fortran/C++ GoogleTest under `test/fortran/` (`mtln/`, `smbjson/`, etc.); C++ solver tests under `test/cpp/`; Python integration tests under `test/pyWrapper/`.
 
 ## Architecture
 
 ### Language & Build
 - Primary language: Fortran (free-form, ~49K+ lines)
-- C/C++ used only for unit tests (GoogleTest)
+- C++ solver in `src_cpp/` (mirrors `src/` layout); C++ also used for unit tests (GoogleTest)
 - Python used for integration tests and the `pyWrapper/` interface
 - Build system: CMake 3.15+
 
@@ -82,23 +94,23 @@ semba-types          (FDTD/NFDE/MTLN/conformal type definitions)
 
 ### Execution Flow
 
-1. `src_main_pub/launcher.F90` — entry point, creates `semba_fdtd_t`
-2. `src_main_pub/semba_fdtd.F90` — main module:
+1. `src/main/launcher.F90` — entry point, creates `semba_fdtd_t`
+2. `src/main/semba_fdtd.F90` — main module:
    - `init()`: load input (`.fdtd.json` via smbjson, or legacy `.fdtd` NFDE format)
    - `launch()`: run the time-stepping loop
    - `end()`: finalize and write outputs
-3. Time-step loop in `src_main_pub/timestepping.F90`:
+3. Time-step loop in `src/main/timestepping.F90`:
    - Update E-fields → apply materials, boundary conditions, wire coupling
    - Update H-fields → apply MTLN/SPICE if enabled
    - Sample observation probes, write snapshots
 
 ### Key Source Directories
 
-- `src_main_pub/` — core solver, time-stepping, preprocessing, geometry, main types
-- `src_conformal/` — conformal mapping (staircase reduction)
-- `src_mtln/` — MTLN circuit/transmission-line solver and ngspice coupling
-- `src_json_parser/` — `.fdtd.json` input format parser
-- `src_wires_pub/` — wire/thin-wire models
+- `src/main/` — core solver, time-stepping, preprocessing, geometry, main types
+- `src/conformal/` — conformal mapping (staircase reduction)
+- `src/mtln/` — MTLN circuit/transmission-line solver and ngspice coupling
+- `src/json_parser/` — `.fdtd.json` input format parser
+- `src/wires/` — wire/thin-wire models
 - `external/` — submodules: `json-fortran`, `fhash`, `googletest`, `ngspice`, `lapack`
 
 ### Input/Output
@@ -109,7 +121,7 @@ semba-types          (FDTD/NFDE/MTLN/conformal type definitions)
 
 ### Optional Features and Conditional Compilation
 
-Many modules are only compiled when their CMake flag is enabled. The smbjson parser, MTLN solver, and HDF5 output are all conditionally compiled. MPI support wraps communication in `src_main_pub/mpicomm.F90` and is activated via the `SEMBA_FDTD_ENABLE_MPI` flag.
+Many modules are only compiled when their CMake flag is enabled. The smbjson parser, MTLN solver, and HDF5 output are all conditionally compiled. MPI support wraps communication in `src/main/mpicomm.F90` and is activated via the `SEMBA_FDTD_ENABLE_MPI` flag.
 
 ## Platform Notes
 

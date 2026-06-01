@@ -91,6 +91,7 @@ def test_read_bulk_current_probe():
     assert p.direction == 'x'
 
 
+@pytest.mark.cpp_migration
 @pytest.mark.planewave
 def test_fdtd_set_new_folder_to_run(tmp_path):
     input = os.path.join(CASES_FOLDER, 'planewave', 'pw-in-box.fdtd.json')
@@ -128,6 +129,7 @@ def test_fdtd_with_mpi_run(tmp_path):
     solver.run()
 
 
+@pytest.mark.cpp_migration
 @pytest.mark.planewave
 def test_fdtd_clean_up_after_run(tmp_path):
     input = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
@@ -165,8 +167,10 @@ def test_fdtd_clean_up_does_not_delete_other_cases_files(tmp_path):
     assert os.path.isfile(other_file)
 
 
+@no_mtln_skip
 @pytest.mark.spice
 @pytest.mark.mtln
+@pytest.mark.mtln_standalone
 def test_fdtd_get_used_files():
     fn = CASES_FOLDER + 'multilines_opamp/multilines_opamp.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE)
@@ -176,7 +180,6 @@ def test_fdtd_get_used_files():
     assert len(used_files) == 2
     assert used_files[0] == 'spice_4port_pulse_start_75.exc'
     assert used_files[1] == 'opamp.model'
-
 
 
 

@@ -2,6 +2,7 @@ from utils import *
 
 
 @no_mtln_skip
+@pytest.mark.mtln_standalone
 @pytest.mark.mtln
 @pytest.mark.wires
 @pytest.mark.multiwire
@@ -28,6 +29,7 @@ def test_paul_8_6_square(tmp_path):
 
 
 @no_mtln_skip
+@pytest.mark.mtln_standalone
 @pytest.mark.mtln
 @pytest.mark.wires
 @pytest.mark.multiwire
@@ -54,6 +56,7 @@ def test_paul_8_6_triangle(tmp_path):
 
 
 @no_mtln_skip
+@pytest.mark.mtln_standalone
 @pytest.mark.mtln
 @pytest.mark.wires
 @pytest.mark.multiwire
@@ -89,6 +92,7 @@ def test_paul_9_6(tmp_path):
 
 
 @no_mtln_skip
+@pytest.mark.mtln_standalone
 @pytest.mark.mtln
 @pytest.mark.spice
 @pytest.mark.wires
@@ -116,6 +120,7 @@ def test_spice_multilines_opamp(tmp_path):
 
 
 @no_mtln_skip
+@pytest.mark.mtln_standalone
 @pytest.mark.mtln
 @pytest.mark.spice
 @pytest.mark.wires
@@ -149,6 +154,7 @@ def test_spice_connectors_diode(tmp_path):
 
 
 @no_mtln_skip
+@pytest.mark.mtln_standalone
 @pytest.mark.mtln
 @pytest.mark.wires
 @pytest.mark.multiwire
@@ -179,6 +185,7 @@ def test_line_multiline_junction(tmp_path):
         
 
 @no_mtln_skip
+@pytest.mark.mtln_standalone
 @pytest.mark.mtln
 @pytest.mark.codemodel
 @pytest.mark.spice
@@ -207,6 +214,7 @@ def test_spice_opamp_saturation(tmp_path):
 
 
 @no_mtln_skip
+@pytest.mark.mtln_standalone
 @pytest.mark.mtln
 @pytest.mark.spice
 @pytest.mark.wires

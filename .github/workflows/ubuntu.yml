@@ -25,21 +25,13 @@ jobs:
           {name: 'gcc', version: 11}
         ]
         build-type: ["Release"]
+        cxx: ["ON", "OFF"]
         mpi: ["ON", "OFF"]
         mtln: ["ON", "OFF"]
         hdf: ["ON"]
         double-precision: ["OFF"]
 
         include:
-          # Disable by lack of space on github action
-          # - os: ubuntu-latest
-          #   compiler: {name: 'nvidia-hpc', version: '24.5'}
-          #   build-type: "Release"
-          #   mpi: "OFF"
-          #   mtln: "OFF"
-          #   hdf: "OFF"
-          #   double-precision: "OFF"
-
           - os: ubuntu-latest # This is the only test with double precision.
             compiler: {name: 'intel', version: '2025.1'}
             build-type: "Release"
@@ -47,11 +39,12 @@ jobs:
             mtln: "OFF"
             hdf: "ON"
             double-precision: "ON"
+            cxx: "OFF"
             
       fail-fast: false
             
     runs-on: ${{ matrix.os }}
-    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})-double(${{matrix.double-precision}})
+    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-cxx(${{matrix.cxx}})-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})-double(${{matrix.double-precision}})
 
     steps:       
     - name: Checkout
@@ -74,7 +67,13 @@ jobs:
       run: |
         sudo apt update
         sudo apt install libhdf5-dev libopenmpi-dev
-   
+    
+    - name: Install cxx required packages
+      if: matrix.cxx=='ON'
+      run: |
+        sudo apt update
+        sudo apt install nlohmann-json3-dev
+
     - name: Setup fortran compiler
       uses: fortran-lang/setup-fortran@v1
       id: setup-fortran
@@ -86,6 +85,7 @@ jobs:
       run: |       
         cmake -S . -B build \
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+          -DSEMBA_FDTD_BUILD_CXX=${{matrix.cxx}} \
           -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
           -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
           -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}} \
@@ -93,10 +93,16 @@ jobs:
         cmake --build build -j
       
     - name: Run unit tests 
-      run: build/bin/fdtd_tests
+      run: |
+        if [ "${{ matrix.cxx }}" = "ON" ]; then
+          build/bin/fdtd_cpp_tests
+        else
+          build/bin/fdtd_tests
+        fi
 
     - name: Run python tests
       env:
+        SEMBA_EXE: ${{ github.workspace }}/build/bin/${{ matrix.cxx == 'ON' && 'semba-fdtd-cpp' || 'semba-fdtd' }}
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}

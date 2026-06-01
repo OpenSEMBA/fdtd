@@ -1,4 +1,10 @@
 *.dat
+!planewave/pw-in-box.fdtd_after_Ex_3_3_5.dat
+!planewave/pw-in-box.fdtd_before_Ex_3_3_1.dat
+!planewave/pw-in-box.fdtd_inbox_Ex_3_3_3.dat
+!planewave/pw-with-periodic.fdtd_after_Ex_3_3_5.dat
+!planewave/pw-with-periodic.fdtd_before_Ex_3_3_1.dat
+!planewave/pw-with-periodic.fdtd_inbox_Ex_3_3_3.dat
 *.pl
 *.txt
 *.vtk

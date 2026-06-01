@@ -1,0 +1,20 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Vacuum pulse absorption test on 6x6x6 grid (same size as pw-in-box).",
+
+    "general": {
+        "timeStep": 1.54066656123717649e-11,
+        "numberOfSteps": 500
+    },
+
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [6, 6, 6],
+            "steps": { "x": [0.01], "y": [0.01], "z": [0.01] }
+        }
+    }
+}

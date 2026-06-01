@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import scipy.constants
 
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../', 'src_pyWrapper'))
+
 SEMBA_EXE = '../../../build/bin/semba-fdtd'
 OUTPUTS_FOLDER = '../../outputs/'
 CASES_FOLDER = '../../cases/'

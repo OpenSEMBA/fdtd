@@ -7,7 +7,6 @@ import scipy.constants
 from skrf.media import Freespace
 from skrf.frequency import Frequency
 
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../', 'src_pyWrapper'))
 SEMBA_EXE = '/home/luis/ugrfdtd/publico/build-rls/bin/semba-fdtd'
 from pyWrapper import *
 

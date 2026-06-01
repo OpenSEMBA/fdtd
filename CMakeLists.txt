@@ -1,5 +1,14 @@
 cmake_minimum_required (VERSION 3.15)
 
+# Allow choosing between Fortran and C++ builds
+option(SEMBA_FDTD_BUILD_CXX "Build C++ version instead of Fortran" OFF)
+
+if(SEMBA_FDTD_BUILD_CXX)
+    message(STATUS "Building C++ version of semba-fdtd")
+    include("${CMAKE_CURRENT_SOURCE_DIR}/cpp_build.cmake")
+    return()
+endif()
+
 project(semba-fdtd Fortran)
 enable_language (Fortran)
 
@@ -21,7 +30,7 @@ option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
 option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag (not supported in github actions)" OFF) 
-option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables the interprocedural optimization" OFF)
+option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables interprocedural optimization" OFF)
 
 option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
 option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
@@ -117,13 +126,6 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		message(STATUS "Using IntelLLVM (ifx) flags")
 
-		# This prevents a compilation error happening due to visual studio headers being too strict.
-		# It can possibly can be removed in the future.
-		#add_compile_definitions("$<$<COMPILE_LANGUAGE:C,CXX>:-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH>")
-		#add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:/nofpp>)
-		#set(CMAKE_Fortran_FLAGS "/Qopenmp")
-		#set(CMAKE_CXX_FLAGS "/Qopenmp")
-
 		# Debug flags - enable full debugging support for breakpoints
 		set(CMAKE_Fortran_FLAGS_DEBUG "/debug:full /Od /traceback /check:all,nouninit /Zi /debug-parameters:all /warn:interfaces")
 		set(CMAKE_CXX_FLAGS_DEBUG "/Zi /Od /RTC1")
@@ -146,23 +148,23 @@ endif()
 add_subdirectory(external)
 
 add_library(semba-types 
-	"src_main_pub/nfde_types.F90"
-	"src_main_pub/fdetypes.F90"
-	"src_mtln/mtln_types.F90"
-	"src_conformal/conformal_types.F90"
-	"src_wires_pub/wires_types.F90"
-	"src_main_pub/lumped_types.F90"
+	"src/main/nfde_types.F90"
+	"src/main/fdetypes.F90"
+	"src/mtln/mtln_types.F90"
+	"src/conformal/conformal_types.F90"
+	"src/wires/wires_types.F90"
+	"src/main/lumped_types.F90"
 )
 target_link_libraries(semba-types ${MPI_Fortran_LIBRARIES})
 
 add_library(semba-reports
-	"src_main_pub/errorreport.F90"
-	"src_main_pub/snapxdmf.F90"
+	"src/main/errorreport.F90"
+	"src/main/snapxdmf.F90"
 )
 target_link_libraries(semba-reports semba-types ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
-	add_subdirectory(src_json_parser)
+	add_subdirectory(src/json_parser)
 	if(PROJECT_IS_TOP_LEVEL)
 		set(SMBJSON_LIBRARIES smbjson)
 	else()
@@ -172,7 +174,7 @@ endif()
 if (SEMBA_FDTD_ENABLE_MTLN)
 	set(NGSPICE_LIB ngspice)
 	add_definitions(-DCompileWithMTLN)
-	add_subdirectory(src_mtln)
+	add_subdirectory(src/mtln)
 	if (PROJECT_IS_TOP_LEVEL)
 		set(MTLN_LIBRARIES mtlnsolver ngspice_interface)
 	else()
@@ -180,42 +182,42 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 	endif()
 endif()
 
-add_subdirectory(src_conformal)
+add_subdirectory(src/conformal)
 set(CONFORMAL_LIBRARIES conformal)
 
 if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(external/googletest/)
-	add_subdirectory(test)
+	add_subdirectory(test/fortran)
 endif()
 
 if(SEMBA_FDTD_COMPONENTS_LIB)
 	add_library(semba-components
-		"src_main_pub/anisotropic.F90"
-		"src_main_pub/borderscpml.F90"
-		"src_main_pub/bordersmur.F90"
-		"src_main_pub/bordersother.F90"
-		"src_main_pub/electricdispersive.F90"
-		"src_main_pub/magneticdispersive.F90"
-		"src_main_pub/nodalsources.F90"
-		"src_main_pub/planewaves.F90"
-		"src_main_pub/pml_bodies.F90"
-		"src_main_pub/maloney_nostoch.F90"
-		"src_main_pub/lumped.F90"
-		"src_main_pub/dmma_thin_slot.F90"
-		"src_main_pub/farfield.F90"
-		"src_wires_pub/wires.F90"
-		"src_wires_pub/wires_mtln.F90"
+		"src/main/anisotropic.F90"
+		"src/main/borderscpml.F90"
+		"src/main/bordersmur.F90"
+		"src/main/bordersother.F90"
+		"src/main/electricdispersive.F90"
+		"src/main/magneticdispersive.F90"
+		"src/main/nodalsources.F90"
+		"src/main/planewaves.F90"
+		"src/main/pml_bodies.F90"
+		"src/main/maloney_nostoch.F90"
+		"src/main/lumped.F90"
+		"src/main/dmma_thin_slot.F90"
+		"src/main/farfield.F90"
+		"src/wires/wires.F90"
+		"src/wires/wires_mtln.F90"
 	)
 	target_link_libraries(semba-components semba-types semba-reports ${MTLN_LIBRARIES})
 endif()
 
 if(SEMBA_FDTD_OUTPUTS_LIB)
 	add_library(semba-outputs
-		"src_main_pub/mpicomm.F90"
-		"src_main_pub/observation.F90"
-		"src_main_pub/vtk.F90"
-		"src_main_pub/xdmf.F90"
-		"src_main_pub/xdmf_h5.F90"
+		"src/main/mpicomm.F90"
+		"src/main/observation.F90"
+		"src/main/vtk.F90"
+		"src/main/xdmf.F90"
+		"src/main/xdmf_h5.F90"
 	)
 	target_link_libraries(semba-outputs 
 		semba-components 
@@ -224,30 +226,28 @@ if(SEMBA_FDTD_OUTPUTS_LIB)
 endif()
 
 if(SEMBA_FDTD_MAIN_LIB)
-	# Prepares variables containing information on commit-hash and build flags.
-	# This information is only available at the configuration stage.
 	set(PROGRAM_NAME "semba-fdtd")
 	include("${CMAKE_CURRENT_SOURCE_DIR}/get_commit_info.cmake")
 	configure_file(
-	${CMAKE_SOURCE_DIR}/src_main_pub/version.F90.in
-	${CMAKE_SOURCE_DIR}/src_main_pub/version.F90
+	${CMAKE_SOURCE_DIR}/src/main/version.F90.in
+	${CMAKE_SOURCE_DIR}/src/main/version.F90
 	@ONLY
 	)
 
 	add_library(semba-main
-		"src_main_pub/semba_fdtd.F90"
-		"src_main_pub/calc_constants.F90"
-		"src_main_pub/nfde_rotate.F90"
-		"src_main_pub/EpsMuTimeScale.F90"
-		"src_main_pub/getargs.F90"
-		"src_main_pub/healer.F90"
-		"src_main_pub/preprocess_geom.F90"
-		"src_main_pub/storegeom.F90"
-		"src_main_pub/version.F90"
-		"src_main_pub/postprocess.F90"
-		"src_main_pub/interpreta_switches.F90"
-		"src_main_pub/resuming.F90"	
-		"src_main_pub/timestepping.F90"
+		"src/main/semba_fdtd.F90"
+		"src/main/calc_constants.F90"
+		"src/main/nfde_rotate.F90"
+		"src/main/EpsMuTimeScale.F90"
+		"src/main/getargs.F90"
+		"src/main/healer.F90"
+		"src/main/preprocess_geom.F90"
+		"src/main/storegeom.F90"
+		"src/main/version.F90"
+		"src/main/postprocess.F90"
+		"src/main/interpreta_switches.F90"
+		"src/main/resuming.F90"	
+		"src/main/timestepping.F90"
 	)
 	target_link_libraries(semba-main
 		semba-outputs 
@@ -257,7 +257,7 @@ endif()
 
 if (SEMBA_FDTD_EXECUTABLE)
 	add_executable(semba-fdtd 
-		"src_main_pub/launcher.F90"
+		"src/main/launcher.F90"
 	)
 	target_link_libraries(semba-fdtd semba-main semba-reports)
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})

@@ -40,6 +40,7 @@ venv/
 build/
 build-*/
 build_test/
+cpp_build/
 
 CMakeUserPresets.json
 CMakeSettings.json
@@ -62,7 +63,7 @@ probes*txt
 
 __pycache__/
 */__pycache__/
-src_pyWrapper/__pycache__/*
+pyWrapper/__pycache__/*
 tmp/
 tmp_cases/
 testData/outputs/paul/paul_8.6_square.txt
@@ -70,8 +71,9 @@ testing_hdf5_writing_and_reading.h5
 fort.17
 build
 build*/
+cpp_build*/
 
-src_main_pub/version.F90
+src/main/version.F90
 git_info.txt
 
 .venv/build2/

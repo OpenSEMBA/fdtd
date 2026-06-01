@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 6,
   "configurePresets": [
     {
       "name": "rls",
@@ -57,6 +57,177 @@
       "cacheVariables": {
         "SEMBA_FDTD_ENABLE_MTLN": "OFF"
       }
+    },
+    {
+      "name": "cpp-rls",
+      "displayName": "C++ Release",
+      "description": "C++ build in Release mode",
+      "binaryDir": "${sourceDir}/cpp_build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "SEMBA_FDTD_BUILD_CXX": "ON"
+      }
+    },
+    {
+      "name": "cpp-dbg",
+      "inherits": "cpp-rls",
+      "displayName": "C++ Debug",
+      "binaryDir": "${sourceDir}/cpp_build/build_debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "cpp-asan",
+      "inherits": "cpp-dbg",
+      "displayName": "C++ Address Sanitizer",
+      "binaryDir": "${sourceDir}/cpp_build/build_asan",
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "-fsanitize=address -fno-omit-frame-pointer"
+      }
+    },
+    {
+      "name": "cpp-rls-mpi",
+      "inherits": "cpp-rls",
+      "displayName": "C++ Release + MPI",
+      "binaryDir": "${sourceDir}/cpp_build/build_mpi",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_MPI": "ON"
+      }
+    },
+    {
+      "name": "cpp-rls-nohdf",
+      "inherits": "cpp-rls",
+      "displayName": "C++ Release (no HDF)",
+      "binaryDir": "${sourceDir}/cpp_build/build_nohdf",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_HDF": "OFF"
+      }
+    },
+    {
+      "name": "cpp-rls-nomtln",
+      "inherits": "cpp-rls",
+      "displayName": "C++ Release (no MTLN)",
+      "binaryDir": "${sourceDir}/cpp_build/build_nomtln",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_MTLN": "OFF"
+      }
+    },
+    {
+      "name": "cpp-intel-rls-strict",
+      "inherits": "cpp-rls",
+      "displayName": "C++ Intel Release (strict)",
+      "binaryDir": "${sourceDir}/cpp_build/build_intel_strict",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "/opt/intel/oneapi/compiler/2025.1/bin/icpx",
+        "SEMBA_FDTD_ENABLE_MTLN": "OFF",
+        "SEMBA_FDTD_ENABLE_TEST": "OFF",
+        "SEMBA_FDTD_COMPONENTS_LIB": "OFF",
+        "SEMBA_FDTD_OUTPUTS_LIB": "OFF",
+        "SEMBA_FDTD_ENABLE_HDF": "OFF",
+        "SEMBA_FDTD_ENABLE_STRICT_FORTRAN_ROUNDING": "ON",
+        "SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION": "OFF",
+        "SEMBA_FDTD_ENABLE_INTEL_IPO": "OFF"
+      }
+    },
+    {
+      "name": "cpp-intel-rls-perf",
+      "inherits": "cpp-intel-rls-strict",
+      "displayName": "C++ Intel Release (perf)",
+      "binaryDir": "${sourceDir}/cpp_build/build_intel_perf",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_STRICT_FORTRAN_ROUNDING": "OFF"
+      }
+    },
+    {
+      "name": "cpp-gcc-rls-strict",
+      "inherits": "cpp-rls",
+      "displayName": "C++ GNU Release (strict)",
+      "binaryDir": "${sourceDir}/cpp_build/build_gcc_strict",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "/usr/bin/c++",
+        "SEMBA_FDTD_ENABLE_MTLN": "OFF",
+        "SEMBA_FDTD_ENABLE_TEST": "OFF",
+        "SEMBA_FDTD_COMPONENTS_LIB": "OFF",
+        "SEMBA_FDTD_OUTPUTS_LIB": "OFF",
+        "SEMBA_FDTD_ENABLE_HDF": "OFF",
+        "SEMBA_FDTD_ENABLE_STRICT_FORTRAN_ROUNDING": "ON"
+      }
+    },
+    {
+      "name": "cpp-gcc-rls-perf",
+      "inherits": "cpp-gcc-rls-strict",
+      "displayName": "C++ GNU Release (perf)",
+      "binaryDir": "${sourceDir}/cpp_build/build_gcc_perf",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_STRICT_FORTRAN_ROUNDING": "OFF"
+      }
+    },
+    {
+      "name": "cpp-rls-double",
+      "inherits": "cpp-rls",
+      "displayName": "C++ Release (double precision)",
+      "binaryDir": "${sourceDir}/cpp_build/build_double",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "cpp-rls",
+      "displayName": "Build C++ Release",
+      "configurePreset": "cpp-rls"
+    },
+    {
+      "name": "cpp-dbg",
+      "displayName": "Build C++ Debug",
+      "configurePreset": "cpp-dbg"
+    },
+    {
+      "name": "cpp-asan",
+      "displayName": "Build C++ ASan",
+      "configurePreset": "cpp-asan"
+    },
+    {
+      "name": "cpp-rls-mpi",
+      "displayName": "Build C++ Release + MPI",
+      "configurePreset": "cpp-rls-mpi"
+    },
+    {
+      "name": "cpp-rls-nohdf",
+      "displayName": "Build C++ Release (no HDF)",
+      "configurePreset": "cpp-rls-nohdf"
+    },
+    {
+      "name": "cpp-rls-nomtln",
+      "displayName": "Build C++ Release (no MTLN)",
+      "configurePreset": "cpp-rls-nomtln"
+    },
+    {
+      "name": "cpp-intel-rls-strict",
+      "displayName": "Build C++ Intel Release (strict)",
+      "configurePreset": "cpp-intel-rls-strict"
+    },
+    {
+      "name": "cpp-intel-rls-perf",
+      "displayName": "Build C++ Intel Release (perf)",
+      "configurePreset": "cpp-intel-rls-perf"
+    },
+    {
+      "name": "cpp-gcc-rls-strict",
+      "displayName": "Build C++ GNU Release (strict)",
+      "configurePreset": "cpp-gcc-rls-strict"
+    },
+    {
+      "name": "cpp-gcc-rls-perf",
+      "displayName": "Build C++ GNU Release (perf)",
+      "configurePreset": "cpp-gcc-rls-perf"
+    },
+    {
+      "name": "cpp-rls-double",
+      "displayName": "Build C++ Release (double precision)",
+      "configurePreset": "cpp-rls-double"
     }
   ]
 }

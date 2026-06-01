@@ -1,6 +1,8 @@
 from utils import *
 from typing import Dict
 import os
+import re
+from pathlib import Path
 from sys import platform
 from scipy import signal
 
@@ -22,9 +24,6 @@ def test_lineIntegralProbe(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
-@pytest.mark.wires
-@pytest.mark.multiwire
-@pytest.mark.probes
 def test_shieldedPair(tmp_path):
     fn = CASES_FOLDER + 'shieldedPair/shieldedPair.fdtd.json'
     solver = FDTD(input_filename=fn,
@@ -76,8 +75,6 @@ def test_shieldedPair(tmp_path):
 @no_mpi_skip
 @pytest.mark.mtln
 @pytest.mark.mpi
-@pytest.mark.wires
-@pytest.mark.multiwire
 def test_bundles_mpi_n_ranks(tmp_path):
     fn = CASES_FOLDER + 'mpi/bundles_for_mpi.fdtd.json'
     solver = FDTD(input_filename=fn,
@@ -107,8 +104,6 @@ def test_bundles_mpi_n_ranks(tmp_path):
 @no_mpi_skip
 @pytest.mark.mtln
 @pytest.mark.mpi
-@pytest.mark.wires
-@pytest.mark.multiwire
 def test_bundles_mpi_n_ranks_2(tmp_path):
 #             (9,10)(10,10)                       
 #                        |  (12,12)
@@ -152,9 +147,6 @@ def test_bundles_mpi_n_ranks_2(tmp_path):
 @no_mpi_skip
 @pytest.mark.mtln
 @pytest.mark.mpi
-@pytest.mark.wires
-@pytest.mark.multiwire
-@pytest.mark.probes
 def test_shieldedPair_mpi(tmp_path):
     fn = CASES_FOLDER + 'shieldedPair/shieldedPair.fdtd.json'
     solver = FDTD(input_filename=fn,
@@ -206,9 +198,6 @@ def test_shieldedPair_mpi(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
-@pytest.mark.wires
-@pytest.mark.dielectric
-@pytest.mark.probes
 def test_coated_antenna(tmp_path):
     """ Test for a coated antenna with MTLN wires reproducing Fig. 2 in:
         A. Rubio Bretones, R. Gomez Martin, A. Salinas and I. Sanchez, 
@@ -239,8 +228,6 @@ def test_coated_antenna(tmp_path):
     
 # compiled without mtln uses classic wires
 # compiled with mtln, wire is treated as an unshielded multiwire
-@pytest.mark.wires
-@pytest.mark.probes
 def test_holland(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(input_filename=fn, 
@@ -259,9 +246,6 @@ def test_holland(tmp_path):
     assert np.allclose(expected_i_interp, p['current'], rtol=1e-4, atol=5e-5)
 
 
-@pytest.mark.wires
-@pytest.mark.termination
-@pytest.mark.probes
 def test_holland_short_terminals_match_open_terminals(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     number_of_steps = 1000
@@ -305,8 +289,6 @@ def test_holland_short_terminals_match_open_terminals(tmp_path):
 @no_mpi_skip
 @pytest.mark.mtln
 @pytest.mark.mpi
-@pytest.mark.wires
-@pytest.mark.probes
 def test_holland_mtln_mpi(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
     # no mpi
@@ -368,9 +350,6 @@ def test_holland_mtln_mpi(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
-@pytest.mark.wires
-@pytest.mark.multiwire
-@pytest.mark.probes
 def test_unshielded_multiwires(tmp_path):
     fn = CASES_FOLDER + 'unshielded_multiwires/unshielded_multiwires_berenger.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -396,9 +375,6 @@ def test_unshielded_multiwires(tmp_path):
 
 
 @no_mpi_skip
-@pytest.mark.mpi
-@pytest.mark.wires
-@pytest.mark.probes
 def test_towelHanger_mpi(tmp_path):
     fn = CASES_FOLDER + 'towelHanger/towelHanger_mpi.fdtd.json'
     mpidir = ["x","y","z"]
@@ -441,8 +417,6 @@ def test_towelHanger_mpi(tmp_path):
     
     
 
-@pytest.mark.wires
-@pytest.mark.probes
 def test_towelHanger(tmp_path):
     fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -464,9 +438,6 @@ def test_towelHanger(tmp_path):
         assert np.corrcoef(solved, p_expected[i]['current_0'])[0,1] > 0.999
 
 
-@pytest.mark.wires
-@pytest.mark.termination
-@pytest.mark.probes
 def test_towel_rack_with_and_without_shorting_plane(tmp_path):
     fn = CASES_FOLDER + \
         'towel_rack_with_shorting_plane/towel_rack_with_shorting_plane.fdtd.json'
@@ -531,9 +502,6 @@ def test_towel_rack_with_and_without_shorting_plane(tmp_path):
 
 @no_hdf_skip
 @pytest.mark.hdf
-@pytest.mark.farfield
-@pytest.mark.movie
-@pytest.mark.probes
 def test_sphere(tmp_path):
     fn = CASES_FOLDER + 'sphere/sphere.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -558,8 +526,6 @@ def test_sphere(tmp_path):
 
 @no_hdf_skip
 @pytest.mark.hdf
-@pytest.mark.planewave
-@pytest.mark.movie
 def test_movie_in_planewave_in_box(tmp_path):
     import h5py
     fn = CASES_FOLDER + 'planewave/pw-in-box-with-movie.fdtd.json'
@@ -578,8 +544,6 @@ def test_movie_in_planewave_in_box(tmp_path):
     assert np.min(field_ds) == 0.0
 
 
-@pytest.mark.planewave
-@pytest.mark.probes
 def test_planewave_in_box(tmp_path):
     fn = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -596,8 +560,6 @@ def test_planewave_in_box(tmp_path):
     assert np.allclose(after.data['field'].to_numpy(), zeros, atol=5e-4)
 
 
-@pytest.mark.planewave
-@pytest.mark.probes
 def test_planewave_with_periodic_boundaries(tmp_path):
     fn = CASES_FOLDER + 'planewave/pw-with-periodic.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -614,8 +576,124 @@ def test_planewave_with_periodic_boundaries(tmp_path):
     assert np.allclose(after.data['field'].to_numpy(), zeros, atol=1.5e-3)
 
 
+_SGBC_FLOAT_RE = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?"
+
+
+def _prepare_raw_sgbc_solver(solver, additional_arguments, steps=600):
+    solver['general']['numberOfSteps'] = steps
+    if additional_arguments is None:
+        solver['general'].pop('additionalArguments', None)
+    else:
+        solver['general']['additionalArguments'] = additional_arguments
+    solver._input['boundary'] = {
+        'xLower': {'type': 'pec'},
+        'xUpper': {'type': 'pec'},
+        'yLower': {'type': 'pmc'},
+        'yUpper': {'type': 'pmc'},
+        'zLower': {'type': 'mur'},
+        'zUpper': {'type': 'mur'},
+    }
+    raw_back_probe = next(
+        dict(probe) for probe in solver['probes'] if probe.get('name') == 'back')
+    raw_back_probe['name'] = 'raw_back'
+    solver['probes'].append(raw_back_probe)
+
+
+def _run_raw_sgbc_flag_case(tmp_path, name, additional_arguments=None,
+                            flags=None, steps=600):
+    run_dir = Path(tmp_path) / name
+    run_dir.mkdir()
+    fn = CASES_FOLDER + 'sgbcShieldingEffectiveness/shieldingEffectiveness.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=run_dir,
+                  flags=flags or [])
+    _prepare_raw_sgbc_solver(solver, additional_arguments, steps=steps)
+    solver.run()
+    probe_files = sorted(run_dir.glob(f"{solver.getCaseName()}_raw_back_*.dat"))
+    assert len(probe_files) == 1
+    stdout = solver.output.stdout.decode('utf-8', errors='replace')
+    return probe_files[0], stdout
+
+
+def _sgbc_output_value(stdout, label):
+    match = re.search(rf"sgbc {label}:\s*({_SGBC_FLOAT_RE})", stdout)
+    assert match, f"missing SGBC {label} in stdout:\n{stdout[-2000:]}"
+    return float(match.group(1))
+
+
+def _assert_sgbc_output_config(stdout, freq=None, resol=None, depth=None):
+    if freq is not None:
+        assert _sgbc_output_value(stdout, "Freq") == pytest.approx(freq)
+    if resol is not None:
+        assert _sgbc_output_value(stdout, "Resol") == pytest.approx(resol)
+    if depth is not None:
+        assert _sgbc_output_value(stdout, "Depth") == pytest.approx(depth)
+
+
 @pytest.mark.sgbc
-@pytest.mark.probes
+def test_sgbc_additional_arguments_match_cli_flags(tmp_path):
+    flags = ['-sgbcfreq', '1e6', '-sgbcresol', '1', '-sgbcdepth', '-1']
+    json_probe, json_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'json_flags',
+        additional_arguments='-sgbcfreq 1e6 -sgbcresol 1 -sgbcdepth -1')
+    cli_probe, cli_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'cli_flags', additional_arguments='', flags=flags)
+
+    assert json_probe.read_bytes() == cli_probe.read_bytes()
+    _assert_sgbc_output_config(json_stdout, freq=1e6, resol=1, depth=-1)
+    _assert_sgbc_output_config(cli_stdout, freq=1e6, resol=1, depth=-1)
+
+
+@pytest.mark.sgbc
+def test_sgbc_frequency_flag_changes_raw_maloney_response(tmp_path):
+    low_probe, low_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'freq_1e6', additional_arguments='',
+        flags=['-sgbcfreq', '1e6'])
+    high_probe, high_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'freq_1e9', additional_arguments='',
+        flags=['-sgbcfreq', '1e9'])
+
+    assert low_probe.read_bytes() != high_probe.read_bytes()
+    _assert_sgbc_output_config(low_stdout, freq=1e6)
+    _assert_sgbc_output_config(high_stdout, freq=1e9)
+
+
+@pytest.mark.sgbc
+def test_sgbc_depth_flag_changes_raw_maloney_response(tmp_path):
+    auto_probe, auto_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'depth_auto', additional_arguments='',
+        flags=['-sgbcfreq', '1e6', '-sgbcdepth', '-1'])
+    zero_probe, zero_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'depth_zero', additional_arguments='',
+        flags=['-sgbcfreq', '1e6', '-sgbcdepth', '0'])
+
+    assert auto_probe.read_bytes() != zero_probe.read_bytes()
+    _assert_sgbc_output_config(auto_stdout, freq=1e6, depth=-1)
+    _assert_sgbc_output_config(zero_stdout, freq=1e6, depth=0)
+
+
+@pytest.mark.sgbc
+def test_sgbc_disable_flag_suppresses_nodes_and_later_sgbc_option_reenables(
+        tmp_path):
+    enabled_probe, enabled_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'enabled', flags=['-sgbcfreq', '1e6'])
+    disabled_probe, disabled_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'disabled', flags=['-nosgbc'])
+    reenabled_probe, reenabled_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'reenabled', flags=['-nosgbc', '-sgbcfreq', '1e6'])
+
+    assert enabled_probe.read_bytes() != disabled_probe.read_bytes()
+    assert reenabled_probe.read_bytes() == enabled_probe.read_bytes()
+
+    assert "---> sgbc    solver for multilayer: F" in disabled_stdout
+    assert "---> sgbc Depth:" not in disabled_stdout
+    assert "----> no Structured sgbc elements found" in disabled_stdout
+
+    assert "---> sgbc    solver for multilayer: T" in enabled_stdout
+    assert "---> sgbc    solver for multilayer: T" in reenabled_stdout
+    _assert_sgbc_output_config(enabled_stdout, freq=1e6)
+    _assert_sgbc_output_config(reenabled_stdout, freq=1e6)
+
+
 def test_sgbc_shielding_effectiveness(tmp_path):
     fn = CASES_FOLDER + 'sgbcShieldingEffectiveness/shieldingEffectiveness.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -669,8 +747,77 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 
     assert np.allclose(fdtd_s21_db, anal_s21_db, rtol=0.05)
 
+
 @pytest.mark.sgbc
-@pytest.mark.probes
+@pytest.mark.planewave
+def test_sgbc_surface_impedance_frequency_points_require_maloney_depth(tmp_path):
+    """Raw SGBC fields must match slab transmission at multiple frequencies.
+
+    The standalone C++ solver currently rewrites the probe named "back" with an
+    analytic SGBC response.  This test adds an equivalent probe with a different
+    name so the assertion exercises the actual time-stepped Maloney fields.
+    Depth-zero Maloney is too flat with frequency and should fail here until
+    nonzero-depth/internal sheet propagation is translated.  The z boundaries
+    are set to MUR here so this test isolates SGBC from the separate CPML
+    migration.
+    """
+    fn = CASES_FOLDER + 'sgbcShieldingEffectiveness/shieldingEffectiveness.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver._input['boundary'] = {
+        'xLower': {'type': 'pec'},
+        'xUpper': {'type': 'pec'},
+        'yLower': {'type': 'pmc'},
+        'yUpper': {'type': 'pmc'},
+        'zLower': {'type': 'mur'},
+        'zUpper': {'type': 'mur'},
+    }
+    raw_back_probe = dict(solver['probes'][1])
+    raw_back_probe['name'] = 'raw_back'
+    solver['probes'].append(raw_back_probe)
+
+    solver.run()
+
+    raw_back = Probe(solver.getSolvedProbeFilenames("raw_back")[0])
+    t = raw_back.data['time'].to_numpy()
+    dt = t[1] - t[0]
+    fq = fftfreq(len(t)) / dt
+    inc = fft(raw_back.data['incident'].to_numpy())
+    field = fft(raw_back.data['field'].to_numpy())
+    s21 = field / inc
+
+    frequency_points = np.array([50e6, 100e6, 250e6, 500e6])
+    sampled_s21_db = []
+    for frequency in frequency_points:
+        idx = (np.abs(fq - frequency)).argmin()
+        sampled_s21_db.append(20 * np.log10(np.abs(s21[idx])))
+    sampled_s21_db = np.array(sampled_s21_db)
+
+    from skrf.media import Freespace
+    from skrf.frequency import Frequency
+    import scipy.constants
+
+    freq = Frequency.from_f(frequency_points, unit='Hz')
+    air = Freespace(freq)
+
+    sigma = 100
+    width = 10e-3
+    mat_ep_r = (1 + sigma / (1j * freq.w * scipy.constants.epsilon_0))
+    conductive_material = Freespace(freq, ep_r=mat_ep_r)
+    slab = air.thru() ** conductive_material.line(width, unit='m') ** air.thru()
+    analytic_s21_db = 20 * np.log10(np.abs(slab.s[:, 0, 1]))
+
+    np.testing.assert_allclose(
+        sampled_s21_db,
+        analytic_s21_db,
+        atol=1.0,
+        rtol=0.0,
+        err_msg=(
+            "Raw SGBC transmission must match analytical slab S21 at several "
+            "frequencies; depth-zero Maloney is expected to fail this."
+        ),
+    )
+
+
 def test_current_orientation(tmp_path):
     fn = CASES_FOLDER + 'current_orientation/currentOrientation.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -705,9 +852,6 @@ def test_current_orientation(tmp_path):
 
 # compiled without mtln uses classic wires
 # compiled with mtln, wire is treated as an unshielded multiwire
-@pytest.mark.sgbc
-@pytest.mark.wires
-@pytest.mark.probes
 def test_sgbc_structured_resistance_single_wire(tmp_path):
     fn = CASES_FOLDER + 'sgbcResistance/sgbcResistance.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -723,8 +867,6 @@ def test_sgbc_structured_resistance_single_wire(tmp_path):
 
 # compiled without mtln uses classic wires
 # compiled with mtln, wire is treated as an unshielded multiwire
-@pytest.mark.sgbc
-@pytest.mark.probes
 def test_pec_overlapping_sgbcs(tmp_path):
     """ Test that PEC surfaces overlapping SGBC surfaces prioritize PEC.
     """
@@ -758,8 +900,6 @@ def test_pec_overlapping_sgbcs(tmp_path):
  
 # compiled without mtln uses classic wires
 # compiled with mtln, wire is treated as an unshielded multiwire
-@pytest.mark.sgbc
-@pytest.mark.probes
 def test_sgbc_overlapping_sgbc(tmp_path):
     """ Test that SGBC surfaces overlapping SGBC surfaces prioritize first in MatAss.
     """
@@ -794,8 +934,6 @@ def test_sgbc_overlapping_sgbc(tmp_path):
     # Checks values are different due to prioritization of first written.
     assert np.all(np.greater(np.abs(iSGBC_top[1000:]), np.abs(iSGBC_bottom[1000:])))
 
-@pytest.mark.dielectric
-@pytest.mark.probes
 def test_dielectric_transmission(tmp_path):
     _FIELD_TOLERANCE = 0.05
 
@@ -856,8 +994,6 @@ def test_dielectric_transmission(tmp_path):
     assert np.allclose(reflectedDelay/transmitedDelay, expectedDelayRatio, rtol=_FIELD_TOLERANCE)
 
     
-@pytest.mark.conformal
-@pytest.mark.probes
 def test_rectilinear_mode(tmp_path):
     _FIELD_TOLERANCE = 4
     _TIME_TOLERANCE = 4
@@ -893,9 +1029,6 @@ def test_rectilinear_mode(tmp_path):
     np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['value'], getPeakPulse(noRectilinearVertexProbe)['value'], decimal=_FIELD_TOLERANCE)
     np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['time'], getPeakPulse(noRectilinearVertexProbe)['time'], decimal=_TIME_TOLERANCE)
     
-@pytest.mark.dielectric
-@pytest.mark.probes
-@pytest.mark.vtk
 def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arguments(tmp_path):
     folderWithSpaces: str  = os.path.join(tmp_path, "spaced bin")
     os.mkdir(folderWithSpaces)
@@ -915,9 +1048,6 @@ def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arg
     
 # compiled without mtln uses classic wires
 # compiled with mtln, wire is treated as an unshielded multiwire
-@pytest.mark.wires
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_nodal_source(tmp_path):
     fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
     assert (os.path.isfile(fn))
@@ -948,9 +1078,6 @@ def test_nodal_source(tmp_path):
     assert np.corrcoef(exc, -nodalBulkProbe['current'])[0,1] > 0.999
     assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
 
-@pytest.mark.wires
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_nodal_source_with_total_resistance(tmp_path):
     """Verify that totalResistance in materialAssociation overrides resistancePerMeter from material.
     
@@ -979,7 +1106,6 @@ def test_nodal_source_with_total_resistance(tmp_path):
     assert np.corrcoef(exc, -nodalBulkProbe['current'])[0,1] > 0.999
     assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
 
-@pytest.mark.sgbc
 def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
     fn = CASES_FOLDER + 'multipleAssigments/multipleSurfaceImpedance.fdtd.json'
 
@@ -987,7 +1113,6 @@ def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
     solver.run()
     assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
 
-@pytest.mark.dielectric
 def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
     fn = CASES_FOLDER + 'multipleAssigments/multipleDielectricMaterial.fdtd.json'
 
@@ -996,8 +1121,6 @@ def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
     assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
 
 @mtln_skip
-@pytest.mark.lumped
-@pytest.mark.probes
 def test_lumped_resistor(tmp_path):
     # This test validates the behavior of lumped resistor materials in a simplified circuit.
     # The circuit consists of a 40mm x 40mm simple loop with a lumped resistor line inserted along one edge.
@@ -1057,8 +1180,6 @@ def test_lumped_resistor(tmp_path):
     assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
 
 @mtln_skip
-@pytest.mark.lumped
-@pytest.mark.probes
 def test_lumped_capacitor(tmp_path):
     # This test validates the behavior of lumped capacitor materials in a simplified circuit. The lumped capacitor 
     # can be modeled as a capacitor in parallel with a resistor.
@@ -1102,8 +1223,6 @@ def test_lumped_capacitor(tmp_path):
     assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
 
 @mtln_skip
-@pytest.mark.lumped
-@pytest.mark.probes
 def test_lumped_inductor(tmp_path):
     # This test validates the behavior of lumped inductor materials in a simplified circuit. The lumped inductor
     # can be modeled as an inductor in series with a resistor.
@@ -1164,9 +1283,6 @@ def test_lumped_inductor(tmp_path):
     assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
 
 @mtln_skip
-@pytest.mark.lumped
-@pytest.mark.termination
-@pytest.mark.probes
 def test_lumped_resistor_parallel_terminal_resistor(tmp_path):
     # This test verifies current splitting behavior in a parallel resistive configuration.
     # The setup consists of a 40mm x 40mm circuit with two parallel elements:
@@ -1210,8 +1326,6 @@ def test_lumped_resistor_parallel_terminal_resistor(tmp_path):
     assert np.corrcoef(TopBulk_probe['current'].to_numpy() + BottomBulk_probe['current'].to_numpy(), I_theo)[0, 1] > 0.999
     assert np.corrcoef(InitialBulk_probe['current'].to_numpy(), I_theo)[0, 1] > 0.999
 
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_bulk_current_offset_normal_in_x(tmp_path):
     # This test verifies the positive offset along the normal vector (in x-direction) respect to the bulk plane
     # used to measure the current values of the system.
@@ -1240,8 +1354,6 @@ def test_bulk_current_offset_normal_in_x(tmp_path):
     assert np.allclose(probe_at_x_20['current'].to_numpy(), 0.0, atol=1.5e-3)
     assert np.allclose(probe_at_x_22['current'].to_numpy(), 0.0, atol=1.5e-3)
 
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_bulk_current_offset_normal_in_y(tmp_path):
     # This test verifies the positive offset along the normal vector (in y-direction) respect to the bulk plane
     # used to measure the current values of the system.
@@ -1270,8 +1382,6 @@ def test_bulk_current_offset_normal_in_y(tmp_path):
     assert np.allclose(probe_at_y_0['current'].to_numpy(), 0.0, atol=1.5e-3)
     assert np.allclose(probe_at_y_2['current'].to_numpy(), 0.0, atol=1.5e-3)
 
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_bulk_current_offset_normal_in_z(tmp_path):
     # This test verifies the positive offset along the normal vector (in z-direction) respect to the bulk plane
     # used to measure the current values of the system.
@@ -1300,8 +1410,6 @@ def test_bulk_current_offset_normal_in_z(tmp_path):
     assert np.allclose(probe_at_z_20['current'].to_numpy(), 0.0, atol=1.5e-3)
     assert np.allclose(probe_at_z_22['current'].to_numpy(), 0.0, atol=1.5e-3)
 
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_bulk_current_offset_perpendicular_in_x(tmp_path):
     # This test verifies the negative offset presented in the y and z directions when the bulk plane is defined
     # with a normal vector in the x-direction.
@@ -1375,8 +1483,6 @@ def test_bulk_current_offset_perpendicular_in_x(tmp_path):
     assert np.allclose(probe1_positive['current'].to_numpy(), 0.0, atol=1.5e-2)
     assert np.allclose(probe2_positive['current'].to_numpy(), 0.0, atol=1.5e-2)
 
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_bulk_current_negative_offset_in_x(tmp_path):
     # Following the previous test, we have seen that the bulk surfaces has negative offsets in the directions
     # perpendicular to the normal vector of the bulk surface. The previous test checks the negative offset in the
@@ -1437,8 +1543,6 @@ def _run_four_probes(tmp_path, json_filename):
 
     return probe_LL, probe_LU, probe_UU, probe_UL, exc_interp
 
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_bulk_current_four_probes_X_oriented(tmp_path):
     # A nodal current source runs along X through cell (23,23).
     # Four bulk-current probes are arranged in the YZ plane at x=4:
@@ -1452,8 +1556,6 @@ def test_bulk_current_four_probes_X_oriented(tmp_path):
     assert np.allclose(probe_LU["current"].to_numpy(), 0.0, atol=2e-3)
     assert np.allclose(probe_UL["current"].to_numpy(), 0.0, atol=2e-3)
 
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_bulk_current_four_probes_Y_oriented(tmp_path):
     # A nodal current source runs along Y through cell (23,23).
     # Four bulk-current probes are arranged in the XZ plane at y=4:
@@ -1467,8 +1569,6 @@ def test_bulk_current_four_probes_Y_oriented(tmp_path):
     assert np.allclose(probe_LU["current"].to_numpy(), 0.0, atol=2e-3)
     assert np.allclose(probe_UL["current"].to_numpy(), 0.0, atol=2e-3)
 
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_bulk_current_four_probes_Z_oriented(tmp_path):
     # A nodal current source runs along Z through cell (23,23).
     # Four bulk-current probes are arranged in the XY plane at z=4:
@@ -1485,9 +1585,6 @@ def test_bulk_current_four_probes_Z_oriented(tmp_path):
 
 # compiled without mtln uses classic wires
 # compiled with mtln, wire is treated as an unshielded multiwire
-@pytest.mark.conformal
-@pytest.mark.wires
-@pytest.mark.probes
 def test_conformal_impedance_cylinder_unshielded(tmp_path):
     case_name = 'conformal_impedance_cylinder_conformal'
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
@@ -1521,9 +1618,6 @@ def test_conformal_impedance_cylinder_unshielded(tmp_path):
     assert np.corrcoef(data['z'], np.abs(Vfexc/Ifbulk_conf))[0,1] > 0.999
 
     
-@pytest.mark.conformal
-@pytest.mark.farfield
-@pytest.mark.probes
 def test_conformal_sphere_rcs(tmp_path):
     case_name = 'conformal_sphere_rcs'
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
@@ -1545,8 +1639,6 @@ def test_conformal_sphere_rcs(tmp_path):
 
     assert np.corrcoef(rcs[5:150], rcs_interp[5:150])[0,1] > 0.98
 
-@pytest.mark.conformal
-@pytest.mark.probes
 def test_conformal_delay(tmp_path):
     fn = CASES_FOLDER + 'conformal/conformal.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -1584,9 +1676,6 @@ def test_conformal_delay(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
-@pytest.mark.wires
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_current_generators_with_resistance(tmp_path):
     # Checks current and voltage of probes at the extremes of a wire
     # with a current generator in the middle of the wire
@@ -1607,9 +1696,6 @@ def test_current_generators_with_resistance(tmp_path):
     assert np.allclose(Vend['voltage_0'][-100:-1], 16.666, rtol=0.005)
     assert np.allclose(Vstart['voltage_0'][-100:-1], -16.666, rtol=0.005)
 
-@pytest.mark.wires
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_current_generators_without_resistance(tmp_path):
     # Checks current probes at the extremes of a wire
     # with a current generator in the middle of the wire and on the extremes of the wire
@@ -1645,9 +1731,6 @@ def test_current_generators_without_resistance(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
-@pytest.mark.wires
-@pytest.mark.nodal_source
-@pytest.mark.probes
 def test_voltage_generators(tmp_path):
     # Checks current and voltage of probes at the extremes of bundle (1 conductor + 1 shield)
     # with a voltage generator in the middle of the inner conductor
@@ -1674,7 +1757,6 @@ def test_voltage_generators(tmp_path):
     assert np.allclose(Vend['voltage_1'][-100:-1],   -16.666, rtol=0.005)
     assert np.allclose(Vstart['voltage_1'][-100:-1], -16.666, rtol=0.005)
     
-@pytest.mark.probes
 def test_bulk_current_outputs(tmp_path):
     # This test uses bulk_probe_cases_over_nodal_source.fdtd from input_examples as input.
     # Verifies all kind of bulk probes are recognised and setted properly by checking outputFile format.
