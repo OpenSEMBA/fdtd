@@ -63,40 +63,51 @@ void launch() {
 }
 
 void step() {
+    const bool profile_enabled = runtimeProfile.enabled;
+    const auto step_begin = profile_enabled
+        ? std::chrono::steady_clock::now()
+        : std::chrono::steady_clock::time_point{};
     flushPlanewaveOff();
 
     // TODO: translate advanceAnisotropicE, advanceEDispersiveE, and multiport E.
-    advanceE();
+    profileBlock(runtimeProfile.advanceE, [&]() { advanceE(); });
 #ifdef CompileWithMTLN
-    advanceMtlnE();
+    profileBlock(runtimeProfile.wiresE, [&]() { advanceMtlnE(); });
 #endif
-    advanceHollandWiresE();
-    advancePmlE();
-    advanceSgbcE();
-    advanceLumpedE();
+    profileBlock(runtimeProfile.wiresE, [&]() { advanceHollandWiresE(); });
+    profileBlock(runtimeProfile.pmlE, [&]() { advancePmlE(); });
+    profileBlock(runtimeProfile.sgbcE, [&]() { advanceSgbcE(); });
+    profileBlock(runtimeProfile.lumpedE, [&]() { advanceLumpedE(); });
     applyPecE();
-    advancePlaneWaveE();
-    advanceNodalE();
+    profileBlock(runtimeProfile.planewaveE, [&]() { advancePlaneWaveE(); });
+    profileBlock(runtimeProfile.nodalE, [&]() { advanceNodalE(); });
 
-    flushMpiElectricFieldsOneAxis();
+    profileBlock(runtimeProfile.mpiE, [&]() { flushMpiElectricFieldsOneAxis(); });
 
     // TODO: translate advanceAnisotropicH, advanceMDispersiveH, advanceNodalH, advanceWiresH, and multiport H.
-    advanceH();
-    advancePmlBodyH();
-    advanceMagneticCpml();
+    profileBlock(runtimeProfile.advanceH, [&]() { advanceH(); });
+    profileBlock(runtimeProfile.pmlH, [&]() { advancePmlBodyH(); });
+    profileBlock(runtimeProfile.pmlH, [&]() { advanceMagneticCpml(); });
     minusCloneMagneticPmc();
     cloneMagneticPeriodic();
-    advanceSgbcH();
-    advancePlaneWaveH();
+    profileBlock(runtimeProfile.sgbcH, [&]() { advanceSgbcH(); });
+    profileBlock(runtimeProfile.planewaveH, [&]() { advancePlaneWaveH(); });
     minusCloneMagneticPmc();
     cloneMagneticPeriodic();
     applyPecH();
     applyMurH();
 
-    flushMpiMagneticFieldsOneAxis();
+    profileBlock(runtimeProfile.mpiH, [&]() { flushMpiMagneticFieldsOneAxis(); });
 
-    sampleProbes();
-    sampleMovieProbes();
+    profileBlock(runtimeProfile.sampling, [&]() {
+        sampleProbes();
+        sampleMovieProbes();
+    });
+    if (profile_enabled) {
+        runtimeProfile.steps += 1;
+        runtimeProfile.stepTotal += std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - step_begin).count();
+    }
 }
 
 void timestepping() {

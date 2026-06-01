@@ -20,6 +20,16 @@ DEFAULT_MAX_STEPS = 2000
 DEFAULT_CASES = {
     "nodal_source": CASES_ROOT / "nodalSource" / "nodalSource.fdtd.json",
 }
+DEFAULT_MPI_CASES = {
+    "holland": CASES_ROOT / "holland_mpi" / "holland1981.fdtd.json",
+    "towel": CASES_ROOT / "towelHanger" / "towelHanger_mpi.fdtd.json",
+}
+DEFAULT_CYBONERA_CASE = Path(
+    os.environ.get(
+        "SEMBA_PERF_CYBONERA_CASE",
+        "/home/luis/cybonera/analysis/cybonera_w4_corrected/cybonera_w4_corrected.fdtd.json",
+    )
+)
 
 
 pytestmark = pytest.mark.performance
@@ -30,18 +40,21 @@ class BenchmarkCase:
     name: str
     input_file: Path
     steps: int
+    mcells_per_step: float
 
 
 @dataclass(frozen=True)
 class BenchmarkExecutable:
     name: str
     path: Path
+    mode: str = "default"
 
 
 @dataclass
 class BenchmarkResult:
     case: str
     executable: str
+    mode: str
     exe_path: str
     build_type: str
     ranks: int
@@ -51,8 +64,10 @@ class BenchmarkResult:
     repeat: int
     requested_steps: int
     reported_steps: int
+    mcells_per_step: float
     elapsed_s: float
     steps_per_s: float
+    mcells_per_s: float
     returncode: int
     run_dir: str
     stdout_tail: str
@@ -111,6 +126,39 @@ def _build_type_for_exe(exe_path: Path) -> str:
     return "unknown"
 
 
+def _cmake_cache_value(exe_path: Path, key: str) -> str | None:
+    build_dir = exe_path.resolve().parent.parent
+    cache = build_dir / "CMakeCache.txt"
+    if not cache.exists():
+        return None
+    prefix = f"{key}:"
+    for line in cache.read_text(errors="replace").splitlines():
+        if line.startswith(prefix):
+            return line.split("=", 1)[1].strip()
+    return None
+
+
+def _cmake_bool(exe_path: Path, key: str) -> bool | None:
+    raw = _cmake_cache_value(exe_path, key)
+    if raw is None:
+        return None
+    value = raw.strip().upper()
+    if value in {"ON", "TRUE", "1", "YES"}:
+        return True
+    if value in {"OFF", "FALSE", "0", "NO"}:
+        return False
+    return None
+
+
+def _solver_signature(exe_path: Path) -> dict[str, bool | None]:
+    return {
+        "mpi": _cmake_bool(exe_path, "SEMBA_FDTD_ENABLE_MPI"),
+        "mtln": _cmake_bool(exe_path, "SEMBA_FDTD_ENABLE_MTLN"),
+        "double_precision": _cmake_bool(exe_path, "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION"),
+        "strict_rounding": _cmake_bool(exe_path, "SEMBA_FDTD_ENABLE_STRICT_FORTRAN_ROUNDING"),
+    }
+
+
 def _used_files(input_data: dict) -> list[str]:
     result = []
 
@@ -130,10 +178,39 @@ def _used_files(input_data: dict) -> list[str]:
     return result
 
 
-def _prepare_case_run(input_file: Path, run_dir: Path, max_steps: int) -> BenchmarkCase:
+def _extract_mcells_per_step(input_data: dict) -> float:
+    try:
+        number_of_cells = input_data["mesh"]["grid"]["numberOfCells"]
+        if len(number_of_cells) != 3:
+            return 0.0
+        total_cells = (
+            float(number_of_cells[0]) *
+            float(number_of_cells[1]) *
+            float(number_of_cells[2])
+        )
+        return total_cells / 1.0e6
+    except Exception:
+        return 0.0
+
+
+def _sanitize_case_for_benchmark(input_data: dict, strip_case_flags: bool) -> None:
+    if not strip_case_flags:
+        return
+    general = input_data.setdefault("general", {})
+    if isinstance(general, dict):
+        general.pop("additionalArguments", None)
+
+
+def _prepare_case_run(
+    input_file: Path,
+    run_dir: Path,
+    max_steps: int,
+    strip_case_flags: bool,
+) -> BenchmarkCase:
     run_dir.mkdir(parents=True, exist_ok=True)
     case_dir = input_file.parent
     input_data = json.loads(input_file.read_text())
+    _sanitize_case_for_benchmark(input_data, strip_case_flags)
 
     original_steps = int(input_data.get("general", {}).get("numberOfSteps", max_steps))
     steps = min(original_steps, max_steps)
@@ -146,7 +223,12 @@ def _prepare_case_run(input_file: Path, run_dir: Path, max_steps: int) -> Benchm
 
     target_input = run_dir / input_file.name
     target_input.write_text(json.dumps(input_data, indent=4) + "\n")
-    return BenchmarkCase(name=input_file.stem.replace(".fdtd", ""), input_file=target_input, steps=steps)
+    return BenchmarkCase(
+        name=input_file.stem.replace(".fdtd", ""),
+        input_file=target_input,
+        steps=steps,
+        mcells_per_step=_extract_mcells_per_step(input_data),
+    )
 
 
 def _parse_reported_steps(stdout: str, fallback: int) -> int:
@@ -166,6 +248,7 @@ def _run_one(
     case_name: str,
     input_file: Path,
     requested_steps: int,
+    mcells_per_step: float,
     executable: BenchmarkExecutable,
     ranks: int,
     threads: int,
@@ -173,12 +256,16 @@ def _run_one(
     timeout_s: float,
     run_dir: Path,
     mpi_command_template: str | None,
+    force_launcher_for_rank1: bool,
 ) -> BenchmarkResult:
     env = os.environ.copy()
     env["OMP_NUM_THREADS"] = str(threads)
     env.setdefault("OMP_PROC_BIND", "false")
 
-    if ranks > 1 or mpi_command_template:
+    use_launcher = ranks > 1 or mpi_command_template is not None
+    if ranks == 1 and force_launcher_for_rank1:
+        use_launcher = True
+    if use_launcher:
         template = mpi_command_template or "mpirun -np {ranks}"
         mpi_command = template.format(ranks=ranks)
         command = shlex.split(mpi_command) + [
@@ -201,12 +288,18 @@ def _run_one(
 
     if completed.returncode != 0:
         steps_per_s = 0.0
+        mcells_per_s = 0.0
     else:
         steps_per_s = reported_steps / elapsed if elapsed > 0.0 else 0.0
+        mcells_per_s = (
+            (mcells_per_step * float(reported_steps)) / elapsed
+            if elapsed > 0.0 else 0.0
+        )
 
     return BenchmarkResult(
         case=case_name,
         executable=executable.name,
+        mode=executable.mode,
         exe_path=str(executable.path.resolve()),
         build_type=_build_type_for_exe(executable.path),
         ranks=ranks,
@@ -216,8 +309,10 @@ def _run_one(
         repeat=repeat,
         requested_steps=requested_steps,
         reported_steps=reported_steps,
+        mcells_per_step=mcells_per_step,
         elapsed_s=elapsed,
         steps_per_s=steps_per_s,
+        mcells_per_s=mcells_per_s,
         returncode=completed.returncode,
         run_dir=str(run_dir),
         stdout_tail=_tail(completed.stdout),
@@ -236,6 +331,7 @@ def run_benchmark_matrix(
     work_dir: Path | None = None,
     keep_workdirs: bool = False,
     mpi_command: str | None = None,
+    strip_case_flags: bool = True,
 ) -> list[BenchmarkResult]:
     if ranks is None:
         ranks = [1]
@@ -247,6 +343,7 @@ def run_benchmark_matrix(
         root = work_dir
         root.mkdir(parents=True, exist_ok=True)
 
+    force_launcher_for_rank1 = bool(mpi_command) or any(rank > 1 for rank in ranks)
     try:
         results = []
         for case_name, case_input in cases.items():
@@ -266,11 +363,17 @@ def run_benchmark_matrix(
                                 root / case_name / executable.name /
                                 f"np{rank_count}_t{thread_count}" / f"r{repeat}"
                             )
-                            prepared = _prepare_case_run(case_input, run_dir, max_steps)
+                            prepared = _prepare_case_run(
+                                case_input,
+                                run_dir,
+                                max_steps,
+                                strip_case_flags=strip_case_flags,
+                            )
                             result = _run_one(
                                 case_name=case_name,
                                 input_file=prepared.input_file,
                                 requested_steps=prepared.steps,
+                                mcells_per_step=prepared.mcells_per_step,
                                 executable=executable,
                                 ranks=rank_count,
                                 threads=thread_count,
@@ -278,6 +381,7 @@ def run_benchmark_matrix(
                                 timeout_s=timeout_s,
                                 run_dir=run_dir,
                                 mpi_command_template=mpi_command,
+                                force_launcher_for_rank1=force_launcher_for_rank1,
                             )
                             results.append(result)
                             if result.returncode != 0:
@@ -343,31 +447,100 @@ def _parse_case_args(case_args: list[str]) -> dict[str, Path]:
     return cases
 
 
+def _default_mpi_cases() -> dict[str, Path]:
+    cases = dict(DEFAULT_MPI_CASES)
+    if DEFAULT_CYBONERA_CASE.exists():
+        cases["cybonera"] = DEFAULT_CYBONERA_CASE
+    return cases
+
+
+def _resolve_case_preset(case_preset: str) -> dict[str, Path]:
+    if case_preset == "default":
+        return DEFAULT_CASES
+    if case_preset == "mpi":
+        return _default_mpi_cases()
+    raise ValueError(f"unsupported case preset: {case_preset}")
+
+
+def _reference_mcells(results: list[BenchmarkResult]) -> dict[tuple[str, int, int, int], float]:
+    refs: dict[tuple[str, int, int, int], float] = {}
+    for result in results:
+        if result.mode != "reference" and result.executable != "fortran":
+            continue
+        refs[(result.case, result.ranks, result.threads, result.repeat)] = result.mcells_per_s
+    return refs
+
+
 def _results_as_dict(results: list[BenchmarkResult]) -> list[dict]:
     return [asdict(result) for result in results]
 
 
 def _format_markdown(results: list[BenchmarkResult]) -> str:
+    refs = _reference_mcells(results)
     lines = [
-        "| case | executable | build | ranks | threads | workers | repeat | steps | elapsed_s | steps_per_s |",
-        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "| case | executable | mode | build | ranks | threads | workers | repeat | steps | elapsed_s | steps_per_s | mcells_per_s | vs_fortran |",
+        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for result in results:
+        ref = refs.get((result.case, result.ranks, result.threads, result.repeat), 0.0)
+        ratio = ""
+        if ref > 0.0 and result.returncode == 0:
+            ratio = f"{(result.mcells_per_s / ref):.3f}x"
         lines.append(
-            f"| {result.case} | {result.executable} | {result.build_type} | "
+            f"| {result.case} | {result.executable} | {result.mode} | {result.build_type} | "
             f"{result.ranks} | {result.threads} | {result.total_workers} | "
             f"{result.repeat} | {result.reported_steps} | {result.elapsed_s:.6f} | "
-            f"{result.steps_per_s:.3f} |"
+            f"{result.steps_per_s:.3f} | {result.mcells_per_s:.3f} | {ratio} |"
         )
     return "\n".join(lines) + "\n"
 
 
 def _print_release_warnings(results: list[BenchmarkResult]) -> None:
+    warned_builds: set[tuple[str, str]] = set()
     for result in results:
+        key = (result.executable, result.exe_path)
+        if key in warned_builds:
+            continue
+        warned_builds.add(key)
         if result.build_type.lower() != "release":
             print(
                 f"warning: {result.executable} build type is {result.build_type}; "
                 "use Release builds for performance numbers",
+                file=sys.stderr,
+            )
+
+    reference: BenchmarkResult | None = next(
+        (
+            result for result in results
+            if result.executable == "fortran" or result.mode == "reference"
+        ),
+        None,
+    )
+    if reference is None:
+        return
+    reference_signature = _solver_signature(Path(reference.exe_path))
+
+    warned_signature: set[tuple[str, str]] = set()
+    for result in results:
+        key = (result.executable, result.exe_path)
+        if key in warned_signature:
+            continue
+        warned_signature.add(key)
+        if result.exe_path == reference.exe_path:
+            continue
+        signature = _solver_signature(Path(result.exe_path))
+        mismatches = []
+        for field, ref_value in reference_signature.items():
+            value = signature.get(field)
+            if ref_value is None or value is None:
+                continue
+            if value != ref_value:
+                mismatches.append(f"{field}: ref={ref_value} candidate={value}")
+        if mismatches:
+            print(
+                f"warning: solver configuration mismatch for {result.executable} "
+                f"({result.exe_path}) vs reference ({reference.exe_path}): "
+                + ", ".join(mismatches),
                 file=sys.stderr,
             )
 
@@ -377,11 +550,13 @@ def _print_release_warnings(results: list[BenchmarkResult]) -> None:
     reason="set SEMBA_RUN_PERFORMANCE_BENCHMARK=1 to run performance benchmarks",
 )
 def test_fortran_cpp_performance_metrics(tmp_path):
+    strip_case_flags_env = os.environ.get("SEMBA_PERF_KEEP_CASE_FLAGS", "").strip().lower()
+    strip_case_flags = strip_case_flags_env not in {"1", "true", "yes", "on"}
     results = run_benchmark_matrix(
         cases=DEFAULT_CASES,
         executables=[
-            BenchmarkExecutable("fortran", _default_fortran_exe()),
-            BenchmarkExecutable("cpp", _default_cpp_exe()),
+            BenchmarkExecutable("fortran", _default_fortran_exe(), mode="reference"),
+            BenchmarkExecutable("cpp", _default_cpp_exe(), mode="strict"),
         ],
         threads=_default_threads(),
         ranks=_default_ranks(),
@@ -391,6 +566,7 @@ def test_fortran_cpp_performance_metrics(tmp_path):
         work_dir=tmp_path,
         keep_workdirs=True,
         mpi_command=os.environ.get("SEMBA_PERF_MPI_COMMAND"),
+        strip_case_flags=strip_case_flags,
     )
     _print_release_warnings(results)
     print(_format_markdown(results))
@@ -410,8 +586,22 @@ def main(argv: list[str] | None = None) -> int:
             "Defaults to nodalSource/nodalSource.fdtd.json."
         ),
     )
+    parser.add_argument(
+        "--case-preset",
+        choices=("default", "mpi"),
+        default="default",
+        help=(
+            "Case preset used when --case is not provided. "
+            "`mpi` includes holland/towel and cybonera if available."
+        ),
+    )
     parser.add_argument("--fortran-exe", default=str(_default_fortran_exe()))
     parser.add_argument("--cpp-exe", default=str(_default_cpp_exe()))
+    parser.add_argument(
+        "--cpp-perf-exe",
+        default=None,
+        help="Optional second C++ executable built in performance mode.",
+    )
     parser.add_argument(
         "--threads",
         default=",".join(str(v) for v in _default_threads()),
@@ -427,7 +617,8 @@ def main(argv: list[str] | None = None) -> int:
         default=os.environ.get("SEMBA_PERF_MPI_COMMAND"),
         help=(
             "MPI launcher template, for example 'mpirun -np {ranks}'. "
-            "Defaults to no launcher for ranks=1 and 'mpirun -np {ranks}' for ranks>1."
+            "When omitted, rank>1 uses 'mpirun -np {ranks}'. "
+            "If any requested rank is >1, rank=1 points also use MPI launcher for consistency."
         ),
     )
     parser.add_argument("--max-steps", type=int, default=DEFAULT_MAX_STEPS)
@@ -435,6 +626,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--timeout", type=float, default=600.0)
     parser.add_argument("--work-dir", type=Path, default=None)
     parser.add_argument("--keep-workdirs", action="store_true")
+    parser.add_argument(
+        "--keep-case-flags",
+        action="store_true",
+        help="Do not strip case-level additionalArguments when preparing benchmark inputs.",
+    )
     parser.add_argument("--json", type=Path, default=None, help="Optional JSON output file.")
     parser.add_argument(
         "--markdown",
@@ -444,12 +640,19 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    executables = [
+        BenchmarkExecutable("fortran", Path(args.fortran_exe), mode="reference"),
+        BenchmarkExecutable("cpp", Path(args.cpp_exe), mode="strict"),
+    ]
+    if args.cpp_perf_exe is not None:
+        executables.append(
+            BenchmarkExecutable("cpp_perf", Path(args.cpp_perf_exe), mode="perf")
+        )
+
+    cases = _parse_case_args(args.case) if args.case else _resolve_case_preset(args.case_preset)
     results = run_benchmark_matrix(
-        cases=_parse_case_args(args.case),
-        executables=[
-            BenchmarkExecutable("fortran", Path(args.fortran_exe)),
-            BenchmarkExecutable("cpp", Path(args.cpp_exe)),
-        ],
+        cases=cases,
+        executables=executables,
         threads=_parse_threads(args.threads),
         ranks=_parse_threads(args.ranks),
         max_steps=args.max_steps,
@@ -458,6 +661,7 @@ def main(argv: list[str] | None = None) -> int:
         work_dir=args.work_dir,
         keep_workdirs=args.keep_workdirs,
         mpi_command=args.mpi_command,
+        strip_case_flags=not args.keep_case_flags,
     )
 
     _print_release_warnings(results)

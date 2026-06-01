@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <stdexcept>
+#include <string>
 
 #ifdef CompileWithMPI
 #include <mpi.h>
@@ -84,6 +85,19 @@ TEST(MpiOneAxis, AppliesFortranPmlCpuWeighting) {
     EXPECT_FALSE(slices[0].pmlUp);
     EXPECT_FALSE(slices[1].pmlDown);
     EXPECT_FALSE(slices[1].pmlUp);
+}
+
+TEST(MpiOneAxis, RejectsSlicesNotLargerThanOriginalPmlLayers) {
+    using namespace SEMBA_FDTD_m::SEMBA_FDTD_test;
+
+    try {
+        (void)test_mpi_one_axis_slices(60, 3, 30, 30, -1, 3);
+        FAIL() << "Expected PML slice-size guard to throw";
+    } catch (const std::runtime_error& ex) {
+        const std::string msg = ex.what();
+        EXPECT_NE(msg.find("PML"), std::string::npos);
+        EXPECT_NE(msg.find("slice"), std::string::npos);
+    }
 }
 
 TEST(MpiOneAxis, SupportsTwoRankForcedCut) {

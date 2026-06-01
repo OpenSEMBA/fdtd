@@ -346,39 +346,48 @@ namespace SGBC_nostoch_m {
         return layers[static_cast<size_t>(oneBasedIndex - 1)];
     }
 
-    static void solve_tridiag_sgbc(const std::vector<SGBCReal>& aa,
-                                   const std::vector<SGBCReal>& bb,
-                                   const std::vector<SGBCReal>& cc,
-                                   SGBCReal a1, SGBCReal b1, SGBCReal c1,
-                                   SGBCReal an, SGBCReal bn, SGBCReal cn,
-                                   const std::vector<SGBCReal>& d,
-                                   std::vector<SGBCReal>& x,
-                                   integer4 n) {
+    static void precompute_tridiag_sgbc(const std::vector<SGBCReal>& a,
+                                        const std::vector<SGBCReal>& b,
+                                        const std::vector<SGBCReal>& c,
+                                        std::vector<SGBCReal>& cp,
+                                        std::vector<SGBCReal>& invM,
+                                        integer4 n) {
+        if (n <= 0) {
+            cp.clear();
+            invM.clear();
+            return;
+        }
+        const auto count = static_cast<size_t>(n);
+        if (cp.size() != count) cp.resize(count);
+        if (invM.size() != count) invM.resize(count);
+        invM[0] = SGBCReal{1.0} / b[0];
+        cp[0] = c[0] * invM[0];
+        for (size_t i = 1; i < count; ++i) {
+            const SGBCReal m = b[i] - cp[i - 1] * a[i];
+            invM[i] = SGBCReal{1.0} / m;
+            cp[i] = c[i] * invM[i];
+        }
+    }
+
+    static void solve_tridiag_prefactored_sgbc(
+        const std::vector<SGBCReal>& a,
+        const std::vector<SGBCReal>& cp,
+        const std::vector<SGBCReal>& invM,
+        const std::vector<SGBCReal>& d,
+        std::vector<SGBCReal>& x,
+        std::vector<SGBCReal>& dp,
+        integer4 n) {
         if (n <= 0) {
             x.clear();
             return;
         }
         const auto count = static_cast<size_t>(n);
-        std::vector<SGBCReal> a(count), b(count), c(count), cp(count), dp(count);
-        a[0] = a1;
-        b[0] = b1;
-        c[0] = c1;
-        a[count - 1] = an;
-        b[count - 1] = bn;
-        c[count - 1] = cn;
-        for (size_t i = 1; i + 1 < count; ++i) {
-            a[i] = aa[i];
-            b[i] = bb[i];
-            c[i] = cc[i];
-        }
-        cp[0] = c[0] / b[0];
-        dp[0] = d[0] / b[0];
+        if (dp.size() != count) dp.resize(count);
+        if (x.size() != count) x.resize(count);
+        dp[0] = d[0] * invM[0];
         for (size_t i = 1; i < count; ++i) {
-            const SGBCReal m = b[i] - cp[i - 1] * a[i];
-            cp[i] = c[i] / m;
-            dp[i] = (d[i] - dp[i - 1] * a[i]) / m;
+            dp[i] = (d[i] - dp[i - 1] * a[i]) * invM[i];
         }
-        x.assign(count, SGBCReal{0.0});
         x[count - 1] = dp[count - 1];
         for (size_t i = count - 1; i-- > 0;) {
             x[i] = dp[i] - cp[i] * x[i + 1];
@@ -679,6 +688,30 @@ namespace SGBC_nostoch_m {
         surface.Efield = sgbc_real(initialE);
 
         calculate_sgbc_constants(surface, layers, dtValue, eps0Value, mu0Value);
+        if (surface.SGBCCrank && surface.depth > 0) {
+            surface.triA.assign(eCount, SGBCReal{0.0});
+            surface.triB.assign(eCount, SGBCReal{1.0});
+            surface.triC.assign(eCount, SGBCReal{0.0});
+            for (integer4 i = -surface.depth + 1; i <= surface.depth - 1; ++i) {
+                const size_t idx = e_index(surface, i);
+                surface.triA[idx] = surface.a[idx];
+                surface.triB[idx] = surface.b[idx];
+                surface.triC[idx] = surface.c[idx];
+            }
+            surface.triA[e_index(surface, -surface.depth)] = surface.a1;
+            surface.triB[e_index(surface, -surface.depth)] = surface.b1;
+            surface.triC[e_index(surface, -surface.depth)] = surface.c1;
+            surface.triA[e_index(surface, surface.depth)] = surface.an;
+            surface.triB[e_index(surface, surface.depth)] = surface.bn;
+            surface.triC[e_index(surface, surface.depth)] = surface.cn;
+            surface.triCp.assign(eCount, SGBCReal{0.0});
+            surface.triDp.assign(eCount, SGBCReal{0.0});
+            surface.triInvM.assign(eCount, SGBCReal{0.0});
+            precompute_tridiag_sgbc(
+                surface.triA, surface.triB, surface.triC,
+                surface.triCp, surface.triInvM,
+                static_cast<integer4>(eCount));
+        }
         return surface;
     }
 
@@ -722,31 +755,32 @@ namespace SGBC_nostoch_m {
         }
 
         if (surface.SGBCCrank) {
-            surface.E_past = surface.E;
+            const auto& oldE = surface.E;
+            auto& newE = surface.E_past;
             if (surface.correct_ha) {
                 integer4 i = depth;
                 surface.D[e_index(surface, i)] =
-                    -surface.an * surface.E_past[e_index(surface, i - 1)] +
-                    surface.rbn * surface.E_past[e_index(surface, i)] +
+                    -surface.an * oldE[e_index(surface, i - 1)] +
+                    surface.rbn * oldE[e_index(surface, i)] +
                     surface.g2a[1] * (haPlusValue - surface.Hyee_right) -
                     surface.g2b[1] * (hbPlusValue - hbMinusValue);
                 i = -depth;
                 surface.D[e_index(surface, i)] =
-                    -surface.c1 * surface.E_past[e_index(surface, i + 1)] +
-                    surface.rb1 * surface.E_past[e_index(surface, i)] +
+                    -surface.c1 * oldE[e_index(surface, i + 1)] +
+                    surface.rb1 * oldE[e_index(surface, i)] +
                     surface.g2a[0] * (surface.Hyee_left - haMinusValue) -
                     surface.g2b[0] * (hbPlusValue - hbMinusValue);
             } else if (surface.correct_hb) {
                 integer4 i = depth;
                 surface.D[e_index(surface, i)] =
-                    -surface.an * surface.E_past[e_index(surface, i - 1)] +
-                    surface.rbn * surface.E_past[e_index(surface, i)] +
+                    -surface.an * oldE[e_index(surface, i - 1)] +
+                    surface.rbn * oldE[e_index(surface, i)] +
                     surface.g2a[1] * (haPlusValue - haMinusValue) -
                     surface.g2b[1] * (hbPlusValue - surface.Hyee_right);
                 i = -depth;
                 surface.D[e_index(surface, i)] =
-                    -surface.c1 * surface.E_past[e_index(surface, i + 1)] +
-                    surface.rb1 * surface.E_past[e_index(surface, i)] +
+                    -surface.c1 * oldE[e_index(surface, i + 1)] +
+                    surface.rb1 * oldE[e_index(surface, i)] +
                     surface.g2a[0] * (haPlusValue - haMinusValue) -
                     surface.g2b[0] * (surface.Hyee_left - hbMinusValue);
             }
@@ -754,11 +788,11 @@ namespace SGBC_nostoch_m {
             for (integer4 i = -depth + 1; i <= depth - 1; ++i) {
                 surface.D[e_index(surface, i)] =
                     -surface.a[e_index(surface, i)] *
-                        surface.E_past[e_index(surface, i - 1)] -
+                        oldE[e_index(surface, i - 1)] -
                     surface.c[e_index(surface, i)] *
-                        surface.E_past[e_index(surface, i + 1)] +
+                        oldE[e_index(surface, i + 1)] +
                     surface.rb[e_index(surface, i)] *
-                        surface.E_past[e_index(surface, i)] +
+                        oldE[e_index(surface, i)] +
                     surface.rh[e_index(surface, i)] *
                         surface.H[h_index(surface, i)] -
                     surface.rhm1[e_index(surface, i)] *
@@ -766,21 +800,14 @@ namespace SGBC_nostoch_m {
             }
 
             const size_t count = surface.E.size();
-            std::vector<SGBCReal> aa(count, SGBCReal{0.0});
-            std::vector<SGBCReal> bb(count, SGBCReal{1.0});
-            std::vector<SGBCReal> cc(count, SGBCReal{0.0});
-            for (integer4 i = -depth + 1; i <= depth - 1; ++i) {
-                aa[e_index(surface, i)] = surface.a[e_index(surface, i)];
-                bb[e_index(surface, i)] = surface.b[e_index(surface, i)];
-                cc[e_index(surface, i)] = surface.c[e_index(surface, i)];
-            }
-            std::vector<SGBCReal> solved;
-            solve_tridiag_sgbc(
-                aa, bb, cc,
-                surface.a1, surface.b1, surface.c1,
-                surface.an, surface.bn, surface.cn,
-                surface.D, solved, static_cast<integer4>(count));
-            surface.E = solved;
+            solve_tridiag_prefactored_sgbc(
+                surface.triA,
+                surface.triCp,
+                surface.triInvM,
+                surface.D,
+                newE,
+                surface.triDp,
+                static_cast<integer4>(count));
         } else {
             for (integer4 i = -depth + 1; i <= depth - 1; ++i) {
                 surface.E[e_index(surface, i)] =
@@ -793,18 +820,25 @@ namespace SGBC_nostoch_m {
         }
 
         if (surface.SGBCCrank) {
+            const auto& oldE = surface.E;
+            const auto& newE = surface.E_past;
             for (integer4 i = -depth; i <= depth - 1; ++i) {
                 surface.H[h_index(surface, i)] =
                     surface.GM1_interno[h_index(surface, i)] *
                         surface.H[h_index(surface, i)] +
                     surface.GM2_interno[h_index(surface, i)] / SGBCReal{2.0} *
-                        (surface.E[e_index(surface, i + 1)] -
-                         surface.E[e_index(surface, i)] +
-                         surface.E_past[e_index(surface, i + 1)] -
-                         surface.E_past[e_index(surface, i)]);
+                        (newE[e_index(surface, i + 1)] -
+                         newE[e_index(surface, i)] +
+                         oldE[e_index(surface, i + 1)] -
+                         oldE[e_index(surface, i)]);
             }
             surface.Hyee_left = surface.H[h_index(surface, -depth)];
             surface.Hyee_right = surface.H[h_index(surface, depth - 1)];
+            surface.Efield =
+                (newE[e_index(surface, -depth)] +
+                 newE[e_index(surface, depth)]) /
+                SGBCReal{2.0};
+            std::swap(surface.E, surface.E_past);
         } else if (depth != 0) {
             for (integer4 i = -depth; i <= depth - 1; ++i) {
                 surface.H[h_index(surface, i)] =
@@ -816,12 +850,13 @@ namespace SGBC_nostoch_m {
             }
             surface.Hyee_left = surface.H[h_index(surface, -depth)];
             surface.Hyee_right = surface.H[h_index(surface, depth - 1)];
+            surface.Efield =
+                (surface.E[e_index(surface, -depth)] +
+                 surface.E[e_index(surface, depth)]) /
+                SGBCReal{2.0};
+        } else {
+            surface.Efield = surface.E[e_index(surface, 0)];
         }
-
-        surface.Efield =
-            (surface.E[e_index(surface, -depth)] +
-             surface.E[e_index(surface, depth)]) /
-            SGBCReal{2.0};
     }
 
     SGBCHCorrection_t AdvanceSGBCH(const SGBCSurface_t& surface,

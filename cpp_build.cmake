@@ -25,6 +25,7 @@ option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag" OFF)
 option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables interprocedural optimization" OFF)
+option(SEMBA_FDTD_ENABLE_STRICT_FORTRAN_ROUNDING "Preserve strict Fortran-like rounding helpers in C++ hot paths" ON)
 option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
 option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
 option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
@@ -51,6 +52,12 @@ else()
 endif()
 
 add_definitions(-DCompileWithInt2 -DCompileWithOpenMP)
+
+if(SEMBA_FDTD_ENABLE_STRICT_FORTRAN_ROUNDING)
+    set(SEMBA_STRICT_FORTRAN_ROUNDING_VALUE 1)
+else()
+    set(SEMBA_STRICT_FORTRAN_ROUNDING_VALUE 0)
+endif()
 
 if(SEMBA_FDTD_ENABLE_MPI)
     find_package(MPI REQUIRED COMPONENTS CXX)
@@ -91,7 +98,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         set(CMAKE_CXX_FLAGS "-std=c++17 -qopenmp")
 
         if(CMAKE_BUILD_TYPE STREQUAL "Release")
-            set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+            set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fp-model fast=2")
 
             if(SEMBA_FDTD_ENABLE_INTEL_IPO)
                 include(CheckIPOSupported)
@@ -244,6 +251,9 @@ if(SEMBA_FDTD_MAIN_LIB)
         "${CPP_SOURCE_ROOT}/src_cpp/main/maloney_nostoch.cpp"
         "${CPP_SOURCE_ROOT}/src_cpp/main/lumped.cpp"
         "${CPP_SOURCE_ROOT}/src_cpp/main/mapvtk_writer.cpp"
+    )
+    target_compile_definitions(semba-main PUBLIC
+        SEMBA_STRICT_FORTRAN_ROUNDING=${SEMBA_STRICT_FORTRAN_ROUNDING_VALUE}
     )
     target_include_directories(semba-main PUBLIC
         "${CPP_SOURCE_ROOT}/src_cpp/main"

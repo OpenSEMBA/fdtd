@@ -89,6 +89,12 @@ struct SGBCSurface_t {
     SGBCReal rbn = 0.0;
     SGBCReal rhn = 0.0;
     std::vector<SGBCReal> D;
+    std::vector<SGBCReal> triA;
+    std::vector<SGBCReal> triB;
+    std::vector<SGBCReal> triC;
+    std::vector<SGBCReal> triCp;
+    std::vector<SGBCReal> triDp;
+    std::vector<SGBCReal> triInvM;
 };
 
 struct SGBCHCorrection_t {

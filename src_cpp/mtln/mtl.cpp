@@ -315,35 +315,60 @@ using mtln_types_m::transfer_impedance_per_meter_t;
 
 #ifdef CompileWithMPI
     void mtl_t::initStepSizeAndFieldSegments(const std::vector<double>& step_size, const std::vector<segment_t>& segments, const std::vector<std::vector<int>>& layer_indices) {
+        std::vector<std::pair<int, int>> normalizedRanges;
+        normalizedRanges.reserve(layer_indices.size());
         int n = 0;
-        for (int j = 0; j < static_cast<int>(layer_indices.size()); ++j) {
-            n += layer_indices[j][1] - layer_indices[j][0] + 1;
-        }
-        n += static_cast<int>(layer_indices.size()) - 1;
+        const int maxSeg = static_cast<int>(segments.size());
+        const int maxStep = static_cast<int>(step_size.size());
+        const int limit = std::min(maxSeg, maxStep);
 
-        this->step_size.resize(n);
-        this->segments.resize(n);
+        for (int j = 0; j < static_cast<int>(layer_indices.size()); ++j) {
+            if (layer_indices[j].size() < 2) {
+                continue;
+            }
+            const int start1 = layer_indices[j][0];
+            const int end1 = layer_indices[j][1];
+            if (end1 < start1) {
+                continue;
+            }
+            int start0 = std::max(1, start1) - 1;
+            int end0 = std::min(limit, end1) - 1;
+            if (end0 < start0) {
+                continue;
+            }
+            normalizedRanges.emplace_back(start0, end0);
+            n += end0 - start0 + 1;
+        }
+
+        if (normalizedRanges.empty()) {
+            this->step_size.clear();
+            this->segments.clear();
+            return;
+        }
+
+        n += static_cast<int>(normalizedRanges.size()) - 1;
+        this->step_size.resize(static_cast<size_t>(n));
+        this->segments.resize(static_cast<size_t>(n));
 
         int idx = 0;
-        for (int j = 0; j < static_cast<int>(layer_indices.size()); ++j) {
-            int start = layer_indices[j][0];
-            int end = layer_indices[j][1];
-            int count = end - start + 1;
-            
-            // Copy step_size
+        for (int j = 0; j < static_cast<int>(normalizedRanges.size()); ++j) {
+            const int start0 = normalizedRanges[static_cast<size_t>(j)].first;
+            const int end0 = normalizedRanges[static_cast<size_t>(j)].second;
+            const int count = end0 - start0 + 1;
+
             for (int k = 0; k < count; ++k) {
-                this->step_size[idx + k] = step_size[start + k];
-            }
-            // Copy segments
-            for (int k = 0; k < count; ++k) {
-                this->segments[idx + k] = segments[start + k];
+                this->step_size[static_cast<size_t>(idx + k)] =
+                    step_size[static_cast<size_t>(start0 + k)];
+                this->segments[static_cast<size_t>(idx + k)] =
+                    segments[static_cast<size_t>(start0 + k)];
             }
 
-            if (j != static_cast<int>(layer_indices.size()) - 1) {
-                // Duplicate the last element and set orientation to -1
-                this->step_size[idx + count] = this->step_size[idx + count - 1];
-                this->segments[idx + count] = this->segments[idx + count - 1];
-                this->segments[idx + count].orientation = -1;
+            if (j != static_cast<int>(normalizedRanges.size()) - 1) {
+                this->step_size[static_cast<size_t>(idx + count)] =
+                    this->step_size[static_cast<size_t>(idx + count - 1)];
+                this->segments[static_cast<size_t>(idx + count)] =
+                    this->segments[static_cast<size_t>(idx + count - 1)];
+                this->segments[static_cast<size_t>(idx + count)].orientation = -1;
                 idx += count + 1;
             } else {
                 idx += count;

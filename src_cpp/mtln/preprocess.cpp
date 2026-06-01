@@ -967,23 +967,59 @@ nw_node_t preprocess_t::addNodeWithId(const terminal_node_t& node) const {
     res.v = 0.0;
     res.i = 0.0;
     res.bundle_number = d;
-    res.conductor_number = conductor_number;
 
     const auto& bundle = bundles[static_cast<size_t>(d - 1)];
+    if (conductor_number < 1 || conductor_number > bundle.number_of_conductors) {
+        conductor_number = node.conductor_in_cable;
+    }
+    if (conductor_number < 1) {
+        conductor_number = 1;
+    }
+    if (conductor_number > bundle.number_of_conductors) {
+        conductor_number = bundle.number_of_conductors;
+    }
+    res.conductor_number = conductor_number;
+
+    if (bundle.cpul.empty() || bundle.gpul.empty() || bundle.du.empty() ||
+        bundle.v.empty() || bundle.i.empty() ||
+        bundle.cpul[0].empty() || bundle.gpul[0].empty() || bundle.du[0].empty() ||
+        bundle.cpul[0][0].empty() || bundle.gpul[0][0].empty() ||
+        bundle.du[0][0].empty()) {
+        return res;
+    }
+
+    const size_t conductorIdx = static_cast<size_t>(conductor_number - 1);
+    if (conductorIdx >= bundle.cpul[0].size() ||
+        conductorIdx >= bundle.cpul[0][0].size() ||
+        conductorIdx >= bundle.gpul[0].size() ||
+        conductorIdx >= bundle.gpul[0][0].size() ||
+        conductorIdx >= bundle.du[0].size() ||
+        conductorIdx >= bundle.du[0][0].size()) {
+        return res;
+    }
+
     if (node.side == mtln_types_m::TERMINAL_NODE_SIDE_INI) {
         res.v_index = 0;
         res.i_index = 0;
-        res.line_c_per_meter = bundle.cpul[0][static_cast<size_t>(conductor_number - 1)][static_cast<size_t>(conductor_number - 1)];
-        res.line_g_per_meter = bundle.gpul[0][static_cast<size_t>(conductor_number - 1)][static_cast<size_t>(conductor_number - 1)];
-        res.step = bundle.du[0][static_cast<size_t>(conductor_number - 1)][static_cast<size_t>(conductor_number - 1)];
+        res.line_c_per_meter = bundle.cpul[0][conductorIdx][conductorIdx];
+        res.line_g_per_meter = bundle.gpul[0][conductorIdx][conductorIdx];
+        res.step = bundle.du[0][conductorIdx][conductorIdx];
         res.side = mtln_types_m::TERMINAL_NODE_SIDE_INI;
     } else if (node.side == mtln_types_m::TERMINAL_NODE_SIDE_END) {
         const int last_div = static_cast<int>(bundle.du.size()) - 1;
         res.v_index = static_cast<int>(bundle.v[0].size()) - 1;
         res.i_index = static_cast<int>(bundle.i[0].size()) - 1;
-        res.line_c_per_meter = bundle.cpul[static_cast<size_t>(last_div)][static_cast<size_t>(conductor_number - 1)][static_cast<size_t>(conductor_number - 1)];
-        res.line_g_per_meter = bundle.gpul[static_cast<size_t>(last_div)][static_cast<size_t>(conductor_number - 1)][static_cast<size_t>(conductor_number - 1)];
-        res.step = bundle.du[static_cast<size_t>(last_div)][static_cast<size_t>(conductor_number - 1)][static_cast<size_t>(conductor_number - 1)];
+        if (last_div < 0 || static_cast<size_t>(last_div) >= bundle.cpul.size() ||
+            static_cast<size_t>(last_div) >= bundle.gpul.size() ||
+            static_cast<size_t>(last_div) >= bundle.du.size()) {
+            return res;
+        }
+        res.line_c_per_meter =
+            bundle.cpul[static_cast<size_t>(last_div)][conductorIdx][conductorIdx];
+        res.line_g_per_meter =
+            bundle.gpul[static_cast<size_t>(last_div)][conductorIdx][conductorIdx];
+        res.step =
+            bundle.du[static_cast<size_t>(last_div)][conductorIdx][conductorIdx];
         res.side = mtln_types_m::TERMINAL_NODE_SIDE_END;
     }
     if (node.termination.termination_type == mtln_types_m::TERMINATION_OPEN) {

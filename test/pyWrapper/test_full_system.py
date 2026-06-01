@@ -1,6 +1,8 @@
 from utils import *
 from typing import Dict
 import os
+import re
+from pathlib import Path
 from sys import platform
 from scipy import signal
 
@@ -572,6 +574,124 @@ def test_planewave_with_periodic_boundaries(tmp_path):
     zeros = np.zeros_like(before.data['field'])
     assert np.allclose(before.data['field'].to_numpy(), zeros, atol=1.5e-3)
     assert np.allclose(after.data['field'].to_numpy(), zeros, atol=1.5e-3)
+
+
+_SGBC_FLOAT_RE = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?"
+
+
+def _prepare_raw_sgbc_solver(solver, additional_arguments, steps=600):
+    solver['general']['numberOfSteps'] = steps
+    if additional_arguments is None:
+        solver['general'].pop('additionalArguments', None)
+    else:
+        solver['general']['additionalArguments'] = additional_arguments
+    solver._input['boundary'] = {
+        'xLower': {'type': 'pec'},
+        'xUpper': {'type': 'pec'},
+        'yLower': {'type': 'pmc'},
+        'yUpper': {'type': 'pmc'},
+        'zLower': {'type': 'mur'},
+        'zUpper': {'type': 'mur'},
+    }
+    raw_back_probe = next(
+        dict(probe) for probe in solver['probes'] if probe.get('name') == 'back')
+    raw_back_probe['name'] = 'raw_back'
+    solver['probes'].append(raw_back_probe)
+
+
+def _run_raw_sgbc_flag_case(tmp_path, name, additional_arguments=None,
+                            flags=None, steps=600):
+    run_dir = Path(tmp_path) / name
+    run_dir.mkdir()
+    fn = CASES_FOLDER + 'sgbcShieldingEffectiveness/shieldingEffectiveness.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=run_dir,
+                  flags=flags or [])
+    _prepare_raw_sgbc_solver(solver, additional_arguments, steps=steps)
+    solver.run()
+    probe_files = sorted(run_dir.glob(f"{solver.getCaseName()}_raw_back_*.dat"))
+    assert len(probe_files) == 1
+    stdout = solver.output.stdout.decode('utf-8', errors='replace')
+    return probe_files[0], stdout
+
+
+def _sgbc_output_value(stdout, label):
+    match = re.search(rf"sgbc {label}:\s*({_SGBC_FLOAT_RE})", stdout)
+    assert match, f"missing SGBC {label} in stdout:\n{stdout[-2000:]}"
+    return float(match.group(1))
+
+
+def _assert_sgbc_output_config(stdout, freq=None, resol=None, depth=None):
+    if freq is not None:
+        assert _sgbc_output_value(stdout, "Freq") == pytest.approx(freq)
+    if resol is not None:
+        assert _sgbc_output_value(stdout, "Resol") == pytest.approx(resol)
+    if depth is not None:
+        assert _sgbc_output_value(stdout, "Depth") == pytest.approx(depth)
+
+
+@pytest.mark.sgbc
+def test_sgbc_additional_arguments_match_cli_flags(tmp_path):
+    flags = ['-sgbcfreq', '1e6', '-sgbcresol', '1', '-sgbcdepth', '-1']
+    json_probe, json_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'json_flags',
+        additional_arguments='-sgbcfreq 1e6 -sgbcresol 1 -sgbcdepth -1')
+    cli_probe, cli_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'cli_flags', additional_arguments='', flags=flags)
+
+    assert json_probe.read_bytes() == cli_probe.read_bytes()
+    _assert_sgbc_output_config(json_stdout, freq=1e6, resol=1, depth=-1)
+    _assert_sgbc_output_config(cli_stdout, freq=1e6, resol=1, depth=-1)
+
+
+@pytest.mark.sgbc
+def test_sgbc_frequency_flag_changes_raw_maloney_response(tmp_path):
+    low_probe, low_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'freq_1e6', additional_arguments='',
+        flags=['-sgbcfreq', '1e6'])
+    high_probe, high_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'freq_1e9', additional_arguments='',
+        flags=['-sgbcfreq', '1e9'])
+
+    assert low_probe.read_bytes() != high_probe.read_bytes()
+    _assert_sgbc_output_config(low_stdout, freq=1e6)
+    _assert_sgbc_output_config(high_stdout, freq=1e9)
+
+
+@pytest.mark.sgbc
+def test_sgbc_depth_flag_changes_raw_maloney_response(tmp_path):
+    auto_probe, auto_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'depth_auto', additional_arguments='',
+        flags=['-sgbcfreq', '1e6', '-sgbcdepth', '-1'])
+    zero_probe, zero_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'depth_zero', additional_arguments='',
+        flags=['-sgbcfreq', '1e6', '-sgbcdepth', '0'])
+
+    assert auto_probe.read_bytes() != zero_probe.read_bytes()
+    _assert_sgbc_output_config(auto_stdout, freq=1e6, depth=-1)
+    _assert_sgbc_output_config(zero_stdout, freq=1e6, depth=0)
+
+
+@pytest.mark.sgbc
+def test_sgbc_disable_flag_suppresses_nodes_and_later_sgbc_option_reenables(
+        tmp_path):
+    enabled_probe, enabled_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'enabled', flags=['-sgbcfreq', '1e6'])
+    disabled_probe, disabled_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'disabled', flags=['-nosgbc'])
+    reenabled_probe, reenabled_stdout = _run_raw_sgbc_flag_case(
+        tmp_path, 'reenabled', flags=['-nosgbc', '-sgbcfreq', '1e6'])
+
+    assert enabled_probe.read_bytes() != disabled_probe.read_bytes()
+    assert reenabled_probe.read_bytes() == enabled_probe.read_bytes()
+
+    assert "---> sgbc    solver for multilayer: F" in disabled_stdout
+    assert "---> sgbc Depth:" not in disabled_stdout
+    assert "----> no Structured sgbc elements found" in disabled_stdout
+
+    assert "---> sgbc    solver for multilayer: T" in enabled_stdout
+    assert "---> sgbc    solver for multilayer: T" in reenabled_stdout
+    _assert_sgbc_output_config(enabled_stdout, freq=1e6)
+    _assert_sgbc_output_config(reenabled_stdout, freq=1e6)
 
 
 def test_sgbc_shielding_effectiveness(tmp_path):

@@ -80,19 +80,44 @@ constexpr int PROBE_FIELD_WIDTH = 19;
 constexpr int PROBE_FIELD_PRECISION = 9;
 #endif
 
-#if defined(__GNUC__)
+#ifndef SEMBA_STRICT_FORTRAN_ROUNDING
+#define SEMBA_STRICT_FORTRAN_ROUNDING 1
+#endif
+
+#if SEMBA_STRICT_FORTRAN_ROUNDING
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_LLVM_COMPILER)
 #define SEMBA_FORTRAN_ROUNDING __attribute__((noinline,optimize("no-fast-math")))
 #define SEMBA_FORTRAN_INLINE_ROUNDING inline __attribute__((always_inline,optimize("no-fast-math")))
-#define SEMBA_RESTRICT __restrict__
 #else
 #define SEMBA_FORTRAN_ROUNDING
 #define SEMBA_FORTRAN_INLINE_ROUNDING inline
+#endif
+#else
+#define SEMBA_FORTRAN_ROUNDING inline
+#define SEMBA_FORTRAN_INLINE_ROUNDING inline
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#define SEMBA_RESTRICT __restrict__
+#else
 #define SEMBA_RESTRICT
 #endif
 
 namespace {
 
 using MpiSliceInfo = SEMBA_FDTD_m::SEMBA_FDTD_test::MpiSliceInfo;
+
+struct ScopedStreamBufRedirect {
+    std::ostream& stream;
+    std::streambuf* previous;
+
+    ScopedStreamBufRedirect(std::ostream& target, std::streambuf* replacement)
+        : stream(target), previous(target.rdbuf(replacement)) {}
+
+    ~ScopedStreamBufRedirect() {
+        stream.rdbuf(previous);
+    }
+};
 
 std::string lowercaseToken(std::string value) {
     for (char& ch : value) {
@@ -136,6 +161,114 @@ int mpiAxisFromFlagsLocal(const std::string& flags) {
         }
     }
     return axis;
+}
+
+struct SgbcRuntimeConfig {
+    bool enabled = true;
+    double freq = 1.0e9;
+    double resol = 1.0;
+    int depth = -1;
+};
+
+bool parseDoubleTokenLocal(const std::string& token, double& value) {
+    try {
+        size_t parsed = 0;
+        const double tmp = std::stod(token, &parsed);
+        if (parsed != token.size()) return false;
+        value = tmp;
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+bool parseIntTokenLocal(const std::string& token, int& value) {
+    try {
+        size_t parsed = 0;
+        const int tmp = std::stoi(token, &parsed);
+        if (parsed != token.size()) return false;
+        value = tmp;
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+std::vector<std::string> splitFlagTokensLocal(const std::string& flags) {
+    std::vector<std::string> tokens;
+    std::istringstream iss(flags);
+    std::string token;
+    while (iss >> token) tokens.push_back(token);
+    return tokens;
+}
+
+std::string mergeAdditionalArgumentsLocal(const std::string& additional,
+                                          const std::string& cli_flags) {
+    std::string merged;
+    if (!additional.empty()) merged += additional;
+    if (!cli_flags.empty()) {
+        if (!merged.empty()) merged += ' ';
+        merged += cli_flags;
+    }
+    return merged;
+}
+
+SgbcRuntimeConfig parseSgbcRuntimeConfig(const std::string& flags) {
+    SgbcRuntimeConfig config;
+    const auto tokens = splitFlagTokensLocal(flags);
+    for (size_t idx = 0; idx < tokens.size(); ++idx) {
+        const std::string& token = tokens[idx];
+        if (token == "-nosgbc") {
+            config.enabled = false;
+            continue;
+        }
+        if (token == "-sgbc" || token == "-sgbcDispersive") {
+            config.enabled = true;
+            continue;
+        }
+
+        auto optionValue = [&](const char* option, std::string& value) -> bool {
+            const std::string opt(option);
+            if (token == opt) {
+                if (idx + 1 >= tokens.size()) return false;
+                value = tokens[++idx];
+                return true;
+            }
+            const std::string prefix = opt + "=";
+            if (token.rfind(prefix, 0) == 0) {
+                value = token.substr(prefix.size());
+                return true;
+            }
+            return false;
+        };
+
+        std::string value;
+        if (optionValue("-sgbcfreq", value)) {
+            double parsed = 0.0;
+            if (parseDoubleTokenLocal(value, parsed)) {
+                config.enabled = true;
+                config.freq = parsed;
+            }
+            continue;
+        }
+        if (optionValue("-sgbcresol", value)) {
+            double parsed = 0.0;
+            if (parseDoubleTokenLocal(value, parsed)) {
+                config.enabled = true;
+                config.resol = parsed;
+            }
+            continue;
+        }
+        if (optionValue("-sgbcdepth", value)) {
+            int parsed = -1;
+            if (parseIntTokenLocal(value, parsed)) {
+                config.enabled = true;
+                config.depth = parsed;
+            }
+            continue;
+        }
+    }
+    return config;
 }
 
 std::vector<MpiSliceInfo> buildMpiOneAxisSlicesLocal(int cells,
@@ -298,10 +431,18 @@ std::vector<MpiSliceInfo> buildMpiOneAxisSlicesLocal(int cells,
 
 void preserveFortranSubnormalArithmetic() {
 #if defined(__SSE__)
+#if SEMBA_STRICT_FORTRAN_ROUNDING
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
+#else
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+#endif
 #endif
 #if defined(__SSE3__) && defined(_MM_DENORMALS_ZERO_MASK)
+#if SEMBA_STRICT_FORTRAN_ROUNDING
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_OFF);
+#else
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+#endif
 #endif
 }
 
@@ -362,26 +503,42 @@ fdtd_real fortranPlanewaveCluz(fdtd_real eps, fdtd_real mu) {
 
 SEMBA_FORTRAN_INLINE_ROUNDING fdtd_real fortranRoundedMul(fdtd_real lhs,
                                                           fdtd_real rhs) {
+#if SEMBA_STRICT_FORTRAN_ROUNDING
     volatile fdtd_real result = static_cast<fdtd_real>(lhs * rhs);
     return result;
+#else
+    return static_cast<fdtd_real>(lhs * rhs);
+#endif
 }
 
 SEMBA_FORTRAN_INLINE_ROUNDING fdtd_real fortranRoundedAdd(fdtd_real lhs,
                                                           fdtd_real rhs) {
+#if SEMBA_STRICT_FORTRAN_ROUNDING
     volatile fdtd_real result = static_cast<fdtd_real>(lhs + rhs);
     return result;
+#else
+    return static_cast<fdtd_real>(lhs + rhs);
+#endif
 }
 
 SEMBA_FORTRAN_INLINE_ROUNDING fdtd_real fortranRoundedSub(fdtd_real lhs,
                                                           fdtd_real rhs) {
+#if SEMBA_STRICT_FORTRAN_ROUNDING
     volatile fdtd_real result = static_cast<fdtd_real>(lhs - rhs);
     return result;
+#else
+    return static_cast<fdtd_real>(lhs - rhs);
+#endif
 }
 
 SEMBA_FORTRAN_INLINE_ROUNDING fdtd_real fortranRoundedDiv(fdtd_real lhs,
                                                           fdtd_real rhs) {
+#if SEMBA_STRICT_FORTRAN_ROUNDING
     volatile fdtd_real result = static_cast<fdtd_real>(lhs / rhs);
     return result;
+#else
+    return static_cast<fdtd_real>(lhs / rhs);
+#endif
 }
 
 fdtd_real fortranNodalProduct(fdtd_real coeff, fdtd_real inv1,
@@ -414,26 +571,42 @@ fdtd_real fortranMurFace(fdtd_real interiorNow, fdtd_real pastInterior,
 
 SEMBA_FORTRAN_ROUNDING double fortranRoundedDoubleMul(double lhs,
                                                       double rhs) {
+#if SEMBA_STRICT_FORTRAN_ROUNDING
     volatile double result = lhs * rhs;
     return result;
+#else
+    return lhs * rhs;
+#endif
 }
 
 SEMBA_FORTRAN_ROUNDING double fortranRoundedDoubleAdd(double lhs,
                                                       double rhs) {
+#if SEMBA_STRICT_FORTRAN_ROUNDING
     volatile double result = lhs + rhs;
     return result;
+#else
+    return lhs + rhs;
+#endif
 }
 
 SEMBA_FORTRAN_ROUNDING double fortranRoundedDoubleSub(double lhs,
                                                       double rhs) {
+#if SEMBA_STRICT_FORTRAN_ROUNDING
     volatile double result = lhs - rhs;
     return result;
+#else
+    return lhs - rhs;
+#endif
 }
 
 SEMBA_FORTRAN_ROUNDING double fortranRoundedDoubleDiv(double lhs,
                                                       double rhs) {
+#if SEMBA_STRICT_FORTRAN_ROUNDING
     volatile double result = lhs / rhs;
     return result;
+#else
+    return lhs / rhs;
+#endif
 }
 
 SEMBA_FORTRAN_ROUNDING fdtd_real fortranPlanewaveRawDelay(
@@ -531,11 +704,13 @@ struct SurfaceImpedanceMaterial_t {
 struct SgbcFieldRef_t {
     int component = 0; // 0=Hx, 1=Hy, 2=Hz
     int i = 0, j = 0, k = 0;
+    int linearIndex = -1;
 };
 struct SgbcNode_t {
     int component = 0; // 0=Ex, 1=Ey, 2=Ez
     int i = 0, j = 0, k = 0;
     int normalAxis = 0;
+    int linearIndex = -1;
     SGBC_nostoch_m::SGBCSurface_t maloney;
     SgbcFieldRef_t haPlus, haMinus, hbPlus, hbMinus;
 };
@@ -1159,6 +1334,10 @@ public:
     std::map<std::string, std::vector<double>> analyticBulkCurrents;
     std::vector<NodalCurrentSegment_t> nodalCurrentSegments;
     std::vector<SgbcNode_t> sgbcNodes;
+    bool sgbcEnabled = true;
+    double sgbcFreq = 1.0e9;
+    double sgbcResol = 1.0;
+    int sgbcDepth = -1;
     std::vector<HollandWireSegment_t> hollandSegments;
     std::vector<HollandWireNode_t> hollandNodes;
     std::vector<HollandWireProbe_t> hollandProbes;
@@ -1249,11 +1428,47 @@ public:
     int mpiAxis = 3;
     bool mpiEnabled = false;
     std::vector<MpiSliceInfo> mpiSlices;
-    std::array<std::vector<fdtd_real>, 4> mpiPlaneBuffers;
+    struct MpiPlaneExchangeEntry {
+        int component = 0;
+        int componentPos = 0;
+        int lowerCoord = 0;
+        int upperCoord = 0;
+        size_t planeSize = 0;
+        size_t bufferOffset = 0;
+    };
+    struct MpiPlaneExchangePack {
+        size_t totalSize = 0;
+        std::array<std::vector<fdtd_real>, 4> buffers;
+    };
+    std::array<std::vector<MpiPlaneExchangeEntry>, 2> mpiPlaneExchange;
+    std::array<MpiPlaneExchangePack, 2> mpiPlaneExchangePack;
+    bool mpiPlaneExchangePrepared = false;
+    struct RuntimeProfile {
+        bool enabled = false;
+        std::uint64_t steps = 0;
+        double stepTotal = 0.0;
+        double advanceE = 0.0;
+        double advanceH = 0.0;
+        double pmlE = 0.0;
+        double pmlH = 0.0;
+        double sgbcE = 0.0;
+        double sgbcH = 0.0;
+        double lumpedE = 0.0;
+        double wiresE = 0.0;
+        double planewaveE = 0.0;
+        double planewaveH = 0.0;
+        double nodalE = 0.0;
+        double mpiE = 0.0;
+        double mpiH = 0.0;
+        double sampling = 0.0;
+    };
+    RuntimeProfile runtimeProfile;
 
     void init(const std::string& filename, bool map_vtk = false,
-              int mpi_rank = 0, int mpi_size = 1, int mpi_axis = 3) {
+              int mpi_rank = 0, int mpi_size = 1, int mpi_axis = 3,
+              const std::string& runtime_flags = std::string()) {
         preserveFortranSubnormalArithmetic();
+        initRuntimeProfileFromEnv();
         inputFile = filename;
         mpiLayoutNumber = mpi_rank;
         mpiNumProcs = std::max(1, mpi_size);
@@ -1266,6 +1481,13 @@ public:
             jf.close();
         }
         pd = parseFDTDJSON(filename);
+        const SgbcRuntimeConfig sgbc_config = parseSgbcRuntimeConfig(
+            mergeAdditionalArgumentsLocal(pd.general.additionalArguments,
+                                          runtime_flags));
+        sgbcEnabled = sgbc_config.enabled;
+        sgbcFreq = sgbc_config.freq;
+        sgbcResol = sgbc_config.resol;
+        sgbcDepth = sgbc_config.depth;
         rotateParsedModelForMpidir(pd, inputRoot, mpiAxis);
         applyMtlnPmlPaddingIfNeeded();
         NX = pd.general.XI; NY = pd.general.YI; NZ = pd.general.ZI;
@@ -1316,6 +1538,7 @@ public:
 
         initBoundaryFlagsFromJson();
         initMpiOneAxisDecomposition();
+        initMpiPlaneExchangeOneAxis();
 
         int ex_n = ex_nx()*ex_ny()*ex_nz();
         int ey_n = ey_nx()*ey_ny()*ey_nz();
@@ -1557,6 +1780,33 @@ public:
         if (!hasMtlnSolver) {
             return;
         }
+        if (const char* profileMtln = std::getenv("SEMBA_CPP_PROFILE_MTLN")) {
+            if (std::string(profileMtln) == "1") {
+                std::size_t totalSegments = 0;
+                std::size_t totalProbes = 0;
+                std::size_t totalGenerators = 0;
+                std::cerr << "MTLN PROFILE INIT bundles="
+                          << mtlnSolver.bundles.size() << std::endl;
+                for (std::size_t b = 0; b < mtlnSolver.bundles.size(); ++b) {
+                    const auto& bundle = mtlnSolver.bundles[b];
+                    totalSegments += static_cast<std::size_t>(bundle.number_of_divisions);
+                    totalProbes += bundle.probes.size();
+                    totalGenerators += bundle.generators.size();
+                    std::cerr << "  bundle[" << b << "]: cond="
+                              << bundle.number_of_conductors
+                              << " div=" << bundle.number_of_divisions
+                              << " poles=" << bundle.transfer_impedance.number_of_poles
+                              << " probes=" << bundle.probes.size()
+                              << " gens=" << bundle.generators.size()
+                              << " in_layer=" << (bundle.bundle_in_layer ? 1 : 0)
+                              << std::endl;
+                }
+                std::cerr << "  totals: segments=" << totalSegments
+                          << " probes=" << totalProbes
+                          << " generators=" << totalGenerators
+                          << std::endl;
+            }
+        }
         shiftMtlnExternalFieldSegmentsForPmlPadding();
         mtlnSolver.updatePULTerms();
         setupMtlnExternalFieldPointers();
@@ -1578,12 +1828,14 @@ public:
     void setupMtlnExternalFieldPointers() {
         size_t count = 0;
         for (const auto& bundle : mtlnSolver.bundles) {
+            if (!bundle.bundle_in_layer || bundle.number_of_divisions <= 0) continue;
             count += bundle.external_field_segments.size();
         }
         mtlnExternalFields.assign(count, 0.0);
 
         size_t idx = 0;
         for (auto& bundle : mtlnSolver.bundles) {
+            if (!bundle.bundle_in_layer || bundle.number_of_divisions <= 0) continue;
             for (auto& segment : bundle.external_field_segments) {
                 segment.field = &mtlnExternalFields[idx++];
             }
@@ -1619,7 +1871,7 @@ public:
 
     void deembedPecMasksForMtlnSegments() {
         for (const auto& bundle : mtlnSolver.bundles) {
-            if (!bundle.bundle_in_layer) continue;
+            if (!bundle.bundle_in_layer || bundle.number_of_divisions <= 0) continue;
             for (const auto& segment : bundle.external_field_segments) {
                 deembedPecMaskForMtlnSegment(segment);
             }
@@ -1646,6 +1898,7 @@ public:
     void syncMtlnExternalFields() {
         size_t idx = 0;
         for (const auto& bundle : mtlnSolver.bundles) {
+            if (!bundle.bundle_in_layer || bundle.number_of_divisions <= 0) continue;
             for (const auto& segment : bundle.external_field_segments) {
                 if (idx < mtlnExternalFields.size()) {
                     mtlnExternalFields[idx] = electricFieldForMtlnSegment(segment);
@@ -1696,7 +1949,7 @@ public:
 
     void subtractMtlnCurrentsFromFields() {
         for (const auto& bundle : mtlnSolver.bundles) {
-            if (!bundle.bundle_in_layer) continue;
+            if (!bundle.bundle_in_layer || bundle.number_of_divisions <= 0) continue;
             for (size_t segmentIdx = 0; segmentIdx < bundle.external_field_segments.size(); ++segmentIdx) {
                 const auto& segment = bundle.external_field_segments[segmentIdx];
                 if (segment.position.size() < 3) continue;
@@ -2317,6 +2570,16 @@ public:
     }
 
     void initMpiOneAxisDecomposition() {
+        mpiPlaneExchangePrepared = false;
+        for (auto& entries : mpiPlaneExchange) {
+            entries.clear();
+        }
+        for (auto& pack : mpiPlaneExchangePack) {
+            pack.totalSize = 0;
+            for (auto& buffer : pack.buffers) {
+                buffer.clear();
+            }
+        }
         const auto pmlLayers = mpiSlicePmlLayers();
         mpiSlices = buildMpiOneAxisSlicesLocal(mpiSliceCellCount(),
                                                mpiNumProcs,
@@ -2332,6 +2595,65 @@ public:
             }
             std::cout << slices.str() << std::endl;
         }
+    }
+
+    static bool envFlagEnabled(const char* name) {
+        const char* value = std::getenv(name);
+        if (value == nullptr) return false;
+        const std::string token = lowercaseToken(std::string(value));
+        return token == "1" || token == "on" || token == "true" ||
+               token == "yes";
+    }
+
+    void initRuntimeProfileFromEnv() {
+        runtimeProfile = RuntimeProfile{};
+        runtimeProfile.enabled = envFlagEnabled("SEMBA_CPP_PROFILE_TIMESTEP");
+    }
+
+    template <typename Fn>
+    inline void profileBlock(double& bucket, Fn&& fn) {
+        if (!runtimeProfile.enabled) {
+            fn();
+            return;
+        }
+        const auto begin = std::chrono::steady_clock::now();
+        fn();
+        bucket += std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - begin).count();
+    }
+
+    void printRuntimeProfileSummary() const {
+        if (!runtimeProfile.enabled || !isMpiRoot()) return;
+        const double total = std::max(runtimeProfile.stepTotal, 1.0e-18);
+        const auto pct = [total](double seconds) -> double {
+            return (seconds * 100.0) / total;
+        };
+        std::ostream& out = std::cerr;
+        out << "TIMESTEP PROFILE SUMMARY (rank 0)\n";
+        out << "steps: " << runtimeProfile.steps << "\n";
+        out << std::fixed << std::setprecision(6);
+        auto print_bucket = [&](const char* name, double seconds) {
+            out << "  " << std::setw(18) << std::left << name
+                << " : " << std::setw(10) << std::right << seconds
+                << " s (" << std::setw(6) << std::setprecision(2)
+                << pct(seconds) << "%)\n" << std::setprecision(6);
+        };
+        print_bucket("advanceE", runtimeProfile.advanceE);
+        print_bucket("advanceH", runtimeProfile.advanceH);
+        print_bucket("pmlE", runtimeProfile.pmlE);
+        print_bucket("pmlH", runtimeProfile.pmlH);
+        print_bucket("sgbcE", runtimeProfile.sgbcE);
+        print_bucket("sgbcH", runtimeProfile.sgbcH);
+        print_bucket("lumpedE", runtimeProfile.lumpedE);
+        print_bucket("wiresE", runtimeProfile.wiresE);
+        print_bucket("planewaveE", runtimeProfile.planewaveE);
+        print_bucket("planewaveH", runtimeProfile.planewaveH);
+        print_bucket("nodalE", runtimeProfile.nodalE);
+        print_bucket("mpiE", runtimeProfile.mpiE);
+        print_bucket("mpiH", runtimeProfile.mpiH);
+        print_bucket("sampling", runtimeProfile.sampling);
+        print_bucket("stepTotal", runtimeProfile.stepTotal);
+        out << std::defaultfloat;
     }
 
     std::map<int, double> isotropicPermittivityByMaterialId() const {
@@ -3414,41 +3736,46 @@ public:
     }
 
     fdtd_real sgbcEValue(const SgbcNode_t& node) const {
-        if (node.component == 0 && in_ex(node.i, node.j, node.k)) {
-            return Ex[ex_idx(node.i, node.j, node.k)];
-        }
-        if (node.component == 1 && in_ey(node.i, node.j, node.k)) {
-            return Ey[ey_idx(node.i, node.j, node.k)];
-        }
-        if (node.component == 2 && in_ez(node.i, node.j, node.k)) {
-            return Ez[ez_idx(node.i, node.j, node.k)];
-        }
+        if (node.linearIndex < 0) return static_cast<fdtd_real>(0.0);
+        if (node.component == 0) return Ex[static_cast<size_t>(node.linearIndex)];
+        if (node.component == 1) return Ey[static_cast<size_t>(node.linearIndex)];
+        if (node.component == 2) return Ez[static_cast<size_t>(node.linearIndex)];
         return static_cast<fdtd_real>(0.0);
     }
 
     void setSgbcEValue(const SgbcNode_t& node, fdtd_real value) {
-        if (node.component == 0 && in_ex(node.i, node.j, node.k)) {
-            Ex[ex_idx(node.i, node.j, node.k)] = value;
-        } else if (node.component == 1 && in_ey(node.i, node.j, node.k)) {
-            Ey[ey_idx(node.i, node.j, node.k)] = value;
-        } else if (node.component == 2 && in_ez(node.i, node.j, node.k)) {
-            Ez[ez_idx(node.i, node.j, node.k)] = value;
+        if (node.linearIndex < 0) return;
+        if (node.component == 0) {
+            Ex[static_cast<size_t>(node.linearIndex)] = value;
+        } else if (node.component == 1) {
+            Ey[static_cast<size_t>(node.linearIndex)] = value;
+        } else if (node.component == 2) {
+            Ez[static_cast<size_t>(node.linearIndex)] = value;
         }
     }
 
+    int sgbcHLinearIndex(const SgbcFieldRef_t& ref) const {
+        if (ref.component == 0) return in_hx(ref.i, ref.j, ref.k) ? hx_idx(ref.i, ref.j, ref.k) : -1;
+        if (ref.component == 1) return in_hy(ref.i, ref.j, ref.k) ? hy_idx(ref.i, ref.j, ref.k) : -1;
+        return in_hz(ref.i, ref.j, ref.k) ? hz_idx(ref.i, ref.j, ref.k) : -1;
+    }
+
     fdtd_real sgbcHValue(const SgbcFieldRef_t& ref) const {
-        if (ref.component == 0) return hxValue0(ref.i, ref.j, ref.k);
-        if (ref.component == 1) return hyValue0(ref.i, ref.j, ref.k);
+        if (ref.linearIndex < 0) return static_cast<fdtd_real>(0.0);
+        if (ref.component == 0) return Hx[static_cast<size_t>(ref.linearIndex)];
+        if (ref.component == 1) return Hy[static_cast<size_t>(ref.linearIndex)];
+        if (ref.component == 2) return Hz[static_cast<size_t>(ref.linearIndex)];
         return hzValue0(ref.i, ref.j, ref.k);
     }
 
     void addSgbcHValue(const SgbcFieldRef_t& ref, fdtd_real delta) {
-        if (ref.component == 0 && in_hx(ref.i, ref.j, ref.k)) {
-            Hx[hx_idx(ref.i, ref.j, ref.k)] += delta;
-        } else if (ref.component == 1 && in_hy(ref.i, ref.j, ref.k)) {
-            Hy[hy_idx(ref.i, ref.j, ref.k)] += delta;
-        } else if (ref.component == 2 && in_hz(ref.i, ref.j, ref.k)) {
-            Hz[hz_idx(ref.i, ref.j, ref.k)] += delta;
+        if (ref.linearIndex < 0) return;
+        if (ref.component == 0) {
+            Hx[static_cast<size_t>(ref.linearIndex)] += delta;
+        } else if (ref.component == 1) {
+            Hy[static_cast<size_t>(ref.linearIndex)] += delta;
+        } else if (ref.component == 2) {
+            Hz[static_cast<size_t>(ref.linearIndex)] += delta;
         }
     }
 
@@ -3472,6 +3799,10 @@ public:
             node.hbPlus = {0, i, j, k};
             node.hbMinus = {0, i, j - 1, k};
         }
+        node.haPlus.linearIndex = sgbcHLinearIndex(node.haPlus);
+        node.haMinus.linearIndex = sgbcHLinearIndex(node.haMinus);
+        node.hbPlus.linearIndex = sgbcHLinearIndex(node.hbPlus);
+        node.hbMinus.linearIndex = sgbcHLinearIndex(node.hbMinus);
     }
 
     void addSgbcNode(int component, int i1, int j1, int k1, int normalAxis,
@@ -3485,6 +3816,9 @@ public:
         if (!sgbcEInBounds(component, i, j, k) || sgbcEIsPec(component, i, j, k)) {
             return;
         }
+        if (!mpiOwnsComponentCoordinate(component, i, j, k)) {
+            return;
+        }
         const std::string key = sgbcNodeKey(component, i, j, k);
         if (!assigned.insert(key).second) return;
 
@@ -3494,6 +3828,13 @@ public:
         node.j = j;
         node.k = k;
         node.normalAxis = normalAxis;
+        if (component == 0) {
+            node.linearIndex = ex_idx(i, j, k);
+        } else if (component == 1) {
+            node.linearIndex = ey_idx(i, j, k);
+        } else {
+            node.linearIndex = ez_idx(i, j, k);
+        }
         fillSgbcFieldRefs(node);
 
         const double transversalDeltaE =
@@ -3511,9 +3852,9 @@ public:
             dt,
             eps0,
             mu0,
-            1.0e9,
-            1.0,
-            -1,
+            sgbcFreq,
+            sgbcResol,
+            sgbcDepth,
             true,
             correctHa,
             esUnfiloPlaca,
@@ -3638,6 +3979,7 @@ public:
 
     void initSgbcFromJson() {
         sgbcNodes.clear();
+        if (!sgbcEnabled) return;
         if (inputRoot.is_null() || !inputRoot.contains("materialAssociations")) {
             return;
         }
@@ -3693,8 +4035,12 @@ public:
 
     void advanceSgbcE() {
         if (sgbcNodes.empty()) return;
-        for (auto& node : sgbcNodes) {
-            if (sgbcEIsPec(node.component, node.i, node.j, node.k)) continue;
+        const int nodeCount = static_cast<int>(sgbcNodes.size());
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) if(nodeCount > 256)
+#endif
+        for (int idx = 0; idx < nodeCount; ++idx) {
+            auto& node = sgbcNodes[static_cast<size_t>(idx)];
             SGBC_nostoch_m::AdvanceSGBCE(
                 node.maloney,
                 static_cast<double>(sgbcHValue(node.haPlus)),
@@ -7982,8 +8328,18 @@ outp.ShallowCopy(thresh.GetOutput())
         return {0, 1};
     }
 
-    void exchangeMpiFieldPlanesOneAxis(bool magnetic) {
+    void initMpiPlaneExchangeOneAxis() {
 #ifdef CompileWithMPI
+        mpiPlaneExchangePrepared = false;
+        for (auto& entries : mpiPlaneExchange) {
+            entries.clear();
+        }
+        for (auto& pack : mpiPlaneExchangePack) {
+            pack.totalSize = 0;
+            for (auto& buffer : pack.buffers) {
+                buffer.clear();
+            }
+        }
         if (!mpiEnabled || mpiNumProcs <= 1 ||
             mpiLayoutNumber < 0 ||
             mpiLayoutNumber >= static_cast<int>(mpiSlices.size())) {
@@ -7992,7 +8348,60 @@ outp.ShallowCopy(thresh.GetOutput())
 
         const MpiSliceInfo& slice = mpiSlices[static_cast<size_t>(mpiLayoutNumber)];
         const int axis = (mpiAxis >= 1 && mpiAxis <= 3) ? mpiAxis : 3;
-        const auto components = tangentialComponentsForAxis(axis, magnetic);
+        const int up = (mpiLayoutNumber + 1 < mpiNumProcs) ? mpiLayoutNumber + 1 : -1;
+        const int down = (mpiLayoutNumber > 0) ? mpiLayoutNumber - 1 : -1;
+        for (int kind = 0; kind < 2; ++kind) {
+            const bool magnetic = (kind == 1);
+            const auto components = tangentialComponentsForAxis(axis, magnetic);
+            auto& entries = mpiPlaneExchange[static_cast<size_t>(kind)];
+            auto& pack = mpiPlaneExchangePack[static_cast<size_t>(kind)];
+            entries.reserve(components.size());
+            for (size_t compPos = 0; compPos < components.size(); ++compPos) {
+                const int component = components[compPos];
+                const int lowerCoord = mpiComponentAxisLowerCoord(slice);
+                const int upperCoord = mpiComponentAxisUpperCoord(slice, component);
+                if (upperCoord < lowerCoord) continue;
+                MpiPlaneExchangeEntry entry;
+                entry.component = component;
+                entry.componentPos = static_cast<int>(compPos);
+                entry.lowerCoord = lowerCoord;
+                entry.upperCoord = upperCoord;
+                entry.planeSize = packedFieldPlaneSize(component, axis);
+                entry.bufferOffset = pack.totalSize;
+                pack.totalSize += entry.planeSize;
+                entries.push_back(std::move(entry));
+            }
+            if (up >= 0) {
+                pack.buffers[0].resize(pack.totalSize);
+                pack.buffers[2].resize(pack.totalSize);
+            }
+            if (down >= 0) {
+                pack.buffers[1].resize(pack.totalSize);
+                pack.buffers[3].resize(pack.totalSize);
+            }
+        }
+        mpiPlaneExchangePrepared = true;
+#endif
+    }
+
+    void exchangeMpiFieldPlanesOneAxis(bool magnetic) {
+#ifdef CompileWithMPI
+        if (!mpiEnabled || mpiNumProcs <= 1 ||
+            mpiLayoutNumber < 0 ||
+            mpiLayoutNumber >= static_cast<int>(mpiSlices.size())) {
+            return;
+        }
+
+        if (!mpiPlaneExchangePrepared) {
+            initMpiPlaneExchangeOneAxis();
+        }
+        const size_t kindIndex = magnetic ? 1U : 0U;
+        auto& entries = mpiPlaneExchange[kindIndex];
+        if (entries.empty()) return;
+        auto& pack = mpiPlaneExchangePack[kindIndex];
+        if (pack.totalSize == 0) return;
+
+        const int axis = (mpiAxis >= 1 && mpiAxis <= 3) ? mpiAxis : 3;
         const int up = (mpiLayoutNumber + 1 < mpiNumProcs) ? mpiLayoutNumber + 1 : -1;
         const int down = (mpiLayoutNumber > 0) ? mpiLayoutNumber - 1 : -1;
         const MPI_Datatype mpiReal =
@@ -8002,52 +8411,56 @@ outp.ShallowCopy(thresh.GetOutput())
             MPI_FLOAT;
 #endif
         const int kindTag = magnetic ? 5000 : 4000;
-
-        for (size_t compPos = 0; compPos < components.size(); ++compPos) {
-            const int component = components[compPos];
-            const int tagBase = kindTag + axis * 100 + static_cast<int>(compPos) * 10;
-            const int lowerCoord = mpiComponentAxisLowerCoord(slice);
-            const int upperCoord = mpiComponentAxisUpperCoord(slice, component);
-            if (upperCoord < lowerCoord) {
-                continue;
-            }
-            auto& sendUp = mpiPlaneBuffers[0];
-            auto& sendDown = mpiPlaneBuffers[1];
-            auto& recvUp = mpiPlaneBuffers[2];
-            auto& recvDown = mpiPlaneBuffers[3];
-            std::array<MPI_Request, 4> requests{};
-            int nRequests = 0;
-
+        auto& sendUp = pack.buffers[0];
+        auto& sendDown = pack.buffers[1];
+        auto& recvUp = pack.buffers[2];
+        auto& recvDown = pack.buffers[3];
+        for (const auto& entry : entries) {
+            const int component = entry.component;
             if (up >= 0) {
-                packFieldPlaneInto(component, axis, upperCoord, sendUp);
-                recvUp.resize(sendUp.size());
-                MPI_Irecv(recvUp.data(), static_cast<int>(recvUp.size()), mpiReal,
-                          up, tagBase + 1, SUBCOMM_MPI,
-                          &requests[static_cast<size_t>(nRequests++)]);
-                MPI_Isend(sendUp.data(), static_cast<int>(sendUp.size()), mpiReal,
-                          up, tagBase, SUBCOMM_MPI,
-                          &requests[static_cast<size_t>(nRequests++)]);
-            }
-
-            if (down >= 0) {
-                packFieldPlaneInto(component, axis, lowerCoord, sendDown);
-                recvDown.resize(sendDown.size());
-                MPI_Irecv(recvDown.data(), static_cast<int>(recvDown.size()), mpiReal,
-                          down, tagBase, SUBCOMM_MPI,
-                          &requests[static_cast<size_t>(nRequests++)]);
-                MPI_Isend(sendDown.data(), static_cast<int>(sendDown.size()), mpiReal,
-                          down, tagBase + 1, SUBCOMM_MPI,
-                          &requests[static_cast<size_t>(nRequests++)]);
-            }
-
-            if (nRequests > 0) {
-                MPI_Waitall(nRequests, requests.data(), MPI_STATUSES_IGNORE);
-            }
-            if (up >= 0) {
-                unpackFieldPlane(component, axis, upperCoord + 1, recvUp);
+                packFieldPlaneRaw(component, axis, entry.upperCoord,
+                                  sendUp.data() + entry.bufferOffset);
             }
             if (down >= 0) {
-                unpackFieldPlane(component, axis, lowerCoord - 1, recvDown);
+                packFieldPlaneRaw(component, axis, entry.lowerCoord,
+                                  sendDown.data() + entry.bufferOffset);
+            }
+        }
+
+        std::array<MPI_Request, 4> requests{};
+        int nRequests = 0;
+        const int tagBase = kindTag + axis * 100;
+        if (up >= 0) {
+            MPI_Irecv(recvUp.data(), static_cast<int>(recvUp.size()), mpiReal,
+                      up, tagBase + 1, SUBCOMM_MPI,
+                      &requests[static_cast<size_t>(nRequests++)]);
+            MPI_Isend(sendUp.data(), static_cast<int>(sendUp.size()), mpiReal,
+                      up, tagBase, SUBCOMM_MPI,
+                      &requests[static_cast<size_t>(nRequests++)]);
+        }
+        if (down >= 0) {
+            MPI_Irecv(recvDown.data(), static_cast<int>(recvDown.size()), mpiReal,
+                      down, tagBase, SUBCOMM_MPI,
+                      &requests[static_cast<size_t>(nRequests++)]);
+            MPI_Isend(sendDown.data(), static_cast<int>(sendDown.size()), mpiReal,
+                      down, tagBase + 1, SUBCOMM_MPI,
+                      &requests[static_cast<size_t>(nRequests++)]);
+        }
+        if (nRequests > 0) {
+            MPI_Waitall(nRequests, requests.data(), MPI_STATUSES_IGNORE);
+        }
+
+        for (const auto& entry : entries) {
+            const int component = entry.component;
+            if (up >= 0) {
+                unpackFieldPlaneRaw(component, axis, entry.upperCoord + 1,
+                                    recvUp.data() + entry.bufferOffset,
+                                    entry.planeSize);
+            }
+            if (down >= 0) {
+                unpackFieldPlaneRaw(component, axis, entry.lowerCoord - 1,
+                                    recvDown.data() + entry.bufferOffset,
+                                    entry.planeSize);
             }
         }
 #else
@@ -8117,6 +8530,7 @@ outp.ShallowCopy(thresh.GetOutput())
             mapvtk::writeCurrentMapVtkFromJson(caseName, inputRoot);
         }
         writeLegacyAuxiliaryOutputs(caseName, output_requests);
+        printRuntimeProfileSummary();
         std::cout << "Output files written." << std::endl;
         mpiBarrier();
     }
@@ -8532,8 +8946,37 @@ std::string legacyFinalTimeText(int final_step) {
                                18, 9));
 }
 
+std::string legacyScientific8(double value) {
+    std::ostringstream out;
+    out << std::uppercase << std::scientific << std::setprecision(8) << value;
+    return out.str();
+}
+
+std::string legacyFixed8(double value) {
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(8) << value;
+    return out.str();
+}
+
 std::string legacyRunBodyPreSimulation(int final_step,
-                                       bool include_corrected_step_block) {
+                                       bool include_corrected_step_block,
+                                       const FDTD_Solver* solver = nullptr) {
+    const bool sgbc_enabled = solver == nullptr ? true : solver->sgbcEnabled;
+    const bool has_sgbc_nodes =
+        solver != nullptr && sgbc_enabled && !solver->sgbcNodes.empty();
+    const bool has_holland_wires =
+        solver != nullptr && !solver->hollandSegments.empty();
+    const bool has_plane_waves =
+        solver == nullptr ? true : !solver->planeWaves.empty();
+    const bool has_mur = solver == nullptr ? false : solver->useMur;
+    const bool has_cpml = solver == nullptr ? false : solver->usePml;
+    const double sgbc_freq = solver == nullptr ? 1.0e9 : solver->sgbcFreq;
+    const double sgbc_resol = solver == nullptr ? 1.0 : solver->sgbcResol;
+    const int sgbc_depth = solver == nullptr ? -1 : solver->sgbcDepth;
+    const double mcells = solver == nullptr ? 2.16000015e-4 :
+        static_cast<double>(solver->NX) *
+        static_cast<double>(solver->NY) *
+        static_cast<double>(solver->NZ) / 1.0e6;
     std::ostringstream out;
     out << "INIT conversion internal ASCII => Binary\n";
     out << "__________________________________________\n";
@@ -8565,14 +9008,18 @@ std::string legacyRunBodyPreSimulation(int final_step,
         out << "__________________________________________\n";
     }
     out << "Solver launched with options:\n";
-    out << "---> this%l%mibc    solver for NIBC multilayer: F\n";
+    out << "---> this%l%mibc    solver for NIBC multilayer: "
+        << (sgbc_enabled ? "F" : "T") << "\n";
     out << "---> this%l%ade     solver for ADC multilayer: F\n";
-    out << "---> sgbc    solver for multilayer: T\n";
-    out << "---> sgbc DISPERSIVE solver for multilayer: F\n";
-    out << "---> sgbc Crank-Nicolson solver for multilayer: T\n";
-    out << "---> sgbc Depth: -1\n";
-    out << "---> sgbc Freq: 1.00000000E+09\n";
-    out << "---> sgbc Resol: 1.00000000\n";
+    out << "---> sgbc    solver for multilayer: "
+        << (sgbc_enabled ? "T" : "F") << "\n";
+    if (sgbc_enabled) {
+        out << "---> sgbc DISPERSIVE solver for multilayer: F\n";
+        out << "---> sgbc Crank-Nicolson solver for multilayer: T\n";
+        out << "---> sgbc Depth: " << sgbc_depth << "\n";
+        out << "---> sgbc Freq: " << legacyScientific8(sgbc_freq) << "\n";
+        out << "---> sgbc Resol: " << legacyFixed8(sgbc_resol) << "\n";
+    }
     out << "---> this%l%skindepthpre preprocessing for multilayer: F\n";
     out << "---> Conformal file external: F\n";
     out << "---> Conformal solver: F\n";
@@ -8590,31 +9037,40 @@ std::string legacyRunBodyPreSimulation(int final_step,
     out << "Init Other Borders...\n";
     out << "----> there are PEC, PMC or periodic Borders\n";
     out << "Init CPML Borders...\n";
-    out << "----> no CPML Borders found\n";
+    out << (has_cpml ? "----> there are CPML Borders\n"
+                     : "----> no CPML Borders found\n");
     out << "Init PML Bodies...\n";
     out << "----> no PML Bodies found\n";
     out << "Init Mur Borders...\n";
-    out << "----> no Mur Borders found\n";
+    out << (has_mur ? "----> there are Mur Borders\n"
+                    : "----> no Mur Borders found\n");
     out << "Init Lumped Elements...\n";
     out << "----> no lumped Structured elements found\n";
     out << "Init Holland Wires...\n";
-    out << "----> no Holland/transition wires found\n";
+    out << (has_holland_wires
+                ? "----> there are Holland/transition wires\n"
+                : "----> no Holland/transition wires found\n");
     out << "Init Anisotropic...\n";
     out << "----> no Structured anisotropic elements found\n";
     out << "Init Multi sgbc...\n";
-    out << "----> no Structured sgbc elements found\n";
+    if (has_sgbc_nodes) {
+        out << "----> there are Structured sgbc elements\n";
+    } else {
+        out << "----> no Structured sgbc elements found\n";
+    }
     out << "Init EDispersives...\n";
     out << "----> no Structured Electric dispersive elements found\n";
     out << "Init MDispersives...\n";
     out << "----> no Structured Magnetic dispersive elements found\n";
     out << "Init Multi Plane-Waves...\n";
-    out << "----> there are Plane Wave\n";
+    out << (has_plane_waves ? "----> there are Plane Wave\n"
+                            : "----> no Plane waves are found\n");
     out << "Init Nodal Sources...\n";
     out << "----> no Structured Nodal sources are found\n";
     out << "Init Observation...\n";
     out << "----> there are observation requests\n";
     out << "Init Timing...\n";
-    out << "Total Mcells:    2.16000015E-04\n";
+    out << "Total Mcells:    " << legacyScientific8(mcells) << "\n";
     out << "NO flushing of restarting FIELDS scheduled\n";
     out << "Flushing observation DATA every      10000001  minutes and every         1024  steps\n";
     out << "Reporting simulation info every             1  minutes\n";
@@ -8864,6 +9320,12 @@ void semba_fdtd_t::init(const std::string& input_flags) {
         throw std::runtime_error("__SEMBA_FDTD_STOP_1__");
     }
 
+    Parseador_t pd_for_flags = parseFDTDJSON(filename);
+    impl_->l.input_flags = mergeAdditionalArgumentsLocal(
+        pd_for_flags.general.additionalArguments, input_flags);
+    impl_->launch_options = parseLaunchOptions(impl_->l.input_flags);
+    impl_->l.mpidir = impl_->launch_options.mpidir;
+
     impl_->input_file = filename;
     impl_->output_case_name = composeOutputCaseName(
         filename, impl_->l.num_procs, impl_->launch_options);
@@ -8893,15 +9355,13 @@ void semba_fdtd_t::init(const std::string& input_flags) {
     }
 #endif
     const bool cli_mapvtk = impl_->launch_options.mapvtk;
-    Parseador_t pd_for_flags = parseFDTDJSON(filename);
     const bool json_mapvtk = mapvtk::flagsContainMapVtk(pd_for_flags.general.additionalArguments);
     {
         std::ostringstream muted;
-        auto* old = std::cout.rdbuf(muted.rdbuf());
+        ScopedStreamBufRedirect mute_stdout(std::cout, muted.rdbuf());
         impl_->solver.init(filename, cli_mapvtk || json_mapvtk,
                            impl_->l.layoutnumber, impl_->l.num_procs,
-                           impl_->l.mpidir);
-        std::cout.rdbuf(old);
+                           impl_->l.mpidir, impl_->l.input_flags);
     }
     if (impl_->launch_options.has_step_override &&
         impl_->launch_options.step_override >= 0) {
@@ -8909,7 +9369,8 @@ void semba_fdtd_t::init(const std::string& input_flags) {
     }
     if (impl_->l.layoutnumber == 0) {
         std::cout << legacyRunBodyPreSimulation(
-            impl_->solver.numSteps, !impl_->launch_options.has_step_override);
+            impl_->solver.numSteps, !impl_->launch_options.has_step_override,
+            &impl_->solver);
         std::cout.flush();
     }
     impl_->media.NumMed = impl_->solver.pd.Mats.nMaterials;
@@ -8934,9 +9395,8 @@ void semba_fdtd_t::launch() {
         impl_->solver.launch();
     } else {
         std::ostringstream muted;
-        auto* old = std::cout.rdbuf(muted.rdbuf());
+        ScopedStreamBufRedirect mute_stdout(std::cout, muted.rdbuf());
         impl_->solver.launch();
-        std::cout.rdbuf(old);
     }
 }
 
@@ -8967,9 +9427,8 @@ void semba_fdtd_t::end(const std::string& case_name) {
     const int final_step = impl_->solver.numSteps;
     {
         std::ostringstream muted;
-        auto* old = std::cout.rdbuf(muted.rdbuf());
+        ScopedStreamBufRedirect mute_stdout(std::cout, muted.rdbuf());
         impl_->solver.end(output_case_name);
-        std::cout.rdbuf(old);
     }
     const std::string report_text = legacySuccessText(
         impl_->l.input_flags, impl_->input_file, output_case_name,

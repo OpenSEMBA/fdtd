@@ -86,11 +86,9 @@ void mtln_t::step_alone() {
 }
 
 void mtln_t::setExternalLongitudinalField() {
-#ifdef CompileWithMPI
-    MPI_Barrier(SUBCOMM_MPI);
-#endif
     for (int i = 0; i < number_of_bundles; ++i) {
-        if (bundles[static_cast<size_t>(i)].bundle_in_layer) {
+        if (bundles[static_cast<size_t>(i)].bundle_in_layer &&
+            bundles[static_cast<size_t>(i)].number_of_divisions > 0) {
             bundles[static_cast<size_t>(i)].setExternalLongitudinalField();
         }
     }
@@ -98,7 +96,8 @@ void mtln_t::setExternalLongitudinalField() {
 
 void mtln_t::advanceBundlesVoltage() {
     for (int i = 0; i < number_of_bundles; ++i) {
-        if (bundles[static_cast<size_t>(i)].bundle_in_layer) {
+        if (bundles[static_cast<size_t>(i)].bundle_in_layer &&
+            bundles[static_cast<size_t>(i)].number_of_divisions > 0) {
             bundles[static_cast<size_t>(i)].updateGenerators(time, dt);
             bundles[static_cast<size_t>(i)].advanceVoltage();
         }
@@ -114,7 +113,9 @@ void mtln_t::advanceNWVoltage() {
             const int b = node.bundle_number - 1;
             const int c = node.conductor_number - 1;
             const int i_idx = node.i_index;
-            if (b >= 0 && b < number_of_bundles && bundles[static_cast<size_t>(b)].bundle_in_layer &&
+            if (b >= 0 && b < number_of_bundles &&
+                bundles[static_cast<size_t>(b)].bundle_in_layer &&
+                bundles[static_cast<size_t>(b)].number_of_divisions > 0 &&
                 i_idx >= 0 &&
                 i_idx < static_cast<int>(bundles[static_cast<size_t>(b)].i[static_cast<size_t>(c)].size())) {
                 node.i = bundles[static_cast<size_t>(b)].i[static_cast<size_t>(c)][static_cast<size_t>(i_idx)];
@@ -133,7 +134,9 @@ void mtln_t::advanceNWVoltage() {
                 continue;
             }
             if (!node.open) {
-                if (bundles[static_cast<size_t>(b)].bundle_in_layer && v_idx >= 0 &&
+                if (bundles[static_cast<size_t>(b)].bundle_in_layer &&
+                    bundles[static_cast<size_t>(b)].number_of_divisions > 0 &&
+                    v_idx >= 0 &&
                     v_idx < static_cast<int>(bundles[static_cast<size_t>(b)].v[static_cast<size_t>(c)].size())) {
                     bundles[static_cast<size_t>(b)].v[static_cast<size_t>(c)][static_cast<size_t>(v_idx)] = node.v;
                 }
@@ -164,11 +167,9 @@ void mtln_t::advanceNWVoltage() {
 }
 
 void mtln_t::advanceBundlesCurrent() {
-#ifdef CompileWithMPI
-    MPI_Barrier(SUBCOMM_MPI);
-#endif
     for (int i = 0; i < number_of_bundles; ++i) {
-        if (bundles[static_cast<size_t>(i)].bundle_in_layer) {
+        if (bundles[static_cast<size_t>(i)].bundle_in_layer &&
+            bundles[static_cast<size_t>(i)].number_of_divisions > 0) {
             bundles[static_cast<size_t>(i)].advanceCurrent();
         }
     }
@@ -181,7 +182,8 @@ void mtln_t::advanceTime() {
 void mtln_t::updateProbes() {
     for (int i = 0; i < number_of_bundles; ++i) {
         auto& bundle = bundles[static_cast<size_t>(i)];
-        if (!bundle.probes.empty() && bundle.bundle_in_layer) {
+        if (!bundle.probes.empty() && bundle.bundle_in_layer &&
+            bundle.number_of_divisions > 0) {
             for (auto& probe : bundle.probes) {
                 if (probe.in_layer) {
                     probe.update(time, bundle.v, bundle.i);
@@ -207,7 +209,7 @@ void mtln_t::updateBundlesTimeStep(double dt_in) {
 
 void mtln_t::updatePULTerms() {
     for (auto& bundle : bundles) {
-        if (bundle.bundle_in_layer) {
+        if (bundle.bundle_in_layer && bundle.number_of_divisions > 0) {
             bundle.updateLRTerms();
             bundle.updateCGTerms();
             for (auto& probe : bundle.probes) {

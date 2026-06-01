@@ -164,6 +164,9 @@ mtl_bundle_t mtl_bundle_ctor(const std::vector<mtl_m::transmission_line_level_t>
         res.mpi_comm = levels[0].lines[0].mpi_comm;
     }
 #endif
+    if (res.number_of_divisions <= 0) {
+        res.bundle_in_layer = false;
+    }
     return res;
 }
 
@@ -284,10 +287,32 @@ void mtl_bundle_t::updateGenerators(double time_in, double dt_in) {
 
 void mtl_bundle_t::advanceVoltage() {
     const int nc = number_of_conductors;
+    if (nc == 1) {
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) if(number_of_divisions > 128)
+#endif
+        for (int seg = 1; seg < number_of_divisions; ++seg) {
+            const double v_col = v[0][static_cast<size_t>(seg)];
+            const double di =
+                i[0][static_cast<size_t>(seg)] - i[0][static_cast<size_t>(seg - 1)];
+            const double du_is =
+                du[static_cast<size_t>(seg)][0][0] *
+                i_source[0][static_cast<size_t>(seg)];
+            const double v_new =
+                v_term[static_cast<size_t>(seg)][0][0] * v_col;
+            const double corr =
+                i_diff[static_cast<size_t>(seg)][0][0] * (di + du_is);
+            v[0][static_cast<size_t>(seg)] = v_new - corr;
+        }
+        return;
+    }
+
+    std::vector<double> v_col(static_cast<size_t>(nc), 0.0);
+    std::vector<double> di(static_cast<size_t>(nc), 0.0);
+    std::vector<double> du_is(static_cast<size_t>(nc), 0.0);
+    std::vector<double> v_new(static_cast<size_t>(nc), 0.0);
     for (int seg = 1; seg < number_of_divisions; ++seg) {
-        std::vector<double> v_col(static_cast<size_t>(nc));
-        std::vector<double> di(static_cast<size_t>(nc));
-        std::vector<double> du_is(nc, 0.0);
+        std::fill(du_is.begin(), du_is.end(), 0.0);
         for (int c = 0; c < nc; ++c) {
             v_col[static_cast<size_t>(c)] = v[static_cast<size_t>(c)][static_cast<size_t>(seg)];
             di[static_cast<size_t>(c)] =
@@ -300,7 +325,14 @@ void mtl_bundle_t::advanceVoltage() {
                     i_source[static_cast<size_t>(k)][static_cast<size_t>(seg)];
             }
         }
-        const auto v_new = utils_m::matmul_vec(v_term[static_cast<size_t>(seg)], v_col);
+        for (int c = 0; c < nc; ++c) {
+            double sum = 0.0;
+            for (int k = 0; k < nc; ++k) {
+                sum += v_term[static_cast<size_t>(seg)][static_cast<size_t>(c)][static_cast<size_t>(k)] *
+                       v_col[static_cast<size_t>(k)];
+            }
+            v_new[static_cast<size_t>(c)] = sum;
+        }
         for (int c = 0; c < nc; ++c) {
             double corr = 0.0;
             for (int k = 0; k < nc; ++k) {
@@ -320,13 +352,47 @@ void mtl_bundle_t::advanceCurrent() {
         Comm_MPI_V();
     }
 #endif
-    transfer_impedance.updateQ3Phi();
-    i_prev = i;
+    const bool hasDispersiveTransfer = transfer_impedance.number_of_poles > 0;
+    if (hasDispersiveTransfer) {
+        transfer_impedance.updateQ3Phi();
+        i_prev = i;
+    }
     const int nc = number_of_conductors;
+    if (nc == 1) {
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) if(number_of_divisions > 128)
+#endif
+        for (int seg = 0; seg < number_of_divisions; ++seg) {
+            const auto segIdx = static_cast<size_t>(seg);
+            const double i_col = i[0][segIdx];
+            const double dv =
+                v[0][static_cast<size_t>(seg + 1)] - v[0][segIdx] -
+                e_L[0][segIdx] * step_size[segIdx];
+            const double vsrc =
+                du[segIdx][0][0] * v_source[0][segIdx];
+            double q3_term = 0.0;
+            if (hasDispersiveTransfer) {
+                const double du_q3 =
+                    du[segIdx][0][0] *
+                    std::real(transfer_impedance.q3_phi[segIdx][0]);
+                q3_term = v_diff[segIdx][0][0] * du_q3;
+            }
+            const double term1 = i_term[segIdx][0][0] * i_col;
+            const double term2 = v_diff[segIdx][0][0] * (dv - vsrc);
+            i[0][segIdx] = term1 - term2 - q3_term;
+        }
+        if (hasDispersiveTransfer) {
+            transfer_impedance.updatePhi(i_prev, i);
+        }
+        return;
+    }
+
+    std::vector<double> i_col(static_cast<size_t>(nc), 0.0);
+    std::vector<double> dv(static_cast<size_t>(nc), 0.0);
+    std::vector<double> vsrc(static_cast<size_t>(nc), 0.0);
+    std::vector<double> du_q3(static_cast<size_t>(nc), 0.0);
+    std::vector<double> q3_term(static_cast<size_t>(nc), 0.0);
     for (int seg = 0; seg < number_of_divisions; ++seg) {
-        std::vector<double> i_col(static_cast<size_t>(nc));
-        std::vector<double> dv(static_cast<size_t>(nc));
-        std::vector<double> vsrc(static_cast<size_t>(nc));
         for (int c = 0; c < nc; ++c) {
             i_col[static_cast<size_t>(c)] = i[static_cast<size_t>(c)][static_cast<size_t>(seg)];
             dv[static_cast<size_t>(c)] =
@@ -339,24 +405,32 @@ void mtl_bundle_t::advanceCurrent() {
             }
             vsrc[static_cast<size_t>(c)] = src;
         }
-        std::vector<double> du_q3(nc, 0.0);
-        for (int j = 0; j < nc; ++j) {
-            for (int k = 0; k < nc; ++k) {
-                du_q3[static_cast<size_t>(j)] +=
-                    du[static_cast<size_t>(seg)][static_cast<size_t>(j)][static_cast<size_t>(k)] *
-                    std::real(transfer_impedance.q3_phi[static_cast<size_t>(seg)][static_cast<size_t>(k)]);
-            }
-        }
-        std::vector<double> q3_term(nc, 0.0);
-        for (int c = 0; c < nc; ++c) {
+        if (hasDispersiveTransfer) {
+            std::fill(du_q3.begin(), du_q3.end(), 0.0);
             for (int j = 0; j < nc; ++j) {
-                q3_term[static_cast<size_t>(c)] +=
-                    v_diff[static_cast<size_t>(seg)][static_cast<size_t>(c)][static_cast<size_t>(j)] *
-                    du_q3[static_cast<size_t>(j)];
+                for (int k = 0; k < nc; ++k) {
+                    du_q3[static_cast<size_t>(j)] +=
+                        du[static_cast<size_t>(seg)][static_cast<size_t>(j)][static_cast<size_t>(k)] *
+                        std::real(transfer_impedance.q3_phi[static_cast<size_t>(seg)][static_cast<size_t>(k)]);
+                }
             }
+            std::fill(q3_term.begin(), q3_term.end(), 0.0);
+            for (int c = 0; c < nc; ++c) {
+                for (int j = 0; j < nc; ++j) {
+                    q3_term[static_cast<size_t>(c)] +=
+                        v_diff[static_cast<size_t>(seg)][static_cast<size_t>(c)][static_cast<size_t>(j)] *
+                        du_q3[static_cast<size_t>(j)];
+                }
+            }
+        } else {
+            std::fill(q3_term.begin(), q3_term.end(), 0.0);
         }
         for (int c = 0; c < nc; ++c) {
-            double term1 = utils_m::matmul_vec(i_term[static_cast<size_t>(seg)], i_col)[static_cast<size_t>(c)];
+            double term1 = 0.0;
+            for (int k = 0; k < nc; ++k) {
+                term1 += i_term[static_cast<size_t>(seg)][static_cast<size_t>(c)][static_cast<size_t>(k)] *
+                         i_col[static_cast<size_t>(k)];
+            }
             double term2 = 0.0;
             for (int k = 0; k < nc; ++k) {
                 term2 += v_diff[static_cast<size_t>(seg)][static_cast<size_t>(c)][static_cast<size_t>(k)] *
@@ -366,7 +440,9 @@ void mtl_bundle_t::advanceCurrent() {
                 term1 - term2 - q3_term[static_cast<size_t>(c)];
         }
     }
-    transfer_impedance.updatePhi(i_prev, i);
+    if (hasDispersiveTransfer) {
+        transfer_impedance.updatePhi(i_prev, i);
+    }
 }
 
 void mtl_bundle_t::setExternalLongitudinalField() {
@@ -381,10 +457,29 @@ void mtl_bundle_t::setExternalLongitudinalField() {
         return;
     }
     const int ncond = conductors_in_level[0];
+    if (ncond <= 0) {
+        return;
+    }
+    if (ncond == 1) {
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) if(number_of_divisions > 128)
+#endif
+        for (int seg = 0; seg < number_of_divisions; ++seg) {
+            const auto& efs = external_field_segments[static_cast<size_t>(seg)];
+            const int dir = efs.direction;
+            const double sign =
+                (dir == 0) ? 0.0 : static_cast<double>(dir) / std::abs(static_cast<double>(dir));
+            e_L[0][static_cast<size_t>(seg)] =
+                (efs.field != nullptr) ? (*efs.field) * sign : 0.0;
+        }
+        return;
+    }
     for (int c = 0; c < ncond; ++c) {
         for (int seg = 0; seg < number_of_divisions; ++seg) {
             const auto& efs = external_field_segments[static_cast<size_t>(seg)];
-            const double sign = static_cast<double>(efs.direction) / std::abs(static_cast<double>(efs.direction));
+            const int dir = efs.direction;
+            const double sign =
+                (dir == 0) ? 0.0 : static_cast<double>(dir) / std::abs(static_cast<double>(dir));
             e_L[static_cast<size_t>(c)][static_cast<size_t>(seg)] =
                 (efs.field != nullptr) ? (*efs.field) * sign : 0.0;
         }
