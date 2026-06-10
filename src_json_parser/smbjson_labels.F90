@@ -115,6 +115,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_ASS_CAB_INI_CONN_ID = "initialConnectorId"
    character(len=*), parameter :: J_MAT_ASS_CAB_END_CONN_ID = "endConnectorId"
    character(len=*), parameter :: J_MAT_ASS_CAB_CONTAINED_WITHIN_ID = "containedWithinElementId"
+   character(len=*), parameter :: J_MAT_ASS_TOTAL_RESISTANCE = "totalResistance"
    
    ! -- connector
    character(len=*), parameter :: J_MAT_CONN_RESISTANCES = "resistances"

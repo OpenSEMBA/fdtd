@@ -3,6 +3,9 @@ from utils import *
 
 @no_mtln_skip
 @pytest.mark.mtln
+@pytest.mark.wires
+@pytest.mark.multiwire
+@pytest.mark.probes
 def test_paul_8_6_square(tmp_path):
     fn = CASES_FOLDER + 'paul/paul_8_6_square.fdtd.json'
 
@@ -26,6 +29,9 @@ def test_paul_8_6_square(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
+@pytest.mark.wires
+@pytest.mark.multiwire
+@pytest.mark.probes
 def test_paul_8_6_triangle(tmp_path):
     fn = CASES_FOLDER + 'paul/paul_8_6_triangle.fdtd.json'
 
@@ -49,6 +55,9 @@ def test_paul_8_6_triangle(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
+@pytest.mark.wires
+@pytest.mark.multiwire
+@pytest.mark.probes
 def test_paul_9_6(tmp_path):
     fn = CASES_FOLDER + 'paul/paul_9_6.fdtd.json'
     solver = FDTD(input_filename=fn,
@@ -81,6 +90,10 @@ def test_paul_9_6(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
+@pytest.mark.spice
+@pytest.mark.wires
+@pytest.mark.multiwire
+@pytest.mark.probes
 def test_spice_multilines_opamp(tmp_path):
     fn = CASES_FOLDER + 'multilines_opamp/multilines_opamp.fdtd.json'
 
@@ -104,6 +117,9 @@ def test_spice_multilines_opamp(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
+@pytest.mark.spice
+@pytest.mark.wires
+@pytest.mark.probes
 def test_spice_connectors_diode(tmp_path):
     fn = CASES_FOLDER + 'spice_connectors/spice_connectors.fdtd.json'
 
@@ -134,6 +150,9 @@ def test_spice_connectors_diode(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
+@pytest.mark.wires
+@pytest.mark.multiwire
+@pytest.mark.probes
 def test_line_multiline_junction(tmp_path):
     fn = CASES_FOLDER + 'line_multiline_junction/line_multiline_junction.fdtd.json'
     solver = FDTD(input_filename=fn,
@@ -162,6 +181,9 @@ def test_line_multiline_junction(tmp_path):
 @no_mtln_skip
 @pytest.mark.mtln
 @pytest.mark.codemodel
+@pytest.mark.spice
+@pytest.mark.wires
+@pytest.mark.probes
 def test_spice_opamp_saturation(tmp_path):
     fn = CASES_FOLDER + 'opamp_saturation/opamp_saturation.fdtd.json'
     setNgspice(tmp_path)
@@ -186,6 +208,9 @@ def test_spice_opamp_saturation(tmp_path):
 
 @no_mtln_skip
 @pytest.mark.mtln
+@pytest.mark.spice
+@pytest.mark.wires
+@pytest.mark.probes
 def test_spice_zener(tmp_path):
     fn = CASES_FOLDER + 'zener/zener.fdtd.json'
 

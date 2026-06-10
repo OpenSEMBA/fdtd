@@ -1,0 +1,126 @@
+name: check-submodules-default-branch
+
+'on':
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-submodules-default-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Validate submodules point to main/master history
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! -f .gitmodules ]]; then
+            echo "No .gitmodules file found. Nothing to validate."
+            exit 0
+          fi
+
+          mapfile -t submodule_paths < <(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | awk '{print $2}')
+
+          if [[ ${#submodule_paths[@]} -eq 0 ]]; then
+            echo "No submodules found in .gitmodules."
+            exit 0
+          fi
+
+          failed=0
+
+          for path in "${submodule_paths[@]}"; do
+            echo ""
+            echo "Checking submodule: ${path}"
+
+            if [[ ! -d "${path}" ]]; then
+              echo "::error title=Missing submodule directory::Submodule path '${path}' is missing in checkout"
+              failed=1
+              continue
+            fi
+
+            if ! git -C "${path}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+              echo "::error title=Invalid submodule checkout::Path '${path}' is not a valid git repository"
+              failed=1
+              continue
+            fi
+
+            sha="$(git -C "${path}" rev-parse HEAD)"
+            echo "Pinned commit: ${sha}"
+
+            git -C "${path}" remote set-branches --add origin '*'
+            git -C "${path}" fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*' >/dev/null
+
+            # actions/checkout can leave submodules shallow; unshallow to make ancestry checks reliable.
+            if git -C "${path}" rev-parse --is-shallow-repository | grep -q true; then
+              git -C "${path}" fetch --unshallow --no-tags origin >/dev/null
+            fi
+
+            default_ref="$(git -C "${path}" ls-remote --symref origin HEAD | awk '/^ref:/ {print $2}' || true)"
+            default_branch="${default_ref#refs/heads/}"
+
+            if [[ -z "${default_branch}" ]]; then
+              if git -C "${path}" show-ref --verify --quiet refs/remotes/origin/main; then
+                default_branch="main"
+              elif git -C "${path}" show-ref --verify --quiet refs/remotes/origin/master; then
+                default_branch="master"
+              else
+                echo "::error title=Cannot determine default branch::Could not determine default branch for submodule '${path}'"
+                failed=1
+                continue
+              fi
+            fi
+
+            echo "Default branch detected: ${default_branch}"
+
+            candidate_branches=()
+
+            if git -C "${path}" show-ref --verify --quiet refs/remotes/origin/main; then
+              candidate_branches+=("main")
+            fi
+
+            if git -C "${path}" show-ref --verify --quiet refs/remotes/origin/master; then
+              candidate_branches+=("master")
+            fi
+
+            if [[ " ${candidate_branches[*]} " != *" ${default_branch} "* ]]; then
+              candidate_branches+=("${default_branch}")
+            fi
+
+            is_valid=0
+            for branch in "${candidate_branches[@]}"; do
+              if git -C "${path}" merge-base --is-ancestor "${sha}" "origin/${branch}"; then
+                echo "OK: ${path} commit belongs to origin/${branch} history"
+                is_valid=1
+                break
+              fi
+            done
+
+            if [[ ${is_valid} -eq 0 ]]; then
+              echo "::error title=Submodule not on main/master history::Submodule '${path}' points to ${sha}, which is not contained in any accepted branch: ${candidate_branches[*]}"
+              failed=1
+            fi
+          done
+
+          if [[ ${failed} -ne 0 ]]; then
+            echo ""
+            echo "One or more submodules are not aligned with accepted branch history (main/master/default)."
+            exit 1
+          fi
+
+          echo ""
+          echo "All submodule commits are contained in accepted branch history (main/master/default)."
