@@ -32,6 +32,9 @@ endif()
 add_subdirectory(conformal)
 set(CONFORMAL_TESTS_LIBRARY conformal_tests)
 
+add_subdirectory(preprocess)
+set(PREPROCESS_TESTS_LIBRARY preprocess_tests)
+
 add_executable(fdtd_tests 
     "fdtd_tests.cpp"
 )
@@ -40,6 +43,7 @@ target_link_libraries(fdtd_tests
     ${MTLN_TESTS_LIBRARY}
     ${SMBJSON_TESTS_LIBRARY}
     ${CONFORMAL_TESTS_LIBRARY}
+    ${PREPROCESS_TESTS_LIBRARY}
     ${ROTATE_TESTS_LIBRARY}
     ${HDF_TESTS_LIBRARY}
     ${VTK_TESTS_LIBRARY}
