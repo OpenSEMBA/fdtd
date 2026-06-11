@@ -13,6 +13,7 @@
     #include "observation/observation_tests.h"
 #endif
 #include "conformal/conformal_tests.h"
+#include "preprocess/preprocess_tests.h"
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
