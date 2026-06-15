@@ -39,5 +39,22 @@ module ngspice_interface_m
         integer(c_int) function has_error() bind (C, name="has_error")
             use iso_c_binding, only: c_int
         end function
+
+        function curplot() bind(C, name="ngspice_cur_plot") result(res)
+            use iso_c_binding
+            type(c_ptr) :: res
+        end function curplot
+
+        function allvecs_current() bind(C, name="ngspice_all_vecs_current") result(res)
+            use iso_c_binding
+            type(c_ptr) :: res
+        end function allvecs_current
+
+        function allplots() bind(c, name="ngspice_all_plots") result(res)
+            use iso_c_binding
+            type(c_ptr) :: res
+        end function allplots
+
+
     end interface
 end module

@@ -187,24 +187,24 @@ contains
         integer :: i, j, idx
 
         ! Update simple terminations directly in Fortran
-        idx = 1
-        do i = 1, size(this%networks)
-            do j = 1, this%networks(i)%number_of_nodes
-                if (isSimpleTermination(this%networks(i)%nodes(j)%termination_type)) then
-                    call this%terminations(idx)%step(this%networks(i)%nodes(j)%i, this%dt)
-                    this%networks(i)%nodes(j)%v = this%terminations(idx)%v_node
-                    idx = idx + 1
-                end if
-            end do
-        end do
+        ! idx = 1
+        ! do i = 1, size(this%networks)
+        !     do j = 1, this%networks(i)%number_of_nodes
+        !         if (isSimpleTermination(this%networks(i)%nodes(j)%termination_type)) then
+        !             call this%terminations(idx)%step(this%networks(i)%nodes(j)%i, this%dt)
+        !             this%networks(i)%nodes(j)%v = this%terminations(idx)%v_node
+        !             idx = idx + 1
+        !         end if
+        !     end do
+        ! end do
 
         ! Update complex terminations via ngspice
-        if (this%num_ngspice > 0) then
-            call this%updateCircuitCurrentsFromNetwork()
-            call this%circuit%step()
-            this%circuit%time = this%circuit%time + this%circuit%dt
-            call this%updateNetworkVoltages()
-        end if
+        ! if (this%num_ngspice > 0) then
+        call this%updateCircuitCurrentsFromNetwork()
+        call this%circuit%step()
+        this%circuit%time = this%circuit%time + this%circuit%dt
+        call this%updateNetworkVoltages()
+        ! end if
     end subroutine
 
 end module

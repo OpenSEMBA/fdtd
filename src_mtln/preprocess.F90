@@ -7,6 +7,7 @@ module mtln_preprocess_m
     use mtl_m
     use Report_m, only: WarnErrReport
     use fhash, only: fhash_tbl_t, key=>fhash_key, fhash_key_t
+    use json_string_utilities, only: lowercase_string
     implicit none
 
     integer, parameter :: XPOS = 1
@@ -645,8 +646,14 @@ contains
 
             write(generator_r, *) termination%source%resistance
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim(trim("V" // node%name) // "_S " // trim(node%name) // "_S " // trim(node%name) //"_genR" //" dc 0" )
+                ! buff = trim(trim("V" // node%name) // "_S " // trim(node%name) // "_S " // trim(node%name) //"_genR" //" dc 0" )
+                ! call appendToStringArray(res, buff) 
+                buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
+                buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
+                call appendToStringArray(res, buff) 
+                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+
                 buff = trim(trim("R" // node%name) // "_S " // trim(node%name) // "_genR " // trim(end_node) //" "// trim(generator_r) )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
@@ -694,8 +701,15 @@ contains
             buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name // "_genR " //" dc 0" )
+                ! buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name // "_genR " //" dc 0" )
+                ! call appendToStringArray(res, buff) 
+
+                buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
+                buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
+                call appendToStringArray(res, buff) 
+                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // " " // trim(end_node) //" "// trim(generator_r))
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
@@ -744,8 +758,15 @@ contains
         if (termination%source%path_to_excitation /= "") then
             write(generator_r, *) termination%source%resistance
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // " " // node%name //"_genR dc 0" )
+                ! buff = trim("V" // node%name // "_S " // node%name // " " // node%name //"_genR dc 0" )
+                ! call appendToStringArray(res, buff) 
+
+                buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
+                buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
+                call appendToStringArray(res, buff) 
+                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // node%name //"_S " //trim(generator_r))
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
@@ -784,7 +805,9 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(30) :: termination_r, termination_l, line_c, line_g, generator_r
-        
+        integer :: io
+        character(len=256) :: path_to_excitation = ""
+        character(len=256) :: lower
         write(termination_r, *) termination%resistance
         write(termination_l, *) termination%inductance
         write(line_c, *) node%line_c_per_meter * node%step/2
@@ -797,8 +820,15 @@ contains
             buff = trim("L" // node%name // " " // node%name // "_R " // node%name //"_S")//" "//trim(termination_l)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
+                ! buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
+                ! call appendToStringArray(res, buff) 
+
+                buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
+                buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
+                call appendToStringArray(res, buff) 
+                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
@@ -873,8 +903,14 @@ contains
             buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
+                ! buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
+                ! call appendToStringArray(res, buff) 
+                buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
+                buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
+                call appendToStringArray(res, buff) 
+                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // trim(end_node) //" " // trim(generator_r) )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
@@ -999,8 +1035,14 @@ contains
             buff = trim(XYZ(3:3) // node%name // " " // node%name // " " // node%name //"_S " // termination_z)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
+                ! buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
+                ! call appendToStringArray(res, buff) 
+                buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
+                buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
+                call appendToStringArray(res, buff) 
+                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
@@ -1066,8 +1108,15 @@ contains
             call appendToStringArray(res, buff)
 
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
+                ! buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
+                ! call appendToStringArray(res, buff) 
+
+                buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
+                buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
+                call appendToStringArray(res, buff) 
+                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 

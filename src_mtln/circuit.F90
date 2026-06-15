@@ -58,6 +58,8 @@ module circuit_m
 
         procedure :: printCWD
 
+        procedure :: getRetrievableVectors
+        procedure, private :: setCurrentCircuitPlot
     end type circuit_t
 
 contains
@@ -206,7 +208,7 @@ contains
             return
         end if
 
-        call this%updateCircuitSources(this%time)
+        ! call this%updateCircuitSources(this%time)
         if (this%time == 0) then
             call this%run()
         else
@@ -363,11 +365,16 @@ contains
         type(c_ptr) :: info_ptr
         real(kind=c_double), pointer :: values(:)
 
+        type(string_t), allocatable :: names(:)
         if (has_error() /= 0) then
             call WarnErrReport('Ngspice reported a controlled exit while updating nodes.', .true.)
             return
         end if
 
+        ! call command('setplot ' // c_null_char)
+        ! call this%getRetrievableVectors(names)
+        ! call command('echo test' // c_null_char)
+        ! call command('display ' // c_null_char)
         do i = 1, size(this%nodes%names)
             info_ptr = get_vector_info(trim(this%nodes%names(i)%name)//c_null_char)
             if (.not. c_associated(info_ptr)) then
@@ -442,5 +449,92 @@ contains
             end if
         end do
     end function    
+
+    subroutine getRetrievableVectors(this, names)
+        class(circuit_t) :: this
+        type(string_t), allocatable, intent(out) :: names(:)
+
+        integer, parameter :: MAX_VECS = 100000
+        type(c_ptr) :: plot_ptr, vecs_ptr, info_ptr
+        type(c_ptr), pointer :: vecs(:)
+        type(string_t), allocatable :: tmp(:)
+        type(string_t) :: cand
+        integer :: i, n
+
+        call this%setCurrentCircuitPlot()
+
+        plot_ptr = curplot()
+        if (.not. c_associated(plot_ptr)) then
+            allocate(names(0))
+            return
+        end if
+
+        vecs_ptr = allvecs_current()
+        if (.not. c_associated(vecs_ptr)) then
+            allocate(names(0))
+            return
+        end if
+
+        call c_f_pointer(vecs_ptr, vecs, [MAX_VECS])
+        allocate(tmp(MAX_VECS))
+        n = 0
+
+        do i = 1, MAX_VECS
+            if (.not. c_associated(vecs(i))) exit
+
+            cand = getName(vecs(i))
+            if (cand%length <= 0) cycle
+
+            info_ptr = get_vector_info(trim(cand%name)//c_null_char)
+            if (c_associated(info_ptr)) then
+                write(*,'(A)') trim(cand%name)
+                n = n + 1
+                tmp(n) = cand
+            end if
+        end do
+
+        allocate(names(n))
+        if (n > 0) names = tmp(1:n)
+        deallocate(tmp)
+    end subroutine getRetrievableVectors
+
+    subroutine setCurrentCircuitPlot(this)
+        class(circuit_t) :: this
+        integer, parameter :: MAX_PLOTS = 128
+        type(c_ptr) :: cur_ptr, plots_ptr, info_ptr
+        type(c_ptr), pointer :: plots(:)
+        type(string_t) :: p
+        integer :: i
+        character(len=300) :: qualified_name
+
+        cur_ptr = curplot()
+        if (c_associated(cur_ptr)) then
+            p = getName(cur_ptr)
+            if (p%length > 0) then
+                if (trim(p%name(1:p%length)) /= 'const') return
+            end if
+        end if
+
+        plots_ptr = allplots()
+        if (.not. c_associated(plots_ptr)) return
+        call c_f_pointer(plots_ptr, plots, [MAX_PLOTS])
+
+        ! p = getName(plots(6))
+
+        do i = 9, MAX_PLOTS
+            if (.not. c_associated(plots(i))) cycle
+            p = getName(plots(i))
+            if (p%length <= 0) cycle
+            if (trim(p%name(1:p%length)) == 'const') cycle
+
+            qualified_name = trim(p%name(1:p%length)) // '.time'
+            info_ptr = get_vector_info(trim(qualified_name) // c_null_char)
+            if (c_associated(info_ptr)) then
+                call command('setplot ' // trim(p%name(1:p%length)) // c_null_char)
+                return
+            end if
+        end do
+    end subroutine setCurrentCircuitPlot
+
 
 end module 

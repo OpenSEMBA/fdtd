@@ -67,6 +67,19 @@ void command(char* input)
     return;
 }
 
+char* ngspice_cur_plot(void) {
+    return ngSpice_CurPlot();
+}
+
+char** ngspice_all_vecs_current(void) {
+    char* plot = ngSpice_CurPlot();
+    if (plot == NULL) return NULL;
+    return ngSpice_AllVecs(plot);
+}
+char** ngspice_all_plots(void) {
+    return ngSpice_AllPlots();
+}
+
 char** get_all_plots(){
     
     char** ret = ngSpice_AllPlots();

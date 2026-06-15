@@ -446,6 +446,8 @@ def test_towelHanger_mpi(tmp_path):
 @pytest.mark.probes
 def test_towelHanger(tmp_path):
     fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
+    setNgspice(tmp_path)
+
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver.run()
