@@ -200,7 +200,7 @@ integer function test_spice_current_source() bind(C) result(error_cnt)
     call circuit%init(names = names, netlist = netlist)
     call circuit%setStopTimes(finalTime, circuit%dt)
     do while (circuit%time < finalTime)
-        call circuit%updateNodeCurrent("1_initial", current)
+        ! call circuit%updateNodeCurrent("1_initial", current)
         call circuit%step()
         circuit%time = circuit%time + circuit%dt
         if (checkNear(circuit%getNodeVoltage("1_initial"), current*resistance, 0.01_rkind) .eqv. .false. ) then 

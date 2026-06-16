@@ -20,6 +20,7 @@ module network_manager_m
         procedure :: advanceVoltage => network_advanceVoltage
         procedure :: updateCircuitCurrentsFromNetwork
         procedure :: updateNetworkVoltages
+        ! procedure :: pointNetworkVoltages
         procedure :: initTerminations
 
     end type
@@ -103,7 +104,7 @@ contains
         call res%circuit%readInput(description, printInput)
         call res%circuit%setModStopTimes(dt)
         call res%initTerminations()
-
+        ! call res%pointNetworkVoltages()
     end function
 
     subroutine initTerminations(this)
@@ -161,6 +162,21 @@ contains
         end select
     end function isSimpleTermination
 
+    ! subroutine pointNetworkVoltages(this)
+    !     class(network_manager_t) :: this
+    !     integer :: i, j
+    !     character(len=:), allocatable :: name
+    !     integer :: name_id
+    !     do i = 1, size(this%networks)
+    !         do j = 1, this%networks(i)%number_of_nodes
+    !             name_id = findVoltageIndexByName(this%circuit%nodes%names, this%networks(i)%nodes(j)%name)
+    !             this%networks(i)%nodes(j)%v => this%circuit%nodes%values(name_id)%voltage
+    !             ! this%networks(i)%nodes(j)%v = this%circuit%getNodeVoltage(this%networks(i)%nodes(j)%name)
+    !         end do
+    !     end do
+
+    ! end subroutine
+
     subroutine updateNetworkVoltages(this)
         class(network_manager_t) :: this
         integer :: i, j
@@ -175,16 +191,21 @@ contains
     subroutine updateCircuitCurrentsFromNetwork(this)
         class(network_manager_t) :: this
         integer :: i, j
+        character(len=256), allocatable :: list(:)
+        allocate(list(0))
         do i = 1, size(this%networks)
             do j = 1, this%networks(i)%number_of_nodes
-                call this%circuit%updateNodeCurrent(this%networks(i)%nodes(j)%name, this%networks(i)%nodes(j)%i)
+                call this%circuit%updateNodeCurrentList(this%networks(i)%nodes(j)%name, this%networks(i)%nodes(j)%i, list)
             end do
         end do
+        write(*,*) list
+        call this%circuit%updateNodeCurrent(list)
     end subroutine
 
-    subroutine network_advanceVoltage(this)
+    subroutine network_advanceVoltage(this, step)
         class(network_manager_t) :: this
         integer :: i, j, idx
+        integer, optional :: step
 
         ! Update simple terminations directly in Fortran
         ! idx = 1
@@ -202,6 +223,11 @@ contains
         ! if (this%num_ngspice > 0) then
         call this%updateCircuitCurrentsFromNetwork()
         call this%circuit%step()
+        if (present(step)) then 
+            if (mod(step,100) == 0) then
+                call this%circuit%clearControlStructures()
+            end if
+        end if
         this%circuit%time = this%circuit%time + this%circuit%dt
         call this%updateNetworkVoltages()
         ! end if

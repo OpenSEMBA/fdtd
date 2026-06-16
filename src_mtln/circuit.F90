@@ -53,9 +53,11 @@ module circuit_m
         procedure :: updateNodes
         procedure :: getTime
         procedure :: updateNodeCurrent
+        procedure :: updateNodeCurrentList
         procedure :: updateCircuitSources
         procedure :: modifyLineCapacitorValue
 
+        procedure :: clearControlStructures
         procedure :: printCWD
 
         procedure :: getRetrievableVectors
@@ -63,6 +65,22 @@ module circuit_m
     end type circuit_t
 
 contains
+
+    subroutine append(arr, str)
+        ! This has been implemented because there seems to be a bug in gfortran: 
+        ! https://fortran-lang.discourse.group/t/read-data-and-append-it-to-array-best-practice/1915
+        ! and arr = [ arr, str ] can't be used.
+        character(len=256), allocatable, intent(inout) :: arr(:)
+        character(len=256), intent(in) :: str
+        character(len=256), allocatable :: old_arr(:)
+        
+        old_arr = arr
+        deallocate(arr)
+        allocate(arr(size(old_arr)+1))
+        arr(1:size(old_arr)) = old_arr 
+        arr(size(old_arr)+1) = str
+    end subroutine
+
 
     real(kind=rkind) function interpolate(this, time, dt) result(res)
         class(source_t) :: this
@@ -111,6 +129,11 @@ contains
     subroutine printCWD(this)
         class(circuit_t) :: this
         call command('getcwd' // c_null_char)
+    end subroutine
+
+    subroutine clearControlStructures(this)
+        class(circuit_t) :: this
+        call command(c_null_char)
     end subroutine
 
     subroutine init(this, names, sources, netlist)
@@ -345,17 +368,37 @@ contains
 
     end subroutine
 
-    subroutine updateNodeCurrent(this, node_name, current)
+    subroutine updateNodeCurrentList(this, node_name, current, list)
         class(circuit_t) :: this
         real(kind=rkind) :: current
         character(50) :: sCurrent
         character(*) :: node_name
+        character(256), dimension(:), allocatable, intent(inout) :: list
+        character(len=256) :: buff
         if (index(node_name, "initial") /= 0) then
             write(sCurrent, *) current
         else if (index(node_name, "end") /= 0) then
             write(sCurrent, *) -current
         end if
-        call command("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
+        buff = trim("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
+        call append(list, buff)
+        ! call command("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
+    end subroutine
+
+    subroutine updateNodeCurrent(this, list)
+    ! subroutine updateNodeCurrent(this, node_name, current, list)
+        class(circuit_t) :: this
+        ! real(kind=rkind) :: current
+        ! character(50) :: sCurrent
+        ! character(*) :: node_name
+         character(256), dimension(:), intent(in) :: list
+        ! if (index(node_name, "initial") /= 0) then
+        !     write(sCurrent, *) current
+        ! else if (index(node_name, "end") /= 0) then
+        !     write(sCurrent, *) -current
+        ! end if
+        call command(list)
+        ! call command("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
     end subroutine
 
     subroutine updateNodes(this) 
@@ -371,10 +414,6 @@ contains
             return
         end if
 
-        ! call command('setplot ' // c_null_char)
-        ! call this%getRetrievableVectors(names)
-        ! call command('echo test' // c_null_char)
-        ! call command('display ' // c_null_char)
         do i = 1, size(this%nodes%names)
             info_ptr = get_vector_info(trim(this%nodes%names(i)%name)//c_null_char)
             if (.not. c_associated(info_ptr)) then
@@ -537,4 +576,5 @@ contains
     end subroutine setCurrentCircuitPlot
 
 
+    
 end module 
