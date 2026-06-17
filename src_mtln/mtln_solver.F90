@@ -27,7 +27,6 @@ module mtln_solver_m
         procedure :: getTimeRange
         procedure :: updateProbes
         procedure :: advanceNWVoltage
-        procedure :: pointINodes
         procedure :: advanceBundlesVoltage
         procedure :: advanceBundlesCurrent
         procedure :: advanceTime
@@ -90,17 +89,7 @@ contains
         res%null_field = 0.0_rkind
     end function
 
-    subroutine initNodes(this)
-        class(mtln_t) :: this
-        integer :: i,j
-        do i = 1, size(this%network_manager%networks)
-            do j = 1, size(this%network_manager%networks(i)%nodes)
-                this%network_manager%networks(i)%nodes(j)%v = 0.0
-                this%network_manager%networks(i)%nodes(j)%i = 0.0
-            end do
-        end do
-        call this%pointINodes()
-    end subroutine
+
 
     subroutine mtln_step(this)
         class(mtln_t) :: this
@@ -172,12 +161,11 @@ contains
 
     end subroutine
 
-    subroutine pointINodes(this)
+    subroutine initNodes(this)
         class(mtln_t) :: this
         integer :: i,j
         integer ::b, c, v_idx, i_idx
         integer :: n
-        logical :: has_active_node
         if (this%number_of_bundles == 0) return
         if (size(this%network_manager%networks) == 0) return
 
@@ -196,13 +184,12 @@ contains
 
     end subroutine
 
-    subroutine advanceNWVoltage(this, step)
+    subroutine advanceNWVoltage(this)
         class(mtln_t) :: this
         integer :: i,j
         integer ::b, c, v_idx, i_idx
         integer :: n
         logical :: has_active_node
-        integer, optional :: step
 ! #ifdef CompileWithMPI
 !         integer(kind=4) :: ierr
 !         call mpi_barrier(subcomm_mpi, ierr)
@@ -210,7 +197,7 @@ contains
         if (this%number_of_bundles == 0) return
         if (size(this%network_manager%networks) == 0) return
 
-        has_active_node = .true.
+        ! has_active_node = .false.
         ! do i = 1, size(this%network_manager%networks)
         !     do j = 1, size(this%network_manager%networks(i)%nodes)
         !         b = this%network_manager%networks(i)%nodes(j)%bundle_number
@@ -224,12 +211,9 @@ contains
         !     end do
         ! end do
 
-        if (.not. has_active_node) return
-        if (present(step)) then 
-            call this%network_manager%advanceVoltage(step)
-        else
-            call this%network_manager%advanceVoltage()
-        end if
+        ! if (.not. has_active_node) return
+        call this%network_manager%advanceVoltage()
+
             ! do i = 1, size(this%network_manager%networks)
         !     do j = 1, size(this%network_manager%networks(i)%nodes)
         !         b = this%network_manager%networks(i)%nodes(j)%bundle_number
@@ -330,7 +314,7 @@ contains
 
         do i = 0, this%getTimeRange(final_time)
             call this%advanceBundlesVoltage()
-            call this%advanceNWVoltage(i)
+            call this%advanceNWVoltage()
             call this%advanceBundlesCurrent()
             call this%updateProbes()
             call this%advanceTime()

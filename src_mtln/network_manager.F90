@@ -15,13 +15,18 @@ module network_manager_m
         integer, allocatable :: ngspice_node_indices(:)
         integer :: num_simple
         integer :: num_ngspice
+        integer :: counter = 0
         real(kind=rkind) :: time, dt
-    contains
+        character(len=256), allocatable :: currentUpdateList(:)
+
+        contains
         procedure :: advanceVoltage => network_advanceVoltage
         procedure :: updateCircuitCurrentsFromNetwork
-        procedure :: updateNetworkVoltages
-        ! procedure :: pointNetworkVoltages
+        procedure :: updateNetworkVoltagesFromCircuit
         procedure :: initTerminations
+        
+        ! procedure :: createCurrentUpdateList
+
 
     end type
 
@@ -103,8 +108,8 @@ contains
 #endif        
         call res%circuit%readInput(description, printInput)
         call res%circuit%setModStopTimes(dt)
-        call res%initTerminations()
-        ! call res%pointNetworkVoltages()
+        ! call res%initTerminations()
+        ! call res%createCurrentUpdateList()
     end function
 
     subroutine initTerminations(this)
@@ -162,50 +167,50 @@ contains
         end select
     end function isSimpleTermination
 
-    ! subroutine pointNetworkVoltages(this)
+
+
+    ! subroutine createCurrentUpdateList(this)
     !     class(network_manager_t) :: this
     !     integer :: i, j
-    !     character(len=:), allocatable :: name
-    !     integer :: name_id
+    !     character(len=256), allocatable :: list(:)
+    !     allocate(list(0))
     !     do i = 1, size(this%networks)
     !         do j = 1, this%networks(i)%number_of_nodes
-    !             name_id = findVoltageIndexByName(this%circuit%nodes%names, this%networks(i)%nodes(j)%name)
-    !             this%networks(i)%nodes(j)%v => this%circuit%nodes%values(name_id)%voltage
-    !             ! this%networks(i)%nodes(j)%v = this%circuit%getNodeVoltage(this%networks(i)%nodes(j)%name)
+    !             call this%circuit%updateNodeCurrentList(this%networks(i)%nodes(j)%name, this%networks(i)%nodes(j)%i, list)
     !         end do
     !     end do
-
+    !     this%currentUpdateList = list
+    !     write(*,*) list
     ! end subroutine
-
-    subroutine updateNetworkVoltages(this)
-        class(network_manager_t) :: this
-        integer :: i, j
-        do i = 1, size(this%networks)
-            do j = 1, this%networks(i)%number_of_nodes
-                this%networks(i)%nodes(j)%v = this%circuit%getNodeVoltage(this%networks(i)%nodes(j)%name)
-            end do
-        end do
-
-    end subroutine
 
     subroutine updateCircuitCurrentsFromNetwork(this)
         class(network_manager_t) :: this
         integer :: i, j
         character(len=256), allocatable :: list(:)
+        character(len=:), allocatable :: batch
+
         allocate(list(0))
         do i = 1, size(this%networks)
             do j = 1, this%networks(i)%number_of_nodes
                 call this%circuit%updateNodeCurrentList(this%networks(i)%nodes(j)%name, this%networks(i)%nodes(j)%i, list)
             end do
         end do
-        write(*,*) list
-        call this%circuit%updateNodeCurrent(list)
+        batch = ''
+        do i = 1, size(list)
+            if (i == 1) then
+                batch = trim(list(i))
+            else
+                batch = trim(batch) // '; ' // trim(list(i))
+            end if
+        end do        
+        write(*,*) batch
+        call this%circuit%updateNodeCurrent(batch)
+        ! call this%circuit%updateNodeCurrent(this%currentUpdatelist)
     end subroutine
 
-    subroutine network_advanceVoltage(this, step)
+    subroutine network_advanceVoltage(this)
         class(network_manager_t) :: this
         integer :: i, j, idx
-        integer, optional :: step
 
         ! Update simple terminations directly in Fortran
         ! idx = 1
@@ -218,19 +223,57 @@ contains
         !         end if
         !     end do
         ! end do
-
         ! Update complex terminations via ngspice
         ! if (this%num_ngspice > 0) then
+
         call this%updateCircuitCurrentsFromNetwork()
+        ! call this%circuit%updateNodeCurrent(this%currentUpdatelist)        
         call this%circuit%step()
-        if (present(step)) then 
-            if (mod(step,100) == 0) then
-                call this%circuit%clearControlStructures()
-            end if
-        end if
-        this%circuit%time = this%circuit%time + this%circuit%dt
-        call this%updateNetworkVoltages()
-        ! end if
+        call this%updateNetworkVoltagesFromCircuit()
+
+        this%counter = this%counter + 1
+        if (mod(this%counter, 100) == 0) call this%circuit%clearControlStructures()
+
+    end subroutine
+
+
+    subroutine updateNetworkVoltagesFromCircuit(this)
+        class(network_manager_t) :: this
+        integer :: i, j, idx
+        type(vectorInfo_t), pointer :: info
+        type(c_ptr) :: info_ptr
+        real(kind=c_double), pointer :: values(:)
+        type(string_t), allocatable :: names(:)
+
+        do i = 1, size(this%networks)
+            do j = 1, this%networks(i)%number_of_nodes
+                info_ptr = get_vector_info(trim(this%networks(i)%nodes(j)%name)//c_null_char)
+                if (.not. c_associated(info_ptr)) then
+                    call WarnErrReport('Ngspice returned null vector info for '//trim(this%networks(i)%nodes(j)%name), .true.)
+                    return
+                end if
+
+                call c_f_pointer(info_ptr, info)
+                if (.not. c_associated(info%vRealData)) then
+                    call WarnErrReport('Ngspice returned null vector data for '//trim(this%networks(i)%nodes(j)%name), .true.)
+                    return
+                end if
+                if (info%vLength <= 0) then
+                    call WarnErrReport('Ngspice returned empty vector for '//trim(this%networks(i)%nodes(j)%name), .true.)
+                    return
+                end if
+
+                call c_f_pointer(info%vRealData, values,shape=[info%vLength])
+                if (this%networks(i)%nodes(j)%name /= "time") then 
+                    this%networks(i)%nodes(j)%v = values(ubound(values,1))
+                else 
+                    write(*,*) 'time node'
+                    ! this%nodes%values(i)%time = values(ubound(values,1))
+                end if
+            end do
+        end do
+
+
     end subroutine
 
 end module

@@ -825,6 +825,7 @@ contains
 
                 buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
+
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
                 call appendToStringArray(res, buff) 
                 call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
@@ -1163,8 +1164,8 @@ contains
         if (stat /= 0) return
         write(sConductor,'(I0)') node%conductor_in_cable
         res%name = trim(node%belongs_to_cable%name)//"_"//trim(sConductor)//"_"//nodeSideToString(node%side)
-        res%v = 0.0
-        res%i = 0.0
+        ! res%v = 0.0
+        ! res%i = 0.0
         res%bundle_number = d
         res%conductor_number = conductor_number
         
@@ -1494,6 +1495,11 @@ contains
 
         buff = trim(".option reltol = 0.005 gmin=1e-50")
         call appendToStringArray(description, buff)       
+        ! buff = trim("set xtrtol=1")
+        ! buff = trim(".option klu")
+        ! call appendToStringArray(description, buff)       
+        ! buff = trim(".option rshunt = 1.0e12")
+        ! call appendToStringArray(description, buff)       
         buff = trim(".tran "//sdt//" "//sTime//" 0 "//sDelta)
         call appendToStringArray(description, buff)       
     end subroutine

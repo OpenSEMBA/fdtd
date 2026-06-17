@@ -16,12 +16,11 @@ module circuit_m
         real(kind=RKIND_TIEMPO), dimension(:), allocatable :: time
         real(kind=RKIND), dimension(:), allocatable :: value
         integer :: source_type
-    contains 
-        procedure :: interpolate
     end type
 
     type VI_t
         real(kind=RKIND) :: voltage
+        ! real(kind=RKIND), pointer :: voltage => null()
         real(kind=RKIND) :: current
         real(kind=RKIND_TIEMPO) :: time
     end type
@@ -49,19 +48,15 @@ module circuit_m
         procedure :: setStopTimes
         procedure :: setModStopTimes
         procedure :: getNodeVoltage
-        procedure :: getNodeCurrent
         procedure :: updateNodes
         procedure :: getTime
         procedure :: updateNodeCurrent
         procedure :: updateNodeCurrentList
-        procedure :: updateCircuitSources
         procedure :: modifyLineCapacitorValue
 
         procedure :: clearControlStructures
         procedure :: printCWD
 
-        procedure :: getRetrievableVectors
-        procedure, private :: setCurrentCircuitPlot
     end type circuit_t
 
 contains
@@ -82,49 +77,6 @@ contains
     end subroutine
 
 
-    real(kind=rkind) function interpolate(this, time, dt) result(res)
-        class(source_t) :: this
-        real(kind=RKIND_TIEMPO) :: time, dt
-        real(kind=RKIND_TIEMPO) :: t_eval
-        real(kind=RKIND) :: x1, x2, y1, y2
-        integer :: index, n
-        real(kind=rkind), dimension(:), allocatable :: timediff
-
-        n = size(this%time)
-        if (n == 0) then
-            res = 0.0_RKIND
-            return
-        end if
-
-        t_eval = time - dt
-
-        ! Clamp to avoid extrapolation and division by zero at source tail.
-        if (t_eval <= this%time(1)) then
-            res = this%value(1)
-            return
-        end if
-        if (t_eval >= this%time(n)) then
-            res = this%value(n)
-            return
-        end if
-
-        timediff = this%time - t_eval
-        index = maxloc(timediff, 1, (timediff) <= 0)
-        if (index == 0) index = 1
-        if (index >= n) index = n - 1
-
-        x1 = this%time(index)
-        y1 = this%value(index)
-        x2 = this%time(index+1)
-        y2 = this%value(index+1)
-
-        if (x2 == x1) then
-            res = y2
-            return
-        end if
-
-        res = (t_eval*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
-    end function
 
     subroutine printCWD(this)
         class(circuit_t) :: this
@@ -155,7 +107,11 @@ contains
 
         allocate(this%nodes%names(size(names)))
         allocate(this%nodes%values(size(names)))
-
+        ! do i = 1, size(this%nodes%values)
+        !     this%nodes%values(i)%current = 0.0_RKIND
+        !     this%nodes%values(i)%voltage = 0.0_RKIND
+        !     this%nodes%values(i)%time = 0.0_RKIND_TIEMPO
+        ! end do
         allocate(this%nodes%sources(size(names)))
         do i = 1, size(names)
             this%nodes%names(i) = names(i)
@@ -166,6 +122,8 @@ contains
                 this%nodes%sources(i)%source_type = sources(i)%source_type
             end do
         end if
+
+        ! call command("version -f"//c_null_char)
 
     end subroutine
 
@@ -231,7 +189,6 @@ contains
             return
         end if
 
-        ! call this%updateCircuitSources(this%time)
         if (this%time == 0) then
             call this%run()
         else
@@ -242,8 +199,8 @@ contains
             call WarnErrReport('Ngspice reported a controlled exit after run/resume.', .true.)
             return
         end if
-
-        call this%updateNodes()
+        this%time = this%time + this%dt
+        ! call this%updateNodes()
 
     end subroutine
 
@@ -336,27 +293,6 @@ contains
 
     end function
 
-    subroutine updateCircuitSources(this, time)
-        class(circuit_t) :: this
-        real(kind=RKIND_TIEMPO), intent(in) :: time
-        real(kind=RKIND) :: interp
-        character(50) :: source_value
-        integer :: i, index
-        do i = 1, size(this%nodes%sources)
-            if (this%nodes%sources(i)%has_source) then
-                if (this%nodes%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
-                    write(source_value, *) interp
-                    call command("alter @V"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
-                else if (this%nodes%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
-                    write(source_value, *) interp
-                    call command("alter @I"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
-                end if
-            end if
-        end do
-    end subroutine
-
     subroutine modifyLineCapacitorValue(this, name, c)
         class(circuit_t) :: this
         character(*), intent(in) :: name
@@ -391,7 +327,8 @@ contains
         ! real(kind=rkind) :: current
         ! character(50) :: sCurrent
         ! character(*) :: node_name
-         character(256), dimension(:), intent(in) :: list
+        ! character(256), dimension(:), intent(in) :: list
+        character(:), allocatable, intent(in) :: list
         ! if (index(node_name, "initial") /= 0) then
         !     write(sCurrent, *) current
         ! else if (index(node_name, "end") /= 0) then
@@ -407,7 +344,6 @@ contains
         type(vectorInfo_t), pointer :: info
         type(c_ptr) :: info_ptr
         real(kind=c_double), pointer :: values(:)
-
         type(string_t), allocatable :: names(:)
         if (has_error() /= 0) then
             call WarnErrReport('Ngspice reported a controlled exit while updating nodes.', .true.)
@@ -447,12 +383,6 @@ contains
         res = this%nodes%values(findVoltageIndexByName(this%nodes%names, name))%voltage
     end function
 
-    function getNodeCurrent(this, name) result(res)
-        class(circuit_t) :: this
-        character(len=*), intent(in) :: name
-        real(kind=rkind) :: res
-        res = this%nodes%values(findVoltageIndexByName(this%nodes%names, name))%current
-    end function
 
     function getTime(this) result(res)
         class(circuit_t) :: this
@@ -489,91 +419,6 @@ contains
         end do
     end function    
 
-    subroutine getRetrievableVectors(this, names)
-        class(circuit_t) :: this
-        type(string_t), allocatable, intent(out) :: names(:)
-
-        integer, parameter :: MAX_VECS = 100000
-        type(c_ptr) :: plot_ptr, vecs_ptr, info_ptr
-        type(c_ptr), pointer :: vecs(:)
-        type(string_t), allocatable :: tmp(:)
-        type(string_t) :: cand
-        integer :: i, n
-
-        call this%setCurrentCircuitPlot()
-
-        plot_ptr = curplot()
-        if (.not. c_associated(plot_ptr)) then
-            allocate(names(0))
-            return
-        end if
-
-        vecs_ptr = allvecs_current()
-        if (.not. c_associated(vecs_ptr)) then
-            allocate(names(0))
-            return
-        end if
-
-        call c_f_pointer(vecs_ptr, vecs, [MAX_VECS])
-        allocate(tmp(MAX_VECS))
-        n = 0
-
-        do i = 1, MAX_VECS
-            if (.not. c_associated(vecs(i))) exit
-
-            cand = getName(vecs(i))
-            if (cand%length <= 0) cycle
-
-            info_ptr = get_vector_info(trim(cand%name)//c_null_char)
-            if (c_associated(info_ptr)) then
-                write(*,'(A)') trim(cand%name)
-                n = n + 1
-                tmp(n) = cand
-            end if
-        end do
-
-        allocate(names(n))
-        if (n > 0) names = tmp(1:n)
-        deallocate(tmp)
-    end subroutine getRetrievableVectors
-
-    subroutine setCurrentCircuitPlot(this)
-        class(circuit_t) :: this
-        integer, parameter :: MAX_PLOTS = 128
-        type(c_ptr) :: cur_ptr, plots_ptr, info_ptr
-        type(c_ptr), pointer :: plots(:)
-        type(string_t) :: p
-        integer :: i
-        character(len=300) :: qualified_name
-
-        cur_ptr = curplot()
-        if (c_associated(cur_ptr)) then
-            p = getName(cur_ptr)
-            if (p%length > 0) then
-                if (trim(p%name(1:p%length)) /= 'const') return
-            end if
-        end if
-
-        plots_ptr = allplots()
-        if (.not. c_associated(plots_ptr)) return
-        call c_f_pointer(plots_ptr, plots, [MAX_PLOTS])
-
-        ! p = getName(plots(6))
-
-        do i = 9, MAX_PLOTS
-            if (.not. c_associated(plots(i))) cycle
-            p = getName(plots(i))
-            if (p%length <= 0) cycle
-            if (trim(p%name(1:p%length)) == 'const') cycle
-
-            qualified_name = trim(p%name(1:p%length)) // '.time'
-            info_ptr = get_vector_info(trim(qualified_name) // c_null_char)
-            if (c_associated(info_ptr)) then
-                call command('setplot ' // trim(p%name(1:p%length)) // c_null_char)
-                return
-            end if
-        end do
-    end subroutine setCurrentCircuitPlot
 
 
     
