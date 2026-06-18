@@ -1610,16 +1610,29 @@ contains
         end do
     end subroutine
 
-    ! Creates a symbolic link from src to dst in a portable way.
+    ! Creates a symbolic link (dst -> src) in a portable way.
     ! SYMLNK is a GFortran-specific extension not available in Intel Fortran.
-    ! On POSIX systems (Linux/macOS) we use execute_command_line with 'ln -sf'.
-    ! On Windows the filesystem is case-insensitive, so the symlink is not needed.
+    ! ISO C binding is used to call the POSIX symlink() function directly,
+    ! avoiding shell execution and any command-injection risk.
+    ! On Windows (_WIN32) the filesystem is case-insensitive so the symlink
+    ! is not needed and the body is compiled out.
     subroutine create_symlink(src, dst)
+        use iso_c_binding, only: c_int, c_char, c_null_char
         character(len=*), intent(in) :: src, dst
 #ifndef _WIN32
-        integer :: exit_status
-        call execute_command_line('ln -sf "' // trim(src) // '" "' // trim(dst) // '"', &
-                                  wait=.true., exitstat=exit_status)
+        interface
+            function c_symlink(target, linkpath) bind(C, name="symlink") result(res)
+                use iso_c_binding, only: c_int, c_char
+                character(kind=c_char), intent(in) :: target(*), linkpath(*)
+                integer(c_int) :: res
+            end function c_symlink
+        end interface
+        integer(c_int) :: res
+        res = c_symlink(trim(src)//c_null_char, trim(dst)//c_null_char)
+        if (res /= 0) then
+            call WarnErrReport('create_symlink: failed to create symlink from ' // &
+                               trim(src) // ' to ' // trim(dst))
+        end if
 #endif
     end subroutine create_symlink
 
