@@ -650,7 +650,7 @@ contains
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
                 call appendToStringArray(res, buff) 
-                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+                call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
 
                 buff = trim(trim("R" // node%name) // "_S " // trim(node%name) // "_genR " // trim(end_node) //" "// trim(generator_r) )
                 call appendToStringArray(res, buff) 
@@ -703,7 +703,7 @@ contains
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
                 call appendToStringArray(res, buff) 
-                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+                call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
 
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // " " // trim(end_node) //" "// trim(generator_r))
                 call appendToStringArray(res, buff) 
@@ -758,7 +758,7 @@ contains
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
                 call appendToStringArray(res, buff) 
-                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+                call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
 
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // node%name //"_S " //trim(generator_r))
                 call appendToStringArray(res, buff) 
@@ -818,7 +818,7 @@ contains
 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
                 call appendToStringArray(res, buff) 
-                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+                call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
 
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
                 call appendToStringArray(res, buff) 
@@ -898,7 +898,7 @@ contains
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
                 call appendToStringArray(res, buff) 
-                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+                call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
 
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // trim(end_node) //" " // trim(generator_r) )
                 call appendToStringArray(res, buff) 
@@ -1028,7 +1028,7 @@ contains
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
                 call appendToStringArray(res, buff) 
-                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+                call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
 
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
                 call appendToStringArray(res, buff) 
@@ -1099,7 +1099,7 @@ contains
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
                 call appendToStringArray(res, buff) 
-                call symlnk(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+                call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
 
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
                 call appendToStringArray(res, buff) 
@@ -1610,5 +1610,17 @@ contains
         end do
     end subroutine
 
+    ! Creates a symbolic link from src to dst in a portable way.
+    ! SYMLNK is a GFortran-specific extension not available in Intel Fortran.
+    ! On POSIX systems (Linux/macOS) we use execute_command_line with 'ln -sf'.
+    ! On Windows the filesystem is case-insensitive, so the symlink is not needed.
+    subroutine create_symlink(src, dst)
+        character(len=*), intent(in) :: src, dst
+#ifndef _WIN32
+        integer :: exit_status
+        call execute_command_line('ln -sf "' // trim(src) // '" "' // trim(dst) // '"', &
+                                  wait=.true., exitstat=exit_status)
+#endif
+    end subroutine create_symlink
 
 end module
