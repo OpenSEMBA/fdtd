@@ -107,11 +107,6 @@ contains
 
         allocate(this%nodes%names(size(names)))
         allocate(this%nodes%values(size(names)))
-        ! do i = 1, size(this%nodes%values)
-        !     this%nodes%values(i)%current = 0.0_RKIND
-        !     this%nodes%values(i)%voltage = 0.0_RKIND
-        !     this%nodes%values(i)%time = 0.0_RKIND_TIEMPO
-        ! end do
         allocate(this%nodes%sources(size(names)))
         do i = 1, size(names)
             this%nodes%names(i) = names(i)
@@ -123,7 +118,6 @@ contains
             end do
         end if
 
-        ! call command("version -f"//c_null_char)
 
     end subroutine
 
@@ -200,7 +194,6 @@ contains
             return
         end if
         this%time = this%time + this%dt
-        ! call this%updateNodes()
 
     end subroutine
 
@@ -208,8 +201,6 @@ contains
         class(circuit_t) :: this
         call command('run ' // c_null_char)
     end subroutine
-
-
 
     subroutine setStopTimes(this, finalTime, dt)
         class(circuit_t) :: this
@@ -304,38 +295,25 @@ contains
 
     end subroutine
 
-    subroutine updateNodeCurrentList(this, node_name, current, list)
+    subroutine updateNodeCurrentList(this, node_name, current, batch)
         class(circuit_t) :: this
         real(kind=rkind) :: current
         character(50) :: sCurrent
         character(*) :: node_name
-        character(256), dimension(:), allocatable, intent(inout) :: list
+        character(:), allocatable, intent(inout) :: batch
         character(len=256) :: buff
         if (index(node_name, "initial") /= 0) then
             write(sCurrent, *) current
         else if (index(node_name, "end") /= 0) then
             write(sCurrent, *) -current
         end if
-        buff = trim("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
-        call append(list, buff)
-        ! call command("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
+        batch = trim(batch) // trim("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent)) // '; '
     end subroutine
 
-    subroutine updateNodeCurrent(this, list)
-    ! subroutine updateNodeCurrent(this, node_name, current, list)
+    subroutine updateNodeCurrent(this, batch)
         class(circuit_t) :: this
-        ! real(kind=rkind) :: current
-        ! character(50) :: sCurrent
-        ! character(*) :: node_name
-        ! character(256), dimension(:), intent(in) :: list
-        character(:), allocatable, intent(in) :: list
-        ! if (index(node_name, "initial") /= 0) then
-        !     write(sCurrent, *) current
-        ! else if (index(node_name, "end") /= 0) then
-        !     write(sCurrent, *) -current
-        ! end if
-        call command(list)
-        ! call command("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
+        character(:), allocatable, intent(in) :: batch
+        call command(batch// c_null_char)
     end subroutine
 
     subroutine updateNodes(this) 

@@ -96,6 +96,7 @@ def test_paul_9_6(tmp_path):
 @pytest.mark.probes
 def test_spice_multilines_opamp(tmp_path):
     fn = CASES_FOLDER + 'multilines_opamp/multilines_opamp.fdtd.json'
+    setNgspice(tmp_path)
 
     solver = FDTD(input_filename=fn,
                   path_to_exe=SEMBA_EXE,
@@ -122,6 +123,7 @@ def test_spice_multilines_opamp(tmp_path):
 @pytest.mark.probes
 def test_spice_connectors_diode(tmp_path):
     fn = CASES_FOLDER + 'spice_connectors/spice_connectors.fdtd.json'
+    setNgspice(tmp_path)
 
     solver = FDTD(input_filename=fn,
                   path_to_exe=SEMBA_EXE,
@@ -213,7 +215,7 @@ def test_spice_opamp_saturation(tmp_path):
 @pytest.mark.probes
 def test_spice_zener(tmp_path):
     fn = CASES_FOLDER + 'zener/zener.fdtd.json'
-
+    setNgspice(tmp_path)
     solver = FDTD(input_filename=fn,
                   path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)

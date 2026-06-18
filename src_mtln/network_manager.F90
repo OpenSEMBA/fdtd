@@ -25,9 +25,6 @@ module network_manager_m
         procedure :: updateNetworkVoltagesFromCircuit
         procedure :: initTerminations
         
-        ! procedure :: createCurrentUpdateList
-
-
     end type
 
     interface network_manager_t
@@ -109,7 +106,6 @@ contains
         call res%circuit%readInput(description, printInput)
         call res%circuit%setModStopTimes(dt)
         ! call res%initTerminations()
-        ! call res%createCurrentUpdateList()
     end function
 
     subroutine initTerminations(this)
@@ -168,44 +164,17 @@ contains
     end function isSimpleTermination
 
 
-
-    ! subroutine createCurrentUpdateList(this)
-    !     class(network_manager_t) :: this
-    !     integer :: i, j
-    !     character(len=256), allocatable :: list(:)
-    !     allocate(list(0))
-    !     do i = 1, size(this%networks)
-    !         do j = 1, this%networks(i)%number_of_nodes
-    !             call this%circuit%updateNodeCurrentList(this%networks(i)%nodes(j)%name, this%networks(i)%nodes(j)%i, list)
-    !         end do
-    !     end do
-    !     this%currentUpdateList = list
-    !     write(*,*) list
-    ! end subroutine
-
     subroutine updateCircuitCurrentsFromNetwork(this)
         class(network_manager_t) :: this
         integer :: i, j
-        character(len=256), allocatable :: list(:)
         character(len=:), allocatable :: batch
-
-        allocate(list(0))
+        batch = ''
         do i = 1, size(this%networks)
             do j = 1, this%networks(i)%number_of_nodes
-                call this%circuit%updateNodeCurrentList(this%networks(i)%nodes(j)%name, this%networks(i)%nodes(j)%i, list)
+                call this%circuit%updateNodeCurrentList(this%networks(i)%nodes(j)%name, this%networks(i)%nodes(j)%i, batch)
             end do
         end do
-        batch = ''
-        do i = 1, size(list)
-            if (i == 1) then
-                batch = trim(list(i))
-            else
-                batch = trim(batch) // '; ' // trim(list(i))
-            end if
-        end do        
-        write(*,*) batch
         call this%circuit%updateNodeCurrent(batch)
-        ! call this%circuit%updateNodeCurrent(this%currentUpdatelist)
     end subroutine
 
     subroutine network_advanceVoltage(this)
@@ -227,7 +196,6 @@ contains
         ! if (this%num_ngspice > 0) then
 
         call this%updateCircuitCurrentsFromNetwork()
-        ! call this%circuit%updateNodeCurrent(this%currentUpdatelist)        
         call this%circuit%step()
         call this%updateNetworkVoltagesFromCircuit()
 

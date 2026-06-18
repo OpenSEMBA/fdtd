@@ -12,7 +12,7 @@ from resource import getrusage as resource_usage, RUSAGE_SELF
 from time import time as timestamp
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../../', 'src_pyWrapper'))
-SEMBA_EXE = '../../../build-rls/bin/semba-fdtd'
+SEMBA_EXE = '../../../build-rls-nomtln/bin/semba-fdtd'
 OUTPUTS_FOLDER = '../../outputs/'
 SPINIT_FOLDER = '../../spinit/'
 from pyWrapper import *
@@ -48,27 +48,14 @@ def copyXSpiceModels(temp_dir, sys_name):
 cwd = os.getcwd()
 setNgspice(cwd)
 
-
 #####################################################
 # %% Run solver
 
 fn = 'towelHanger.fdtd.json'
-# times_mtln_2 = np.array([])
 solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
-# for i in range(30):
 solver.cleanUp()
-# start_time, start_resources = timestamp(), resource_usage(RUSAGE_SELF) 
 solver.run()
-# end_resources, end_time = resource_usage(RUSAGE_SELF), timestamp()
-# times_mtln_2 = np.append(times_mtln_2, end_time - start_time)
 #####################################################
-# %% Plot times
-# counts, bins = np.histogram(times)
-counts_m, bins_m = np.histogram(times_mtln_2)
-# plt.stairs(counts, bins)
-plt.stairs(counts_m, bins_m)
-# plt.hist(counts, bins)
-# plt.show()
 # %% Plot results
 
 p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),

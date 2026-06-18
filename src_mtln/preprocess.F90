@@ -646,8 +646,6 @@ contains
 
             write(generator_r, *) termination%source%resistance
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                ! buff = trim(trim("V" // node%name) // "_S " // trim(node%name) // "_S " // trim(node%name) //"_genR" //" dc 0" )
-                ! call appendToStringArray(res, buff) 
                 buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
@@ -701,9 +699,6 @@ contains
             buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                ! buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name // "_genR " //" dc 0" )
-                ! call appendToStringArray(res, buff) 
-
                 buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
@@ -758,8 +753,6 @@ contains
         if (termination%source%path_to_excitation /= "") then
             write(generator_r, *) termination%source%resistance
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                ! buff = trim("V" // node%name // "_S " // node%name // " " // node%name //"_genR dc 0" )
-                ! call appendToStringArray(res, buff) 
 
                 buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
@@ -820,9 +813,6 @@ contains
             buff = trim("L" // node%name // " " // node%name // "_R " // node%name //"_S")//" "//trim(termination_l)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                ! buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
-                ! call appendToStringArray(res, buff) 
-
                 buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
 
@@ -904,8 +894,6 @@ contains
             buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                ! buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
-                ! call appendToStringArray(res, buff) 
                 buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
@@ -1036,8 +1024,6 @@ contains
             buff = trim(XYZ(3:3) // node%name // " " // node%name // " " // node%name //"_S " // termination_z)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                ! buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
-                ! call appendToStringArray(res, buff) 
                 buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
@@ -1109,9 +1095,6 @@ contains
             call appendToStringArray(res, buff)
 
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                ! buff = trim("V" // node%name // "_S " // node%name // "_S " // node%name //"_genR dc 0" )
-                ! call appendToStringArray(res, buff) 
-
                 buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
@@ -1495,11 +1478,6 @@ contains
 
         buff = trim(".option reltol = 0.005 gmin=1e-50")
         call appendToStringArray(description, buff)       
-        ! buff = trim("set xtrtol=1")
-        ! buff = trim(".option klu")
-        ! call appendToStringArray(description, buff)       
-        ! buff = trim(".option rshunt = 1.0e12")
-        ! call appendToStringArray(description, buff)       
         buff = trim(".tran "//sdt//" "//sTime//" 0 "//sDelta)
         call appendToStringArray(description, buff)       
     end subroutine
