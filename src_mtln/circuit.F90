@@ -365,7 +365,8 @@ contains
     function getTime(this) result(res)
         class(circuit_t) :: this
         real(kind=rkind_tiempo) :: res
-        res = this%nodes%values(findIndexByName(this%nodes%names, "time"))%time
+        res = this%time
+        ! res = this%nodes%values(findIndexByName(this%nodes%names, "time"))%time
     end function
 
     function findIndexByName(names, name) result(res)

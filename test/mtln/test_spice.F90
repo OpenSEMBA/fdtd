@@ -31,6 +31,7 @@ integer function test_spice_read_message() bind(C) result(error_cnt)
     call circuit%init(names=names)
     call circuit%readInput(input)
     call circuit%step()
+    call circuit%updateNodes()
 
     result = [24.000000000000000, 9.7469741675197206, 15.000000000000000, 24.000000000000000]
     if (size(circuit%nodes%values) /= 4) then 
@@ -66,6 +67,7 @@ integer function test_spice_dc() bind(C) result(error_cnt)
     netlist = PATH_TO_TEST_DATA//'netlists/netlist_dc.cir'
     call circuit%init(names = names, netlist = netlist)
     call circuit%step()
+    call circuit%updateNodes()
 
     result = [24.000000000000000, 9.7469741675197206, 15.000000000000000, 24.000000000000000]
     if (size(circuit%nodes%values) /= 4) then 
@@ -108,7 +110,7 @@ integer function test_spice_tran() bind(C) result(error_cnt)
     call circuit%setStopTimes(finalTime, circuit%dt)
     do while (circuit%time < finalTime)
         call circuit%step()
-        circuit%time = circuit%time + circuit%dt
+        call circuit%updateNodes()
         if (checkNear_time(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
@@ -155,7 +157,7 @@ integer function test_spice_tran_2() bind(C) result(error_cnt)
     call circuit%setStopTimes(finalTime, circuit%dt)
     do while (circuit%time < finalTime)
         call circuit%step()
-        circuit%time = circuit%time + circuit%dt
+        call circuit%updateNodes()
         if (checkNear_time(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
@@ -185,6 +187,7 @@ integer function test_spice_current_source() bind(C) result(error_cnt)
     real(kind=rkind) ::resistance
     integer :: i
     real(kind=rkind) :: current
+    character(50) :: sCurrent
     type(string_t), dimension(1) :: names
     names(1) = string_t("1_initial", 9)
 
@@ -200,9 +203,10 @@ integer function test_spice_current_source() bind(C) result(error_cnt)
     call circuit%init(names = names, netlist = netlist)
     call circuit%setStopTimes(finalTime, circuit%dt)
     do while (circuit%time < finalTime)
-        ! call circuit%updateNodeCurrent("1_initial", current)
+        write(sCurrent, *) current
+        call command("alter @I1_initial[dc]="//trim(sCurrent))
         call circuit%step()
-        circuit%time = circuit%time + circuit%dt
+        call circuit%updateNodes()
         if (checkNear(circuit%getNodeVoltage("1_initial"), current*resistance, 0.01_rkind) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
@@ -240,7 +244,7 @@ integer function test_spice_multiple() bind(C) result(error_cnt)
     call circuit%setStopTimes(finalTime, dt)
     do while (circuit%time < finalTime)
         call circuit%step()
-        circuit%time = circuit%time + circuit%dt
+        call circuit%updateNodes()
         if (checkNear_time(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
@@ -277,7 +281,7 @@ integer function test_spice_stop_mod_times() bind(C) result(error_cnt)
     call circuit%setModStopTimes(circuit%dt)
     do while (circuit%time < finalTime)
         call circuit%step()
-        circuit%time = circuit%time + circuit%dt
+        call circuit%updateNodes()
         if (checkNear_time(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
