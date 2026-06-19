@@ -8,7 +8,7 @@ module mtl_bundle_m
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #endif
-    use mtln_types_m, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use mtln_types_m, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE, TERMINAL_NODE_SIDE_END, TERMINAL_NODE_SIDE_INI
     use FDETYPES_m, only: RKIND, RKIND_TIEMPO
     implicit none
 
@@ -459,6 +459,7 @@ contains
         end do
 
     end subroutine
+
 
 #ifdef CompileWithMPI
     subroutine Comm_MPI_V(this)

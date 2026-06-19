@@ -815,7 +815,6 @@ contains
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
                 buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
-
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
                 call appendToStringArray(res, buff) 
                 call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
@@ -823,12 +822,19 @@ contains
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-                buff = trim("I" // node%name // "_S " // end_node // " " //node%name // "_S  dc 0" )
+                ! buff = trim("I" // node%name // "_S " // end_node // " " //node%name // "_S  dc 0" )
+                ! call appendToStringArray(res, buff) 
+                buff=trim("A" // node%name) // "_S %i(["//trim(end_node) // " " // trim(node%name) //"_S]) filesrc"
                 call appendToStringArray(res, buff) 
+                buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
+                call appendToStringArray(res, buff) 
+                call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
+
                 if (termination%source%resistance /= 1.0e22_rkind) then 
                     buff = trim("R" // node%name // "_S " // end_node // " " //node%name // "_S " // trim(generator_r))
                     call appendToStringArray(res, buff) 
                 end if
+
             end if
         else
             buff = trim("L" // node%name // " " // node%name // "_R " // end_node)//" "//trim(termination_l)

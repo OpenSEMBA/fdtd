@@ -12,6 +12,8 @@ module network_manager_m
         type(network_t), dimension(:), allocatable :: networks
         type(circuit_t) :: circuit
         type(simple_termination_t), allocatable :: terminations(:)
+        type(nw_node_t), allocatable :: open_nodes(:)
+        logical :: has_active_node = .false.
         integer, allocatable :: ngspice_node_indices(:)
         integer :: num_simple
         integer :: num_ngspice
@@ -98,6 +100,9 @@ contains
         res%dt = dt
         res%time = 0.0
         res%networks = networks
+        
+        res%open_nodes = collectOpenNodes(networks)
+
         call res%circuit%init(copy_node_names(networks), copy_sources(networks))
         res%circuit%dt = dt
 #ifdef CompileWithRelease
@@ -106,6 +111,32 @@ contains
         call res%circuit%readInput(description, printInput)
         call res%circuit%setModStopTimes(dt)
         ! call res%initTerminations()
+
+        contains
+        
+        function collectOpenNodes(nws) result(res)
+            type(network_t), dimension(:), intent(in) :: nws
+            integer :: i, j, n
+            type(nw_node_t), allocatable :: res(:)
+            n = 0
+            do i = 1, size(nws)
+                do j = 1, nws(i)%number_of_nodes
+                    if (nws(i)%nodes(j)%open) n = n + 1
+                end do
+            end do
+            allocate(res(n))
+            if (n==0) return
+            n = 0
+            do i = 1, size(nws)
+                do j = 1, nws(i)%number_of_nodes
+                    if (nws(i)%nodes(j)%open) then 
+                        n = n + 1
+                        res(n) = nws(i)%nodes(j)
+                    end if
+                end do
+            end do
+            
+        end function
     end function
 
     subroutine initTerminations(this)
@@ -232,11 +263,8 @@ contains
                 end if
 
                 call c_f_pointer(info%vRealData, values,shape=[info%vLength])
-                if (this%networks(i)%nodes(j)%name /= "time") then 
+                if (this%networks(i)%nodes(j)%name /= "time" .and. .not. this%networks(i)%nodes(j)%open) then 
                     this%networks(i)%nodes(j)%v = values(ubound(values,1))
-                else 
-                    write(*,*) 'time node'
-                    ! this%nodes%values(i)%time = values(ubound(values,1))
                 end if
             end do
         end do
