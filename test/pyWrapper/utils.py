@@ -1,4 +1,5 @@
 from src_pyWrapper.pyWrapper import *
+import os
 import shutil
 import glob
 import re
@@ -31,6 +32,23 @@ no_mpi_skip = pytest.mark.skipif(
     os.getenv("SEMBA_FDTD_ENABLE_MPI") == "OFF",
     reason="MPI is not available",
 )
+
+def _default_semba_exe():
+    exe_name = 'semba-fdtd.exe' if platform == "win32" else 'semba-fdtd'
+    build_dirs = ['build']
+
+    if os.getenv("SEMBA_FDTD_ENABLE_MPI") == "ON":
+        build_dirs.extend(['build-rls-mpi', 'build-dbg-mpi'])
+    else:
+        build_dirs.extend(['build-rls', 'build-dbg'])
+
+    for build_dir in build_dirs:
+        candidate = os.path.join(os.getcwd(), build_dir, 'bin', exe_name)
+        if os.path.isfile(candidate):
+            return candidate
+
+    return os.path.join(os.getcwd(), 'build', 'bin', exe_name)
+
 
 # Use of absolute path to avoid conflicts when changing directory.
 if platform == "linux":
@@ -206,3 +224,12 @@ def compute_impedance(probe_path, time_exc, voltage_exc, freqs):
     V_f = dtft(V_interp, time_I, freqs)
     Z = V_f / I_f
     return time_I, current, Z
+
+def corrcoef_on_common_time(t_ref, y_ref, t_cmp, y_cmp):
+    t_ini = max(t_ref[0], t_cmp[0])
+    t_end = min(t_ref[-1], t_cmp[-1])
+    mask = (t_ref >= t_ini) & (t_ref <= t_end)
+    t_common = t_ref[mask]
+    y_ref_common = y_ref[mask]
+    y_cmp_interp = np.interp(t_common, t_cmp, y_cmp)
+    return np.corrcoef(y_ref_common, y_cmp_interp)[0, 1]
