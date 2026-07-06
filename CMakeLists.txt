@@ -57,6 +57,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
 		message(STATUS "Using GNU flags")
 
+		set(CMAKE_C_STANDARD 17)
+		set(CMAKE_C_STANDARD_REQUIRED ON)
+		set(CMAKE_C_EXTENSIONS ON)
 		set(CMAKE_CXX_FLAGS "-fopenmp")
 		set(CMAKE_Fortran_FLAGS "-fopenmp -ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
 		

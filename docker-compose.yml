@@ -9,6 +9,43 @@ services:
       - ./simulations:/work
     working_dir: /work
 
+  dev:
+    image: fdtd-dev:latest
+    build:
+      context: .
+      target: dev
+    environment:
+      HOME: /home/developer
+      XDG_CONFIG_HOME: /home/developer/.config
+      XDG_DATA_HOME: /home/developer/.local/share
+    volumes:
+      - type: bind
+        source: .
+        target: /home/developer/workspaces/fdtd
+      - type: bind
+        source: ${HOME}/.gitconfig
+        target: /home/developer/.gitconfig
+      - type: bind
+        source: ${HOME}/.ssh
+        target: /home/developer/.ssh
+        read_only: true
+      - type: bind
+        source: ${HOME}/.config/gh
+        target: /home/developer/.config/gh
+      - type: bind
+        source: ${HOME}/.config/opencode
+        target: /home/developer/.config/opencode
+      - type: bind
+        source: ${HOME}/.local/share/opencode
+        target: /home/developer/.local/share/opencode
+      - type: bind
+        source: ./build-dev
+        target: /home/developer/workspaces/fdtd/build-dev
+      - type: bind
+        source: ./build-dev-mpi
+        target: /home/developer/workspaces/fdtd/build-dev-mpi
+    working_dir: /home/developer/workspaces/fdtd
+    tty: true
   # Debug a simulation with gdbserver (connect from VSCode with launch.json)
   # Usage: docker compose run --rm -p 2345:2345 debug case.fdtd.json
   debug:
@@ -25,11 +62,11 @@ services:
     working_dir: /work
     entrypoint: ["gdbserver", ":2345", "/src/build/bin/semba-fdtd", "-i"]
 
-  # Build the project and run all tests
+  # Build the project and run non-MPI tests
   test:
     build:
       context: .
-      target: builder
+      target: test-builder
       args:
         BUILD_TYPE: Release
         ENABLE_MPI: "OFF"
@@ -38,6 +75,63 @@ services:
       SEMBA_FDTD_ENABLE_MPI: "OFF"
       SEMBA_FDTD_ENABLE_MTLN: "ON"
       SEMBA_FDTD_ENABLE_HDF: "ON"
+      SEMBA_EXE: /src/build/bin/semba-fdtd
     working_dir: /src
     command: >
-      sh -c "build/bin/fdtd_tests && python3 -m pytest test/ --durations=20"
+      sh -c "build/bin/fdtd_tests && python3 -m pytest test/ -m 'not mpi' --durations=20"
+
+  # Build with MPI enabled and run MPI integration tests
+  test-mpi:
+    build:
+      context: .
+      target: test-builder
+      args:
+        BUILD_TYPE: Release
+        ENABLE_MPI: "ON"
+        ENABLE_MTLN: "ON"
+    environment:
+      SEMBA_FDTD_ENABLE_MPI: "ON"
+      SEMBA_FDTD_ENABLE_MTLN: "ON"
+      SEMBA_FDTD_ENABLE_HDF: "ON"
+      SEMBA_EXE: /src/build/bin/semba-fdtd
+      OMPI_ALLOW_RUN_AS_ROOT: "1"
+      OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: "1"
+    working_dir: /src
+    command: >
+      sh -c "build/bin/fdtd_tests && python3 -m pytest test/ -m mpi --durations=20"
+
+  # Interactive shell in the non-MPI test image
+  shell:
+    build:
+      context: .
+      target: test-builder
+      args:
+        BUILD_TYPE: Debug
+        ENABLE_MPI: "OFF"
+        ENABLE_MTLN: "ON"
+    environment:
+      SEMBA_FDTD_ENABLE_MPI: "OFF"
+      SEMBA_FDTD_ENABLE_MTLN: "ON"
+      SEMBA_FDTD_ENABLE_HDF: "ON"
+      SEMBA_EXE: /src/build/bin/semba-fdtd
+    working_dir: /src
+    entrypoint: ["bash"]
+
+  # Interactive shell in the MPI-enabled test image
+  shell-mpi:
+    build:
+      context: .
+      target: test-builder
+      args:
+        BUILD_TYPE: Debug
+        ENABLE_MPI: "ON"
+        ENABLE_MTLN: "ON"
+    environment:
+      SEMBA_FDTD_ENABLE_MPI: "ON"
+      SEMBA_FDTD_ENABLE_MTLN: "ON"
+      SEMBA_FDTD_ENABLE_HDF: "ON"
+      SEMBA_EXE: /src/build/bin/semba-fdtd
+      OMPI_ALLOW_RUN_AS_ROOT: "1"
+      OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: "1"
+    working_dir: /src
+    entrypoint: ["bash"]
