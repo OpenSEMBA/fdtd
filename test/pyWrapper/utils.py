@@ -1,4 +1,5 @@
 from src_pyWrapper.pyWrapper import *
+import os
 import shutil
 import glob
 import re
@@ -31,6 +32,23 @@ no_mpi_skip = pytest.mark.skipif(
     os.getenv("SEMBA_FDTD_ENABLE_MPI") == "OFF",
     reason="MPI is not available",
 )
+
+def _default_semba_exe():
+    exe_name = 'semba-fdtd.exe' if platform == "win32" else 'semba-fdtd'
+    build_dirs = ['build']
+
+    if os.getenv("SEMBA_FDTD_ENABLE_MPI") == "ON":
+        build_dirs.extend(['build-rls-mpi', 'build-dbg-mpi'])
+    else:
+        build_dirs.extend(['build-rls', 'build-dbg'])
+
+    for build_dir in build_dirs:
+        candidate = os.path.join(os.getcwd(), build_dir, 'bin', exe_name)
+        if os.path.isfile(candidate):
+            return candidate
+
+    return os.path.join(os.getcwd(), 'build', 'bin', exe_name)
+
 
 # Use of absolute path to avoid conflicts when changing directory.
 if platform == "linux":
