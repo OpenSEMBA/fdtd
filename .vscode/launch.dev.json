@@ -1,0 +1,74 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug semba-fdtd (dbg)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-dbg/bin/semba-fdtd",
+      "args": ["${input:inputFile}"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "CMake: build Debug no-MPI"
+    },
+    {
+      "name": "Debug semba-fdtd (dbg-mpi)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-dbg-mpi/bin/semba-fdtd",
+      "args": ["${input:inputFile}"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "Debug fdtd_tests (dbg)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-dbg/bin/fdtd_tests",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "CMake: build Debug no-MPI"
+    },
+    {
+      "name": "Attach to process",
+      "type": "cppdbg",
+      "request": "attach",
+      "program": "${workspaceFolder}/build-dbg/bin/semba-fdtd",
+      "processId": "${command:pickProcess}",
+      "MIMode": "gdb"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "inputFile",
+      "type": "promptString",
+      "description": "Path to .fdtd.json input file",
+      "default": "testData/input_examples/sphere.fdtd.json"
+    }
+  ]
+}
