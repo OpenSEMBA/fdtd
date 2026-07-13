@@ -83,6 +83,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     openssh-client \
     nodejs \
     npm \
+    paraview \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
