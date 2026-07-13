@@ -27,6 +27,10 @@ if ! command -v opencode >/dev/null 2>&1; then
     warn "opencode is not available in PATH"
 fi
 
+if ! command -v paraview >/dev/null 2>&1 && ! command -v pvpython >/dev/null 2>&1; then
+    warn "ParaView is not available in PATH; rebuild the dev container image"
+fi
+
 if command -v git >/dev/null 2>&1; then
     git config --global --add safe.directory /home/developer/workspaces/fdtd >/dev/null 2>&1 || \
         warn "could not add workspace to git safe.directory"
@@ -34,6 +38,10 @@ fi
 
 if [ ! -d "$expected_home/.config/opencode" ]; then
     warn "$expected_home/.config/opencode is not mounted"
+fi
+
+if [ ! -d "$expected_home/.agents/skills" ]; then
+    warn "$expected_home/.agents/skills is not mounted"
 fi
 
 if [ ! -d "$expected_home/.local/share/opencode" ]; then

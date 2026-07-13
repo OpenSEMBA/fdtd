@@ -14,8 +14,8 @@ git submodule update --init --recursive
 
 | File | Description |
 |---|---|
-| `Dockerfile` | Multi-stage build: `builder` (compilation + tests) and `runtime` (binary only) |
-| `docker-compose.yml` | Services `solver` (run simulations) and `test` (build and test) |
+| `Dockerfile` | Multi-stage build: `builder` (compilation + tests), `dev` (development container), and `runtime` (binary only) |
+| `docker-compose.yml` | Services `solver` (run simulations), `dev` (development container), and `test` (build and test) |
 | `.dockerignore` | Excludes unnecessary files from the build context |
 
 ---
@@ -28,6 +28,16 @@ docker compose build solver  # runtime image for simulations
 ```
 
 `build` only constructs and saves the image to disk — it does not start any container. You only need to re-run it when the code changes.
+
+### Development container tools
+
+The `dev` image target includes developer-only tools used from the dev container, including ParaView for inspecting generated VTK/XDMF/HDF5 outputs. ParaView is installed in the `dev-tools` stage only, so runtime and test images do not carry the extra GUI package dependencies.
+
+If `paraview` or `pvpython` is missing inside the dev container, rebuild the dev image:
+
+```bash
+docker compose build dev
+```
 
 ### Build arguments
 
