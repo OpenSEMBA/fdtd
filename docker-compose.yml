@@ -36,6 +36,10 @@ services:
         source: ${HOME}/.config/opencode
         target: /home/developer/.config/opencode
       - type: bind
+        source: ${HOME}/.agents
+        target: /home/developer/.agents
+        read_only: true
+      - type: bind
         source: ${HOME}/.local/share/opencode
         target: /home/developer/.local/share/opencode
       - type: bind
