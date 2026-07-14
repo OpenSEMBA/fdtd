@@ -119,7 +119,7 @@ contains
             return
          end if
          
-         open (unit=unit, file=this%filePathTime, status="old", action="write", position="append")
+         open (newunit=unit, file=this%filePathTime, status="old", action="write", position="append")
 
          do i = 1, this%nTime
             write (unit, '(F12.6,1X,F12.6)') this%timeStep(i), this%valueForTime(i)
@@ -142,7 +142,7 @@ contains
             print *, "No data to write."
             return
          end if
-         open (unit=unit, file=this%filePathFreq, status="replace", action="write")
+         open (newunit=unit, file=this%filePathFreq, status="replace", action="write")
 
          do i = 1, this%nFreq
             write (unit, '(F12.6,1X,F12.6,1X,F12.6)') this%frequencySlice(i), real(this%valueForFreq(i)), aimag(this%valueForFreq(i))
