@@ -163,7 +163,7 @@ contains
          return
       end if
 
-      open (unit=unit, file=this%filePathTime, status="old", action="write", position="append")
+      open (newunit=unit, file=this%filePathTime, status="old", action="write", position="append")
 
       do i = 1, this%nTime
          write (unit, fmt) this%timeStep(i), this%valueForTime(i)
