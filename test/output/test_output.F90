@@ -789,12 +789,12 @@ integer function test_flush_movie_probe() bind(c) result(err)
    !movieElectricXObservable
    outputs(2)%movieProbe%nTime = 1
    outputs(2)%movieProbe%timeStep(1) = 0.5_RKIND_tiempo
-   outputs(2)%movieProbe%xValueForTime(1, :) = [0.1_RKIND, 0.2_RKIND, 0.3_RKIND, 0.4_RKIND]
+   outputs(2)%movieProbe%xValueForTime(1, :4) = [0.1_RKIND, 0.2_RKIND, 0.3_RKIND, 0.4_RKIND]
 
    !movieMagneticYObservable
    outputs(3)%movieProbe%nTime = 1
    outputs(3)%movieProbe%timeStep(1) = 0.5_RKIND_tiempo
-   outputs(3)%movieProbe%yValueForTime(1, :) = [0.1_RKIND, 0.2_RKIND, 0.3_RKIND, 0.4_RKIND]
+   outputs(3)%movieProbe%yValueForTime(1, :4) = [0.1_RKIND, 0.2_RKIND, 0.3_RKIND, 0.4_RKIND]
 
    !--- Dummy second update ---
    !movieCurrentObservable
@@ -807,12 +807,12 @@ integer function test_flush_movie_probe() bind(c) result(err)
    !movieElectricXObservable
    outputs(2)%movieProbe%nTime = 2
    outputs(2)%movieProbe%timeStep(2) = 0.75_RKIND_tiempo
-   outputs(2)%movieProbe%xValueForTime(2, :) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
+   outputs(2)%movieProbe%xValueForTime(2, :4) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
 
    !movieMagneticYObservable
    outputs(3)%movieProbe%nTime = 2
    outputs(3)%movieProbe%timeStep(2) = 0.75_RKIND_tiempo
-   outputs(3)%movieProbe%yValueForTime(2, :) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
+   outputs(3)%movieProbe%yValueForTime(2, :4) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
 
    call flush_outputs(dummysgg%tiempo, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
 
