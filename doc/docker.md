@@ -1,255 +1,112 @@
 # Docker
 
-This document explains how to use Docker to build, test, and run semba-fdtd without installing any dependencies on your machine.
+Docker provides two environments for working with semba-fdtd.
+Both mount the repository at `/home/developer/workspaces/fdtd`, so build artefacts and simulation output are written to the host workspace.
 
-## Prerequisite: initialize submodules
+## Prerequisite
 
-Submodules must be initialized on the host before building the image, as the build depends on them:
+Initialise submodules before building an image:
 
 ```bash
 git submodule update --init --recursive
 ```
 
-## Included files
+## Environments
 
-| File | Description |
-|---|---|
-| `Dockerfile` | Multi-stage build: `builder` (compilation + tests), `dev` (development container), and `runtime` (binary only) |
-| `docker-compose.yml` | Services `solver` (run simulations), `dev` (development container), and `test` (build and test) |
-| `.dockerignore` | Excludes unnecessary files from the build context |
+| Service | Purpose | Included tools |
+|---|---|---|
+| `quality` | Compile, test, run examples, and inspect generated output | GNU C/C++/Fortran compilers, CMake, Ninja, MPI, HDF5, Python, and ParaView |
+| `dev` | Interactive development and the Dev Container | Everything in `quality`, plus Git, GitHub CLI, SSH client, Node/npm, OpenCode, Fortran tools, and debuggers |
 
----
+`quality` intentionally excludes developer-only tools.
+Both environments include ParaView.
 
-## Building the images
+## Build Images
+
+Build `quality` first:
 
 ```bash
-docker compose build test    # image for tests
-docker compose build solver  # runtime image for simulations
+docker compose build quality
 ```
 
-`build` only constructs and saves the image to disk — it does not start any container. You only need to re-run it when the code changes.
-
-### Development container tools
-
-The `dev` image target includes developer-only tools used from the dev container, including ParaView for inspecting generated VTK/XDMF/HDF5 outputs. ParaView is installed in the `dev-tools` stage only, so runtime and test images do not carry the extra GUI package dependencies.
-
-If `paraview` or `pvpython` is missing inside the dev container, rebuild the dev image:
+Build `dev` when its additional developer tools are required:
 
 ```bash
 docker compose build dev
 ```
 
-### Build arguments
+The `dev` target is built from `quality`.
+Docker therefore reuses the compiler and ParaView layers when building `dev`.
 
-The build mode and optional features can be configured via `--build-arg`:
+The source tree is never copied into either image.
+Editing source files, running examples, and creating build directories do not invalidate image layers or require an image rebuild.
 
-| Argument | Values | Default |
-|---|---|---|
-| `BUILD_TYPE` | `Release`, `Debug` | `Release` |
-| `ENABLE_MPI` | `ON`, `OFF` | `OFF` |
-| `ENABLE_MTLN` | `ON`, `OFF` | `ON` |
+## Compile With Quality
 
-```bash
-# Debug build
-docker compose build --build-arg BUILD_TYPE=Debug test
-
-# Combining arguments
-docker compose build \
-  --build-arg BUILD_TYPE=Debug \
-  --build-arg ENABLE_MPI=ON \
-  --build-arg ENABLE_MTLN=OFF \
-  test
-```
-
-**Release** (`-Ofast`): optimized for speed, no debug information.  
-**Debug** (`-g -O0 -fcheck=all -fbacktrace`): no optimization, with runtime checks and backtraces on error — useful for diagnosing crashes.
-
-### Base image digest
-
-The `Dockerfile` pins the base image using a SHA256 digest instead of just the tag:
-
-```dockerfile
-FROM ubuntu:22.04@sha256:eb29ed27... AS builder
-```
-
-`ubuntu:22.04` is a mutable tag — Canonical can update it at any time. The digest identifies an exact, immutable image, so builds are fully reproducible regardless of when or where they run.
-
-The downside is that OS security patches are not picked up automatically. To update the digest:
+Run CMake presets from the mounted workspace:
 
 ```bash
-docker pull ubuntu:22.04
-docker inspect ubuntu:22.04 --format='{{index .RepoDigests 0}}'
+docker compose run --rm quality cmake --preset rls
+docker compose run --rm quality cmake --build --preset rls
 ```
 
-Then replace both occurrences of the digest in the `Dockerfile` (builder and runtime stages).
-
----
-
-## Running the tests
+For an MPI build:
 
 ```bash
-docker compose run --rm test
+docker compose run --rm quality cmake --preset rls-mpi
+docker compose run --rm quality cmake --build --preset rls-mpi
 ```
 
-This runs in sequence:
-1. `build/bin/fdtd_tests` — unit tests (GoogleTest)
-2. `python3 -m pytest test/ --durations=20` — Python integration tests
+Build directories such as `build-rls/` and `build-rls-mpi/` remain in the repository after the container exits.
 
-To run only part of the test suite:
+## Run Binaries And Examples
+
+Use the binary produced in the mounted build directory:
 
 ```bash
-# Unit tests only
-docker compose run --rm test build/bin/fdtd_tests
-
-# pytest with a specific marker
-docker compose run --rm test python3 -m pytest test/ -m mtln
-docker compose run --rm test python3 -m pytest test/ -m hdf
+docker compose run --rm quality build-rls/bin/semba-fdtd -i path/to/case.fdtd.json
 ```
 
-To open an interactive shell inside the container:
+Any output generated by the solver is available immediately in the corresponding host directory.
+
+Open an interactive quality shell when repeatedly compiling or running examples:
 
 ```bash
-docker compose run --rm --entrypoint bash test
+docker compose run --rm quality
 ```
 
----
-
-## Debugging a simulation
-
-This uses `gdbserver` inside the container and connects VSCode to it via the C/C++ extension.
-
-### Prerequisites
-
-- VSCode extension: **C/C++** (`ms-vscode.cpptools`)
-- `gdb` installed on the host:
-  ```bash
-  sudo apt install gdb
-  ```
-
-### Step 1 — Build the debug image
+ParaView is available in both environments:
 
 ```bash
-docker compose build debug
+docker compose run --rm quality paraview
+docker compose run --rm dev paraview
 ```
 
-### Step 2 — Extract the binary for local symbol loading
+## Run Tests
 
-VSCode's GDB client needs a local copy of the binary to load debug symbols. Extract it from the image once after each build:
+Configure a build with tests, then run the required test commands:
 
 ```bash
-docker create --name tmp-debug fdtd-debug
-docker cp tmp-debug:/src/build/bin/semba-fdtd ./build/bin/semba-fdtd
-docker rm tmp-debug
+docker compose run --rm quality cmake --preset rls
+docker compose run --rm quality cmake --build --preset rls
+docker compose run --rm quality build-rls/bin/fdtd_tests
 ```
 
-### Step 3 — Start gdbserver
-
-Place your input files in `simulations/` and run:
+Python integration tests require the project dependencies in a virtual environment:
 
 ```bash
-docker compose run --rm -p 2345:2345 debug case.fdtd.json
+docker compose run --rm quality python3 -m venv .venv
+docker compose run --rm quality .venv/bin/python -m pip install -r requirements.txt
+docker compose run --rm quality .venv/bin/python -m pytest test/ --durations=20
 ```
 
-The container starts and waits, printing something like:
+## Development Environment
 
-```
-Process /src/build/bin/semba-fdtd created; pid = 7
-Listening on port 2345
-```
-
-### Step 4 — Connect from VSCode
-
-`.vscode/launch.json` is tracked in the repository and already contains the **Docker: attach gdbserver** configuration.
-
-Open the **Run and Debug** panel (`Ctrl+Shift+D`), select **Docker: attach gdbserver**, and press `F5`. VSCode connects, the simulation starts, and breakpoints work normally.
-
-```json
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Docker: attach gdbserver",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/bin/semba-fdtd",
-            "miDebuggerServerAddress": "localhost:2345",
-            "miDebuggerPath": "gdb",
-            "MIMode": "gdb",
-            "cwd": "${workspaceFolder}/simulations",
-            "sourceFileMap": {
-                "/src": "${workspaceFolder}"
-            },
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        }
-    ]
-}
-```
-
-> The `sourceFileMap` maps `/src` (container path baked into debug info) to `${workspaceFolder}` on the host, so source files display correctly.
-
----
-
-## Running a simulation
-
-Place your input files in `simulations/` (created at the repo root) and run:
+Use `dev` for a full interactive shell:
 
 ```bash
-docker compose run --rm solver case.fdtd.json
+docker compose run --rm dev
 ```
 
-The `simulations/` directory is mounted at `/work` inside the container, which is the solver's working directory.
-
----
-
-## Managing images and containers
-
-### Where are images stored?
-
-Docker manages them internally (under `/var/lib/docker/` on Linux), not in a project folder. To inspect them:
-
-```bash
-docker images          # list all saved images
-docker image prune     # remove unused images
-```
-
-### Viewing active containers
-
-```bash
-docker ps      # currently running containers
-docker ps -a   # running + stopped containers
-```
-
-### Stopping and removing containers
-
-```bash
-docker stop <ID_or_name>   # stops the container (does not remove it)
-docker rm <ID_or_name>     # removes it
-docker rm -f <ID_or_name>  # stop and remove in one step
-docker container prune     # remove all stopped containers
-```
-
-The full ID is not required — the first 3–4 characters are enough:
-
-```bash
-docker stop a1b2
-```
-
-> With `--rm` (used in all `docker compose run` commands) the container is removed automatically when it finishes, so no manual cleanup is needed.
-
-### Does closing the terminal stop the container?
-
-- **Without `-d`** (normal mode, what we use): yes, closing the terminal stops the container because it is attached to it.
-- **With `-d`** (detached mode): no, it keeps running in the background even after the terminal is closed.
-
-```bash
-# Run in the background
-docker compose run -d --rm test
-```
-
-For tests it is better to omit `-d` so you can see the output in real time.
+The Dev Container configuration also uses the `dev` service.
+It mounts the host Git, SSH, GitHub CLI, and OpenCode configuration required by the development workflow.
