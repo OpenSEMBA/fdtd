@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(HDF5 REQUIRED COMPONENTS Fortran)
+
+if(NOT TARGET HDF5::HDF5)
+  add_library(HDF5::HDF5 INTERFACE IMPORTED)
+  set_target_properties(HDF5::HDF5 PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${HDF5_Fortran_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${HDF5_Fortran_LIBRARIES}"
+  )
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/OpenSEMBAXdmfHdf5Targets.cmake")
+
+check_required_components(OpenSEMBAXdmfHdf5)
