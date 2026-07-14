@@ -93,7 +93,7 @@ contains
       type(frequency_slice_probe_output_t), intent(inout) :: this
       integer :: i, f, unit
       !We rewrite the binary as simulation continues
-      open (unit=unit, file=add_extension(this%filesPath, binaryExtension), &
+      open (newunit=unit, file=add_extension(this%filesPath, binaryExtension), &
             status='old', form='unformatted', action='write', access='stream')
       do f = 1, this%nFreq
       do i = 1, this%nPoints

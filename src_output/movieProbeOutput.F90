@@ -208,7 +208,7 @@ contains
       type(movie_probe_output_t), intent(inout) :: this
       integer :: i, t, unit
 
-      open (unit=unit, file=add_extension(this%filesPath, binaryExtension), &
+      open (newunit=unit, file=add_extension(this%filesPath, binaryExtension), &
             status='old', form='unformatted', position='append', access='stream')
       do t = 1, this%nTime
       do i = 1, this%nPoints
