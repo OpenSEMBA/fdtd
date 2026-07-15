@@ -13,6 +13,7 @@ import numpy as np
 
 PAIR_NAMES = (
     "uniform",
+    "volume",
     "rectilinear",
     "curvilinear",
     "unstructured",
@@ -117,6 +118,19 @@ def verify_uniform(document: ET.Element, hdf5: h5py.File) -> None:
     np.testing.assert_allclose(values.ravel(), np.arange(1, 7) * 0.25)
     require(values.dtype == np.dtype("float32"), "uniform: real32 data")
     require(hdf5["/grids/g0001/origin"].dtype == np.dtype("float32"), "uniform: real32 geometry")
+
+
+def verify_volume(document: ET.Element, hdf5: h5py.File) -> None:
+    topology = document.find(".//Topology")
+    require(topology is not None, "volume: missing topology")
+    require(topology.attrib["Dimensions"] == "21 21 21", "volume: topology dimensions")
+    attributes = {element.attrib["Name"] for element in document.findall(".//Attribute")}
+    require(attributes == {"electric-field-magnitude"}, "volume: scalar attribute")
+    values = hdf5["/attributes/a0001/values"]
+    require(values.shape == (21, 21, 21), "volume: field shape")
+    require(values.dtype == np.dtype("float64"), "volume: field dtype")
+    require(float(values[:].min()) >= 0.0, "volume: negative field magnitude")
+    require(float(values[:].max()) > 1.0, "volume: field maximum")
 
 
 def verify_rectilinear(document: ET.Element, hdf5: h5py.File) -> None:
@@ -225,19 +239,31 @@ def verify_time_series(document: ET.Element, hdf5: h5py.File) -> None:
     temporal = document.find(".//Grid[@CollectionType='Temporal']")
     require(temporal is not None, "time-series: temporal collection")
     times = [float(element.attrib["Value"]) for element in temporal.findall("./Grid/Time")]
-    np.testing.assert_allclose(times, [0.1, 0.25])
-    np.testing.assert_allclose(hdf5["/series/values"][:], [0.1, 0.25])
-    pressure = hdf5["/attributes/a0001/values"]
-    velocity = hdf5["/attributes/a0002/values"]
-    require(pressure.shape == (2, 4, 3, 2), "time-series: scalar shape")
-    require(velocity.shape == (2, 4, 3, 2, 3), "time-series: vector shape")
-    require(pressure.dtype == np.dtype("float64"), "time-series: scalar dtype")
-    require(velocity.dtype == np.dtype("float32"), "time-series: vector dtype")
-    np.testing.assert_allclose(pressure[0].ravel(), np.arange(101, 125))
-    np.testing.assert_allclose(pressure[1].ravel(), np.arange(201, 225))
-    np.testing.assert_allclose(velocity[0].ravel(), np.arange(1001, 1073))
-    np.testing.assert_allclose(velocity[1].ravel(), np.arange(2001, 2073))
-    require(pressure.chunks is not None and pressure.chunks[0] == 1, "time-series: chunking")
+    expected_times = np.linspace(0.0, 1.0, 20)
+    np.testing.assert_allclose(times, expected_times, rtol=1.0e-6)
+    np.testing.assert_allclose(hdf5["/series/values"][:], expected_times, rtol=1.0e-6)
+    attributes = {element.attrib["Name"] for element in document.findall(".//Attribute")}
+    require(
+        attributes == {"electric-field-magnitude", "electric-field"},
+        "time-series: field names",
+    )
+    magnitude = hdf5["/attributes/a0001/values"]
+    electric_field = hdf5["/attributes/a0002/values"]
+    require(magnitude.shape == (20, 25, 25, 25), "time-series: scalar shape")
+    require(electric_field.shape == (20, 25, 25, 25, 3), "time-series: vector shape")
+    require(magnitude.dtype == np.dtype("float32"), "time-series: scalar dtype")
+    require(electric_field.dtype == np.dtype("float32"), "time-series: vector dtype")
+    magnitude_values = magnitude[:]
+    electric_values = electric_field[:]
+    require(float(magnitude_values.min()) >= 0.0, "time-series: negative magnitude")
+    require(float(magnitude_values.max()) > 0.99, "time-series: pulse maximum")
+    np.testing.assert_allclose(magnitude_values, np.abs(electric_values[..., 1]))
+    np.testing.assert_array_equal(electric_values[..., 0], 0.0)
+    np.testing.assert_array_equal(electric_values[..., 2], 0.0)
+    early_peak = int(np.argmax(magnitude_values[0, 12, 12, :]))
+    late_peak = int(np.argmax(magnitude_values[-1, 12, 12, :]))
+    require(early_peak < late_peak, "time-series: pulse does not move along +x")
+    require(magnitude.chunks is not None and magnitude.chunks[0] == 1, "time-series: chunking")
 
 
 def verify_frequency_series(document: ET.Element, hdf5: h5py.File) -> None:
@@ -264,22 +290,36 @@ def verify_validation_series(hdf5: h5py.File) -> None:
 def main() -> int:
     root = Path(sys.argv[1]).resolve()
     require(root.is_dir(), f"generated output directory does not exist: {root}")
+    requested_names = tuple(sys.argv[2:]) or PAIR_NAMES
+    for name in requested_names:
+        require(name in PAIR_NAMES, f"unknown generated pair: {name}")
+
     opened: list[h5py.File] = []
     try:
         pairs: dict[str, tuple[ET.Element, h5py.File]] = {}
-        for name in PAIR_NAMES:
+        for name in requested_names:
             document, hdf5 = validate_pair(root, name)
             opened.append(hdf5)
             pairs[name] = (document, hdf5)
 
-        verify_uniform(*pairs["uniform"])
-        verify_rectilinear(*pairs["rectilinear"])
-        verify_curvilinear(*pairs["curvilinear"])
-        verify_unstructured(*pairs["unstructured"])
-        verify_mixed(*pairs["mixed"])
-        verify_time_series(*pairs["time-series"])
-        verify_frequency_series(*pairs["frequency-series"])
-        verify_validation_series(pairs["validation-series"][1])
+        if "uniform" in pairs:
+            verify_uniform(*pairs["uniform"])
+        if "volume" in pairs:
+            verify_volume(*pairs["volume"])
+        if "rectilinear" in pairs:
+            verify_rectilinear(*pairs["rectilinear"])
+        if "curvilinear" in pairs:
+            verify_curvilinear(*pairs["curvilinear"])
+        if "unstructured" in pairs:
+            verify_unstructured(*pairs["unstructured"])
+        if "mixed" in pairs:
+            verify_mixed(*pairs["mixed"])
+        if "time-series" in pairs:
+            verify_time_series(*pairs["time-series"])
+        if "frequency-series" in pairs:
+            verify_frequency_series(*pairs["frequency-series"])
+        if "validation-series" in pairs:
+            verify_validation_series(pairs["validation-series"][1])
     finally:
         for hdf5 in opened:
             hdf5.close()

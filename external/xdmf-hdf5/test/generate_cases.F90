@@ -5,23 +5,37 @@ program generate_cases
   implicit none
 
   character(len=1024) :: output_dir
+  character(len=32) :: mode
   integer :: failures
+  logical :: examples_only
 
   failures = 0
   call get_command_argument(1, output_dir)
   if (len_trim(output_dir) == 0) then
     error stop 'An output directory argument is required'
   end if
+  call get_command_argument(2, mode)
+  select case (trim(mode))
+  case ('')
+    examples_only = .false.
+  case ('--examples')
+    examples_only = .true.
+  case default
+    error stop 'The optional second argument must be --examples'
+  end select
 
   call generate_uniform(trim(output_dir), failures)
-  call generate_rectilinear(trim(output_dir), failures)
+  call generate_volume(trim(output_dir), failures)
   call generate_curvilinear(trim(output_dir), failures)
   call generate_unstructured(trim(output_dir), failures)
   call generate_mixed(trim(output_dir), failures)
   call generate_time_series(trim(output_dir), failures)
-  call generate_frequency_series(trim(output_dir), failures)
-  call generate_escaped_path(trim(output_dir), failures)
-  call exercise_validation(trim(output_dir), failures)
+  if (.not. examples_only) then
+    call generate_rectilinear(trim(output_dir), failures)
+    call generate_frequency_series(trim(output_dir), failures)
+    call generate_escaped_path(trim(output_dir), failures)
+    call exercise_validation(trim(output_dir), failures)
+  end if
 
   if (failures /= 0) then
     write(*, '(A,I0)') 'XDMF/HDF5 generator failures: ', failures
@@ -60,6 +74,55 @@ contains
     call writer%close(status)
     call require_ok(status, 'close uniform', failures)
   end subroutine generate_uniform
+
+  subroutine generate_volume(directory, failures)
+    character(len=*), intent(in) :: directory
+    integer, intent(inout) :: failures
+
+    integer, parameter :: nx = 21, ny = 21, nz = 21
+    type(xdmf_writer_t) :: writer
+    type(xdmf_options_t) :: options
+    type(xdmf_status_t) :: status
+    type(xdmf_grid_id_t) :: grid
+    type(xdmf_attribute_id_t) :: field
+    real(real64), allocatable :: values(:)
+    real(real64) :: x, y, z
+    integer :: i, j, k, value_index
+
+    options%overwrite = .true.
+    call writer%create(pair_path(directory, 'volume'), options, status)
+    call require_ok(status, 'create volume', failures)
+    call writer%define_uniform_grid('electric-field-volume', &
+      [int(nx, int64), int(ny, int64), int(nz, int64)], &
+      [-1.0_real64, -1.0_real64, -1.0_real64], &
+      [0.1_real64, 0.1_real64, 0.1_real64], grid, status)
+    call require_ok(status, 'define volume grid', failures)
+    call writer%define_attribute(grid, 'electric-field-magnitude', &
+      XDMF_CENTER_NODE, XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, &
+      field, status)
+    call require_ok(status, 'define volume field', failures)
+
+    allocate(values(nx * ny * nz))
+    do k = 1, nz
+      z = -1.0_real64 + 0.1_real64 * real(k - 1, real64)
+      do j = 1, ny
+        y = -1.0_real64 + 0.1_real64 * real(j - 1, real64)
+        do i = 1, nx
+          x = -1.0_real64 + 0.1_real64 * real(i - 1, real64)
+          value_index = i + nx * ((j - 1) + ny * (k - 1))
+          values(value_index) = exp(-8.0_real64 * (x*x + y*y + z*z)) &
+            + 0.35_real64 * exp(-20.0_real64 * &
+              ((x - 0.45_real64)**2 + (y + 0.25_real64)**2 &
+                + (z - 0.2_real64)**2))
+        end do
+      end do
+    end do
+
+    call writer%write_attribute(field, values, status)
+    call require_ok(status, 'write volume field', failures)
+    call writer%close(status)
+    call require_ok(status, 'close volume', failures)
+  end subroutine generate_volume
 
   subroutine generate_rectilinear(directory, failures)
     character(len=*), intent(in) :: directory
@@ -303,49 +366,70 @@ contains
     character(len=*), intent(in) :: directory
     integer, intent(inout) :: failures
 
+    integer, parameter :: nx = 25, ny = 25, nz = 25
+    integer, parameter :: npoints = nx * ny * nz, nsteps = 20
+    real(real32), parameter :: origin = -1.2_real32
+    real(real32), parameter :: spacing = 0.1_real32
+    real(real32), parameter :: two_pi = 6.2831853_real32
     type(xdmf_writer_t) :: writer
     type(xdmf_options_t) :: options
     type(xdmf_status_t) :: status
     type(xdmf_grid_id_t) :: grid
-    type(xdmf_attribute_id_t) :: pressure, velocity
-    real(real64) :: pressure_values(24)
-    real(real64) :: times(2)
-    real(real32) :: velocity_values(72)
-    integer :: i, step
+    type(xdmf_attribute_id_t) :: magnitude, electric_field
+    real(real32), allocatable :: magnitude_values(:), electric_values(:)
+    real(real32) :: x, y, z, progress, pulse_center, envelope, ey
+    real(real64) :: time
+    integer :: i, j, k, point_index, step
 
     options%overwrite = .true.
     options%series_kind = XDMF_SERIES_TIME
-    options%chunk_target_bytes = 128_int64
+    options%chunk_target_bytes = 1048576_int64
     call writer%create(pair_path(directory, 'time-series'), options, status)
     call require_ok(status, 'create time series', failures)
-    call writer%define_uniform_grid('time-volume', &
-      [2_int64, 3_int64, 4_int64], &
-      [0.0_real64, 0.0_real64, 0.0_real64], &
-      [1.0_real64, 2.0_real64, 3.0_real64], grid, status)
+    call writer%define_uniform_grid('travelling-wave-pulse', &
+      [int(nx, int64), int(ny, int64), int(nz, int64)], &
+      [origin, origin, origin], [spacing, spacing, spacing], grid, status)
     call require_ok(status, 'define time grid', failures)
-    call writer%define_attribute(grid, 'pressure', XDMF_CENTER_NODE, &
-      XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, .true., pressure, status)
-    call require_ok(status, 'define time scalar', failures)
-    call writer%define_attribute(grid, 'velocity', XDMF_CENTER_NODE, &
-      XDMF_ATTRIBUTE_VECTOR, XDMF_NUMERIC_REAL32, .true., velocity, status)
-    call require_ok(status, 'define time vector', failures)
-    times = [0.1_real64, 0.25_real64]
-    do step = 1, 2
-      call writer%begin_step(times(step), status)
+    call writer%define_attribute(grid, 'electric-field-magnitude', &
+      XDMF_CENTER_NODE, XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL32, &
+      .true., magnitude, status)
+    call require_ok(status, 'define time magnitude', failures)
+    call writer%define_attribute(grid, 'electric-field', XDMF_CENTER_NODE, &
+      XDMF_ATTRIBUTE_VECTOR, XDMF_NUMERIC_REAL32, .true., &
+      electric_field, status)
+    call require_ok(status, 'define time electric field', failures)
+
+    allocate(magnitude_values(npoints), electric_values(3 * npoints))
+    do step = 1, nsteps
+      progress = real(step - 1, real32) / real(nsteps - 1, real32)
+      time = real(progress, real64)
+      pulse_center = -0.8_real32 + 1.6_real32 * progress
+      electric_values = 0.0_real32
+      do k = 1, nz
+        z = origin + spacing * real(k - 1, real32)
+        do j = 1, ny
+          y = origin + spacing * real(j - 1, real32)
+          do i = 1, nx
+            x = origin + spacing * real(i - 1, real32)
+            point_index = i + nx * ((j - 1) + ny * (k - 1))
+            envelope = exp(-((x - pulse_center) / 0.32_real32)**2 &
+              - (y / 0.55_real32)**2 - (z / 0.55_real32)**2)
+            ey = envelope * cos(two_pi * (x - pulse_center) / 0.55_real32)
+            magnitude_values(point_index) = abs(ey)
+            electric_values(3 * point_index - 1) = ey
+          end do
+        end do
+      end do
+
+      call writer%begin_step(time, status)
       call require_ok(status, 'begin time step', failures)
-      do i = 1, size(pressure_values)
-        pressure_values(i) = real(100 * step + i, real64)
-      end do
-      do i = 1, size(velocity_values)
-        velocity_values(i) = real(1000 * step + i, real32)
-      end do
-      call writer%write_attribute(pressure, pressure_values, status)
-      call require_ok(status, 'write time scalar', failures)
-      call writer%write_attribute(velocity, velocity_values, status)
-      call require_ok(status, 'write time vector', failures)
+      call writer%write_attribute(magnitude, magnitude_values, status)
+      call require_ok(status, 'write time magnitude', failures)
+      call writer%write_attribute(electric_field, electric_values, status)
+      call require_ok(status, 'write time electric field', failures)
       call writer%end_step(status)
       call require_ok(status, 'end time step', failures)
-      if (step == 1) then
+      if (step == nsteps / 2) then
         call writer%flush(status)
         call require_ok(status, 'flush time series', failures)
       end if

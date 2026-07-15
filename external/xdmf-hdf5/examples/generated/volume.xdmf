@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Xdmf Version="3.0">
+  <Domain Name="OpenSEMBA XDMF-HDF5">
+    <Information Name="Schema" Value="OpenSEMBA XDMF-HDF5 1.0"/>
+    <Grid Name="electric-field-volume" GridType="Uniform">
+      <Topology TopologyType="3DCoRectMesh" Dimensions="21 21 21"/>
+      <Geometry GeometryType="ORIGIN_DXDYDZ">
+        <DataItem Dimensions="3" NumberType="Float" Precision="8" Format="HDF">
+          volume.h5:/grids/g0001/origin
+        </DataItem>
+        <DataItem Dimensions="3" NumberType="Float" Precision="8" Format="HDF">
+          volume.h5:/grids/g0001/spacing
+        </DataItem>
+      </Geometry>
+      <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+        <DataItem Dimensions="21 21 21" NumberType="Float" Precision="8" Format="HDF">
+          volume.h5:/attributes/a0001/values
+        </DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>

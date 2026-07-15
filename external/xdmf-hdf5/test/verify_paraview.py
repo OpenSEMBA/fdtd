@@ -40,34 +40,56 @@ def first_leaf(data):
     return None
 
 
+def read_volume(root: Path) -> None:
+    reader = XDMFReader(FileNames=[str(root / "volume.xdmf")])
+    reader.PointArrayStatus = ["electric-field-magnitude"]
+    reader.UpdatePipeline()
+    information = reader.GetDataInformation()
+    require(information.GetNumberOfPoints() == 21**3, "volume: point count")
+    data = first_leaf(servermanager.Fetch(reader))
+    require(data is not None, "volume: missing grid")
+    field = data.GetPointData().GetArray("electric-field-magnitude")
+    require(field is not None, "volume: missing scalar field")
+    require(field.GetRange()[0] >= 0.0, "volume: negative field magnitude")
+    require(field.GetRange()[1] > 1.0, "volume: field maximum")
+    Delete(reader)
+
+
 def main() -> int:
     root = Path(sys.argv[1]).resolve()
     read_case(root, "uniform", 6)
+    read_volume(root)
     read_case(root, "curvilinear", 6)
     read_case(root, "unstructured")
     read_case(root, "mixed", 8)
 
     reader = XDMFReader(FileNames=[str(root / "time-series.xdmf")])
-    require(list(reader.TimestepValues) == [0.1, 0.25], "time-series: timesteps")
-    reader.PointArrayStatus = ["pressure", "velocity"]
-    reader.UpdatePipeline(0.1)
+    times = list(reader.TimestepValues)
+    require(len(times) == 20, "time-series: timestep count")
+    require(abs(times[0]) < 1.0e-6, "time-series: initial time")
+    require(abs(times[-1] - 1.0) < 1.0e-6, "time-series: final time")
+    reader.PointArrayStatus = ["electric-field-magnitude", "electric-field"]
+    reader.UpdatePipeline(times[0])
     first_step = first_leaf(servermanager.Fetch(reader))
     require(first_step is not None, "time-series: missing first grid")
-    first_pressure = first_step.GetPointData().GetArray("pressure")
-    require(first_pressure is not None, "time-series: missing first pressure")
-    require(first_pressure.GetRange() == (101.0, 124.0), "time-series: first values")
-    reader.UpdatePipeline(0.25)
+    first_magnitude = first_step.GetPointData().GetArray("electric-field-magnitude")
+    first_electric = first_step.GetPointData().GetArray("electric-field")
+    require(first_magnitude is not None, "time-series: missing first magnitude")
+    require(first_electric is not None, "time-series: missing first electric field")
+    require(first_magnitude.GetRange()[1] > 0.99, "time-series: first pulse maximum")
+    require(first_electric.GetNumberOfComponents() == 3, "time-series: vector components")
+    reader.UpdatePipeline(times[-1])
     information = reader.GetDataInformation()
-    require(information.GetNumberOfPoints() == 24, "time-series: point count")
+    require(information.GetNumberOfPoints() == 25**3, "time-series: point count")
     require(
-        set(reader.PointArrayStatus) == {"pressure", "velocity"},
+        set(reader.PointArrayStatus) == {"electric-field-magnitude", "electric-field"},
         "time-series: point arrays",
     )
-    second_step = first_leaf(servermanager.Fetch(reader))
-    require(second_step is not None, "time-series: missing second grid")
-    second_pressure = second_step.GetPointData().GetArray("pressure")
-    require(second_pressure is not None, "time-series: missing second pressure")
-    require(second_pressure.GetRange() == (201.0, 224.0), "time-series: second values")
+    last_step = first_leaf(servermanager.Fetch(reader))
+    require(last_step is not None, "time-series: missing last grid")
+    last_magnitude = last_step.GetPointData().GetArray("electric-field-magnitude")
+    require(last_magnitude is not None, "time-series: missing last magnitude")
+    require(last_magnitude.GetRange()[1] > 0.99, "time-series: last pulse maximum")
     Delete(reader)
     return 0
 

@@ -94,6 +94,9 @@ jobs:
     - name: Run unit tests 
       run: build/bin/fdtd_tests
 
+    - name: Run CTest suites
+      run: ctest --test-dir build --output-on-failure
+
     - name: Run python tests
       if: matrix.new-output-module=='OFF'
       env:

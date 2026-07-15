@@ -99,6 +99,11 @@ When `pvpython` is available, it also loads representative uniform,
 curvilinear, unstructured, mixed, and temporal outputs through ParaView's
 XDMF reader.
 
+Ready-to-open examples of those outputs are committed under
+[`examples/generated`](examples/generated/README.md).
+Keep each `.xdmf` file beside its corresponding `.h5` file when opening it in
+ParaView.
+
 Some ParaView releases still use the legacy XDMF2 reader internally.
 That reader ignores edge- and face-centred attributes and can fail on valid
 higher-rank `Matrix` attributes.
