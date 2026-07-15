@@ -5,6 +5,7 @@ add_library(
     "test_output.F90"
     "test_output_utils.F90"
     "test_volumic_utils.F90"
+    "test_output_decomposition.F90"
 )
 
 add_library(vtkAPI_test_fortran

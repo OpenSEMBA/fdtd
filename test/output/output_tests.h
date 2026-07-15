@@ -16,6 +16,9 @@ extern "C" int test_count_required_coords();
 extern "C" int test_store_required_coords();
 extern "C" int test_is_valid_point_current();
 extern "C" int test_is_valid_point_field();
+extern "C" int test_output_partition_shared_interfaces();
+extern "C" int test_output_partition_disjoint_intervals();
+extern "C" int test_output_partition_clipping_and_large_shape();
 
 
 TEST(output, test_initialize_point_probe)    {EXPECT_EQ(0, test_init_point_probe()); }
@@ -32,5 +35,8 @@ TEST(output, test_volumic_utils_count) { EXPECT_EQ(0, test_count_required_coords
 TEST(output, test_volumic_utils_store) { EXPECT_EQ(0, test_store_required_coords()); }
 TEST(output, test_volumic_utils_valid_current) { EXPECT_EQ(0, test_is_valid_point_current()); }
 TEST(output, test_volumic_utils_valid_field) { EXPECT_EQ(0, test_is_valid_point_field()); }
+TEST(output, test_partition_shared_interfaces) { EXPECT_EQ(0, test_output_partition_shared_interfaces()); }
+TEST(output, test_partition_disjoint_intervals) { EXPECT_EQ(0, test_output_partition_disjoint_intervals()); }
+TEST(output, test_partition_clipping_and_large_shape) { EXPECT_EQ(0, test_output_partition_clipping_and_large_shape()); }
 
 #endif
