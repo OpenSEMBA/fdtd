@@ -17,8 +17,15 @@ Version 0.1 provides:
 - `real32`, `real64`, `int32`, and `int64` heavy data.
 - Explicit real/imaginary or magnitude/phase attributes for complex data.
 
-The library does not depend on solver types, MPI, OpenMP, or SMBJSON.
+The library does not depend on solver types, OpenMP, or SMBJSON.
 HDF5 identifiers and XML serialization are private implementation details.
+
+When CMake discovers an MPI-capable HDF5 Fortran installation, the library also
+supports collective scalar-series hyperslab writes.
+When included by `semba-fdtd`, its MPI API follows the parent
+`SEMBA_FDTD_ENABLE_MPI` setting with no additional project option.
+For a standalone build, set `XDMF_HDF5_ENABLE_MPI=ON` to enable the MPI API.
+Collective HDF5 support is detected automatically in either build mode.
 
 ## Standalone Build
 
@@ -76,6 +83,35 @@ confirmed; the writer must then be closed and not reused.
 `xdmf_writer_t` is a unique resource owner.
 Do not assign or copy an open writer; pass it with `intent(inout)` and close it
 explicitly before it leaves scope.
+
+## Collective HDF5
+
+Collective output is available only when the library was built against parallel
+HDF5 with a compatible MPI Fortran implementation.
+All ranks must call writer creation, definitions, step operations, flush, and
+close in the same order.
+Only `root_rank` publishes the XDMF document.
+
+```fortran
+options%overwrite = .true.
+options%series_kind = XDMF_SERIES_TIME
+options%collective_io = .true.
+options%communicator = MPI_COMM_WORLD
+options%root_rank = 0
+
+call writer%create('result', options, status)
+! Define the same grid and scalar series attribute on every rank.
+call writer%begin_step(time, status)
+call writer%write_attribute_hyperslab(field, local_values, &
+  local_offset, local_shape, status)
+call writer%end_step(status)
+```
+
+`local_offset` is zero-based and `local_shape` is in Fortran I/J/K order.
+They select a disjoint portion of the globally defined scalar attribute.
+Ranks with no cells pass zero for every `local_shape` entry and an empty value
+array; they still participate in the collective call.
+Compression is intentionally unavailable in collective mode.
 
 ## Data Conventions
 

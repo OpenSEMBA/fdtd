@@ -83,3 +83,45 @@ if(XDMF_HDF5_PVPYTHON_EXECUTABLE)
       "${_xdmf_hdf5_example_dir}"
   )
 endif()
+
+if(XDMF_HDF5_PARALLEL_AVAILABLE)
+  add_executable(xdmf_hdf5_generate_parallel_case generate_parallel_case.F90)
+  target_link_libraries(xdmf_hdf5_generate_parallel_case PRIVATE
+    OpenSEMBA::xdmf-hdf5
+    MPI::MPI_Fortran
+  )
+
+  set(_xdmf_hdf5_mpi_output_dir
+    "${CMAKE_CURRENT_BINARY_DIR}/generated-mpi"
+  )
+  file(MAKE_DIRECTORY "${_xdmf_hdf5_mpi_output_dir}")
+  add_test(
+    NAME xdmf-hdf5-mpi-generate
+    COMMAND
+      ${MPIEXEC_EXECUTABLE}
+      ${MPIEXEC_NUMPROC_FLAG} 3
+      ${MPIEXEC_PREFLAGS}
+      $<TARGET_FILE:xdmf_hdf5_generate_parallel_case>
+      ${MPIEXEC_POSTFLAGS}
+      "${_xdmf_hdf5_mpi_output_dir}"
+  )
+  set_tests_properties(xdmf-hdf5-mpi-generate PROPERTIES
+    PROCESSORS 3
+    TIMEOUT 30
+    LABELS "xdmf-hdf5;mpi;parallel-hdf5"
+  )
+
+  if(Python3_Interpreter_FOUND AND _xdmf_hdf5_h5py_result EQUAL 0)
+    add_test(
+      NAME xdmf-hdf5-mpi-verify
+      COMMAND ${Python3_EXECUTABLE}
+        "${CMAKE_CURRENT_SOURCE_DIR}/verify_pairs.py"
+        "${_xdmf_hdf5_mpi_output_dir}"
+        parallel-hyperslab
+    )
+    set_tests_properties(xdmf-hdf5-mpi-verify PROPERTIES
+      DEPENDS xdmf-hdf5-mpi-generate
+      LABELS "xdmf-hdf5;mpi;parallel-hdf5"
+    )
+  endif()
+endif()

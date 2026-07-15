@@ -24,6 +24,7 @@ PAIR_NAMES = (
     "validation-static",
     "validation-series",
 )
+KNOWN_PAIR_NAMES = PAIR_NAMES + ("parallel-hyperslab",)
 
 
 def require(condition: bool, message: str) -> None:
@@ -287,12 +288,31 @@ def verify_validation_series(hdf5: h5py.File) -> None:
     np.testing.assert_allclose(hdf5["/attributes/a0002/values"][0].ravel(), [-1, -2, -3, -4])
 
 
+def verify_parallel_hyperslab(document: ET.Element, hdf5: h5py.File) -> None:
+    topology = document.find(".//Topology")
+    require(topology is not None, "parallel-hyperslab: missing topology")
+    require(topology.attrib["Dimensions"] == "4 2 2", "parallel-hyperslab: topology")
+    np.testing.assert_allclose(hdf5["/series/values"][:], [0.0, 0.5])
+
+    values = hdf5["/attributes/a0001/values"][:]
+    require(values.shape == (2, 4, 2, 2), "parallel-hyperslab: global shape")
+    expected = np.empty((2, 4, 2, 2), dtype=np.float64)
+    for step in range(2):
+        for k in range(4):
+            for j in range(2):
+                for i in range(2):
+                    expected[step, k, j, i] = (
+                        1000 * (step + 1) + 100 * (k + 1) + 10 * (j + 1) + i + 1
+                    )
+    np.testing.assert_allclose(values, expected)
+
+
 def main() -> int:
     root = Path(sys.argv[1]).resolve()
     require(root.is_dir(), f"generated output directory does not exist: {root}")
     requested_names = tuple(sys.argv[2:]) or PAIR_NAMES
     for name in requested_names:
-        require(name in PAIR_NAMES, f"unknown generated pair: {name}")
+        require(name in KNOWN_PAIR_NAMES, f"unknown generated pair: {name}")
 
     opened: list[h5py.File] = []
     try:
@@ -320,6 +340,8 @@ def main() -> int:
             verify_frequency_series(*pairs["frequency-series"])
         if "validation-series" in pairs:
             verify_validation_series(pairs["validation-series"][1])
+        if "parallel-hyperslab" in pairs:
+            verify_parallel_hyperslab(*pairs["parallel-hyperslab"])
     finally:
         for hdf5 in opened:
             hdf5.close()

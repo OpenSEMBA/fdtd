@@ -1,5 +1,8 @@
 module xdmf_hdf5_m
   use, intrinsic :: iso_fortran_env, only: int32, int64, real32, real64
+#ifdef XDMF_HDF5_WITH_MPI
+  use mpi
+#endif
   use xdmf_model_m, only: xdmf_status_t, xdmf_options_t, &
     xdmf_collection_id_t, xdmf_grid_id_t, xdmf_attribute_id_t, &
     collection_record_t, grid_record_t, attribute_record_t, &
@@ -37,7 +40,8 @@ module xdmf_hdf5_m
   use xdmf_hdf5_backend_m, only: hdf5_file_t, hdf_create_file, &
     hdf_file_is_open, hdf_close_file, hdf_flush_file, hdf_create_group, &
     hdf_write_dataset, &
-    hdf_create_series_dataset, hdf_append_series, hdf_truncate_series
+    hdf_create_series_dataset, hdf_append_series, &
+    hdf_append_series_hyperslab, hdf_truncate_series
   use xdmf_xml_m, only: write_xdmf_document
 
   implicit none
@@ -93,12 +97,16 @@ module xdmf_hdf5_m
     integer :: next_grid_id = 1
     integer :: next_attribute_id = 1
     integer :: committed_steps = 0
+    integer :: communicator = 0
+    integer :: rank = 0
+    integer :: root_rank = 0
     integer(int64) :: owner_token = 0_int64
     real(real64) :: active_step_value = 0.0_real64
     logical :: is_open = .false.
     logical :: definitions_locked = .false.
     logical :: step_is_active = .false.
     logical :: is_poisoned = .false.
+    logical :: is_collective = .false.
   contains
     procedure, private :: writer_create_with_options
     procedure, private :: writer_create_default
@@ -143,6 +151,15 @@ module xdmf_hdf5_m
     generic, public :: write_attribute => writer_write_attribute_r4, &
       writer_write_attribute_r8, writer_write_attribute_i4, &
       writer_write_attribute_i8
+    procedure, private :: writer_write_attribute_hyperslab_r4
+    procedure, private :: writer_write_attribute_hyperslab_r8
+    procedure, private :: writer_write_attribute_hyperslab_i4
+    procedure, private :: writer_write_attribute_hyperslab_i8
+    generic, public :: write_attribute_hyperslab => &
+      writer_write_attribute_hyperslab_r4, &
+      writer_write_attribute_hyperslab_r8, &
+      writer_write_attribute_hyperslab_i4, &
+      writer_write_attribute_hyperslab_i8
     procedure, public :: begin_step => writer_begin_step
     procedure, public :: end_step => writer_end_step
     procedure, public :: flush => writer_flush
@@ -178,6 +195,7 @@ contains
     type(xdmf_status_t), intent(out) :: status
 
     integer(int64) :: scalar_shape(0)
+    integer :: mpi_error
     logical :: xdmf_exists
 
     call set_status_success(status)
@@ -196,6 +214,19 @@ contains
 
     call reset_writer_metadata(this)
     this%options = options
+    this%is_collective = options%collective_io
+    this%communicator = options%communicator
+    this%root_rank = options%root_rank
+#ifdef XDMF_HDF5_WITH_MPI
+    if (this%is_collective) then
+      call MPI_Comm_rank(this%communicator, this%rank, mpi_error)
+      if (mpi_error /= MPI_SUCCESS) then
+        call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+          'Could not query the collective-output MPI communicator')
+        return
+      end if
+    end if
+#endif
     call derive_output_paths(path, this%xdmf_path, this%hdf5_path, &
       this%hdf5_name)
     if (.not. options%overwrite) then
@@ -208,6 +239,8 @@ contains
     end if
 
     call hdf_create_file(this%hdf5_file, this%hdf5_path, options, status)
+    call synchronize_collective_status(this, status, &
+      'Collective HDF5 file creation failed')
     if (status%is_error()) then
       if (hdf_file_is_open(this%hdf5_file)) then
         this%is_open = .true.
@@ -1060,6 +1093,102 @@ contains
     call finish_attribute_write(this, index, status)
   end subroutine writer_write_attribute_i8
 
+  subroutine writer_write_attribute_hyperslab_r4(this, attribute_id, values, &
+      spatial_offset, spatial_count, status)
+    class(xdmf_writer_t), intent(inout) :: this
+    type(xdmf_attribute_id_t), intent(in) :: attribute_id
+    real(real32), intent(in) :: values(:)
+    integer(int64), intent(in) :: spatial_offset(:), spatial_count(:)
+    type(xdmf_status_t), intent(out) :: status
+
+    integer(int64), allocatable :: storage_offset(:), storage_count(:)
+    integer :: index
+
+    call prepare_attribute_hyperslab_write(this, attribute_id, &
+      XDMF_NUMERIC_REAL32, size(values, kind=int64), spatial_offset, &
+      spatial_count, index, storage_offset, storage_count, status)
+    if (status%is_error()) return
+    call hdf_append_series_hyperslab(this%hdf5_file, &
+      this%attributes(index)%dataset_path, values, &
+      this%attributes(index)%storage_shape, storage_offset, storage_count, &
+      this%committed_steps, status)
+    call synchronize_collective_status(this, status, &
+      'Collective attribute hyperslab write failed')
+    call finish_attribute_write(this, index, status)
+  end subroutine writer_write_attribute_hyperslab_r4
+
+  subroutine writer_write_attribute_hyperslab_r8(this, attribute_id, values, &
+      spatial_offset, spatial_count, status)
+    class(xdmf_writer_t), intent(inout) :: this
+    type(xdmf_attribute_id_t), intent(in) :: attribute_id
+    real(real64), intent(in) :: values(:)
+    integer(int64), intent(in) :: spatial_offset(:), spatial_count(:)
+    type(xdmf_status_t), intent(out) :: status
+
+    integer(int64), allocatable :: storage_offset(:), storage_count(:)
+    integer :: index
+
+    call prepare_attribute_hyperslab_write(this, attribute_id, &
+      XDMF_NUMERIC_REAL64, size(values, kind=int64), spatial_offset, &
+      spatial_count, index, storage_offset, storage_count, status)
+    if (status%is_error()) return
+    call hdf_append_series_hyperslab(this%hdf5_file, &
+      this%attributes(index)%dataset_path, values, &
+      this%attributes(index)%storage_shape, storage_offset, storage_count, &
+      this%committed_steps, status)
+    call synchronize_collective_status(this, status, &
+      'Collective attribute hyperslab write failed')
+    call finish_attribute_write(this, index, status)
+  end subroutine writer_write_attribute_hyperslab_r8
+
+  subroutine writer_write_attribute_hyperslab_i4(this, attribute_id, values, &
+      spatial_offset, spatial_count, status)
+    class(xdmf_writer_t), intent(inout) :: this
+    type(xdmf_attribute_id_t), intent(in) :: attribute_id
+    integer(int32), intent(in) :: values(:)
+    integer(int64), intent(in) :: spatial_offset(:), spatial_count(:)
+    type(xdmf_status_t), intent(out) :: status
+
+    integer(int64), allocatable :: storage_offset(:), storage_count(:)
+    integer :: index
+
+    call prepare_attribute_hyperslab_write(this, attribute_id, &
+      XDMF_NUMERIC_INT32, size(values, kind=int64), spatial_offset, &
+      spatial_count, index, storage_offset, storage_count, status)
+    if (status%is_error()) return
+    call hdf_append_series_hyperslab(this%hdf5_file, &
+      this%attributes(index)%dataset_path, values, &
+      this%attributes(index)%storage_shape, storage_offset, storage_count, &
+      this%committed_steps, status)
+    call synchronize_collective_status(this, status, &
+      'Collective attribute hyperslab write failed')
+    call finish_attribute_write(this, index, status)
+  end subroutine writer_write_attribute_hyperslab_i4
+
+  subroutine writer_write_attribute_hyperslab_i8(this, attribute_id, values, &
+      spatial_offset, spatial_count, status)
+    class(xdmf_writer_t), intent(inout) :: this
+    type(xdmf_attribute_id_t), intent(in) :: attribute_id
+    integer(int64), intent(in) :: values(:)
+    integer(int64), intent(in) :: spatial_offset(:), spatial_count(:)
+    type(xdmf_status_t), intent(out) :: status
+
+    integer(int64), allocatable :: storage_offset(:), storage_count(:)
+    integer :: index
+
+    call prepare_attribute_hyperslab_write(this, attribute_id, &
+      XDMF_NUMERIC_INT64, size(values, kind=int64), spatial_offset, &
+      spatial_count, index, storage_offset, storage_count, status)
+    if (status%is_error()) return
+    call hdf_append_series_hyperslab(this%hdf5_file, &
+      this%attributes(index)%dataset_path, values, &
+      this%attributes(index)%storage_shape, storage_offset, storage_count, &
+      this%committed_steps, status)
+    call synchronize_collective_status(this, status, &
+      'Collective attribute hyperslab write failed')
+    call finish_attribute_write(this, index, status)
+  end subroutine writer_write_attribute_hyperslab_i8
+
   subroutine write_attribute_data_r4(this, index, values, status)
     class(xdmf_writer_t), intent(inout) :: this
     integer, intent(in) :: index
@@ -1398,6 +1527,8 @@ contains
     step_value(1) = this%active_step_value
     call hdf_append_series(this%hdf5_file, SERIES_VALUES_PATH, step_value, &
       scalar_shape, this%committed_steps, status)
+    call synchronize_collective_status(this, status, &
+      'Collective series-coordinate write failed')
     if (status%is_error()) then
       original_status = status
       if (status%error_code() == XDMF_ERROR_CONSISTENCY) then
@@ -1441,10 +1572,18 @@ contains
     end do
 
     call hdf_flush_file(this%hdf5_file, status)
+    call synchronize_collective_status(this, status, &
+      'Collective HDF5 flush failed')
     if (status%is_error()) return
-    call write_xdmf_document(this%xdmf_path, this%hdf5_name, &
-      this%collections, this%grids, this%attributes, &
-      this%options%series_kind, this%series_values, status)
+    if (.not. this%is_collective .or. this%rank == this%root_rank) then
+      call write_xdmf_document(this%xdmf_path, this%hdf5_name, &
+        this%collections, this%grids, this%attributes, &
+        this%options%series_kind, this%series_values, status)
+    else
+      call set_status_success(status)
+    end if
+    call synchronize_collective_status(this, status, &
+      'The collective-output root could not publish XDMF metadata')
   end subroutine writer_flush
 
   subroutine writer_close(this, status)
@@ -1458,6 +1597,8 @@ contains
 
     if (this%is_poisoned) then
       call hdf_close_file(this%hdf5_file, close_status)
+      call synchronize_collective_status(this, close_status, &
+        'Collective HDF5 close failed')
       if (close_status%is_error()) then
         status = close_status
       else
@@ -1484,6 +1625,8 @@ contains
     end if
 
     call hdf_close_file(this%hdf5_file, close_status)
+    call synchronize_collective_status(this, close_status, &
+      'Collective HDF5 close failed')
     if (close_status%is_error()) then
       status = close_status
     else
@@ -1788,6 +1931,98 @@ contains
     end if
   end subroutine prepare_attribute_write
 
+  subroutine prepare_attribute_hyperslab_write(this, attribute_id, &
+      numeric_type, value_count, spatial_offset, spatial_count, index, &
+      storage_offset, storage_count, status)
+    class(xdmf_writer_t), intent(in) :: this
+    type(xdmf_attribute_id_t), intent(in) :: attribute_id
+    integer, intent(in) :: numeric_type
+    integer(int64), intent(in) :: value_count
+    integer(int64), intent(in) :: spatial_offset(:), spatial_count(:)
+    integer, intent(out) :: index
+    integer(int64), allocatable, intent(out) :: storage_offset(:)
+    integer(int64), allocatable, intent(out) :: storage_count(:)
+    type(xdmf_status_t), intent(out) :: status
+
+    integer(int64) :: expected_count
+    logical :: empty_selection
+
+    index = 0
+    call check_open(this, status)
+    if (.not. status%is_error() .and. .not. this%is_collective) then
+      call set_status_error(status, XDMF_ERROR_STATE, &
+        'Attribute hyperslabs require collective HDF5 output')
+    end if
+    if (.not. status%is_error()) then
+      index = find_attribute(this, attribute_id)
+      if (index == 0) then
+        call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+          'Unknown attribute identifier')
+      end if
+    end if
+    if (.not. status%is_error()) then
+      if (this%attributes(index)%numeric_type /= numeric_type) then
+        call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+          'Attribute values have the wrong numeric type')
+      else if (.not. this%attributes(index)%is_series) then
+        call set_status_error(status, XDMF_ERROR_STATE, &
+          'Collective hyperslabs currently support series attributes only')
+      else if (size(this%attributes(index)%component_shape) /= 0) then
+        call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+          'Collective hyperslabs currently support scalar attributes only')
+      end if
+    end if
+    if (.not. status%is_error()) then
+      if (size(spatial_offset) /= size(this%attributes(index)%storage_shape) .or. &
+          size(spatial_count) /= size(this%attributes(index)%storage_shape)) then
+        call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+          'Hyperslab offset and count must match the spatial rank')
+      else if (any(spatial_offset < 0_int64) .or. &
+          any(spatial_count < 0_int64)) then
+        call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+          'Hyperslab offsets and counts must not be negative')
+      end if
+    end if
+    if (.not. status%is_error()) then
+      empty_selection = all(spatial_count == 0_int64)
+      if (.not. empty_selection .and. any(spatial_count == 0_int64)) then
+        call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+          'A hyperslab must be entirely empty or positive in every dimension')
+      else if (.not. empty_selection) then
+        if (any(spatial_count > this%attributes(index)%storage_shape) .or. &
+            any(spatial_offset > &
+              this%attributes(index)%storage_shape - spatial_count)) then
+          call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+            'Attribute hyperslab lies outside the defined shape')
+        end if
+      end if
+    end if
+    if (.not. status%is_error()) then
+      if (all(spatial_count == 0_int64)) then
+        expected_count = 0_int64
+      else
+        expected_count = product_int64(spatial_count)
+      end if
+      if (expected_count < 0_int64 .or. value_count /= expected_count) then
+        call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+          'Hyperslab value count does not match its local shape')
+      else if (.not. this%step_is_active) then
+        call set_status_error(status, XDMF_ERROR_STATE, &
+          'A series attribute can only be written inside an active step')
+      else if (this%attributes(index)%last_step == &
+          this%committed_steps + 1) then
+        call set_status_error(status, XDMF_ERROR_STATE, &
+          'A series attribute can only be written once per step')
+      end if
+    end if
+
+    call synchronize_collective_status(this, status, &
+      'Collective attribute hyperslab validation failed')
+    if (status%is_error()) return
+    storage_offset = spatial_offset
+    storage_count = spatial_count
+  end subroutine prepare_attribute_hyperslab_write
+
   subroutine finish_attribute_write(this, index, status)
     class(xdmf_writer_t), intent(inout) :: this
     integer, intent(in) :: index
@@ -2003,6 +2238,9 @@ contains
     type(xdmf_options_t), intent(in) :: options
     type(xdmf_status_t), intent(out) :: status
 
+    integer :: mpi_error, rank_count
+    logical :: mpi_is_initialized
+
     select case (options%series_kind)
     case (XDMF_SERIES_NONE, XDMF_SERIES_TIME, XDMF_SERIES_FREQUENCY, &
         XDMF_SERIES_PARAMETER)
@@ -2020,6 +2258,39 @@ contains
       call set_status_error(status, XDMF_ERROR_ARGUMENT, &
         'The HDF5 chunk target must be positive')
       return
+    end if
+    if (options%collective_io .and. options%compression_level /= 0) then
+      call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+        'Collective HDF5 output does not currently support compression')
+      return
+    end if
+    if (options%collective_io) then
+#ifdef XDMF_HDF5_WITH_MPI
+      call MPI_Initialized(mpi_is_initialized, mpi_error)
+      if (mpi_error /= MPI_SUCCESS .or. .not. mpi_is_initialized .or. &
+          options%communicator == MPI_COMM_NULL) then
+        call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+          'Collective HDF5 output requires an initialized MPI communicator')
+        return
+      end if
+      call MPI_Comm_size(options%communicator, rank_count, mpi_error)
+      if (mpi_error /= MPI_SUCCESS .or. options%root_rank < 0 .or. &
+          options%root_rank >= rank_count) then
+        call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+          'The collective-output root rank is outside the communicator')
+        return
+      end if
+#ifdef XDMF_HDF5_WITH_PARALLEL_HDF5
+#else
+      call set_status_error(status, XDMF_ERROR_STATE, &
+        'This library was built with MPI but the selected HDF5 is serial')
+      return
+#endif
+#else
+      call set_status_error(status, XDMF_ERROR_STATE, &
+        'This library was built without MPI support')
+      return
+#endif
     end if
     call set_status_success(status)
   end subroutine validate_options
@@ -2056,6 +2327,32 @@ contains
         'The XDMF writer is not open')
     end if
   end subroutine check_open
+
+  subroutine synchronize_collective_status(this, status, context)
+    class(xdmf_writer_t), intent(in) :: this
+    type(xdmf_status_t), intent(inout) :: status
+    character(len=*), intent(in) :: context
+
+#ifdef XDMF_HDF5_WITH_MPI
+    integer :: local_code, global_code, mpi_error
+#endif
+
+    if (.not. this%is_collective) return
+#ifdef XDMF_HDF5_WITH_MPI
+    local_code = status%error_code()
+    call MPI_Allreduce(local_code, global_code, 1, MPI_INTEGER, MPI_MAX, &
+      this%communicator, mpi_error)
+    if (mpi_error /= MPI_SUCCESS) then
+      call set_status_error(status, XDMF_ERROR_CONSISTENCY, &
+        'Could not synchronize collective writer status')
+    else if (global_code /= XDMF_SUCCESS .and. local_code == XDMF_SUCCESS) then
+      call set_status_error(status, global_code, context)
+    end if
+#else
+    call set_status_error(status, XDMF_ERROR_STATE, &
+      'This library was built without parallel HDF5 support')
+#endif
+  end subroutine synchronize_collective_status
 
   logical function collection_exists(this, id)
     class(xdmf_writer_t), intent(in) :: this
@@ -2202,9 +2499,13 @@ contains
       next_writer_token = next_writer_token + 1_int64
     end if
     this%active_step_value = 0.0_real64
+    this%communicator = 0
+    this%rank = 0
+    this%root_rank = 0
     this%definitions_locked = .false.
     this%step_is_active = .false.
     this%is_poisoned = .false.
+    this%is_collective = .false.
   end subroutine reset_writer_metadata
 
   subroutine close_after_create_failure(this, status)

@@ -84,6 +84,9 @@ module xdmf_model_m
     integer :: series_kind = XDMF_SERIES_NONE
     integer :: compression_level = 0
     integer(int64) :: chunk_target_bytes = 1048576_int64
+    logical :: collective_io = .false.
+    integer :: communicator = 0
+    integer :: root_rank = 0
   end type xdmf_options_t
 
   type, public :: xdmf_collection_id_t

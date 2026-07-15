@@ -27,6 +27,58 @@ option(
 
 find_package(HDF5 REQUIRED COMPONENTS Fortran)
 
+if(DEFINED SEMBA_FDTD_ENABLE_MPI)
+  set(_xdmf_hdf5_mpi_default ${SEMBA_FDTD_ENABLE_MPI})
+else()
+  set(_xdmf_hdf5_mpi_default OFF)
+endif()
+option(
+  XDMF_HDF5_ENABLE_MPI
+  "Build the external writer MPI API"
+  ${_xdmf_hdf5_mpi_default}
+)
+
+set(XDMF_HDF5_MPI_ENABLED FALSE)
+if(XDMF_HDF5_ENABLE_MPI)
+  find_package(MPI REQUIRED COMPONENTS Fortran)
+  set(XDMF_HDF5_MPI_ENABLED TRUE)
+endif()
+
+set(XDMF_HDF5_PARALLEL_AVAILABLE FALSE)
+if(XDMF_HDF5_MPI_ENABLED AND SEMBA_FDTD_HAVE_PARALLEL_HDF5_FORTRAN)
+  set(XDMF_HDF5_PARALLEL_AVAILABLE TRUE)
+elseif(XDMF_HDF5_MPI_ENABLED AND HDF5_IS_PARALLEL)
+  include(CMakePushCheckState)
+  include(CheckFortranSourceCompiles)
+  cmake_push_check_state(RESET)
+  set(CMAKE_REQUIRED_INCLUDES
+    ${HDF5_Fortran_INCLUDE_DIRS}
+    ${MPI_Fortran_INCLUDE_DIRS}
+  )
+  set(CMAKE_REQUIRED_LIBRARIES
+    ${HDF5_Fortran_LIBRARIES}
+    MPI::MPI_Fortran
+  )
+  check_fortran_source_compiles([=[
+program xdmf_hdf5_mpi_probe
+  use hdf5
+  use mpi
+  implicit none
+  integer :: error
+  integer(HID_T) :: file_access_plist, transfer_plist
+
+  call h5pcreate_f(H5P_FILE_ACCESS_F, file_access_plist, error)
+  call h5pset_fapl_mpio_f(file_access_plist, MPI_COMM_WORLD, MPI_INFO_NULL, error)
+  call h5pcreate_f(H5P_DATASET_XFER_F, transfer_plist, error)
+  call h5pset_dxpl_mpio_f(transfer_plist, H5FD_MPIO_COLLECTIVE_F, error)
+end program xdmf_hdf5_mpi_probe
+]=] XDMF_HDF5_MPI_PROBE_WORKS SRC_EXT F90)
+  cmake_pop_check_state()
+  if(XDMF_HDF5_MPI_PROBE_WORKS)
+    set(XDMF_HDF5_PARALLEL_AVAILABLE TRUE)
+  endif()
+endif()
+
 add_library(opensemba_xdmf_hdf5
   src/xdmf_model.F90
   src/xdmf_hdf5_backend.F90
@@ -55,6 +107,13 @@ if(NOT TARGET HDF5::HDF5)
   )
 endif()
 target_link_libraries(opensemba_xdmf_hdf5 PUBLIC HDF5::HDF5)
+if(XDMF_HDF5_MPI_ENABLED)
+  target_link_libraries(opensemba_xdmf_hdf5 PUBLIC MPI::MPI_Fortran)
+  target_compile_definitions(opensemba_xdmf_hdf5 PRIVATE XDMF_HDF5_WITH_MPI)
+endif()
+if(XDMF_HDF5_PARALLEL_AVAILABLE)
+  target_compile_definitions(opensemba_xdmf_hdf5 PRIVATE XDMF_HDF5_WITH_PARALLEL_HDF5)
+endif()
 
 if(XDMF_HDF5_BUILD_TESTING)
   enable_testing()

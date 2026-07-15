@@ -1,8 +1,11 @@
 module xdmf_hdf5_backend_m
   use, intrinsic :: iso_fortran_env, only: int32, int64, real32, real64
   use hdf5
+#ifdef XDMF_HDF5_WITH_PARALLEL_HDF5
+  use mpi
+#endif
   use xdmf_model_m, only: xdmf_status_t, xdmf_options_t, &
-    XDMF_ERROR_HDF5, XDMF_ERROR_CONSISTENCY, &
+    XDMF_ERROR_ARGUMENT, XDMF_ERROR_HDF5, XDMF_ERROR_CONSISTENCY, &
     XDMF_NUMERIC_REAL32, XDMF_NUMERIC_REAL64, &
     XDMF_NUMERIC_INT32, XDMF_NUMERIC_INT64, &
     numeric_type_size, product_int64, set_status_success, set_status_error
@@ -14,6 +17,11 @@ module xdmf_hdf5_backend_m
   type, public :: hdf5_file_t
     private
     integer(HID_T) :: id = -1_HID_T
+    integer(HID_T) :: transfer_property = -1_HID_T
+    integer :: communicator = 0
+    integer :: rank = 0
+    integer :: root_rank = 0
+    logical :: collective = .false.
   end type hdf5_file_t
 
   public :: hdf_create_file
@@ -24,6 +32,7 @@ module xdmf_hdf5_backend_m
   public :: hdf_write_dataset
   public :: hdf_create_series_dataset
   public :: hdf_append_series
+  public :: hdf_append_series_hyperslab
   public :: hdf_truncate_series
 
   interface hdf_write_dataset
@@ -40,6 +49,13 @@ module xdmf_hdf5_backend_m
     module procedure hdf_append_series_i8
   end interface hdf_append_series
 
+  interface hdf_append_series_hyperslab
+    module procedure hdf_append_series_hyperslab_r4
+    module procedure hdf_append_series_hyperslab_r8
+    module procedure hdf_append_series_hyperslab_i4
+    module procedure hdf_append_series_hyperslab_i8
+  end interface hdf_append_series_hyperslab
+
 contains
 
   subroutine hdf_create_file(file, path, options, status)
@@ -50,8 +66,15 @@ contains
 
     integer(HID_T) :: access_property
     integer :: access_flag, close_error, error
+#ifdef XDMF_HDF5_WITH_PARALLEL_HDF5
+    integer :: mpi_error, rank_count
+#endif
 
     call set_status_success(status)
+    file%transfer_property = H5P_DEFAULT_F
+#ifdef XDMF_HDF5_WITH_PARALLEL_HDF5
+    rank_count = 0
+#endif
     call h5open_f(error)
     if (error /= 0) then
       call set_status_error(status, XDMF_ERROR_HDF5, &
@@ -63,12 +86,48 @@ contains
     if (error == 0) then
       call h5pset_fclose_degree_f(access_property, H5F_CLOSE_STRONG_F, error)
     end if
+    if (error == 0 .and. options%collective_io) then
+#ifdef XDMF_HDF5_WITH_PARALLEL_HDF5
+      file%collective = .true.
+      file%communicator = options%communicator
+      file%root_rank = options%root_rank
+      call MPI_Comm_rank(file%communicator, file%rank, mpi_error)
+      if (mpi_error == MPI_SUCCESS) then
+        call MPI_Comm_size(file%communicator, rank_count, mpi_error)
+      end if
+      if (mpi_error /= MPI_SUCCESS .or. file%root_rank < 0 .or. &
+          file%root_rank >= rank_count) then
+        error = -1
+      else
+        call h5pset_fapl_mpio_f(access_property, file%communicator, &
+          MPI_INFO_NULL, error)
+      end if
+      if (error == 0) then
+        call h5pcreate_f(H5P_DATASET_XFER_F, file%transfer_property, error)
+      end if
+      if (error == 0) then
+        call h5pset_dxpl_mpio_f(file%transfer_property, &
+          H5FD_MPIO_COLLECTIVE_F, error)
+      end if
+#else
+      error = -1
+#endif
+    end if
     if (error /= 0) then
       if (access_property >= 0_HID_T) then
         call h5pclose_f(access_property, close_error)
       end if
-      call set_status_error(status, XDMF_ERROR_HDF5, &
-        'Could not configure HDF5 file ownership')
+      if (file%transfer_property /= H5P_DEFAULT_F) then
+        call h5pclose_f(file%transfer_property, close_error)
+        file%transfer_property = H5P_DEFAULT_F
+      end if
+      if (options%collective_io) then
+        call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+          'Collective HDF5 output is unavailable or has invalid MPI options')
+      else
+        call set_status_error(status, XDMF_ERROR_HDF5, &
+          'Could not configure HDF5 file ownership')
+      end if
       return
     end if
     if (options%overwrite) then
@@ -80,6 +139,10 @@ contains
       H5P_DEFAULT_F, access_property)
     call h5pclose_f(access_property, close_error)
     if (error /= 0 .or. file%id < 0_HID_T) then
+      if (file%transfer_property /= H5P_DEFAULT_F) then
+        call h5pclose_f(file%transfer_property, close_error)
+        file%transfer_property = H5P_DEFAULT_F
+      end if
       call set_status_error(status, XDMF_ERROR_HDF5, &
         'Could not create HDF5 file: '//trim(path))
       return
@@ -114,9 +177,10 @@ contains
     type(hdf5_file_t), intent(inout) :: file
     type(xdmf_status_t), intent(out) :: status
 
-    integer :: error
+    integer :: error, property_error
 
     call set_status_success(status)
+    property_error = 0
     if (file%id >= 0_HID_T) then
       call h5fclose_f(file%id, error)
       if (error /= 0) then
@@ -125,6 +189,14 @@ contains
       else
         file%id = -1_HID_T
       end if
+    end if
+    if (file%transfer_property /= H5P_DEFAULT_F) then
+      call h5pclose_f(file%transfer_property, property_error)
+      if (property_error == 0) file%transfer_property = H5P_DEFAULT_F
+    end if
+    if (property_error /= 0 .and. .not. status%is_error()) then
+      call set_status_error(status, XDMF_ERROR_CONSISTENCY, &
+        'Could not close the collective HDF5 transfer property list')
     end if
   end subroutine hdf_close_file
 
@@ -178,7 +250,7 @@ contains
     integer(int64), intent(in) :: shape(:)
     type(xdmf_status_t), intent(out) :: status
 
-    integer(HID_T) :: dataset_id
+    integer(HID_T) :: dataset_id, filespace, memspace
     integer(HSIZE_T) :: buffer_dims(1)
     integer :: error
 
@@ -188,9 +260,17 @@ contains
     if (status%is_error()) return
 
     buffer_dims(1) = int(size(data), HSIZE_T)
+    call prepare_full_transfer(file, dataset_id, buffer_dims, filespace, &
+      memspace, status)
+    if (status%is_error()) then
+      call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
+        -1, status)
+      return
+    end if
     call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_REAL32), &
-      data, buffer_dims, error)
-    call finish_fixed_write(file, dataset_id, path, error, status)
+      data, buffer_dims, error, memspace, filespace, file%transfer_property)
+    call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
+      error, status)
   end subroutine hdf_write_dataset_r4
 
   subroutine hdf_write_dataset_r8(file, path, data, shape, status)
@@ -200,7 +280,7 @@ contains
     integer(int64), intent(in) :: shape(:)
     type(xdmf_status_t), intent(out) :: status
 
-    integer(HID_T) :: dataset_id
+    integer(HID_T) :: dataset_id, filespace, memspace
     integer(HSIZE_T) :: buffer_dims(1)
     integer :: error
 
@@ -210,9 +290,17 @@ contains
     if (status%is_error()) return
 
     buffer_dims(1) = int(size(data), HSIZE_T)
+    call prepare_full_transfer(file, dataset_id, buffer_dims, filespace, &
+      memspace, status)
+    if (status%is_error()) then
+      call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
+        -1, status)
+      return
+    end if
     call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_REAL64), &
-      data, buffer_dims, error)
-    call finish_fixed_write(file, dataset_id, path, error, status)
+      data, buffer_dims, error, memspace, filespace, file%transfer_property)
+    call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
+      error, status)
   end subroutine hdf_write_dataset_r8
 
   subroutine hdf_write_dataset_i4(file, path, data, shape, status)
@@ -222,7 +310,7 @@ contains
     integer(int64), intent(in) :: shape(:)
     type(xdmf_status_t), intent(out) :: status
 
-    integer(HID_T) :: dataset_id
+    integer(HID_T) :: dataset_id, filespace, memspace
     integer(HSIZE_T) :: buffer_dims(1)
     integer :: error
 
@@ -232,9 +320,17 @@ contains
     if (status%is_error()) return
 
     buffer_dims(1) = int(size(data), HSIZE_T)
+    call prepare_full_transfer(file, dataset_id, buffer_dims, filespace, &
+      memspace, status)
+    if (status%is_error()) then
+      call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
+        -1, status)
+      return
+    end if
     call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_INT32), &
-      data, buffer_dims, error)
-    call finish_fixed_write(file, dataset_id, path, error, status)
+      data, buffer_dims, error, memspace, filespace, file%transfer_property)
+    call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
+      error, status)
   end subroutine hdf_write_dataset_i4
 
   subroutine hdf_write_dataset_i8(file, path, data, shape, status)
@@ -244,7 +340,7 @@ contains
     integer(int64), intent(in) :: shape(:)
     type(xdmf_status_t), intent(out) :: status
 
-    integer(HID_T) :: dataset_id
+    integer(HID_T) :: dataset_id, filespace, memspace
     integer(HSIZE_T) :: buffer_dims(1)
     integer :: error
 
@@ -254,9 +350,17 @@ contains
     if (status%is_error()) return
 
     buffer_dims(1) = int(size(data), HSIZE_T)
+    call prepare_full_transfer(file, dataset_id, buffer_dims, filespace, &
+      memspace, status)
+    if (status%is_error()) then
+      call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
+        -1, status)
+      return
+    end if
     call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_INT64), &
-      data, buffer_dims, error)
-    call finish_fixed_write(file, dataset_id, path, error, status)
+      data, buffer_dims, error, memspace, filespace, file%transfer_property)
+    call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
+      error, status)
   end subroutine hdf_write_dataset_i8
 
   subroutine hdf_create_series_dataset(file, path, numeric_type, shape, &
@@ -382,6 +486,130 @@ contains
       hdf_datatype(XDMF_NUMERIC_INT64), status)
   end subroutine hdf_append_series_i8
 
+  subroutine hdf_append_series_hyperslab_r4(file, path, data, shape, offset, &
+      count, committed_steps, status)
+    type(hdf5_file_t), intent(in) :: file
+    character(len=*), intent(in) :: path
+    real(real32), intent(in) :: data(:)
+    integer(int64), intent(in) :: shape(:), offset(:), count(:)
+    integer, intent(in) :: committed_steps
+    type(xdmf_status_t), intent(out) :: status
+
+    real(real32) :: dummy(1)
+    integer(HID_T) :: dataset_id, filespace, memspace
+    integer(HSIZE_T), allocatable :: new_dims(:), hdf_offset(:), hdf_count(:)
+    integer(HSIZE_T) :: mem_dims(1)
+    integer :: error
+
+    dummy = 0.0_real32
+    call prepare_append(file, path, shape, committed_steps, dataset_id, &
+      filespace, memspace, new_dims, hdf_offset, hdf_count, mem_dims, status, &
+      offset, count)
+    if (status%is_error()) return
+    if (size(data) == 0) then
+      call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_REAL32), dummy, &
+        mem_dims, error, memspace, filespace, file%transfer_property)
+    else
+      call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_REAL32), data, &
+        mem_dims, error, memspace, filespace, file%transfer_property)
+    end if
+    call finish_append(dataset_id, filespace, memspace, path, shape, &
+      committed_steps, error, status)
+  end subroutine hdf_append_series_hyperslab_r4
+
+  subroutine hdf_append_series_hyperslab_r8(file, path, data, shape, offset, &
+      count, committed_steps, status)
+    type(hdf5_file_t), intent(in) :: file
+    character(len=*), intent(in) :: path
+    real(real64), intent(in) :: data(:)
+    integer(int64), intent(in) :: shape(:), offset(:), count(:)
+    integer, intent(in) :: committed_steps
+    type(xdmf_status_t), intent(out) :: status
+
+    real(real64) :: dummy(1)
+    integer(HID_T) :: dataset_id, filespace, memspace
+    integer(HSIZE_T), allocatable :: new_dims(:), hdf_offset(:), hdf_count(:)
+    integer(HSIZE_T) :: mem_dims(1)
+    integer :: error
+
+    dummy = 0.0_real64
+    call prepare_append(file, path, shape, committed_steps, dataset_id, &
+      filespace, memspace, new_dims, hdf_offset, hdf_count, mem_dims, status, &
+      offset, count)
+    if (status%is_error()) return
+    if (size(data) == 0) then
+      call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_REAL64), dummy, &
+        mem_dims, error, memspace, filespace, file%transfer_property)
+    else
+      call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_REAL64), data, &
+        mem_dims, error, memspace, filespace, file%transfer_property)
+    end if
+    call finish_append(dataset_id, filespace, memspace, path, shape, &
+      committed_steps, error, status)
+  end subroutine hdf_append_series_hyperslab_r8
+
+  subroutine hdf_append_series_hyperslab_i4(file, path, data, shape, offset, &
+      count, committed_steps, status)
+    type(hdf5_file_t), intent(in) :: file
+    character(len=*), intent(in) :: path
+    integer(int32), intent(in) :: data(:)
+    integer(int64), intent(in) :: shape(:), offset(:), count(:)
+    integer, intent(in) :: committed_steps
+    type(xdmf_status_t), intent(out) :: status
+
+    integer(int32) :: dummy(1)
+    integer(HID_T) :: dataset_id, filespace, memspace
+    integer(HSIZE_T), allocatable :: new_dims(:), hdf_offset(:), hdf_count(:)
+    integer(HSIZE_T) :: mem_dims(1)
+    integer :: error
+
+    dummy = 0_int32
+    call prepare_append(file, path, shape, committed_steps, dataset_id, &
+      filespace, memspace, new_dims, hdf_offset, hdf_count, mem_dims, status, &
+      offset, count)
+    if (status%is_error()) return
+    if (size(data) == 0) then
+      call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_INT32), dummy, &
+        mem_dims, error, memspace, filespace, file%transfer_property)
+    else
+      call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_INT32), data, &
+        mem_dims, error, memspace, filespace, file%transfer_property)
+    end if
+    call finish_append(dataset_id, filespace, memspace, path, shape, &
+      committed_steps, error, status)
+  end subroutine hdf_append_series_hyperslab_i4
+
+  subroutine hdf_append_series_hyperslab_i8(file, path, data, shape, offset, &
+      count, committed_steps, status)
+    type(hdf5_file_t), intent(in) :: file
+    character(len=*), intent(in) :: path
+    integer(int64), intent(in) :: data(:)
+    integer(int64), intent(in) :: shape(:), offset(:), count(:)
+    integer, intent(in) :: committed_steps
+    type(xdmf_status_t), intent(out) :: status
+
+    integer(int64) :: dummy(1)
+    integer(HID_T) :: dataset_id, filespace, memspace
+    integer(HSIZE_T), allocatable :: new_dims(:), hdf_offset(:), hdf_count(:)
+    integer(HSIZE_T) :: mem_dims(1)
+    integer :: error
+
+    dummy = 0_int64
+    call prepare_append(file, path, shape, committed_steps, dataset_id, &
+      filespace, memspace, new_dims, hdf_offset, hdf_count, mem_dims, status, &
+      offset, count)
+    if (status%is_error()) return
+    if (size(data) == 0) then
+      call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_INT64), dummy, &
+        mem_dims, error, memspace, filespace, file%transfer_property)
+    else
+      call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_INT64), data, &
+        mem_dims, error, memspace, filespace, file%transfer_property)
+    end if
+    call finish_append(dataset_id, filespace, memspace, path, shape, &
+      committed_steps, error, status)
+  end subroutine hdf_append_series_hyperslab_i8
+
   subroutine append_series_r4_impl(file, path, data, shape, committed_steps, &
       datatype, status)
     type(hdf5_file_t), intent(in) :: file
@@ -401,7 +629,7 @@ contains
       filespace, memspace, new_dims, offset, count, mem_dims, status)
     if (status%is_error()) return
     call h5dwrite_f(dataset_id, datatype, data, mem_dims, error, &
-      memspace, filespace)
+      memspace, filespace, file%transfer_property)
     call finish_append(dataset_id, filespace, memspace, path, shape, &
       committed_steps, error, status)
   end subroutine append_series_r4_impl
@@ -425,7 +653,7 @@ contains
       filespace, memspace, new_dims, offset, count, mem_dims, status)
     if (status%is_error()) return
     call h5dwrite_f(dataset_id, datatype, data, mem_dims, error, &
-      memspace, filespace)
+      memspace, filespace, file%transfer_property)
     call finish_append(dataset_id, filespace, memspace, path, shape, &
       committed_steps, error, status)
   end subroutine append_series_r8_impl
@@ -449,7 +677,7 @@ contains
       filespace, memspace, new_dims, offset, count, mem_dims, status)
     if (status%is_error()) return
     call h5dwrite_f(dataset_id, datatype, data, mem_dims, error, &
-      memspace, filespace)
+      memspace, filespace, file%transfer_property)
     call finish_append(dataset_id, filespace, memspace, path, shape, &
       committed_steps, error, status)
   end subroutine append_series_i4_impl
@@ -473,7 +701,7 @@ contains
       filespace, memspace, new_dims, offset, count, mem_dims, status)
     if (status%is_error()) return
     call h5dwrite_f(dataset_id, datatype, data, mem_dims, error, &
-      memspace, filespace)
+      memspace, filespace, file%transfer_property)
     call finish_append(dataset_id, filespace, memspace, path, shape, &
       committed_steps, error, status)
   end subroutine append_series_i8_impl
@@ -559,19 +787,56 @@ contains
     end if
   end subroutine create_fixed_dataset
 
-  subroutine finish_fixed_write(file, dataset_id, path, write_error, status)
+  subroutine prepare_full_transfer(file, dataset_id, buffer_dims, filespace, &
+      memspace, status)
     type(hdf5_file_t), intent(in) :: file
-    integer(HID_T), intent(inout) :: dataset_id
+    integer(HID_T), intent(in) :: dataset_id
+    integer(HSIZE_T), intent(in) :: buffer_dims(1)
+    integer(HID_T), intent(out) :: filespace, memspace
+    type(xdmf_status_t), intent(out) :: status
+
+    integer :: error, close_error
+
+    call set_status_success(status)
+    filespace = -1_HID_T
+    memspace = -1_HID_T
+    call h5dget_space_f(dataset_id, filespace, error)
+    if (error == 0) call h5screate_simple_f(1, buffer_dims, memspace, error)
+    if (error == 0 .and. file%collective .and. file%rank /= file%root_rank) then
+      call h5sselect_none_f(filespace, error)
+      if (error == 0) call h5sselect_none_f(memspace, error)
+    end if
+    if (error /= 0) then
+      if (memspace >= 0_HID_T) call h5sclose_f(memspace, close_error)
+      if (filespace >= 0_HID_T) call h5sclose_f(filespace, close_error)
+      memspace = -1_HID_T
+      filespace = -1_HID_T
+      call set_status_error(status, XDMF_ERROR_HDF5, &
+        'Could not configure a fixed-dataset transfer')
+    end if
+  end subroutine prepare_full_transfer
+
+  subroutine finish_fixed_write(file, dataset_id, filespace, memspace, path, &
+      write_error, status)
+    type(hdf5_file_t), intent(in) :: file
+    integer(HID_T), intent(inout) :: dataset_id, filespace, memspace
     character(len=*), intent(in) :: path
     integer, intent(in) :: write_error
     type(xdmf_status_t), intent(inout) :: status
 
-    integer :: close_error, delete_error
+    integer :: close_error, delete_error, space_error
 
+    close_error = 0
     delete_error = 0
+    space_error = 0
+    if (memspace >= 0_HID_T) call h5sclose_f(memspace, space_error)
+    if (filespace >= 0_HID_T) call h5sclose_f(filespace, close_error)
+    if (space_error == 0) space_error = close_error
+    memspace = -1_HID_T
+    filespace = -1_HID_T
     call h5dclose_f(dataset_id, close_error)
     dataset_id = -1_HID_T
-    if (write_error /= 0 .or. close_error /= 0) then
+    if (write_error /= 0 .or. close_error /= 0 .or. space_error /= 0) then
       call h5ldelete_f(file%id, trim(path), delete_error)
     end if
     if (write_error /= 0) then
@@ -582,14 +847,15 @@ contains
         call set_status_error(status, XDMF_ERROR_HDF5, &
           'Could not write HDF5 dataset: '//trim(path))
       end if
-    else if (close_error /= 0) then
+    else if (close_error /= 0 .or. space_error /= 0) then
       call set_status_error(status, XDMF_ERROR_CONSISTENCY, &
-        'Could not close HDF5 dataset: '//trim(path))
+        'Could not close HDF5 dataset resources: '//trim(path))
     end if
   end subroutine finish_fixed_write
 
   subroutine prepare_append(file, path, shape, committed_steps, dataset_id, &
-      filespace, memspace, new_dims, offset, count, mem_dims, status)
+      filespace, memspace, new_dims, offset, count, mem_dims, status, &
+      local_offset, local_count)
     type(hdf5_file_t), intent(in) :: file
     character(len=*), intent(in) :: path
     integer(int64), intent(in) :: shape(:)
@@ -598,10 +864,12 @@ contains
     integer(HSIZE_T), allocatable, intent(out) :: new_dims(:), offset(:), count(:)
     integer(HSIZE_T), intent(out) :: mem_dims(1)
     type(xdmf_status_t), intent(out) :: status
+    integer(int64), intent(in), optional :: local_offset(:), local_count(:)
 
     integer(HSIZE_T), allocatable :: dims(:), maxdims(:)
+    integer(int64) :: memory_elements
     integer :: error, close_error, rank
-    logical :: close_failed
+    logical :: close_failed, empty_selection
 
     call set_status_success(status)
     dataset_id = -1_HID_T
@@ -609,6 +877,19 @@ contains
     memspace = -1_HID_T
     rank = size(shape) + 1
     allocate(dims(rank), maxdims(rank), new_dims(rank), offset(rank), count(rank))
+    if (present(local_offset) .neqv. present(local_count)) then
+      call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+        'A series hyperslab requires both offset and count')
+      return
+    end if
+    if (present(local_offset)) then
+      if (size(local_offset) /= size(shape) .or. &
+          size(local_count) /= size(shape)) then
+        call set_status_error(status, XDMF_ERROR_ARGUMENT, &
+          'A series hyperslab rank must match the dataset rank')
+        return
+      end if
+    end if
 
     call h5dopen_f(file%id, trim(path), dataset_id, error)
     if (error == 0) call h5dget_space_f(dataset_id, filespace, error)
@@ -658,15 +939,38 @@ contains
 
     offset = 0_HSIZE_T
     offset(rank) = dims(rank)
-    count = new_dims
+    if (present(local_offset)) then
+      if (size(shape) > 0) then
+        offset(:rank - 1) = int(local_offset, HSIZE_T)
+        count(:rank - 1) = int(local_count, HSIZE_T)
+      end if
+    else
+      count = new_dims
+    end if
     count(rank) = 1_HSIZE_T
-    if (error == 0) then
+    empty_selection = .false.
+    if (present(local_count)) empty_selection = any(local_count == 0_int64)
+    if (error == 0 .and. empty_selection) then
+      call h5sselect_none_f(filespace, error)
+    else if (error == 0) then
       call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
         offset, count, error)
     end if
 
-    mem_dims(1) = int(max(1_int64, product_int64(shape)), HSIZE_T)
+    if (present(local_count)) then
+      memory_elements = product_int64(local_count)
+    else
+      memory_elements = product_int64(shape)
+    end if
+    mem_dims(1) = int(max(1_int64, memory_elements), HSIZE_T)
     if (error == 0) call h5screate_simple_f(1, mem_dims, memspace, error)
+    if (error == 0 .and. empty_selection) then
+      call h5sselect_none_f(memspace, error)
+    else if (error == 0 .and. .not. present(local_offset) .and. &
+        file%collective .and. file%rank /= file%root_rank) then
+      call h5sselect_none_f(filespace, error)
+      if (error == 0) call h5sselect_none_f(memspace, error)
+    end if
     if (error /= 0) then
       call h5dset_extent_f(dataset_id, dims, close_error)
       call close_append_handles(dataset_id, filespace, memspace, close_failed)
@@ -811,11 +1115,16 @@ contains
   subroutine close_after_create_error(file, status)
     type(hdf5_file_t), intent(inout) :: file
     type(xdmf_status_t), intent(inout) :: status
-    integer :: error
+    integer :: error, property_error
 
     error = 0
+    property_error = 0
     if (file%id >= 0_HID_T) call h5fclose_f(file%id, error)
-    if (error == 0) then
+    if (file%transfer_property /= H5P_DEFAULT_F) then
+      call h5pclose_f(file%transfer_property, property_error)
+      if (property_error == 0) file%transfer_property = H5P_DEFAULT_F
+    end if
+    if (error == 0 .and. property_error == 0) then
       file%id = -1_HID_T
     else
       call set_status_error(status, XDMF_ERROR_CONSISTENCY, &
