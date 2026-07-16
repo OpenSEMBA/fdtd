@@ -35,6 +35,33 @@ cmake --build build -j
 ctest --test-dir build --output-on-failure
 ```
 
+## Example Generator
+
+With `XDMF_HDF5_BUILD_TESTING=ON`, the build produces
+`xdmf_hdf5_generate_cases` in the build's binary directory.
+It generates the XDMF/HDF5 conformance examples:
+
+```sh
+./build/bin/xdmf_hdf5_generate_cases <output-directory> [options]
+```
+
+The output directory is created when necessary.
+The generator preserves existing files by default and rejects the invocation
+before writing when one of its output pairs already exists.
+Use `--replace` to explicitly replace the generator's named output pairs:
+
+```sh
+./build/bin/xdmf_hdf5_generate_cases ./generated --replace
+```
+
+Available options are:
+
+```text
+--examples  Generate only the committed examples.
+--help      Print command usage and exit.
+--replace   Replace generated files that already exist.
+```
+
 Consumers link the exported target:
 
 ```cmake

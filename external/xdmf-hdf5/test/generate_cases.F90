@@ -1,28 +1,69 @@
 program generate_cases
+  use, intrinsic :: iso_c_binding, only: c_char, c_int, c_null_char
   use, intrinsic :: iso_fortran_env, only: int32, int64, real32, real64
   use xdmf_hdf5_m
 
   implicit none
 
   character(len=1024) :: output_dir
-  character(len=32) :: mode
-  integer :: failures
-  logical :: examples_only
+  character(len=32) :: option
+  character(kind=c_char), allocatable :: c_output_dir(:)
+  integer :: argument_index, failures, output_dir_length
+  integer(c_int) :: directory_error
+  logical :: examples_only, replace_existing
+
+  interface
+    function xdmf_create_directory(directory) bind(C) result(error)
+      import :: c_char, c_int
+      character(kind=c_char), intent(in) :: directory(*)
+      integer(c_int) :: error
+    end function xdmf_create_directory
+  end interface
 
   failures = 0
-  call get_command_argument(1, output_dir)
-  if (len_trim(output_dir) == 0) then
-    error stop 'An output directory argument is required'
+  examples_only = .false.
+  replace_existing = .false.
+  if (command_argument_count() == 0) then
+    call print_help()
+    stop
   end if
-  call get_command_argument(2, mode)
-  select case (trim(mode))
-  case ('')
-    examples_only = .false.
-  case ('--examples')
-    examples_only = .true.
-  case default
-    error stop 'The optional second argument must be --examples'
-  end select
+  call get_command_argument(1, output_dir)
+  if (trim(output_dir) == '--help') then
+    call print_help()
+    stop
+  end if
+  if (len_trim(output_dir) == 0) then
+    call print_help()
+    stop 1
+  end if
+  output_dir_length = len_trim(output_dir)
+  allocate(c_output_dir(output_dir_length + 1))
+  do argument_index = 1, output_dir_length
+    c_output_dir(argument_index) = output_dir(argument_index:argument_index)
+  end do
+  c_output_dir(output_dir_length + 1) = c_null_char
+  directory_error = xdmf_create_directory(c_output_dir)
+  if (directory_error /= 0) then
+    write(*, '(A,I0,A)') 'Error: could not create output directory (system error ', &
+      directory_error, '): '//trim(output_dir)
+    stop 1
+  end if
+  do argument_index = 2, command_argument_count()
+    call get_command_argument(argument_index, option)
+    select case (trim(option))
+    case ('--examples')
+      examples_only = .true.
+    case ('--replace')
+      replace_existing = .true.
+    case default
+      write(*, '(A)') 'Error: unknown option: '//trim(option)
+      call print_help()
+      stop 1
+    end select
+  end do
+  if (.not. replace_existing) then
+    call require_available_output_paths(trim(output_dir), examples_only)
+  end if
 
   call generate_uniform(trim(output_dir), failures)
   call generate_volume(trim(output_dir), failures)
@@ -39,7 +80,7 @@ program generate_cases
 
   if (failures /= 0) then
     write(*, '(A,I0)') 'XDMF/HDF5 generator failures: ', failures
-    error stop 1
+    stop 1
   end if
 
 contains
@@ -56,7 +97,7 @@ contains
     real(real32) :: values(6)
     integer :: i
 
-    options%overwrite = .true.
+    options%overwrite = replace_existing
     call writer%create(pair_path(directory, 'uniform'), options, status)
     call require_ok(status, 'create uniform', failures)
     call writer%define_uniform_grid('uniform-2d', [3_int64, 2_int64], &
@@ -89,7 +130,7 @@ contains
     real(real64) :: x, y, z
     integer :: i, j, k, value_index
 
-    options%overwrite = .true.
+    options%overwrite = replace_existing
     call writer%create(pair_path(directory, 'volume'), options, status)
     call require_ok(status, 'create volume', failures)
     call writer%define_uniform_grid('electric-field-volume', &
@@ -142,7 +183,7 @@ contains
     integer(int64) :: identifier_value(1)
     integer :: i
 
-    options%overwrite = .true.
+    options%overwrite = replace_existing
     call writer%create(pair_path(directory, 'rectilinear'), options, status)
     call require_ok(status, 'create rectilinear', failures)
     call writer%define_collection('collection & <escaped>', collection, status)
@@ -219,7 +260,7 @@ contains
         0.1_real32 * real((i - 1) / 2, real32)
       points(2, i) = real((i - 1) / 2, real32)
     end do
-    options%overwrite = .true.
+    options%overwrite = replace_existing
     call writer%create(pair_path(directory, 'curvilinear'), options, status)
     call require_ok(status, 'create curvilinear', failures)
     call writer%define_curvilinear_grid('curved-surface', &
@@ -244,7 +285,7 @@ contains
       points(:, i) = [real(i - 1, real64), &
         real(mod(i - 1, 5), real64), real(mod(i - 1, 3), real64)]
     end do
-    options%overwrite = .true.
+    options%overwrite = replace_existing
     call writer%create(pair_path(directory, 'unstructured'), options, status)
     call require_ok(status, 'create unstructured', failures)
     call writer%define_collection('topology-suite', collection, status)
@@ -352,7 +393,7 @@ contains
         3_int64, 3_int64, 1_int64, 5_int64, &
       int(XDMF_TOPOLOGY_TRIANGLE_6, int64), &
         1_int64, 2_int64, 3_int64, 4_int64, 5_int64, 6_int64]
-    options%overwrite = .true.
+    options%overwrite = replace_existing
     call writer%create(pair_path(directory, 'mixed'), options, status)
     call require_ok(status, 'create mixed', failures)
     call writer%define_mixed_grid('mixed-elements', points, connectivity, &
@@ -381,7 +422,7 @@ contains
     real(real64) :: time
     integer :: i, j, k, point_index, step
 
-    options%overwrite = .true.
+    options%overwrite = replace_existing
     options%series_kind = XDMF_SERIES_TIME
     options%chunk_target_bytes = 1048576_int64
     call writer%create(pair_path(directory, 'time-series'), options, status)
@@ -450,7 +491,7 @@ contains
     real(real64) :: real_values(4), imaginary_values(4)
     integer :: step
 
-    options%overwrite = .true.
+    options%overwrite = replace_existing
     options%series_kind = XDMF_SERIES_FREQUENCY
     call writer%create(pair_path(directory, 'frequency-series'), &
       options, status)
@@ -493,7 +534,7 @@ contains
     type(xdmf_status_t) :: status
     type(xdmf_grid_id_t) :: grid
 
-    options%overwrite = .true.
+    options%overwrite = replace_existing
     call writer%create(pair_path(directory, 'escaped-&-pair'), &
       options, status)
     call require_ok(status, 'create escaped path', failures)
@@ -517,7 +558,7 @@ contains
     real(real64) :: points(3, 3), correct_values(4)
     integer(int64) :: bad_connectivity(3, 1)
 
-    options%overwrite = .true.
+    options%overwrite = replace_existing
     call writer%create(pair_path(directory, 'validation-static'), &
       options, status)
     call require_ok(status, 'create validation static', failures)
@@ -569,7 +610,7 @@ contains
     type(xdmf_attribute_id_t) :: first, second
     real(real64) :: values(4)
 
-    options%overwrite = .true.
+    options%overwrite = replace_existing
     options%series_kind = XDMF_SERIES_TIME
     call writer%create(pair_path(directory, 'validation-series'), &
       options, status)
@@ -616,7 +657,7 @@ contains
     type(xdmf_attribute_id_t) :: field
     real(real64) :: values(4)
 
-    options%overwrite = .true.
+    options%overwrite = replace_existing
     call first_writer%create(pair_path(directory, 'owner-first'), &
       options, status)
     call require_ok(status, 'create first owner', failures)
@@ -649,6 +690,8 @@ contains
     call second_writer%close(status)
     call require_ok(status, 'close second concurrent writer', failures)
 
+    ! This conformance check intentionally reopens the pair created above.
+    options%overwrite = .true.
     call first_writer%create(pair_path(directory, 'owner-first'), &
       options, status)
     call require_ok(status, 'reopen first owner', failures)
@@ -686,6 +729,47 @@ contains
     path = trim(directory)//'/'//trim(name)
   end function pair_path
 
+  subroutine require_available_output_paths(directory, examples_only)
+    character(len=*), intent(in) :: directory
+    logical, intent(in) :: examples_only
+
+    character(len=20), parameter :: example_names(6) = [character(len=20) :: &
+      'uniform', 'volume', 'curvilinear', 'unstructured', 'mixed', &
+      'time-series']
+    character(len=20), parameter :: all_names(14) = [character(len=20) :: &
+      example_names, 'rectilinear', 'frequency-series', 'escaped-&-pair', &
+      'validation-static', 'validation-series', 'owner-first', 'owner-second', &
+      'protected']
+    integer :: i, name_count
+    logical :: hdf5_exists, xdmf_exists
+
+    if (examples_only) then
+      name_count = size(example_names)
+    else
+      name_count = size(all_names)
+    end if
+    do i = 1, name_count
+      if (examples_only) then
+        inquire(file=pair_path(directory, example_names(i))//'.h5', &
+          exist=hdf5_exists)
+        inquire(file=pair_path(directory, example_names(i))//'.xdmf', &
+          exist=xdmf_exists)
+      else
+        inquire(file=pair_path(directory, all_names(i))//'.h5', &
+          exist=hdf5_exists)
+        inquire(file=pair_path(directory, all_names(i))//'.xdmf', &
+          exist=xdmf_exists)
+      end if
+      if (hdf5_exists .or. xdmf_exists) then
+        write(*, '(A)') 'Error: output already exists: '// &
+          merge(pair_path(directory, example_names(i)), &
+            pair_path(directory, all_names(i)), examples_only)
+        write(*, '(A)') 'Use --replace to replace generated output pairs.'
+        stop 1
+      end if
+    end do
+  end subroutine require_available_output_paths
+
   subroutine require_ok(status, context, failures)
     type(xdmf_status_t), intent(in) :: status
     character(len=*), intent(in) :: context
@@ -707,5 +791,21 @@ contains
       write(*, '(A)') trim(context)//': expected an error status'
     end if
   end subroutine require_error
+
+  subroutine print_help()
+    write(*, '(A)') 'Usage'
+    write(*, '(A)') '  xdmf_hdf5_generate_cases <output-directory> [options]'
+    write(*, '()')
+    write(*, '(A)') 'Generate XDMF/HDF5 example files in <output-directory>.'
+    write(*, '()')
+    write(*, '(A)') 'Options'
+    write(*, '(A)') '  --examples  Generate only the committed examples.'
+    write(*, '(A)') '  --help      Print this help information and exit.'
+    write(*, '(A)') '  --replace   Replace generated files that already exist.'
+    write(*, '()')
+    write(*, '(A)') 'The output directory is created when necessary. Existing generated files'
+    write(*, '(A)') 'are preserved unless --replace is provided. Relative paths are resolved'
+    write(*, '(A)') 'from the current working directory.'
+  end subroutine print_help
 
 end program generate_cases

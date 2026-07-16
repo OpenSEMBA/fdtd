@@ -1,6 +1,45 @@
+# Prefer an activated virtual environment, or the parent project's .venv when
+# CMake is launched by an IDE. CMake resolves bin/python or Scripts/python.exe.
+set(_xdmf_hdf5_venv)
+if(DEFINED ENV{VIRTUAL_ENV})
+  set(_xdmf_hdf5_venv "$ENV{VIRTUAL_ENV}")
+elseif(EXISTS "${CMAKE_SOURCE_DIR}/.venv")
+  set(_xdmf_hdf5_venv "${CMAKE_SOURCE_DIR}/.venv")
+endif()
+
+if(_xdmf_hdf5_venv)
+  get_filename_component(_xdmf_hdf5_venv "${_xdmf_hdf5_venv}" REALPATH)
+  if(DEFINED Python3_EXECUTABLE)
+    get_filename_component(_xdmf_hdf5_cached_python "${Python3_EXECUTABLE}" REALPATH)
+  elseif(DEFINED _Python3_EXECUTABLE)
+    get_filename_component(_xdmf_hdf5_cached_python "${_Python3_EXECUTABLE}" REALPATH)
+  endif()
+  if(DEFINED _xdmf_hdf5_cached_python)
+    file(RELATIVE_PATH _xdmf_hdf5_python_relative
+      "${_xdmf_hdf5_venv}"
+      "${_xdmf_hdf5_cached_python}"
+    )
+    if(_xdmf_hdf5_python_relative MATCHES "^\\.\\.")
+      unset(Python3_EXECUTABLE CACHE)
+      unset(Python3_EXECUTABLE)
+      unset(_Python3_EXECUTABLE CACHE)
+      unset(_Python3_EXECUTABLE)
+      unset(_Python3_INTERPRETER_PROPERTIES CACHE)
+      unset(_Python3_INTERPRETER_SIGNATURE CACHE)
+    endif()
+  endif()
+  set(Python3_FIND_VIRTUALENV ONLY)
+  set(Python3_ROOT_DIR "${_xdmf_hdf5_venv}")
+endif()
+
 find_package(Python3 QUIET COMPONENTS Interpreter)
 
-add_executable(xdmf_hdf5_generate_cases generate_cases.F90)
+enable_language(C)
+
+add_executable(xdmf_hdf5_generate_cases
+  generate_cases.F90
+  create_directory.c
+)
 target_link_libraries(xdmf_hdf5_generate_cases PRIVATE
   OpenSEMBA::xdmf-hdf5
 )
@@ -24,6 +63,7 @@ add_custom_target(xdmf-hdf5-refresh-examples
   COMMAND xdmf_hdf5_generate_cases
     "${_xdmf_hdf5_example_dir}"
     --examples
+    --replace
   DEPENDS xdmf_hdf5_generate_cases
   COMMENT "Refreshing committed XDMF/HDF5 examples"
   VERBATIM
@@ -31,7 +71,15 @@ add_custom_target(xdmf-hdf5-refresh-examples
 
 add_test(
   NAME xdmf-hdf5-generate
-  COMMAND xdmf_hdf5_generate_cases "${_xdmf_hdf5_output_dir}"
+  COMMAND xdmf_hdf5_generate_cases "${_xdmf_hdf5_output_dir}" --replace
+)
+add_test(
+  NAME xdmf-hdf5-generate-help
+  COMMAND xdmf_hdf5_generate_cases --help
+)
+add_test(
+  NAME xdmf-hdf5-generate-no-arguments
+  COMMAND xdmf_hdf5_generate_cases
 )
 if(Python3_Interpreter_FOUND)
   execute_process(
@@ -40,6 +88,7 @@ if(Python3_Interpreter_FOUND)
     ERROR_QUIET
   )
   if(_xdmf_hdf5_h5py_result EQUAL 0)
+    message(STATUS "Found h5py with ${Python3_EXECUTABLE}; enabling XDMF/HDF5 black-box verification")
     add_test(
       NAME xdmf-hdf5-verify
       COMMAND ${Python3_EXECUTABLE}
