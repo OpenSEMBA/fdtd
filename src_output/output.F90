@@ -8,8 +8,14 @@ module output_m
    use bulkProbeOutput_m
    use movieProbeOutput_m
    use frequencySliceProbeOutput_m
-   use farFieldOutput_m
-   use mapVTKOutput_m
+    use farFieldOutput_m
+     use mapVTKOutput_m
+     use outputDecomposition_m, only: output_partition_t, build_output_partition, &
+                                      OUTPUT_PARTITION_SUCCESS, OUTPUT_PARTITION_INVALID_ARGUMENT
+    use outputTypes_m, only: probe_metadata_t, output_artifact_t, output_lifecycle_is_terminal, &
+                             probe_metadata_is_complete, OUTPUT_ARTIFACT_UNDEFINED, &
+                             OUTPUT_LIFECYCLE_DECLARED, OUTPUT_LIFECYCLE_ACTIVE, &
+                             OUTPUT_LIFECYCLE_FINALISING, OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
 #ifdef CompileWithMTLN
    use Wire_bundles_mtln_m, only: GetSolverPtr
    use mtln_solver_m, only: mtln_solver_t => mtln_t
@@ -27,7 +33,15 @@ module output_m
    public :: init_outputs
    public :: update_outputs
    public :: flush_outputs
-   public :: close_outputs
+     public :: close_outputs
+     public :: GetOutputPartition
+    public :: probe_output_t, run_output_manifest_t
+     public :: init_run_output_manifest, declare_probe_output, begin_probe_output, finalise_probe_output, &
+               fail_probe_output, finalise_run_outputs, select_probe_participants
+    public :: OUTPUT_COORDINATION_SUCCESS, OUTPUT_COORDINATION_INVALID_PROBE, &
+               OUTPUT_COORDINATION_INVALID_STATE, OUTPUT_COORDINATION_INVALID_ARTIFACTS, &
+               OUTPUT_COORDINATION_NOT_TERMINAL, OUTPUT_COORDINATION_NOT_ROOT, &
+               OUTPUT_COORDINATION_INVALID_OWNERSHIP
 
    public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, VOLUMIC_CURRENT_PROBE_ID, &
              MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID
@@ -39,7 +53,7 @@ module output_m
    private :: get_required_output_count
    !===========================
 
-   integer(kind=SINGLE), parameter :: UNDEFINED_PROBE = -1, &
+    integer(kind=SINGLE), parameter :: UNDEFINED_PROBE = -1, &
                                       POINT_PROBE_ID = 0, &
                                       WIRE_CURRENT_PROBE_ID = 1, &
                                       WIRE_CHARGE_PROBE_ID = 2, &
@@ -48,11 +62,31 @@ module output_m
                                       MOVIE_PROBE_ID = 5, &
                                       FREQUENCY_SLICE_PROBE_ID = 6, &
                                       FAR_FIELD_PROBE_ID = 7, &
-                                      MAPVTK_ID = 8
+                                       MAPVTK_ID = 8
+
+    integer, parameter :: OUTPUT_COORDINATION_SUCCESS = 0
+    integer, parameter :: OUTPUT_COORDINATION_INVALID_PROBE = 1
+    integer, parameter :: OUTPUT_COORDINATION_INVALID_STATE = 2
+    integer, parameter :: OUTPUT_COORDINATION_INVALID_ARTIFACTS = 3
+     integer, parameter :: OUTPUT_COORDINATION_NOT_TERMINAL = 4
+     integer, parameter :: OUTPUT_COORDINATION_NOT_ROOT = 5
+     integer, parameter :: OUTPUT_COORDINATION_INVALID_OWNERSHIP = 6
+
+    type :: probe_output_t
+       type(probe_metadata_t) :: metadata
+    end type probe_output_t
+
+    type :: run_output_manifest_t
+       character(len=BUFSIZE) :: run_id = ''
+       integer :: root_rank = 0
+       logical :: published = .false.
+       type(probe_output_t), allocatable :: probes(:)
+    end type run_output_manifest_t
 
    REAL(KIND=RKIND), save           ::  eps0, mu0
    REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
-   type(solver_output_t), pointer, dimension(:), save  ::  outputs
+    type(solver_output_t), pointer, dimension(:), save  ::  outputs
+    type(output_partition_t), allocatable, save :: outputPartitions(:)
    type(problem_info_t), save, target :: problemInfo
 
    interface init_solver_output
@@ -95,17 +129,228 @@ module output_m
    end interface
 contains
 
-   function GetOutputs() result(r)
+    function GetOutputs() result(r)
       type(solver_output_t), pointer, dimension(:)  ::  r
       r => outputs
       return
    end function
 
-   function GetProblemInfo() result(r)
+    function GetProblemInfo() result(r)
       type(problem_info_t), pointer ::  r
       r => problemInfo
       return
-   end function
+    end function
+
+    subroutine GetOutputPartition(output_index, partition, status)
+       integer, intent(in) :: output_index
+       type(output_partition_t), intent(out) :: partition
+       integer, intent(out) :: status
+
+       partition = output_partition_t()
+       if (.not. allocated(outputPartitions) .or. output_index < 1 .or. output_index > size(outputPartitions)) then
+          status = OUTPUT_PARTITION_INVALID_ARGUMENT
+          return
+       end if
+
+       partition = outputPartitions(output_index)
+       status = OUTPUT_PARTITION_SUCCESS
+    end subroutine GetOutputPartition
+
+    subroutine init_run_output_manifest(manifest, run_id, root_rank)
+       type(run_output_manifest_t), intent(out) :: manifest
+       character(len=*), intent(in) :: run_id
+       integer, intent(in) :: root_rank
+
+       manifest%run_id = run_id
+       manifest%root_rank = root_rank
+    end subroutine init_run_output_manifest
+
+    subroutine declare_probe_output(manifest, probe_id, artifacts, probe_index, status)
+       type(run_output_manifest_t), intent(inout) :: manifest
+       character(len=*), intent(in) :: probe_id
+       type(output_artifact_t), intent(in) :: artifacts(:)
+       integer, intent(out) :: probe_index, status
+       type(probe_output_t), allocatable :: expanded_probes(:)
+       integer :: i, probe_count
+
+       probe_index = 0
+       if (len_trim(probe_id) == 0 .or. .not. artifacts_are_declared(artifacts)) then
+          status = OUTPUT_COORDINATION_INVALID_ARTIFACTS
+          return
+       end if
+
+       if (allocated(manifest%probes)) then
+          do i = 1, size(manifest%probes)
+             if (trim(manifest%probes(i)%metadata%probe_id) == trim(probe_id)) then
+                status = OUTPUT_COORDINATION_INVALID_PROBE
+                return
+             end if
+          end do
+          probe_count = size(manifest%probes)
+       else
+          probe_count = 0
+       end if
+
+       allocate(expanded_probes(probe_count + 1))
+       if (probe_count > 0) expanded_probes(:probe_count) = manifest%probes
+       expanded_probes(probe_count + 1)%metadata%probe_id = probe_id
+       allocate(expanded_probes(probe_count + 1)%metadata%artifacts(size(artifacts)))
+       expanded_probes(probe_count + 1)%metadata%artifacts = artifacts
+       call move_alloc(expanded_probes, manifest%probes)
+       probe_index = probe_count + 1
+       status = OUTPUT_COORDINATION_SUCCESS
+    end subroutine declare_probe_output
+
+     subroutine begin_probe_output(manifest, probe_index, status)
+       type(run_output_manifest_t), intent(inout) :: manifest
+       integer, intent(in) :: probe_index
+       integer, intent(out) :: status
+
+       if (.not. valid_probe_index(manifest, probe_index)) then
+          status = OUTPUT_COORDINATION_INVALID_PROBE
+       else if (manifest%probes(probe_index)%metadata%lifecycle%state /= OUTPUT_LIFECYCLE_DECLARED) then
+          status = OUTPUT_COORDINATION_INVALID_STATE
+       else
+          manifest%probes(probe_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
+          status = OUTPUT_COORDINATION_SUCCESS
+       end if
+     end subroutine begin_probe_output
+
+     subroutine select_probe_participants(manifest, probe_index, participant_ranks, scalar_writer_rank, status)
+        type(run_output_manifest_t), intent(inout) :: manifest
+        integer, intent(in) :: probe_index
+        integer, intent(in) :: participant_ranks(:)
+        integer, intent(in) :: scalar_writer_rank
+        integer, intent(out) :: status
+
+        if (.not. valid_probe_index(manifest, probe_index)) then
+           status = OUTPUT_COORDINATION_INVALID_PROBE
+           return
+        end if
+        if (manifest%probes(probe_index)%metadata%lifecycle%state /= OUTPUT_LIFECYCLE_DECLARED) then
+           status = OUTPUT_COORDINATION_INVALID_STATE
+           return
+        end if
+        if (.not. valid_probe_ownership(participant_ranks, scalar_writer_rank)) then
+           status = OUTPUT_COORDINATION_INVALID_OWNERSHIP
+           return
+        end if
+
+        associate(ownership => manifest%probes(probe_index)%metadata%ownership)
+           ownership%participant_ranks = participant_ranks
+           ownership%scalar_writer_rank = scalar_writer_rank
+        end associate
+        status = OUTPUT_COORDINATION_SUCCESS
+     end subroutine select_probe_participants
+
+    subroutine finalise_probe_output(manifest, probe_index, status)
+       type(run_output_manifest_t), intent(inout) :: manifest
+       integer, intent(in) :: probe_index
+       integer, intent(out) :: status
+
+       if (.not. valid_probe_index(manifest, probe_index)) then
+          status = OUTPUT_COORDINATION_INVALID_PROBE
+          return
+       end if
+
+       associate(metadata => manifest%probes(probe_index)%metadata)
+          if (metadata%lifecycle%state /= OUTPUT_LIFECYCLE_DECLARED .and. &
+              metadata%lifecycle%state /= OUTPUT_LIFECYCLE_ACTIVE) then
+             status = OUTPUT_COORDINATION_INVALID_STATE
+             return
+          end if
+
+          metadata%lifecycle%state = OUTPUT_LIFECYCLE_FINALISING
+          metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
+          if (probe_metadata_is_complete(metadata)) then
+             status = OUTPUT_COORDINATION_SUCCESS
+          else
+             metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+             metadata%lifecycle%diagnostic = 'Required artifacts are incomplete'
+             status = OUTPUT_COORDINATION_INVALID_ARTIFACTS
+          end if
+       end associate
+    end subroutine finalise_probe_output
+
+    subroutine fail_probe_output(manifest, probe_index, diagnostic, status)
+       type(run_output_manifest_t), intent(inout) :: manifest
+       integer, intent(in) :: probe_index
+       character(len=*), intent(in) :: diagnostic
+       integer, intent(out) :: status
+
+       if (.not. valid_probe_index(manifest, probe_index)) then
+          status = OUTPUT_COORDINATION_INVALID_PROBE
+          return
+       end if
+       if (output_lifecycle_is_terminal(manifest%probes(probe_index)%metadata%lifecycle)) then
+          status = OUTPUT_COORDINATION_INVALID_STATE
+          return
+       end if
+
+       manifest%probes(probe_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+       manifest%probes(probe_index)%metadata%lifecycle%diagnostic = diagnostic
+       status = OUTPUT_COORDINATION_SUCCESS
+    end subroutine fail_probe_output
+
+    subroutine finalise_run_outputs(manifest, writer_rank, status)
+       type(run_output_manifest_t), intent(inout) :: manifest
+       integer, intent(in) :: writer_rank
+       integer, intent(out) :: status
+       integer :: i
+
+       if (writer_rank /= manifest%root_rank) then
+          status = OUTPUT_COORDINATION_NOT_ROOT
+          return
+       end if
+       if (allocated(manifest%probes)) then
+          do i = 1, size(manifest%probes)
+             if (.not. output_lifecycle_is_terminal(manifest%probes(i)%metadata%lifecycle)) then
+                status = OUTPUT_COORDINATION_NOT_TERMINAL
+                return
+             end if
+          end do
+       end if
+
+       manifest%published = .true.
+       status = OUTPUT_COORDINATION_SUCCESS
+    end subroutine finalise_run_outputs
+
+    pure logical function valid_probe_index(manifest, probe_index)
+       type(run_output_manifest_t), intent(in) :: manifest
+       integer, intent(in) :: probe_index
+
+       valid_probe_index = allocated(manifest%probes) .and. probe_index >= 1
+       if (valid_probe_index) valid_probe_index = probe_index <= size(manifest%probes)
+    end function valid_probe_index
+
+     pure logical function artifacts_are_declared(artifacts)
+       type(output_artifact_t), intent(in) :: artifacts(:)
+       integer :: i
+
+       artifacts_are_declared = size(artifacts) > 0
+       if (.not. artifacts_are_declared) return
+       do i = 1, size(artifacts)
+          if (artifacts(i)%kind == OUTPUT_ARTIFACT_UNDEFINED .or. len_trim(artifacts(i)%relative_path) == 0) then
+             artifacts_are_declared = .false.
+             return
+          end if
+       end do
+     end function artifacts_are_declared
+
+     pure logical function valid_probe_ownership(participant_ranks, scalar_writer_rank)
+        integer, intent(in) :: participant_ranks(:)
+        integer, intent(in) :: scalar_writer_rank
+        integer :: i
+
+        valid_probe_ownership = size(participant_ranks) > 0 .and. any(participant_ranks == scalar_writer_rank)
+        if (.not. valid_probe_ownership) return
+        do i = 1, size(participant_ranks) - 1
+           if (any(participant_ranks(i + 1:) == participant_ranks(i))) then
+              valid_probe_ownership = .false.
+              return
+           end if
+        end do
+     end function valid_probe_ownership
 
    subroutine init_outputs(sgg, media, sinpml_fullsize, materialTags, bounds, control, observationsExists, wiresExists)
 
@@ -142,8 +387,10 @@ contains
       problemInfo%ySteps => sgg%LineY
       problemInfo%zSteps => sgg%LineZ
 
-      outputs => NULL()
-      allocate (outputs(requestedOutputs))
+       outputs => NULL()
+       allocate (outputs(requestedOutputs))
+       if (allocated(outputPartitions)) deallocate(outputPartitions)
+       allocate(outputPartitions(requestedOutputs))
 
       allocate (InvEps(0:sgg%NumMedia - 1), InvMu(0:sgg%NumMedia - 1))
       outputCount = 0
@@ -237,15 +484,17 @@ contains
                if (domain%domainType == TIME_DOMAIN) then
 
                   outputCount = outputCount + 1
-                  outputs(outputCount)%outputID = MOVIE_PROBE_ID
-                  allocate (outputs(outputCount)%movieProbe)
-                  call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, control, problemInfo, outputTypeExtension)
+                   outputs(outputCount)%outputID = MOVIE_PROBE_ID
+                   allocate (outputs(outputCount)%movieProbe)
+                   call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, control, problemInfo, outputTypeExtension)
+                   call attach_output_partition(outputCount)
                else if (domain%domainType == FREQUENCY_DOMAIN) then
 
                   outputCount = outputCount + 1
-                  outputs(outputCount)%outputID = FREQUENCY_SLICE_PROBE_ID
-                  allocate (outputs(outputCount)%frequencySliceProbe)
-                  call init_solver_output(outputs(outputCount)%frequencySliceProbe, lowerBound, upperBound, sgg%dt, outputRequestType, domain, outputTypeExtension, control, problemInfo)
+                   outputs(outputCount)%outputID = FREQUENCY_SLICE_PROBE_ID
+                   allocate (outputs(outputCount)%frequencySliceProbe)
+                   call init_solver_output(outputs(outputCount)%frequencySliceProbe, lowerBound, upperBound, sgg%dt, outputRequestType, domain, outputTypeExtension, control, problemInfo)
+                   call attach_output_partition(outputCount)
                end if
             case (farfield)
                sphericRange = preprocess_polar_range(sgg%Observation(ii))
@@ -269,8 +518,28 @@ contains
 #endif
       if (observationsExists) call registerOutputFiles(control, outputCount)
       return
-   contains
-      subroutine adjust_bound_range()
+    contains
+       subroutine attach_output_partition(output_index)
+          integer(kind=SINGLE), intent(in) :: output_index
+          type(limit_t) :: local_sweep
+          integer :: field_component, partition_status
+
+          field_component = fieldo(outputRequestType, 'Z')
+          local_sweep%XI = sgg%Sweep(field_component)%XI
+          local_sweep%XE = sgg%Sweep(field_component)%XE
+          local_sweep%YI = sgg%Sweep(field_component)%YI
+          local_sweep%YE = sgg%Sweep(field_component)%YE
+          local_sweep%ZI = sgg%Sweep(field_component)%ZI
+          local_sweep%ZE = sgg%Sweep(field_component)%ZE
+          local_sweep%NX = local_sweep%XE - local_sweep%XI + 1
+          local_sweep%NY = local_sweep%YE - local_sweep%YI + 1
+          local_sweep%NZ = local_sweep%ZE - local_sweep%ZI + 1
+          call build_output_partition(lowerBound, upperBound, SINPML_fullsize(field_component), local_sweep, &
+                                      field_component, control%layoutnumber, max(control%num_procs, 1), &
+                                      outputPartitions(output_index), partition_status)
+       end subroutine attach_output_partition
+
+       subroutine adjust_bound_range()
          select case (outputRequestType)
          case (iExC, iEyC, iHzC, iMhC)
             lowerBound%z = max(sgg%Sweep(fieldo(outputRequestType, 'Z'))%ZI, sgg%observation(ii)%P(i)%ZI)
@@ -420,26 +689,30 @@ contains
       implicit none
       type(solver_output_t), pointer, intent(inout) :: output_list(:)
 
-      type(solver_output_t), allocatable :: tmp(:)
-      integer :: i, n, k
+       type(solver_output_t), allocatable :: tmp(:)
+       type(output_partition_t), allocatable :: compact_partitions(:)
+       integer :: i, n, k
 
       n = count(output_list%outputID /= UNDEFINED_PROBE)
 
-      allocate (tmp(n))
+       allocate (tmp(n))
+       allocate (compact_partitions(n))
 
       ! Copy valid elements
       k = 0
       do i = 1, size(output_list)
          if (output_list(i)%outputID /= UNDEFINED_PROBE) then
-            k = k + 1
-            tmp(k) = output_list(i)   ! deep copy of all allocatable components
+             k = k + 1
+             tmp(k) = output_list(i)   ! deep copy of all allocatable components
+             compact_partitions(k) = outputPartitions(i)
          end if
       end do
 
       ! Replace the saved pointer target safely
       if (associated(output_list)) deallocate (output_list)
-      allocate (output_list(n))
-      output_list = tmp
+       allocate (output_list(n))
+       output_list = tmp
+       call move_alloc(compact_partitions, outputPartitions)
 
    end subroutine remove_unused_outputs
 

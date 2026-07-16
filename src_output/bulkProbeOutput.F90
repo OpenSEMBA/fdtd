@@ -20,12 +20,15 @@ contains
       this%auxCoords = upperBound
       this%component = field
 
-      this%domain = domain
-      this%path = get_output_path()
+       this%domain = domain
+       this%path = get_output_path()
 
-      call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
-      call alloc_and_init(this%valueForTime, BuffObse, 0.0_RKIND)
-      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
+       call alloc_and_init(this%valueForTime, BuffObse, 0.0_RKIND)
+       call declare_probe_artifacts(this%artifacts, [character(len=BUFSIZE) :: &
+            trim(this%path)//'_'//timeExtension//datFileExtension], [OUTPUT_ARTIFACT_TEXT])
+       this%filePathTime = this%artifacts(1)%relative_path
+       call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
 
    contains
 

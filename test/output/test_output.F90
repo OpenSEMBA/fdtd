@@ -74,6 +74,8 @@ integer function test_init_point_probe() bind(c) result(err)
 
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%filePathTime, expectedDataPath, 'Unexpected path')
+   test_err = test_err + assert_string_equal(outputs(1)%pointProbe%artifacts(1)%relative_path, &
+                                              expectedDataPath, 'Declared payload path changed')
    test_err = test_err + assert_true(file_exists(expectedDataPath), 'Time data file do not exist')
 
    ! Cleanup
@@ -81,6 +83,264 @@ integer function test_init_point_probe() bind(c) result(err)
    deallocate (sgg%Observation, outputs)
 
    err = test_err
+end function
+
+integer function test_output_artifact_contract() bind(c) result(err)
+   use outputTypes_m, only: output_artifact_t, output_lifecycle_t, OUTPUT_ARTIFACT_BINARY, &
+                            OUTPUT_LIFECYCLE_DECLARED, BINARY_ENDIAN_LITTLE, BINARY_COMPLEX_REAL_IMAG
+   use assertionTools_m, only: assert_integer_equal
+   implicit none
+
+   type(output_artifact_t) :: artifact
+   type(output_lifecycle_t) :: lifecycle
+
+   err = 0
+   artifact%kind = OUTPUT_ARTIFACT_BINARY
+   artifact%byte_order = BINARY_ENDIAN_LITTLE
+   artifact%complex_representation = BINARY_COMPLEX_REAL_IMAG
+   lifecycle%state = OUTPUT_LIFECYCLE_DECLARED
+
+   err = err + assert_integer_equal(artifact%kind, OUTPUT_ARTIFACT_BINARY, 'Binary artifact kind')
+   err = err + assert_integer_equal(artifact%byte_order, BINARY_ENDIAN_LITTLE, 'Binary byte order')
+   err = err + assert_integer_equal(artifact%complex_representation, BINARY_COMPLEX_REAL_IMAG, &
+                                    'Complex representation')
+   err = err + assert_integer_equal(lifecycle%state, OUTPUT_LIFECYCLE_DECLARED, 'Declared lifecycle state')
+end function
+
+integer function test_declared_output_artifacts() bind(c) result(err)
+   use outputTypes_m, only: probe_metadata_t, OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_GEOMETRY, &
+                            declare_output_artifacts
+   use assertionTools_m, only: assert_integer_equal, assert_string_equal, assert_true
+   implicit none
+
+   type(probe_metadata_t) :: metadata
+
+   err = 0
+   call declare_output_artifacts(metadata, [character(len=16) :: 'probe_tm.dat', 'geometry.vtu'], &
+                                 [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_GEOMETRY])
+
+   err = err + assert_true(allocated(metadata%artifacts), 'Artifacts were not declared')
+   err = err + assert_integer_equal(size(metadata%artifacts), 2, 'Unexpected artifact count')
+   err = err + assert_integer_equal(metadata%artifacts(1)%kind, OUTPUT_ARTIFACT_TEXT, 'Text kind was not retained')
+   err = err + assert_string_equal(metadata%artifacts(1)%relative_path, 'probe_tm.dat', 'Text path was not retained')
+   err = err + assert_integer_equal(metadata%artifacts(2)%kind, OUTPUT_ARTIFACT_GEOMETRY, 'Geometry kind was not retained')
+   err = err + assert_string_equal(metadata%artifacts(2)%relative_path, 'geometry.vtu', 'Geometry path was not retained')
+end function
+
+integer function test_output_lifecycle_contract() bind(c) result(err)
+   use outputTypes_m, only: probe_metadata_t, output_artifact_t, output_lifecycle_is_terminal, &
+                            probe_metadata_is_complete, OUTPUT_ARTIFACT_BINARY, OUTPUT_LIFECYCLE_DECLARED, &
+                            OUTPUT_LIFECYCLE_ACTIVE, OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
+   use assertionTools_m, only: assert_true
+   implicit none
+
+   type(probe_metadata_t) :: metadata
+
+   err = 0
+   allocate(output_artifact_t :: metadata%artifacts(1))
+   metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
+
+   metadata%lifecycle%state = OUTPUT_LIFECYCLE_DECLARED
+   err = err + assert_true(.not. output_lifecycle_is_terminal(metadata%lifecycle), 'Declared lifecycle is terminal')
+   err = err + assert_true(.not. probe_metadata_is_complete(metadata), 'Declared metadata is complete')
+
+   metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
+   err = err + assert_true(.not. output_lifecycle_is_terminal(metadata%lifecycle), 'Active lifecycle is terminal')
+
+   metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
+   err = err + assert_true(output_lifecycle_is_terminal(metadata%lifecycle), 'Complete lifecycle is not terminal')
+   err = err + assert_true(probe_metadata_is_complete(metadata), 'Complete zero-sample metadata is incomplete')
+
+   metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+   err = err + assert_true(output_lifecycle_is_terminal(metadata%lifecycle), 'Failed lifecycle is not terminal')
+   err = err + assert_true(.not. probe_metadata_is_complete(metadata), 'Failed metadata is complete')
+end function
+
+integer function test_output_lifecycle_coordination() bind(c) result(err)
+   use output_m, only: run_output_manifest_t, init_run_output_manifest, declare_probe_output, &
+                       begin_probe_output, finalise_probe_output, finalise_run_outputs, &
+                       OUTPUT_COORDINATION_SUCCESS, OUTPUT_COORDINATION_NOT_ROOT, OUTPUT_COORDINATION_NOT_TERMINAL
+   use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY, &
+                            OUTPUT_LIFECYCLE_COMPLETE
+   use assertionTools_m, only: assert_integer_equal, assert_true
+   implicit none
+
+   type(run_output_manifest_t) :: manifest
+   type(output_artifact_t) :: artifacts(2)
+   integer :: probe_index, status
+
+   err = 0
+   artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
+   artifacts(1)%relative_path = 'point.dat'
+   artifacts(2)%kind = OUTPUT_ARTIFACT_BINARY
+   artifacts(2)%relative_path = 'point.bin'
+
+   call init_run_output_manifest(manifest, 'run-001', 0)
+   call declare_probe_output(manifest, 'point-001', artifacts, probe_index, status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Probe declaration failed')
+   err = err + assert_integer_equal(probe_index, 1, 'Unexpected probe index')
+   err = err + assert_true(allocated(manifest%probes), 'Manifest did not retain declared probe')
+
+   call finalise_run_outputs(manifest, 0, status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_NOT_TERMINAL, 'Non-terminal manifest was published')
+
+   call begin_probe_output(manifest, probe_index, status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Probe activation failed')
+   call finalise_probe_output(manifest, probe_index, status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Probe finalisation failed')
+   err = err + assert_integer_equal(manifest%probes(1)%metadata%lifecycle%state, OUTPUT_LIFECYCLE_COMPLETE, &
+                                    'Probe is not complete')
+
+   call finalise_run_outputs(manifest, 1, status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_NOT_ROOT, 'Non-root published manifest')
+   err = err + assert_true(.not. manifest%published, 'Non-root manifest was published')
+
+   call finalise_run_outputs(manifest, 0, status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Root manifest finalisation failed')
+   err = err + assert_true(manifest%published, 'Root manifest was not published')
+end function
+
+integer function test_output_probe_ownership() bind(c) result(err)
+   use output_m, only: run_output_manifest_t, init_run_output_manifest, declare_probe_output, &
+                       select_probe_participants, OUTPUT_COORDINATION_SUCCESS, &
+                       OUTPUT_COORDINATION_INVALID_OWNERSHIP
+   use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_TEXT
+   use assertionTools_m, only: assert_integer_equal, assert_true
+   implicit none
+
+   type(run_output_manifest_t) :: manifest
+   type(output_artifact_t) :: artifacts(1)
+   integer :: participants(1), probe_index, status
+
+   err = 0
+   artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
+   artifacts(1)%relative_path = 'point.dat'
+   participants = [0]
+
+   call init_run_output_manifest(manifest, 'serial-run', 0)
+   call declare_probe_output(manifest, 'point-001', artifacts, probe_index, status)
+   call select_probe_participants(manifest, probe_index, participants, 0, status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Serial ownership selection failed')
+   err = err + assert_true(allocated(manifest%probes(probe_index)%metadata%ownership%participant_ranks), &
+                            'Participants were not retained in the output contract')
+   err = err + assert_integer_equal(manifest%probes(probe_index)%metadata%ownership%participant_ranks(1), 0, &
+                                    'Unexpected serial participant')
+   err = err + assert_integer_equal(manifest%probes(probe_index)%metadata%ownership%scalar_writer_rank, 0, &
+                                    'Unexpected serial scalar writer')
+
+   call select_probe_participants(manifest, probe_index, participants, 1, status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_INVALID_OWNERSHIP, &
+                                    'Non-participant selected as scalar writer')
+end function
+
+integer function test_output_serial_distributed_equivalence() bind(c) result(err)
+   use FDETYPES_m, only: iEx, limit_t
+   use outputTypes_m, only: cell_coordinate_t, output_artifact_t, OUTPUT_ARTIFACT_BINARY
+   use outputDecomposition_m, only: output_partition_t, build_output_partition, OUTPUT_PARTITION_SUCCESS
+   use assertionTools_m, only: assert_integer_equal, assert_string_equal, assert_true
+   implicit none
+
+   type(output_artifact_t) :: serial_artifact, distributed_artifact
+   type(cell_coordinate_t) :: lower_bound, upper_bound
+   type(limit_t) :: global_bounds, local_sweep
+   type(output_partition_t) :: partition
+   integer :: coverage(0:5), rank, z, status
+
+   err = 0
+   serial_artifact%kind = OUTPUT_ARTIFACT_BINARY
+   serial_artifact%relative_path = 'probe.bin'
+   distributed_artifact = serial_artifact
+   err = err + assert_integer_equal(distributed_artifact%kind, serial_artifact%kind, 'Artifact kind differs')
+   err = err + assert_string_equal(distributed_artifact%relative_path, serial_artifact%relative_path, &
+                                   'Artifact path differs')
+
+   lower_bound = cell_coordinate_t(0, 0, 0)
+   upper_bound = cell_coordinate_t(0, 0, 5)
+   global_bounds = limit_t(0, 0, 0, 0, 0, 5, 1, 1, 6)
+   coverage = 0
+   do rank = 0, 1
+      if (rank == 0) then
+         local_sweep = limit_t(0, 0, 0, 0, 0, 3, 1, 1, 4)
+      else
+         local_sweep = limit_t(0, 0, 0, 0, 3, 5, 1, 1, 3)
+      end if
+      call build_output_partition(lower_bound, upper_bound, global_bounds, local_sweep, iEx, rank, 2, partition, status)
+      err = err + assert_integer_equal(status, OUTPUT_PARTITION_SUCCESS, 'Partition construction failed')
+      do z = partition%local_lower%z, partition%local_upper%z
+         coverage(z) = coverage(z) + 1
+      end do
+   end do
+   err = err + assert_true(all(coverage == 1), 'Distributed partition does not match serial coverage')
+end function
+
+integer function test_volumetric_output_partition_attachment() bind(c) result(err)
+   use FDETYPES_m
+   use FDETYPES_TOOLS, only: create_limit_t, create_control_flags, init_time_array, &
+                              init_simulation_material_list, create_geometry_media, create_xyz_limit_array
+   use output_m, only: init_outputs, GetOutputPartition
+   use outputDecomposition_m, only: output_partition_t, OUTPUT_PARTITION_SUCCESS
+   use testOutputUtils_m, only: create_movie_observation
+   use sggMethods_m, only: sgg_init, sgg_set_tiempo, sgg_set_dt, sgg_set_Med, sgg_set_NumMedia, &
+                           sgg_set_Sweep, sgg_set_SINPMLSweep, sgg_set_NumPlaneWaves, sgg_set_Alloc, &
+                           sgg_set_LineX, sgg_set_LineY, sgg_set_LineZ, sgg_add_observation
+   use assertionTools_m, only: assert_integer_equal, assert_true
+   use directoryUtils_m, only: delete_file, remove_folder
+   implicit none
+
+   type(SGGFDTDINFO_t) :: sgg
+   type(sim_control_t) :: control
+   type(media_matrices_t) :: media
+   type(limit_t) :: sinpml(6)
+   type(bounds_t) :: bounds
+   type(taglist_t) :: material_tags
+   type(Obses_t) :: observation
+   type(MediaData_t), allocatable, target :: materials(:)
+   type(MediaData_t), pointer :: materials_ptr(:)
+   type(XYZlimit_t) :: sweep(6)
+   type(output_partition_t) :: partition
+   real(kind=RKIND_tiempo), pointer :: time_array(:)
+   real(kind=RKIND), pointer :: x_steps(:), y_steps(:), z_steps(:)
+   logical :: observations_exist, wires_exist
+   integer :: status, i, ios
+
+   err = 0
+   wires_exist = .false.
+   call sgg_init(sgg)
+   call init_time_array(time_array, 2_SINGLE, 0.1_RKIND_tiempo)
+   call sgg_set_tiempo(sgg, time_array)
+   call sgg_set_dt(sgg, 0.1_RKIND_tiempo)
+   call init_simulation_material_list(materials)
+   materials_ptr => materials
+   call sgg_set_NumMedia(sgg, size(materials))
+   call sgg_set_Med(sgg, materials_ptr)
+   sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(sgg, sweep)
+   call sgg_set_SINPMLSweep(sgg, sweep)
+   call sgg_set_NumPlaneWaves(sgg, 1)
+   call sgg_set_Alloc(sgg, sweep)
+   allocate(x_steps(0:8), y_steps(0:8), z_steps(0:8), source=1.0_RKIND)
+   call sgg_set_LineX(sgg, x_steps)
+   call sgg_set_LineY(sgg, y_steps)
+   call sgg_set_LineZ(sgg, z_steps)
+   do i = 1, size(sinpml)
+      sinpml(i) = create_limit_t(0, 8, 0, 8, 0, 8, 9, 9, 9)
+   end do
+   call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
+   observation = create_movie_observation(2, 2, 2, 5, 5, 5, iCur)
+   call sgg_add_observation(sgg, observation)
+   control = create_control_flags(nEntradaRoot='partitionAttachment', mpidir=3, size=1)
+
+   call init_outputs(sgg, media, sinpml, material_tags, bounds, control, observations_exist, wires_exist)
+   call GetOutputPartition(1, partition, status)
+
+   err = err + assert_integer_equal(status, OUTPUT_PARTITION_SUCCESS, 'Volumetric partition was not retained')
+   err = err + assert_true(partition%has_data, 'Serial volumetric partition has no data')
+   err = err + assert_integer_equal(partition%global_lower%x, 2, 'Unexpected global lower x')
+   err = err + assert_integer_equal(partition%global_upper%z, 5, 'Unexpected global upper z')
+   err = err + assert_integer_equal(partition%local_lower%z, 2, 'Unexpected local lower z')
+   err = err + assert_integer_equal(partition%local_upper%z, 5, 'Unexpected local upper z')
+   call remove_folder('partitionAttachment_movieProbe_BC_2_2_2__5_5_5', ios)
+   call delete_file('partitionAttachment_Outputrequests_1.txt', ios)
 end function
 
 integer function test_update_point_probe() bind(c) result(err)

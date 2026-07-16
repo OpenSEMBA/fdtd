@@ -30,7 +30,7 @@ module outputUtils_m
    public :: computeJ1
    public :: computeJ2
    public :: fieldo
-   public :: create_data_file
+    public :: create_data_file
    public :: currentType
    public :: get_media_from_coord_and_h_neighbours
    !===========================
@@ -658,7 +658,7 @@ contains
       end select
    end function get_delta
 
-   subroutine create_data_file(filePathReference, probePathReference, domainTypeReference, fileExtension)
+    subroutine create_data_file(filePathReference, probePathReference, domainTypeReference, fileExtension)
       use directoryUtils_m
       character(len=*), intent(out) :: filePathReference
       character(len=*), intent(in) :: probePathReference
@@ -669,7 +669,7 @@ contains
       integer :: err
 
       filePathReference = trim(probePathReference)//sep//trim(domainTypeReference)//fileExtension
-      call create_file_with_path(filePathReference, err)
-   end subroutine
+       call create_file_with_path(filePathReference, err)
+    end subroutine
 
 end module outputUtils_m

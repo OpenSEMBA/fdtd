@@ -23,20 +23,21 @@ contains
 
       real(kind=RKIND_tiempo), intent(in) :: timeInterval
 
-      integer(kind=SINGLE) :: i
+       integer(kind=SINGLE) :: i
+       integer :: artifact_kinds(2)
+       character(len=BUFSIZE) :: artifact_paths(2)
 
       this%mainCoords = coordinates
 
       this%component = field
 
-      this%domain = domain
-      this%path = get_output_path()
+       this%domain = domain
+       this%path = get_output_path()
 
-      if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
+       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
          call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
          call alloc_and_init(this%valueForTime, BUFSIZE, 0.0_RKIND)
-         call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
-      end if
+       end if
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          this%nFreq = this%domain%fnum
          allocate (this%frequencySlice(this%domain%fnum))
@@ -52,8 +53,30 @@ contains
             this%auxExp_E(i) = timeInterval*(1.0E0_RKIND, 0.0E0_RKIND)*Exp(mcpi2*this%frequencySlice(i))   !el dt deberia ser algun tipo de promedio
             this%auxExp_H(i) = this%auxExp_E(i)*Exp(mcpi2*this%frequencySlice(i)*timeInterval*0.5_RKIND)
          end do
-         call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension)
-      end if
+       end if
+
+       if (this%domain%domainType == BOTH_DOMAIN) then
+          artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+          artifact_paths(2) = trim(this%path)//'_'//frequencyExtension//datFileExtension
+          artifact_kinds = OUTPUT_ARTIFACT_TEXT
+          call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
+          this%filePathTime = this%artifacts(1)%relative_path
+          this%filePathFreq = this%artifacts(2)%relative_path
+          call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+          call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension)
+       else if (this%domain%domainType == TIME_DOMAIN) then
+          artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+          artifact_kinds(1) = OUTPUT_ARTIFACT_TEXT
+          call declare_probe_artifacts(this%artifacts, artifact_paths(:1), artifact_kinds(:1))
+          this%filePathTime = this%artifacts(1)%relative_path
+          call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+       else if (this%domain%domainType == FREQUENCY_DOMAIN) then
+          artifact_paths(1) = trim(this%path)//'_'//frequencyExtension//datFileExtension
+          artifact_kinds(1) = OUTPUT_ARTIFACT_TEXT
+          call declare_probe_artifacts(this%artifacts, artifact_paths(:1), artifact_kinds(:1))
+          this%filePathFreq = this%artifacts(1)%relative_path
+          call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension)
+       end if
 
    contains
       function get_output_path() result(outputPath)

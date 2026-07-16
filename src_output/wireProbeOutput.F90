@@ -59,11 +59,14 @@ module wireProbeOutput_m
       this%domain    = domain
       this%sign      = 1
 
-      call find_current_segment(this, node, field, media, wiresflavor)
-      this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
+       call find_current_segment(this, node, field, media, wiresflavor)
+       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-      call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
-      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
+       call declare_probe_artifacts(this%artifacts, [character(len=BUFSIZE) :: &
+            trim(this%path)//'_'//timeExtension//datFileExtension], [OUTPUT_ARTIFACT_TEXT])
+       this%filePathTime = this%artifacts(1)%relative_path
+       call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
 
    end subroutine init_wire_current_probe_output
 
@@ -81,12 +84,15 @@ module wireProbeOutput_m
       this%domain    = domain
       this%sign      = 1
 
-      call find_charge_segment(this, node, field, wiresflavor)
-      this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
+       call find_charge_segment(this, node, field, wiresflavor)
+       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-      call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
-      call alloc_and_init(this%chargeValue, BuffObse, 0.0_RKIND)
-      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
+       call alloc_and_init(this%chargeValue, BuffObse, 0.0_RKIND)
+       call declare_probe_artifacts(this%artifacts, [character(len=BUFSIZE) :: &
+            trim(this%path)//'_'//timeExtension//datFileExtension], [OUTPUT_ARTIFACT_TEXT])
+       this%filePathTime = this%artifacts(1)%relative_path
+       call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
 
    end subroutine init_wire_charge_probe_output
 
