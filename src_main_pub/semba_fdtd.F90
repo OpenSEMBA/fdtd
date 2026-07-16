@@ -21,8 +21,9 @@ module SEMBA_FDTD_m
 #endif
 
    use Preprocess_m
-   use storeData_m
-   use xdmf_h5_m
+    use storeData_m
+    use xdmf_h5_m
+    use output_m, only: delete_run_output_manifest
    !
 #ifdef CompileWithMPI
    use MPIcomm_m
@@ -1200,14 +1201,16 @@ contains
       call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
       !
-      if (this%l%deleteintermediates) then
+       if (this%l%deleteintermediates) then
          write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
          call print11 (this%l%layoutnumber, dubuf)
          write(dubuf,*) 'Attempting to delete all intermediate data files'
          call print11 (this%l%layoutnumber, dubuf)
-         write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
-         call print11 (this%l%layoutnumber, dubuf)
-         inquire(file=trim(adjustl(this%l%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(this%whoamishort))//'.txt', EXIST=existe)
+          write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
+          call print11 (this%l%layoutnumber, dubuf)
+          call delete_run_output_manifest(this%l%nEntradaRoot, this%l%layoutnumber)
+          ! Legacy observation dispatch still owns its per-rank register until T19.
+          inquire(file=trim(adjustl(this%l%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(this%whoamishort))//'.txt', EXIST=existe)
          if (existe) then
             open(19, file=trim(adjustl(this%l%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(this%whoamishort))//'.txt')
             buscafile: DO

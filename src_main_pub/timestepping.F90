@@ -18,13 +18,9 @@ module Solver_m
    use logUtils_m
    use FDETYPES_m
    use Report_m
-   use PostProcessing_m
    use ilumina_m
-#ifdef CompileWithNewOutputModule
    use output_m
    use outputTypes_m
-#endif
-   use Observa_m
    use BORDERS_other_m
    use BORDERS_CPML_m
    use BORDERS_MUR_m
@@ -32,8 +28,6 @@ module Solver_m
    use nodalsources_m
    use Lumped_m
    use PMLbodies_m
-   use xdmf_m
-   use VTK_m
    use interpreta_switches_m, only: entrada_t
 #ifdef CompileWithMPI
    use MPIcomm_m
@@ -1465,13 +1459,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Observation...';  call print11(this%control%layoutnumber,dubuf)
-#ifdef CompileWithNewOutputModule
-         call init_outputs(this%sgg, this%media, this%sinPML_fullsize, this%tag_numbers, this%bounds, this%control, this%thereAre%Observation, this%thereAre%wires)
-#else
-         call InitObservation (this%sgg,this%media,this%tag_numbers, &
-                                 this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%initialtimestep,this%lastexecutedtime, &
-                                 this%sinPML_fullsize,this%eps0,this%mu0,this%bounds, this%control)
-#endif
+          call init_outputs(this%sgg, this%media, this%sinPML_fullsize, this%tag_numbers, this%bounds, this%control, this%thereAre%Observation, this%thereAre%wires)
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
 
@@ -1736,9 +1724,7 @@ contains
       real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
 
-#ifdef CompileWithNewOutputModule
       type(fields_reference_t) :: fieldReference
-#endif
 
       logical :: call_timing, l_aux, flushFF, somethingdone, newsomethingdone
       integer :: i
@@ -1760,7 +1746,6 @@ contains
       
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 
-#ifdef CompileWithNewOutputModule
       fieldReference%E%x => this%Ex
       fieldReference%E%y => this%Ey
       fieldReference%E%z => this%Ez
@@ -1776,7 +1761,6 @@ contains
       fieldReference%H%deltax => this%dxh
       fieldReference%H%deltay => this%dyh
       fieldReference%H%deltaz => this%dzh
-#endif
 
       ciclo_temporal :  do while (this%n <= this%control%finaltimestep)
       
@@ -2018,11 +2002,9 @@ contains
          write(dubuf,'(a,i9)')  ' Unpacking .bin files and prostprocessing them at n= ',this%n
          call printMessageWithSeparator(this%control%layoutnumber, dubuf)
 
-         if (this%thereAre%Observation) call unpacksinglefiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%control%resume) !dump the remaining to disk
          somethingdone=.false.
          if (this%control%singlefilewrite.and.this%perform%Unpack) then
             at=this%n*this%sgg%dt
-            if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
          end if
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2686,9 +2668,7 @@ contains
       logical :: dummylog, somethingdone, newsomethingdone
       character(len=bufsize) :: dubuf
 
-#ifdef CompileWithNewOutputModule
       type(fields_reference_t) :: fieldReference
-#endif
 
 
 #ifdef CompileWithMPI
@@ -2697,7 +2677,6 @@ contains
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz;
       dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 
-#ifdef CompileWithNewOutputModule
       fieldReference%E%x => this%Ex
       fieldReference%E%y => this%Ey
       fieldReference%E%z => this%Ez
@@ -2713,7 +2692,6 @@ contains
       fieldReference%H%deltax => this%dxh
       fieldReference%H%deltay => this%dyh
       fieldReference%H%deltaz => this%dzh
-#endif
 
 #ifdef CompileWithProfiling
       call nvtxEndRange
@@ -2812,7 +2790,6 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       somethingdone=.false.
 
-      if (this%thereAre%Observation) call createvtk(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%media%sggMtag,this%control%dontwritevtk)
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2836,8 +2813,6 @@ contains
       write(dubuf,*) SEPARADOR//separador//separador
       call print11(this%control%layoutnumber,dubuf)
       somethingdone=.false.
-      if (this%thereAre%Observation) call createxdmf(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)
-      if (this%control%createh5bin) call createh5bintxt(this%sgg,this%control%layoutnumber,this%control%num_procs) !lo deben llamar todos haya o no this%thereAre%observation
 !        call create_interpreted_mesh(sgg)
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2880,7 +2855,6 @@ contains
       real(kind=RKIND), intent(INOUT)     , pointer, dimension( : , : , : ) :: Ex,Ey,Ez,Hx,Hy,Hz
       real(kind=RKIND), intent(INOUT)     , pointer, dimension( : ) :: G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
 
-      call DestroyObservation(sgg)
       Call DestroyNodal(sgg)
       call DestroyIlumina(sgg)
 #ifdef CompileWithNIBC
@@ -2920,7 +2894,6 @@ contains
    subroutine destroy_and_deallocate(this)
       class(solver_t) :: this
 
-      call DestroyObservation(this%sgg)
       Call DestroyNodal(this%sgg)
       call DestroyIlumina(this%sgg)
 #ifdef CompileWithNIBC

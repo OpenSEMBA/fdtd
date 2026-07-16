@@ -20,6 +20,11 @@ option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal
 
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
+if(SEMBA_FDTD_ENABLE_MPI AND SEMBA_FDTD_ENABLE_TEST)
+	set(SEMBA_FDTD_OUTPUT_MPI_TEST_RANKS 3 CACHE STRING
+		"Number of ranks used by distributed output integration tests")
+endif()
+
 if(SEMBA_FDTD_ENABLE_TEST OR XDMF_HDF5_BUILD_TESTING)
 	enable_testing()
 endif()
@@ -34,7 +39,7 @@ option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
 
 option(SEMBA_FDTD_ENABLE_OUTPUT_MODULE "Use the new output module" ON)
 
-if(SEMBA_FDTD_ENABLE_MPI AND SEMBA_FDTD_ENABLE_HDF AND SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
+if(SEMBA_FDTD_ENABLE_MPI AND SEMBA_FDTD_ENABLE_HDF)
 	set(HDF5_PREFER_PARALLEL TRUE)
 endif()
 
@@ -44,9 +49,14 @@ if(CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "release" )
 else()
 	add_definitions(-DCompileWithDebug)
 endif()
-if(SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
-	add_definitions(-DCompileWithNewOutputModule)
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+add_compile_definitions(__WIN32__)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+add_compile_definitions(__APPLE__)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+add_compile_definitions(__linux__)
 endif()
+
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_definitions(-DCompileWithSMBJSON)
 endif()
@@ -61,11 +71,16 @@ endif()
 add_definitions(
 	-DCompileWithInt2
 	-DCompileWithOpenMP
+	-DCompileWithNewOutputModule
 )
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
 	add_definitions(-DGNUCompiler)
 endif()
+if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
+	add_definitions(-DIFXCompiler)
+endif()
+
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
@@ -203,12 +218,10 @@ endif()
 
 add_subdirectory(src_utils)
 
-if (SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
-	add_subdirectory(src_output)
-	set(OUTPUT_LIBRARIES fdtd-output)
-	set(VTK_API_LIBRARIES vtkAPI)
-	set(XDMF_API_LIBRARIES xdmfAPI)
-endif()
+add_subdirectory(src_output)
+set(OUTPUT_LIBRARIES fdtd-output)
+set(VTK_API_LIBRARIES vtkAPI)
+set(XDMF_API_LIBRARIES xdmfAPI)
 
 add_subdirectory(src_conformal)
 set(CONFORMAL_LIBRARIES conformal)
@@ -244,9 +257,7 @@ endif()
 if(SEMBA_FDTD_OUTPUTS_LIB)
 	add_library(semba-outputs
 		"src_main_pub/mpicomm.F90"
-		"src_main_pub/observation.F90"
-		"src_main_pub/vtk.F90"
-		"src_main_pub/xdmf.F90"
+		# Retained for the standalone -createh5filefromsinglebin utility.
 		"src_main_pub/xdmf_h5.F90"
 	)
 	target_link_libraries(semba-outputs 
@@ -276,7 +287,6 @@ if(SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/preprocess_geom.F90"
 		"src_main_pub/storegeom.F90"
 		"src_main_pub/version.F90"
-		"src_main_pub/postprocess.F90"
 		"src_main_pub/interpreta_switches.F90"
 		"src_main_pub/resuming.F90"	
 		"src_main_pub/timestepping.F90"
@@ -287,7 +297,7 @@ if(SEMBA_FDTD_MAIN_LIB)
 		${OUTPUT_LIBRARIES}
 		${VTK_API_LIBRARIES}
 		${XDMF_API_LIBRARIES}
-		${SMBJSON_LIBRARIES} 
+		${SMBJSON_LIBRARIES}
 		${MTLN_LIBRARIES})
 endif()
 
