@@ -14,8 +14,8 @@ integer function test_init_point_probe() bind(c) result(err)
    implicit none
 
    ! Parameters
-   character(len=14), parameter :: test_folder = 'testing_folder'
-   character(len=18), parameter :: test_name = 'initPointProbeTest'
+   character(len=*), parameter :: test_folder = 'testing folder'
+   character(len=*), parameter :: test_name = 'nested output/initPointProbeTest'
 
    ! Local variables
    character(len=1) :: sep
@@ -85,6 +85,139 @@ integer function test_init_point_probe() bind(c) result(err)
    err = test_err
 end function
 
+integer function test_root_output_manifest() bind(c) result(err)
+   use FDETYPES_m
+   use FDETYPES_TOOLS
+   use output_m
+   use testOutputUtils_m
+   use sggMethods_m
+   use assertionTools_m
+   use directoryUtils_m
+   implicit none
+
+   type(SGGFDTDINFO_t) :: sgg
+   type(sim_control_t) :: control
+   type(bounds_t) :: bounds
+   type(media_matrices_t) :: media
+   type(limit_t), allocatable :: sinpml(:)
+   type(Obses_t) :: probe
+   type(MediaData_t), allocatable, target :: materials(:)
+   type(MediaData_t), pointer :: materials_ptr(:)
+   type(taglist_t) :: tag_numbers
+   real(kind=RKIND_tiempo), pointer :: time_array(:)
+   character(len=BUFSIZE) :: line
+   integer :: ios, unit
+   logical :: observations_exist, wires_exist, has_artifact
+
+   err = 0
+   wires_exist = .false.
+   has_artifact = .false.
+   call delete_file('rootManifest_Outputrequests_1.txt', ios)
+   call sgg_init(sgg)
+   call init_time_array(time_array, 2_SINGLE, 0.1_RKIND_tiempo)
+   call sgg_set_tiempo(sgg, time_array)
+   call sgg_set_dt(sgg, 0.1_RKIND_tiempo)
+   call init_simulation_material_list(materials)
+   materials_ptr => materials
+   call sgg_set_Med(sgg, materials_ptr)
+   probe = create_point_probe_observation(4, 4, 4)
+   call sgg_add_observation(sgg, probe)
+   control = create_control_flags(nEntradaRoot='rootManifest', mpidir=3, size=1)
+
+   call init_outputs(sgg, media, sinpml, tag_numbers, bounds, control, observations_exist, wires_exist)
+
+   err = err + assert_true(file_exists('rootManifest_output_manifest.json'), 'Root output manifest does not exist')
+   err = err + assert_true(.not. file_exists('rootManifest_Outputrequests_1.txt'), &
+                            'New output path created a per-rank register')
+   open(newunit=unit, file='rootManifest_output_manifest.json', status='old', action='read', iostat=ios)
+   do while (ios == 0)
+      read(unit, '(A)', iostat=ios) line
+      if (index(line, 'rootManifest_pointProbe_Ex_4_4_4_tm.dat') > 0) has_artifact = .true.
+   end do
+   close(unit)
+   err = err + assert_true(has_artifact, 'Manifest does not contain the declared point artifact')
+
+   call delete_run_output_manifest('rootManifest', 0)
+   err = err + assert_true(.not. file_exists('rootManifest_pointProbe_Ex_4_4_4_tm.dat'), &
+                            'Manifest deletion did not remove the declared artifact')
+   err = err + assert_true(.not. file_exists('rootManifest_output_manifest.json'), &
+                            'Manifest deletion did not remove the manifest')
+   call remove_folder('rootManifest_Ex_4_4_4', ios)
+end function
+
+integer function test_nested_output_path() bind(c) result(err)
+   use directoryUtils_m, only: create_file_with_path, file_exists, remove_folder
+   use assertionTools_m, only: assert_integer_equal, assert_true
+   implicit none
+
+   character(len=*), parameter :: path = 'testing folder/nested output/result.dat'
+   integer :: ios
+
+   err = 0
+   call create_file_with_path(path, ios)
+   err = err + assert_integer_equal(ios, 0, 'Nested path creation failed')
+   err = err + assert_true(file_exists(path), 'Nested output file does not exist')
+   call remove_folder('testing folder', ios)
+   err = err + assert_integer_equal(ios, 0, 'Nested path cleanup failed')
+end function
+
+integer function test_output_metadata_publication() bind(c) result(err)
+   use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, &
+                               OUTPUT_METADATA_SUCCESS
+   use outputTypes_m, only: probe_metadata_t, output_artifact_t, OUTPUT_ARTIFACT_BINARY, &
+                            OUTPUT_LIFECYCLE_FAILED
+   use assertionTools_m, only: assert_integer_equal, assert_true
+   use directoryUtils_m, only: remove_folder
+   implicit none
+
+   type(probe_metadata_t) :: metadata
+   character(len=8192) :: line
+   integer :: ios, status, unit
+   logical :: initial_declared, final_failed, has_relative_artifact, has_diagnostic
+
+   err = 0
+   metadata%probe_id = 'point-001'
+   metadata%quantity = 'Ex'
+   metadata%lower_bound%x = 4
+   metadata%lower_bound%y = 5
+   metadata%lower_bound%z = 6
+   metadata%upper_bound = metadata%lower_bound
+   allocate(metadata%artifacts(1))
+   metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
+   metadata%artifacts(1)%relative_path = 'payload/point.bin'
+
+   call publish_initial_probe_metadata('testing metadata/initial.json', metadata, status)
+   err = err + assert_integer_equal(status, OUTPUT_METADATA_SUCCESS, 'Initial metadata publication failed')
+   initial_declared = .false.
+   open(newunit=unit, file='testing metadata/initial.json', status='old', action='read', iostat=ios)
+   do while (ios == 0)
+      read(unit, '(A)', iostat=ios) line
+      if (index(line, '"state":"declared"') > 0) initial_declared = .true.
+   end do
+   close(unit)
+   err = err + assert_true(initial_declared, 'Initial descriptor is not declared JSON')
+
+   metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+   metadata%lifecycle%diagnostic = 'disk full'
+   call publish_final_probe_metadata('testing metadata/final.json', metadata, status)
+   err = err + assert_integer_equal(status, OUTPUT_METADATA_SUCCESS, 'Final metadata publication failed')
+   final_failed = .false.
+   has_relative_artifact = .false.
+   has_diagnostic = .false.
+   open(newunit=unit, file='testing metadata/final.json', status='old', action='read', iostat=ios)
+   do while (ios == 0)
+      read(unit, '(A)', iostat=ios) line
+      if (index(line, '"state":"failed"') > 0) final_failed = .true.
+      if (index(line, '"relative_path":"payload/point.bin"') > 0) has_relative_artifact = .true.
+      if (index(line, '"diagnostic":"disk full"') > 0) has_diagnostic = .true.
+   end do
+   close(unit)
+   err = err + assert_true(final_failed, 'Final descriptor does not report failure')
+   err = err + assert_true(has_relative_artifact, 'Descriptor does not publish relative artifact path')
+   err = err + assert_true(has_diagnostic, 'Failed descriptor does not retain diagnostic')
+   call remove_folder('testing metadata', ios)
+end function
+
 integer function test_output_artifact_contract() bind(c) result(err)
    use outputTypes_m, only: output_artifact_t, output_lifecycle_t, OUTPUT_ARTIFACT_BINARY, &
                             OUTPUT_LIFECYCLE_DECLARED, BINARY_ENDIAN_LITTLE, BINARY_COMPLEX_REAL_IMAG
@@ -105,6 +238,74 @@ integer function test_output_artifact_contract() bind(c) result(err)
    err = err + assert_integer_equal(artifact%complex_representation, BINARY_COMPLEX_REAL_IMAG, &
                                     'Complex representation')
    err = err + assert_integer_equal(lifecycle%state, OUTPUT_LIFECYCLE_DECLARED, 'Declared lifecycle state')
+end function
+
+integer function test_portable_binary_output() bind(c) result(err)
+   use, intrinsic :: iso_fortran_env, only: int8, real32
+   use outputBinary_m, only: write_binary_real32, validate_binary_layout, BINARY_WRITER_SUCCESS, &
+                             BINARY_WRITER_INVALID_LAYOUT
+   use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_BINARY, BINARY_ENDIAN_LITTLE, &
+                            BINARY_ENDIAN_BIG, BINARY_NUMERIC_REAL32, BINARY_COMPLEX_UNSPECIFIED
+   use assertionTools_m, only: assert_integer_equal, assert_true
+   use directoryUtils_m, only: remove_folder
+   implicit none
+
+   type(output_artifact_t) :: artifact
+   integer(int8) :: bytes(8)
+   integer :: expected_bytes(8), ios, status, unit
+
+   err = 0
+   artifact%kind = OUTPUT_ARTIFACT_BINARY
+   artifact%byte_order = BINARY_ENDIAN_LITTLE
+   artifact%numeric_representation = BINARY_NUMERIC_REAL32
+   artifact%complex_representation = BINARY_COMPLEX_UNSPECIFIED
+   artifact%record_bytes = 4
+   expected_bytes = [0, 0, -128, 63, 0, 0, 32, -64]
+
+   call validate_binary_layout(artifact, status)
+   err = err + assert_integer_equal(status, BINARY_WRITER_SUCCESS, 'Valid real32 layout was rejected')
+   call write_binary_real32('testing binary/payload.bin', artifact, [1.0_real32, -2.5_real32], status)
+   err = err + assert_integer_equal(status, BINARY_WRITER_SUCCESS, 'Portable binary write failed')
+
+   open(newunit=unit, file='testing binary/payload.bin', access='stream', form='unformatted', status='old', &
+        action='read', iostat=ios)
+   err = err + assert_integer_equal(ios, 0, 'Cannot read portable binary payload')
+   if (ios == 0) then
+      read(unit, iostat=ios) bytes
+      close(unit)
+      err = err + assert_integer_equal(ios, 0, 'Cannot read portable binary bytes')
+      err = err + assert_true(all(int(bytes) == expected_bytes), &
+                              'Payload is not little-endian IEEE real32')
+   end if
+
+   artifact%byte_order = BINARY_ENDIAN_BIG
+   call validate_binary_layout(artifact, status)
+   err = err + assert_integer_equal(status, BINARY_WRITER_INVALID_LAYOUT, 'Unsupported byte order was accepted')
+   call remove_folder('testing binary', ios)
+end function
+
+integer function test_volumetric_visualisation_output() bind(c) result(err)
+   use, intrinsic :: iso_fortran_env, only: int64, real64
+   use outputVisualisation_m, only: publish_volumetric_visualisation, VISUALISATION_SUCCESS
+   use assertionTools_m, only: assert_integer_equal, assert_true
+   use directoryUtils_m, only: file_exists, remove_folder
+   implicit none
+
+   integer :: ios, status
+
+   err = 0
+   call publish_volumetric_visualisation('testing visualisation/volume', 'volume', 'Ex', &
+                                        [2_int64, 2_int64, 2_int64], &
+                                        [0.0_real64, 0.0_real64, 0.0_real64], &
+                                        [1.0_real64, 1.0_real64, 1.0_real64], 0.0_real64, &
+                                        [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64, &
+                                         5.0_real64, 6.0_real64, 7.0_real64, 8.0_real64], status)
+   err = err + assert_integer_equal(status, VISUALISATION_SUCCESS, 'Visualisation writer failed')
+   err = err + assert_true(file_exists('testing visualisation/volume.xdmf'), &
+                            'Visualisation metadata does not exist')
+   err = err + assert_true(file_exists('testing visualisation/volume.h5'), &
+                            'Visualisation heavy data does not exist')
+   call remove_folder('testing visualisation', ios)
 end function
 
 integer function test_declared_output_artifacts() bind(c) result(err)
@@ -277,8 +478,9 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
    use FDETYPES_m
    use FDETYPES_TOOLS, only: create_limit_t, create_control_flags, init_time_array, &
                               init_simulation_material_list, create_geometry_media, create_xyz_limit_array
-   use output_m, only: init_outputs, GetOutputPartition
-   use outputDecomposition_m, only: output_partition_t, OUTPUT_PARTITION_SUCCESS
+    use output_m, only: init_outputs, GetOutputs, GetOutputPartition, solver_output_t
+    use outputDecomposition_m, only: output_partition_t, OUTPUT_PARTITION_SUCCESS
+    use outputCollective_m, only: OUTPUT_PUBLICATION_ROOT_AGGREGATION
    use testOutputUtils_m, only: create_movie_observation
    use sggMethods_m, only: sgg_init, sgg_set_tiempo, sgg_set_dt, sgg_set_Med, sgg_set_NumMedia, &
                            sgg_set_Sweep, sgg_set_SINPMLSweep, sgg_set_NumPlaneWaves, sgg_set_Alloc, &
@@ -296,8 +498,9 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
    type(Obses_t) :: observation
    type(MediaData_t), allocatable, target :: materials(:)
    type(MediaData_t), pointer :: materials_ptr(:)
-   type(XYZlimit_t) :: sweep(6)
-   type(output_partition_t) :: partition
+    type(XYZlimit_t) :: sweep(6)
+    type(output_partition_t) :: partition
+    type(solver_output_t), pointer :: outputs(:)
    real(kind=RKIND_tiempo), pointer :: time_array(:)
    real(kind=RKIND), pointer :: x_steps(:), y_steps(:), z_steps(:)
    logical :: observations_exist, wires_exist
@@ -330,15 +533,20 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
    call sgg_add_observation(sgg, observation)
    control = create_control_flags(nEntradaRoot='partitionAttachment', mpidir=3, size=1)
 
-   call init_outputs(sgg, media, sinpml, material_tags, bounds, control, observations_exist, wires_exist)
-   call GetOutputPartition(1, partition, status)
+    call init_outputs(sgg, media, sinpml, material_tags, bounds, control, observations_exist, wires_exist)
+    call GetOutputPartition(1, partition, status)
+    outputs => GetOutputs()
 
    err = err + assert_integer_equal(status, OUTPUT_PARTITION_SUCCESS, 'Volumetric partition was not retained')
    err = err + assert_true(partition%has_data, 'Serial volumetric partition has no data')
    err = err + assert_integer_equal(partition%global_lower%x, 2, 'Unexpected global lower x')
    err = err + assert_integer_equal(partition%global_upper%z, 5, 'Unexpected global upper z')
-   err = err + assert_integer_equal(partition%local_lower%z, 2, 'Unexpected local lower z')
-   err = err + assert_integer_equal(partition%local_upper%z, 5, 'Unexpected local upper z')
+    err = err + assert_integer_equal(partition%local_lower%z, 2, 'Unexpected local lower z')
+    err = err + assert_integer_equal(partition%local_upper%z, 5, 'Unexpected local upper z')
+    err = err + assert_integer_equal(outputs(1)%movieProbe%publication_mode, OUTPUT_PUBLICATION_ROOT_AGGREGATION, &
+                                     'Serial movie output did not select root aggregation fallback')
+    err = err + assert_true(outputs(1)%movieProbe%local_participates, &
+                           'Serial movie output was excluded from publication')
    call remove_folder('partitionAttachment_movieProbe_BC_2_2_2__5_5_5', ios)
    call delete_file('partitionAttachment_Outputrequests_1.txt', ios)
 end function
@@ -470,7 +678,7 @@ integer function test_flush_point_probe() bind(c) result(err)
    type(domain_t)             :: domain
    type(cell_coordinate_t)    :: coordinates
 
-   integer :: n, i
+   integer :: file_size, n, i
    integer :: test_err = 0
    integer :: ios
 
@@ -487,6 +695,11 @@ integer function test_flush_point_probe() bind(c) result(err)
    coordinates%z = 2
 
    call init_point_probe_output(probe, coordinates, iEx, domain, nEntrada, 3, 0.1_RKIND_tiempo)
+
+   ! A declared scalar artifact remains discoverable when no sample is recorded.
+   call flush_point_probe_output(probe)
+   inquire(file=probe%filePathTime, size=file_size)
+   test_err = test_err + assert_integer_equal(file_size, 0, 'Zero-sample point artifact is not empty')
 
    ! Action
    n = 10
@@ -962,10 +1175,12 @@ integer function test_flush_movie_probe() bind(c) result(err)
    character(len=14), parameter :: test_folder = 'testing_folder'
    character(len=10), parameter :: test_name = 'flushMovie'
 
-   character(len=BUFSIZE) :: nEntrada
-   character(len=BUFSIZE) :: expectedPath
-   integer :: outputIdx
-   integer :: ios
+    character(len=BUFSIZE) :: nEntrada
+    character(len=BUFSIZE) :: expectedPath
+    character(len=BUFSIZE) :: metadataLine
+    integer :: outputIdx
+    integer :: binaryBytes, ios, metadataUnit
+    logical :: hasBinaryArtifact, hasH5Artifact, hasXdmfArtifact, metadataComplete
 
    nEntrada = join_path(test_folder, test_name)
 
@@ -1074,11 +1289,42 @@ integer function test_flush_movie_probe() bind(c) result(err)
    outputs(3)%movieProbe%timeStep(2) = 0.75_RKIND_tiempo
    outputs(3)%movieProbe%yValueForTime(2, :4) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
 
-   call flush_outputs(dummysgg%tiempo, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
+    call flush_outputs(dummysgg%tiempo, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
 
-   call close_outputs()
+    call close_outputs()
 
-   call remove_folder(test_folder, ios)
+    expectedPath = trim(outputs(1)%movieProbe%filesPath)
+    test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.bin'), 'Movie binary payload does not exist')
+    test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.xdmf'), 'Movie XDMF metadata does not exist')
+    test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.h5'), 'Movie HDF5 payload does not exist')
+    test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.json'), 'Movie JSON descriptor does not exist')
+    inquire(file=trim(expectedPath)//'.bin', size=binaryBytes)
+    test_err = test_err + assert_integer_equal(binaryBytes, 8 * 44, 'Movie binary record layout changed')
+    metadataComplete = .false.
+    hasBinaryArtifact = .false.
+    hasXdmfArtifact = .false.
+    hasH5Artifact = .false.
+    open(newunit=metadataUnit, file=trim(expectedPath)//'.json', status='old', action='read', iostat=ios)
+    do while (ios == 0)
+       read(metadataUnit, '(A)', iostat=ios) metadataLine
+       if (index(metadataLine, '"state":"complete"') > 0) metadataComplete = .true.
+       if (index(metadataLine, '"relative_path":"'//trim(get_last_component(expectedPath))//'.bin"') > 0) then
+          hasBinaryArtifact = .true.
+       end if
+       if (index(metadataLine, '"relative_path":"'//trim(get_last_component(expectedPath))//'.xdmf"') > 0) then
+          hasXdmfArtifact = .true.
+       end if
+       if (index(metadataLine, '"relative_path":"'//trim(get_last_component(expectedPath))//'.h5"') > 0) then
+          hasH5Artifact = .true.
+       end if
+    end do
+    close(metadataUnit)
+    test_err = test_err + assert_true(metadataComplete, 'Movie JSON descriptor is not complete')
+    test_err = test_err + assert_true(hasBinaryArtifact, 'Movie JSON lacks the binary artifact')
+    test_err = test_err + assert_true(hasXdmfArtifact, 'Movie JSON lacks the XDMF artifact')
+    test_err = test_err + assert_true(hasH5Artifact, 'Movie JSON lacks the HDF5 artifact')
+
+    call remove_folder(test_folder, ios)
 
    err = test_err
 end function
@@ -1087,8 +1333,10 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 ! This test initializes a frequency slice probe over a 3D region (2,2,2) to (5,5,5).
 ! It verifies that the probe is correctly set up, that the expected number of measurement
 ! points and frequencies are allocated, and that the output folder and PVD file exist.
-   use output_m
-   use outputTypes_m
+    use output_m
+    use outputTypes_m
+    use frequencySliceProbeOutput_m, only: flush_frequency_slice_probe_output, close_frequency_slice_probe_output
+    use, intrinsic :: iso_fortran_env, only: real32
    use testOutputUtils_m
    use FDETYPES_TOOLS
    use sggMethods_m
@@ -1137,7 +1385,9 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    character(len=BUFSIZE) :: nEntrada
    character(len=BUFSIZE) :: expectedProbePath
    character(len=BUFSIZE) :: pdvFileName
-   integer :: ios
+    integer :: binaryBytes, ios, unit
+    real(real32) :: record(10)
+    logical :: metadataComplete
 
    nEntrada = join_path(test_folder, test_name)
    err = 1
@@ -1206,9 +1456,49 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    pdvFileName = trim(get_last_component(expectedProbePath))//pvdExtension
 
    test_err = test_err + assert_string_equal(outputs(1)%frequencySliceProbe%path, expectedProbePath, 'Unexpected path')
-   test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Frequency Slice folder do not exist')
+    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Frequency Slice folder do not exist')
 
-   call remove_folder(test_folder, ios)
+    ! Use distinct complex component values to catch both lossy serialisation and the historical duplicated X record.
+    outputs(1)%frequencySliceProbe%xValueForFreq = (0.0_CKIND, 0.0_CKIND)
+    outputs(1)%frequencySliceProbe%yValueForFreq = (0.0_CKIND, 0.0_CKIND)
+    outputs(1)%frequencySliceProbe%zValueForFreq = (0.0_CKIND, 0.0_CKIND)
+    outputs(1)%frequencySliceProbe%xValueForFreq(1, 1) = (1.0_CKIND, 2.0_CKIND)
+    outputs(1)%frequencySliceProbe%yValueForFreq(1, 1) = (3.0_CKIND, 4.0_CKIND)
+    outputs(1)%frequencySliceProbe%zValueForFreq(1, 1) = (5.0_CKIND, 6.0_CKIND)
+    call flush_frequency_slice_probe_output(outputs(1)%frequencySliceProbe)
+    call close_frequency_slice_probe_output(outputs(1)%frequencySliceProbe)
+
+    expectedProbePath = trim(outputs(1)%frequencySliceProbe%filesPath)
+    test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.bin'), 'Frequency binary payload does not exist')
+    test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.xdmf'), 'Frequency XDMF metadata does not exist')
+    test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.h5'), 'Frequency HDF5 payload does not exist')
+    test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.json'), 'Frequency JSON descriptor does not exist')
+    inquire(file=trim(expectedProbePath)//'.bin', size=binaryBytes)
+    test_err = test_err + assert_integer_equal(binaryBytes, 6 * 4 * 40, 'Frequency binary record layout changed')
+    open(newunit=unit, file=trim(expectedProbePath)//'.bin', access='stream', form='unformatted', status='old', action='read', iostat=ios)
+    if (ios == 0) then
+       read(unit, iostat=ios) record
+       close(unit)
+       test_err = test_err + assert_integer_equal(ios, 0, 'Cannot read frequency binary record')
+       test_err = test_err + assert_real_equal(real(record(5), RKIND), 1.0_RKIND, 1e-5_RKIND, 'X real value was not retained')
+       test_err = test_err + assert_real_equal(real(record(6), RKIND), 2.0_RKIND, 1e-5_RKIND, 'X imaginary value was not retained')
+       test_err = test_err + assert_real_equal(real(record(7), RKIND), 3.0_RKIND, 1e-5_RKIND, 'Y real value was not retained')
+       test_err = test_err + assert_real_equal(real(record(8), RKIND), 4.0_RKIND, 1e-5_RKIND, 'Y imaginary value was not retained')
+       test_err = test_err + assert_real_equal(real(record(9), RKIND), 5.0_RKIND, 1e-5_RKIND, 'Z real value duplicates X')
+       test_err = test_err + assert_real_equal(real(record(10), RKIND), 6.0_RKIND, 1e-5_RKIND, 'Z imaginary value was not retained')
+    else
+       test_err = test_err + assert_integer_equal(ios, 0, 'Cannot open frequency binary payload')
+    end if
+    metadataComplete = .false.
+    open(newunit=unit, file=trim(expectedProbePath)//'.json', status='old', action='read', iostat=ios)
+    do while (ios == 0)
+       read(unit, '(A)', iostat=ios) expectedProbePath
+       if (index(expectedProbePath, '"state":"complete"') > 0) metadataComplete = .true.
+    end do
+    close(unit)
+    test_err = test_err + assert_true(metadataComplete, 'Frequency JSON descriptor is not complete')
+
+    call remove_folder(test_folder, ios)
 
    err = test_err
 end function

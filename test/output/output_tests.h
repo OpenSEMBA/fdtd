@@ -3,7 +3,12 @@
 #include <gtest/gtest.h>
 
 extern "C" int test_init_point_probe();
+extern "C" int test_root_output_manifest();
+extern "C" int test_nested_output_path();
+extern "C" int test_output_metadata_publication();
 extern "C" int test_output_artifact_contract();
+extern "C" int test_portable_binary_output();
+extern "C" int test_volumetric_visualisation_output();
 extern "C" int test_declared_output_artifacts();
 extern "C" int test_output_lifecycle_contract();
 extern "C" int test_output_lifecycle_coordination();
@@ -26,10 +31,16 @@ extern "C" int test_is_valid_point_field();
 extern "C" int test_output_partition_shared_interfaces();
 extern "C" int test_output_partition_disjoint_intervals();
 extern "C" int test_output_partition_clipping_and_large_shape();
+extern "C" int test_output_collective_contract();
 
 
 TEST(output, test_initialize_point_probe)    {EXPECT_EQ(0, test_init_point_probe()); }
+TEST(output, test_root_output_manifest) { EXPECT_EQ(0, test_root_output_manifest()); }
+TEST(output, test_nested_output_path) { EXPECT_EQ(0, test_nested_output_path()); }
+TEST(output, test_metadata_publication) { EXPECT_EQ(0, test_output_metadata_publication()); }
 TEST(output, test_artifact_contract) { EXPECT_EQ(0, test_output_artifact_contract()); }
+TEST(output, test_portable_binary_output) { EXPECT_EQ(0, test_portable_binary_output()); }
+TEST(output, test_volumetric_visualisation_output) { EXPECT_EQ(0, test_volumetric_visualisation_output()); }
 TEST(output, test_declared_output_artifacts) { EXPECT_EQ(0, test_declared_output_artifacts()); }
 TEST(output, test_lifecycle_contract) { EXPECT_EQ(0, test_output_lifecycle_contract()); }
 TEST(output, test_lifecycle_coordination) { EXPECT_EQ(0, test_output_lifecycle_coordination()); }
@@ -52,5 +63,6 @@ TEST(output, test_volumic_utils_valid_field) { EXPECT_EQ(0, test_is_valid_point_
 TEST(output, test_partition_shared_interfaces) { EXPECT_EQ(0, test_output_partition_shared_interfaces()); }
 TEST(output, test_partition_disjoint_intervals) { EXPECT_EQ(0, test_output_partition_disjoint_intervals()); }
 TEST(output, test_partition_clipping_and_large_shape) { EXPECT_EQ(0, test_output_partition_clipping_and_large_shape()); }
+TEST(output, test_collective_contract) { EXPECT_EQ(0, test_output_collective_contract()); }
 
 #endif

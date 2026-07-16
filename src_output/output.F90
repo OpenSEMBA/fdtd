@@ -2,7 +2,8 @@ module output_m
    use FDETYPES_m
    use report_m
    use domain_m
-   use outputUtils_m
+    use outputUtils_m
+    use directoryUtils_m, only: delete_file, file_exists, join_path
    use pointProbeOutput_m
    use wireProbeOutput_m
    use bulkProbeOutput_m
@@ -10,8 +11,10 @@ module output_m
    use frequencySliceProbeOutput_m
     use farFieldOutput_m
      use mapVTKOutput_m
-     use outputDecomposition_m, only: output_partition_t, build_output_partition, &
-                                      OUTPUT_PARTITION_SUCCESS, OUTPUT_PARTITION_INVALID_ARGUMENT
+    use outputDecomposition_m, only: output_partition_t, build_output_partition, &
+                                     OUTPUT_PARTITION_SUCCESS, OUTPUT_PARTITION_INVALID_ARGUMENT
+    use outputCollective_m, only: output_collective_t, init_output_collective, select_output_publication_mode, &
+                                  OUTPUT_COLLECTIVE_SUCCESS
     use outputTypes_m, only: probe_metadata_t, output_artifact_t, output_lifecycle_is_terminal, &
                              probe_metadata_is_complete, OUTPUT_ARTIFACT_UNDEFINED, &
                              OUTPUT_LIFECYCLE_DECLARED, OUTPUT_LIFECYCLE_ACTIVE, &
@@ -37,7 +40,8 @@ module output_m
      public :: GetOutputPartition
     public :: probe_output_t, run_output_manifest_t
      public :: init_run_output_manifest, declare_probe_output, begin_probe_output, finalise_probe_output, &
-               fail_probe_output, finalise_run_outputs, select_probe_participants
+                fail_probe_output, finalise_run_outputs, select_probe_participants
+     public :: delete_run_output_manifest
     public :: OUTPUT_COORDINATION_SUCCESS, OUTPUT_COORDINATION_INVALID_PROBE, &
                OUTPUT_COORDINATION_INVALID_STATE, OUTPUT_COORDINATION_INVALID_ARTIFACTS, &
                OUTPUT_COORDINATION_NOT_TERMINAL, OUTPUT_COORDINATION_NOT_ROOT, &
@@ -124,8 +128,8 @@ module output_m
 
    end interface
 
-   interface close_solver_output
-      module procedure close_frequency_slice_probe_output
+    interface close_solver_output
+       module procedure close_movie_probe_output, close_frequency_slice_probe_output
    end interface
 contains
 
@@ -516,13 +520,14 @@ contains
 #ifdef CompileWithMTLN
       observationsExists = observationsExists .or. thereAreMtlnObservations
 #endif
-      if (observationsExists) call registerOutputFiles(control, outputCount)
+       if (observationsExists) call write_run_output_manifest(control, outputCount)
       return
     contains
        subroutine attach_output_partition(output_index)
-          integer(kind=SINGLE), intent(in) :: output_index
-          type(limit_t) :: local_sweep
-          integer :: field_component, partition_status
+           integer(kind=SINGLE), intent(in) :: output_index
+           type(limit_t) :: local_sweep
+           type(output_collective_t) :: collective
+           integer :: field_component, partition_status, collective_status, publication_mode
 
           field_component = fieldo(outputRequestType, 'Z')
           local_sweep%XI = sgg%Sweep(field_component)%XI
@@ -534,10 +539,25 @@ contains
           local_sweep%NX = local_sweep%XE - local_sweep%XI + 1
           local_sweep%NY = local_sweep%YE - local_sweep%YI + 1
           local_sweep%NZ = local_sweep%ZE - local_sweep%ZI + 1
-          call build_output_partition(lowerBound, upperBound, SINPML_fullsize(field_component), local_sweep, &
-                                      field_component, control%layoutnumber, max(control%num_procs, 1), &
-                                      outputPartitions(output_index), partition_status)
-       end subroutine attach_output_partition
+           call build_output_partition(lowerBound, upperBound, SINPML_fullsize(field_component), local_sweep, &
+                                       field_component, control%layoutnumber, max(control%num_procs, 1), &
+                                       outputPartitions(output_index), partition_status)
+           if (partition_status /= OUTPUT_PARTITION_SUCCESS) return
+
+           ! The current writers have no MPI transport, so distributed runs use root aggregation.
+           call init_output_collective(collective, control%layoutnumber, max(control%num_procs, 1), 0, .false., &
+                                       collective_status)
+           if (collective_status /= OUTPUT_COLLECTIVE_SUCCESS) return
+           call select_output_publication_mode(collective, publication_mode)
+           select case (outputs(output_index)%outputID)
+           case (MOVIE_PROBE_ID)
+              call configure_movie_probe_publication(outputs(output_index)%movieProbe, publication_mode, &
+                                                    outputPartitions(output_index)%has_data)
+           case (FREQUENCY_SLICE_PROBE_ID)
+              call configure_frequency_slice_probe_publication(outputs(output_index)%frequencySliceProbe, &
+                                                                publication_mode, outputPartitions(output_index)%has_data)
+           end select
+        end subroutine attach_output_partition
 
        subroutine adjust_bound_range()
          select case (outputRequestType)
@@ -725,8 +745,9 @@ contains
          case (WIRE_CHARGE_PROBE_ID)
          case (BULK_PROBE_ID)
          case (VOLUMIC_CURRENT_PROBE_ID)
-         case (MOVIE_PROBE_ID)
-         case (FREQUENCY_SLICE_PROBE_ID)
+          case (MOVIE_PROBE_ID)
+             call close_solver_output(outputs(i)%movieProbe)
+          case (FREQUENCY_SLICE_PROBE_ID)
             call close_solver_output(outputs(i)%frequencySliceProbe)
          end select
       end do
@@ -770,51 +791,91 @@ contains
       return
    end function
 
-   subroutine registerOutputFiles(control, outputCount)
-      type(sim_control_t), intent(in) :: control
-      integer, intent(in) :: outputCount
+    subroutine write_run_output_manifest(control, outputCount)
+       type(sim_control_t), intent(in) :: control
+       integer, intent(in) :: outputCount
 
-      character(LEN=BUFSIZE)  ::  whoami, whoamishort, outputRequestFile
-      integer :: iostat, i, unit
+       character(len=BUFSIZE) :: manifest_path
+       integer :: i, iostat, unit
+       logical :: first_artifact
 
-      write (whoamishort, '(i5)') control%layoutnumber + 1
-      write (whoami, '(a,i5,a,i5,a)') '(', control%layoutnumber + 1, '/', control%num_procs, ') '
-      write (outputRequestFile, *) trim(adjustl(control%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt'
+       if (control%layoutnumber /= 0) return
+       manifest_path = trim(control%nEntradaRoot)//'_output_manifest.json'
+       open(newunit=unit, file=trim(manifest_path), status='replace', action='write', iostat=iostat)
+       if (iostat /= 0) then
+          call StopOnError(control%layoutnumber, control%num_procs, 'Error while creating output manifest')
+          return
+       end if
 
-      call create_file_with_path(outputRequestFile, iostat)
-      if (iostat /= 0) call StopOnError(control%layoutnumber, control%num_procs, 'Error while creating new outputrequestRegister file...')
+       first_artifact = .true.
+       write(unit, '(a)') '{'
+       write(unit, '(a)') '"artifacts":['
+       do i = 1, outputCount
+          select case (outputs(i)%outputID)
+          case (POINT_PROBE_ID)
+             call write_artifacts(outputs(i)%pointProbe%artifacts)
+          case (WIRE_CURRENT_PROBE_ID)
+             call write_artifacts(outputs(i)%wireCurrentProbe%artifacts)
+          case (WIRE_CHARGE_PROBE_ID)
+             call write_artifacts(outputs(i)%wireChargeProbe%artifacts)
+          case (BULK_PROBE_ID)
+             call write_artifacts(outputs(i)%bulkCurrentProbe%artifacts)
+          case (MOVIE_PROBE_ID)
+             call write_artifacts(outputs(i)%movieProbe%metadata%artifacts, outputs(i)%movieProbe%path)
+          case (FREQUENCY_SLICE_PROBE_ID)
+             call write_artifacts(outputs(i)%frequencySliceProbe%metadata%artifacts, outputs(i)%frequencySliceProbe%path)
+          case (FAR_FIELD_PROBE_ID)
+             call write_artifacts(outputs(i)%farFieldOutput%artifacts)
+          case (MAPVTK_ID)
+             call write_artifacts(outputs(i)%mapvtkOutput%artifacts)
+          end select
+       end do
+       write(unit, '(a)') ']'
+       write(unit, '(a)') '}'
+       close(unit)
+    contains
+       subroutine write_artifacts(artifacts, base_path)
+          type(output_artifact_t), intent(in) :: artifacts(:)
+          character(len=*), intent(in), optional :: base_path
+          character(len=:), allocatable :: artifact_path
+          integer :: artifact_index
 
-      open (newunit=unit, file=trim(adjustl(outputRequestFile)), status='replace', action='write', position='append', iostat=iostat)
-      do i = 1, outputCount
-         select case (outputs(i)%outputID)
-         case (POINT_PROBE_ID)
-            if (any(outputs(i)%pointProbe%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
-               write (unit, *) trim(adjustl(outputs(i)%pointProbe%filePathTime))
-            end if
-            if (any(outputs(i)%pointProbe%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
-               write (unit, *) trim(adjustl(outputs(i)%pointProbe%filePathFreq))
-            end if
-         case (WIRE_CURRENT_PROBE_ID)
-            write (unit, *) trim(adjustl(outputs(i)%wireCurrentProbe%filePathTime))
-         case (WIRE_CHARGE_PROBE_ID)
-            write (unit, *) trim(adjustl(outputs(i)%wireChargeProbe%filePathTime))
-         case (BULK_PROBE_ID)
-            write (unit, *) trim(adjustl(outputs(i)%bulkCurrentProbe%filePathTime))
-         case (MOVIE_PROBE_ID)
-            write (unit, *) trim(adjustl(outputs(i)%movieProbe%filePathTime))
-         case (FREQUENCY_SLICE_PROBE_ID)
-            write (unit, *) trim(adjustl(outputs(i)%frequencySliceProbe%filePathFreq))
-         case (FAR_FIELD_PROBE_ID)
-            write (unit, *) trim(adjustl(outputs(i)%farFieldOutput%filePathFreq))
-         case (MAPVTK_ID)
-            write (unit, *) trim(adjustl(outputs(i)%mapvtkOutput%path))
-         case default
-            call stoponerror(0, 0, 'Output update not implemented')
-         end select
-      end do
+          do artifact_index = 1, size(artifacts)
+             artifact_path = trim(artifacts(artifact_index)%relative_path)
+             if (present(base_path)) artifact_path = join_path(trim(base_path), artifact_path)
+             if (.not. first_artifact) write(unit, '(a)') ','
+             write(unit, '(a)') '{"path":"'//trim(artifact_path)//'"}'
+             first_artifact = .false.
+          end do
+       end subroutine write_artifacts
+    end subroutine write_run_output_manifest
 
-      write (unit, *) 'END!'
-      close (unit)
-   end subroutine
+    subroutine delete_run_output_manifest(run_id, writer_rank)
+       character(len=*), intent(in) :: run_id
+       integer, intent(in) :: writer_rank
+       character(len=BUFSIZE) :: artifact_path, line, manifest_path
+       integer :: ios, path_end, path_start, unit
+
+       if (writer_rank /= 0) return
+       manifest_path = trim(run_id)//'_output_manifest.json'
+       if (.not. file_exists(manifest_path)) return
+       open(newunit=unit, file=trim(manifest_path), status='old', action='read', iostat=ios)
+       if (ios /= 0) return
+       do
+          read(unit, '(A)', iostat=ios) line
+          if (ios /= 0) exit
+          path_start = index(line, '"path":"')
+          if (path_start == 0) cycle
+          path_start = path_start + len('"path":"')
+          path_end = index(line(path_start:), '"')
+          if (path_end == 0) cycle
+          artifact_path = line(path_start:path_start + path_end - 2)
+          if (index(trim(artifact_path), trim(run_id)//'_') == 1) then
+             call delete_file(trim(artifact_path), ios)
+          end if
+       end do
+       close(unit)
+       call delete_file(trim(manifest_path), ios)
+    end subroutine delete_run_output_manifest
 
 end module output_m

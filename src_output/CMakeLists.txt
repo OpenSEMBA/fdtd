@@ -5,7 +5,11 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 add_library(fdtd-output
   "output.F90"
   "outputTypes.F90"
+  "outputBinary.F90"
+  "outputVisualisation.F90"
+  "outputMetadata.F90"
   "outputDecomposition.F90"
+  "outputCollective.F90"
   "domain.F90"
   "outputUtils.F90"
   "volumicProbeUtils.F90"
@@ -22,7 +26,8 @@ target_link_libraries(fdtd-output PRIVATE
   semba-components
   semba-types
   fdtd-utils
-  ${HDF5_LIBRARIES}
+  OpenSEMBA::xdmf-hdf5
+  ${HDF5_LIBRARIES} 
   ${HDF5_HL_LIBRARIES}
 )
 

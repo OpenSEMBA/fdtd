@@ -2,10 +2,14 @@ module movieProbeOutput_m
    use FDETYPES_m
    use utils_m
    use report_m
-   use outputTypes_m
-   use outputUtils_m
-   use volumicProbeUtils_m
-   use xdmfAPI_m
+    use outputTypes_m
+    use outputUtils_m
+    use volumicProbeUtils_m
+    use xdmfAPI_m
+    use outputBinary_m, only: validate_binary_layout, open_binary_append, BINARY_WRITER_SUCCESS
+    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
+    use outputVisualisation_m, only: verify_volumetric_visualisation, VISUALISATION_SUCCESS
+    use directoryUtils_m, only: file_exists
    implicit none
    private
 
@@ -14,7 +18,9 @@ module movieProbeOutput_m
    !===========================
    public :: init_movie_probe_output
    public :: update_movie_probe_output
-   public :: flush_movie_probe_output
+    public :: flush_movie_probe_output
+    public :: close_movie_probe_output
+    public :: configure_movie_probe_publication
    !===========================
 
    !===========================
@@ -29,7 +35,7 @@ contains
    ! Public routines
    !===========================
 
-   subroutine init_movie_probe_output(this, lowerBound, upperBound, field, domain, control, problemInfo, outputTypeExtension)
+    subroutine init_movie_probe_output(this, lowerBound, upperBound, field, domain, control, problemInfo, outputTypeExtension)
       type(movie_probe_output_t), intent(out) :: this
       type(cell_coordinate_t), intent(in)     :: lowerBound, upperBound
       integer(kind=SINGLE), intent(in)        :: field
@@ -63,17 +69,59 @@ contains
       filename = get_last_component(this%path)
       this%filesPath = join_path(this%path, filename)
 
-      call create_folder(this%path, error)
-      call create_bin_file(this%filesPath, error)
-      call create_movie_files(this, error, xsteps, ysteps, zsteps)
-      if (error/=0) print *, 'error en creacion'
-   end subroutine init_movie_probe_output
+       call create_folder(this%path, error)
+       call create_bin_file(this%filesPath, error)
+       call create_movie_files(this, error, xsteps, ysteps, zsteps)
+       call write_to_xdmf_file(this)
+       call initialise_movie_metadata(this, error)
+       if (error /= 0) print *, 'error en creacion'
+    end subroutine init_movie_probe_output
 
-   subroutine create_bin_file(filePath, error)
+    subroutine configure_movie_probe_publication(this, publication_mode, local_participates)
+       type(movie_probe_output_t), intent(inout) :: this
+       integer, intent(in) :: publication_mode
+       logical, intent(in) :: local_participates
+
+       this%publication_mode = publication_mode
+       this%local_participates = local_participates
+    end subroutine configure_movie_probe_publication
+
+    subroutine create_bin_file(filePath, error)
       character(len=*), intent(in) :: filePath
       integer, intent(out) :: error
       call create_file_with_path(add_extension(filePath, binaryExtension), error)
-   end subroutine
+    end subroutine
+
+    subroutine initialise_movie_metadata(this, error)
+       type(movie_probe_output_t), intent(inout) :: this
+       integer, intent(out) :: error
+       character(len=BUFSIZE) :: base_name
+
+       base_name = get_last_component(this%filesPath)
+       this%metadata%probe_id = trim(base_name)
+       this%metadata%quantity = get_prefix_extension(this%component, 0_SINGLE)
+       this%metadata%lower_bound = this%mainCoords
+       this%metadata%upper_bound = this%auxCoords
+       this%metadata%domain_type = TIME_DOMAIN
+       if (allocated(this%metadata%artifacts)) deallocate(this%metadata%artifacts)
+       allocate(this%metadata%artifacts(3))
+       this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
+       this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
+       this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
+       this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL32
+       this%metadata%artifacts(1)%record_bytes = 44
+       this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
+       this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
+       this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+       this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
+
+       call validate_binary_layout(this%metadata%artifacts(1), error)
+       if (error /= BINARY_WRITER_SUCCESS) return
+       call publish_initial_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
+       if (error /= OUTPUT_METADATA_SUCCESS) return
+       this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
+       error = 0
+    end subroutine initialise_movie_metadata
 
    subroutine create_movie_files(this, error, xsteps, ysteps, zsteps)
       type(movie_probe_output_t), intent(in) :: this
@@ -188,7 +236,7 @@ contains
       end if
    end subroutine update_movie_probe_output
 
-   subroutine flush_movie_probe_output(this)
+    subroutine flush_movie_probe_output(this)
       type(movie_probe_output_t), intent(inout) :: this
       integer :: i
       if (this%nTime /= 0) then
@@ -196,21 +244,43 @@ contains
          call write_to_h5_file(this)
          call write_to_xdmf_file(this)
       end if
-      call clear_memory_data(this)
-   end subroutine flush_movie_probe_output
+       call clear_memory_data(this)
+    end subroutine flush_movie_probe_output
+
+    subroutine close_movie_probe_output(this)
+       type(movie_probe_output_t), intent(inout) :: this
+       integer :: error
+
+       if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
+           this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) return
+       call verify_volumetric_visualisation(this%filesPath, error)
+       if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. &
+           error == VISUALISATION_SUCCESS) then
+          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
+          this%metadata%lifecycle%diagnostic = ''
+       else
+          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+          this%metadata%lifecycle%diagnostic = 'Required movie artifacts are incomplete'
+       end if
+       call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
+       if (error /= OUTPUT_METADATA_SUCCESS) then
+          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+          this%metadata%lifecycle%diagnostic = 'Unable to publish movie metadata'
+       end if
+    end subroutine close_movie_probe_output
 
    !===========================
    ! Private routines
    !===========================
 
-   subroutine write_bin_file(this)
-      ! Check type definition for binary format
-      type(movie_probe_output_t), intent(inout) :: this
-      integer :: i, t, unit
+    subroutine write_bin_file(this)
+       ! Check type definition for binary format
+       type(movie_probe_output_t), intent(inout) :: this
+       integer :: i, status, t, unit
 
-      open (newunit=unit, file=add_extension(this%filesPath, binaryExtension), &
-            status='old', form='unformatted', position='append', access='stream')
-      do t = 1, this%nTime
+       call open_binary_append(add_extension(this%filesPath, binaryExtension), this%metadata%artifacts(1), unit, status)
+       if (status /= BINARY_WRITER_SUCCESS) return
+       do t = 1, this%nTime
       do i = 1, this%nPoints
          write(unit) this%timeStep(t), this%coords(1,i), this%coords(2,i), this%coords(3,i), this%xValueForTime(t,i), this%yValueForTime(t,i), this%zValueForTime(t,i)
       end do

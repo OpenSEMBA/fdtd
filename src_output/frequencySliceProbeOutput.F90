@@ -1,4 +1,5 @@
 module frequencySliceProbeOutput_m
+   use, intrinsic :: iso_fortran_env, only: int64, real32, real64
    use FDETYPES_m
    use utils_m
    use report_m
@@ -6,7 +7,10 @@ module frequencySliceProbeOutput_m
    use outputUtils_m
    use volumicProbeUtils_m
    use directoryUtils_m
-   use xdmfAPI_m
+   use outputBinary_m, only: validate_binary_layout, write_binary_complex_record32, BINARY_WRITER_SUCCESS
+   use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
+   use outputVisualisation_m, only: publish_frequency_slice_visualisation, verify_volumetric_visualisation, &
+                                    VISUALISATION_SUCCESS
    implicit none
    private
 
@@ -15,8 +19,9 @@ module frequencySliceProbeOutput_m
    !===========================
    public :: init_frequency_slice_probe_output
    public :: update_frequency_slice_probe_output
-   public :: flush_frequency_slice_probe_output
-   public :: close_frequency_slice_probe_output
+    public :: flush_frequency_slice_probe_output
+    public :: close_frequency_slice_probe_output
+    public :: configure_frequency_slice_probe_publication
    !===========================
 
    !===========================
@@ -28,13 +33,14 @@ module frequencySliceProbeOutput_m
    private :: save_current
    private :: save_current_module
    private :: save_current_component
+   private :: initialise_frequency_metadata
    !===========================
 
    !===========================
 
 contains
 
-   subroutine init_frequency_slice_probe_output(this, lowerBound, upperBound, timeInterval, field, domain, outputTypeExtension, control, problemInfo)
+    subroutine init_frequency_slice_probe_output(this, lowerBound, upperBound, timeInterval, field, domain, outputTypeExtension, control, problemInfo)
       type(frequency_slice_probe_output_t), intent(out) :: this
       type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
       real(kind=RKIND_tiempo), intent(in) :: timeInterval
@@ -78,9 +84,19 @@ contains
       filename = get_last_component(this%path)
       this%filesPath = join_path(this%path, filename)
 
-      call create_folder(this%path, error)
-      call create_bin_file(this%filesPath, error)
-   end subroutine init_frequency_slice_probe_output
+       call create_folder(this%path, error)
+       call create_bin_file(this%filesPath, error)
+       call initialise_frequency_metadata(this, error)
+    end subroutine init_frequency_slice_probe_output
+
+    subroutine configure_frequency_slice_probe_publication(this, publication_mode, local_participates)
+       type(frequency_slice_probe_output_t), intent(inout) :: this
+       integer, intent(in) :: publication_mode
+       logical, intent(in) :: local_participates
+
+       this%publication_mode = publication_mode
+       this%local_participates = local_participates
+    end subroutine configure_frequency_slice_probe_publication
 
    subroutine create_bin_file(filePath, error)
       character(len=*), intent(in) :: filePath
@@ -88,49 +104,67 @@ contains
       call create_file_with_path(add_extension(filePath, binaryExtension), error)
    end subroutine
 
-   subroutine write_bin_file(this)
-      ! Check type definition for binary format
-      type(frequency_slice_probe_output_t), intent(inout) :: this
-      integer :: i, f, unit
-      !We rewrite the binary as simulation continues
-      open (newunit=unit, file=add_extension(this%filesPath, binaryExtension), &
-            status='old', form='unformatted', action='write', access='stream')
-      do f = 1, this%nFreq
-      do i = 1, this%nPoints
-         write(unit) this%frequencySlice(f), this%coords(1,i), this%coords(2,i), this%coords(3,i), this%xValueForFreq(f,i), this%yValueForFreq(f,i), this%xValueForFreq(f,i)
-      end do
-      end do
-      flush (unit)
-      close (unit)
-   end subroutine
+    subroutine initialise_frequency_metadata(this, error)
+       type(frequency_slice_probe_output_t), intent(inout) :: this
+       integer, intent(out) :: error
+       character(len=BUFSIZE) :: base_name
 
-   subroutine write_to_xdmf_h5(this)
-      !If we call to this subrutine it will always replace old values
-      type(frequency_slice_probe_output_t), intent(inout) :: this
+       base_name = get_last_component(this%filesPath)
+       this%metadata%probe_id = trim(base_name)
+       this%metadata%quantity = get_prefix_extension(this%component, 0_SINGLE)
+       this%metadata%lower_bound = this%mainCoords
+       this%metadata%upper_bound = this%auxCoords
+       this%metadata%domain_type = FREQUENCY_DOMAIN
+       if (allocated(this%metadata%artifacts)) deallocate(this%metadata%artifacts)
+       allocate(this%metadata%artifacts(3))
+       this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
+       this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
+       this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
+       this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL32
+       this%metadata%artifacts(1)%complex_representation = BINARY_COMPLEX_REAL_IMAG
+       this%metadata%artifacts(1)%record_bytes = 40
+       this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
+       this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
+       this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+       this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
 
-      integer(HID_T) :: file_id
-      integer :: f, error, xdmfunit
-      real(dp), allocatable, dimension(:, :) :: coordsReal
-      character(len=256) :: h5_filename, h5_filepath
-      character(len=256) :: xdmf_filename
-      character(len=10) :: dimension_string
-      character(len=10) :: nCoordsString
-      character(len=14) :: stepName
-      h5_filepath = add_extension(this%filesPath, ".h5")
-      h5_filename = get_last_component(h5_filepath)
+       call validate_binary_layout(this%metadata%artifacts(1), error)
+       if (error /= BINARY_WRITER_SUCCESS) return
+       call publish_initial_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
+       if (error /= OUTPUT_METADATA_SUCCESS) return
+       this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
+       error = 0
+    end subroutine initialise_frequency_metadata
 
-      call H5open_f(error)
-      call H5Fopen_f(trim(h5_filepath), H5F_ACC_RDWR_F, file_id, error)
-      write(dimension_string, '(I0,1X,I0)') this%nPoints, this%nFreq
-      write(nCoordsString, '(I0, I0)') this%nPoints, 1
-      do f = 1, this%nFreq
-         write(stepName, '((I5.5))') f
-         call h5_append_rows_to_dataset(file_id, "xVal", reshape(real(abs(this%xValueForFreq(f, :)), dp), [1, this%nPoints]))
-         call h5_append_rows_to_dataset(file_id, "yVal", reshape(real(abs(this%yValueForFreq(f, :)), dp), [1, this%nPoints]))
-         call h5_append_rows_to_dataset(file_id, "zVal", reshape(real(abs(this%zValueForFreq(f, :)), dp), [1, this%nPoints]))
-      end do
-      call H5Fclose_f(file_id, error)
-      call H5close_f(error)
+    subroutine write_bin_file(this)
+       type(frequency_slice_probe_output_t), intent(inout) :: this
+       real(real32), allocatable :: records(:)
+       integer :: i, f, record_index, status
+
+       allocate(records(10 * this%nPoints * this%nFreq))
+       record_index = 0
+       do f = 1, this%nFreq
+       do i = 1, this%nPoints
+          records(record_index + 1:record_index + 10) = [real(this%frequencySlice(f), real32), &
+             real(this%coords(1, i), real32), real(this%coords(2, i), real32), real(this%coords(3, i), real32), &
+             real(this%xValueForFreq(f, i), real32), real(aimag(this%xValueForFreq(f, i)), real32), &
+             real(this%yValueForFreq(f, i), real32), real(aimag(this%yValueForFreq(f, i)), real32), &
+             real(this%zValueForFreq(f, i), real32), real(aimag(this%zValueForFreq(f, i)), real32)]
+          record_index = record_index + 10
+       end do
+       end do
+       call write_binary_complex_record32(add_extension(this%filesPath, binaryExtension), this%metadata%artifacts(1), &
+                                          records, status)
+    end subroutine
+
+    subroutine write_to_xdmf_h5(this, error)
+       type(frequency_slice_probe_output_t), intent(inout) :: this
+       integer, intent(out) :: error
+
+       call publish_frequency_slice_visualisation(this%filesPath, 'frequencySliceProbe', &
+          [int(this%nPoints, int64), 1_int64, 1_int64], real(this%frequencySlice, real64), &
+          cmplx(this%xValueForFreq, kind=real64), cmplx(this%yValueForFreq, kind=real64), &
+          cmplx(this%zValueForFreq, kind=real64), error)
    end subroutine
 
    function get_output_path_freq(this, outputTypeExtension, field, control) result(outputPath)
@@ -330,10 +364,29 @@ contains
       call write_bin_file(this)
    end subroutine flush_frequency_slice_probe_output
 
-   subroutine close_frequency_slice_probe_output(this)
-      type(frequency_slice_probe_output_t), intent(inout) :: this
-      call write_to_xdmf_h5(this)
-   end subroutine
+    subroutine close_frequency_slice_probe_output(this)
+       type(frequency_slice_probe_output_t), intent(inout) :: this
+       integer :: error
+
+       if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
+           this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) return
+       call write_to_xdmf_h5(this, error)
+       if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. error == VISUALISATION_SUCCESS) then
+          call verify_volumetric_visualisation(this%filesPath, error)
+       end if
+       if (error == VISUALISATION_SUCCESS) then
+          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
+          this%metadata%lifecycle%diagnostic = ''
+       else
+          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+          this%metadata%lifecycle%diagnostic = 'Required frequency slice artifacts are incomplete'
+       end if
+       call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
+       if (error /= OUTPUT_METADATA_SUCCESS) then
+          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+          this%metadata%lifecycle%diagnostic = 'Unable to publish frequency slice metadata'
+       end if
+    end subroutine
 
 
 

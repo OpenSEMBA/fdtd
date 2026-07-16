@@ -54,9 +54,13 @@ module outputTypes_m
     integer, parameter :: BINARY_NUMERIC_INT32 = 3
     integer, parameter :: BINARY_NUMERIC_INT64 = 4
 
-    integer, parameter :: BINARY_COMPLEX_UNSPECIFIED = 0
-    integer, parameter :: BINARY_COMPLEX_REAL_IMAG = 1
-    integer, parameter :: BINARY_COMPLEX_MAGNITUDE_PHASE = 2
+     integer, parameter :: BINARY_COMPLEX_UNSPECIFIED = 0
+     integer, parameter :: BINARY_COMPLEX_REAL_IMAG = 1
+     integer, parameter :: BINARY_COMPLEX_MAGNITUDE_PHASE = 2
+
+     integer, parameter :: BINARY_LAYOUT_VERSION = 1
+     integer, parameter :: BINARY_BYTES_REAL32 = 4
+     integer, parameter :: BINARY_BYTES_REAL64 = 8
 
 !=====================================================
 ! Basic helper / geometry types
@@ -228,7 +232,7 @@ module outputTypes_m
        type(output_artifact_t), allocatable :: artifacts(:)
    end type far_field_probe_output_t
 
-   type, extends(abstract_time_probe_t) :: movie_probe_output_t
+     type, extends(abstract_time_probe_t) :: movie_probe_output_t
       !Binary format: timeStamp, x, y, z, xVal, yVal, zVal. Total register size: 44
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE)    :: nPoints = -1
@@ -237,18 +241,24 @@ module outputTypes_m
       real(kind=RKIND), allocatable :: yValueForTime(:, :)  !(time, coordIdx)
       real(kind=RKIND), allocatable :: zValueForTime(:, :)  !(time, coordIdx)
       character(len=BUFSIZE) :: filesPath
+      type(probe_metadata_t) :: metadata
+      integer :: publication_mode = 0
+      logical :: local_participates = .true.
    end type movie_probe_output_t
 
-   type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
-      !Binary format: frequencySlice, x, y, z, xVal, yVal, zVal. Total register size: 44
+    type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
+       ! Binary format: frequency, x, y, z, then real/imaginary pairs for X, Y, and Z. Total record size: 40.
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE)    :: nPoints = -1
       integer(kind=SINGLE), allocatable :: coords(:, :)        !(3, coordIdx)
       complex(kind=CKIND), allocatable :: xValueForFreq(:, :)  !(time, coordIdx)
       complex(kind=CKIND), allocatable :: yValueForFreq(:, :)  !(time, coordIdx)
-      complex(kind=CKIND), allocatable :: zValueForFreq(:, :)  !(time, coordIdx)
-      character(len=BUFSIZE) :: filesPath
-   end type frequency_slice_probe_output_t
+       complex(kind=CKIND), allocatable :: zValueForFreq(:, :)  !(time, coordIdx)
+        character(len=BUFSIZE) :: filesPath
+        type(probe_metadata_t) :: metadata
+        integer :: publication_mode = 0
+        logical :: local_participates = .true.
+     end type frequency_slice_probe_output_t
 
 !=====================================================
 ! High-level aggregation types
