@@ -563,20 +563,56 @@ def test_sphere(tmp_path):
 @pytest.mark.movie
 def test_movie_in_planewave_in_box(tmp_path):
     import h5py
+    import xml.etree.ElementTree as ET
+
     fn = CASES_FOLDER + 'planewave/pw-in-box-with-movie.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
     movie_files = solver.getSolvedProbeFilenames("electric_field_movie")
     h5file = [f for f in movie_files if f.endswith('.h5')][0]
-    with h5py.File(h5file, "r") as f:
-        time_key = list(f.keys())[0]
-        field_key = list(f.keys())[1]
-        time_ds = f[time_key][()]
-        field_ds = f[field_key][()]
+    xdmffile = [f for f in movie_files if f.endswith('.xdmf')][0]
+    descriptor = os.path.splitext(h5file)[0] + '.json'
 
-    assert np.isclose(np.max(field_ds), 1.0, rtol=1e-2)
-    assert np.min(field_ds) == 0.0
+    assert os.path.isfile(descriptor)
+    with h5py.File(h5file, "r") as f:
+        required_datasets = {
+            'coordsX', 'coordsY', 'coordsZ', 'times',
+            'ElectricFieldX', 'ElectricFieldY', 'ElectricFieldZ',
+        }
+        assert required_datasets <= set(f.keys())
+
+        time_ds = f['times'][()]
+        assert time_ds.ndim == 1
+        assert len(time_ds) > 1
+        assert np.all(np.diff(time_ds) > 0.0)
+
+        for component in ('ElectricFieldX', 'ElectricFieldY', 'ElectricFieldZ'):
+            field_ds = f[component][()]
+            assert field_ds.ndim == 4
+            assert field_ds.shape[0] == len(time_ds)
+            assert np.all(np.isfinite(field_ds))
+
+        assert np.isclose(np.max(f['ElectricFieldX'][()]), 1.0, rtol=1e-2)
+        assert np.ptp(f['ElectricFieldX'][()]) > 0.0
+
+        root = ET.parse(xdmffile).getroot()
+        references = {
+            item.text.strip() for item in root.findall('.//DataItem')
+            if item.text and ':/' in item.text
+        }
+        h5_name = os.path.basename(h5file)
+        expected_references = {
+            f'{h5_name}:/{dataset}' for dataset in required_datasets
+        }
+        assert expected_references <= references
+
+        for item in root.findall('.//DataItem'):
+            if not item.text or ':/' not in item.text:
+                continue
+            _, dataset = item.text.strip().split(':/', 1)
+            dimensions = tuple(int(value) for value in item.attrib['Dimensions'].split())
+            assert dimensions == f[dataset].shape
 
 
 @pytest.mark.planewave
