@@ -4,7 +4,7 @@ module outputBinary_m
                             BINARY_NUMERIC_REAL32, BINARY_NUMERIC_REAL64, &
                             BINARY_COMPLEX_UNSPECIFIED, BINARY_COMPLEX_REAL_IMAG, &
                             BINARY_BYTES_REAL32, BINARY_BYTES_REAL64
-   use directoryUtils_m, only: create_file_with_path
+    use directoryUtils_m, only: create_file_with_path, file_exists
    implicit none
    private
 
@@ -55,11 +55,13 @@ contains
        unit = -1
        call validate_binary_layout(artifact, status)
        if (status /= BINARY_WRITER_SUCCESS) return
-       call create_file_with_path(path, ios)
-       if (ios /= 0) then
-          status = BINARY_WRITER_IO_ERROR
-          return
-       end if
+        if (.not. file_exists(path)) then
+           call create_file_with_path(path, ios)
+           if (ios /= 0) then
+              status = BINARY_WRITER_IO_ERROR
+              return
+           end if
+        end if
        open(newunit=unit, file=trim(path), access='stream', form='unformatted', status='old', &
             position='append', action='write', iostat=ios)
        if (ios == 0) then

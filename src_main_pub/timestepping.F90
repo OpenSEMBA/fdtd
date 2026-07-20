@@ -1459,7 +1459,9 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Observation...';  call print11(this%control%layoutnumber,dubuf)
-          call init_outputs(this%sgg, this%media, this%sinPML_fullsize, this%tag_numbers, this%bounds, this%control, this%thereAre%Observation, this%thereAre%wires)
+           call init_outputs(this%sgg, this%media, this%sinPML_fullsize, this%tag_numbers, this%bounds, &
+                             this%control, this%thereAre%Observation, this%thereAre%wires, &
+                             eps0_input=this%eps0, mu0_input=this%mu0)
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
 

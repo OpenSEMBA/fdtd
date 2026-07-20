@@ -23,7 +23,7 @@ module output_m
    use Wire_bundles_mtln_m, only: GetSolverPtr
    use mtln_solver_m, only: mtln_solver_t => mtln_t
 #endif
-
+   
 
    implicit none
    private
@@ -356,16 +356,18 @@ contains
         end do
      end function valid_probe_ownership
 
-   subroutine init_outputs(sgg, media, sinpml_fullsize, materialTags, bounds, control, observationsExists, wiresExists)
-
+    subroutine init_outputs(sgg, media, sinpml_fullsize, materialTags, bounds, control, observationsExists, &
+                            wiresExists, eps0_input, mu0_input)
+      
       type(SGGFDTDINFO_t), intent(in) ::  sgg
       type(media_matrices_t), target, intent(in) :: media
       type(limit_t), dimension(:), target, intent(in)  ::  SINPML_fullsize
-      type(bounds_t),intent(in), target :: bounds
-      type(taglist_t),intent(in), target :: materialTags
-      type(sim_control_t), intent(in) :: control
-      logical, intent(inout) :: wiresExists
-      logical, intent(out) :: observationsExists
+       type(bounds_t),intent(in), target :: bounds
+       type(taglist_t),intent(in), target :: materialTags
+       type(sim_control_t), intent(in) :: control
+       logical, intent(inout) :: wiresExists
+       logical, intent(out) :: observationsExists
+       real(kind=RKIND), intent(in), optional :: eps0_input, mu0_input
 
       type(domain_t) :: domain
       type(spheric_domain_t) :: sphericRange
@@ -379,7 +381,11 @@ contains
 #ifdef CompileWithMTLN
       logical :: thereAreMtlnObservations = .false.
 #endif
-      observationsExists = .false.
+       observationsExists = .false.
+       eps0 = EPSILON_VACUUM
+       mu0 = MU_VACUUM
+       if (present(eps0_input)) eps0 = eps0_input
+       if (present(mu0_input)) mu0 = mu0_input
       requestedOutputs = get_required_output_count(sgg)
 
       problemInfo%geometryToMaterialData => media
@@ -396,11 +402,12 @@ contains
        if (allocated(outputPartitions)) deallocate(outputPartitions)
        allocate(outputPartitions(requestedOutputs))
 
-      allocate (InvEps(0:sgg%NumMedia - 1), InvMu(0:sgg%NumMedia - 1))
-      outputCount = 0
+       allocate (InvEps(lbound(sgg%Med, 1):ubound(sgg%Med, 1)), &
+                 InvMu(lbound(sgg%Med, 1):ubound(sgg%Med, 1)))
+       outputCount = 0
 
-      InvEps(0:sgg%NumMedia - 1) = 1.0_RKIND/(Eps0*sgg%Med(0:sgg%NumMedia - 1)%Epr)
-      InvMu(0:sgg%NumMedia - 1) = 1.0_RKIND/(Mu0*sgg%Med(0:sgg%NumMedia - 1)%Mur)
+       InvEps = 1.0_RKIND/(eps0*sgg%Med%Epr)
+       InvMu = 1.0_RKIND/(mu0*sgg%Med%Mur)
 
       !do ii = 1, sgg%NumberRequest
       !do i = 1, sgg%Observation(ii)%nP
@@ -581,7 +588,14 @@ contains
 
          integer(kind=SINGLE) :: nFreq
 
-         if (observation%TimeDomain) then
+          if (observation%TimeDomain .and. observation%FreqDomain) then
+             nFreq = frequency_count(observation)
+             newdomain = domain_t(real(observation%InitialTime, kind=RKIND_tiempo), &
+                                  real(observation%FinalTime, kind=RKIND_tiempo), &
+                                  real(observation%TimeStep, kind=RKIND_tiempo), &
+                                  observation%InitialFreq, frequency_stop(observation, nFreq), nFreq, .false.)
+
+          else if (observation%TimeDomain) then
             newdomain = domain_t(real(observation%InitialTime, kind=RKIND_tiempo), &
                                  real(observation%FinalTime, kind=RKIND_tiempo), &
                                  real(observation%TimeStep, kind=RKIND_tiempo))
@@ -600,24 +614,16 @@ contains
                newDomain%tstop = newDomain%tstart + newDomain%tstep
             end if
 
-         elseif (observation%FreqDomain) then
-            !Just linear progression for now. Need to bring logartihmic info to here
-            nFreq = int((observation%FinalFreq - observation%InitialFreq)/observation%FreqStep, kind=SINGLE) + 1_SINGLE
-            newdomain = domain_t(observation%InitialFreq, observation%FinalFreq, nFreq, logarithmicspacing=.false.)
-
-            newDomain%fstep = min(newDomain%fstep, 2.0_RKIND/simulationTimeStep)
-            if ((newDomain%fstep > newDomain%fstop - newDomain%fstart) .or. (newDomain%fstep == 0)) then
-               newDomain%fstep = newDomain%fstop - newDomain%fstart
-               newDomain%fstop = newDomain%fstart + newDomain%fstep
-            end if
-
-            newDomain%fnum = int((newDomain%fstop - newDomain%fstart)/newDomain%fstep, kind=SINGLE)
+          elseif (observation%FreqDomain) then
+             nFreq = frequency_count(observation)
+             newdomain = domain_t(observation%InitialFreq, frequency_stop(observation, nFreq), nFreq, &
+                                  logarithmicspacing=.false.)
 
          else
             newDomain = domain_t()
-         end if
-         return
-      end function preprocess_domain
+          end if
+          return
+       end function preprocess_domain
 
       function preprocess_polar_range(observation) result(sphericDomain)
          type(spheric_domain_t) :: sphericDomain
@@ -850,7 +856,7 @@ contains
        end subroutine write_artifacts
     end subroutine write_run_output_manifest
 
-    subroutine delete_run_output_manifest(run_id, writer_rank)
+     subroutine delete_run_output_manifest(run_id, writer_rank)
        character(len=*), intent(in) :: run_id
        integer, intent(in) :: writer_rank
        character(len=BUFSIZE) :: artifact_path, line, manifest_path
@@ -876,6 +882,30 @@ contains
        end do
        close(unit)
        call delete_file(trim(manifest_path), ios)
-    end subroutine delete_run_output_manifest
+     end subroutine delete_run_output_manifest
+
+     function frequency_count(observation) result(count)
+        type(Obses_t), intent(in) :: observation
+        integer(kind=SINGLE) :: count
+
+        if (observation%FreqStep <= 0.0_RKIND) then
+           count = 1_SINGLE
+        else
+           count = int(floor((observation%FinalFreq - observation%InitialFreq) / observation%FreqStep), &
+                       kind=SINGLE) + 1_SINGLE
+        end if
+     end function frequency_count
+
+     function frequency_stop(observation, count) result(stop)
+        type(Obses_t), intent(in) :: observation
+        integer(kind=SINGLE), intent(in) :: count
+        real(kind=RKIND) :: stop
+
+        if (count == 1_SINGLE) then
+           stop = observation%InitialFreq
+        else
+           stop = observation%InitialFreq + real(count - 1_SINGLE, RKIND)*observation%FreqStep
+        end if
+     end function frequency_stop
 
 end module output_m

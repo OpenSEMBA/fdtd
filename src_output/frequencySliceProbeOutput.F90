@@ -57,13 +57,12 @@ contains
       this%mainCoords = lowerBound
       this%auxCoords = upperBound
       this%component = field !This can refer to electric, magnetic or currentDensity
-      this%domain = domain
-      this%nFreq = domain%fnum
+       this%domain = domain
+       this%nFreq = domain%fnum
+       this%quadratureDt = timeInterval
 
-      call alloc_and_init(this%frequencySlice, this%nFreq, 0.0_RKIND)
-      do i = 1, this%nFreq
-         call init_frequency_slice(this%frequencySlice, this%domain)
-      end do
+       call alloc_and_init(this%frequencySlice, this%nFreq, 0.0_RKIND)
+       call init_frequency_slice(this%frequencySlice, this%domain)
 
       call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
 
@@ -74,9 +73,9 @@ contains
       call alloc_and_init(this%auxExp_E, this%nFreq, (0.0_CKIND, 0.0_CKIND))
       call alloc_and_init(this%auxExp_H, this%nFreq, (0.0_CKIND, 0.0_CKIND))
 
-      do i = 1, this%nFreq
-         this%auxExp_E(i) = timeInterval*(1.0E0_RKIND, 0.0E0_RKIND)*Exp(mcpi2*this%frequencySlice(i))   ! the dt should be some kind of average
-         this%auxExp_H(i) = this%auxExp_E(i)*Exp(mcpi2*this%frequencySlice(i)*timeInterval*0.5_RKIND)
+       do i = 1, this%nFreq
+          this%auxExp_E(i) = mcpi2*this%frequencySlice(i)
+          this%auxExp_H(i) = this%auxExp_E(i)
       end do
 
       this%path = get_output_path_freq(this, outputTypeExtension, field, control)
@@ -86,7 +85,7 @@ contains
 
        call create_folder(this%path, error)
        call create_bin_file(this%filesPath, error)
-       call initialise_frequency_metadata(this, error)
+        call initialise_frequency_metadata(this, error, control%mpidir)
     end subroutine init_frequency_slice_probe_output
 
     subroutine configure_frequency_slice_probe_publication(this, publication_mode, local_participates)
@@ -104,14 +103,15 @@ contains
       call create_file_with_path(add_extension(filePath, binaryExtension), error)
    end subroutine
 
-    subroutine initialise_frequency_metadata(this, error)
+     subroutine initialise_frequency_metadata(this, error, mpidir)
        type(frequency_slice_probe_output_t), intent(inout) :: this
        integer, intent(out) :: error
+       integer(kind=SINGLE), intent(in) :: mpidir
        character(len=BUFSIZE) :: base_name
 
        base_name = get_last_component(this%filesPath)
        this%metadata%probe_id = trim(base_name)
-       this%metadata%quantity = get_prefix_extension(this%component, 0_SINGLE)
+        this%metadata%quantity = get_prefix_extension(this%component, mpidir)
        this%metadata%lower_bound = this%mainCoords
        this%metadata%upper_bound = this%auxCoords
        this%metadata%domain_type = FREQUENCY_DOMAIN
@@ -238,9 +238,12 @@ contains
       do k = this%mainCoords%z, this%auxCoords%z
          if (isValidPointForCurrent(iCur, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_current(this%xValueForFreq, iEx, coordIdx, i, j, k, fieldsReference, this%auxExp_E, this%nFreq, step)
-            call save_current(this%yValueForFreq, iEy, coordIdx, i, j, k, fieldsReference, this%auxExp_E, this%nFreq, step)
-            call save_current(this%zValueForFreq, iEz, coordIdx, i, j, k, fieldsReference, this%auxExp_E, this%nFreq, step)
+             call save_current(this%xValueForFreq, iEx, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+                               this%quadratureDt, this%nFreq, step)
+             call save_current(this%yValueForFreq, iEy, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+                               this%quadratureDt, this%nFreq, step)
+             call save_current(this%zValueForFreq, iEz, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+                               this%quadratureDt, this%nFreq, step)
          end if
       end do
       end do
@@ -264,19 +267,22 @@ contains
       do k = this%mainCoords%z, this%auxCoords%z
          if (isValidPointForCurrent(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_current(currentData, fieldDir, coordIdx, i, j, k, fieldsReference, auxExp, nFreq, step)
+             call save_current(currentData, fieldDir, coordIdx, i, j, k, fieldsReference, auxExp, &
+                               this%quadratureDt, nFreq, step)
          end if
       end do
       end do
       end do
    end subroutine
 
-   subroutine save_current(valorComplex, direction, coordIdx, i, j, k, fieldsReference, auxExponential, nFreq, step)
+    subroutine save_current(valorComplex, direction, coordIdx, i, j, k, fieldsReference, auxExponential, &
+                            quadratureDt, nFreq, step)
       integer, intent(in) :: direction
       complex(kind=CKIND), intent(inout) :: valorComplex(:, :)
-      complex(kind=CKIND), intent(in) :: auxExponential(:)
-      integer, intent(in) :: i, j, k, coordIdx, nFreq
-      type(fields_reference_t), intent(in) :: fieldsReference
+       complex(kind=CKIND), intent(in) :: auxExponential(:)
+       integer, intent(in) :: i, j, k, coordIdx, nFreq
+       type(fields_reference_t), intent(in) :: fieldsReference
+       real(kind=RKIND_tiempo), intent(in) :: quadratureDt
       real(kind=RKIND_tiempo), intent(in) :: step
 
       integer :: iter
@@ -286,7 +292,8 @@ contains
       jdir = computej(direction, i, j, k, fieldsReference)
 
       do iter = 1, nFreq
-         valorComplex(iter, coordIdx) = valorComplex(iter, coordIdx) + (auxExponential(iter)**step)*jdir
+          valorComplex(iter, coordIdx) = valorComplex(iter, coordIdx) + quadratureDt* &
+                                         exp(auxExponential(iter)*step)*jdir
       end do
    end subroutine
 
@@ -300,8 +307,8 @@ contains
       complex(kind=CKIND), dimension(this%nFreq) :: auxExponential
       integer :: i, j, k, coordIdx
 
-      if (iMHC == request) auxExponential = this%auxExp_H**simTime
-      if (iMEC == request) auxExponential = this%auxExp_E**simTime
+       if (iMHC == request) auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_tiempo*this%quadratureDt))
+       if (iMEC == request) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
 
       coordIdx = 0
       do i = this%mainCoords%x, this%auxCoords%x
@@ -330,8 +337,10 @@ contains
       complex(kind=CKIND), dimension(this%nFreq) :: auxExponential
       integer :: i, j, k, coordIdx
 
-      if (any(MAGNETIC_FIELD_DIRECTION == fieldDir)) auxExponential = this%auxExp_H**simTime
-      if (any(ELECTRIC_FIELD_DIRECTION == fieldDir)) auxExponential = this%auxExp_E**simTime
+       if (any(MAGNETIC_FIELD_DIRECTION == fieldDir)) then
+          auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_tiempo*this%quadratureDt))
+       end if
+       if (any(ELECTRIC_FIELD_DIRECTION == fieldDir)) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
 
       coordIdx = 0
       do i = this%mainCoords%x, this%auxCoords%x
@@ -355,7 +364,7 @@ contains
       integer :: freq
 
       do freq = 1, nFreq
-         valorComplex = valorComplex(freq, coordIdx) + auxExp(freq)*fieldValue
+          valorComplex(freq, coordIdx) = valorComplex(freq, coordIdx) + auxExp(freq)*fieldValue
       end do
    end subroutine
 

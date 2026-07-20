@@ -38,20 +38,19 @@ contains
          call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
          call alloc_and_init(this%valueForTime, BUFSIZE, 0.0_RKIND)
        end if
-      if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
-         this%nFreq = this%domain%fnum
-         allocate (this%frequencySlice(this%domain%fnum))
-         call alloc_and_init(this%valueForFreq, this%domain%fnum, (0.0_CKIND, 0.0_CKIND))
-         do i = 1, this%nFreq
-            call init_frequency_slice(this%frequencySlice, this%domain)
-         end do
-         this%valueForFreq = (0.0_RKIND, 0.0_RKIND)
+       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
+          this%nFreq = this%domain%fnum
+          this%quadratureDt = timeInterval
+          allocate (this%frequencySlice(this%domain%fnum))
+          call alloc_and_init(this%valueForFreq, this%domain%fnum, (0.0_CKIND, 0.0_CKIND))
+          call init_frequency_slice(this%frequencySlice, this%domain)
+          this%valueForFreq = (0.0_RKIND, 0.0_RKIND)
 
-         allocate (this%auxExp_E(this%nFreq))
-         allocate (this%auxExp_H(this%nFreq))
-         do i = 1, this%nFreq
-            this%auxExp_E(i) = timeInterval*(1.0E0_RKIND, 0.0E0_RKIND)*Exp(mcpi2*this%frequencySlice(i))   !el dt deberia ser algun tipo de promedio
-            this%auxExp_H(i) = this%auxExp_E(i)*Exp(mcpi2*this%frequencySlice(i)*timeInterval*0.5_RKIND)
+          allocate (this%auxExp_E(this%nFreq))
+          allocate (this%auxExp_H(this%nFreq))
+          do i = 1, this%nFreq
+             this%auxExp_E(i) = mcpi2*this%frequencySlice(i)
+             this%auxExp_H(i) = this%auxExp_E(i)
          end do
        end if
 
@@ -109,12 +108,14 @@ contains
          case (iEx, iEy, iEz)
             do iter = 1, this%nFreq
                this%valueForFreq(iter) = &
-                  this%valueForFreq(iter) + field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)*(this%auxExp_E(iter)**step)
+                   this%valueForFreq(iter) + field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)* &
+                   this%quadratureDt*exp(this%auxExp_E(iter)*step)
             end do
          case (iHx, iHy, iHz)
             do iter = 1, this%nFreq
                this%valueForFreq(iter) = &
-                  this%valueForFreq(iter) + field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)*(this%auxExp_H(iter)**step)
+                   this%valueForFreq(iter) + field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)* &
+                   this%quadratureDt*exp(this%auxExp_H(iter)*(step + 0.5_RKIND_tiempo*this%quadratureDt))
             end do
          end select
 

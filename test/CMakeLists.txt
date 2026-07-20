@@ -52,3 +52,7 @@ target_link_libraries(fdtd_tests
     ${OBSERVATION_TESTS_LIBRARY}
     GTest::gtest_main
 )
+
+if(SEMBA_FDTD_ENABLE_MPI)
+    target_link_libraries(fdtd_tests MPI::MPI_Fortran)
+endif()

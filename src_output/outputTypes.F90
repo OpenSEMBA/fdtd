@@ -164,17 +164,19 @@ module outputTypes_m
       real(kind=RKIND_tiempo), allocatable :: timeStep(:)
    end type abstract_time_probe_t
 
-   type, extends(abstract_probe_t) :: abstract_frequency_probe_t
-      character(len=BUFSIZE) :: filePathFreq
-      integer(kind=SINGLE) :: nFreq = 0_SINGLE
-      real(kind=RKIND), allocatable    :: frequencySlice(:)
-      complex(kind=CKIND), allocatable :: auxExp_E(:), auxExp_H(:)
-   end type abstract_frequency_probe_t
+    type, extends(abstract_probe_t) :: abstract_frequency_probe_t
+       character(len=BUFSIZE) :: filePathFreq
+       integer(kind=SINGLE) :: nFreq = 0_SINGLE
+       real(kind=RKIND_tiempo) :: quadratureDt = 0.0_RKIND_tiempo
+       real(kind=RKIND), allocatable    :: frequencySlice(:)
+       complex(kind=CKIND), allocatable :: auxExp_E(:), auxExp_H(:)
+    end type abstract_frequency_probe_t
 
    type, extends(abstract_probe_t) :: abstract_time_frequency_probe_t
-      character(len=BUFSIZE) :: filePathTime, filePathFreq
-      integer(kind=SINGLE) :: nTime = 0_SINGLE, nFreq = 0_SINGLE
-      real(kind=RKIND_tiempo), allocatable :: timeStep(:)
+       character(len=BUFSIZE) :: filePathTime, filePathFreq
+       integer(kind=SINGLE) :: nTime = 0_SINGLE, nFreq = 0_SINGLE
+       real(kind=RKIND_tiempo) :: quadratureDt = 0.0_RKIND_tiempo
+       real(kind=RKIND_tiempo), allocatable :: timeStep(:)
       real(kind=RKIND), allocatable        :: frequencySlice(:)
       complex(kind=CKIND), allocatable     :: auxExp_E(:), auxExp_H(:)
    end type abstract_time_frequency_probe_t

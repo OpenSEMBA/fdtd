@@ -73,7 +73,7 @@ contains
        call create_bin_file(this%filesPath, error)
        call create_movie_files(this, error, xsteps, ysteps, zsteps)
        call write_to_xdmf_file(this)
-       call initialise_movie_metadata(this, error)
+        call initialise_movie_metadata(this, error, control%mpidir)
        if (error /= 0) print *, 'error en creacion'
     end subroutine init_movie_probe_output
 
@@ -92,14 +92,15 @@ contains
       call create_file_with_path(add_extension(filePath, binaryExtension), error)
     end subroutine
 
-    subroutine initialise_movie_metadata(this, error)
+     subroutine initialise_movie_metadata(this, error, mpidir)
        type(movie_probe_output_t), intent(inout) :: this
        integer, intent(out) :: error
+       integer(kind=SINGLE), intent(in) :: mpidir
        character(len=BUFSIZE) :: base_name
 
        base_name = get_last_component(this%filesPath)
        this%metadata%probe_id = trim(base_name)
-       this%metadata%quantity = get_prefix_extension(this%component, 0_SINGLE)
+        this%metadata%quantity = get_prefix_extension(this%component, mpidir)
        this%metadata%lower_bound = this%mainCoords
        this%metadata%upper_bound = this%auxCoords
        this%metadata%domain_type = TIME_DOMAIN
