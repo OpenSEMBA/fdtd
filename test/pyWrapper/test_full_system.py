@@ -593,8 +593,15 @@ def test_movie_in_planewave_in_box(tmp_path):
             assert field_ds.shape[0] == len(time_ds)
             assert np.all(np.isfinite(field_ds))
 
-        assert np.isclose(np.max(f['ElectricFieldX'][()]), 1.0, rtol=1e-2)
-        assert np.ptp(f['ElectricFieldX'][()]) > 0.0
+        electric_field = f['ElectricFieldY'][()]
+        assert electric_field.shape[1:] == (10, 30, 30)
+        assert np.max(np.abs(electric_field[1000])) > 1e-2
+
+        # The dielectric slows the x-propagating pulse so it remains in the
+        # movie volume through timestep 1,000.
+        early_profile = np.mean(np.abs(electric_field[400]), axis=(0, 1))
+        late_profile = np.mean(np.abs(electric_field[1000]), axis=(0, 1))
+        assert np.argmax(late_profile[3:]) > np.argmax(early_profile[3:])
 
         root = ET.parse(xdmffile).getroot()
         h5_name = os.path.basename(h5file)
