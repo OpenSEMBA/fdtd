@@ -597,22 +597,37 @@ def test_movie_in_planewave_in_box(tmp_path):
         assert np.ptp(f['ElectricFieldX'][()]) > 0.0
 
         root = ET.parse(xdmffile).getroot()
-        references = {
-            item.text.strip() for item in root.findall('.//DataItem')
-            if item.text and ':/' in item.text
-        }
         h5_name = os.path.basename(h5file)
-        expected_references = {
-            f'{h5_name}:/{dataset}' for dataset in required_datasets
+        temporal = root.find('./Domain/Grid')
+        assert temporal.attrib == {
+            'Name': 'Time Series',
+            'GridType': 'Collection',
+            'CollectionType': 'Temporal',
         }
-        assert expected_references <= references
+        steps = temporal.findall('./Grid')
+        assert len(steps) == len(time_ds)
 
-        for item in root.findall('.//DataItem'):
-            if not item.text or ':/' not in item.text:
-                continue
-            _, dataset = item.text.strip().split(':/', 1)
-            dimensions = tuple(int(value) for value in item.attrib['Dimensions'].split())
-            assert dimensions == f[dataset].shape
+        for index, step in enumerate(steps):
+            assert step.attrib['Name'] == f'Step {index + 1}'
+            assert np.isclose(float(step.find('./Time').attrib['Value']), time_ds[index])
+            grid = step.find('./Grid')
+            assert grid.attrib == {'Name': 'movieProbe', 'GridType': 'Uniform'}
+
+            for attribute in grid.findall('./Attribute'):
+                hyperslab = attribute.find('./DataItem')
+                selection, source = hyperslab.findall('./DataItem')
+                assert hyperslab.attrib['ItemType'] == 'HyperSlab'
+                assert tuple(int(value) for value in hyperslab.attrib['Dimensions'].split()) == f[attribute.attrib['Name']].shape[1:]
+                assert selection.attrib == {'Dimensions': '3 4', 'Format': 'XML'}
+                offset, stride, count = [
+                    tuple(int(value) for value in line.split())
+                    for line in selection.text.splitlines() if line.strip()
+                ]
+                assert offset == (index, 0, 0, 0)
+                assert stride == (1, 1, 1, 1)
+                assert count == (1, *f[attribute.attrib['Name']].shape[1:])
+                assert source.text.strip() == f'{h5_name}:/{attribute.attrib["Name"]}'
+                assert tuple(int(value) for value in source.attrib['Dimensions'].split()) == f[attribute.attrib['Name']].shape
 
 
 @pytest.mark.planewave
