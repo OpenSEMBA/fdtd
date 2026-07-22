@@ -27,11 +27,17 @@ option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
 option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
 option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
 option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
+
+option(SEMBA_FDTD_ENABLE_OUTPUT_MODULE "Use the new output module" ON)
+
 # Compilation defines.
 if(CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "release" )
 	add_definitions(-DCompileWithRelease)
 else()
 	add_definitions(-DCompileWithDebug)
+endif()
+if(SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
+	add_definitions(-DCompileWithNewOutputModule)
 endif()
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_definitions(-DCompileWithSMBJSON)
@@ -44,10 +50,14 @@ if (SEMBA_FDTD_ENABLE_DOUBLE_PRECISION)
 else()
 	add_definitions(-DCompileWithReal4)
 endif()
-add_definitions(		
-	-DCompileWithInt2 
+add_definitions(
+	-DCompileWithInt2
 	-DCompileWithOpenMP
 )
+
+if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+	add_definitions(-DGNUCompiler)
+endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
@@ -180,6 +190,15 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 	endif()
 endif()
 
+add_subdirectory(src_utils)
+
+if (SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
+	add_subdirectory(src_output)
+	set(OUTPUT_LIBRARIES fdtd-output)
+	set(VTK_API_LIBRARIES vtkAPI)
+	set(XDMF_API_LIBRARIES xdmfAPI)
+endif()
+
 add_subdirectory(src_conformal)
 set(CONFORMAL_LIBRARIES conformal)
 
@@ -187,6 +206,8 @@ if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(external/googletest/)
 	add_subdirectory(test)
 endif()
+
+
 
 if(SEMBA_FDTD_COMPONENTS_LIB)
 	add_library(semba-components
@@ -250,7 +271,11 @@ if(SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/timestepping.F90"
 	)
 	target_link_libraries(semba-main
-		semba-outputs 
+		semba-outputs
+		fdtd-utils
+		${OUTPUT_LIBRARIES}
+		${VTK_API_LIBRARIES}
+		${XDMF_API_LIBRARIES}
 		${SMBJSON_LIBRARIES} 
 		${MTLN_LIBRARIES})
 endif()
