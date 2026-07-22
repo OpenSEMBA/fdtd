@@ -8,8 +8,13 @@
     #include "smbjson/smbjson_tests.h"
     #include "rotate/rotate_tests.h"
     #include "vtk/vtk_tests.h"
+    #ifdef CompileWithNewOutputModule
+        #include "output/output_tests.h"
+        #include "output/vtkAPI_tests.h"
+        #include "output/xdmfAPI_tests.h"
+    #endif
 #endif
-#ifndef CompileWithMPI
+#if !defined(CompileWithMPI) && !defined(CompileWithNewOutputModule)
     #include "observation/observation_tests.h"
 #endif
 #include "conformal/conformal_tests.h"
