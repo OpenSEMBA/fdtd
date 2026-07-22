@@ -689,6 +689,47 @@ def test_frequency_slice_in_planewave_in_box(tmp_path):
                 assert np.all(np.isfinite(f[dataset][()]))
 
         assert np.max(np.abs(f['attributes/a0001/values'][()])) > 0.0
+
+
+@no_hdf_skip
+@pytest.mark.hdf
+def test_central_dipole_frequency_slice(tmp_path):
+    import h5py
+    import xml.etree.ElementTree as ET
+
+    fn = CASES_FOLDER + 'antenna_frequency/central_dipole_frequency_slice.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+    frequency_files = solver.getSolvedProbeFilenames('dipole_frequency_slice')
+    h5file = [f for f in frequency_files if f.endswith('.h5')][0]
+    xdmffile = [f for f in frequency_files if f.endswith('.xdmf')][0]
+
+    with h5py.File(h5file, 'r') as f:
+        root = ET.parse(xdmffile).getroot()
+        steps = root.findall('./Domain/Grid/Grid')
+        frequencies = [float(step.find('./Information').attrib['Value']) for step in steps]
+        np.testing.assert_allclose(frequencies, [7.5e8, 1e9, 1.25e9])
+
+        def component(step, name):
+            attribute = next(item for item in step.findall('./Grid/Attribute') if item.attrib['Name'] == name)
+            source = attribute.findall('./DataItem')[0].findall('./DataItem')[1]
+            _, dataset = source.text.strip().split(':/', 1)
+            return f[dataset][1]
+
+        electric_z = component(steps[1], 'Z_real') + 1j * component(steps[1], 'Z_imag')
+        amplitude = np.abs(electric_z)
+        assert electric_z.shape == (48, 48, 48)
+        assert np.max(amplitude) > 1e-9
+
+        # The z-oriented dipole has an azimuthally symmetric equatorial field
+        # whose magnitude decays and phase changes with radial distance.
+        equatorial_near = electric_z[24, 24, 32]
+        equatorial_far = electric_z[24, 24, 36]
+        equatorial_far_y = electric_z[24, 36, 24]
+        assert np.isclose(np.abs(equatorial_far), np.abs(equatorial_far_y), rtol=1e-3)
+        assert np.abs(equatorial_far) < np.abs(equatorial_near)
+        assert np.abs(np.angle(equatorial_far / equatorial_near)) > 0.1
  
  
 @pytest.mark.planewave
