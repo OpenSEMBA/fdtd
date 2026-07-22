@@ -32,8 +32,9 @@ module frequencySliceProbeOutput_m
    private :: save_field_component
    private :: save_current
    private :: save_current_module
-   private :: save_current_component
-   private :: initialise_frequency_metadata
+    private :: save_current_component
+    private :: initialise_frequency_metadata
+    private :: make_spatial_values
    !===========================
 
    !===========================
@@ -54,9 +55,28 @@ contains
       integer :: error
       character(len=BUFSIZE) :: filename
 
-      this%mainCoords = lowerBound
-      this%auxCoords = upperBound
-      this%component = field !This can refer to electric, magnetic or currentDensity
+       this%mainCoords = lowerBound
+       this%auxCoords = upperBound
+       this%gridDimensions = [upperBound%x - lowerBound%x + 1, upperBound%y - lowerBound%y + 1, &
+                              upperBound%z - lowerBound%z + 1]
+       if (associated(problemInfo%xSteps)) then
+          this%xCoordinates = problemInfo%xSteps(lowerBound%x:upperBound%x)
+          this%yCoordinates = problemInfo%ySteps(lowerBound%y:upperBound%y)
+          this%zCoordinates = problemInfo%zSteps(lowerBound%z:upperBound%z)
+       else
+          allocate(this%xCoordinates(this%gridDimensions(1)), this%yCoordinates(this%gridDimensions(2)), &
+                   this%zCoordinates(this%gridDimensions(3)))
+          do i = 1, this%gridDimensions(1)
+             this%xCoordinates(i) = real(lowerBound%x + i - 1, RKIND)
+          end do
+          do i = 1, this%gridDimensions(2)
+             this%yCoordinates(i) = real(lowerBound%y + i - 1, RKIND)
+          end do
+          do i = 1, this%gridDimensions(3)
+             this%zCoordinates(i) = real(lowerBound%z + i - 1, RKIND)
+          end do
+       end if
+       this%component = field !This can refer to electric, magnetic or currentDensity
        this%domain = domain
        this%nFreq = domain%fnum
        this%quadratureDt = timeInterval
@@ -161,11 +181,32 @@ contains
        type(frequency_slice_probe_output_t), intent(inout) :: this
        integer, intent(out) :: error
 
+       complex(real64), allocatable :: x_values(:, :), y_values(:, :), z_values(:, :)
+
+       call make_spatial_values(this, this%xValueForFreq, x_values)
+       call make_spatial_values(this, this%yValueForFreq, y_values)
+       call make_spatial_values(this, this%zValueForFreq, z_values)
        call publish_frequency_slice_visualisation(this%filesPath, 'frequencySliceProbe', &
-          [int(this%nPoints, int64), 1_int64, 1_int64], real(this%frequencySlice, real64), &
-          cmplx(this%xValueForFreq, kind=real64), cmplx(this%yValueForFreq, kind=real64), &
-          cmplx(this%zValueForFreq, kind=real64), error)
-   end subroutine
+          int(this%gridDimensions, int64), real(this%xCoordinates, real64), real(this%yCoordinates, real64), &
+          real(this%zCoordinates, real64), real(this%frequencySlice, real64), x_values, y_values, z_values, error)
+    end subroutine
+
+    subroutine make_spatial_values(this, values, spatial_values)
+       type(frequency_slice_probe_output_t), intent(in) :: this
+       complex(kind=CKIND), intent(in) :: values(:, :)
+       complex(real64), allocatable, intent(out) :: spatial_values(:, :)
+
+       integer :: point, value_index
+
+       allocate(spatial_values(this%nFreq, product(this%gridDimensions)))
+       spatial_values = (0.0_real64, 0.0_real64)
+       do point = 1, this%nPoints
+          value_index = this%coords(1, point) - this%mainCoords%x + 1 + &
+                        this%gridDimensions(1) * (this%coords(2, point) - this%mainCoords%y) + &
+                        this%gridDimensions(1) * this%gridDimensions(2) * (this%coords(3, point) - this%mainCoords%z)
+          spatial_values(:, value_index) = cmplx(values(:, point), kind=real64)
+       end do
+    end subroutine
 
    function get_output_path_freq(this, outputTypeExtension, field, control) result(outputPath)
       type(frequency_slice_probe_output_t), intent(in) :: this
@@ -233,9 +274,9 @@ contains
       integer :: i, j, k, coordIdx
 
       coordIdx = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
-      do k = this%mainCoords%z, this%auxCoords%z
+       do k = this%mainCoords%z, this%auxCoords%z
+       do j = this%mainCoords%y, this%auxCoords%y
+       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForCurrent(iCur, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
              call save_current(this%xValueForFreq, iEx, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
@@ -262,9 +303,9 @@ contains
       integer :: i, j, k, coordIdx
 
       coordIdx = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
-      do k = this%mainCoords%z, this%auxCoords%z
+       do k = this%mainCoords%z, this%auxCoords%z
+       do j = this%mainCoords%y, this%auxCoords%y
+       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForCurrent(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
              call save_current(currentData, fieldDir, coordIdx, i, j, k, fieldsReference, auxExp, &
@@ -311,9 +352,9 @@ contains
        if (iMEC == request) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
 
       coordIdx = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
-      do k = this%mainCoords%z, this%auxCoords%z
+       do k = this%mainCoords%z, this%auxCoords%z
+       do j = this%mainCoords%y, this%auxCoords%y
+       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForField(request, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
             call save_field(this%xValueForFreq, auxExponential, fieldInfo%x(i, j, k), this%nFreq, coordIdx)
@@ -343,9 +384,9 @@ contains
        if (any(ELECTRIC_FIELD_DIRECTION == fieldDir)) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
 
       coordIdx = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
-      do k = this%mainCoords%z, this%auxCoords%z
+       do k = this%mainCoords%z, this%auxCoords%z
+       do j = this%mainCoords%y, this%auxCoords%y
+       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForField(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
             call save_field(fieldData, auxExponential, fieldComponent(i, j, k), this%nFreq, coordIdx)

@@ -1,0 +1,51 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Planewave with an electric-field frequency slice.",
+
+    "general": {
+        "timeStep": 0.05e-9,
+        "numberOfSteps": 400
+    },
+
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [4, 5, 6],
+            "steps": {"x": [0.01], "y": [0.01], "z": [0.01]}
+        },
+        "elements": [
+            {"id": 1, "type": "cell", "name": "pw-box", "intervals": [[[1, 1, 1], [3, 4, 5]]]},
+            {"id": 2, "type": "cell", "name": "frequency-volume", "intervals": [[[0, 0, 0], [4, 5, 6]]]}
+        ]
+    },
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss_1GHz.exc",
+            "elementIds": [1],
+            "direction": {"theta": 0.0, "phi": 0.0},
+            "polarization": {"theta": 1.5708, "phi": 0.0}
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "electric_field_frequency_slice",
+            "type": "movie",
+            "field": "electric",
+            "component": "x",
+            "elementIds": [2],
+            "domain": {
+                "type": "frequency",
+                "initialFrequency": 5e8,
+                "finalFrequency": 1.5e9,
+                "numberOfFrequencies": 3,
+                "frequencySpacing": "linear"
+            }
+        }
+    ]
+}
