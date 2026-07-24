@@ -43,6 +43,11 @@ add_executable(xdmf_hdf5_generate_cases
 target_link_libraries(xdmf_hdf5_generate_cases PRIVATE
   XDMF::HDF5
 )
+set_target_properties(xdmf_hdf5_generate_cases PROPERTIES
+  Fortran_STANDARD 2018
+  Fortran_STANDARD_REQUIRED YES
+  Fortran_EXTENSIONS OFF
+)
 
 set(_xdmf_hdf5_output_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(_xdmf_hdf5_example_dir
@@ -138,6 +143,11 @@ if(XDMF_HDF5_PARALLEL_AVAILABLE)
   target_link_libraries(xdmf_hdf5_generate_parallel_case PRIVATE
     XDMF::HDF5
     MPI::MPI_Fortran
+  )
+  set_target_properties(xdmf_hdf5_generate_parallel_case PROPERTIES
+    Fortran_STANDARD 2018
+    Fortran_STANDARD_REQUIRED YES
+    Fortran_EXTENSIONS OFF
   )
 
   set(_xdmf_hdf5_mpi_output_dir

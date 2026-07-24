@@ -52,8 +52,9 @@ add_library(XDMF::HDF5 ALIAS xdmf_hdf5)
 set_target_properties(xdmf_hdf5 PROPERTIES
   EXPORT_NAME HDF5
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules"
-  Fortran_STANDARD 2008
+  Fortran_STANDARD 2018
   Fortran_STANDARD_REQUIRED YES
+  Fortran_EXTENSIONS OFF
 )
 
 target_include_directories(xdmf_hdf5
