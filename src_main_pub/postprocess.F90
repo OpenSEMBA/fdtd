@@ -6,10 +6,6 @@ module PostProcessing_m
    use Report_m
    use Observa_m
 
-#ifdef CompileWithHDF
-   use HDF5
-#endif
-
    implicit none
 
    private

@@ -184,7 +184,10 @@ add_library(semba-reports
 	"src_main_pub/errorreport.F90"
 	"src_main_pub/snapxdmf.F90"
 )
-target_link_libraries(semba-reports semba-types ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+target_link_libraries(semba-reports semba-types)
+if(SEMBA_FDTD_ENABLE_HDF)
+  target_link_libraries(semba-reports XDMF::HDF5)
+endif()
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_subdirectory(src_json_parser)
@@ -211,7 +214,6 @@ if (SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
 	add_subdirectory(src_output)
 	set(OUTPUT_LIBRARIES fdtd-output)
 	set(VTK_API_LIBRARIES vtkAPI)
-	set(XDMF_API_LIBRARIES xdmfAPI)
 endif()
 
 add_subdirectory(src_conformal)
@@ -253,9 +255,9 @@ if(SEMBA_FDTD_OUTPUTS_LIB)
 		"src_main_pub/xdmf.F90"
 		"src_main_pub/xdmf_h5.F90"
 	)
-	target_link_libraries(semba-outputs 
-		semba-components 
-		${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES} 
+	target_link_libraries(semba-outputs
+		semba-components
+		XDMF::HDF5
 		${MPI_Fortran_LIBRARIES})
 endif()
 
@@ -290,7 +292,6 @@ if(SEMBA_FDTD_MAIN_LIB)
 		fdtd-utils
 		${OUTPUT_LIBRARIES}
 		${VTK_API_LIBRARIES}
-		${XDMF_API_LIBRARIES}
 		${SMBJSON_LIBRARIES} 
 		${MTLN_LIBRARIES})
 endif()

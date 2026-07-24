@@ -43,9 +43,9 @@ contains
 
     call put_line(unit, 0, '<?xml version="1.0" encoding="UTF-8"?>', status)
     call put_line(unit, 0, '<Xdmf Version="3.0">', status)
-    call put_line(unit, 1, '<Domain Name="OpenSEMBA XDMF-HDF5">', status)
+    call put_line(unit, 1, '<Domain Name="XDMF-HDF5">', status)
     call put_line(unit, 2, &
-      '<Information Name="Schema" Value="OpenSEMBA XDMF-HDF5 1.0"/>', &
+      '<Information Name="Schema" Value="XDMF-HDF5 1.0"/>', &
       status)
 
     if (series_kind == XDMF_SERIES_NONE) then

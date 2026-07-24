@@ -6,7 +6,10 @@ module frequencySliceProbeOutput_m
    use outputUtils_m
    use volumicProbeUtils_m
    use directoryUtils_m
-   use xdmfAPI_m
+   use, intrinsic :: iso_fortran_env, only: int64, real64
+   use xdmf_hdf5_m, only: xdmf_options_t, xdmf_status_t, &
+      xdmf_attribute_id_t, XDMF_SERIES_FREQUENCY, XDMF_CENTER_NODE, &
+      XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, XDMF_TOPOLOGY_POLYVERTEX
    implicit none
    private
 
@@ -80,7 +83,82 @@ contains
 
       call create_folder(this%path, error)
       call create_bin_file(this%filesPath, error)
+      call create_frequency_writer(this, problemInfo, error)
    end subroutine init_frequency_slice_probe_output
+
+   subroutine create_frequency_writer(this, problemInfo, error)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      type(problem_info_t), intent(in) :: problemInfo
+      integer, intent(out) :: error
+
+      type(xdmf_options_t) :: options
+      type(xdmf_status_t) :: status
+      real(real64), allocatable :: points(:, :)
+      integer(int64), allocatable :: connectivity(:, :)
+      integer :: i
+
+      error = 0
+      allocate(this%writer)
+      allocate(points(3, this%nPoints), connectivity(1, this%nPoints))
+      do i = 1, this%nPoints
+         if (associated(problemInfo%xSteps) .and. &
+             associated(problemInfo%ySteps) .and. &
+             associated(problemInfo%zSteps)) then
+            if (this%coords(1, i) >= lbound(problemInfo%xSteps, 1) .and. &
+                this%coords(1, i) <= ubound(problemInfo%xSteps, 1) .and. &
+                this%coords(2, i) >= lbound(problemInfo%ySteps, 1) .and. &
+                this%coords(2, i) <= ubound(problemInfo%ySteps, 1) .and. &
+                this%coords(3, i) >= lbound(problemInfo%zSteps, 1) .and. &
+                this%coords(3, i) <= ubound(problemInfo%zSteps, 1)) then
+               points(:, i) = [real(problemInfo%xSteps(this%coords(1, i)), real64), &
+                  real(problemInfo%ySteps(this%coords(2, i)), real64), &
+                  real(problemInfo%zSteps(this%coords(3, i)), real64)]
+            else
+               points(:, i) = real(this%coords(:, i), real64)
+            end if
+         else
+            points(:, i) = real(this%coords(:, i), real64)
+         end if
+         connectivity(1, i) = int(i, int64)
+      end do
+
+      options%overwrite = .true.
+      options%series_kind = XDMF_SERIES_FREQUENCY
+      call this%writer%create(trim(this%filesPath), options, status)
+      if (.not. status%is_error()) then
+         call this%writer%define_unstructured_grid('frequencySlice', &
+            XDMF_TOPOLOGY_POLYVERTEX, points, connectivity, this%grid, status)
+      end if
+      if (.not. status%is_error()) then
+         call define_frequency_attribute(this, 'xMagnitude', &
+            this%xMagnitude, status)
+      end if
+      if (.not. status%is_error()) call define_frequency_attribute(this, 'yMagnitude', &
+            this%yMagnitude, status)
+      if (.not. status%is_error()) call define_frequency_attribute(this, 'zMagnitude', &
+            this%zMagnitude, status)
+      if (.not. status%is_error()) call define_frequency_attribute(this, 'xPhase', &
+         this%xPhase, status)
+      if (.not. status%is_error()) call define_frequency_attribute(this, 'yPhase', &
+         this%yPhase, status)
+      if (.not. status%is_error()) call define_frequency_attribute(this, 'zPhase', &
+         this%zPhase, status)
+      if (status%is_error()) then
+         error = 1
+         print *, trim(status%message())
+      end if
+      deallocate(points, connectivity)
+   end subroutine create_frequency_writer
+
+   subroutine define_frequency_attribute(this, name, attribute, status)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      character(len=*), intent(in) :: name
+      type(xdmf_attribute_id_t), intent(out) :: attribute
+      type(xdmf_status_t), intent(out) :: status
+
+      call this%writer%define_attribute(this%grid, name, XDMF_CENTER_NODE, &
+         XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, .true., attribute, status)
+   end subroutine define_frequency_attribute
 
    subroutine create_bin_file(filePath, error)
       character(len=*), intent(in) :: filePath
@@ -108,29 +186,47 @@ contains
       !If we call to this subrutine it will always replace old values
       type(frequency_slice_probe_output_t), intent(inout) :: this
 
-      integer(HID_T) :: file_id
-      integer :: f, error, xdmfunit
-      real(dp), allocatable, dimension(:, :) :: coordsReal
-      character(len=256) :: h5_filename, h5_filepath
-      character(len=256) :: xdmf_filename
-      character(len=10) :: dimension_string
-      character(len=10) :: nCoordsString
-      character(len=14) :: stepName
-      h5_filepath = add_extension(this%filesPath, ".h5")
-      h5_filename = get_last_component(h5_filepath)
+      type(xdmf_status_t) :: status
+      real(real64), allocatable :: xMagnitude(:), yMagnitude(:), zMagnitude(:)
+      real(real64), allocatable :: xPhase(:), yPhase(:), zPhase(:)
+      integer :: f, i
 
-      call H5open_f(error)
-      call H5Fopen_f(trim(h5_filepath), H5F_ACC_RDWR_F, file_id, error)
-      write(dimension_string, '(I0,1X,I0)') this%nPoints, this%nFreq
-      write(nCoordsString, '(I0, I0)') this%nPoints, 1
+      allocate(xMagnitude(this%nPoints), yMagnitude(this%nPoints), &
+         zMagnitude(this%nPoints), xPhase(this%nPoints), yPhase(this%nPoints), &
+         zPhase(this%nPoints))
       do f = 1, this%nFreq
-         write(stepName, '((I5.5))') f
-         call h5_append_rows_to_dataset(file_id, "xVal", reshape(real(abs(this%xValueForFreq(f, :)), dp), [1, this%nPoints]))
-         call h5_append_rows_to_dataset(file_id, "yVal", reshape(real(abs(this%yValueForFreq(f, :)), dp), [1, this%nPoints]))
-         call h5_append_rows_to_dataset(file_id, "zVal", reshape(real(abs(this%zValueForFreq(f, :)), dp), [1, this%nPoints]))
+         do i = 1, this%nPoints
+            xMagnitude(i) = real(abs(this%xValueForFreq(f, i)), real64)
+            yMagnitude(i) = real(abs(this%yValueForFreq(f, i)), real64)
+            zMagnitude(i) = real(abs(this%zValueForFreq(f, i)), real64)
+            xPhase(i) = atan2(real(aimag(this%xValueForFreq(f, i)), real64), &
+               real(this%xValueForFreq(f, i), real64))
+            yPhase(i) = atan2(real(aimag(this%yValueForFreq(f, i)), real64), &
+               real(this%yValueForFreq(f, i), real64))
+            zPhase(i) = atan2(real(aimag(this%zValueForFreq(f, i)), real64), &
+               real(this%zValueForFreq(f, i), real64))
+         end do
+
+         call this%writer%begin_step(real(this%frequencySlice(f), real64), status)
+         if (.not. status%is_error()) call this%writer%write_attribute( &
+            this%xMagnitude, xMagnitude, status)
+         if (.not. status%is_error()) call this%writer%write_attribute( &
+            this%yMagnitude, yMagnitude, status)
+         if (.not. status%is_error()) call this%writer%write_attribute( &
+            this%zMagnitude, zMagnitude, status)
+         if (.not. status%is_error()) call this%writer%write_attribute( &
+            this%xPhase, xPhase, status)
+         if (.not. status%is_error()) call this%writer%write_attribute( &
+            this%yPhase, yPhase, status)
+         if (.not. status%is_error()) call this%writer%write_attribute( &
+            this%zPhase, zPhase, status)
+         if (.not. status%is_error()) call this%writer%end_step(status)
+         if (status%is_error()) then
+            print *, trim(status%message())
+            exit
+         end if
       end do
-      call H5Fclose_f(file_id, error)
-      call H5close_f(error)
+      deallocate(xMagnitude, yMagnitude, zMagnitude, xPhase, yPhase, zPhase)
    end subroutine
 
    function get_output_path_freq(this, outputTypeExtension, field, control) result(outputPath)
@@ -333,6 +429,14 @@ contains
    subroutine close_frequency_slice_probe_output(this)
       type(frequency_slice_probe_output_t), intent(inout) :: this
       call write_to_xdmf_h5(this)
+      if (associated(this%writer)) then
+         block
+            type(xdmf_status_t) :: status
+            call this%writer%close(status)
+            if (status%is_error()) print *, trim(status%message())
+         end block
+         deallocate(this%writer)
+      end if
    end subroutine
 
 

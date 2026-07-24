@@ -11,6 +11,10 @@ if(NOT TARGET HDF5::HDF5)
   )
 endif()
 
-include("${CMAKE_CURRENT_LIST_DIR}/OpenSEMBAXdmfHdf5Targets.cmake")
+if(@XDMF_HDF5_MPI_ENABLED@)
+  find_dependency(MPI REQUIRED COMPONENTS Fortran)
+endif()
 
-check_required_components(OpenSEMBAXdmfHdf5)
+include("${CMAKE_CURRENT_LIST_DIR}/XDMFHdf5Targets.cmake")
+
+check_required_components(XDMFHdf5)

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Xdmf Version="3.0">
-  <Domain Name="OpenSEMBA XDMF-HDF5">
-    <Information Name="Schema" Value="OpenSEMBA XDMF-HDF5 1.0"/>
+  <Domain Name="XDMF-HDF5">
+    <Information Name="Schema" Value="XDMF-HDF5 1.0"/>
     <Grid Name="topology-suite" GridType="Collection" CollectionType="Spatial">
       <Grid Name="polyvertex" GridType="Uniform">
         <Topology TopologyType="Polyvertex" NumberOfElements="1" NodesPerElement="1">

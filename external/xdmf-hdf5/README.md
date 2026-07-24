@@ -1,6 +1,6 @@
-# OpenSEMBA XDMF/HDF5
+# XDMF/HDF5
 
-`opensemba-xdmf-hdf5` is a solver-independent Fortran library for producing
+`xdmf-hdf5` is a solver-independent Fortran library for producing
 XDMF 3 metadata and its associated HDF5 heavy data.
 It is developed in-tree initially, but has its own build, tests, package
 metadata, and public API so it can later move to a separate repository.
@@ -22,9 +22,7 @@ HDF5 identifiers and XML serialization are private implementation details.
 
 When CMake discovers an MPI-capable HDF5 Fortran installation, the library also
 supports collective scalar-series hyperslab writes.
-When included by `semba-fdtd`, its MPI API follows the parent
-`SEMBA_FDTD_ENABLE_MPI` setting with no additional project option.
-For a standalone build, set `XDMF_HDF5_ENABLE_MPI=ON` to enable the MPI API.
+Set `XDMF_HDF5_ENABLE_MPI=ON` to enable the MPI API.
 Collective HDF5 support is detected automatically in either build mode.
 
 ## Standalone Build
@@ -65,8 +63,8 @@ Available options are:
 Consumers link the exported target:
 
 ```cmake
-find_package(OpenSEMBAXdmfHdf5 CONFIG REQUIRED)
-target_link_libraries(my_writer PRIVATE OpenSEMBA::xdmf-hdf5)
+find_package(XDMFHdf5 CONFIG REQUIRED)
+target_link_libraries(my_writer PRIVATE XDMF::HDF5)
 ```
 
 ## API Example

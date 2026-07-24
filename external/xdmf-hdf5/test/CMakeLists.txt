@@ -41,7 +41,7 @@ add_executable(xdmf_hdf5_generate_cases
   create_directory.c
 )
 target_link_libraries(xdmf_hdf5_generate_cases PRIVATE
-  OpenSEMBA::xdmf-hdf5
+  XDMF::HDF5
 )
 
 set(_xdmf_hdf5_output_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
@@ -136,7 +136,7 @@ endif()
 if(XDMF_HDF5_PARALLEL_AVAILABLE)
   add_executable(xdmf_hdf5_generate_parallel_case generate_parallel_case.F90)
   target_link_libraries(xdmf_hdf5_generate_parallel_case PRIVATE
-    OpenSEMBA::xdmf-hdf5
+    XDMF::HDF5
     MPI::MPI_Fortran
   )
 

@@ -155,7 +155,7 @@ contains
     end if
 
     call write_string_attribute(file%id, 'schema_name', &
-      'OpenSEMBA XDMF-HDF5', status)
+      'XDMF-HDF5', status)
     if (status%is_error()) then
       call close_after_create_error(file, status)
       return

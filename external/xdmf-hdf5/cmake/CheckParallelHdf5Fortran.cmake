@@ -1,7 +1,7 @@
 include(CMakePushCheckState)
 include(CheckFortranSourceCompiles)
 
-function(opensemba_check_parallel_hdf5_fortran result)
+function(xdmf_check_parallel_hdf5_fortran result)
   set(${result} FALSE PARENT_SCOPE)
 
   if(NOT HDF5_IS_PARALLEL)
@@ -31,10 +31,10 @@ program parallel_hdf5_fortran_probe
   call h5pcreate_f(H5P_DATASET_XFER_F, transfer_plist, error)
   call h5pset_dxpl_mpio_f(transfer_plist, H5FD_MPIO_COLLECTIVE_F, error)
 end program parallel_hdf5_fortran_probe
-]=] OPENSEMBA_PARALLEL_HDF5_FORTRAN_PROBE_WORKS SRC_EXT F90)
+]=] XDMF_PARALLEL_HDF5_FORTRAN_PROBE_WORKS SRC_EXT F90)
   cmake_pop_check_state()
 
-  if(OPENSEMBA_PARALLEL_HDF5_FORTRAN_PROBE_WORKS)
+  if(XDMF_PARALLEL_HDF5_FORTRAN_PROBE_WORKS)
     set(${result} TRUE PARENT_SCOPE)
   endif()
 endfunction()

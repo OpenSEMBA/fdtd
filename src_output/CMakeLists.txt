@@ -21,8 +21,7 @@ target_link_libraries(fdtd-output PRIVATE
   semba-components
   semba-types
   fdtd-utils
-  ${HDF5_LIBRARIES}
-  ${HDF5_HL_LIBRARIES}
+  XDMF::HDF5
 )
 
 
@@ -30,17 +29,6 @@ add_library(vtkAPI
   "vtkAPI.F90"
 )
 
-add_library(xdmfAPI
-  "xdmfAPI.F90"
-)
-
-target_link_libraries(xdmfAPI PRIVATE
-  ${HDF5_LIBRARIES}
-  ${HDF5_HL_LIBRARIES}
-)
-
 target_link_libraries(vtkAPI
  fdtd-utils
 )
-
-target_include_directories(xdmfAPI PRIVATE ${HDF5_INCLUDE_DIRS})

@@ -52,7 +52,7 @@ def validate_pair(root: Path, name: str) -> tuple[ET.Element, h5py.File]:
     require(document.tag == "Xdmf", f"{name}: invalid XML root")
     require(document.attrib.get("Version") == "3.0", f"{name}: wrong XDMF version")
     hdf5 = h5py.File(hdf5_path, "r")
-    require(text(hdf5.attrs["schema_name"]) == "OpenSEMBA XDMF-HDF5", f"{name}: schema name")
+    require(text(hdf5.attrs["schema_name"]) == "XDMF-HDF5", f"{name}: schema name")
     require(text(hdf5.attrs["schema_version"]) == "1.0", f"{name}: schema version")
 
     for item in document.findall(".//DataItem[@Format='HDF']"):

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Xdmf Version="3.0">
-  <Domain Name="OpenSEMBA XDMF-HDF5">
-    <Information Name="Schema" Value="OpenSEMBA XDMF-HDF5 1.0"/>
+  <Domain Name="XDMF-HDF5">
+    <Information Name="Schema" Value="XDMF-HDF5 1.0"/>
     <Grid Name="electric-field-volume" GridType="Uniform">
       <Topology TopologyType="3DCoRectMesh" Dimensions="21 21 21"/>
       <Geometry GeometryType="ORIGIN_DXDYDZ">
