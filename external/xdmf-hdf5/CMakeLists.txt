@@ -27,15 +27,10 @@ option(
 
 find_package(HDF5 REQUIRED COMPONENTS Fortran)
 
-if(DEFINED SEMBA_FDTD_ENABLE_MPI)
-  set(_xdmf_hdf5_mpi_default ${SEMBA_FDTD_ENABLE_MPI})
-else()
-  set(_xdmf_hdf5_mpi_default OFF)
-endif()
 option(
   XDMF_HDF5_ENABLE_MPI
   "Build the external writer MPI API"
-  ${_xdmf_hdf5_mpi_default}
+  OFF
 )
 
 set(XDMF_HDF5_MPI_ENABLED FALSE)
