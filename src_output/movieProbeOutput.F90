@@ -114,7 +114,7 @@ contains
        this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
        this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
        this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL32
-       this%metadata%artifacts(1)%record_bytes = 44
+       this%metadata%artifacts(1)%record_bytes = 32
        this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
        this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
        this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
