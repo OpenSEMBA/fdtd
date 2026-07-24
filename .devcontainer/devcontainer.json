@@ -42,7 +42,27 @@
         "cmake.buildDirectory": "${workspaceFolder}/build",
         "cmake.useCMakePresets": "always",
         "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
-        "terminal.integrated.defaultProfile.linux": "bash"
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "fortran.fortls.path": "/usr/local/bin/fortls",
+        "fortran.fortls.notifyInit": true,
+        "fortran.fortls.disableAutoupdate": true,
+        "fortran.provide.hover": "Both",
+        "fortran.formatting.formatter": "fprettify",
+        "editor.tokenColorCustomizations": {
+          "textMateRules": [
+            {
+              "scope": [
+                "entity.name.function.fortran",
+                "entity.name.function.procedure.fortran",
+                "entity.name.function.subroutine.fortran"
+              ],
+              "settings": {
+                "foreground": "#DCDCAA",
+                "fontStyle": "bold"
+              }
+            }
+          ]
+        }
       }
     }
   }

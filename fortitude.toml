@@ -1,0 +1,5 @@
+[check]
+target-std = "f2018"
+select = ["E", "C001", "C002", "C003", "C011", "C061", "C071", "C072", "C081", "C082", "C161", "C181", "C182", "C191"]
+extend-exclude = ["external", "precompiled_libraries", "test", "testData"]
+force-exclude = true

@@ -17,6 +17,7 @@ option(SEMBA_FDTD_ENABLE_HDF "Use HDF" ON)
 option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
 option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
+option(SEMBA_FDTD_ENABLE_GNU_STRICT_WARNINGS "Enable additional GNU Fortran warnings" OFF)
 
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
@@ -107,6 +108,10 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		set(CMAKE_C_FLAGS_DEBUG "-g -O0")
 		set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 		set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -fno-inline -fcheck=all -fbacktrace")
+
+		if(SEMBA_FDTD_ENABLE_GNU_STRICT_WARNINGS)
+			set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -Wextra -Wimplicit-interface -Wimplicit-procedure -Wuse-without-only")
+		endif()
 
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		message(STATUS "Using IntelLLVM (ifx) flags")

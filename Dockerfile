@@ -88,7 +88,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm install -g opencode-ai
 
 RUN --mount=type=cache,target=/root/.cache/pip \
-    python3 -m pip install --break-system-packages fortls fprettify
+    python3 -m pip install --break-system-packages fortls fprettify fortitude-lint
 
 # Prepare mount points and grant passwordless sudo for interactive development.
 RUN mkdir -p /home/${USERNAME}/.config \

@@ -43,6 +43,15 @@
       }
     },
     {
+      "name": "dbg-gnu-strict",
+      "inherits": "dbg",
+      "binaryDir": "build-dbg-gnu-strict/",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_MTLN": "OFF",
+        "SEMBA_FDTD_ENABLE_GNU_STRICT_WARNINGS": "ON"
+      }
+    },
+    {
       "name": "rls-nomtln",
       "inherits": "rls",
       "binaryDir": "build-rls-nomtln/",
@@ -100,6 +109,10 @@
     {
       "name": "dbg-nomtln",
       "configurePreset": "dbg-nomtln"
+    },
+    {
+      "name": "dbg-gnu-strict",
+      "configurePreset": "dbg-gnu-strict"
     },
     {
       "name": "intel-rls",
