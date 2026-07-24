@@ -1,0 +1,91 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CMake: configure Release no-MPI",
+      "type": "shell",
+      "command": "cmake --preset rls",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: build Release no-MPI",
+      "type": "shell",
+      "command": "cmake --build --preset rls",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: configure Debug no-MPI",
+      "type": "shell",
+      "command": "cmake --preset dbg",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: build Debug no-MPI",
+      "type": "shell",
+      "command": "cmake --build --preset dbg",
+      "dependsOn": ["CMake: configure Debug no-MPI"],
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: configure Debug GNU strict no-MTLN",
+      "type": "shell",
+      "command": "cmake --preset dbg-gnu-strict",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: build Debug GNU strict no-MTLN",
+      "type": "shell",
+      "command": "cmake --build --preset dbg-gnu-strict",
+      "dependsOn": ["CMake: configure Debug GNU strict no-MTLN"],
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "Lint: Fortitude (advisory)",
+      "type": "shell",
+      "command": "fortitude check --exit-zero",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: configure Release MPI",
+      "type": "shell",
+      "command": "cmake --preset rls-mpi",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: build Release MPI",
+      "type": "shell",
+      "command": "cmake --build --preset rls-mpi",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: unit Release no-MPI",
+      "type": "shell",
+      "command": "build-rls/bin/fdtd_tests",
+      "dependsOn": ["CMake: build Release no-MPI"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: pytest Release no-MPI",
+      "type": "shell",
+      "command": "SEMBA_FDTD_ENABLE_MPI=OFF SEMBA_FDTD_ENABLE_MTLN=ON SEMBA_FDTD_ENABLE_HDF=ON SEMBA_EXE=build-rls/bin/semba-fdtd .venv/bin/python -m pytest test/ -m 'not mpi' --durations=20",
+      "dependsOn": ["CMake: build Release no-MPI"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: pytest Release MPI",
+      "type": "shell",
+      "command": "SEMBA_FDTD_ENABLE_MPI=ON SEMBA_FDTD_ENABLE_MTLN=ON SEMBA_FDTD_ENABLE_HDF=ON SEMBA_EXE=build-rls-mpi/bin/semba-fdtd .venv/bin/python -m pytest test/ -m mpi --durations=20",
+      "dependsOn": ["CMake: build Release MPI"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: all Release no-MPI",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Test: unit Release no-MPI",
+        "Test: pytest Release no-MPI"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

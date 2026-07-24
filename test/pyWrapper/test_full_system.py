@@ -730,8 +730,6 @@ def test_central_dipole_frequency_slice(tmp_path):
         assert np.isclose(np.abs(equatorial_far), np.abs(equatorial_far_y), rtol=1e-3)
         assert np.abs(equatorial_far) < np.abs(equatorial_near)
         assert np.abs(np.angle(equatorial_far / equatorial_near)) > 0.1
- 
- 
 @pytest.mark.planewave
 @pytest.mark.probes
 def test_planewave_in_box(tmp_path):

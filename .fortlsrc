@@ -1,0 +1,18 @@
+{
+  "source_dirs": [
+    "./src_conformal",
+    "./src_json_parser",
+    "./src_main_pub",
+    "./src_mtln",
+    "./src_output",
+    "./src_pyWrapper",
+    "./src_utils",
+    "./src_wires_pub",
+    "./test"
+  ],
+  "excl_paths": [
+    "./build*",
+    "./.venv",
+    "./Testing"
+  ]
+}

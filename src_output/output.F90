@@ -27,7 +27,7 @@ module output_m
    use Wire_bundles_mtln_m, only: GetSolverPtr
    use mtln_solver_m, only: mtln_solver_t => mtln_t
 #endif
-   
+
 
    implicit none
    private
@@ -468,9 +468,9 @@ contains
         end do
      end function valid_probe_ownership
 
-    subroutine init_outputs(sgg, media, sinpml_fullsize, materialTags, bounds, control, observationsExists, &
-                            wiresExists, eps0_input, mu0_input)
-      
+     subroutine init_outputs(sgg, media, sinpml_fullsize, materialTags, bounds, control, observationsExists, &
+                             wiresExists, eps0_input, mu0_input)
+
       type(SGGFDTDINFO_t), intent(in) ::  sgg
       type(media_matrices_t), target, intent(in) :: media
       type(limit_t), dimension(:), target, intent(in)  ::  SINPML_fullsize

@@ -70,6 +70,21 @@ pytest test/
 
 (You can also use `python -m pytest test/`.)
 
+### Fortran tooling
+
+The development container provides Modern Fortran, `fortls`, `fprettify`, and
+Fortitude. Reload VS Code after rebuilding the container to activate the
+extensions and tools.
+
+Run `fortitude check --exit-zero` to review Fortitude's advisory diagnostics.
+It is not a required gate because the current preprocessed sources produce
+parser false positives.
+
+Use `cmake --preset dbg-gnu-strict` and
+`cmake --build --preset dbg-gnu-strict` to compile the no-MTLN configuration
+with additional GNU Fortran warnings. The preset is opt-in and does not alter
+the established build presets.
+
 ## Making changes
 
 - Keep changes focused and as small as reasonably possible.
