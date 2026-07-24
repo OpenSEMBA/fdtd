@@ -1,5 +1,6 @@
 module outputTypes_m
    use FDETYPES_m
+   use xdmf_hdf5_m, only: xdmf_writer_t, xdmf_grid_id_t, xdmf_attribute_id_t
    use HollandWires_m
    use wiresHolland_constants_m
 #ifdef CompileWithBerengerWires
@@ -173,6 +174,11 @@ module outputTypes_m
       real(kind=RKIND), allocatable :: yValueForTime(:, :)  !(time, coordIdx)
       real(kind=RKIND), allocatable :: zValueForTime(:, :)  !(time, coordIdx)
       character(len=BUFSIZE) :: filesPath
+      type(xdmf_writer_t), pointer :: writer => null()
+      type(xdmf_grid_id_t) :: grid
+      type(xdmf_attribute_id_t) :: xAttribute
+      type(xdmf_attribute_id_t) :: yAttribute
+      type(xdmf_attribute_id_t) :: zAttribute
    end type movie_probe_output_t
 
    type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
@@ -184,6 +190,14 @@ module outputTypes_m
       complex(kind=CKIND), allocatable :: yValueForFreq(:, :)  !(time, coordIdx)
       complex(kind=CKIND), allocatable :: zValueForFreq(:, :)  !(time, coordIdx)
       character(len=BUFSIZE) :: filesPath
+      type(xdmf_writer_t), pointer :: writer => null()
+      type(xdmf_grid_id_t) :: grid
+      type(xdmf_attribute_id_t) :: xMagnitude
+      type(xdmf_attribute_id_t) :: yMagnitude
+      type(xdmf_attribute_id_t) :: zMagnitude
+      type(xdmf_attribute_id_t) :: xPhase
+      type(xdmf_attribute_id_t) :: yPhase
+      type(xdmf_attribute_id_t) :: zPhase
    end type frequency_slice_probe_output_t
 
 !=====================================================

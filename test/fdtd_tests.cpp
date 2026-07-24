@@ -11,7 +11,6 @@
     #ifdef CompileWithNewOutputModule
         #include "output/output_tests.h"
         #include "output/vtkAPI_tests.h"
-        #include "output/xdmfAPI_tests.h"
     #endif
 #endif
 #if !defined(CompileWithMPI) && !defined(CompileWithNewOutputModule)

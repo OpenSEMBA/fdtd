@@ -20,6 +20,10 @@ option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal
 
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
+if(SEMBA_FDTD_ENABLE_TEST OR XDMF_HDF5_BUILD_TESTING)
+	enable_testing()
+endif()
+
 option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag (not supported in github actions)" OFF) 
 option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables the interprocedural optimization" OFF)
 
@@ -29,6 +33,14 @@ option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
 option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
 
 option(SEMBA_FDTD_ENABLE_OUTPUT_MODULE "Use the new output module" ON)
+
+if(SEMBA_FDTD_ENABLE_MPI AND SEMBA_FDTD_ENABLE_HDF AND SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
+	set(HDF5_PREFER_PARALLEL TRUE)
+endif()
+
+if(SEMBA_FDTD_ENABLE_HDF)
+	set(XDMF_HDF5_ENABLE_MPI "${SEMBA_FDTD_ENABLE_MPI}")
+endif()
 
 # Compilation defines.
 if(CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "release" )
@@ -172,7 +184,10 @@ add_library(semba-reports
 	"src_main_pub/errorreport.F90"
 	"src_main_pub/snapxdmf.F90"
 )
-target_link_libraries(semba-reports semba-types ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+target_link_libraries(semba-reports semba-types)
+if(SEMBA_FDTD_ENABLE_HDF)
+  target_link_libraries(semba-reports XDMF::HDF5)
+endif()
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_subdirectory(src_json_parser)
@@ -199,7 +214,6 @@ if (SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
 	add_subdirectory(src_output)
 	set(OUTPUT_LIBRARIES fdtd-output)
 	set(VTK_API_LIBRARIES vtkAPI)
-	set(XDMF_API_LIBRARIES xdmfAPI)
 endif()
 
 add_subdirectory(src_conformal)
@@ -241,9 +255,9 @@ if(SEMBA_FDTD_OUTPUTS_LIB)
 		"src_main_pub/xdmf.F90"
 		"src_main_pub/xdmf_h5.F90"
 	)
-	target_link_libraries(semba-outputs 
-		semba-components 
-		${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES} 
+	target_link_libraries(semba-outputs
+		semba-components
+		XDMF::HDF5
 		${MPI_Fortran_LIBRARIES})
 endif()
 
@@ -278,7 +292,6 @@ if(SEMBA_FDTD_MAIN_LIB)
 		fdtd-utils
 		${OUTPUT_LIBRARIES}
 		${VTK_API_LIBRARIES}
-		${XDMF_API_LIBRARIES}
 		${SMBJSON_LIBRARIES} 
 		${MTLN_LIBRARIES})
 endif()

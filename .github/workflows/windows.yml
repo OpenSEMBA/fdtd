@@ -71,6 +71,9 @@ jobs:
     - name: Run unit tests 
       run: build/bin/fdtd_tests.exe
 
+    - name: Run CTest suites
+      run: ctest --test-dir build --output-on-failure
+
     - name: Run python tests (except codemodel)
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
