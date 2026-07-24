@@ -91,6 +91,7 @@ module output_m
    end interface
 
    interface close_solver_output
+      module procedure close_movie_probe_output
       module procedure close_frequency_slice_probe_output
    end interface
 contains

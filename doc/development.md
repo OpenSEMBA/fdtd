@@ -49,23 +49,62 @@ If you use intel oneapi compiler, make sure to run
 
 #### HDF5 Libraries
 
-HDF5 precompiled libraries for ubuntu are used by default (see [precompiled libraries cmake script](../set_precompiled_libraries.cmake)).  
+GNU builds use the system HDF5 installation by default.
+Intel builds use the bundled serial HDF5 installation unless a different
+installation is selected with `HDF5_ROOT` or `HDF5_DIR`.
 
-You can compile HDF5 for your specific platform downloading the latest sources from this [link](https://www.hdfgroup.org/downloads/hdf5/source-code/).
-Extract to a folder and build and install with the following commands
-
-```shell
-  cmake -S . -B build -DHDF5_BUILD_FORTRAN=ON -DHDF5_ENABLE_Z_LIB_SUPPORT=NO --fresh
-  cmake --build build -j 
-  cmake --install build --prefix ~/hdf5-installed 
-```
-
-A specific HDF5 library can be set with the option `-DHDF5_ROOT=<path-to-library>`, e.g.
+You can compile HDF5 for your platform by downloading the latest sources from
+the [HDF5 website](https://www.hdfgroup.org/downloads/hdf5/source-code/).
+Extract the archive, then build and install a serial version with:
 
 ```shell
-  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DHDF5_ROOT=~/hdf5-installed -DHDF5_USE_STATIC_LIBRARIES=TRUE --fresh 
-  cmake --build build -j
+cmake -S . -B build \
+  -DHDF5_BUILD_FORTRAN=ON \
+  -DHDF5_ENABLE_Z_LIB_SUPPORT=NO \
+  --fresh
+cmake --build build -j
+cmake --install build --prefix ~/hdf5-installed
 ```
+
+A specific HDF5 installation can be selected with
+`-DHDF5_ROOT=<path-to-library>`:
+
+```shell
+cmake -S . -B build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DHDF5_ROOT=~/hdf5-installed \
+  -DHDF5_USE_STATIC_LIBRARIES=TRUE \
+  --fresh
+cmake --build build -j
+```
+
+Parallel movie output requires HDF5 built with both MPI and Fortran support.
+Configure HDF5 with MPI compiler wrappers and `HDF5_ENABLE_PARALLEL=ON`:
+
+```shell
+CC=mpicc FC=mpifort cmake -S . -B build-hdf5-parallel \
+  -DHDF5_BUILD_FORTRAN=ON \
+  -DHDF5_ENABLE_PARALLEL=ON \
+  -DHDF5_ENABLE_Z_LIB_SUPPORT=NO
+cmake --build build-hdf5-parallel -j
+cmake --install build-hdf5-parallel --prefix ~/hdf5-parallel
+```
+
+MPI builds automatically prefer parallel HDF5 when it is available.
+Select the parallel HDF5 installation while enabling the normal MPI option:
+
+```shell
+cmake -S . -B build-parallel \
+  -DSEMBA_FDTD_ENABLE_MPI=ON \
+  -DSEMBA_FDTD_ENABLE_HDF=ON \
+  -DSEMBA_FDTD_ENABLE_OUTPUT_MODULE=ON \
+  -DHDF5_ROOT=~/hdf5-parallel
+```
+
+If HDF5 reports parallel support, configuration verifies that its Fortran MPIO
+interfaces compile and link with the selected MPI library.
+MPI builds using serial HDF5 remain valid, but the parallel HDF5 movie backend
+is not available in those builds.
 
 #### MTLN and ngspice
 
@@ -615,3 +654,5 @@ See the [MIEngine troubleshooting guide][miengine-troubleshooting]
 for more information.
 
 [miengine-troubleshooting]: https://github.com/Microsoft/MIEngine/wiki/Troubleshoot-attaching-to-processes-using-GDB
+
+

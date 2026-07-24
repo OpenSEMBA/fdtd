@@ -1,158 +1,67 @@
 module snapxdmf_m
-   !
-
 #ifdef CompileWithHDF
+   use, intrinsic :: iso_fortran_env, only: int64, real64
    use FDETYPES_m
-   use HDF5
-   !
-   !
+   use xdmf_hdf5_m, only: xdmf_writer_t, xdmf_options_t, xdmf_status_t, &
+      xdmf_grid_id_t, xdmf_attribute_id_t, XDMF_SERIES_TIME, &
+      XDMF_CENTER_NODE, XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL32
    implicit none
-   !
    private
    public WRITE_XDMFSNAP
+
 contains
 
-   !snaps
-
-   subroutine write_xdmfsnap(ninstant,filename,minXabs,maxXabs,minYabs,maxYabs,minZabs,maxZabs,valor3D)
-
-      !------------------------>
-
-
-
-      integer(kind=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs
-      real(kind=4), dimension(minXabs:maxXabs,minYabs:maxYabs,minZabs:maxZabs,1:1) :: valor3D
-      character(len=BUFSIZE) :: filename ! File name
-      character(len=BUFSIZE) :: dsetname ! Dataset name
-      !
-      integer(HID_T) :: file_id  ! File identifier
-      integer(HID_T) :: dset_id ! Dataset identifier
-      integer(HID_T) :: dspace_id, slice2D_id ! Dataspace identifier
-      !
-      integer :: error ! Error flag
-      integer :: rank ! Dataset rank
-      integer(HSIZE_T), ALLOCATABLE, dimension(:) :: DATA_dims ! Dataset dimensions
-      integer(HSIZE_T), ALLOCATABLE, dimension(:) :: offset
-      integer(HSIZE_T), ALLOCATABLE, dimension(:) :: valor3d_dims ! slice dimensions
-      !
-      character(len=BUFSIZE) :: charc
+   subroutine write_xdmfsnap(ninstant, filename, minXabs, maxXabs, minYabs, &
+      maxYabs, minZabs, maxZabs, valor3D)
       integer(kind=4), intent(in) :: ninstant
-      !
-      !
-      !
-      integer(kind=4) :: indi
-      real(kind=4), ALLOCATABLE, dimension(:) :: att
-      !
-      integer(kind=4) :: finalstep
-      !
-      finalstep=1
-      !
-      allocate (att(1:finalstep))
-      !
-      rank = 4
-      ALLOCATE(DATA_dims(1:RANK),valor3d_dims(1:RANK),offset(1:RANK))
-      !
-      DATA_dims (1) = maxXabs - minXabs + 1
-      DATA_dims (2) = maxYabs - minYabs + 1
-      DATA_dims (3) = maxZabs - minZabs + 1
-      DATA_dims (4) = finalstep
-      !
-      valor3d_dims (1) = DATA_dims (1)
-      valor3d_dims (2) = DATA_dims (2)
-      valor3d_dims (3) = DATA_dims (3)
-      valor3d_dims (4) = 1
-      !
-      dsetname = 'data'
+      character(len=BUFSIZE), intent(in) :: filename
+      integer(kind=4), intent(in) :: minXabs, maxXabs, minYabs, maxYabs
+      integer(kind=4), intent(in) :: minZabs, maxZabs
+      real(kind=4), intent(in) :: valor3D(minXabs:maxXabs, minYabs:maxYabs, &
+         minZabs:maxZabs, 1:1)
 
-      call h5open_f (error)
-      call h5fcreate_f (trim(adjustl(filename))//'.h5', H5F_ACC_TRUNC_F, file_id, error)
-      call h5screate_simple_f (rank, DATA_dims, dspace_id, error)
-      call h5screate_simple_f (rank, valor3d_dims, slice2D_id, error)
-      call h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_REAL , dspace_id, dset_id, error)
-      open(18, FILE=trim(adjustl(filename))//'.xdmf', FORM='formatted')
-      write(18,*) '<Xdmf>'
-      write(18,*) '<Domain>'
-      write(18,*) '<Grid Name="GridTime" GridType="Collection" CollectionType="Temporal">'
+      type(xdmf_writer_t) :: writer
+      type(xdmf_options_t) :: options
+      type(xdmf_status_t) :: status
+      type(xdmf_grid_id_t) :: grid
+      type(xdmf_attribute_id_t) :: attribute
+      integer(int64) :: dimensions(3)
+      real(real64) :: origin(3), spacing(3)
 
-      !HDF5 transposes the dimensions !be careful
-      indi=finalstep
-      att(indi)=ninstant
-      write(charc, '(i10)') indi
-      offset (1) = 0
-      offset (2) = 0
-      offset (3) = 0
-      offset (4) = 0
-      !
-      call h5sselect_hyperslab_f (dspace_id, H5S_SELECT_SET_F, offset, valor3d_dims, error)
-      call h5dwrite_f (dset_id, H5T_NATIVE_REAL, valor3d, valor3d_dims, error, slice2D_id,dspace_id)
+      options%overwrite = .true.
+      options%series_kind = XDMF_SERIES_TIME
+      call writer%create(trim(filename), options, status)
+      call check_status(status)
 
-      !
-      !HDF5 transposes matrices
-      write(18, '(a)') '<Grid Name="IntGrid" GridType="Uniform"  CollectionType="Spatial">>'
-      write(18, '(a)') '<Time Value="' // trim (adjustl(charc)) // '" />'
-      write(18, '(a,3i5,a)') '<Topology TopologyType="3DCoRectMesh" Dimensions="', DATA_dims (3), &
-      & DATA_dims (2), DATA_dims (1), '">'
-      write(18, '(a)') '</Topology>'
-      write(18, '(a)') '<Geometry Type="ORIGIN_DXDYDZ">'
-      write(18, '(a)') '<DataItem Format="XML" Dimensions="3">'
-      write(18, '(4f10.1)') 1.0_RKIND *minZabs, 1.0_RKIND *minYabs, 1.0_RKIND *minXabs
-      write(18, '(a)') '</DataItem>'
-      write(18, '(a)') '<DataItem Format="XML" Dimensions="3">'
-      write(18, '(a)') '1.0 1.0 1.0'
-      write(18, '(a)') '</DataItem>'
-      write(18, '(a)') '</Geometry>'
-      write(18, '(a)') '<Attribute Name="IntValues" Center="Node">'
-      write(18, '(a,4i5,a)') '<DataItem ItemType="HyperSlab" Dimensions="', 1, DATA_dims (3), &
-      & DATA_dims (2), DATA_dims (1), '" Format="XML">'
-      write(18, '(a)') '<DataItem Dimensions="3 4" Format="XML">'
-      write(18, '(4i5)') offset (4), 0, 0, 0
-      write(18, '(4i5)') 1, 1, 1, 1
-      write(18, '(4i5)') 1, DATA_dims (3), DATA_dims (2), DATA_dims (1)
-      write(18, '(a)') '</DataItem>'
-      write(18, '(a,4i5,a)') '<DataItem Format="HDF" NumberType="Float" Precision="4" Dimensions="',&
-      &  finalstep, DATA_dims (3), DATA_dims (2), DATA_dims (1), '">'
-      write(18, '(a)') trim (adjustl(filename)) // '.h5:/' // trim (adjustl(dsetname))
-      write(18, '(a)') '</DataItem>'
-      write(18, '(a)') '</DataItem>'
-      write(18, '(a)') '</Attribute>'
-      write(18, '(a)') '</Grid>'
+      dimensions = [int(maxXabs - minXabs + 1, int64), &
+         int(maxYabs - minYabs + 1, int64), &
+         int(maxZabs - minZabs + 1, int64)]
+      origin = [real(minXabs, real64), real(minYabs, real64), &
+         real(minZabs, real64)]
+      spacing = 1.0_real64
+      call writer%define_uniform_grid('snapshot', dimensions, origin, spacing, &
+         grid, status)
+      call check_status(status)
+      call writer%define_attribute(grid, 'values', XDMF_CENTER_NODE, &
+         XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL32, .true., attribute, status)
+      call check_status(status)
+      call writer%begin_step(real(ninstant, real64), status)
+      call check_status(status)
+      call writer%write_attribute(attribute, &
+         reshape(valor3D(:, :, :, 1), [size(valor3D(:, :, :, 1))]), status)
+      call check_status(status)
+      call writer%end_step(status)
+      call check_status(status)
+      call writer%close(status)
+      call check_status(status)
 
-      !timedata
-      call h5dclose_f (dset_id, error)
-      call h5sclose_f (slice2D_id, error)
-      call h5sclose_f (dspace_id, error)
+   contains
 
-      DEALLOCATE(DATA_dims,valor3d_dims,offset)
+      subroutine check_status(result)
+         type(xdmf_status_t), intent(in) :: result
 
-      dsetname='Time'
-      rank = 1
-      ALLOCATE(DATA_dims(rank))
-      data_dims(1) = finalstep
-
-      call h5screate_simple_f (rank, DATA_dims, dspace_id, error)
-      call h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_REAL, dspace_id, dset_id, error)
-      call h5dwrite_f (dset_id, H5T_NATIVE_REAL, att, DATA_dims, error)
-      !
-      cALL h5dclose_f (dset_id, error)
-      call h5sclose_f (dspace_id, error)
-      !
-      write(18, '(a)') '</Grid>'
-      write(18, '(a)') '</Domain>'
-      write(18, '(a)') '</Xdmf>'
-
-
-      call h5fclose_f (file_id, error)
-      call h5close_f (error)
-
-      CLOSE (18)
-
-      deallocate(ATT)
-
-      return
+         if (result%is_error()) error stop result%message()
+      end subroutine check_status
    end subroutine write_xdmfsnap
 #endif
-
-
 end module snapxdmf_m
-!
-!
