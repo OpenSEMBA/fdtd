@@ -29,6 +29,7 @@ Write modules as explicit boundaries:
 - Separate data definitions, parsing/conversion, numerical operations, and output concerns unless they are naturally part of the same abstraction.
 - Avoid introducing new global state; pass data through arguments or owned derived-type components when practical.
 - Keep changes local unless a broader module boundary change is explicitly requested.
+- New API and implementations must target strict Fortran 2018 or newer; keep its CMake targets standard-required with extensions disabled.
 
 ## Module Skeleton
 
