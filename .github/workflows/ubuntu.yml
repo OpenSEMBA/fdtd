@@ -71,7 +71,7 @@ jobs:
       if: matrix.compiler.name=='gcc'
       run: |
         sudo apt update
-        sudo apt install libhdf5-dev libopenmpi-dev
+        sudo apt install libhdf5-dev libhdf5-openmpi-dev libopenmpi-dev
    
     - name: Setup fortran compiler
       uses: fortran-lang/setup-fortran@v1
@@ -94,6 +94,9 @@ jobs:
     - name: Run unit tests 
       run: build/bin/fdtd_tests
 
+    - name: Run CTest suites
+      run: ctest --test-dir build --output-on-failure
+
     - name: Run python tests
       if: matrix.new-output-module=='OFF'
       env:
@@ -101,6 +104,39 @@ jobs:
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: python -m pytest test/ --durations=20
+
+  parallel-hdf5-build:
+    runs-on: ubuntu-latest
+    name: ubuntu / gcc / parallel-hdf5
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Install parallel HDF5
+      run: |
+        sudo apt update
+        sudo apt install gfortran libhdf5-openmpi-dev libopenmpi-dev python3-h5py python3-numpy
+
+    - name: Configure parallel HDF5 output
+      run: |
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DSEMBA_FDTD_ENABLE_MPI=ON \
+          -DSEMBA_FDTD_ENABLE_HDF=ON \
+          -DSEMBA_FDTD_ENABLE_OUTPUT_MODULE=ON \
+          -DSEMBA_FDTD_ENABLE_MTLN=OFF \
+          -DSEMBA_FDTD_ENABLE_TEST=OFF \
+          -DXDMF_HDF5_BUILD_TESTING=ON \
+          -DHDF5_ROOT=/usr/lib/x86_64-linux-gnu/hdf5/openmpi
+
+    - name: Build parallel HDF5 output
+      run: cmake --build build -j
+
+    - name: Test parallel HDF5 output
+      run: ctest --test-dir build --output-on-failure -R '^xdmf-hdf5-(generate|verify|mpi-generate|mpi-verify)$'
         
        
       

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Xdmf Version="3.0">
+  <Domain Name="OpenSEMBA XDMF-HDF5">
+    <Information Name="Schema" Value="OpenSEMBA XDMF-HDF5 1.0"/>
+    <Grid Name="uniform-2d" GridType="Uniform">
+      <Topology TopologyType="2DCoRectMesh" Dimensions="2 3"/>
+      <Geometry GeometryType="ORIGIN_DXDY">
+        <DataItem Dimensions="2" NumberType="Float" Precision="4" Format="HDF">
+          uniform.h5:/grids/g0001/origin
+        </DataItem>
+        <DataItem Dimensions="2" NumberType="Float" Precision="4" Format="HDF">
+          uniform.h5:/grids/g0001/spacing
+        </DataItem>
+      </Geometry>
+      <Attribute Name="temperature" Center="Node" AttributeType="Scalar">
+        <DataItem Dimensions="2 3" NumberType="Float" Precision="4" Format="HDF">
+          uniform.h5:/attributes/a0001/values
+        </DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>

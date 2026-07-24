@@ -20,6 +20,10 @@ option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal
 
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
+if(SEMBA_FDTD_ENABLE_TEST OR XDMF_HDF5_BUILD_TESTING)
+	enable_testing()
+endif()
+
 option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag (not supported in github actions)" OFF) 
 option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables the interprocedural optimization" OFF)
 
@@ -29,6 +33,10 @@ option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
 option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
 
 option(SEMBA_FDTD_ENABLE_OUTPUT_MODULE "Use the new output module" ON)
+
+if(SEMBA_FDTD_ENABLE_MPI AND SEMBA_FDTD_ENABLE_HDF AND SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
+	set(HDF5_PREFER_PARALLEL TRUE)
+endif()
 
 # Compilation defines.
 if(CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "release" )

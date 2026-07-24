@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Xdmf Version="3.0">
+  <Domain Name="OpenSEMBA XDMF-HDF5">
+    <Information Name="Schema" Value="OpenSEMBA XDMF-HDF5 1.0"/>
+    <Grid Name="curved-surface" GridType="Uniform">
+      <Topology TopologyType="2DSMesh" Dimensions="3 2"/>
+      <Geometry GeometryType="XY">
+        <DataItem Dimensions="3 2 2" NumberType="Float" Precision="4" Format="HDF">
+          curvilinear.h5:/grids/g0001/points
+        </DataItem>
+      </Geometry>
+    </Grid>
+  </Domain>
+</Xdmf>
