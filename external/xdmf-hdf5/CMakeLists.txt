@@ -40,38 +40,9 @@ if(XDMF_HDF5_ENABLE_MPI)
 endif()
 
 set(XDMF_HDF5_PARALLEL_AVAILABLE FALSE)
-if(XDMF_HDF5_MPI_ENABLED AND SEMBA_FDTD_HAVE_PARALLEL_HDF5_FORTRAN)
-  set(XDMF_HDF5_PARALLEL_AVAILABLE TRUE)
-elseif(XDMF_HDF5_MPI_ENABLED AND HDF5_IS_PARALLEL)
-  include(CMakePushCheckState)
-  include(CheckFortranSourceCompiles)
-  cmake_push_check_state(RESET)
-  set(CMAKE_REQUIRED_INCLUDES
-    ${HDF5_Fortran_INCLUDE_DIRS}
-    ${MPI_Fortran_INCLUDE_DIRS}
-  )
-  set(CMAKE_REQUIRED_LIBRARIES
-    ${HDF5_Fortran_LIBRARIES}
-    MPI::MPI_Fortran
-  )
-  check_fortran_source_compiles([=[
-program xdmf_hdf5_mpi_probe
-  use hdf5
-  use mpi
-  implicit none
-  integer :: error
-  integer(HID_T) :: file_access_plist, transfer_plist
-
-  call h5pcreate_f(H5P_FILE_ACCESS_F, file_access_plist, error)
-  call h5pset_fapl_mpio_f(file_access_plist, MPI_COMM_WORLD, MPI_INFO_NULL, error)
-  call h5pcreate_f(H5P_DATASET_XFER_F, transfer_plist, error)
-  call h5pset_dxpl_mpio_f(transfer_plist, H5FD_MPIO_COLLECTIVE_F, error)
-end program xdmf_hdf5_mpi_probe
-]=] XDMF_HDF5_MPI_PROBE_WORKS SRC_EXT F90)
-  cmake_pop_check_state()
-  if(XDMF_HDF5_MPI_PROBE_WORKS)
-    set(XDMF_HDF5_PARALLEL_AVAILABLE TRUE)
-  endif()
+if(XDMF_HDF5_MPI_ENABLED AND HDF5_IS_PARALLEL)
+  include("${CMAKE_CURRENT_LIST_DIR}/cmake/CheckParallelHdf5Fortran.cmake")
+  opensemba_check_parallel_hdf5_fortran(XDMF_HDF5_PARALLEL_AVAILABLE)
 endif()
 
 add_library(opensemba_xdmf_hdf5
