@@ -77,3 +77,6 @@ git_info.txt
 .venv/build2/
 build2/
 .venv/
+
+# Working specifications are local planning artifacts; canonical specifications live in specs/features/.
+specs/changes/
