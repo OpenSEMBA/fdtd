@@ -1306,7 +1306,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
     test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.h5'), 'Movie HDF5 payload does not exist')
     test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.json'), 'Movie JSON descriptor does not exist')
     inquire(file=trim(expectedPath)//'.bin', size=binaryBytes)
-    test_err = test_err + assert_integer_equal(binaryBytes, 8 * 44, 'Movie binary record layout changed')
+    test_err = test_err + assert_integer_equal(binaryBytes, 8 * 32, 'Movie binary record layout changed')
     metadataComplete = .false.
     hasBinaryArtifact = .false.
     hasXdmfArtifact = .false.

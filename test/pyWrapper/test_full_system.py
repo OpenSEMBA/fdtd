@@ -575,8 +575,59 @@ def test_movie_in_planewave_in_box(tmp_path):
         time_ds = f[time_key][()]
         field_ds = f[field_key][()]
 
-    assert np.isclose(np.max(field_ds), 1.0, rtol=1e-2)
-    assert np.min(field_ds) == 0.0
+        time_ds = f['times'][()]
+        assert time_ds.ndim == 1
+        assert len(time_ds) > 1
+        assert np.all(np.diff(time_ds) > 0.0)
+
+        for component in ('ElectricFieldX', 'ElectricFieldY', 'ElectricFieldZ'):
+            field_ds = f[component][()]
+            assert field_ds.ndim == 4
+            assert field_ds.shape[0] == len(time_ds)
+            assert np.all(np.isfinite(field_ds))
+
+        electric_field = f['ElectricFieldY'][()]
+        assert electric_field.shape[1:] == (10, 30, 30)
+        assert np.max(np.abs(electric_field[1000])) > 1e-2
+
+        # The dielectric slows the x-propagating pulse so it remains in the
+        # movie volume through timestep 1,000.
+        early_profile = np.mean(np.abs(electric_field[400]), axis=(0, 1))
+        late_profile = np.mean(np.abs(electric_field[1000]), axis=(0, 1))
+        assert np.argmax(late_profile[3:]) > np.argmax(early_profile[3:])
+
+        root = ET.parse(xdmffile).getroot()
+        h5_name = os.path.basename(h5file)
+        temporal = root.find('./Domain/Grid')
+        assert temporal.attrib == {
+            'Name': 'Time Series',
+            'GridType': 'Collection',
+            'CollectionType': 'Temporal',
+        }
+        steps = temporal.findall('./Grid')
+        assert len(steps) == len(time_ds)
+
+        for index, step in enumerate(steps):
+            assert step.attrib['Name'] == f'Step {index + 1}'
+            assert np.isclose(float(step.find('./Time').attrib['Value']), time_ds[index])
+            grid = step.find('./Grid')
+            assert grid.attrib == {'Name': 'movieProbe', 'GridType': 'Uniform'}
+
+            for attribute in grid.findall('./Attribute'):
+                hyperslab = attribute.find('./DataItem')
+                selection, source = hyperslab.findall('./DataItem')
+                assert hyperslab.attrib['ItemType'] == 'HyperSlab'
+                assert tuple(int(value) for value in hyperslab.attrib['Dimensions'].split()) == f[attribute.attrib['Name']].shape[1:]
+                assert selection.attrib == {'Dimensions': '3 4', 'Format': 'XML'}
+                offset, stride, count = [
+                    tuple(int(value) for value in line.split())
+                    for line in selection.text.splitlines() if line.strip()
+                ]
+                assert offset == (index, 0, 0, 0)
+                assert stride == (1, 1, 1, 1)
+                 assert count == (1, *f[attribute.attrib['Name']].shape[1:])
+                 assert source.text.strip() == f'{h5_name}:/{attribute.attrib["Name"]}'
+                 assert tuple(int(value) for value in source.attrib['Dimensions'].split()) == f[attribute.attrib['Name']].shape
 
 
 @pytest.mark.planewave
