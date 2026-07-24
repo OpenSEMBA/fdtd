@@ -14,15 +14,21 @@ integer function test_output_binary_fragment_layout() bind(c) result(err)
    artifact%role = OUTPUT_ARTIFACT_ROLE_FRAGMENT
    artifact%byte_order = BINARY_ENDIAN_LITTLE
    artifact%numeric_representation = BINARY_NUMERIC_REAL32
-   artifact%complex_representation = BINARY_COMPLEX_UNSPECIFIED
-   artifact%record_bytes = 4
+    artifact%complex_representation = BINARY_COMPLEX_UNSPECIFIED
+    artifact%record_bytes = 4
 
-   call validate_binary_layout(artifact, status)
+    call validate_binary_layout(artifact, status)
    err = err + assert_integer_equal(status, BINARY_WRITER_INVALID_LAYOUT, &
                                     'Fragment layout without an identity was accepted')
 
-   artifact%fragment%parent_probe_id = 'movie-001'
-   artifact%fragment%contributor_rank = 1
-   call validate_binary_layout(artifact, status)
-   err = err + assert_integer_equal(status, BINARY_WRITER_SUCCESS, 'Valid fragment layout was rejected')
+    artifact%fragment%parent_probe_id = 'movie-001'
+    artifact%fragment%contributor_rank = 1
+    artifact%component_order = 'Ex'
+    call validate_binary_layout(artifact, status)
+    err = err + assert_integer_equal(status, BINARY_WRITER_SUCCESS, 'Valid fragment layout was rejected')
+
+    artifact%component_order = ''
+    call validate_binary_layout(artifact, status)
+    err = err + assert_integer_equal(status, BINARY_WRITER_INVALID_LAYOUT, &
+                                     'Binary layout without component order was accepted')
 end function test_output_binary_fragment_layout

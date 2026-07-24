@@ -80,7 +80,49 @@ integer function test_init_point_probe() bind(c) result(err)
    deallocate (sgg%Observation, outputs)
 
    err = test_err
-end function
+ end function
+
+integer function test_output_failure_coordination() bind(c) result(err)
+   ! Verifies failed publication retains diagnostics and cannot complete.
+   use output_m, only: run_output_manifest_t, init_run_output_manifest, declare_probe_output, &
+                       begin_probe_output, finalise_probe_output, fail_probe_output, &
+                       OUTPUT_COORDINATION_SUCCESS, OUTPUT_COORDINATION_INVALID_ARTIFACTS, &
+                       OUTPUT_COORDINATION_INVALID_STATE
+   use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_UNDEFINED, &
+                            OUTPUT_LIFECYCLE_FAILED
+   use assertionTools_m, only: assert_integer_equal, assert_string_equal
+   implicit none
+
+   type(run_output_manifest_t) :: manifest
+   type(output_artifact_t) :: artifacts(1)
+   integer :: probe_index, status
+
+   err = 0
+   artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
+   artifacts(1)%relative_path = 'point.dat'
+   call init_run_output_manifest(manifest, 'failed-run', 0)
+   call declare_probe_output(manifest, 'point-001', 'Ex', artifacts, probe_index, status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Failure probe declaration failed')
+   call begin_probe_output(manifest, probe_index, status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Failure probe activation failed')
+   call fail_probe_output(manifest, probe_index, 'disk full', status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Failure state was not recorded')
+   err = err + assert_integer_equal(manifest%probes(probe_index)%metadata%lifecycle%state, OUTPUT_LIFECYCLE_FAILED, &
+                                    'Failed probe did not enter failed state')
+   err = err + assert_string_equal(manifest%probes(probe_index)%metadata%lifecycle%diagnostic, 'disk full', &
+                                   'Failure diagnostic was not retained')
+   call finalise_probe_output(manifest, probe_index, status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_INVALID_STATE, &
+                                    'Failed probe was allowed to finalise')
+
+   call init_run_output_manifest(manifest, 'incomplete-run', 0)
+   call declare_probe_output(manifest, 'point-002', 'Ex', artifacts, probe_index, status)
+   call begin_probe_output(manifest, probe_index, status)
+   manifest%probes(probe_index)%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_UNDEFINED
+   call finalise_probe_output(manifest, probe_index, status)
+   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_INVALID_ARTIFACTS, &
+                                    'Incomplete artifacts were reported complete')
+end function test_output_failure_coordination
 
 integer function test_root_output_manifest() bind(c) result(err)
     ! Verifies root manifest creation, artifact declaration, and cleanup.
@@ -262,6 +304,7 @@ integer function test_portable_binary_output() bind(c) result(err)
    artifact%numeric_representation = BINARY_NUMERIC_REAL32
    artifact%complex_representation = BINARY_COMPLEX_UNSPECIFIED
    artifact%record_bytes = 4
+   artifact%component_order = 'Ex'
    expected_bytes = [0, 0, -128, 63, 0, 0, 32, -64]
 
    call validate_binary_layout(artifact, status)
@@ -346,11 +389,14 @@ integer function test_output_lifecycle_contract() bind(c) result(err)
    use assertionTools_m, only: assert_true
    implicit none
 
-   type(probe_metadata_t) :: metadata
+    type(probe_metadata_t) :: metadata
 
-   err = 0
-   allocate(output_artifact_t :: metadata%artifacts(1))
-   metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
+    err = 0
+    metadata%probe_id = 'lifecycle-001'
+    metadata%quantity = 'Ex'
+    allocate(output_artifact_t :: metadata%artifacts(1))
+    metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
+    metadata%artifacts(1)%relative_path = 'lifecycle.bin'
 
    metadata%lifecycle%state = OUTPUT_LIFECYCLE_DECLARED
    err = err + assert_true(.not. output_lifecycle_is_terminal(metadata%lifecycle), 'Declared lifecycle is terminal')
@@ -389,7 +435,7 @@ integer function test_output_lifecycle_coordination() bind(c) result(err)
    artifacts(2)%relative_path = 'point.bin'
 
    call init_run_output_manifest(manifest, 'run-001', 0)
-   call declare_probe_output(manifest, 'point-001', artifacts, probe_index, status)
+   call declare_probe_output(manifest, 'point-001', 'Ex', artifacts, probe_index, status)
    err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Probe declaration failed')
    err = err + assert_integer_equal(probe_index, 1, 'Unexpected probe index')
    err = err + assert_true(allocated(manifest%probes), 'Manifest did not retain declared probe')
@@ -432,7 +478,7 @@ integer function test_output_probe_ownership() bind(c) result(err)
    participants = [0]
 
    call init_run_output_manifest(manifest, 'serial-run', 0)
-   call declare_probe_output(manifest, 'point-001', artifacts, probe_index, status)
+   call declare_probe_output(manifest, 'point-001', 'Ex', artifacts, probe_index, status)
    call select_probe_participants(manifest, probe_index, participants, 0, status)
    err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Serial ownership selection failed')
    err = err + assert_true(allocated(manifest%probes(probe_index)%metadata%ownership%participant_ranks), &

@@ -53,8 +53,10 @@ module wireProbeOutput_m
       type(cell_coordinate_t), intent(in)            :: coordinates
       type(domain_t), intent(in)                     :: domain
       type(MediaData_t), intent(in)                  :: media(:)
-      integer(kind=SINGLE), intent(in)               :: node, field, mpidir
-      character(len=*), intent(in)                   :: outputTypeExtension, wiresflavor
+       integer(kind=SINGLE), intent(in)               :: node, field, mpidir
+       character(len=*), intent(in)                   :: outputTypeExtension, wiresflavor
+       character(len=BUFSIZE) :: artifact_paths(1)
+       integer :: artifact_kinds(1)
 
       this%mainCoords = coordinates
       this%component = field
@@ -65,8 +67,9 @@ module wireProbeOutput_m
        this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
        call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
-       call declare_probe_artifacts(this%artifacts, [character(len=BUFSIZE) :: &
-            trim(this%path)//'_'//timeExtension//datFileExtension], [OUTPUT_ARTIFACT_TEXT])
+        artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+        artifact_kinds(1) = OUTPUT_ARTIFACT_TEXT
+        call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
        this%filePathTime = this%artifacts(1)%relative_path
        call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
 
@@ -78,8 +81,10 @@ module wireProbeOutput_m
       type(wire_charge_probe_output_t), intent(out) :: this
       type(cell_coordinate_t), intent(in)           :: coordinates
       type(domain_t), intent(in)                    :: domain
-      integer(kind=SINGLE), intent(in)              :: node, field, mpidir
-      character(len=*), intent(in)                  :: outputTypeExtension, wiresflavor
+       integer(kind=SINGLE), intent(in)              :: node, field, mpidir
+       character(len=*), intent(in)                  :: outputTypeExtension, wiresflavor
+       character(len=BUFSIZE) :: artifact_paths(1)
+       integer :: artifact_kinds(1)
 
       this%mainCoords = coordinates
       this%component = field
@@ -91,8 +96,9 @@ module wireProbeOutput_m
 
        call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
        call alloc_and_init(this%chargeValue, BuffObse, 0.0_RKIND)
-       call declare_probe_artifacts(this%artifacts, [character(len=BUFSIZE) :: &
-            trim(this%path)//'_'//timeExtension//datFileExtension], [OUTPUT_ARTIFACT_TEXT])
+        artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+        artifact_kinds(1) = OUTPUT_ARTIFACT_TEXT
+        call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
        this%filePathTime = this%artifacts(1)%relative_path
        call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
 
@@ -190,12 +196,16 @@ module wireProbeOutput_m
       type(WiresData), pointer :: Hwireslocal_S
 #endif
 
-      integer :: n, iwi, iwj, node2
+       integer :: n, iwi, iwj, node2
+       integer :: probe_i, probe_j, probe_k
       logical :: found
       character(len=BUFSIZE) :: buff
 
-      found = .false.
-      this%sign = 1
+       found = .false.
+       this%sign = 1
+       probe_i = this%mainCoords%x
+       probe_j = this%mainCoords%y
+       probe_k = this%mainCoords%z
 
       select case (trim(adjustl(wiresflavor)))
       case ('holland','transition')
@@ -205,7 +215,7 @@ module wireProbeOutput_m
          do n = 1, Hwireslocal%NumCurrentSegments
             seg => Hwireslocal%CurrentSegment(n)
             if (seg%origindex == node .and. &
-                seg%i == iCoord .and. seg%j == jCoord .and. seg%k == kCoord .and. &
+                seg%i == probe_i .and. seg%j == probe_j .and. seg%k == probe_k .and. &
                 seg%tipofield*10 == field) then
                found = .true.
                this%segment => seg
@@ -263,7 +273,7 @@ module wireProbeOutput_m
       end if
 
       if (.not. found) then
-         write(buff,'(a,4i7,a)') 'ERROR: WIRE probe ',node,iCoord,jCoord,kCoord,' DOES NOT EXIST'
+          write(buff,'(a,4i7,a)') 'ERROR: WIRE probe ',node,probe_i,probe_j,probe_k,' DOES NOT EXIST'
          call WarnErrReport(buff,.true.)
       end if
    end subroutine find_current_segment
@@ -274,13 +284,17 @@ module wireProbeOutput_m
       character(len=*), intent(in) :: wiresflavor
 
       type(Thinwires_t), pointer :: Hwireslocal
-      type(CurrentSegments_t), pointer :: seg
-      integer :: n
+       type(CurrentSegments_t), pointer :: seg
+       integer :: n
+       integer :: probe_i, probe_j, probe_k
       logical :: found
       character(len=BUFSIZE) :: buff
 
-      found = .false.
-      this%sign = 1
+       found = .false.
+       this%sign = 1
+       probe_i = this%mainCoords%x
+       probe_j = this%mainCoords%y
+       probe_k = this%mainCoords%z
 
       if (trim(adjustl(wiresflavor)) /= 'holland' .and. &
           trim(adjustl(wiresflavor)) /= 'transition') then
@@ -293,7 +307,7 @@ module wireProbeOutput_m
       do n = 1, Hwireslocal%NumCurrentSegments
          seg => Hwireslocal%CurrentSegment(n)
          if (seg%origindex == node .and. &
-             seg%i == iCoord .and. seg%j == jCoord .and. seg%k == kCoord .and. &
+              seg%i == probe_i .and. seg%j == probe_j .and. seg%k == probe_k .and. &
              seg%tipofield*10000 == field) then
             found = .true.
             this%segment => seg
@@ -303,7 +317,7 @@ module wireProbeOutput_m
       end do
 
       if (.not. found) then
-         write(buff,'(a,4i7,a)') 'ERROR: CHARGE probe ',node,iCoord,jCoord,kCoord,' DOES NOT EXIST'
+          write(buff,'(a,4i7,a)') 'ERROR: CHARGE probe ',node,probe_i,probe_j,probe_k,' DOES NOT EXIST'
          call WarnErrReport(buff,.true.)
       end if
    end subroutine find_charge_segment

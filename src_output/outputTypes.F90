@@ -90,10 +90,11 @@ module outputTypes_m
        character(len=BUFSIZE) :: relative_path = ''
        logical :: required = .true.
        integer :: byte_order = BINARY_ENDIAN_UNSPECIFIED
-       integer :: numeric_representation = BINARY_NUMERIC_UNSPECIFIED
-       integer :: complex_representation = BINARY_COMPLEX_UNSPECIFIED
-       integer(kind=8) :: record_bytes = 0
-       type(output_fragment_identity_t) :: fragment
+        integer :: numeric_representation = BINARY_NUMERIC_UNSPECIFIED
+        integer :: complex_representation = BINARY_COMPLEX_UNSPECIFIED
+        integer(kind=8) :: record_bytes = 0
+        character(len=BUFSIZE) :: component_order = ''
+        type(output_fragment_identity_t) :: fragment
     end type output_artifact_t
 
      type :: output_lifecycle_t
@@ -308,8 +309,10 @@ module outputTypes_m
 ! High-level aggregation types
 !=====================================================
    type :: solver_output_t
-      integer(kind=SINGLE) :: outputID = -1
-      type(point_probe_output_t), allocatable :: pointProbe
+       integer(kind=SINGLE) :: outputID = -1
+       type(probe_metadata_t) :: metadata
+       character(len=BUFSIZE) :: metadata_path = ''
+       type(point_probe_output_t), allocatable :: pointProbe
       type(wire_current_probe_output_t), allocatable :: wireCurrentProbe
       type(wire_charge_probe_output_t), allocatable  :: wireChargeProbe
       type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
@@ -357,7 +360,19 @@ contains
       integer, intent(in) :: kinds(:)
       integer :: i
 
-      artifacts = output_artifact_t()
+      do i = 1, size(artifacts)
+         artifacts(i)%kind = OUTPUT_ARTIFACT_UNDEFINED
+         artifacts(i)%role = OUTPUT_ARTIFACT_ROLE_CANONICAL
+         artifacts(i)%relative_path = ''
+         artifacts(i)%required = .true.
+         artifacts(i)%byte_order = BINARY_ENDIAN_UNSPECIFIED
+         artifacts(i)%numeric_representation = BINARY_NUMERIC_UNSPECIFIED
+         artifacts(i)%complex_representation = BINARY_COMPLEX_UNSPECIFIED
+         artifacts(i)%record_bytes = 0
+         artifacts(i)%component_order = ''
+         artifacts(i)%fragment%parent_probe_id = ''
+         artifacts(i)%fragment%contributor_rank = -1
+      end do
       do i = 1, size(paths)
          artifacts(i)%kind = kinds(i)
          artifacts(i)%relative_path = paths(i)
@@ -386,6 +401,19 @@ contains
        end select
     end function output_artifact_identity_is_valid
 
+    pure logical function output_artifact_path_is_relative(path)
+       character(len=*), intent(in) :: path
+       character(len=:), allocatable :: value
+
+       value = trim(path)
+       output_artifact_path_is_relative = len(value) > 0
+       if (.not. output_artifact_path_is_relative) return
+
+       output_artifact_path_is_relative = value(1:1) /= '/' .and. value(1:1) /= '\'
+       if (len(value) > 1) output_artifact_path_is_relative = &
+          output_artifact_path_is_relative .and. value(2:2) /= ':'
+    end function output_artifact_path_is_relative
+
     pure logical function output_fragment_descriptor_is_valid(descriptor, parent_probe_id)
        type(output_fragment_descriptor_t), intent(in) :: descriptor
        character(len=*), intent(in) :: parent_probe_id
@@ -400,8 +428,14 @@ contains
       type(probe_metadata_t), intent(in) :: metadata
        integer :: i, j
 
-       probe_metadata_is_complete = metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE
-       if (.not. probe_metadata_is_complete) return
+        probe_metadata_is_complete = metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .and. &
+           metadata%schema_version > 0 .and. len_trim(metadata%probe_id) > 0 .and. &
+           len_trim(metadata%quantity) > 0 .and. allocated(metadata%artifacts)
+        if (.not. probe_metadata_is_complete) return
+        if (size(metadata%artifacts) == 0) then
+           probe_metadata_is_complete = .false.
+           return
+        end if
 
         if (len_trim(metadata%parent_probe_id) == 0) then
            if (metadata%contributor_rank /= -1) then
@@ -439,10 +473,14 @@ contains
              probe_metadata_is_complete = .false.
              return
           end if
-          if (.not. output_artifact_identity_is_valid(metadata%artifacts(i))) then
-             probe_metadata_is_complete = .false.
-             return
-          end if
+           if (.not. output_artifact_identity_is_valid(metadata%artifacts(i))) then
+              probe_metadata_is_complete = .false.
+              return
+           end if
+           if (.not. output_artifact_path_is_relative(metadata%artifacts(i)%relative_path)) then
+              probe_metadata_is_complete = .false.
+              return
+           end if
           if (len_trim(metadata%parent_probe_id) == 0) then
              if (metadata%artifacts(i)%role /= OUTPUT_ARTIFACT_ROLE_CANONICAL) then
                 probe_metadata_is_complete = .false.

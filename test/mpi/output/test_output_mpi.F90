@@ -71,7 +71,7 @@ program test_output_mpi
        artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
        artifacts(1)%relative_path = 'point.dat'
        call init_run_output_manifest(manifest, 'mpi-run', root)
-       call declare_probe_output(manifest, 'point-001', artifacts, probe_index, status)
+        call declare_probe_output(manifest, 'point-001', 'Ex', artifacts, probe_index, status)
        if (status /= OUTPUT_COORDINATION_SUCCESS) failures = failures + 1
        call begin_probe_output(manifest, probe_index, status)
        if (status /= OUTPUT_COORDINATION_SUCCESS) failures = failures + 1

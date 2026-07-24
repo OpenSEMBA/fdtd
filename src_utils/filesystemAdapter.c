@@ -54,6 +54,21 @@ int fdtd_delete_file(const char *path) {
   return errno;
 }
 
+int fdtd_atomic_replace(const char *source, const char *target) {
+  if (source == NULL || target == NULL || source[0] == '\0' || target[0] == '\0') {
+    return EINVAL;
+  }
+#ifdef _WIN32
+  if (MoveFileExA(source, target, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+    return 0;
+  }
+  return (int)GetLastError();
+#else
+  if (rename(source, target) == 0) return 0;
+  return errno;
+#endif
+}
+
 #ifdef _WIN32
 int fdtd_remove_tree(const char *path) {
   char pattern[MAX_PATH];

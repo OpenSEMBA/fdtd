@@ -1,7 +1,33 @@
 # Output Probe Coverage Matrix
 
-This matrix defines the probe families covered by the distributed-output work.
-It is the authoritative test inventory for the unit, multi-worker, and end-to-end suites.
+This matrix defines the probe families covered by the output module.
+It is the authoritative test inventory for unit, multi-worker, and end-to-end
+suites.
+
+## Support Matrix
+
+The release gate covers these execution modes:
+
+| Execution mode | Environment | Build requirements |
+| --- | --- | --- |
+| Single worker | Linux | Output module and visualisation output enabled |
+| Single worker | Windows | Output module and visualisation output enabled |
+| Two workers, collective publication | Linux | MPI and parallel visualisation output enabled |
+| Two workers, root aggregation | Linux | MPI and visualisation output enabled |
+
+The matrix covers both configured time-domain and frequency-domain requests.
+The supported precision variants are the default and double-precision builds
+where the selected environment provides them.
+
+## Terminology
+
+- **Descriptor:** one machine-readable metadata file for a configured probe.
+- **Canonical artifact:** the one logical result exposed to consumers.
+- **Fragment:** one worker-owned contribution to a volumetric result.
+- **Collective publication:** participating workers publish disjoint regions
+  as one logical volumetric result.
+- **Root aggregation:** the designated root publishes the gathered logical
+  result when collective publication is unavailable.
 
 | Probe family | Canonical result | Worker fragments | Unit lifecycle coverage | End-to-end coverage |
 | --- | --- | --- | --- | --- |

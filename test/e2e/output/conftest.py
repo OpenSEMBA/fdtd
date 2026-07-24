@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -32,3 +34,74 @@ def stage_output_case(tmp_path):
         return destination
 
     return stage
+
+
+@pytest.fixture
+def output_root(tmp_path):
+    """Return a nested output path containing a space for path tests."""
+
+    return tmp_path / "nested output" / "results"
+
+
+@pytest.fixture
+def failed_output_root(tmp_path):
+    """Return an isolated path used by publication failure tests."""
+
+    return tmp_path / "failed output" / "results"
+
+
+@pytest.fixture
+def run_output_case(stage_output_case, tmp_path):
+    """Run a staged output case and return its process and output directory."""
+
+    def run(
+        case_name: str,
+        probes: list[dict],
+        additional_arguments: str = "",
+    ) -> tuple[subprocess.CompletedProcess, Path]:
+        input_path = stage_output_case("common_geometry.fdtd.json")
+        with input_path.open(encoding="utf-8") as input_file:
+            case = json.load(input_file)
+        case["probes"] = probes
+        if case_name == "wire":
+            case["materials"] = [
+                {
+                    "id": 1,
+                    "type": "wire",
+                    "radius": 0.01,
+                    "resistancePerMeter": 0.0,
+                    "inductancePerMeter": 0.0,
+                },
+                {
+                    "id": 2,
+                    "type": "terminal",
+                    "terminations": [{"type": "open"}],
+                },
+            ]
+            case["materialAssociations"] = [
+                {
+                    "name": "e2e_wire",
+                    "materialId": 1,
+                    "initialTerminalId": 2,
+                    "endTerminalId": 2,
+                    "elementIds": [2],
+                }
+            ]
+        if additional_arguments:
+            case.setdefault("general", {})["additionalArguments"] = additional_arguments
+        with input_path.open("w", encoding="utf-8") as input_file:
+            json.dump(case, input_file)
+
+        executable_name = "semba-fdtd.exe" if os.name == "nt" else "semba-fdtd"
+        executable = PROJECT_ROOT / "build" / "bin" / executable_name
+        process = subprocess.run(
+            [str(executable), "-i", str(input_path)],
+            cwd=tmp_path,
+            env={**os.environ, "OMP_NUM_THREADS": "1"},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return process, tmp_path
+
+    return run

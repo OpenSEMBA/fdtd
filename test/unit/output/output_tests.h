@@ -16,6 +16,8 @@ extern "C" int test_output_partition_all_components_cover_volume();
 // Distributed publication coordination.
 extern "C" int test_output_collective_contract();
 extern "C" int test_output_publication_contract();
+extern "C" int test_output_metadata_contract_edges();
+extern "C" int test_scalar_metadata_publication();
 extern "C" int test_point_publication_plan();
 extern "C" int test_planned_metadata_publication();
 extern "C" int test_output_transport_serial();
@@ -23,6 +25,7 @@ extern "C" int test_output_transport_serial();
 // Artifact metadata and binary layout.
 extern "C" int test_output_metadata_publication();
 extern "C" int test_output_metadata_fragment_descriptors();
+extern "C" int test_atomic_file_replacement();
 extern "C" int test_portable_binary_output();
 extern "C" int test_output_binary_fragment_layout();
 
@@ -45,6 +48,7 @@ extern "C" int test_volumetric_visualisation_output();
 extern "C" int test_declared_output_artifacts();
 extern "C" int test_output_lifecycle_contract();
 extern "C" int test_output_lifecycle_coordination();
+extern "C" int test_output_failure_coordination();
 extern "C" int test_output_probe_ownership();
 extern "C" int test_output_serial_distributed_equivalence();
 extern "C" int test_volumetric_output_partition_attachment();
@@ -71,6 +75,10 @@ TEST(output, test_partition_all_components_cover_volume) { EXPECT_EQ(0, test_out
 TEST(output, test_collective_contract) { EXPECT_EQ(0, test_output_collective_contract()); }
 // Validates artifact identities and complete probe metadata.
 TEST(output, test_publication_contract) { EXPECT_EQ(0, test_output_publication_contract()); }
+// Rejects incomplete metadata identity and non-relative artifact paths.
+TEST(output, test_metadata_contract_edges) { EXPECT_EQ(0, test_output_metadata_contract_edges()); }
+// Publishes metadata for a scalar probe from its declared artifacts.
+TEST(output, test_scalar_metadata_publication) { EXPECT_EQ(0, test_scalar_metadata_publication()); }
 // Selects a canonical point writer and rejects unowned points.
 TEST(output, test_point_publication_plan) { EXPECT_EQ(0, test_point_publication_plan()); }
 // Publishes metadata only from the planned canonical writer.
@@ -81,6 +89,8 @@ TEST(output, test_transport_serial) { EXPECT_EQ(0, test_output_transport_serial(
 TEST(output, test_metadata_publication) { EXPECT_EQ(0, test_output_metadata_publication()); }
 // Serializes canonical and fragment metadata descriptors correctly.
 TEST(output, test_metadata_fragment_descriptors) { EXPECT_EQ(0, test_output_metadata_fragment_descriptors()); }
+// Replaces a completed file without exposing a partial target.
+TEST(output, test_atomic_file_replacement) { EXPECT_EQ(0, test_atomic_file_replacement()); }
 // Writes portable little-endian real32 binary data.
 TEST(output, test_portable_binary_output) { EXPECT_EQ(0, test_portable_binary_output()); }
 // Requires identity metadata for binary fragments.
@@ -117,6 +127,8 @@ TEST(output, test_declared_output_artifacts) { EXPECT_EQ(0, test_declared_output
 TEST(output, test_lifecycle_contract) { EXPECT_EQ(0, test_output_lifecycle_contract()); }
 // Finalizes probes and restricts manifest publication to the root rank.
 TEST(output, test_lifecycle_coordination) { EXPECT_EQ(0, test_output_lifecycle_coordination()); }
+// Retains failure diagnostics and rejects incomplete finalisation.
+TEST(output, test_failure_coordination) { EXPECT_EQ(0, test_output_failure_coordination()); }
 // Retains probe participants and validates the scalar writer.
 TEST(output, test_probe_ownership) { EXPECT_EQ(0, test_output_probe_ownership()); }
 // Keeps artifact identity and partition coverage equivalent across modes.

@@ -4,7 +4,7 @@ integer function test_output_metadata_fragment_descriptors() bind(c) result(err)
    use outputTypes_m, only: probe_metadata_t, output_artifact_t, OUTPUT_ARTIFACT_METADATA, &
                             OUTPUT_ARTIFACT_ROLE_FRAGMENT, OUTPUT_LIFECYCLE_COMPLETE
    use assertionTools_m, only: assert_integer_equal, assert_true
-   use directoryUtils_m, only: remove_folder
+   use directoryUtils_m, only: file_exists, remove_folder
    implicit none
 
    type(probe_metadata_t) :: canonical, fragment
@@ -26,8 +26,10 @@ integer function test_output_metadata_fragment_descriptors() bind(c) result(err)
    canonical%fragment_descriptors(2)%identity%contributor_rank = 1
    canonical%fragment_descriptors(2)%relative_path = 'movie-001/rank-1.json'
 
-   call publish_final_probe_metadata('testing metadata fragments/canonical.json', canonical, status)
-   err = err + assert_integer_equal(status, OUTPUT_METADATA_SUCCESS, 'Canonical descriptor publication failed')
+    call publish_final_probe_metadata('testing metadata fragments/canonical.json', canonical, status)
+    err = err + assert_integer_equal(status, OUTPUT_METADATA_SUCCESS, 'Canonical descriptor publication failed')
+    err = err + assert_true(.not. file_exists('testing metadata fragments/canonical.json.tmp'), &
+                            'Temporary descriptor remains after publication')
    canonical_role = .false.
    fragment_reference = .false.
    open(newunit=unit, file='testing metadata fragments/canonical.json', status='old', action='read', iostat=ios)
@@ -71,3 +73,34 @@ integer function test_output_metadata_fragment_descriptors() bind(c) result(err)
    err = err + assert_true(fragment_parent .and. fragment_contributor, 'Fragment descriptor has no parent identity')
    call remove_folder('testing metadata fragments', ios)
 end function test_output_metadata_fragment_descriptors
+
+integer function test_atomic_file_replacement() bind(c) result(err)
+   ! Verifies replacement leaves the target complete and removes the temporary file.
+   use directoryUtils_m, only: atomic_replace_file, create_file_with_path, file_exists, &
+                               delete_file
+   use assertionTools_m, only: assert_integer_equal, assert_true, assert_string_equal
+   implicit none
+
+   character(len=*), parameter :: target = 'testing atomic replacement/result.json'
+   character(len=*), parameter :: temporary = 'testing atomic replacement/result.json.tmp'
+   character(len=32) :: line
+   integer :: ios, unit
+
+   err = 0
+   call create_file_with_path(target, ios)
+   call create_file_with_path(temporary, ios)
+   open(newunit=unit, file=temporary, status='old', action='write', position='rewind', iostat=ios)
+   write(unit, '(a)') 'complete'
+   close(unit)
+
+   call atomic_replace_file(temporary, target, ios)
+   err = err + assert_integer_equal(ios, 0, 'Atomic replacement failed')
+   err = err + assert_true(file_exists(target), 'Replacement target does not exist')
+   err = err + assert_true(.not. file_exists(temporary), 'Temporary file remains after replacement')
+
+   open(newunit=unit, file=target, status='old', action='read', iostat=ios)
+   read(unit, '(a)', iostat=ios) line
+   close(unit)
+   err = err + assert_string_equal(line, 'complete', 'Replacement target is incomplete')
+   call delete_file(target, ios)
+end function test_atomic_file_replacement

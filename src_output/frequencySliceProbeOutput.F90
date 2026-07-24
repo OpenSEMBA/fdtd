@@ -200,9 +200,11 @@ contains
        this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
        this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
        this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
-       this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL32
-       this%metadata%artifacts(1)%complex_representation = BINARY_COMPLEX_REAL_IMAG
-       this%metadata%artifacts(1)%record_bytes = 40
+        this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL32
+        this%metadata%artifacts(1)%complex_representation = BINARY_COMPLEX_REAL_IMAG
+        this%metadata%artifacts(1)%record_bytes = 40
+        this%metadata%artifacts(1)%component_order = &
+           'frequency,x,y,z,Ex.real,Ex.imag,Ey.real,Ey.imag,Ez.real,Ez.imag'
        this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
        this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
        this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA

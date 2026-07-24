@@ -4,7 +4,7 @@ module outputMetadata_m
                              OUTPUT_ARTIFACT_UNDEFINED, OUTPUT_ARTIFACT_ROLE_CANONICAL, &
                              OUTPUT_ARTIFACT_ROLE_FRAGMENT, OUTPUT_LIFECYCLE_DECLARED, &
                              OUTPUT_LIFECYCLE_FAILED, TIME_DOMAIN, FREQUENCY_DOMAIN, BOTH_DOMAIN, UNDEFINED_DOMAIN
-   use directoryUtils_m, only: create_file_with_path
+   use directoryUtils_m, only: atomic_replace_file, create_file_with_path, delete_file
    implicit none
    private
 
@@ -42,21 +42,23 @@ contains
       logical, intent(in) :: terminal
       integer, intent(out) :: status
        integer :: artifact_index, close_ios, fragment_index, ios, unit, write_ios
+       character(len=:), allocatable :: temporary_path
 
       if (.not. valid_metadata(metadata, terminal)) then
          status = OUTPUT_METADATA_INVALID
          return
       end if
 
-      call create_file_with_path(path, ios)
-      if (ios /= 0) then
-         status = OUTPUT_METADATA_IO_ERROR
-         return
-      end if
-      open(newunit=unit, file=trim(path), status='replace', action='write', iostat=ios)
-      if (ios /= 0) then
-         status = OUTPUT_METADATA_IO_ERROR
-         return
+       temporary_path = trim(path)//'.tmp'
+       call create_file_with_path(temporary_path, ios)
+       if (ios /= 0) then
+          status = OUTPUT_METADATA_IO_ERROR
+          return
+       end if
+       open(newunit=unit, file=temporary_path, status='replace', action='write', iostat=ios)
+       if (ios /= 0) then
+          status = OUTPUT_METADATA_IO_ERROR
+          return
       end if
 
        write(unit, '(a)', iostat=ios) '{'
@@ -92,11 +94,18 @@ contains
       if (ios == 0) write(unit, '(a)', iostat=ios) '}'
       write_ios = ios
       close(unit, iostat=close_ios)
-      if (write_ios == 0 .and. close_ios == 0) then
-         status = OUTPUT_METADATA_SUCCESS
-      else
-         status = OUTPUT_METADATA_IO_ERROR
-      end if
+       if (write_ios /= 0 .or. close_ios /= 0) then
+          call delete_file(temporary_path, ios)
+          status = OUTPUT_METADATA_IO_ERROR
+          return
+       end if
+       call atomic_replace_file(temporary_path, path, ios)
+       if (ios == 0) then
+          status = OUTPUT_METADATA_SUCCESS
+       else
+          call delete_file(temporary_path, close_ios)
+          status = OUTPUT_METADATA_IO_ERROR
+       end if
    end subroutine publish_probe_metadata
 
    subroutine write_artifact(unit, metadata, artifact_index, ios)
@@ -110,9 +119,10 @@ contains
           json_escape(trim(metadata%artifacts(artifact_index)%relative_path))//'","required":'// &
          logical_json(metadata%artifacts(artifact_index)%required)//',"byte_order":"'// &
          byte_order_name(metadata%artifacts(artifact_index)%byte_order)//'","numeric_representation":"'// &
-         numeric_name(metadata%artifacts(artifact_index)%numeric_representation)//'","complex_representation":"'// &
-         complex_name(metadata%artifacts(artifact_index)%complex_representation)//'","record_bytes":'// &
-         integer_json(metadata%artifacts(artifact_index)%record_bytes)//'}'
+          numeric_name(metadata%artifacts(artifact_index)%numeric_representation)//'","complex_representation":"'// &
+          complex_name(metadata%artifacts(artifact_index)%complex_representation)//'","record_bytes":'// &
+          integer_json(metadata%artifacts(artifact_index)%record_bytes)//',"component_order":"'// &
+          json_escape(trim(metadata%artifacts(artifact_index)%component_order))//'"}'
        write(unit, '(a)', advance='no', iostat=ios) artifact
     end subroutine write_artifact
 

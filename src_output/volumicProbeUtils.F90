@@ -101,13 +101,20 @@ contains
       real(kind=RKIND), allocatable, dimension(:, :), intent(out) :: Nodes
       integer(kind=4), allocatable, dimension(:, :), intent(out) ::  Edges, Quads
 
-      if (counter == 0) return
+      numNodes = 0
+      numEdges = 0
+      numQuads = 0
+      if (counter <= 0) then
+         allocate(Edges(2, 0), Quads(4, 0), Nodes(3, 0))
+         return
+      end if
 
       call countElements(counter, currentType, numEdges, numQuads)
 
       allocate (Edges(2, numEdges))
       allocate (Quads(4, numQuads))
       allocate (Nodes(3, 2*numEdges + 4*numQuads))
+      numNodes = 2*numEdges + 4*numQuads
 
       call registerElements(counter, coords, currentType, Nodes, Edges, Quads, usevtkindex, realXGrid, realYGrid, realZGrid)
       return

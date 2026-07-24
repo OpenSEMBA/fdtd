@@ -24,10 +24,11 @@ contains
       integer, intent(out) :: status
       integer(kind=8) :: scalar_bytes
 
-       status = BINARY_WRITER_INVALID_LAYOUT
-       if (artifact%kind /= OUTPUT_ARTIFACT_BINARY) return
-       if (.not. output_artifact_identity_is_valid(artifact)) return
-       if (artifact%byte_order /= BINARY_ENDIAN_LITTLE) return
+        status = BINARY_WRITER_INVALID_LAYOUT
+        if (artifact%kind /= OUTPUT_ARTIFACT_BINARY) return
+        if (.not. output_artifact_identity_is_valid(artifact)) return
+        if (len_trim(artifact%component_order) == 0) return
+        if (artifact%byte_order /= BINARY_ENDIAN_LITTLE) return
       select case (artifact%numeric_representation)
       case (BINARY_NUMERIC_REAL32)
          scalar_bytes = BINARY_BYTES_REAL32

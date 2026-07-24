@@ -17,16 +17,18 @@ contains
       integer(kind=SINGLE), intent(in) :: mpidir, field
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
 
-      integer(kind=SINGLE) :: i
+      character(len=BUFSIZE) :: artifact_paths(2)
+      integer :: artifact_kinds(2)
 
       this%mainCoords = lowerBound
       this%auxCoords = upperBound
        this%component = field
 
        this%path = get_output_path()
-       call declare_probe_artifacts(this%artifacts, [character(len=BUFSIZE) :: &
-            trim(join_path(this%path, get_last_component(this%path)))//vtuFileExtension, trim(this%path)//'.txt'], &
-            [OUTPUT_ARTIFACT_GEOMETRY, OUTPUT_ARTIFACT_TEXT])
+       artifact_paths(1) = trim(join_path(this%path, get_last_component(this%path)))//vtuFileExtension
+       artifact_paths(2) = trim(this%path)//'.txt'
+       artifact_kinds = [OUTPUT_ARTIFACT_GEOMETRY, OUTPUT_ARTIFACT_TEXT]
+       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
        call store_relevant_coordinates(this, problemInfo)
 
    contains
@@ -153,41 +155,26 @@ contains
       call createUnstructuredDataForVTU(this%nPoints, this%coords, this%currentType, nodes, edges, quads, numNodes, numEdges, numQuads, control%vtkindex, realXGrid, realYGrid, realZGrid)
       call ugrid%add_points(real(nodes, 4))
 
-      allocate (conn(2*numEdges + 4*numQuads))
-      conn(1:2*numEdges) = reshape(edges, [2*numEdges])
-      conn(2*numEdges + 1:2*numEdges + 4*numQuads) = reshape(quads, [4*numQuads])
+       if (numEdges + numQuads > 0) then
+          allocate (conn(2*numEdges + 4*numQuads))
+          if (numEdges > 0) conn(1:2*numEdges) = reshape(edges, [2*numEdges])
+          if (numQuads > 0) conn(2*numEdges + 1:2*numEdges + 4*numQuads) = reshape(quads, [4*numQuads])
 
-      allocate (offsets(numEdges + numQuads))
-      do i = 1, numEdges + numQuads
-         if (i <= numEdges) then
-            if (i == 1) then
-               offsets(i) = 2
-            else
-               offsets(i) = offsets(i - 1) + 2
-            end if
-         else
-            if (i == 1) then
-               offsets(i) = 4
-            else
-               offsets(i) = offsets(i - 1) + 4
-            end if
-         end if
-      end do
+          allocate (offsets(numEdges + numQuads))
+          do i = 1, numEdges + numQuads
+             if (i <= numEdges) then
+                offsets(i) = 2*i
+             else
+                offsets(i) = 2*numEdges + 4*(i - numEdges)
+             end if
+          end do
 
-      allocate (types(numEdges + numQuads))
-      types(1:numEdges) = 3
-      types(numEdges + 1:numEdges + numQuads) = 9
+          allocate (types(numEdges + numQuads))
+          if (numEdges > 0) types(1:numEdges) = 3
+          if (numQuads > 0) types(numEdges + 1:numEdges + numQuads) = 9
 
-      call ugrid%add_cell_connectivity(conn, offsets, types)
-      if (size(offsets) /= numQuads) then
-         print *, "Problema con offsets"
-      end if
-      if (size(types) /= numQuads) then
-         print *, "Problema con types"
-      end if
-      if (offsets(numQuads) /= size(conn)) then
-         print *, "Tenemos un problema con conn y offset"
-      end if
+          call ugrid%add_cell_connectivity(conn, offsets, types)
+       end if
 
       call ugrid%write_file(vtuPath)
 

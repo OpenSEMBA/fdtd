@@ -14,7 +14,8 @@ module directoryUtils_m
    public :: file_exists
    public :: delete_file
    public :: list_files
-   public :: create_file_with_path
+    public :: create_file_with_path
+    public :: atomic_replace_file
    public :: get_path_separator
 
    abstract interface
@@ -35,10 +36,15 @@ module directoryUtils_m
          character(kind=c_char), intent(in) :: path(*)
       end function fdtd_remove_tree
 
-      integer(c_int) function fdtd_delete_file(path) bind(C, name='fdtd_delete_file')
+       integer(c_int) function fdtd_delete_file(path) bind(C, name='fdtd_delete_file')
          import :: c_char, c_int
          character(kind=c_char), intent(in) :: path(*)
-      end function fdtd_delete_file
+       end function fdtd_delete_file
+
+       integer(c_int) function fdtd_atomic_replace(source, target) bind(C, name='fdtd_atomic_replace')
+          import :: c_char, c_int
+          character(kind=c_char), intent(in) :: source(*), target(*)
+       end function fdtd_atomic_replace
    end interface
 
 contains
@@ -253,7 +259,7 @@ contains
    !------------------------------------------------------------
    ! Create a file, creating its folder if needed
    !------------------------------------------------------------
-    subroutine create_file_with_path(fullpath, ios)
+     subroutine create_file_with_path(fullpath, ios)
       character(len=*), intent(in) :: fullpath
       integer, intent(out) :: ios
       integer :: unit
@@ -273,7 +279,27 @@ contains
       open (newunit=unit, file=trim(adjustl(fullpath)), status='replace', iostat=ios)
       if (ios == 0) close (unit)
 
-    end subroutine create_file_with_path
+     end subroutine create_file_with_path
+
+    subroutine atomic_replace_file(source, target, ios)
+       character(len=*), intent(in) :: source, target
+       integer, intent(out) :: ios
+       character(kind=c_char), allocatable :: c_source(:), c_target(:)
+       integer :: i, source_length, target_length
+
+       source_length = len_trim(source)
+       target_length = len_trim(target)
+       allocate(c_source(source_length + 1), c_target(target_length + 1))
+       do i = 1, source_length
+          c_source(i) = source(i:i)
+       end do
+       do i = 1, target_length
+          c_target(i) = target(i:i)
+       end do
+       c_source(source_length + 1) = c_null_char
+       c_target(target_length + 1) = c_null_char
+       ios = fdtd_atomic_replace(c_source, c_target)
+    end subroutine atomic_replace_file
 
    subroutine call_native_path_operation(path, operation, ios)
       character(len=*), intent(in) :: path
