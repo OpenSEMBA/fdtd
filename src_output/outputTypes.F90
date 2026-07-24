@@ -280,12 +280,14 @@ module outputTypes_m
       logical :: local_participates = .true.
    end type movie_probe_output_t
 
-    type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
-       ! Binary format: frequency, x, y, z, then real/imaginary pairs for X, Y, and Z. Total record size: 40.
-      type(cell_coordinate_t) :: auxCoords
-      integer(kind=SINGLE)    :: nPoints = -1
-      integer(kind=SINGLE), allocatable :: coords(:, :)        !(3, coordIdx)
-      complex(kind=CKIND), allocatable :: xValueForFreq(:, :)  !(time, coordIdx)
+     type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
+        ! Binary format: frequency, x, y, z, then real/imaginary pairs for X, Y, and Z. Total record size: 40.
+       type(cell_coordinate_t) :: auxCoords
+       integer(kind=SINGLE)    :: nPoints = -1
+       integer(kind=SINGLE)    :: gridDimensions(3) = 0
+       integer(kind=SINGLE), allocatable :: coords(:, :)        !(3, coordIdx)
+       real(kind=RKIND), allocatable :: xCoordinates(:), yCoordinates(:), zCoordinates(:)
+       complex(kind=CKIND), allocatable :: xValueForFreq(:, :)  !(time, coordIdx)
       complex(kind=CKIND), allocatable :: yValueForFreq(:, :)  !(time, coordIdx)
       complex(kind=CKIND), allocatable :: zValueForFreq(:, :)  !(time, coordIdx)
       character(len=BUFSIZE) :: filesPath
