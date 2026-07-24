@@ -630,6 +630,101 @@ def test_movie_in_planewave_in_box(tmp_path):
                  assert tuple(int(value) for value in source.attrib['Dimensions'].split()) == f[attribute.attrib['Name']].shape
 
 
+@no_hdf_skip
+@pytest.mark.hdf
+def test_frequency_slice_in_planewave_in_box(tmp_path):
+    import h5py
+    import xml.etree.ElementTree as ET
+
+    fn = CASES_FOLDER + 'planewave/pw-in-box-with-frequency-slice.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+    frequency_files = solver.getSolvedProbeFilenames('electric_field_frequency_slice')
+    h5file = [f for f in frequency_files if f.endswith('.h5')][0]
+    xdmffile = [f for f in frequency_files if f.endswith('.xdmf')][0]
+
+    with h5py.File(h5file, 'r') as f:
+        root = ET.parse(xdmffile).getroot()
+        series = root.find('./Domain/Grid')
+        assert series.attrib == {
+            'Name': 'Parameter Series',
+            'GridType': 'Collection',
+            'CollectionType': 'Spatial',
+        }
+
+        steps = series.findall('./Grid')
+        assert len(steps) == 4
+        frequencies = [float(step.find('./Information').attrib['Value']) for step in steps]
+        np.testing.assert_allclose(frequencies, [5e8, 5e8 + 1e9 / 3, 5e8 + 2e9 / 3, 1.5e9])
+
+        for index, step in enumerate(steps):
+            assert step.find('./Information').attrib['Name'] == 'Frequency'
+            grid = step.find('./Grid')
+            assert grid.find('./Topology').attrib['Dimensions'] == '6 5 4'
+
+            attributes = grid.findall('./Attribute')
+            assert {attribute.attrib['Name'] for attribute in attributes} == {
+                'X_real', 'X_imag', 'Y_real', 'Y_imag', 'Z_real', 'Z_imag',
+            }
+            for attribute in attributes:
+                hyperslab = attribute.find('./DataItem')
+                selection, source = hyperslab.findall('./DataItem')
+                offset, stride, count = [
+                    tuple(int(value) for value in line.split())
+                    for line in selection.text.splitlines() if line.strip()
+                ]
+                assert offset == (index, 0, 0, 0)
+                assert stride == (1, 1, 1, 1)
+                assert count == (1, 6, 5, 4)
+                _, dataset = source.text.strip().split(':/', 1)
+                assert tuple(int(value) for value in source.attrib['Dimensions'].split()) == f[dataset].shape
+                assert np.all(np.isfinite(f[dataset][()]))
+
+        assert np.max(np.abs(f['attributes/a0001/values'][()])) > 0.0
+
+
+@no_hdf_skip
+@pytest.mark.hdf
+def test_central_dipole_frequency_slice(tmp_path):
+    import h5py
+    import xml.etree.ElementTree as ET
+
+    fn = CASES_FOLDER + 'antenna_frequency/central_dipole_frequency_slice.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+    frequency_files = solver.getSolvedProbeFilenames('dipole_frequency_slice')
+    h5file = [f for f in frequency_files if f.endswith('.h5')][0]
+    xdmffile = [f for f in frequency_files if f.endswith('.xdmf')][0]
+
+    with h5py.File(h5file, 'r') as f:
+        root = ET.parse(xdmffile).getroot()
+        steps = root.findall('./Domain/Grid/Grid')
+        frequencies = [float(step.find('./Information').attrib['Value']) for step in steps]
+        np.testing.assert_allclose(frequencies, [7.5e8, 1e9, 1.25e9])
+
+        def component(step, name):
+            attribute = next(item for item in step.findall('./Grid/Attribute') if item.attrib['Name'] == name)
+            source = attribute.findall('./DataItem')[0].findall('./DataItem')[1]
+            _, dataset = source.text.strip().split(':/', 1)
+            return f[dataset][1]
+
+        electric_z = component(steps[1], 'Z_real') + 1j * component(steps[1], 'Z_imag')
+        amplitude = np.abs(electric_z)
+        assert electric_z.shape == (48, 48, 48)
+        assert np.max(amplitude) > 1e-9
+
+        # The z-oriented dipole has an azimuthally symmetric equatorial field
+        # whose magnitude decays and phase changes with radial distance.
+        equatorial_near = electric_z[24, 24, 32]
+        equatorial_far = electric_z[24, 24, 36]
+        equatorial_far_y = electric_z[24, 36, 24]
+        assert np.isclose(np.abs(equatorial_far), np.abs(equatorial_far_y), rtol=1e-3)
+        assert np.abs(equatorial_far) < np.abs(equatorial_near)
+        assert np.abs(np.angle(equatorial_far / equatorial_near)) > 0.1
+ 
+ 
 @pytest.mark.planewave
 @pytest.mark.probes
 def test_planewave_in_box(tmp_path):

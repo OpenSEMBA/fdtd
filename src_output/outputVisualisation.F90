@@ -4,7 +4,7 @@ module outputVisualisation_m
      use outputTypes_m, only: output_artifact_t, output_artifact_identity_is_valid, &
                               OUTPUT_ARTIFACT_VISUALISATION_METADATA, OUTPUT_ARTIFACT_VISUALISATION_DATA
    use xdmf_hdf5_m, only: xdmf_writer_t, xdmf_options_t, xdmf_status_t, &
-                           xdmf_grid_id_t, xdmf_attribute_id_t, XDMF_SERIES_TIME, &
+                           xdmf_grid_id_t, xdmf_attribute_id_t, XDMF_SERIES_FREQUENCY, XDMF_SERIES_TIME, &
                            XDMF_CENTER_NODE, XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64
    implicit none
    private
@@ -67,10 +67,11 @@ contains
        status = VISUALISATION_SUCCESS
     end subroutine publish_volumetric_visualisation
 
-    subroutine publish_frequency_slice_visualisation(path, grid_name, dimensions, frequencies, x_values, y_values, &
-                                                     z_values, status)
+    subroutine publish_frequency_slice_visualisation(path, grid_name, dimensions, x_coordinates, y_coordinates, &
+                                                     z_coordinates, frequencies, x_values, y_values, z_values, status)
        character(len=*), intent(in) :: path, grid_name
        integer(int64), intent(in) :: dimensions(3)
+       real(real64), intent(in) :: x_coordinates(:), y_coordinates(:), z_coordinates(:)
        real(real64), intent(in) :: frequencies(:)
        complex(real64), intent(in) :: x_values(:, :), y_values(:, :), z_values(:, :)
        integer, intent(out) :: status
@@ -82,9 +83,10 @@ contains
        type(xdmf_attribute_id_t) :: x_real, x_imag, y_real, y_imag, z_real, z_imag
        integer :: directory_end, frequency_index, ios
 
-       status = VISUALISATION_IO_ERROR
-       if (size(frequencies) /= size(x_values, 1) .or. size(x_values, 2) /= product(dimensions)) return
-       if (any(shape(y_values) /= shape(x_values)) .or. any(shape(z_values) /= shape(x_values))) return
+        status = VISUALISATION_IO_ERROR
+        if (size(frequencies) /= size(x_values, 1) .or. size(x_values, 2) /= product(dimensions)) return
+        if (any(shape(y_values) /= shape(x_values)) .or. any(shape(z_values) /= shape(x_values))) return
+        if (any([size(x_coordinates), size(y_coordinates), size(z_coordinates)] /= dimensions)) return
        directory_end = scan(trim(path), '/\\', back=.true.)
        if (directory_end > 0) then
           call create_folder(path(:directory_end - 1), ios)
@@ -92,14 +94,14 @@ contains
        end if
 
        options%overwrite = .true.
-       options%series_kind = XDMF_SERIES_TIME
+        options%series_kind = XDMF_SERIES_FREQUENCY
        call writer%create(trim(path), options, writer_status)
        if (writer_status%is_error()) then
           status = VISUALISATION_WRITER_ERROR
           return
        end if
-       call writer%define_uniform_grid(trim(grid_name), dimensions, [0.0_real64, 0.0_real64, 0.0_real64], &
-                                       [1.0_real64, 1.0_real64, 1.0_real64], grid, writer_status)
+        call writer%define_rectilinear_grid(trim(grid_name), x_coordinates, y_coordinates, z_coordinates, &
+                                            grid, writer_status)
        if (.not. writer_status%is_error()) call writer%define_attribute(grid, 'X_real', XDMF_CENTER_NODE, &
           XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, .true., x_real, writer_status)
        if (.not. writer_status%is_error()) call writer%define_attribute(grid, 'X_imag', XDMF_CENTER_NODE, &
