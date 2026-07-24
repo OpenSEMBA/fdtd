@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.15)
 
-project(semba-fdtd Fortran)
+project(semba-fdtd Fortran C)
 enable_language (Fortran)
 
 

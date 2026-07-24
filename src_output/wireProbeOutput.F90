@@ -4,7 +4,8 @@ module wireProbeOutput_m
    use allocationUtils_m, only: alloc_and_init
    use report_m
    use outputTypes_m
-   use outputUtils_m
+    use outputUtils_m
+    use allocationUtils_m, only: alloc_and_init
    use wiresHolland_constants_m
    use HollandWires_m
 
@@ -60,11 +61,14 @@ module wireProbeOutput_m
       this%domain    = domain
       this%sign      = 1
 
-      call find_current_segment(this, node, field, media, wiresflavor)
-      this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
+       call find_current_segment(this, node, field, media, wiresflavor)
+       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-      call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
-      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
+       call declare_probe_artifacts(this%artifacts, [character(len=BUFSIZE) :: &
+            trim(this%path)//'_'//timeExtension//datFileExtension], [OUTPUT_ARTIFACT_TEXT])
+       this%filePathTime = this%artifacts(1)%relative_path
+       call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
 
    end subroutine init_wire_current_probe_output
 
@@ -82,12 +86,15 @@ module wireProbeOutput_m
       this%domain    = domain
       this%sign      = 1
 
-      call find_charge_segment(this, node, field, wiresflavor)
-      this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
+       call find_charge_segment(this, node, field, wiresflavor)
+       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-      call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
-      call alloc_and_init(this%chargeValue, BuffObse, 0.0_RKIND)
-      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
+       call alloc_and_init(this%chargeValue, BuffObse, 0.0_RKIND)
+       call declare_probe_artifacts(this%artifacts, [character(len=BUFSIZE) :: &
+            trim(this%path)//'_'//timeExtension//datFileExtension], [OUTPUT_ARTIFACT_TEXT])
+       this%filePathTime = this%artifacts(1)%relative_path
+       call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
 
    end subroutine init_wire_charge_probe_output
 
@@ -98,7 +105,7 @@ module wireProbeOutput_m
       type(wire_current_probe_output_t), intent(inout) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
       type(sim_control_t), intent(in)     :: control
-      real(kind=RKIND), intent(in)        :: InvEps(:), InvMu(:)
+       real(kind=RKIND), intent(in)        :: InvEps(0:), InvMu(0:)
 
       this%nTime = this%nTime + 1
       this%timeStep(this%nTime) = step
@@ -131,41 +138,41 @@ module wireProbeOutput_m
    ! FLUSH
    !======================================================================
    subroutine flush_wire_current_probe_output(this)
-      type(wire_current_probe_output_t), intent(inout) :: this
-      integer :: i
-      integer :: unit
+       type(wire_current_probe_output_t), intent(inout) :: this
+       integer :: i, ios, unit
 
-      open(unit, file=this%filePathTime, &
-           status='old', position='append')
+       open(newunit=unit, file=this%filePathTime, status='old', action='write', position='append', iostat=ios)
+       if (ios /= 0) return
 
-      do i = 1, this%nTime
-         write(unit, fmt) this%timeStep(i), &
-            this%currentValues(i)%current, &
+       do i = 1, this%nTime
+          write(unit, fmt, iostat=ios) this%timeStep(i), &
+             this%currentValues(i)%current, &
             this%currentValues(i)%deltaVoltage, &
             this%currentValues(i)%plusVoltage, &
-            this%currentValues(i)%minusVoltage, &
-            this%currentValues(i)%voltageDiference
-      end do
-      close(unit)
+             this%currentValues(i)%minusVoltage, &
+             this%currentValues(i)%voltageDiference
+          if (ios /= 0) exit
+       end do
+       close(unit, iostat=ios)
 
-      call clear_current_time_data(this)
+       if (ios == 0) call clear_current_time_data(this)
    end subroutine
 
 
    subroutine flush_wire_charge_probe_output(this)
-      type(wire_charge_probe_output_t), intent(inout) :: this
-      integer :: i
-      integer :: unit
+       type(wire_charge_probe_output_t), intent(inout) :: this
+       integer :: i, ios, unit
 
-      open(unit, file=this%filePathTime, &
-           status='old', position='append')
+       open(newunit=unit, file=this%filePathTime, status='old', action='write', position='append', iostat=ios)
+       if (ios /= 0) return
 
-      do i = 1, this%nTime
-         write(unit, fmt) this%timeStep(i), this%chargeValue(i)
-      end do
-      close(unit)
+       do i = 1, this%nTime
+          write(unit, fmt, iostat=ios) this%timeStep(i), this%chargeValue(i)
+          if (ios /= 0) exit
+       end do
+       close(unit, iostat=ios)
 
-      call clear_charge_time_data(this)
+       if (ios == 0) call clear_charge_time_data(this)
    end subroutine
 
    subroutine find_current_segment(this, node, field, media, wiresflavor)
@@ -365,7 +372,7 @@ module wireProbeOutput_m
    subroutine update_current_holland(this, control, InvEps, InvMu)
       type(wire_current_probe_output_t), intent(inout) :: this
       type(sim_control_t), intent(in) :: control
-      real(kind=RKIND), intent(in) :: InvEps(:), InvMu(:)
+       real(kind=RKIND), intent(in) :: InvEps(0:), InvMu(0:)
 
       type(CurrentSegments_t), pointer :: seg
 
@@ -403,7 +410,7 @@ module wireProbeOutput_m
 #ifdef CompileWithBerengerWires
    subroutine update_current_berenger(this, InvEps, InvMu)
       type(wire_current_probe_output_t), intent(inout) :: this
-      real(kind=RKIND), intent(in) :: InvEps(:), InvMu(:)
+       real(kind=RKIND), intent(in) :: InvEps(0:), InvMu(0:)
 
       type(TSegment), pointer :: seg
 

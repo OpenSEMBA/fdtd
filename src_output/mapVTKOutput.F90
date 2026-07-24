@@ -21,10 +21,13 @@ contains
 
       this%mainCoords = lowerBound
       this%auxCoords = upperBound
-      this%component = field
+       this%component = field
 
-      this%path = get_output_path()
-      call store_relevant_coordinates(this, problemInfo)
+       this%path = get_output_path()
+       call declare_probe_artifacts(this%artifacts, [character(len=BUFSIZE) :: &
+            trim(join_path(this%path, get_last_component(this%path)))//vtuFileExtension, trim(this%path)//'.txt'], &
+            [OUTPUT_ARTIFACT_GEOMETRY, OUTPUT_ARTIFACT_TEXT])
+       call store_relevant_coordinates(this, problemInfo)
 
    contains
 
@@ -145,7 +148,7 @@ contains
       integer(kind=SINGLE), allocatable :: edges(:, :), quads(:, :)
 
       call create_folder(this%path, ierr)
-      vtuPath = join_path(this%path, get_last_component(this%path))//vtuFileExtension
+       vtuPath = this%artifacts(1)%relative_path
 
       call createUnstructuredDataForVTU(this%nPoints, this%coords, this%currentType, nodes, edges, quads, numNodes, numEdges, numQuads, control%vtkindex, realXGrid, realYGrid, realZGrid)
       call ugrid%add_points(real(nodes, 4))
@@ -195,7 +198,7 @@ contains
                  'WIRE=7, WIRE-COLISION=8, COMPO=3, DISPER=1, DIEL=2, SLOT=4, '// &
                  'CONF=5/6, OTHER=-1 (ADD +0.5 for borders)'
 
-      metadata_filename = trim(this%path)//'.txt'
+       metadata_filename = this%artifacts(2)%relative_path
       open (newunit=unit, file=metadata_filename, status='replace', action='write', iostat=ierr)
       if (ierr /= 0) then
          print *, 'Error opening metadata file: ', metadata_filename

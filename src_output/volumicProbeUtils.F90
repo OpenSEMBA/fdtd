@@ -3,7 +3,8 @@ module volumicProbeUtils_m
    use utils_m
    use allocationUtils_m, only: alloc_and_init
    use outputTypes_m
-   use outputUtils_m
+    use outputUtils_m
+    use allocationUtils_m, only: alloc_and_init
    implicit none
    private
 

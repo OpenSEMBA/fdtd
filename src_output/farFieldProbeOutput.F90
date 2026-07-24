@@ -30,14 +30,19 @@ contains
       if (domain%domainType /= TIME_DOMAIN) call StopOnError(0, 0, "Unexpected domain type for farField probe")
 
       this%domain = domain
-      this%sphericRange = sphericRange
-      this%component = field
-      this%path = get_output_path()
-      call InitFarField(sgg, &
+       this%sphericRange = sphericRange
+       this%component = field
+        this%mainCoords = lowerBound
+        this%auxCoords = upperBound
+        this%path = get_output_path()
+        allocate(this%artifacts(1))
+        call declare_probe_artifacts(this%artifacts, [character(len=BUFSIZE) :: trim(this%path)], [OUTPUT_ARTIFACT_TEXT])
+       this%filePathFreq = this%artifacts(1)%relative_path
+       call InitFarField(sgg, &
          problemInfo%geometryToMaterialData%sggMiEx, problemInfo%geometryToMaterialData%sggMiEy, problemInfo%geometryToMaterialData%sggMiEz, &
          problemInfo%geometryToMaterialData%sggMiHx, problemInfo%geometryToMaterialData%sggMiHy, problemInfo%geometryToMaterialData%sggMiHz, &
                         control%layoutnumber, control%num_procs, problemInfo%simulationBounds, control%resume, &
-                        2025, this%path, &
+                         2025, this%filePathFreq, &
                         lowerBound%x, upperBound%x, &
                         lowerBound%y, upperBound%y, &
                         lowerBound%z, upperBound%z, &
@@ -75,7 +80,7 @@ contains
    end subroutine update_farField_probe_output
 
    subroutine flush_farField_probe_output(this, simlulationTimeArray, timeIndex, control, fieldsReference, bounds)
-    type(far_field_probe_output_t), intent(out) :: this
+     type(far_field_probe_output_t), intent(inout) :: this
     integer, intent(in) :: timeIndex
     real(KIND=RKIND_tiempo), pointer, dimension(:), intent(in) :: simlulationTimeArray
     type(sim_control_t), intent(in) :: control

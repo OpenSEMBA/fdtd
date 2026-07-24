@@ -1,5 +1,6 @@
 module directoryUtils_m
    use FDETYPES_m
+   use iso_c_binding, only: c_char, c_int, c_null_char
    implicit none
    private
 
@@ -15,6 +16,30 @@ module directoryUtils_m
    public :: list_files
    public :: create_file_with_path
    public :: get_path_separator
+
+   abstract interface
+      integer(c_int) function native_path_operation(path) bind(C)
+         import :: c_char, c_int
+         character(kind=c_char), intent(in) :: path(*)
+      end function native_path_operation
+   end interface
+
+   interface
+      integer(c_int) function fdtd_create_directories(path) bind(C, name='fdtd_create_directories')
+         import :: c_char, c_int
+         character(kind=c_char), intent(in) :: path(*)
+      end function fdtd_create_directories
+
+      integer(c_int) function fdtd_remove_tree(path) bind(C, name='fdtd_remove_tree')
+         import :: c_char, c_int
+         character(kind=c_char), intent(in) :: path(*)
+      end function fdtd_remove_tree
+
+      integer(c_int) function fdtd_delete_file(path) bind(C, name='fdtd_delete_file')
+         import :: c_char, c_int
+         character(kind=c_char), intent(in) :: path(*)
+      end function fdtd_delete_file
+   end interface
 
 contains
 
@@ -132,11 +157,7 @@ contains
          return
       end if
 
-#ifdef _WIN32
-      call execute_command_line("mkdir """//trim(path)//"""", exitstat=ios)
-#else
-      call execute_command_line("mkdir -p "//trim(path), exitstat=ios)
-#endif
+       call call_native_path_operation(path, fdtd_create_directories, ios)
    end subroutine create_folder
 
    !------------------------------------------------------------
@@ -151,11 +172,7 @@ contains
          return
       end if
 
-#ifdef _WIN32
-      call execute_command_line("rmdir /S /Q """//trim(path)//"""", exitstat=ios)
-#else
-      call execute_command_line("rm -rf "//trim(path), exitstat=ios)
-#endif
+       call call_native_path_operation(path, fdtd_remove_tree, ios)
 
    end subroutine remove_folder
 
@@ -181,11 +198,7 @@ contains
          return
       end if
 
-#ifdef __WIN32__
-      call execute_command_line("del /Q """//trim(path)//"""", exitstat=ios)
-#else
-      call execute_command_line("rm -f "//trim(path), exitstat=ios)
-#endif
+       call call_native_path_operation(path, fdtd_delete_file, ios)
 
    end subroutine delete_file
 
@@ -240,7 +253,7 @@ contains
    !------------------------------------------------------------
    ! Create a file, creating its folder if needed
    !------------------------------------------------------------
-   subroutine create_file_with_path(fullpath, ios)
+    subroutine create_file_with_path(fullpath, ios)
       character(len=*), intent(in) :: fullpath
       integer, intent(out) :: ios
       integer :: unit
@@ -250,7 +263,7 @@ contains
 
       ios = 0
       ! Find last slash or backslash
-      pos = index(fullpath, get_path_separator())
+       pos = scan(trim(fullpath), '/\\', back=.true.)
 
       if (pos > 0) then
          folder = adjustl(fullpath(:pos - 1))
@@ -260,9 +273,25 @@ contains
       open (newunit=unit, file=trim(adjustl(fullpath)), status='replace', iostat=ios)
       if (ios == 0) close (unit)
 
-   end subroutine create_file_with_path
+    end subroutine create_file_with_path
 
-   function get_path_separator() result(sep)
+   subroutine call_native_path_operation(path, operation, ios)
+      character(len=*), intent(in) :: path
+      procedure(native_path_operation) :: operation
+      integer, intent(out) :: ios
+      character(kind=c_char), allocatable :: c_path(:)
+      integer :: i, path_length
+
+      path_length = len_trim(path)
+      allocate(c_path(path_length + 1))
+      do i = 1, path_length
+         c_path(i) = path(i:i)
+      end do
+      c_path(path_length + 1) = c_null_char
+      ios = operation(c_path)
+   end subroutine call_native_path_operation
+
+    function get_path_separator() result(sep)
       character(len=1) :: sep
 
 #ifdef __WIN32__

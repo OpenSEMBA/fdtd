@@ -30,7 +30,11 @@ contains
       new_domain%fstart = fstart
       new_domain%fstop = fstop
       new_domain%fnum = fnum
-      new_domain%fstep = (fstop - fstart) / fnum
+       if (fnum > 1_SINGLE) then
+          new_domain%fstep = (fstop - fstart) / real(fnum - 1_SINGLE, RKIND)
+       else
+          new_domain%fstep = 0.0_RKIND
+       end if
       new_domain%logarithmicSpacing = logarithmicSpacing
 
       new_domain%domainType = FREQUENCY_DOMAIN
@@ -52,7 +56,11 @@ contains
       new_domain%fstart = fstart
       new_domain%fstop = fstop
       new_domain%fnum = fnum
-      new_domain%fstep = (fstop - fstart) / fnum
+       if (fnum > 1_SINGLE) then
+          new_domain%fstep = (fstop - fstart) / real(fnum - 1_SINGLE, RKIND)
+       else
+          new_domain%fstep = 0.0_RKIND
+       end if
       new_domain%logarithmicSpacing = logarithmicSpacing
 
       new_domain%domainType = BOTH_DOMAIN
