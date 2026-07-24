@@ -6,6 +6,7 @@
 ! Test 1: Structured grid basic allocation
 !==============================
 integer function test_vtkAPI_points_allocation() bind(C) result(error_cnt)
+   ! Verifies structured-grid points are allocated with the expected shape.
    use vtkAPI_m
    implicit none
    type(vtk_structured_grid), target :: grid
@@ -31,6 +32,7 @@ end function
 ! Test 2: Point scalar assignment
 !==============================
 integer function test_vtkAPI_point_scalar() bind(C) result(error_cnt)
+   ! Verifies scalar point data is stored in a structured grid.
    use vtkAPI_m
    implicit none
    type(vtk_structured_grid), target :: grid
@@ -56,6 +58,7 @@ end function
 ! Test 3: Point vector assignment
 !==============================
 integer function test_vtkAPI_point_vector() bind(C) result(error_cnt)
+   ! Verifies vector point data is stored in a structured grid.
    use vtkAPI_m
    implicit none
    type(vtk_structured_grid), target :: grid
@@ -83,6 +86,7 @@ end function
 ! Test 4: Cell scalar assignment
 !==============================
 integer function test_vtkAPI_cell_scalar() bind(C) result(error_cnt)
+   ! Verifies scalar cell data is stored in a structured grid.
    use vtkAPI_m
    implicit none
    type(vtk_structured_grid), target :: grid
@@ -108,6 +112,7 @@ end function
 ! Test 5: Cell vector assignment
 !==============================
 integer function test_vtkAPI_cell_vector() bind(C) result(error_cnt)
+   ! Verifies vector cell data is stored in a structured grid.
    use vtkAPI_m
    implicit none
    type(vtk_structured_grid), target :: grid
@@ -135,6 +140,7 @@ end function
 ! Test 6: VTS file creation
 !==============================
 integer function test_vtkAPI_vts_file_creation() bind(C) result(error_cnt)
+   ! Verifies a structured-grid VTS file can be created and opened.
    use vtkAPI_m
    use directoryUtils_m
    implicit none
@@ -173,6 +179,7 @@ end function
 ! Test 7: VTU file creation with cells and point data
 !==============================
 integer function test_vtkAPI_vtu_file_creation() bind(C) result(error_cnt)
+   ! Verifies an unstructured-grid VTU file can be created and opened.
    use vtkAPI_m
    use directoryUtils_m
    implicit none
@@ -223,6 +230,7 @@ end function
 ! Test 8: VTU file with cell data
 !==============================
 integer function test_vtkAPI_vtu_cell_data() bind(C) result(error_cnt)
+   ! Verifies scalar and vector data is stored for unstructured-grid cells.
    use vtkAPI_m
    implicit none
    type(vtk_unstructured_grid), target :: ugrid
@@ -255,6 +263,7 @@ end function
 ! Test 9: Verificación de VTS contenido
 !==============================
 integer function test_vtkAPI_vts_content() bind(C) result(error_cnt)
+   ! Verifies VTS output declares scalar and vector point data.
    use vtkAPI_m
    use directoryUtils_m
    implicit none
@@ -324,6 +333,7 @@ end function
 ! Test 10
 !==============================
 integer function test_vtkAPI_vtu_content() bind(C) result(error_cnt)
+   ! Verifies VTU output contains points, cells, and point/cell data sections.
    use vtkAPI_m
    use directoryUtils_m
    implicit none

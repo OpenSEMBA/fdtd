@@ -1,4 +1,5 @@
 integer function test_point_publication_plan() bind(c) result(err)
+   ! Verifies canonical point-writer selection and unowned-point rejection.
    use output_m, only: prepare_point_publication_plan, publication_plan_allows_canonical_write
    use outputTypes_m, only: probe_publication_plan_t
    use outputCollective_m, only: OUTPUT_COLLECTIVE_SUCCESS, OUTPUT_COLLECTIVE_UNOWNED_POINT
@@ -27,6 +28,7 @@ integer function test_point_publication_plan() bind(c) result(err)
 end function test_point_publication_plan
 
 integer function test_planned_metadata_publication() bind(c) result(err)
+   ! Verifies only the planned canonical writer publishes metadata.
    use output_m, only: publish_planned_probe_metadata, OUTPUT_COORDINATION_SUCCESS
    use outputTypes_m, only: probe_metadata_t, probe_publication_plan_t, OUTPUT_ARTIFACT_TEXT
    use assertionTools_m, only: assert_integer_equal, assert_true

@@ -1,4 +1,5 @@
 integer function test_output_publication_contract() bind(c) result(err)
+   ! Verifies canonical and fragment identities and metadata completeness.
    use outputTypes_m, only: output_artifact_t, probe_metadata_t, output_artifact_identity_is_valid, &
                             probe_metadata_is_complete, OUTPUT_ARTIFACT_BINARY, &
                             OUTPUT_ARTIFACT_ROLE_FRAGMENT, OUTPUT_LIFECYCLE_COMPLETE

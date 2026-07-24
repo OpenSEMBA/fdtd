@@ -1,4 +1,5 @@
 integer function test_output_binary_fragment_layout() bind(c) result(err)
+   ! Verifies binary fragment layouts require a valid fragment identity.
    use outputBinary_m, only: validate_binary_layout, BINARY_WRITER_SUCCESS, BINARY_WRITER_INVALID_LAYOUT
    use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_BINARY, OUTPUT_ARTIFACT_ROLE_FRAGMENT, &
                             BINARY_ENDIAN_LITTLE, BINARY_NUMERIC_REAL32, BINARY_COMPLEX_UNSPECIFIED

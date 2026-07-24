@@ -1,4 +1,5 @@
 integer function test_output_metadata_fragment_descriptors() bind(c) result(err)
+   ! Verifies canonical and fragment descriptor publication and identity fields.
    use outputMetadata_m, only: publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
    use outputTypes_m, only: probe_metadata_t, output_artifact_t, OUTPUT_ARTIFACT_METADATA, &
                             OUTPUT_ARTIFACT_ROLE_FRAGMENT, OUTPUT_LIFECYCLE_COMPLETE

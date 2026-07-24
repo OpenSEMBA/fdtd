@@ -1,4 +1,5 @@
 integer function test_output_partition_shared_interfaces() bind(c) result(err)
+   ! Verifies unique ownership of shared interfaces across output partitions.
    use iso_fortran_env, only: int64
    use FDETYPES_m, only: iEx, iEy, iHz, limit_t
    use outputTypes_m, only: cell_coordinate_t
@@ -56,6 +57,7 @@ integer function test_output_partition_shared_interfaces() bind(c) result(err)
 end function test_output_partition_shared_interfaces
 
 integer function test_output_partition_disjoint_intervals() bind(c) result(err)
+   ! Verifies complete, non-overlapping coverage of disjoint rank intervals.
    use FDETYPES_m, only: iEz, iHx, iHy, limit_t
    use outputTypes_m, only: cell_coordinate_t
    use outputDecomposition_m
@@ -102,6 +104,7 @@ integer function test_output_partition_disjoint_intervals() bind(c) result(err)
 end function test_output_partition_disjoint_intervals
 
 integer function test_output_partition_clipping_and_large_shape() bind(c) result(err)
+   ! Verifies request clipping, empty ranks, large shapes, and invalid components.
    use iso_fortran_env, only: int64
    use FDETYPES_m, only: iEx, limit_t
    use outputTypes_m, only: cell_coordinate_t
@@ -163,6 +166,7 @@ integer function test_output_partition_clipping_and_large_shape() bind(c) result
 end function test_output_partition_clipping_and_large_shape
 
 integer function test_output_point_partition_eligibility() bind(c) result(err)
+   ! Verifies point eligibility at partition boundaries and for empty partitions.
    use outputTypes_m, only: cell_coordinate_t
    use outputDecomposition_m, only: output_partition_t, point_is_in_partition
    use assertionTools_m, only: assert_true
@@ -187,6 +191,7 @@ integer function test_output_point_partition_eligibility() bind(c) result(err)
 end function test_output_point_partition_eligibility
 
 integer function test_output_partition_all_components_cover_volume() bind(c) result(err)
+   ! Verifies unique volume coverage for every electric and magnetic component.
    use FDETYPES_m, only: iEx, iEy, iEz, iHx, iHy, iHz, limit_t
    use outputTypes_m, only: cell_coordinate_t
    use outputDecomposition_m, only: output_partition_t, build_output_partition, OUTPUT_PARTITION_SUCCESS

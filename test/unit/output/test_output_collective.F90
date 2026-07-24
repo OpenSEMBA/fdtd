@@ -1,4 +1,5 @@
 integer function test_output_collective_contract() bind(c) result(err)
+   ! Verifies participant selection, ownership, and publication modes.
    use outputCollective_m
    use outputDecomposition_m, only: output_partition_t
    use assertionTools_m, only: assert_integer_equal, assert_true
@@ -42,16 +43,16 @@ integer function test_output_collective_contract() bind(c) result(err)
    call validate_output_ownership(collective, [2, 1], 1, status)
    err = err + assert_integer_equal(status, OUTPUT_COLLECTIVE_INVALID_PARTICIPANTS, &
                                     'Unordered participants were accepted')
-    call validate_output_ownership(collective, [1, 2], 2, status)
-    err = err + assert_integer_equal(status, OUTPUT_COLLECTIVE_INVALID_OWNER, &
-                                     'Non-deterministic owner was accepted')
+   call validate_output_ownership(collective, [1, 2], 2, status)
+   err = err + assert_integer_equal(status, OUTPUT_COLLECTIVE_INVALID_OWNER, &
+                                    'Non-deterministic owner was accepted')
 
-    call select_point_owner(collective, [.false., .true., .true.], owner, status)
-    err = err + assert_integer_equal(status, OUTPUT_COLLECTIVE_SUCCESS, 'Point owner selection failed')
-    err = err + assert_integer_equal(owner, 1, 'Point owner is not the lowest eligible rank')
-    err = err + assert_true(point_owner_is_local(collective, owner), 'Point owner is not local')
+   call select_point_owner(collective, [.false., .true., .true.], owner, status)
+   err = err + assert_integer_equal(status, OUTPUT_COLLECTIVE_SUCCESS, 'Point owner selection failed')
+   err = err + assert_integer_equal(owner, 1, 'Point owner is not the lowest eligible rank')
+   err = err + assert_true(point_owner_is_local(collective, owner), 'Point owner is not local')
 
-    call select_point_owner(collective, [.false., .false., .false.], owner, status)
-    err = err + assert_integer_equal(status, OUTPUT_COLLECTIVE_UNOWNED_POINT, &
-                                     'Unowned point was accepted')
+   call select_point_owner(collective, [.false., .false., .false.], owner, status)
+   err = err + assert_integer_equal(status, OUTPUT_COLLECTIVE_UNOWNED_POINT, &
+                                    'Unowned point was accepted')
 end function test_output_collective_contract

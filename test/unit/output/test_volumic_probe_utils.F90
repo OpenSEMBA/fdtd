@@ -2,6 +2,7 @@
 ! Test: count_required_coords
 !--------------------------------------------------------------------------------
 integer function test_count_required_coords() bind(c) result(err)
+   ! Verifies the number of valid field coordinates in a volumetric region.
    use FDETYPES_m
    use outputTypes_m
    use volumicProbeUtils_m
@@ -36,6 +37,7 @@ end function test_count_required_coords
 ! Test: store_required_coords
 !--------------------------------------------------------------------------------
 integer function test_store_required_coords() bind(c) result(err)
+   ! Verifies volumetric probe coordinates are allocated and stored correctly.
    use FDETYPES_m
    use outputTypes_m
    use outputUtils_m
@@ -78,6 +80,7 @@ end function test_store_required_coords
 ! Test: isValidPointForCurrent
 !--------------------------------------------------------------------------------
 integer function test_is_valid_point_current() bind(c) result(err)
+   ! Verifies current probes are rejected in empty space without PEC or wires.
    use FDETYPES_m
    use outputTypes_m
    use volumicProbeUtils_m
@@ -107,6 +110,7 @@ end function test_is_valid_point_current
 ! Test: isValidPointForField
 !--------------------------------------------------------------------------------
 integer function test_is_valid_point_field() bind(c) result(err)
+   ! Verifies field probes accept in-bounds points and reject out-of-bounds points.
      use FDETYPES_m
      use outputTypes_m
      use volumicProbeUtils_m

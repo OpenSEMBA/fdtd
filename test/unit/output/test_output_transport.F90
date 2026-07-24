@@ -1,4 +1,5 @@
 integer function test_output_transport_serial() bind(c) result(err)
+   ! Verifies serial eligibility gathering, reductions, and flush transfers.
    use FDETYPES_m, only: RKIND
    use outputTransport_m, only: output_transport_t, init_output_transport, &
                                 gather_point_eligibility, reduce_scalar_batch, transfer_flush_batch, &

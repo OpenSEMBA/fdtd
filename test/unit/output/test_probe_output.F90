@@ -1,8 +1,5 @@
 integer function test_init_point_probe() bind(c) result(err)
-! This test initializes a single point probe at coordinates (4,4,4).
-! It verifies that the probe is correctly registered in the simulation outputs,
-! that the output ID matches POINT_PROBE_ID, and that the output paths for
-! both the probe and its time data file are correctly set and exist.
+   ! Verifies point-probe registration, identity, paths, and declared time output.
    use FDETYPES_m
    use FDETYPES_TOOLS
    use output_m
@@ -86,6 +83,7 @@ integer function test_init_point_probe() bind(c) result(err)
 end function
 
 integer function test_root_output_manifest() bind(c) result(err)
+    ! Verifies root manifest creation, artifact declaration, and cleanup.
    use FDETYPES_m
    use FDETYPES_TOOLS
    use output_m
@@ -146,6 +144,7 @@ integer function test_root_output_manifest() bind(c) result(err)
 end function
 
 integer function test_nested_output_path() bind(c) result(err)
+    ! Verifies nested output directories are created and removed correctly.
    use directoryUtils_m, only: create_file_with_path, file_exists, remove_folder
    use assertionTools_m, only: assert_integer_equal, assert_true
    implicit none
@@ -162,6 +161,7 @@ integer function test_nested_output_path() bind(c) result(err)
 end function
 
 integer function test_output_metadata_publication() bind(c) result(err)
+    ! Verifies declared and failed metadata retain artifacts and diagnostics.
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, &
                                OUTPUT_METADATA_SUCCESS
    use outputTypes_m, only: probe_metadata_t, output_artifact_t, OUTPUT_ARTIFACT_BINARY, &
@@ -219,6 +219,7 @@ integer function test_output_metadata_publication() bind(c) result(err)
 end function
 
 integer function test_output_artifact_contract() bind(c) result(err)
+    ! Verifies binary artifact encoding and declared lifecycle values.
    use outputTypes_m, only: output_artifact_t, output_lifecycle_t, OUTPUT_ARTIFACT_BINARY, &
                             OUTPUT_LIFECYCLE_DECLARED, BINARY_ENDIAN_LITTLE, BINARY_COMPLEX_REAL_IMAG
    use assertionTools_m, only: assert_integer_equal
@@ -241,6 +242,7 @@ integer function test_output_artifact_contract() bind(c) result(err)
 end function
 
 integer function test_portable_binary_output() bind(c) result(err)
+    ! Verifies little-endian real32 output and rejects unsupported byte order.
    use, intrinsic :: iso_fortran_env, only: int8, real32
    use outputBinary_m, only: write_binary_real32, validate_binary_layout, BINARY_WRITER_SUCCESS, &
                              BINARY_WRITER_INVALID_LAYOUT
@@ -285,6 +287,7 @@ integer function test_portable_binary_output() bind(c) result(err)
 end function
 
 integer function test_volumetric_visualisation_output() bind(c) result(err)
+    ! Verifies volumetric XDMF/HDF5 creation and artifact validation.
    use, intrinsic :: iso_fortran_env, only: int64, real64
     use outputVisualisation_m, only: publish_volumetric_visualisation, verify_visualisation_artifact, VISUALISATION_SUCCESS
     use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_VISUALISATION_METADATA
@@ -315,6 +318,7 @@ integer function test_volumetric_visualisation_output() bind(c) result(err)
 end function
 
 integer function test_declared_output_artifacts() bind(c) result(err)
+    ! Verifies output artifact kinds and relative paths are declared.
    use outputTypes_m, only: probe_metadata_t, OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_GEOMETRY, &
                             declare_output_artifacts
    use assertionTools_m, only: assert_integer_equal, assert_string_equal, assert_true
@@ -335,6 +339,7 @@ integer function test_declared_output_artifacts() bind(c) result(err)
 end function
 
 integer function test_output_lifecycle_contract() bind(c) result(err)
+    ! Verifies lifecycle terminal states and metadata completeness.
    use outputTypes_m, only: probe_metadata_t, output_artifact_t, output_lifecycle_is_terminal, &
                             probe_metadata_is_complete, OUTPUT_ARTIFACT_BINARY, OUTPUT_LIFECYCLE_DECLARED, &
                             OUTPUT_LIFECYCLE_ACTIVE, OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
@@ -364,6 +369,7 @@ integer function test_output_lifecycle_contract() bind(c) result(err)
 end function
 
 integer function test_output_lifecycle_coordination() bind(c) result(err)
+    ! Verifies probe finalisation and root-only manifest publication.
    use output_m, only: run_output_manifest_t, init_run_output_manifest, declare_probe_output, &
                        begin_probe_output, finalise_probe_output, finalise_run_outputs, &
                        OUTPUT_COORDINATION_SUCCESS, OUTPUT_COORDINATION_NOT_ROOT, OUTPUT_COORDINATION_NOT_TERMINAL
@@ -408,6 +414,7 @@ integer function test_output_lifecycle_coordination() bind(c) result(err)
 end function
 
 integer function test_output_probe_ownership() bind(c) result(err)
+    ! Verifies probe participants and scalar-writer ownership.
    use output_m, only: run_output_manifest_t, init_run_output_manifest, declare_probe_output, &
                        select_probe_participants, OUTPUT_COORDINATION_SUCCESS, &
                        OUTPUT_COORDINATION_INVALID_OWNERSHIP
@@ -441,6 +448,7 @@ integer function test_output_probe_ownership() bind(c) result(err)
 end function
 
 integer function test_output_serial_distributed_equivalence() bind(c) result(err)
+    ! Verifies serial and distributed artifacts have equivalent coverage.
    use FDETYPES_m, only: iEx, limit_t
    use outputTypes_m, only: cell_coordinate_t, output_artifact_t, OUTPUT_ARTIFACT_BINARY
    use outputDecomposition_m, only: output_partition_t, build_output_partition, OUTPUT_PARTITION_SUCCESS
@@ -481,6 +489,7 @@ integer function test_output_serial_distributed_equivalence() bind(c) result(err
 end function
 
 integer function test_volumetric_output_partition_attachment() bind(c) result(err)
+    ! Verifies volumetric partitions attach to outputs and select serial fallback.
    use FDETYPES_m
    use FDETYPES_TOOLS, only: create_limit_t, create_control_flags, init_time_array, &
                               init_simulation_material_list, create_geometry_media, create_xyz_limit_array
@@ -559,10 +568,7 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
 end function
 
 integer function test_update_point_probe() bind(c) result(err)
-! This test updates the values recorded by a single point probe at (4,4,4)
-! over two timesteps. It verifies that the probe correctly stores the time
-! steps and associated field values, ensuring proper temporal tracking of
-! measured quantities.
+   ! Verifies point-probe values and timestamps are recorded over two timesteps.
    use FDETYPES_m
    use FDETYPES_TOOLS
    use output_m
@@ -661,9 +667,7 @@ integer function test_update_point_probe() bind(c) result(err)
 end function
 
 integer function test_flush_point_probe() bind(c) result(err)
-! This test validates the flush operation for a point probe. It ensures
-! that time and frequency data are properly written to files, and that
-! internal arrays are cleared/reset after flushing, preserving data integrity.
+   ! Verifies point-probe time and frequency data are written and reset on flush.
    use output_m
    use outputTypes_m
    use pointProbeOutput_m
@@ -745,9 +749,7 @@ integer function test_flush_point_probe() bind(c) result(err)
 end function
 
 integer function test_multiple_flush_point_probe() bind(c) result(err)
-! This test verifies that multiple consecutive flushes of a point probe
-! correctly append or overwrite data files without losing previous data.
-! It ensures consistency of both time and frequency outputs across multiple flushes.
+   ! Verifies consecutive point-probe flushes preserve time and frequency data.
    use output_m
    use outputTypes_m
    use pointProbeOutput_m
@@ -845,10 +847,7 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
 end function
 
 integer function test_init_movie_probe() bind(c) result(err)
-! This test initializes a movie probe over a 3D region from (2,2,2) to (5,5,5).
-! It checks that the probe is correctly allocated, that the number of measurement
-! points and buffer sizes are correct, and that the output folder and PVD file
-! for the movie are properly created.
+   ! Verifies movie-probe allocation, measurement sizes, and output directory.
    use output_m
    use outputTypes_m
    use testOutputUtils_m
@@ -976,9 +975,7 @@ integer function test_init_movie_probe() bind(c) result(err)
 end function
 
 integer function test_update_movie_probe() bind(c) result(err)
-! This test updates a movie probe with field values at a single timestep.
-! It verifies that the probe correctly stores the measured values in the x, y,
-! and z components for all points, and that the timestep buffer is properly populated.
+   ! Verifies movie-probe field components and timestep buffering for one update.
    use output_m
    use outputTypes_m
    use testOutputUtils_m
@@ -1129,9 +1126,7 @@ integer function test_update_movie_probe() bind(c) result(err)
 end function
 
 integer function test_flush_movie_probe() bind(c) result(err)
-! This test validates flushing movie probes to disk. It ensures that
-! binary, HDF5, XDMF, and descriptor artifacts are created for the temporal
-! sequence, including full-vector and individual-component requests.
+   ! Verifies movie flushes create binary, HDF5, XDMF, and descriptor artifacts.
    use output_m
    use outputTypes_m
    use testOutputUtils_m
@@ -1337,9 +1332,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
 end function
 
 integer function test_init_frequency_slice_probe() bind(c) result(err)
-! This test initializes a frequency slice probe over a 3D region (2,2,2) to (5,5,5).
-! It verifies that the probe is correctly set up, that the expected number of measurement
-! points and frequencies are allocated, and that the output folder and PVD file exist.
+   ! Verifies frequency-slice allocation, dimensions, paths, and serialized output.
     use output_m
     use outputTypes_m
     use frequencySliceProbeOutput_m, only: flush_frequency_slice_probe_output, close_frequency_slice_probe_output
@@ -1511,10 +1504,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 end function
 
 integer function test_update_frequency_slice_probe() bind(c) result(err)
-! This test updates a frequency slice probe with field gradients.
-! It checks that no current is detected along the X-axis for H-field gradients
-! and verifies the correct relation between Y and Z values (Y = -Z), ensuring
-! correct handling of field distributions across the frequency slice.
+   ! Verifies frequency-slice gradients produce zero X current and Y = -Z.
    use output_m
    use outputTypes_m
    use testOutputUtils_m
