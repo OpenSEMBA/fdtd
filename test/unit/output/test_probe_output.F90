@@ -1130,8 +1130,8 @@ end function
 
 integer function test_flush_movie_probe() bind(c) result(err)
 ! This test validates flushing movie probes to disk. It ensures that
-! VTU files for each timestep and the PVD file are created, confirming that
-! the temporal sequence of the movie probe is correctly serialized and saved.
+! binary, HDF5, XDMF, and descriptor artifacts are created for the temporal
+! sequence, including full-vector and individual-component requests.
    use output_m
    use outputTypes_m
    use testOutputUtils_m
@@ -1331,7 +1331,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
     test_err = test_err + assert_true(hasXdmfArtifact, 'Movie JSON lacks the XDMF artifact')
     test_err = test_err + assert_true(hasH5Artifact, 'Movie JSON lacks the HDF5 artifact')
 
-    call remove_folder(test_folder, ios)
+    call cleanup_test_artifacts(test_folder, ios)
 
    err = test_err
 end function

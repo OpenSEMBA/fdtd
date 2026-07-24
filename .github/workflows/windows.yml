@@ -73,6 +73,9 @@ jobs:
     - name: Run unit tests 
       run: build/bin/fdtd_tests.exe
 
+    - name: Verify output (serial)
+      run: build/bin/fdtd_tests.exe --gtest_filter=output.*
+
     - name: Run CTest suites
       run: ctest --test-dir build --output-on-failure
 

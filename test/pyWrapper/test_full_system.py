@@ -563,17 +563,24 @@ def test_sphere(tmp_path):
 @pytest.mark.movie
 def test_movie_in_planewave_in_box(tmp_path):
     import h5py
+    import xml.etree.ElementTree as ET
+
     fn = CASES_FOLDER + 'planewave/pw-in-box-with-movie.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
     movie_files = solver.getSolvedProbeFilenames("electric_field_movie")
     h5file = [f for f in movie_files if f.endswith('.h5')][0]
+    xdmffile = [f for f in movie_files if f.endswith('.xdmf')][0]
+    descriptor = os.path.splitext(h5file)[0] + '.json'
+
+    assert os.path.isfile(descriptor)
     with h5py.File(h5file, "r") as f:
-        time_key = list(f.keys())[0]
-        field_key = list(f.keys())[1]
-        time_ds = f[time_key][()]
-        field_ds = f[field_key][()]
+        required_datasets = {
+            'coordsX', 'coordsY', 'coordsZ', 'times',
+            'ElectricFieldX', 'ElectricFieldY', 'ElectricFieldZ',
+        }
+        assert required_datasets <= set(f.keys())
 
         time_ds = f['times'][()]
         assert time_ds.ndim == 1
@@ -625,9 +632,9 @@ def test_movie_in_planewave_in_box(tmp_path):
                 ]
                 assert offset == (index, 0, 0, 0)
                 assert stride == (1, 1, 1, 1)
-                 assert count == (1, *f[attribute.attrib['Name']].shape[1:])
-                 assert source.text.strip() == f'{h5_name}:/{attribute.attrib["Name"]}'
-                 assert tuple(int(value) for value in source.attrib['Dimensions'].split()) == f[attribute.attrib['Name']].shape
+                assert count == (1, *f[attribute.attrib['Name']].shape[1:])
+                assert source.text.strip() == f'{h5_name}:/{attribute.attrib["Name"]}'
+                assert tuple(int(value) for value in source.attrib['Dimensions'].split()) == f[attribute.attrib['Name']].shape
 
 
 @no_hdf_skip

@@ -367,8 +367,10 @@ class FDTD():
         file_extensions = ('*.dat', '*.xdmf', '*.bin', '*.h5')
         probeFiles = []
         for ext in file_extensions:
-            newProbes = [x for x in glob.glob(ext) if re.match(
-                self.getCaseName() + '_' + probe_name, x)]
+            newProbes = [
+                x for x in glob.glob(os.path.join('**', ext), recursive=True)
+                if re.match(self.getCaseName() + '_' + probe_name, os.path.basename(x))
+            ]
             probeFiles.extend(newProbes)
 
         return sorted(probeFiles)

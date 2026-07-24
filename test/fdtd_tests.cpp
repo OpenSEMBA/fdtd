@@ -11,10 +11,9 @@
 #ifdef CompileWithSMBJSON
     #include "smbjson/smbjson_tests.h"
     #include "rotate/rotate_tests.h"
-    #include "vtk/vtk_tests.h"
     #ifdef CompileWithNewOutputModule
-        #include "output/output_tests.h"
-        #include "output/vtkAPI_tests.h"
+        #include "unit/output/output_tests.h"
+        #include "unit/output/vtkAPI_tests.h"
     #endif
 #endif
 #if !defined(CompileWithMPI) && !defined(CompileWithNewOutputModule)
