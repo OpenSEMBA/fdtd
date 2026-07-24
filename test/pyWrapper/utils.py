@@ -52,7 +52,9 @@ def _default_semba_exe():
 
 # Use of absolute path to avoid conflicts when changing directory.
 if platform == "linux":
-    SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd')
+    SEMBA_EXE = _default_semba_exe()
+    RELEASE_SEMBA_EXE = os.path.join(os.getcwd(), 'build-rls', 'bin', 'semba-fdtd')
+    DEBUG_SEMBA_EXE = os.path.join(os.getcwd(), 'build-dbg', 'bin', 'semba-fdtd')
 elif platform == "win32":
     SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd.exe')
 

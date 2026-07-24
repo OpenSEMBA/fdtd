@@ -17,6 +17,7 @@ module testOutputUtils_m
    public :: fillGradient
    public :: setup_dummy_problem_info
    public :: clean_dummy_problem_info
+   public :: cleanup_test_artifacts
    !===========================
 
    ! Storage for dummy targets
@@ -232,5 +233,24 @@ contains
       nullify(problemInfo%materialList)
       nullify(problemInfo%simulationBounds)
    end subroutine clean_dummy_problem_info
+
+   subroutine cleanup_test_artifacts(path, error)
+       use directoryUtils_m, only: remove_folder
+       character(len=*), intent(in) :: path
+       integer, intent(out) :: error
+
+       character(len=8) :: value
+       integer :: status
+
+       call get_environment_variable('SEMBA_FDTD_KEEP_ARTIFACTS', value, status=status)
+       if (status == 0 .and. any([trim(value) == '1', trim(value) == 'true', trim(value) == 'TRUE', &
+                                  trim(value) == 'on', trim(value) == 'ON'])) then
+          error = 0
+          write(*, '(A)') 'Retained test artifacts: '//trim(path)
+          return
+       end if
+
+       call remove_folder(path, error)
+   end subroutine cleanup_test_artifacts
 
 end module testOutputUtils_m

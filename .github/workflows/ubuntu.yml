@@ -94,6 +94,18 @@ jobs:
     - name: Run unit tests 
       run: build/bin/fdtd_tests
 
+    - name: Verify output (serial)
+      if: matrix.mpi=='OFF'
+      run: build/bin/fdtd_tests --gtest_filter='output.*'
+
+    - name: Verify output (MPI collective)
+      if: matrix.mpi=='ON'
+      run: ctest --test-dir build --output-on-failure -R '^output_mpi_collective_and_root_aggregation$'
+
+    - name: Verify output (MPI root aggregation)
+      if: matrix.mpi=='ON'
+      run: ctest --test-dir build --output-on-failure -R '^output_mpi_collective_and_root_aggregation$'
+
     - name: Run CTest suites
       run: ctest --test-dir build --output-on-failure
 
