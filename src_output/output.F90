@@ -693,8 +693,8 @@ contains
                    outputCount = outputCount + 1
                    outputs(outputCount)%outputID = LINE_PROBE_ID
                    allocate(outputs(outputCount)%lineProbe)
-                   call init_solver_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
-                                           outputTypeExtension//'_LI')
+                   call init_line_probe_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
+                                               outputTypeExtension//'_LI', sgg%Sweep, control%layoutnumber, control%num_procs)
                    call register_scalar_output_metadata(outputCount, trim(outputTypeExtension)//'.json', &
                                                         trim(outputTypeExtension), 'LI', &
                                                         outputs(outputCount)%lineProbe%artifacts, metadata_status)

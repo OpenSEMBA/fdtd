@@ -1,5 +1,5 @@
 module lineProbeOutput_m
-   use FDETYPES_m, only: RKIND, RKIND_tiempo, BUFSIZE, direction_t, iEx, iEy, iEz
+   use FDETYPES_m, only: RKIND, RKIND_tiempo, SINGLE, BUFSIZE, direction_t, xyzlimit_t, iEx, iEy, iEz
    use outputTypes_m, only: field_data_t, line_probe_output_t, domain_t, TIME_DOMAIN, &
                              OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY, BINARY_ENDIAN_LITTLE, &
                              BINARY_NUMERIC_REAL32, BINARY_COMPLEX_UNSPECIFIED, binaryExtension, &
@@ -12,7 +12,7 @@ module lineProbeOutput_m
    private
 
    public :: calculate_line_integral, init_line_probe_output, update_line_probe_output, &
-             flush_line_probe_output, complete_line_probe_sample, reduce_line_probe_sample
+              flush_line_probe_output, complete_line_probe_sample, reduce_line_probe_sample, line_segment_is_local
 
 contains
 
@@ -42,18 +42,36 @@ contains
       end do
    end function calculate_line_integral
 
-   subroutine init_line_probe_output(this, segments, domain, output_path)
+   subroutine init_line_probe_output(this, segments, domain, output_path, sweeps, rank, rank_count)
       type(line_probe_output_t), intent(out) :: this
       type(direction_t), intent(in) :: segments(:)
       type(domain_t), intent(in) :: domain
       character(len=*), intent(in) :: output_path
+      type(xyzlimit_t), intent(in), optional :: sweeps(:)
+      integer(kind=SINGLE), intent(in), optional :: rank, rank_count
       character(len=BUFSIZE) :: artifact_paths(2)
-      integer :: artifact_kinds(2), ios
+      integer :: artifact_kinds(2), ios, segment_index, local_count
 
       this%domain = domain
       this%path = output_path
-      allocate(this%segments(size(segments)))
-      this%segments = segments
+      local_count = size(segments)
+      if (present(sweeps)) then
+         local_count = 0
+         do segment_index = 1, size(segments)
+            if (line_segment_is_local(segments(segment_index), sweeps, rank, rank_count)) local_count = local_count + 1
+         end do
+      end if
+      allocate(this%segments(local_count))
+      if (present(sweeps)) then
+         local_count = 0
+         do segment_index = 1, size(segments)
+            if (.not. line_segment_is_local(segments(segment_index), sweeps, rank, rank_count)) cycle
+            local_count = local_count + 1
+            this%segments(local_count) = segments(segment_index)
+         end do
+      else
+         this%segments = segments
+      end if
       call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
       call alloc_and_init(this%valueForTime, BUFSIZE, 0.0_RKIND)
 
@@ -69,6 +87,28 @@ contains
       call create_file_with_path(this%artifacts(1)%relative_path, ios)
       call create_file_with_path(this%artifacts(2)%relative_path, ios)
    end subroutine init_line_probe_output
+
+   pure logical function line_segment_is_local(segment, sweeps, rank, rank_count)
+      type(direction_t), intent(in) :: segment
+      type(xyzlimit_t), intent(in) :: sweeps(:)
+      integer, intent(in), optional :: rank, rank_count
+      integer(kind=SINGLE) :: component, local_rank, local_rank_count, owned_upper_z
+
+      local_rank = 0
+      local_rank_count = 1
+      if (present(rank)) local_rank = rank
+      if (present(rank_count)) local_rank_count = rank_count
+      component = abs(segment%orientation)
+      if (component < lbound(sweeps, 1) .or. component > ubound(sweeps, 1)) then
+         line_segment_is_local = .false.
+         return
+      end if
+      owned_upper_z = sweeps(component)%ZE
+      if (local_rank < local_rank_count - 1 .and. any(component == [iEx, iEy])) owned_upper_z = owned_upper_z - 1
+      line_segment_is_local = segment%x >= sweeps(component)%XI .and. segment%x <= sweeps(component)%XE .and. &
+                              segment%y >= sweeps(component)%YI .and. segment%y <= sweeps(component)%YE .and. &
+                              segment%z >= sweeps(component)%ZI .and. segment%z <= owned_upper_z
+   end function line_segment_is_local
 
    subroutine update_line_probe_output(this, step, electric_field)
       type(line_probe_output_t), intent(inout) :: this

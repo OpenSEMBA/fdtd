@@ -338,6 +338,25 @@ integer function test_line_probe_serial_reduction() bind(c) result(err)
    err = err + assert_real_equal(value, 3.5_RKIND, 1.0e-6_RKIND, 'Serial line reduction changed the value')
 end function test_line_probe_serial_reduction
 
+integer function test_line_probe_shared_interface_owner() bind(c) result(err)
+   use FDETYPES_m, only: direction_t, xyzlimit_t, iEx
+   use lineProbeOutput_m, only: line_segment_is_local
+   use assertionTools_m, only: assert_true
+   implicit none
+
+   type(direction_t) :: segment
+   type(xyzlimit_t) :: lower_rank_sweeps(6), upper_rank_sweeps(6)
+
+   err = 0
+   lower_rank_sweeps = xyzlimit_t(0, 4, 0, 4, 0, 2)
+   upper_rank_sweeps = xyzlimit_t(0, 4, 0, 4, 2, 4)
+   segment = direction_t(1, 1, 2, iEx)
+   err = err + assert_true(.not. line_segment_is_local(segment, lower_rank_sweeps, 0, 2), &
+                            'Lower rank retained a shared Ex interface segment')
+   err = err + assert_true(line_segment_is_local(segment, upper_rank_sweeps, 1, 2), &
+                            'Higher rank did not own a shared Ex interface segment')
+end function test_line_probe_shared_interface_owner
+
 integer function test_nested_output_path() bind(c) result(err)
     ! Verifies nested output directories are created and removed correctly.
    use directoryUtils_m, only: create_file_with_path, file_exists, remove_folder
