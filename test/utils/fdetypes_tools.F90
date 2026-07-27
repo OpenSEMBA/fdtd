@@ -1,6 +1,7 @@
 module FDETYPES_TOOLS
    use FDETYPES_m
    use utils_m
+   use allocationUtils_m, only: alloc_and_init
    use NFDETypes_m
    implicit none
    private

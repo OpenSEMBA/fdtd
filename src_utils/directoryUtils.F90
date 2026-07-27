@@ -132,7 +132,7 @@ contains
          return
       end if
 
-#ifdef __WIN32__
+#ifdef _WIN32
       call execute_command_line("mkdir """//trim(path)//"""", exitstat=ios)
 #else
       call execute_command_line("mkdir -p "//trim(path), exitstat=ios)
@@ -151,7 +151,7 @@ contains
          return
       end if
 
-#ifdef __WIN32__
+#ifdef _WIN32
       call execute_command_line("rmdir /S /Q """//trim(path)//"""", exitstat=ios)
 #else
       call execute_command_line("rm -rf "//trim(path), exitstat=ios)

@@ -1,4 +1,4 @@
-module utils_m
+module mtln_utils_m
 
    use iso_fortran_env, only: real64
    use FDETYPES_m, only: RKIND
@@ -113,4 +113,4 @@ contains
    end function
 
 
-end module utils_m
+end module mtln_utils_m

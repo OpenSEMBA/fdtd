@@ -2,7 +2,7 @@ integer function test_init_time_movie_observation() bind(C) result(err)
     use FDETYPES_m
     use FDETYPES_TOOLS
     use Observa_m
-    use observation_testingTools
+    use observation_testingTools, only: create_base_sgg, get_temp_dir
 
     type(SGGFDTDINFO_t) :: sgg
     type(media_matrices_t) :: media
@@ -22,7 +22,8 @@ integer function test_init_time_movie_observation() bind(C) result(err)
     sgg = create_base_sgg()
     call set_sgg_data(sgg)
 
-    media = create_media(sgg%Alloc)
+    media = create_geometry_media_from_sggAlloc(sgg%Alloc)
+    media%sggMtag = 0
     tag_numbers = create_tag_list(sgg%Alloc)
 
     ThereAreObservation = .false.
@@ -36,7 +37,7 @@ integer function test_init_time_movie_observation() bind(C) result(err)
 
     facesNF2FF = create_facesNF2FF(.false., .false., .false., .false., .false., .false.)
     control = create_control_flags(0, 0, 3, 10, trim(get_temp_dir())//'/entryRoot', "wireflavour",&
-                                    .false., .false., .false., .false., .false.,&
+                                    .false., .false., .false., .false., .false., .false.,&
                                     facesNF2FF)
 
     call InitObservation(sgg, media, tag_numbers, &
