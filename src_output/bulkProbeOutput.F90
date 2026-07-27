@@ -7,7 +7,7 @@ module bulkProbeOutput_m
      use allocationUtils_m, only: alloc_and_init
      use outputBinary_m, only: append_binary_real64, BINARY_WRITER_SUCCESS
      use, intrinsic :: iso_fortran_env, only: real64
-     use directoryUtils_m, only: create_file_with_path
+      use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
    implicit none
 
 contains
@@ -51,8 +51,9 @@ contains
          character(len=BUFSIZE) :: outputPath
          probeBoundsExtension = get_coordinates_extension(this%mainCoords, this%auxCoords, mpidir)
          prefixFieldExtension = get_prefix_extension(field, mpidir)
-         outputPath = &
-            trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
+          outputPath = &
+             trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
+          outputPath = join_path(outputPath, get_last_component(outputPath))
          return
       end function get_output_path
 

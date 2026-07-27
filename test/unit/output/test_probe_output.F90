@@ -17,8 +17,9 @@ integer function test_init_point_probe() bind(c) result(err)
    ! Local variables
    character(len=1) :: sep
    character(len=BUFSIZE) :: nEntrada
-   character(len=BUFSIZE) :: expectedProbePath
-   character(len=BUFSIZE) :: expectedDataPath
+    character(len=BUFSIZE) :: expectedProbePath
+    character(len=BUFSIZE) :: expectedDataPath
+    character(len=BUFSIZE) :: expectedDescriptorPath
 
    type(SGGFDTDINFO_t)              :: sgg
    type(sim_control_t)            :: control
@@ -66,14 +67,17 @@ integer function test_init_point_probe() bind(c) result(err)
    test_err = test_err + assert_true(outputRequested, 'Valid probes not found')
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, POINT_PROBE_ID, 'Unexpected probe id')
 
-   expectedProbePath = trim(nEntrada)//wordSeparation//'pointProbe_Ex_4_4_4'
-   expectedDataPath = trim(expectedProbePath)//wordSeparation//timeExtension//datFileExtension
+    expectedProbePath = trim(nEntrada)//wordSeparation//'pointProbe_Ex_4_4_4'
+    expectedProbePath = trim(expectedProbePath)//sep//get_last_component(expectedProbePath)
+    expectedDataPath = trim(expectedProbePath)//wordSeparation//timeExtension//datFileExtension
+    expectedDescriptorPath = trim(expectedProbePath)//'.json'
 
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%filePathTime, expectedDataPath, 'Unexpected path')
-   test_err = test_err + assert_string_equal(outputs(1)%pointProbe%artifacts(1)%relative_path, &
-                                              expectedDataPath, 'Declared payload path changed')
-   test_err = test_err + assert_true(file_exists(expectedDataPath), 'Time data file do not exist')
+    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%artifacts(1)%relative_path, &
+                                               expectedDataPath, 'Declared payload path changed')
+    test_err = test_err + assert_true(file_exists(expectedDataPath), 'Time data file do not exist')
+    test_err = test_err + assert_true(file_exists(expectedDescriptorPath), 'Probe descriptor does not exist')
 
    ! Cleanup
    call remove_folder(test_folder, ios)
@@ -172,17 +176,18 @@ integer function test_root_output_manifest() bind(c) result(err)
    open(newunit=unit, file='rootManifest_output_manifest.json', status='old', action='read', iostat=ios)
    do while (ios == 0)
       read(unit, '(A)', iostat=ios) line
-      if (index(line, 'rootManifest_pointProbe_Ex_4_4_4_tm.dat') > 0) has_artifact = .true.
+       if (index(line, 'rootManifest_pointProbe_Ex_4_4_4/rootManifest_pointProbe_Ex_4_4_4_tm.dat') > 0) has_artifact = .true.
    end do
    close(unit)
    err = err + assert_true(has_artifact, 'Manifest does not contain the declared point artifact')
 
-   call delete_run_output_manifest('rootManifest', 0)
-   err = err + assert_true(.not. file_exists('rootManifest_pointProbe_Ex_4_4_4_tm.dat'), &
-                            'Manifest deletion did not remove the declared artifact')
+    call delete_run_output_manifest('rootManifest', 0)
+    err = err + assert_true(.not. file_exists('rootManifest_pointProbe_Ex_4_4_4/rootManifest_pointProbe_Ex_4_4_4_tm.dat'), &
+                             'Manifest deletion did not remove the declared artifact')
+    err = err + assert_true(.not. folder_exists('rootManifest_pointProbe_Ex_4_4_4'), &
+                             'Manifest deletion did not remove the probe directory')
    err = err + assert_true(.not. file_exists('rootManifest_output_manifest.json'), &
                             'Manifest deletion did not remove the manifest')
-   call remove_folder('rootManifest_Ex_4_4_4', ios)
 end function
 
 integer function test_line_probe_integral() bind(c) result(err)

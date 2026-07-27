@@ -26,7 +26,7 @@ contains
 
        this%path = get_output_path()
        artifact_paths(1) = trim(join_path(this%path, get_last_component(this%path)))//vtuFileExtension
-       artifact_paths(2) = trim(this%path)//'.txt'
+        artifact_paths(2) = trim(join_path(this%path, get_last_component(this%path)))//'.txt'
        artifact_kinds = [OUTPUT_ARTIFACT_GEOMETRY, OUTPUT_ARTIFACT_TEXT]
        call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
        call store_relevant_coordinates(this, problemInfo)

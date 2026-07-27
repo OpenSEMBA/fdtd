@@ -1,8 +1,9 @@
 module farFieldOutput_m
    use outputTypes_m
    use report_m
-   use outputUtils_m
-   use farfield_m
+    use outputUtils_m
+    use farfield_m
+    use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
    implicit none
    private
    !===========================
@@ -26,8 +27,8 @@ contains
       character(len=*), intent(in) :: fileNormalize, outputTypeExtension
        type(problem_info_t), intent(in) :: problemInfo
        real(kind=RKIND), intent(in) :: mu0, eps0
-       character(len=BUFSIZE) :: artifact_paths(2)
-       integer :: artifact_kinds(2)
+        character(len=BUFSIZE) :: artifact_paths(2)
+        integer :: artifact_kinds(2), ios
 
       if (domain%domainType /= FREQUENCY_DOMAIN) call StopOnError(0, 0, "Unexpected domain type for farField probe")
 
@@ -48,8 +49,9 @@ contains
         this%artifacts(2)%record_bytes = 72
         this%artifacts(2)%component_order = &
            'frequency,theta,phi,Etheta.magnitude,Etheta.phase,Ephi.magnitude,Ephi.phase,RCS.arithmetic,RCS.geometric'
-       this%filePathFreq = this%artifacts(1)%relative_path
-       call InitFarField(sgg, &
+        this%filePathFreq = this%artifacts(1)%relative_path
+        call create_file_with_path(this%filePathFreq, ios)
+        call InitFarField(sgg, &
          problemInfo%geometryToMaterialData%sggMiEx, problemInfo%geometryToMaterialData%sggMiEy, problemInfo%geometryToMaterialData%sggMiEz, &
          problemInfo%geometryToMaterialData%sggMiHx, problemInfo%geometryToMaterialData%sggMiHy, problemInfo%geometryToMaterialData%sggMiHz, &
                         control%layoutnumber, control%num_procs, problemInfo%simulationBounds, control%resume, &
@@ -73,8 +75,9 @@ contains
          character(len=BUFSIZE) :: outputPath
          probeBoundsExtension = get_coordinates_extension(this%mainCoords, this%auxCoords, control%mpidir)
          prefixFieldExtension = get_prefix_extension(field, control%mpidir)
-         outputPath = &
-            trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
+          outputPath = &
+             trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
+          outputPath = join_path(outputPath, get_last_component(outputPath))
          return
       end function get_output_path
 

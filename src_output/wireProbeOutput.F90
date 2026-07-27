@@ -8,7 +8,7 @@ module wireProbeOutput_m
      use allocationUtils_m, only: alloc_and_init
      use outputBinary_m, only: append_binary_real64, BINARY_WRITER_SUCCESS
      use, intrinsic :: iso_fortran_env, only: real64
-     use directoryUtils_m, only: create_file_with_path
+      use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
    use wiresHolland_constants_m
    use HollandWires_m
 
@@ -401,8 +401,9 @@ module wireProbeOutput_m
       fieldExt  = get_prefix_extension(field, mpidir)
       boundsExt = probe_bounds_extension(mpidir, coords)
 
-      path = trim(outExt)//'_'//trim(fieldExt)//'_'// &
-             trim(boundsExt)//'_s'//trim(adjustl(nodeStr))
+       path = trim(outExt)//'_'//trim(fieldExt)//'_'// &
+              trim(boundsExt)//'_s'//trim(adjustl(nodeStr))
+       path = join_path(path, get_last_component(path))
    end function build_output_path
 
    subroutine clear_current_time_data(this)

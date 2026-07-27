@@ -3,7 +3,7 @@ module output_m
    use report_m
    use domain_m
     use outputUtils_m
-     use directoryUtils_m, only: delete_file, file_exists, get_last_component, join_path
+      use directoryUtils_m, only: delete_file, file_exists, get_last_component, join_path, remove_folder
    use pointProbeOutput_m
    use wireProbeOutput_m
     use bulkProbeOutput_m
@@ -639,9 +639,12 @@ contains
                allocate (outputs(outputCount)%mapvtkOutput)
                call init_solver_output(outputs(outputCount)%mapvtkOutput, lowerBound, upperBound, outputRequestType, outputTypeExtension, control%mpidir, problemInfo)
                call create_geometry_simulation_vtu(outputs(outputCount)%mapvtkOutput, control, sgg%LineX, sgg%LineY, sgg%LineZ)
-               call register_scalar_output_metadata(outputCount, trim(outputTypeExtension)//'.json', &
-                                                    trim(outputTypeExtension), get_prefix_extension(outputRequestType, control%mpidir), &
-                                                    outputs(outputCount)%mapvtkOutput%artifacts, metadata_status)
+                call register_scalar_output_metadata(outputCount, &
+                                                     join_path(outputs(outputCount)%mapvtkOutput%path, &
+                                                               get_last_component(outputs(outputCount)%mapvtkOutput%path)//'.json'), &
+                                                     get_last_component(outputs(outputCount)%mapvtkOutput%path), &
+                                                     get_prefix_extension(outputRequestType, control%mpidir), &
+                                                     outputs(outputCount)%mapvtkOutput%artifacts, metadata_status)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
 
             case (iEx, iEy, iEz, iHx, iHy, iHz)
@@ -650,8 +653,9 @@ contains
 
                 allocate (outputs(outputCount)%pointProbe)
                 call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt)
-                call register_scalar_output_metadata(outputCount, trim(outputTypeExtension)//'.json', &
-                                                     trim(outputTypeExtension), get_prefix_extension(outputRequestType, control%mpidir), &
+                 call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%pointProbe%path)//'.json', &
+                                                      get_last_component(outputs(outputCount)%pointProbe%path), &
+                                                      get_prefix_extension(outputRequestType, control%mpidir), &
                                                      outputs(outputCount)%pointProbe%artifacts, metadata_status)
             case (iJx, iJy, iJz)
                if (wiresExists) then
@@ -660,9 +664,10 @@ contains
 
                    allocate (outputs(outputCount)%wireCurrentProbe)
                    call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, problemInfo%materialList, outputTypeExtension, control%mpidir, control%wiresflavor)
-                   call register_scalar_output_metadata(outputCount, trim(outputTypeExtension)//'.json', &
-                                                        trim(outputTypeExtension), get_prefix_extension(outputRequestType, control%mpidir), &
-                                                        outputs(outputCount)%wireCurrentProbe%artifacts, metadata_status)
+                    call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%wireCurrentProbe%path)//'.json', &
+                                                         get_last_component(outputs(outputCount)%wireCurrentProbe%path), &
+                                                         get_prefix_extension(outputRequestType, control%mpidir), &
+                                                         outputs(outputCount)%wireCurrentProbe%artifacts, metadata_status)
                end if
 
             case (iQx, iQy, iQz)
@@ -671,9 +676,10 @@ contains
 
                 allocate (outputs(outputCount)%wireChargeProbe)
                 call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
-                call register_scalar_output_metadata(outputCount, trim(outputTypeExtension)//'.json', &
-                                                     trim(outputTypeExtension), get_prefix_extension(outputRequestType, control%mpidir), &
-                                                     outputs(outputCount)%wireChargeProbe%artifacts, metadata_status)
+                 call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%wireChargeProbe%path)//'.json', &
+                                                      get_last_component(outputs(outputCount)%wireChargeProbe%path), &
+                                                      get_prefix_extension(outputRequestType, control%mpidir), &
+                                                      outputs(outputCount)%wireChargeProbe%artifacts, metadata_status)
 
              case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
                outputCount = outputCount + 1
@@ -681,9 +687,10 @@ contains
 
                 allocate (outputs(outputCount)%bulkCurrentProbe)
                 call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
-                 call register_scalar_output_metadata(outputCount, trim(outputTypeExtension)//'.json', &
-                                                      trim(outputTypeExtension), get_prefix_extension(outputRequestType, control%mpidir), &
-                                                      outputs(outputCount)%bulkCurrentProbe%artifacts, metadata_status)
+                  call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%bulkCurrentProbe%path)//'.json', &
+                                                       get_last_component(outputs(outputCount)%bulkCurrentProbe%path), &
+                                                       get_prefix_extension(outputRequestType, control%mpidir), &
+                                                       outputs(outputCount)%bulkCurrentProbe%artifacts, metadata_status)
                 !! call adjust_computation_range --- Required due to issues in mpi region edges
 
              case (lineIntegral)
@@ -694,10 +701,11 @@ contains
                    outputs(outputCount)%outputID = LINE_PROBE_ID
                    allocate(outputs(outputCount)%lineProbe)
                    call init_line_probe_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
-                                               outputTypeExtension//'_LI', sgg%Sweep, control%layoutnumber, control%num_procs)
-                   call register_scalar_output_metadata(outputCount, trim(outputTypeExtension)//'.json', &
-                                                        trim(outputTypeExtension), 'LI', &
-                                                        outputs(outputCount)%lineProbe%artifacts, metadata_status)
+                                                join_path(outputTypeExtension//'_LI', outputTypeExtension//'_LI'), &
+                                                sgg%Sweep, control%layoutnumber, control%num_procs)
+                    call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%lineProbe%path)//'.json', &
+                                                         get_last_component(outputs(outputCount)%lineProbe%path), 'LI', &
+                                                         outputs(outputCount)%lineProbe%artifacts, metadata_status)
                    outputs(outputCount)%metadata%domain_type = domain%domainType
                    if (allocated(outputs(outputCount)%metadata%ownership%participant_ranks)) then
                       deallocate(outputs(outputCount)%metadata%ownership%participant_ranks)
@@ -734,9 +742,10 @@ contains
                outputs(outputCount)%outputID = FAR_FIELD_PROBE_ID
                 allocate (outputs(outputCount)%farFieldOutput)
                 call init_solver_output(outputs(outputCount)%farFieldOutput, sgg, lowerBound, upperBound, outputRequestType, domain, sphericRange, outputTypeExtension, sgg%Observation(ii)%FileNormalize, control, problemInfo, eps0, mu0)
-                call register_scalar_output_metadata(outputCount, trim(outputTypeExtension)//'.json', &
-                                                     trim(outputTypeExtension), get_prefix_extension(outputRequestType, control%mpidir), &
-                                                     outputs(outputCount)%farFieldOutput%artifacts, metadata_status)
+                 call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%farFieldOutput%path)//'.json', &
+                                                      get_last_component(outputs(outputCount)%farFieldOutput%path), &
+                                                      get_prefix_extension(outputRequestType, control%mpidir), &
+                                                      outputs(outputCount)%farFieldOutput%artifacts, metadata_status)
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
             end select
@@ -1124,7 +1133,7 @@ contains
      subroutine delete_run_output_manifest(run_id, writer_rank)
        character(len=*), intent(in) :: run_id
        integer, intent(in) :: writer_rank
-       character(len=BUFSIZE) :: artifact_path, line, manifest_path
+        character(len=BUFSIZE) :: artifact_path, artifact_folder, line, manifest_path
        integer :: ios, path_end, path_start, unit
 
        if (writer_rank /= 0) return
@@ -1140,10 +1149,15 @@ contains
           path_start = path_start + len('"path":"')
           path_end = index(line(path_start:), '"')
           if (path_end == 0) cycle
-          artifact_path = line(path_start:path_start + path_end - 2)
-          if (index(trim(artifact_path), trim(run_id)//'_') == 1) then
-             call delete_file(trim(artifact_path), ios)
-          end if
+           artifact_path = line(path_start:path_start + path_end - 2)
+           if (index(trim(artifact_path), trim(run_id)//'_') == 1) then
+              call delete_file(trim(artifact_path), ios)
+              path_end = scan(trim(artifact_path), '/\\', back=.true.)
+              if (path_end > 0) then
+                 artifact_folder = artifact_path(:path_end - 1)
+                 call remove_folder(trim(artifact_folder), ios)
+              end if
+           end if
        end do
        close(unit)
        call delete_file(trim(manifest_path), ios)
