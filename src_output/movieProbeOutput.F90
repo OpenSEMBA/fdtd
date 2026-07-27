@@ -1,10 +1,12 @@
 module movieProbeOutput_m
    use FDETYPES_m
    use utils_m
+   use allocationUtils_m, only: alloc_and_init
    use report_m
    use outputTypes_m
    use outputUtils_m
    use volumicProbeUtils_m
+   use directoryUtils_m, only: add_extension, get_last_component, join_path, create_folder, create_file_with_path
    use xdmfAPI_m
    implicit none
    private
