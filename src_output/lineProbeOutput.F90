@@ -2,11 +2,12 @@ module lineProbeOutput_m
    use FDETYPES_m, only: RKIND, RKIND_tiempo, SINGLE, BUFSIZE, direction_t, xyzlimit_t, iEx, iEy, iEz
    use outputTypes_m, only: field_data_t, line_probe_output_t, domain_t, TIME_DOMAIN, &
                              OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY, BINARY_ENDIAN_LITTLE, &
-                             BINARY_NUMERIC_REAL32, BINARY_COMPLEX_UNSPECIFIED, binaryExtension, &
+                              BINARY_NUMERIC_REAL64, BINARY_COMPLEX_UNSPECIFIED, binaryExtension, &
                              datFileExtension, timeExtension, declare_probe_artifacts
    use allocationUtils_m, only: alloc_and_init
    use directoryUtils_m, only: create_file_with_path
-   use outputBinary_m, only: append_binary_real32, BINARY_WRITER_SUCCESS
+    use outputBinary_m, only: append_binary_real64, BINARY_WRITER_SUCCESS
+    use, intrinsic :: iso_fortran_env, only: real64
    use outputTransport_m, only: output_transport_t, reduce_scalar_batch, OUTPUT_TRANSPORT_SUCCESS
    implicit none
    private
@@ -80,9 +81,9 @@ contains
       artifact_kinds = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       this%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
-      this%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL32
+       this%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
       this%artifacts(2)%complex_representation = BINARY_COMPLEX_UNSPECIFIED
-      this%artifacts(2)%record_bytes = 8
+       this%artifacts(2)%record_bytes = 16
       this%artifacts(2)%component_order = 'time,line_integral'
       call create_file_with_path(this%artifacts(1)%relative_path, ios)
       call create_file_with_path(this%artifacts(2)%relative_path, ios)
@@ -145,7 +146,7 @@ contains
    subroutine flush_line_probe_output(this)
       type(line_probe_output_t), intent(inout) :: this
       integer :: index, ios, unit
-      real(kind=RKIND), allocatable :: records(:)
+       real(real64), allocatable :: records(:)
       real(kind=RKIND_tiempo) :: time_value
 
       if (this%nTime == 0) return
@@ -160,10 +161,10 @@ contains
 
       allocate(records(2 * this%nTime))
       do index = 1, this%nTime
-         records(2 * index - 1) = real(this%timeStep(index), RKIND)
-         records(2 * index) = this%valueForTime(index)
+          records(2 * index - 1) = real(this%timeStep(index), real64)
+          records(2 * index) = real(this%valueForTime(index), real64)
       end do
-      call append_binary_real32(this%artifacts(2)%relative_path, this%artifacts(2), real(records, kind=4), ios)
+       call append_binary_real64(this%artifacts(2)%relative_path, this%artifacts(2), records, ios)
       if (ios == BINARY_WRITER_SUCCESS) call complete_line_probe_sample(this)
    end subroutine flush_line_probe_output
 

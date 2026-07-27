@@ -26,8 +26,8 @@ contains
       character(len=*), intent(in) :: fileNormalize, outputTypeExtension
        type(problem_info_t), intent(in) :: problemInfo
        real(kind=RKIND), intent(in) :: mu0, eps0
-      character(len=BUFSIZE) :: artifact_paths(1)
-      integer :: artifact_kinds(1)
+       character(len=BUFSIZE) :: artifact_paths(2)
+       integer :: artifact_kinds(2)
 
       if (domain%domainType /= FREQUENCY_DOMAIN) call StopOnError(0, 0, "Unexpected domain type for farField probe")
 
@@ -37,10 +37,17 @@ contains
         this%mainCoords = lowerBound
         this%auxCoords = upperBound
         this%path = get_output_path()
-       allocate(this%artifacts(1))
-       artifact_paths(1) = trim(this%path)
-       artifact_kinds(1) = OUTPUT_ARTIFACT_TEXT
-       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
+        allocate(this%artifacts(2))
+        artifact_paths(1) = trim(this%path)
+        artifact_paths(2) = trim(this%path)//binaryExtension
+        artifact_kinds = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]
+        call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
+        this%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
+        this%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
+        this%artifacts(2)%complex_representation = BINARY_COMPLEX_MAGNITUDE_PHASE
+        this%artifacts(2)%record_bytes = 72
+        this%artifacts(2)%component_order = &
+           'frequency,theta,phi,Etheta.magnitude,Etheta.phase,Ephi.magnitude,Ephi.phase,RCS.arithmetic,RCS.geometric'
        this%filePathFreq = this%artifacts(1)%relative_path
        call InitFarField(sgg, &
          problemInfo%geometryToMaterialData%sggMiEx, problemInfo%geometryToMaterialData%sggMiEy, problemInfo%geometryToMaterialData%sggMiEz, &

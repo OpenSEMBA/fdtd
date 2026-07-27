@@ -11,7 +11,7 @@ module movieProbeOutput_m
    use xdmf_hdf5_m, only: xdmf_options_t, xdmf_status_t, &
       xdmf_attribute_id_t, XDMF_SERIES_TIME, XDMF_CENTER_NODE, &
       XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64
-   use outputBinary_m, only: validate_binary_layout, open_binary_append, BINARY_WRITER_SUCCESS
+    use outputBinary_m, only: validate_binary_layout, append_binary_real64, BINARY_WRITER_SUCCESS
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
    use outputVisualisation_m, only: verify_volumetric_visualisation, VISUALISATION_SUCCESS
    use directoryUtils_m, only: add_extension, create_file_with_path, create_folder, file_exists, &
@@ -114,8 +114,8 @@ contains
        this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
        this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
         this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
-        this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL32
-        this%metadata%artifacts(1)%record_bytes = 32
+         this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL64
+         this%metadata%artifacts(1)%record_bytes = 56
         this%metadata%artifacts(1)%component_order = 'time,x,y,z,Ex,Ey,Ez'
        this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
        this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
@@ -314,17 +314,21 @@ contains
     subroutine write_bin_file(this)
        ! Check type definition for binary format
        type(movie_probe_output_t), intent(inout) :: this
-       integer :: i, status, t, unit
+        integer :: i, status, t, record_index
+        real(real64), allocatable :: records(:)
 
-       call open_binary_append(add_extension(this%filesPath, binaryExtension), this%metadata%artifacts(1), unit, status)
-       if (status /= BINARY_WRITER_SUCCESS) return
-       do t = 1, this%nTime
-      do i = 1, this%nPoints
-         write(unit) this%timeStep(t), this%coords(1,i), this%coords(2,i), this%coords(3,i), this%xValueForTime(t,i), this%yValueForTime(t,i), this%zValueForTime(t,i)
-      end do
-      end do
-      flush (unit)
-      close (unit)
+        allocate(records(7 * this%nPoints * this%nTime))
+        record_index = 0
+        do t = 1, this%nTime
+       do i = 1, this%nPoints
+          records(record_index + 1:record_index + 7) = [real(this%timeStep(t), real64), &
+             real(this%coords(1, i), real64), real(this%coords(2, i), real64), real(this%coords(3, i), real64), &
+             real(this%xValueForTime(t, i), real64), real(this%yValueForTime(t, i), real64), &
+             real(this%zValueForTime(t, i), real64)]
+          record_index = record_index + 7
+       end do
+       end do
+       call append_binary_real64(add_extension(this%filesPath, binaryExtension), this%metadata%artifacts(1), records, status)
    end subroutine
 
    subroutine write_to_external_xdmf(this)

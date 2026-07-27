@@ -314,8 +314,8 @@ integer function test_line_probe_artifacts() bind(c) result(err)
    close(text_unit)
    inquire(file=trim(path)//'_tm.bin', size=binary_size, iostat=ios)
    err = err + assert_integer_equal(text_records, 2, 'Line text artifact lost samples')
-   err = err + assert_true(file_exists(trim(path)//'_tm.bin') .and. binary_size == 16, &
-                            'Line binary artifact does not contain two records')
+    err = err + assert_true(file_exists(trim(path)//'_tm.bin') .and. binary_size == 32, &
+                             'Line binary artifact does not contain two records')
    call delete_file(trim(path)//'_tm.dat', ios)
    call delete_file(trim(path)//'_tm.bin', ios)
 end function test_line_probe_artifacts
@@ -907,7 +907,7 @@ integer function test_flush_point_probe() bind(c) result(err)
    type(domain_t)             :: domain
    type(cell_coordinate_t)    :: coordinates
 
-   integer :: file_size, n, i
+    integer :: file_size, frequency_binary_size, time_binary_size, n, i
    integer :: test_err = 0
    integer :: ios
 
@@ -923,12 +923,19 @@ integer function test_flush_point_probe() bind(c) result(err)
    coordinates%y = 2
    coordinates%z = 2
 
-   call init_point_probe_output(probe, coordinates, iEx, domain, nEntrada, 3, 0.1_RKIND_tiempo)
+    call init_point_probe_output(probe, coordinates, iEx, domain, nEntrada, 3, 0.1_RKIND_tiempo)
 
-   ! A declared scalar artifact remains discoverable when no sample is recorded.
-   call flush_point_probe_output(probe)
-   inquire(file=probe%filePathTime, size=file_size)
-   test_err = test_err + assert_integer_equal(file_size, 0, 'Zero-sample point artifact is not empty')
+    test_err = test_err + assert_integer_equal(size(probe%artifacts), 4, &
+                                                'Point probe does not declare all text and binary artifacts')
+
+    ! A declared scalar artifact remains discoverable when no sample is recorded.
+    call flush_point_probe_output(probe)
+    inquire(file=probe%filePathTime, size=file_size)
+    test_err = test_err + assert_integer_equal(file_size, 0, 'Zero-sample point artifact is not empty')
+    test_err = test_err + assert_true(file_exists(probe%artifacts(2)%relative_path), &
+                                      'Zero-sample point time binary artifact is missing')
+    test_err = test_err + assert_true(file_exists(probe%artifacts(4)%relative_path), &
+                                      'Zero-sample point frequency binary artifact is missing')
 
    ! Action
    n = 10
@@ -945,8 +952,15 @@ integer function test_flush_point_probe() bind(c) result(err)
    call flush_point_probe_output(probe)
 
    ! Assertions
-   test_err = test_err + assert_written_output_file(probe%filePathTime)
-   test_err = test_err + assert_written_output_file(probe%filePathFreq)
+    test_err = test_err + assert_written_output_file(probe%filePathTime)
+    test_err = test_err + assert_written_output_file(probe%filePathFreq)
+    inquire(file=probe%artifacts(2)%relative_path, size=time_binary_size)
+    inquire(file=probe%artifacts(4)%relative_path, size=frequency_binary_size)
+    test_err = test_err + assert_true(file_exists(probe%artifacts(2)%relative_path) .and. time_binary_size == 16*n, &
+                                      'Point time binary artifact has an unexpected size')
+    test_err = test_err + assert_true(file_exists(probe%artifacts(4)%relative_path) .and. &
+                                      frequency_binary_size == 24*n, &
+                                      'Point frequency binary artifact has an unexpected size')
 
    test_err = test_err + assert_integer_equal(probe%nTime, 0, 'ERROR: clear_time_data did not reset serializedTimeSize!')
 
@@ -965,6 +979,126 @@ integer function test_flush_point_probe() bind(c) result(err)
 
    err = test_err
 end function
+
+integer function test_flush_wire_probe_binary() bind(c) result(err)
+   use FDETYPES_m, only: RKIND, RKIND_tiempo
+   use outputTypes_m, only: wire_current_probe_output_t, wire_charge_probe_output_t, &
+                            OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY, &
+                            BINARY_ENDIAN_LITTLE, BINARY_NUMERIC_REAL64, &
+                            BINARY_COMPLEX_UNSPECIFIED
+   use wireProbeOutput_m, only: flush_wire_current_probe_output, flush_wire_charge_probe_output
+   use assertionTools_m, only: assert_true
+   use directoryUtils_m, only: create_file_with_path, delete_file, file_exists
+   implicit none
+
+   type(wire_current_probe_output_t) :: current_probe
+   type(wire_charge_probe_output_t) :: charge_probe
+   integer :: current_size, charge_size, ios
+
+   err = 0
+   current_probe%filePathTime = 'testing wire/current_tm.dat'
+   current_probe%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
+   current_probe%artifacts(1)%relative_path = current_probe%filePathTime
+   current_probe%artifacts(2)%kind = OUTPUT_ARTIFACT_BINARY
+   current_probe%artifacts(2)%relative_path = 'testing wire/current_tm.bin'
+   current_probe%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
+   current_probe%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
+   current_probe%artifacts(2)%complex_representation = BINARY_COMPLEX_UNSPECIFIED
+   current_probe%artifacts(2)%record_bytes = 48
+   current_probe%artifacts(2)%component_order = 'time,current,delta_voltage,plus_voltage,minus_voltage,voltage_difference'
+   allocate(current_probe%timeStep(1))
+   current_probe%nTime = 1
+   current_probe%timeStep(1) = 1.0_RKIND_tiempo
+   current_probe%currentValues(1)%current = 2.0_RKIND
+   call create_file_with_path(current_probe%filePathTime, ios)
+   call flush_wire_current_probe_output(current_probe)
+   inquire(file=current_probe%artifacts(2)%relative_path, size=current_size, iostat=ios)
+   err = err + assert_true(file_exists(current_probe%artifacts(2)%relative_path) .and. ios == 0 .and. current_size == 48, &
+                            'Wire-current binary record was not published')
+
+   charge_probe%filePathTime = 'testing wire/charge_tm.dat'
+   charge_probe%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
+   charge_probe%artifacts(1)%relative_path = charge_probe%filePathTime
+   charge_probe%artifacts(2)%kind = OUTPUT_ARTIFACT_BINARY
+   charge_probe%artifacts(2)%relative_path = 'testing wire/charge_tm.bin'
+   charge_probe%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
+   charge_probe%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
+   charge_probe%artifacts(2)%complex_representation = BINARY_COMPLEX_UNSPECIFIED
+   charge_probe%artifacts(2)%record_bytes = 16
+   charge_probe%artifacts(2)%component_order = 'time,charge'
+   allocate(charge_probe%timeStep(1), charge_probe%chargeValue(1))
+   charge_probe%nTime = 1
+   charge_probe%timeStep(1) = 1.0_RKIND_tiempo
+   charge_probe%chargeValue(1) = 2.0_RKIND
+   call create_file_with_path(charge_probe%filePathTime, ios)
+   call flush_wire_charge_probe_output(charge_probe)
+   inquire(file=charge_probe%artifacts(2)%relative_path, size=charge_size, iostat=ios)
+   err = err + assert_true(file_exists(charge_probe%artifacts(2)%relative_path) .and. ios == 0 .and. charge_size == 16, &
+                            'Wire-charge binary record was not published')
+
+   call delete_file(current_probe%filePathTime, ios)
+   call delete_file(current_probe%artifacts(2)%relative_path, ios)
+   call delete_file(charge_probe%filePathTime, ios)
+   call delete_file(charge_probe%artifacts(2)%relative_path, ios)
+end function test_flush_wire_probe_binary
+
+integer function test_flush_bulk_probe_binary() bind(c) result(err)
+   use FDETYPES_m, only: RKIND, RKIND_tiempo
+   use outputTypes_m, only: bulk_current_probe_output_t, OUTPUT_ARTIFACT_TEXT, &
+                            OUTPUT_ARTIFACT_BINARY, BINARY_ENDIAN_LITTLE, &
+                            BINARY_NUMERIC_REAL64, BINARY_COMPLEX_UNSPECIFIED
+   use bulkProbeOutput_m, only: flush_bulk_probe_output
+   use assertionTools_m, only: assert_true
+   use directoryUtils_m, only: create_file_with_path, delete_file, file_exists
+   implicit none
+
+   type(bulk_current_probe_output_t) :: probe
+   integer :: binary_size, ios
+
+   err = 0
+   probe%filePathTime = 'testing bulk/probe_tm.dat'
+   probe%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
+   probe%artifacts(1)%relative_path = probe%filePathTime
+   probe%artifacts(2)%kind = OUTPUT_ARTIFACT_BINARY
+   probe%artifacts(2)%relative_path = 'testing bulk/probe_tm.bin'
+   probe%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
+   probe%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
+   probe%artifacts(2)%complex_representation = BINARY_COMPLEX_UNSPECIFIED
+   probe%artifacts(2)%record_bytes = 16
+   probe%artifacts(2)%component_order = 'time,value'
+   allocate(probe%timeStep(1), probe%valueForTime(1))
+   probe%nTime = 1
+   probe%timeStep(1) = 1.0_RKIND_tiempo
+   probe%valueForTime(1) = 2.0_RKIND
+   call create_file_with_path(probe%filePathTime, ios)
+   call flush_bulk_probe_output(probe)
+   inquire(file=probe%artifacts(2)%relative_path, size=binary_size, iostat=ios)
+   err = err + assert_true(file_exists(probe%artifacts(2)%relative_path) .and. ios == 0 .and. binary_size == 16, &
+                            'Bulk binary record was not published')
+   call delete_file(probe%filePathTime, ios)
+   call delete_file(probe%artifacts(2)%relative_path, ios)
+end function test_flush_bulk_probe_binary
+
+integer function test_farfield_binary_row() bind(c) result(err)
+   use FDETYPES_m, only: RKIND, CKIND
+   use farfield_m, only: append_farfield_binary
+   use assertionTools_m, only: assert_true
+   use directoryUtils_m, only: create_file_with_path, delete_file, file_exists
+   implicit none
+
+   character(len=*), parameter :: path = 'testing farfield/result.bin'
+   integer :: ios, size
+
+   err = 0
+   call create_file_with_path(path, ios)
+   call append_farfield_binary(path, 1.0_RKIND, 2.0_RKIND, 3.0_RKIND, &
+                               cmplx(4.0_RKIND, 5.0_RKIND, CKIND), &
+                               cmplx(6.0_RKIND, 7.0_RKIND, CKIND), 8.0_RKIND, 9.0_RKIND)
+   inquire(file=path, size=size, iostat=ios)
+   err = err + assert_true(file_exists(path) .and. ios == 0 .and. size == 72, &
+                            'Far-field binary row does not contain nine real64 values')
+   call delete_file(path, ios)
+end function test_farfield_binary_row
 
 integer function test_multiple_flush_point_probe() bind(c) result(err)
    ! Verifies consecutive point-probe flushes preserve time and frequency data.
@@ -1519,7 +1653,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
     test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.h5'), 'Movie HDF5 payload does not exist')
     test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.json'), 'Movie JSON descriptor does not exist')
     inquire(file=trim(expectedPath)//'.bin', size=binaryBytes)
-    test_err = test_err + assert_integer_equal(binaryBytes, 8 * 32, 'Movie binary record layout changed')
+     test_err = test_err + assert_integer_equal(binaryBytes, 8 * 56, 'Movie binary record layout changed')
     metadataComplete = .false.
     hasBinaryArtifact = .false.
     hasXdmfArtifact = .false.
@@ -1554,7 +1688,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
     use output_m
     use outputTypes_m
     use frequencySliceProbeOutput_m, only: flush_frequency_slice_probe_output, close_frequency_slice_probe_output
-    use, intrinsic :: iso_fortran_env, only: real32
+     use, intrinsic :: iso_fortran_env, only: real64
    use testOutputUtils_m
    use FDETYPES_TOOLS
    use sggMethods_m
@@ -1604,7 +1738,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    character(len=BUFSIZE) :: expectedProbePath
    character(len=BUFSIZE) :: pdvFileName
     integer :: binaryBytes, ios, unit
-    real(real32) :: record(10)
+     real(real64) :: record(10)
     logical :: metadataComplete
 
    nEntrada = join_path(test_folder, test_name)
@@ -1692,7 +1826,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
     test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.h5'), 'Frequency HDF5 payload does not exist')
     test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.json'), 'Frequency JSON descriptor does not exist')
     inquire(file=trim(expectedProbePath)//'.bin', size=binaryBytes)
-    test_err = test_err + assert_integer_equal(binaryBytes, 6 * 4 * 40, 'Frequency binary record layout changed')
+     test_err = test_err + assert_integer_equal(binaryBytes, 6 * 4 * 80, 'Frequency binary record layout changed')
     open(newunit=unit, file=trim(expectedProbePath)//'.bin', access='stream', form='unformatted', status='old', action='read', iostat=ios)
     if (ios == 0) then
        read(unit, iostat=ios) record

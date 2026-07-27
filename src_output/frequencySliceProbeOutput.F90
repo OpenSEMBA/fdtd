@@ -1,5 +1,5 @@
 module frequencySliceProbeOutput_m
-   use, intrinsic :: iso_fortran_env, only: int64, real32, real64
+    use, intrinsic :: iso_fortran_env, only: int64, real64
    use FDETYPES_m
    use utils_m
    use allocationUtils_m, only: alloc_and_init
@@ -12,7 +12,7 @@ module frequencySliceProbeOutput_m
    use xdmf_hdf5_m, only: xdmf_options_t, xdmf_status_t, &
       xdmf_attribute_id_t, XDMF_SERIES_FREQUENCY, XDMF_CENTER_NODE, &
       XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, XDMF_TOPOLOGY_POLYVERTEX
-   use outputBinary_m, only: validate_binary_layout, write_binary_complex_record32, BINARY_WRITER_SUCCESS
+    use outputBinary_m, only: validate_binary_layout, write_binary_complex_record64, BINARY_WRITER_SUCCESS
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
    use outputVisualisation_m, only: verify_volumetric_visualisation, &
                                     VISUALISATION_SUCCESS
@@ -200,9 +200,9 @@ contains
        this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
        this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
        this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
-        this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL32
+         this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL64
         this%metadata%artifacts(1)%complex_representation = BINARY_COMPLEX_REAL_IMAG
-        this%metadata%artifacts(1)%record_bytes = 40
+         this%metadata%artifacts(1)%record_bytes = 80
         this%metadata%artifacts(1)%component_order = &
            'frequency,x,y,z,Ex.real,Ex.imag,Ey.real,Ey.imag,Ez.real,Ez.imag'
        this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
@@ -266,22 +266,22 @@ contains
 
    subroutine write_bin_file(this)
       type(frequency_slice_probe_output_t), intent(inout) :: this
-      real(real32), allocatable :: records(:)
+       real(real64), allocatable :: records(:)
       integer :: i, f, record_index, status
 
       allocate(records(10 * this%nPoints * this%nFreq))
       record_index = 0
       do f = 1, this%nFreq
       do i = 1, this%nPoints
-         records(record_index + 1:record_index + 10) = [real(this%frequencySlice(f), real32), &
-            real(this%coords(1, i), real32), real(this%coords(2, i), real32), real(this%coords(3, i), real32), &
-            real(this%xValueForFreq(f, i), real32), real(aimag(this%xValueForFreq(f, i)), real32), &
-            real(this%yValueForFreq(f, i), real32), real(aimag(this%yValueForFreq(f, i)), real32), &
-            real(this%zValueForFreq(f, i), real32), real(aimag(this%zValueForFreq(f, i)), real32)]
+          records(record_index + 1:record_index + 10) = [real(this%frequencySlice(f), real64), &
+             real(this%coords(1, i), real64), real(this%coords(2, i), real64), real(this%coords(3, i), real64), &
+             real(this%xValueForFreq(f, i), real64), real(aimag(this%xValueForFreq(f, i)), real64), &
+             real(this%yValueForFreq(f, i), real64), real(aimag(this%yValueForFreq(f, i)), real64), &
+             real(this%zValueForFreq(f, i), real64), real(aimag(this%zValueForFreq(f, i)), real64)]
          record_index = record_index + 10
       end do
       end do
-      call write_binary_complex_record32(add_extension(this%filesPath, binaryExtension), this%metadata%artifacts(1), &
+       call write_binary_complex_record64(add_extension(this%filesPath, binaryExtension), this%metadata%artifacts(1), &
                                          records, status)
       deallocate(records)
    end subroutine

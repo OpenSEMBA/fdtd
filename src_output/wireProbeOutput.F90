@@ -5,7 +5,10 @@ module wireProbeOutput_m
    use report_m
    use outputTypes_m
     use outputUtils_m
-    use allocationUtils_m, only: alloc_and_init
+     use allocationUtils_m, only: alloc_and_init
+     use outputBinary_m, only: append_binary_real64, BINARY_WRITER_SUCCESS
+     use, intrinsic :: iso_fortran_env, only: real64
+     use directoryUtils_m, only: create_file_with_path
    use wiresHolland_constants_m
    use HollandWires_m
 
@@ -55,8 +58,9 @@ module wireProbeOutput_m
       type(MediaData_t), intent(in)                  :: media(:)
        integer(kind=SINGLE), intent(in)               :: node, field, mpidir
        character(len=*), intent(in)                   :: outputTypeExtension, wiresflavor
-       character(len=BUFSIZE) :: artifact_paths(1)
-       integer :: artifact_kinds(1)
+        character(len=BUFSIZE) :: artifact_paths(2)
+        integer :: artifact_kinds(2)
+        integer :: ios
 
       this%mainCoords = coordinates
       this%component = field
@@ -68,10 +72,16 @@ module wireProbeOutput_m
 
        call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
         artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
-        artifact_kinds(1) = OUTPUT_ARTIFACT_TEXT
-        call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
-       this%filePathTime = this%artifacts(1)%relative_path
-       call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+         artifact_paths(2) = trim(this%path)//'_'//timeExtension//binaryExtension
+         artifact_kinds = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]
+         call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
+         this%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
+         this%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
+         this%artifacts(2)%record_bytes = 48
+         this%artifacts(2)%component_order = 'time,current,delta_voltage,plus_voltage,minus_voltage,voltage_difference'
+        this%filePathTime = this%artifacts(1)%relative_path
+        call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+        call create_file_with_path(this%artifacts(2)%relative_path, ios)
 
    end subroutine init_wire_current_probe_output
 
@@ -83,8 +93,9 @@ module wireProbeOutput_m
       type(domain_t), intent(in)                    :: domain
        integer(kind=SINGLE), intent(in)              :: node, field, mpidir
        character(len=*), intent(in)                  :: outputTypeExtension, wiresflavor
-       character(len=BUFSIZE) :: artifact_paths(1)
-       integer :: artifact_kinds(1)
+        character(len=BUFSIZE) :: artifact_paths(2)
+        integer :: artifact_kinds(2)
+        integer :: ios
 
       this%mainCoords = coordinates
       this%component = field
@@ -97,10 +108,16 @@ module wireProbeOutput_m
        call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
        call alloc_and_init(this%chargeValue, BuffObse, 0.0_RKIND)
         artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
-        artifact_kinds(1) = OUTPUT_ARTIFACT_TEXT
-        call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
-       this%filePathTime = this%artifacts(1)%relative_path
-       call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+         artifact_paths(2) = trim(this%path)//'_'//timeExtension//binaryExtension
+         artifact_kinds = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]
+         call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
+         this%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
+         this%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
+         this%artifacts(2)%record_bytes = 16
+         this%artifacts(2)%component_order = 'time,charge'
+        this%filePathTime = this%artifacts(1)%relative_path
+        call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+        call create_file_with_path(this%artifacts(2)%relative_path, ios)
 
    end subroutine init_wire_charge_probe_output
 
@@ -159,9 +176,23 @@ module wireProbeOutput_m
              this%currentValues(i)%voltageDiference
           if (ios /= 0) exit
        end do
-       close(unit, iostat=ios)
+        close(unit, iostat=ios)
 
-       if (ios == 0) call clear_current_time_data(this)
+        if (ios /= 0) return
+        block
+           real(real64), allocatable :: records(:)
+           integer :: status
+           allocate(records(6 * this%nTime))
+           do i = 1, this%nTime
+              records(6 * i - 5:6 * i) = [real(this%timeStep(i), real64), &
+                 real(this%currentValues(i)%current, real64), real(this%currentValues(i)%deltaVoltage, real64), &
+                 real(this%currentValues(i)%plusVoltage, real64), real(this%currentValues(i)%minusVoltage, real64), &
+                 real(this%currentValues(i)%voltageDiference, real64)]
+           end do
+           call append_binary_real64(this%artifacts(2)%relative_path, this%artifacts(2), records, status)
+           if (status /= BINARY_WRITER_SUCCESS) return
+        end block
+        call clear_current_time_data(this)
    end subroutine
 
 
@@ -176,9 +207,20 @@ module wireProbeOutput_m
           write(unit, fmt, iostat=ios) this%timeStep(i), this%chargeValue(i)
           if (ios /= 0) exit
        end do
-       close(unit, iostat=ios)
+        close(unit, iostat=ios)
 
-       if (ios == 0) call clear_charge_time_data(this)
+        if (ios /= 0) return
+        block
+           real(real64), allocatable :: records(:)
+           integer :: status
+           allocate(records(2 * this%nTime))
+           do i = 1, this%nTime
+              records(2 * i - 1:2 * i) = [real(this%timeStep(i), real64), real(this%chargeValue(i), real64)]
+           end do
+           call append_binary_real64(this%artifacts(2)%relative_path, this%artifacts(2), records, status)
+           if (status /= BINARY_WRITER_SUCCESS) return
+        end block
+        call clear_charge_time_data(this)
    end subroutine
 
    subroutine find_current_segment(this, node, field, media, wiresflavor)

@@ -28,6 +28,9 @@ extern "C" int test_output_metadata_fragment_descriptors();
 extern "C" int test_atomic_file_replacement();
 extern "C" int test_portable_binary_output();
 extern "C" int test_output_binary_fragment_layout();
+extern "C" int test_output_binary_native_precision();
+extern "C" int test_output_binary_mixed_complex_layout();
+extern "C" int test_output_binary_append_real64();
 
 // Probe lifecycle behaviour.
 extern "C" int test_init_point_probe();
@@ -38,6 +41,9 @@ extern "C" int test_line_probe_serial_reduction();
 extern "C" int test_line_probe_shared_interface_owner();
 extern "C" int test_update_point_probe();
 extern "C" int test_flush_point_probe();
+extern "C" int test_flush_wire_probe_binary();
+extern "C" int test_flush_bulk_probe_binary();
+extern "C" int test_farfield_binary_row();
 extern "C" int test_multiple_flush_point_probe();
 extern "C" int test_init_movie_probe();
 extern "C" int test_update_movie_probe();
@@ -100,6 +106,12 @@ TEST(output, test_atomic_file_replacement) { EXPECT_EQ(0, test_atomic_file_repla
 TEST(output, test_portable_binary_output) { EXPECT_EQ(0, test_portable_binary_output()); }
 // Requires identity metadata for binary fragments.
 TEST(output, test_binary_fragment_layout) { EXPECT_EQ(0, test_output_binary_fragment_layout()); }
+// Selects the highest supported native precision for mixed-value records.
+TEST(output, test_binary_native_precision) { EXPECT_EQ(0, test_output_binary_native_precision()); }
+// Accepts coordinate-plus-complex records at the selected record precision.
+TEST(output, test_binary_mixed_complex_layout) { EXPECT_EQ(0, test_output_binary_mixed_complex_layout()); }
+// Appends complete double-precision records without replacing prior samples.
+TEST(output, test_binary_append_real64) { EXPECT_EQ(0, test_output_binary_append_real64()); }
 // Registers a point probe and its declared output paths.
 TEST(output, test_initialize_point_probe) { EXPECT_EQ(0, test_init_point_probe()); }
 // Preserves the signed mixed-direction electric-field line integral.
@@ -114,6 +126,12 @@ TEST(output, test_line_probe_shared_interface_owner) { EXPECT_EQ(0, test_line_pr
 TEST(output, test_update_point_probe_info) { EXPECT_EQ(0, test_update_point_probe()); }
 // Flushes point-probe samples and resets serialized time data.
 TEST(output, test_flush_point_probe_info) { EXPECT_EQ(0, test_flush_point_probe()); }
+// Writes binary records for wire-current and wire-charge samples.
+TEST(output, test_flush_wire_probe_binary) { EXPECT_EQ(0, test_flush_wire_probe_binary()); }
+// Writes binary records for bulk-current samples.
+TEST(output, test_flush_bulk_probe_binary) { EXPECT_EQ(0, test_flush_bulk_probe_binary()); }
+// Writes one portable far-field binary row from final computed values.
+TEST(output, test_farfield_binary_row) { EXPECT_EQ(0, test_farfield_binary_row()); }
 // Preserves point-probe data across consecutive flushes.
 TEST(output, test_flush_multiple_point_probe_info) { EXPECT_EQ(0, test_multiple_flush_point_probe()); }
 // Allocates a movie probe and creates its output directory.

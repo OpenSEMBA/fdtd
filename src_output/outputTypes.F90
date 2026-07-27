@@ -63,9 +63,17 @@ module outputTypes_m
      integer, parameter :: BINARY_COMPLEX_REAL_IMAG = 1
      integer, parameter :: BINARY_COMPLEX_MAGNITUDE_PHASE = 2
 
-     integer, parameter :: BINARY_LAYOUT_VERSION = 1
-     integer, parameter :: BINARY_BYTES_REAL32 = 4
-     integer, parameter :: BINARY_BYTES_REAL64 = 8
+      integer, parameter :: BINARY_LAYOUT_VERSION = 1
+      integer, parameter :: BINARY_BYTES_REAL32 = 4
+      integer, parameter :: BINARY_BYTES_REAL64 = 8
+      character(len=*), parameter :: BINARY_COMPONENTS_SCALAR_TIME = 'time,value'
+      character(len=*), parameter :: BINARY_COMPONENTS_SCALAR_FREQUENCY = &
+         'frequency,value.real,value.imag'
+      character(len=*), parameter :: BINARY_COMPONENTS_VOLUMETRIC_TIME = 'time,x,y,z,value'
+      character(len=*), parameter :: BINARY_COMPONENTS_VOLUMETRIC_FREQUENCY = &
+         'frequency,x,y,z,value.real,value.imag'
+      character(len=*), parameter :: BINARY_COMPONENTS_FAR_FIELD = &
+         'frequency,theta,phi,value.real,value.imag'
 
 !=====================================================
 ! Basic helper / geometry types
@@ -220,11 +228,11 @@ module outputTypes_m
        integer :: nPoints = -1
        type(output_artifact_t) :: artifacts(2)
    end type mapvtk_output_t
-   type, extends(abstract_time_frequency_probe_t) :: point_probe_output_t
-      real(kind=RKIND), allocatable :: valueForTime(:)
-      complex(kind=CKIND), allocatable :: valueForFreq(:)
-      type(output_artifact_t) :: artifacts(2)
-   end type point_probe_output_t
+    type, extends(abstract_time_frequency_probe_t) :: point_probe_output_t
+       real(kind=RKIND), allocatable :: valueForTime(:)
+       complex(kind=CKIND), allocatable :: valueForFreq(:)
+       type(output_artifact_t) :: artifacts(4)
+    end type point_probe_output_t
 
     type, extends(abstract_time_probe_t) :: wire_charge_probe_output_t
       integer(kind=SINGLE) :: sign = +1
@@ -346,7 +354,32 @@ module outputTypes_m
 
 contains
 
-   subroutine declare_output_artifacts(metadata, paths, kinds)
+   pure integer function binary_numeric_representation_for_bytes(component_bytes)
+      integer, intent(in) :: component_bytes(:)
+      integer :: maximum_bytes
+
+      binary_numeric_representation_for_bytes = BINARY_NUMERIC_UNSPECIFIED
+      if (size(component_bytes) == 0) return
+      maximum_bytes = maxval(component_bytes)
+      select case (maximum_bytes)
+      case (BINARY_BYTES_REAL32)
+         binary_numeric_representation_for_bytes = BINARY_NUMERIC_REAL32
+      case (BINARY_BYTES_REAL64)
+         binary_numeric_representation_for_bytes = BINARY_NUMERIC_REAL64
+      end select
+   end function binary_numeric_representation_for_bytes
+
+   pure real(kind=8) function formatted_result_tolerance(decimal_places)
+      integer, intent(in) :: decimal_places
+
+      if (decimal_places < 0) then
+         formatted_result_tolerance = 0.0_8
+      else
+         formatted_result_tolerance = 0.5_8 * 10.0_8 ** (-decimal_places)
+      end if
+   end function formatted_result_tolerance
+
+    subroutine declare_output_artifacts(metadata, paths, kinds)
       type(probe_metadata_t), intent(inout) :: metadata
       character(len=*), intent(in) :: paths(:)
       integer, intent(in) :: kinds(:)
