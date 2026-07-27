@@ -320,6 +320,24 @@ integer function test_line_probe_artifacts() bind(c) result(err)
    call delete_file(trim(path)//'_tm.bin', ios)
 end function test_line_probe_artifacts
 
+integer function test_line_probe_serial_reduction() bind(c) result(err)
+   use FDETYPES_m, only: RKIND
+   use lineProbeOutput_m, only: reduce_line_probe_sample
+   use outputTransport_m, only: output_transport_t, init_output_transport, OUTPUT_TRANSPORT_SUCCESS
+   use assertionTools_m, only: assert_integer_equal, assert_real_equal
+   implicit none
+
+   type(output_transport_t) :: transport
+   real(kind=RKIND) :: value
+   integer :: status
+
+   err = 0
+   call init_output_transport(transport, status=status)
+   call reduce_line_probe_sample(transport, 3.5_RKIND, value, status)
+   err = err + assert_integer_equal(status, OUTPUT_TRANSPORT_SUCCESS, 'Serial line reduction failed')
+   err = err + assert_real_equal(value, 3.5_RKIND, 1.0e-6_RKIND, 'Serial line reduction changed the value')
+end function test_line_probe_serial_reduction
+
 integer function test_nested_output_path() bind(c) result(err)
     ! Verifies nested output directories are created and removed correctly.
    use directoryUtils_m, only: create_file_with_path, file_exists, remove_folder

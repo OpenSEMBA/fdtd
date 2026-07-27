@@ -34,6 +34,7 @@ extern "C" int test_init_point_probe();
 extern "C" int test_line_probe_integral();
 extern "C" int test_line_probe_empty_path();
 extern "C" int test_line_probe_artifacts();
+extern "C" int test_line_probe_serial_reduction();
 extern "C" int test_update_point_probe();
 extern "C" int test_flush_point_probe();
 extern "C" int test_multiple_flush_point_probe();
@@ -106,6 +107,7 @@ TEST(output, test_line_probe_integral) { EXPECT_EQ(0, test_line_probe_integral()
 TEST(output, test_line_probe_empty_path) { EXPECT_EQ(0, test_line_probe_empty_path()); }
 // Publishes every line sample to both scalar artifact representations.
 TEST(output, test_line_probe_artifacts) { EXPECT_EQ(0, test_line_probe_artifacts()); }
+TEST(output, test_line_probe_serial_reduction) { EXPECT_EQ(0, test_line_probe_serial_reduction()); }
 // Records point-probe values and their corresponding timesteps.
 TEST(output, test_update_point_probe_info) { EXPECT_EQ(0, test_update_point_probe()); }
 // Flushes point-probe samples and resets serialized time data.

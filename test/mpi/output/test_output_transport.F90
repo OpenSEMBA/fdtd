@@ -1,9 +1,10 @@
 program test_output_transport
    use mpi
    use FDETYPES_m, only: RKIND
-   use outputTransport_m, only: output_transport_t, init_output_transport, &
-                                gather_point_eligibility, reduce_scalar_batch, transfer_flush_batch, &
-                                OUTPUT_TRANSPORT_SUCCESS
+    use outputTransport_m, only: output_transport_t, init_output_transport, &
+                                 gather_point_eligibility, reduce_scalar_batch, transfer_flush_batch, &
+                                 OUTPUT_TRANSPORT_SUCCESS
+    use lineProbeOutput_m, only: reduce_line_probe_sample
    implicit none
 
    integer, parameter :: root_rank = 0
@@ -11,7 +12,7 @@ program test_output_transport
    integer, allocatable :: counts(:), displacements(:)
    logical :: local_eligible
    logical, allocatable :: eligibility(:)
-   real(kind=RKIND) :: local_scalars(2)
+    real(kind=RKIND) :: local_scalars(2), canonical_line_value
    real(kind=RKIND), allocatable :: reduced_scalars(:), local_batch(:), gathered_batch(:)
    type(output_transport_t) :: transport
 
@@ -33,11 +34,17 @@ program test_output_transport
    local_scalars = [real(rank + 1, RKIND), real(2 * (rank + 1), RKIND)]
    call reduce_scalar_batch(transport, local_scalars, reduced_scalars, status)
    if (status /= OUTPUT_TRANSPORT_SUCCESS) failures = failures + 1
-   if (rank == root_rank) then
+    if (rank == root_rank) then
       if (any(abs(reduced_scalars - [real(rank_count * (rank_count + 1) / 2, RKIND), &
                                      real(rank_count * (rank_count + 1), RKIND)]) > 0.0_RKIND)) then
          failures = failures + 1
-      end if
+    end if
+
+    call reduce_line_probe_sample(transport, real(rank + 1, RKIND), canonical_line_value, status)
+    if (status /= OUTPUT_TRANSPORT_SUCCESS) failures = failures + 1
+    if (rank == root_rank .and. canonical_line_value /= real(rank_count * (rank_count + 1) / 2, RKIND)) then
+       failures = failures + 1
+    end if
    end if
 
    allocate(local_batch(rank + 1))
