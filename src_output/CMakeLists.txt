@@ -14,6 +14,7 @@ add_library(fdtd-output
   "domain.F90"
   "outputUtils.F90"
   "volumicProbeUtils.F90"
+  "lineProbeOutput.F90"
   "pointProbeOutput.F90"
   "wireProbeOutput.F90"
   "bulkProbeOutput.F90"

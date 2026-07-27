@@ -251,7 +251,13 @@ module outputTypes_m
       type(cell_coordinate_t) :: auxCoords
        real(kind=RKIND), allocatable :: valueForTime(:)
        type(output_artifact_t) :: artifacts(2)
-   end type bulk_current_probe_output_t
+    end type bulk_current_probe_output_t
+
+    type, extends(abstract_time_probe_t) :: line_probe_output_t
+       type(direction_t), allocatable :: segments(:)
+       real(kind=RKIND), allocatable :: valueForTime(:)
+       type(output_artifact_t) :: artifacts(2)
+    end type line_probe_output_t
 
     type, extends(abstract_frequency_probe_t) :: far_field_probe_output_t
       type(spheric_domain_t)  :: sphericRange
@@ -315,7 +321,8 @@ module outputTypes_m
        type(point_probe_output_t), allocatable :: pointProbe
       type(wire_current_probe_output_t), allocatable :: wireCurrentProbe
       type(wire_charge_probe_output_t), allocatable  :: wireChargeProbe
-      type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
+       type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
+       type(line_probe_output_t), allocatable :: lineProbe
       type(movie_probe_output_t), allocatable         :: movieProbe
       type(frequency_slice_probe_output_t), allocatable :: frequencySliceProbe
       type(far_field_probe_output_t), allocatable     :: farFieldOutput

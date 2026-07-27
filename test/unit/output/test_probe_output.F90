@@ -185,6 +185,141 @@ integer function test_root_output_manifest() bind(c) result(err)
    call remove_folder('rootManifest_Ex_4_4_4', ios)
 end function
 
+integer function test_line_probe_integral() bind(c) result(err)
+   ! Verifies the legacy signed E.dl line-integral convention in isolation.
+   use FDETYPES_m, only: RKIND, direction_t, iEx, iEy, iEz
+   use outputTypes_m, only: field_data_t
+   use lineProbeOutput_m, only: calculate_line_integral
+   use assertionTools_m, only: assert_real_equal
+   implicit none
+
+   type(direction_t) :: segments(3), reversed_segments(3)
+   type(field_data_t) :: electric_field
+   real(kind=RKIND), target :: ex(3, 3, 3), ey(3, 3, 3), ez(3, 3, 3)
+   real(kind=RKIND), target :: dx(3), dy(3), dz(3)
+   real(kind=RKIND) :: value
+
+   err = 0
+   ex = 0.0_RKIND
+   ey = 0.0_RKIND
+   ez = 0.0_RKIND
+   dx = 1.0_RKIND
+   dy = 1.0_RKIND
+   dz = 1.0_RKIND
+
+   ex(1, 1, 1) = 2.0_RKIND
+   ey(2, 1, 1) = 3.0_RKIND
+   ez(2, 2, 1) = 4.0_RKIND
+   dx(1) = 0.5_RKIND
+   dy(1) = 2.0_RKIND
+   dz(1) = 1.5_RKIND
+
+   segments(1) = direction_t(1, 1, 1, iEx)
+   segments(2) = direction_t(2, 1, 1, -iEy)
+   segments(3) = direction_t(2, 2, 1, iEz)
+   reversed_segments = segments
+   reversed_segments%orientation = -reversed_segments%orientation
+
+   electric_field%x => ex
+   electric_field%y => ey
+   electric_field%z => ez
+   electric_field%deltaX => dx
+   electric_field%deltaY => dy
+   electric_field%deltaZ => dz
+
+   value = calculate_line_integral(segments, electric_field)
+   err = err + assert_real_equal(value, 1.0_RKIND - 6.0_RKIND + 6.0_RKIND, 1.0e-6_RKIND, &
+                                  'Mixed-direction line integral is incorrect')
+   value = calculate_line_integral(reversed_segments, electric_field)
+   err = err + assert_real_equal(value, -1.0_RKIND, 1.0e-6_RKIND, &
+                                  'Reversed line orientation did not reverse the integral sign')
+end function test_line_probe_integral
+
+integer function test_line_probe_empty_path() bind(c) result(err)
+   ! Verifies an empty line remains a valid zero-sample probe.
+   use FDETYPES_m, only: RKIND, RKIND_tiempo, direction_t
+   use outputTypes_m, only: line_probe_output_t, field_data_t, domain_t, TIME_DOMAIN
+    use lineProbeOutput_m, only: init_line_probe_output, update_line_probe_output
+    use assertionTools_m, only: assert_integer_equal
+    use directoryUtils_m, only: delete_file
+   implicit none
+
+   type(line_probe_output_t) :: probe
+   type(domain_t) :: domain
+   type(direction_t), allocatable :: segments(:)
+    type(field_data_t) :: electric_field
+    real(kind=RKIND), target :: field(1, 1, 1), spacing(1)
+    integer :: ios
+
+   err = 0
+   allocate(segments(0))
+   domain%domainType = TIME_DOMAIN
+   call init_line_probe_output(probe, segments, domain, 'line-probe-empty')
+   field = 0.0_RKIND
+   spacing = 1.0_RKIND
+   electric_field%x => field
+   electric_field%y => field
+   electric_field%z => field
+   electric_field%deltaX => spacing
+   electric_field%deltaY => spacing
+   electric_field%deltaZ => spacing
+    call update_line_probe_output(probe, 0.0_RKIND_tiempo, electric_field)
+    err = err + assert_integer_equal(probe%nTime, 0, 'Empty line probe recorded a fabricated sample')
+    call delete_file('line-probe-empty_tm.dat', ios)
+    call delete_file('line-probe-empty_tm.bin', ios)
+end function test_line_probe_empty_path
+
+integer function test_line_probe_artifacts() bind(c) result(err)
+   ! Verifies line-probe flush retains text and binary records for every sample.
+   use FDETYPES_m, only: RKIND, RKIND_tiempo, direction_t, iEx
+   use outputTypes_m, only: line_probe_output_t, field_data_t, domain_t, TIME_DOMAIN
+   use lineProbeOutput_m, only: init_line_probe_output, update_line_probe_output, flush_line_probe_output
+   use assertionTools_m, only: assert_integer_equal, assert_true
+   use directoryUtils_m, only: delete_file, file_exists
+   implicit none
+
+   type(line_probe_output_t) :: probe
+   type(domain_t) :: domain
+   type(direction_t) :: segments(1)
+   type(field_data_t) :: electric_field
+   real(kind=RKIND), target :: ex(1, 1, 1), ey(1, 1, 1), ez(1, 1, 1), spacing(1)
+   character(len=*), parameter :: path = 'line-probe-artifacts'
+   integer :: ios, text_unit, text_records, binary_size
+   character(len=128) :: line
+
+   err = 0
+   domain%domainType = TIME_DOMAIN
+   segments(1) = direction_t(1, 1, 1, iEx)
+   call init_line_probe_output(probe, segments, domain, path)
+   ex = 2.0_RKIND
+   ey = 0.0_RKIND
+   ez = 0.0_RKIND
+   spacing = 0.5_RKIND
+   electric_field%x => ex
+   electric_field%y => ey
+   electric_field%z => ez
+   electric_field%deltaX => spacing
+   electric_field%deltaY => spacing
+   electric_field%deltaZ => spacing
+   call update_line_probe_output(probe, 0.0_RKIND_tiempo, electric_field)
+   call update_line_probe_output(probe, 0.1_RKIND_tiempo, electric_field)
+   call flush_line_probe_output(probe)
+
+   text_records = 0
+   open(newunit=text_unit, file=trim(path)//'_tm.dat', status='old', action='read', iostat=ios)
+   do while (ios == 0)
+      read(text_unit, '(A)', iostat=ios) line
+      if (ios == 0) text_records = text_records + 1
+   end do
+   close(text_unit)
+   inquire(file=trim(path)//'_tm.bin', size=binary_size, iostat=ios)
+   err = err + assert_integer_equal(text_records, 2, 'Line text artifact lost samples')
+   err = err + assert_true(file_exists(trim(path)//'_tm.bin') .and. binary_size == 16, &
+                            'Line binary artifact does not contain two records')
+   call delete_file(trim(path)//'_tm.dat', ios)
+   call delete_file(trim(path)//'_tm.bin', ios)
+end function test_line_probe_artifacts
+
 integer function test_nested_output_path() bind(c) result(err)
     ! Verifies nested output directories are created and removed correctly.
    use directoryUtils_m, only: create_file_with_path, file_exists, remove_folder

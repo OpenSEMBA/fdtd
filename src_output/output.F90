@@ -6,7 +6,8 @@ module output_m
      use directoryUtils_m, only: delete_file, file_exists, get_last_component, join_path
    use pointProbeOutput_m
    use wireProbeOutput_m
-   use bulkProbeOutput_m
+    use bulkProbeOutput_m
+    use lineProbeOutput_m
    use movieProbeOutput_m
    use frequencySliceProbeOutput_m
     use farFieldOutput_m
@@ -57,7 +58,7 @@ module output_m
                 OUTPUT_COORDINATION_TRANSPORT_ERROR
 
    public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, VOLUMIC_CURRENT_PROBE_ID, &
-             MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID
+              MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID, LINE_PROBE_ID
    !===========================
 
    !===========================
@@ -74,8 +75,8 @@ module output_m
                                       VOLUMIC_CURRENT_PROBE_ID = 4, &
                                       MOVIE_PROBE_ID = 5, &
                                       FREQUENCY_SLICE_PROBE_ID = 6, &
-                                      FAR_FIELD_PROBE_ID = 7, &
-                                       MAPVTK_ID = 8
+                                       FAR_FIELD_PROBE_ID = 7, &
+                                        MAPVTK_ID = 8, LINE_PROBE_ID = 9
 
     integer, parameter :: OUTPUT_COORDINATION_SUCCESS = 0
     integer, parameter :: OUTPUT_COORDINATION_INVALID_PROBE = 1
@@ -110,7 +111,8 @@ module output_m
          init_point_probe_output, &
          init_wire_current_probe_output, &
          init_wire_charge_probe_output, &
-         init_bulk_probe_output, &
+          init_bulk_probe_output, &
+          init_line_probe_output, &
          init_movie_probe_output, &
          init_frequency_slice_probe_output, &
          init_farField_probe_output, &
@@ -122,7 +124,8 @@ module output_m
          update_point_probe_output, &
          update_wire_current_probe_output, &
          update_wire_charge_probe_output, &
-         update_bulk_probe_output, &
+          update_bulk_probe_output, &
+          update_line_probe_output, &
          update_movie_probe_output, &
          update_frequency_slice_probe_output, &
          update_farField_probe_output
@@ -133,7 +136,8 @@ module output_m
          flush_point_probe_output, &
          flush_wire_current_probe_output, &
          flush_wire_charge_probe_output, &
-         flush_bulk_probe_output, &
+          flush_bulk_probe_output, &
+          flush_line_probe_output, &
          flush_movie_probe_output, &
          flush_frequency_slice_probe_output, &
          flush_farField_probe_output
@@ -671,16 +675,39 @@ contains
                                                      trim(outputTypeExtension), get_prefix_extension(outputRequestType, control%mpidir), &
                                                      outputs(outputCount)%wireChargeProbe%artifacts, metadata_status)
 
-            case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
+             case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = BULK_PROBE_ID
 
                 allocate (outputs(outputCount)%bulkCurrentProbe)
                 call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
-                call register_scalar_output_metadata(outputCount, trim(outputTypeExtension)//'.json', &
-                                                     trim(outputTypeExtension), get_prefix_extension(outputRequestType, control%mpidir), &
-                                                     outputs(outputCount)%bulkCurrentProbe%artifacts, metadata_status)
-               !! call adjust_computation_range --- Required due to issues in mpi region edges
+                 call register_scalar_output_metadata(outputCount, trim(outputTypeExtension)//'.json', &
+                                                      trim(outputTypeExtension), get_prefix_extension(outputRequestType, control%mpidir), &
+                                                      outputs(outputCount)%bulkCurrentProbe%artifacts, metadata_status)
+                !! call adjust_computation_range --- Required due to issues in mpi region edges
+
+             case (lineIntegral)
+                if (domain%domainType /= TIME_DOMAIN) then
+                   call stoponerror(0, 0, 'Line probes only support the time domain')
+                else
+                   outputCount = outputCount + 1
+                   outputs(outputCount)%outputID = LINE_PROBE_ID
+                   allocate(outputs(outputCount)%lineProbe)
+                   call init_solver_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
+                                           outputTypeExtension//'_LI')
+                   call register_scalar_output_metadata(outputCount, trim(outputTypeExtension)//'.json', &
+                                                        trim(outputTypeExtension), 'LI', &
+                                                        outputs(outputCount)%lineProbe%artifacts, metadata_status)
+                   outputs(outputCount)%metadata%domain_type = domain%domainType
+                   if (allocated(outputs(outputCount)%metadata%ownership%participant_ranks)) then
+                      deallocate(outputs(outputCount)%metadata%ownership%participant_ranks)
+                   end if
+                   allocate(outputs(outputCount)%metadata%ownership%participant_ranks(1))
+                   outputs(outputCount)%metadata%ownership%participant_ranks(1) = control%layoutnumber
+                   outputs(outputCount)%metadata%ownership%scalar_writer_rank = control%layoutnumber
+                   call publish_initial_probe_metadata(outputs(outputCount)%metadata_path, outputs(outputCount)%metadata, &
+                                                       metadata_status)
+                end if
 
             case (iCur, iMEC, iMHC, iCurX, iCurY, iCurZ, iExC, iEyC, iEzC, iHxC, iHyC, iHzC)
                call adjust_bound_range()
@@ -880,9 +907,11 @@ contains
             call update_solver_output(outputs(i)%wireCurrentProbe, discreteTime, control, InvEps, InvMu)
          case (WIRE_CHARGE_PROBE_ID)
             call update_solver_output(outputs(i)%wireChargeProbe, discreteTime)
-         case (BULK_PROBE_ID)
-            fieldReference = get_field_reference(outputs(i)%bulkCurrentProbe%component, fieldsReference)
-            call update_solver_output(outputs(i)%bulkCurrentProbe, discreteTime, fieldReference)
+          case (BULK_PROBE_ID)
+             fieldReference = get_field_reference(outputs(i)%bulkCurrentProbe%component, fieldsReference)
+             call update_solver_output(outputs(i)%bulkCurrentProbe, discreteTime, fieldReference)
+          case (LINE_PROBE_ID)
+             call update_solver_output(outputs(i)%lineProbe, discreteTime, fieldsReference%E)
          case (MOVIE_PROBE_ID)
             call update_solver_output(outputs(i)%movieProbe, discreteTime, fieldsReference, control, problemInfo)
          case (FREQUENCY_SLICE_PROBE_ID)
@@ -918,8 +947,10 @@ contains
             call flush_solver_output(outputs(outIdx)%wireCurrentProbe)
          case (WIRE_CHARGE_PROBE_ID)
             call flush_solver_output(outputs(outIdx)%wireChargeProbe)
-         case (BULK_PROBE_ID)
-            call flush_solver_output(outputs(outIdx)%bulkCurrentProbe)
+          case (BULK_PROBE_ID)
+             call flush_solver_output(outputs(outIdx)%bulkCurrentProbe)
+          case (LINE_PROBE_ID)
+             call flush_solver_output(outputs(outIdx)%lineProbe)
          case (MOVIE_PROBE_ID)
             call flush_solver_output(outputs(outIdx)%movieProbe)
          case (FREQUENCY_SLICE_PROBE_ID)
@@ -972,8 +1003,10 @@ contains
              call finalise_scalar_output_metadata(i)
           case (WIRE_CHARGE_PROBE_ID)
              call finalise_scalar_output_metadata(i)
-          case (BULK_PROBE_ID)
-             call finalise_scalar_output_metadata(i)
+           case (BULK_PROBE_ID)
+              call finalise_scalar_output_metadata(i)
+           case (LINE_PROBE_ID)
+              call finalise_scalar_output_metadata(i)
           case (VOLUMIC_CURRENT_PROBE_ID)
              call finalise_scalar_output_metadata(i)
            case (FAR_FIELD_PROBE_ID)
@@ -1053,8 +1086,10 @@ contains
              call write_artifacts(outputs(i)%wireCurrentProbe%artifacts)
           case (WIRE_CHARGE_PROBE_ID)
              call write_artifacts(outputs(i)%wireChargeProbe%artifacts)
-          case (BULK_PROBE_ID)
-             call write_artifacts(outputs(i)%bulkCurrentProbe%artifacts)
+           case (BULK_PROBE_ID)
+              call write_artifacts(outputs(i)%bulkCurrentProbe%artifacts)
+           case (LINE_PROBE_ID)
+              call write_artifacts(outputs(i)%lineProbe%artifacts)
           case (MOVIE_PROBE_ID)
              call write_artifacts(outputs(i)%movieProbe%metadata%artifacts, outputs(i)%movieProbe%path)
           case (FREQUENCY_SLICE_PROBE_ID)

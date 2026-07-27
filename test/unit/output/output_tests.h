@@ -31,6 +31,9 @@ extern "C" int test_output_binary_fragment_layout();
 
 // Probe lifecycle behaviour.
 extern "C" int test_init_point_probe();
+extern "C" int test_line_probe_integral();
+extern "C" int test_line_probe_empty_path();
+extern "C" int test_line_probe_artifacts();
 extern "C" int test_update_point_probe();
 extern "C" int test_flush_point_probe();
 extern "C" int test_multiple_flush_point_probe();
@@ -97,6 +100,12 @@ TEST(output, test_portable_binary_output) { EXPECT_EQ(0, test_portable_binary_ou
 TEST(output, test_binary_fragment_layout) { EXPECT_EQ(0, test_output_binary_fragment_layout()); }
 // Registers a point probe and its declared output paths.
 TEST(output, test_initialize_point_probe) { EXPECT_EQ(0, test_init_point_probe()); }
+// Preserves the signed mixed-direction electric-field line integral.
+TEST(output, test_line_probe_integral) { EXPECT_EQ(0, test_line_probe_integral()); }
+// Keeps an empty line discoverable without fabricating measurements.
+TEST(output, test_line_probe_empty_path) { EXPECT_EQ(0, test_line_probe_empty_path()); }
+// Publishes every line sample to both scalar artifact representations.
+TEST(output, test_line_probe_artifacts) { EXPECT_EQ(0, test_line_probe_artifacts()); }
 // Records point-probe values and their corresponding timesteps.
 TEST(output, test_update_point_probe_info) { EXPECT_EQ(0, test_update_point_probe()); }
 // Flushes point-probe samples and resets serialized time data.

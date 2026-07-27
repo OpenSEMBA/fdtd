@@ -14,7 +14,7 @@ module outputBinary_m
    integer, parameter, public :: BINARY_WRITER_SIZE_MISMATCH = 2
    integer, parameter, public :: BINARY_WRITER_IO_ERROR = 3
 
-    public :: validate_binary_layout, open_binary_append, write_binary_real32, write_binary_real64
+     public :: validate_binary_layout, open_binary_append, write_binary_real32, write_binary_real64, append_binary_real32
     public :: write_binary_complex32, write_binary_complex64, write_binary_complex_record32
 
 contains
@@ -74,14 +74,43 @@ contains
        end if
     end subroutine open_binary_append
 
-   subroutine write_binary_real32(path, artifact, values, status)
+    subroutine write_binary_real32(path, artifact, values, status)
       character(len=*), intent(in) :: path
       type(output_artifact_t), intent(in) :: artifact
       real(real32), intent(in) :: values(:)
       integer, intent(out) :: status
 
       call write_real32_values(path, artifact, values, BINARY_COMPLEX_UNSPECIFIED, status)
-   end subroutine write_binary_real32
+    end subroutine write_binary_real32
+
+    subroutine append_binary_real32(path, artifact, values, status)
+       character(len=*), intent(in) :: path
+       type(output_artifact_t), intent(in) :: artifact
+       real(real32), intent(in) :: values(:)
+       integer, intent(out) :: status
+       integer :: index, ios, unit
+
+       call validate_binary_layout(artifact, status)
+       if (status /= BINARY_WRITER_SUCCESS) return
+       if (artifact%numeric_representation /= BINARY_NUMERIC_REAL32 .or. &
+           artifact%complex_representation /= BINARY_COMPLEX_UNSPECIFIED .or. &
+           mod(int(size(values), kind=8) * BINARY_BYTES_REAL32, artifact%record_bytes) /= 0) then
+          status = BINARY_WRITER_INVALID_LAYOUT
+          return
+       end if
+       call open_binary_append(path, artifact, unit, status)
+       if (status /= BINARY_WRITER_SUCCESS) return
+       do index = 1, size(values)
+          call write_int32_little_endian(unit, transfer(values(index), 0_int32), ios)
+          if (ios /= 0) exit
+       end do
+       close(unit)
+       if (ios == 0) then
+          status = BINARY_WRITER_SUCCESS
+       else
+          status = BINARY_WRITER_IO_ERROR
+       end if
+    end subroutine append_binary_real32
 
    subroutine write_binary_real64(path, artifact, values, status)
       character(len=*), intent(in) :: path
