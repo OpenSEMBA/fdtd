@@ -50,7 +50,6 @@ Testing/
 /SEMBA_FDTD_temp.log
 .vscode/launch.json
 .vscode/settings.json
-.vscode/tasks.json
 */*.bak
 ./*.bak
 .vscode/ltex.dictionary.en-US.txt
@@ -77,3 +76,4 @@ git_info.txt
 .venv/build2/
 build2/
 .venv/
+specs/changes/*

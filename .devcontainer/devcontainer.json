@@ -34,6 +34,7 @@
       "extensions": [
         "fortran-lang.linter-gfortran",
         "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools",
         "ms-python.python",
         "mhutchie.git-graph"
       ],

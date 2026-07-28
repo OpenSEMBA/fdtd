@@ -5,6 +5,17 @@ All environments mount the repository at `/home/developer/workspaces/fdtd`, so b
 All presets use the same `build/` directory.
 Run CMake with `--fresh` whenever switching preset so the previous compiler and configuration cache is discarded.
 
+## Contents
+
+- [Prerequisite](#prerequisite)
+- [Environments](#environments)
+- [Build images](#build-images)
+- [Compile with quality](#compile-with-quality)
+- [Compile with Intel oneAPI](#compile-with-intel-oneapi)
+- [Run binaries and examples](#run-binaries-and-examples)
+- [Run tests](#run-tests)
+- [Development environment](#development-environment)
+
 ## Prerequisite
 
 Initialise submodules before building an image:

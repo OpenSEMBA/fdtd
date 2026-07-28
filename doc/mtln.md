@@ -5,6 +5,16 @@ bibliography:
 # The `mtln` solver module
 
 This module allows to solve networks of multiconductor transmission line bundles in the time domain. 
+
+## Contents
+
+- [Multiconductor transmission lines](#multiconductor-transmission-lines)
+- [Networks](#networks)
+- [Bundles](#bundles)
+- [Features](#features)
+  - [Coupling to NgSpice](#coupling-to-ngspice)
+  - [Dispersive elements](#dispersive-elements)
+
 In the context of transmission line theory, a working definition of each of the terms above is:
 
 * A **multiconductor tranmission line** is tranmission line composed of more than one conductor (and the reference conductor), i.e a tranmssion line composed of 3 or more conductors, where one of them is taken as the reference.
@@ -132,7 +142,6 @@ Dispersive elements are those whose properties depend on frequency. The solver w
         F_{2} &= ( \frac{\Delta z}{\Delta t}L - \frac{\Delta z}{2}d + \frac{\Delta z}{\Delta t}e - \Delta z \sum_{i}q_{2i})
     \end{align}
     $$
-
 
 
 
