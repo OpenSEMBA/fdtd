@@ -1,5 +1,22 @@
 # Compilation and debugging
 
+## Contents
+
+- [Prebuilt binary releases](#running-from-prebuilt-binary-releases)
+- [GNU/Linux compilation](#gnulinux-compilation)
+  - [Compilation options](#compilation-options)
+  - [HDF5 libraries](#hdf5-libraries)
+  - [MTLN and ngspice](#mtln-and-ngspice)
+  - [MPI](#mpi)
+- [Windows (intelLLVM) compilation](#windows-intelllvm-compilation)
+  - [Prerequisites](#prerequisites)
+  - [Compilation process](#compilation-process)
+  - [Visual Studio debugging](#debugging-with-visual-studio)
+- [WSL2 and Visual Studio Code setup](#wsl2--visual-studio-code--gfortran-setup-guide)
+- [Debugging the project](#debugging-the-project)
+  - [MPI debugging](#debugging-with-mpi)
+  - [Troubleshooting](#troubleshooting)
+
 ## Running from prebuilt binary releases
 
 Prebuilt binares are available at [releases](https://github.com/OpenSEMBA/fdtd/releases).
@@ -351,55 +368,245 @@ An example of launch.json filke is given. This will use a file as argument when 
 
 Now you are ready to work with the project.
 
-### Debugging with MPI 
+### Debugging with MPI
 
-gdb is a serial debugger, but can be attached to one of the parallel processes after they have started running. 
+#### Overview
 
+GDB controls one process per debug session.
+To debug an MPI job, each MPI rank is therefore started under its own
+`gdbserver`, and VS Code creates one `cppdbg` session for each rank.
 
-1. Modify the file launch.json to attach to a running process after launching the debugger:
+The checked-in configuration supports a two-rank solver job:
+
+```text
+VS Code: MPI: debug all ranks (2 ranks)
+  |-- GDB session: rank 0 -> localhost:20000 -> gdbserver -> MPI rank 0
+  `-- GDB session: rank 1 -> localhost:20001 -> gdbserver -> MPI rank 1
+```
+
+Both sessions are shown separately in the VS Code **Call Stack** panel.
+Breakpoints are sent to both sessions, although rank-specific control flow can
+mean that only one rank reaches a particular breakpoint.
+
+#### Configuration files
+
+| File | Responsibility |
+|---|---|
+| `.vscode/launch.dev.json` | Version-controlled template for debug configurations. |
+| `.vscode/launch.json` | Active local configuration; ignored by Git. |
+| `.vscode/settings.json` | Local input file, working directory, and test filter values. |
+| `.vscode/tasks.json` | Build tasks and the MPI-safe `fdtd_tests` preparation task. |
+| `scripts/debug-mpi-gdbserver.sh` | Starts MPI ranks under `gdbserver`, waits for ports, and cleans stale jobs. |
+
+Copy the version-controlled files template when initially configuring the
+workspace, or when the template changes:
+
+```shell
+cp .vscode/launch.dev.json .vscode/launch.json
+```
+
+Add the following project-specific values to the local
+`.vscode/settings.json` file:
 
 ```json
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-        "name": "(gdb) Attach",
-        "type": "cppdbg",
-        "request": "attach",
-        "processId": "${command:pickProcess}",
-        "program": "${workspaceFolder}/build/bin/semba-fdtd",
-        "MIMode": "gdb",
-        "miDebuggerPath": "/usr/bin/gdb",
-        "setupCommands": [
-            {
-                "description": "Enable pretty-printing for gdb",
-                "text": "-enable-pretty-printing",
-                "ignoreFailures": true
-            },
-            {
-                "description": "Set Disassembly Flavor to Intel",
-                "text": "-gdb-set disassembly-flavor intel",
-                "ignoreFailures": true
-            }
-        ]
-    }
-  ]
+  "semba-fdtd.debug.inputFile": "pw-in-box.fdtd.json",
+  "semba-fdtd.debug.inputCwd": "testData/cases/planewave",
+  "semba-fdtd.debug.mpiGtestFilter": "conformal.geometry_coord_position"
 }
 ```
 
-2. Use *mpirun* to execute semba-fdtd paralellized in 'np' processes:
-``` 
-mpirun -np 2 build/bin/semba-fdtd -i input_file.fdtd.json -args
+`inputFile` is relative to `inputCwd`.
+Set `inputCwd` to the directory containing the JSON input and all files that
+the JSON references with relative paths, such as excitation files.
+
+#### Build requirements
+
+Debug launches do not configure or rebuild the project automatically.
+Build an MPI-enabled Debug executable before starting VS Code debugging:
+
+```shell
+cmake --fresh --preset dbg-mpi
+cmake --build --preset dbg-mpi -j
 ```
 
-3. Once mpirun is running, launch the debuuger. A selection box will ask which process to attach to. Type *semba-fdtd* and all mpirun processes running semba will display. Selecto which process the debugger should attach to
+All CMake presets currently share `build/`.
+Running a Release or non-MPI configure replaces the previous build
+configuration, so rerun the commands above before MPI debugging when needed.
+
+#### Starting all ranks
+
+1. Open the VS Code **Run and Debug** view.
+2. Select `MPI: debug all ranks (2 ranks)`.
+3. Press F5.
+4. Wait for both `MPI all ranks: rank 0` and
+   `MPI all ranks: rank 1` to appear in **Call Stack**.
+5. Continue each session once after the initial entry stop.
+
+The two ranks must both be allowed to continue.
+If one remains stopped before `MPI_Init` or another collective operation, the
+other rank can appear blocked while it waits for that rank.
+
+`MPI: debug solver rank 0 (2 ranks)` is a simpler alternative.
+It runs a two-rank MPI job but attaches GDB only to rank 0;
+rank 1 runs normally.
+
+#### Startup sequence
+
+The all-rank configuration is a VS Code compound containing two hidden launch
+configurations.
+No `preLaunchTask` or problem matcher is used for the solver.
+Instead, the C/C++ extension directly owns the helper processes through
+`debugServerPath` and waits for readiness through `serverStarted`.
+
+The startup sequence is:
+
+1. The rank 0 launch configuration invokes
+   `scripts/debug-mpi-gdbserver.sh` with `--foreground-all 2`.
+2. The script validates `--workdir`, changes to that directory, and executes
+   one `mpirun -np 2` job.
+3. Each MPI process calculates its debugger port as
+   `20000 + OMPI_COMM_WORLD_RANK` and then executes `gdbserver`.
+4. The rank 0 adapter waits for `Listening on port 20000` and connects its GDB.
+5. The rank 1 launch configuration invokes the same script with
+   `--wait-for-port 20001` instead of starting a second MPI job.
+6. The waiter checks `/proc/net/tcp` and `/proc/net/tcp6` without opening a
+   debugger connection.
+7. When port 20001 is listening, the rank 1 adapter connects its own GDB.
+8. The compound's `stopAll` option stops both sessions when either session is
+   terminated.
+
+It is important that rank 1 only waits for its port.
+Starting `mpirun` from both hidden configurations would create two unrelated
+MPI jobs rather than two debugger views of the same job.
+
+#### Port and rank mapping
+
+| MPI rank | `gdbserver` address | VS Code session |
+|---:|---|---|
+| 0 | `localhost:20000` | `MPI all ranks: rank 0` |
+| 1 | `localhost:20001` | `MPI all ranks: rank 1` |
+
+The shell script supports more ranks, but the checked-in compound explicitly
+defines two GDB sessions.
+Supporting additional ranks requires another hidden launch configuration and
+port waiter for each extra rank.
+
+#### Working directory
+
+The target process is launched by `gdbserver`, not directly by `cppdbg`.
+Consequently, the `cwd` property alone does not reliably set the inferior's
+working directory.
+
+The launch configuration passes the directory explicitly:
+
+```text
+--workdir ${workspaceFolder}/${config:semba-fdtd.debug.inputCwd}
+```
+
+The script verifies that the directory exists and is writable, then changes to
+it before starting `mpirun`.
+This is required for relative JSON resources, output files, and solver control
+files such as `running`, `pause`, `relaunch`, and `forcestop`.
+
+#### Script modes
+
+The helper script has the following modes:
+
+| Mode | Purpose |
+|---|---|
+| `--foreground-all <ranks> <program> ...` | Run every MPI rank under a separate `gdbserver`. |
+| `--foreground-debug-rank <rank> <ranks> <program> ...` | Debug one rank and run the remaining ranks normally. |
+| `--wait-for-port <port>` | Wait for another launch configuration's `gdbserver`. |
+| `--debug-rank <rank> <ranks> <program> ...` | Detached preparation mode used by task-based workflows. |
+| `--stop` | Stop a detached MPI debug job recorded by the script. |
+
+The `--foreground-*` modes are preferred for solver debugging because
+`OpenDebugAD7` owns their lifetime directly.
+This avoids races in which a background task exits before GDB connects.
+
+#### Debugging MPI unit tests
+
+The full `fdtd_tests` suite should normally be debugged as one process, even
+when linked against an MPI-enabled build.
+Several tests write fixed file names and are not safe to execute concurrently
+on every rank.
+
+The `MPI: debug fdtd_tests (2 ranks)` compound is intended only for an
+MPI-safe filtered test.
+Set `semba-fdtd.debug.mpiGtestFilter` in `.vscode/settings.json` before using
+that compound.
 
 #### Troubleshooting
 
-1. After selecting the process the debugger should attach to, a new terminal opens with the message "Superuser access is required to attach to a process"
+**GDB connection timeout**
 
-Run the following command as super user: 
+Confirm that the selected configuration is
+`MPI: debug all ranks (2 ranks)` and reload the VS Code window after changing
+`launch.json`.
+The solver configuration must use `debugServerPath`, `serverStarted`, and the
+foreground script modes; it must not depend on a background `preLaunchTask`.
+
+Check for stale MPI or `gdbserver` processes before retrying:
+
+```shell
+pgrep -af 'gdbserver|prterun|mpirun'
 ```
-echo 0| sudo tee /proc/sys/kernel/yama/ptrace_scope 
+
+**Cannot create `running` or another relative file**
+
+Verify `semba-fdtd.debug.inputCwd` and confirm that the directory is writable.
+The debug output prints `MPI working directory: ...` before `mpirun` starts.
+
+**A breakpoint is not reached**
+
+Confirm that the correct rank executes that code path and that the breakpoint
+was installed before the one-time initialization code ran.
+Also confirm that the active executable is an MPI-enabled Debug build.
+A valid source breakpoint cannot force execution through a false runtime
+condition.
+
+**Both sessions connect but the program does not advance**
+
+Select each rank in **Call Stack** and continue it.
+One stopped rank can hold the other rank inside an MPI collective operation.
+
+**Warnings about unavailable system-library debug information**
+
+Messages about missing separate debug information for MPI or system libraries
+are non-fatal when debugging project sources.
+Install the corresponding system debug packages only when stepping inside those
+libraries is required.
+
+#### Manual attach fallback
+
+The native compound is preferred, but GDB can also attach manually to an
+already running process.
+Start the MPI job in a terminal:
+
+```shell
+mpirun -np 2 build/bin/semba-fdtd -i input_file.fdtd.json
 ```
-([source](https://github.com/Microsoft/MIEngine/wiki/Troubleshoot-attaching-to-processes-using-GDB))
+
+Then use the `Attach to process` configuration and select one `semba-fdtd`
+process.
+This method provides one attached rank per debug session and does not perform
+the automatic port coordination described above.
+
+If Linux blocks manual attachment because of `ptrace_scope`, temporarily relax
+the restriction only on a trusted development machine:
+
+```shell
+sudo sysctl kernel.yama.ptrace_scope=0
+```
+
+Restore the normal restriction after debugging:
+
+```shell
+sudo sysctl kernel.yama.ptrace_scope=1
+```
+
+See the [MIEngine troubleshooting guide][miengine-troubleshooting]
+for more information.
+
+[miengine-troubleshooting]: https://github.com/Microsoft/MIEngine/wiki/Troubleshoot-attaching-to-processes-using-GDB

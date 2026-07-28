@@ -6,9 +6,9 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build/bin/semba-fdtd",
-      "args": ["${input:inputFile}"],
+      "args": ["-i", "${config:semba-fdtd.debug.inputFile}"],
       "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/${config:semba-fdtd.debug.inputCwd}",
       "MIMode": "gdb",
       "setupCommands": [
         {
@@ -17,18 +17,100 @@
           "ignoreFailures": true
         }
       ],
-      "preLaunchTask": "CMake: build Debug no-MPI"
+      "miDebuggerPath": "/usr/bin/gdb"
     },
     {
-      "name": "Debug semba-fdtd (dbg-mpi)",
+      "name": "MPI: debug solver rank 0 (2 ranks)",
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build/bin/semba-fdtd",
-      "args": ["${input:inputFile}"],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
+      "args": [],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}/${config:semba-fdtd.debug.inputCwd}",
       "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "miDebuggerServerAddress": "localhost:20000",
+      "debugServerPath": "${workspaceFolder}/scripts/debug-mpi-gdbserver.sh",
+      "debugServerArgs": "--workdir ${workspaceFolder}/${config:semba-fdtd.debug.inputCwd} --foreground-debug-rank 0 2 ${workspaceFolder}/build/bin/semba-fdtd -i ${config:semba-fdtd.debug.inputFile}",
+      "serverStarted": "Listening on port 20000",
+      "filterStdout": true,
+      "filterStderr": true,
+      "serverLaunchTimeout": 30000,
+      "presentation": {
+        "order": 2
+      },
       "setupCommands": [
+        {
+          "description": "Use local shared libraries",
+          "text": "set sysroot /",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Enable pretty printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "MPI all ranks: rank 0",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/semba-fdtd",
+      "args": [],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}/${config:semba-fdtd.debug.inputCwd}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "miDebuggerServerAddress": "localhost:20000",
+      "debugServerPath": "${workspaceFolder}/scripts/debug-mpi-gdbserver.sh",
+      "debugServerArgs": "--workdir ${workspaceFolder}/${config:semba-fdtd.debug.inputCwd} --foreground-all 2 ${workspaceFolder}/build/bin/semba-fdtd -i ${config:semba-fdtd.debug.inputFile}",
+      "serverStarted": "Listening on port 20000",
+      "filterStdout": true,
+      "filterStderr": true,
+      "serverLaunchTimeout": 30000,
+      "presentation": {
+        "hidden": true
+      },
+      "setupCommands": [
+        {
+          "description": "Use local shared libraries",
+          "text": "set sysroot /",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Enable pretty printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "MPI all ranks: rank 1",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/semba-fdtd",
+      "args": [],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}/${config:semba-fdtd.debug.inputCwd}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "miDebuggerServerAddress": "localhost:20001",
+      "debugServerPath": "${workspaceFolder}/scripts/debug-mpi-gdbserver.sh",
+      "debugServerArgs": "--wait-for-port 20001",
+      "serverStarted": "MPI gdbserver ready on port 20001",
+      "filterStdout": true,
+      "filterStderr": true,
+      "serverLaunchTimeout": 30000,
+      "presentation": {
+        "hidden": true
+      },
+      "setupCommands": [
+        {
+          "description": "Use local shared libraries",
+          "text": "set sysroot /",
+          "ignoreFailures": true
+        },
         {
           "description": "Enable pretty printing for gdb",
           "text": "-enable-pretty-printing",
@@ -52,7 +134,103 @@
           "ignoreFailures": true
         }
       ],
-      "preLaunchTask": "CMake: build Debug no-MPI"
+      "miDebuggerPath": "/usr/bin/gdb"
+    },
+    {
+      "name": "Debug fdtd_tests filter (dbg)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/fdtd_tests",
+      "args": ["--gtest_filter=${input:gtestFilter}"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb"
+    },
+    {
+      "name": "Debug fdtd_tests (dbg-mpi)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/fdtd_tests",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb"
+    },
+    {
+      "name": "Debug fdtd_tests filter (dbg-mpi)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/fdtd_tests",
+      "args": ["--gtest_filter=${input:gtestFilter}"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb"
+    },
+    {
+      "name": "Debug MPI fdtd_tests rank 0",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/fdtd_tests",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "miDebuggerServerAddress": "localhost:20000",
+      "presentation": {
+        "hidden": true
+      },
+      "postDebugTask": "Debug: stop MPI gdbservers"
+    },
+    {
+      "name": "Debug MPI fdtd_tests rank 1",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/fdtd_tests",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "miDebuggerServerAddress": "localhost:20001",
+      "presentation": {
+        "hidden": true
+      }
+    },
+    {
+      "name": "Debug pytest node (dbg)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${input:pytestNode}", "-s"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "SEMBA_EXE": "${workspaceFolder}/build/bin/semba-fdtd",
+        "SEMBA_FDTD_ENABLE_MPI": "OFF",
+        "SEMBA_FDTD_ENABLE_MTLN": "ON",
+        "SEMBA_FDTD_ENABLE_HDF": "ON"
+      }
+    },
+    {
+      "name": "Debug pytest node (dbg-mpi)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${input:pytestNode}", "-s"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "SEMBA_EXE": "${workspaceFolder}/build/bin/semba-fdtd",
+        "SEMBA_FDTD_ENABLE_MPI": "ON",
+        "SEMBA_FDTD_ENABLE_MTLN": "ON",
+        "SEMBA_FDTD_ENABLE_HDF": "ON"
+      }
     },
     {
       "name": "Attach to process",
@@ -60,15 +238,41 @@
       "request": "attach",
       "program": "${workspaceFolder}/build/bin/semba-fdtd",
       "processId": "${command:pickProcess}",
-      "MIMode": "gdb"
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "MPI: debug all ranks (2 ranks)",
+      "configurations": ["MPI all ranks: rank 0", "MPI all ranks: rank 1"],
+      "stopAll": true,
+      "presentation": {
+        "order": 1
+      }
+    },
+    {
+      "name": "MPI: debug fdtd_tests (2 ranks)",
+      "configurations": ["Debug MPI fdtd_tests rank 0", "Debug MPI fdtd_tests rank 1"],
+      "preLaunchTask": "Debug: prepare MPI fdtd_tests",
+      "stopAll": true,
+      "presentation": {
+        "order": 3
+      }
     }
   ],
   "inputs": [
     {
-      "id": "inputFile",
+      "id": "gtestFilter",
       "type": "promptString",
-      "description": "Path to .fdtd.json input file",
-      "default": "testData/input_examples/sphere.fdtd.json"
+      "description": "GoogleTest filter",
+      "default": "*"
+    },
+    {
+      "id": "pytestNode",
+      "type": "promptString",
+      "description": "Pytest node or path",
+      "default": "test/pyWrapper/test_pyWrapper.py::test_fdtd_with_string_args"
     }
   ]
 }
