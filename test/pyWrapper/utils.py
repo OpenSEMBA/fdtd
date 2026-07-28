@@ -35,26 +35,12 @@ no_mpi_skip = pytest.mark.skipif(
 
 def _default_semba_exe():
     exe_name = 'semba-fdtd.exe' if platform == "win32" else 'semba-fdtd'
-    build_dirs = ['build']
-
-    if os.getenv("SEMBA_FDTD_ENABLE_MPI") == "ON":
-        build_dirs.extend(['build-rls-mpi', 'build-dbg-mpi'])
-    else:
-        build_dirs.extend(['build-rls', 'build-dbg'])
-
-    for build_dir in build_dirs:
-        candidate = os.path.join(os.getcwd(), build_dir, 'bin', exe_name)
-        if os.path.isfile(candidate):
-            return candidate
-
-    return os.path.join(os.getcwd(), 'build', 'bin', exe_name)
+    return os.path.abspath(os.getenv(
+        'SEMBA_EXE', os.path.join(os.getcwd(), 'build', 'bin', exe_name)))
 
 
-# Use of absolute path to avoid conflicts when changing directory.
-if platform == "linux":
-    SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd')
-elif platform == "win32":
-    SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd.exe')
+# Use an absolute path to avoid conflicts when changing directory.
+SEMBA_EXE = _default_semba_exe()
 
 NGSPICE_DLL = os.path.join(
     os.getcwd(), 'precompiled_libraries', 'windows-intel', 'ngspice', 'ngspice.dll')

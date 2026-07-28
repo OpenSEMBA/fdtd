@@ -8,7 +8,13 @@ In windows, you need to install [intel oneapi runtime libraries](https://www.int
 
 ## GNU/Linux Compilation
 
-It is important to point out the repository has dependencies which are available as submodules. It is necessary to run `git submodule init` and `git submodule update` from the root folder before running any `cmake` or `build` commands.
+The repository has dependencies available as submodules. Before running CMake, initialise them from the repository root:
+
+```shell
+git submodule update --init --recursive
+```
+
+All local configurations use `build/`. Run CMake with `--fresh` whenever changing compiler, build type, or feature options so the previous cache is discarded.
 
 If you use intel oneapi compiler, make sure to run
 
@@ -93,8 +99,13 @@ navigate to the `/fdtd/` folder that has been created, this folder will be refer
 ### Prerequisites
 
 This compilation process will use the already available precompiled libraries included with the project, thus it's not required to build them manually.
-This repository has dependencies that are available as submodules. It is necessary to run `git submodule init` and `git submodule update` from the root folder before running any `cmake` or `build` commands.
-In the .gitmodules file, the submodules use the SSH remote URL by default. If not using a SSH-key in the computer where the following process will be performed, the remote addresses for each submodule must be individually changed to their HTTPS alternative.
+This repository has dependencies available as submodules. Initialise them from the root folder before running CMake:
+
+```shell
+git submodule update --init --recursive
+```
+
+The default submodule URLs use HTTPS.
 
 This software requires [Windows BaseKit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html) and [Windows HPCKit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit-download.html). Install these packages with all their features selected.
 
@@ -113,7 +124,7 @@ This will load the OneAPI environment for x64.
 Navigate to the fdtd root folder, choose between "Debug"/"Release" for `-DCMAKE_BUILD_TYPE`, and "ON"/"OFF" for `-DSEMBA_FDTD_ENABLE_MPI`, for example, a Release version with MPI Support would be:
 
 ```shell
-cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DSEMBA_FDTD_ENABLE_MPI=ON
+cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DSEMBA_FDTD_ENABLE_MPI=ON --fresh
 ```
 
 Then,
@@ -260,8 +271,7 @@ cd <repository_name>
 This project has submodule dependencies remember to initiate an update the
 
 ```bash
-git submodule init
-git submodule update
+git submodule update --init --recursive
 ```
 
 #### Step 2: Install Python Requirements
