@@ -10,13 +10,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **First time setup (required):**
 ```bash
-git submodule init
-git submodule update
+git submodule update --init --recursive
 ```
 
 **Configure and build:**
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --fresh --preset rls
 cmake --build build -j
 ```
 

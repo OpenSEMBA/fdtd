@@ -1,15 +1,31 @@
 services:
+  # Lightweight image for compiling and testing the solver.
   quality:
     build:
       context: .
       target: quality
     volumes:
+      # Work directly against the checked-out source tree.
       - type: bind
         source: .
         target: /home/developer/workspaces/fdtd
     working_dir: /home/developer/workspaces/fdtd
     tty: true
 
+  # Intel oneAPI compiler and Intel MPI environment for manual quality builds.
+  intel-quality:
+    build:
+      context: .
+      target: intel-quality
+    volumes:
+      - type: bind
+        source: .
+        target: /home/developer/workspaces/fdtd
+    working_dir: /home/developer/workspaces/fdtd
+    stdin_open: true
+    tty: true
+
+  # Interactive development image with source-control and OpenCode tooling.
   dev:
     build:
       context: .
@@ -18,6 +34,7 @@ services:
       - type: bind
         source: .
         target: /home/developer/workspaces/fdtd
+      # Use the host Git identity and SSH keys for authenticated Git operations.
       - type: bind
         source: ${HOME}/.gitconfig
         target: /home/developer/.gitconfig
@@ -28,6 +45,7 @@ services:
       - type: bind
         source: ${HOME}/.config/gh
         target: /home/developer/.config/gh
+      # Share local OpenCode configuration and agent resources with the container.
       - type: bind
         source: ${HOME}/.config/opencode
         target: /home/developer/.config/opencode
@@ -35,6 +53,7 @@ services:
         source: ${HOME}/.agents
         target: /home/developer/.agents
         read_only: true
+      # Keep OpenCode's local data available between disposable containers.
       - type: bind
         source: ${HOME}/.local/share/opencode
         target: /home/developer/.local/share/opencode

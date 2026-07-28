@@ -35,10 +35,10 @@
         "fortran-lang.linter-gfortran",
         "ms-vscode.cmake-tools",
         "ms-python.python",
-        "eamodio.gitlens"
+        "mhutchie.git-graph"
       ],
       "settings": {
-        "cmake.buildDirectory": "${workspaceFolder}/build-dev",
+        "cmake.buildDirectory": "${workspaceFolder}/build",
         "cmake.useCMakePresets": "always",
         "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
         "terminal.integrated.defaultProfile.linux": "bash"

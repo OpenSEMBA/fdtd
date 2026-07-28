@@ -4,7 +4,7 @@
     {
       "name": "rls",
       "generator": "Ninja",
-      "binaryDir": "build-rls/",
+      "binaryDir": "build/",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "SEMBA_FDTD_ENABLE_MPI": "OFF"
@@ -13,7 +13,7 @@
     {
       "name": "dbg",
       "inherits": "rls",
-      "binaryDir": "build-dbg/",
+      "binaryDir": "build/",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
@@ -21,7 +21,7 @@
     {
       "name": "rls-mpi",
       "inherits": "rls",
-      "binaryDir": "build-rls-mpi/",
+      "binaryDir": "build/",
       "cacheVariables": {
         "SEMBA_FDTD_ENABLE_MPI": "ON"
       }
@@ -29,7 +29,7 @@
     {
       "name": "dbg-mpi",
       "inherits": "dbg",
-      "binaryDir": "build-dbg-mpi/",
+      "binaryDir": "build/",
       "cacheVariables": {
         "SEMBA_FDTD_ENABLE_MPI": "ON"
       }
@@ -37,7 +37,7 @@
     {
       "name": "dbg-nomtln",
       "inherits": "dbg",
-      "binaryDir": "build-dbg-nomtln/",
+      "binaryDir": "build/",
       "cacheVariables": {
         "SEMBA_FDTD_ENABLE_MTLN": "OFF"
       }
@@ -45,7 +45,7 @@
     {
       "name": "rls-nomtln",
       "inherits": "rls",
-      "binaryDir": "build-rls-nomtln/",
+      "binaryDir": "build/",
       "cacheVariables": {
         "SEMBA_FDTD_ENABLE_MTLN": "OFF"
       }
@@ -53,7 +53,7 @@
     {
       "name": "intel-rls",
       "generator": "Ninja",
-      "binaryDir": "build-intel-rls/",
+      "binaryDir": "build/",
       "environment": {
         "I_MPI_ROOT": "/opt/intel/oneapi/mpi/latest",
         "FC": "mpiifx",
@@ -70,7 +70,7 @@
     {
       "name": "intel-rls-nomtln",
       "inherits": "intel-rls",
-      "binaryDir": "build-intel-rls-nomtln/",
+      "binaryDir": "build/",
       "cacheVariables": {
         "SEMBA_FDTD_ENABLE_MTLN": "OFF"
       }
