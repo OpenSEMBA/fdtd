@@ -225,8 +225,11 @@ def test_coated_antenna(tmp_path):
         run_in_folder=tmp_path)
     solver.run()
 
-    probe_current = solver.getSolvedProbeFilenames("mid_point")[0]
-    probe_files = [probe_current]
+    probe_files = solver.getSolvedProbeFilenames("mid_point")
+    assert {os.path.basename(probe_file) for probe_file in probe_files} == {
+        'coated_antenna.fdtd_mid_point_half_1_I_11_11_12.dat',
+        'coated_antenna.fdtd_mid_point_half_2_I_11_11_12.dat'
+    }
 
     p_expected = Probe(
         OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_half_1_I_11_11_12.dat')

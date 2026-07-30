@@ -98,6 +98,9 @@ module Solver_m
       type(EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
 
       logical :: parar, everflushed = .false., still_planewave_time
+#ifdef CompileWithMTLN
+      logical :: mtlnObservationInitialized = .false.
+#endif
 
       ! semba variables 
       type(SGGFDTDINFO_t) :: sgg
@@ -575,6 +578,12 @@ module Solver_m
       call initializeBorders()
       call initializeLumped()
       call initializeWires()
+#ifdef CompileWithMTLN
+       if (this%thereAre%MTLNbundles) then
+          call InitMTLNObservation(this%control%nEntradaRoot)
+          this%mtlnObservationInitialized = .true.
+       end if
+#endif
       call initializeAnisotropic()
       call initializeSGBC()
       call initializeMultiports()
@@ -2037,6 +2046,9 @@ contains
       call this%advanceE()
 
       call this%advanceWiresE()
+#ifdef CompileWithMTLN
+       if (this%mtlnObservationInitialized) call UpdateMTLNObservation(this%n)
+#endif
       call this%advancePMLE()
 #ifdef CompileWithNIBC
       if (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(this%sgg%alloc, this%Ex, this%Ey, this%Ez)
@@ -2744,6 +2756,9 @@ contains
          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
 #endif
       end if
+#ifdef CompileWithMTLN
+       if (this%mtlnObservationInitialized) call CloseMTLNObservation()
+#endif
       if (this%thereAre%FarFields) then
          write(dubuf,'(a,i9)')   ' DONE FINAL OBSERVATION DATA FLUSHED and Near-to-Far field  n= ',this%n
       else

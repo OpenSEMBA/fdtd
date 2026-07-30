@@ -19,6 +19,7 @@ module Wire_bundles_mtln_m
    private   
 
    public InitWires_mtln, AdvanceWiresE_mtln, GetSolverPtr, solveMTLNProblem, reportSimulationEnd
+   public InitMTLNObservation, UpdateMTLNObservation, CloseMTLNObservation
    type(mtln_solver_t), target :: mtln_solver
    integer, dimension(:,:), allocatable :: indexMap
 
@@ -196,6 +197,20 @@ contains
       res => mtln_solver
       return
    end function
+
+   subroutine InitMTLNObservation(nEntradaRoot)
+      character(len=*), intent(in) :: nEntradaRoot
+      call mtln_solver%initObservation(nEntradaRoot)
+   end subroutine
+
+   subroutine UpdateMTLNObservation(step)
+      integer, intent(in) :: step
+      call mtln_solver%updateObservation(step)
+   end subroutine
+
+   subroutine CloseMTLNObservation()
+      call mtln_solver%closeObservation()
+   end subroutine
 
    subroutine solveMTLNProblem(mtln_parsed, nEntradaRoot)
       type(mtln_t) :: mtln_parsed
