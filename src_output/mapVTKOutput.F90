@@ -6,7 +6,10 @@ module mapVTKOutput_m
    use allocationUtils_m
    use vtkAPI_m
    use volumicProbeUtils_m
-   use report_m
+    use report_m
+#ifdef CompileWithHDF
+    use hdf5
+#endif
 
    implicit none
 contains
@@ -129,25 +132,27 @@ contains
       this%materialTag(counter) = tag
    end subroutine
 
-   subroutine create_geometry_simulation_vtu(this, control, realXGrid, realYGrid, realZGrid)
+    subroutine create_geometry_simulation_vtu(this, control, realXGrid, realYGrid, realZGrid, problemInfo)
       implicit none
 
       type(mapvtk_output_t), intent(in) :: this
       type(sim_control_t), intent(in) :: control
-      real(KIND=RKIND), pointer, dimension(:), intent(in) :: realXGrid, realYGrid, realZGrid
+       real(KIND=RKIND), pointer, dimension(:), intent(in) :: realXGrid, realYGrid, realZGrid
+       type(problem_info_t), intent(in) :: problemInfo
 
       !type(vtk_file) :: vtkOutput
       type(vtk_unstructured_grid), target :: ugrid
 
-      integer :: ierr, i, npts, unit
-      real(RKIND), allocatable :: x(:), y(:), z(:), materialTag(:)
+       integer :: ierr, i, npts, unit
+       real(RKIND), allocatable :: x(:), y(:), z(:), materialTag(:)
       character(len=BUFSIZE) :: info_str
       character(len=BUFSIZE) :: metadata_filename, vtuPath
 
       integer, allocatable :: conn(:), offsets(:), types(:)
-      integer :: numNodes, numEdges, numQuads
-      real(kind=RKIND), allocatable :: nodes(:, :)
-      integer(kind=SINGLE), allocatable :: edges(:, :), quads(:, :)
+       integer :: numNodes, numEdges, numQuads
+       real(kind=RKIND), allocatable :: nodes(:, :)
+       integer(kind=SINGLE), allocatable :: edges(:, :), quads(:, :)
+       real, allocatable :: cell_tags(:), cell_media_types(:)
 
       call create_folder(this%path, ierr)
        vtuPath = this%artifacts(1)%relative_path
@@ -170,11 +175,17 @@ contains
           end do
 
           allocate (types(numEdges + numQuads))
-          if (numEdges > 0) types(1:numEdges) = 3
-          if (numQuads > 0) types(numEdges + 1:numEdges + numQuads) = 9
+           if (numEdges > 0) types(1:numEdges) = 3
+           if (numQuads > 0) types(numEdges + 1:numEdges + numQuads) = 9
 
-          call ugrid%add_cell_connectivity(conn, offsets, types)
-       end if
+           call ugrid%add_cell_connectivity(conn, offsets, types)
+           call build_cell_properties(this, problemInfo, numEdges, numQuads, cell_tags, cell_media_types)
+           call ugrid%add_cell_scalar('tagnumber', cell_tags)
+           call ugrid%add_cell_scalar('mediatype', cell_media_types)
+#ifdef CompileWithHDF
+           call write_geometry_xdmf_hdf5(vtuPath, cell_tags, cell_media_types)
+#endif
+        end if
 
       call ugrid%write_file(vtuPath)
 
@@ -194,7 +205,141 @@ contains
          close (unit)
       end if
 
-   end subroutine create_geometry_simulation_vtu
+    end subroutine create_geometry_simulation_vtu
+
+    subroutine build_cell_properties(this, problemInfo, numEdges, numQuads, tags, media_types)
+       type(mapvtk_output_t), intent(in) :: this
+       type(problem_info_t), intent(in) :: problemInfo
+       integer, intent(in) :: numEdges, numQuads
+       real, allocatable, intent(out) :: tags(:), media_types(:)
+       integer :: edge_index, quad_index, index, field, media
+
+       allocate(tags(numEdges + numQuads), media_types(numEdges + numQuads))
+       edge_index = 0
+       quad_index = numEdges
+       do index = 1, this%nPoints
+          select case (this%currentType(index))
+          case (iJx, iJy, iJz)
+             edge_index = edge_index + 1
+             field = this%currentType(index) - iJx + iEx
+             media = getMediaIndex(field, this%coords(1, index), this%coords(2, index), this%coords(3, index), &
+                                    problemInfo%geometryToMaterialData)
+             tags(edge_index) = tag_number(problemInfo%materialList(media), this%materialTag(index), .true.)
+             media_types(edge_index) = edge_media_type(problemInfo%materialList(media))
+          case (iBloqueJx, iBloqueJy, iBloqueJz)
+             quad_index = quad_index + 1
+             field = this%currentType(index) - iBloqueJx + iHx
+             media = getMediaIndex(field, this%coords(1, index), this%coords(2, index), this%coords(3, index), &
+                                    problemInfo%geometryToMaterialData)
+             tags(quad_index) = real(this%materialTag(index))
+             media_types(quad_index) = surface_media_type(problemInfo%materialList(media))
+          end select
+       end do
+    contains
+       real function surface_media_type(material)
+          type(MediaData_t), intent(in) :: material
+
+          if (material%is%Pec) then
+             surface_media_type = 0.0
+          else if (material%is%PMC) then
+             surface_media_type = 16.0
+          else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
+             surface_media_type = 300.0 + material%id
+          else if (material%is%EDispersive .or. material%is%MDispersive .or. material%is%EDispersiveAnis .or. &
+                   material%is%MDispersiveAnis) then
+             surface_media_type = 100.0 + material%id
+          else if (material%is%Dielectric .or. material%is%Anisotropic) then
+             surface_media_type = 200.0 + material%id
+          else if (material%is%ThinSlot) then
+             surface_media_type = 400.0 + material%id
+          else
+             surface_media_type = -1.0
+          end if
+       end function surface_media_type
+
+       real function edge_media_type(material)
+          type(MediaData_t), intent(in) :: material
+
+          if (material%is%Pec) then
+             edge_media_type = 0.5
+          else if (material%is%PMC) then
+             edge_media_type = 16.5
+          else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
+             edge_media_type = 3.5
+          else if (material%is%EDispersive .or. material%is%MDispersive .or. material%is%EDispersiveAnis .or. &
+                   material%is%MDispersiveAnis) then
+             edge_media_type = 1.5
+          else if (material%is%Dielectric .or. material%is%Anisotropic) then
+             edge_media_type = 2.5
+          else if (material%is%ThinSlot) then
+             edge_media_type = 4.5
+          else if (material%is%ThinWire) then
+             edge_media_type = 7.0
+          else if (material%is%Multiwire) then
+             edge_media_type = 12.0
+          else
+             edge_media_type = -0.5
+          end if
+       end function edge_media_type
+
+       real function tag_number(material, fallback_tag, is_edge)
+          type(MediaData_t), intent(in) :: material
+          integer(kind=SINGLE), intent(in) :: fallback_tag
+          logical, intent(in) :: is_edge
+
+          if (material%is%Pec) then
+             tag_number = 64.0
+          else if (material%is%PMC) then
+             tag_number = 128.0
+          else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
+             tag_number = 192.0
+          else if (is_edge) then
+             tag_number = 64.0 * real(fallback_tag)
+          else
+             tag_number = real(fallback_tag)
+          end if
+       end function tag_number
+    end subroutine build_cell_properties
+
+#ifdef CompileWithHDF
+    subroutine write_geometry_xdmf_hdf5(vtu_path, tags, media_types)
+       character(len=*), intent(in) :: vtu_path
+       real, intent(in) :: tags(:), media_types(:)
+       character(len=BUFSIZE) :: hdf_path, xdmf_path, hdf_name
+       integer(hid_t) :: file_id, space_id, dataset_id = -1
+       integer(hsize_t) :: dimensions(1)
+       integer :: hdf_error, unit
+
+       hdf_path = trim(vtu_path(:len_trim(vtu_path) - len(vtuFileExtension)))//'.h5'
+       xdmf_path = trim(vtu_path(:len_trim(vtu_path) - len(vtuFileExtension)))//'.xdmf'
+       hdf_name = get_last_component(hdf_path)
+       dimensions = [int(size(tags), hsize_t)]
+       call h5open_f(hdf_error)
+       call h5fcreate_f(trim(hdf_path), H5F_ACC_TRUNC_F, file_id, hdf_error)
+       if (hdf_error /= 0) return
+       call h5screate_simple_f(1, dimensions, space_id, hdf_error)
+       call h5dcreate_f(file_id, 'tagnumber', H5T_NATIVE_REAL, space_id, dataset_id, hdf_error)
+       if (hdf_error == 0) call h5dwrite_f(dataset_id, H5T_NATIVE_REAL, tags, dimensions, hdf_error)
+       if (dataset_id >= 0) call h5dclose_f(dataset_id, hdf_error)
+       call h5dcreate_f(file_id, 'mediatype', H5T_NATIVE_REAL, space_id, dataset_id, hdf_error)
+       if (hdf_error == 0) call h5dwrite_f(dataset_id, H5T_NATIVE_REAL, media_types, dimensions, hdf_error)
+       if (dataset_id >= 0) call h5dclose_f(dataset_id, hdf_error)
+       call h5sclose_f(space_id, hdf_error)
+       call h5fclose_f(file_id, hdf_error)
+       call h5close_f(hdf_error)
+
+       open(newunit=unit, file=trim(xdmf_path), status='replace', action='write', iostat=hdf_error)
+       if (hdf_error /= 0) return
+       write(unit, '(A)') '<Xdmf Version="3.0"><Domain><Grid Name="geometry" GridType="Uniform">'
+       write(unit, '(A,I0,A)') '<Topology TopologyType="Polyvertex" NumberOfElements="', size(tags), '"/>'
+       write(unit, '(A,I0,A)') '<Attribute Name="tagnumber" Center="Cell"><DataItem Dimensions="', size(tags), &
+                                '" Format="HDF">'//trim(hdf_name)//':/tagnumber</DataItem></Attribute>'
+       write(unit, '(A,I0,A)') '<Attribute Name="mediatype" Center="Cell"><DataItem Dimensions="', size(tags), &
+                                '" Format="HDF">'//trim(hdf_name)//':/mediatype</DataItem></Attribute>'
+       write(unit, '(A)') '</Grid></Domain></Xdmf>'
+       close(unit)
+    end subroutine write_geometry_xdmf_hdf5
+#endif
 
    logical function isEdge(campo, iii, jjj, kkk, problemInfo)
       integer(4), intent(in) :: campo, iii, jjj, kkk

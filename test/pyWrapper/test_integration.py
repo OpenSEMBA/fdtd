@@ -1,4 +1,5 @@
 from utils import *
+from pathlib import Path
 
 @pytest.mark.wires
 @pytest.mark.termination
@@ -503,6 +504,34 @@ def test_1_volume(tmp_path):
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
     assert len(line_media_dict) == 0
+
+
+@no_hdf_skip
+def test_1_volume_map_publishes_geometry_in_xdmf_hdf5(tmp_path):
+    import h5py
+
+    fn = CASES_FOLDER + 'observation/pec_volume.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+    solver.run()
+
+    map_path = Path(solver.getVTKMap())
+    hdf_path = map_path.with_suffix('.h5')
+    xdmf_path = map_path.with_suffix('.xdmf')
+
+    assert hdf_path.is_file()
+    assert xdmf_path.is_file()
+    with h5py.File(hdf_path, 'r') as hdf:
+        assert set(hdf.keys()) == {'tagnumber', 'mediatype'}
+        assert np.all(hdf['tagnumber'][()] == 64)
+        assert np.all(hdf['mediatype'][()] == 0.0)
+        assert len(hdf['tagnumber']) == 36
+
+    xdmf = xdmf_path.read_text()
+    assert hdf_path.name in xdmf
+    assert 'tagnumber' in xdmf
+    assert 'mediatype' in xdmf
 
 
 def test_2_volumes(tmp_path):

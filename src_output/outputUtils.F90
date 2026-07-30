@@ -31,7 +31,8 @@ module outputUtils_m
    public :: computeJ2
    public :: fieldo
     public :: create_data_file
-   public :: currentType
+    public :: currentType
+    public :: getMediaIndex
    public :: get_media_from_coord_and_h_neighbours
    !===========================
 
