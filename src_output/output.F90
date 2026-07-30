@@ -652,7 +652,8 @@ contains
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
                 allocate (outputs(outputCount)%pointProbe)
-                call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt)
+                call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt, &
+                                        sgg%NumPlaneWaves >= 1)
                  call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%pointProbe%path)//'.json', &
                                                       get_last_component(outputs(outputCount)%pointProbe%path), &
                                                       get_prefix_extension(outputRequestType, control%mpidir), &
@@ -895,14 +896,15 @@ contains
 
    end subroutine init_outputs
 
-   subroutine update_outputs(control, discreteTimeArray, timeIndx, fieldsReference)
+   subroutine update_outputs(control, discreteTimeArray, timeIndx, fieldsReference, sgg)
       integer(kind=SINGLE), intent(in) :: timeIndx
       real(kind=RKIND_tiempo), dimension(:), intent(in) :: discreteTimeArray
       integer(kind=SINGLE) :: i, id
       type(sim_control_t), intent(in) :: control
       real(kind=RKIND), pointer, dimension(:, :, :) :: fieldComponent
       type(field_data_t) :: fieldReference
-      type(fields_reference_t), intent(in) :: fieldsReference
+       type(fields_reference_t), intent(in) :: fieldsReference
+       type(SGGFDTDINFO_t), intent(in), optional :: sgg
       real(kind=RKIND_tiempo) :: discreteTime
 
       discreteTime = discreteTimeArray(timeIndx)
@@ -911,7 +913,11 @@ contains
          select case (outputs(i)%outputID)
          case (POINT_PROBE_ID)
             fieldComponent => get_field_component(outputs(i)%pointProbe%component, fieldsReference) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
-            call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent)
+            if (present(sgg)) then
+               call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent, sgg)
+            else
+               call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent)
+            end if
          case (WIRE_CURRENT_PROBE_ID)
             call update_solver_output(outputs(i)%wireCurrentProbe, discreteTime, control, InvEps, InvMu)
          case (WIRE_CHARGE_PROBE_ID)

@@ -67,6 +67,7 @@ module outputTypes_m
       integer, parameter :: BINARY_BYTES_REAL32 = 4
       integer, parameter :: BINARY_BYTES_REAL64 = 8
       character(len=*), parameter :: BINARY_COMPONENTS_SCALAR_TIME = 'time,value'
+      character(len=*), parameter :: BINARY_COMPONENTS_SCALAR_TIME_INCIDENT = 'time,value,incident'
       character(len=*), parameter :: BINARY_COMPONENTS_SCALAR_FREQUENCY = &
          'frequency,value.real,value.imag'
       character(len=*), parameter :: BINARY_COMPONENTS_VOLUMETRIC_TIME = 'time,x,y,z,value'
@@ -228,11 +229,13 @@ module outputTypes_m
        integer :: nPoints = -1
        type(output_artifact_t) :: artifacts(2)
    end type mapvtk_output_t
-    type, extends(abstract_time_frequency_probe_t) :: point_probe_output_t
-       real(kind=RKIND), allocatable :: valueForTime(:)
-       complex(kind=CKIND), allocatable :: valueForFreq(:)
+     type, extends(abstract_time_frequency_probe_t) :: point_probe_output_t
+        real(kind=RKIND), allocatable :: valueForTime(:)
+       real(kind=RKIND), allocatable :: incidentForTime(:)
+        complex(kind=CKIND), allocatable :: valueForFreq(:)
+       logical :: hasIncident = .false.
        type(output_artifact_t) :: artifacts(4)
-    end type point_probe_output_t
+     end type point_probe_output_t
 
     type, extends(abstract_time_probe_t) :: wire_charge_probe_output_t
       integer(kind=SINGLE) :: sign = +1

@@ -392,29 +392,16 @@ class FDTD():
         return excitationFile
 
     def getVTKMap(self):
-        current_path = os.getcwd()
-        folders = [item for item in os.listdir(
-            current_path) if os.path.isdir(os.path.join(current_path, item))]
-        if len(folders) == 0:
-            return None
-        for folder in folders:
-            mapFile = os.path.join(current_path, folder, folder+"_1.vtk")
-            if os.path.isfile(mapFile):
-                return mapFile
-        raise ValueError("Unable to find mapvatk file")
+        map_files = sorted(glob.glob(os.path.join('**', '*.vtu'), recursive=True))
+        if not map_files:
+            map_files = sorted(glob.glob(os.path.join('**', '*_1.vtk'), recursive=True))
+        return map_files[0] if map_files else None
 
     def getCurrentVTKMap(self):
-        current_path = os.getcwd()
-        folders = [item for item in os.listdir(
-            current_path) if os.path.isdir(os.path.join(current_path, item))]
-        if len(folders) != 1:
-            return None
-        for folder in folders:
-            mapFile = os.path.join(current_path, folder,
-                                   folder+"_1_current.vtk")
-            if os.path.isfile(mapFile):
-                return mapFile
-        raise ValueError("Unable to find current vtk file")
+        current_maps = sorted(glob.glob(os.path.join('**', '*current*.vtu'), recursive=True))
+        if not current_maps:
+            current_maps = sorted(glob.glob(os.path.join('**', '*_1_current.vtk'), recursive=True))
+        return current_maps[0] if current_maps else None
 
     def getMaterialProperties(self, materialName):
         if 'materials' in self._input:

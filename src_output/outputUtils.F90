@@ -361,24 +361,24 @@ contains
    function get_field_reference(fieldId, fieldReference) result(field)
       type(fields_reference_t), intent(in) :: fieldReference
       integer(kind=SINGLE), intent(in) :: fieldId
-      type(field_data_t) :: field
-      select case (fieldId)
-      case (iBloqueJx, iBloqueJy, iBloqueJz)
-         field%x => fieldReference%E%x
-         field%y => fieldReference%E%y
-         field%z => fieldReference%E%z
+       type(field_data_t) :: field
+       select case (fieldId)
+       case (iBloqueJx, iBloqueJy, iBloqueJz)
+          field%x => fieldReference%H%x
+          field%y => fieldReference%H%y
+          field%z => fieldReference%H%z
 
-         field%deltaX => fieldReference%E%deltax
-         field%deltaY => fieldReference%E%deltay
-         field%deltaZ => fieldReference%E%deltaz
-      case (iBloqueMx, iBloqueMy, iBloqueMz)
-         field%x => fieldReference%H%x
-         field%y => fieldReference%H%y
-         field%z => fieldReference%H%z
+          field%deltaX => fieldReference%H%deltax
+          field%deltaY => fieldReference%H%deltay
+          field%deltaZ => fieldReference%H%deltaz
+       case (iBloqueMx, iBloqueMy, iBloqueMz)
+          field%x => fieldReference%E%x
+          field%y => fieldReference%E%y
+          field%z => fieldReference%E%z
 
-         field%deltaX => fieldReference%H%deltax
-         field%deltaY => fieldReference%H%deltay
-         field%deltaZ => fieldReference%H%deltaz
+          field%deltaX => fieldReference%E%deltax
+          field%deltaY => fieldReference%E%deltay
+          field%deltaZ => fieldReference%E%deltaz
       end select
    end function get_field_reference
 

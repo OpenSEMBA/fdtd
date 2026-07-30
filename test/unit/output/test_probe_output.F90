@@ -84,7 +84,41 @@ integer function test_init_point_probe() bind(c) result(err)
    deallocate (sgg%Observation, outputs)
 
    err = test_err
- end function
+end function
+
+integer function test_init_point_probe_with_incident() bind(c) result(err)
+   ! Verifies incident point probes declare a three-component time record.
+   use FDETYPES_m
+   use FDETYPES_TOOLS
+   use outputTypes_m, only: point_probe_output_t, domain_t, cell_coordinate_t, TIME_DOMAIN, &
+                            BINARY_COMPONENTS_SCALAR_TIME_INCIDENT
+   use pointProbeOutput_m, only: init_point_probe_output
+   use assertionTools_m, only: assert_true, assert_string_equal
+   use directoryUtils_m, only: remove_folder
+   implicit none
+
+   type(point_probe_output_t) :: probe
+   type(domain_t) :: domain
+   type(cell_coordinate_t) :: coordinates
+   character(len=BUFSIZE) :: header
+   integer :: ios, unit
+
+   err = 0
+   domain%domainType = TIME_DOMAIN
+   coordinates = cell_coordinate_t(1, 1, 1)
+   call init_point_probe_output(probe, coordinates, iEx, domain, 'incidentPointProbe', 3, 0.1_RKIND_tiempo, .true.)
+
+   err = err + assert_true(probe%hasIncident .and. allocated(probe%incidentForTime), &
+                            'Incident point probe did not allocate incident samples')
+   err = err + assert_true(probe%artifacts(2)%record_bytes == 24, 'Incident binary record size is incorrect')
+   err = err + assert_string_equal(probe%artifacts(2)%component_order, BINARY_COMPONENTS_SCALAR_TIME_INCIDENT, &
+                                   'Incident binary component order is incorrect')
+   open(newunit=unit, file=probe%filePathTime, status='old', action='read', iostat=ios)
+   read(unit, '(A)', iostat=ios) header
+   close(unit)
+   err = err + assert_true(ios == 0 .and. trim(header) == 't field incident', 'Incident text header is incorrect')
+   call remove_folder('incidentPointProbe_Ex_1_1_1', ios)
+end function test_init_point_probe_with_incident
 
 integer function test_output_failure_coordination() bind(c) result(err)
    ! Verifies failed publication retains diagnostics and cannot complete.

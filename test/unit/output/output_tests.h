@@ -34,6 +34,7 @@ extern "C" int test_output_binary_append_real64();
 
 // Probe lifecycle behaviour.
 extern "C" int test_init_point_probe();
+extern "C" int test_init_point_probe_with_incident();
 extern "C" int test_line_probe_integral();
 extern "C" int test_line_probe_empty_path();
 extern "C" int test_line_probe_artifacts();
@@ -114,6 +115,8 @@ TEST(output, test_binary_mixed_complex_layout) { EXPECT_EQ(0, test_output_binary
 TEST(output, test_binary_append_real64) { EXPECT_EQ(0, test_output_binary_append_real64()); }
 // Registers a point probe and its declared output paths.
 TEST(output, test_initialize_point_probe) { EXPECT_EQ(0, test_init_point_probe()); }
+// Declares the incident field alongside point-probe time samples.
+TEST(output, test_initialize_point_probe_with_incident) { EXPECT_EQ(0, test_init_point_probe_with_incident()); }
 // Preserves the signed mixed-direction electric-field line integral.
 TEST(output, test_line_probe_integral) { EXPECT_EQ(0, test_line_probe_integral()); }
 // Keeps an empty line discoverable without fabricating measurements.

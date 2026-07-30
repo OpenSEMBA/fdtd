@@ -957,7 +957,7 @@ def test_dielectric_transmission(tmp_path):
     def getPointProbe(probeName: str):
         binaryFilename = next(filename for filename in solver.getSolvedProbeFilenames(probeName, include_binary=True)
                               if filename.endswith(".bin"))
-        samples = np.fromfile(binaryFilename, dtype="<f8").reshape(-1, 2)
+        samples = np.fromfile(binaryFilename, dtype="<f8").reshape(-1, 3)
         return samples[:, 0], samples[:, 1]
 
     def getIncidentField(time: np.ndarray, field: np.ndarray) -> Dict:

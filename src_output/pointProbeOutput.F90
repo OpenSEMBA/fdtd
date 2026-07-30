@@ -6,9 +6,10 @@ module pointProbeOutput_m
    use domain_m
      use outputUtils_m
      use allocationUtils_m, only: alloc_and_init
-     use outputBinary_m, only: append_binary_real64, write_binary_complex_record64, BINARY_WRITER_SUCCESS
-      use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
-     use, intrinsic :: iso_fortran_env, only: real64
+   use outputBinary_m, only: append_binary_real64, write_binary_complex_record64, BINARY_WRITER_SUCCESS
+   use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
+   use, intrinsic :: iso_fortran_env, only: real64
+   use ilumina_m, only: Incid
 
    implicit none
 
@@ -19,7 +20,7 @@ module pointProbeOutput_m
    public :: flush_point_probe_output
 
 contains
-   subroutine init_point_probe_output(this, coordinates, field, domain, outputTypeExtension, mpidir, timeInterval)
+   subroutine init_point_probe_output(this, coordinates, field, domain, outputTypeExtension, mpidir, timeInterval, hasIncident)
       type(point_probe_output_t), intent(out) :: this
       type(cell_coordinate_t) :: coordinates
       integer(kind=SINGLE), intent(in) :: mpidir, field
@@ -27,6 +28,7 @@ contains
       type(domain_t), intent(in) :: domain
 
       real(kind=RKIND_tiempo), intent(in) :: timeInterval
+      logical, intent(in), optional :: hasIncident
 
        integer(kind=SINGLE) :: i
         integer :: artifact_kinds(4)
@@ -38,10 +40,12 @@ contains
 
        this%domain = domain
        this%path = get_output_path()
+       if (present(hasIncident)) this%hasIncident = hasIncident
 
        if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
-         call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
-         call alloc_and_init(this%valueForTime, BUFSIZE, 0.0_RKIND)
+          call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
+          call alloc_and_init(this%valueForTime, BUFSIZE, 0.0_RKIND)
+          if (this%hasIncident) call alloc_and_init(this%incidentForTime, BUFSIZE, 0.0_RKIND)
        end if
        if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
           this%nFreq = this%domain%fnum
@@ -69,11 +73,10 @@ contains
            call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
            this%filePathTime = this%artifacts(1)%relative_path
            this%filePathFreq = this%artifacts(3)%relative_path
-            call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, 't field')
+            call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, time_header())
             call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension, &
                                   'frequency real imaginary')
-           call configure_binary_artifact(this%artifacts(2), 16_8, BINARY_COMPONENTS_SCALAR_TIME, &
-                                          BINARY_COMPLEX_UNSPECIFIED)
+           call configure_time_binary_artifact(this%artifacts(2))
            call configure_binary_artifact(this%artifacts(4), 24_8, BINARY_COMPONENTS_SCALAR_FREQUENCY, &
                                           BINARY_COMPLEX_REAL_IMAG)
         else if (this%domain%domainType == TIME_DOMAIN) then
@@ -82,9 +85,8 @@ contains
            artifact_kinds(:2) = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]
            call declare_probe_artifacts(this%artifacts, artifact_paths(:2), artifact_kinds(:2))
            this%filePathTime = this%artifacts(1)%relative_path
-            call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, 't field')
-           call configure_binary_artifact(this%artifacts(2), 16_8, BINARY_COMPONENTS_SCALAR_TIME, &
-                                          BINARY_COMPLEX_UNSPECIFIED)
+            call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, time_header())
+           call configure_time_binary_artifact(this%artifacts(2))
         else if (this%domain%domainType == FREQUENCY_DOMAIN) then
            artifact_paths(1) = trim(this%path)//'_'//frequencyExtension//datFileExtension
            artifact_paths(2) = trim(this%path)//'_'//frequencyExtension//binaryExtension
@@ -132,19 +134,49 @@ contains
           artifact%component_order = component_order
        end subroutine configure_binary_artifact
 
+       subroutine configure_time_binary_artifact(artifact)
+          type(output_artifact_t), intent(inout) :: artifact
+
+          if (this%hasIncident) then
+             call configure_binary_artifact(artifact, 24_8, BINARY_COMPONENTS_SCALAR_TIME_INCIDENT, &
+                                            BINARY_COMPLEX_UNSPECIFIED)
+          else
+             call configure_binary_artifact(artifact, 16_8, BINARY_COMPONENTS_SCALAR_TIME, &
+                                            BINARY_COMPLEX_UNSPECIFIED)
+          end if
+       end subroutine configure_time_binary_artifact
+
+       function time_header() result(header)
+          character(len=16) :: header
+
+          if (this%hasIncident) then
+             header = 't field incident'
+          else
+             header = 't field'
+          end if
+       end function time_header
+
     end subroutine init_point_probe_output
 
-   subroutine update_point_probe_output(this, step, field)
+   subroutine update_point_probe_output(this, step, field, sgg)
       type(point_probe_output_t), intent(inout) :: this
       real(kind=RKIND), pointer, dimension(:, :, :), intent(in) :: field
       real(kind=RKIND_tiempo), intent(in) :: step
+      type(SGGFDTDINFO_t), intent(in), optional :: sgg
 
-      integer(kind=SINGLE) :: iter
+       integer(kind=SINGLE) :: iter
+      logical :: still_planewave_time
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
-         this%nTime = this%nTime + 1
-         this%timeStep(this%nTime) = step
-         this%valueForTime(this%nTime) = field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)
+          this%nTime = this%nTime + 1
+          this%timeStep(this%nTime) = step
+          this%valueForTime(this%nTime) = field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)
+          if (this%hasIncident .and. present(sgg)) then
+             still_planewave_time = .false.
+             this%incidentForTime(this%nTime) = Incid(sgg, 1, this%component, real(step + sgg%dt, RKIND), &
+                                                       this%mainCoords%x, this%mainCoords%y, this%mainCoords%z, &
+                                                       still_planewave_time, .true.)
+          end if
       end if
 
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
@@ -189,7 +221,11 @@ contains
          open (newunit=unit, file=this%filePathTime, status="old", action="write", position="append")
 
          do i = 1, this%nTime
-             write (unit, fmt) this%timeStep(i), this%valueForTime(i)
+             if (this%hasIncident) then
+                write (unit, fmt) this%timeStep(i), this%valueForTime(i), this%incidentForTime(i)
+             else
+                write (unit, fmt) this%timeStep(i), this%valueForTime(i)
+             end if
          end do
 
           close (unit)
@@ -226,11 +262,18 @@ contains
           real(real64), allocatable :: records(:)
           integer :: i, status
 
-          allocate(records(2 * this%nTime))
-          do i = 1, this%nTime
-             records(2 * i - 1) = real(this%timeStep(i), real64)
-             records(2 * i) = real(this%valueForTime(i), real64)
-          end do
+          if (this%hasIncident) then
+             allocate(records(3 * this%nTime))
+             do i = 1, this%nTime
+                records(3 * i - 2:3 * i) = [real(this%timeStep(i), real64), real(this%valueForTime(i), real64), &
+                                             real(this%incidentForTime(i), real64)]
+             end do
+          else
+             allocate(records(2 * this%nTime))
+             do i = 1, this%nTime
+                records(2 * i - 1:2 * i) = [real(this%timeStep(i), real64), real(this%valueForTime(i), real64)]
+             end do
+          end if
           call append_binary_real64(this%artifacts(2)%relative_path, this%artifacts(2), records, status)
        end subroutine write_time_binary
 
@@ -255,8 +298,9 @@ contains
        end subroutine write_frequency_binary
 
       subroutine clear_time_data()
-         this%timeStep = 0.0_RKIND_tiempo
-         this%valueForTime = 0.0_RKIND
+          this%timeStep = 0.0_RKIND_tiempo
+          this%valueForTime = 0.0_RKIND
+          if (this%hasIncident) this%incidentForTime = 0.0_RKIND
 
          this%nTime = 0
       end subroutine clear_time_data

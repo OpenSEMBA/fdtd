@@ -1987,7 +1987,7 @@ contains
          IF (this%thereAre%Observation) then
 #ifdef CompileWithNewOutputModule
             if (this%n /= 0) then
-               call update_outputs(this%control, this%sgg%tiempo, this%n, fieldReference)
+               call update_outputs(this%control, this%sgg%tiempo, this%n, fieldReference, this%sgg)
                if (this%n>=this%ini_save+BuffObse)  then
                   mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
                   call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .FALSE.)
