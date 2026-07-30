@@ -41,7 +41,7 @@ contains
         this%artifacts(2)%record_bytes = 16
         this%artifacts(2)%component_order = 'time,value'
         this%filePathTime = this%artifacts(1)%relative_path
-        call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+         call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, 't current')
         call create_file_with_path(this%artifacts(2)%relative_path, ios)
 
    contains

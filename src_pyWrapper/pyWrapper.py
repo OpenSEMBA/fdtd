@@ -360,20 +360,22 @@ class FDTD():
             if f.startswith(case_name):
                 shutil.rmtree(os.path.join(folder, f), ignore_errors=True)
 
-    def getSolvedProbeFilenames(self, probe_name):
+    def getSolvedProbeFilenames(self, probe_name, include_binary=False):
         if not "probes" in self._input:
             raise ValueError('Solver does not contain probes.')
 
-        file_extensions = ('*.dat', '*.xdmf', '*.bin', '*.h5')
+        file_extensions = ('*.dat', '*.xdmf', '*.h5')
+        if include_binary:
+            file_extensions += ('*.bin',)
         probeFiles = []
         for ext in file_extensions:
             newProbes = [
                 x for x in glob.glob(os.path.join('**', ext), recursive=True)
                 if re.match(self.getCaseName() + '_' + probe_name, os.path.basename(x))
             ]
-            probeFiles.extend(newProbes)
+            probeFiles.extend(sorted(newProbes))
 
-        return sorted(probeFiles)
+        return probeFiles
 
     def getExcitationFile(self, excitation_file_name):
         file_extensions = ('*.exc',)

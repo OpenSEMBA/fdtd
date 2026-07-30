@@ -658,18 +658,24 @@ contains
       end select
    end function get_delta
 
-    subroutine create_data_file(filePathReference, probePathReference, domainTypeReference, fileExtension)
-      use directoryUtils_m
-      character(len=*), intent(out) :: filePathReference
-      character(len=*), intent(in) :: probePathReference
-      character(len=*), intent(in) :: domainTypeReference
-      character(len=*), intent(in) :: fileExtension
+     subroutine create_data_file(filePathReference, probePathReference, domainTypeReference, fileExtension, header)
+       use directoryUtils_m
+       character(len=*), intent(out) :: filePathReference
+       character(len=*), intent(in) :: probePathReference
+       character(len=*), intent(in) :: domainTypeReference
+       character(len=*), intent(in) :: fileExtension
+       character(len=*), intent(in), optional :: header
 
-      character(len=1) :: sep = '_'
-      integer :: err
+       character(len=1) :: sep = '_'
+       integer :: err, unit
 
-      filePathReference = trim(probePathReference)//sep//trim(domainTypeReference)//fileExtension
+       filePathReference = trim(probePathReference)//sep//trim(domainTypeReference)//fileExtension
        call create_file_with_path(filePathReference, err)
-    end subroutine
+       if (err /= 0 .or. .not. present(header)) return
+       open(newunit=unit, file=filePathReference, status='old', action='write', position='append', iostat=err)
+       if (err /= 0) return
+       write(unit, '(A)', iostat=err) trim(header)
+       close(unit)
+     end subroutine
 
 end module outputUtils_m

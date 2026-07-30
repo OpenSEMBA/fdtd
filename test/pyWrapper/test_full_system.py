@@ -555,7 +555,7 @@ def test_sphere(tmp_path):
 
     electric_field_movie_files = solver.getSolvedProbeFilenames(
         "electric_field_movie")
-    assert len(electric_field_movie_files) == 3
+    assert {Path(filename).suffix for filename in electric_field_movie_files} == {'.h5', '.xdmf'}
     p = Probe(electric_field_movie_files[0])
     assert p.type == 'movie'
 
@@ -955,7 +955,7 @@ def test_dielectric_transmission(tmp_path):
     _FIELD_TOLERANCE = 0.05
 
     def getPointProbe(probeName: str):
-        binaryFilename = next(filename for filename in solver.getSolvedProbeFilenames(probeName)
+        binaryFilename = next(filename for filename in solver.getSolvedProbeFilenames(probeName, include_binary=True)
                               if filename.endswith(".bin"))
         samples = np.fromfile(binaryFilename, dtype="<f8").reshape(-1, 2)
         return samples[:, 0], samples[:, 1]

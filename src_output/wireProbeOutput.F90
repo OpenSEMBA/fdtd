@@ -80,7 +80,8 @@ module wireProbeOutput_m
          this%artifacts(2)%record_bytes = 48
          this%artifacts(2)%component_order = 'time,current,delta_voltage,plus_voltage,minus_voltage,voltage_difference'
         this%filePathTime = this%artifacts(1)%relative_path
-        call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+         call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, &
+                               't current delta_voltage plus_voltage minus_voltage voltage_difference')
         call create_file_with_path(this%artifacts(2)%relative_path, ios)
 
    end subroutine init_wire_current_probe_output
@@ -116,7 +117,7 @@ module wireProbeOutput_m
          this%artifacts(2)%record_bytes = 16
          this%artifacts(2)%component_order = 'time,charge'
         this%filePathTime = this%artifacts(1)%relative_path
-        call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+         call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, 't charge')
         call create_file_with_path(this%artifacts(2)%relative_path, ios)
 
    end subroutine init_wire_charge_probe_output

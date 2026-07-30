@@ -69,8 +69,9 @@ contains
            call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
            this%filePathTime = this%artifacts(1)%relative_path
            this%filePathFreq = this%artifacts(3)%relative_path
-           call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
-           call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension)
+            call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, 't field')
+            call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension, &
+                                  'frequency real imaginary')
            call configure_binary_artifact(this%artifacts(2), 16_8, BINARY_COMPONENTS_SCALAR_TIME, &
                                           BINARY_COMPLEX_UNSPECIFIED)
            call configure_binary_artifact(this%artifacts(4), 24_8, BINARY_COMPONENTS_SCALAR_FREQUENCY, &
@@ -81,7 +82,7 @@ contains
            artifact_kinds(:2) = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]
            call declare_probe_artifacts(this%artifacts, artifact_paths(:2), artifact_kinds(:2))
            this%filePathTime = this%artifacts(1)%relative_path
-           call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
+            call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, 't field')
            call configure_binary_artifact(this%artifacts(2), 16_8, BINARY_COMPONENTS_SCALAR_TIME, &
                                           BINARY_COMPLEX_UNSPECIFIED)
         else if (this%domain%domainType == FREQUENCY_DOMAIN) then
@@ -90,7 +91,8 @@ contains
            artifact_kinds(:2) = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]
            call declare_probe_artifacts(this%artifacts, artifact_paths(:2), artifact_kinds(:2))
            this%filePathFreq = this%artifacts(1)%relative_path
-           call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension)
+            call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension, &
+                                  'frequency real imaginary')
           call configure_binary_artifact(this%artifacts(2), 24_8, BINARY_COMPONENTS_SCALAR_FREQUENCY, &
                                          BINARY_COMPLEX_REAL_IMAG)
         end if
@@ -187,7 +189,7 @@ contains
          open (newunit=unit, file=this%filePathTime, status="old", action="write", position="append")
 
          do i = 1, this%nTime
-            write (unit, '(F12.6,1X,F12.6)') this%timeStep(i), this%valueForTime(i)
+             write (unit, fmt) this%timeStep(i), this%valueForTime(i)
          end do
 
           close (unit)
@@ -208,10 +210,11 @@ contains
             print *, "No data to write."
             return
          end if
-         open (newunit=unit, file=this%filePathFreq, status="replace", action="write")
+          open (newunit=unit, file=this%filePathFreq, status="replace", action="write")
+          write (unit, '(A)') 'frequency real imaginary'
 
          do i = 1, this%nFreq
-            write (unit, '(F12.6,1X,F12.6,1X,F12.6)') this%frequencySlice(i), real(this%valueForFreq(i)), aimag(this%valueForFreq(i))
+             write (unit, fmt) this%frequencySlice(i), real(this%valueForFreq(i)), aimag(this%valueForFreq(i))
          end do
 
           close (unit)

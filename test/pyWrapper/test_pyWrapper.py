@@ -147,6 +147,22 @@ def test_fdtd_clean_up_after_run(tmp_path):
 
 
 @pytest.mark.planewave
+def test_fdtd_probe_filenames_exclude_binary_by_default(tmp_path):
+    input = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
+    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver['general']['numberOfSteps'] = 1
+    solver.run()
+
+    text_artifacts = solver.getSolvedProbeFilenames('inbox')
+    all_artifacts = solver.getSolvedProbeFilenames('inbox', include_binary=True)
+
+    assert text_artifacts
+    assert all(filename.endswith(('.dat', '.xdmf', '.h5')) for filename in text_artifacts)
+    assert set(text_artifacts) < set(all_artifacts)
+    assert any(filename.endswith('.bin') for filename in all_artifacts)
+
+
+@pytest.mark.planewave
 def test_fdtd_clean_up_does_not_delete_other_cases_files(tmp_path):
     input = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
     solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -212,5 +228,4 @@ def test_default_semba_exe_selects_compatible_preset(
         monkeypatch.setenv(name, value)
 
     assert utils._default_semba_exe() == str(executable)
-
 

@@ -51,7 +51,7 @@ contains
       type(xyzlimit_t), intent(in), optional :: sweeps(:)
       integer(kind=SINGLE), intent(in), optional :: rank, rank_count
       character(len=BUFSIZE) :: artifact_paths(2)
-      integer :: artifact_kinds(2), ios, segment_index, local_count
+       integer :: artifact_kinds(2), ios, unit, segment_index, local_count
 
       this%domain = domain
       this%path = output_path
@@ -85,8 +85,14 @@ contains
       this%artifacts(2)%complex_representation = BINARY_COMPLEX_UNSPECIFIED
        this%artifacts(2)%record_bytes = 16
       this%artifacts(2)%component_order = 'time,line_integral'
-      call create_file_with_path(this%artifacts(1)%relative_path, ios)
-      call create_file_with_path(this%artifacts(2)%relative_path, ios)
+       call create_file_with_path(this%artifacts(1)%relative_path, ios)
+       if (ios /= 0) return
+       open(newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
+       if (ios /= 0) return
+       write(unit, '(A)', iostat=ios) 't lineIntegral'
+       close(unit)
+       if (ios /= 0) return
+       call create_file_with_path(this%artifacts(2)%relative_path, ios)
    end subroutine init_line_probe_output
 
    pure logical function line_segment_is_local(segment, sweeps, rank, rank_count)

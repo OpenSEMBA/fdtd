@@ -316,9 +316,9 @@ integer function test_line_probe_artifacts() bind(c) result(err)
       read(text_unit, '(A)', iostat=ios) line
       if (ios == 0) text_records = text_records + 1
    end do
-   close(text_unit)
-   inquire(file=trim(path)//'_tm.bin', size=binary_size, iostat=ios)
-   err = err + assert_integer_equal(text_records, 2, 'Line text artifact lost samples')
+    close(text_unit)
+    inquire(file=trim(path)//'_tm.bin', size=binary_size, iostat=ios)
+    err = err + assert_integer_equal(text_records, 3, 'Line text artifact lost its header or samples')
     err = err + assert_true(file_exists(trim(path)//'_tm.bin') .and. binary_size == 32, &
                              'Line binary artifact does not contain two records')
    call delete_file(trim(path)//'_tm.dat', ios)
@@ -936,7 +936,7 @@ integer function test_flush_point_probe() bind(c) result(err)
     ! A declared scalar artifact remains discoverable when no sample is recorded.
     call flush_point_probe_output(probe)
     inquire(file=probe%filePathTime, size=file_size)
-    test_err = test_err + assert_integer_equal(file_size, 0, 'Zero-sample point artifact is not empty')
+     test_err = test_err + assert_true(file_size > 0, 'Zero-sample point artifact is missing its header')
     test_err = test_err + assert_true(file_exists(probe%artifacts(2)%relative_path), &
                                       'Zero-sample point time binary artifact is missing')
     test_err = test_err + assert_true(file_exists(probe%artifacts(4)%relative_path), &
@@ -1134,6 +1134,7 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    integer :: n, i, unit
    integer :: test_err = 0
    integer :: ios
+   character(len=BUFSIZE) :: header
 
    ! Setup
    sep = get_path_separator()
@@ -1188,13 +1189,18 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    call flush_point_probe_output(probe)
 
    ! Assertions
-   unit = 1
-   open (unit=unit, file=probe%filePathTime, status='old', action='read')
-   test_err = test_err + assert_file_content(unit, expectedTime, 2*n, 2, 1e-06_RKIND)
-   close (unit)
-   unit = 2
-   open (unit=unit, file=probe%filePathFreq, status='old', action='read')
-   test_err = test_err + assert_file_content(unit, expectedFreq, n, 2, 1e-06_RKIND)
+    unit = 1
+    open (unit=unit, file=probe%filePathTime, status='old', action='read')
+    read(unit, '(A)', iostat=ios) header
+    test_err = test_err + assert_true(ios == 0 .and. trim(header) == 't field', 'Point time header is incorrect')
+    test_err = test_err + assert_file_content(unit, expectedTime, 2*n, 2, 1e-06_RKIND)
+    close (unit)
+    unit = 2
+    open (unit=unit, file=probe%filePathFreq, status='old', action='read')
+    read(unit, '(A)', iostat=ios) header
+    test_err = test_err + assert_true(ios == 0 .and. trim(header) == 'frequency real imaginary', &
+                                      'Point frequency header is incorrect')
+    test_err = test_err + assert_file_content(unit, expectedFreq, n, 2, 1e-06_RKIND)
    close (unit)
 
    !Cleanup
