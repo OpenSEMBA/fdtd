@@ -954,22 +954,28 @@ def test_sgbc_overlapping_sgbc(tmp_path):
 def test_dielectric_transmission(tmp_path):
     _FIELD_TOLERANCE = 0.05
 
-    def getIncidentField(probe:Probe) -> Dict:
-        idx = probe["field"].argmin()
-        time = probe["time"][idx]
-        value = probe["field"][idx]
+    def getPointProbe(probeName: str):
+        binaryFilename = next(filename for filename in solver.getSolvedProbeFilenames(probeName)
+                              if filename.endswith(".bin"))
+        samples = np.fromfile(binaryFilename, dtype="<f8").reshape(-1, 2)
+        return samples[:, 0], samples[:, 1]
+
+    def getIncidentField(time: np.ndarray, field: np.ndarray) -> Dict:
+        idx = field.argmin()
+        time = time[idx]
+        value = field[idx]
         return {"time":time, "value": value}
     
-    def getReflectedField(probe:Probe) -> Dict:
-        idx = probe["field"].argmax()
-        time = probe["time"][idx]
-        value = probe["field"][idx]
+    def getReflectedField(time: np.ndarray, field: np.ndarray) -> Dict:
+        idx = field.argmax()
+        time = time[idx]
+        value = field[idx]
         return {"time":time, "value": value}
     
-    def getTransmittedField(probe:Probe) -> Dict:
-        idx = probe["field"].argmin()
-        time = probe["time"][idx]
-        value = probe["field"][idx]
+    def getTransmittedField(time: np.ndarray, field: np.ndarray) -> Dict:
+        idx = field.argmin()
+        time = time[idx]
+        value = field[idx]
         return {"time":time, "value": value}
     
     def getReflectedDelay(incidentTime:float, reflectedTime:float):
@@ -993,13 +999,13 @@ def test_dielectric_transmission(tmp_path):
     expectedtransmittedCoeff = (1 + expectedReflectedCoeff)
     expectedDelayRatio = 1/np.sqrt(relativePermittivity)
 
-    outsideProbe = Probe(solver.getSolvedProbeFilenames("outside")[0])
-    insideProbe = Probe(solver.getSolvedProbeFilenames("inside")[0])
+    outsideTime, outsideField = getPointProbe("outside")
+    insideTime, insideField = getPointProbe("inside")
 
 
-    incidentField = getIncidentField(outsideProbe)
-    reflectedField = getReflectedField(outsideProbe)
-    transmittedField = getTransmittedField(insideProbe)
+    incidentField = getIncidentField(outsideTime, outsideField)
+    reflectedField = getReflectedField(outsideTime, outsideField)
+    transmittedField = getTransmittedField(insideTime, insideField)
  
     assert (incidentField['value'] - transmittedField['value'] + reflectedField['value']) < _FIELD_TOLERANCE
     assert np.allclose(reflectedField["value"]/incidentField["value"], expectedReflectedCoeff, rtol=_FIELD_TOLERANCE)
