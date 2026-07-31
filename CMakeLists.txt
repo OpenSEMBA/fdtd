@@ -38,8 +38,6 @@ option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
 option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
 option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
 
-option(SEMBA_FDTD_ENABLE_OUTPUT_MODULE "Use the new output module" ON)
-
 if(SEMBA_FDTD_ENABLE_MPI AND SEMBA_FDTD_ENABLE_HDF)
 	set(HDF5_PREFER_PARALLEL TRUE)
 endif()
@@ -230,11 +228,9 @@ endif()
 
 add_subdirectory(src_utils)
 
-if (SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
-	add_subdirectory(src_output)
-	set(OUTPUT_LIBRARIES fdtd-output)
-	set(VTK_API_LIBRARIES vtkAPI)
-endif()
+add_subdirectory(src_output)
+set(OUTPUT_LIBRARIES fdtd-output)
+set(VTK_API_LIBRARIES vtkAPI)
 
 add_subdirectory(src_conformal)
 set(CONFORMAL_LIBRARIES conformal)

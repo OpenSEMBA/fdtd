@@ -21,15 +21,9 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
     set(SMBJSON_TESTS_LIBRARY smbjson_tests)
     add_subdirectory(rotate)
     set(ROTATE_TESTS_LIBRARY rotate_tests)
-    if (SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
-        add_subdirectory(unit/output)
-        set(OUTPUT_TESTS_LIBRARY output_tests)
-        set(VTK_API_TESTS_LIBRARY vtkAPI_tests)
-    endif()
-    if (NOT SEMBA_FDTD_ENABLE_MPI AND NOT SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
-        add_subdirectory(observation)
-        set(OBSERVATION_TESTS_LIBRARY observation_tests)
-    endif()
+    add_subdirectory(unit/output)
+    set(OUTPUT_TESTS_LIBRARY output_tests)
+    set(VTK_API_TESTS_LIBRARY vtkAPI_tests)
 endif()
 
 if(SEMBA_FDTD_ENABLE_MPI)
@@ -57,7 +51,6 @@ target_link_libraries(fdtd_tests
     ${OUTPUT_TESTS_LIBRARY}
     ${VTK_API_TESTS_LIBRARY}
     ${SYSTEM_TESTS_LIBRARY}
-    ${OBSERVATION_TESTS_LIBRARY}
     GTest::gtest_main
 )
 

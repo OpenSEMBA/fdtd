@@ -97,7 +97,6 @@ Select the parallel HDF5 installation while enabling the normal MPI option:
 cmake -S . -B build-parallel \
   -DSEMBA_FDTD_ENABLE_MPI=ON \
   -DSEMBA_FDTD_ENABLE_HDF=ON \
-  -DSEMBA_FDTD_ENABLE_OUTPUT_MODULE=ON \
   -DHDF5_ROOT=~/hdf5-parallel
 ```
 
@@ -654,5 +653,4 @@ See the [MIEngine troubleshooting guide][miengine-troubleshooting]
 for more information.
 
 [miengine-troubleshooting]: https://github.com/Microsoft/MIEngine/wiki/Troubleshoot-attaching-to-processes-using-GDB
-
 
