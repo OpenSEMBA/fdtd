@@ -58,5 +58,6 @@ add_test(NAME fdtd_unit COMMAND $<TARGET_FILE:fdtd_tests>)
 set_tests_properties(fdtd_unit PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 if(SEMBA_FDTD_ENABLE_MPI)
-    target_link_libraries(fdtd_tests MPI::MPI_Fortran)
+    find_package(MPI REQUIRED COMPONENTS CXX)
+    target_link_libraries(fdtd_tests MPI::MPI_Fortran MPI::MPI_CXX)
 endif()
