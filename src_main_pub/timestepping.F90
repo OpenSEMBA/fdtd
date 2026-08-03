@@ -1753,9 +1753,14 @@ contains
       flushFF = .false.
       pscale_alpha=1.0 !se le entra con 1.0 
 
-      Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
+      Ex => this%Ex; Ey => this%Ey; Ez => this%Ez
+      Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
       
-      Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
+      Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze 
+      Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh
+      
+      dxe => this%dxe; dye => this%dye; dze => this%dze 
+      dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 
       fieldReference%E%x => this%Ex
       fieldReference%E%y => this%Ey

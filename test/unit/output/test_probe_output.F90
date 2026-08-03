@@ -210,13 +210,15 @@ integer function test_root_output_manifest() bind(c) result(err)
    open(newunit=unit, file='rootManifest_output_manifest.json', status='old', action='read', iostat=ios)
    do while (ios == 0)
       read(unit, '(A)', iostat=ios) line
-       if (index(line, 'rootManifest_pointProbe_Ex_4_4_4/rootManifest_pointProbe_Ex_4_4_4_tm.dat') > 0) has_artifact = .true.
+       if (index(line, join_path('rootManifest_pointProbe_Ex_4_4_4', &
+                                 'rootManifest_pointProbe_Ex_4_4_4_tm.dat')) > 0) has_artifact = .true.
    end do
    close(unit)
    err = err + assert_true(has_artifact, 'Manifest does not contain the declared point artifact')
 
     call delete_run_output_manifest('rootManifest', 0)
-    err = err + assert_true(.not. file_exists('rootManifest_pointProbe_Ex_4_4_4/rootManifest_pointProbe_Ex_4_4_4_tm.dat'), &
+    err = err + assert_true(.not. file_exists(join_path('rootManifest_pointProbe_Ex_4_4_4', &
+                             'rootManifest_pointProbe_Ex_4_4_4_tm.dat')), &
                              'Manifest deletion did not remove the declared artifact')
     err = err + assert_true(.not. folder_exists('rootManifest_pointProbe_Ex_4_4_4'), &
                              'Manifest deletion did not remove the probe directory')
