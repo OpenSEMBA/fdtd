@@ -6,6 +6,26 @@ from sys import platform
 from scipy import signal
 
 
+def _get_solved_probe_filename(
+        solver, probe_name, *, filename=None, contains=None, suffix=None,
+        include_binary=False):
+    probe_files = solver.getSolvedProbeFilenames(
+        probe_name, include_binary=include_binary)
+    if filename is not None:
+        probe_files = [
+            path for path in probe_files if Path(path).name == filename
+        ]
+    if contains is not None:
+        probe_files = [
+            path for path in probe_files if contains in Path(path).name
+        ]
+    if suffix is not None:
+        probe_files = [path for path in probe_files if path.endswith(suffix)]
+    assert len(probe_files) == 1, (
+        f'Expected one artifact for probe {probe_name!r}, found {probe_files}')
+    return probe_files[0]
+
+
 # compiled without mtln uses classic wires
 # compiled with mtln, wire is treated as an unshielded multiwire
 @pytest.mark.skip
@@ -16,7 +36,7 @@ def test_lineIntegralProbe(tmp_path):
     solver.run()
     
     pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
-    li_probe  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_20_20_10")[0])
+    li_probe = Probe(_get_solved_probe_filename(solver, "vprobe"))
     expected  = Probe(OUTPUTS_FOLDER+pf)
     assert np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
 
@@ -44,7 +64,9 @@ def test_shieldedPair(tmp_path):
 
     p_solved = []
     for pf in probe_files:
-        p_solved.append(Probe(pf))
+        probe_name = 'wire_start' if '_wire_start_' in pf else 'wire_end'
+        p_solved.append(Probe(_get_solved_probe_filename(
+            solver, probe_name, filename=pf)))
 
     for i in [0,3]:
         solved = np.interp(p_expected[i]['time'].to_numpy(), 
@@ -175,7 +197,9 @@ def test_shieldedPair_mpi(tmp_path):
 
     p_solved = []
     for pf in probe_files:
-        p_solved.append(Probe(pf))
+        probe_name = 'wire_start' if '_wire_start_' in pf else 'wire_end'
+        p_solved.append(Probe(_get_solved_probe_filename(
+            solver, probe_name, filename=pf)))
 
     for i in [0,3]:
         solved = np.interp(p_expected[i]['time'].to_numpy(), 
@@ -234,7 +258,11 @@ def test_coated_antenna(tmp_path):
     p_expected = Probe(
         OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_half_1_I_11_11_12.dat')
 
-    p_solved = Probe(probe_files[0])
+    p_solved = Probe(_get_solved_probe_filename(
+        solver,
+        'mid_point',
+        filename='coated_antenna.fdtd_mid_point_half_1_I_11_11_12.dat',
+    ))
     
     solved = np.interp(p_expected['time'].to_numpy(), 
                        p_solved['time'].to_numpy(), 
@@ -251,7 +279,7 @@ def test_holland(tmp_path):
                   path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver.run()
-    p = Probe(solver.getSolvedProbeFilenames("mid_point")[0])
+    p = Probe(_get_solved_probe_filename(solver, "mid_point"))
     
     expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981_mid_point_expected_current.json'))
     expected_t, expected_i = np.array([]), np.array([])
@@ -278,8 +306,7 @@ def test_holland_short_terminals_match_open_terminals(tmp_path):
     solver_open['general']['numberOfSteps'] = number_of_steps
     solver_open.run()
 
-    probe_name = os.path.basename(solver_open.getSolvedProbeFilenames("mid_point")[0])
-    probe_open = Probe(os.path.join(folder_open, probe_name))
+    probe_open = Probe(_get_solved_probe_filename(solver_open, "mid_point"))
 
     folder_short = os.path.join(tmp_path, 'short_terminals')
     os.makedirs(folder_short)
@@ -290,7 +317,7 @@ def test_holland_short_terminals_match_open_terminals(tmp_path):
     solver_short['materials'][1]['terminations'][0]['type'] = 'short'
     solver_short.run()
 
-    probe_short = Probe(os.path.join(folder_short, probe_name))
+    probe_short = Probe(_get_solved_probe_filename(solver_short, "mid_point"))
 
     assert np.allclose(
         probe_open['time'].to_numpy(),
@@ -317,29 +344,32 @@ def test_holland_mtln_mpi(tmp_path):
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver.run()
-    probe_names = solver.getSolvedProbeFilenames("mid_point")
-    probe_mid_no_mpi = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+    probe_mid_no_mpi = Probe(_get_solved_probe_filename(
+        solver, "mid_point", contains='_I_'))
 
     # no mpi -np 1
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   mpi_command='mpirun -np 1',run_in_folder=tmp_path)
     solver.cleanUp()
     solver.run()
-    probe_mid_mpi_1 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+    probe_mid_mpi_1 = Probe(_get_solved_probe_filename(
+        solver, "mid_point", contains='_I_'))
 
     # no mpi -np 2
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   mpi_command='mpirun -np 2',run_in_folder=tmp_path)
     solver.cleanUp()
     solver.run()
-    probe_mid_mpi_2 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+    probe_mid_mpi_2 = Probe(_get_solved_probe_filename(
+        solver, "mid_point", contains='_I_'))
 
     # # no mpi -np 3
     # solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
     #               flags=['-mtlnwires'], mpi_command='mpirun -np 3',run_in_folder=tmp_path)
     # solver.cleanUp()
     # solver.run()
-    # probe_mid_mpi_3 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+    # probe_mid_mpi_3 = Probe(_get_solved_probe_filename(
+    #     solver, "mid_point", contains='_I_'))
 
     expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981_mid_point_expected_current.json'))
     expected_t, expected_i = np.array([]), np.array([])
@@ -382,8 +412,8 @@ def test_unshielded_multiwires(tmp_path):
 
     solver.run()
 
-    probe_names = solver.getSolvedProbeFilenames("mid_point")
-    p_solved = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+    p_solved = Probe(_get_solved_probe_filename(
+        solver, "mid_point", contains='_I_'))
 
     p_expected = Probe(
         OUTPUTS_FOLDER+'unshielded_multiwires_berenger.fdtd_mid_point_unshielded_two_wire_I_2_11_14.dat')
@@ -429,9 +459,11 @@ def test_towelHanger_mpi(tmp_path):
         solver.cleanUp()
         solver.run()
 
-        p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
-                    Probe(solver.getSolvedProbeFilenames("wire_mid")[0]),
-                    Probe(solver.getSolvedProbeFilenames("wire_end")[0])]
+        p_solved = [
+            Probe(_get_solved_probe_filename(solver, "wire_start")),
+            Probe(_get_solved_probe_filename(solver, "wire_mid")),
+            Probe(_get_solved_probe_filename(solver, "wire_end")),
+        ]
 
         p_expected = [Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
                     Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
@@ -453,9 +485,11 @@ def test_towelHanger(tmp_path):
                   run_in_folder=tmp_path)
     solver.run()
 
-    p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
-                   Probe(solver.getSolvedProbeFilenames("wire_mid")[0]),
-                   Probe(solver.getSolvedProbeFilenames("wire_end")[0])]
+    p_solved = [
+        Probe(_get_solved_probe_filename(solver, "wire_start")),
+        Probe(_get_solved_probe_filename(solver, "wire_mid")),
+        Probe(_get_solved_probe_filename(solver, "wire_end")),
+    ]
 
     p_expected = [Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
                   Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
@@ -492,8 +526,7 @@ def test_towel_rack_with_and_without_shorting_plane(tmp_path):
     solver_w = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=folder_with)
     solver_w.run()
 
-    probe_name = os.path.basename(solver_w.getSolvedProbeFilenames("Wire probe")[0])
-    probe_w = Probe(os.path.join(folder_with, probe_name))
+    probe_w = Probe(_get_solved_probe_filename(solver_w, "Wire probe"))
     time_I_w  = probe_w["time"].to_numpy()
     current_w = probe_w["current_0"].to_numpy()
     V_interp_w = np.interp(time_I_w, t, excitation)
@@ -506,7 +539,7 @@ def test_towel_rack_with_and_without_shorting_plane(tmp_path):
     solver_wo['materialAssociations'][0]['elementIds'] = [1]
     solver_wo.run()
 
-    probe_wo = Probe(os.path.join(folder_without, probe_name))
+    probe_wo = Probe(_get_solved_probe_filename(solver_wo, "Wire probe"))
     time_I_wo  = probe_wo["time"].to_numpy()
     current_wo = probe_wo["current_0"].to_numpy()
     V_interp_wo = np.interp(time_I_wo, t, excitation)
@@ -548,15 +581,14 @@ def test_sphere(tmp_path):
 
     solver.run()
 
-    far_field_probe_files = solver.getSolvedProbeFilenames("far")
-    assert len(far_field_probe_files) == 1
-    p = Probe(far_field_probe_files[0])
+    p = Probe(_get_solved_probe_filename(solver, "farfield"))
     assert p.type == 'farField'
 
     electric_field_movie_files = solver.getSolvedProbeFilenames(
         "electric_field_movie")
     assert {Path(filename).suffix for filename in electric_field_movie_files} == {'.h5', '.xdmf'}
-    p = Probe(electric_field_movie_files[0])
+    p = Probe(_get_solved_probe_filename(
+        solver, "electric_field_movie", suffix='.xdmf'))
     assert p.type == 'movie'
 
 
@@ -572,31 +604,59 @@ def test_movie_in_planewave_in_box(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    movie_files = solver.getSolvedProbeFilenames("electric_field_movie")
-    h5file = [f for f in movie_files if f.endswith('.h5')][0]
-    xdmffile = [f for f in movie_files if f.endswith('.xdmf')][0]
+    h5file = _get_solved_probe_filename(
+        solver, "electric_field_movie", suffix='.h5')
+    xdmffile = _get_solved_probe_filename(
+        solver, "electric_field_movie", suffix='.xdmf')
     descriptor = os.path.splitext(h5file)[0] + '.json'
 
     assert os.path.isfile(descriptor)
+    root = ET.parse(xdmffile).getroot()
+    h5_name = os.path.basename(h5file)
+    temporal = root.find('./Domain/Grid')
+    assert temporal.attrib == {
+        'Name': 'Time Series',
+        'GridType': 'Collection',
+        'CollectionType': 'Temporal',
+    }
+    steps = temporal.findall('./Grid')
+    time_ds = np.array([
+        float(step.find('./Time').attrib['Value']) for step in steps
+    ])
+    assert len(time_ds) > 1
+    assert np.all(np.diff(time_ds) > 0.0)
+
     with h5py.File(h5file, "r") as f:
         required_datasets = {
-            'coordsX', 'coordsY', 'coordsZ', 'times',
+            'series/values',
+            'grids/g0001/axis_x', 'grids/g0001/axis_y',
+            'grids/g0001/axis_z',
+        }
+        assert all(dataset in f for dataset in required_datasets)
+        np.testing.assert_allclose(f['series/values'][()], time_ds)
+
+        attributes = {
+            attribute.attrib['Name']: attribute
+            for attribute in steps[0].findall('./Grid/Attribute')
+        }
+        assert set(attributes) == {
             'ElectricFieldX', 'ElectricFieldY', 'ElectricFieldZ',
         }
-        assert required_datasets <= set(f.keys())
 
-        time_ds = f['times'][()]
-        assert time_ds.ndim == 1
-        assert len(time_ds) > 1
-        assert np.all(np.diff(time_ds) > 0.0)
+        def dataset_for(attribute):
+            source = attribute.find('./DataItem').findall('./DataItem')[1]
+            source_name, dataset = source.text.strip().split(':/', 1)
+            assert source_name == h5_name
+            assert dataset in f
+            return dataset
 
         for component in ('ElectricFieldX', 'ElectricFieldY', 'ElectricFieldZ'):
-            field_ds = f[component][()]
+            field_ds = f[dataset_for(attributes[component])][()]
             assert field_ds.ndim == 4
             assert field_ds.shape[0] == len(time_ds)
             assert np.all(np.isfinite(field_ds))
 
-        electric_field = f['ElectricFieldY'][()]
+        electric_field = f[dataset_for(attributes['ElectricFieldY'])][()]
         assert electric_field.shape[1:] == (10, 30, 30)
         assert np.max(np.abs(electric_field[1000])) > 1e-2
 
@@ -606,14 +666,6 @@ def test_movie_in_planewave_in_box(tmp_path):
         late_profile = np.mean(np.abs(electric_field[1000]), axis=(0, 1))
         assert np.argmax(late_profile[3:]) > np.argmax(early_profile[3:])
 
-        root = ET.parse(xdmffile).getroot()
-        h5_name = os.path.basename(h5file)
-        temporal = root.find('./Domain/Grid')
-        assert temporal.attrib == {
-            'Name': 'Time Series',
-            'GridType': 'Collection',
-            'CollectionType': 'Temporal',
-        }
         steps = temporal.findall('./Grid')
         assert len(steps) == len(time_ds)
 
@@ -627,7 +679,8 @@ def test_movie_in_planewave_in_box(tmp_path):
                 hyperslab = attribute.find('./DataItem')
                 selection, source = hyperslab.findall('./DataItem')
                 assert hyperslab.attrib['ItemType'] == 'HyperSlab'
-                assert tuple(int(value) for value in hyperslab.attrib['Dimensions'].split()) == f[attribute.attrib['Name']].shape[1:]
+                dataset = dataset_for(attribute)
+                assert tuple(int(value) for value in hyperslab.attrib['Dimensions'].split()) == f[dataset].shape[1:]
                 assert selection.attrib == {'Dimensions': '3 4', 'Format': 'XML'}
                 offset, stride, count = [
                     tuple(int(value) for value in line.split())
@@ -635,9 +688,8 @@ def test_movie_in_planewave_in_box(tmp_path):
                 ]
                 assert offset == (index, 0, 0, 0)
                 assert stride == (1, 1, 1, 1)
-                assert count == (1, *f[attribute.attrib['Name']].shape[1:])
-                assert source.text.strip() == f'{h5_name}:/{attribute.attrib["Name"]}'
-                assert tuple(int(value) for value in source.attrib['Dimensions'].split()) == f[attribute.attrib['Name']].shape
+                assert count == (1, *f[dataset].shape[1:])
+                assert tuple(int(value) for value in source.attrib['Dimensions'].split()) == f[dataset].shape
 
 
 @no_hdf_skip
@@ -650,9 +702,10 @@ def test_frequency_slice_in_planewave_in_box(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    frequency_files = solver.getSolvedProbeFilenames('electric_field_frequency_slice')
-    h5file = [f for f in frequency_files if f.endswith('.h5')][0]
-    xdmffile = [f for f in frequency_files if f.endswith('.xdmf')][0]
+    h5file = _get_solved_probe_filename(
+        solver, 'electric_field_frequency_slice', suffix='.h5')
+    xdmffile = _get_solved_probe_filename(
+        solver, 'electric_field_frequency_slice', suffix='.xdmf')
 
     with h5py.File(h5file, 'r') as f:
         root = ET.parse(xdmffile).getroot()
@@ -704,9 +757,10 @@ def test_central_dipole_frequency_slice(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    frequency_files = solver.getSolvedProbeFilenames('dipole_frequency_slice')
-    h5file = [f for f in frequency_files if f.endswith('.h5')][0]
-    xdmffile = [f for f in frequency_files if f.endswith('.xdmf')][0]
+    h5file = _get_solved_probe_filename(
+        solver, 'dipole_frequency_slice', suffix='.h5')
+    xdmffile = _get_solved_probe_filename(
+        solver, 'dipole_frequency_slice', suffix='.xdmf')
 
     with h5py.File(h5file, 'r') as f:
         root = ET.parse(xdmffile).getroot()
@@ -741,9 +795,9 @@ def test_planewave_in_box(tmp_path):
 
     solver.run()
 
-    before = Probe(solver.getSolvedProbeFilenames("before")[0])
-    inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
-    after = Probe(solver.getSolvedProbeFilenames("after")[0])
+    before = Probe(_get_solved_probe_filename(solver, "before"))
+    inbox = Probe(_get_solved_probe_filename(solver, "inbox"))
+    after = Probe(_get_solved_probe_filename(solver, "after"))
 
     assert np.corrcoef(inbox.data['field'].to_numpy(), inbox.data['incident'].to_numpy())[0, 1] > 0.999
     zeros = np.zeros_like(before.data['field'])
@@ -759,9 +813,9 @@ def test_planewave_with_periodic_boundaries(tmp_path):
 
     solver.run()
     
-    before = Probe(solver.getSolvedProbeFilenames("before")[0])
-    inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
-    after = Probe(solver.getSolvedProbeFilenames("after")[0])
+    before = Probe(_get_solved_probe_filename(solver, "before"))
+    inbox = Probe(_get_solved_probe_filename(solver, "inbox"))
+    after = Probe(_get_solved_probe_filename(solver, "after"))
 
     assert np.corrcoef(inbox.data['field'].to_numpy(), inbox.data['incident'].to_numpy())[0, 1] > 0.999
     zeros = np.zeros_like(before.data['field'])
@@ -778,7 +832,7 @@ def test_sgbc_shielding_effectiveness(tmp_path):
     solver.run()
 
     # FDTD results
-    back = Probe(solver.getSolvedProbeFilenames("back")[0])
+    back = Probe(_get_solved_probe_filename(solver, "back"))
 
     t = back.data['time']
     dt = t[1] - t[0]
@@ -834,28 +888,32 @@ def test_current_orientation(tmp_path):
     solver['sources'][0]['elementIds'] = [1]
     solver.cleanUp()
     solver.run()
-    i = Probe(solver.getSolvedProbeFilenames("Bulk_probe")[0]).data['current']
+    i = Probe(_get_solved_probe_filename(
+        solver, "Bulk_probe")).data['current']
     assert np.all(i >= 0)
 
     solver['mesh']['elements'][12]['coordinateIds'] = [2,1]
     solver['sources'][0]['elementIds'] = [1]
     solver.cleanUp()
     solver.run()
-    i = Probe(solver.getSolvedProbeFilenames("Bulk_probe")[0]).data['current']
+    i = Probe(_get_solved_probe_filename(
+        solver, "Bulk_probe")).data['current']
     assert np.all(i >= 0)
 
     solver['mesh']['elements'][12]['coordinateIds'] = [1,2]
     solver['sources'][0]['elementIds'] = [3]
     solver.cleanUp()
     solver.run()
-    i = Probe(solver.getSolvedProbeFilenames("Bulk_probe")[0]).data['current']
+    i = Probe(_get_solved_probe_filename(
+        solver, "Bulk_probe")).data['current']
     assert np.all(i <= 0)
 
     solver['mesh']['elements'][12]['coordinateIds'] = [2,1]
     solver['sources'][0]['elementIds'] = [3]
     solver.cleanUp()
     solver.run()
-    i = Probe(solver.getSolvedProbeFilenames("Bulk_probe")[0]).data['current']
+    i = Probe(_get_solved_probe_filename(
+        solver, "Bulk_probe")).data['current']
     assert np.all(i <= 0)
 
 # compiled without mtln uses classic wires
@@ -870,7 +928,8 @@ def test_sgbc_structured_resistance_single_wire(tmp_path):
     solver['materials'][2] = createWire(id = 3, r = 1e-4)
     solver.run()
 
-    i = Probe(solver.getSolvedProbeFilenames("Bulk_probe")[0]).data['current']
+    i = Probe(_get_solved_probe_filename(
+        solver, "Bulk_probe")).data['current']
     assert np.allclose(i.array[-101:-1], np.ones(100)*i.array[-100], rtol=1e-3)
     assert np.allclose(1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
 
@@ -888,7 +947,7 @@ def test_pec_overlapping_sgbcs(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
+    p = Probe(_get_solved_probe_filename(solver, "Bulk probe"))
     t = p['time'].to_numpy()
     iSGBC = p['current'].to_numpy()
 
@@ -897,7 +956,8 @@ def test_pec_overlapping_sgbcs(tmp_path):
     solver['materialAssociations'][0]["elementIds"].extend(sgbcElementIds)
     solver.cleanUp()
     solver.run()
-    iPEC = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
+    iPEC = Probe(_get_solved_probe_filename(
+        solver, "Bulk probe"))['current'].to_numpy()
 
     # For debugging only.
     # plt.figure()
@@ -926,7 +986,7 @@ def test_sgbc_overlapping_sgbc(tmp_path):
     solver['materialAssociations'][1]["materialId"] = 6
     solver.cleanUp()
     solver.run()
-    p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
+    p = Probe(_get_solved_probe_filename(solver, "Bulk probe"))
 
     t = p['time'].to_numpy()
     iSGBC_top = p['current'].to_numpy()
@@ -936,7 +996,8 @@ def test_sgbc_overlapping_sgbc(tmp_path):
     solver['materialAssociations'][2]["materialId"] = 6
     solver.cleanUp()
     solver.run()
-    iSGBC_bottom = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
+    iSGBC_bottom = Probe(_get_solved_probe_filename(
+        solver, "Bulk probe"))['current'].to_numpy()
     
     # For debugging only.
     # plt.figure()
@@ -955,8 +1016,8 @@ def test_dielectric_transmission(tmp_path):
     _FIELD_TOLERANCE = 0.05
 
     def getPointProbe(probeName: str):
-        binaryFilename = next(filename for filename in solver.getSolvedProbeFilenames(probeName, include_binary=True)
-                              if filename.endswith(".bin"))
+        binaryFilename = _get_solved_probe_filename(
+            solver, probeName, suffix='.bin', include_binary=True)
         samples = np.fromfile(binaryFilename, dtype="<f8").reshape(-1, 3)
         return samples[:, 0], samples[:, 1]
 
@@ -1040,14 +1101,18 @@ def test_rectilinear_mode(tmp_path):
 
     solverRectilinear = FDTD(rectilinearModeFile, path_to_exe=SEMBA_EXE, run_in_folder=rectilinearModeFolder)
     solverRectilinear.run()
-    rectilinearFrontProbe = Probe(solverRectilinear.getSolvedProbeFilenames("Front probe")[0])
-    rectilinearVertexProbe = Probe(solverRectilinear.getSolvedProbeFilenames("Vertex probe")[0])
+    rectilinearFrontProbe = Probe(_get_solved_probe_filename(
+        solverRectilinear, "Front probe", contains='_Ex_'))
+    rectilinearVertexProbe = Probe(_get_solved_probe_filename(
+        solverRectilinear, "Vertex probe", contains='_Ex_'))
 
 
     solverNoRectilinear = FDTD(noRectilinearModeFile, path_to_exe=SEMBA_EXE, run_in_folder=noRectilinearModeFolder)
     solverNoRectilinear.run()
-    noRectilinearFrontProbe = Probe(solverNoRectilinear.getSolvedProbeFilenames("Front probe")[0])
-    noRectilinearVertexProbe = Probe(solverNoRectilinear.getSolvedProbeFilenames("Vertex probe")[0])
+    noRectilinearFrontProbe = Probe(_get_solved_probe_filename(
+        solverNoRectilinear, "Front probe", contains='_Ex_'))
+    noRectilinearVertexProbe = Probe(_get_solved_probe_filename(
+        solverNoRectilinear, "Vertex probe", contains='_Ex_'))
 
     np.testing.assert_almost_equal(getPeakPulse(rectilinearFrontProbe)['value'], getPeakPulse(noRectilinearFrontProbe)['value'], decimal=_FIELD_TOLERANCE)
     np.testing.assert_almost_equal(getPeakPulse(rectilinearFrontProbe)['time'], getPeakPulse(noRectilinearFrontProbe)['time'], decimal=_TIME_TOLERANCE)
@@ -1070,7 +1135,7 @@ def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arg
     fn = CASES_FOLDER + "dielectric/dielectricTransmission.fdtd.json"
     solver = FDTD(fn, path_to_exe=pathToExe, run_in_folder=tmp_path, flags=['-mapvtk'])
     solver.run()
-    assert (Probe(solver.getSolvedProbeFilenames("outside")[0]) is not None)
+    assert Probe(_get_solved_probe_filename(solver, "outside")) is not None
     vtk_map_path = solver.getVTKMap()
     assert vtk_map_path is not None and os.path.isfile(vtk_map_path)
     
@@ -1086,10 +1151,10 @@ def test_nodal_source(tmp_path):
     solver['materials'][1] = createWire(id = 2, r = 0.1e-5, rpul=10000.0)
     solver.run()
     
-    resistanceBulkProbe = Probe( \
-    solver.getSolvedProbeFilenames("Bulk probe Resistance")[0])
-    nodalBulkProbe = Probe( \
-        solver.getSolvedProbeFilenames("Bulk probe Nodal Source")[0])
+    resistanceBulkProbe = Probe(_get_solved_probe_filename(
+        solver, "Bulk probe Resistance"))
+    nodalBulkProbe = Probe(_get_solved_probe_filename(
+        solver, "Bulk probe Nodal Source"))
     excitation = ExcitationFile( \
         excitation_filename=solver.getExcitationFile("predefinedExcitation")[0])
 
@@ -1127,10 +1192,10 @@ def test_nodal_source_with_total_resistance(tmp_path):
     solver['materialAssociations'][1]['totalResistance'] = 100.0
     solver.run()
 
-    resistanceBulkProbe = Probe( \
-        solver.getSolvedProbeFilenames("Bulk probe Resistance")[0])
-    nodalBulkProbe = Probe( \
-        solver.getSolvedProbeFilenames("Bulk probe Nodal Source")[0])
+    resistanceBulkProbe = Probe(_get_solved_probe_filename(
+        solver, "Bulk probe Resistance"))
+    nodalBulkProbe = Probe(_get_solved_probe_filename(
+        solver, "Bulk probe Nodal Source"))
     excitation = ExcitationFile( \
         excitation_filename=solver.getExcitationFile("predefinedExcitation")[0])
 
@@ -1146,7 +1211,8 @@ def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
 
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
+    assert Probe(_get_solved_probe_filename(
+        solver, "BulkProbeEntry")) is not None
 
 @pytest.mark.dielectric
 def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
@@ -1154,7 +1220,8 @@ def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
 
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
+    assert Probe(_get_solved_probe_filename(
+        solver, "BulkProbeEntry")) is not None
 
 @mtln_skip
 @pytest.mark.lumped
@@ -1183,17 +1250,25 @@ def test_lumped_resistor(tmp_path):
     solver_lumped.run()
     solver_terminal.run()
 
-    StartTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("TerminalCellStart")[0])
-    StartLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellStart")[0])
+    StartTerminalProbe = Probe(_get_solved_probe_filename(
+        solver_terminal, "TerminalCellStart"))
+    StartLumpedProbe = Probe(_get_solved_probe_filename(
+        solver_lumped, "LumpedCellStart"))
 
-    EndTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("TerminalCellEnd")[0])
-    EndLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellEnd")[0])
+    EndTerminalProbe = Probe(_get_solved_probe_filename(
+        solver_terminal, "TerminalCellEnd"))
+    EndLumpedProbe = Probe(_get_solved_probe_filename(
+        solver_lumped, "LumpedCellEnd"))
 
-    AdjacentPostLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PostLumpedCell")[0])
-    AdjacentPostTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PostTerminalCell")[0])
+    AdjacentPostLumpedProbe = Probe(_get_solved_probe_filename(
+        solver_lumped, "PostLumpedCell"))
+    AdjacentPostTerminalProbe = Probe(_get_solved_probe_filename(
+        solver_terminal, "PostTerminalCell"))
 
-    AdjacentPreLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PreLumpedCell")[0])
-    AdjacentPreTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PreTerminalCell")[0])
+    AdjacentPreLumpedProbe = Probe(_get_solved_probe_filename(
+        solver_lumped, "PreLumpedCell"))
+    AdjacentPreTerminalProbe = Probe(_get_solved_probe_filename(
+        solver_terminal, "PreTerminalCell"))
 
     assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), StartTerminalProbe['current'].to_numpy())[0, 1] > 0.999
     assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), EndTerminalProbe['current'].to_numpy())[0, 1] > 0.999
@@ -1239,10 +1314,14 @@ def test_lumped_capacitor(tmp_path):
     solver_lumped.run()
 
 
-    StartLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellStart")[0])
-    EndLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellEnd")[0])
-    AdjacentPostLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PostLumpedCell")[0])
-    AdjacentPreLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PreLumpedCell")[0])
+    StartLumpedProbe = Probe(_get_solved_probe_filename(
+        solver_lumped, "LumpedCellStart"))
+    EndLumpedProbe = Probe(_get_solved_probe_filename(
+        solver_lumped, "LumpedCellEnd"))
+    AdjacentPostLumpedProbe = Probe(_get_solved_probe_filename(
+        solver_lumped, "PostLumpedCell"))
+    AdjacentPreLumpedProbe = Probe(_get_solved_probe_filename(
+        solver_lumped, "PreLumpedCell"))
 
     R = solver_lumped.getMaterialProperties("lumped_RC")["resistance"]
     C = solver_lumped.getMaterialProperties("lumped_RC")["capacitance"]
@@ -1290,17 +1369,25 @@ def test_lumped_inductor(tmp_path):
     solver_lumped.run()
     solver_terminal.run()
 
-    StartTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("TerminalCellStart")[0])
-    StartLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellStart")[0])
+    StartTerminalProbe = Probe(_get_solved_probe_filename(
+        solver_terminal, "TerminalCellStart"))
+    StartLumpedProbe = Probe(_get_solved_probe_filename(
+        solver_lumped, "LumpedCellStart"))
 
-    EndTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("TerminalCellEnd")[0])
-    EndLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellEnd")[0])
+    EndTerminalProbe = Probe(_get_solved_probe_filename(
+        solver_terminal, "TerminalCellEnd"))
+    EndLumpedProbe = Probe(_get_solved_probe_filename(
+        solver_lumped, "LumpedCellEnd"))
 
-    AdjacentPostLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PostLumpedCell")[0])
-    AdjacentPostTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PostTerminalCell")[0])
+    AdjacentPostLumpedProbe = Probe(_get_solved_probe_filename(
+        solver_lumped, "PostLumpedCell"))
+    AdjacentPostTerminalProbe = Probe(_get_solved_probe_filename(
+        solver_terminal, "PostTerminalCell"))
 
-    AdjacentPreLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PreLumpedCell")[0])
-    AdjacentPreTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PreTerminalCell")[0])
+    AdjacentPreLumpedProbe = Probe(_get_solved_probe_filename(
+        solver_lumped, "PreLumpedCell"))
+    AdjacentPreTerminalProbe = Probe(_get_solved_probe_filename(
+        solver_terminal, "PreTerminalCell"))
 
     assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), StartTerminalProbe['current'].to_numpy())[0, 1] > 0.999
     assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), EndTerminalProbe['current'].to_numpy())[0, 1] > 0.999
@@ -1350,9 +1437,12 @@ def test_lumped_resistor_parallel_terminal_resistor(tmp_path):
     solver.run()
 
 
-    InitialBulk_probe = Probe(solver.getSolvedProbeFilenames("Bulk Initial probe")[0])
-    TopBulk_probe = Probe(solver.getSolvedProbeFilenames("Bulk Top probe")[0])
-    BottomBulk_probe = Probe(solver.getSolvedProbeFilenames("Bulk Bottom probe")[0])
+    InitialBulk_probe = Probe(_get_solved_probe_filename(
+        solver, "Bulk Initial probe"))
+    TopBulk_probe = Probe(_get_solved_probe_filename(
+        solver, "Bulk Top probe"))
+    BottomBulk_probe = Probe(_get_solved_probe_filename(
+        solver, "Bulk Bottom probe"))
 
     R_lumped = solver.getMaterialProperties("lumped_resistor")["resistance"]
     R_terminal = solver.getMaterialProperties("Terminal_R")["terminations"][0]["resistance"]
@@ -1387,9 +1477,9 @@ def test_bulk_current_offset_normal_in_x(tmp_path):
     I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
     time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
     
-    probe_at_x_18 = Probe(solver.getSolvedProbeFilenames("BulkCurrent1")[0])
-    probe_at_x_20 = Probe(solver.getSolvedProbeFilenames("BulkCurrent2")[0])
-    probe_at_x_22 = Probe(solver.getSolvedProbeFilenames("BulkCurrent3")[0])
+    probe_at_x_18 = Probe(_get_solved_probe_filename(solver, "BulkCurrent1"))
+    probe_at_x_20 = Probe(_get_solved_probe_filename(solver, "BulkCurrent2"))
+    probe_at_x_22 = Probe(_get_solved_probe_filename(solver, "BulkCurrent3"))
     
     I_interp = np.interp(
         probe_at_x_18['time'].to_numpy(),
@@ -1417,9 +1507,9 @@ def test_bulk_current_offset_normal_in_y(tmp_path):
     I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
     time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
     
-    probe_at_y_m2 = Probe(solver.getSolvedProbeFilenames("BulkCurrent1")[0])
-    probe_at_y_0 = Probe(solver.getSolvedProbeFilenames("BulkCurrent2")[0])
-    probe_at_y_2 = Probe(solver.getSolvedProbeFilenames("BulkCurrent3")[0])
+    probe_at_y_m2 = Probe(_get_solved_probe_filename(solver, "BulkCurrent1"))
+    probe_at_y_0 = Probe(_get_solved_probe_filename(solver, "BulkCurrent2"))
+    probe_at_y_2 = Probe(_get_solved_probe_filename(solver, "BulkCurrent3"))
     
     I_interp = np.interp(
         probe_at_y_m2['time'].to_numpy(),
@@ -1447,9 +1537,9 @@ def test_bulk_current_offset_normal_in_z(tmp_path):
     I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
     time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
     
-    probe_at_z_18 = Probe(solver.getSolvedProbeFilenames("BulkCurrent1")[0])
-    probe_at_z_20 = Probe(solver.getSolvedProbeFilenames("BulkCurrent2")[0])
-    probe_at_z_22 = Probe(solver.getSolvedProbeFilenames("BulkCurrent3")[0])
+    probe_at_z_18 = Probe(_get_solved_probe_filename(solver, "BulkCurrent1"))
+    probe_at_z_20 = Probe(_get_solved_probe_filename(solver, "BulkCurrent2"))
+    probe_at_z_22 = Probe(_get_solved_probe_filename(solver, "BulkCurrent3"))
     
     I_interp = np.interp(
         probe_at_z_18['time'].to_numpy(),
@@ -1494,17 +1584,21 @@ def test_bulk_current_offset_perpendicular_in_x(tmp_path):
     solver_negative.run()
     solver_positive.run()
 
-    probe1 = Probe(solver.getSolvedProbeFilenames("Bulk probe1")[0])
-    probe2 = Probe(solver.getSolvedProbeFilenames("Bulk probe2")[0])
-    probe3 = Probe(solver.getSolvedProbeFilenames("Bulk probe3")[0])
-    probeTotal = Probe(solver.getSolvedProbeFilenames("Bulk probe total")[0])
+    probe1 = Probe(_get_solved_probe_filename(solver, "Bulk probe1"))
+    probe2 = Probe(_get_solved_probe_filename(solver, "Bulk probe2"))
+    probe3 = Probe(_get_solved_probe_filename(solver, "Bulk probe3"))
+    probeTotal = Probe(_get_solved_probe_filename(
+        solver, "Bulk probe total"))
 
     assert np.corrcoef(probe1['current'].to_numpy() + probe2['current'].to_numpy() + probe3['current'].to_numpy(),
                           probeTotal['current'].to_numpy())[0, 1] > 0.999
     
-    probe1_negative = Probe(solver_negative.getSolvedProbeFilenames("Bulk probe1")[0])
-    probe2_negative = Probe(solver_negative.getSolvedProbeFilenames("Bulk probe2")[0])
-    probe3_negative = Probe(solver_negative.getSolvedProbeFilenames("Bulk probe3")[0])
+    probe1_negative = Probe(_get_solved_probe_filename(
+        solver_negative, "Bulk probe1"))
+    probe2_negative = Probe(_get_solved_probe_filename(
+        solver_negative, "Bulk probe2"))
+    probe3_negative = Probe(_get_solved_probe_filename(
+        solver_negative, "Bulk probe3"))
 
     I_in_2 = np.loadtxt(solver["sources"][1]["magnitudeFile"], usecols=1)
     time_2 = np.loadtxt(solver["sources"][1]["magnitudeFile"], usecols=0)
@@ -1519,9 +1613,12 @@ def test_bulk_current_offset_perpendicular_in_x(tmp_path):
     assert np.allclose(probe1_negative['current'].to_numpy(), 0.0, atol=1.5e-2)
     assert np.allclose(probe3_negative['current'].to_numpy(), 0.0, atol=1.5e-2)
 
-    probe1_positive = Probe(solver_positive.getSolvedProbeFilenames("Bulk probe1")[0])
-    probe2_positive = Probe(solver_positive.getSolvedProbeFilenames("Bulk probe2")[0])
-    probe3_positive = Probe(solver_positive.getSolvedProbeFilenames("Bulk probe3")[0])
+    probe1_positive = Probe(_get_solved_probe_filename(
+        solver_positive, "Bulk probe1"))
+    probe2_positive = Probe(_get_solved_probe_filename(
+        solver_positive, "Bulk probe2"))
+    probe3_positive = Probe(_get_solved_probe_filename(
+        solver_positive, "Bulk probe3"))
 
     I_in_3 = np.loadtxt(solver["sources"][2]["magnitudeFile"], usecols=1)
     time_3 = np.loadtxt(solver["sources"][2]["magnitudeFile"], usecols=0)
@@ -1561,9 +1658,9 @@ def test_bulk_current_negative_offset_in_x(tmp_path):
     I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
     time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
     
-    probeR = Probe(solver.getSolvedProbeFilenames("Bulk_right")[0])
-    probeL = Probe(solver.getSolvedProbeFilenames("Bulk_left")[0])
-    probeTotal = Probe(solver.getSolvedProbeFilenames("BulkTotal")[0])
+    probeR = Probe(_get_solved_probe_filename(solver, "Bulk_right"))
+    probeL = Probe(_get_solved_probe_filename(solver, "Bulk_left"))
+    probeTotal = Probe(_get_solved_probe_filename(solver, "BulkTotal"))
     
     I_interp = np.interp(
         probeTotal['time'].to_numpy(),
@@ -1588,10 +1685,10 @@ def _run_four_probes(tmp_path, json_filename):
     exc_time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
     exc_val  = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
 
-    probe_LL = Probe(solver.getSolvedProbeFilenames("BC_LL")[0])
-    probe_LU = Probe(solver.getSolvedProbeFilenames("BC_LU")[0])
-    probe_UU = Probe(solver.getSolvedProbeFilenames("BC_UU")[0])
-    probe_UL = Probe(solver.getSolvedProbeFilenames("BC_UL")[0])
+    probe_LL = Probe(_get_solved_probe_filename(solver, "BC_LL"))
+    probe_LU = Probe(_get_solved_probe_filename(solver, "BC_LU"))
+    probe_UU = Probe(_get_solved_probe_filename(solver, "BC_UU"))
+    probe_UL = Probe(_get_solved_probe_filename(solver, "BC_UL"))
 
     probe_time = probe_LL["time"].to_numpy()
     exc_interp = np.interp(probe_time, exc_time, exc_val)
@@ -1656,7 +1753,7 @@ def test_conformal_impedance_cylinder_unshielded(tmp_path):
     solver.cleanUp()
     solver.run()
     assert solver.hasFinishedSuccessfully()
-    bulk_conf = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
+    bulk_conf = Probe(_get_solved_probe_filename(solver, "BulkProbe"))
    
     #discrete fourier transforms
     exc_file = solver.getExcitationFile("predefinedExcitation")[0]
@@ -1692,7 +1789,7 @@ def test_conformal_sphere_rcs(tmp_path):
     solver.run()
     assert solver.hasFinishedSuccessfully()
 
-    far  = Probe(solver.getSolvedProbeFilenames("n2f")[0])
+    far = Probe(_get_solved_probe_filename(solver, "n2f"))
     ra = far.data.loc[(far.data['Theta'] == 90.0) & (far.data['Phi'] ==  0.0), 'rcs_arit']
     rg = far.data.loc[(far.data['Theta'] == 90.0) & (far.data['Phi'] ==  0.0), 'rcs_geom']
     ffar  = far.data.loc[(far.data['Theta'] == 90.0) & (far.data['Phi'] ==  0.0), 'freq']
@@ -1717,7 +1814,7 @@ def test_conformal_delay(tmp_path):
     solver['mesh']['elements'][3]['intervals'] = [[[0,0,4],[2,2,4]]]
     solver.cleanUp()
     solver.run()
-    front = Probe(solver.getSolvedProbeFilenames("front")[0])
+    front = Probe(_get_solved_probe_filename(solver, "front"))
     t = front['time']
     t4 = t[front['field'].argmin()]
 
@@ -1736,7 +1833,7 @@ def test_conformal_delay(tmp_path):
 
         solver.cleanUp()
         solver.run()
-        front = Probe(solver.getSolvedProbeFilenames("front")[0])
+        front = Probe(_get_solved_probe_filename(solver, "front"))
         t = front['time']
         delay = t[front['field'].argmin()]
         tdelta = t4 + 2*(i*1.0/n)*0.02/3e8
@@ -1758,10 +1855,14 @@ def test_current_generators_with_resistance(tmp_path):
     solver["sources"][0]["elementIds"] = [1]
     solver.cleanUp()
     solver.run()
-    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
-    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
-    Vend = Probe(solver.getSolvedProbeFilenames("probe_end")[1])
-    Vstart = Probe(solver.getSolvedProbeFilenames("probe_start")[1])
+    Iend = Probe(_get_solved_probe_filename(
+        solver, "probe_end", contains='_I_'))
+    Istart = Probe(_get_solved_probe_filename(
+        solver, "probe_start", contains='_I_'))
+    Vend = Probe(_get_solved_probe_filename(
+        solver, "probe_end", contains='_V_'))
+    Vstart = Probe(_get_solved_probe_filename(
+        solver, "probe_start", contains='_V_'))
 
     assert np.allclose(Iend['current_0'][-100:-1], 1.0/3.0, rtol=0.005)
     assert np.allclose(Istart['current_0'][-100:-1], 1.0/3.0, rtol=0.005)
@@ -1781,16 +1882,16 @@ def test_current_generators_without_resistance(tmp_path):
     solver["sources"][0]["elementIds"] = [1] # wire center
     solver.cleanUp()
     solver.run()
-    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
-    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+    Iend = Probe(_get_solved_probe_filename(solver, "probe_end"))
+    Istart = Probe(_get_solved_probe_filename(solver, "probe_start"))
     assert np.allclose(Iend['current_0'][-100:-1], 1.0, rtol=0.005)
     assert np.allclose(Istart['current_0'][-100:-1], 1.0, rtol=0.005)
 
     solver["sources"][0]["elementIds"] = [9] # wire start
     solver.cleanUp()
     solver.run()
-    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
-    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+    Iend = Probe(_get_solved_probe_filename(solver, "probe_end"))
+    Istart = Probe(_get_solved_probe_filename(solver, "probe_start"))
 
     assert np.allclose(Iend['current_0'][-100:-1], 1.0, rtol=0.005)
     assert np.allclose(Istart['current_0'][-100:-1], 1.0, rtol=0.005)
@@ -1798,8 +1899,8 @@ def test_current_generators_without_resistance(tmp_path):
     solver["sources"][0]["elementIds"] = [10] # wire end
     solver.cleanUp()
     solver.run()
-    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
-    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
+    Iend = Probe(_get_solved_probe_filename(solver, "probe_end"))
+    Istart = Probe(_get_solved_probe_filename(solver, "probe_start"))
 
     assert np.allclose(Iend['current_0'][-100:-1], -1.0, rtol=0.005)
     assert np.allclose(Istart['current_0'][-100:-1], -1.0, rtol=0.005)
@@ -1820,10 +1921,14 @@ def test_voltage_generators(tmp_path):
     solver.run()
 
     
-    Iend = Probe(solver.getSolvedProbeFilenames("probe_end")[0])
-    Istart = Probe(solver.getSolvedProbeFilenames("probe_start")[0])
-    Vend = Probe(solver.getSolvedProbeFilenames("probe_end")[1])
-    Vstart = Probe(solver.getSolvedProbeFilenames("probe_start")[1])
+    Iend = Probe(_get_solved_probe_filename(
+        solver, "probe_end", contains='_I_'))
+    Istart = Probe(_get_solved_probe_filename(
+        solver, "probe_start", contains='_I_'))
+    Vend = Probe(_get_solved_probe_filename(
+        solver, "probe_end", contains='_V_'))
+    Vstart = Probe(_get_solved_probe_filename(
+        solver, "probe_start", contains='_V_'))
 
     assert np.allclose(Iend['current_0'][-100:-1],   0.0, rtol=0.005)
     assert np.allclose(Istart['current_0'][-100:-1], 0.0, rtol=0.005)
@@ -1855,28 +1960,25 @@ def test_bulk_current_outputs(tmp_path):
     assert len(bulkYPointFiles) == 1
     assert len(bulkZVolumeFiles) == 10
 
-    probeBulkXPlane = Probe(bulkXPlaneFiles[0])
-    probeBulkYPlane = Probe(bulkYPlaneFiles[0])
-    probeBulkZPlane = Probe(bulkZPlaneFiles[0])
-    probeBulkYPoint = Probe(bulkYPointFiles[0])
-    probeBulkZVolume = Probe(bulkZVolumeFiles[0])
+    probeBulkXPlane = Probe(_get_solved_probe_filename(
+        solver, "BulkXPlane"))
+    probeBulkYPlane = Probe(_get_solved_probe_filename(
+        solver, "BulkYPlane"))
+    probeBulkZPlane = Probe(_get_solved_probe_filename(
+        solver, "BulkZPlane"))
+    probeBulkYPoint = Probe(_get_solved_probe_filename(
+        solver, "BulkYPoint"))
+    probeBulkZVolumes = [Probe(path) for path in bulkZVolumeFiles]
 
     assert probeBulkXPlane.direction == 'x'
     assert probeBulkYPlane.direction == 'y'
     assert probeBulkZPlane.direction == 'z'
     assert probeBulkYPoint.direction == 'y'
-    assert probeBulkZVolume.direction == 'z'
+    assert all(probe.direction == 'z' for probe in probeBulkZVolumes)
 
 @no_mtln_skip
 @pytest.mark.mtln
 def test_conductors_forming_y_on_panel_holland_vs_mtln(tmp_path):
-    def get_probe_file(solver, probe_name):
-        folder = Path(solver.getFolder())
-        case_name = solver.getCaseName()
-        files = sorted(folder.glob(f'{case_name}_{probe_name}*.dat'))
-        assert files, f'Probe {probe_name} not found in {folder}'
-        return files[0]
-
     holland_run = tmp_path / 'holland'
     mtln_run = tmp_path / 'mtln'
     holland_run.mkdir()
@@ -1896,14 +1998,21 @@ def test_conductors_forming_y_on_panel_holland_vs_mtln(tmp_path):
     )
     mtln_solver.run()
 
-    holland_yplus = Probe(get_probe_file(holland_solver, "curr_yplus"))
-    holland_yminus = Probe(get_probe_file(holland_solver, "curr_yminus"))
-    holland_joined_1 = Probe(get_probe_file(holland_solver, "curr_joined_1"))
-    holland_joined_2 = Probe(get_probe_file(holland_solver, "curr_joined_2"))
+    holland_yplus = Probe(_get_solved_probe_filename(
+        holland_solver, "curr_yplus"))
+    holland_yminus = Probe(_get_solved_probe_filename(
+        holland_solver, "curr_yminus"))
+    holland_joined_1 = Probe(_get_solved_probe_filename(
+        holland_solver, "curr_joined_1"))
+    holland_joined_2 = Probe(_get_solved_probe_filename(
+        holland_solver, "curr_joined_2"))
 
-    mtln_yplus = Probe(get_probe_file(mtln_solver, "curr_yplus"))
-    mtln_yminus = Probe(get_probe_file(mtln_solver, "curr_yminus"))
-    mtln_joined = Probe(get_probe_file(mtln_solver, "curr_joined"))
+    mtln_yplus = Probe(_get_solved_probe_filename(
+        mtln_solver, "curr_yplus"))
+    mtln_yminus = Probe(_get_solved_probe_filename(
+        mtln_solver, "curr_yminus"))
+    mtln_joined = Probe(_get_solved_probe_filename(
+        mtln_solver, "curr_joined"))
 
     corr_yplus = corrcoef_on_common_time(
         holland_yplus['time'].to_numpy(), holland_yplus['current'].to_numpy(),

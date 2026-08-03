@@ -1,5 +1,6 @@
 from utils import *
 import utils
+from pathlib import Path
 
 
 @pytest.mark.probes
@@ -90,6 +91,106 @@ def test_read_bulk_current_probe():
     assert p.type == 'bulkCurrent'
     assert p.domainType == 'time'
     assert p.direction == 'x'
+
+
+@pytest.mark.probes
+@pytest.mark.parametrize(
+    ('domain_marker', 'expected_domain'),
+    [('_tm', 'time'), ('_fq', 'frequency')],
+)
+def test_read_point_probe_with_output_domain_marker(
+        tmp_path, domain_marker, expected_domain):
+    probe_folder = tmp_path / 'case.fdtd_sample_Ex_1_2_3'
+    probe_folder.mkdir()
+    probe_path = probe_folder / (
+        f'case.fdtd_sample_Ex_1_2_3{domain_marker}.dat')
+    probe_path.write_text('value_a value_b\n0.0 1.0\n')
+
+    probe = Probe(probe_path)
+
+    assert probe.name == 'sample'
+    assert probe.domainType == expected_domain
+    assert np.all(probe.cell == np.array([1, 2, 3]))
+
+
+@pytest.mark.probes
+@pytest.mark.farfield
+def test_read_extensionless_far_field_probe(tmp_path):
+    probe_folder = tmp_path / 'case.fdtd_farfield_FF_1_1_1__2_2_2'
+    probe_folder.mkdir()
+    probe_path = probe_folder / 'case.fdtd_farfield_FF_1_1_1__2_2_2'
+    probe_path.write_text(
+        'frequency Theta Phi Etheta_mod Etheta_phase Ephi_mod '
+        'Ephi_phase RCS_arithmetic RCS_geometric\n'
+        '1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0\n'
+    )
+
+    probe = Probe(probe_path)
+
+    assert probe.name == 'farfield'
+    assert probe.type == 'farField'
+    assert np.all(probe.cell_init == np.array([1, 1, 1]))
+    assert np.all(probe.cell_end == np.array([2, 2, 2]))
+
+
+@pytest.mark.probes
+def test_probe_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch):
+    run_folder = tmp_path / 'own_run'
+    other_folder = tmp_path / 'other_run'
+    run_folder.mkdir()
+    other_folder.mkdir()
+
+    input_path = run_folder / 'case.fdtd.json'
+    input_path.write_text(
+        '{"probes": ['
+        '{"name": "sample"}, '
+        '{"name": "probe[0]"}, '
+        '{"name": "farfield"}'
+        ']}')
+    monkeypatch.chdir(tmp_path)
+    solver = FDTD(
+        Path('own_run/case.fdtd.json'), path_to_exe=input_path)
+
+    probe_folder = run_folder / 'case.fdtd_sample_Ex_1_2_3'
+    probe_folder.mkdir()
+    nested_text = probe_folder / 'case.fdtd_sample_Ex_1_2_3_tm.dat'
+    nested_binary = probe_folder / 'case.fdtd_sample_Ex_1_2_3_tm.bin'
+    descriptor = probe_folder / 'case.fdtd_sample_Ex_1_2_3.json'
+    flat_text = run_folder / 'case.fdtd_sample_line_I_1_2_3.dat'
+    unrelated_extensionless = run_folder / 'case.fdtd_sample_notes'
+    literal_name = run_folder / 'case.fdtd_probe[0]_Ex_4_5_6.dat'
+    regex_like_name = run_folder / 'case.fdtd_probe0_Ex_4_5_6.dat'
+    wrong_run_text = other_folder / 'case.fdtd_sample_Ex_1_2_3.dat'
+    for path in (
+            nested_text, nested_binary, descriptor, flat_text,
+            unrelated_extensionless, literal_name, regex_like_name,
+            wrong_run_text):
+        path.touch()
+
+    far_field = run_folder / 'case.fdtd_farfield_FF_1_1_1__2_2_2'
+    far_field.touch()
+    monkeypatch.chdir(other_folder)
+
+    assert solver.getSolvedProbeFilenames('sample') == sorted([
+        str(flat_text.resolve()),
+        str(nested_text.resolve()),
+    ])
+    assert solver.getSolvedProbeFilenames(
+        'sample', include_binary=True) == sorted([
+            str(flat_text.resolve()),
+            str(nested_binary.resolve()),
+            str(nested_text.resolve()),
+        ])
+    assert solver.getSolvedProbeFilenames('farfield') == [
+        str(far_field.resolve())
+    ]
+    assert solver.getSolvedProbeFilenames(
+        'farfield_FF_1_1_1__2_2_2') == [str(far_field.resolve())]
+    assert solver.getSolvedProbeFilenames('probe[0]') == [
+        str(literal_name.resolve())
+    ]
+    assert solver.getSolvedProbeFilenames(
+        'sample_Ex_1_2_3_tm') == [str(nested_text.resolve())]
 
 
 @pytest.mark.planewave

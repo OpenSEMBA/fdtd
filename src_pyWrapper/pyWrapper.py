@@ -28,6 +28,9 @@ class Probe():
         + FAR_FIELD_TAG \
         + MOVIE_TAGS
 
+    FILE_EXTENSIONS = ['.dat', '.xdmf', '.h5', '.bin']
+    DOMAIN_MARKERS = ['_tm', '_fq', '_df']
+
     def __init__(self, probe_filename):
         if isinstance(probe_filename, os.PathLike):
             self.filename = probe_filename.as_posix()
@@ -79,7 +82,10 @@ class Probe():
         elif tag in Probe.LINE_INTEGRAL_PROBE_TAG:
             self.type = 'lineIntegral'
             self.field, self.direction = Probe._getFieldAndDirection(tag)
-            self.cell = self._positionStrToCell(position_str)
+            self.cell = (
+                self._positionStrToCell(position_str)
+                if position_str else None
+            )
             if self.domainType == 'time':
                 self.data = self.data.rename(columns={
                     't': 'time',
@@ -171,33 +177,53 @@ class Probe():
 
     @staticmethod
     def _getProbeNameFromFilename(fn):
-        if '.fdtd_' in fn:
-            tag = Probe._getTagFromFilename(fn)
-            bn_without_case_name = fn.split('.fdtd_')[1]
+        bn = os.path.basename(fn)
+        if '.fdtd_' in bn:
+            tag = Probe._getTagFromFilename(bn)
+            bn_without_case_name = bn.split('.fdtd_', 1)[1]
             probe_name = bn_without_case_name.split(tag)[0]
             return probe_name
         else:
-            return Probe._getCaseNameFromFilename(fn)
+            return Probe._getCaseNameFromFilename(bn)
 
     @staticmethod
     def _getTagFromFilename(fn):
+        bn = os.path.basename(fn)
         for tag in Probe.ALL_TAGS:
-            if tag in fn:
+            if tag in bn:
                 return tag
         raise ValueError("Unable to determine probe tag")
 
     @staticmethod
+    def _getFilenameStem(fn):
+        bn = os.path.basename(fn)
+        stem, extension = os.path.splitext(bn)
+        if extension not in Probe.FILE_EXTENSIONS:
+            stem = bn
+        for marker in Probe.DOMAIN_MARKERS:
+            if stem.endswith(marker):
+                return stem[:-len(marker)]
+        return stem
+
+    @staticmethod
     def _getPositionStrFromFilename(fn):
-        bn_no_ext = os.path.splitext(os.path.basename(fn))[0]
+        bn_no_ext = Probe._getFilenameStem(fn)
         tag = Probe._getTagFromFilename(fn)
-        if '_df' in bn_no_ext:
-            bn_no_ext = bn_no_ext.replace('_df', '')
-        position_str = bn_no_ext.split(tag)[1]
+        if tag in bn_no_ext:
+            position_str = bn_no_ext.split(tag, 1)[1]
+        elif bn_no_ext.endswith(tag[:-1]):
+            position_str = ''
+        else:
+            raise ValueError("Unable to determine probe position")
         return position_str
 
     @staticmethod
     def _getDomainTypeFromFilename(fn):
-        if '_df.' in os.path.basename(fn):
+        bn = os.path.basename(fn)
+        stem, extension = os.path.splitext(bn)
+        if extension not in Probe.FILE_EXTENSIONS:
+            stem = bn
+        if stem.endswith(('_fq', '_df')):
             return 'frequency'
         else:
             return 'time'
@@ -278,11 +304,7 @@ class FDTD():
         return self._input[key]
 
     def _setFilename(self, newFilename):
-        if isinstance(newFilename, os.PathLike):
-            self._filename = str(newFilename)
-        else:
-            self._filename = newFilename
-        self._filename = newFilename
+        self._filename = os.path.abspath(os.fspath(newFilename))
         self._input = json.load(open(self._filename))
 
     def getUsedFiles(self):
@@ -364,18 +386,36 @@ class FDTD():
         if not "probes" in self._input:
             raise ValueError('Solver does not contain probes.')
 
-        file_extensions = ('*.dat', '*.xdmf', '*.h5')
+        file_extensions = ('.dat', '.xdmf', '.h5', '')
         if include_binary:
-            file_extensions += ('*.bin',)
+            file_extensions += ('.bin',)
+        search_root = os.path.abspath(self.getFolder())
+        probe_prefix = self.getCaseName() + '_' + probe_name
         probeFiles = []
-        for ext in file_extensions:
-            newProbes = [
-                x for x in glob.glob(os.path.join('**', ext), recursive=True)
-                if re.match(self.getCaseName() + '_' + probe_name, os.path.basename(x))
-            ]
-            probeFiles.extend(sorted(newProbes))
+        for path in glob.glob(os.path.join(search_root, '**', '*'), recursive=True):
+            if not os.path.isfile(path):
+                continue
+            basename = os.path.basename(path)
+            if not basename.startswith(probe_prefix):
+                continue
+            extension = next(
+                (value for value in Probe.FILE_EXTENSIONS
+                 if basename.endswith(value)),
+                '',
+            )
+            artifact_suffix = os.path.splitext(
+                basename[len(probe_prefix):].lstrip('_'))[1]
+            if not extension and artifact_suffix:
+                continue
+            if not extension and not any(
+                    tag in basename[len(self.getCaseName()) + 1:]
+                    for tag in Probe.FAR_FIELD_TAG):
+                continue
+            if extension not in file_extensions:
+                continue
+            probeFiles.append(os.path.abspath(path))
 
-        return probeFiles
+        return sorted(probeFiles)
 
     def getExcitationFile(self, excitation_file_name):
         file_extensions = ('*.exc',)

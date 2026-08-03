@@ -82,9 +82,18 @@ def test_towel_hanger_case_creates_output_probes(tmp_path):
     assert len(probe_mid) == 1
     assert len(probe_end) == 1
 
-    assert 'towelHanger.fdtd_wire_start_Wz_27_25_30_s3.dat' == probe_start[0]
-    assert 'towelHanger.fdtd_wire_mid_Wx_35_25_32_s13.dat' == probe_mid[0]
-    assert 'towelHanger.fdtd_wire_end_Wz_43_25_30_s22.dat' == probe_end[0]
+    assert (
+        'towelHanger.fdtd_wire_start_Wz_27_25_30_s3_tm.dat'
+        == Path(probe_start[0]).name
+    )
+    assert (
+        'towelHanger.fdtd_wire_mid_Wx_35_25_32_s13_tm.dat'
+        == Path(probe_mid[0]).name
+    )
+    assert (
+        'towelHanger.fdtd_wire_end_Wz_43_25_30_s22_tm.dat'
+        == Path(probe_end[0]).name
+    )
     assert countLinesInFile(probe_start[0]) == 3
     assert countLinesInFile(probe_mid[0]) == 3
     assert countLinesInFile(probe_end[0]) == 3
@@ -143,12 +152,20 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
 
     solver.run()
 
-    p = Probe(solver.getSolvedProbeFilenames("far")[0])
+    far_field_files = solver.getSolvedProbeFilenames("farfield")
+    assert len(far_field_files) == 1
+    p = Probe(far_field_files[0])
     assert p.case_name == 'sphere'
     assert p.type == 'farField'
     assert np.all(p.cell_init == np.array([2, 2, 2]))
 
-    p = Probe(solver.getSolvedProbeFilenames("electric_field_movie")[0])
+    movie_files = [
+        path for path in solver.getSolvedProbeFilenames(
+            "electric_field_movie")
+        if path.endswith('.xdmf')
+    ]
+    assert len(movie_files) == 1
+    p = Probe(movie_files[0])
     assert p.case_name == 'sphere'
     assert p.type == 'movie'
     assert np.all(p.cell_init == np.array([2, 2, 2]))
@@ -297,7 +314,12 @@ def test_movie_with_frequency_domain(tmp_path):
 
     solver.run()
 
-    p = Probe(solver.getSolvedProbeFilenames("movie_electric")[0])
+    movie_files = [
+        path for path in solver.getSolvedProbeFilenames("movie_electric")
+        if path.endswith('.xdmf')
+    ]
+    assert len(movie_files) == 1
+    p = Probe(movie_files[0])
     assert p.case_name == 'movieFrequency'
     assert p.type == 'movie'
     assert np.all(p.cell_init == np.array([1, 1, 1]))
@@ -312,7 +334,12 @@ def test_movie_with_time_domain(tmp_path):
 
     solver.run()
 
-    p = Probe(solver.getSolvedProbeFilenames("movie_electric")[0])
+    movie_files = [
+        path for path in solver.getSolvedProbeFilenames("movie_electric")
+        if path.endswith('.xdmf')
+    ]
+    assert len(movie_files) == 1
+    p = Probe(movie_files[0])
     assert p.case_name == 'movieTime'
     assert p.type == 'movie'
     assert np.all(p.cell_init == np.array([1, 1, 1]))
@@ -1241,14 +1268,18 @@ def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
 
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
+    probe_files = solver.getSolvedProbeFilenames("BulkProbeEntry")
+    assert len(probe_files) == 1
+    assert Probe(probe_files[0]) is not None
 
 def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
     fn = CASES_FOLDER + 'multipleAssigments/multipleDielectricMaterial.fdtd.json'
 
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
+    probe_files = solver.getSolvedProbeFilenames("BulkProbeEntry")
+    assert len(probe_files) == 1
+    assert Probe(probe_files[0]) is not None
 
 def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arguments(tmp_path):
     projectRoot = os.getcwd()
@@ -1265,7 +1296,9 @@ def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arg
     fn = CASES_FOLDER + "dielectric/dielectricTransmission.fdtd.json"
     solver = FDTD(fn, path_to_exe=pathToExe, run_in_folder=tmp_path)
     solver.run()
-    assert (Probe(solver.getSolvedProbeFilenames("outside")[0]) is not None)
+    probe_files = solver.getSolvedProbeFilenames("outside")
+    assert len(probe_files) == 1
+    assert Probe(probe_files[0]) is not None
     assert (solver.getVTKMap()[0] is not None)
 
 def test_bulk_current_outputs(tmp_path):
