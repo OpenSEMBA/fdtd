@@ -28,7 +28,9 @@ def retain_test_artifacts(request, tmp_path):
     if not _keep_artifacts(request.config):
         return
 
-    destination = Path(os.getenv("SEMBA_FDTD_ARTIFACT_DIR", request.config.rootpath / "test-artifacts"))
+    destination = Path(
+        os.getenv("SEMBA_FDTD_ARTIFACT_DIR", request.config.rootpath / "test-artifacts")
+    )
     test_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", request.node.nodeid)
     target = destination / test_name
     shutil.copytree(tmp_path, target, dirs_exist_ok=True)

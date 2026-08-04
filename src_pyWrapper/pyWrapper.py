@@ -7,29 +7,30 @@ import re
 import pandas as pd
 import numpy as np
 
-DEFAULT_SEMBA_FDTD_PATH = '/build/bin/semba-fdtd'
+DEFAULT_SEMBA_FDTD_PATH = "/build/bin/semba-fdtd"
 
 
-class Probe():
-    MTLN_PROBE_TAGS = ['_V_', '_I_']
-    CURRENT_PROBE_TAGS = ['_Wx_', '_Wy_', '_Wz_']
-    BULK_CURRENT_PROBE_TAGS = ['_Jx_', '_Jy_', '_Jz_']
-    LINE_INTEGRAL_PROBE_TAG = ['_LI_']
-    POINT_PROBE_TAGS = ['_Ex_', '_Ey_', '_Ez_', '_Hx_', '_Hy_', '_Hz_']
-    FAR_FIELD_TAG = ['_FF_']
-    MOVIE_TAGS = ['_ExC_', '_EyC_', '_EzC_',
-                  '_HxC_', '_HyC_', '_HzC_', '_ME_', '_MH_']
+class Probe:
+    MTLN_PROBE_TAGS = ["_V_", "_I_"]
+    CURRENT_PROBE_TAGS = ["_Wx_", "_Wy_", "_Wz_"]
+    BULK_CURRENT_PROBE_TAGS = ["_Jx_", "_Jy_", "_Jz_"]
+    LINE_INTEGRAL_PROBE_TAG = ["_LI_"]
+    POINT_PROBE_TAGS = ["_Ex_", "_Ey_", "_Ez_", "_Hx_", "_Hy_", "_Hz_"]
+    FAR_FIELD_TAG = ["_FF_"]
+    MOVIE_TAGS = ["_ExC_", "_EyC_", "_EzC_", "_HxC_", "_HyC_", "_HzC_", "_ME_", "_MH_"]
 
-    ALL_TAGS = MTLN_PROBE_TAGS \
-        + CURRENT_PROBE_TAGS \
-        + BULK_CURRENT_PROBE_TAGS \
-        + LINE_INTEGRAL_PROBE_TAG \
-        + POINT_PROBE_TAGS \
-        + FAR_FIELD_TAG \
+    ALL_TAGS = (
+        MTLN_PROBE_TAGS
+        + CURRENT_PROBE_TAGS
+        + BULK_CURRENT_PROBE_TAGS
+        + LINE_INTEGRAL_PROBE_TAG
+        + POINT_PROBE_TAGS
+        + FAR_FIELD_TAG
         + MOVIE_TAGS
+    )
 
-    FILE_EXTENSIONS = ['.dat', '.xdmf', '.h5', '.bin']
-    DOMAIN_MARKERS = ['_tm', '_fq', '_df']
+    FILE_EXTENSIONS = [".dat", ".xdmf", ".h5", ".bin"]
+    DOMAIN_MARKERS = ["_tm", "_fq", "_df"]
 
     def __init__(self, probe_filename):
         if isinstance(probe_filename, os.PathLike):
@@ -45,131 +46,126 @@ class Probe():
 
         tag = self._getTagFromFilename(self.filename)
         if tag not in Probe.MOVIE_TAGS:
-            self.data = pd.read_csv(self.filename, sep='\\s+')
+            self.data = pd.read_csv(self.filename, sep="\\s+")
 
         position_str = self._getPositionStrFromFilename(self.filename)
         if tag in Probe.CURRENT_PROBE_TAGS:
-            self.type = 'wire'
+            self.type = "wire"
             self.field, self.direction = Probe._getFieldAndDirection(tag)
             self.cell = self._positionStrToCell(position_str)
-            self.segment = int(position_str.split('_s')[1])
-            if self.domainType == 'time':
-                self.data = self.data.rename(columns={
-                    't': 'time',
-                    self.data.columns[1]: 'current'
-                })
-            elif self.domainType == 'frequency':
-                self.data = self.data.rename(columns={
-                    self.data.columns[0]: 'frequency',
-                    self.data.columns[1]: 'magnitude',
-                    self.data.columns[2]: 'phase'
-                })
+            self.segment = int(position_str.split("_s")[1])
+            if self.domainType == "time":
+                self.data = self.data.rename(
+                    columns={"t": "time", self.data.columns[1]: "current"}
+                )
+            elif self.domainType == "frequency":
+                self.data = self.data.rename(
+                    columns={
+                        self.data.columns[0]: "frequency",
+                        self.data.columns[1]: "magnitude",
+                        self.data.columns[2]: "phase",
+                    }
+                )
         elif tag in Probe.BULK_CURRENT_PROBE_TAGS:
-            self.type = 'bulkCurrent'
+            self.type = "bulkCurrent"
             self.field, self.direction = Probe._getFieldAndDirection(tag)
             self.cell = self._positionStrToCell(position_str)
-            if self.domainType == 'time':
-                self.data = self.data.rename(columns={
-                    't': 'time',
-                    self.data.columns[1]: 'current'
-                })
-            elif self.domainType == 'frequency':
-                self.data = self.data.rename(columns={
-                    self.data.columns[0]: 'frequency',
-                    self.data.columns[1]: 'magnitude',
-                    self.data.columns[2]: 'phase'
-                })
+            if self.domainType == "time":
+                self.data = self.data.rename(
+                    columns={"t": "time", self.data.columns[1]: "current"}
+                )
+            elif self.domainType == "frequency":
+                self.data = self.data.rename(
+                    columns={
+                        self.data.columns[0]: "frequency",
+                        self.data.columns[1]: "magnitude",
+                        self.data.columns[2]: "phase",
+                    }
+                )
         elif tag in Probe.LINE_INTEGRAL_PROBE_TAG:
-            self.type = 'lineIntegral'
+            self.type = "lineIntegral"
             self.field, self.direction = Probe._getFieldAndDirection(tag)
-            self.cell = (
-                self._positionStrToCell(position_str)
-                if position_str else None
-            )
-            if self.domainType == 'time':
-                self.data = self.data.rename(columns={
-                    't': 'time',
-                    self.data.columns[1]: 'lineIntegral'
-                })
+            self.cell = self._positionStrToCell(position_str) if position_str else None
+            if self.domainType == "time":
+                self.data = self.data.rename(
+                    columns={"t": "time", self.data.columns[1]: "lineIntegral"}
+                )
         elif tag in Probe.POINT_PROBE_TAGS:
-            self.type = 'point'
+            self.type = "point"
             self.field, self.direction = Probe._getFieldAndDirection(tag)
             self.cell = self._positionStrToCell(position_str)
 
-            if self.domainType == 'time':
-                self.data = self.data.rename(columns={
-                    't': 'time',
-                    self.data.columns[1]: 'field'
-                })
+            if self.domainType == "time":
+                self.data = self.data.rename(
+                    columns={"t": "time", self.data.columns[1]: "field"}
+                )
                 if len(self.data.columns) == 3:
-                    self.data = self.data.rename(columns={
-                        self.data.columns[2]: 'incident'
-                    })
+                    self.data = self.data.rename(
+                        columns={self.data.columns[2]: "incident"}
+                    )
         elif tag in Probe.BULK_CURRENT_PROBE_TAGS:
-            self.type = 'bulkCurrent'
+            self.type = "bulkCurrent"
             self.field, self.direction = Probe._getFieldAndDirection(tag)
-            self.cell_init, self.cell_end = \
-                Probe._positionStrToTwoCells(position_str)
+            self.cell_init, self.cell_end = Probe._positionStrToTwoCells(position_str)
 
-            if self.domainType == 'time':
-                self.data = self.data.rename(columns={
-                    't': 'time',
-                    self.data.columns[1]: 'current'
-                })
+            if self.domainType == "time":
+                self.data = self.data.rename(
+                    columns={"t": "time", self.data.columns[1]: "current"}
+                )
                 if len(self.data.columns) == 3:
-                    self.data = self.data.rename(columns={
-                        self.data.columns[2]: 'incident'
-                    })
+                    self.data = self.data.rename(
+                        columns={self.data.columns[2]: "incident"}
+                    )
         elif tag in Probe.FAR_FIELD_TAG:
-            self.type = 'farField'
-            self.cell_init, self.cell_end = \
-                Probe._positionStrToTwoCells(position_str)
-            self.data = self.data.rename(columns={
-                self.data.columns[0]: 'freq',
-                self.data.columns[7]: 'rcs_arit',
-                self.data.columns[8]: 'rcs_geom'
-            })
+            self.type = "farField"
+            self.cell_init, self.cell_end = Probe._positionStrToTwoCells(position_str)
+            self.data = self.data.rename(
+                columns={
+                    self.data.columns[0]: "freq",
+                    self.data.columns[7]: "rcs_arit",
+                    self.data.columns[8]: "rcs_geom",
+                }
+            )
 
         elif tag in Probe.MOVIE_TAGS:
-            self.type = 'movie'
-            self.cell_init, self.cell_end = \
-                Probe._positionStrToTwoCells(position_str)
+            self.type = "movie"
+            self.cell_init, self.cell_end = Probe._positionStrToTwoCells(position_str)
         elif tag in Probe.MTLN_PROBE_TAGS:
-            self.type = 'mtln'
+            self.type = "mtln"
             self.cell = self._positionStrToCell(position_str)
-            if self.domainType == 'time':
-                self.data = self.data.rename(columns={'t': 'time'})
-            for n in range(self.data.shape[1]-1):
-                if tag == '_V_':
-                    self.data = self.data.rename(columns={
-                        self.data.columns[n+1]: 'voltage_'+str(n)
-                    })
-                elif tag == '_I_':
-                    self.data = self.data.rename(columns={
-                        self.data.columns[n+1]: 'current_'+str(n)
-                    })
+            if self.domainType == "time":
+                self.data = self.data.rename(columns={"t": "time"})
+            for n in range(self.data.shape[1] - 1):
+                if tag == "_V_":
+                    self.data = self.data.rename(
+                        columns={self.data.columns[n + 1]: "voltage_" + str(n)}
+                    )
+                elif tag == "_I_":
+                    self.data = self.data.rename(
+                        columns={self.data.columns[n + 1]: "current_" + str(n)}
+                    )
 
         else:
             raise ValueError("Unable to determine probe type")
 
     def __getitem__(self, key):
         if key not in self.data.columns:
-            if key == 'current' and 'current_0' in self.data.columns:
-                return self.data['current_0']
-            elif key == 'current_0' and 'current' in self.data.columns:
-                return self.data['current']
-            
-            if key == 'voltage' and 'voltage_0' in self.data.columns:
-                return self.data['voltage_0']
-            elif key == 'voltage_0' and 'voltage' in self.data.columns:
-                return self.data['voltage']
+            if key == "current" and "current_0" in self.data.columns:
+                return self.data["current_0"]
+            elif key == "current_0" and "current" in self.data.columns:
+                return self.data["current"]
+
+            if key == "voltage" and "voltage_0" in self.data.columns:
+                return self.data["voltage_0"]
+            elif key == "voltage_0" and "voltage" in self.data.columns:
+                return self.data["voltage"]
         return self.data[key]
 
     @staticmethod
     def _getCaseNameFromFilename(fn):
         bn = os.path.basename(fn)
-        if '.fdtd_' in bn:
-            return bn.split('.fdtd_')[0]
+        if ".fdtd_" in bn:
+            return bn.split(".fdtd_")[0]
         else:
             for tag in Probe.ALL_TAGS:
                 if tag in bn:
@@ -178,9 +174,9 @@ class Probe():
     @staticmethod
     def _getProbeNameFromFilename(fn):
         bn = os.path.basename(fn)
-        if '.fdtd_' in bn:
+        if ".fdtd_" in bn:
             tag = Probe._getTagFromFilename(bn)
-            bn_without_case_name = bn.split('.fdtd_', 1)[1]
+            bn_without_case_name = bn.split(".fdtd_", 1)[1]
             probe_name = bn_without_case_name.split(tag)[0]
             return probe_name
         else:
@@ -202,7 +198,7 @@ class Probe():
             stem = bn
         for marker in Probe.DOMAIN_MARKERS:
             if stem.endswith(marker):
-                return stem[:-len(marker)]
+                return stem[: -len(marker)]
         return stem
 
     @staticmethod
@@ -212,7 +208,7 @@ class Probe():
         if tag in bn_no_ext:
             position_str = bn_no_ext.split(tag, 1)[1]
         elif bn_no_ext.endswith(tag[:-1]):
-            position_str = ''
+            position_str = ""
         else:
             raise ValueError("Unable to determine probe position")
         return position_str
@@ -223,28 +219,27 @@ class Probe():
         stem, extension = os.path.splitext(bn)
         if extension not in Probe.FILE_EXTENSIONS:
             stem = bn
-        if stem.endswith(('_fq', '_df')):
-            return 'frequency'
+        if stem.endswith(("_fq", "_df")):
+            return "frequency"
         else:
-            return 'time'
+            return "time"
 
     @staticmethod
     def _positionStrToCell(pos_str: str):
-        pos = pos_str.split('_')
+        pos = pos_str.split("_")
         return np.array([int(pos[0]), int(pos[1]), int(pos[2])])
 
     @staticmethod
     def _positionStrToTwoCells(pos_str: str):
-        init_str, end_str = pos_str.split('__')
-        return Probe._positionStrToCell(init_str), \
-            Probe._positionStrToCell(end_str)
+        init_str, end_str = pos_str.split("__")
+        return Probe._positionStrToCell(init_str), Probe._positionStrToCell(end_str)
 
     @staticmethod
     def _getFieldAndDirection(tag: str):
         return tag[1], tag[2]
 
 
-class ExcitationFile():
+class ExcitationFile:
     def __init__(self, excitation_filename):
         if isinstance(excitation_filename, os.PathLike):
             self.filename = excitation_filename.as_posix()
@@ -252,22 +247,26 @@ class ExcitationFile():
             self.filename = excitation_filename
         assert os.path.isfile(self.filename)
 
-        self.data = pd.read_csv(
-            self.filename, sep='\\s+', names=['time', 'value'])
+        self.data = pd.read_csv(self.filename, sep="\\s+", names=["time", "value"])
 
     def __getitem__(self, key):
         return self.data[key]
 
 
-class FDTD():
-    def __init__(self, input_filename, path_to_exe=None,
-                 flags=None, run_in_folder=None, mpi_command=None):
+class FDTD:
+    def __init__(
+        self,
+        input_filename,
+        path_to_exe=None,
+        flags=None,
+        run_in_folder=None,
+        mpi_command=None,
+    ):
 
         self._setFilename(input_filename)
 
         if path_to_exe is None:
-            semba_exe = \
-                os.path.join(os.getcwd(), DEFAULT_SEMBA_FDTD_PATH)
+            semba_exe = os.path.join(os.getcwd(), DEFAULT_SEMBA_FDTD_PATH)
         else:
             semba_exe = path_to_exe
         assert os.path.isfile(semba_exe)
@@ -283,8 +282,7 @@ class FDTD():
             flags = flags.split()
 
         case_name = self.getCaseName() + ".json"
-        self.run_command = \
-            mpi_command_parts + [semba_exe] + ["-i", case_name] + flags
+        self.run_command = mpi_command_parts + [semba_exe] + ["-i", case_name] + flags
 
         self._hasRun = False
 
@@ -294,11 +292,11 @@ class FDTD():
     def getFolder(self):
         res = os.path.dirname(self._filename)
         if len(res) == 0:
-            return './'
+            return "./"
         return res
 
     def getCaseName(self):
-        return os.path.basename(self._filename).split('.json')[0]
+        return os.path.basename(self._filename).split(".json")[0]
 
     def __getitem__(self, key):
         return self._input[key]
@@ -311,24 +309,24 @@ class FDTD():
         res = []
 
         # Files used to define magnitudes.
-        if 'sources' in self._input:
-            for p in self._input['sources']:
-                if 'magnitudeFile' in p:
-                    res.append(p['magnitudeFile'])
+        if "sources" in self._input:
+            for p in self._input["sources"]:
+                if "magnitudeFile" in p:
+                    res.append(p["magnitudeFile"])
 
         # Files used in transfer functions.
-        if 'probes' in self._input:
-            for p in self._input['probes']:
-                if 'magnitudeFile' in p:
-                    res.append(p['magnitudeFile'])
+        if "probes" in self._input:
+            for p in self._input["probes"]:
+                if "magnitudeFile" in p:
+                    res.append(p["magnitudeFile"])
 
         # .model files in terminations.
-        if 'materials' in self._input:
-            for p in self._input['materials']:
-                if 'terminations' in p:
-                    for t in p['terminations']:
-                        if 'file' in t and not t['file'] in res:
-                            res.append(t['file'])
+        if "materials" in self._input:
+            for p in self._input["materials"]:
+                if "terminations" in p:
+                    for t in p["terminations"]:
+                        if "file" in t and not t["file"] in res:
+                            res.append(t["file"])
 
         return res
 
@@ -345,8 +343,8 @@ class FDTD():
         self._setFilename(newFilename)
 
     def run(self):
-        if self._input != json.load(open(self._filename, 'r')):
-            json.dump(self._input, open(self._filename, 'w'))
+        if self._input != json.load(open(self._filename, "r")):
+            json.dump(self._input, open(self._filename, "w"))
 
         os.chdir(self.getFolder())
         self.output = subprocess.run(self.run_command, capture_output=True)
@@ -358,9 +356,9 @@ class FDTD():
             return True
         else:
             if self.output.stdout:
-                print(self.output.stdout.decode('utf-8'), end='')
+                print(self.output.stdout.decode("utf-8"), end="")
             if self.output.stderr:
-                print(self.output.stderr.decode('utf-8'), end='')
+                print(self.output.stderr.decode("utf-8"), end="")
             return False
 
     def __getitem__(self, key):
@@ -369,47 +367,51 @@ class FDTD():
     def cleanUp(self):
         folder = self.getFolder()
         case_name = self.getCaseName()
-        extensions = ('*.dat', '*.pl', '*.txt', '*.xdmf', '*.bin', '*.h5')
+        extensions = ("*.dat", "*.pl", "*.txt", "*.xdmf", "*.bin", "*.h5")
         for ext in extensions:
             files = glob.glob(os.path.join(folder, ext))
             for file in files:
                 if os.path.basename(file).startswith(case_name):
                     os.remove(file)
 
-        subfolders = [item for item in os.listdir(
-            folder) if os.path.isdir(os.path.join(folder, item))]
+        subfolders = [
+            item
+            for item in os.listdir(folder)
+            if os.path.isdir(os.path.join(folder, item))
+        ]
         for f in subfolders:
             if f.startswith(case_name):
                 shutil.rmtree(os.path.join(folder, f), ignore_errors=True)
 
     def getSolvedProbeFilenames(self, probe_name, include_binary=False):
         if not "probes" in self._input:
-            raise ValueError('Solver does not contain probes.')
+            raise ValueError("Solver does not contain probes.")
 
-        file_extensions = ('.dat', '.xdmf', '.h5', '')
+        file_extensions = (".dat", ".xdmf", ".h5", "")
         if include_binary:
-            file_extensions += ('.bin',)
+            file_extensions += (".bin",)
         search_root = os.path.abspath(self.getFolder())
-        probe_prefix = self.getCaseName() + '_' + probe_name
+        probe_prefix = self.getCaseName() + "_" + probe_name
         probeFiles = []
-        for path in glob.glob(os.path.join(search_root, '**', '*'), recursive=True):
+        for path in glob.glob(os.path.join(search_root, "**", "*"), recursive=True):
             if not os.path.isfile(path):
                 continue
             basename = os.path.basename(path)
             if not basename.startswith(probe_prefix):
                 continue
             extension = next(
-                (value for value in Probe.FILE_EXTENSIONS
-                 if basename.endswith(value)),
-                '',
+                (value for value in Probe.FILE_EXTENSIONS if basename.endswith(value)),
+                "",
             )
             artifact_suffix = os.path.splitext(
-                basename[len(probe_prefix):].lstrip('_'))[1]
+                basename[len(probe_prefix) :].lstrip("_")
+            )[1]
             if not extension and artifact_suffix:
                 continue
             if not extension and not any(
-                    tag in basename[len(self.getCaseName()) + 1:]
-                    for tag in Probe.FAR_FIELD_TAG):
+                tag in basename[len(self.getCaseName()) + 1 :]
+                for tag in Probe.FAR_FIELD_TAG
+            ):
                 continue
             if extension not in file_extensions:
                 continue
@@ -418,33 +420,39 @@ class FDTD():
         return sorted(probeFiles)
 
     def getExcitationFile(self, excitation_file_name):
-        file_extensions = ('*.exc',)
+        file_extensions = ("*.exc",)
         excitationFile = []
         for ext in file_extensions:
-            newExcitationFile = [x for x in glob.glob(
-                ext) if re.match(excitation_file_name, x)]
+            newExcitationFile = [
+                x for x in glob.glob(ext) if re.match(excitation_file_name, x)
+            ]
             excitationFile.extend(newExcitationFile)
 
-        if ((len(excitationFile)) != 1):
+        if (len(excitationFile)) != 1:
             raise ValueError(
-                "Unexpected number of excitation Files found: {}".format(excitationFile))
+                "Unexpected number of excitation Files found: {}".format(excitationFile)
+            )
 
         return excitationFile
 
     def getVTKMap(self):
-        map_files = sorted(glob.glob(os.path.join('**', '*.vtu'), recursive=True))
+        map_files = sorted(glob.glob(os.path.join("**", "*.vtu"), recursive=True))
         if not map_files:
-            map_files = sorted(glob.glob(os.path.join('**', '*_1.vtk'), recursive=True))
+            map_files = sorted(glob.glob(os.path.join("**", "*_1.vtk"), recursive=True))
         return map_files[0] if map_files else None
 
     def getCurrentVTKMap(self):
-        current_maps = sorted(glob.glob(os.path.join('**', '*current*.vtu'), recursive=True))
+        current_maps = sorted(
+            glob.glob(os.path.join("**", "*current*.vtu"), recursive=True)
+        )
         if not current_maps:
-            current_maps = sorted(glob.glob(os.path.join('**', '*_1_current.vtk'), recursive=True))
+            current_maps = sorted(
+                glob.glob(os.path.join("**", "*_1_current.vtk"), recursive=True)
+            )
         return current_maps[0] if current_maps else None
 
     def getMaterialProperties(self, materialName):
-        if 'materials' in self._input:
-            for idx, element in enumerate(self._input['materials']):
+        if "materials" in self._input:
+            for idx, element in enumerate(self._input["materials"]):
                 if element.get("name") == materialName:
-                    return self._input['materials'][idx]
+                    return self._input["materials"][idx]
