@@ -352,9 +352,9 @@ contains
       integer :: i, j, k, coordIdx
 
       coordIdx = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
-      do k = this%mainCoords%z, this%auxCoords%z
+       do k = this%mainCoords%z, this%auxCoords%z
+       do j = this%mainCoords%y, this%auxCoords%y
+       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForCurrent(iCur, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
              call save_current(this%xValueForFreq, iEx, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
@@ -381,9 +381,9 @@ contains
       integer :: i, j, k, coordIdx
 
       coordIdx = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
-      do k = this%mainCoords%z, this%auxCoords%z
+       do k = this%mainCoords%z, this%auxCoords%z
+       do j = this%mainCoords%y, this%auxCoords%y
+       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForCurrent(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
              call save_current(currentData, fieldDir, coordIdx, i, j, k, fieldsReference, auxExp, &
@@ -430,9 +430,9 @@ contains
        if (iMEC == request) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
 
       coordIdx = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
-      do k = this%mainCoords%z, this%auxCoords%z
+       do k = this%mainCoords%z, this%auxCoords%z
+       do j = this%mainCoords%y, this%auxCoords%y
+       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForField(request, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
             call save_field(this%xValueForFreq, auxExponential, fieldInfo%x(i, j, k), this%nFreq, coordIdx)
@@ -448,7 +448,7 @@ contains
    subroutine save_field_component(this, fieldData, fieldComponent, simTime, problemInfo, fieldDir)
       type(frequency_slice_probe_output_t), intent(inout) :: this
       complex(kind=CKIND), intent(inout) :: fieldData(:, :)
-      real(kind=RKIND), intent(in) :: fieldComponent(:, :, :)
+      real(kind=RKIND), pointer, intent(in) :: fieldComponent(:, :, :)
       real(kind=RKIND_tiempo), intent(in) :: simTime
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: fieldDir
@@ -462,9 +462,9 @@ contains
        if (any(ELECTRIC_FIELD_DIRECTION == fieldDir)) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
 
       coordIdx = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
-      do k = this%mainCoords%z, this%auxCoords%z
+       do k = this%mainCoords%z, this%auxCoords%z
+       do j = this%mainCoords%y, this%auxCoords%y
+       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForField(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
             call save_field(fieldData, auxExponential, fieldComponent(i, j, k), this%nFreq, coordIdx)
