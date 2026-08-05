@@ -1,4 +1,5 @@
 from utils import *
+import utils
 
 
 @pytest.mark.probes
@@ -178,5 +179,38 @@ def test_fdtd_get_used_files():
     assert used_files[1] == 'opamp.model'
 
 
+def test_default_semba_exe_prefers_environment_override(tmp_path, monkeypatch):
+    configured_exe = tmp_path / 'configured' / 'semba-fdtd'
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv('SEMBA_EXE', str(configured_exe))
+
+    assert utils._default_semba_exe() == str(configured_exe)
+
+
+@pytest.mark.parametrize(
+    ('environment', 'build_dir'),
+    [
+        ({}, 'build-rls'),
+        ({'SEMBA_FDTD_ENABLE_MPI': 'ON'}, 'build-rls-mpi'),
+        ({'SEMBA_FDTD_ENABLE_MTLN': 'OFF'}, 'build-rls-nomtln'),
+    ],
+)
+def test_default_semba_exe_selects_compatible_preset(
+    tmp_path, monkeypatch, environment, build_dir
+):
+    executable = tmp_path / build_dir / 'bin' / 'semba-fdtd'
+    executable.parent.mkdir(parents=True)
+    executable.touch()
+    legacy_executable = tmp_path / 'build' / 'bin' / 'semba-fdtd'
+    legacy_executable.parent.mkdir(parents=True)
+    legacy_executable.touch()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv('SEMBA_EXE', raising=False)
+    monkeypatch.delenv('SEMBA_FDTD_ENABLE_MPI', raising=False)
+    monkeypatch.delenv('SEMBA_FDTD_ENABLE_MTLN', raising=False)
+    for name, value in environment.items():
+        monkeypatch.setenv(name, value)
+
+    assert utils._default_semba_exe() == str(executable)
 
 

@@ -16,7 +16,7 @@ git submodule update --init --recursive
 **Configure and build:**
 ```bash
 cmake --fresh --preset rls
-cmake --build build -j
+cmake --build --preset rls -j
 ```
 
 **Key CMake options:**
@@ -27,13 +27,13 @@ cmake --build build -j
 - `-DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=ON` — 8-byte reals (OFF by default)
 - `-DSEMBA_FDTD_ENABLE_TEST=ON` — compile unit tests (ON by default)
 
-**Binary output:** `./build/bin/semba-fdtd`
+**Binary output:** `./build-rls/bin/semba-fdtd` for the `rls` preset.
 
 ## Running Tests
 
 **C++/Fortran unit tests (GoogleTest):**
 ```bash
-./build/bin/fdtd_tests
+./build-rls/bin/fdtd_tests
 ```
 
 **Python integration tests:**
@@ -47,7 +47,7 @@ pytest test/ --durations=20
 # Run by marker
 pytest test/ -m mtln
 pytest test/ -m hdf
-pytest test/ -m mpi
+SEMBA_FDTD_ENABLE_MPI=ON pytest test/ -m mpi
 ```
 
 Test markers are defined in `pytest.ini`: `mtln`, `codemodel`, `hdf`, `mpi`.

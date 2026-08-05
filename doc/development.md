@@ -31,7 +31,10 @@ The repository has dependencies available as submodules. Before running CMake, i
 git submodule update --init --recursive
 ```
 
-All local configurations use `build/`. Run CMake with `--fresh` whenever changing compiler, build type, or feature options so the previous cache is discarded.
+CMake presets use separate build directories, such as `build-rls/` and
+`build-dbg-mpi/`, so their configurations can coexist.
+Run CMake with `--fresh` when changing the options of an existing build
+directory so its previous cache is discarded.
 
 If you use intel oneapi compiler, make sure to run
 
@@ -356,7 +359,7 @@ An example of launch.json filke is given. This will use a file as argument when 
             "name": "Fortran Launch (GDB)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/build/bin/semba-fdtd",
+            "program": "${workspaceRoot}/build-dbg/bin/semba-fdtd",
             "miDebuggerPath": "gdb",
             "args": ["-i", "shieldingEffectiveness.fdtd.json"],
             "stopAtEntry": false,
@@ -430,9 +433,11 @@ cmake --fresh --preset dbg-mpi
 cmake --build --preset dbg-mpi -j
 ```
 
-All CMake presets currently share `build/`.
-Running a Release or non-MPI configure replaces the previous build
-configuration, so rerun the commands above before MPI debugging when needed.
+The `dbg-mpi` preset builds in `build-dbg-mpi/`.
+Its configuration can coexist with other presets, so a Release or non-MPI
+preset build does not replace the MPI Debug executable.
+If the options of `dbg-mpi` itself change, rerun the commands above to refresh
+that build directory.
 
 #### Starting all ranks
 
@@ -585,7 +590,7 @@ already running process.
 Start the MPI job in a terminal:
 
 ```shell
-mpirun -np 2 build/bin/semba-fdtd -i input_file.fdtd.json
+mpirun -np 2 build-dbg-mpi/bin/semba-fdtd -i input_file.fdtd.json
 ```
 
 Then use the `Attach to process` configuration and select one `semba-fdtd`
