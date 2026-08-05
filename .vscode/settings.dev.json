@@ -1,4 +1,5 @@
 {
+  "semba-fdtd.debug.buildFolderName": "build-dbg-mpi",
   "semba-fdtd.debug.inputFile": "nodal-source-with-movie.fdtd.json",
   "semba-fdtd.debug.inputCwd": "Testing",
   "semba-fdtd.debug.mpiGtestFilter": "conformal.geometry_coord_position",

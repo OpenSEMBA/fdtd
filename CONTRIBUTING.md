@@ -45,8 +45,8 @@ platform‑specific notes, refer to:
 In short:
 
 - Always update submodules before configuring CMake.
-- Use a separate `build/` directory (as in the examples in
-  `doc/development.md`).
+- Use a separate build directory. CMake presets select one automatically, for
+  example `build-rls/`; manual `cmake -B build` configurations use `build/`.
 - Prefer reproducible build configurations by passing the same CMake
   options you expect CI to use.
 
@@ -87,8 +87,11 @@ Before opening a pull request:
 
 - Build the project using CMake (see `doc/development.md`).
 - Run unit tests, if they apply to your changes. For example:
-  - `build/bin/fdtd_tests` (depending on your setup).
-  - `pytest test/` for Python tests.
+  - `build-rls/bin/fdtd_tests` after building with the `rls` preset.
+  - `pytest test/` for Python tests after building a compatible preset. Set
+    `SEMBA_EXE=$PWD/build-rls/bin/semba-fdtd` to select a specific binary.
+  - `build/bin/...` remains correct after an explicit `cmake -B build`
+    configuration.
 - If you add new functionality, add or update tests when possible.
 
 ## Commit and pull request guidelines

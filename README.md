@@ -50,7 +50,13 @@ It can be run with
   semba-fdtd -i CASE_NAME.fdtd.json
 ```
 
-Tests must be run from the root folder. `python` wrapper test assumes that `semba-fdtd` has been compiled successfully and is located in folder `build/bin/`. For intel compilation it also assumes that the intel runtime libraries are accessible.
+Tests must be run from the root folder. Python tests automatically select the
+first compatible preset binary, preferring Release builds, based on
+`SEMBA_FDTD_ENABLE_MPI` and `SEMBA_FDTD_ENABLE_MTLN`, and then fall back to an
+explicitly configured `build/bin/semba-fdtd` binary.
+Set `SEMBA_EXE` to select a particular executable, for example
+`SEMBA_EXE=$PWD/build-rls/bin/semba-fdtd pytest test/`.
+For Intel compilation, the Intel runtime libraries must be accessible.
 
 
 # License

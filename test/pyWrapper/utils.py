@@ -35,8 +35,29 @@ no_mpi_skip = pytest.mark.skipif(
 
 def _default_semba_exe():
     exe_name = 'semba-fdtd.exe' if platform == "win32" else 'semba-fdtd'
-    return os.path.abspath(os.getenv(
-        'SEMBA_EXE', os.path.join(os.getcwd(), 'build', 'bin', exe_name)))
+    configured_exe = os.getenv('SEMBA_EXE')
+    if configured_exe:
+        return os.path.abspath(configured_exe)
+
+    if os.getenv("SEMBA_FDTD_ENABLE_MPI") == "ON":
+        build_dirs = ['build-rls-mpi', 'build-dbg-mpi', 'build-intel-rls']
+    elif os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF":
+        build_dirs = [
+            'build-rls-nomtln',
+            'build-dbg-nomtln',
+            'build-intel-rls-nomtln',
+        ]
+    else:
+        build_dirs = ['build-rls', 'build-dbg', 'build-intel-rls']
+
+    # A manual cmake -B build configuration remains a compatibility fallback.
+    build_dirs.append('build')
+    for build_dir in build_dirs:
+        candidate = os.path.join(os.getcwd(), build_dir, 'bin', exe_name)
+        if os.path.isfile(candidate):
+            return candidate
+
+    return os.path.join(os.getcwd(), 'build', 'bin', exe_name)
 
 
 # Use an absolute path to avoid conflicts when changing directory.
