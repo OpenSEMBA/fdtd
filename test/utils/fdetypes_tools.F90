@@ -1,9 +1,9 @@
 module FDETYPES_TOOLS
-    use FDETYPES
+    use FDETYPES_m
     contains
     function create_limit_t(XI,XE,YI,YE,ZI,ZE,NX,NY,NZ) result(r)
         type(limit_t) :: r
-        integer (kind=4), intent(in) :: XI,XE,YI,YE,ZI,ZE,NX,NY,NZ
+        integer(kind=4), intent(in) :: XI,XE,YI,YE,ZI,ZE,NX,NY,NZ
         r%XI = XI
         r%XE = XE
         r%YI = YI

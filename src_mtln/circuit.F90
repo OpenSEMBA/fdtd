@@ -1,7 +1,9 @@
-module circuit_mod
+module circuit_m
 
-    use ngspice_interface_mod
-    use mtln_types_mod, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use ngspice_interface_m
+    use mtln_types_m, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use Report_m, only: WarnErrReport
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO, SINGLE
     implicit none
 
     type string_t
@@ -11,17 +13,17 @@ module circuit_mod
 
     type source_t
         logical :: has_source = .false.
-        real, dimension(:), allocatable :: time
-        real, dimension(:), allocatable :: value
+        real(kind=RKIND_TIEMPO), dimension(:), allocatable :: time
+        real(kind=RKIND), dimension(:), allocatable :: value
         integer :: source_type
     contains 
         procedure :: interpolate
     end type
 
     type VI_t
-        real :: voltage
-        real :: current
-        real :: time
+        real(kind=RKIND) :: voltage
+        real(kind=RKIND) :: current
+        real(kind=RKIND_TIEMPO) :: time
     end type
 
     type nodes_t
@@ -31,8 +33,8 @@ module circuit_mod
     end type nodes_t
 
     type, public :: circuit_t
-        character (len=:), allocatable :: name
-        real :: time = 0.0, dt = 0.0
+        character(len=:), allocatable :: name
+        real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 0.0
         logical :: errorFlag = .false.
         type(nodes_t) :: nodes, saved_nodes   
 
@@ -54,47 +56,59 @@ module circuit_mod
         procedure :: updateCircuitSources
         procedure :: modifyLineCapacitorValue
 
-        procedure :: loadCodeModels
         procedure :: printCWD
 
     end type circuit_t
 
 contains
 
-    real function interpolate(this, time, dt) result(res)
+    real(kind=rkind) function interpolate(this, time, dt) result(res)
         class(source_t) :: this
-        real :: time, dt, x1,x2, y1, y2
-        integer :: index
-        real, dimension(:), allocatable :: timediff
-        timediff = this%time - time + dt
+        real(kind=RKIND_TIEMPO) :: time, dt
+        real(kind=RKIND_TIEMPO) :: t_eval
+        real(kind=RKIND) :: x1, x2, y1, y2
+        integer :: index, n
+        real(kind=rkind), dimension(:), allocatable :: timediff
+
+        n = size(this%time)
+        if (n == 0) then
+            res = 0.0_RKIND
+            return
+        end if
+
+        t_eval = time - dt
+
+        ! Clamp to avoid extrapolation and division by zero at source tail.
+        if (t_eval <= this%time(1)) then
+            res = this%value(1)
+            return
+        end if
+        if (t_eval >= this%time(n)) then
+            res = this%value(n)
+            return
+        end if
+
+        timediff = this%time - t_eval
         index = maxloc(timediff, 1, (timediff) <= 0)
         if (index == 0) index = 1
+        if (index >= n) index = n - 1
+
         x1 = this%time(index)
         y1 = this%value(index)
-        if (index+1 > size(this%time)) then
-            x2 = x1
-            y2 = y1
-        else 
-            x2 = this%time(index+1)
-            y2 = this%value(index+1)
+        x2 = this%time(index+1)
+        y2 = this%value(index+1)
+
+        if (x2 == x1) then
+            res = y2
+            return
         end if
-                
-        res = (time*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
+
+        res = (t_eval*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
     end function
 
     subroutine printCWD(this)
         class(circuit_t) :: this
         call command('getcwd' // c_null_char)
-    end subroutine
-
-    subroutine loadCodeModels(this)
-        class(circuit_t) :: this
-        call command('codemodel /mnt/c/users/alberto/Work/ugr-fdtd/fdtd/testData/spinit/linux/analog.cm' // c_null_char)
-        call command('codemodel /mnt/c/users/alberto/Work/ugr-fdtd/fdtd/testData/spinit/linux/digital.cm' // c_null_char)
-        call command('codemodel /mnt/c/users/alberto/Work/ugr-fdtd/fdtd/testData/spinit/linux/spice2poly.cm' // c_null_char)
-        call command('codemodel /mnt/c/users/alberto/Work/ugr-fdtd/fdtd/testData/spinit/linux/table.cm' // c_null_char)
-        call command('codemodel /mnt/c/users/alberto/Work/ugr-fdtd/fdtd/testData/spinit/linux/xtradev.cm' // c_null_char)
-        call command('codemodel /mnt/c/users/alberto/Work/ugr-fdtd/fdtd/testData/spinit/linux/xtraevt.cm' // c_null_char)
     end subroutine
 
     subroutine init(this, names, sources, netlist)
@@ -105,7 +119,6 @@ contains
         integer :: i
 
         call start()
-        ! call this%loadCodeModels()
         if (present(netlist)) then
             write(*,*) 'load netlist'
             call this%loadNetlist(netlist)
@@ -133,19 +146,51 @@ contains
 
     type(source_t) function setSource(source_path) result(res)
         character(*), intent(in) :: source_path
-        real :: time, value
-        integer :: io
-        allocate(res%time(0), res%value(0))
-        if (source_path /= "" ) then 
-            res%has_source = .true.
-            open(unit = 1, file = source_path)
-            do
-                read(1, *, iostat = io) time, value
-                if (io /= 0) exit
-                res%time = [res%time, time]
-                res%value = [res%value, value]
-            end do
+        real(kind=RKIND_TIEMPO) :: time
+        real(kind=RKIND) ::value
+        integer :: io, line_count, i
+        
+        if (source_path == "" ) then 
+            allocate(res%time(0), res%value(0))
+            res%has_source = .false.
+            return
         end if
+        
+        res%has_source = .true.
+        
+        ! First pass: count the number of lines
+        line_count = 0
+        open(unit = 1, file = source_path, iostat = io)
+        if (io /= 0) then
+            call WarnErrReport('Cannot open excitation file: ' // trim(source_path), .true.)
+            allocate(res%time(0), res%value(0))
+            res%has_source = .false.
+            return
+        end if
+        do
+            read(1, *, iostat = io) time, value
+            if (io < 0) exit
+            if (io > 0) then
+                close(1)
+                call WarnErrReport('Error reading excitation file: ' // trim(source_path), .true.)
+                allocate(res%time(0), res%value(0))
+                res%has_source = .false.
+                return
+            end if
+            line_count = line_count + 1
+        end do
+        close(1)
+        
+        ! Allocate arrays with the exact size needed
+        allocate(res%time(line_count))
+        allocate(res%value(line_count))
+        
+        ! Second pass: fill the arrays (file was verified readable in first pass)
+        open(unit = 1, file = source_path)
+        do i = 1, line_count
+            read(1, *) res%time(i), res%value(i)
+        end do
+        close(1)
     end function    
 
     subroutine loadNetlist(this, netlist)
@@ -156,12 +201,23 @@ contains
 
     subroutine step(this)
         class(circuit_t) :: this
+        if (has_error() /= 0) then
+            call WarnErrReport('Ngspice reported a controlled exit before MTLN step.', .true.)
+            return
+        end if
+
         call this%updateCircuitSources(this%time)
         if (this%time == 0) then
             call this%run()
         else
             call this%resume()
         end if
+
+        if (has_error() /= 0) then
+            call WarnErrReport('Ngspice reported a controlled exit after run/resume.', .true.)
+            return
+        end if
+
         call this%updateNodes()
 
     end subroutine
@@ -175,11 +231,11 @@ contains
 
     subroutine setStopTimes(this, finalTime, dt)
         class(circuit_t) :: this
-        real, intent(in) :: finalTime, dt
-        character(20) :: charTime
-        real :: time
+        real(kind=RKIND_TIEMPO), intent(in) :: finalTime, dt
+        character(50) :: charTime
+        real(kind=rkind) :: time
 
-        time = 0.0
+        time = 0.0_rkind
         do while (time < finalTime)
             time = time + dt
             write(charTime, *) time
@@ -189,10 +245,9 @@ contains
 
     subroutine setModStopTimes(this, dt)
         class(circuit_t) :: this
-        real, intent(in) :: dt
-        character(20) :: charTime
-        real :: time
-        write(charTime, *) dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
+        character(50) :: charTime
+        write(charTime, *) real(dt, SINGLE)
         call command('stop when time mod '//charTime // c_null_char)
     end subroutine
 
@@ -213,10 +268,10 @@ contains
         type(c_ptr) :: argv_c(size(input))
         integer :: i   
 
-        type string
+        type c_string_t
             character(len=:,kind=c_char), allocatable :: item
-        end type string
-        type(string), target :: tmp(size(input))
+        end type c_string_t
+        type(c_string_t), target :: tmp(size(input))
 
         if (present(printInput)) then
             if (printInput .eqv. .true.) then 
@@ -231,6 +286,13 @@ contains
             argv_c(i) = c_loc(tmp(i)%item)
         end do
         call circ(argv_c)
+        ! Prevent ngspice from accumulating per-step vector history:
+        ! with 'save none', plotAddRealValue always overwrites position 0,
+        ! keeping only the latest value and avoiding unbounded memory growth.
+        call command('save none' // c_null_char)
+        ! Limit command history to 1 entry so the history list does not grow
+        ! with every per-step 'alter' call in updateNodeCurrent.
+        call command('set history = 1' // c_null_char)
     end subroutine
 
     function getName(cName) result(res)
@@ -244,25 +306,25 @@ contains
         do i = 1,100
             if (f_output(i) == c_null_char) exit
             res%name(i:i) = f_output(i)
-        enddo
+        end do
         res%length = i-1
 
     end function
 
     subroutine updateCircuitSources(this, time)
         class(circuit_t) :: this
-        real, intent(in) :: time
-        real :: interp
-        character(20) :: source_value
+        real(kind=RKIND_TIEMPO), intent(in) :: time
+        real(kind=RKIND) :: interp
+        character(50) :: source_value
         integer :: i, index
         do i = 1, size(this%nodes%sources)
             if (this%nodes%sources(i)%has_source) then
                 if (this%nodes%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0) 
+                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
                     write(source_value, *) interp
                     call command("alter @V"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
                 else if (this%nodes%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0) 
+                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
                     write(source_value, *) interp
                     call command("alter @I"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
                 end if
@@ -273,8 +335,8 @@ contains
     subroutine modifyLineCapacitorValue(this, name, c)
         class(circuit_t) :: this
         character(*), intent(in) :: name
-        real, intent(in) :: c
-        character(20) :: sC
+        real(kind=rkind), intent(in) :: c
+        character(50) :: sC
 
         write(sC, *) c
         call command("alter @CL"//trim(name)//" = "//trim(sC) // c_null_char)
@@ -283,8 +345,8 @@ contains
 
     subroutine updateNodeCurrent(this, node_name, current)
         class(circuit_t) :: this
-        real :: current
-        character(20) :: sCurrent
+        real(kind=rkind) :: current
+        character(50) :: sCurrent
         character(*) :: node_name
         if (index(node_name, "initial") /= 0) then
             write(sCurrent, *) current
@@ -297,10 +359,32 @@ contains
     subroutine updateNodes(this) 
         class(circuit_t) :: this
         integer :: i
-        type(vectorInfo), pointer :: info
+        type(vectorInfo_t), pointer :: info
+        type(c_ptr) :: info_ptr
         real(kind=c_double), pointer :: values(:)
+
+        if (has_error() /= 0) then
+            call WarnErrReport('Ngspice reported a controlled exit while updating nodes.', .true.)
+            return
+        end if
+
         do i = 1, size(this%nodes%names)
-            call c_f_pointer(get_vector_info(trim(this%nodes%names(i)%name)//c_null_char), info)
+            info_ptr = get_vector_info(trim(this%nodes%names(i)%name)//c_null_char)
+            if (.not. c_associated(info_ptr)) then
+                call WarnErrReport('Ngspice returned null vector info for '//trim(this%nodes%names(i)%name), .true.)
+                return
+            end if
+
+            call c_f_pointer(info_ptr, info)
+            if (.not. c_associated(info%vRealData)) then
+                call WarnErrReport('Ngspice returned null vector data for '//trim(this%nodes%names(i)%name), .true.)
+                return
+            end if
+            if (info%vLength <= 0) then
+                call WarnErrReport('Ngspice returned empty vector for '//trim(this%nodes%names(i)%name), .true.)
+                return
+            end if
+
             call c_f_pointer(info%vRealData, values,shape=[info%vLength])
             if (this%nodes%names(i)%name /= "time") then 
                 this%nodes%values(i)%voltage = values(ubound(values,1))
@@ -313,20 +397,20 @@ contains
     function getNodeVoltage(this, name) result(res)
         class(circuit_t) :: this
         character(len=*), intent(in) :: name
-        real :: res
+        real(kind=rkind) :: res
         res = this%nodes%values(findVoltageIndexByName(this%nodes%names, name))%voltage
     end function
 
     function getNodeCurrent(this, name) result(res)
         class(circuit_t) :: this
         character(len=*), intent(in) :: name
-        real :: res
+        real(kind=rkind) :: res
         res = this%nodes%values(findVoltageIndexByName(this%nodes%names, name))%current
     end function
 
     function getTime(this) result(res)
         class(circuit_t) :: this
-        real :: res
+        real(kind=rkind_tiempo) :: res
         res = this%nodes%values(findIndexByName(this%nodes%names, "time"))%time
     end function
 

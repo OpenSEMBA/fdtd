@@ -1,8 +1,8 @@
 {
     "_format": "FDTD Input file",
     "general": {
-        "timeStep": 1e-11,
-        "numberOfSteps": 600000
+        "timeStep": 30.2e-12,
+        "numberOfSteps": 300000
     },
     "boundary": {
         "all": {
@@ -18,13 +18,13 @@
             ],
             "steps": {
                 "x": [
-                    0.01
+                    0.05
                 ],
                 "y": [
-                    0.01
+                    0.05
                 ],
                 "z": [
-                    0.01
+                    0.05
                 ]
             }
         },

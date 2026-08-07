@@ -1,11 +1,11 @@
 integer function test_read_planewave() bind (C) result(err)
-   use smbjson
+   use smbjson_m
    use smbjson_testingTools
 
    implicit none
 
    character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
-   type(Parseador) :: pr, ex
+   type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -17,30 +17,30 @@ integer function test_read_planewave() bind (C) result(err)
 
 contains
    function expectedProblemDescription() result (expected)
-      type(Parseador) :: expected
+      type(Parseador_t) :: expected
 
       call initializeProblemDescription(expected)
 
       ! Expected general info.
-      expected%general%dt = 10e-12
+      expected%general%dt = 10e-12_RKIND
       expected%general%nmax = 2000
 
       ! Excected media matrix.
-      expected%matriz%totalX = 10
-      expected%matriz%totalY = 10
-      expected%matriz%totalZ = 10
+      expected%matriz%totalX = 11
+      expected%matriz%totalY = 11
+      expected%matriz%totalZ = 11
 
       ! Expected grid.
-      expected%despl%nX = 10
-      expected%despl%nY = 10
-      expected%despl%nZ = 10
+      expected%despl%nX = 1
+      expected%despl%nY = 1
+      expected%despl%nZ = 1
 
-      allocate(expected%despl%desX(10))
-      allocate(expected%despl%desY(10))
-      allocate(expected%despl%desZ(10))
-      expected%despl%desX = 0.1
-      expected%despl%desY = 0.1
-      expected%despl%desZ = 0.1
+      allocate(expected%despl%desX(1:1))
+      allocate(expected%despl%desY(1:1))
+      allocate(expected%despl%desZ(1:1))
+      expected%despl%desX = 0.1_RKIND
+      expected%despl%desY = 0.1_RKIND
+      expected%despl%desZ = 0.1_RKIND
       expected%despl%mx1 = 0
       expected%despl%mx2 = 10
       expected%despl%my1 = 0
@@ -54,23 +54,23 @@ contains
       ! Expected sources.
       allocate(expected%plnSrc%collection(1))
       expected%plnSrc%collection(1)%nombre_fichero = "gauss.exc"
-      expected%plnSrc%collection(1)%atributo = ""
+      expected%plnSrc%collection(1)%atributo = "LOCKED"
       expected%plnSrc%collection(1)%coor1 = [1, 1, 1]
       expected%plnSrc%collection(1)%coor2 = [8, 8, 8]
-      expected%plnSrc%collection(1)%theta = 0.0
-      expected%plnSrc%collection(1)%phi = 0.0
-      expected%plnSrc%collection(1)%alpha = 1.5708
-      expected%plnSrc%collection(1)%beta = 0.0
+      expected%plnSrc%collection(1)%theta = 0.0_RKIND
+      expected%plnSrc%collection(1)%phi = 0.0_RKIND
+      expected%plnSrc%collection(1)%alpha = 1.5708_RKIND
+      expected%plnSrc%collection(1)%beta = 0.0_RKIND
       expected%plnSrc%collection(1)%isRC=.false.
       expected%plnSrc%collection(1)%nummodes=1
-      expected%plnSrc%collection(1)%INCERTMAX=0.0
+      expected%plnSrc%collection(1)%INCERTMAX=0.0_RKIND
       expected%plnSrc%nc = 1
       expected%plnSrc%nC_max = 1
 
 
       ! Expected probes
       ! sonda
-      expected%Sonda%len_cor_max = 0
+      expected%Sonda%len_cor_max = 3
       expected%Sonda%length = 2
       expected%Sonda%length_max = 2
       allocate(expected%Sonda%collection(2))
@@ -78,12 +78,12 @@ contains
       expected%Sonda%collection(1)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(1)%type2 = NP_T2_TIME
       expected%Sonda%collection(1)%filename = ' '
-      expected%Sonda%collection(1)%tstart = 0.0
-      expected%Sonda%collection(1)%tstop = 0.0
-      expected%Sonda%collection(1)%tstep = 0.0
-      expected%Sonda%collection(1)%fstart = 0.0
-      expected%Sonda%collection(1)%fstop = 0.0
-      expected%Sonda%collection(1)%fstep = 0.0
+      expected%Sonda%collection(1)%tstart = 0.0_RKIND
+      expected%Sonda%collection(1)%tstop  = 0.0_RKIND
+      expected%Sonda%collection(1)%tstep  = 0.0_RKIND
+      expected%Sonda%collection(1)%fstart = 0.0_RKIND
+      expected%Sonda%collection(1)%fstop  = 0.0_RKIND
+      expected%Sonda%collection(1)%fstep  = 0.0_RKIND
       allocate(expected%Sonda%collection(1)%cordinates(3))
       expected%Sonda%collection(1)%len_cor = 3
       expected%Sonda%collection(1)%cordinates(1:3)%tag = "electric_field_point_probe"
@@ -98,12 +98,12 @@ contains
       expected%Sonda%collection(2)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(2)%type2 = NP_T2_TIME
       expected%Sonda%collection(2)%filename = ' '
-      expected%Sonda%collection(2)%tstart = 0.0
-      expected%Sonda%collection(2)%tstop = 0.0
-      expected%Sonda%collection(2)%tstep = 0.0
-      expected%Sonda%collection(2)%fstart = 0.0
-      expected%Sonda%collection(2)%fstop = 0.0
-      expected%Sonda%collection(2)%fstep = 0.0
+      expected%Sonda%collection(2)%tstart = 0.0_RKIND
+      expected%Sonda%collection(2)%tstop  = 0.0_RKIND
+      expected%Sonda%collection(2)%tstep  = 0.0_RKIND
+      expected%Sonda%collection(2)%fstart = 0.0_RKIND
+      expected%Sonda%collection(2)%fstop  = 0.0_RKIND
+      expected%Sonda%collection(2)%fstep  = 0.0_RKIND
       allocate(expected%Sonda%collection(2)%cordinates(1))
       expected%Sonda%collection(2)%len_cor = 1
       expected%Sonda%collection(2)%cordinates(1)%tag = "magnetic_field_point_probe"
@@ -115,3 +115,24 @@ contains
    end function
 end function
 
+integer function test_read_planewave_empty_elementids() bind(C) result(err)
+   use smbjson_m
+   use smbjson_testingTools
+   use Report_m, only: isFatalError, resetFatalError
+
+   implicit none
+
+   character(len=*), parameter :: filename = &
+      PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave_empty_elementids.fdtd.json'
+   type(Parseador_t) :: pr
+   type(parser_t) :: parser
+   err = 0
+
+   call resetFatalError()
+   parser = parser_t(filename)
+   pr = parser%readProblemDescription()
+
+   if (.not. isFatalError()) &
+      call testFails(err, 'Expected a fatal error for planewave with empty elementIds')
+
+end function

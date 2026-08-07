@@ -52,7 +52,7 @@
 
     "materialAssociations": [
         { 
-                        "name" : "single_wire",
+            "name" : "single_wire",
             "materialId": 1,
             "initialTerminalId": 2,
             "endTerminalId": 2,

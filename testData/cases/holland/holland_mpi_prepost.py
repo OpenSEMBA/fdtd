@@ -13,7 +13,7 @@ fn_mtln = 'holland1981_unshielded.fdtd.json'
 
 #####################################################
 # %% Run solver
-solver = FDTD(input_filename = fn_mtln, path_to_exe=SEMBA_EXE, flags=['-mtlnwires'])
+solver = FDTD(input_filename = fn_mtln, path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
 probe_names = solver.getSolvedProbeFilenames("mid_point")
@@ -26,21 +26,21 @@ solver.run()
 probe_names = solver.getSolvedProbeFilenames("mid_point")
 mid = Probe(list(filter(lambda x: '_Wz_' in x, probe_names))[0])
 # %% Run solver
-solver = FDTD(input_filename = fn_mtln, path_to_exe=SEMBA_EXE, flags=['-mtlnwires'],mpi_command='mpirun -np 1')
+solver = FDTD(input_filename = fn_mtln, path_to_exe=SEMBA_EXE,mpi_command='mpirun -np 1')
 solver.cleanUp()
 solver.run()
 probe_names = solver.getSolvedProbeFilenames("mid_point")
 mid_mpi1 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 # %% Run solver
 
-solver = FDTD(input_filename = fn_mtln, path_to_exe=SEMBA_EXE, flags=['-mtlnwires'],mpi_command='mpirun -np 2')
+solver = FDTD(input_filename = fn_mtln, path_to_exe=SEMBA_EXE,mpi_command='mpirun -np 2')
 solver.cleanUp()
 solver.run()
 probe_names = solver.getSolvedProbeFilenames("mid_point")
 mid_mpi2 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
 # %% Run solver
-solver = FDTD(input_filename = fn_mtln, path_to_exe=SEMBA_EXE, flags=['-mtlnwires'],mpi_command='mpirun -np 3')
+solver = FDTD(input_filename = fn_mtln, path_to_exe=SEMBA_EXE,mpi_command='mpirun -np 3')
 solver.cleanUp()
 solver.run()
 probe_names = solver.getSolvedProbeFilenames("mid_point")

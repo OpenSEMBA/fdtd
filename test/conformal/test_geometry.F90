@@ -1,5 +1,5 @@
 integer function test_geometry_coord_position() bind(C) result(err)
-    use geometry_mod
+    use geometry_m
     implicit none
     type(coord_t) :: c
     err = 0
@@ -56,7 +56,7 @@ integer function test_geometry_coord_position() bind(C) result(err)
 end function
 
 integer function test_geometry_side_position() bind(C) result(err)
-    use geometry_mod
+    use geometry_m
     implicit none
     type(side_t) :: side
     type(coord_t) :: c1, c2, c3, c4, c5
@@ -89,7 +89,7 @@ end function
 
 integer function test_geometry_triangle_on_face() bind(C) result(err)
 
-    use geometry_mod
+    use geometry_m
     implicit none
     type(triangle_t) :: t
     type(coord_t) :: c1, c2, c3, c4, c5
@@ -123,7 +123,7 @@ end function
 
 integer function test_geometry_triangle_normal() bind(C) result(err)
 
-    use geometry_mod
+    use geometry_m
     implicit none
     type(triangle_t) :: t
     err = 0
@@ -146,7 +146,7 @@ end function
 
 integer function test_geometry_triangle_edges() bind(C) result(err)
 
-    use geometry_mod
+    use geometry_m
     implicit none
     type(triangle_t) :: t
     type(side_t), dimension(3) :: sides
@@ -181,7 +181,7 @@ end function
 
 integer function test_geometry_triangle_cell() bind(C) result(err)
 
-    use geometry_mod
+    use geometry_m
     implicit none
     type(triangle_t) :: t
     type(side_t), dimension(3) :: sides
@@ -210,8 +210,8 @@ end function
 integer function test_geometry_elements_in_cell() bind(C) result(err)
 
 
-    use cell_map_mod
-    use geometry_mod
+    use cell_map_m
+    use geometry_m
     implicit none 
 
     type(triangle_map_t) :: tri_map
@@ -245,8 +245,8 @@ integer function test_geometry_elements_in_cell() bind(C) result(err)
 end function
 
 integer function test_geometry_map_sides() bind(C) result(err)
-    use geometry_mod
-    use cell_map_mod
+    use geometry_m
+    use cell_map_m
     implicit none 
 
     type(triangle_map_t) :: tri_map
@@ -297,8 +297,8 @@ integer function test_geometry_map_sides() bind(C) result(err)
 end function
 
 integer function test_geometry_path() bind(C) result(err)
-    use geometry_mod
-    use cell_map_mod
+    use geometry_m
+    use cell_map_m
     implicit none 
 
     type(triangle_map_t) :: tri_map
@@ -345,8 +345,8 @@ integer function test_geometry_path() bind(C) result(err)
 end function
 
 integer function test_geometry_vertex_vertex_contour() bind(C) result(err)
-    use geometry_mod
-    use cell_map_mod
+    use geometry_m
+    use cell_map_m
     implicit none 
 
     type(side_map_t) :: side_map
@@ -397,8 +397,8 @@ integer function test_geometry_vertex_vertex_contour() bind(C) result(err)
 end function
 
 integer function test_geometry_vertex_side_contour() bind(C) result(err)
-    use geometry_mod
-    use cell_map_mod
+    use geometry_m
+    use cell_map_m
     implicit none 
 
     type(side_map_t) :: side_map
@@ -450,8 +450,8 @@ integer function test_geometry_vertex_side_contour() bind(C) result(err)
 end function
 
 integer function test_geometry_side_vertex_contour() bind(C) result(err)
-    use geometry_mod
-    use cell_map_mod
+    use geometry_m
+    use cell_map_m
     implicit none 
 
     type(side_map_t) :: side_map
@@ -503,8 +503,8 @@ integer function test_geometry_side_vertex_contour() bind(C) result(err)
 end function
 
 integer function test_geometry_side_side_contour() bind(C) result(err)
-    use geometry_mod
-    use cell_map_mod
+    use geometry_m
+    use cell_map_m
     implicit none 
 
     type(side_map_t) :: side_map
@@ -555,8 +555,8 @@ integer function test_geometry_side_side_contour() bind(C) result(err)
 end function
 
 integer function test_geometry_side_side_contour_2() bind(C) result(err)
-    use geometry_mod
-    use cell_map_mod
+    use geometry_m
+    use cell_map_m
     implicit none 
 
     type(side_map_t) :: side_map
@@ -613,8 +613,8 @@ integer function test_geometry_side_side_contour_2() bind(C) result(err)
 end function
 
 integer function test_geometry_side_side_contour_3() bind(C) result(err)
-    use geometry_mod
-    use cell_map_mod
+    use geometry_m
+    use cell_map_m
     implicit none 
 
     type(side_map_t) :: side_map
@@ -659,8 +659,8 @@ end function
 
 
 integer function test_geometry_areas() bind(C) result(err)
-    use geometry_mod
-    use cell_map_mod
+    use geometry_m
+    use cell_map_m
     implicit none 
 
     type(side_map_t) :: side_map

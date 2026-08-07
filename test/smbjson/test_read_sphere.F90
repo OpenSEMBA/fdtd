@@ -1,11 +1,11 @@
 integer function test_read_sphere() bind (C) result(err)
-   use smbjson
+   use smbjson_m
    use smbjson_testingTools
 
    implicit none
 
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'sphere.fdtd.json'
-   type(Parseador) :: pr, ex
+   type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -20,30 +20,30 @@ integer function test_read_sphere() bind (C) result(err)
    
 contains
    function expectedProblemDescription() result (ex)
-      type(Parseador) :: ex
+      type(Parseador_t) :: ex
 
       call initializeProblemDescription(ex)
 
       ! Expected general info.
-      ex%general%dt = 3.85167e-11
+      ex%general%dt = 3.85167e-11_RKIND
       ex%general%nmax = 100
 
       ! Excected media matrix.
-      ex%matriz%totalX = 80
-      ex%matriz%totalY = 80
-      ex%matriz%totalZ = 80
+      ex%matriz%totalX = 81
+      ex%matriz%totalY = 81
+      ex%matriz%totalZ = 81
 
       ! Expected grid.
-      ex%despl%nX = 80
-      ex%despl%nY = 80
-      ex%despl%nZ = 80
+      ex%despl%nX = 1
+      ex%despl%nY = 1
+      ex%despl%nZ = 1
 
-      allocate(ex%despl%desX(80))
-      allocate(ex%despl%desY(80))
-      allocate(ex%despl%desZ(80))
-      ex%despl%desX = 0.025
-      ex%despl%desY = 0.025
-      ex%despl%desZ = 0.025
+      allocate(ex%despl%desX(1:1))
+      allocate(ex%despl%desY(1:1))
+      allocate(ex%despl%desZ(1:1))
+      ex%despl%desX = 0.025_RKIND
+      ex%despl%desY = 0.025_RKIND
+      ex%despl%desZ = 0.025_RKIND
       ex%despl%mx1 = 0
       ex%despl%mx2 = 80
       ex%despl%my1 = 0
@@ -55,27 +55,27 @@ contains
       ex%front%tipoFrontera(:) = F_PML
       ex%front%propiedadesPML(:)%numCapas = 10
       ex%front%propiedadesPML(:)%orden = 2
-      ex%front%propiedadesPML(:)%refl = 0.001
+      ex%front%propiedadesPML(:)%refl = 0.001_RKIND
 
       ! Expected material regions.
       ex%pecRegs%nSurfs = 1
       ex%pecRegs%nSurfs_max = 1
       allocate(ex%pecRegs%Surfs(1))
-      ! -- specific surfs not included DO NOT use comparison --
+      ! -- specific surfs not included do NOT use comparison --
 
       ! Expected sources.
       allocate(ex%plnSrc%collection(1))
       ex%plnSrc%collection(1)%nombre_fichero = "gauss.exc"
-      ex%plnSrc%collection(1)%atributo = ""
+      ex%plnSrc%collection(1)%atributo = "LOCKED"
       ex%plnSrc%collection(1)%coor1 = [0, 0, 0]
       ex%plnSrc%collection(1)%coor2 = [79, 79, 79]
-      ex%plnSrc%collection(1)%theta = 1.5707963268
-      ex%plnSrc%collection(1)%phi = 0.0
-      ex%plnSrc%collection(1)%alpha = 1.5707963268
-      ex%plnSrc%collection(1)%beta = 4.7123889804
+      ex%plnSrc%collection(1)%theta = 1.5707963268_RKIND
+      ex%plnSrc%collection(1)%phi = 0.0_RKIND
+      ex%plnSrc%collection(1)%alpha = 1.5707963268_RKIND
+      ex%plnSrc%collection(1)%beta = 4.7123889804_RKIND
       ex%plnSrc%collection(1)%isRC=.false.
       ex%plnSrc%collection(1)%nummodes=1
-      ex%plnSrc%collection(1)%INCERTMAX=0.0
+      ex%plnSrc%collection(1)%INCERTMAX=0.0_RKIND
       ex%plnSrc%nc = 1
       ex%plnSrc%nC_max = 1
 
@@ -89,12 +89,12 @@ contains
       allocate(ex%oldSonda%probes(1)%FarField(1))
       ex%oldSonda%probes(1)%FarField(1)%probe%grname = " "
       ex%oldSonda%probes(1)%FarField(1)%probe%outputrequest = "FarField_log_"
-      ex%oldSonda%probes(1)%FarField(1)%probe%tstart = 0.0
-      ex%oldSonda%probes(1)%FarField(1)%probe%tstop = 0.0
-      ex%oldSonda%probes(1)%FarField(1)%probe%tstep = 0.0
-      ex%oldSonda%probes(1)%FarField(1)%probe%fstart = 1e6
-      ex%oldSonda%probes(1)%FarField(1)%probe%fstop = 1e9
-      ex%oldSonda%probes(1)%FarField(1)%probe%fstep = (1e9-1e6)/5
+      ex%oldSonda%probes(1)%FarField(1)%probe%tstart = 0.0_RKIND
+      ex%oldSonda%probes(1)%FarField(1)%probe%tstop = 0.0_RKIND
+      ex%oldSonda%probes(1)%FarField(1)%probe%tstep = 0.0_RKIND
+      ex%oldSonda%probes(1)%FarField(1)%probe%fstart = 1e6_RKIND
+      ex%oldSonda%probes(1)%FarField(1)%probe%fstop = 1e9_RKIND
+      ex%oldSonda%probes(1)%FarField(1)%probe%fstep = (1e9_RKIND-1e6_RKIND)/5
       ex%oldSONDA%probes(1)%FarField(1)%probe%FileNormalize = "gauss.exc"
       allocate(ex%oldSonda%probes(1)%FarField(1)%probe%i(2))
       allocate(ex%oldSonda%probes(1)%FarField(1)%probe%j(2))
@@ -105,12 +105,12 @@ contains
       ex%oldSonda%probes(1)%FarField(1)%probe%k = [2, 77]
       ex%oldSonda%probes(1)%FarField(1)%probe%n_cord = 2
       ex%oldSonda%probes(1)%FarField(1)%probe%n_cord_max = 2
-      ex%oldSonda%probes(1)%FarField(1)%probe%thetastart = 0.0
-      ex%oldSonda%probes(1)%FarField(1)%probe%thetastop  = 180.0
-      ex%oldSonda%probes(1)%FarField(1)%probe%thetastep  = 90.0 
-      ex%oldSonda%probes(1)%FarField(1)%probe%phistart   = 0.0
-      ex%oldSonda%probes(1)%FarField(1)%probe%phistop    = 360.0
-      ex%oldSonda%probes(1)%FarField(1)%probe%phistep    = 90.0   
+      ex%oldSonda%probes(1)%FarField(1)%probe%thetastart = 0.0_RKIND
+      ex%oldSonda%probes(1)%FarField(1)%probe%thetastop  = 180.0_RKIND
+      ex%oldSonda%probes(1)%FarField(1)%probe%thetastep  = 90.0_RKIND
+      ex%oldSonda%probes(1)%FarField(1)%probe%phistart   = 0.0_RKIND
+      ex%oldSonda%probes(1)%FarField(1)%probe%phistop    = 360.0_RKIND
+      ex%oldSonda%probes(1)%FarField(1)%probe%phistep    = 90.0_RKIND
       
       allocate(ex%VolPrb)
       ex%VolPrb%length = 1
@@ -130,12 +130,12 @@ contains
       ex%VolPrb%collection(1)%cordinates(1)%ytrancos = 1
       ex%VolPrb%collection(1)%cordinates(1)%ztrancos = 1
       ex%VolPrb%collection(1)%cordinates(1)%tag = ""
-      ex%VolPrb%collection(1)%tstart = 0.0
-      ex%VolPrb%collection(1)%tstop = 0.0
-      ex%VolPrb%collection(1)%tstep = 1e-9
-      ex%VolPrb%collection(1)%fstart = 0.0
-      ex%VolPrb%collection(1)%fstop = 0.0
-      ex%VolPrb%collection(1)%fstep = 0.0
+      ex%VolPrb%collection(1)%tstart = 0.0_RKIND
+      ex%VolPrb%collection(1)%tstop = 0.0_RKIND
+      ex%VolPrb%collection(1)%tstep = 1e-9_RKIND
+      ex%VolPrb%collection(1)%fstart = 0.0_RKIND
+      ex%VolPrb%collection(1)%fstop = 0.0_RKIND
+      ex%VolPrb%collection(1)%fstep = 0.0_RKIND
       ex%VolPrb%collection(1)%outputrequest = "electric_field_movie"
       ex%VolPrb%collection(1)%filename = " "
       ex%VolPrb%collection(1)%type2 = NP_T2_TIME

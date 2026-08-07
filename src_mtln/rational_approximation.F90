@@ -1,14 +1,16 @@
-module rational_approximation_mod
-    use mtln_types_mod, only: &
+module rational_approximation_m
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
+    use mtln_types_m, only: &
         transfer_impedance_per_meter_t, &
         TRANSFER_IMPEDANCE_DIRECTION_BOTH, &
         TRANSFER_IMPEDANCE_DIRECTION_INWARDS, &
         TRANSFER_IMPEDANCE_DIRECTION_OUTWARDS
+    use FDETYPES_m, only: RKIND
     implicit none
 
     type :: pol_res_t
         complex, allocatable, dimension(:) :: q1,q2,q3
-        real :: r, l
+        real(kind=rkind) :: r, l
         integer :: number_of_poles
         integer :: direction
     end type
@@ -21,7 +23,7 @@ contains
 
     function pol_resCtor(model, dt) result(res)
         type(transfer_impedance_per_meter_t), intent(in) :: model
-        real, intent(in) :: dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
         type(pol_res_t) :: res
         
         res%r = model%resistive_term

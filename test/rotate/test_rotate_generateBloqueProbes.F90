@@ -1,5 +1,5 @@
 module test_rotate_generateBloqueProbes_m
-    use smbjson
+    use smbjson_m
     use nfde_rotate_m
     use rotate_testingTools
     implicit none
@@ -7,7 +7,7 @@ module test_rotate_generateBloqueProbes_m
 contains
 
 integer function test_rotate_generate_bloque_probes() bind(C) result(err)
-    type(Parseador) :: this
+    type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     integer :: test_err = 0
     
@@ -37,7 +37,7 @@ integer function test_rotate_generate_bloque_probes() bind(C) result(err)
 end function test_rotate_generate_bloque_probes
 
 subroutine setup_bloque_probe_test(this, n_probes)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer, intent(in) :: n_probes
     integer :: i
     
@@ -64,7 +64,7 @@ subroutine setup_bloque_probe_test(this, n_probes)
 end subroutine setup_bloque_probe_test
 
 subroutine init_bloque_probe_data(this, idx, i1, i2, j1, j2, k1, k2, type2, skip, tag)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer, intent(in) :: idx, i1, i2, j1, j2, k1, k2, type2, skip
     character(len=*), intent(in) :: tag
     
@@ -81,7 +81,7 @@ end subroutine init_bloque_probe_data
 
 subroutine verify_bloque_probe_rotation(test_err, this, mpidir)
     integer, intent(inout) :: test_err
-    type(Parseador), intent(in) :: this
+    type(Parseador_t), intent(in) :: this
     integer, intent(in) :: mpidir
     
     if (mpidir == 2) then
@@ -126,7 +126,7 @@ subroutine verify_bloque_probe_rotation(test_err, this, mpidir)
 end subroutine verify_bloque_probe_rotation
 
 subroutine cleanup_bloque_probe_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     
     if (this%BloquePrb%n_bp > 0) then
         deallocate(this%BloquePrb%bp)

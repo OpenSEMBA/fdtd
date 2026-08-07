@@ -1,6 +1,6 @@
 ! Do not modify this file if it ends in .F90 it has been created from a template .F90.in
 ! Modifications will be lost after configuration with cmake.
-module version 
+module version_m
     character(*), parameter :: program_name="@PROGRAM_NAME@"
     character(*), parameter :: compilation_date= __DATE__ // " " // __TIME__  
     character(*), parameter :: git_commit="@GIT_COMMIT@"
@@ -9,4 +9,4 @@ module version
     character(*), parameter :: compilation_flags="@CMAKE_Fortran_FLAGS@"
     character(*), parameter :: compilation_flags_debug="@CMAKE_Fortran_FLAGS@ @CMAKE_Fortran_FLAGS_DEBUG@"
     character(*), parameter :: compilation_flags_release="@CMAKE_Fortran_FLAGS@ @CMAKE_Fortran_FLAGS_RELEASE@"
-end module version
+end module version_m

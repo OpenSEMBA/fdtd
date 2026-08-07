@@ -1,9 +1,9 @@
-module ngspice_interface_mod
+module ngspice_interface_m
 
     use iso_c_binding
     implicit none
 
-    type, bind(c) :: vectorInfo
+    type, bind(c) :: vectorInfo_t
         type(c_ptr) :: vName
         integer(c_int) :: vType
         integer(c_short) :: vFlags
@@ -36,7 +36,8 @@ module ngspice_interface_mod
             use iso_c_binding, only: c_ptr
         end function
 
+        integer(c_int) function has_error() bind (C, name="has_error")
+            use iso_c_binding, only: c_int
+        end function
     end interface
-
-
 end module

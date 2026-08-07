@@ -70676,6 +70676,20 @@
                     1,
                     2
                 ]
+            },
+            {
+                "id": 14,
+                "type": "node",
+                "coordinateIds": [
+                    1
+                ]
+            },
+            {
+                "id": 15,
+                "type": "node",
+                "coordinateIds": [
+                    2
+                ]
             }
         ]
     },
@@ -70769,18 +70783,7 @@
     ],
     "probes": [
         {
-            "name": "Wire probe",
-            "type": "wire",
-            "field": "current",
-            "elementIds": [
-                3
-            ],
-            "domain": {
-                "type": "time"
-            }
-        },
-        {
-            "name": "Bulk probe",
+            "name": "Bulk_probe",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [
@@ -70789,6 +70792,22 @@
             "domain": {
                 "type": "time"
             }
+        },
+        {
+            "name": "wire_probe_1",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [
+                14
+            ]
+        },
+        {
+            "name": "wire_probe_2",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [
+                15
+            ]
         }
     ]
 }

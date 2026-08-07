@@ -1,6 +1,6 @@
 integer function test_fhash() bind(C) result(error_cnt)
 
-    use mtl_bundle_mod
+    use mtl_bundle_m
     use fhash, only: fhash_tbl_t, key=>fhash_key
     
 

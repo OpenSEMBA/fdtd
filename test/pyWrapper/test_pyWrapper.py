@@ -2,26 +2,26 @@ from utils import *
 
 
 def test_read_wire_probe():
-    p = Probe(OUTPUTS_FOLDER + 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
+    p = Probe(OUTPUTS_FOLDER + 'fakeCurrentProbe.fdtd_mid_point_Wz_11_11_11_s2.dat')
 
-    assert p.case_name == 'holland1981'
+    assert p.case_name == 'fakeCurrentProbe'
     assert p.name == 'mid_point'
     assert p.type == 'wire'
     assert p.domainType == 'time'
-    assert np.all(p.cell == np.array([11, 11, 12]))
+    assert np.all(p.cell == np.array([11, 11, 11]))
     assert p.segment == 2
 
-    assert len(p['time']) == 1001
+    assert len(p['time']) == 3
     assert p['time'][0] == 0.0
-    assert p['time'].iat[-1] == 0.2999999901276417E-007
+    assert np.isclose(p['time'].iat[-1], 0.59999998025528356E-010)
 
-    assert len(p['current']) == 1001
+    assert len(p['current']) == 3
     assert p['current'][0] == 0.0
-    assert p['current'].iat[-1] == -0.513576742E-004
+    assert p['current'].iat[-1] == -0.000000000E+000
 
 
 def test_read_probe_from_NFDE():
-    p = Probe(OUTPUTS_FOLDER + 'fakeCurrentProbe_mid_point_Wz_11_11_11_s2.dat')
+    p = Probe(OUTPUTS_FOLDER + 'fakeCurrentProbe.fdtd_mid_point_Wz_11_11_11_s2.dat')
 
     assert p.type == 'wire'
 
@@ -129,6 +129,25 @@ def test_fdtd_clean_up_after_run(tmp_path):
     solver.cleanUp()
 
     assert not os.path.isfile(pn[0])
+
+
+def test_fdtd_clean_up_does_not_delete_other_cases_files(tmp_path):
+    input = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
+    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    case_name = solver.getCaseName()
+    other_case_name = 'other_case.fdtd'
+
+    own_file = os.path.join(str(tmp_path), case_name + '_probe_Ex_1_2_3.dat')
+    other_file = os.path.join(str(tmp_path), other_case_name + '_probe_Ex_1_2_3.dat')
+
+    open(own_file, 'w').close()
+    open(other_file, 'w').close()
+
+    solver.cleanUp()
+
+    assert not os.path.isfile(own_file)
+    assert os.path.isfile(other_file)
 
 
 def test_fdtd_get_used_files():

@@ -14,19 +14,19 @@ from pyWrapper import *
 #####################################################
 # %% Run solver
 fn = 'holland1981.fdtd.json'
-solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE_MPI, flags=['-mtlnwires'])
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE_MPI)
 solver.cleanUp()
 solver.run()
 probe_names = solver.getSolvedProbeFilenames("mid_point")
 mid = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
-solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE_MPI, flags=['-mtlnwires'],mpi_command='mpirun -np 2')
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE_MPI,mpi_command='mpirun -np 2')
 solver.cleanUp()
 solver.run()
 probe_names = solver.getSolvedProbeFilenames("mid_point")
 mid_mpi2 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
-solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE_MPI, flags=['-mtlnwires'],mpi_command='mpirun -np 3')
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE_MPI,mpi_command='mpirun -np 3')
 solver.cleanUp()
 solver.run()
 probe_names = solver.getSolvedProbeFilenames("mid_point")

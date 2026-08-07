@@ -17,6 +17,10 @@ extern "C" int test_rotate_generate_mas_sondas();
 extern "C" int test_rotate_generate_bloque_probes();
 extern "C" int test_rotate_generate_volumic_probes();
 
+#ifdef CompileWithMTLN
+extern "C" int test_rotate_mtln();
+#endif
+
 
 TEST(rotate, rotate_spaceSteps_test)    { EXPECT_EQ(0, test_rotate_generate_space_steps()); }
 TEST(rotate, rotate_currentFieldSources_test) { EXPECT_EQ(0, test_rotate_generate_current_field_sources()); }
@@ -34,5 +38,8 @@ TEST(rotate, rotate_sondas_test)        { EXPECT_EQ(0, test_rotate_generate_sond
 TEST(rotate, rotate_masSondas_test)     { EXPECT_EQ(0, test_rotate_generate_mas_sondas()); }
 TEST(rotate, rotate_bloqueProbes_test)  { EXPECT_EQ(0, test_rotate_generate_bloque_probes()); }
 TEST(rotate, rotate_volumicProbes_test) { EXPECT_EQ(0, test_rotate_generate_volumic_probes()); }
+#ifdef CompileWithMTLN
+TEST(rotate, rotate_mtln_test) { EXPECT_EQ(0, test_rotate_mtln()); }
+#endif
 
 

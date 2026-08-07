@@ -1,0 +1,43 @@
+services:
+
+  # Run a simulation: docker compose run --rm solver path/to/case.fdtd.json
+  solver:
+    build:
+      context: .
+      target: runtime
+    volumes:
+      - ./simulations:/work
+    working_dir: /work
+
+  # Debug a simulation with gdbserver (connect from VSCode with launch.json)
+  # Usage: docker compose run --rm -p 2345:2345 debug case.fdtd.json
+  debug:
+    build:
+      context: .
+      target: builder
+      args:
+        BUILD_TYPE: Debug
+        ENABLE_MTLN: "ON"
+    volumes:
+      - ./simulations:/work
+    ports:
+      - "2345:2345"
+    working_dir: /work
+    entrypoint: ["gdbserver", ":2345", "/src/build/bin/semba-fdtd", "-i"]
+
+  # Build the project and run all tests
+  test:
+    build:
+      context: .
+      target: builder
+      args:
+        BUILD_TYPE: Release
+        ENABLE_MPI: "OFF"
+        ENABLE_MTLN: "ON"
+    environment:
+      SEMBA_FDTD_ENABLE_MPI: "OFF"
+      SEMBA_FDTD_ENABLE_MTLN: "ON"
+      SEMBA_FDTD_ENABLE_HDF: "ON"
+    working_dir: /src
+    command: >
+      sh -c "build/bin/fdtd_tests && python3 -m pytest test/ --durations=20"

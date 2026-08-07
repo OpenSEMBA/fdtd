@@ -9,50 +9,50 @@
 ! ONLY 2 poles (not 3) and provide the real one and any one of the couple of conjugates)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module Anisotropic
-   use fdetypes
+module Anisotropic_m
+   use FDETYPES_m
    implicit none
    private
 
    !structures needed by the Anisotropic
-   type, public::  Coeff_t
-      real (kind=rkind) :: eexx,eexy,eexz,eeyx,eeyy,eeyz,eezx,eezy,eezz
-      real (kind=rkind) :: ehxx,ehxy,ehxz,ehyx,ehyy,ehyz,ehzx,ehzy,ehzz
-      real (kind=rkind) :: hexx,hexy,hexz,heyx,heyy,heyz,hezx,hezy,hezz
-      real (kind=rkind) :: hhxx,hhxy,hhxz,hhyx,hhyy,hhyz,hhzx,hhzy,hhzz
+   type, public:: Coeff_t
+      real(kind=rkind) :: eexx,eexy,eexz,eeyx,eeyy,eeyz,eezx,eezy,eezz
+      real(kind=rkind) :: ehxx,ehxy,ehxz,ehyx,ehyy,ehyz,ehzx,ehzy,ehzz
+      real(kind=rkind) :: hexx,hexy,hexz,heyx,heyy,heyz,hezx,hezy,hezz
+      real(kind=rkind) :: hhxx,hhxy,hhxz,hhyx,hhyy,hhyz,hhzx,hhzy,hhzz
    end type
-   type, public::  LocalSharedElement_t
-      integer (kind=4) :: times
-      integer (kind=4), dimension(:), pointer ::  SharedMed
+   type, public:: LocalSharedElement_t
+      integer(kind=4) :: times
+      integer(kind=4), dimension(:), pointer :: SharedMed
       !
-      type (coeff_t) :: coeff
+      type(coeff_t) :: coeff
    end type
 
-   TYPE, public :: Anisotropicinfo_t
-      integer (kind=4)  ::  indexmed,numnodesEx,numnodesEy,numnodesEz
-      integer (kind=4)  ::           numnodesHx,numnodesHy,numnodesHz
-      integer (kind=4), dimension(:), pointer :: Ex_i,Ey_i,Ez_i,Hx_i,Hy_i,Hz_i
-      integer (kind=4), dimension(:), pointer :: Ex_j,Ey_j,Ez_j,Hx_j,Hy_j,Hz_j
-      integer (kind=4), dimension(:), pointer :: Ex_k,Ey_k,Ez_k,Hx_k,Hy_k,Hz_k
-      real (kind=rkind), dimension(:), pointer :: Ex_value,Ey_value,Ez_value,Hx_value,Hy_value,Hz_value
-      type (LocalSharedElement_t), dimension(:), pointer :: Ex_Shared,Ey_Shared,Ez_Shared
-      type (LocalSharedElement_t), dimension(:), pointer :: Hx_Shared,Hy_Shared,Hz_Shared
+   type, public :: Anisotropicinfo_t
+      integer(kind=4) :: indexmed,numnodesEx,numnodesEy,numnodesEz
+      integer(kind=4) :: numnodesHx,numnodesHy,numnodesHz
+      integer(kind=4), dimension(:), pointer :: Ex_i,Ey_i,Ez_i,Hx_i,Hy_i,Hz_i
+      integer(kind=4), dimension(:), pointer :: Ex_j,Ey_j,Ez_j,Hx_j,Hy_j,Hz_j
+      integer(kind=4), dimension(:), pointer :: Ex_k,Ey_k,Ez_k,Hx_k,Hy_k,Hz_k
+      real(kind=rkind), dimension(:), pointer :: Ex_value,Ey_value,Ez_value,Hx_value,Hy_value,Hz_value
+      type(LocalSharedElement_t), dimension(:), pointer :: Ex_Shared,Ey_Shared,Ez_Shared
+      type(LocalSharedElement_t), dimension(:), pointer :: Hx_Shared,Hy_Shared,Hz_Shared
       !
-      type (coeff_t) :: coeff
+      type(coeff_t) :: coeff
       logical :: IsOnlyThinSlot
 !
-      REAL (KIND=RKIND),  DIMENSION(3,3)  ::  sigma,epr,mur,sigmaM  
-   END TYPE Anisotropicinfo_t
+      real(kind=RKIND),  DIMENSION(3,3) :: sigma,epr,mur,sigmaM  
+   end type Anisotropicinfo_t
 
 
-   type, public ::  AnisotropicMed_t
-      integer (kind=4)  ::  NumMed
-      type (Anisotropicinfo_t), pointer, dimension( : )  ::  info
+   type, public :: AnisotropicMed_t
+      integer(kind=4) :: NumMed
+      type(Anisotropicinfo_t), pointer, dimension( : ) :: info
    end type
-   type (AnisotropicMed_t),save, target :: AniMed
+   type(AnisotropicMed_t),save, target :: AniMed
 
 !!!variables globales del modulo
-   REAL (KIND=RKIND), save           ::  eps0,mu0,cluz,zvac
+   real(kind=RKIND), save           :: eps0,mu0,cluz,zvac
 !!!
    public AdvanceAnisotropicE,AdvanceAnisotropich,InitAnisotropic,DestroyAnisotropic,calc_anisotropicconstants
 
@@ -60,18 +60,18 @@ module Anisotropic
 contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Subroutine to initialize the parameters
+   ! subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitAnisotropic(sgg,media,ThereAreAnisotropic,ThereAreThinSlot,eps00,mu00)
-      REAL (KIND=RKIND)           ::  eps00,mu00
-      type (SGGFDTDINFO), intent(IN) , target      ::  sgg
+      real(kind=RKIND) :: eps00,mu00
+      type(SGGFDTDINFO_t), intent(in) , target      :: sgg
       type(media_matrices_t), intent(in) :: media
       !!!
 
-      type (Anisotropic_t), pointer :: DummyAnisProp,dummyAnisShared
+      type(Anisotropic_t), pointer :: DummyAnisProp,dummyAnisShared
 
-      logical, INTENT(OUT)  ::  ThereAreAnisotropic,ThereAreThinSlot
-      integer (kind=4)  ::  jmed,j1,conta,k1,i1,tempindex
+      logical, intent(out) :: ThereAreAnisotropic,ThereAreThinSlot
+      integer(kind=4) :: jmed,j1,conta,k1,i1,tempindex
 
       eps0=eps00; mu0=mu00;
 
@@ -83,7 +83,7 @@ contains
       do jmed=1,sgg%NumMedia
          if (sgg%Med(jmed)%Is%Anisotropic) then
             conta=conta+1
-         endif
+         end if
       end do
 
 
@@ -98,8 +98,8 @@ contains
                AniMed%info(conta)%IsOnlyThinSlot=.true.
             else
                AniMed%info(conta)%IsOnlyThinSlot=.false.
-            endif
-         endif
+            end if
+         end if
       end do
 
       do jmed=1,AniMed%NumMed
@@ -139,7 +139,7 @@ contains
                      AniMed%info(jmed)%Ex_i(conta)=i1
                      AniMed%info(jmed)%Ex_j(conta)=j1
                      AniMed%info(jmed)%Ex_k(conta)=k1
-                  endif
+                  end if
                end do
             end do
          end do
@@ -171,7 +171,7 @@ contains
                      AniMed%info(jmed)%Ey_i(conta)=i1
                      AniMed%info(jmed)%Ey_j(conta)=j1
                      AniMed%info(jmed)%Ey_k(conta)=k1
-                  endif
+                  end if
                end do
             end do
          end do
@@ -203,7 +203,7 @@ contains
                      AniMed%info(jmed)%Ez_i(conta)=i1
                      AniMed%info(jmed)%Ez_j(conta)=j1
                      AniMed%info(jmed)%Ez_k(conta)=k1
-                  endif
+                  end if
                end do
             end do
          end do
@@ -236,7 +236,7 @@ contains
                      AniMed%info(jmed)%Hx_i(conta)=i1
                      AniMed%info(jmed)%Hx_j(conta)=j1
                      AniMed%info(jmed)%Hx_k(conta)=k1
-                  endif
+                  end if
                end do
             end do
          end do
@@ -268,7 +268,7 @@ contains
                      AniMed%info(jmed)%Hy_i(conta)=i1
                      AniMed%info(jmed)%Hy_j(conta)=j1
                      AniMed%info(jmed)%Hy_k(conta)=k1
-                  endif
+                  end if
                end do
             end do
          end do
@@ -300,7 +300,7 @@ contains
                      AniMed%info(jmed)%Hz_i(conta)=i1
                      AniMed%info(jmed)%Hz_j(conta)=j1
                      AniMed%info(jmed)%Hz_k(conta)=k1
-                  endif
+                  end if
                end do
             end do
          end do
@@ -319,9 +319,9 @@ contains
                   AniMed%info(jmed)%Ex_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
                   if (sgg%Eshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Ex_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))    
-                  endif
+                  end if
                   exit buscaEx
-               endif
+               end if
             end do
          end do BuscaEx
          !
@@ -334,9 +334,9 @@ contains
                   AniMed%info(jmed)%Ey_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
                   if (sgg%Eshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Ey_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))
-                  endif
+                  end if
                   exit buscaEy
-               endif
+               end if
             end do
          end do BuscaEy
          !
@@ -349,10 +349,10 @@ contains
                   AniMed%info(jmed)%Ez_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
                   if (sgg%Eshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Ez_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))
-                  endif
+                  end if
                   !PRINT *,'---> ez',sgg%Eshared%elem(j1)%i,sgg%Eshared%elem(j1)%J,sgg%Eshared%elem(j1)%k,sgg%Eshared%elem(j1)%times
                   exit buscaez
-               endif
+               end if
             end do
          end do BuscaEz
          !
@@ -367,10 +367,10 @@ contains
                   AniMed%info(jmed)%Hx_Shared(i1)%times = sgg%Hshared%elem(j1)%Times
                   if (sgg%Hshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Hx_Shared(i1)%SharedMed(1:sgg%Hshared%elem(j1)%Times))
-                  endif
+                  end if
                   !PRINT *,'---> Hx',sgg%Hshared%elem(j1)%i,sgg%Hshared%elem(j1)%J,sgg%Hshared%elem(j1)%k,sgg%Hshared%elem(j1)%times
                   Exit buscaHx
-               endif
+               end if
             end do
          end do BuscaHx
          !
@@ -383,10 +383,10 @@ contains
                   AniMed%info(jmed)%Hy_Shared(i1)%times = sgg%Hshared%elem(j1)%Times
                   if (sgg%Hshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Hy_Shared(i1)%SharedMed(1:sgg%Hshared%elem(j1)%Times))
-                  endif
+                  end if
                   !PRINT *,'---> Hy',sgg%Hshared%elem(j1)%i,sgg%Hshared%elem(j1)%J,sgg%Hshared%elem(j1)%k,sgg%Hshared%elem(j1)%times
                   Exit buscaHy
-               endif
+               end if
             end do
          end do BuscaHy
          !
@@ -399,10 +399,10 @@ contains
                   AniMed%info(jmed)%Hz_Shared(i1)%times = sgg%Hshared%elem(j1)%Times
                   if (sgg%Hshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Hz_Shared(i1)%SharedMed(1:sgg%Hshared%elem(j1)%Times))
-                  endif
+                  end if
                   !PRINT *,'---> Hz',sgg%Hshared%elem(j1)%i,sgg%Hshared%elem(j1)%J,sgg%Hshared%elem(j1)%k,sgg%Hshared%elem(j1)%times
                   Exit buscaHz
-               endif
+               end if
             end do
          end do BuscaHz
          !
@@ -419,7 +419,7 @@ contains
                (sgg%Eshared%elem(j1)%Field == iEx)) then
                   conta=conta+1
                   AniMed%info(jmed)%Ex_Shared(i1)%SharedMed(conta) =  sgg%Eshared%elem(j1)%SharedMed
-               endif
+               end if
             end do
          end do
       end do
@@ -435,7 +435,7 @@ contains
                   conta=conta+1
                   AniMed%info(jmed)%Ey_Shared(i1)%SharedMed(conta) =  sgg%Eshared%elem(j1)%SharedMed
                   continue
-               endif
+               end if
             end do
          end do
       end do
@@ -450,7 +450,7 @@ contains
                (sgg%Eshared%elem(j1)%Field == iEz)) then
                   conta=conta+1
                   AniMed%info(jmed)%Ez_Shared(i1)%SharedMed(conta) =  sgg%Eshared%elem(j1)%SharedMed
-               endif
+               end if
             end do
          end do
       end do
@@ -466,7 +466,7 @@ contains
                   conta=conta+1
                   AniMed%info(jmed)%Hx_Shared(i1)%SharedMed(conta) =  sgg%Hshared%elem(j1)%SharedMed
                   continue
-               endif
+               end if
             end do
          end do
       end do
@@ -481,7 +481,7 @@ contains
                (sgg%Hshared%elem(j1)%Field == iHy)) then
                   conta=conta+1
                   AniMed%info(jmed)%Hy_Shared(i1)%SharedMed(conta) =  sgg%Hshared%elem(j1)%SharedMed
-               endif
+               end if
             end do
          end do
       end do
@@ -495,7 +495,7 @@ contains
                (sgg%Hshared%elem(j1)%Field == iHz)) then
                   conta=conta+1
                   AniMed%info(jmed)%Hz_Shared(i1)%SharedMed(conta) =  sgg%Hshared%elem(j1)%SharedMed
-               endif
+               end if
             end do
          end do
       end do
@@ -520,7 +520,7 @@ contains
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
                   AniMed%info(jmed)%epr    = AniMed%info(jmed)%epr    + dummyAnisShared%epr    /conta
                end do
-            endif
+            end if
          end do
 
 
@@ -538,7 +538,7 @@ contains
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
                   AniMed%info(jmed)%epr    = AniMed%info(jmed)%epr    + dummyAnisShared%epr    /conta
                end do
-            endif
+            end if
          end do
 
 
@@ -557,7 +557,7 @@ contains
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
                   AniMed%info(jmed)%epr    = AniMed%info(jmed)%epr    + dummyAnisShared%epr    /conta
                end do
-            endif
+            end if
          end do
 
 
@@ -576,7 +576,7 @@ contains
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
                   AniMed%info(jmed)%epr    = AniMed%info(jmed)%epr    + dummyAnisShared%epr    /conta
                end do
-            endif
+            end if
          end do
 
 
@@ -595,7 +595,7 @@ contains
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
                   AniMed%info(jmed)%epr    = AniMed%info(jmed)%epr    + dummyAnisShared%epr    /conta
                end do
-            endif
+            end if
          end do
 
 
@@ -615,7 +615,7 @@ contains
                   AniMed%info(jmed)%epr    = AniMed%info(jmed)%epr    + dummyAnisShared%epr    /conta
                end do
                continue
-            endif
+            end if
          end do
       end do
 
@@ -626,21 +626,21 @@ contains
    end subroutine InitAnisotropic
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Subroutine to advance the E field in the Anisotropic (no need to advance the magnetic field)
+   ! subroutine to advance the E field in the Anisotropic (no need to advance the magnetic field)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine AdvanceAnisotropicE(sggalloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
 
-      type (XYZlimit_t), dimension (1:6), intent(in)                      ::  sggAlloc
+      type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
 
-      REAL (KIND=RKIND)   , intent(inout)      :: &
+      real(kind=RKIND)   , intent(inout) :: &
       Ex(sggalloc(iEx)%XI : sggalloc(iEx)%XE,sggalloc(iEx)%YI : sggalloc(iEx)%YE,sggalloc(iEx)%ZI : sggalloc(iEx)%ZE),&
       Ey(sggalloc(iEy)%XI : sggalloc(iEy)%XE,sggalloc(iEy)%YI : sggalloc(iEy)%YE,sggalloc(iEy)%ZI : sggalloc(iEy)%ZE),&
       Ez(sggalloc(iEz)%XI : sggalloc(iEz)%XE,sggalloc(iEz)%YI : sggalloc(iEz)%YE,sggalloc(iEz)%ZI : sggalloc(iEz)%ZE),&
       Hx(sggalloc(iHx)%XI : sggalloc(iHx)%XE,sggalloc(iHx)%YI : sggalloc(iHx)%YE,sggalloc(iHx)%ZI : sggalloc(iHx)%ZE),&
       Hy(sggalloc(iHy)%XI : sggalloc(iHy)%XE,sggalloc(iHy)%YI : sggalloc(iHy)%YE,sggalloc(iHy)%ZI : sggalloc(iHy)%ZE),&
       Hz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
-      REAL (KIND=RKIND) , dimension (:)   , intent(in)      ::  &
+      real(kind=RKIND) , dimension(:)   , intent(in) :: &
       Idxe(sggalloc(iHx)%XI : sggalloc(iHx)%XE), &
       Idye(sggalloc(iHy)%YI : sggalloc(iHy)%YE), &
       Idze(sggalloc(iHz)%ZI : sggalloc(iHz)%ZE), &
@@ -651,9 +651,9 @@ contains
 
 
 
-      type (Coeff_t), pointer :: coeff
-      type (Anisotropicinfo_t), pointer :: dummy
-      integer (kind=4)  ::  jmed,i1,i,j,k
+      type(Coeff_t), pointer :: coeff
+      type(Anisotropicinfo_t), pointer :: dummy
+      integer(kind=4) :: jmed,i1,i,j,k
 
       do jmed=1,AniMed%NumMed
          dummy => AniMed%info(jmed)
@@ -662,7 +662,7 @@ contains
                Coeff => AniMed%info(jmed)%coeff
             else
                Coeff => AniMed%info(jmed)%Ex_Shared(i1)%Coeff
-            endif
+            end if
 
             i=dummy%Ex_i(i1)
             j=dummy%Ex_j(i1)
@@ -687,14 +687,14 @@ contains
                Coeff%ehxy * hx(i,j,k) + Coeff%ehxy * hx(1 + i,-1 + j,-1 + k) -                                &
                Coeff%ehxy * hx(1 + i,-1 + j,k) + Coeff%ehxy * hx(1 + i,j,-1 + k) - Coeff%ehxy * hx(1 + i,j,k) -  &
                4. * Coeff%ehxx * hy(i,j,-1 + k) + 4. * Coeff%ehxx * hy(i,j,k)) * Idzh(k))/4.0_RKIND
-            endif
+            end if
          end do
          do i1=1,dummy%NumNodesEy
             if (Dummy%Ey_Shared(i1)%times == 1) then
                Coeff => AniMed%info(jmed)%coeff
             else
                Coeff => AniMed%info(jmed)%Ey_Shared(i1)%Coeff
-            endif
+            end if
             i=dummy%Ey_i(i1)
             j=dummy%Ey_j(i1)
             k=dummy%Ey_k(i1)
@@ -719,14 +719,14 @@ contains
                Coeff%ehyx * hy(-1 + i,j,k) - Coeff%ehyx * hy(-1 + i,1 + j,-1 + k) +                                   &
                Coeff%ehyx * hy(-1 + i,1 + j,k) - Coeff%ehyx * hy(i,j,-1 + k) + Coeff%ehyx * hy(i,j,k) -                  &
                Coeff%ehyx * hy(i,1 + j,-1 + k) + Coeff%ehyx * hy(i,1 + j,k)) * Idzh(k))/4.0_RKIND
-            endif
+            end if
          end do
          do i1=1,dummy%NumNodesEz
             if (Dummy%Ez_Shared(i1)%times == 1) then
                Coeff => AniMed%info(jmed)%coeff
             else
                Coeff => AniMed%info(jmed)%Ez_Shared(i1)%Coeff
-            endif
+            end if
             i=dummy%Ez_i(i1)
             j=dummy%Ez_j(i1)
             k=dummy%Ez_k(i1)
@@ -751,7 +751,7 @@ contains
                Coeff%ehzy * hx(i,j,-1 + k) - Coeff%ehzy * hx(i,j,1 + k) - Coeff%ehzx * hy(-1 + i,j,-1 + k) +           &
                Coeff%ehzx * hy(-1 + i,j,1 + k) - Coeff%ehzx * hy(i,j,-1 + k) + Coeff%ehzx * hy(i,j,1 + k)) *             &
                Idze(k))/4.0_RKIND
-            endif
+            end if
          end do
       end do
 
@@ -783,28 +783,28 @@ contains
          end do
       end do
 
-      RETURN
+      return
 
    end subroutine AdvanceAnisotropicE
 
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Subroutine to advance the E field in the Anisotropic (no need to advance the magnetic field)
+   ! subroutine to advance the E field in the Anisotropic (no need to advance the magnetic field)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine AdvanceAnisotropicH(sggalloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
 
-      type (XYZlimit_t), dimension (1:6), intent(in)                      ::  sggAlloc
+      type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
 
 
-      REAL (KIND=RKIND)   , intent(inout)      :: &
+      real(kind=RKIND)   , intent(inout) :: &
       Ex(sggAlloc(iEx)%XI : sggAlloc(iEx)%XE,sggAlloc(iEx)%YI : sggAlloc(iEx)%YE,sggAlloc(iEx)%ZI : sggAlloc(iEx)%ZE),&
       Ey(sggAlloc(iEy)%XI : sggAlloc(iEy)%XE,sggAlloc(iEy)%YI : sggAlloc(iEy)%YE,sggAlloc(iEy)%ZI : sggAlloc(iEy)%ZE),&
       Ez(sggAlloc(iEz)%XI : sggAlloc(iEz)%XE,sggAlloc(iEz)%YI : sggAlloc(iEz)%YE,sggAlloc(iEz)%ZI : sggAlloc(iEz)%ZE),&
       Hx(sggAlloc(iHx)%XI : sggAlloc(iHx)%XE,sggAlloc(iHx)%YI : sggAlloc(iHx)%YE,sggAlloc(iHx)%ZI : sggAlloc(iHx)%ZE),&
       Hy(sggAlloc(iHy)%XI : sggAlloc(iHy)%XE,sggAlloc(iHy)%YI : sggAlloc(iHy)%YE,sggAlloc(iHy)%ZI : sggAlloc(iHy)%ZE),&
       Hz(sggAlloc(iHz)%XI : sggAlloc(iHz)%XE,sggAlloc(iHz)%YI : sggAlloc(iHz)%YE,sggAlloc(iHz)%ZI : sggAlloc(iHz)%ZE)
-      REAL (KIND=RKIND) , dimension (:)   , intent(in)      ::  &
+      real(kind=RKIND) , dimension(:)   , intent(in) :: &
       Idxe(sggALLOC(iHx)%XI : sggALLOC(iHx)%XE), &
       Idye(sggALLOC(iHy)%YI : sggALLOC(iHy)%YE), &
       Idze(sggALLOC(iHz)%ZI : sggALLOC(iHz)%ZE), &
@@ -813,9 +813,9 @@ contains
       Idzh(sggALLOC(iEz)%ZI : sggALLOC(iEz)%ZE)
       !
 
-      type (Anisotropicinfo_t), pointer :: dummy
-      type (coeff_t), pointer :: coeff
-      integer (kind=4)  ::  jmed,i1,i,j,k
+      type(Anisotropicinfo_t), pointer :: dummy
+      type(coeff_t), pointer :: coeff
+      integer(kind=4) :: jmed,i1,i,j,k
 
 
       do jmed=1,AniMed%NumMed
@@ -826,7 +826,7 @@ contains
                Coeff => AniMed%info(jmed)%coeff
             else
                Coeff => AniMed%info(jmed)%Hx_Shared(i1)%Coeff
-            endif
+            end if
             i=dummy%Hx_i(i1)
             j=dummy%Hx_j(i1)
             k=dummy%Hx_k(i1)
@@ -850,14 +850,14 @@ contains
                Coeff%hexy * ex(-1 + i,1 + j,1 + k) + Coeff%hexy * ex(i,j,k) - Coeff%hexy * ex(i,j,1 + k) +             &
                Coeff%hexy * ex(i,1 + j,k) - Coeff%hexy * ex(i,1 + j,1 + k) - 4. * Coeff%hexx * ey(i,j,k) +             &
                4. * Coeff%hexx * ey(i,j,1 + k)) * Idze(k))/4.0_RKIND
-            endif
+            end if
          end do
          do i1=1,dummy%NumNodesHy
             if (Dummy%Hy_Shared(i1)%times == 1) then
                Coeff => AniMed%info(jmed)%coeff
             else
                Coeff => AniMed%info(jmed)%Hy_Shared(i1)%Coeff
-            endif
+            end if
             i=dummy%Hy_i(i1)
             j=dummy%Hy_j(i1)
             k=dummy%Hy_k(i1)
@@ -882,14 +882,14 @@ contains
                Coeff%heyx * ey(i,j,1 + k) - Coeff%heyx * ey(1 + i,-1 + j,k) +                                             &
                Coeff%heyx * ey(1 + i,-1 + j,1 + k) - Coeff%heyx * ey(1 + i,j,k) + Coeff%heyx * ey(1 + i,j,1 + k)          &
                ) * Idze(k))/4.0_RKIND
-            endif
+            end if
          end do
          do i1=1,dummy%NumNodesHz
             if (Dummy%Hz_Shared(i1)%times == 1) then
                Coeff => AniMed%info(jmed)%coeff
             else
                Coeff => AniMed%info(jmed)%Hz_Shared(i1)%Coeff
-            endif
+            end if
             i=dummy%Hz_i(i1)
             j=dummy%Hz_j(i1)
             k=dummy%Hz_k(i1)
@@ -913,7 +913,7 @@ contains
                ((Coeff%hezy * ex(i,j,-1 + k) - Coeff%hezy * ex(i,j,1 + k) + Coeff%hezy * ex(i,1 + j,-1 + k) -              &
                Coeff%hezy * ex(i,1 + j,1 + k) - Coeff%hezx * ey(i,j,-1 + k) + Coeff%hezx * ey(i,j,1 + k) -            &
                Coeff%hezx * ey(1 + i,j,-1 + k) + Coeff%hezx * ey(1 + i,j,1 + k)) * Idzh(k))/4.0_RKIND
-            endif
+            end if
          end do
       end do
 
@@ -946,36 +946,36 @@ contains
          end do
       end do
 
-      RETURN
+      return
 
    end subroutine AdvanceAnisotropicH
 
 
    subroutine DestroyAnisotropic(sgg)
-      type (SGGFDTDINFO), intent(INOUT)         ::  sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       !
-      integer (kind=4)  ::  jmed,i
+      integer(kind=4) :: jmed,i
       !free up memory
       do jmed=1,AniMed%NumMed
-         deallocate (AniMed%info(jmed)%Ex_i,AniMed%info(jmed)%Ex_j,AniMed%info(jmed)%Ex_k)
-         deallocate (AniMed%info(jmed)%Ey_i,AniMed%info(jmed)%Ey_j,AniMed%info(jmed)%Ey_k)
-         deallocate (AniMed%info(jmed)%Ez_i,AniMed%info(jmed)%Ez_j,AniMed%info(jmed)%Ez_k)
-         deallocate (AniMed%info(jmed)%Hx_i,AniMed%info(jmed)%Hx_j,AniMed%info(jmed)%Hx_k)
-         deallocate (AniMed%info(jmed)%Hy_i,AniMed%info(jmed)%Hy_j,AniMed%info(jmed)%Hy_k)
-         deallocate (AniMed%info(jmed)%Hz_i,AniMed%info(jmed)%Hz_j,AniMed%info(jmed)%Hz_k)
-         deallocate (AniMed%info(jmed)%Ex_value,AniMed%info(jmed)%Ex_Shared)
-         deallocate (AniMed%info(jmed)%Ey_value,AniMed%info(jmed)%Ey_Shared)
-         deallocate (AniMed%info(jmed)%Ez_value,AniMed%info(jmed)%Ez_Shared)
-         deallocate (AniMed%info(jmed)%Hx_value,AniMed%info(jmed)%Hx_Shared)
-         deallocate (AniMed%info(jmed)%Hy_value,AniMed%info(jmed)%Hy_Shared)
-         deallocate (AniMed%info(jmed)%Hz_value,AniMed%info(jmed)%Hz_Shared)
+         deallocate(AniMed%info(jmed)%Ex_i,AniMed%info(jmed)%Ex_j,AniMed%info(jmed)%Ex_k)
+         deallocate(AniMed%info(jmed)%Ey_i,AniMed%info(jmed)%Ey_j,AniMed%info(jmed)%Ey_k)
+         deallocate(AniMed%info(jmed)%Ez_i,AniMed%info(jmed)%Ez_j,AniMed%info(jmed)%Ez_k)
+         deallocate(AniMed%info(jmed)%Hx_i,AniMed%info(jmed)%Hx_j,AniMed%info(jmed)%Hx_k)
+         deallocate(AniMed%info(jmed)%Hy_i,AniMed%info(jmed)%Hy_j,AniMed%info(jmed)%Hy_k)
+         deallocate(AniMed%info(jmed)%Hz_i,AniMed%info(jmed)%Hz_j,AniMed%info(jmed)%Hz_k)
+         deallocate(AniMed%info(jmed)%Ex_value,AniMed%info(jmed)%Ex_Shared)
+         deallocate(AniMed%info(jmed)%Ey_value,AniMed%info(jmed)%Ey_Shared)
+         deallocate(AniMed%info(jmed)%Ez_value,AniMed%info(jmed)%Ez_Shared)
+         deallocate(AniMed%info(jmed)%Hx_value,AniMed%info(jmed)%Hx_Shared)
+         deallocate(AniMed%info(jmed)%Hy_value,AniMed%info(jmed)%Hy_Shared)
+         deallocate(AniMed%info(jmed)%Hz_value,AniMed%info(jmed)%Hz_Shared)
       end do
       do i=1,sgg%NumMedia
          if (sgg%Med(i)%Is%Anisotropic)  then
-            deallocate (sgg%Med(i)%Anisotropic)
-         endif
+            deallocate(sgg%Med(i)%Anisotropic)
+         end if
       end do
-      deallocate (AniMed%info)
+      deallocate(AniMed%info)
 
    end subroutine
 
@@ -983,7 +983,7 @@ contains
    !funcion para publicar el valor de Med
 
    function GetMed() result(r)
-      type(AnisotropicMed_t), pointer  ::  r
+      type(AnisotropicMed_t), pointer  :: r
 
       r=>AniMed
 
@@ -991,11 +991,11 @@ contains
    end function
 
    !found by the mathematica notebook
-   Subroutine calc_anisotropicconstants(sgg,eps00,mu00)
-        type (SGGFDTDINFO), intent(IN)   ::  sgg
-        REAL (KIND=RKIND) , intent(inout) :: Eps00, Mu00
-        REAL (KIND=RKIND),  DIMENSION(3,3) ::  sigma,epr,mur,sigmaM
-        integer (kind=4) :: jmed
+   subroutine calc_anisotropicconstants(sgg,eps00,mu00)
+        type(SGGFDTDINFO_t), intent(in) :: sgg
+        real(kind=RKIND) , intent(inout) :: Eps00, Mu00
+        real(kind=RKIND),  DIMENSION(3,3) :: sigma,epr,mur,sigmaM
+        integer(kind=4) :: jmed
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       zvac=sqrt(mu0/eps0)
       cluz=1.0_RKIND/sqrt(eps0*mu0)
@@ -1016,11 +1016,11 @@ contains
 
 
    !found by the mathematica notebook
-   Subroutine CalculateCoeff(epr,mur,sigma,sigmam,dt,coeff)
+   subroutine CalculateCoeff(epr,mur,sigma,sigmam,dt,coeff)
 
-      type (coeff_t), intent(out) :: coeff
-      REAL (KIND=RKIND),  DIMENSION(3,3), intent(in)  ::  sigma,epr,mur,sigmaM
-      REAL (KIND=RKIND_tiempo) :: dt
+      type(coeff_t), intent(out) :: coeff
+      real(kind=RKIND),  DIMENSION(3,3), intent(in) :: sigma,epr,mur,sigmaM
+      real(kind=RKIND_tiempo) :: dt
 
       coeff%eexx = ((-((2 * eps0 * epr(1,3) + dt * sigma(1,3)) *(2 * eps0 * epr(2,2) + dt * sigma(2,2))) +(2          &
       * eps0 * epr(1,2) + dt * sigma(1,2)) *(2 * eps0 * epr(2,3) + dt * sigma(2,3))) *((eps0 * epr(3,1))/dt      &
@@ -1544,4 +1544,4 @@ contains
 
    end subroutine
 
-end module Anisotropic
+end module Anisotropic_m

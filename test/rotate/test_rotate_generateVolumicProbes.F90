@@ -1,5 +1,5 @@
 module test_rotate_generateVolumicProbes_m
-    use smbjson
+    use smbjson_m
     use nfde_rotate_m
     use rotate_testingTools
     implicit none
@@ -7,7 +7,7 @@ module test_rotate_generateVolumicProbes_m
 contains
 
 integer function test_rotate_generate_volumic_probes() bind(C) result(err)
-    type(Parseador) :: this
+    type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     integer :: test_err = 0
 
@@ -36,7 +36,7 @@ integer function test_rotate_generate_volumic_probes() bind(C) result(err)
 end function test_rotate_generate_volumic_probes
 
 subroutine setup_volumic_probe_test(this, n_probes)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer, intent(in) :: n_probes
     integer :: i
     
@@ -63,7 +63,7 @@ subroutine setup_volumic_probe_test(this, n_probes)
 end subroutine setup_volumic_probe_test
 
 subroutine init_volumic_probe_data(this, idx, xi, xe, yi, ye, zi, ze, xtrancos, ytrancos, ztrancos, or, tag)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer, intent(in) :: idx, xi, xe, yi, ye, zi, ze, xtrancos, ytrancos, ztrancos, or
     character(len=*), intent(in) :: tag
     this%VolPrb%collection(idx)%len_cor = 1
@@ -83,7 +83,7 @@ end subroutine init_volumic_probe_data
 
 subroutine verify_volumic_probe_rotation(test_err, this, mpidir)
     integer, intent(inout) :: test_err
-    type(Parseador), intent(in) :: this
+    type(Parseador_t), intent(in) :: this
     integer, intent(in) :: mpidir
     if (mpidir==2) then
     call expect_eq_int(test_err, 1, this%VolPrb%collection(1)%cordinates(1)%Xi, "rotate_generateVolumicProbes: Xi(1) should remain unchanged")
@@ -134,7 +134,7 @@ subroutine verify_volumic_probe_rotation(test_err, this, mpidir)
 end subroutine verify_volumic_probe_rotation
 
 subroutine cleanup_volumic_probe_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer :: i
     
     if (this%VolPrb%length > 0) then

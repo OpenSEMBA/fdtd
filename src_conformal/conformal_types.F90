@@ -1,4 +1,4 @@
-module conformal_types_mod
+module conformal_types_m
 
     implicit none
     

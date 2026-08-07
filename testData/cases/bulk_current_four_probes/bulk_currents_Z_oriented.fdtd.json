@@ -1,0 +1,270 @@
+{
+    "_format": "FDTD Input file",
+    "general": {
+        "numberOfSteps": 23375,
+        "additionalArguments": ""
+    },
+    "boundary": {
+        "all": {
+            "type": "mur"
+        }
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [
+                44,
+                44,
+                8
+            ],
+            "steps": {
+                "x": [
+                    0.005
+                ],
+                "y": [
+                    0.005
+                ],
+                "z": [
+                    0.005
+                ]
+            }
+        },
+        "coordinates": [
+            {
+                "id": 1,
+                "relativePosition": [
+                    21.0,
+                    21.0,
+                    0.0
+                ]
+            },
+            {
+                "id": 2,
+                "relativePosition": [
+                    21.0,
+                    21.0,
+                    1.0
+                ]
+            },
+            {
+                "id": 3,
+                "relativePosition": [
+                    21.0,
+                    21.0,
+                    2.0
+                ]
+            },
+            {
+                "id": 4,
+                "relativePosition": [
+                    21.0,
+                    21.0,
+                    3.0
+                ]
+            },
+            {
+                "id": 5,
+                "relativePosition": [
+                    21.0,
+                    21.0,
+                    4.0
+                ]
+            },
+            {
+                "id": 6,
+                "relativePosition": [
+                    21.0,
+                    21.0,
+                    5.0
+                ]
+            },
+            {
+                "id": 7,
+                "relativePosition": [
+                    21.0,
+                    21.0,
+                    6.0
+                ]
+            },
+            {
+                "id": 8,
+                "relativePosition": [
+                    21.0,
+                    21.0,
+                    7.0
+                ]
+            },
+            {
+                "id": 9,
+                "relativePosition": [
+                    21.0,
+                    21.0,
+                    8.0
+                ]
+            }
+        ],
+        "elements": [
+            {
+                "id": 1,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            20,
+                            20,
+                            4
+                        ],
+                        [
+                            22,
+                            22,
+                            4
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 2,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            20,
+                            22,
+                            4
+                        ],
+                        [
+                            22,
+                            24,
+                            4
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 3,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            22,
+                            22,
+                            4
+                        ],
+                        [
+                            24,
+                            24,
+                            4
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 4,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            22,
+                            20,
+                            4
+                        ],
+                        [
+                            24,
+                            22,
+                            4
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 5,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            23,
+                            23,
+                            0
+                        ],
+                        [
+                            23,
+                            23,
+                            8
+                        ]
+                    ]
+                ]
+            }
+        ]
+    },
+    "materials": [],
+    "materialAssociations": [],
+    "sources": [
+        {
+            "name": "nodalSource",
+            "type": "nodalSource",
+            "hardness": "soft",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [
+                5
+            ],
+            "field": "current"
+        }
+    ],
+    "probes": [
+        {
+            "name": "BC_LL",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                1
+            ],
+            "domain": {
+                "type": "time",
+                "initialTime": 0.0,
+                "finalTime": 3e-08,
+                "samplingPeriod": 1e-09
+            }
+        },
+        {
+            "name": "BC_LU",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                2
+            ],
+            "domain": {
+                "type": "time",
+                "initialTime": 0.0,
+                "finalTime": 3e-08,
+                "samplingPeriod": 1e-09
+            }
+        },
+        {
+            "name": "BC_UU",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                3
+            ],
+            "domain": {
+                "type": "time",
+                "initialTime": 0.0,
+                "finalTime": 3e-08,
+                "samplingPeriod": 1e-09
+            }
+        },
+        {
+            "name": "BC_UL",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                4
+            ],
+            "domain": {
+                "type": "time",
+                "initialTime": 0.0,
+                "finalTime": 3e-08,
+                "samplingPeriod": 1e-09
+            }
+        }
+    ]
+}

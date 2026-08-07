@@ -56,6 +56,7 @@ extern "C" int test_preprocess_zt_conductor_ranges();
 // extern "C" int test_termination_rls_cp_ns();
 // extern "C" int test_termination_rcp();
 
+
 TEST(mtln, mtl_homogeneous)   { EXPECT_EQ(0, test_mtl_init_homogeneous()); }
 TEST(mtln, mtl_time_step) { EXPECT_EQ(0, test_mtl_time_step()); }
 TEST(mtln, mtl_wrong_dt) { EXPECT_EQ(0, test_mtl_wrong_dt()); }
@@ -80,8 +81,6 @@ TEST(mtln, dispersive_init_1_pole) { EXPECT_EQ(0, test_dispersive_init_1_pole())
 TEST(mtln, dispersive_init_2_poles) { EXPECT_EQ(0, test_dispersive_init_2_poles()); }
 TEST(mtln, dispersive_init_1_pole_3_levels) { EXPECT_EQ(0, test_dispersive_init_1_pole_3_levels()); }
 TEST(mtln, dispersive_init_1_pole_lines_with_lumped) { EXPECT_EQ(0, test_dispersive_init_1_pole_lines_with_lumped()); }
-
-// // TEST(mtln, wire_panel){ EXPECT_EQ(0, test_wire_panel()); }
 
 // test_spice.F90
 TEST(mtln, codemodels) { EXPECT_EQ(0, test_load_codemodels()); }

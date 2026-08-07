@@ -9,12 +9,12 @@
 ! 5 poles (not 3) !UNTESTED SGG JUN'12
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module Mdispersives
+module Mdispersives_m
 
    !mismo switch electrico y magnetico
 
-   use fdetypes
-   USE REPORT
+   use FDETYPES_m
+   use Report_m
    implicit none
    private
 
@@ -23,27 +23,27 @@ module Mdispersives
 
 
    type field_t
-      integer (kind=4)   ::  i,j,k
-      integer (kind=4)   ::  WhatField
-      REAL (KIND=RKIND), pointer                 ::  FieldPresent !apunta al campo del background
-      REAL (KIND=RKIND)                          ::  FieldPrevious
-      Complex (Kind=CKIND), pointer, dimension ( : )   ::  Current
+      integer(kind=4) :: i,j,k
+      integer(kind=4) :: WhatField
+      real(kind=RKIND), pointer                 :: FieldPresent !apunta al campo del background
+      real(kind=RKIND)                          :: FieldPrevious
+      complex(Kind=CKIND), pointer, dimension( : ) :: Current
    end type
 
-   TYPE Mdispersive_t
-      integer (kind=4)  ::  indexmed,numnodesHx,numnodesHy,numnodesHz,numpolres11
-      Complex (Kind=CKIND), pointer, dimension ( : )      ::  Beta,Kappa,GM3
-      type (field_t), pointer, dimension ( : )      ::   NodesHx,NodesHy,NodesHz
-   END TYPE Mdispersive_t
+   type Mdispersive_t
+      integer(kind=4) :: indexmed,numnodesHx,numnodesHy,numnodesHz,numpolres11
+      complex(Kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,GM3
+      type(field_t), pointer, dimension( : ) :: NodesHx,NodesHy,NodesHz
+   end type Mdispersive_t
 
 
-   type  Mdispersive_t2
-      integer (kind=4)  ::  NumMdispersives
-      type (Mdispersive_t), pointer, dimension( : )  ::  Medium
+   type  Mdispersive2_t
+      integer(kind=4) :: NumMdispersives
+      type(Mdispersive_t), pointer, dimension( : ) :: Medium
    end type
 
    !!!LOCAL VARIABLES
-   type (Mdispersive_t2) , save ::  MDutton
+   type(Mdispersive2_t) , save :: MDutton
 
 
    public AdvanceMdispersiveH,InitMdispersives,StoreFieldsMdispersives,DestroyMdispersives
@@ -51,24 +51,24 @@ module Mdispersives
 contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Subroutine to initialize the parameters
+   ! subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitMdispersives(sgg,media,ThereAreMdispersives,resume,GM1,GM2,Hx,Hy,Hz)
-      type (SGGFDTDINFO), intent(IN)         ::  sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
-      REAL (KIND=RKIND)     , intent(inout)      ::  &
+      real(kind=RKIND)     , intent(inout) :: &
       GM1(0 : sgg%NumMedia),GM2(0 : sgg%NumMedia)
-      REAL (KIND=RKIND)   , intent(inout), target      :: &
+      real(kind=RKIND)   , intent(inout), target      :: &
       Hx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE),&
       Hy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE),&
       Hz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE)
 
       !habria que ir deprecando lo de pasar el Mdispersive, etc.. porque hay acceso directo a sgg%Med%Dispersiv
-      logical, INTENT(OUT)  ::  ThereAreMdispersives
-      logical, INTENT(in)  ::  resume
-      integer (kind=4)  ::  jmed,j1,conta,k1,i1,tempindex
-      REAL (KIND=RKIND)   ::  tempo
-      integer (kind=4)  ::  numpolres
+      logical, intent(out) :: ThereAreMdispersives
+      logical, INTENT(in) :: resume
+      integer(kind=4) :: jmed,j1,conta,k1,i1,tempindex
+      real(kind=RKIND) :: tempo
+      integer(kind=4) :: numpolres
       MDutton%Medium => null()
 
       ThereAreMdispersives=.FALSE.
@@ -76,7 +76,7 @@ contains
       do jmed=1,sgg%NumMedia
          if ((sgg%Med(jmed)%Is%Mdispersive).and.(.not.sgg%Med(jmed)%Is%MdispersiveANIS)) then
             conta=conta+1
-         endif
+         end if
       end do
 
 
@@ -100,7 +100,7 @@ contains
                MDutton%Medium(conta)%Beta(i1)=  (   sgg%Med(jmed)%Mdispersive(1)%c11(i1)*sgg%dt) /&
                (1.0_RKIND-sgg%Med(jmed)%Mdispersive(1)%a11(i1)*sgg%dt/2.0_RKIND)
             end do
-         endif
+         end if
       end do
 
       !calculate the coefficients
@@ -109,7 +109,7 @@ contains
          numpolres=sgg%Med(tempindex)%Mdispersive(1)%numpolres11
          tempo=0.0_RKIND
          Do i1=1,NumPolRes
-            tempo=tempo+REAL (MDutton%Medium(jmed)%Beta(i1))
+            tempo=tempo+real(MDutton%Medium(jmed)%Beta(i1))
          end do
          GM1(tempindex)=        (2.0_RKIND * sgg%Med(tempindex)%Mdispersive(1)%mu11+tempo-sgg%Med(tempindex)%Mdispersive(1)%Sigmam11*sgg%dt)/ &
          (2.0_RKIND * sgg%Med(tempindex)%Mdispersive(1)%mu11+tempo+sgg%Med(tempindex)%Mdispersive(1)%Sigmam11*sgg%dt)
@@ -148,7 +148,7 @@ contains
                      MDutton%Medium(jmed)%NodesHx(conta)%k=k1
                      MDutton%Medium(jmed)%NodesHx(conta)%WhatField=iHx
                      MDutton%Medium(jmed)%NodesHx(conta)%FieldPresent=>Hx(i1,j1,k1)
-                  endif
+                  end if
                end do
             end do
          end do
@@ -179,7 +179,7 @@ contains
                      MDutton%Medium(jmed)%NodesHy(conta)%k=k1
                      MDutton%Medium(jmed)%NodesHy(conta)%WhatField=iHy
                      MDutton%Medium(jmed)%NodesHy(conta)%FieldPresent=>Hy(i1,j1,k1)
-                  endif
+                  end if
                end do
             end do
          end do
@@ -211,7 +211,7 @@ contains
                      MDutton%Medium(jmed)%NodesHz(conta)%k=k1
                      MDutton%Medium(jmed)%NodesHz(conta)%WhatField=iHz
                      MDutton%Medium(jmed)%NodesHz(conta)%FieldPresent=>Hz(i1,j1,k1)
-                  endif
+                  end if
                end do
             end do
          end do
@@ -226,14 +226,14 @@ contains
                MDutton%Medium(jmed)%NodesHx(i1)%fieldPrevious=0.0_RKIND
                Do k1=1,NumPolRes
                   MDutton%Medium(jmed)%NodesHx(i1)%current(k1)=0.0_RKIND
-               enddo
+               end do
             end do
             !Hy,Jy
             do i1=1,MDutton%Medium(jmed)%NumNodesHy
                MDutton%Medium(jmed)%NodesHy(i1)%fieldPrevious=0.0_RKIND
                Do k1=1,NumPolRes
                   MDutton%Medium(jmed)%NodesHy(i1)%current(k1)=0.0_RKIND
-               enddo
+               end do
             end do
 
             !Hz,Jz
@@ -241,7 +241,7 @@ contains
                MDutton%Medium(jmed)%NodesHz(i1)%fieldPrevious=0.0_RKIND
                Do k1=1,NumPolRes
                   MDutton%Medium(jmed)%NodesHz(i1)%current(k1)=0.0_RKIND
-               enddo
+               end do
             end do
          else
             !Hx,Jx
@@ -249,14 +249,14 @@ contains
                READ (14) MDutton%Medium(jmed)%NodesHx(i1)%fieldPrevious
                Do k1=1,NumPolRes
                   READ (14) MDutton%Medium(jmed)%NodesHx(i1)%current(k1)
-               enddo
+               end do
             end do
             !Hy,Jy
             do i1=1,MDutton%Medium(jmed)%NumNodesHy
                READ (14) MDutton%Medium(jmed)%NodesHy(i1)%fieldPrevious
                Do k1=1,NumPolRes
                   READ (14) MDutton%Medium(jmed)%NodesHy(i1)%current(k1)
-               enddo
+               end do
             end do
 
             !Hz,Jz
@@ -264,24 +264,24 @@ contains
                READ (14) MDutton%Medium(jmed)%NodesHz(i1)%fieldPrevious
                Do k1=1,NumPolRes
                   READ (14) MDutton%Medium(jmed)%NodesHz(i1)%current(k1)
-               enddo
+               end do
             end do
-         endif
+         end if
       end do
       return
    end subroutine InitMdispersives
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Subroutine to advance the E field in the Mdispersive (no need to advance the magnetic field)
+   ! subroutine to advance the E field in the Mdispersive (no need to advance the magnetic field)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine AdvanceMdispersiveH(sgg)
-      type (SGGFDTDINFO), intent(IN)              :: sgg              ! Simulation data.
+      type(SGGFDTDINFO_t), intent(in)              :: sgg              ! Simulation data.
       !!!
 
-      integer (kind=4)  ::  jmed,i1,k1,numpolres
+      integer(kind=4) :: jmed,i1,k1,numpolres
 
-      type (field_t), pointer  ::  tempnode
+      type(field_t), pointer  :: tempnode
       !!!
 
       do jmed=1,MDutton%NumMdispersives
@@ -290,12 +290,12 @@ contains
          do i1=1,MDutton%Medium(jmed)%NumNodesHx
             tempnode=>MDutton%Medium(jmed)%NodesHx(i1)
             Do k1=1,NumPolRes
-               tempnode%fieldPresent=tempnode%FieldPresent-REAL (MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
-            enddo
+               tempnode%fieldPresent=tempnode%FieldPresent-real(MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
+            end do
             Do k1=1,NumPolRes
                tempnode%current(k1)=MDutton%Medium(jmed)%Kappa(k1)  *tempnode%current(k1) + &
                MDutton%Medium(jmed)%Beta(k1)/sgg%dt*(tempnode%fieldPresent-tempnode%fieldPrevious)
-            enddo
+            end do
             tempnode%fieldPrevious=tempnode%fieldPresent
             !stores previous field (cuidado no es un apuntamiento sino una igualdad de valores)
             !antes de que re-empiHze a calcularlo el algoritmo del background
@@ -304,12 +304,12 @@ contains
          do i1=1,MDutton%Medium(jmed)%NumNodesHy
             tempnode=>MDutton%Medium(jmed)%NodesHy(i1)
             Do k1=1,NumPolRes
-               tempnode%FieldPresent=tempnode%FieldPresent-REAL (MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
-            enddo
+               tempnode%FieldPresent=tempnode%FieldPresent-real(MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
+            end do
             Do k1=1,NumPolRes
                tempnode%current(k1)=MDutton%Medium(jmed)%Kappa(k1)  *tempnode%current(k1)+ &
                MDutton%Medium(jmed)%Beta(k1)/sgg%dt*(tempnode%fieldPresent-tempnode%fieldPrevious)
-            enddo
+            end do
             tempnode%fieldPrevious=tempnode%fieldPresent
          end do
 
@@ -317,12 +317,12 @@ contains
          do i1=1,MDutton%Medium(jmed)%NumNodesHz
             tempnode=>MDutton%Medium(jmed)%NodesHz(i1)
             Do k1=1,NumPolRes
-               tempnode%FieldPresent=tempnode%FieldPresent-REAL (MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
-            enddo
+               tempnode%FieldPresent=tempnode%FieldPresent-real(MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
+            end do
             Do k1=1,NumPolRes
                tempnode%current(k1)=MDutton%Medium(jmed)%Kappa(k1)   *tempnode%current(k1)+ &
                MDutton%Medium(jmed)%Beta(k1)/sgg%dt*(tempnode%fieldPresent-tempnode%fieldPrevious)
-            enddo
+            end do
             tempnode%fieldPrevious=tempnode%fieldPresent
          end do
 
@@ -335,7 +335,7 @@ contains
 
    subroutine StoreFieldsMdispersives
 
-      integer (kind=4)  ::  jmed,numpolres,i1,k1
+      integer(kind=4) :: jmed,numpolres,i1,k1
 
 
       do jmed=1,MDutton%NumMdispersives
@@ -345,14 +345,14 @@ contains
             write(14,err=634) MDutton%Medium(jmed)%NodesHx(i1)%fieldPrevious
             Do k1=1,NumPolRes
                write(14,err=634) MDutton%Medium(jmed)%NodesHx(i1)%current(k1)
-            enddo
+            end do
          end do
          !Hy,Jy
          do i1=1,MDutton%Medium(jmed)%NumNodesHy
             write(14,err=634) MDutton%Medium(jmed)%NodesHy(i1)%fieldPrevious
             Do k1=1,NumPolRes
                write(14,err=634) MDutton%Medium(jmed)%NodesHy(i1)%current(k1)
-            enddo
+            end do
          end do
 
          !Hz,Jz
@@ -360,7 +360,7 @@ contains
             write(14,err=634) MDutton%Medium(jmed)%NodesHz(i1)%fieldPrevious
             Do k1=1,NumPolRes
                write(14,err=634) MDutton%Medium(jmed)%NodesHz(i1)%current(k1)
-            enddo
+            end do
          end do
       end do
 
@@ -372,45 +372,45 @@ contains
    end subroutine StoreFieldsMdispersives
 
    subroutine DestroyMdispersives(sgg)
-      type (SGGFDTDINFO), intent(INout)         ::  sgg
+      type(SGGFDTDINFO_t), intent(INout) :: sgg
 
-      integer (kind=4)  ::  jmed,i1,i
+      integer(kind=4) :: jmed,i1,i
 
 
       !free up memory
       do i=1,sgg%NumMedia
          if ((sgg%Med(i)%Is%Mdispersive).and.(.not.sgg%Med(i)%Is%PML).and.(.not.sgg%Med(i)%Is%MdispersiveANIS)) then
-            deallocate (sgg%Med(i)%Mdispersive(1)%c11,sgg%Med(i)%Mdispersive(1)%a11)
-         endif
+            deallocate(sgg%Med(i)%Mdispersive(1)%c11,sgg%Med(i)%Mdispersive(1)%a11)
+         end if
       end do
       do i=1,sgg%NumMedia
          if ((sgg%Med(i)%Is%Mdispersive).and.(.not.sgg%Med(i)%Is%PML).and.(.not.sgg%Med(i)%Is%MdispersiveANIS)) then
-            deallocate (sgg%Med(i)%Mdispersive)
-         endif
+            deallocate(sgg%Med(i)%Mdispersive)
+         end if
       end do
 
       do jmed=1,MDutton%NumMdispersives
-         deallocate (MDutton%Medium(jmed)%Beta,MDutton%Medium(jmed)%Kappa,MDutton%Medium(jmed)%GM3)
+         deallocate(MDutton%Medium(jmed)%Beta,MDutton%Medium(jmed)%Kappa,MDutton%Medium(jmed)%GM3)
 
          do i1=1,MDutton%Medium(jmed)%NumNodesHx
-            deallocate (MDutton%Medium(jmed)%NodesHx(i1)%Current)
+            deallocate(MDutton%Medium(jmed)%NodesHx(i1)%Current)
          end do
-         deallocate (MDutton%Medium(jmed)%NodesHx)
+         deallocate(MDutton%Medium(jmed)%NodesHx)
          !
          do i1=1,MDutton%Medium(jmed)%NumNodesHy
-            deallocate (MDutton%Medium(jmed)%NodesHy(i1)%Current)
+            deallocate(MDutton%Medium(jmed)%NodesHy(i1)%Current)
          end do
-         deallocate (MDutton%Medium(jmed)%NodesHy)
+         deallocate(MDutton%Medium(jmed)%NodesHy)
          !
          do i1=1,MDutton%Medium(jmed)%NumNodesHz
-            deallocate (MDutton%Medium(jmed)%NodesHz(i1)%Current)
+            deallocate(MDutton%Medium(jmed)%NodesHz(i1)%Current)
          end do
-         deallocate (MDutton%Medium(jmed)%NodesHz)
+         deallocate(MDutton%Medium(jmed)%NodesHz)
       end do
 
 
-      if (associated(MDutton%Medium))  deallocate (MDutton%Medium)
+      if (associated(MDutton%Medium))  deallocate(MDutton%Medium)
 
    end subroutine
 
-end module Mdispersives
+end module Mdispersives_m

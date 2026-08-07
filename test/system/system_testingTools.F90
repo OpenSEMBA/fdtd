@@ -1,6 +1,6 @@
 module system_testingTools_mod
     use iso_c_binding
-    use fdetypes
+    use FDETYPES_m
     implicit none
     
     character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'

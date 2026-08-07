@@ -70711,14 +70711,6 @@
             ]
         },
         {
-            "name": "Wirematerial",
-            "id": 3,
-            "type": "wire",
-            "radius": 0.0001,
-            "resistancePerMeter": 0.0,
-            "inductancePerMeter": 0.0
-        },
-        {
             "name": "Terminal50",
             "id": 4,
             "type": "terminal",

@@ -1,5 +1,5 @@
 module test_rotate_generateLossyThinSurface_m
-    use smbjson
+    use smbjson_m
     use nfde_rotate_m
     use rotate_testingTools
     implicit none
@@ -7,7 +7,7 @@ module test_rotate_generateLossyThinSurface_m
 contains
 
 integer function test_rotate_generate_lossy_thin_surface() bind(C) result(err)
-    type(Parseador) :: this
+    type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     integer :: test_err = 0
     
@@ -25,7 +25,7 @@ integer function test_rotate_generate_lossy_thin_surface() bind(C) result(err)
 end function test_rotate_generate_lossy_thin_surface
 
 subroutine setup_lossy_thin_surface_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer(kind=4) :: n_lts = 1, n_ltsc = 2
     allocate(this%LossyThinSurfs)
     allocate(this%LossyThinSurfs%cs(n_lts))
@@ -38,7 +38,7 @@ subroutine setup_lossy_thin_surface_test(this)
 end subroutine setup_lossy_thin_surface_test
 
 subroutine init_lossy_thin_surface_data(this, ltsidx, ltscidx, x1, y1, z1, x2, y2, z2, xt, yt, zt, or, tag)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer, intent(in) :: ltsidx, ltscidx, x1, y1, z1, x2, y2, z2, xt, yt, zt, or
     character(len=*), intent(in) :: tag
     this%LossyThinSurfs%cs(ltsidx)%c(ltscidx)%Xi = X1
@@ -56,7 +56,7 @@ end subroutine init_lossy_thin_surface_data
 
 subroutine verify_lossy_thin_surface_rotation(test_err, this, mpidir)
     integer, intent(inout) :: test_err, mpidir
-    type(Parseador), intent(in) :: this
+    type(Parseador_t), intent(in) :: this
 
     if (mpidir==2) then
         call expect_eq_int(test_err, 3, this%LossyThinSurfs%cs(1)%c(1)%Xi, "rotate_generateLossyThinSurface: Xi(1) mpidir2 error")
@@ -107,7 +107,7 @@ subroutine verify_lossy_thin_surface_rotation(test_err, this, mpidir)
 end subroutine verify_lossy_thin_surface_rotation
 
 subroutine cleanup_lossy_thin_surface_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
 
     deallocate(this%LossyThinSurfs%cs)
     deallocate(this%LossyThinSurfs)

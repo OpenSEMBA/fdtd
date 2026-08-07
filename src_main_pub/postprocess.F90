@@ -1,62 +1,63 @@
 
     
-module PostProcessing
+module PostProcessing_m
 
-   use fdetypes
-   use Report
-   use Observa
+   use FDETYPES_m
+   use Report_m
+   use Observa_m
 
 #ifdef CompileWithHDF
-   USE HDF5
+   use HDF5
 #endif
 
    implicit none
 
    private
    public PostProcess,postprocessonthefly
+
 contains
 
    !
    !Subrutine to parse the .h5 file in search for outputrequest sections and wrap the ASCII data into .h5
    !
-   subroutine PostProcess(layoutnumber,size,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
+   subroutine PostProcess(layoutnumber,num_procs,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
 
 
-      type (SGGFDTDINFO), intent(IN)     ::  sgg
-      integer (kind=4), intent(in)  :: layoutnumber,size
-      character (len=*), intent(in) :: nEntradaRoot
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
+      character(len=*), intent(in) :: nEntradaRoot
 
-      type(output_t), pointer, dimension( : )  ::  output
-      character (LEN=BUFSIZE) :: cabecera,cabeceraNew,path,path2,path3,path_resampled
-      integer (kind=4) :: numComp
-      REAL (KIND=RKIND), allocatable, dimension(:,:) :: valores
-      complex (kind=CKIND), allocatable, dimension(:,:) :: valoresDF,valoresDF2
-      REAL (KIND=RKIND_tiempo), allocatable, dimension(:) :: tiempo,samplingtime
-	  integer (kind=4) :: pozi
+      type(output_t), pointer, dimension( : ) :: output
+      character(len=BUFSIZE) :: cabecera,cabeceraNew,path,path2,path3,path_resampled
+      integer(kind=4) :: numComp
+      real(kind=RKIND), allocatable, dimension(:,:) :: valores
+      complex(kind=CKIND), allocatable, dimension(:,:) :: valoresDF,valoresDF2
+      real(kind=RKIND_tiempo), allocatable, dimension(:) :: tiempo,samplingtime
+	   integer(kind=4) :: pozi
       logical :: existe,neverprecounted,escribir,escribirBloque,niapapostprocess,forceresampled,somethingdone
-      integer (kind=4) :: fqLength,ii,i,i1,j1,field,ns,timesteps,compo,iii,pp,pasadas
-      real (kind=RKIND) :: dummy
-      real (kind=RKIND_tiempo) :: rinstant
+      integer(kind=4) :: fqLength,ii,i,i1,j1,field,ns,timesteps,compo,iii,pp,pasadas
+      real(kind=RKIND) :: dummy
+      real(kind=RKIND_tiempo) :: rinstant
       !
-      real (kind=RKIND), allocatable, dimension(:)   :: fqPos,signal
-      real (kind=RKIND)   :: fmin,fmax,fstep,value_interp
-      complex (kind=CKIND), allocatable, dimension(:) :: fqValues
+      real(kind=RKIND), allocatable, dimension(:) :: fqPos,signal
+      real(kind=RKIND) :: fmin,fmax,fstep,value_interp
+      complex(kind=CKIND), allocatable, dimension(:) :: fqValues
       character(len=BUFSIZE) :: buff
-      character (LEN=BUFSIZE)     ::  dubuf
+      character(len=BUFSIZE) :: dubuf
       !
-      character (LEN=BUFSIZE)  ::  whoami,whoamishort
-      real (kind=RKIND) :: t_pedido
-      integer (kind=4) columna,jjj
+      character(len=BUFSIZE) :: whoami,whoamishort
+      real(kind=RKIND) :: t_pedido
+      integer(kind=4) columna,jjj
       integer :: my_iostat
-     !!!!!
+     
       if (niapapostprocess) then  !niapa 200120 ojooo
            print *,'Copiar a mano los .dat en tiempo para que se postrocesen bien...'
            pause
            print *,'Continuing...'
-      endif
-     !!!!! 
+      end if
+      
       write(whoamishort,'(i5)') layoutnumber+1
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
 
       Output => GetOutput() !get the output private info from observation
 
@@ -114,12 +115,12 @@ contains
 178                           continue
                               close (output(ii)%item(i)%unit)
                               timesteps=timesteps-1 !le resto 1 para evitar lo del ultimo time step a tiempos grandes que saca en el .exc !sgg 180516
-                              if (allocated(valores)) deallocate (valores,tiempo,signal)
+                              if (allocated(valores)) deallocate(valores,tiempo,signal)
                               allocate (valores(1:timesteps,1:numComp))
                               allocate (tiempo(1:timesteps))
                               allocate (signal(1:timesteps))
                               allocate (samplingtime(1:timesteps))
-                           endif
+                           end if
 
                            open (output(ii)%item(i)%unit,file=trim(adjustl(path)),form='formatted')
                            read (output(ii)%item(i)%unit,'(a)') cabecera
@@ -133,14 +134,14 @@ contains
                              do ns=1,timesteps
                                tiempo(ns)=real(ns*sgg%dt,RKIND_tiempo)
                              end do
-                           endif
+                           end if
                            ! 
                            !!buscanoigual2: do ns=3,timesteps
                            !!   if (.not.almostequal(tiempo(ns)-tiempo(ns-1),tiempo(2)-tiempo(1))) then
                            !!      !check that steps are equally spaced
                            !!      call print11(layoutnumber,'WARNING: (DFT) Unequally spaced timesteps in '//trim(adjustl(path)))
                            !!      exit buscanoigual2
-                           !!   endif
+                           !!   end if
                            !!end do buscanoigual2
                            
                            
@@ -164,25 +165,25 @@ contains
                                                   exit buscinterpol
                                               else
                                                   cycle buscinterpol
-                                              endif
-                                          enddo buscinterpol
-                                      enddo
-                                  enddo  
+                                              end if
+                                          end do buscinterpol
+                                      end do
+                                  end do  
                                   close (output(ii)%item(i)%unit)
-                            !  endif 
-                            endif
+                            !  end if 
+                            end if
                                                                
 !                              !!!fin write resampled data en tiempo sampleado con la peticion temporal 200319
 
                            fmin=(min(sgg%observation(ii)%FinalFreq,sgg%observation(ii)%InitialFreq))
                            fmax=(max(sgg%observation(ii)%FinalFreq,sgg%observation(ii)%InitialFreq))
 
-                           IF ((sgg%observation(ii)%FreqStep == 0.0_RKIND).or. &
+                           if ((sgg%observation(ii)%FreqStep == 0.0_RKIND).or. &
                            (sgg%observation(ii)%FreqStep > fmax-fmin)) then
                               fstep = fmax-fmin
                            else
                               fstep = (sgg%observation(ii)%FreqStep)
-                           endif
+                           end if
                            fqLength=int((fmax - fmin)/fstep)+2
                            allocate (fqPos(1:fqLength),fqValues(1:fqLength),valoresDF(1:fqLength,1:numComp))
 
@@ -191,7 +192,7 @@ contains
                               fmin=max(1.0_RKIND,log10(fmin))
                               fmax=log10(fmax)
                               fstep=(fmax-fmin)/(fqLength-2.0_RKIND)
-                           endif
+                           end if
                            !
                            do i1=1,fqLength
                               fqPos(i1)=fmin+(i1-1.0_RKIND)*fstep
@@ -201,7 +202,7 @@ contains
                               do i1=1,fqLength
                                  fqPos(i1)=10.0_RKIND **fqPos(i1)
                               end do
-                           endif
+                           end if
                            !
                            ! Computes dtft.
                            signal=0.0_RKIND
@@ -222,7 +223,7 @@ contains
                            do i1=1,fqLength
                               write(output(ii)%item(i)%unit,fmt) fqPos(i1), &
                               (abs(valoresDF(i1,j1)),atan2(aimag(valoresDF(i1,j1)),real(valoresDF(i1,j1))), j1=1,numComp)
-                           enddo
+                           end do
                            close (output(ii)%item(i)%unit)
                            !
                            deallocate(valores,tiempo,signal,samplingtime) !no longer needed
@@ -247,12 +248,12 @@ contains
 778                                 continue
                                     close (34)
                                     timesteps=timesteps-1 !le resto 1 para evitar lo del ultimo time step a tiempos grandes que saca en el .exc !sgg 180516
-                                    if (allocated(valores)) deallocate (valores,tiempo,signal)
+                                    if (allocated(valores)) deallocate(valores,tiempo,signal)
                                     allocate (valores(1:timesteps,1:1))
                                     allocate (tiempo(1:timesteps))
                                     allocate (signal(1:timesteps))
                                     allocate (samplingtime(1:timesteps))
-                                 endif
+                                 end if
 
                                  open (34,file=trim(adjustl(sgg%observation(ii)%FileNormalize)),form='formatted')
                                  do ns=1,timesteps
@@ -265,7 +266,7 @@ contains
                                     do ns=1,timesteps
                                        tiempo(ns)=real(ns*sgg%dt,RKIND_tiempo)
                                     end do
-                                 endif
+                                 end if
                                  
                           
                                 if (forceresampled) then !no sacar resampleadas salvo forzando 120123 
@@ -288,14 +289,14 @@ contains
                                                     exit buscinterpol2
                                                 else
                                                     cycle buscinterpol2
-                                                endif
-                                            enddo buscinterpol2
-                                        enddo
-                                    enddo  
+                                                end if
+                                            end do buscinterpol2
+                                        end do
+                                    end do  
                                     close (34)  
-                                 ! endif
+                                 ! end if
                                  
-                                endif 
+                                end if 
                           !!!end write resampled 
                                  
                                  !
@@ -304,7 +305,7 @@ contains
 !!!                                       !check that steps are equally spaced
 !!!                                       call print11(layoutnumber,'WARNING: (DFT) Unequally spaced timesteps in '//trim(adjustl(path3)))
 !!!!                                       exit buscanoigual3
-!!!                                    endif
+!!!                                    end if
 !!!                                 end do buscanoigual3
                                  !assume equally spaced!!! !may be different between computed and reference
                                  !the normalization file only has one column
@@ -320,10 +321,10 @@ contains
                                     !do j1=1,numComp-1
                                     do j1=1,numComp
                                        valoresDF2(iii,j1)=(valoresDF(iii,j1)/fqValues(iii)) !overwrite since no longer needed
-                                    enddo
+                                    end do
                                     !do j1=numComp,numComp
                                     !    valoresDF2(iii,j1)=fqValues(iii) !la entrada se deja sin normalizar pero se saca
-                                    !enddo
+                                    !end do
                                  end do
                                  !
                                  path2=trim(adjustl(path(1:index(path,'.dat')-1)))//'_normalization_df.dat'
@@ -356,17 +357,17 @@ contains
                                         (20.0_RKIND * log10(abs(valoresDF2(i1,j1))),&
                                             atan2(aimag(valoresDF2(i1,j1)),real(valoresDF2(i1,j1))), j1=1,numComp)
 
-                                 enddo
+                                 end do
                                  close (output(ii)%item(i)%unit)
                                  deallocate(valoresDF2,valores,tiempo,signal,samplingtime)
-                              endif !del not existe
-                           endif !del transfer
+                              end if !del not existe
+                           end if !del transfer
                            !
                            deallocate(fqPos,fqValues,valoresDF)
-                        endif !del existe
+                        end if !del existe
                      
                      somethingdone=.true.
-                  endif !del if fredomain
+                  end if !del if fredomain
                   
                   !!!!!!!!!peticion correo 300120 !siempre escribe resammpled
                   !
@@ -391,12 +392,12 @@ contains
 5178                           continue
                               close (output(ii)%item(i)%unit)
                               timesteps=timesteps-1 !le resto 1 para evitar lo del ultimo time step a tiempos grandes que saca en el .exc !sgg 180516
-                              if (allocated(valores)) deallocate (valores,tiempo,signal)
+                              if (allocated(valores)) deallocate(valores,tiempo,signal)
                               allocate (valores(1:timesteps,1:numComp))
                               allocate (tiempo(1:timesteps))
                               allocate (signal(1:timesteps))
                               allocate (samplingtime(1:timesteps))
-                           endif
+                           end if
 
                            open (output(ii)%item(i)%unit,file=trim(adjustl(path)),form='formatted')
                            read (output(ii)%item(i)%unit,'(a)') cabecera
@@ -410,7 +411,7 @@ contains
                              do ns=1,timesteps
                                tiempo(ns)=real(ns*sgg%dt,RKIND_tiempo)
                              end do
-                           endif
+                           end if
 
                           
                           if (forceresampled) then !no sacar resampleadas salvo forzando 120123 
@@ -432,21 +433,21 @@ contains
                                                 exit buscinterpoli
                                             else
                                                 cycle buscinterpoli
-                                            endif
-                                        enddo buscinterpoli
-                                    enddo
-                                enddo  
+                                            end if
+                                        end do buscinterpoli
+                                    end do
+                                end do  
                                 close (output(ii)%item(i)%unit)
-                            !endif del trancos
-                          endif !del resampled      
+                            !end if del trancos
+                          end if !del resampled      
                           deallocate(valores,tiempo,signal,samplingtime) !no longer needed
-                        endif !del existe
-                  endif !del if timedomain
+                        end if !del existe
+                  end if !del if timedomain
 
                   !!!!!!!!!!!!
-               endif !del escribir
-            endif !del volumic
-            endif !del nothing
+               end if !del escribir
+            end if !del volumic
+            end if !del nothing
          end do
          !
       end do !barrido puntos de observacion
@@ -464,9 +465,9 @@ contains
    !
    !
    function almostequal(a,b) result(almost)
-      real (kind=RKIND) a,b,ratio
+      real(kind=RKIND) a,b,ratio
       logical almost
-      real (kind=RKIND), parameter :: tolerancia=0.01
+      real(kind=RKIND), parameter :: tolerancia=0.01
 
       ratio=a/b
       if (abs(ratio)<1.0_RKIND) ratio=1.0_RKIND / ratio
@@ -474,16 +475,16 @@ contains
          almost=.true.
       else
          almost=.false.
-      endif
+      end if
    end function
 
 
    subroutine conviertecabecera(c,cNew,columnas,rinstant)
       integer :: columnas
-      character(LEN=BUFSIZE) :: c,cNew,chninstant
-      character(LEN=BUFSIZE), dimension(1:columnas) :: c2
+      character(len=BUFSIZE) :: c,cNew,chninstant
+      character(len=BUFSIZE), dimension(1:columnas) :: c2
       integer :: i,j,k,longi,ii
-      real (kind=RKIND_tiempo) rinstant
+      real(kind=RKIND_tiempo) rinstant
 
       write(chninstant,fmt) rinstant
 
@@ -501,42 +502,42 @@ contains
                      c2(k)=' f_at_'//trim(adjustl(chninstant))
                   else
                      c2(k)=c(i:j-1)//'_Mod   '//c(i:j-1)//'_Phase   '
-                  endif
+                  end if
                   k=k+1
                   if (k > columnas) exit buscam
                   do ii=j,longi
                      i=ii
                      if ((c(ii:ii) /= ' ').or.(ii == longi)) exit interno
                   end do
-               endif
+               end if
             end do interno
          else
             i=i+1
-         endif
+         end if
       end do buscam
 
       cNew=' '
       do i=1,columnas
          cNew=trim(adjustl(cNew))//'   '//trim(adjustl(c2(i)))
-      enddo
+      end do
       return
    end subroutine
 
 
 
-   subroutine postprocessonthefly(layoutnumber,size,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
+   subroutine postprocessonthefly(layoutnumber,num_procs,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
 
 
-      type (SGGFDTDINFO), intent(IN)     ::  sgg
-      integer (kind=4), intent(in)  :: layoutnumber,size
-      character (len=*), intent(in) :: nEntradaRoot
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
+      character(len=*), intent(in) :: nEntradaRoot
 
-      type(output_t), pointer, dimension( : )  ::  output
-      character (LEN=BUFSIZE) :: path
+      type(output_t), pointer, dimension( : ) :: output
+      character(len=BUFSIZE) :: path
       logical :: existe,escribir,escribirBloque,somethingdone,niapapostprocess,forceresampled
-      integer (kind=4) :: ii,i,field
+      integer(kind=4) :: ii,i,field
       character(len=BUFSIZE) :: buff
-      real (kind=RKIND_tiempo) :: rinstant
+      real(kind=RKIND_tiempo) :: rinstant
 
       Output => GetOutput() !get the output private info from observation
       !
@@ -563,14 +564,14 @@ contains
                      call print11(layoutnumber,BUFF)
                   ELSE
                      close (output(ii)%item(i)%unit)
-                  endif !del existe
-               endif !del if fredomain
-            endif !del escribir
+                  end if !del existe
+               end if !del if fredomain
+            end if !del escribir
          end do
          !
       end do !barrido puntos de observacion
       !
-      call postprocess(layoutnumber,size,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
+      call postprocess(layoutnumber,num_procs,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
       !
       do ii=1,sgg%NumberRequest
          do i=1,sgg%Observation(ii)%nP
@@ -595,9 +596,9 @@ contains
                      call print11(layoutnumber,BUFF)
                   ELSE
                      open (output(ii)%item(i)%unit,file=trim(adjustl(path)),form='formatted',position='append')
-                  endif !del existe
-               endif !del if fredomain
-            endif !del escribir
+                  end if !del existe
+               end if !del if fredomain
+            end if !del escribir
          end do
       end do !barrido puntos de observacion
    end subroutine postprocessonthefly
