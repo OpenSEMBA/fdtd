@@ -13,10 +13,11 @@ def test_far_field_probe_publishes_complete_descriptor(run_output_case):
                 "phi": {"initial": 0, "final": 0, "step": 1},
                 "domain": {
                     "type": "frequency",
-                    "initialFrequency": 1e9,
+                    "initialFrequency": 1e6,
                     "finalFrequency": 1e9,
-                    "numberOfFrequencies": 1,
-                },
+                    "numberOfFrequencies": 30,
+                    "frequencySpacing": "logarithmic"
+                }
             }
         ],
     )
