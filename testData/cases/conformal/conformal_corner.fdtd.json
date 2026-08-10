@@ -46,7 +46,7 @@
         "elements": [
             {
                 "id": 1,
-                "type": "cell",
+                "type": "conformal",
                 "subtype" : "volume",
                 "intervals" : [],
                 "triangles": [

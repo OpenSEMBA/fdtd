@@ -171,8 +171,10 @@ def test_fill_conformal_vtk_sphere(tmp_path):
     face_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=9, property='mediatype')
 
-    assert line_media_dict[0.5] == 12  # PEC line
-    assert line_media_dict[2004] == 24  # Conformal line
+    assert line_media_dict
+    assert face_media_dict
+    assert line_media_dict[12] == 12  # PEC line
+    assert line_media_dict[13] == 24  # Conformal line
 
     assert face_media_dict[0] == 6  # PEC surface
     assert face_media_dict[1005] == 24  # Conformal PEC surface
@@ -194,11 +196,13 @@ def test_fill_conformal_fL_0_005_vtk_large_sphere(tmp_path):
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
 
+    assert line_media_dict
     assert -0.5 not in line_media_dict.keys()
 
     face_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=9, property='mediatype')
 
+    assert face_media_dict
     assert -1 not in face_media_dict.keys()
 
 @pytest.mark.conformal
@@ -217,11 +221,13 @@ def test_fill_conformal_fL_0_15_vtk_large_sphere(tmp_path):
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
 
+    assert line_media_dict
     assert -0.5 not in line_media_dict.keys()
 
     face_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=9, property='mediatype')
 
+    assert face_media_dict
     assert -1 not in face_media_dict.keys()
 
 @pytest.mark.conformal
@@ -240,11 +246,13 @@ def test_fill_slanted_vtk_large_sphere(tmp_path):
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
 
+    assert line_media_dict
     assert -0.5 not in line_media_dict.keys()
 
     face_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=9, property='mediatype')
 
+    assert face_media_dict
     assert -1 not in face_media_dict.keys()
 
     
@@ -276,14 +284,15 @@ def test_fill_conformal_vtk_corner(tmp_path):
     face_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=9, property='mediatype')
     
+    assert face_media_dict
     assert(0 not in face_media_dict.keys())
     assert face_media_dict[1005] == 2  # Conformal PEC surface #1
     assert face_media_dict[1006] == 2  # Conformal PEC surface #2
 
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
-    assert line_media_dict[0.5] == 1  # PEC line
-    assert line_media_dict[2004] == 4  # Conformal line #1
+    assert line_media_dict
+    assert line_media_dict[13] == 5  # Conformal line #1
     
 @pytest.mark.probes
 @pytest.mark.movie

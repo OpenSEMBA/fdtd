@@ -128,14 +128,11 @@ def createUnshieldedWire(id, lpul, cpul, rpul=0.0, gpul=0.0):
 
 def createPropertyDictionary(vtkfile, celltype: int, property: str):
     ugrid = pv.UnstructuredGrid(vtkfile)
-    objs = np.argwhere(ugrid.celltypes == celltype)  # [i][0]
-    if len(objs) == 0:
+    cell_mask = ugrid.celltypes == celltype
+    if not np.any(cell_mask):
         return dict()
 
-    props = np.array([])
-    prop_array = ugrid.cell_data[property]
-    for i in range(objs[0][0], objs[-1][0]+1):
-        props = np.append(props, prop_array[i])
+    props = np.asarray(ugrid.cell_data[property])[cell_mask]
 
     unique, counts = np.unique(props, return_counts=True)
     return dict(zip(unique, counts))

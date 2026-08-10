@@ -1582,6 +1582,12 @@ def test_conformal_delay(tmp_path):
         tdelta = t4 + 2*(i*1.0/n)*0.02/3e8
         assert np.abs(delay - tdelta)/tdelta < 0.01
         
+@pytest.mark.conformal
+@pytest.mark.xfail(
+    run=False,
+    strict=True,
+    reason="The conformal thin-strip fixture is a placeholder with no surface triangles or impedance reference.",
+)
 def test_conformal_thin_strip_resistance(tmp_path):
     fn = CASES_FOLDER + 'conformal_thin_strip/conformal_thin_strip.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,

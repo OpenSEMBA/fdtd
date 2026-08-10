@@ -2,7 +2,7 @@ MODULE NFDETypes_m
    !
    USE FDETYPES_m
 #ifdef CompileWithMTLN   
-   USE mtln_types_mod
+   USE mtln_types_m, ONLY: mtln_t
 #endif
    USE conformal_types_m
    !

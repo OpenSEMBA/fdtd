@@ -2,6 +2,9 @@ module smbjson_m
 
 #ifdef CompileWithSMBJSON
    use NFDETypes_m
+#ifdef CompileWithMTLN
+   use mtln_types_m
+#endif
 
    use NFDETypes_extension_m
    use smbjson_labels_m

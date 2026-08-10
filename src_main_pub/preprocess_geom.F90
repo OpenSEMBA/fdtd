@@ -4675,6 +4675,9 @@ CONTAINS
          MEDIOEXTRA%index=CONTAMEDIA
       endif
       !!!!!!!!!!!!!
+      if (contamedia > sgg%AllocMed) then
+         call Readjust(sgg%AllocMed, sgg%Med, contamedia)
+      end if
       sgg%NumMedia = contamedia
       !el medio 0 no precisa compresion
 
