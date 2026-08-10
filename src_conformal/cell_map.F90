@@ -1,8 +1,8 @@
-module cell_map_mod
+module cell_map_m
 
-    use geometry_mod, only: triangle_t, side_t, interval_t, FACE_X, FACE_Y, FACE_Z, isNewSide
+    use geometry_m, only: triangle_t, side_t, interval_t, FACE_X, FACE_Y, FACE_Z, isNewSide
     use fhash, only: fhash_tbl_t, key=>fhash_key
-    use NFDETypes, only: rkind, ConformalPECElement
+    use NFDETypes_m, only: rkind, ConformalPECElements_t
     implicit none
 
 
@@ -150,7 +150,7 @@ contains
 
     subroutine buildCellMap(res, volume)
         type(cell_map_t), intent(inout) :: res
-        type(ConformalPECElement), intent(in) :: volume
+        type(ConformalPECElements_t), intent(in) :: volume
         type(triangle_map_t) :: tri_map
         type(interval_map_t) :: interval_map
         type(side_map_t) :: side_map, side_map_on

@@ -1,8 +1,8 @@
-module conformal_mod
+module conformal_m
 
-   use geometry_mod
-   use cell_map_mod
-   use NFDETypes, only: ConformalPECRegions, ConformalPECElement, ConformalMedia_t, & 
+   use geometry_m
+   use cell_map_m
+   use NFDETypes_m, only: ConformalPECRegions_t, ConformalPECElements_t, ConformalMedia_t, &
                         edge_t, face_t, & 
                         conformal_face_media_t, conformal_edge_media_t, rkind
    
@@ -12,7 +12,7 @@ module conformal_mod
 contains
 
    function buildSideMaps(regions) result(res)
-      type(ConformalPECRegions), intent(in) :: regions
+      type(ConformalPECRegions_t), intent(in) :: regions
       type(side_tris_map_t), dimension(:), allocatable :: res
       integer :: i
       allocate(res(size(regions%volumes)))
@@ -22,7 +22,7 @@ contains
    end function
 
    subroutine buildConformalMedia(conformalRegs, volumes, surfaces) 
-      type(ConformalPECRegions), pointer, intent(in) :: conformalRegs
+      type(ConformalPECRegions_t), pointer, intent(in) :: conformalRegs
       type(ConformalMedia_t), allocatable, dimension(:), intent(inout) :: volumes, surfaces
       if (associated(conformalRegs%volumes)) then 
          volumes = buildMedia(conformalRegs%volumes)
@@ -37,7 +37,7 @@ contains
    end subroutine
 
    function buildMedia(elements) result(res)
-      type(ConformalPECElement), dimension(:), pointer :: elements
+      type(ConformalPECElements_t), dimension(:), pointer :: elements
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i
       allocate(res(size(elements)))
@@ -47,7 +47,7 @@ contains
    end function   
 
    function buildMediaFromElement(element) result(res)
-      type(ConformalPECElement), intent(in) :: element
+      type(ConformalPECElements_t), intent(in) :: element
       type(ConformalMedia_t) :: res
 
       type(cell_map_t) :: cell_map
@@ -584,4 +584,4 @@ contains
    end function
 
 
-end module
+end module conformal_m

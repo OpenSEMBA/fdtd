@@ -10,21 +10,14 @@
 MODULE Preprocess_m
 #undef DetectAdj
    !
-   USE Report
-   USE NFDETypes
+   USE Report_m
+   USE NFDETypes_m
    !healer sgg10
-   USE CreateMatrices
+   USE CreateMatrices_m
    !typos que leo desde mi FDE
-   USE FDEtypes
-   USE DMMA
-#ifdef CompileWithConformal
-   USE CONFORMAL_INI_CLASS
-   USE CONFORMAL_TOOLS
-   USE CONFORMAL_MAPPED
-   USE CONFORMAL_TYPES
-   USE Conformal_TimeSteps_m
-#endif
-   USE conformal_mod, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
+   USE FDETYPES_m
+   USE DMMA_m
+   USE conformal_m, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
    IMPLICIT NONE
 !!!variables globales del modulo
    REAL (KIND=RKIND), save           ::  cluz,zvac
@@ -51,11 +44,11 @@ CONTAINS
       LOGICAL, INTENT (INout) :: mibc,SGBC,CLIPREGION,boundwireradius,SGBCDispersive,skindepthpre
       LOGICAL, INTENT (INout) :: createmapvtk
       TYPE (limit_t), DIMENSION (1:6) :: SINPML_fullsize, fullsize
-      type (SGGFDTDINFO), intent(INOUT)    :: sgg
+      type (SGGFDTDINFO_t), intent(INOUT)    :: sgg
       character(len=BUFSIZE) :: extraswitches
 
       type(taglist_t) :: tag_numbers
-      TYPE (Parseador), INTENT (INOUT) :: this
+      type(Parseador_t), INTENT (INOUT) :: this
       INTEGER (KIND=4) :: tama, tama2, tama3, tama4, tama5, tama6, i, j, k, tipotemp, tamaSonda,  &
       &      tamaoldSONDA, tamaBloquePrb, tamaScrPrb,pozi,tama2bis,numeroasignaciones,ci
       CHARACTER (LEN=*), INTENT (IN) :: fichin
@@ -98,7 +91,7 @@ CONTAINS
       INTEGER (KIND=4) :: i11, j11
       !
       type (tagtype_t) :: tagtype
-      TYPE (FreqDepenMaterial), POINTER :: fdgeom
+      type(FreqDepenMaterial_t), POINTER :: fdgeom
       !
       INTEGER (KIND=4) :: numertag
       INTEGER (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
@@ -4866,7 +4859,7 @@ CONTAINS
       end function
 
       subroutine initConformalBoundingBox(sgg, bbox)
-         type(sggfdtdinfo), intent(in)    :: sgg
+         type(sggfdtdinfo_t), intent(in)    :: sgg
          type(XYZlimit_t), intent(inout) :: bbox
          bbox%XI = -sgg%Alloc(iHx)%XI
          bbox%XE = -sgg%Alloc(iHx)%XE
@@ -4945,7 +4938,7 @@ CONTAINS
       end subroutine
 
       subroutine addConformalMedia(sgg, media, conformal_volumes, edge_ratios, face_ratios, contamedia, bbox, side_map, type)
-         type(sggfdtdinfo), intent(inout)    :: sgg
+         type(sggfdtdinfo_t), intent(inout)    :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_volumes
          real(kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios, face_ratios
@@ -4991,7 +4984,7 @@ CONTAINS
       end subroutine
 
       subroutine addConformalFaceMedia(sgg, media, conformal_volumes, num_media, face_ratios, bbox, type)
-         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type (SGGFDTDINFO_t), intent(INOUT)    :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_volumes
          integer (kind=4), intent(in) :: num_media
@@ -5018,7 +5011,7 @@ CONTAINS
                face_media = 0
             end if
 
-            allocate(sgg%Med(face_media)%ConformalFace,conformal_volumes%face_media(j)%size)
+            allocate(sgg%Med(face_media)%ConformalFace(conformal_volumes%face_media(j)%size))
 
             do k = 1, conformal_volumes%face_media(j)%size
                cell(:) = conformal_volumes%face_media(j)%faces(k)%cell(:)
@@ -5038,7 +5031,7 @@ CONTAINS
                   media%sggMiHz(cell(1), cell(2), cell(3)) = face_media
                end select
 
-               sgg%Med(face_media)%ConformalFace(k) => conformal_volumes%face_media(j)%faces(k)
+               sgg%Med(face_media)%ConformalFace(k) = conformal_volumes%face_media(j)%faces(k)
 
             end do
          end do
@@ -5058,7 +5051,7 @@ CONTAINS
       end function
 
       subroutine addConformalEdgeMedia(sgg, media, conformal_volumes, num_media, edge_ratios, bbox, type)
-         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type (SGGFDTDINFO_t), intent(INOUT)    :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_volumes
          integer (kind=4), intent(in) :: num_media
@@ -5088,7 +5081,7 @@ CONTAINS
                edge_media = 0
             end if
 
-            allocate(sgg%Med(edge_media)%ConformalEdge,conformal_volumes%edge_media(j)%size)
+            allocate(sgg%Med(edge_media)%ConformalEdge(conformal_volumes%edge_media(j)%size))
 
 
             do k = 1, conformal_volumes%edge_media(j)%size
@@ -5110,7 +5103,7 @@ CONTAINS
                   media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
                end select
 
-               sgg%Med(edge_media)%ConformalEdge(k) => conformal_volumes%edge_media(j)%edge(k)
+               sgg%Med(edge_media)%ConformalEdge(k) = conformal_volumes%edge_media(j)%edges(k)
 
 
             end do
@@ -5118,7 +5111,7 @@ CONTAINS
       end subroutine
 
       subroutine addUndetectedBorderFaces(sgg, media, conformal_volumes, num_media, edge_ratios, bbox, side_map)
-         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type (SGGFDTDINFO_t), intent(INOUT)    :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_volumes
          integer (kind=4), intent(in) :: num_media
@@ -5613,7 +5606,7 @@ CONTAINS
       end subroutine asignawiredisper
 
       subroutine asignadisper(fdgeom)
-         TYPE (FreqDepenMaterial), POINTER :: fdgeom
+         type(FreqDepenMaterial_t), POINTER :: fdgeom
 
          IF (fdgeom%l+fdgeom%LM /=0 ) THEN
             BUFF='ERROR: SECOND ORDER DISPERSIVE MEDIA UNSUPPORTED. TRANSLATE THEM TO FIRST ORDER ()'
@@ -5825,9 +5818,9 @@ CONTAINS
 
    SUBROUTINE read_limits_nogeom (layoutnumber,size, sgg, fullsize, SINPML_fullsize, this,MurAfterPML,mur_exist)
       TYPE (limit_t), DIMENSION (1:6) :: fullsize, SINPML_fullsize
-      type (SGGFDTDINFO), intent(INOUT)    :: sgg
+      type (SGGFDTDINFO_t), intent(INOUT)    :: sgg
 
-      TYPE (Parseador), INTENT (IN) :: this
+      type(Parseador_t), INTENT (IN) :: this
       INTEGER (KIND=4) :: tama, i, field,j,k
       character(len=BUFSIZE) :: buff
       logical MurAfterPML,mur_exist
@@ -6303,7 +6296,7 @@ CONTAINS
    subroutine prepro_skindepth(this,fichin)
       integer pozi,tama,j,k
       character (LEN=BUFSIZE)       ::   multiportFile
-      TYPE (Parseador), INTENT (IN) :: this
+      type(Parseador_t), INTENT (IN) :: this
       CHARACTER (LEN=*), INTENT (IN) :: fichin
       character (LEN=BUFSIZE)  ::  restocadena
       integer :: my_iostat
@@ -6347,7 +6340,7 @@ CONTAINS
 #else
    subroutine AssigLossyOrPECtoNodes(sgg,media)
 #endif
-      type (SGGFDTDINFO), intent(INOUT) :: sgg
+      type (SGGFDTDINFO_t), intent(INOUT) :: sgg
       type (media_matrices_t), intent(inout) :: media
 
       logical :: ispec, isSGBC, IsComposite, islossy, input_conformal_flag,NODALMENTEIGUALES,iguaSGM,iguaSIG,iguaMUR,iguaPEC,iguaLOS,iguaEPR,ISconformal
@@ -6674,7 +6667,7 @@ CONTAINS
       CHARACTER (LEN=*), INTENT (IN) :: fichin
       INTEGER (KIND=4), INTENT (IN) :: layoutnumber
 
-      TYPE (Parseador), INTENT (INOUT) :: this
+      type(Parseador_t), INTENT (INOUT) :: this
       LOGICAL :: foundDuplicate
       integer (Kind=4) :: numertag, i,j, k, m, tama,tama2,tama3,tama2p,tama3p,precounting,acum,thefileno
       CHARACTER(LEN=BUFSIZE) :: tagToCheck

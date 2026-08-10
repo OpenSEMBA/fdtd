@@ -6,9 +6,9 @@
 !                        Also creates intermediate media for the boundaries
 !                        between different media.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-MODULE CreateMatrices
-   USE Report
-   USE fdetypes
+MODULE CreateMatrices_m
+   USE Report_m
+   USE FDETYPES_m
    !
    IMPLICIT NONE
    PRIVATE
@@ -1511,7 +1511,7 @@ MODULE CreateMatrices
       !
       TYPE (limit_t), DIMENSION (1:6) :: SINPML_fullsize, fullsize
       !Inputs and Outputs
-      type (SGGFDTDINFO), intent(INOUT)        :: sgg
+      type (SGGFDTDINFO_t), intent(INOUT)        :: sgg
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES)   ::  &
       sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
       sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
@@ -2189,7 +2189,7 @@ MODULE CreateMatrices
          field = iEx
          !izda y dcha
          IF ((Border%IsLeftPML)) THEN
-            DO j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
+            DO j = YIPML (field),YIPML (field)+ MEDIOEXTRA%pml_size
                DO i = XIPML (field), XEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2225,7 +2225,7 @@ MODULE CreateMatrices
          END IF
          !
          IF ((Border%IsRightPML)) THEN
-            DO j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
+            DO j = YEPML (field)- MEDIOEXTRA%pml_size,YEPML (field)
                DO i = XIPML (field), XEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2261,7 +2261,7 @@ MODULE CreateMatrices
          END IF
          !  !Up y Down
          IF ((Border%IsDownPML)) THEN
-            DO k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
+            DO k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%pml_size
                DO j = YIPML (field), YEPML (field)
                   DO i = XIPML (field), XEPML (field)
                      !
@@ -2297,7 +2297,7 @@ MODULE CreateMatrices
          END IF
          !
          IF ((Border%IsUpPML)) THEN
-            DO k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
+            DO k = ZEPML (field)- MEDIOEXTRA%pml_size,ZEPML (field)
                DO j = YIPML (field), YEPML (field)
                   DO i = XIPML (field), XEPML (field)
                      !
@@ -2335,7 +2335,7 @@ MODULE CreateMatrices
          field = iEy
          !front y back
          IF ((Border%IsBackPML)) THEN
-            DO i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
+            DO i = XIPML (field),XIPML (field)+ MEDIOEXTRA%pml_size
                DO j = YIPML (field), YEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2371,7 +2371,7 @@ MODULE CreateMatrices
          END IF
          !
          IF ((Border%IsFrontPML)) THEN
-            DO i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
+            DO i = XEPML (field)- MEDIOEXTRA%pml_size,XEPML (field)
                DO j = YIPML (field), YEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2407,7 +2407,7 @@ MODULE CreateMatrices
          END IF
          !  !Up y Down
          IF ((Border%IsDownPML)) THEN
-            DO k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
+            DO k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%pml_size
                DO j = YIPML (field), YEPML (field)
                   DO i = XIPML (field), XEPML (field)
                      !
@@ -2443,7 +2443,7 @@ MODULE CreateMatrices
          END IF
          !
          IF ((Border%IsUpPML)) THEN
-            DO k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
+            DO k = ZEPML (field)- MEDIOEXTRA%pml_size,ZEPML (field)
                DO j = YIPML (field), YEPML (field)
                   DO i = XIPML (field), XEPML (field)
                      !
@@ -2481,7 +2481,7 @@ MODULE CreateMatrices
          field = iEz
          !front y back
          IF ((Border%IsBackPML)) THEN
-            DO i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
+            DO i = XIPML (field),XIPML (field)+ MEDIOEXTRA%pml_size
                DO j = YIPML (field), YEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2517,7 +2517,7 @@ MODULE CreateMatrices
          END IF
          !
          IF ((Border%IsFrontPML)) THEN
-            DO i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
+            DO i = XEPML (field)- MEDIOEXTRA%pml_size,XEPML (field)
                DO j = YIPML (field), YEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2553,7 +2553,7 @@ MODULE CreateMatrices
          END IF
          !izda y dcha
          IF ((Border%IsLeftPML)) THEN
-            DO j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
+            DO j = YIPML (field),YIPML (field)+ MEDIOEXTRA%pml_size
                DO i = XIPML (field), XEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2589,7 +2589,7 @@ MODULE CreateMatrices
          END IF
          !
          IF ((Border%IsRightPML)) THEN
-            DO j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
+            DO j = YEPML (field)- MEDIOEXTRA%pml_size,YEPML (field)
                DO i = XIPML (field), XEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2631,7 +2631,7 @@ MODULE CreateMatrices
          field = iHx
          !izda y dcha
          IF ((Border%IsLeftPML)) THEN
-            DO j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
+            DO j = YIPML (field),YIPML (field)+ MEDIOEXTRA%pml_size
                DO i = XIPML (field), XEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2667,7 +2667,7 @@ MODULE CreateMatrices
          END IF
          !
          IF ((Border%IsRightPML)) THEN
-            DO j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
+            DO j = YEPML (field)- MEDIOEXTRA%pml_size,YEPML (field)
                DO i = XIPML (field), XEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2703,7 +2703,7 @@ MODULE CreateMatrices
          END IF
          !  !Up y Down
          IF ((Border%IsDownPML)) THEN
-            DO k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
+            DO k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%pml_size
                DO j = YIPML (field), YEPML (field)
                   DO i = XIPML (field), XEPML (field)
                      !
@@ -2739,7 +2739,7 @@ MODULE CreateMatrices
          END IF
          !
          IF ((Border%IsUpPML)) THEN
-            DO k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
+            DO k = ZEPML (field)- MEDIOEXTRA%pml_size,ZEPML (field)
                DO j = YIPML (field), YEPML (field)
                   DO i = XIPML (field), XEPML (field)
                      !
@@ -2777,7 +2777,7 @@ MODULE CreateMatrices
          field = iHy
          !front y back
          IF ((Border%IsBackPML)) THEN
-            DO i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
+            DO i = XIPML (field),XIPML (field)+ MEDIOEXTRA%pml_size
                DO j = YIPML (field), YEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2813,7 +2813,7 @@ MODULE CreateMatrices
          END IF
          !
          IF ((Border%IsFrontPML)) THEN
-            DO i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
+            DO i = XEPML (field)- MEDIOEXTRA%pml_size,XEPML (field)
                DO j = YIPML (field), YEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2849,7 +2849,7 @@ MODULE CreateMatrices
          END IF
          !  !Up y Down
          IF ((Border%IsDownPML)) THEN
-            DO k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
+            DO k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%pml_size
                DO j = YIPML (field), YEPML (field)
                   DO i = XIPML (field), XEPML (field)
                      !
@@ -2885,7 +2885,7 @@ MODULE CreateMatrices
          END IF
          !
          IF ((Border%IsUpPML)) THEN
-            DO k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
+            DO k = ZEPML (field)- MEDIOEXTRA%pml_size,ZEPML (field)
                DO j = YIPML (field), YEPML (field)
                   DO i = XIPML (field), XEPML (field)
                      !
@@ -2923,7 +2923,7 @@ MODULE CreateMatrices
          field = iHz
          !front y back
          IF ((Border%IsBackPML)) THEN
-            DO i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
+            DO i = XIPML (field),XIPML (field)+ MEDIOEXTRA%pml_size
                DO j = YIPML (field), YEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2959,7 +2959,7 @@ MODULE CreateMatrices
          END IF
          !
          IF ((Border%IsFrontPML)) THEN
-            DO i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
+            DO i = XEPML (field)- MEDIOEXTRA%pml_size,XEPML (field)
                DO j = YIPML (field), YEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -2995,7 +2995,7 @@ MODULE CreateMatrices
          END IF
          !izda y dcha
          IF ((Border%IsLeftPML)) THEN
-            DO j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
+            DO j = YIPML (field),YIPML (field)+ MEDIOEXTRA%pml_size
                DO i = XIPML (field), XEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -3031,7 +3031,7 @@ MODULE CreateMatrices
          END IF
          !
          IF ((Border%IsRightPML)) THEN
-            DO j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
+            DO j = YEPML (field)- MEDIOEXTRA%pml_size,YEPML (field)
                DO i = XIPML (field), XEPML (field)
                   DO k = ZIPML (field), ZEPML (field)
                      !
@@ -3187,4 +3187,4 @@ MODULE CreateMatrices
       !
    END SUBROUTINE
    !
-END MODULE
+END MODULE CreateMatrices_m

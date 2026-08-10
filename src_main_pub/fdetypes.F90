@@ -4,7 +4,7 @@
 ! This module contains the types and parameters shared by all the rest of the modules
 ! No public variables are defined. Only types and parameters
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module  FDETYPES
+module  FDETYPES_m
 
 
 #ifdef CompileWithOpenMP
@@ -228,20 +228,20 @@ module  FDETYPES
         integer (Kind=4) :: numertags
     end type
 
-   type coorsxyz
+   type coorsxyz_t
       REAL (KIND=RKIND), pointer, dimension( : )  ::  x,y,z
-   end type coorsxyz
+   end type coorsxyz_t
    !
-   type coorsxyzP
-      type (coorsxyz), dimension(1:6)  ::  PhysCoor
-   end type coorsxyzP
+   type coorsxyzP_t
+      type (coorsxyz_t), dimension(1:6)  ::  PhysCoor
+   end type coorsxyzP_t
 
    TYPE MedioExtra_t
-      integer (kind=4) :: size,index
+      integer (kind=4) :: pml_size,index
       real (kind=rkind) :: sigma,sigmam
       logical :: exists
    end type
-   type logic_control
+   type logic_control_t
       LOGICAL  ::  Wires  , &
       PMLbodies  , &
       MultiportS  , &
@@ -331,14 +331,14 @@ module  FDETYPES
    !
 
    !wires
-   type  ::  fichevol_t_wires
+   type  ::  fichevol_wires_t
       character (LEN=BUFSIZE)  ::  Name
       integer (kind=4)      ::  NumSamples
       REAL (KIND=RKIND_wires)  ::  DeltaSamples
       REAL (KIND=RKIND_wires), dimension( : ), pointer  ::  Samples
    end type
-   type  ::  source
-      type (fichevol_t_wires)  ::  Fichero
+   type  ::  source_t
+      type (fichevol_wires_t)  ::  Fichero
       REAL (KIND=RKIND_wires)  ::  Resistance
       REAL (KIND=RKIND_wires)   ::  Multiplier
       logical :: soft
@@ -360,22 +360,22 @@ module  FDETYPES
       Complex (KIND=CKIND)                        :: d, e
    end type
 
-   type  ::  oriented_point
+   type  ::  oriented_point_t
       integer (kind=4)  :: ori
       integer (kind=4)  ::  i,j,k,origIndex,ilibre,jlibre,klibre,multiraboDE !si es multirabo de que indice lo es
       logical :: Is_LeftEnd,Is_RightEnd,IsEnd_norLeft_norRight
       logical :: repetido,multirabo !marca segmentos que aparecen repetidos en un mismo thin wire!los bundles deberan estar thin-wires distintos
       logical :: orientadoalreves
-   end type oriented_point
+   end type oriented_point_t
 
    type  ::  Wires_t
       REAL (KIND=RKIND_wires)   ::  Radius,R,L,C,P_R,P_L,P_C
       REAL (KIND=RKIND_wires)   ::  Radius_devia,R_devia,L_devia,C_devia
       type (WireDispersiveParams_t), allocatable, dimension(:) :: disp
       integer (kind=4)  :: numsegmentos,NUMVOLTAGESOURCES,NUMCURRENTSOURCES
-      type (oriented_point), pointer, dimension( : )  ::  segm
-      type (source), pointer, dimension( : )  ::  Vsource
-      type (source), pointer, dimension( : )  ::  Isource
+      type (oriented_point_t), pointer, dimension( : )  ::  segm
+      type (source_t), pointer, dimension( : )  ::  Vsource
+      type (source_t), pointer, dimension( : )  ::  Isource
       logical  ::  VsourceExists ,IsourceExists
       logical  ::  HasParallel_LeftEnd ,HasParallel_RightEnd ,&
                    HasSeries_LeftEnd ,HasSeries_RightEnd,HasAbsorbing_LeftEnd,HasAbsorbing_RightEnd
@@ -401,7 +401,7 @@ module  FDETYPES
       integer (kind=4)        :: index
       real (kind=RKIND_wires)       :: x, y, z
       logical                 :: VsourceExists, IsourceExists
-      type (source), pointer  :: Vsource, Isource
+      type (source_t), pointer  :: Vsource, Isource
    end type SlantedNode_t
    
    type  :: SlantedWires_t
@@ -558,6 +558,7 @@ module  FDETYPES
       ConformalPEC , &
       PMC , &
       ThinWire , &
+      Multiwire, &
       SlantedWire, &
       EDispersive , &
       MDispersive , &
@@ -585,6 +586,67 @@ module  FDETYPES
 
 
 
+   ! Conformal edge/face data is shared by FDETYPES and NFDETypes.  Keep the
+   ! definitions in this foundational module so MediaData_t does not depend
+   ! on the module that already USEs FDETYPES.
+   type :: conformal_field_t
+      real(kind=rkind), pointer :: p => null()
+      real(kind=rkind), allocatable :: owned
+   end type
+
+   type :: conformal_edge_fields_t
+      real(kind=rkind), pointer :: E => null()
+      real(kind=rkind), pointer :: H1 => null()
+      real(kind=rkind), pointer :: H2 => null()
+      real(kind=rkind), pointer :: H3 => null()
+      real(kind=rkind), pointer :: H4 => null()
+   end type
+
+   type :: conformal_face_fields_t
+      real(kind=rkind), pointer :: H => null()
+      type(conformal_field_t) :: E1
+      real(kind=rkind), pointer :: E2 => null()
+      real(kind=rkind), pointer :: E3 => null()
+      real(kind=rkind), pointer :: E4 => null()
+   end type
+
+   type :: conformal_feature_t
+      real(kind=rkind) :: ratio
+      integer (kind=4) :: size
+   end type
+
+   type, public :: edge_t
+      integer (kind=4), dimension(3) :: cell
+      integer(kind=4) :: direction = -1
+      real (kind=rkind) :: ratio = -1
+      real (kind=rkind), dimension(2) :: material_coords
+      type(conformal_edge_fields_t) :: region_I_fields, region_II_fields
+   end type
+
+   type, public :: face_t
+      integer (kind=4), dimension(3) :: cell
+      integer(kind=4) :: direction = -1
+      real (kind=rkind) :: ratio = -1
+      type(conformal_face_fields_t) :: region_I_fields, region_II_fields
+   end type
+
+   type, public, extends(conformal_feature_t) :: conformal_edge_media_t
+      type(edge_t), dimension(:), allocatable :: edges
+   end type
+
+   type, public, extends(conformal_feature_t) :: conformal_face_media_t
+      type(face_t), dimension(:), allocatable :: faces
+   end type
+
+   type, public :: ConformalMedia_t
+      integer (kind=4) :: n_edges_media = 0
+      integer (kind=4) :: n_faces_media = 0
+      type (conformal_face_media_t), dimension(:), pointer :: face_media => null()
+      type (conformal_edge_media_t), dimension(:), pointer :: edge_media => null()
+      real (kind=rkind) :: time_step_scale_factor = 1.0
+      character(len=bufsize) :: tag
+   end type ConformalMedia_t
+
    type  ::  MediaData_t
       REAL (KIND=RKIND)          ::  Priority,Epr,Sigma,Mur,SigmaM
       logical :: sigmareasignado !solo afecta a un chequeo de errores en lumped 120123
@@ -599,14 +661,14 @@ module  FDETYPES
       type (Anisotropic_t)     , dimension( : ), pointer  ::  Anisotropic
       type (Lumped_t)          , dimension( : ), pointer  ::  Lumped
       ! type (conformal_feature_t), , dimension( : ), pointer  ::  Conformal
-      type (edge_t), dimension( : ), pointer  ::  ConformalEdge
-      type (face_t), dimension( : ), pointer  ::  ConformalFace
+      type (edge_t), dimension( : ), allocatable  ::  ConformalEdge
+      type (face_t), dimension( : ), allocatable  ::  ConformalFace
    end type
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! This is the  class which stores all the simulation data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   type  ::  SGGFDTDINFO
+   type  ::  SGGFDTDINFO_t
       REAL (KIND=RKIND_tiempo)     , pointer, dimension ( : )        ::  tiempo !para permit scaling
       REAL (KIND=RKIND_tiempo)  ::  dt
       character (len=BUFSIZE) :: extraswitches
@@ -635,7 +697,7 @@ module  FDETYPES
       logical  :: thereAreMagneticMedia
       logical  :: thereArePMLMagneticMedia
       CHARACTER (LEN=BUFSIZE) :: nEntradaRoot
-      type (coorsxyzP)  ::  Punto
+      type (coorsxyzP_t)  ::  Punto
    end type
 
    type media_matrices_t
@@ -693,7 +755,7 @@ module  FDETYPES
       CHARACTER (LEN=BUFSIZE) :: opcionestotales
       
       integer (kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 
-                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, size
+                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, num_procs
       
       TYPE (MedioExtra_t) :: MEDIOEXTRA
       type (nf2ff_T) :: facesNF2FF
@@ -751,7 +813,7 @@ contains
    end subroutine 
 
    subroutine logic_reset(this)
-      class(logic_control) :: this
+      class(logic_control_t) :: this
       this%Wires = .false.
       this%PMLbodies = .false.
       this%MultiportS = .false.
@@ -864,7 +926,7 @@ contains
       direction_eq = direction_eq .and. (a%orientation == b%orientation)
 
    end function
-end module FDETYPES
+end module FDETYPES_m
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !         STRUCTURE OF SGG

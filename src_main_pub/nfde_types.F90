@@ -1,10 +1,10 @@
-MODULE NFDETypes
+MODULE NFDETypes_m
    !
-   USE FDETYPES
+   USE FDETYPES_m
 #ifdef CompileWithMTLN   
    USE mtln_types_mod
 #endif
-   USE conformal_types_mod
+   USE conformal_types_m
    !
    IMPLICIT NONE
    INTEGER (KIND=4), PARAMETER :: RK = RKIND
@@ -74,7 +74,7 @@ MODULE NFDETypes
    !------------------------------------------------------------------------------
    ! Basic cordinate type for two points and orientation
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: coords
+   TYPE, PUBLIC :: coords_t
       INTEGER (KIND=4) :: Xi = - 1
       INTEGER (KIND=4) :: Xe = - 1
       INTEGER (KIND=4) :: Yi = - 1
@@ -86,8 +86,8 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: Ztrancos = 1
       INTEGER (KIND=4) :: Or = 0 !f1eld orientation
       CHARACTER (LEN=BUFSIZE) :: tag
-   END TYPE coords
-   TYPE, PUBLIC :: coords_scaled
+   END TYPE coords_t
+   TYPE, PUBLIC :: coords_scaled_t
       INTEGER (KIND=4) :: Xi = - 1
       INTEGER (KIND=4) :: Xe = - 1
       INTEGER (KIND=4) :: Yi = - 1
@@ -99,123 +99,63 @@ MODULE NFDETypes
       REAL (KIND=RK) :: zc = 0.0_RKIND
       INTEGER (KIND=4) :: Or = 0 !field orientation nuevo 2015
       CHARACTER (LEN=BUFSIZE) :: tag
-   END TYPE coords_scaled
-   !-----------------> Material Types
+   END TYPE coords_scaled_t
+   !-----------------> Material_t Types
    !------------------------------------------------------------------------------
    ! Basic constants for materials
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: Material
+   TYPE, PUBLIC :: Material_t
       REAL (KIND=RK) :: eps = 0.0_RKIND
       REAL (KIND=RK) :: mu = 0.0_RKIND
       REAL (KIND=RK) :: sigma = 0.0_RKIND
       REAL (KIND=RK) :: sigmam = 0.0_RKIND
       INTEGER (KIND=4) :: id = 0
-   END TYPE Material
+   END TYPE Material_t
    !------------------------------------------------------------------------------
    ! New Class which is a collection of different materials
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: Materials
+   TYPE, PUBLIC :: Materials_t
       INTEGER (KIND=4) :: n_Mats = 0
       INTEGER (KIND=4) :: n_Mats_max = 0
-      TYPE (Material), DIMENSION (:), POINTER :: Mats => NULL ()
-   END TYPE Materials
+      TYPE (Material_t), DIMENSION (:), POINTER :: Mats => NULL ()
+   END TYPE Materials_t
 
    !------------------------------------------------------------------------------
    ! Identifies conformal PEC "media"
    !------------------------------------------------------------------------------
 
-   type, public :: ConformalPECElement
+   type, public :: ConformalPECElements_t
       type(triangle_t), dimension(:), allocatable :: triangles
       type(interval_t), dimension(:), allocatable :: intervals
       character(len=bufsize) :: tag
    end type 
 
-   type, public :: ConformalPECRegions
-      type(ConformalPECElement), dimension(:), pointer :: volumes => null()
-      type(ConformalPECElement), dimension(:), pointer :: surfaces => null()
+   type, public :: ConformalPECRegions_t
+      type(ConformalPECElements_t), dimension(:), pointer :: volumes => null()
+      type(ConformalPECElements_t), dimension(:), pointer :: surfaces => null()
    end type
-
-   type :: conformal_field_t
-      real(kind=rkind), pointer :: p => null()
-      real(kind=rkind), allocatable :: owned
-   end type
-
-   type :: conformal_edge_fields_t
-      real(kind=rkind), pointer :: E => null()
-      real(kind=rkind), pointer :: H1 => null()
-      real(kind=rkind), pointer :: H2 => null()
-      real(kind=rkind), pointer :: H3 => null()
-      real(kind=rkind), pointer :: H4 => null()
-   end type
-
-   type :: conformal_face_fields_t
-      real(kind=rkind), pointer :: H => null()
-      type(conformal_field_t) :: E1
-      ! real(kind=rkind), pointer :: E1 => null()
-      real(kind=rkind), pointer :: E2 => null()
-      real(kind=rkind), pointer :: E3 => null()
-      real(kind=rkind), pointer :: E4 => null()
-   end type
-
-   ! region II not pointers?
-
-   type, public :: edge_t 
-      integer (kind=4), dimension(3) :: cell
-      integer(kind=4) :: direction = -1
-      real (kind=rkind) :: ratio = -1
-      real (kind=rkind), dimension(2) :: material_coords
-      type(conformal_edge_fields_t) :: region_I_fields, region_II_fields
-   end type 
-   type, public :: face_t 
-      integer (kind=4), dimension(3) :: cell
-      integer(kind=4) :: direction = -1
-      real (kind=rkind) :: ratio = -1
-      type(conformal_face_fields_t) :: region_I_fields, region_II_fields
-   end type 
-
-   type :: conformal_feature_t
-      real(kind=rkind) :: ratio
-      integer (kind=4) :: size
-   end type
-
-   type, extends(conformal_feature_t) :: conformal_edge_media_t
-      type(edge_t), dimension(:), allocatable :: edges
-   end type
-   type, extends(conformal_feature_t) :: conformal_face_media_t
-      type(face_t), dimension(:), allocatable :: faces
-   end type
-
-   TYPE, PUBLIC :: ConformalMedia_t
-      INTEGER (KIND=4) :: n_edges_media = 0
-      INTEGER (KIND=4) :: n_faces_media = 0
-      TYPE (conformal_face_media_t), DIMENSION (:), POINTER :: face_media => NULL ()
-      TYPE (conformal_edge_media_t), DIMENSION (:), POINTER :: edge_media => NULL ()
-      real (kind=rkind) :: time_step_scale_factor = 1.0
-      character(len=bufsize) :: tag
-   END TYPE ConformalMedia_t
-
 
    !------------------------------------------------------------------------------
    ! Locates all the different PEC media found
    !------------------------------------------------------------------------------
 
-   TYPE, PUBLIC :: PECRegions
+   TYPE, PUBLIC :: PECRegions_t
       INTEGER (KIND=4) :: nVols = 0
       INTEGER (KIND=4) :: nSurfs = 0
       INTEGER (KIND=4) :: nLins = 0
       INTEGER (KIND=4) :: nVols_max = 0
       INTEGER (KIND=4) :: nSurfs_max = 0
       INTEGER (KIND=4) :: nLins_max = 0
-      TYPE (coords), DIMENSION (:), POINTER :: Vols => NULL ()
-      TYPE (coords), DIMENSION (:), POINTER :: Surfs => NULL ()
-      TYPE (coords), DIMENSION (:), POINTER :: Lins => NULL ()
-   END TYPE PECRegions
+      TYPE (coords_t), DIMENSION (:), POINTER :: Vols => NULL ()
+      TYPE (coords_t), DIMENSION (:), POINTER :: Surfs => NULL ()
+      TYPE (coords_t), DIMENSION (:), POINTER :: Lins => NULL ()
+   END TYPE PECRegions_t
    !------------------------------------------------------------------------------
    ! Defines a Non Metal Body
    !------------------------------------------------------------------------------
    TYPE, PUBLIC :: Dielectric_t
-      TYPE (coords), DIMENSION (:), POINTER :: c1P => NULL ()
-      TYPE (coords), DIMENSION (:), POINTER :: c2P => NULL ()
+      TYPE (coords_t), DIMENSION (:), POINTER :: c1P => NULL ()
+      TYPE (coords_t), DIMENSION (:), POINTER :: c2P => NULL ()
       REAL (KIND=RK) :: sigma = 0.0_RKIND
       REAL (KIND=RK) :: eps = 0.0_RKIND
       REAL (KIND=RK) :: mu = 0.0_RKIND
@@ -243,7 +183,7 @@ MODULE NFDETypes
    !------------------------------------------------------------------------------
    ! Locates all the different Non Metal Media found
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: DielectricRegions
+   TYPE, PUBLIC :: DielectricRegions_t
       TYPE (Dielectric_t), DIMENSION (:), POINTER :: Vols => NULL ()
       TYPE (Dielectric_t), DIMENSION (:), POINTER :: Surfs => NULL ()
       TYPE (Dielectric_t), DIMENSION (:), POINTER :: Lins => NULL ()
@@ -255,13 +195,13 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: nLins_max = 0
       INTEGER (KIND=4) :: n_C1P_max = 0
       INTEGER (KIND=4) :: n_C2P_max = 0
-   END TYPE DielectricRegions
+   END TYPE DielectricRegions_t
    !------------------------------------------------------------------------------
    ! TYPE that defines the information of a frequency depENDent material,
    ! it inherits from the material class and it adds the possible values needed
    ! in the frequency depENDent section of the
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: FreqDepenMaterial
+   TYPE, PUBLIC :: FreqDepenMaterial_t
       COMPLEX, DIMENSION (:), POINTER ::  a11 => NULL ()
       COMPLEX, DIMENSION (:), POINTER ::  b11 => NULL ()
       COMPLEX, DIMENSION (:), POINTER :: am11 => NULL ()
@@ -292,7 +232,7 @@ MODULE NFDETypes
       REAL (KIND=RK), DIMENSION (:), POINTER :: alpham => NULL ()
       REAL (KIND=RK), DIMENSION (:), POINTER :: betam => NULL ()
       REAL (KIND=RK), DIMENSION (:), POINTER :: gammam => NULL ()
-      TYPE (coords), DIMENSION (:), POINTER :: c => NULL ()
+      TYPE (coords_t), DIMENSION (:), POINTER :: c => NULL ()
       REAL (KIND=RK) ::    eps11 = 0.0_RKIND ,    eps12 = 0.0_RKIND ,    eps13 = 0.0_RKIND ,    eps22 = 0.0_RKIND ,    eps23 = 0.0_RKIND ,    eps33 = 0.0_RKIND
       REAL (KIND=RK) ::     mu11 = 0.0_RKIND ,     mu12 = 0.0_RKIND ,     mu13 = 0.0_RKIND ,     mu22 = 0.0_RKIND ,     mu23 = 0.0_RKIND ,     mu33 = 0.0_RKIND
       REAL (KIND=RK) ::  sigma11 = 0.0_RKIND ,  sigma12 = 0.0_RKIND ,  sigma13 = 0.0_RKIND ,  sigma22 = 0.0_RKIND ,  sigma23 = 0.0_RKIND ,  sigma33 = 0.0_RKIND
@@ -313,14 +253,14 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: Lm = 0
       INTEGER (KIND=4) :: n_c = 0
       CHARACTER (LEN=BUFSIZE) :: files = ' ' !2015 si esta presente lee los polos/residuos desde fichero
-   END TYPE FreqDepenMaterial
+   END TYPE FreqDepenMaterial_t
    !------------------------------------------------------------------------------
    ! TYPE that defines the list of frequency depedent materials
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: FreqDepenMaterials
-      TYPE (FreqDepenMaterial), DIMENSION (:), POINTER :: Vols => NULL ()
-      TYPE (FreqDepenMaterial), DIMENSION (:), POINTER :: Surfs => NULL ()
-      TYPE (FreqDepenMaterial), DIMENSION (:), POINTER :: Lins => NULL ()
+   TYPE, PUBLIC :: FreqDepenMaterials_t
+      TYPE (FreqDepenMaterial_t), DIMENSION (:), POINTER :: Vols => NULL ()
+      TYPE (FreqDepenMaterial_t), DIMENSION (:), POINTER :: Surfs => NULL ()
+      TYPE (FreqDepenMaterial_t), DIMENSION (:), POINTER :: Lins => NULL ()
       INTEGER (KIND=4) :: nVols = 0
       INTEGER (KIND=4) :: nSurfs = 0
       INTEGER (KIND=4) :: nLins = 0
@@ -328,14 +268,14 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: nSurfs_max = 0
       INTEGER (KIND=4) :: nLins_max = 0
       INTEGER (KIND=4) :: n_c_max = 0 !cota superior
-   END TYPE FreqDepenMaterials
+   END TYPE FreqDepenMaterials_t
    !------------------------------------------------------------------------------
    ! Type for the ANISOTROPIC body, surface and lines since they will contain
    ! the same information
    !------------------------------------------------------------------------------
    TYPE, PUBLIC :: ANISOTROPICbody_t
-      TYPE (coords), DIMENSION (:), POINTER :: c1P => NULL ()
-      TYPE (coords), DIMENSION (:), POINTER :: c2P => NULL ()
+      TYPE (coords_t), DIMENSION (:), POINTER :: c1P => NULL ()
+      TYPE (coords_t), DIMENSION (:), POINTER :: c2P => NULL ()
       REAL (KIND=RK), DIMENSION (3, 3) :: sigma, eps, mu, sigmam
       INTEGER (KIND=4) :: n_C1P = 0
       INTEGER (KIND=4) :: n_C2P = 0
@@ -359,8 +299,8 @@ MODULE NFDETypes
    !------------------------------------------------------------------------------
    ! Defines a Comp Surface
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: LossyThinSurface
-      TYPE (coords), DIMENSION (:), POINTER :: c => NULL ()
+   TYPE, PUBLIC :: LossyThinSurface_t
+      TYPE (coords_t), DIMENSION (:), POINTER :: c => NULL ()
       REAL (KIND=RK), DIMENSION (:), POINTER :: sigma
       REAL (KIND=RK), DIMENSION (:), POINTER :: eps
       REAL (KIND=RK), DIMENSION (:), POINTER :: mu
@@ -376,21 +316,21 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: nc = 0
       CHARACTER (LEN=BUFSIZE) :: files = ' ' 
       INTEGER (KIND=4)  :: numcapas  
-   END TYPE LossyThinSurface
+   END TYPE LossyThinSurface_t
    !------------------------------------------------------------------------------
    ! Locates all the different Comp media found
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: LossyThinSurfaces
-      TYPE (LossyThinSurface), DIMENSION (:), POINTER :: cs => NULL ()
+   TYPE, PUBLIC :: LossyThinSurfaces_t
+      TYPE (LossyThinSurface_t), DIMENSION (:), POINTER :: cs => NULL ()
       INTEGER (KIND=4) :: length = 0
       INTEGER (KIND=4) :: length_max = 0
-      INTEGER (KIND=4) :: nC_max = 0 !cota de todos los nc de LossyThinSurface
-   END TYPE LossyThinSurfaces
+      INTEGER (KIND=4) :: nC_max = 0 !cota de todos los nc de LossyThinSurface_t
+   END TYPE LossyThinSurfaces_t
    !------------------------------------------------------------------------------
    ! Component for Thin Wires there is a list of this inside the component
    ! that defines the whole Thin Wire Reference
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: ThinWireComp
+   TYPE, PUBLIC :: ThinWireComp_t
       CHARACTER (LEN=BUFSIZE) :: srctype, srcfile
       INTEGER (KIND=4) :: i = - 1
       INTEGER (KIND=4) :: j = - 1
@@ -399,13 +339,13 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: d = - 1
       REAL (KIND=RK) :: m = 0.0_RKIND
       CHARACTER (LEN=BUFSIZE) :: tag
-   END TYPE ThinWireComp
+   END TYPE ThinWireComp_t
    !------------------------------------------------------------------------------
-   ! ThinWire component that defines the overall properties of the definition
-   ! of ThinWires
+   ! ThinWire_t component that defines the overall properties of the definition
+   ! of ThinWires_t
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: ThinWire
-      TYPE (ThinWireComp), DIMENSION (:), POINTER :: twc => NULL ()
+   TYPE, PUBLIC :: ThinWire_t
+      TYPE (ThinWireComp_t), DIMENSION (:), POINTER :: twc => NULL ()
       REAL (KIND=RK) :: rad = 0 , rad_devia = 0
       LOGICAL :: disp = .false.
       CHARACTER (LEN=BUFSIZE) :: dispfile
@@ -430,20 +370,20 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: tr = 0
       INTEGER (KIND=4) :: n_twc = 0
       INTEGER (KIND=4) :: n_twc_max = 0
-   END TYPE ThinWire
+   END TYPE ThinWire_t
    !------------------------------------------------------------------------------
    ! List of the different thin wires that were found in the file
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: ThinWires
-      TYPE (ThinWire), DIMENSION (:), POINTER :: tw => NULL ()
+   TYPE, PUBLIC :: ThinWires_t
+      TYPE (ThinWire_t), DIMENSION (:), POINTER :: tw => NULL ()
       INTEGER (KIND=4) :: n_tw = 0
       INTEGER (KIND=4) :: n_tw_max = 0
-   END TYPE ThinWires
+   END TYPE ThinWires_t
    !------------------------------------------------------------------------------
    ! Component for Slanted Wires there is a list of this inside the component
    ! that defines the whole Slanted Wire Reference
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: SlantedWireComp
+   TYPE, PUBLIC :: SlantedWireComp_t
       CHARACTER (LEN=BUFSIZE) :: srctype, srcfile
       REAL (KIND=RK) :: x = - 1.0_RKIND
       REAL (KIND=RK) :: y = - 1.0_RKIND
@@ -451,13 +391,13 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: nd = - 1
       REAL (KIND=RK) :: m = 0.0_RKIND
       CHARACTER (LEN=BUFSIZE) :: tag
-   END TYPE SlantedWireComp
+   END TYPE SlantedWireComp_t
    !------------------------------------------------------------------------------
-   ! ThinWire component that defines the overall properties of the definition
-   ! of ThinWires
+   ! ThinWire_t component that defines the overall properties of the definition
+   ! of ThinWires_t
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: SlantedWire
-      TYPE (SlantedWireComp), DIMENSION (:), POINTER :: swc => NULL ()
+   TYPE, PUBLIC :: SlantedWire_t
+      TYPE (SlantedWireComp_t), DIMENSION (:), POINTER :: swc => NULL ()
       REAL (KIND=RK) :: rad = 0
       LOGICAL :: disp = .false.
       CHARACTER (LEN=BUFSIZE) :: dispfile
@@ -482,20 +422,20 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: tr = 0
       INTEGER (KIND=4) :: n_swc = 0
       INTEGER (KIND=4) :: n_swc_max = 0
-   END TYPE SlantedWire
+   END TYPE SlantedWire_t
    !------------------------------------------------------------------------------
    ! List of the different thin wires that were found in the file
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: SlantedWires
-      TYPE (SlantedWire), DIMENSION (:), POINTER :: sw => NULL ()
+   TYPE, PUBLIC :: SlantedWiresInfo_t
+      TYPE (SlantedWire_t), DIMENSION (:), POINTER :: sw => NULL ()
       INTEGER (KIND=4) :: n_sw = 0
       INTEGER (KIND=4) :: n_sw_max = 0
-   END TYPE SlantedWires
+   END TYPE SlantedWiresInfo_t
    !--------------------------------------------------------------------------
    ! Component for Thin Slots there is a list of this inside the component
    ! that defines the whole Thin Slot Reference
    !--------------------------------------------------------------------------
-   TYPE, PUBLIC :: ThinSlotComp
+   TYPE, PUBLIC :: ThinSlotComp_t
       INTEGER (KIND=4) :: i = 0
       INTEGER (KIND=4) :: j = 0
       INTEGER (KIND=4) :: K = 0
@@ -503,69 +443,69 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: dir = - 1
       INTEGER (KIND=4) :: Or = - 1
       CHARACTER (LEN=BUFSIZE) :: tag
-   END TYPE ThinSlotComp
+   END TYPE ThinSlotComp_t
    !--------------------------------------------------------------------------
-   ! ThinSlot component that defines the overall properties of the definition
-   ! of ThinSlots in ORIGINAL
+   ! ThinSlot_t component that defines the overall properties of the definition
+   ! of ThinSlots_t in ORIGINAL
    !--------------------------------------------------------------------------
-   TYPE, PUBLIC :: ThinSlot
-      TYPE (ThinSlotComp), DIMENSION (:), POINTER :: tgc => NULL ()
+   TYPE, PUBLIC :: ThinSlot_t
+      TYPE (ThinSlotComp_t), DIMENSION (:), POINTER :: tgc => NULL ()
       REAL (KIND=RK) :: width = 0
       INTEGER (KIND=4) :: n_tgc = 0
       INTEGER (KIND=4) :: n_tgc_max = 0
-   END TYPE ThinSlot
+   END TYPE ThinSlot_t
    !--------------------------------------------------------------------------
    ! List of the different thin Slots that were found in the file
    !--------------------------------------------------------------------------
-   TYPE, PUBLIC :: ThinSlots
-      TYPE (ThinSlot), DIMENSION (:), POINTER :: tg => NULL ()
+   TYPE, PUBLIC :: ThinSlots_t
+      TYPE (ThinSlot_t), DIMENSION (:), POINTER :: tg => NULL ()
       INTEGER (KIND=4) :: n_tg = 0
       INTEGER (KIND=4) :: n_tg_max = 0
-   END TYPE ThinSlots
+   END TYPE ThinSlots_t
    !-----------------> Border Types
    !------------------------------------------------------------------------------
    ! PML Border Type
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: FronteraPML
+   TYPE, PUBLIC :: FronteraPML_t
       REAL (KIND=RK) :: orden = 2.0_RK
       REAL (KIND=RK) :: refl = 1e-3_RK
       INTEGER (KIND=4) :: numCapas = 8
-   END TYPE FronteraPML
+   END TYPE FronteraPML_t
    !------------------------------------------------------------------------------
    ! Tipo de la frontera
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: Frontera
+   TYPE, PUBLIC :: Frontera_t
       INTEGER (KIND=4), DIMENSION (6) :: tipoFrontera
-      TYPE (FronteraPML), DIMENSION (6) :: propiedadesPML
-   END TYPE Frontera
+      TYPE (FronteraPML_t), DIMENSION (6) :: propiedadesPML
+   END TYPE Frontera_t
    !-----------------> Probe Types
    !------------------------------------------------------------------------------
    ! TYPE to define the new probe object which contains the TYPE of calculation
    ! the TYPE of analysis, time and frequency step and the filename where
    ! it should be saved
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: MasSonda
+   TYPE, PUBLIC :: MasSonda_t
       CHARACTER (LEN=BUFSIZE) :: filename
-      TYPE (coords), DIMENSION (:), POINTER :: cordinates => NULL ()
+      TYPE (coords_t), DIMENSION (:), POINTER :: cordinates => NULL ()
       REAL (KIND=RK) :: tstart, tstop, tstep
       REAL (KIND=RK) :: fstart, fstop, fstep
       INTEGER (KIND=4) :: type1, type2
       INTEGER (KIND=4) :: len_cor = 0
       CHARACTER (LEN=BUFSIZE) :: outputrequest
-   END TYPE MasSonda
+   END TYPE MasSonda_t
    !------------------------------------------------------------------------------
    ! TYPE that defines a list of probes to be appended and accesed
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: MasSondas
-      TYPE (MasSonda), DIMENSION (:), POINTER :: collection => NULL ()
+   TYPE, PUBLIC :: MasSondas_t
+      TYPE (MasSonda_t), DIMENSION (:), POINTER :: collection => NULL ()
       INTEGER (KIND=4) :: length = 0
       INTEGER (KIND=4) :: length_max = 0
       INTEGER (KIND=4) :: len_cor_max = 0 !cota
-   END TYPE MasSondas
+   END TYPE MasSondas_t
    !------------------------------------------------------------------------------
    ! This TYPE contains the basic information in nearly all the different PROBES
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: Sonda
+   TYPE, PUBLIC :: Sonda_t
       CHARACTER (LEN=BUFSIZE) :: grname
       INTEGER (KIND=4), DIMENSION (:), POINTER :: i => NULL ()
       INTEGER (KIND=4), DIMENSION (:), POINTER :: j => NULL ()
@@ -580,65 +520,65 @@ MODULE NFDETypes
       REAL (KIND=RK) :: phistart, phistop, phistep
       REAL (KIND=RK) :: thetastart, thetastop, thetastep
       CHARACTER (LEN=BUFSIZE) :: FileNormalize
-   END TYPE Sonda
+   END TYPE Sonda_t
    !------------------------------------------------------------------------------
    ! TYPE for the electric far field
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: FarField_Sonda
-      TYPE (Sonda) :: probe
-   END TYPE FarField_Sonda
+   TYPE, PUBLIC :: FarField_Sonda_t
+      TYPE (Sonda_t) :: probe
+   END TYPE FarField_Sonda_t
    !------------------------------------------------------------------------------
    ! TYPE for the electric field
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: Electric_Sonda
-      TYPE (Sonda) :: probe
-   END TYPE Electric_Sonda
+   TYPE, PUBLIC :: Electric_Sonda_t
+      TYPE (Sonda_t) :: probe
+   END TYPE Electric_Sonda_t
    !------------------------------------------------------------------------------
    ! TYPE for the magnetic field
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: Magnetic_Sonda
-      TYPE (Sonda) :: probe
-   END TYPE Magnetic_Sonda
+   TYPE, PUBLIC :: Magnetic_Sonda_t
+      TYPE (Sonda_t) :: probe
+   END TYPE Magnetic_Sonda_t
    !------------------------------------------------------------------------------
    ! TYPE for the normal electric field
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: NormalElectric_Sonda
-      TYPE (Sonda) :: probe
+   TYPE, PUBLIC :: NormalElectric_Sonda_t
+      TYPE (Sonda_t) :: probe
       INTEGER (KIND=4), DIMENSION (:), POINTER :: nml => NULL ()
       INTEGER (KIND=4) :: n_nml = 0
       INTEGER (KIND=4) :: n_nml_max = 0
-   END TYPE NormalElectric_Sonda
+   END TYPE NormalElectric_Sonda_t
    !------------------------------------------------------------------------------
    ! TYPE for the normal magnetic field
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: NormalMagnetic_Sonda
-      TYPE (Sonda) :: probe
+   TYPE, PUBLIC :: NormalMagnetic_Sonda_t
+      TYPE (Sonda_t) :: probe
       INTEGER (KIND=4), DIMENSION (:), POINTER :: nml => NULL ()
       INTEGER (KIND=4) :: n_nml = 0
       INTEGER (KIND=4) :: n_nml_max = 0
-   END TYPE NormalMagnetic_Sonda
+   END TYPE NormalMagnetic_Sonda_t
    !------------------------------------------------------------------------------
    ! TYPE for the electric surface current density
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: SurfaceElectricCurrent_Sonda
-      TYPE (Sonda) :: probe
+   TYPE, PUBLIC :: SurfaceElectricCurrent_Sonda_t
+      TYPE (Sonda_t) :: probe
       INTEGER (KIND=4), DIMENSION (:), POINTER :: nml => NULL ()
       INTEGER (KIND=4) :: n_nml = 0
       INTEGER (KIND=4) :: n_nml_max = 0
-   END TYPE SurfaceElectricCurrent_Sonda
+   END TYPE SurfaceElectricCurrent_Sonda_t
    !------------------------------------------------------------------------------
    ! TYPE for the magnetic surface current density
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: SurfaceMagneticCurrent_Sonda
-      TYPE (Sonda) :: probe
+   TYPE, PUBLIC :: SurfaceMagneticCurrent_Sonda_t
+      TYPE (Sonda_t) :: probe
       INTEGER (KIND=4), DIMENSION (:), POINTER :: nml => NULL ()
       INTEGER (KIND=4) :: n_nml = 0
       INTEGER (KIND=4) :: n_nml_max = 0
-   END TYPE SurfaceMagneticCurrent_Sonda
+   END TYPE SurfaceMagneticCurrent_Sonda_t
    !------------------------------------------------------------------------------
    ! Abstract class which performs the dynamic dispatching
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: abstractSonda
+   TYPE, PUBLIC :: abstractSonda_t
       INTEGER (KIND=4) :: n_FarField = 0 
       INTEGER (KIND=4) :: n_Electric = 0
       INTEGER (KIND=4) :: n_Magnetic = 0
@@ -654,27 +594,27 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: n_NormalMagnetic_max = 0
       INTEGER (KIND=4) :: n_SurfaceElectricCurrent_max = 0
       INTEGER (KIND=4) :: n_SurfaceMagneticCurrent_max = 0
-      TYPE (FarField_Sonda), DIMENSION (:), POINTER :: FarField => NULL ()
-      TYPE (Electric_Sonda), DIMENSION (:), POINTER :: Electric => NULL ()
-      TYPE (Magnetic_Sonda), DIMENSION (:), POINTER :: Magnetic => NULL ()
-      TYPE (NormalElectric_Sonda), DIMENSION (:), POINTER :: NormalElectric => NULL ()
-      TYPE (NormalMagnetic_Sonda), DIMENSION (:), POINTER :: NormalMagnetic => NULL ()
-      TYPE (SurfaceElectricCurrent_Sonda), DIMENSION (:), POINTER :: SurfaceElectricCurrent => NULL ()
-      TYPE (SurfaceMagneticCurrent_Sonda), DIMENSION (:), POINTER :: SurfaceMagneticCurrent => NULL ()
-   END TYPE abstractSonda
+      TYPE (FarField_Sonda_t), DIMENSION (:), POINTER :: FarField => NULL ()
+      TYPE (Electric_Sonda_t), DIMENSION (:), POINTER :: Electric => NULL ()
+      TYPE (Magnetic_Sonda_t), DIMENSION (:), POINTER :: Magnetic => NULL ()
+      TYPE (NormalElectric_Sonda_t), DIMENSION (:), POINTER :: NormalElectric => NULL ()
+      TYPE (NormalMagnetic_Sonda_t), DIMENSION (:), POINTER :: NormalMagnetic => NULL ()
+      TYPE (SurfaceElectricCurrent_Sonda_t), DIMENSION (:), POINTER :: SurfaceElectricCurrent => NULL ()
+      TYPE (SurfaceMagneticCurrent_Sonda_t), DIMENSION (:), POINTER :: SurfaceMagneticCurrent => NULL ()
+   END TYPE abstractSonda_t
    !------------------------------------------------------------------------------
    ! Class to account as a list for all the probes
    ! that might be required during the parsing process
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: Sondas
-      TYPE (abstractSonda), DIMENSION (:), POINTER :: probes => NULL ()
+   TYPE, PUBLIC :: Sondas_t
+      TYPE (abstractSonda_t), DIMENSION (:), POINTER :: probes => NULL ()
       INTEGER (KIND=4) :: n_probes = 0
       INTEGER (KIND=4) :: n_probes_max = 0
-   END TYPE Sondas
+   END TYPE Sondas_t
    !------------------------------------------------------------------------------
    ! Object TYPE defined for the Bloque current probe
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: BloqueProbe
+   TYPE, PUBLIC :: BloqueProbe_t
       REAL (KIND=RK) :: tstart, tstop, tstep
       REAL (KIND=RK) :: fstart, fstop, fstep
       CHARACTER (LEN=BUFSIZE) :: FileNormalize
@@ -684,19 +624,19 @@ MODULE NFDETypes
       LOGICAL :: t
       CHARACTER (LEN=BUFSIZE) :: outputrequest
       CHARACTER (LEN=BUFSIZE) :: tag
-   END TYPE BloqueProbe
+   END TYPE BloqueProbe_t
    ! Object made for the collection of defined Bloque probes
-   TYPE, PUBLIC :: BloqueProbes
-      TYPE (BloqueProbe), DIMENSION (:), POINTER :: bp => NULL ()
+   TYPE, PUBLIC :: BloqueProbes_t
+      TYPE (BloqueProbe_t), DIMENSION (:), POINTER :: bp => NULL ()
       INTEGER (KIND=4) :: n_bp = 0
       INTEGER (KIND=4) :: n_bp_max = 0
-   END TYPE BloqueProbes
+   END TYPE BloqueProbes_t
 
    !------------------------------------------------------------------------------
    ! Object TYPE defined for the Volumic probes
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: VolProbe
-      TYPE (coords), DIMENSION (:), POINTER :: cordinates => NULL ()
+   TYPE, PUBLIC :: VolProbe_t
+      TYPE (coords_t), DIMENSION (:), POINTER :: cordinates => NULL ()
       REAL (KIND=RK) :: tstart, tstop, tstep
       CHARACTER (LEN=BUFSIZE) :: outputrequest
       INTEGER (KIND=4) :: len_cor = 0
@@ -704,32 +644,32 @@ MODULE NFDETypes
       REAL (KIND=RK) :: fstart, fstop, fstep
       INTEGER (KIND=4) ::  type2
       CHARACTER (LEN=BUFSIZE) :: filename
-   END TYPE VolProbe
+   END TYPE VolProbe_t
    ! Object made for the collection of defined Volumic probes
-   TYPE, PUBLIC :: VolProbes
-      TYPE (VolProbe), DIMENSION (:), POINTER :: collection => NULL ()
+   TYPE, PUBLIC :: VolProbes_t
+      TYPE (VolProbe_t), DIMENSION (:), POINTER :: collection => NULL ()
       INTEGER (KIND=4) :: length = 0
       INTEGER (KIND=4) :: length_max = 0
       INTEGER (KIND=4) :: len_cor_max = 0 !cota
-   END TYPE VolProbes
+   END TYPE VolProbes_t
 
    !-----------------> Source Types
    !------------------------------------------------------------------------------
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: Box
+   TYPE, PUBLIC :: Box_t
       CHARACTER (LEN=BUFSIZE) :: nombre_fichero
       INTEGER (KIND=4), DIMENSION (3) :: coor1, coor2
-   END TYPE Box
+   END TYPE Box_t
    !------------------------------------------------------------------------------
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: Boxes
-      TYPE (Box), DIMENSION (:), POINTER :: Vols => NULL ()
+   TYPE, PUBLIC :: Boxes_t
+      TYPE (Box_t), DIMENSION (:), POINTER :: Vols => NULL ()
       INTEGER (KIND=4) :: nVols = 0
       INTEGER (KIND=4) :: nVols_max = 0
-   END TYPE Boxes
+   END TYPE Boxes_t
    !------------------------------------------------------------------------------
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: PlaneWave
+   TYPE, PUBLIC :: PlaneWave_t
       CHARACTER (LEN=BUFSIZE) :: nombre_fichero
       CHARACTER (LEN=BUFSIZE) :: atributo
       INTEGER (KIND=4), DIMENSION (3) :: coor1, coor2
@@ -737,64 +677,64 @@ MODULE NFDETypes
       logical :: isRC !for reververation chambers
       REAL (KIND=RK) :: INCERTMAX
       INTEGER (KIND=4) :: numModes !for reververation chambers
-   END TYPE PlaneWave
+   END TYPE PlaneWave_t
    !------------------------------------------------------------------------------
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: PlaneWaves
-      TYPE (PlaneWave), DIMENSION (:), POINTER :: collection => NULL ()
+   TYPE, PUBLIC :: PlaneWaves_t
+      TYPE (PlaneWave_t), DIMENSION (:), POINTER :: collection => NULL ()
       INTEGER (KIND=4) :: nc = 0
       INTEGER (KIND=4) :: nC_max = 0
-   END TYPE PlaneWaves
+   END TYPE PlaneWaves_t
    !------------------------------------------------------------------------------
    ! Definicin de los tipos current density que existirn en el ficero
    ! nfde
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: Curr_Field_Src
-      TYPE (coords_scaled), DIMENSION (:), POINTER :: c1P => NULL ()
-      TYPE (coords_scaled), DIMENSION (:), POINTER :: c2P => NULL ()
+   TYPE, PUBLIC :: Curr_Field_Src_t
+      TYPE (coords_scaled_t), DIMENSION (:), POINTER :: c1P => NULL ()
+      TYPE (coords_scaled_t), DIMENSION (:), POINTER :: c2P => NULL ()
       CHARACTER (LEN=BUFSIZE) :: nombre
       INTEGER (KIND=4) :: n_C1P = 0
       INTEGER (KIND=4) :: n_C2P = 0
       LOGICAL :: isElec, isHard, isInitialValue
-   END TYPE Curr_Field_Src
+   END TYPE Curr_Field_Src_t
    !------------------------------------------------------------------------------
    ! Definicin de las Nodal Source global
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: NodSource
-      TYPE (Curr_Field_Src), DIMENSION (:), POINTER :: NodalSource => NULL ()
+   TYPE, PUBLIC :: NodSource_t
+      TYPE (Curr_Field_Src_t), DIMENSION (:), POINTER :: NodalSource => NULL ()
       INTEGER (KIND=4) :: n_nodSrc = 0
       INTEGER (KIND=4) :: n_nodSrc_max = 0
       INTEGER (KIND=4) :: n_C1P_max = 0
       INTEGER (KIND=4) :: n_C2P_max = 0
-   END TYPE NodSource
+   END TYPE NodSource_t
    !-----------------> General Types
    !------------------------------------------------------------------------------
    ! Matrix attributes.
    ! Total[XYZ] -> Is the cell number for each axis.
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: MatrizMedios
+   TYPE, PUBLIC :: MatrizMedios_t
       INTEGER (KIND=4) :: totalX, totalY, totalZ
-   END TYPE MatrizMedios
+   END TYPE MatrizMedios_t
    !------------------------------------------------------------------------------
    !------------------------------------------------------------------------------
-   TYPE NFDEGeneral
+   TYPE NFDEGeneral_t
       REAL (KIND=RK) :: dt
       INTEGER (KIND=4) :: nmax
       LOGICAL :: mtlnProblem
-   END TYPE NFDEGeneral
+   END TYPE NFDEGeneral_t
    !------------------------------------------------------------------------------
    ! Definition of the type. Three vectors are defined, for each axis X,Y,Z. If
    ! their size is equal to 1 then there is a constant increment. If it is not
    ! then it will be one for each cell position.
    !! WARNING
-   !! Even though, Type MatrizMedios defines the total number of cell for each
+   !! Even though, Type MatrizMedios_t defines the total number of cell for each
    !! axis. n[XYZ] defines it too partially. Meaning that if there is a
    !! constant increment, the pointer will be a scalar. However, when it is
    !! variable the pointer will have the same size as total[XYZ] in the
-   !! MatrizMedios type and for each vector position the increment for those
+   !! MatrizMedios_t type and for each vector position the increment for those
    !! Cells
    !------------------------------------------------------------------------------
-   TYPE Desplazamiento
+   TYPE Desplazamiento_t
       REAL (KIND=RK), DIMENSION (:), POINTER :: desX => NULL ()
       REAL (KIND=RK), DIMENSION (:), POINTER :: desY => NULL ()
       REAL (KIND=RK), DIMENSION (:), POINTER :: desZ => NULL ()
@@ -804,65 +744,65 @@ MODULE NFDETypes
       real (KIND=RK) ::originx= 0.0_RKIND  !2012
       real (KIND=RK) ::originy= 0.0_RKIND  !2012
       real (KIND=RK) ::originz= 0.0_RKIND  !2012
-   END TYPE Desplazamiento
+   END TYPE Desplazamiento_t
    !-----------------> Program Types
    !------------------------------------------------------------------------------
    ! Parameters needed for the parser
    !------------------------------------------------------------------------------
-   TYPE, PUBLIC :: Parseador
+   TYPE, PUBLIC :: Parseador_t
       character (len=BUFSIZE) :: switches=' '  
       ! Basics
-      TYPE (NFDEGeneral), POINTER ::           general => NULL ()
-      TYPE (MatrizMedios), POINTER ::          matriz => NULL ()
-      TYPE (Desplazamiento), POINTER ::        despl => NULL ()
-      TYPE (Frontera), POINTER ::              front => NULL ()
-      ! Materials
-      TYPE (Materials), POINTER ::             Mats => NULL ()
-      TYPE (PECRegions), POINTER ::            pecRegs => NULL ()
-      TYPE (PECRegions), POINTER ::            pmcRegs => NULL ()
-      TYPE (DielectricRegions), POINTER ::     DielRegs => NULL ()
-      TYPE (LossyThinSurfaces), POINTER ::     LossyThinSurfs => NULL ()
-      TYPE (FreqDepenMaterials), POINTER ::    frqDepMats => NULL ()
+      TYPE (NFDEGeneral_t), POINTER ::           general => NULL ()
+      TYPE (MatrizMedios_t), POINTER ::          matriz => NULL ()
+      TYPE (Desplazamiento_t), POINTER ::        despl => NULL ()
+      TYPE (Frontera_t), POINTER ::              front => NULL ()
+      ! Materials_t
+      TYPE (Materials_t), POINTER ::             Mats => NULL ()
+      TYPE (PECRegions_t), POINTER ::            pecRegs => NULL ()
+      TYPE (PECRegions_t), POINTER ::            pmcRegs => NULL ()
+      TYPE (DielectricRegions_t), POINTER ::     DielRegs => NULL ()
+      TYPE (LossyThinSurfaces_t), POINTER ::     LossyThinSurfs => NULL ()
+      TYPE (FreqDepenMaterials_t), POINTER ::    frqDepMats => NULL ()
       TYPE (ANISOTROPICelements_t), POINTER :: aniMats => NULL ()
       ! Sources
-      TYPE (Boxes), POINTER ::                 boxSrc => NULL ()
-      TYPE (PlaneWaves), POINTER ::            plnSrc => NULL ()
-      TYPE (NodSource), POINTER ::             nodSrc => NULL ()
+      TYPE (Boxes_t), POINTER ::                 boxSrc => NULL ()
+      TYPE (PlaneWaves_t), POINTER ::            plnSrc => NULL ()
+      TYPE (NodSource_t), POINTER ::             nodSrc => NULL ()
       ! Probes
-      TYPE (Sondas), POINTER ::                oldSONDA => NULL ()
-      TYPE (MasSondas), POINTER ::             Sonda => NULL ()
-      TYPE (BloqueProbes), POINTER ::          BloquePrb => NULL ()
-      TYPE (VolProbes), POINTER ::             VolPrb => NULL ()
+      TYPE (Sondas_t), POINTER ::                oldSONDA => NULL ()
+      TYPE (MasSondas_t), POINTER ::             Sonda => NULL ()
+      TYPE (BloqueProbes_t), POINTER ::          BloquePrb => NULL ()
+      TYPE (VolProbes_t), POINTER ::             VolPrb => NULL ()
       ! Thin Elements                         
-      TYPE (ThinWires), POINTER ::             tWires => NULL ()
-      TYPE (SlantedWires), POINTER ::          sWires => NULL ()
-      TYPE (ThinSlots), POINTER ::             tSlots => NULL ()
+      TYPE (ThinWires_t), POINTER ::             tWires => NULL ()
+      TYPE (SlantedWiresInfo_t), POINTER ::          sWires => NULL ()
+      TYPE (ThinSlots_t), POINTER ::             tSlots => NULL ()
       ! Conformal
-      TYPE(ConformalPECRegions), pointer ::    conformalRegs => NULL()
+      TYPE(ConformalPECRegions_t), pointer ::    conformalRegs => NULL()
 #ifdef CompileWithMTLN
       TYPE (mtln_t), POINTER ::                mtln => NULL () 
 #endif
-   END TYPE Parseador
+   END TYPE Parseador_t
    
    !---> definicion de tipos
-   TYPE, PUBLIC :: t_linea
+   TYPE, PUBLIC :: t_linea_t
       INTEGER (KIND=4) :: LEN
       CHARACTER (LEN=BUFSIZE) :: dato
-   END TYPE t_linea
+   END TYPE t_linea_t
    !--->
-   TYPE, PUBLIC :: t_NFDE_FILE
+   TYPE, PUBLIC :: t_NFDE_FILE_t
       INTEGER (KIND=4) mpidir !x=1,y=2,z=3
       INTEGER (KIND=8) :: targ
       !--->
       INTEGER (KIND=8) :: numero
-      TYPE (t_linea), DIMENSION (:), POINTER :: lineas
+      TYPE (t_linea_t), DIMENSION (:), POINTER :: lineas
       logical :: thereare_stoch
-   END TYPE t_NFDE_FILE
+   END TYPE t_NFDE_FILE_t
 !--->
 
 contains
 
 
-END MODULE NFDETypes
+END MODULE NFDETypes_m
 
     

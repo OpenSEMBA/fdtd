@@ -1,20 +1,20 @@
-module smbjson
+module smbjson_m
 
 #ifdef CompileWithSMBJSON
-   use NFDETypes
+   use NFDETypes_m
 
-   use NFDETypes_extension
-   use smbjson_labels_mod
-   use mesh_mod
-   use parser_tools_mod
-   use idchildtable_mod
+   use NFDETypes_extension_m
+   use smbjson_labels_m
+   use mesh_m
+   use parser_tools_m
+   use idchildtable_m
 
-   use Report
+   use Report_m
 
    use json_module
    use json_kinds
 
-   use conformal_types_mod
+   use conformal_types_m
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 
@@ -146,7 +146,7 @@ contains
 
    function readProblemDescription(this) result (res)
       class(parser_t) :: this
-      type(Parseador) :: res
+      type(Parseador_t) :: res
       integer :: stat 
 
       this%mesh = this%readMesh()
@@ -362,7 +362,7 @@ contains
 
    function readGeneral(this) result (res)
       class(parser_t) :: this
-      type(NFDEGeneral) :: res
+      type(NFDEGeneral_t) :: res
       res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
       res%mtlnProblem = this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
@@ -370,7 +370,7 @@ contains
 
    function readMediaMatrix(this) result(res)
       class(parser_t) :: this
-      type(MatrizMedios) :: res
+      type(MatrizMedios_t) :: res
       character (len=*), parameter :: P = J_MESH//'.'//J_GRID//'.'//J_GRID_NUMBER_OF_CELLS
       res%totalX = this%getIntAt(this%root, P//'(1)')
       res%totalY = this%getIntAt(this%root, P//'(2)')
@@ -379,7 +379,7 @@ contains
 
    function readGrid(this) result (res)
       class(parser_t) :: this
-      type(Desplazamiento) :: res
+      type(Desplazamiento_t) :: res
       real, dimension(:), allocatable :: vec
       character (len=*), parameter :: P = J_MESH//'.'//J_GRID
 
@@ -427,7 +427,7 @@ contains
 
    function readBoundary(this) result (res)
       class(parser_t) :: this
-      type(Frontera) :: res
+      type(Frontera_t) :: res
       character (len=:), allocatable :: bdrType
       type(json_value), pointer :: bdrs
       logical :: found
@@ -468,7 +468,7 @@ contains
 
    contains
       function readPMLProperties(p) result(res)
-         type(FronteraPML) :: res
+         type(FronteraPML_t) :: res
          character(len=*), intent(in) :: p
          res%numCapas = this%getIntAt(this%root, p//'.'//J_BND_PML_LAYERS, default=8)
          res%orden = this%getRealAt(this%root, p//'.'//J_BND_PML_ORDER, default=2.0)
@@ -514,27 +514,27 @@ contains
 
    function readPECRegions(this) result (res)
       class(parser_t), intent(in) :: this
-      type(PECRegions) :: res
+      type(PECRegions_t) :: res
       res = this%buildPECPMCRegions(J_MAT_TYPE_PEC)
    end function
 
    function readPMCRegions(this) result (res)
       class(parser_t), intent(in) :: this
-      type(PECRegions) :: res
+      type(PECRegions_t) :: res
       res = this%buildPECPMCRegions(J_MAT_TYPE_PMC)
    end function
 
    function buildPECPMCRegions(this, matType) result(res)
       class(parser_t) :: this
       character (len=*), intent(in) :: matType 
-      type(PECRegions) :: res
+      type(PECRegions_t) :: res
       type(materialAssociation_t), dimension(:), allocatable :: mAs
-      type(coords), dimension(:), pointer :: cs
+      type(coords_t), dimension(:), pointer :: cs
       integer :: i
       
       mAs = this%getMaterialAssociations([matType], [J_ELEM_TYPE_CELL])
       block
-         type(coords), dimension(:), pointer :: emptyCoords
+         type(coords_t), dimension(:), pointer :: emptyCoords
          if (size(mAs) == 0) then 
             allocate(emptyCoords(0))
             call appendRegion(res%lins,  res%nLins,  res%nLins_max,  emptyCoords)
@@ -556,10 +556,10 @@ contains
 
    contains
       subroutine appendRegion(resCoords, resNCoords, resNCoordsMax, cs)
-         type(coords), dimension(:), pointer :: resCoords
+         type(coords_t), dimension(:), pointer :: resCoords
          integer, intent(out) :: resNCoords, resNCoordsMax
-         type(coords), dimension(:), pointer, intent(in) :: cs
-         type(coords) , dimension(:), allocatable :: auxCs
+         type(coords_t), dimension(:), pointer, intent(in) :: cs
+         type(coords_t) , dimension(:), allocatable :: auxCs
          integer :: i
 
          if (.not. associated(resCoords)) then
@@ -591,7 +591,7 @@ contains
 
    function readConformalRegions(this) result(res)
       class(parser_t) :: this
-      type(ConformalPECRegions) :: res
+      type(ConformalPECRegions_t) :: res
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(conformal_region_t) :: cR
       type(triangle_t), dimension(:), allocatable :: aux_tris
@@ -618,11 +618,11 @@ contains
 
    contains 
       subroutine appendRegion(regions, region, tagName)
-         type(ConformalPECElement), dimension(:), pointer :: regions
+         type(ConformalPECElements_t), dimension(:), pointer :: regions
          type(conformal_region_t), intent(in) :: region
          character (len=:), allocatable, intent(in) :: tagName
 
-         type(ConformalPECElement), dimension(:), allocatable :: aux
+         type(ConformalPECElements_t), dimension(:), allocatable :: aux
          integer :: i
          if (.not. associated(regions)) then 
             allocate(regions(1))
@@ -663,7 +663,7 @@ contains
 
    function readDielectricRegions(this) result (res)
       class(parser_t), intent(in) :: this
-      type(DielectricRegions) :: res
+      type(DielectricRegions_t) :: res
       
       call fillDielectricsOfCellType(res%vols, CELL_TYPE_VOXEL)
       call fillDielectricsOfCellType(res%surfs, CELL_TYPE_SURFEL)
@@ -729,8 +729,8 @@ contains
          integer, intent(in) :: cellType
          type(Dielectric_t) :: res
          type(cell_region_t) :: cR
-         type (coords), dimension(:), allocatable :: coords
-         type(json_value_ptr) :: matPtr
+         type(coords_t), dimension(:), allocatable :: coords
+         type(json_value_ptr_t) :: matPtr
          integer :: e, j
 
          allocate(res%c1P(0))
@@ -753,8 +753,8 @@ contains
          integer, intent(in) :: cellType
          type(Dielectric_t) :: res
          type(cell_region_t) :: cR
-         type (coords), dimension(:), allocatable :: coords
-         type(json_value_ptr) :: matPtr
+         type(coords_t), dimension(:), allocatable :: coords
+         type(json_value_ptr_t) :: matPtr
          integer :: e, j
          character(len=:), allocatable :: model
          logical :: found
@@ -842,10 +842,10 @@ contains
    subroutine matAssToCoords(this, res, mA, cellType)
       class(parser_t) :: this
       type(materialAssociation_t), intent(in) :: mA
-      type (coords), dimension(:), pointer :: res
+      type(coords_t), dimension(:), pointer :: res
       integer, intent(in) :: cellType
       character (len=:), allocatable :: tagName
-      type (coords), dimension(:), allocatable :: newCoords
+      type(coords_t), dimension(:), allocatable :: newCoords
       type (cell_region_t) :: cR
       integer :: nCs
       integer :: e, jIni, jEnd
@@ -874,13 +874,13 @@ contains
 
    function readLossyThinSurfaces(this) result (res)
       class(parser_t), intent(in) :: this
-      type(LossyThinSurfaces) :: res
+      type(LossyThinSurfaces_t) :: res
       type(materialAssociation_t), dimension(:), allocatable :: mAs
-      type(json_value_ptr) :: mat
+      type(json_value_ptr_t) :: mat
       integer :: nLossySurfaces
       logical :: found
       integer :: i, j, k
-      type(coords), dimension(:), pointer :: cs
+      type(coords_t), dimension(:), pointer :: cs
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_MULTILAYERED_SURFACE])
       
@@ -912,11 +912,11 @@ contains
    contains
       function readLossyThinSurface(mA) result(res)
          type(materialAssociation_t), intent(in) :: mA
-         type(LossyThinSurface) :: res
+         type(LossyThinSurface_t) :: res
          logical :: found
          character (len=*), parameter :: errorMsgInit = "ERROR reading lossy thin surface: "
          integer :: i
-         type(json_value_ptr) :: mat
+         type(json_value_ptr_t) :: mat
          type(json_value), pointer :: layer
          type(json_value), pointer :: layers
          
@@ -956,7 +956,7 @@ contains
       end function
 
       function emptyLossyThinSurfaces() result (res)
-         type(LossyThinSurfaces) :: res
+         type(LossyThinSurfaces_t) :: res
          allocate(res%cs(0))
          res%length = 0
          res%length_max = 0
@@ -966,9 +966,9 @@ contains
 
    function readPlanewaves(this) result (res)
       class(parser_t) :: this
-      type(PlaneWaves) :: res
+      type(PlaneWaves_t) :: res
       type(json_value), pointer :: sources
-      type(json_value_ptr), allocatable :: pws(:)
+      type(json_value_ptr_t), allocatable :: pws(:)
       integer :: i
       logical :: found
 
@@ -992,7 +992,7 @@ contains
 
    contains
       function readPlanewave(pw) result (res)
-         type(PlaneWave) :: res
+         type(PlaneWave_t) :: res
          type(json_value), pointer :: pw
 
          character (len=:), allocatable :: label
@@ -1008,7 +1008,7 @@ contains
          res%beta = this%getRealAt(pw, J_SRC_PW_POLARIZATION//'.'//J_SRC_PW_PHI)
 
          block
-            type(coords), dimension(:), allocatable :: nfdeCoords
+            type(coords_t), dimension(:), allocatable :: nfdeCoords
             nfdeCoords = &
                cellIntervalsToCoords(this%getSingleVolumeInElementsIds(pw))
             res%coor1 = [nfdeCoords(1)%Xi, nfdeCoords(1)%Yi, nfdeCoords(1)%Zi]
@@ -1022,10 +1022,10 @@ contains
    end function
 
    function readNodalSources(this) result (res)
-      type(NodSource) :: res
+      type(NodSource_t) :: res
       class(parser_t) :: this
       type(json_value), pointer :: sources
-      type(json_value_ptr), dimension(:), allocatable :: nodSrcs
+      type(json_value_ptr_t), dimension(:), allocatable :: nodSrcs
       logical :: found
       integer :: i
 
@@ -1053,11 +1053,11 @@ contains
 
    contains
       function readField(jns) result(res)
-         type(Curr_Field_Src) :: res
+         type(Curr_Field_Src_t) :: res
          type(json_value), pointer :: jns, entry
          integer, dimension(:), allocatable :: elementIds
          character (len=BUFSIZE) :: nodalSourceName
-         type(coords_scaled), dimension(:), allocatable :: coordsFromLinels
+         type(coords_scaled_t), dimension(:), allocatable :: coordsFromLinels
 
          select case (this%getStrAt(jns, J_FIELD, default=J_FIELD_CURRENT))
           case (J_FIELD_CURRENT)
@@ -1093,9 +1093,9 @@ contains
 
    function readProbes(this) result (res)
       class(parser_t) :: this
-      type(Sondas) :: res
+      type(Sondas_t) :: res
       type(json_value), pointer :: allProbes
-      type(json_value_ptr), dimension(:), allocatable :: ps
+      type(json_value_ptr_t), dimension(:), allocatable :: ps
       ! The only oldProbe present in the format is the far field.
       character (len=*), dimension(1), parameter :: validTypes = [J_PR_TYPE_FARFIELD]
       integer :: i
@@ -1120,9 +1120,9 @@ contains
 
    contains
       function readFarFieldProbe(p) result (res)
-         type(abstractSonda) :: res
+         type(abstractSonda_t) :: res
          type(json_value), pointer :: p
-         type(Sonda), pointer :: ff
+         type(Sonda_t), pointer :: ff
          character (len=:), allocatable :: outputName
          logical :: transferFunctionFound
          type(domain_t) :: domain
@@ -1177,7 +1177,7 @@ contains
          end if
 
          block
-            type(coords), dimension(:), allocatable :: nfdeCoords
+            type(coords_t), dimension(:), allocatable :: nfdeCoords
             nfdeCoords = &
                cellIntervalsToCoords(this%getSingleVolumeInElementsIds(p))
             ff%n_cord = 2
@@ -1221,9 +1221,9 @@ contains
 
    function readMoreProbes(this) result (res)
       class(parser_t) :: this
-      type(MasSondas) :: res
+      type(MasSondas_t) :: res
       type(json_value), pointer :: allProbes
-      type(json_value_ptr), dimension(:), allocatable :: ps
+      type(json_value_ptr_t), dimension(:), allocatable :: ps
 
       integer :: i
       character (len=*), dimension(3), parameter :: validTypes = &
@@ -1344,7 +1344,7 @@ contains
       end function
 
       function readLineProbe(p) result (res)
-         type(MasSonda) :: res
+         type(MasSonda_t) :: res
          type(json_value), pointer :: p
          integer :: i
          character (len=:), allocatable :: outputName
@@ -1394,7 +1394,7 @@ contains
       end function
 
       function readPointProbe(p) result (res)
-         type(MasSonda) :: res
+         type(MasSonda_t) :: res
          type(json_value), pointer :: p, dirLabelPtr
          character(len=1), dimension(:), allocatable :: dirLabels
          integer :: i, j, k
@@ -1471,7 +1471,7 @@ contains
       end function
 
       subroutine setDomain(res, domain)
-         type(MasSonda), intent(inout) :: res
+         type(MasSonda_t), intent(inout) :: res
          type(domain_t), intent(in) :: domain
 
          res%tstart = domain%tstart
@@ -1540,8 +1540,8 @@ contains
 
    function readBlockProbes(this) result (res)
       class(parser_t) :: this
-      type(BloqueProbes) :: res
-      type(json_value_ptr), dimension(:), allocatable :: bps
+      type(BloqueProbes_t) :: res
+      type(json_value_ptr_t), dimension(:), allocatable :: bps
       type(json_value), pointer :: probes
       logical :: found
       integer :: i
@@ -1566,9 +1566,9 @@ contains
       end do
    contains
       function readBlockProbe(bp) result(res)
-         type(BloqueProbe) :: res
+         type(BloqueProbe_t) :: res
          type(json_value), pointer :: bp
-         type(coords), dimension(:), allocatable :: cs
+         type(coords_t), dimension(:), allocatable :: cs
          type(cell_region_t), dimension(:), allocatable :: cRs
 
          character(len=1) :: direction
@@ -1610,7 +1610,7 @@ contains
       end function
 
       subroutine setDomain(res, domain)
-         type(BloqueProbe), intent(inout) :: res
+         type(BloqueProbe_t), intent(inout) :: res
          type(domain_t), intent(in) :: domain
 
          res%tstart = domain%tstart
@@ -1634,8 +1634,8 @@ contains
 
    function readVolumicProbes(this) result (res)
       class(parser_t) :: this
-      type(VolProbes) :: res
-      type(json_value_ptr), dimension(:), allocatable :: ps
+      type(VolProbes_t) :: res
+      type(json_value_ptr_t), dimension(:), allocatable :: ps
       type(json_value), pointer :: probes
       logical :: found
       integer :: i
@@ -1662,7 +1662,7 @@ contains
 
    contains
       function buildNoVolProbes() result(res)
-         type(VolProbes) :: res
+         type(VolProbes_t) :: res
          allocate(res%collection(0))
          res%length = 0
          res%length_max = 0
@@ -1670,9 +1670,9 @@ contains
       end function
 
       function readVolProbe(p) result(res)
-         type(VolProbe) :: res
+         type(VolProbe_t) :: res
          type(json_value), pointer :: p, compsPtr, compPtr
-         type(coords), dimension(:), allocatable :: cs
+         type(coords_t), dimension(:), allocatable :: cs
          type(cell_region_t), dimension(:), allocatable :: cRs
          character(len=:), allocatable :: fieldType, component
          integer :: i
@@ -1748,7 +1748,7 @@ contains
       end function
 
       subroutine setDomain(res, domain)
-         type(VolProbe), intent(inout) :: res
+         type(VolProbe_t), intent(inout) :: res
          type(domain_t), intent(in) :: domain
 
          res%tstart = domain%tstart
@@ -1778,7 +1778,7 @@ contains
 
    function readThinSlots(this) result (res)
       class(parser_t) :: this
-      type(ThinSlots) :: res
+      type(ThinSlots_t) :: res
       
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       integer :: i
@@ -1797,9 +1797,9 @@ contains
    contains
       function readThinSlot(mA) result(res)
          type (materialAssociation_t), intent(in) :: mA
-         type (thinSlot) :: res
-         type (coords), dimension(:), pointer :: cs
-         type(json_value_ptr) :: mat
+         type(ThinSlot_t) :: res
+         type(coords_t), dimension(:), pointer :: cs
+         type(json_value_ptr_t) :: mat
          logical :: found
          
          mat = this%matTable%getId(mA%materialId)
@@ -1815,8 +1815,8 @@ contains
       end function
 
       subroutine coordsToThinSlotComp(tc, cs)
-         type(coords), dimension(:), pointer, intent(in) :: cs
-         type(thinSlotComp), dimension(:), pointer :: tc
+         type(coords_t), dimension(:), pointer, intent(in) :: cs
+         type(ThinSlotComp_t), dimension(:), pointer :: tc
          integer :: i, j, k
          integer :: nTgc, nXYZ
          integer :: dir
@@ -1857,8 +1857,8 @@ contains
       end subroutine
 
       function buildBaseThinSlotComponent(cs) result(res)
-         type(coords), intent(in) :: cs
-         type(thinSlotComp) :: res
+         type(coords_t), intent(in) :: cs
+         type(ThinSlotComp_t) :: res
          res%i = cs%xi
          res%j = cs%yi
          res%k = cs%zi
@@ -1869,7 +1869,7 @@ contains
 
    function readThinWires(this) result (res)
       class(parser_t) :: this
-      type(ThinWires) :: res
+      type(ThinWires_t) :: res
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       integer :: i, j
       logical :: found
@@ -1903,7 +1903,7 @@ contains
 
    contains
       function readThinWire(cable) result(res)
-         type(ThinWire) :: res
+         type(ThinWire_t) :: res
          type(materialAssociation_t), intent(in) :: cable
 
          character (len=:), allocatable :: entry
@@ -1912,7 +1912,7 @@ contains
          logical :: found
          real :: radius, resistance, inductance
          block
-            type(json_value_ptr) :: m
+            type(json_value_ptr_t) :: m
             m = this%matTable%getId(cable%materialId)
             radius = this%getRealAt(m%p, J_MAT_WIRE_RADIUS, default = 0.0)
             resistance = this%getRealAt(m%p, J_MAT_WIRE_RESISTANCE, default = 0.0)
@@ -1924,7 +1924,7 @@ contains
          end block
 
          block
-            type(json_value_ptr) :: terminal
+            type(json_value_ptr_t) :: terminal
             type(thinwiretermination_t) :: term
             character (len=:), allocatable :: label
             terminal = this%matTable%getId(cable%initialTerminalId)
@@ -1937,7 +1937,7 @@ contains
          end block
 
          block
-            type(json_value_ptr) :: terminal
+            type(json_value_ptr_t) :: terminal
             type(thinwiretermination_t) :: term
             terminal = this%matTable%getId(cable%endTerminalId)
             term = readThinWireTermination(terminal%p)
@@ -1983,7 +1983,7 @@ contains
          type(linel_t), dimension(:), intent(in) :: linels
          integer, dimension(:), intent(in) :: plineElemIds
          type(json_value), pointer :: sources
-         type(json_value_ptr), dimension(:), allocatable :: genSrcs
+         type(json_value_ptr_t), dimension(:), allocatable :: genSrcs
          logical :: found
          type(generator_description_t), dimension(:), allocatable :: res
          integer :: i
@@ -2112,7 +2112,7 @@ contains
 
       logical function isThinWire(mA)
          type(materialAssociation_t) :: mA
-         type(json_value_ptr) :: mat
+         type(json_value_ptr_t) :: mat
          type(polyline_t) :: pl
          logical :: found
          isThinWire = .false.
@@ -2232,7 +2232,7 @@ contains
    function parseMaterialAssociation(this, matAss) result(res)
       class(parser_t) :: this
       type(json_value), pointer, intent(in) :: matAss
-      type(json_value_ptr) :: mat
+      type(json_value_ptr_t) :: mat
       type(materialAssociation_t) :: res
       character (len=*), parameter :: errorMsgInit = "ERROR reading material association: "
       logical :: found
@@ -2327,7 +2327,7 @@ contains
       logical function isMaterialIdOfType(matId, matType)
          integer, intent(in) :: matId
          character (len=*), intent(in) :: matType
-         type(json_value_ptr) :: mat
+         type(json_value_ptr_t) :: mat
          logical :: materialFound
          if (this%matTable%checkId(matId) /= 0) then
             write(errorMsg, *) "Material with id ", matId, " not found."
@@ -2399,7 +2399,7 @@ contains
          character (len=*), intent(in) :: materialType
          
          type(materialAssociation_t) :: matAss
-         type(json_value_ptr) :: mat
+         type(json_value_ptr_t) :: mat
 
          matAss = this%parseMaterialAssociation(mAPtr)
          mat = this%matTable%getId(matAss%materialId)
@@ -2412,7 +2412,7 @@ contains
          character (len=:), allocatable :: trimmedLabel
          character(len=20) :: elementLabel
          type(materialAssociation_t) :: matAss
-         type(json_value_ptr) :: elm
+         type(json_value_ptr_t) :: elm
          integer, dimension(:), allocatable :: elementIds
          integer :: i, j
 
@@ -2453,7 +2453,7 @@ contains
       character (len=BUFSIZE) :: errorMsg
       
       block
-         type(json_value_ptr) :: mat
+         type(json_value_ptr_t) :: mat
          mat = this%matTable%getId(matId)
          matName = this%getStrAt(mat%p, J_NAME, found)
          if (.not. found) then
@@ -2465,7 +2465,7 @@ contains
       end block
       
       block
-         type(json_value_ptr) :: elem
+         type(json_value_ptr_t) :: elem
          elem = this%elementTable%getId(elementId)
          layerName = this%getStrAt(elem%p, J_NAME, found)
          if (.not. found) then
@@ -2564,7 +2564,7 @@ contains
       function assignParentCable(cable, cables) result(res)
          type(materialAssociation_t) :: cable
          type(cable_abstract_t), dimension(:), allocatable :: cables
-         type(json_value_ptr) :: mat
+         type(json_value_ptr_t) :: mat
          integer :: parentId, index
          class(cable_t), pointer :: res
 
@@ -2587,7 +2587,7 @@ contains
 
       function assignConductorInParent(cable) result(res)
          type(materialAssociation_t) :: cable
-         type(json_value_ptr) :: mat
+         type(json_value_ptr_t) :: mat
          integer :: parentId
          integer :: res
 
@@ -2630,7 +2630,7 @@ contains
          type(connector_t), dimension(:), pointer :: res
          type(json_value), pointer :: mat, z, zs
          logical :: materialsFound
-         type(json_value_ptr), dimension(:), allocatable :: connectors
+         type(json_value_ptr_t), dimension(:), allocatable :: connectors
          integer :: i, j, id, n
          
          call this%core%get(this%root, J_MATERIALS, mat, materialsFound)
@@ -2669,7 +2669,7 @@ contains
       end function
 
       function findMaxElemId(cables) result(res)
-         type(json_value_ptr), dimension(:), intent(in) :: cables
+         type(json_value_ptr_t), dimension(:), intent(in) :: cables
          integer :: i, m
          integer, dimension(:), allocatable :: elemIds
          integer :: res
@@ -2727,7 +2727,7 @@ contains
       function readSubcircuits() result(res_ckt)
          type(subcircuit_t), dimension(:), allocatable :: res_ckt
          type(json_value), pointer :: subCkt, ckt
-         type(json_value_ptr) :: m
+         type(json_value_ptr_t) :: m
          integer :: i, j, id
          logical :: found
          type(coordinate_t) :: ports_coordinate
@@ -2896,7 +2896,7 @@ contains
 
       function getTerminationsOnSide(terminationId) result(res)
          integer, intent(in) :: terminationId
-         type(json_value_ptr) :: terminal
+         type(json_value_ptr_t) :: terminal
          type(json_value), pointer :: res
 
          if (terminationId == -1) then
@@ -2955,7 +2955,7 @@ contains
       function readGeneratorOnTermination(id, label) result(res)
          integer, intent(in) :: id, label
          type(json_value), pointer :: sources
-         type(json_value_ptr), dimension(:), allocatable :: genSrcs
+         type(json_value_ptr_t), dimension(:), allocatable :: genSrcs
          logical :: found
          type(node_source_t) :: res
          integer :: polylineId
@@ -3124,7 +3124,7 @@ contains
 
       function readMultiwireProbes() result(res)
          type(probe_t), dimension(:), allocatable :: res
-         type(json_value_ptr), dimension(:), allocatable :: wire_probes
+         type(json_value_ptr_t), dimension(:), allocatable :: wire_probes
          type(json_value), pointer :: probes
          integer :: i, j, index, n
          integer, dimension(:), allocatable :: ids
@@ -3229,7 +3229,7 @@ contains
       end function
 
       function countOutputProbes(probes) result(res)
-         type(json_value_ptr), dimension(:), allocatable :: probes
+         type(json_value_ptr_t), dimension(:), allocatable :: probes
          integer :: res
 
          character (len=:), allocatable :: fieldLabel
@@ -3453,9 +3453,9 @@ contains
 
       function readMTLNCable(j_cable, despl) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
-         type(Desplazamiento), intent(in) :: despl
+         type(Desplazamiento_t), intent(in) :: despl
          class(cable_t), pointer :: res
-         type(json_value_ptr) :: material
+         type(json_value_ptr_t) :: material
          integer :: nConductors
          logical :: found
          character(:), allocatable :: materialType
@@ -3488,7 +3488,7 @@ contains
       end function
 
       function buildTransferImpedance(mat) result(res)
-         type(json_value_ptr):: mat
+         type(json_value_ptr_t):: mat
          type(transfer_impedance_per_meter_t) :: res
          type(json_value), pointer :: z
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE)) then
@@ -3501,7 +3501,7 @@ contains
 
       subroutine assignPULProperties(res, mat, n)
          type(shielded_multiwire_t), intent(inout) :: res
-         type(json_value_ptr) :: mat
+         type(json_value_ptr_t) :: mat
          integer, intent(in) :: n
          real, dimension(:,:), allocatable :: null_matrix
          logical :: found
@@ -3536,7 +3536,7 @@ contains
 
       subroutine assignInCellProperties(res, mat, n)
          type(unshielded_multiwire_t), intent(inout) :: res
-         type(json_value_ptr) :: mat
+         type(json_value_ptr_t) :: mat
          type(json_value), pointer :: multipolarExpansionPtr
          integer, intent(in) :: n
          real, dimension(:,:), allocatable :: null_matrix
@@ -3652,7 +3652,7 @@ contains
    
       function buildSegments(j_cable, despl) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
-         type(Desplazamiento), intent(in) :: despl
+         type(Desplazamiento_t), intent(in) :: despl
          type(segment_t), dimension(:), allocatable :: res
 
          integer, dimension(:), allocatable :: elemIds
@@ -3690,7 +3690,7 @@ contains
       end function clip
 
       function getdualBoxYZ(segment, despl) result (res)
-         type(Desplazamiento), intent(in) :: despl
+         type(Desplazamiento_t), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
          integer :: y0, y1, z0, z1
@@ -3705,7 +3705,7 @@ contains
       end function
 
       function getdualBoxXY(segment, despl) result (res)
-         type(Desplazamiento), intent(in) :: despl
+         type(Desplazamiento_t), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
          integer :: x0, x1, y0, y1
@@ -3720,7 +3720,7 @@ contains
       end function
 
       function getdualBoxZX(segment, despl) result (res)
-         type(Desplazamiento), intent(in) :: despl
+         type(Desplazamiento_t), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
          integer :: z0, z1, x0, x1
@@ -3736,7 +3736,7 @@ contains
 
       function buildStepSize(segments, despl) result(res)
          type(segment_t), dimension(:), allocatable :: segments
-         type(Desplazamiento), intent(in) :: despl
+         type(Desplazamiento_t), intent(in) :: despl
          real, allocatable, dimension(:) :: res
          integer :: i, or
          allocate(res(size(segments)))
@@ -3816,7 +3816,7 @@ contains
 
 
       function assignDisplacement(desp, axis) result (res)
-         type(Desplazamiento), intent(in) :: desp
+         type(Desplazamiento_t), intent(in) :: desp
          integer, intent(in) :: axis
          real, dimension(:), allocatable :: res
 
@@ -4007,13 +4007,13 @@ contains
 
    function jsonValueFilterByKeyValues(this, srcs, key, values) result (res)
       class(parser_t) :: this
-      type(json_value_ptr), dimension(:), allocatable :: res
+      type(json_value_ptr_t), dimension(:), allocatable :: res
       type(json_value), pointer :: srcs
 
       character (kind=JSON_CK, len=*) :: key
       character (kind=JSON_CK, len=*), dimension(:) :: values
 
-      type(json_value_ptr), dimension (:), allocatable :: foundEntries
+      type(json_value_ptr_t), dimension (:), allocatable :: foundEntries
       integer :: i, lastEntry, nEntries
 
       allocate(res(0))
@@ -4027,7 +4027,7 @@ contains
 
    function jsonValueFilterByKeyValue(this, place, key, value) result (res)
       class(parser_t) :: this
-      type(json_value_ptr), allocatable :: res(:)
+      type(json_value_ptr_t), allocatable :: res(:)
       character (kind=JSON_CK, len=*) :: key, value
       type(json_value), pointer :: place, src
       character (kind=JSON_CK, len=:), allocatable :: typeStr
