@@ -148,10 +148,10 @@ The `elements` entry contains an array of JSON objects, each of which represents
   + `node`, representing a point in space. Elements with this type include a `<coordinateIds>` entry which is an array of a single integer representing the `id` of a coordinate and which must exist in the within the `mesh` `coordinates` list.
   + `polyline`, representing an oriented collection of segments. It must contain a list `<coordinateIds>` with at least two coordinates.
   + `cell`, containing a list of one or more `<intervals>` defined following the [interval convention](#the-interval-convention).
-  + + If `cell` represents a conformal element it will contain a list of zero or more <intervals> and a list of <triangles>,  describing a close outwards-pointing surface. 
-  + + In this case, the `cell` must contain an entry `subtype`, which can be `surface` or `volume`, according to the dimension of the geometrical entity.
-
-
+  + `conformal` represents a conformal element which contains a list of `[intervals]` which define surfaces or lines, and a list of `<triangles>`. The cells occupied by intervals and triangles can not contain both.
+  It also must contain an entry `subtype`, which can be:
+    + `surface`, the intervals and triangles will be treated as a surface, which can be open or closed.
+    + `volume`, the intervals and triangles must define a closed surface with all normals pointing outwards.
 
 Below there is an example of a mesh object which includes several types of elements.
 
@@ -170,7 +170,8 @@ Below there is an example of a mesh object which includes several types of eleme
         {"id": 1, "type": "node", "coordinateIds": [2]},
         {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3] },
         {"id": 3, "type": "cell", "intervals": [ [ [1, 1, 1], [19, 19, 21] ] ] }
-        {"id": 4, "type": "conformalVolume", "intervals": [ [ [1, 1, 1], [19, 19, 21] ] ], "triangles" : [[1,2,3]] }
+        {"id": 4, "type": "conformal", "subtype": "surface", 
+            "intervals": [ [ [1, 1, 1], [19, 19, 1] ] ], "triangles" : [ [1,2,3] ] }
     ]
 }
 ```

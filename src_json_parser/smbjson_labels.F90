@@ -146,6 +146,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_ELEM_TYPE_NODE = "node"
    character(len=*), parameter :: J_ELEM_TYPE_POLYLINE = "polyline"
    character(len=*), parameter :: J_ELEM_TYPE_CELL = "cell"
+   character(len=*), parameter :: J_ELEM_TYPE_CONFORMAL = "conformal"
    character(len=*), parameter :: J_CELL_INTERVALS = "intervals"
    character(len=*), parameter :: J_CONF_VOLUME_TRIANGLES = "triangles"
    character(len=*), parameter :: J_CONF_VOLUME_INTERVALS = "intervals"

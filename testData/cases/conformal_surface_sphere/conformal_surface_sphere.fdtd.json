@@ -35,7 +35,7 @@
         "elements": [
             {
                 "id": 1,
-                "type": "conformalSurface",
+                "type": "conformal", "subtype": "surface",
                 "intervals": [],
                 "triangles": [
                     [

@@ -254,39 +254,13 @@ contains
                   call mesh%addElement(id, polyline)
                CASE (J_ELEM_TYPE_CELL)
                   block
-                     logical :: isConformal
-                     type(json_value), pointer :: triangles
-                     call this%core%get(je, J_CONF_VOLUME_TRIANGLES, triangles, found=isConformal)
-                     if (.not. isConformal) then 
-                        block
-                           type(cell_region_t) :: cR
-                           type(cell_interval_t), dimension(:), allocatable :: intervals
-                           cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
-                           call mesh%addCellRegion(id, cR)
-                        end block
-                     else 
-                        block 
-                           type(conformal_region_t) :: cV
-                           type(coordinate_t) :: c
-                           integer :: j, k
-                           character (len=:), allocatable :: subtype
-                           cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
-                           do k = 1, size(cV%triangles)
-                              do j = 1, 3
-                                 c = mesh%getCoordinate(cV%triangles(k)%vertices(j)%id)
-                                 cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
-                              end do
-                           end do
-                           cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
-                           subtype = this%getStrAt(je, J_SUBTYPE)
-
-                           if (subtype == J_CONF_SUBTYPE_VOLUME) cV%type = REGION_TYPE_VOLUME
-                           if (subtype == J_CONF_SUBTYPE_SURFACE) cV%type = REGION_TYPE_SURFACE
-
-                           call mesh%addConformalRegion(id, cV)
-                        end block
-                     end if
+                     type(json_value), pointer :: subtypeEntry, trianglesEntry
+                     type(cell_region_t) :: cR
+                     cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                     call mesh%addCellRegion(id, cR)
                   end block
+               case (J_ELEM_TYPE_CONFORMAL)
+                  call mesh%addConformalRegion(id, readConformalRegion(je, mesh))
                case default
                   call WarnErrReport('Invalid element type', .true.)
                end select
@@ -347,6 +321,35 @@ contains
          end do
          
 
+      end function
+
+      function readConformalRegion(place, mesh) result(res)
+         type(json_value), pointer, intent(in) :: place
+         type(mesh_t), intent(in) :: mesh
+         type(conformal_region_t) :: res
+
+         type(coordinate_t) :: c
+         integer :: j, k
+         character (len=:), allocatable :: subtype
+
+         res%triangles = readTriangles(place, J_CONF_VOLUME_TRIANGLES)
+         do k = 1, size(res%triangles)
+            do j = 1, 3
+               c = mesh%getCoordinate(res%triangles(k)%vertices(j)%id)
+               res%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
+            end do
+         end do
+         res%intervals = readCellIntervals(place, J_CELL_INTERVALS)
+         subtype = this%getStrAt(place, J_SUBTYPE)
+
+         if (subtype == J_CONF_SUBTYPE_VOLUME) then
+            res%type = REGION_TYPE_VOLUME
+         else if (subtype == J_CONF_SUBTYPE_SURFACE) then
+            res%type = REGION_TYPE_SURFACE
+         else
+            call WarnErrReport('Invalid conformal subtype label: ' // subtype // '. Expected "surface" or "volume".', .true.)
+            return
+         end if
       end function
 
    end function
@@ -529,8 +532,7 @@ contains
       type(coords), dimension(:), pointer :: cs
       integer :: i
       
-      ! mAs = this%getMaterialAssociations([matType],[J_ELEM_TYPE_CELL])
-      mAs = this%getMaterialAssociations([matType],['-'//J_CONF_SUBTYPE_SURFACE, J_ELEM_TYPE_CELL//'    ', '-'//J_CONF_SUBTYPE_VOLUME//' '])
+      mAs = this%getMaterialAssociations([matType], [J_ELEM_TYPE_CELL])
       block
          type(coords), dimension(:), pointer :: emptyCoords
          if (size(mAs) == 0) then 
@@ -597,7 +599,7 @@ contains
       integer :: i, j
       logical :: found
 
-      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC], [J_CONF_SUBTYPE_VOLUME, J_CONF_SUBTYPE_SURFACE])
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC], [J_ELEM_TYPE_CONFORMAL])
 
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
