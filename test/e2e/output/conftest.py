@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Callable
 
 import pytest
 
@@ -17,7 +18,7 @@ EXCITATIONS = PROJECT_ROOT / "testData" / "excitations"
 
 
 @pytest.fixture
-def stage_output_case(tmp_path):
+def stage_output_case(tmp_path: Path) -> Callable[[str], Path]:
     """Copy an input and its source magnitudes into an isolated solver folder."""
 
     def stage(case_name: str) -> Path:
@@ -37,21 +38,24 @@ def stage_output_case(tmp_path):
 
 
 @pytest.fixture
-def output_root(tmp_path):
+def output_root(tmp_path: Path) -> Path:
     """Return a nested output path containing a space for path tests."""
 
     return tmp_path / "nested output" / "results"
 
 
 @pytest.fixture
-def failed_output_root(tmp_path):
+def failed_output_root(tmp_path: Path) -> Path:
     """Return an isolated path used by publication failure tests."""
 
     return tmp_path / "failed output" / "results"
 
 
 @pytest.fixture
-def run_output_case(stage_output_case, tmp_path):
+def run_output_case(
+    stage_output_case: Callable[[str], Path],
+    tmp_path: Path,
+) -> Callable[[str, list[dict], str], tuple[subprocess.CompletedProcess[str], Path]]:
     """Run a staged output case and return its process and output directory."""
 
     def run(
