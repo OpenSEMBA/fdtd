@@ -33,7 +33,7 @@ endif()
 add_subdirectory(conformal)
 set(CONFORMAL_TESTS_LIBRARY conformal_tests)
 
-add_subdirectory(preprocess)
+add_subdirectory(unit/preprocess)
 set(PREPROCESS_TESTS_LIBRARY preprocess_tests)
 
 add_executable(fdtd_tests 

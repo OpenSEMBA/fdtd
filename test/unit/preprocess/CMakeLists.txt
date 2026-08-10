@@ -1,4 +1,4 @@
-message(STATUS "Creating build system for test/preprocess")
+message(STATUS "Creating build system for test/unit/preprocess")
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
