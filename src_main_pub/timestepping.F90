@@ -1139,9 +1139,17 @@ contains
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
 #endif
-
          dtcritico=this%sgg%dt
-#ifndef CompileWithMTLN         
+#ifdef CompileWithMTLN
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+            write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
+            call InitWires_mtln(this%sgg,Ex,Ey,Ez,& 
+                                this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,& 
+                                this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,&
+                                this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles, dtcritico)
+#else
          if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
 #ifdef CompileWithMPI
@@ -1161,7 +1169,7 @@ contains
                write (dubuf,*) '----> there are Holland/transition wires';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no Holland/transition wires found';  call print11(this%control%layoutnumber,dubuf)
-         end if
+            end if
          end if
 
 #ifdef CompileWithBerengerWires
@@ -1214,9 +1222,9 @@ contains
                                     this%g%g2, this%sinPML_fullsize, dtcritico,this%eps0,this%mu0,this%control%verbose)
             l_auxinput=this%thereAre%Wires
             l_auxoutput=l_auxinput
-!check for MUR1 nodes sgg 230124
+            !check for MUR1 nodes sgg 230124
             call init_murABC_slanted(this%sgg,this%sinPML_fullsize,this%eps0,this%mu0)
-!!!!!!         
+            !!!!!!         
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
@@ -1228,24 +1236,12 @@ contains
                write(dubuf,*) '----> no Slanted wires found';  call print11(this%control%layoutnumber,dubuf)
             end if
          end if
+#endif 
 #endif
 
 
-#else 
-! else of #ifndef CompileWithMTLN          
 #ifdef CompileWithMPI
-         call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
-         write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
-         call InitWires_mtln(this%sgg,Ex,Ey,Ez,& 
-                             this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,& 
-                             this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,&
-                             this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles, dtcritico)
-#endif
-
-
-      !!!sincroniza el dtcritico
-#ifdef CompileWithMPI
+         !!!sincroniza el dtcritico
          newdtcritico = 0.0_RKIND_tiempo
          call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE_tiempo, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
