@@ -35,7 +35,7 @@ contains
       call core%get(root, path, jentries, found)
       if (.not. found) return
       numberOfEntries = core%count(jentries)
-      call res%idToChilds%allocate(10*numberOfEntries)
+      call res%idToChilds%allocate(13*numberOfEntries)
       do i = 1, numberOfEntries
          call core%get_child(jentries, i, jentry)
          call core%get(jentry, J_ID, id)
