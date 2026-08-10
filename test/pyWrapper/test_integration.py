@@ -2,6 +2,97 @@ from utils import *
 from pathlib import Path
 
 
+@pytest.mark.planewave
+def test_fdtd_set_new_folder_to_run(tmp_path):
+    input = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
+    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver["general"]["numberOfSteps"] = 1
+
+    solver.run()
+
+
+@pytest.mark.planewave
+def test_fdtd_with_string_args(tmp_path):
+    input = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
+    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, flags="-h")
+    solver["general"]["numberOfSteps"] = 1
+
+    solver.run()
+
+
+@no_mpi_skip
+@pytest.mark.mpi
+@pytest.mark.planewave
+def test_fdtd_with_mpi_run(tmp_path):
+    input = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
+    solver = FDTD(
+        input,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+        flags=["-h"],
+        mpi_command="mpirun -np 2",
+    )
+    solver["general"]["numberOfSteps"] = 1
+
+    solver.run()
+
+
+@pytest.mark.planewave
+def test_fdtd_clean_up_after_run(tmp_path):
+    input = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
+    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver["general"]["numberOfSteps"] = 1
+
+    solver.run()
+
+    pn = solver.getSolvedProbeFilenames("inbox")
+    assert os.path.isfile(pn[0])
+
+    solver.cleanUp()
+
+    assert not os.path.isfile(pn[0])
+
+
+@pytest.mark.planewave
+def test_fdtd_probe_filenames_exclude_binary_by_default(tmp_path):
+    input = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
+    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver["general"]["numberOfSteps"] = 1
+    solver.run()
+
+    text_artifacts = solver.getSolvedProbeFilenames("inbox")
+    all_artifacts = solver.getSolvedProbeFilenames("inbox", include_binary=True)
+
+    assert text_artifacts
+    assert all(
+        filename.endswith((".dat", ".xdmf", ".h5")) for filename in text_artifacts
+    )
+    assert set(text_artifacts) < set(all_artifacts)
+    assert any(filename.endswith(".bin") for filename in all_artifacts)
+
+
+@pytest.mark.planewave
+def test_fdtd_clean_up_does_not_delete_other_cases_files(tmp_path):
+    input = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
+    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    case_name = solver.getCaseName()
+    other_case_name = "other_case.fdtd"
+
+    own_file = os.path.join(str(tmp_path), case_name + "_probe_Ex_1_2_3.dat")
+    other_file = os.path.join(str(tmp_path), other_case_name + "_probe_Ex_1_2_3.dat")
+
+    open(own_file, "w").close()
+    open(other_file, "w").close()
+
+    solver.cleanUp()
+
+    assert not os.path.isfile(own_file)
+    assert os.path.isfile(other_file)
+
+
 @pytest.mark.wires
 @pytest.mark.termination
 def test_holland_case_checking_number_of_outputs_single_wire(tmp_path):

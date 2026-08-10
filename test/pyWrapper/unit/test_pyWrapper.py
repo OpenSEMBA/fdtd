@@ -2,11 +2,18 @@ from utils import *
 import utils
 from pathlib import Path
 
+import numpy as np
+import pytest
+
+from src_pyWrapper.pyWrapper import FDTD, Probe
+
 
 @pytest.mark.probes
 @pytest.mark.wires
 def test_read_wire_probe():
-    p = Probe(OUTPUTS_FOLDER + "fakeCurrentProbe.fdtd_mid_point_Wz_11_11_11_s2.dat")
+    p = Probe(
+        "testData/outputs/fakeCurrentProbe.fdtd_mid_point_Wz_11_11_11_s2.dat"
+    )
 
     assert p.case_name == "fakeCurrentProbe"
     assert p.name == "mid_point"
@@ -27,7 +34,9 @@ def test_read_wire_probe():
 @pytest.mark.probes
 @pytest.mark.wires
 def test_read_probe_from_NFDE():
-    p = Probe(OUTPUTS_FOLDER + "fakeCurrentProbe.fdtd_mid_point_Wz_11_11_11_s2.dat")
+    p = Probe(
+        "testData/outputs/fakeCurrentProbe.fdtd_mid_point_Wz_11_11_11_s2.dat"
+    )
 
     assert p.type == "wire"
 
@@ -35,7 +44,7 @@ def test_read_probe_from_NFDE():
 @pytest.mark.probes
 @pytest.mark.wires
 def test_read_frequency_probe_from_NFDE():
-    p = Probe(OUTPUTS_FOLDER + "edelcadfixZ_COR2_log__Wz_21_21_28_s10_df.dat")
+    p = Probe("testData/outputs/edelcadfixZ_COR2_log__Wz_21_21_28_s10_df.dat")
 
     assert p.type == "wire"
     assert p.domainType == "frequency"
@@ -45,7 +54,7 @@ def test_read_frequency_probe_from_NFDE():
 
 @pytest.mark.probes
 def test_read_point_probe():
-    p = Probe(OUTPUTS_FOLDER + "shieldingEffectiveness.fdtd_front_Ex_1_1_1.dat")
+    p = Probe("testData/outputs/shieldingEffectiveness.fdtd_front_Ex_1_1_1.dat")
 
     assert p.case_name == "shieldingEffectiveness"
     assert p.name == "front"
@@ -70,7 +79,7 @@ def test_read_point_probe():
 
 @pytest.mark.probes
 def test_read_point_probe_without_planewave():
-    p = Probe(OUTPUTS_FOLDER + "twoWires.fdtd_ProbeEnd_Ey_25_13_5.dat")
+    p = Probe("testData/outputs/twoWires.fdtd_ProbeEnd_Ey_25_13_5.dat")
 
     assert p.case_name == "twoWires"
     assert p.name == "ProbeEnd"
@@ -83,7 +92,7 @@ def test_read_point_probe_without_planewave():
 
 @pytest.mark.probes
 def test_read_bulk_current_probe():
-    p = Probe(OUTPUTS_FOLDER + "twoWires.fdtd_Bulk probe_Jx_15_11_13__15_13_17.dat")
+    p = Probe("testData/outputs/twoWires.fdtd_Bulk probe_Jx_15_11_13__15_13_17.dat")
 
     assert p.case_name == "twoWires"
     assert p.name == "Bulk probe"
@@ -195,102 +204,13 @@ def test_probe_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch):
     ]
 
 
-@pytest.mark.planewave
-def test_fdtd_set_new_folder_to_run(tmp_path):
-    input = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
-    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-
-    solver["general"]["numberOfSteps"] = 1
-
-    solver.run()
-
-
-@pytest.mark.planewave
-def test_fdtd_with_string_args(tmp_path):
-    input = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
-    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, flags="-h")
-    solver["general"]["numberOfSteps"] = 1
-
-    solver.run()
-
-
-@no_mpi_skip
-@pytest.mark.mpi
-@pytest.mark.planewave
-def test_fdtd_with_mpi_run(tmp_path):
-    input = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
-    solver = FDTD(
-        input,
-        path_to_exe=SEMBA_EXE,
-        run_in_folder=tmp_path,
-        flags=["-h"],
-        mpi_command="mpirun -np 2",
-    )
-    solver["general"]["numberOfSteps"] = 1
-
-    solver.run()
-
-
-@pytest.mark.planewave
-def test_fdtd_clean_up_after_run(tmp_path):
-    input = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
-    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-
-    solver["general"]["numberOfSteps"] = 1
-
-    solver.run()
-
-    pn = solver.getSolvedProbeFilenames("inbox")
-    assert os.path.isfile(pn[0])
-
-    solver.cleanUp()
-
-    assert not os.path.isfile(pn[0])
-
-
-@pytest.mark.planewave
-def test_fdtd_probe_filenames_exclude_binary_by_default(tmp_path):
-    input = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
-    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver["general"]["numberOfSteps"] = 1
-    solver.run()
-
-    text_artifacts = solver.getSolvedProbeFilenames("inbox")
-    all_artifacts = solver.getSolvedProbeFilenames("inbox", include_binary=True)
-
-    assert text_artifacts
-    assert all(
-        filename.endswith((".dat", ".xdmf", ".h5")) for filename in text_artifacts
-    )
-    assert set(text_artifacts) < set(all_artifacts)
-    assert any(filename.endswith(".bin") for filename in all_artifacts)
-
-
-@pytest.mark.planewave
-def test_fdtd_clean_up_does_not_delete_other_cases_files(tmp_path):
-    input = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
-    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-
-    case_name = solver.getCaseName()
-    other_case_name = "other_case.fdtd"
-
-    own_file = os.path.join(str(tmp_path), case_name + "_probe_Ex_1_2_3.dat")
-    other_file = os.path.join(str(tmp_path), other_case_name + "_probe_Ex_1_2_3.dat")
-
-    open(own_file, "w").close()
-    open(other_file, "w").close()
-
-    solver.cleanUp()
-
-    assert not os.path.isfile(own_file)
-    assert os.path.isfile(other_file)
-
-
 @pytest.mark.spice
 @pytest.mark.mtln
 def test_fdtd_get_used_files():
-    fn = CASES_FOLDER + "multilines_opamp/multilines_opamp.fdtd.json"
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE)
+    solver = FDTD(
+        "testData/cases/multilines_opamp/multilines_opamp.fdtd.json",
+        path_to_exe="build/bin/semba-fdtd",
+    )
 
     used_files = solver.getUsedFiles()
 
