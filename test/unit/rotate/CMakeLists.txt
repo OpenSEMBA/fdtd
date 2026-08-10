@@ -1,4 +1,4 @@
-message(STATUS "Creating build system for test/rotate")
+message(STATUS "Creating build system for test/unit/rotate")
 
 add_library(
     rotate_test_fortran

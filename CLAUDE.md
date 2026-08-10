@@ -52,7 +52,7 @@ SEMBA_FDTD_ENABLE_MPI=ON pytest test/ -m mpi
 
 Test markers are defined in `pytest.ini`: `mtln`, `codemodel`, `hdf`, `mpi`.
 
-Unit test source is under `test/` in subdirectories: `mtln/`, `smbjson/`, `conformal/`, `observation/`, `rotate/`, `vtk/`, `pyWrapper/`.
+Unit test source is under `test/` in subdirectories: `mtln/`, `smbjson/`, `conformal/`, `observation/`, `unit/rotate/`, `vtk/`, `pyWrapper/`.
 
 ## Architecture
 
