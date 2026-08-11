@@ -4,14 +4,19 @@ module mapVTKOutput_m
    use outputUtils_m
    use directoryUtils_m
    use allocationUtils_m
-   use vtkAPI_m
-   use volumicProbeUtils_m
+    use vtkAPI_m
+    use volumicProbeUtils_m
     use report_m
+    use, intrinsic :: iso_fortran_env, only: int64, real64
+    use xdmf_hdf5_m, only: xdmf_writer_t, xdmf_options_t, xdmf_status_t, xdmf_grid_id_t, &
+                            xdmf_attribute_id_t, XDMF_TOPOLOGY_POLYLINE, XDMF_TOPOLOGY_QUADRILATERAL, &
+                            XDMF_CENTER_CELL, XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64
 #ifdef CompileWithHDF
     use hdf5
 #endif
 
-   implicit none
+    implicit none
+    public :: write_geometry_companion
 contains
    subroutine init_mapvtk_output(this, lowerBound, upperBound, field, outputTypeExtension, mpidir, problemInfo)
       type(mapvtk_output_t), intent(out) :: this
@@ -138,7 +143,7 @@ contains
       type(mapvtk_output_t), intent(in) :: this
       type(sim_control_t), intent(in) :: control
        real(KIND=RKIND), pointer, dimension(:), intent(in) :: realXGrid, realYGrid, realZGrid
-       type(problem_info_t), intent(in) :: problemInfo
+       type(problem_info_t), target, intent(in) :: problemInfo
 
       !type(vtk_file) :: vtkOutput
       type(vtk_unstructured_grid), target :: ugrid
@@ -206,6 +211,63 @@ contains
       end if
 
     end subroutine create_geometry_simulation_vtu
+
+    subroutine write_geometry_companion(base_path, lower_bound, upper_bound, problemInfo)
+       character(len=*), intent(in) :: base_path
+       type(cell_coordinate_t), intent(in) :: lower_bound, upper_bound
+       type(problem_info_t), target, intent(in) :: problemInfo
+
+       type(mapvtk_output_t) :: geometry
+       type(xdmf_writer_t) :: writer
+       type(xdmf_options_t) :: options
+       type(xdmf_status_t) :: status
+       type(xdmf_grid_id_t) :: grid
+       type(xdmf_attribute_id_t) :: tags_attribute, media_attribute
+       integer :: num_nodes, num_edges, num_quads
+       real(RKIND), allocatable :: nodes(:, :)
+       integer(kind=SINGLE), allocatable :: edges(:, :), quads(:, :)
+       real, allocatable :: tags(:), media_types(:)
+       integer(int64), allocatable :: connectivity(:, :)
+
+       geometry%mainCoords = lower_bound
+       geometry%auxCoords = upper_bound
+       call store_relevant_coordinates(geometry, problemInfo)
+       call createUnstructuredDataForVTU(geometry%nPoints, geometry%coords, geometry%currentType, nodes, edges, quads, &
+                                         num_nodes, num_edges, num_quads, .true., problemInfo%xSteps, &
+                                         problemInfo%ySteps, problemInfo%zSteps)
+       call build_cell_properties(geometry, problemInfo, num_edges, num_quads, tags, media_types)
+
+       options%overwrite = .true.
+       call writer%create(trim(base_path)//'_geometry', options, status)
+       if (status%is_error()) return
+
+       if (num_edges > 0) then
+          allocate(connectivity(2, num_edges))
+          connectivity = int(edges, int64) + 1_int64
+          call writer%define_unstructured_grid('lines', XDMF_TOPOLOGY_POLYLINE, real(nodes, real64), connectivity, grid, status)
+          if (.not. status%is_error()) call writer%define_attribute(grid, 'tagnumber', XDMF_CENTER_CELL, &
+               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, tags_attribute, status)
+          if (.not. status%is_error()) call writer%write_attribute(tags_attribute, real(tags(:num_edges), real64), status)
+          if (.not. status%is_error()) call writer%define_attribute(grid, 'mediatype', XDMF_CENTER_CELL, &
+               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, media_attribute, status)
+          if (.not. status%is_error()) call writer%write_attribute(media_attribute, real(media_types(:num_edges), real64), status)
+          deallocate(connectivity)
+       end if
+
+       if (num_quads > 0 .and. .not. status%is_error()) then
+          allocate(connectivity(4, num_quads))
+          connectivity = int(quads, int64) + 1_int64
+          call writer%define_unstructured_grid('faces', XDMF_TOPOLOGY_QUADRILATERAL, real(nodes, real64), connectivity, grid, status)
+          if (.not. status%is_error()) call writer%define_attribute(grid, 'tagnumber', XDMF_CENTER_CELL, &
+               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, tags_attribute, status)
+          if (.not. status%is_error()) call writer%write_attribute(tags_attribute, real(tags(num_edges + 1:), real64), status)
+          if (.not. status%is_error()) call writer%define_attribute(grid, 'mediatype', XDMF_CENTER_CELL, &
+               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, media_attribute, status)
+          if (.not. status%is_error()) call writer%write_attribute(media_attribute, real(media_types(num_edges + 1:), real64), status)
+          deallocate(connectivity)
+       end if
+       call writer%close(status)
+    end subroutine write_geometry_companion
 
     subroutine build_cell_properties(this, problemInfo, numEdges, numQuads, tags, media_types)
        type(mapvtk_output_t), intent(in) :: this

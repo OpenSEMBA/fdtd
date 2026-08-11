@@ -283,16 +283,18 @@ module outputTypes_m
       !Binary format: timeStamp, x, y, z, xVal, yVal, zVal. Total register size: 44
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE)    :: nPoints = -1
-      integer(kind=SINGLE), allocatable :: coords(:, :)     !(3, coordIdx)
-      real(kind=RKIND), allocatable :: xValueForTime(:, :)  !(time, coordIdx)
+       integer(kind=SINGLE), allocatable :: coords(:, :)     !(3, coordIdx)
+       real(kind=RKIND), allocatable :: tagNumber(:)         !(coordIdx)
+       real(kind=RKIND), allocatable :: xValueForTime(:, :)  !(time, coordIdx)
       real(kind=RKIND), allocatable :: yValueForTime(:, :)  !(time, coordIdx)
       real(kind=RKIND), allocatable :: zValueForTime(:, :)  !(time, coordIdx)
       character(len=BUFSIZE) :: filesPath
       type(xdmf_writer_t), pointer :: writer => null()
       type(xdmf_grid_id_t) :: grid
-      type(xdmf_attribute_id_t) :: xAttribute
-      type(xdmf_attribute_id_t) :: yAttribute
-      type(xdmf_attribute_id_t) :: zAttribute
+       type(xdmf_attribute_id_t) :: xAttribute
+       type(xdmf_attribute_id_t) :: yAttribute
+       type(xdmf_attribute_id_t) :: zAttribute
+       type(xdmf_attribute_id_t) :: tagAttribute
       type(probe_metadata_t) :: metadata
       integer :: publication_mode = 0
       logical :: local_participates = .true.

@@ -1,5 +1,55 @@
 from utils import *
 from pathlib import Path
+import re
+
+
+def assert_current_movie_has_tag_number(solver, expected_tags=None):
+    import h5py
+
+    xdmf_path = Path(solver.getCurrentMovie())
+    hdf_path = xdmf_path.with_suffix(".h5")
+    xdmf_contents = xdmf_path.read_text()
+
+    assert xdmf_path.is_file()
+    assert hdf_path.is_file()
+    tag_match = re.search(
+        r'<Attribute Name="tagnumber".*?/attributes/(a\d+)/values',
+        xdmf_contents,
+        re.DOTALL,
+    )
+    assert tag_match is not None
+    with h5py.File(hdf_path, "r") as hdf_file:
+        tag_values = hdf_file[f"attributes/{tag_match.group(1)}/values"][0]
+        for coordinates, expected_tag in (expected_tags or {}).items():
+            assert tag_values[coordinates] == expected_tag
+
+
+def current_movie_geometry_tag_counts(solver):
+    import h5py
+
+    geometry_path = Path(solver.getCurrentMovieGeometry())
+    assert geometry_path.is_file()
+    with h5py.File(geometry_path.with_suffix(".h5"), "r") as hdf_file:
+        tags = hdf_file["attributes/a0001/values"][()]
+    values, counts = np.unique(tags, return_counts=True)
+    return dict(zip(values, counts))
+
+
+def current_movie_geometry_all_tag_counts(solver):
+    import h5py
+
+    geometry_path = Path(solver.getCurrentMovieGeometry())
+    attribute_ids = re.findall(
+        r'<Attribute Name="tagnumber".*?/attributes/(a\d+)/values',
+        geometry_path.read_text(),
+        re.DOTALL,
+    )
+    with h5py.File(geometry_path.with_suffix(".h5"), "r") as hdf_file:
+        tags = np.concatenate(
+            [hdf_file[f"attributes/{attribute_id}/values"][()] for attribute_id in attribute_ids]
+        )
+    values, counts = np.unique(tags, return_counts=True)
+    return dict(zip(values, counts))
 
 
 @pytest.mark.planewave
@@ -177,11 +227,9 @@ def test_towel_hanger_case_creates_output_probes(tmp_path):
     assert len(probe_mid) == 1
     assert len(probe_end) == 1
 
-    assert (
-        "towelHanger.fdtd_wire_start_Wz_27_25_30_s3_tm.dat" == Path(probe_start[0]).name
-    )
-    assert "towelHanger.fdtd_wire_mid_Wx_35_25_32_s13_tm.dat" == Path(probe_mid[0]).name
-    assert "towelHanger.fdtd_wire_end_Wz_43_25_30_s22_tm.dat" == Path(probe_end[0]).name
+    assert "towelHanger.fdtd_wire_start_wire_I_27_25_30.dat" == Path(probe_start[0]).name
+    assert "towelHanger.fdtd_wire_mid_wire_I_35_25_32.dat" == Path(probe_mid[0]).name
+    assert "towelHanger.fdtd_wire_end_wire_I_43_25_30.dat" == Path(probe_end[0]).name
     assert countLinesInFile(probe_start[0]) == 3
     assert countLinesInFile(probe_mid[0]) == 3
     assert countLinesInFile(probe_end[0]) == 3
@@ -490,20 +538,18 @@ def test_three_surfaces_Jprobe(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getCurrentVTKMap()
-    assert os.path.isfile(vtkmapfile)
-
-    face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+    assert_current_movie_has_tag_number(
+        solver,
+        {
+            (3, 3, 3): 64,
+            (3, 5, 4): 64,
+            (0, 0, 0): 0,
+        },
     )
-    assert face_tag_dict[0] == 725
-
-    line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
-    )
-    assert line_tag_dict[64] == 12
-    assert line_tag_dict[128] == 10
-    assert line_tag_dict[192] == 8
+    tag_counts = current_movie_geometry_all_tag_counts(solver)
+    assert tag_counts[64] == 12
+    assert tag_counts[128] == 10
+    assert tag_counts[192] == 8
 
 
 @pytest.mark.sgbc
@@ -515,20 +561,18 @@ def test_three_one_cell_surfaces_Jprobe(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getCurrentVTKMap()
-    assert os.path.isfile(vtkmapfile)
-
-    face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+    assert_current_movie_has_tag_number(
+        solver,
+        {
+            (3, 3, 3): 64,
+            (3, 4, 3): 64,
+            (0, 0, 0): 0,
+        },
     )
-    assert face_tag_dict[0] == 728
-
-    line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
-    )
-    assert line_tag_dict[64] == 4
-    assert line_tag_dict[128] == 3
-    assert line_tag_dict[192] == 2
+    tag_counts = current_movie_geometry_tag_counts(solver)
+    assert tag_counts[64] == 4
+    assert tag_counts[128] == 3
+    assert tag_counts[192] == 2
 
 
 @pytest.mark.probes
@@ -539,24 +583,13 @@ def test_one_cell_PEC_surface_Jprobe(tmp_path):
     solver["general"]["numberOfSteps"] = 1
     solver["materialAssociations"][0]["materialId"] = 1
 
-    expected_face_tags = {"x": 729, "y": 729, "z": 728}
-
     for probe_component in ["x", "y", "z"]:
         solver["probes"][0]["component"] = probe_component
         solver.cleanUp()
         solver.run()
-        vtk_map_filename = solver.getCurrentVTKMap()
-        assert os.path.isfile(vtk_map_filename)
-
-        face_tag_dict = createPropertyDictionary(
-            vtk_map_filename, celltype=9, property="tagnumber"
-        )
-        assert face_tag_dict[0] == expected_face_tags[probe_component]
-
-        line_tag_dict = createPropertyDictionary(
-            vtk_map_filename, celltype=3, property="tagnumber"
-        )
-        assert line_tag_dict[64] == 4
+        expected_tag = 0 if probe_component == "z" else 64
+        assert_current_movie_has_tag_number(solver, {(3, 3, 3): expected_tag, (0, 0, 0): 0})
+        assert current_movie_geometry_all_tag_counts(solver)[64] == 5
 
 
 def test_one_cell_SGBC_surface_Jprobe(tmp_path):
@@ -566,53 +599,12 @@ def test_one_cell_SGBC_surface_Jprobe(tmp_path):
     solver["general"]["numberOfSteps"] = 1
     solver["materialAssociations"][0]["materialId"] = 2
 
-    solver["probes"][0]["component"] = "x"
-    solver.cleanUp()
-    solver.run()
-    vtkmapfile = solver.getCurrentVTKMap()
-    assert os.path.isfile(vtkmapfile)
-
-    face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
-    )
-    assert face_tag_dict[0] == 729
-
-    line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
-    )
-    assert line_tag_dict[64] == 4
-
-    solver["probes"][0]["component"] = "y"
-    solver.cleanUp()
-    solver.run()
-    vtkmapfile = solver.getCurrentVTKMap()
-    assert os.path.isfile(vtkmapfile)
-
-    face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
-    )
-    assert face_tag_dict[0] == 729
-
-    line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
-    )
-    assert line_tag_dict[64] == 4
-
-    solver["probes"][0]["component"] = "z"
-    solver.cleanUp()
-    solver.run()
-    vtkmapfile = solver.getCurrentVTKMap()
-    assert os.path.isfile(vtkmapfile)
-
-    face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
-    )
-    assert face_tag_dict[0] == 728
-
-    line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
-    )
-    assert line_tag_dict[64] == 4
+    for probe_component in ["x", "y", "z"]:
+        solver["probes"][0]["component"] = probe_component
+        solver.cleanUp()
+        solver.run()
+        assert_current_movie_has_tag_number(solver, {(3, 3, 3): 0, (0, 0, 0): 0})
+        assert current_movie_geometry_all_tag_counts(solver)[64] == 5
 
 
 def test_1_volume(tmp_path):
@@ -873,24 +865,12 @@ def test_wires_collision_Jprobe(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getCurrentVTKMap()
-
-    assert os.path.isfile(vtkmapfile)
-
-    face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
-    )
-    assert len(face_tag_dict) == 1
-    assert face_tag_dict[0] == 729
-
-    line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
-    )
-    assert len(line_tag_dict) == 4
-    assert line_tag_dict[64] == 2  # PEC
-    assert line_tag_dict[128] == 4  # Wire1
-    assert line_tag_dict[192] == 6  # Wire2
-    assert line_tag_dict[256] == 4  # Wire3
+    assert_current_movie_has_tag_number(solver, {(3, 3, 3): 0, (0, 0, 0): 0})
+    tag_counts = current_movie_geometry_tag_counts(solver)
+    assert tag_counts[64] == 2
+    assert tag_counts[128] == 2
+    assert tag_counts[192] == 3
+    assert tag_counts[256] == 2
 
 
 @mtln_skip
@@ -986,19 +966,10 @@ def test_wire_x_collision_y_Jprobe(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getCurrentVTKMap()
-    assert os.path.isfile(vtkmapfile)
-
-    line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
-    )
-    assert line_tag_dict[0] == 729
-
-    line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
-    )
-    assert line_tag_dict[64] == 2  # PEC
-    assert line_tag_dict[128] == 4  # Wire
+    assert_current_movie_has_tag_number(solver, {(3, 3, 3): 0, (0, 0, 0): 0})
+    tag_counts = current_movie_geometry_tag_counts(solver)
+    assert tag_counts[64] == 2
+    assert tag_counts[128] == 2
 
 
 @mtln_skip

@@ -451,6 +451,18 @@ class FDTD:
             )
         return current_maps[0] if current_maps else None
 
+    def getCurrentMovie(self):
+        current_movies = sorted(
+            glob.glob(os.path.join("**", "*current_movie*", "*.xdmf"), recursive=True)
+        )
+        return current_movies[0] if current_movies else None
+
+    def getCurrentMovieGeometry(self):
+        geometries = sorted(
+            glob.glob(os.path.join("**", "*current_movie*", "*_geometry.xdmf"), recursive=True)
+        )
+        return geometries[0] if geometries else None
+
     def getMaterialProperties(self, materialName):
         if "materials" in self._input:
             for idx, element in enumerate(self._input["materials"]):

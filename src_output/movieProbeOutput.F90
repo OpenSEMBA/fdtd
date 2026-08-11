@@ -13,7 +13,8 @@ module movieProbeOutput_m
       XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64
     use outputBinary_m, only: validate_binary_layout, append_binary_real64, BINARY_WRITER_SUCCESS
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
-   use outputVisualisation_m, only: verify_volumetric_visualisation, VISUALISATION_SUCCESS
+    use outputVisualisation_m, only: verify_volumetric_visualisation, VISUALISATION_SUCCESS
+    use mapVTKOutput_m, only: write_geometry_companion
    use directoryUtils_m, only: add_extension, create_file_with_path, create_folder, file_exists, &
                                get_last_component, join_path
    implicit none
@@ -63,8 +64,10 @@ contains
       ysteps => problemInfo%ySteps(lowerBound%y:upperBound%y)
       zsteps => problemInfo%zSteps(lowerBound%z:upperBound%z)
 
-      call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
-      call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
+       call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
+       call alloc_and_init(this%tagNumber, this%nPoints, 0.0_RKIND)
+       call store_tag_numbers(this, problemInfo)
+       call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
 
       ! Allocate value arrays based on component type
       call alloc_and_init(this%xValueForTime, BUFSIZE, this%nPoints, 0.0_RKIND)
@@ -77,7 +80,8 @@ contains
 
        call create_folder(this%path, error)
        call create_bin_file(this%filesPath, error)
-       call create_movie_files(this, error, xsteps, ysteps, zsteps)
+        call create_movie_files(this, error, xsteps, ysteps, zsteps)
+        if (error == 0) call write_geometry_companion(this%filesPath, lowerBound, upperBound, problemInfo)
        call initialise_movie_metadata(this, error, control%mpidir)
        if (error /= 0) print *, 'error en creacion'
    end subroutine init_movie_probe_output
@@ -110,7 +114,7 @@ contains
        this%metadata%upper_bound = this%auxCoords
        this%metadata%domain_type = TIME_DOMAIN
        if (allocated(this%metadata%artifacts)) deallocate(this%metadata%artifacts)
-       allocate(this%metadata%artifacts(3))
+        allocate(this%metadata%artifacts(5))
        this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
        this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
         this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
@@ -119,8 +123,12 @@ contains
         this%metadata%artifacts(1)%component_order = 'time,x,y,z,Ex,Ey,Ez'
        this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
        this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
-       this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
-       this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
+        this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+        this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
+        this%metadata%artifacts(4)%kind = OUTPUT_ARTIFACT_GEOMETRY
+        this%metadata%artifacts(4)%relative_path = trim(base_name)//'_geometry.xdmf'
+        this%metadata%artifacts(5)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+        this%metadata%artifacts(5)%relative_path = trim(base_name)//'_geometry.h5'
 
        call validate_binary_layout(this%metadata%artifacts(1), error)
        if (error /= BINARY_WRITER_SUCCESS) return
@@ -159,7 +167,7 @@ contains
          return
       end if
 
-      select case(this%component)
+       select case(this%component)
       case(iCur, iMEC, iMHC)
          attributeBaseName = 'CurrenDensity'
          if (this%component == iMEC) attributeBaseName = 'ElectricField'
@@ -188,8 +196,9 @@ contains
          if (this%component == iHzC) attributeBaseName = 'MagneticField'
          call define_movie_attribute(this, trim(attributeBaseName)//'Z', &
             this%zAttribute, status)
-      end select
-      if (status%is_error()) then
+       end select
+       if (.not. status%is_error()) call define_movie_attribute(this, 'tagnumber', this%tagAttribute, status)
+       if (status%is_error()) then
          error = 1
          print *, trim(status%message())
       end if
@@ -352,12 +361,13 @@ contains
             call write_external_attribute(this, this%yAttribute, &
                this%yValueForTime, time_index, status)
          end if
-         if (.not. status%is_error() .and. &
-             any([iCur, iMEC, iMHC, iCurZ, iEzC, iHzC] == this%component)) then
+          if (.not. status%is_error() .and. &
+              any([iCur, iMEC, iMHC, iCurZ, iEzC, iHzC] == this%component)) then
             call write_external_attribute(this, this%zAttribute, &
                this%zValueForTime, time_index, status)
-         end if
-         if (.not. status%is_error()) call this%writer%end_step(status)
+          end if
+          if (.not. status%is_error()) call write_external_tag_attribute(this, this%tagAttribute, status)
+          if (.not. status%is_error()) call this%writer%end_step(status)
          if (status%is_error()) then
             print *, trim(status%message())
             return
@@ -365,7 +375,7 @@ contains
       end do
    end subroutine write_to_external_xdmf
 
-   subroutine write_external_attribute(this, attribute, values, time_index, status)
+    subroutine write_external_attribute(this, attribute, values, time_index, status)
       type(movie_probe_output_t), intent(inout) :: this
       type(xdmf_attribute_id_t), intent(in) :: attribute
       real(RKIND), intent(in) :: values(:, :)
@@ -387,8 +397,61 @@ contains
             real(values(time_index, i), real64)
       end do
       call this%writer%write_attribute(attribute, reshape(field, [size(field)]), status)
-      deallocate(field)
-   end subroutine write_external_attribute
+       deallocate(field)
+    end subroutine write_external_attribute
+
+    subroutine write_external_tag_attribute(this, attribute, status)
+       type(movie_probe_output_t), intent(inout) :: this
+       type(xdmf_attribute_id_t), intent(in) :: attribute
+       type(xdmf_status_t), intent(out) :: status
+
+       integer :: i, nx, ny, nz
+       real(real64), allocatable :: tags(:, :, :)
+
+       nx = this%auxCoords%x - this%mainCoords%x + 1
+       ny = this%auxCoords%y - this%mainCoords%y + 1
+       nz = this%auxCoords%z - this%mainCoords%z + 1
+       allocate(tags(nx, ny, nz))
+       tags = 0.0_real64
+       do i = 1, this%nPoints
+          tags(this%coords(1, i) - this%mainCoords%x + 1, &
+               this%coords(2, i) - this%mainCoords%y + 1, &
+               this%coords(3, i) - this%mainCoords%z + 1) = real(this%tagNumber(i), real64)
+       end do
+       call this%writer%write_attribute(attribute, reshape(tags, [size(tags)]), status)
+       deallocate(tags)
+    end subroutine write_external_tag_attribute
+
+    subroutine store_tag_numbers(this, problemInfo)
+       type(movie_probe_output_t), intent(inout) :: this
+       type(problem_info_t), intent(in) :: problemInfo
+
+       integer :: i, field
+
+       field = tag_field(this%component)
+       do i = 1, this%nPoints
+          if (field <= iEz) then
+             this%tagNumber(i) = real(iabs(problemInfo%materialTag%getEdgeTag(field, this%coords(1, i), &
+                                                this%coords(2, i), this%coords(3, i))), RKIND)
+          else
+             this%tagNumber(i) = real(iabs(problemInfo%materialTag%getFaceTag(field, this%coords(1, i), &
+                                                this%coords(2, i), this%coords(3, i))), RKIND)
+          end if
+       end do
+    end subroutine store_tag_numbers
+
+    integer function tag_field(component)
+       integer(kind=SINGLE), intent(in) :: component
+
+       select case (component)
+       case (iCur, iCurX, iMEC, iExC); tag_field = iEx
+       case (iCurY, iEyC); tag_field = iEy
+       case (iCurZ, iEzC); tag_field = iEz
+       case (iMHC, iHxC); tag_field = iHx
+       case (iHyC); tag_field = iHy
+       case (iHzC); tag_field = iHz
+       end select
+    end function tag_field
 
    function get_output_path(this, outputTypeExtension, field, mpidir) result(path)
       type(movie_probe_output_t), intent(in) :: this
