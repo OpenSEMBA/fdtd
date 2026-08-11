@@ -13,23 +13,39 @@ from sys import platform
 from scipy.special import hankel2 as h
 from scipy.special import h2vp as hp
 
+def build_feature_enabled(feature):
+    value = os.getenv(feature)
+    if value is not None:
+        return value == "ON"
+
+    cache_path = os.path.join(os.getcwd(), "build", "CMakeCache.txt")
+    try:
+        with open(cache_path) as cache_file:
+            for line in cache_file:
+                if line.startswith(feature + ":"):
+                    return line.rstrip().endswith("=ON")
+    except OSError:
+        pass
+    return False
+
+
 mtln_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON",
+    build_feature_enabled("SEMBA_FDTD_ENABLE_MTLN"),
     reason="Binary compiled with MTLN. No tests wire wires",
 )
 
 no_mtln_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF",
+    not build_feature_enabled("SEMBA_FDTD_ENABLE_MTLN"),
     reason="MTLN is not available",
 )
 
 no_hdf_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_HDF") == "OFF",
+    not build_feature_enabled("SEMBA_FDTD_ENABLE_HDF"),
     reason="HDF5 is not available",
 )
 
 no_mpi_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_MPI") == "OFF",
+    not build_feature_enabled("SEMBA_FDTD_ENABLE_MPI"),
     reason="MPI is not available",
 )
 
