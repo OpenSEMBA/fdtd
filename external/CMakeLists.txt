@@ -19,5 +19,10 @@ endif()
 
 if (SEMBA_FDTD_ENABLE_MTLN)
 	add_subdirectory("ngspice/")
+	if (WIN32 AND TARGET ngspice-spicelib)
+		# Newer clang + MSVC STL on windows-latest rejects ngspice cppduals
+		# forbidden std::is_compound specialization as invalid-specialization.
+		target_compile_options(ngspice-spicelib PRIVATE "$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:IntelLLVM>>>:-Wno-invalid-specialization>")
+	endif()
 	# set(NGSPICE_LIB ngspice)
 endif()
