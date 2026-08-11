@@ -90,12 +90,12 @@ contains
       do k = this%mainCoords%Z, this%auxCoords%Z
       do j = this%mainCoords%Y, this%auxCoords%Y
       do i = this%mainCoords%X, this%auxCoords%X
-         do field = iEx, iEz
-            if (isEdge(field, i, j, k, problemInfo)) then
-               counter = counter + 1
-               call writeFaceTagInfo(this, counter, i, j, k, field, problemInfo%materialTag%getFaceTag(field, i, j, k))
-            end if
-         end do
+          do field = iEx, iEz
+             if (isEdge(field, i, j, k, problemInfo)) then
+                counter = counter + 1
+                call writeFaceTagInfo(this, counter, i, j, k, field, problemInfo%materialTag%getEdgeTag(field, i, j, k))
+             end if
+          end do
          do field = iHx, iHz
             if (isWithinBounds(field, i, j, k, problemInfo)) then
                if (isMaterialExceptPML(field, i, j, k, problemInfo)) then
@@ -221,14 +221,14 @@ contains
           select case (this%currentType(index))
           case (iJx, iJy, iJz)
              edge_index = edge_index + 1
-             field = this%currentType(index) - iJx + iEx
+             field = electric_field(this%currentType(index))
              media = getMediaIndex(field, this%coords(1, index), this%coords(2, index), this%coords(3, index), &
                                     problemInfo%geometryToMaterialData)
-             tags(edge_index) = tag_number(problemInfo%materialList(media), this%materialTag(index), .true.)
+             tags(edge_index) = real(this%materialTag(index))
              media_types(edge_index) = edge_media_type(problemInfo%materialList(media))
           case (iBloqueJx, iBloqueJy, iBloqueJz)
              quad_index = quad_index + 1
-             field = this%currentType(index) - iBloqueJx + iHx
+             field = magnetic_field(this%currentType(index))
              media = getMediaIndex(field, this%coords(1, index), this%coords(2, index), this%coords(3, index), &
                                     problemInfo%geometryToMaterialData)
              tags(quad_index) = real(this%materialTag(index))
@@ -282,23 +282,25 @@ contains
           end if
        end function edge_media_type
 
-       real function tag_number(material, fallback_tag, is_edge)
-          type(MediaData_t), intent(in) :: material
-          integer(kind=SINGLE), intent(in) :: fallback_tag
-          logical, intent(in) :: is_edge
+       integer function electric_field(current_type)
+          integer(kind=SINGLE), intent(in) :: current_type
 
-          if (material%is%Pec) then
-             tag_number = 64.0
-          else if (material%is%PMC) then
-             tag_number = 128.0
-          else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
-             tag_number = 192.0
-          else if (is_edge) then
-             tag_number = 64.0 * real(fallback_tag)
-          else
-             tag_number = real(fallback_tag)
-          end if
-       end function tag_number
+          select case (current_type)
+          case (iJx); electric_field = iEx
+          case (iJy); electric_field = iEy
+          case (iJz); electric_field = iEz
+          end select
+       end function electric_field
+
+       integer function magnetic_field(current_type)
+          integer(kind=SINGLE), intent(in) :: current_type
+
+          select case (current_type)
+          case (iBloqueJx); magnetic_field = iHx
+          case (iBloqueJy); magnetic_field = iHy
+          case (iBloqueJz); magnetic_field = iHz
+          end select
+       end function magnetic_field
     end subroutine build_cell_properties
 
 #ifdef CompileWithHDF
