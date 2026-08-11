@@ -399,6 +399,8 @@ class FDTD:
             basename = os.path.basename(path)
             if not basename.startswith(probe_prefix):
                 continue
+            if basename.endswith("_geometry.xdmf") or basename.endswith("_geometry.h5"):
+                continue
             extension = next(
                 (value for value in Probe.FILE_EXTENSIONS if basename.endswith(value)),
                 "",
