@@ -1,5 +1,8 @@
 module smbjson_testingTools
    use NFDETypes_extension_m
+#ifdef CompileWithMTLN
+   use mtln_types_m
+#endif
    implicit none
 
    character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'

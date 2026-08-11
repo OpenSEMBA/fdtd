@@ -298,9 +298,8 @@ module Solver_m
       character (len=*), intent(in)  ::  nEntradaRoot
       integer (kind=4), intent(in) ::  layoutnumber
 
-      call solveMTLNProblem(mtln_parsed)
+      call solveMTLNProblem(mtln_parsed, nEntradaRoot)
       call reportSimulationEnd(layoutnumber)
-      call FlushMTLNObservationFiles(nEntradaRoot, mtlnProblem = .true.)
    end subroutine
 #endif
 
@@ -1273,7 +1272,10 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
-            call InitWires_mtln(this%sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles)
+            call InitWires_mtln(this%sgg,Ex,Ey,Ez, &
+                                this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, &
+                                this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, &
+                                this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles, dtcritico)
 #else
             write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif
@@ -2888,12 +2890,6 @@ contains
             if (this%control%wirecrank) then
                call AdvanceWiresEcrank(this%sgg, this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
             else
-#ifdef CompileWithMTLN
-               if (this%mtln_parsed%has_multiwires) then
-                  write(buff, *) 'ERROR: Multiwires in simulation but -mtlnwires flag has not been selected'
-                  call WarnErrReport(buff)
-               end if
-#endif
                call AdvanceWiresE(this%sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,this%eps0,this%mu0)
             endif
          endif
@@ -3020,11 +3016,6 @@ contains
       if (this%thereAre%Observation) THEN
          call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
-#ifdef CompileWithMTLN      
-         if (this%control%use_mtln_wires) then
-            call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
-         end if
-#endif
       endif
       
       if (this%thereAre%FarFields) then
