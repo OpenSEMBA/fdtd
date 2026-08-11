@@ -11,6 +11,10 @@ module mapVTKOutput_m
     use xdmf_hdf5_m, only: xdmf_writer_t, xdmf_options_t, xdmf_status_t, xdmf_grid_id_t, &
                             xdmf_attribute_id_t, XDMF_TOPOLOGY_POLYLINE, XDMF_TOPOLOGY_QUADRILATERAL, &
                             XDMF_CENTER_CELL, XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64
+#ifdef CompileWithMTLN
+    use Wire_bundles_mtln_m, only: GetSolverPtr
+    use mtln_solver_m, only: mtln_solver_t => mtln_t
+#endif
 #ifdef CompileWithHDF
     use hdf5
 #endif
@@ -82,14 +86,18 @@ contains
                end if
             end if
          end do
-      end do
-      end do
-      end do
+       end do
+       end do
+       end do
+#ifdef CompileWithMTLN
+       call count_mtln_external_segments(this, counter)
+#endif
 
-      this%nPoints = counter
-      call alloc_and_init(this%coords, 3, this%nPoints, -99)
-      call alloc_and_init(this%materialTag, this%nPoints, -1)
-      call alloc_and_init(this%currentType, this%nPoints, -1)
+       this%nPoints = counter
+       call alloc_and_init(this%coords, 3, this%nPoints, -99)
+       call alloc_and_init(this%materialTag, this%nPoints, -1)
+       call alloc_and_init(this%currentType, this%nPoints, -1)
+       call alloc_and_init(this%mediaType, this%nPoints, -1.0_RKIND)
 
       counter = 0
       do k = this%mainCoords%Z, this%auxCoords%Z
@@ -115,10 +123,68 @@ contains
                end if
             end if
          end do
-      end do
-      end do
-      end do
-   end subroutine store_relevant_coordinates
+       end do
+       end do
+       end do
+#ifdef CompileWithMTLN
+       call store_mtln_external_segments(this, counter, problemInfo)
+#endif
+    end subroutine store_relevant_coordinates
+
+#ifdef CompileWithMTLN
+    subroutine count_mtln_external_segments(this, counter)
+       type(mapvtk_output_t), intent(in) :: this
+       integer, intent(inout) :: counter
+
+       type(mtln_solver_t), pointer :: mtln_local
+       integer :: bundle_index, segment_index
+       integer :: position(3)
+
+       mtln_local => GetSolverPtr()
+       if (.not. associated(mtln_local)) return
+       if (.not. allocated(mtln_local%bundles)) return
+       do bundle_index = 1, size(mtln_local%bundles)
+          if (.not. allocated(mtln_local%bundles(bundle_index)%external_field_segments)) cycle
+          do segment_index = 1, size(mtln_local%bundles(bundle_index)%external_field_segments)
+             position = mtln_local%bundles(bundle_index)%external_field_segments(segment_index)%position
+             if (all(position >= [this%mainCoords%x, this%mainCoords%y, this%mainCoords%z]) .and. &
+                 all(position <= [this%auxCoords%x, this%auxCoords%y, this%auxCoords%z])) counter = counter + 1
+          end do
+       end do
+    end subroutine count_mtln_external_segments
+
+    subroutine store_mtln_external_segments(this, counter, problemInfo)
+       type(mapvtk_output_t), intent(inout) :: this
+       integer, intent(inout) :: counter
+       type(problem_info_t), intent(in) :: problemInfo
+
+       type(mtln_solver_t), pointer :: mtln_local
+       integer :: bundle_index, segment_index, field
+       integer :: position(3)
+
+       mtln_local => GetSolverPtr()
+       if (.not. associated(mtln_local)) return
+       if (.not. allocated(mtln_local%bundles)) return
+       do bundle_index = 1, size(mtln_local%bundles)
+          if (.not. allocated(mtln_local%bundles(bundle_index)%external_field_segments)) cycle
+          do segment_index = 1, size(mtln_local%bundles(bundle_index)%external_field_segments)
+             position = mtln_local%bundles(bundle_index)%external_field_segments(segment_index)%position
+             if (.not. all(position >= [this%mainCoords%x, this%mainCoords%y, this%mainCoords%z]) .or. &
+                 .not. all(position <= [this%auxCoords%x, this%auxCoords%y, this%auxCoords%z])) cycle
+             field = abs(mtln_local%bundles(bundle_index)%external_field_segments(segment_index)%direction)
+             counter = counter + 1
+             this%coords(:, counter) = position
+              this%currentType(counter) = currentType(field)
+              this%materialTag(counter) = problemInfo%materialTag%getEdgeTag(field, position(1), position(2), position(3))
+              if (segment_index == 1 .or. segment_index == size(mtln_local%bundles(bundle_index)%external_field_segments)) then
+                 this%mediaType(counter) = 14.0_RKIND
+              else
+                 this%mediaType(counter) = 60.0_RKIND + real(sum(mtln_local%bundles(bundle_index)%conductors_in_level), RKIND)
+              end if
+          end do
+       end do
+    end subroutine store_mtln_external_segments
+#endif
 
    logical function isMaterialExceptPML(field, i, j, k, problemInfo)
       integer, intent(in)             :: field, i, j, k
@@ -286,9 +352,13 @@ contains
              field = electric_field(this%currentType(index))
              media = getMediaIndex(field, this%coords(1, index), this%coords(2, index), this%coords(3, index), &
                                     problemInfo%geometryToMaterialData)
-             tags(edge_index) = real(this%materialTag(index))
-             media_types(edge_index) = edge_media_type(problemInfo%materialList(media))
-          case (iBloqueJx, iBloqueJy, iBloqueJz)
+              tags(edge_index) = real(this%materialTag(index))
+               if (this%mediaType(index) >= 0.0_RKIND) then
+                  media_types(edge_index) = this%mediaType(index)
+               else
+                  media_types(edge_index) = edge_media_type(field, this%coords(:, index), problemInfo, media)
+               end if
+           case (iBloqueJx, iBloqueJy, iBloqueJz)
              quad_index = quad_index + 1
              field = magnetic_field(this%currentType(index))
              media = getMediaIndex(field, this%coords(1, index), this%coords(2, index), this%coords(3, index), &
@@ -319,8 +389,13 @@ contains
           end if
        end function surface_media_type
 
-       real function edge_media_type(material)
-          type(MediaData_t), intent(in) :: material
+        real function edge_media_type(field, position, problemInfo, media)
+           integer, intent(in) :: field, position(3), media
+           type(problem_info_t), intent(in) :: problemInfo
+           integer :: candidate_field, candidate_media, candidate_position(3)
+           type(MediaData_t), pointer :: material
+
+           material => problemInfo%materialList(media)
 
           if (material%is%Pec) then
              edge_media_type = 0.5
@@ -335,10 +410,28 @@ contains
              edge_media_type = 2.5
           else if (material%is%ThinSlot) then
              edge_media_type = 4.5
-          else if (material%is%ThinWire) then
-             edge_media_type = 7.0
-          else if (material%is%Multiwire) then
-             edge_media_type = 12.0
+           else if (material%is%ThinWire) then
+              edge_media_type = 7.0
+           else if (material%is%Multiwire) then
+              edge_media_type = 12.0
+              do candidate_field = iEx, iEz
+                 candidate_media = getMediaIndex(candidate_field, position(1), position(2), position(3), &
+                                                  problemInfo%geometryToMaterialData)
+                 if (candidate_media /= 1 .and. candidate_media /= media) then
+                    edge_media_type = 13.0
+                    return
+                 end if
+              end do
+              candidate_position = position
+              candidate_position(field) = candidate_position(field) + 1
+              do candidate_field = iEx, iEz
+                 candidate_media = getMediaIndex(candidate_field, candidate_position(1), candidate_position(2), &
+                                                  candidate_position(3), problemInfo%geometryToMaterialData)
+                 if (candidate_media /= 1 .and. candidate_media /= media) then
+                    edge_media_type = 13.0
+                    return
+                 end if
+              end do
           else
              edge_media_type = -0.5
           end if

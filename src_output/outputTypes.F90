@@ -224,9 +224,10 @@ module outputTypes_m
    type, extends(abstract_probe_t) :: mapvtk_output_t
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE), allocatable :: coords(:, :)
-      integer(kind=SINGLE), allocatable :: currentType(:)
-      integer(kind=SINGLE), allocatable :: materialTag(:)
-       integer :: nPoints = -1
+       integer(kind=SINGLE), allocatable :: currentType(:)
+       integer(kind=SINGLE), allocatable :: materialTag(:)
+       real(kind=RKIND), allocatable :: mediaType(:)
+        integer :: nPoints = -1
        type(output_artifact_t) :: artifacts(2)
    end type mapvtk_output_t
      type, extends(abstract_time_frequency_probe_t) :: point_probe_output_t
