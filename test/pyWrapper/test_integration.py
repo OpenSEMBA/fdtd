@@ -180,6 +180,61 @@ def test_fill_conformal_vtk_sphere(tmp_path):
     assert face_media_dict[1005] == 24  # Conformal PEC surface
     assert face_media_dict[1006] == 24  # Conformal PEC surface
 
+
+@pytest.mark.conformal
+@pytest.mark.vtk
+def test_fill_conformal_surface_midcell_vtk(tmp_path):
+    fn = CASES_FOLDER + 'conformal_surface/conformal_surface_midcell.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    volume_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=12, property='mediatype')
+
+    assert sum(line_media_dict.values()) == 21
+    assert sum(face_media_dict.values()) == 12
+    assert not volume_media_dict
+
+
+@pytest.mark.conformal
+@pytest.mark.vtk
+def test_fill_mixed_conformal_volume_and_surfaces(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal_sphere_1mm_rcs_delta.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver['mesh']['coordinates'].extend([
+        {"id": 28, "relativePosition": [5.5, 5, 5]},
+        {"id": 29, "relativePosition": [5.5, 6, 5]},
+        {"id": 30, "relativePosition": [5.5, 5, 6]},
+        {"id": 31, "relativePosition": [7.5, 5, 5]},
+        {"id": 32, "relativePosition": [7.5, 6, 5]},
+        {"id": 33, "relativePosition": [7.5, 5, 6]},
+    ])
+    solver['mesh']['elements'].extend([
+        {"id": 5, "type": "conformal", "subtype": "surface", "intervals": [], "triangles": [[28, 29, 30]]},
+        {"id": 6, "type": "conformal", "subtype": "surface", "intervals": [], "triangles": [[31, 32, 33]]},
+    ])
+    solver['materialAssociations'][0]['elementIds'].extend([5, 6])
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+    assert createPropertyDictionary(vtkmapfile, celltype=3, property='mediatype')
+    assert createPropertyDictionary(vtkmapfile, celltype=9, property='mediatype')
+
 @pytest.mark.conformal
 @pytest.mark.vtk
 def test_fill_conformal_fL_0_005_vtk_large_sphere(tmp_path):

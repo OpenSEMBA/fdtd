@@ -115,6 +115,7 @@ integer function test_parser_read_conformal_volume() bind(C) result(err)
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'conformal.fdtd.json'
    type(parser_t) :: parser
    type(mesh_t) :: mesh
+   type(Parseador_t) :: problem
    logical :: found
    type(conformal_region_t), dimension(:), allocatable :: conformal_regions
    type(cell_region_t), dimension(:), allocatable :: cell_regions
@@ -128,4 +129,8 @@ integer function test_parser_read_conformal_volume() bind(C) result(err)
    if (size(conformal_regions(1)%triangles) /= 24) err = err + 1
    cell_regions = mesh%getCellRegions([5])
    if (size(cell_regions(1)%intervals) /= 1) err = err + 1
+
+   problem = parser%readProblemDescription()
+   if (.not. associated(problem%conformalRegs%volumes)) err = err + 1
+   if (size(problem%conformalRegs%volumes) /= 1) err = err + 1
 end function

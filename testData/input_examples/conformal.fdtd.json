@@ -78,7 +78,7 @@
     ],
 
     "materialAssociations": [
-        {"materialId": 2, "elementIds": [4]}
+        {"materialId": 2, "elementIds": [4, 5]}
     ],
 
     "sources": [

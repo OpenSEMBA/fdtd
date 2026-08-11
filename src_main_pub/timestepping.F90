@@ -84,6 +84,15 @@ module Solver_m
 #endif
    implicit none
 
+   type :: conformal_surface_face_state_t
+      integer(kind=4), dimension(3) :: cell = 0
+      integer(kind=4) :: face_direction = 0
+      integer(kind=4) :: split_direction = 0
+      real(kind=rkind) :: lower_fraction = 0.0_RKIND
+      real(kind=rkind) :: lower_h = 0.0_RKIND
+      real(kind=rkind) :: upper_h = 0.0_RKIND
+   end type conformal_surface_face_state_t
+
 
    type, public :: solver_t
       type(sim_control_t) :: control
@@ -111,6 +120,7 @@ module Solver_m
       logical :: finishedwithsuccess = .false.
       real (kind=rkind) :: eps0,mu0
       type (tagtype_t) :: tagtype
+      type(conformal_surface_face_state_t), allocatable :: conformal_surface_faces(:)
 
 #ifdef CompileWithMTLN
       type (mtln_t) :: mtln_parsed
@@ -1361,7 +1371,7 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Conformal Elements ...';  call print11(this%control%layoutnumber,dubuf)
-            ! call initConformal(this%sgg, Ex,Ey,Ez,Hx,Hy,Hz)
+            call initializeConformalSurfaceStates(this)
             
       end subroutine
 
@@ -2529,13 +2539,219 @@ contains
 
    subroutine solver_advanceConformalE(this)
       class(solver_t) :: this
-      ! Conformal time stepping is still WIP; no implementation is linked.
+      integer :: n, i, j, k, e, medium
+      real(kind=rkind) :: sign, inverse_step
+
+      if (.not. allocated(this%conformal_surface_faces)) return
+      do n = 1, size(this%conformal_surface_faces)
+         i = this%conformal_surface_faces(n)%cell(1)
+         j = this%conformal_surface_faces(n)%cell(2)
+         k = this%conformal_surface_faces(n)%cell(3)
+         e = 6 - this%conformal_surface_faces(n)%face_direction - &
+                 this%conformal_surface_faces(n)%split_direction
+         sign = leviCivita(this%conformal_surface_faces(n)%face_direction, &
+                           this%conformal_surface_faces(n)%split_direction, e)
+
+         select case(this%conformal_surface_faces(n)%split_direction)
+         case(1)
+            i = i + 1
+            inverse_step = this%Idxh(i)
+         case(2)
+            j = j + 1
+            inverse_step = this%Idyh(j)
+         case(3)
+            k = k + 1
+            inverse_step = this%Idzh(k)
+         end select
+
+         select case(e)
+         case(1)
+            medium = this%media%sggMiEx(i,j,k)
+            this%Ex(i,j,k) = this%Ex(i,j,k) + this%g%g2(medium)*inverse_step*sign* &
+               (this%conformal_surface_faces(n)%upper_h - this%conformal_surface_faces(n)%lower_h)
+         case(2)
+            medium = this%media%sggMiEy(i,j,k)
+            this%Ey(i,j,k) = this%Ey(i,j,k) + this%g%g2(medium)*inverse_step*sign* &
+               (this%conformal_surface_faces(n)%upper_h - this%conformal_surface_faces(n)%lower_h)
+         case(3)
+            medium = this%media%sggMiEz(i,j,k)
+            this%Ez(i,j,k) = this%Ez(i,j,k) + this%g%g2(medium)*inverse_step*sign* &
+               (this%conformal_surface_faces(n)%upper_h - this%conformal_surface_faces(n)%lower_h)
+         end select
+      end do
    end subroutine solver_advanceConformalE
 
    subroutine solver_advanceConformalH(this)
       class(solver_t) :: this
-      ! Conformal time stepping is still WIP; no implementation is linked.
+      integer :: n, i, j, k, e
+      real(kind=rkind) :: sign, inverse_step, lower_e, upper_e, lower_fraction
+
+      if (.not. allocated(this%conformal_surface_faces)) return
+      do n = 1, size(this%conformal_surface_faces)
+         i = this%conformal_surface_faces(n)%cell(1)
+         j = this%conformal_surface_faces(n)%cell(2)
+         k = this%conformal_surface_faces(n)%cell(3)
+         e = 6 - this%conformal_surface_faces(n)%face_direction - &
+                 this%conformal_surface_faces(n)%split_direction
+         sign = leviCivita(this%conformal_surface_faces(n)%face_direction, &
+                           this%conformal_surface_faces(n)%split_direction, e)
+         lower_fraction = this%conformal_surface_faces(n)%lower_fraction
+
+         select case(e)
+         case(1)
+            lower_e = this%Ex(i,j,k)
+            select case(this%conformal_surface_faces(n)%split_direction)
+            case(2); upper_e = this%Ex(i,j+1,k); inverse_step = this%Idye(j)
+            case(3); upper_e = this%Ex(i,j,k+1); inverse_step = this%Idze(k)
+            end select
+         case(2)
+            lower_e = this%Ey(i,j,k)
+            select case(this%conformal_surface_faces(n)%split_direction)
+            case(1); upper_e = this%Ey(i+1,j,k); inverse_step = this%Idxe(i)
+            case(3); upper_e = this%Ey(i,j,k+1); inverse_step = this%Idze(k)
+            end select
+         case(3)
+            lower_e = this%Ez(i,j,k)
+            select case(this%conformal_surface_faces(n)%split_direction)
+            case(1); upper_e = this%Ez(i+1,j,k); inverse_step = this%Idxe(i)
+            case(2); upper_e = this%Ez(i,j+1,k); inverse_step = this%Idye(j)
+            end select
+         end select
+
+         this%conformal_surface_faces(n)%lower_h = this%conformal_surface_faces(n)%lower_h + &
+            this%sgg%dt/(this%mu0*lower_fraction)*(-sign)*(-lower_e)*inverse_step
+         this%conformal_surface_faces(n)%upper_h = this%conformal_surface_faces(n)%upper_h + &
+            this%sgg%dt/(this%mu0*(1.0_RKIND-lower_fraction))*(-sign)*upper_e*inverse_step
+
+         select case(this%conformal_surface_faces(n)%face_direction)
+         case(1); this%Hx(i,j,k) = this%conformal_surface_faces(n)%lower_h
+         case(2); this%Hy(i,j,k) = this%conformal_surface_faces(n)%lower_h
+         case(3); this%Hz(i,j,k) = this%conformal_surface_faces(n)%lower_h
+         end select
+      end do
    end subroutine solver_advanceConformalH
+
+   subroutine initializeConformalSurfaceStates(this)
+      class(solver_t) :: this
+      type(conformal_surface_face_state_t), allocatable :: states(:), enlarged(:)
+      integer :: medium, feature, split_direction
+      type(face_t) :: face
+      real(kind=rkind) :: lower_fraction
+
+      ! A coordinate-normal sheet cuts opposite, parallel edges at the same
+      ! fractional coordinate.  Those faces can be split into independent
+      ! lower/upper Yee states without defining a PEC volume.
+      allocate(states(0))
+      do medium = 1, this%sgg%NumMedia
+         if (.not. this%sgg%Med(medium)%Is%ConformalPEC .or. &
+             .not. this%sgg%Med(medium)%Is%Surface) cycle
+         if (.not. allocated(this%sgg%Med(medium)%ConformalFace)) cycle
+         do feature = 1, size(this%sgg%Med(medium)%ConformalFace)
+            face = this%sgg%Med(medium)%ConformalFace(feature)
+            call findSurfaceFaceSplit(this%sgg, face, split_direction, lower_fraction)
+            if (split_direction == 0) cycle
+            if (lower_fraction <= 1.0e-5_RKIND .or. lower_fraction >= 1.0_RKIND-1.0e-5_RKIND) cycle
+            if (surfaceStateExists(states, face%cell, face%direction)) cycle
+            allocate(enlarged(size(states)+1))
+            if (size(states) > 0) enlarged(1:size(states)) = states
+            enlarged(size(enlarged))%cell = face%cell
+            enlarged(size(enlarged))%face_direction = face%direction
+            enlarged(size(enlarged))%split_direction = split_direction
+            enlarged(size(enlarged))%lower_fraction = lower_fraction
+            call move_alloc(enlarged, states)
+         end do
+      end do
+      call move_alloc(states, this%conformal_surface_faces)
+   end subroutine initializeConformalSurfaceStates
+
+   subroutine findSurfaceFaceSplit(sgg, face, split_direction, lower_fraction)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      type(face_t), intent(in) :: face
+      integer, intent(out) :: split_direction
+      real(kind=rkind), intent(out) :: lower_fraction
+      integer :: medium, feature, candidate
+      real(kind=rkind) :: candidate_fraction
+
+      split_direction = 0
+      lower_fraction = 0.0_RKIND
+      do medium = 1, sgg%NumMedia
+         if (.not. sgg%Med(medium)%Is%ConformalPEC .or. .not. sgg%Med(medium)%Is%Surface) cycle
+         if (.not. allocated(sgg%Med(medium)%ConformalEdge)) cycle
+         do feature = 1, size(sgg%Med(medium)%ConformalEdge)
+            candidate = sgg%Med(medium)%ConformalEdge(feature)%direction
+            if (candidate == face%direction) cycle
+            if (.not. edgeBoundsFace(sgg%Med(medium)%ConformalEdge(feature), face)) cycle
+            candidate_fraction = edgeIntersectionFraction(sgg%Med(medium)%ConformalEdge(feature))
+            if (candidate_fraction <= 0.0_RKIND) cycle
+            if (split_direction /= 0 .and. split_direction /= candidate) then
+               split_direction = 0
+               lower_fraction = 0.0_RKIND
+               return
+            end if
+            if (split_direction == candidate .and. lower_fraction > 0.0_RKIND .and. &
+                abs(lower_fraction-candidate_fraction) > 1.0e-5_RKIND) then
+               split_direction = 0
+               lower_fraction = 0.0_RKIND
+               return
+            end if
+            split_direction = candidate
+            lower_fraction = candidate_fraction
+         end do
+      end do
+   end subroutine findSurfaceFaceSplit
+
+   logical function edgeBoundsFace(edge, face)
+      type(edge_t), intent(in) :: edge
+      type(face_t), intent(in) :: face
+      integer :: remaining_direction
+
+      edgeBoundsFace = .false.
+      if (edge%direction == face%direction) return
+      remaining_direction = 6 - edge%direction - face%direction
+      if (edge%cell(face%direction) /= face%cell(face%direction)) return
+      if (edge%cell(edge%direction) /= face%cell(edge%direction)) return
+      edgeBoundsFace = edge%cell(remaining_direction) == face%cell(remaining_direction) .or. &
+                       edge%cell(remaining_direction) == face%cell(remaining_direction) + 1
+   end function edgeBoundsFace
+
+   real(kind=rkind) function edgeIntersectionFraction(edge) result(fraction)
+      type(edge_t), intent(in) :: edge
+      real(kind=rkind) :: first_fraction, second_fraction
+
+      first_fraction = edge%material_coords(1) - floor(edge%material_coords(1))
+      second_fraction = edge%material_coords(2) - floor(edge%material_coords(2))
+      fraction = 0.0_RKIND
+      if (first_fraction > 1.0e-5_RKIND) fraction = first_fraction
+      if (second_fraction > 1.0e-5_RKIND) fraction = second_fraction
+   end function edgeIntersectionFraction
+
+   logical function surfaceStateExists(states, cell, direction)
+      type(conformal_surface_face_state_t), dimension(:), intent(in) :: states
+      integer(kind=4), dimension(3), intent(in) :: cell
+      integer, intent(in) :: direction
+      integer :: n
+
+      surfaceStateExists = .false.
+      do n = 1, size(states)
+         if (states(n)%face_direction == direction .and. all(states(n)%cell == cell)) then
+            surfaceStateExists = .true.
+            return
+         end if
+      end do
+   end function surfaceStateExists
+
+   real(kind=rkind) function leviCivita(first, second, third) result(value)
+      integer, intent(in) :: first, second, third
+      if (first == second .or. second == third .or. first == third) then
+         value = 0.0_RKIND
+      else if ((first == 1 .and. second == 2 .and. third == 3) .or. &
+               (first == 2 .and. second == 3 .and. third == 1) .or. &
+               (first == 3 .and. second == 1 .and. third == 2)) then
+         value = 1.0_RKIND
+      else
+         value = -1.0_RKIND
+      end if
+   end function leviCivita
 
 
    subroutine solver_advanceEDispersiveE(this)
@@ -2995,6 +3211,7 @@ contains
       !Destroy the remaining
       deallocate (this%sgg%Med,this%sgg%LineX,this%sgg%LineY,this%sgg%LineZ,this%sgg%DX,this%sgg%DY,this%sgg%DZ,this%sgg%tiempo)
       call this%g%destroy()
+      if (allocated(this%conformal_surface_faces)) deallocate(this%conformal_surface_faces)
       deallocate (this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
       deallocate (this%dxe, this%dye, this%dze, this%Idxe, this%Idye, this%Idze, this%dxh, this%dyh, this%dzh, this%Idxh, this%Idyh, this%Idzh)
       return

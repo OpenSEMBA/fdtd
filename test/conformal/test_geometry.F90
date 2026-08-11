@@ -55,6 +55,94 @@ integer function test_geometry_coord_position() bind(C) result(err)
 
 end function
 
+integer function test_geometry_closed_surface_orientation() bind(C) result(err)
+    use conformal_m
+    use NFDETypes_m, only: ConformalPECElements_t
+    implicit none
+
+    type(coord_t) :: c1, c2, c3, c4, c5, c6, c7, c8, c9, c10
+    type(ConformalPECElements_t) :: surface
+    type(triangle_t), dimension(:), allocatable :: outward, inward
+    logical :: is_valid
+    character(len=256) :: message
+    integer :: triangle_index, vertex_index
+    integer, dimension(3,4) :: inward_ids
+
+    err = 0
+    c1 = coord_t(position=[0.2,0.2,0.2], id=1)
+    c2 = coord_t(position=[0.8,0.2,0.2], id=2)
+    c3 = coord_t(position=[0.2,0.8,0.2], id=3)
+    c4 = coord_t(position=[0.2,0.2,0.8], id=4)
+
+    allocate(outward(4))
+    outward(1) = triangle_t(vertices=[c2,c3,c4])
+    outward(2) = triangle_t(vertices=[c1,c4,c3])
+    outward(3) = triangle_t(vertices=[c1,c2,c4])
+    outward(4) = triangle_t(vertices=[c1,c3,c2])
+    inward = outward
+    do triangle_index = 1, size(inward)
+        inward(triangle_index)%vertices = [outward(triangle_index)%vertices(1), &
+                                             outward(triangle_index)%vertices(3), &
+                                             outward(triangle_index)%vertices(2)]
+    end do
+
+    surface%triangles = outward
+    allocate(surface%intervals(0))
+    call validateConformalSurface(surface, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    call validateConformalVolume(surface, is_valid, message)
+    if (.not. is_valid) err = err + 1
+
+    surface%triangles = inward
+    do triangle_index = 1, size(inward)
+        do vertex_index = 1, 3
+            inward_ids(vertex_index, triangle_index) = inward(triangle_index)%vertices(vertex_index)%id
+        end do
+    end do
+    call validateConformalSurface(surface, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    call validateConformalVolume(surface, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    do triangle_index = 1, size(inward)
+        do vertex_index = 1, 3
+            if (surface%triangles(triangle_index)%vertices(vertex_index)%id /= inward_ids(vertex_index, triangle_index)) err = err + 1
+        end do
+    end do
+
+    surface%triangles(2)%vertices = [c1,c4,c3]
+    call validateConformalSurface(surface, is_valid, message)
+    if (is_valid) err = err + 1
+    call validateConformalVolume(surface, is_valid, message)
+    if (is_valid) err = err + 1
+
+    surface%triangles = [outward, outward(1)]
+    call validateConformalSurface(surface, is_valid, message)
+    if (is_valid) err = err + 1
+    call validateConformalVolume(surface, is_valid, message)
+    if (is_valid) err = err + 1
+
+    deallocate(surface%triangles)
+    allocate(surface%triangles(1))
+    surface%triangles(1) = triangle_t(vertices=[c1,c3,c2])
+    call validateConformalSurface(surface, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    call validateConformalVolume(surface, is_valid, message)
+    if (is_valid) err = err + 1
+
+    c5 = coord_t(position=[0.0,0.0,0.2], id=5)
+    c6 = coord_t(position=[1.0,0.0,0.2], id=6)
+    c7 = coord_t(position=[0.5,0.5,0.5], id=7)
+    c8 = coord_t(position=[0.0,0.0,0.7], id=8)
+    c9 = coord_t(position=[1.0,0.0,0.7], id=9)
+    c10 = coord_t(position=[0.5,0.5,0.6], id=10)
+    deallocate(surface%triangles)
+    allocate(surface%triangles(2))
+    surface%triangles(1) = triangle_t(vertices=[c5,c6,c7])
+    surface%triangles(2) = triangle_t(vertices=[c8,c9,c10])
+    call validateConformalSurface(surface, is_valid, message)
+    if (is_valid) err = err + 1
+end function test_geometry_closed_surface_orientation
+
 integer function test_geometry_side_position() bind(C) result(err)
     use geometry_m
     implicit none

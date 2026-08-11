@@ -11,13 +11,13 @@ module conformal_m
 
 contains
 
-   function buildSideMaps(regions) result(res)
-      type(ConformalPECRegions_t), intent(in) :: regions
+   function buildSideMaps(elements) result(res)
+      type(ConformalPECElements_t), dimension(:), pointer, intent(in) :: elements
       type(side_tris_map_t), dimension(:), allocatable :: res
       integer :: i
-      allocate(res(size(regions%volumes)))
-      do i = 1, size(regions%volumes)
-         call buildSideMap(res(i),regions%volumes(i)%triangles)
+      allocate(res(size(elements)))
+      do i = 1, size(elements)
+         call buildSideMap(res(i), elements(i)%triangles)
       end do
    end function
 
@@ -30,11 +30,416 @@ contains
          allocate(volumes(0))
       end if
       if (associated(conformalRegs%surfaces)) then 
-         surfaces = buildMedia(conformalRegs%surfaces)
+         surfaces = buildSurfaceMedia(conformalRegs%surfaces)
       else
          allocate(surfaces(0))
       end if
    end subroutine
+
+   function buildSurfaceMedia(elements) result(res)
+      type(ConformalPECElements_t), dimension(:), pointer, intent(in) :: elements
+      type(ConformalPECElements_t) :: canonical_element
+      type(ConformalMedia_t), dimension(:), allocatable :: res
+      integer :: i
+
+      allocate(res(size(elements)))
+      do i = 1, size(elements)
+         canonical_element = canonicalClosedSurfaceOrientation(elements(i))
+         res(i) = buildMediaFromElement(canonical_element)
+      end do
+   end function buildSurfaceMedia
+
+   subroutine validateConformalSurface(element, is_valid, message)
+      type(ConformalPECElements_t), intent(in) :: element
+      logical, intent(out) :: is_valid
+      character(len=*), intent(out) :: message
+
+      call validateConformalRegion(element, .false., is_valid, message)
+   end subroutine validateConformalSurface
+
+   subroutine validateConformalVolume(element, is_valid, message)
+      type(ConformalPECElements_t), intent(in) :: element
+      logical, intent(out) :: is_valid
+      character(len=*), intent(out) :: message
+
+      call validateConformalRegion(element, .true., is_valid, message)
+   end subroutine validateConformalVolume
+
+   subroutine validateConformalRegion(element, require_closed, is_valid, message)
+      type(ConformalPECElements_t), intent(in) :: element
+      logical, intent(in) :: require_closed
+      logical, intent(out) :: is_valid
+      character(len=*), intent(out) :: message
+      type(cell_map_t) :: cell_map
+      type(side_t), dimension(:), allocatable :: sides, sides_on_face
+      integer(kind=4), dimension(3) :: cell
+      integer :: i, face
+      character(len=160) :: detail
+
+      is_valid = .true.
+      message = ''
+      call validateSurfaceTopology(element%triangles, is_valid, message)
+      if (.not. is_valid) return
+      if (require_closed) then
+         call validateClosedSurfaceTopology(element%triangles, is_valid, message)
+         if (.not. is_valid) return
+      end if
+
+      call buildCellMap(cell_map, element)
+      do i = 1, size(cell_map%keys)
+         cell = cell_map%keys(i)%cell
+         sides = cell_map%getSidesInCell(cell)
+         do face = FACE_X, FACE_Z
+            sides_on_face = getSidesOnFace(sides, face)
+            if (size(sides_on_face) > 0) then
+               call validateSurfaceFaceContour(sides_on_face, face, is_valid, detail)
+               if (.not. is_valid) then
+                  call setCellFaceValidationError(trim(detail), cell, face, is_valid, message)
+                  return
+               end if
+            end if
+         end do
+      end do
+   end subroutine validateConformalRegion
+
+   function canonicalClosedSurfaceOrientation(element) result(res)
+      type(ConformalPECElements_t), intent(in) :: element
+      type(ConformalPECElements_t) :: res
+      integer, dimension(:), allocatable :: component
+      integer :: component_id, triangle_index
+      real :: signed_volume, volume_scale, volume_tolerance
+      real, dimension(3) :: min_position, max_position, extent
+
+      res = element
+      if (.not. allocated(res%triangles)) return
+      if (size(res%triangles) == 0) return
+      call assignTriangleComponents(res%triangles, component)
+
+      do component_id = 1, maxval(component)
+         if (.not. isClosedComponent(res%triangles, component, component_id)) cycle
+         signed_volume = 0.0
+         min_position = huge(1.0)
+         max_position = -huge(1.0)
+         do triangle_index = 1, size(res%triangles)
+            if (component(triangle_index) /= component_id) cycle
+            signed_volume = signed_volume + dot_product(res%triangles(triangle_index)%vertices(1)%position, &
+               cross(res%triangles(triangle_index)%vertices(2)%position, res%triangles(triangle_index)%vertices(3)%position))/6.0
+            min_position = min(min_position, res%triangles(triangle_index)%vertices(1)%position)
+            min_position = min(min_position, res%triangles(triangle_index)%vertices(2)%position)
+            min_position = min(min_position, res%triangles(triangle_index)%vertices(3)%position)
+            max_position = max(max_position, res%triangles(triangle_index)%vertices(1)%position)
+            max_position = max(max_position, res%triangles(triangle_index)%vertices(2)%position)
+            max_position = max(max_position, res%triangles(triangle_index)%vertices(3)%position)
+         end do
+         extent = max_position - min_position
+         volume_scale = max(1.0, extent(1)*extent(2)*extent(3))
+         volume_tolerance = 100.0*epsilon(1.0)*volume_scale
+         if (signed_volume < -volume_tolerance) then
+            do triangle_index = 1, size(res%triangles)
+               if (component(triangle_index) == component_id) call reverseTriangle(res%triangles(triangle_index))
+            end do
+         end if
+      end do
+   end function canonicalClosedSurfaceOrientation
+
+   subroutine validateSurfaceTopology(triangles, is_valid, message)
+      type(triangle_t), dimension(:), allocatable, intent(in) :: triangles
+      logical, intent(out) :: is_valid
+      character(len=*), intent(out) :: message
+      integer :: triangle_index, edge, other_triangle, other_edge
+      integer :: first_id, second_id, direction, other_first, other_second, other_direction, incidence
+
+      is_valid = .true.
+      message = ''
+      do triangle_index = 1, size(triangles)
+         do edge = 1, 3
+            call triangleEdge(triangles(triangle_index), edge, first_id, second_id, direction)
+            if (first_id == second_id) then
+               write(message, '(A,I0,A,I0)') 'triangle ', triangle_index, ' has a degenerate edge ', edge
+               is_valid = .false.
+               return
+            end if
+            incidence = 0
+            do other_triangle = 1, size(triangles)
+               do other_edge = 1, 3
+                  call triangleEdge(triangles(other_triangle), other_edge, other_first, other_second, other_direction)
+                  if (first_id == other_first .and. second_id == other_second) then
+                     incidence = incidence + 1
+                     if (other_triangle /= triangle_index .and. direction == other_direction) then
+                        write(message, '(A,I0,A,I0,A,I0,A,I0,A)') 'triangles ', triangle_index, ' and ', other_triangle, &
+                           ' traverse shared edge ', first_id, '-', second_id, ' in the same direction'
+                        is_valid = .false.
+                        return
+                     end if
+                  end if
+               end do
+            end do
+            if (incidence > 2) then
+               write(message, '(A,I0,A,I0,A,I0)') 'non-manifold edge ', first_id, '-', second_id, ' has incidence ', incidence
+               is_valid = .false.
+               return
+            end if
+         end do
+      end do
+   end subroutine validateSurfaceTopology
+
+   subroutine validateClosedSurfaceTopology(triangles, is_valid, message)
+      type(triangle_t), dimension(:), allocatable, intent(in) :: triangles
+      logical, intent(out) :: is_valid
+      character(len=*), intent(out) :: message
+      integer :: triangle_index, edge, other_triangle, other_edge, incidence
+      integer :: first_id, second_id, direction, other_first, other_second, other_direction
+
+      is_valid = .true.
+      message = ''
+      if (size(triangles) == 0) then
+         message = 'volume has no triangles'
+         is_valid = .false.
+         return
+      end if
+      do triangle_index = 1, size(triangles)
+         do edge = 1, 3
+            call triangleEdge(triangles(triangle_index), edge, first_id, second_id, direction)
+            incidence = 0
+            do other_triangle = 1, size(triangles)
+               do other_edge = 1, 3
+                  call triangleEdge(triangles(other_triangle), other_edge, other_first, other_second, other_direction)
+                  if (first_id == other_first .and. second_id == other_second) incidence = incidence + 1
+               end do
+            end do
+            if (incidence /= 2) then
+               write(message, '(A,I0,A,I0,A,I0)') 'open volume edge ', first_id, '-', second_id, ' has incidence ', incidence
+               is_valid = .false.
+               return
+            end if
+         end do
+      end do
+   end subroutine validateClosedSurfaceTopology
+
+   subroutine validateSurfaceFaceContour(sides, face, is_valid, detail)
+      type(side_t), dimension(:), allocatable, intent(in) :: sides
+      integer, intent(in) :: face
+      logical, intent(out) :: is_valid
+      character(len=*), intent(out) :: detail
+      type(coord_t), dimension(:), allocatable :: vertices
+      integer, dimension(:), allocatable :: incoming, outgoing, queue
+      logical, dimension(:), allocatable :: visited
+      integer :: side_index, vertex_index, next_vertex, nvertices, head, tail, components
+
+      is_valid = .true.
+      detail = ''
+      allocate(vertices(2*size(sides)), incoming(2*size(sides)), outgoing(2*size(sides)))
+      incoming = 0
+      outgoing = 0
+      nvertices = 0
+      do side_index = 1, size(sides)
+         call registerContourVertex(sides(side_index)%init, vertices, incoming, outgoing, nvertices, vertex_index)
+         outgoing(vertex_index) = outgoing(vertex_index) + 1
+         call registerContourVertex(sides(side_index)%end, vertices, incoming, outgoing, nvertices, vertex_index)
+         incoming(vertex_index) = incoming(vertex_index) + 1
+      end do
+      do vertex_index = 1, nvertices
+         if (incoming(vertex_index) > 1 .or. outgoing(vertex_index) > 1) then
+            detail = 'branching contour vertex'
+            is_valid = .false.
+            return
+         end if
+         if (.not. isOnFaceBoundary(vertices(vertex_index), face) .and. &
+             (incoming(vertex_index) /= 1 .or. outgoing(vertex_index) /= 1)) then
+            detail = 'dangling contour vertex inside the cell face'
+            is_valid = .false.
+            return
+         end if
+      end do
+
+      allocate(visited(size(sides)), queue(size(sides)))
+      visited = .false.
+      components = 0
+      do side_index = 1, size(sides)
+         if (visited(side_index)) cycle
+         components = components + 1
+         head = 1
+         tail = 1
+         queue(1) = side_index
+         visited(side_index) = .true.
+         do while (head <= tail)
+            next_vertex = queue(head)
+            head = head + 1
+            do vertex_index = 1, size(sides)
+               if (visited(vertex_index)) cycle
+               if (sidesTouch(sides(next_vertex), sides(vertex_index))) then
+                  tail = tail + 1
+                  queue(tail) = vertex_index
+                  visited(vertex_index) = .true.
+               end if
+            end do
+         end do
+      end do
+      if (components /= 1) then
+         detail = 'multiple disconnected contours'
+         is_valid = .false.
+      end if
+   end subroutine validateSurfaceFaceContour
+
+   subroutine registerContourVertex(vertex, vertices, incoming, outgoing, nvertices, index)
+      type(coord_t), intent(in) :: vertex
+      type(coord_t), dimension(:), intent(inout) :: vertices
+      integer, dimension(:), intent(inout) :: incoming, outgoing
+      integer, intent(inout) :: nvertices
+      integer, intent(out) :: index
+      integer :: i
+
+      do i = 1, nvertices
+         if (sameCoordinate(vertices(i), vertex)) then
+            index = i
+            return
+         end if
+      end do
+      nvertices = nvertices + 1
+      vertices(nvertices) = vertex
+      incoming(nvertices) = 0
+      outgoing(nvertices) = 0
+      index = nvertices
+   end subroutine registerContourVertex
+
+   logical function isOnFaceBoundary(vertex, face)
+      type(coord_t), intent(in) :: vertex
+      integer, intent(in) :: face
+      integer :: first_direction, second_direction
+
+      first_direction = mod(face, 3) + 1
+      second_direction = mod(face + 1, 3) + 1
+      isOnFaceBoundary = isOnGridPlane(vertex%position(first_direction)) .or. &
+                         isOnGridPlane(vertex%position(second_direction))
+   end function isOnFaceBoundary
+
+   logical function isOnGridPlane(position)
+      real, intent(in) :: position
+      isOnGridPlane = abs(position - nint(position)) < 1.0e-5
+   end function isOnGridPlane
+
+   logical function sidesTouch(first, second)
+      type(side_t), intent(in) :: first, second
+      sidesTouch = sameCoordinate(first%init, second%init) .or. sameCoordinate(first%init, second%end) .or. &
+                   sameCoordinate(first%end, second%init) .or. sameCoordinate(first%end, second%end)
+   end function sidesTouch
+
+   logical function sameCoordinate(first, second)
+      type(coord_t), intent(in) :: first, second
+      sameCoordinate = all(abs(first%position-second%position) < 1.0e-5)
+   end function sameCoordinate
+
+   subroutine setCellFaceValidationError(detail, cell, face, is_valid, message)
+      character(len=*), intent(in) :: detail
+      integer(kind=4), dimension(3), intent(in) :: cell
+      integer, intent(in) :: face
+      logical, intent(out) :: is_valid
+      character(len=*), intent(out) :: message
+      write(message, '(A,A,I0,A,I0,A,I0,A,I0)') trim(detail), ' at cell (', cell(1), ',', cell(2), ',', cell(3), '), face ', face
+      is_valid = .false.
+   end subroutine setCellFaceValidationError
+
+   subroutine assignTriangleComponents(triangles, component)
+      type(triangle_t), dimension(:), allocatable, intent(in) :: triangles
+      integer, dimension(:), allocatable, intent(out) :: component
+      integer, dimension(:), allocatable :: queue
+      integer :: component_id, seed, head, tail, current, neighbor
+
+      allocate(component(size(triangles)), queue(size(triangles)))
+      component = 0
+      component_id = 0
+      do seed = 1, size(triangles)
+         if (component(seed) /= 0) cycle
+         component_id = component_id + 1
+         head = 1
+         tail = 1
+         queue(1) = seed
+         component(seed) = component_id
+         do while (head <= tail)
+            current = queue(head)
+            head = head + 1
+            do neighbor = 1, size(triangles)
+               if (component(neighbor) /= 0) cycle
+               if (trianglesShareEdge(triangles(current), triangles(neighbor))) then
+                  component(neighbor) = component_id
+                  tail = tail + 1
+                  queue(tail) = neighbor
+               end if
+            end do
+         end do
+      end do
+   end subroutine assignTriangleComponents
+
+   logical function isClosedComponent(triangles, component, component_id)
+      type(triangle_t), dimension(:), allocatable, intent(in) :: triangles
+      integer, dimension(:), intent(in) :: component
+      integer, intent(in) :: component_id
+      integer :: triangle_index, edge, other_triangle, other_edge, incidence
+      integer :: first_id, second_id, direction, other_first, other_second, other_direction
+
+      isClosedComponent = .true.
+      do triangle_index = 1, size(triangles)
+         if (component(triangle_index) /= component_id) cycle
+         do edge = 1, 3
+            call triangleEdge(triangles(triangle_index), edge, first_id, second_id, direction)
+            incidence = 0
+            do other_triangle = 1, size(triangles)
+               if (component(other_triangle) /= component_id) cycle
+               do other_edge = 1, 3
+                  call triangleEdge(triangles(other_triangle), other_edge, other_first, other_second, other_direction)
+                  if (first_id == other_first .and. second_id == other_second) incidence = incidence + 1
+               end do
+            end do
+            if (incidence /= 2) then
+               isClosedComponent = .false.
+               return
+            end if
+         end do
+      end do
+   end function isClosedComponent
+
+   logical function trianglesShareEdge(first, second)
+      type(triangle_t), intent(in) :: first, second
+      integer :: edge, other_edge, first_id, second_id, direction, other_first, other_second, other_direction
+
+      trianglesShareEdge = .false.
+      do edge = 1, 3
+         call triangleEdge(first, edge, first_id, second_id, direction)
+         do other_edge = 1, 3
+            call triangleEdge(second, other_edge, other_first, other_second, other_direction)
+            if (first_id == other_first .and. second_id == other_second) then
+               trianglesShareEdge = .true.
+               return
+            end if
+         end do
+      end do
+   end function trianglesShareEdge
+
+   subroutine triangleEdge(triangle, edge_index, first_id, second_id, direction)
+      type(triangle_t), intent(in) :: triangle
+      integer, intent(in) :: edge_index
+      integer, intent(out) :: first_id, second_id, direction
+      integer :: directed_first, directed_second
+
+      directed_first = triangle%vertices(edge_index)%id
+      directed_second = triangle%vertices(mod(edge_index,3)+1)%id
+      first_id = min(directed_first, directed_second)
+      second_id = max(directed_first, directed_second)
+      if (directed_first == first_id) then
+         direction = 1
+      else
+         direction = -1
+      end if
+   end subroutine triangleEdge
+
+   subroutine reverseTriangle(triangle)
+      type(triangle_t), intent(inout) :: triangle
+      type(coord_t) :: swapped_vertex
+
+      swapped_vertex = triangle%vertices(2)
+      triangle%vertices(2) = triangle%vertices(3)
+      triangle%vertices(3) = swapped_vertex
+   end subroutine reverseTriangle
 
    function buildMedia(elements) result(res)
       type(ConformalPECElements_t), dimension(:), pointer :: elements

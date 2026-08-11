@@ -24,12 +24,20 @@
         "coordinates": [
             {"id": 1, "relativePosition": [3, 3, 1]},
             {"id": 2, "relativePosition": [3, 3, 3]},
-            {"id": 3, "relativePosition": [3, 3, 5]}
+            {"id": 3, "relativePosition": [3, 3, 5]},
+            {"id": 4, "relativePosition": [1, 3, 3]},
+            {"id": 5, "relativePosition": [5, 3, 3]},
+            {"id": 6, "relativePosition": [3, 1, 3]},
+            {"id": 7, "relativePosition": [3, 5, 3]}
         ],
         "elements": [
             {"id": 1, "type": "node", "coordinateIds": [1]},
             {"id": 2, "type": "node", "coordinateIds": [2]},
             {"id": 3, "type": "node", "coordinateIds": [3]},
+            {"id": 5, "type": "node", "coordinateIds": [4]},
+            {"id": 6, "type": "node", "coordinateIds": [5]},
+            {"id": 7, "type": "node", "coordinateIds": [6]},
+            {"id": 8, "type": "node", "coordinateIds": [7]},
             {"id": 4, "type": "cell", "name": "pw-box", "intervals": [ [ [-1, -1, 2], [7, 7, 4] ] ]}
         ]
     },
@@ -53,6 +61,10 @@
     "probes": [
         {"name": "before", "type": "point", "elementIds": [1], "directions": ["x"]},
         {"name": "inbox",  "type": "point", "elementIds": [2], "directions": ["x"]},
-        {"name": "after",  "type": "point", "elementIds": [3], "directions": ["x"]}
+        {"name": "after",  "type": "point", "elementIds": [3], "directions": ["x"]},
+        {"name": "x_lower_edge", "type": "point", "elementIds": [5], "directions": ["x"]},
+        {"name": "x_upper_edge", "type": "point", "elementIds": [6], "directions": ["x"]},
+        {"name": "y_lower_edge", "type": "point", "elementIds": [7], "directions": ["x"]},
+        {"name": "y_upper_edge", "type": "point", "elementIds": [8], "directions": ["x"]}
     ]
 }

@@ -89,6 +89,69 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
 
 end function
 
+integer function test_conformal_surface_complementary_ratios() bind(C) result(err)
+    use conformal_m
+    implicit none
+    real(kind=rkind), dimension(3) :: fractions
+    real(kind=rkind) :: fraction, forward_ratio, reverse_ratio
+    integer :: axis, fraction_index
+
+    err = 0
+    fractions = [0.25_RKIND, 0.5_RKIND, 0.75_RKIND]
+
+    do axis = 1, 3
+        do fraction_index = 1, size(fractions)
+            block
+                type(coord_t), dimension(3) :: coords
+                type(coord_t), dimension(3) :: vertices
+                type(ConformalPECRegions_t) :: regions
+                type(ConformalMedia_t), dimension(:), allocatable :: media
+
+                fraction = fractions(fraction_index)
+                select case(axis)
+                case(1)
+                    coords(1) = coord_t(position=[fraction,0.0_RKIND,0.0_RKIND], id=1)
+                    coords(2) = coord_t(position=[fraction,0.0_RKIND,1.0_RKIND], id=2)
+                    coords(3) = coord_t(position=[fraction,1.0_RKIND,0.0_RKIND], id=3)
+                case(2)
+                    coords(1) = coord_t(position=[0.0_RKIND,fraction,0.0_RKIND], id=1)
+                    coords(2) = coord_t(position=[0.0_RKIND,fraction,1.0_RKIND], id=2)
+                    coords(3) = coord_t(position=[1.0_RKIND,fraction,0.0_RKIND], id=3)
+                case(3)
+                    coords(1) = coord_t(position=[0.0_RKIND,0.0_RKIND,fraction], id=1)
+                    coords(2) = coord_t(position=[0.0_RKIND,1.0_RKIND,fraction], id=2)
+                    coords(3) = coord_t(position=[1.0_RKIND,0.0_RKIND,fraction], id=3)
+                end select
+
+                allocate(regions%surfaces(1))
+                allocate(regions%surfaces(1)%triangles(1))
+                allocate(regions%surfaces(1)%intervals(0))
+
+                vertices = [coords(1), coords(2), coords(3)]
+                regions%surfaces(1)%triangles(1) = triangle_t(vertices)
+                media = buildMedia(regions%surfaces)
+                if (size(media(1)%face_media) /= 1) then
+                    err = err + 1
+                    cycle
+                end if
+                forward_ratio = media(1)%face_media(1)%ratio
+
+                vertices = [coords(1), coords(3), coords(2)]
+                regions%surfaces(1)%triangles(1) = triangle_t(vertices)
+                media = buildMedia(regions%surfaces)
+                if (size(media(1)%face_media) /= 1) then
+                    err = err + 1
+                    cycle
+                end if
+                reverse_ratio = media(1)%face_media(1)%ratio
+
+                if (abs(forward_ratio + reverse_ratio - 1.0_RKIND) > 0.01_RKIND) err = err + 1
+                if (min(abs(forward_ratio-fraction), abs(reverse_ratio-fraction)) > 0.01_RKIND) err = err + 1
+            end block
+        end do
+    end do
+end function test_conformal_surface_complementary_ratios
+
 integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err)
 
 !         /|

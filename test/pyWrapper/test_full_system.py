@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 from sys import platform
 from scipy import signal
+from scipy.constants import speed_of_light
 
 
 # compiled without mtln uses classic wires
@@ -609,7 +610,15 @@ def test_planewave_with_periodic_boundaries(tmp_path):
     inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
     after = Probe(solver.getSolvedProbeFilenames("after")[0])
 
+    edge_probes = [
+        Probe(solver.getSolvedProbeFilenames(name)[0])
+        for name in ("x_lower_edge", "x_upper_edge", "y_lower_edge", "y_upper_edge")
+    ]
+
     assert np.corrcoef(inbox.data['field'].to_numpy(), inbox.data['incident'].to_numpy())[0, 1] > 0.999
+    for edge in edge_probes:
+        assert np.corrcoef(edge.data['field'].to_numpy(), edge.data['incident'].to_numpy())[0, 1] > 0.999
+        assert np.allclose(edge.data['field'].to_numpy(), inbox.data['field'].to_numpy(), atol=1e-6)
     zeros = np.zeros_like(before.data['field'])
     assert np.allclose(before.data['field'].to_numpy(), zeros, atol=1.5e-3)
     assert np.allclose(after.data['field'].to_numpy(), zeros, atol=1.5e-3)
@@ -1527,22 +1536,71 @@ def test_conformal_impedance_cylinder_unshielded(tmp_path):
 @pytest.mark.probes
 def test_conformal_sphere_rcs(tmp_path):
     case_name = 'conformal_sphere_rcs'
-    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
+    input_filename = TEST_DATA_FOLDER+'cases/conformal/'+case_name+'.fdtd.json'
 
-    far  = Probe(solver.getSolvedProbeFilenames("n2f")[0])
-    ra = far.data.loc[(far.data['Theta'] == 90.0) & (far.data['Phi'] ==  0.0), 'rcs_arit']
-    rg = far.data.loc[(far.data['Theta'] == 90.0) & (far.data['Phi'] ==  0.0), 'rcs_geom']
-    ffar  = far.data.loc[(far.data['Theta'] == 90.0) & (far.data['Phi'] ==  0.0), 'freq']
+    def run_variant(name, subtype, reverse_winding=False):
+        run_folder = tmp_path/name
+        run_folder.mkdir()
+        solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE,
+                      run_in_folder=run_folder)
+        conformal_element = next(
+            element for element in solver['mesh']['elements']
+            if element['type'] == 'conformal'
+        )
+        conformal_element['subtype'] = subtype
+        if reverse_winding:
+            conformal_element['triangles'] = [
+                [triangle[0], triangle[2], triangle[1]]
+                for triangle in conformal_element['triangles']
+            ]
+
+        solver.run()
+        assert solver.hasFinishedSuccessfully()
+
+        inside = {}
+        inside_files = solver.getSolvedProbeFilenames("inside")
+        assert len(inside_files) == 3
+        for filename in inside_files:
+            probe = Probe(filename)
+            assert probe.field == 'E'
+            inside[probe.direction] = {
+                'payload': readWithoutHeader(filename),
+                'field': probe['field'].to_numpy(),
+            }
+
+        far_files = solver.getSolvedProbeFilenames("n2f")
+        assert len(far_files) == 1
+        far = Probe(far_files[0])
+        return {
+            'inside': inside,
+            'far_payload': readWithoutHeader(far_files[0]),
+            'far': far.data.copy(),
+        }
+
+    results = {
+        'volume': run_variant('volume', 'volume'),
+        'surface': run_variant('surface', 'surface'),
+        'surface_reversed': run_variant('surface_reversed', 'surface', reverse_winding=True),
+    }
+
+    volume = results['volume']
+    for result in results.values():
+        assert result['inside'].keys() == volume['inside'].keys()
+        for direction, probe in result['inside'].items():
+            assert np.count_nonzero(probe['field']) == 0
+            assert probe['payload'] == volume['inside'][direction]['payload']
+        assert result['far_payload'] == volume['far_payload']
+
+    far = volume['far']
+    rg = far.loc[(far['Theta'] == 90.0) & (far['Phi'] == 0.0), 'rcs_geom']
+    ffar = far.loc[(far['Theta'] == 90.0) & (far['Phi'] == 0.0), 'freq']
     
     # analytical RCS
     f = np.linspace(1e7,7e8,200)
     r = 0.5 # in meters
     rcs = RCS(fspace=f, radius=r)
     # simulated, interpolated to analytical frequencies
-    rcs_interp = np.interp(f,ffar,rg)
+    rcs_interp = np.interp(f, ffar, rg)
 
     assert np.corrcoef(rcs[5:150], rcs_interp[5:150])[0,1] > 0.98
 
@@ -1581,6 +1639,90 @@ def test_conformal_delay(tmp_path):
         delay = t[front['field'].argmin()]
         tdelta = t4 + 2*(i*1.0/n)*0.02/3e8
         assert np.abs(delay - tdelta)/tdelta < 0.01
+
+
+@pytest.mark.conformal
+@pytest.mark.planewave
+@pytest.mark.probes
+@pytest.mark.parametrize("normal_axis,propagation,reverse_winding", [
+    ('x', 1, False), ('x', -1, False), ('x', 1, True), ('x', -1, True),
+    ('y', 1, False), ('y', -1, False), ('z', 1, False), ('z', -1, False)
+])
+def test_conformal_surface_midcell_reflection(tmp_path, normal_axis, propagation, reverse_winding):
+    fn = CASES_FOLDER + 'conformal_surface/conformal_surface_midcell.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    permutations = {
+        'x': (0, 1, 2),
+        'y': (1, 0, 2),
+        'z': (2, 1, 0),
+    }
+    permutation = permutations[normal_axis]
+    if normal_axis != 'x':
+        grid = solver['mesh']['grid']
+        grid['numberOfCells'] = [grid['numberOfCells'][index] for index in permutation]
+        for coordinate in solver['mesh']['coordinates']:
+            position = coordinate['relativePosition']
+            coordinate['relativePosition'] = [position[index] for index in permutation]
+        for element in solver['mesh']['elements']:
+            for interval in element.get('intervals', []):
+                interval[0] = [interval[0][index] for index in permutation]
+                interval[1] = [interval[1][index] for index in permutation]
+
+    periodic_axes = {'x', 'y', 'z'} - {normal_axis}
+    solver['boundary'].clear()
+    for axis in ('x', 'y', 'z'):
+        boundary_type = 'periodic' if axis in periodic_axes else 'mur'
+        solver['boundary'][axis+'Lower'] = {'type': boundary_type}
+        solver['boundary'][axis+'Upper'] = {'type': boundary_type}
+
+    if normal_axis == 'x':
+        solver['sources'][0]['direction'] = {'theta': propagation*np.pi/2, 'phi': 0.0}
+        probe_direction = 'z'
+    elif normal_axis == 'y':
+        solver['sources'][0]['direction'] = {'theta': np.pi/2, 'phi': propagation*np.pi/2}
+        probe_direction = 'z'
+    else:
+        solver['sources'][0]['direction'] = {'theta': 0.0 if propagation > 0 else np.pi, 'phi': 0.0}
+        solver['sources'][0]['polarization'] = {'theta': np.pi/2, 'phi': 0.0}
+        probe_direction = 'x'
+    for probe in solver['probes']:
+        probe['directions'] = [probe_direction]
+
+    if reverse_winding:
+        triangles = solver['mesh']['elements'][0]['triangles']
+        solver['mesh']['elements'][0]['triangles'] = [
+            [triangle[0], triangle[2], triangle[1]] for triangle in triangles
+        ]
+
+    solver.run()
+
+    incident_name, shadow_name = ('left', 'right') if propagation > 0 else ('right', 'left')
+    incident_probe = Probe(solver.getSolvedProbeFilenames(incident_name)[0])
+    shadow_probe = Probe(solver.getSolvedProbeFilenames(shadow_name)[0])
+
+    time = incident_probe['time'].to_numpy()
+    incident = incident_probe['incident'].to_numpy()
+    reflected = incident_probe['field'].to_numpy() - incident
+    shadow = shadow_probe['field'].to_numpy()
+    dt = time[1] - time[0]
+
+    correlation = signal.correlate(reflected, -incident, mode='full')
+    lags = signal.correlation_lags(reflected.size, incident.size, mode='full')
+    lag = lags[np.argmax(correlation)]
+    normalized_correlation = np.max(correlation) / np.sqrt(
+        np.dot(reflected, reflected)*np.dot(incident, incident)
+    )
+    reflection_amplitude = np.linalg.norm(reflected) / np.linalg.norm(incident)
+
+    surface_position = 8.5*0.01
+    probe_position = (4 if propagation > 0 else 12)*0.01
+    expected_delay = 2*abs(surface_position-probe_position)/speed_of_light
+
+    assert normalized_correlation > 0.99
+    assert np.isclose(reflection_amplitude, 1.0, rtol=0.05)
+    assert abs(lag*dt-expected_delay) <= 4*dt
+    assert np.max(np.abs(shadow)) <= 0.01*np.max(np.abs(incident))
         
 @pytest.mark.conformal
 @pytest.mark.xfail(

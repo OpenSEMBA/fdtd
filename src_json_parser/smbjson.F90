@@ -18,6 +18,7 @@ module smbjson_m
    use json_kinds
 
    use conformal_types_m
+   use conformal_m, only: validateConformalSurface, validateConformalVolume
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 
@@ -627,11 +628,14 @@ contains
 
          type(ConformalPECElements_t), dimension(:), allocatable :: aux
          integer :: i
+         logical :: is_valid
+         character(len=256) :: validation_message
          if (.not. associated(regions)) then 
             allocate(regions(1))
             regions(1)%triangles = region%triangles
             regions(1)%intervals = copyIntervals(region%intervals)
             regions(1)%tag = tagName
+            call validateRegion(regions(1), region%type, tagName, is_valid, validation_message)
          else 
             allocate(aux(size(regions) + 1))
             do i = 1, size(regions)
@@ -646,9 +650,27 @@ contains
             do i = 1, size(aux)
                regions(i) = aux(i)
             end do
+            call validateRegion(regions(size(regions)), region%type, tagName, is_valid, validation_message)
 
          end if
       end subroutine
+
+      subroutine validateRegion(element, region_type, tag_name, is_valid, validation_message)
+         type(ConformalPECElements_t), intent(in) :: element
+         integer, intent(in) :: region_type
+         character(len=*), intent(in) :: tag_name
+         logical, intent(out) :: is_valid
+         character(len=*), intent(out) :: validation_message
+
+         select case (region_type)
+         case (REGION_TYPE_SURFACE)
+            call validateConformalSurface(element, is_valid, validation_message)
+            if (.not. is_valid) call WarnErrReport('Invalid conformal surface ' // trim(tag_name) // ': ' // trim(validation_message), .true.)
+         case (REGION_TYPE_VOLUME)
+            call validateConformalVolume(element, is_valid, validation_message)
+            if (.not. is_valid) call WarnErrReport('Invalid conformal volume ' // trim(tag_name) // ': ' // trim(validation_message), .true.)
+         end select
+      end subroutine validateRegion
 
       function copyIntervals(intervals) result(res)
          type(cell_interval_t), dimension(:), allocatable, intent(in) :: intervals

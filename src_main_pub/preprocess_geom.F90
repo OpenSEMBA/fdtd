@@ -103,7 +103,7 @@ CONTAINS
       !
       type(ConformalMedia_t), dimension(:), allocatable :: conformal_volumes, conformal_surfaces
       real(kind=rkind), dimension(:), allocatable :: edge_ratios, face_ratios
-      type(side_tris_map_t), dimension(:), allocatable :: side_to_triangles_maps
+      type(side_tris_map_t), dimension(:), allocatable :: volume_side_maps, surface_side_maps
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       cluz=1.0_RKIND/sqrt(eps0*mu0)
       zvac=sqrt(mu0/eps0)
@@ -139,7 +139,16 @@ CONTAINS
 
       call buildConformalMedia(this%conformalRegs, conformal_volumes, conformal_surfaces)
       sgg%dt = changeTimeStepIfConformalNeeded(sgg%dt)
-      if (associated(this%conformalRegs%volumes)) side_to_triangles_maps = buildSideMaps(this%conformalRegs)
+      if (associated(this%conformalRegs%volumes)) then
+         volume_side_maps = buildSideMaps(this%conformalRegs%volumes)
+      else
+         allocate(volume_side_maps(0))
+      end if
+      if (associated(this%conformalRegs%surfaces)) then
+         surface_side_maps = buildSideMaps(this%conformalRegs%surfaces)
+      else
+         allocate(surface_side_maps(0))
+      end if
 
       ! Cuenta los medios
       !!!!!calcula tamanios
@@ -197,6 +206,13 @@ CONTAINS
       contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
       if (findloc(edge_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
       if (findloc(face_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
+      ! Surface updates need media distinct from volume updates even when their
+      ! geometric ratios are equal.
+      if (ubound(conformal_volumes, 1) > 0 .and. ubound(conformal_surfaces, 1) > 0) then
+         contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
+         if (findloc(edge_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
+         if (findloc(face_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
+      end if
 
       sgg%NumMedia = contamedia
       sgg%AllocMed = contamedia
@@ -2548,7 +2564,7 @@ CONTAINS
 
       do j = 1, ubound(conformal_volumes,1)
 
-         call addConformalMedia(sgg, media, conformal_volumes(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j), isVolume)
+         call addConformalMedia(sgg, media, conformal_volumes(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, volume_side_maps(j), isVolume)
          numertag = searchtag(tagtype,conformal_volumes(j)%tag)
          CALL CreateConformalPECVolume (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
             & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
@@ -2560,13 +2576,15 @@ CONTAINS
 
       end do
 
-      contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
-      if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
-      if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+      if (ubound(conformal_volumes, 1) > 0) then
+         contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
+         if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+         if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+      end if
       ! faces from V and S with same ratio are considered different media, bc they need to perform different operations
       do j = 1, ubound(conformal_surfaces,1)
          
-         call addConformalMedia(sgg, media, conformal_surfaces(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j), isSurface)
+         call addConformalMedia(sgg, media, conformal_surfaces(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, surface_side_maps(j), isSurface)
          ! numertag = searchtag(tagtype,conformal_surfaces(j)%tag)
          ! CALL CreateConformalPECVolume (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
          !    & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
@@ -2578,9 +2596,11 @@ CONTAINS
 
       end do
 
-      contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
-      if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
-      if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+      if (ubound(conformal_surfaces, 1) > 0) then
+         contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
+         if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+         if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+      end if
 
 
       !reporta el bounding box
@@ -4983,7 +5003,9 @@ CONTAINS
          call addConformalEdgeMedia(sgg, media, conformal_volumes, num_media, edge_ratios_no_zero, bbox, type)
          num_media = contamedia + ubound(edge_ratios_no_zero,1)
          call addConformalFaceMedia(sgg, media, conformal_volumes, num_media, face_ratios_no_zero, bbox, type)
-         call addUndetectedBorderFaces(sgg, media, conformal_volumes, num_media, edge_ratios_no_zero, bbox, side_map)
+         if (type == isVolume) then
+            call addUndetectedBorderFaces(sgg, media, conformal_volumes, num_media, edge_ratios_no_zero, bbox, side_map)
+         end if
       end subroutine
 
       subroutine addConformalFaceMedia(sgg, media, conformal_volumes, num_media, face_ratios, bbox, type)
@@ -4995,6 +5017,8 @@ CONTAINS
 
          integer (kind=4) :: face_media
          integer (kind=4) :: cell(3)
+         integer (kind=4) :: previous_faces
+         type(face_t), dimension(:), allocatable :: combined_faces
          type(XYZlimit_t), intent(inout) :: bbox
          integer (kind=4), intent(in) :: type
          integer :: j, k
@@ -5014,7 +5038,10 @@ CONTAINS
                face_media = 0
             end if
 
-            allocate(sgg%Med(face_media)%ConformalFace(conformal_volumes%face_media(j)%size))
+            previous_faces = 0
+            if (allocated(sgg%Med(face_media)%ConformalFace)) previous_faces = ubound(sgg%Med(face_media)%ConformalFace, 1)
+            allocate(combined_faces(previous_faces + conformal_volumes%face_media(j)%size))
+            if (previous_faces > 0) combined_faces(1:previous_faces) = sgg%Med(face_media)%ConformalFace
 
             do k = 1, conformal_volumes%face_media(j)%size
                cell(:) = conformal_volumes%face_media(j)%faces(k)%cell(:)
@@ -5034,9 +5061,10 @@ CONTAINS
                   media%sggMiHz(cell(1), cell(2), cell(3)) = face_media
                end select
 
-               sgg%Med(face_media)%ConformalFace(k) = conformal_volumes%face_media(j)%faces(k)
+               combined_faces(previous_faces+k) = conformal_volumes%face_media(j)%faces(k)
 
             end do
+            call move_alloc(combined_faces, sgg%Med(face_media)%ConformalFace)
          end do
       end subroutine
 
@@ -5062,6 +5090,8 @@ CONTAINS
          real (kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
          integer (kind=4) :: edge_media
          integer (kind=4) :: cell(3)
+         integer (kind=4) :: previous_edges
+         type(edge_t), dimension(:), allocatable :: combined_edges
          type(XYZlimit_t), intent(inout) :: bbox
          integer (kind=4), intent(in) :: type
          ! integer(kind=4), dimension(4) :: key
@@ -5084,7 +5114,10 @@ CONTAINS
                edge_media = 0
             end if
 
-            allocate(sgg%Med(edge_media)%ConformalEdge(conformal_volumes%edge_media(j)%size))
+            previous_edges = 0
+            if (allocated(sgg%Med(edge_media)%ConformalEdge)) previous_edges = ubound(sgg%Med(edge_media)%ConformalEdge, 1)
+            allocate(combined_edges(previous_edges + conformal_volumes%edge_media(j)%size))
+            if (previous_edges > 0) combined_edges(1:previous_edges) = sgg%Med(edge_media)%ConformalEdge
 
 
             do k = 1, conformal_volumes%edge_media(j)%size
@@ -5106,10 +5139,11 @@ CONTAINS
                   media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
                end select
 
-               sgg%Med(edge_media)%ConformalEdge(k) = conformal_volumes%edge_media(j)%edges(k)
+               combined_edges(previous_edges+k) = conformal_volumes%edge_media(j)%edges(k)
 
 
             end do
+            call move_alloc(combined_edges, sgg%Med(edge_media)%ConformalEdge)
          end do
       end subroutine
 
