@@ -4,8 +4,8 @@ from pathlib import Path
 
 @pytest.mark.planewave
 def test_fdtd_set_new_folder_to_run(tmp_path):
-    input = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
-    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver["general"]["numberOfSteps"] = 1
 
@@ -14,8 +14,8 @@ def test_fdtd_set_new_folder_to_run(tmp_path):
 
 @pytest.mark.planewave
 def test_fdtd_with_string_args(tmp_path):
-    input = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
-    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, flags="-h")
+    input_filename = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, flags="-h")
     solver["general"]["numberOfSteps"] = 1
 
     solver.run()
@@ -25,9 +25,9 @@ def test_fdtd_with_string_args(tmp_path):
 @pytest.mark.mpi
 @pytest.mark.planewave
 def test_fdtd_with_mpi_run(tmp_path):
-    input = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
+    input_filename = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
     solver = FDTD(
-        input,
+        input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-h"],
@@ -47,12 +47,12 @@ def test_fdtd_clean_up_after_run(tmp_path):
 
     solver.run()
 
-    pn = solver.getSolvedProbeFilenames("inbox")
-    assert os.path.isfile(pn[0])
+    solved_probe_filenames = solver.getSolvedProbeFilenames("inbox")
+    assert os.path.isfile(solved_probe_filenames[0])
 
     solver.cleanUp()
 
-    assert not os.path.isfile(pn[0])
+    assert not os.path.isfile(solved_probe_filenames[0])
 
 
 @pytest.mark.planewave
@@ -96,8 +96,8 @@ def test_fdtd_clean_up_does_not_delete_other_cases_files(tmp_path):
 @pytest.mark.wires
 @pytest.mark.termination
 def test_holland_case_checking_number_of_outputs_single_wire(tmp_path):
-    fn = CASES_FOLDER + "holland/holland1981.fdtd.json"
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "holland/holland1981.fdtd.json"
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     number_of_steps = 10
     solver["general"]["numberOfSteps"] = number_of_steps
@@ -108,8 +108,8 @@ def test_holland_case_checking_number_of_outputs_single_wire(tmp_path):
     probe_files = solver.getSolvedProbeFilenames("mid_point")
 
     assert len(probe_files) == 1
-    p = Probe(probe_files[0])
-    assert len(p["current"]) == 11
+    output_probe = Probe(probe_files[0])
+    assert len(output_probe["current"]) == 11
 
 
 @no_mtln_skip
@@ -118,21 +118,20 @@ def test_holland_case_checking_number_of_outputs_single_wire(tmp_path):
 @pytest.mark.multiwire
 @pytest.mark.termination
 def test_holland_case_checking_number_of_outputs_wire(tmp_path):
-    fn = CASES_FOLDER + "holland/holland1981.fdtd.json"
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "holland/holland1981.fdtd.json"
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     number_of_steps = 10
     solver["general"]["numberOfSteps"] = number_of_steps
 
     solver["materials"][0] = createWire(id=1, r=0.02)
-    outfile = "holland1981.fdtd_mid_point_single_wire_I_11_11_12.dat"
     solver.run()
 
     probe_files = solver.getSolvedProbeFilenames("mid_point")
 
     assert len(probe_files) == 1
-    p = Probe(probe_files[0])
-    assert len(p["current"]) == 11
+    output_probe = Probe(probe_files[0])
+    assert len(output_probe["current"]) == 11
 
 
 @no_mtln_skip
@@ -141,22 +140,22 @@ def test_holland_case_checking_number_of_outputs_wire(tmp_path):
 @pytest.mark.multiwire
 @pytest.mark.termination
 def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
-    fn = CASES_FOLDER + "holland/holland1981.fdtd.json"
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "holland/holland1981.fdtd.json"
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     number_of_steps = 10
     solver["general"]["numberOfSteps"] = number_of_steps
     solver["materials"][0] = createUnshieldedWire(
         id=1, lpul=6.52188703e-08, cpul=1.7060247700000001e-10
     )
-    outfile = "holland1981.fdtd_mid_point_single_wire_I_11_11_12.dat"
+    expected_output_filename = "holland1981.fdtd_mid_point_single_wire_I_11_11_12.dat"
     solver.run()
 
     probe_files = solver.getSolvedProbeFilenames("mid_point")
 
     assert len(probe_files) == 1
-    p = Probe(probe_files[0])
-    assert len(p["current"]) == 11
+    output_probe = Probe(probe_files[0])
+    assert len(output_probe["current"]) == 11
 
 
 @mtln_skip
@@ -164,8 +163,8 @@ def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
 @pytest.mark.probes
 @pytest.mark.termination
 def test_towel_hanger_case_creates_output_probes(tmp_path):
-    fn = CASES_FOLDER + "towelHanger/towelHanger.fdtd.json"
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "towelHanger/towelHanger.fdtd.json"
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver["general"]["numberOfSteps"] = 1
 
     solver.run()
@@ -190,8 +189,8 @@ def test_towel_hanger_case_creates_output_probes(tmp_path):
 
 @pytest.mark.wires
 def test_simple_cabin_initialization(tmp_path):
-    fn = CASES_FOLDER + "simple_cabin/simple_cabin.fdtd.json"
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "simple_cabin/simple_cabin.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
     assert solver.hasFinishedSuccessfully()
@@ -201,8 +200,8 @@ def test_simple_cabin_initialization(tmp_path):
 @pytest.mark.hdf
 @pytest.mark.farfield
 def test_sphere_case_with_far_field_probe_launches(tmp_path):
-    fn = CASES_FOLDER + "sphere/sphere.fdtd.json"
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "sphere/sphere.fdtd.json"
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver["general"]["numberOfSteps"] = 1
     solver["probes"][0]["domain"]["numberOfFrequencies"] = 100
 
@@ -210,10 +209,10 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
 
     far_field_files = solver.getSolvedProbeFilenames("farfield")
     assert len(far_field_files) == 1
-    p = Probe(far_field_files[0])
-    assert p.case_name == "sphere"
-    assert p.type == "farField"
-    assert np.all(p.cell_init == np.array([2, 2, 2]))
+    far_field_probe = Probe(far_field_files[0])
+    assert far_field_probe.case_name == "sphere"
+    assert far_field_probe.type == "farField"
+    assert np.all(far_field_probe.cell_init == np.array([2, 2, 2]))
 
     movie_files = [
         path
@@ -221,18 +220,18 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
         if path.endswith(".xdmf")
     ]
     assert len(movie_files) == 1
-    p = Probe(movie_files[0])
-    assert p.case_name == "sphere"
-    assert p.type == "movie"
-    assert np.all(p.cell_init == np.array([2, 2, 2]))
+    movie_probe = Probe(movie_files[0])
+    assert movie_probe.case_name == "sphere"
+    assert movie_probe.type == "movie"
+    assert np.all(movie_probe.cell_init == np.array([2, 2, 2]))
 
 
 @pytest.mark.conformal
 @pytest.mark.vtk
 def test_fill_conformal_vtk_sphere(tmp_path):
-    fn = CASES_FOLDER + "conformal/conformal_sphere_1mm_rcs_delta.fdtd.json"
+    input_filename = CASES_FOLDER + "conformal/conformal_sphere_1mm_rcs_delta.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -241,15 +240,15 @@ def test_fill_conformal_vtk_sphere(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
 
     assert line_media_dict[0.5] == 12  # PEC line
@@ -263,9 +262,9 @@ def test_fill_conformal_vtk_sphere(tmp_path):
 @pytest.mark.conformal
 @pytest.mark.vtk
 def test_fill_conformal_fL_0_005_vtk_large_sphere(tmp_path):
-    fn = CASES_FOLDER + "conformal/conformal_fL_sphere_rcs.fdtd.json"
+    input_filename = CASES_FOLDER + "conformal/conformal_fL_sphere_rcs.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -274,17 +273,17 @@ def test_fill_conformal_fL_0_005_vtk_large_sphere(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
 
     assert -0.5 not in line_media_dict.keys()
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
 
     assert -1 not in face_media_dict.keys()
@@ -293,9 +292,9 @@ def test_fill_conformal_fL_0_005_vtk_large_sphere(tmp_path):
 @pytest.mark.conformal
 @pytest.mark.vtk
 def test_fill_conformal_fL_0_15_vtk_large_sphere(tmp_path):
-    fn = CASES_FOLDER + "conformal/conformal_fL_0.15_sphere_rcs.fdtd.json"
+    input_filename = CASES_FOLDER + "conformal/conformal_fL_0.15_sphere_rcs.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -304,17 +303,17 @@ def test_fill_conformal_fL_0_15_vtk_large_sphere(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
 
     assert -0.5 not in line_media_dict.keys()
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
 
     assert -1 not in face_media_dict.keys()
@@ -323,9 +322,9 @@ def test_fill_conformal_fL_0_15_vtk_large_sphere(tmp_path):
 @pytest.mark.conformal
 @pytest.mark.vtk
 def test_fill_slanted_vtk_large_sphere(tmp_path):
-    fn = CASES_FOLDER + "conformal/slanted_sphere_rcs.fdtd.json"
+    input_filename = CASES_FOLDER + "conformal/slanted_sphere_rcs.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -334,17 +333,17 @@ def test_fill_slanted_vtk_large_sphere(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
 
     assert -0.5 not in line_media_dict.keys()
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
 
     assert -1 not in face_media_dict.keys()
@@ -363,9 +362,9 @@ def test_fill_conformal_vtk_corner(tmp_path):
     #    |  / \|        |  /
     #    1/____2________|/
 
-    fn = CASES_FOLDER + "conformal/conformal_corner.fdtd.json"
+    input_filename = CASES_FOLDER + "conformal/conformal_corner.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -374,11 +373,11 @@ def test_fill_conformal_vtk_corner(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
 
     assert 0 not in face_media_dict.keys()
@@ -386,7 +385,7 @@ def test_fill_conformal_vtk_corner(tmp_path):
     assert face_media_dict[1006] == 2  # Conformal PEC surface #2
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 1  # PEC line
     assert line_media_dict[2004] == 4  # Conformal line #1
@@ -395,8 +394,8 @@ def test_fill_conformal_vtk_corner(tmp_path):
 @pytest.mark.probes
 @pytest.mark.movie
 def test_movie_with_frequency_domain(tmp_path):
-    fn = CASES_FOLDER + "observation/movieFrequency.fdtd.json"
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "observation/movieFrequency.fdtd.json"
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver["general"]["numberOfSteps"] = 100
     solver["general"]["timeStep"] = 2.0e-9
     solver["probes"][0]["domain"]["numberOfFrequencies"] = 100
@@ -409,17 +408,17 @@ def test_movie_with_frequency_domain(tmp_path):
         if path.endswith(".xdmf")
     ]
     assert len(movie_files) == 1
-    p = Probe(movie_files[0])
-    assert p.case_name == "movieFrequency"
-    assert p.type == "movie"
-    assert np.all(p.cell_init == np.array([1, 1, 1]))
+    movie_probe = Probe(movie_files[0])
+    assert movie_probe.case_name == "movieFrequency"
+    assert movie_probe.type == "movie"
+    assert np.all(movie_probe.cell_init == np.array([1, 1, 1]))
 
 
 @pytest.mark.probes
 @pytest.mark.movie
 def test_movie_with_time_domain(tmp_path):
-    fn = CASES_FOLDER + "observation/movieTime.fdtd.json"
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "observation/movieTime.fdtd.json"
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver["general"]["numberOfSteps"] = 1
     solver["probes"][0]["domain"]["samplingPeriod"] = 1e-9
 
@@ -431,18 +430,18 @@ def test_movie_with_time_domain(tmp_path):
         if path.endswith(".xdmf")
     ]
     assert len(movie_files) == 1
-    p = Probe(movie_files[0])
-    assert p.case_name == "movieTime"
-    assert p.type == "movie"
-    assert np.all(p.cell_init == np.array([1, 1, 1]))
+    movie_probe = Probe(movie_files[0])
+    assert movie_probe.case_name == "movieTime"
+    assert movie_probe.type == "movie"
+    assert np.all(movie_probe.cell_init == np.array([1, 1, 1]))
 
 
 @pytest.mark.sgbc
 @pytest.mark.vtk
 def test_three_surfaces(tmp_path):
-    fn = CASES_FOLDER + "observation/three_surfaces.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/three_surfaces.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -485,8 +484,8 @@ def test_three_surfaces(tmp_path):
 @pytest.mark.sgbc
 @pytest.mark.probes
 def test_three_surfaces_Jprobe(tmp_path):
-    fn = CASES_FOLDER + "observation/three_surfaces_Jprobe.fdtd.json"
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "observation/three_surfaces_Jprobe.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver["general"]["numberOfSteps"] = 1
 
     solver.run()
@@ -510,8 +509,8 @@ def test_three_surfaces_Jprobe(tmp_path):
 @pytest.mark.sgbc
 @pytest.mark.probes
 def test_three_one_cell_surfaces_Jprobe(tmp_path):
-    fn = CASES_FOLDER + "observation/three_one_cell_surfaces_Jprobe.fdtd.json"
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "observation/three_one_cell_surfaces_Jprobe.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver["general"]["numberOfSteps"] = 1
 
     solver.run()
@@ -534,35 +533,35 @@ def test_three_one_cell_surfaces_Jprobe(tmp_path):
 
 @pytest.mark.probes
 def test_one_cell_PEC_surface_Jprobe(tmp_path):
-    fn = CASES_FOLDER + "observation/one_cell_surface_Jprobe.fdtd.json"
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "observation/one_cell_surface_Jprobe.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver["general"]["numberOfSteps"] = 1
     solver["materialAssociations"][0]["materialId"] = 1
 
     expected_face_tags = {"x": 729, "y": 729, "z": 728}
 
-    for x in ["x", "y", "z"]:
-        solver["probes"][0]["component"] = x
+    for probe_component in ["x", "y", "z"]:
+        solver["probes"][0]["component"] = probe_component
         solver.cleanUp()
         solver.run()
-        vtkmapfile = solver.getCurrentVTKMap()
-        assert os.path.isfile(vtkmapfile)
+        vtk_map_filename = solver.getCurrentVTKMap()
+        assert os.path.isfile(vtk_map_filename)
 
         face_tag_dict = createPropertyDictionary(
-            vtkmapfile, celltype=9, property="tagnumber"
+            vtk_map_filename, celltype=9, property="tagnumber"
         )
-        assert face_tag_dict[0] == expected_face_tags[x]
+        assert face_tag_dict[0] == expected_face_tags[probe_component]
 
         line_tag_dict = createPropertyDictionary(
-            vtkmapfile, celltype=3, property="tagnumber"
+            vtk_map_filename, celltype=3, property="tagnumber"
         )
         assert line_tag_dict[64] == 4
 
 
 def test_one_cell_SGBC_surface_Jprobe(tmp_path):
-    fn = CASES_FOLDER + "observation/one_cell_surface_Jprobe.fdtd.json"
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "observation/one_cell_surface_Jprobe.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver["general"]["numberOfSteps"] = 1
     solver["materialAssociations"][0]["materialId"] = 2
@@ -617,9 +616,9 @@ def test_one_cell_SGBC_surface_Jprobe(tmp_path):
 
 
 def test_1_volume(tmp_path):
-    fn = CASES_FOLDER + "observation/pec_volume.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/pec_volume.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -656,9 +655,9 @@ def test_1_volume(tmp_path):
 def test_1_volume_map_publishes_geometry_in_xdmf_hdf5(tmp_path):
     import h5py
 
-    fn = CASES_FOLDER + "observation/pec_volume.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/pec_volume.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -672,22 +671,22 @@ def test_1_volume_map_publishes_geometry_in_xdmf_hdf5(tmp_path):
 
     assert hdf_path.is_file()
     assert xdmf_path.is_file()
-    with h5py.File(hdf_path, "r") as hdf:
-        assert set(hdf.keys()) == {"tagnumber", "mediatype"}
-        assert np.all(hdf["tagnumber"][()] == 64)
-        assert np.all(hdf["mediatype"][()] == 0.0)
-        assert len(hdf["tagnumber"]) == 36
+    with h5py.File(hdf_path, "r") as hdf_file:
+        assert set(hdf_file.keys()) == {"tagnumber", "mediatype"}
+        assert np.all(hdf_file["tagnumber"][()] == 64)
+        assert np.all(hdf_file["mediatype"][()] == 0.0)
+        assert len(hdf_file["tagnumber"]) == 36
 
-    xdmf = xdmf_path.read_text()
-    assert hdf_path.name in xdmf
-    assert "tagnumber" in xdmf
-    assert "mediatype" in xdmf
+    xdmf_contents = xdmf_path.read_text()
+    assert hdf_path.name in xdmf_contents
+    assert "tagnumber" in xdmf_contents
+    assert "mediatype" in xdmf_contents
 
 
 def test_2_volumes(tmp_path):
-    fn = CASES_FOLDER + "observation/pec_volumes.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/pec_volumes.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -722,9 +721,9 @@ def test_2_volumes(tmp_path):
 
 
 def test_1_line(tmp_path):
-    fn = CASES_FOLDER + "observation/pec_line.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/pec_line.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -758,9 +757,9 @@ def test_1_line(tmp_path):
 
 
 def test_volume_and_surfaces(tmp_path):
-    fn = CASES_FOLDER + "observation/volume_and_surfaces.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/volume_and_surfaces.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -802,9 +801,9 @@ def test_volume_and_surfaces(tmp_path):
 
 
 def test_count_bug(tmp_path):
-    fn = CASES_FOLDER + "observation/count_bug.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/count_bug.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -827,9 +826,9 @@ def test_count_bug(tmp_path):
 
 @mtln_skip
 def test_wires(tmp_path):
-    fn = CASES_FOLDER + "observation/wires.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/wires.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -868,8 +867,8 @@ def test_wires(tmp_path):
 
 @mtln_skip
 def test_wires_collision_Jprobe(tmp_path):
-    fn = CASES_FOLDER + "observation/wires_collision_Jprobe.fdtd.json"
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "observation/wires_collision_Jprobe.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver["general"]["numberOfSteps"] = 1
 
     solver.run()
@@ -896,9 +895,9 @@ def test_wires_collision_Jprobe(tmp_path):
 
 @mtln_skip
 def test_wires_collision(tmp_path):
-    fn = CASES_FOLDER + "observation/wires_collision.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/wires_collision.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -940,9 +939,9 @@ def test_wires_collision(tmp_path):
 
 @mtln_skip
 def test_wire_x_collision_y(tmp_path):
-    fn = CASES_FOLDER + "observation/wire_x_collision_y.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/wire_x_collision_y.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -981,8 +980,8 @@ def test_wire_x_collision_y(tmp_path):
 
 @mtln_skip
 def test_wire_x_collision_y_Jprobe(tmp_path):
-    fn = CASES_FOLDER + "observation/wire_x_collision_y_Jprobe.fdtd.json"
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "observation/wire_x_collision_y_Jprobe.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver["general"]["numberOfSteps"] = 1
 
     solver.run()
@@ -1004,9 +1003,9 @@ def test_wire_x_collision_y_Jprobe(tmp_path):
 
 @mtln_skip
 def test_wire_x_collision_z(tmp_path):
-    fn = CASES_FOLDER + "observation/wire_x_collision_z.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/wire_x_collision_z.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1045,9 +1044,9 @@ def test_wire_x_collision_z(tmp_path):
 
 @mtln_skip
 def test_wire_x_long_collision_z(tmp_path):
-    fn = CASES_FOLDER + "observation/wire_x_long_collision_z.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/wire_x_long_collision_z.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1087,9 +1086,9 @@ def test_wire_x_long_collision_z(tmp_path):
 
 @mtln_skip
 def test_wire_y_collision_x(tmp_path):
-    fn = CASES_FOLDER + "observation/wire_y_collision_x.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/wire_y_collision_x.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1128,9 +1127,9 @@ def test_wire_y_collision_x(tmp_path):
 
 @mtln_skip
 def test_wire_y_collision_z(tmp_path):
-    fn = CASES_FOLDER + "observation/wire_y_collision_z.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/wire_y_collision_z.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1169,9 +1168,9 @@ def test_wire_y_collision_z(tmp_path):
 
 @mtln_skip
 def test_wire_z_collision_x(tmp_path):
-    fn = CASES_FOLDER + "observation/wire_z_collision_x.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/wire_z_collision_x.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1210,9 +1209,9 @@ def test_wire_z_collision_x(tmp_path):
 
 @mtln_skip
 def test_wire_z_collision_y(tmp_path):
-    fn = CASES_FOLDER + "observation/wire_z_collision_y.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/wire_z_collision_y.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1251,9 +1250,9 @@ def test_wire_z_collision_y(tmp_path):
 
 @no_mtln_skip
 def test_multiwire_z_collision_y(tmp_path):
-    fn = CASES_FOLDER + "observation/multiwire_z_collision_y.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/multiwire_z_collision_y.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1296,9 +1295,9 @@ def test_multiwire_z_collision_y(tmp_path):
 
 @no_mtln_skip
 def test_multiwire_z_collision_x(tmp_path):
-    fn = CASES_FOLDER + "observation/multiwire_z_collision_x.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/multiwire_z_collision_x.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1341,9 +1340,9 @@ def test_multiwire_z_collision_x(tmp_path):
 
 @no_mtln_skip
 def test_multiwire_y_collision_x(tmp_path):
-    fn = CASES_FOLDER + "observation/multiwire_y_collision_x.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/multiwire_y_collision_x.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1386,9 +1385,9 @@ def test_multiwire_y_collision_x(tmp_path):
 
 @no_mtln_skip
 def test_multiwire_y_collision_z(tmp_path):
-    fn = CASES_FOLDER + "observation/multiwire_y_collision_z.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/multiwire_y_collision_z.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1431,9 +1430,9 @@ def test_multiwire_y_collision_z(tmp_path):
 
 @no_mtln_skip
 def test_multiwire_x_collision_y(tmp_path):
-    fn = CASES_FOLDER + "observation/multiwire_x_collision_y.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/multiwire_x_collision_y.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1476,9 +1475,9 @@ def test_multiwire_x_collision_y(tmp_path):
 
 @no_mtln_skip
 def test_multiwire_x_collision_z(tmp_path):
-    fn = CASES_FOLDER + "observation/multiwire_x_collision_z.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/multiwire_x_collision_z.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1521,9 +1520,9 @@ def test_multiwire_x_collision_z(tmp_path):
 
 @no_mtln_skip
 def test_multiwire_x_long_collision_z(tmp_path):
-    fn = CASES_FOLDER + "observation/multiwire_x_long_collision_z.fdtd.json"
+    input_filename = CASES_FOLDER + "observation/multiwire_x_long_collision_z.fdtd.json"
     solver = FDTD(
-        input_filename=fn,
+        input_filename=input_filename,
         path_to_exe=SEMBA_EXE,
         run_in_folder=tmp_path,
         flags=["-mapvtk"],
@@ -1568,9 +1567,9 @@ def test_multiwire_x_long_collision_z(tmp_path):
 
 
 def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
-    fn = CASES_FOLDER + "multipleAssigments/multipleSurfaceImpedance.fdtd.json"
+    input_filename = CASES_FOLDER + "multipleAssigments/multipleSurfaceImpedance.fdtd.json"
 
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
     probe_files = solver.getSolvedProbeFilenames("BulkProbeEntry")
     assert len(probe_files) == 1
@@ -1578,9 +1577,9 @@ def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
 
 
 def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
-    fn = CASES_FOLDER + "multipleAssigments/multipleDielectricMaterial.fdtd.json"
+    input_filename = CASES_FOLDER + "multipleAssigments/multipleDielectricMaterial.fdtd.json"
 
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
     probe_files = solver.getSolvedProbeFilenames("BulkProbeEntry")
     assert len(probe_files) == 1
@@ -1590,19 +1589,18 @@ def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
 def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arguments(
     tmp_path,
 ):
-    projectRoot = os.getcwd()
-    folderWitSpaces: str = os.path.join(tmp_path, "spaced bin")
-    os.mkdir(folderWitSpaces)
+    folder_with_spaces: str = os.path.join(tmp_path, "spaced bin")
+    os.mkdir(folder_with_spaces)
     if platform == "win32":
-        shutil.copy2(NGSPICE_DLL, folderWitSpaces)
+        shutil.copy2(NGSPICE_DLL, folder_with_spaces)
 
-    sembaExecutable = SEMBA_EXE.split(os.path.sep)[-1]
-    pathToExe: str = os.path.join(folderWitSpaces, sembaExecutable)
-    shutil.copy2(SEMBA_EXE, pathToExe)
-    print(pathToExe)
+    semba_executable = SEMBA_EXE.split(os.path.sep)[-1]
+    executable_path: str = os.path.join(folder_with_spaces, semba_executable)
+    shutil.copy2(SEMBA_EXE, executable_path)
+    print(executable_path)
 
-    fn = CASES_FOLDER + "dielectric/dielectricTransmission.fdtd.json"
-    solver = FDTD(fn, path_to_exe=pathToExe, run_in_folder=tmp_path)
+    input_filename = CASES_FOLDER + "dielectric/dielectricTransmission.fdtd.json"
+    solver = FDTD(input_filename, path_to_exe=executable_path, run_in_folder=tmp_path)
     solver.run()
     probe_files = solver.getSolvedProbeFilenames("outside")
     assert len(probe_files) == 1
@@ -1613,38 +1611,38 @@ def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arg
 def test_bulk_current_outputs(tmp_path):
     # This test uses bulk_probe_cases_over_nodal_source.fdtd from input_examples as input.
     # Verifies all kind of bulk probes are recognised and setted properly by checking outputFile format.
-    fn = PROBES_INPUT_EXAMPLE + "bulk_probe_cases_over_nodal_source.fdtd.json"
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    input_filename = PROBES_INPUT_EXAMPLE + "bulk_probe_cases_over_nodal_source.fdtd.json"
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    bulkXPlaneFiles = solver.getSolvedProbeFilenames("BulkXPlane")
-    bulkYPlaneFiles = solver.getSolvedProbeFilenames("BulkYPlane")
-    bulkZPlaneFiles = solver.getSolvedProbeFilenames("BulkZPlane")
-    bulkYPointFiles = solver.getSolvedProbeFilenames("BulkYPoint")
-    bulkZVolumeFiles = solver.getSolvedProbeFilenames("BulkZVolume")
+    bulk_x_plane_filenames = solver.getSolvedProbeFilenames("BulkXPlane")
+    bulk_y_plane_filenames = solver.getSolvedProbeFilenames("BulkYPlane")
+    bulk_z_plane_filenames = solver.getSolvedProbeFilenames("BulkZPlane")
+    bulk_y_point_filenames = solver.getSolvedProbeFilenames("BulkYPoint")
+    bulk_z_volume_filenames = solver.getSolvedProbeFilenames("BulkZVolume")
 
-    assert len(bulkXPlaneFiles) == 1
-    assert len(bulkYPlaneFiles) == 1
-    assert len(bulkZPlaneFiles) == 1
-    assert len(bulkYPointFiles) == 1
-    assert len(bulkZVolumeFiles) == 10
+    assert len(bulk_x_plane_filenames) == 1
+    assert len(bulk_y_plane_filenames) == 1
+    assert len(bulk_z_plane_filenames) == 1
+    assert len(bulk_y_point_filenames) == 1
+    assert len(bulk_z_volume_filenames) == 10
 
-    probeBulkXPlane = Probe(bulkXPlaneFiles[0])
-    probeBulkYPlane = Probe(bulkYPlaneFiles[0])
-    probeBulkZPlane = Probe(bulkZPlaneFiles[0])
-    probeBulkYPoint = Probe(bulkYPointFiles[0])
-    probeBulkZVolume = Probe(bulkZVolumeFiles[0])
+    bulk_x_plane_probe = Probe(bulk_x_plane_filenames[0])
+    bulk_y_plane_probe = Probe(bulk_y_plane_filenames[0])
+    bulk_z_plane_probe = Probe(bulk_z_plane_filenames[0])
+    bulk_y_point_probe = Probe(bulk_y_point_filenames[0])
+    bulk_z_volume_probe = Probe(bulk_z_volume_filenames[0])
 
-    assert probeBulkXPlane.direction == "x"
-    assert probeBulkYPlane.direction == "y"
-    assert probeBulkZPlane.direction == "z"
-    assert probeBulkYPoint.direction == "y"
+    assert bulk_x_plane_probe.direction == "x"
+    assert bulk_y_plane_probe.direction == "y"
+    assert bulk_z_plane_probe.direction == "z"
+    assert bulk_y_point_probe.direction == "y"
 
 
 def test_wires_vtk(tmp_path):
-    fn = CASES_FOLDER + "wire_vtk/wire_vtk.fdtd.json"
+    input_filename = CASES_FOLDER + "wire_vtk/wire_vtk.fdtd.json"
 
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
     vtkmapfile = solver.getVTKMap()
