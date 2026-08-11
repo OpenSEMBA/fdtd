@@ -361,29 +361,36 @@ contains
            case (iBloqueJx, iBloqueJy, iBloqueJz)
              quad_index = quad_index + 1
              field = magnetic_field(this%currentType(index))
-             media = getMediaIndex(field, this%coords(1, index), this%coords(2, index), this%coords(3, index), &
-                                    problemInfo%geometryToMaterialData)
-             tags(quad_index) = real(this%materialTag(index))
-             media_types(quad_index) = surface_media_type(problemInfo%materialList(media))
+              media = getMediaIndex(field, this%coords(1, index), this%coords(2, index), this%coords(3, index), &
+                                     problemInfo%geometryToMaterialData)
+              tags(quad_index) = real(this%materialTag(index))
+              media_types(quad_index) = surface_media_type(problemInfo%materialList(media), media)
           end select
        end do
     contains
-       real function surface_media_type(material)
-          type(MediaData_t), intent(in) :: material
+       real function surface_media_type(material, media)
+           type(MediaData_t), intent(in) :: material
+           integer, intent(in) :: media
 
-          if (material%is%Pec) then
-             surface_media_type = 0.0
-          else if (material%is%PMC) then
-             surface_media_type = 16.0
-          else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
-             surface_media_type = 300.0 + material%id
+           if (material%is%Pec) then
+              surface_media_type = 0.0
+           else if (material%is%PMC) then
+              surface_media_type = 16.0
+           else if (material%is%ConformalPec) then
+              surface_media_type = 1000.0 + media
+           else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
+              surface_media_type = 300.0 + media
           else if (material%is%EDispersive .or. material%is%MDispersive .or. material%is%EDispersiveAnis .or. &
                    material%is%MDispersiveAnis) then
-             surface_media_type = 100.0 + material%id
+              surface_media_type = 100.0 + media
           else if (material%is%Dielectric .or. material%is%Anisotropic) then
-             surface_media_type = 200.0 + material%id
-          else if (material%is%ThinSlot) then
-             surface_media_type = 400.0 + material%id
+              surface_media_type = 200.0 + media
+           else if (material%is%ThinSlot) then
+              surface_media_type = 400.0 + media
+           else if (material%is%already_YEEadvanced_byconformal) then
+              surface_media_type = 5.0
+           else if (material%is%split_and_useless) then
+              surface_media_type = 6.0
           else
              surface_media_type = -1.0
           end if
@@ -397,10 +404,16 @@ contains
 
            material => problemInfo%materialList(media)
 
-          if (material%is%Pec) then
+           if (material%is%already_YEEadvanced_byconformal) then
+              edge_media_type = 5.5
+           else if (material%is%split_and_useless) then
+              edge_media_type = 6.5
+           else if (material%is%Pec) then
              edge_media_type = 0.5
-          else if (material%is%PMC) then
-             edge_media_type = 16.5
+           else if (material%is%PMC) then
+              edge_media_type = 16.5
+           else if (material%is%ConformalPec) then
+              edge_media_type = 2000.0 + media
           else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
              edge_media_type = 3.5
           else if (material%is%EDispersive .or. material%is%MDispersive .or. material%is%EDispersiveAnis .or. &
