@@ -430,6 +430,7 @@ def test_movie_in_planewave_in_box(tmp_path):
             "ElectricFieldX",
             "ElectricFieldY",
             "ElectricFieldZ",
+            "tagnumber",
         }
 
         def dataset_for(attribute):
