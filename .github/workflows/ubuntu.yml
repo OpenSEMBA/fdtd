@@ -19,7 +19,7 @@ jobs:
         os: [ubuntu-latest]
         compiler: [
           {name: 'intel', version: '2025.1'},
-          {name: 'gcc', version: 11}
+          {name: 'gcc', version: 15}
         ]
         build-type: ["Release"]
         mpi: ["ON", "OFF"]
