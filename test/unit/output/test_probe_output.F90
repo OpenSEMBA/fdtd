@@ -751,7 +751,7 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
     ! Verifies volumetric partitions attach to outputs and select serial fallback.
    use FDETYPES_m
    use FDETYPES_TOOLS, only: create_limit_t, create_control_flags, init_time_array, &
-                              init_simulation_material_list, create_geometry_media, create_xyz_limit_array
+                               init_simulation_material_list, create_geometry_media, create_xyz_limit_array, create_tag_list
     use output_m, only: init_outputs, GetOutputs, GetOutputPartition, solver_output_t
     use outputDecomposition_m, only: output_partition_t, OUTPUT_PARTITION_SUCCESS
     use outputCollective_m, only: OUTPUT_PUBLICATION_ROOT_AGGREGATION
@@ -793,9 +793,10 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
    sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
    call sgg_set_Sweep(sgg, sweep)
    call sgg_set_SINPMLSweep(sgg, sweep)
-   call sgg_set_NumPlaneWaves(sgg, 1)
-   call sgg_set_Alloc(sgg, sweep)
-   allocate(x_steps(0:8), y_steps(0:8), z_steps(0:8), source=1.0_RKIND)
+    call sgg_set_NumPlaneWaves(sgg, 1)
+    call sgg_set_Alloc(sgg, sweep)
+    material_tags = create_tag_list(sweep)
+    allocate(x_steps(0:8), y_steps(0:8), z_steps(0:8), source=1.0_RKIND)
    call sgg_set_LineX(sgg, x_steps)
    call sgg_set_LineY(sgg, y_steps)
    call sgg_set_LineZ(sgg, z_steps)
@@ -1324,6 +1325,7 @@ integer function test_init_movie_probe() bind(c) result(err)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
    allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
    call sgg_set_Alloc(dummysgg, allocationRange)
+   tagNumbers = create_tag_list(allocationRange)
 
    allocate(x_steps(6),source=1.0_RKIND)
    allocate(y_steps(6),source=1.0_RKIND)
@@ -1449,6 +1451,7 @@ integer function test_update_movie_probe() bind(c) result(err)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
    allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
    call sgg_set_Alloc(dummysgg, allocationRange)
+   tagNumbers = create_tag_list(allocationRange)
 
    allocate(x_steps(6),source=1.0_RKIND)
    allocate(y_steps(6),source=1.0_RKIND)
@@ -1604,6 +1607,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
    allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
    call sgg_set_Alloc(dummysgg, allocationRange)
+   tagNumbers = create_tag_list(allocationRange)
 
    allocate(x_steps(6),source=1.0_RKIND)
    allocate(y_steps(6),source=1.0_RKIND)
