@@ -1,5 +1,6 @@
 module conformal_m
 
+   use Report_m, only: WarnErrReport
    use geometry_m
    use cell_map_m
    use NFDETypes_m, only: ConformalPECRegions_t, ConformalPECElements_t, ConformalMedia_t, &
@@ -8,16 +9,29 @@ module conformal_m
    
    real (kind=rkind), PARAMETER :: EDGE_RATIO_EQ_TOLERANCE = 1e-5
    real (kind=rkind), PARAMETER :: FACE_RATIO_EQ_TOLERANCE = 1e-3
+   real, parameter :: TOPOLOGY_TOLERANCE = 1.0e-5
+
+   type :: oriented_edge_t
+      real, dimension(3) :: first
+      real, dimension(3) :: second
+   end type oriented_edge_t
+
+   type :: rectangle_key_t
+      integer, dimension(3) :: cell
+      integer :: face
+   end type rectangle_key_t
 
 contains
 
    function buildSideMaps(elements) result(res)
       type(ConformalPECElements_t), dimension(:), pointer, intent(in) :: elements
       type(side_tris_map_t), dimension(:), allocatable :: res
+      type(ConformalPECElements_t) :: canonical_element
       integer :: i
       allocate(res(size(elements)))
       do i = 1, size(elements)
-         call buildSideMap(res(i), elements(i)%triangles)
+         canonical_element = canonicalClosedSurfaceOrientation(elements(i))
+         call buildSideMap(res(i), canonical_element%triangles)
       end do
    end function
 
@@ -75,14 +89,29 @@ contains
       integer(kind=4), dimension(3) :: cell
       integer :: i, face
       character(len=160) :: detail
+      logical :: has_intervals, has_triangles
 
       is_valid = .true.
       message = ''
-      call validateSurfaceTopology(element%triangles, is_valid, message)
-      if (.not. is_valid) return
-      if (require_closed) then
-         call validateClosedSurfaceTopology(element%triangles, is_valid, message)
+      has_intervals = .false.
+      has_triangles = .false.
+      if (allocated(element%intervals)) has_intervals = size(element%intervals) > 0
+      if (allocated(element%triangles)) has_triangles = size(element%triangles) > 0
+      if (.not. has_intervals .and. .not. has_triangles) then
+         message = 'conformal region has no surface patches'
+         is_valid = .false.
+         return
+      end if
+      if (has_intervals) then
+         call validateCombinedSurfaceTopology(element, require_closed, is_valid, message)
          if (.not. is_valid) return
+      else
+         call validateSurfaceTopology(element%triangles, is_valid, message)
+         if (.not. is_valid) return
+         if (require_closed) then
+            call validateClosedSurfaceTopology(element%triangles, is_valid, message)
+            if (.not. is_valid) return
+         end if
       end if
 
       call buildCellMap(cell_map, element)
@@ -215,6 +244,318 @@ contains
          end do
       end do
    end subroutine validateClosedSurfaceTopology
+
+   subroutine validateCombinedSurfaceTopology(element, require_closed, is_valid, message)
+      type(ConformalPECElements_t), intent(in) :: element
+      logical, intent(in) :: require_closed
+      logical, intent(out) :: is_valid
+      character(len=*), intent(out) :: message
+      type(oriented_edge_t), dimension(:), allocatable :: raw_edges, atomic_edges
+      type(rectangle_key_t), dimension(:), allocatable :: rectangle_keys
+      integer :: triangle_index, edge_index, interval_index, rectangle_count, raw_count, atomic_count
+      integer :: max_raw_edges, ntriangles
+
+      is_valid = .true.
+      message = ''
+      ntriangles = 0
+      if (allocated(element%triangles)) ntriangles = size(element%triangles)
+
+      call countAndValidateRectangles(element%intervals, rectangle_count, is_valid, message)
+      if (.not. is_valid) return
+      if (ntriangles + rectangle_count == 0) then
+         message = 'conformal region has no surface patches'
+         is_valid = .false.
+         return
+      end if
+
+      max_raw_edges = 3*ntriangles + 4*rectangle_count
+      allocate(raw_edges(max_raw_edges), rectangle_keys(rectangle_count))
+      raw_count = 0
+      do triangle_index = 1, ntriangles
+         do edge_index = 1, 3
+            call appendRawEdge(raw_edges, raw_count, &
+               element%triangles(triangle_index)%vertices(edge_index)%position, &
+               element%triangles(triangle_index)%vertices(mod(edge_index,3)+1)%position, is_valid, message)
+            if (.not. is_valid) return
+         end do
+      end do
+
+      rectangle_count = 0
+      do interval_index = 1, size(element%intervals)
+         call appendIntervalEdges(element%intervals(interval_index), raw_edges, raw_count, &
+            rectangle_keys, rectangle_count, is_valid, message)
+         if (.not. is_valid) return
+      end do
+
+      allocate(atomic_edges(max(1, raw_count)))
+      atomic_count = 0
+      do edge_index = 1, raw_count
+         call splitAndAppendEdge(raw_edges(edge_index), raw_edges, raw_count, atomic_edges, atomic_count)
+      end do
+      call validateAtomicEdges(atomic_edges, atomic_count, require_closed, is_valid, message)
+   end subroutine validateCombinedSurfaceTopology
+
+   subroutine countAndValidateRectangles(intervals, rectangle_count, is_valid, message)
+      type(interval_t), dimension(:), allocatable, intent(in) :: intervals
+      integer, intent(out) :: rectangle_count
+      logical, intent(out) :: is_valid
+      character(len=*), intent(out) :: message
+      integer, dimension(3) :: diff
+      integer :: interval_index, face, first_direction, second_direction
+
+      rectangle_count = 0
+      is_valid = .true.
+      message = ''
+      if (.not. allocated(intervals)) return
+      do interval_index = 1, size(intervals)
+         diff = intervals(interval_index)%end%cell - intervals(interval_index)%ini%cell
+         if (count(diff /= 0) /= 2) then
+            write(message, '(A,I0,A)') 'interval ', interval_index, ' must define a non-zero rectangular surface'
+            is_valid = .false.
+            return
+         end if
+         face = minloc(abs(diff), 1)
+         first_direction = mod(face,3) + 1
+         second_direction = mod(face+1,3) + 1
+         if ((diff(first_direction) < 0) .neqv. (diff(second_direction) < 0)) then
+            write(message, '(A,I0,A)') 'interval ', interval_index, &
+               ' has mixed-sign directions; both varying directions must have the same sign'
+            call WarnErrReport(trim(message), .true.)
+            is_valid = .false.
+            return
+         end if
+         rectangle_count = rectangle_count + abs(diff(first_direction))*abs(diff(second_direction))
+      end do
+   end subroutine countAndValidateRectangles
+
+   subroutine appendIntervalEdges(interval, raw_edges, raw_count, rectangle_keys, rectangle_count, is_valid, message)
+      type(interval_t), intent(in) :: interval
+      type(oriented_edge_t), dimension(:), intent(inout) :: raw_edges
+      integer, intent(inout) :: raw_count, rectangle_count
+      type(rectangle_key_t), dimension(:), intent(inout) :: rectangle_keys
+      logical, intent(out) :: is_valid
+      character(len=*), intent(out) :: message
+      integer, dimension(3) :: diff, lower, cell
+      real, dimension(4,3) :: corners
+      integer :: face, first_direction, second_direction, first_offset, second_offset, orientation, i
+
+      is_valid = .true.
+      message = ''
+      diff = interval%end%cell - interval%ini%cell
+      face = minloc(abs(diff), 1)
+      first_direction = mod(face,3) + 1
+      second_direction = mod(face+1,3) + 1
+      orientation = merge(1, -1, diff(first_direction) > 0)
+      lower = min(interval%ini%cell, interval%end%cell)
+
+      do first_offset = 0, abs(diff(first_direction))-1
+         do second_offset = 0, abs(diff(second_direction))-1
+            cell = lower
+            cell(first_direction) = lower(first_direction) + first_offset
+            cell(second_direction) = lower(second_direction) + second_offset
+            do i = 1, rectangle_count
+               if (rectangle_keys(i)%face == face .and. all(rectangle_keys(i)%cell == cell)) then
+                  write(message, '(A,I0,A,I0,A,I0,A,I0)') 'duplicate interval rectangle at cell (', &
+                     cell(1), ',', cell(2), ',', cell(3), '), face ', face
+                  is_valid = .false.
+                  return
+               end if
+            end do
+            rectangle_count = rectangle_count + 1
+            rectangle_keys(rectangle_count)%cell = cell
+            rectangle_keys(rectangle_count)%face = face
+            call rectangleCorners(cell, face, corners)
+            if (orientation < 0) corners = corners([1,4,3,2],:)
+            do i = 1, 4
+               call appendRawEdge(raw_edges, raw_count, corners(i,:), corners(mod(i,4)+1,:), is_valid, message)
+               if (.not. is_valid) return
+            end do
+         end do
+      end do
+   end subroutine appendIntervalEdges
+
+   subroutine rectangleCorners(cell, face, corners)
+      integer, dimension(3), intent(in) :: cell
+      integer, intent(in) :: face
+      real, dimension(4,3), intent(out) :: corners
+
+      corners(1,:) = real(cell)
+      select case(face)
+      case(FACE_X)
+         corners(2,:) = corners(1,:) + [0.0,1.0,0.0]
+         corners(3,:) = corners(1,:) + [0.0,1.0,1.0]
+         corners(4,:) = corners(1,:) + [0.0,0.0,1.0]
+      case(FACE_Y)
+         corners(2,:) = corners(1,:) + [0.0,0.0,1.0]
+         corners(3,:) = corners(1,:) + [1.0,0.0,1.0]
+         corners(4,:) = corners(1,:) + [1.0,0.0,0.0]
+      case(FACE_Z)
+         corners(2,:) = corners(1,:) + [1.0,0.0,0.0]
+         corners(3,:) = corners(1,:) + [1.0,1.0,0.0]
+         corners(4,:) = corners(1,:) + [0.0,1.0,0.0]
+      end select
+   end subroutine rectangleCorners
+
+   subroutine appendRawEdge(edges, edge_count, first, second, is_valid, message)
+      type(oriented_edge_t), dimension(:), intent(inout) :: edges
+      integer, intent(inout) :: edge_count
+      real, dimension(3), intent(in) :: first, second
+      logical, intent(out) :: is_valid
+      character(len=*), intent(out) :: message
+
+      is_valid = .false.
+      if (norm2(second-first) <= TOPOLOGY_TOLERANCE) then
+         message = 'surface patch has a degenerate geometric edge'
+         return
+      end if
+      edge_count = edge_count + 1
+      edges(edge_count)%first = first
+      edges(edge_count)%second = second
+      is_valid = .true.
+      message = ''
+   end subroutine appendRawEdge
+
+   subroutine splitAndAppendEdge(edge, raw_edges, raw_count, atomic_edges, atomic_count)
+      type(oriented_edge_t), intent(in) :: edge
+      type(oriented_edge_t), dimension(:), intent(in) :: raw_edges
+      integer, intent(in) :: raw_count
+      type(oriented_edge_t), dimension(:), allocatable, intent(inout) :: atomic_edges
+      integer, intent(inout) :: atomic_count
+      real, dimension(:), allocatable :: parameters
+      real, dimension(3) :: direction
+      real :: parameter, swap
+      integer :: edge_index, endpoint, parameter_count, i, j
+
+      allocate(parameters(2*raw_count + 2))
+      parameter_count = 2
+      parameters(1:2) = [0.0, 1.0]
+      direction = edge%second-edge%first
+      do edge_index = 1, raw_count
+         do endpoint = 1, 2
+            if (endpoint == 1) then
+               if (.not. pointOnSegment(raw_edges(edge_index)%first, edge)) cycle
+               parameter = dot_product(raw_edges(edge_index)%first-edge%first, direction)/dot_product(direction,direction)
+            else
+               if (.not. pointOnSegment(raw_edges(edge_index)%second, edge)) cycle
+               parameter = dot_product(raw_edges(edge_index)%second-edge%first, direction)/dot_product(direction,direction)
+            end if
+            if (any(abs(parameters(1:parameter_count)-parameter) < TOPOLOGY_TOLERANCE)) cycle
+            parameter_count = parameter_count + 1
+            parameters(parameter_count) = max(0.0, min(1.0, parameter))
+         end do
+      end do
+      do i = 2, parameter_count
+         swap = parameters(i)
+         j = i-1
+         do while (j >= 1)
+            if (parameters(j) <= swap) exit
+            parameters(j+1) = parameters(j)
+            j = j-1
+         end do
+         parameters(j+1) = swap
+      end do
+      do i = 1, parameter_count-1
+         if (parameters(i+1)-parameters(i) <= TOPOLOGY_TOLERANCE) cycle
+         call ensureEdgeCapacity(atomic_edges, atomic_count+1)
+         atomic_count = atomic_count + 1
+         atomic_edges(atomic_count)%first = edge%first + parameters(i)*direction
+         atomic_edges(atomic_count)%second = edge%first + parameters(i+1)*direction
+      end do
+   end subroutine splitAndAppendEdge
+
+   subroutine ensureEdgeCapacity(edges, needed)
+      type(oriented_edge_t), dimension(:), allocatable, intent(inout) :: edges
+      integer, intent(in) :: needed
+      type(oriented_edge_t), dimension(:), allocatable :: enlarged
+
+      if (needed <= size(edges)) return
+      allocate(enlarged(max(needed, 2*size(edges))))
+      enlarged(1:size(edges)) = edges
+      call move_alloc(enlarged, edges)
+   end subroutine ensureEdgeCapacity
+
+   logical function pointOnSegment(point, edge)
+      real, dimension(3), intent(in) :: point
+      type(oriented_edge_t), intent(in) :: edge
+      real, dimension(3) :: direction, offset
+      real :: length_squared, parameter
+
+      direction = edge%second-edge%first
+      offset = point-edge%first
+      length_squared = dot_product(direction,direction)
+      parameter = dot_product(offset,direction)/length_squared
+      pointOnSegment = parameter >= -TOPOLOGY_TOLERANCE .and. parameter <= 1.0+TOPOLOGY_TOLERANCE .and. &
+         norm2(offset-parameter*direction) <= TOPOLOGY_TOLERANCE
+   end function pointOnSegment
+
+   subroutine validateAtomicEdges(edges, edge_count, require_closed, is_valid, message)
+      type(oriented_edge_t), dimension(:), intent(in) :: edges
+      integer, intent(in) :: edge_count
+      logical, intent(in) :: require_closed
+      logical, intent(out) :: is_valid
+      character(len=*), intent(out) :: message
+      integer :: edge_index, other_index, incidence
+      logical :: same_direction
+
+      is_valid = .true.
+      message = ''
+      do edge_index = 1, edge_count
+         if (edgeAlreadyChecked(edges, edge_index)) cycle
+         incidence = 0
+         same_direction = .false.
+         do other_index = 1, edge_count
+            if (.not. equivalentEdge(edges(edge_index), edges(other_index))) cycle
+            incidence = incidence + 1
+            if (other_index /= edge_index .and. directedSameWay(edges(edge_index), edges(other_index))) same_direction = .true.
+         end do
+         if (incidence > 2) then
+            write(message, '(A,I0)') 'non-manifold combined surface edge has incidence ', incidence
+            is_valid = .false.
+            return
+         end if
+         if (same_direction) then
+            message = 'combined surface patches traverse a shared edge in the same direction'
+            is_valid = .false.
+            return
+         end if
+         if (require_closed .and. incidence /= 2) then
+            write(message, '(A,3(F0.5,1X),A,3(F0.5,1X),A,I0)') 'open combined volume edge from ', &
+               edges(edge_index)%first, 'to ', edges(edge_index)%second, 'has incidence ', incidence
+            is_valid = .false.
+            return
+         end if
+      end do
+   end subroutine validateAtomicEdges
+
+   logical function edgeAlreadyChecked(edges, edge_index)
+      type(oriented_edge_t), dimension(:), intent(in) :: edges
+      integer, intent(in) :: edge_index
+      integer :: previous
+
+      edgeAlreadyChecked = .false.
+      do previous = 1, edge_index-1
+         if (equivalentEdge(edges(previous), edges(edge_index))) then
+            edgeAlreadyChecked = .true.
+            return
+         end if
+      end do
+   end function edgeAlreadyChecked
+
+   logical function equivalentEdge(first, second)
+      type(oriented_edge_t), intent(in) :: first, second
+      equivalentEdge = (samePoint(first%first,second%first) .and. samePoint(first%second,second%second)) .or. &
+         (samePoint(first%first,second%second) .and. samePoint(first%second,second%first))
+   end function equivalentEdge
+
+   logical function directedSameWay(first, second)
+      type(oriented_edge_t), intent(in) :: first, second
+      directedSameWay = samePoint(first%first,second%first) .and. samePoint(first%second,second%second)
+   end function directedSameWay
+
+   logical function samePoint(first, second)
+      real, dimension(3), intent(in) :: first, second
+      samePoint = all(abs(first-second) < TOPOLOGY_TOLERANCE)
+   end function samePoint
 
    subroutine validateSurfaceFaceContour(sides, face, is_valid, detail)
       type(side_t), dimension(:), allocatable, intent(in) :: sides
@@ -443,11 +784,13 @@ contains
 
    function buildMedia(elements) result(res)
       type(ConformalPECElements_t), dimension(:), pointer :: elements
+      type(ConformalPECElements_t) :: canonical_element
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i
       allocate(res(size(elements)))
       do i = 1, size(elements)
-         res(i) = buildMediaFromElement(elements(i))
+         canonical_element = canonicalClosedSurfaceOrientation(elements(i))
+         res(i) = buildMediaFromElement(canonical_element)
       end do
    end function   
 

@@ -8,4 +8,4 @@ add_library(conformal
     "conformal.F90"
 )
 
-target_link_libraries(conformal PRIVATE semba-types fhash)
+target_link_libraries(conformal PRIVATE semba-types semba-reports fhash)

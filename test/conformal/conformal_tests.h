@@ -18,6 +18,7 @@ extern "C" int test_geometry_side_side_contour_2();
 extern "C" int test_geometry_side_side_contour_3();
 extern "C" int test_geometry_areas();
 extern "C" int test_geometry_closed_surface_orientation();
+extern "C" int test_geometry_combined_surface_topology();
 extern "C" int test_cell_map_coords();
 extern "C" int test_cell_map_array();
 extern "C" int test_cell_map_add_triangle();
@@ -52,6 +53,7 @@ TEST(conformal, geometry_ss_contour2)      { EXPECT_EQ(0, test_geometry_side_sid
 TEST(conformal, geometry_ss_contour3)      { EXPECT_EQ(0, test_geometry_side_side_contour_3()); }
 TEST(conformal, geometry_areas)            { EXPECT_EQ(0, test_geometry_areas()); }
 TEST(conformal, geometry_closed_surface_orientation) { EXPECT_EQ(0, test_geometry_closed_surface_orientation()); }
+TEST(conformal, geometry_combined_surface_topology) { EXPECT_EQ(0, test_geometry_combined_surface_topology()); }
 
 TEST(conformal, cell_map_coords)              { EXPECT_EQ(0, test_cell_map_coords()); }
 TEST(conformal, cell_map_array)               { EXPECT_EQ(0, test_cell_map_array()); }

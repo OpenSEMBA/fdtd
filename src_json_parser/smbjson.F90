@@ -18,7 +18,7 @@ module smbjson_m
    use json_kinds
 
    use conformal_types_m
-   use conformal_m, only: validateConformalSurface, validateConformalVolume
+   use conformal_m, only: validateConformalSurface, validateConformalVolume, validateClosedSurfaceTopology
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 
@@ -51,6 +51,7 @@ module smbjson_m
       procedure, private :: readGeneral
       procedure, private :: readGrid
       procedure, private :: readMediaMatrix
+      procedure, private :: readBackgroundMaterial
       procedure, private :: readPECRegions
       procedure, private :: readPMCRegions
       procedure, private :: readDielectricRegions
@@ -171,6 +172,7 @@ contains
       res%front = this%readBoundary()
 
       ! Materials
+      call this%readBackgroundMaterial(res%mats)
       res%pecRegs = this%readPECRegions()
       res%pmcRegs = this%readPMCRegions()
       res%dielRegs = this%readDielectricRegions()
@@ -190,7 +192,7 @@ contains
       res%conformalRegs = this%readConformalRegions()
 
       ! Thin elements
-      res%tWires = this%readThinWires()
+      call this%readThinWires(res%tWires, res%sonda)
       res%tSlots = this%readThinSlots()
 
 #ifdef CompileWithMTLN
@@ -261,8 +263,18 @@ contains
                   call mesh%addElement(id, polyline)
                CASE (J_ELEM_TYPE_CELL)
                   block
-                     type(json_value), pointer :: subtypeEntry, trianglesEntry
+                     type(json_value), pointer :: conformalEntry
                      type(cell_region_t) :: cR
+                     logical :: foundConformalEntry
+
+                     call this%core%get(je, J_CONF_VOLUME_TRIANGLES, conformalEntry, found=foundConformalEntry)
+                     if (.not. foundConformalEntry) then
+                        call this%core%get(je, J_SUBTYPE, conformalEntry, found=foundConformalEntry)
+                     end if
+                     if (foundConformalEntry) then
+                        call WarnErrReport('Element type "cell" cannot define conformal geometry. Use type "conformal".', .true.)
+                        return
+                     end if
                      cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
                      call mesh%addCellRegion(id, cR)
                   end block
@@ -283,6 +295,7 @@ contains
          type(json_value), pointer :: intervalsPlace, interval
          integer :: i, nIntervals
          real, dimension(:), allocatable :: cellIni, cellEnd
+         character(len=160) :: error_message
          logical :: containsInterval
 
          call this%core%get(place, path, intervalsPlace, found=containsInterval)
@@ -294,10 +307,24 @@ contains
          allocate(res(nIntervals))
          do i = 1, nIntervals
             call this%core%get_child(intervalsPlace, i, interval)
+            if (this%core%count(interval) /= 2) then
+               call WarnErrReport('Cell intervals must contain exactly two three-dimensional endpoints.', .true.)
+               return
+            end if
             cellIni = this%getRealsAt(interval, '(1)')
             cellEnd = this%getRealsAt(interval, '(2)')
+            if (size(cellIni) /= 3 .or. size(cellEnd) /= 3) then
+               call WarnErrReport('Cell interval endpoints must contain exactly three coordinates.', .true.)
+               return
+            end if
             res(i)%ini%cell = cellIni(1:3)
             res(i)%end%cell = cellEnd(1:3)
+            if (res(i)%hasMixedSignOrientation()) then
+               write(error_message, '(A,I0,A)') 'Surface interval ', i, &
+                  ' has mixed-sign directions; both varying directions must have the same sign.'
+               call WarnErrReport(trim(error_message), .true.)
+               return
+            end if
          end do
       end function
 
@@ -370,8 +397,10 @@ contains
    function readGeneral(this) result (res)
       class(parser_t) :: this
       type(NFDEGeneral_t) :: res
-      res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
+      res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP, default = 0.0_RKIND)
+      if (res%dt < 0) call WarnErrReport('timeStep cannot be negative', .true.)
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
+      if (res%nmax <= 0) call WarnErrReport('numberOfSteps has to be positive', .true.)
       res%mtlnProblem = this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
    end function
 
@@ -379,9 +408,9 @@ contains
       class(parser_t) :: this
       type(MatrizMedios_t) :: res
       character (len=*), parameter :: P = J_MESH//'.'//J_GRID//'.'//J_GRID_NUMBER_OF_CELLS
-      res%totalX = this%getIntAt(this%root, P//'(1)')
-      res%totalY = this%getIntAt(this%root, P//'(2)')
-      res%totalZ = this%getIntAt(this%root, P//'(3)')
+      res%totalX = this%getIntAt(this%root, P//'(1)') + 1
+      res%totalY = this%getIntAt(this%root, P//'(2)') + 1
+      res%totalZ = this%getIntAt(this%root, P//'(3)') + 1
    end function
 
    function readGrid(this) result (res)
@@ -390,28 +419,38 @@ contains
       real, dimension(:), allocatable :: vec
       character (len=*), parameter :: P = J_MESH//'.'//J_GRID
 
-      res%nX = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(1)')
-      res%nY = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(2)')
-      res%nZ = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(3)')
+      integer :: nX, nY, nZ
+
+      nX = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(1)')
+      nY = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(2)')
+      nZ = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(3)')
+
+      res%nX = nX
+      res%nY = nY
+      res%nZ = nZ
 
       call assignDes(P//'.'//J_GRID_STEPS//'.x', res%desX, res%nX)
       call assignDes(P//'.'//J_GRID_STEPS//'.y', res%desY, res%nY)
       call assignDes(P//'.'//J_GRID_STEPS//'.z', res%desZ, res%nZ)
 
+      res%originx = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(1)', default=0.0_RKIND)
+      res%originy = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(2)', default=0.0_RKIND)
+      res%originz = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(3)', default=0.0_RKIND)
+
       res%mx1 = 0
       res%my1 = 0
       res%mz1 = 0
-      res%mx2 = res%nX
-      res%my2 = res%nY
-      res%mz2 = res%nZ
+      res%mx2 = nX
+      res%my2 = nY
+      res%mz2 = nZ
 
 
    contains
-      subroutine assignDes(path, dest, numberOfCells)
+      subroutine assignDes(path, dest, n)
          character(kind=CK, len=*) :: path
          real (kind=rkind), dimension(:), pointer :: dest
-         real, dimension(:), allocatable :: vec
-         integer (kind=4), intent(in) :: numberOfCells
+         real(kind=RKIND), dimension(:), allocatable :: vec
+         integer (kind=4), intent(inout) :: n
          logical :: found = .false.
 
          vec= this%getRealsAt(this%root, path, found)
@@ -419,18 +458,33 @@ contains
          if (.not. found) then
             call WarnErrReport('Error reading grid: steps not found.', .true.)
          endif
-         if (size(vec) /= 1 .and. size(vec) /= numberOfCells) then
+         if (size(vec) /= 1 .and. size(vec) /= n) then
             call WarnErrReport( 'Error reading grid: steps must be arrays of size 1 (for regular grids) or size equal to the number of cells.', .true.)
          end if
 
-         allocate(dest(0 : numberOfCells-1))
          if (size(vec) == 1) then
-            dest(:) = vec(1)
+            n = 1
+            allocate(dest(1:1))
+            dest(1) = vec(1)
          else
+            allocate(dest(0 : n-1))
             dest = vec
          end if
       end subroutine
    end function
+
+   subroutine readBackgroundMaterial(this, mats)
+      class(parser_t) :: this
+      type(Materials_t), intent(inout) :: mats
+      logical :: found
+      real(kind=RKIND) :: val
+
+      val = this%getRealAt(this%root, J_BACKGROUND//'.'//J_BKG_ABS_PERMITTIVITY, found=found)
+      if (found) mats%mats(1)%eps = val
+
+      val = this%getRealAt(this%root, J_BACKGROUND//'.'//J_BKG_ABS_PERMEABILITY, found=found)
+      if (found) mats%mats(1)%mu = val
+   end subroutine
 
    function readBoundary(this) result (res)
       class(parser_t) :: this
@@ -539,7 +593,8 @@ contains
       type(coords_t), dimension(:), pointer :: cs
       integer :: i
 
-      mAs = this%getMaterialAssociations([matType], [J_ELEM_TYPE_CELL])
+      mAs = this%getMaterialAssociations([matType], [ &
+         '-'//J_CONF_SUBTYPE_SURFACE, J_ELEM_TYPE_CELL//'    ', '-'//J_CONF_SUBTYPE_VOLUME//' '])
       block
          type(coords_t), dimension(:), pointer :: emptyCoords
          if (size(mAs) == 0) then
@@ -606,7 +661,9 @@ contains
       integer :: i, j
       logical :: found
 
-      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC], [J_ELEM_TYPE_CONFORMAL])
+      ! Put the longest label first so the Fortran character constructor does not
+      ! truncate "surface" to the length of "volume".
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC], [J_CONF_SUBTYPE_SURFACE, J_CONF_SUBTYPE_VOLUME])
 
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
@@ -617,13 +674,35 @@ contains
                   call appendRegion(res%volumes, cR, tagName)
                end if
                if (cR%type == REGION_TYPE_SURFACE) then
-                  call appendRegion(res%surfaces, cR, tagName)
+                  if (isClosedRegion(cR)) then
+                     ! A closed PEC shell has the same electromagnetic semantics as a
+                     ! conformal volume; use the established volume filling path.
+                     call appendRegion(res%volumes, cR, tagName)
+                  else
+                     call appendRegion(res%surfaces, cR, tagName)
+                  end if
                end if
             end if
          end do
       end do
 
    contains
+      logical function isClosedRegion(region)
+         type(conformal_region_t), intent(in) :: region
+         type(ConformalPECElements_t) :: element
+         logical :: is_valid
+         character(len=256) :: validation_message
+
+         element%triangles = region%triangles
+         element%intervals = copyIntervals(region%intervals)
+         if (size(element%intervals) == 0) then
+            call validateClosedSurfaceTopology(element%triangles, is_valid, validation_message)
+         else
+            call validateConformalVolume(element, is_valid, validation_message)
+         end if
+         isClosedRegion = is_valid
+      end function isClosedRegion
+
       subroutine appendRegion(regions, region, tagName)
          type(ConformalPECElements_t), dimension(:), pointer :: regions
          type(conformal_region_t), intent(in) :: region
@@ -668,10 +747,12 @@ contains
          select case (region_type)
          case (REGION_TYPE_SURFACE)
             call validateConformalSurface(element, is_valid, validation_message)
-            if (.not. is_valid) call WarnErrReport('Invalid conformal surface ' // trim(tag_name) // ': ' // trim(validation_message), .true.)
+            if (.not. is_valid .and. .not. isFatalError()) &
+               call WarnErrReport('Invalid conformal surface ' // trim(tag_name) // ': ' // trim(validation_message), .true.)
          case (REGION_TYPE_VOLUME)
             call validateConformalVolume(element, is_valid, validation_message)
-            if (.not. is_valid) call WarnErrReport('Invalid conformal volume ' // trim(tag_name) // ': ' // trim(validation_message), .true.)
+            if (.not. is_valid .and. .not. isFatalError()) &
+               call WarnErrReport('Invalid conformal volume ' // trim(tag_name) // ': ' // trim(validation_message), .true.)
          end select
       end subroutine validateRegion
 
@@ -928,7 +1009,6 @@ contains
       allocate(res%cs(nLossySurfaces))
       res%length = nLossySurfaces
       res%length_max = nLossySurfaces
-      res%nC_max = nLossySurfaces
       k = 1
       do i = 1, size(mAs)
          call this%matAssToCoords(cs, mAs(i), CELL_TYPE_SURFEL)
@@ -937,11 +1017,15 @@ contains
          k = k + 1
       end do
 
+      do i = 1, nLossySurfaces
+         res%nC_max = max(res%nC_max, size(res%cs(i)%c))
+      end do
+
    contains
       function readLossyThinSurface(mA) result(res)
          type(materialAssociation_t), intent(in) :: mA
          type(LossyThinSurface_t) :: res
-         logical :: found
+         logical :: found, hasAbsPermittivity, hasAbsPermeability
          character (len=*), parameter :: errorMsgInit = "ERROR reading lossy thin surface: "
          integer :: i
          type(json_value_ptr_t) :: mat
@@ -952,6 +1036,7 @@ contains
          res%nc = size(res%c)
 
          mat = this%matTable%getId(mA%materialId)
+         res%files = trim(adjustl(this%getStrAt(mat%p, J_NAME, default=' ')))
          call this%core%get(mat%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers)
 
          res%numcapas = this%core%count(layers)
@@ -967,19 +1052,25 @@ contains
          allocate(res%thk_devia(   res%numcapas))
          do i = 1, res%numcapas
             call this%core%get_child(layers, i, layer)
-            res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
-            res%sigmam(i) = this%getRealAt(layer, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
-            res%eps(i)    = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0) * EPSILON_VACUUM
-            res%mu(i)     = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0) * MU_VACUUM
+            res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
+            res%sigmam(i) = this%getRealAt(layer, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0_RKIND)
+            res%eps(i) = this%getRealAt(layer, J_MAT_ABS_PERMITTIVITY, hasAbsPermittivity)
+            if (.not. hasAbsPermittivity) then
+               res%eps(i) = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND) * EPSILON_VACUUM
+            end if
+            res%mu(i) = this%getRealAt(layer, J_MAT_ABS_PERMEABILITY, hasAbsPermeability)
+            if (.not. hasAbsPermeability) then
+               res%mu(i) = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0_RKIND) * MU_VACUUM
+            end if
             res%thk(i)    = this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
             if (.not. found) then
                call WarnErrReport(errorMsgInit // J_MAT_MULTILAYERED_SURF_THICKNESS // " in layer not found.", .true.)
             end if
-            res%sigma_devia(i) = 0.0
-            res%eps_devia(i) = 0.0
-            res%mu_devia(i) = 0.0
-            res%sigmam_devia(i) = 0.0
-            res%thk_devia(i) = 0.0
+            res%sigma_devia(i) = 0.0_RKIND
+            res%eps_devia(i) = 0.0_RKIND
+            res%mu_devia(i) = 0.0_RKIND
+            res%sigmam_devia(i) = 0.0_RKIND
+            res%thk_devia(i) = 0.0_RKIND
          end do
       end function
 
@@ -1028,24 +1119,28 @@ contains
 
          res%nombre_fichero = trim(adjustl(this%getStrAt(pw,J_SRC_MAGNITUDE_FILE)))
 
-         res%atributo = ""
+         res%atributo = "LOCKED"
 
          res%theta = this%getRealAt(pw, J_SRC_PW_DIRECTION//'.'//J_SRC_PW_THETA)
          res%phi = this%getRealAt(pw, J_SRC_PW_DIRECTION//'.'//J_SRC_PW_PHI)
          res%alpha = this%getRealAt(pw, J_SRC_PW_POLARIZATION//'.'//J_SRC_PW_THETA)
          res%beta = this%getRealAt(pw, J_SRC_PW_POLARIZATION//'.'//J_SRC_PW_PHI)
+         res%isRC = .false.
+         res%nummodes = 1
+         res%incertmax = 0.0_RKIND
 
          block
+            type(cell_interval_t), dimension(:), allocatable :: cellIntervals
             type(coords_t), dimension(:), allocatable :: nfdeCoords
-            nfdeCoords = &
-               cellIntervalsToCoords(this%getSingleVolumeInElementsIds(pw))
+            cellIntervals = this%getSingleVolumeInElementsIds(pw)
+            if (size(cellIntervals) == 0) then
+               call WarnErrReport('Planewave elementIds must define one non-empty volume.', .true.)
+               return
+            end if
+            nfdeCoords = cellIntervalsToCoords(cellIntervals)
             res%coor1 = [nfdeCoords(1)%Xi, nfdeCoords(1)%Yi, nfdeCoords(1)%Zi]
             res%coor2 = [nfdeCoords(1)%Xe, nfdeCoords(1)%Ye, nfdeCoords(1)%Ze]
          end block
-
-         res%isRC = .false.
-         res%nummodes = 1
-         res%incertmax = 0.0
       end function
    end function
 
@@ -1076,8 +1171,13 @@ contains
          res%NodalSource(i) = readField(nodSrcs(i)%p)
       end do
       do i = 1, size(nodSrcs)
+         res%n_C1P_max = max(res%n_C1P_max, res%NodalSource(i)%n_C1P)
          res%n_C2P_max = max(res%n_C2P_max, res%NodalSource(i)%n_C2P)
       end do
+      if (res%n_nodSrc > 0) then
+         if (res%n_C1P_max == 0) res%n_C1P_max = 1
+         if (res%n_C2P_max == 0) res%n_C2P_max = 1
+      end if
 
    contains
       function readField(jns) result(res)
@@ -1085,7 +1185,8 @@ contains
          type(json_value), pointer :: jns, entry
          integer, dimension(:), allocatable :: elementIds
          character (len=BUFSIZE) :: nodalSourceName
-         type(coords_scaled_t), dimension(:), allocatable :: coordsFromLinels
+         type(coords_scaled_t), dimension(:), pointer :: allCoords
+         integer :: j, cnt_c1p, cnt_c2p
 
          select case (this%getStrAt(jns, J_FIELD, default=J_FIELD_CURRENT))
           case (J_FIELD_CURRENT)
@@ -1109,12 +1210,40 @@ contains
 
          nodalSourceName = this%getStrAt(jns, J_NAME, default=' ')
 
-         allocate(res%c1P(0))
-         res%n_C1P = 0
-
          elementIds = this%getIntsAt(jns, J_ELEMENTIDS)
-         call cellRegionsToScaledCoords(res%C2P,  this%mesh%getCellRegions(elementIds), nodalSourceName)
-         res%n_C2P = size(res%C2p)
+         call cellRegionsToScaledCoords(allCoords, this%mesh%getCellRegions(elementIds))
+
+         cnt_c1p = 0
+         cnt_c2p = 0
+         do j = 1, size(allCoords)
+            if (allCoords(j)%Xi == allCoords(j)%Xe .and. &
+                allCoords(j)%Yi == allCoords(j)%Ye .and. &
+                allCoords(j)%Zi == allCoords(j)%Ze) then
+               cnt_c1p = cnt_c1p + 1
+            else
+               cnt_c2p = cnt_c2p + 1
+            end if
+         end do
+
+         if (cnt_c1p > 0) allocate(res%c1P(cnt_c1p))
+         if (cnt_c2p > 0) allocate(res%c2P(cnt_c2p))
+         cnt_c1p = 0
+         cnt_c2p = 0
+         do j = 1, size(allCoords)
+            if (allCoords(j)%Xi == allCoords(j)%Xe .and. &
+                allCoords(j)%Yi == allCoords(j)%Ye .and. &
+                allCoords(j)%Zi == allCoords(j)%Ze) then
+               cnt_c1p = cnt_c1p + 1
+               res%c1P(cnt_c1p) = allCoords(j)
+            else
+               cnt_c2p = cnt_c2p + 1
+               res%c2P(cnt_c2p) = allCoords(j)
+            end if
+         end do
+         res%n_C1P = cnt_c1p
+         res%n_C2P = cnt_c2p
+
+         deallocate(allCoords)
 
       end function
    end function
@@ -1254,8 +1383,8 @@ contains
       type(json_value_ptr_t), dimension(:), allocatable :: ps
 
       integer :: i
-      character (len=*), dimension(3), parameter :: validTypes = &
-         [J_PR_TYPE_POINT, J_PR_TYPE_WIRE, J_PR_TYPE_LINE]
+      character (len=*), dimension(2), parameter :: validTypes = &
+         [J_PR_TYPE_POINT, J_PR_TYPE_LINE]
       logical :: found
       character (len=:), allocatable :: fieldLbl, probeLbl
       integer :: filtered_size, n
@@ -1285,7 +1414,7 @@ contains
          fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
          if (isMoreProbe(ps(i)%p)) then
             probeLbl = this%getStrAt(ps(i)%p, J_TYPE, default=J_FIELD_ELECTRIC)
-            if (probeLbl == J_PR_TYPE_WIRE .or. probeLbl == J_PR_TYPE_POINT) then
+            if (probeLbl == J_PR_TYPE_POINT) then
                res%collection(n) = readPointProbe(ps(i)%p)
                n = n + 1
             else if (probeLbl == J_PR_TYPE_LINE) then
@@ -1297,55 +1426,20 @@ contains
 
       res%length = size(res%collection)
       res%length_max = size(res%collection)
-      res%len_cor_max = 0
+      do i=1, size(res%collection)
+         if (size(res%collection(i)%cordinates) > res%len_cor_max) then
+            res%len_cor_max = size(res%collection(i)%cordinates)
+         end if
+      end do
    contains
       logical function isMoreProbe(p)
          type(json_value), pointer :: p
-         isMoreProbe = isPointProbe(p) &
-            .or. isCurrentProbeDefinedOnWire(p) &
-            .or. isLineProbe(p)
+         isMoreProbe = isPointProbe(p) .or. isLineProbe(p)
       end function
 
       logical function isLineProbe(p)
          type(json_value), pointer :: p
          isLineProbe = this%getStrAt(p, J_TYPE) == J_PR_TYPE_LINE
-      end function
-
-      logical function isCurrentProbeDefinedOnWire(p)
-         type(json_value), pointer :: p
-         character (len=:), allocatable :: fieldLabel
-         logical :: found
-         type(materialAssociation_t), dimension(:), allocatable :: mAs
-         integer :: i, j
-         integer :: cId
-         type(polyline_t) :: polyline
-
-         fieldLabel = this%getStrAt(p, J_FIELD, found=found)
-         if (.not. found .or. fieldLabel /= J_FIELD_CURRENT) then
-            isCurrentProbeDefinedOnWire = .false.
-            return
-         end if
-
-         block
-            type(pixel_t) :: pixel
-            integer, dimension(:), allocatable :: eIds
-            eIds = this%getIntsAt(p, J_ELEMENTIDS)
-            pixel = getPixelFromElementId(this%mesh, eIds(1))
-            cId = pixel%tag
-         end block
-
-         mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
-         do i = 1, size(mAs)
-            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
-            do j = 1, size(polyline%coordIds)
-               if (polyline%coordIds(j) == cId) then
-                  isCurrentProbeDefinedOnWire = .true.
-                  return
-               end if
-            end do
-         end do
-
-         isCurrentProbeDefinedOnWire = .false.
       end function
 
       logical function isPointProbe(p)
@@ -1455,14 +1549,6 @@ contains
             call WarnErrReport("Point probe type label not found.", .true.)
          end if
          select case (typeLabel)
-          case (J_PR_TYPE_WIRE)
-            allocate(res%cordinates(1))
-            fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_VOLTAGE)
-            res%cordinates(1)%tag = outputName
-            res%cordinates(1)%Xi = pixel%tag
-            res%cordinates(1)%Yi = 0
-            res%cordinates(1)%Zi = 0
-            res%cordinates(1)%Or = strToFieldType(fieldLabel)
           case (J_PR_TYPE_POINT)
             call this%core%get(p, J_PR_POINT_DIRECTIONS, dirLabelPtr, found=dirLabelsFound)
             if(dirLabelsFound) then
@@ -1895,11 +1981,13 @@ contains
       end function
    end function
 
-   function readThinWires(this) result (res)
+   subroutine readThinWires(this, res, sonda)
       class(parser_t) :: this
-      type(ThinWires_t) :: res
+      type(ThinWires_t), intent(out) :: res
+      type(MasSondas_t), intent(inout) :: sonda
       type(materialAssociation_t), dimension(:), allocatable :: mAs
-      integer :: i, j
+      integer :: i, j, nGlobal, nNodes
+      integer, dimension(:), allocatable :: nodeCoordIds, nodeNodeIdx
       logical :: found
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
@@ -1919,6 +2007,10 @@ contains
          res%n_tw_max = size(res%tw)
       end block
 
+      nGlobal = 0
+      nNodes = 0
+      allocate(nodeCoordIds(2 * res%n_tw))
+      allocate(nodeNodeIdx(2 * res%n_tw))
       j = 1
       if (size(mAs) /=0 ) then
          do i = 1, size(mAs)
@@ -1929,6 +2021,38 @@ contains
          end do
       end if
 
+#ifndef CompileWithMTLN
+      ! Classic wire probes refer to the solver node numbering generated above.
+      block
+         type(json_value), pointer :: allProbes
+         type(json_value_ptr_t), dimension(:), allocatable :: wireProbePs
+         type(MasSonda_t), dimension(:), pointer :: newCollection
+         integer :: nWireProbes, nExisting, k
+
+         call this%core%get(this%root, J_PROBES, allProbes, found)
+         if (found) then
+            wireProbePs = [this%jsonValueFilterByKeyValue(allProbes, J_TYPE, J_PR_TYPE_WIRE)]
+            nWireProbes = size(wireProbePs)
+            if (nWireProbes > 0) then
+               nExisting = sonda%length
+               allocate(newCollection(nExisting + nWireProbes))
+               if (nExisting > 0) newCollection(1:nExisting) = sonda%collection(1:nExisting)
+               do k = 1, nWireProbes
+                  newCollection(nExisting + k) = readWireProbe(wireProbePs(k)%p)
+               end do
+               deallocate(sonda%collection)
+               sonda%collection => newCollection
+               sonda%length = nExisting + nWireProbes
+               sonda%length_max = sonda%length
+            end if
+         end if
+      end block
+
+      do i = 1, size(sonda%collection)
+         sonda%len_cor_max = max(sonda%len_cor_max, size(sonda%collection(i)%cordinates))
+      end do
+#endif
+
    contains
       function readThinWire(cable) result(res)
          type(ThinWire_t) :: res
@@ -1938,13 +2062,13 @@ contains
          type(json_value), pointer :: je, je2
          integer :: i
          logical :: found
-         real :: radius, resistance, inductance
+         real(kind=RKIND) :: radius, resistance, inductance
          block
             type(json_value_ptr_t) :: m
             m = this%matTable%getId(cable%materialId)
-            radius = this%getRealAt(m%p, J_MAT_WIRE_RADIUS, default = 0.0)
-            resistance = this%getRealAt(m%p, J_MAT_WIRE_RESISTANCE, default = 0.0)
-            inductance = this%getRealAt(m%p, J_MAT_WIRE_INDUCTANCE, default = 0.0)
+            radius = this%getRealAt(m%p, J_MAT_WIRE_RADIUS)
+            resistance = this%getRealAt(m%p, J_MAT_WIRE_RESISTANCE, default=0.0_RKIND)
+            inductance = this%getRealAt(m%p, J_MAT_WIRE_INDUCTANCE, default=0.0_RKIND)
             res%rad = radius
             res%res = resistance
             res%ind = inductance
@@ -1985,13 +2109,49 @@ contains
             polyline = this%mesh%getPolyline(cable%elementIds(1))
             linels = this%mesh%polylineToLinels(polyline)
 
-            write(tagLabel, '(i10)') cable%elementIds(1)
+            if (cable%hasTotalResistance) then
+               block
+                  type(Desplazamiento_t) :: despl
+                  real(kind=RKIND) :: totalLength, stepSize
+                  integer :: k
+                  despl = this%readGrid()
+                  totalLength = 0.0_RKIND
+                  do k = 1, size(linels)
+                     select case(abs(linels(k)%orientation))
+                     case(DIR_X)
+                        if (size(despl%desX) == 1) then
+                           stepSize = despl%desX(1)
+                        else
+                           stepSize = despl%desX(linels(k)%cell(1))
+                        end if
+                     case(DIR_Y)
+                        if (size(despl%desY) == 1) then
+                           stepSize = despl%desY(1)
+                        else
+                           stepSize = despl%desY(linels(k)%cell(2))
+                        end if
+                     case(DIR_Z)
+                        if (size(despl%desZ) == 1) then
+                           stepSize = despl%desZ(1)
+                        else
+                           stepSize = despl%desZ(linels(k)%cell(3))
+                        end if
+                     end select
+                     totalLength = totalLength + stepSize
+                  end do
+                  res%res = cable%totalResistance(1) / totalLength
+               end block
+            end if
+
+            tagLabel = this%buildTagName(cable%materialId, cable%elementIds(1))
 
             genDesc = readGeneratorOnThinWire(linels, cable%elementIds)
 
             res%n_twc = size(linels)
             res%n_twc_max = size(linels)
             allocate(res%twc(size(linels)))
+            res%LeftEnd = getOrAssignNodeIndex(polyline%coordIds(1))
+            res%RightEnd = getOrAssignNodeIndex(polyline%coordIds(size(polyline%coordIds)))
             do i = 1, size(linels)
                res%twc(i)%srcfile = genDesc(i)%srcfile
                res%twc(i)%srctype = genDesc(i)%srctype
@@ -2000,11 +2160,28 @@ contains
                res%twc(i)%j = linels(i)%cell(2)
                res%twc(i)%k = linels(i)%cell(3)
                res%twc(i)%d = abs(linels(i)%orientation)
-               res%twc(i)%nd = linels(i)%tag
+               res%twc(i)%nd = nGlobal + i
                res%twc(i)%tag = trim(adjustl(tagLabel))
             end do
+            nGlobal = nGlobal + size(linels)
          end block
 
+      end function
+
+      function getOrAssignNodeIndex(coordId) result(nodeIdx)
+         integer, intent(in) :: coordId
+         integer :: nodeIdx, k
+         do k = 1, nNodes
+            if (nodeCoordIds(k) == coordId) then
+               nodeIdx = nodeNodeIdx(k)
+               return
+            end if
+         end do
+         nGlobal = nGlobal + 1
+         nNodes = nNodes + 1
+         nodeCoordIds(nNodes) = coordId
+         nodeNodeIdx(nNodes) = nGlobal
+         nodeIdx = nGlobal
       end function
 
       function readGeneratorOnThinWire(linels, plineElemIds) result(res)
@@ -2020,7 +2197,7 @@ contains
          do i = 1, size(linels)
             res(i)%srcfile = 'None'
             res(i)%srctype = 'None'
-            res(i)%multiplier = 0.0
+            res(i)%multiplier = 0.0_RKIND
          end do
 
          call this%core%get(this%root, J_SOURCES, sources, found)
@@ -2054,20 +2231,31 @@ contains
 
                select case(this%getStrAt(genSrcs(i)%p, J_FIELD))
                 case (J_FIELD_VOLTAGE)
-                  res(position)%srctype = "VOLT"
-                  res(position)%srcfile = this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)
-                  res(position)%multiplier = 1.0
+                  res(position)%srctype = F_SOURCE_VOLTAGE
                 case (J_FIELD_CURRENT)
-                  res(position)%srctype = "CURR"
-                  res(position)%srcfile = this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)
-                  res(position)%multiplier = 1.0
+                  res(position)%srctype = F_SOURCE_CURRENT
                 case default
                   call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
                end select
+               res(position)%srcfile = this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)
+               res(position)%multiplier = 1.0_RKIND*orientFieldFromGenerator(linels, position)
 
             end do
          end block
 
+      end function
+
+      function orientFieldFromGenerator(linels, position) result(res)
+         type(linel_t), dimension(:), intent(in) :: linels
+         integer, intent(in) :: position
+         integer :: res
+         if (position == 1) then
+            res = sign(1, linels(position)%orientation)
+         else if (position == size(linels)) then
+            res = -sign(1, linels(position)%orientation)
+         else
+            res = sign(1, linels(position)%orientation)
+         end if
       end function
 
       function findSourcePositionInLinels(srcElemIds, linels) result(res)
@@ -2114,13 +2302,20 @@ contains
 
          select case(label)
           case(J_MAT_TERM_TYPE_OPEN)
-            res%r = 0.0
-            res%l = 0.0
-            res%c = 0.0
+            res%r = 0.0_RKIND
+            res%l = 0.0_RKIND
+            res%c = 0.0_RKIND
+          case(J_MAT_TERM_TYPE_SHORT)
+            res%r = 0.0_RKIND
+            res%l = 0.0_RKIND
+            res%c = 0.0_RKIND
+          case(J_MAT_TERM_TYPE_SERIES)
+            res%r = this%getRealAt(tm, J_MAT_TERM_RESISTANCE, default=0.0_RKIND)
+            res%l = this%getRealAt(tm, J_MAT_TERM_INDUCTANCE, default=0.0_RKIND)
+            res%c = this%getRealAt(tm, J_MAT_TERM_CAPACITANCE, default=1e22_RKIND)
           case default
-            res%r = this%getRealAt(tm, J_MAT_TERM_RESISTANCE, default=0.0)
-            res%l = this%getRealAt(tm, J_MAT_TERM_INDUCTANCE, default=0.0)
-            res%c = this%getRealAt(tm, J_MAT_TERM_CAPACITANCE, default=1e22)
+            call WarnErrReport(&
+               "Error reading wire terminal. Holland wires only support open, short, and series terminations", .true.)
          end select
 
       end function
@@ -2156,7 +2351,116 @@ contains
 
          isThinWire = .true.
       end function
-   end function
+
+#ifndef CompileWithMTLN
+      function readWireProbe(p) result(res)
+         type(MasSonda_t) :: res
+         type(json_value), pointer :: p
+         character(len=:), allocatable :: outputName, fieldLabel
+         type(node_t) :: node
+         type(coordinate_t) :: probe_coord
+         integer, dimension(:), allocatable :: elemIds
+         logical :: nameFound, elementIdsFound
+
+         outputName = this%getStrAt(p, J_NAME, found=nameFound)
+         if (.not. nameFound) call WarnErrReport("Wire probes must define a name.", .true.)
+         res%outputrequest = trim(adjustl(outputName))
+
+         call setDomainOfWireProbe(res, this%getDomain(p, J_PR_DOMAIN))
+
+         elemIds = this%getIntsAt(p, J_ELEMENTIDS, found=elementIdsFound)
+         if (.not. elementIdsFound) then
+            call WarnErrReport("Element ids entry not found for wire probe.", .true.)
+         end if
+         if (size(elemIds) /= 1) then
+            call WarnErrReport("Wire probe must contain a single element id.", .true.)
+         end if
+
+         node = this%mesh%getNode(elemIds(1))
+         probe_coord = this%mesh%getCoordinate(node%coordIds(1))
+         fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_VOLTAGE)
+
+         allocate(res%cordinates(1))
+         res%cordinates(1)%tag = outputName
+         res%cordinates(1)%Xi = getSegmentNdWhichMatchesCoord(node%coordIds(1), probe_coord)
+         res%cordinates(1)%Yi = 0
+         res%cordinates(1)%Zi = 0
+         select case (fieldLabel)
+          case (J_FIELD_CURRENT)
+            res%cordinates(1)%Or = NP_COR_WIRECURRENT
+          case (J_FIELD_VOLTAGE)
+            res%cordinates(1)%Or = NP_COR_DDP
+          case default
+            call WarnErrReport("Invalid field label for wire probe.", .true.)
+         end select
+
+         res%len_cor = 1
+      end function
+
+      subroutine setDomainOfWireProbe(res, domain)
+         type(MasSonda_t), intent(inout) :: res
+         type(domain_t), intent(in) :: domain
+
+         res%tstart = domain%tstart
+         res%tstep  = domain%tstep
+         res%tstop  = domain%tstop
+         res%fstart = domain%fstart
+         res%fstep  = domain%fstep
+         res%fstop  = domain%fstop
+         if (allocated(domain%filename)) then
+            res%filename = domain%filename
+         else
+            res%filename = " "
+         end if
+         res%type1 = domain%type1
+         res%type2 = domain%type2
+
+         if (domain%isLogarithmicFrequencySpacing) call appendLogSufix(res%outputrequest)
+      end subroutine
+
+      function getSegmentNdWhichMatchesCoord(coordId, probe_coord) result(nd_index)
+         integer :: nd_index
+         integer, intent(in) :: coordId
+         type(coordinate_t), intent(in) :: probe_coord
+         type(linel_t), dimension(:), allocatable :: linels
+         type(polyline_t) :: polyline
+         type(coordinate_t), dimension(:), allocatable :: linelCoords
+         real, dimension(:), allocatable :: distance_to_linel_cell
+         integer :: k, j, i, m(1), orientation, n_linels, local_idx
+
+         nd_index = 0
+         do k = 1, size(mAs)
+            polyline = this%mesh%getPolyline(mAs(k)%elementIds(1))
+            do j = 1, size(polyline%coordIds)
+               if (polyline%coordIds(j) == coordId) then
+                  linels = this%mesh%polylineToLinels(polyline)
+                  n_linels = size(linels)
+                  allocate(linelCoords(n_linels+1))
+                  do i = 1, n_linels
+                     linelCoords(i)%position = linels(i)%cell
+                     if (linels(i)%orientation < 0) then
+                        orientation = abs(linels(i)%orientation)
+                        linelCoords(i)%position(orientation) = linelCoords(i)%position(orientation) + 1
+                     end if
+                  end do
+                  orientation = linels(n_linels)%orientation
+                  linelCoords(n_linels+1)%position = linelCoords(n_linels)%position
+                  linelCoords(n_linels+1)%position(abs(orientation)) = &
+                     linelCoords(n_linels+1)%position(abs(orientation)) + merge(1, -1, orientation > 0)
+                  allocate(distance_to_linel_cell(n_linels+1))
+                  do i = 1, n_linels+1
+                     distance_to_linel_cell(i) = norm2(linelCoords(i)%position - probe_coord%position)
+                  end do
+                  m = minloc(distance_to_linel_cell)
+                  local_idx = min(m(1), n_linels)
+                  nd_index = res%tw(k)%twc(local_idx)%nd
+                  return
+               end if
+            end do
+         end do
+      end function
+#endif
+   end subroutine
 
    function getDomain(this, place, path) result(res)
       class(parser_t) :: this
@@ -4443,12 +4747,12 @@ contains
    end function
 
    function getRealAt(this, place, path, found, default) result(res)
-      real :: res
+      real(kind=RKIND) :: res
       class(parser_t) :: this
       type(json_value), pointer :: place
       character(len=*) :: path
       logical, intent(out), optional :: found
-      real, optional :: default
+      real(kind=RKIND), optional :: default
       logical :: localFound
 
       call this%core%get(place, path, res, localFound, default)
@@ -4460,7 +4764,7 @@ contains
    end function
 
    function getRealsAt(this, place, path, found) result(res)
-      real, dimension(:), allocatable :: res
+      real(kind=RKIND), dimension(:), allocatable :: res
       class(parser_t) :: this
       type(json_value), pointer :: place
       character(len=*) :: path
@@ -4605,14 +4909,20 @@ contains
       elemIds = this%getIntsAt(pw, J_ELEMENTIDS, found=found)
       if (.not. found) then
          call WarnErrReport("Error reading single volume elementIds label not found.", .true.)
+         allocate(res(0))
+         return
       end if
       if (size(elemIds) /= 1) then
          call WarnErrReport("Entity must contain a single elementId.", .true.)
+         allocate(res(0))
+         return
       end if
       cellRegion = this%mesh%getCellRegion(elemIds(1), found)
       if (.not. found) then
          write(errorMsg, *) "Entity elementId ", elemIds(1), " not found."
          call WarnErrReport(errorMsg, .true.)
+         allocate(res(0))
+         return
       end if
       res = cellRegion%getIntervalsOfType(CELL_TYPE_VOXEL)
       if (size(res) /= 1) then

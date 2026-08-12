@@ -1,6 +1,7 @@
 integer function test_cells() bind(C) result(err)
    use cells_m
    use smbjson_testingTools
+   use Report_m, only: isFatalError, resetFatalError
 
    implicit none
 
@@ -37,4 +38,12 @@ integer function test_cells() bind(C) result(err)
    if (interval%getType()        /= CELL_TYPE_SURFEL) err = err + 1
    if (interval%getOrientation() /= - DIR_X) err = err + 1
    if (interval%getSize()        /= 3) err = err + 1
+
+   ! A mixed-sign diagonal does not define an accepted surface orientation.
+   interval = cell_interval_t(ini=cell_t([5, 4, 2]), end=cell_t([5, 7, 1]))
+   if (.not. interval%hasMixedSignOrientation()) err = err + 1
+   call resetFatalError()
+   if (interval%getOrientation() /= DIR_NULL) err = err + 1
+   if (.not. isFatalError()) err = err + 1
+   call resetFatalError()
 end function

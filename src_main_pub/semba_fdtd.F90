@@ -953,6 +953,7 @@ contains
          parsed_t = fdtdjson_parser_t(filename)   
          allocate(parsedProblem)
          parsedProblem = parsed_t%readProblemDescription()
+         if (isFatalError()) error stop 1
 #endif
 
       else

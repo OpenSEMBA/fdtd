@@ -134,3 +134,40 @@ integer function test_parser_read_conformal_volume() bind(C) result(err)
    if (.not. associated(problem%conformalRegs%volumes)) err = err + 1
    if (size(problem%conformalRegs%volumes) /= 1) err = err + 1
 end function
+
+integer function test_parser_reject_conformal_cell_label() bind(C) result(err)
+   use smbjson_m
+   use smbjson_testingTools
+   use Report_m, only: isFatalError, resetFatalError
+   implicit none
+
+   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'conformal_cell_label.fdtd.json'
+   type(parser_t) :: parser
+   type(mesh_t) :: mesh
+
+   err = 0
+   call resetFatalError()
+   parser = parser_t(filename)
+   mesh = parser%readMesh()
+   if (.not. isFatalError()) err = err + 1
+   call resetFatalError()
+end function test_parser_reject_conformal_cell_label
+
+integer function test_parser_reject_mixed_sign_surface_interval() bind(C) result(err)
+   use smbjson_m
+   use smbjson_testingTools
+   use Report_m, only: isFatalError, resetFatalError
+   implicit none
+
+   character(len=*), parameter :: filename = &
+      PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mixed_sign_surface_interval.fdtd.json'
+   type(parser_t) :: parser
+   type(mesh_t) :: mesh
+
+   err = 0
+   call resetFatalError()
+   parser = parser_t(filename)
+   mesh = parser%readMesh()
+   if (.not. isFatalError()) err = err + 1
+   call resetFatalError()
+end function test_parser_reject_mixed_sign_surface_interval

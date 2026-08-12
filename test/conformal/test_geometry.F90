@@ -143,6 +143,99 @@ integer function test_geometry_closed_surface_orientation() bind(C) result(err)
     if (is_valid) err = err + 1
 end function test_geometry_closed_surface_orientation
 
+integer function test_geometry_combined_surface_topology() bind(C) result(err)
+    use conformal_m
+    use NFDETypes_m, only: ConformalPECElements_t
+    use Report_m, only: isFatalError, resetFatalError
+    implicit none
+
+    type(ConformalPECElements_t) :: region
+    type(coord_t) :: c1, c2, c3, c4
+    logical :: is_valid
+    character(len=256) :: message
+    integer :: interval_index
+
+    err = 0
+    allocate(region%triangles(0), region%intervals(6))
+    region%intervals(1)%ini%cell = [1,0,0]; region%intervals(1)%end%cell = [1,1,1]
+    region%intervals(2)%ini%cell = [0,1,1]; region%intervals(2)%end%cell = [0,0,0]
+    region%intervals(3)%ini%cell = [0,1,0]; region%intervals(3)%end%cell = [1,1,1]
+    region%intervals(4)%ini%cell = [1,0,1]; region%intervals(4)%end%cell = [0,0,0]
+    region%intervals(5)%ini%cell = [0,0,1]; region%intervals(5)%end%cell = [1,1,1]
+    region%intervals(6)%ini%cell = [1,1,0]; region%intervals(6)%end%cell = [0,0,0]
+    call validateConformalVolume(region, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    do interval_index = 1, size(region%intervals)
+        call reverse_interval(region%intervals(interval_index))
+    end do
+    call validateConformalVolume(region, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    do interval_index = 1, size(region%intervals)
+        call reverse_interval(region%intervals(interval_index))
+    end do
+    call reverse_interval(region%intervals(1))
+    call validateConformalVolume(region, is_valid, message)
+    if (is_valid) err = err + 1
+    call reverse_interval(region%intervals(1))
+
+    deallocate(region%triangles, region%intervals)
+    allocate(region%intervals(5), region%triangles(2))
+    region%intervals(1)%ini%cell = [1,0,0]; region%intervals(1)%end%cell = [1,1,1]
+    region%intervals(2)%ini%cell = [0,1,1]; region%intervals(2)%end%cell = [0,0,0]
+    region%intervals(3)%ini%cell = [0,1,0]; region%intervals(3)%end%cell = [1,1,1]
+    region%intervals(4)%ini%cell = [1,0,1]; region%intervals(4)%end%cell = [0,0,0]
+    region%intervals(5)%ini%cell = [1,1,0]; region%intervals(5)%end%cell = [0,0,0]
+    c1 = coord_t(position=[0.0,0.0,1.0], id=1)
+    c2 = coord_t(position=[1.0,0.0,1.0], id=2)
+    c3 = coord_t(position=[1.0,1.0,1.0], id=3)
+    c4 = coord_t(position=[0.0,1.0,1.0], id=4)
+    region%triangles(1) = triangle_t(vertices=[c1,c2,c3])
+    region%triangles(2) = triangle_t(vertices=[c1,c3,c4])
+    call validateConformalVolume(region, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    region%triangles(2)%vertices = [c1,c4,c3]
+    call validateConformalVolume(region, is_valid, message)
+    if (is_valid) err = err + 1
+
+    deallocate(region%triangles, region%intervals)
+    allocate(region%triangles(0), region%intervals(2))
+    region%intervals(1)%ini%cell = [0,0,0]; region%intervals(1)%end%cell = [1,1,0]
+    region%intervals(2)%ini%cell = [1,0,0]; region%intervals(2)%end%cell = [2,1,0]
+    call validateConformalSurface(region, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    call reverse_interval(region%intervals(2))
+    call validateConformalSurface(region, is_valid, message)
+    if (is_valid) err = err + 1
+    call reverse_interval(region%intervals(2))
+    region%intervals(2) = region%intervals(1)
+    call validateConformalSurface(region, is_valid, message)
+    if (is_valid) err = err + 1
+    region%intervals(2)%ini%cell = [0,0,0]
+    region%intervals(2)%end%cell = [1,0,0]
+    call validateConformalSurface(region, is_valid, message)
+    if (is_valid) err = err + 1
+
+    deallocate(region%triangles, region%intervals)
+    allocate(region%triangles(0), region%intervals(1))
+    region%intervals(1)%ini%cell = [0,1,0]
+    region%intervals(1)%end%cell = [1,0,0]
+    call resetFatalError()
+    call validateConformalSurface(region, is_valid, message)
+    if (is_valid) err = err + 1
+    if (index(message, 'mixed-sign directions') == 0) err = err + 1
+    if (.not. isFatalError()) err = err + 1
+    call resetFatalError()
+
+contains
+    subroutine reverse_interval(interval)
+        type(interval_t), intent(inout) :: interval
+        type(point_t) :: point
+        point = interval%ini
+        interval%ini = interval%end
+        interval%end = point
+    end subroutine reverse_interval
+end function test_geometry_combined_surface_topology
+
 integer function test_geometry_side_position() bind(C) result(err)
     use geometry_m
     implicit none

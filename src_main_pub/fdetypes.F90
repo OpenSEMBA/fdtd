@@ -207,7 +207,11 @@ module  FDETYPES_m
    integer(kind=4), parameter :: EDGE_Y = 2
    integer(kind=4), parameter :: EDGE_Z = 3
 
-   
+   ! Source types.
+   character(len=*), parameter :: F_SOURCE_VOLTAGE = 'VOLT'
+   character(len=*), parameter :: F_SOURCE_CURRENT = 'CURR'
+
+
 #ifdef CompileWithReal4
    CHARACTER (LEN=*), PARAMETER  ::  fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
 #else

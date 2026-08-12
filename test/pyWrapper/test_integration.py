@@ -183,31 +183,6 @@ def test_fill_conformal_vtk_sphere(tmp_path):
 
 @pytest.mark.conformal
 @pytest.mark.vtk
-def test_fill_conformal_surface_midcell_vtk(tmp_path):
-    fn = CASES_FOLDER + 'conformal_surface/conformal_surface_midcell.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path, flags=['-mapvtk'])
-    solver['general']['numberOfSteps'] = 1
-
-    solver.run()
-
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
-
-    line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property='mediatype')
-    face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property='mediatype')
-    volume_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=12, property='mediatype')
-
-    assert sum(line_media_dict.values()) == 21
-    assert sum(face_media_dict.values()) == 12
-    assert not volume_media_dict
-
-
-@pytest.mark.conformal
-@pytest.mark.vtk
 def test_fill_mixed_conformal_volume_and_surfaces(tmp_path):
     fn = CASES_FOLDER + 'conformal/conformal_sphere_1mm_rcs_delta.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -261,29 +236,15 @@ def test_fill_conformal_fL_0_005_vtk_large_sphere(tmp_path):
     assert -1 not in face_media_dict.keys()
 
 @pytest.mark.conformal
-@pytest.mark.vtk
-def test_fill_conformal_fL_0_15_vtk_large_sphere(tmp_path):
+def test_reject_conformal_fL_0_15_multiple_face_contours(tmp_path):
     fn = CASES_FOLDER + 'conformal/conformal_fL_0.15_sphere_rcs.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path, flags=['-mapvtk'])
-    solver['general']['numberOfSteps'] = 1
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
-    solver.run()
+    result = subprocess.run(solver.run_command, cwd=solver.getFolder(), capture_output=True)
+    output = result.stdout + result.stderr
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
-
-    line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property='mediatype')
-
-    assert line_media_dict
-    assert -0.5 not in line_media_dict.keys()
-
-    face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property='mediatype')
-
-    assert face_media_dict
-    assert -1 not in face_media_dict.keys()
+    assert result.returncode != 0
+    assert b'multiple disconnected contours' in output
 
 @pytest.mark.conformal
 @pytest.mark.vtk

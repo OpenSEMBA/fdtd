@@ -1,0 +1,13 @@
+{
+    "mesh": {
+        "coordinates": [],
+        "elements": [
+            {
+                "id": 1,
+                "name": "mixed-sign-surface",
+                "type": "cell",
+                "intervals": [[[0, 1, 0], [1, 0, 0]]]
+            }
+        ]
+    }
+}
