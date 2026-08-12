@@ -33,7 +33,7 @@ module HollandWires_m
 !!!
    private
 
-   public InitWires,AdvanceWiresE,AdvanceWiresH,AdvanceWiresEcrank,StoreFieldsWires,DestroyWires, GetHwires,ReportWireJunctions,calc_wirehollandconstants
+   public InitWires,AdvanceWiresE,AdvanceWiresH,AdvanceWiresEcrank,StoreFieldsWires,DestroyWires,DestroyWireMedia, GetHwires,ReportWireJunctions,calc_wirehollandconstants,evolucion
 
 
 
@@ -5831,11 +5831,7 @@ subroutine resume_casuistics
 
       !free up memory !ojo no se como hacerlo
       do i=1,sgg%NumMedia
-         if (sgg%Med(i)%Is%ThinWire) then
-            if (associated(sgg%Med(i)%wire(1)%Vsource)) deallocate(sgg%Med(i)%wire(1)%Vsource)
-            if (associated(sgg%Med(i)%wire(1)%Isource)) deallocate(sgg%Med(i)%wire(1)%Isource)
-            if (associated(sgg%Med(i)%wire)) deallocate(sgg%Med(i)%wire)
-         end if
+         call DestroyWireMedia(sgg%Med(i))
       end do
 
       if (associated(HWires%WireTipoMedio )) deallocate(HWires%WireTipoMedio )
@@ -5845,6 +5841,17 @@ subroutine resume_casuistics
       if (Hwires%NumNeededCurrentUpMPI>0)   deallocate(HWires%MPIUpNeededCurrentSegment)
       if (Hwires%NumNeededCurrentDownMPI>0) deallocate(HWires%MPIDownNeededCurrentSegment)
 #endif
+   end subroutine
+
+   subroutine DestroyWireMedia(media)
+      type(MediaData_t), intent(inout) :: media
+
+      if (.not. media%Is%ThinWire) return
+      if (.not. associated(media%Wire)) return
+
+      if (associated(media%wire(1)%Vsource)) deallocate(media%wire(1)%Vsource)
+      if (associated(media%wire(1)%Isource)) deallocate(media%wire(1)%Isource)
+      if (associated(media%wire)) deallocate(media%wire)
    end subroutine
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!

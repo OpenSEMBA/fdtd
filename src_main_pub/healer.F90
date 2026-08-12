@@ -28,10 +28,10 @@ MODULE CreateMatrices_m
    &                      0, 0,-1, 0, 0, 0,-1,-1, 0,-1, 0,-1, 0,-1, 0, 0, &
    -1,-1,-1, 0 /), (/ 6, 3, 2 /))
    !
-   PUBLIC CreatePMLmatrix, Readjust
-   PUBLIC CreateVolumeMM, CreateSurfaceMM, CreateLineMM
-   PUBLIC CreateSurfaceSlotMM,CreateMagneticSurface
-   public CreateConformalPECVolume!, CreateConformalPECSurface 
+   public CreatePMLmatrix, Readjust, SortInitEndWithIncreasingOrder
+   public CreateVolumeMM, CreateSurfaceMM, CreateLineMM
+   public CreateSurfaceSlotMM,CreateMagneticSurface
+   public CreateConformalPECVolume
    !
     CONTAINS
     
