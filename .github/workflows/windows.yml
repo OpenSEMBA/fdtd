@@ -15,11 +15,12 @@ concurrency:
 jobs:
 
   builds-and-tests:
-    
     strategy:
       matrix:
         os: [windows-latest]
-        compiler: [ {name: 'intel', version: '2025.2.1'} ]
+        compiler: [ 
+          {name: 'intel', version: '2025.2.1'} 
+        ]
         build-type: ["Release"]
         mpi: ["OFF"]
         mtln: ["ON", "OFF"]
@@ -32,20 +33,18 @@ jobs:
     name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})-double(${{matrix.double-precision}})
 
     steps:
-
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
       with:
         submodules: 'recursive'
     
     - name: Install python wrapper requirements
-      run: |
-        python -m pip install -r requirements.txt
-
-    - name: Setup MPI
-      uses: mpi4py/setup-mpi@v1
-      with:
-        mpi: 'intelmpi'
-
+      run: python -m pip install -r requirements.txt
+        
+    #- name: Setup MPI
+    #  uses: mpi4py/setup-mpi@v1
+    #  with:
+    #    mpi: 'intelmpi'
 
     - name: Setup intel fortran
       uses: fortran-lang/setup-fortran@v1
@@ -68,13 +67,7 @@ jobs:
           -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=${{matrix.double-precision}}
         cmake --build build -j 
 
-    - name: Run unit tests 
-      run: build/bin/fdtd_tests.exe
-
-    - name: Verify output (serial)
-      run: build/bin/fdtd_tests.exe --gtest_filter=output.*
-
-    - name: Run CTest suites
+    - name: Run ctest
       run: ctest --test-dir build --output-on-failure
 
     - name: Run python tests (except codemodel)
@@ -83,4 +76,8 @@ jobs:
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: python -m pytest -m 'not codemodel' test/ --durations=20
+
+    - name: Run native tests 
+      run: build/bin/fdtd_tests.exe
+
         
