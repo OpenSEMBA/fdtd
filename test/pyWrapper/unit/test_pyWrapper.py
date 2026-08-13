@@ -161,6 +161,8 @@ def test_probe_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch):
     nested_binary = probe_folder / "case.fdtd_sample_Ex_1_2_3_tm.bin"
     descriptor = probe_folder / "case.fdtd_sample_Ex_1_2_3.json"
     flat_text = run_folder / "case.fdtd_sample_line_I_1_2_3.dat"
+    mtln_text = run_folder / "case.fdtd_start_voltage_wire_V_5_5_1.dat"
+    wire_text = run_folder / "case.fdtd_wire_start_Wz_27_25_30_s3_tm.dat"
     unrelated_extensionless = run_folder / "case.fdtd_sample_notes"
     literal_name = run_folder / "case.fdtd_probe[0]_Ex_4_5_6.dat"
     regex_like_name = run_folder / "case.fdtd_probe0_Ex_4_5_6.dat"
@@ -170,6 +172,8 @@ def test_probe_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch):
         nested_binary,
         descriptor,
         flat_text,
+        mtln_text,
+        wire_text,
         unrelated_extensionless,
         literal_name,
         regex_like_name,
@@ -202,6 +206,8 @@ def test_probe_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch):
     assert solver.getSolvedProbeFilenames("sample_Ex_1_2_3_tm") == [
         str(nested_text.resolve())
     ]
+    assert solver.getSolvedProbeFilenames("start_voltage") == [str(mtln_text.resolve())]
+    assert solver.getSolvedProbeFilenames("wire_start") == [str(wire_text.resolve())]
 
 
 @pytest.mark.spice
@@ -252,4 +258,3 @@ def test_default_semba_exe_selects_compatible_preset(
         monkeypatch.setenv(name, value)
 
     assert utils._default_semba_exe() == str(executable)
-

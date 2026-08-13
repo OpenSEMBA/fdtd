@@ -19,7 +19,8 @@ jobs:
         os: [ubuntu-latest]
         compiler: [
           {name: 'intel', version: '2025.1'},
-          {name: 'gcc', version: 15}
+          # Match the HDF5 Fortran ABI used by the Ubuntu packages.
+          {name: 'gcc', version: 11}
         ]
         build-type: ["Release"]
         mpi: ["ON", "OFF"]
@@ -89,6 +90,9 @@ jobs:
         cmake --build build -j
       
     - name: Run ctest
+      env:
+        # The hosted runner exposes fewer cores than the MPI integration tests use.
+        OMPI_MCA_rmaps_base_oversubscribe: ${{ matrix.compiler.name == 'gcc' && '1' || '' }}
       run: ctest --test-dir build --output-on-failure
 
     - name: Run python tests
@@ -114,12 +118,13 @@ jobs:
     - name: Install parallel HDF5
       run: |
         sudo apt update
-        sudo apt install gfortran libhdf5-openmpi-dev libopenmpi-dev python3-h5py python3-numpy
+        sudo apt install gfortran-11 libhdf5-openmpi-dev libopenmpi-dev python3-h5py python3-numpy
 
     - name: Configure parallel HDF5 output
       run: |
         cmake -S . -B build \
           -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_Fortran_COMPILER=gfortran-11 \
           -DSEMBA_FDTD_ENABLE_MPI=ON \
           -DSEMBA_FDTD_ENABLE_HDF=ON \
           -DSEMBA_FDTD_ENABLE_MTLN=OFF \
@@ -131,6 +136,9 @@ jobs:
       run: cmake --build build -j
 
     - name: Test parallel HDF5 output
+      env:
+        # The test uses three ranks, while the hosted runner provides two slots.
+        OMPI_MCA_rmaps_base_oversubscribe: 1
       run: ctest --test-dir build --output-on-failure -R '^xdmf-hdf5-(generate|verify|mpi-generate|mpi-verify)$'
         
        
