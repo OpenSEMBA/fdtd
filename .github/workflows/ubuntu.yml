@@ -118,7 +118,7 @@ jobs:
     - name: Install parallel HDF5
       run: |
         sudo apt update
-        sudo apt install gfortran-11 libhdf5-openmpi-dev libopenmpi-dev python3-h5py python3-numpy
+        sudo apt install gfortran-11 libhdf5-openmpi-dev libopenmpi-dev python3-h5py python3-numpy libhdf5-dev
 
     - name: Configure parallel HDF5 output
       run: |

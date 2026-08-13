@@ -56,6 +56,8 @@ module xdmf_hdf5_backend_m
     module procedure hdf_append_series_hyperslab_i8
   end interface hdf_append_series_hyperslab
 
+  logical :: hdf5_initialized = .false.
+
 contains
 
   subroutine hdf_create_file(file, path, options, status)
@@ -75,11 +77,16 @@ contains
 #ifdef XDMF_HDF5_WITH_PARALLEL_HDF5
     rank_count = 0
 #endif
-    call h5open_f(error)
-    if (error /= 0) then
-      call set_status_error(status, XDMF_ERROR_HDF5, &
-        'Could not initialize the HDF5 Fortran interface')
-      return
+    if (.not. hdf5_initialized) then
+      call h5open_f(error)
+      if (error /= 0) then
+        call set_status_error(status, XDMF_ERROR_HDF5, &
+          'Could not initialize the HDF5 Fortran interface')
+        return
+      end if
+      hdf5_initialized = .true.
+    else
+      error = 0
     end if
     access_property = -1_HID_T
     call h5pcreate_f(H5P_FILE_ACCESS_F, access_property, error)
