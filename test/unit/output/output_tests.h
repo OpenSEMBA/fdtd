@@ -49,6 +49,7 @@ extern "C" int test_multiple_flush_point_probe();
 extern "C" int test_init_movie_probe();
 extern "C" int test_update_movie_probe();
 extern "C" int test_flush_movie_probe();
+extern "C" int test_close_movie_probe();
 extern "C" int test_init_frequency_slice_probe();
 extern "C" int test_update_frequency_slice_probe();
 
@@ -143,6 +144,8 @@ TEST(output, test_init_movie_probe_for_pec_surface) { EXPECT_EQ(0, test_init_mov
 TEST(output, test_update_movie_probe_for_pec_surface) { EXPECT_EQ(0, test_update_movie_probe()); }
 // Flushes movie data and creates binary, HDF5, XDMF, and descriptor artifacts.
 TEST(output, test_flush_movie_probe_data) { EXPECT_EQ(0, test_flush_movie_probe()); }
+// Closes a movie writer and publishes its final descriptor.
+TEST(output, test_close_movie_probe_data) { EXPECT_EQ(0, test_close_movie_probe()); }
 // Allocates a frequency-slice probe and its frequency buffers.
 TEST(output, test_init_frequency_slice) { EXPECT_EQ(0, test_init_frequency_slice_probe()); }
 // Computes frequency-slice values for a field gradient.

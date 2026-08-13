@@ -290,7 +290,7 @@ integer function test_line_probe_empty_path() bind(c) result(err)
    type(direction_t), allocatable :: segments(:)
     type(field_data_t) :: electric_field
     real(kind=RKIND), target :: field(1, 1, 1), spacing(1)
-    integer :: ios
+   integer :: ios
 
    err = 0
    allocate(segments(0))
@@ -1299,7 +1299,9 @@ integer function test_init_movie_probe() bind(c) result(err)
    character(len=1) :: sep
    character(len=BUFSIZE) :: expectedProbePath
    character(len=BUFSIZE) :: pdvFileName
-   integer :: ios
+   character(len=BUFSIZE) :: metadataLine
+   integer :: ios, metadataUnit
+   logical :: metadataDeclared, metadataOpened
 
    sep = get_path_separator()
    nEntrada = test_folder//sep//test_name
@@ -1368,6 +1370,25 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    test_err = test_err + assert_string_equal(outputs(1)%movieProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Movie folder do not exist')
+   test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'.bin'), &
+                                     'Movie binary payload was not created')
+   test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'.json'), &
+                                     'Movie JSON descriptor was not created')
+   test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'_geometry.xdmf'), &
+                                     'Movie geometry XDMF was not created')
+   test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'_geometry.h5'), &
+                                     'Movie geometry HDF5 was not created')
+   metadataDeclared = .false.
+   metadataOpened = .false.
+   open(newunit=metadataUnit, file=trim(outputs(1)%movieProbe%filesPath)//'.json', status='old', action='read', iostat=ios)
+   test_err = test_err + assert_integer_equal(ios, 0, 'Movie JSON descriptor could not be opened')
+   metadataOpened = ios == 0
+   do while (ios == 0)
+       read(metadataUnit, '(A)', iostat=ios) metadataLine
+       if (index(metadataLine, '"state":"declared"') > 0) metadataDeclared = .true.
+   end do
+   if (metadataOpened) close(metadataUnit)
+   test_err = test_err + assert_true(metadataDeclared, 'Movie JSON descriptor is not declared')
 
    !Cleanup
    call remove_folder(test_folder, ios)
@@ -1520,6 +1541,9 @@ integer function test_update_movie_probe() bind(c) result(err)
 
    test_err = test_err + assert_integer_equal( &
               size(outputs(1)%movieProbe%timeStep), BuffObse, 'Unexpected timestep buffer size')
+   test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nTime, 1, 'Movie update did not buffer a timestep')
+   test_err = test_err + assert_true(outputs(1)%movieProbe%timeStep(1) == dummysgg%tiempo(1), &
+                                     'Movie update stored an incorrect timestep')
 
    !Cleanup
    call remove_folder(test_folder, ios)
@@ -1528,7 +1552,7 @@ integer function test_update_movie_probe() bind(c) result(err)
 end function
 
 integer function test_flush_movie_probe() bind(c) result(err)
-   ! Verifies movie flushes create binary, HDF5, XDMF, and descriptor artifacts.
+   ! Verifies movie flushes binary samples and clears its in-memory buffers.
    use output_m
    use outputTypes_m
    use testOutputUtils_m
@@ -1581,10 +1605,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    character(len=BUFSIZE) :: testPath
     character(len=BUFSIZE) :: nEntrada
     character(len=BUFSIZE) :: expectedPath
-    character(len=BUFSIZE) :: metadataLine
-    integer :: outputIdx
-    integer :: binaryBytes, ios, metadataUnit
-    logical :: hasBinaryArtifact, hasH5Artifact, hasXdmfArtifact, metadataComplete
+   integer :: binaryBytes, ios
 
 
    testPath = join_path(get_temp_folder(), test_folder)
@@ -1698,43 +1719,105 @@ integer function test_flush_movie_probe() bind(c) result(err)
 
     call flush_outputs(dummysgg%tiempo, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
 
-    call close_outputs()
+   expectedPath = trim(outputs(1)%movieProbe%filesPath)
+   test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.bin'), 'Movie binary payload does not exist')
+   inquire(file=trim(expectedPath)//'.bin', size=binaryBytes)
+   test_err = test_err + assert_integer_equal(binaryBytes, 8 * 56, 'Movie binary record layout changed')
+   test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nTime, 0, 'Movie flush did not clear current samples')
+   test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nTimesFlushed, 2, 'Movie flush did not count samples')
+   test_err = test_err + assert_integer_equal(outputs(2)%movieProbe%nTime, 0, 'Electric movie flush did not clear samples')
+   test_err = test_err + assert_integer_equal(outputs(3)%movieProbe%nTime, 0, 'Magnetic movie flush did not clear samples')
 
-    expectedPath = trim(outputs(1)%movieProbe%filesPath)
-    test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.bin'), 'Movie binary payload does not exist')
-    test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.xdmf'), 'Movie XDMF metadata does not exist')
-    test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.h5'), 'Movie HDF5 payload does not exist')
-    test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.json'), 'Movie JSON descriptor does not exist')
-    inquire(file=trim(expectedPath)//'.bin', size=binaryBytes)
-     test_err = test_err + assert_integer_equal(binaryBytes, 8 * 56, 'Movie binary record layout changed')
-    metadataComplete = .false.
-    hasBinaryArtifact = .false.
-    hasXdmfArtifact = .false.
-    hasH5Artifact = .false.
-    open(newunit=metadataUnit, file=trim(expectedPath)//'.json', status='old', action='read', iostat=ios)
-    do while (ios == 0)
-       read(metadataUnit, '(A)', iostat=ios) metadataLine
-       if (index(metadataLine, '"state":"complete"') > 0) metadataComplete = .true.
-       if (index(metadataLine, '"relative_path":"'//trim(get_last_component(expectedPath))//'.bin"') > 0) then
-          hasBinaryArtifact = .true.
-       end if
-       if (index(metadataLine, '"relative_path":"'//trim(get_last_component(expectedPath))//'.xdmf"') > 0) then
-          hasXdmfArtifact = .true.
-       end if
-       if (index(metadataLine, '"relative_path":"'//trim(get_last_component(expectedPath))//'.h5"') > 0) then
-          hasH5Artifact = .true.
-       end if
-    end do
-    close(metadataUnit)
-    test_err = test_err + assert_true(metadataComplete, 'Movie JSON descriptor is not complete')
-    test_err = test_err + assert_true(hasBinaryArtifact, 'Movie JSON lacks the binary artifact')
-    test_err = test_err + assert_true(hasXdmfArtifact, 'Movie JSON lacks the XDMF artifact')
-    test_err = test_err + assert_true(hasH5Artifact, 'Movie JSON lacks the HDF5 artifact')
-
-    call cleanup_test_artifacts(testPath, ios)
+   call close_outputs()
+   call cleanup_test_artifacts(testPath, ios)
 
    err = test_err
 end function
+
+integer function test_close_movie_probe() bind(c) result(err)
+   ! Verifies movie close publishes final visualisation artifacts and metadata.
+   use output_m
+   use outputTypes_m
+   use testOutputUtils_m
+   use FDETYPES_TOOLS
+   use sggMethods_m
+   use assertionTools_m
+   use directoryUtils_m
+   implicit none
+
+   type(SGGFDTDINFO_t) :: dummysgg
+   type(sim_control_t) :: dummyControl
+   type(bounds_t) :: dummyBound
+   type(solver_output_t), pointer :: outputs(:)
+   type(media_matrices_t) :: media
+   type(MediaData_t), allocatable, target :: simulationMaterials(:)
+   type(MediaData_t), pointer :: simulationMaterialsPtr(:)
+   type(limit_t) :: sinpml(6)
+   type(taglist_t) :: tagNumbers
+   type(XYZlimit_t) :: sweep(6)
+   type(Obses_t) :: movieObservable
+   real(kind=RKIND_tiempo), pointer :: timeArray(:)
+   real(kind=RKIND), pointer :: x_steps(:), y_steps(:), z_steps(:)
+   real(kind=RKIND_tiempo) :: dt = 0.1_RKIND_tiempo
+   integer(kind=SINGLE) :: iter, mpidir = 3_SINGLE, test_err = 0_SINGLE
+   logical :: outputRequested, thereAreWires = .false., metadataComplete, metadataOpened
+   character(len=14), parameter :: test_folder = 'testing_folder'
+   character(len=10), parameter :: test_name = 'closeMovie'
+   character(len=BUFSIZE) :: inputPath, metadataLine, expectedPath
+   integer :: ios, metadataUnit
+
+   err = 1
+   inputPath = join_path(test_folder, test_name)
+   call sgg_init(dummysgg)
+   call init_time_array(timeArray, 100_SINGLE, dt)
+   call sgg_set_tiempo(dummysgg, timeArray)
+   call sgg_set_dt(dummysgg, dt)
+   call init_simulation_material_list(simulationMaterials)
+   simulationMaterialsPtr => simulationMaterials
+   call sgg_set_NumMedia(dummysgg, size(simulationMaterials))
+   call sgg_set_Med(dummysgg, simulationMaterialsPtr)
+   sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(dummysgg, sweep)
+   call sgg_set_SINPMLSweep(dummysgg, sweep)
+   call sgg_set_NumPlaneWaves(dummysgg, 1)
+   call sgg_set_Alloc(dummysgg, sweep)
+   tagNumbers = create_tag_list(sweep)
+   allocate(x_steps(6), source=1.0_RKIND)
+   allocate(y_steps(6), source=1.0_RKIND)
+   allocate(z_steps(6), source=1.0_RKIND)
+   call sgg_set_LineX(dummysgg, x_steps)
+   call sgg_set_LineY(dummysgg, y_steps)
+   call sgg_set_LineZ(dummysgg, z_steps)
+   movieObservable = create_movie_observation(2, 2, 2, 5, 5, 5, iCur)
+   call sgg_add_observation(dummysgg, movieObservable)
+   call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
+   do iter = 1, 6
+      sinpml(iter) = create_limit_t(0, 8, 0, 8, 0, 8, 10, 10, 10)
+   end do
+   dummyControl = create_control_flags(nEntradaRoot=inputPath, mpidir=mpidir)
+   call init_outputs(dummysgg, media, sinpml, tagNumbers, dummyBound, dummyControl, outputRequested, thereAreWires)
+   outputs => GetOutputs()
+
+   call close_outputs()
+   expectedPath = trim(outputs(1)%movieProbe%filesPath)
+   test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.xdmf'), 'Movie XDMF metadata was not finalised')
+   test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.h5'), 'Movie HDF5 payload was not finalised')
+   test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.json'), 'Movie JSON descriptor was not finalised')
+   metadataComplete = .false.
+   metadataOpened = .false.
+   open(newunit=metadataUnit, file=trim(expectedPath)//'.json', status='old', action='read', iostat=ios)
+   test_err = test_err + assert_integer_equal(ios, 0, 'Movie JSON descriptor could not be opened after close')
+   metadataOpened = ios == 0
+   do while (ios == 0)
+      read(metadataUnit, '(A)', iostat=ios) metadataLine
+      if (index(metadataLine, '"state":"complete"') > 0) metadataComplete = .true.
+   end do
+   if (metadataOpened) close(metadataUnit)
+   test_err = test_err + assert_true(metadataComplete, 'Movie JSON descriptor is not complete')
+
+   call cleanup_test_artifacts(test_folder, ios)
+   err = test_err
+end function test_close_movie_probe
 
 integer function test_init_frequency_slice_probe() bind(c) result(err)
    ! Verifies frequency-slice allocation, dimensions, paths, and serialized output.
