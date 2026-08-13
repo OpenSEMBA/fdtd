@@ -16,8 +16,9 @@ module testOutputUtils_m
    public :: create_dummy_fields
    public :: fillGradient
    public :: setup_dummy_problem_info
-   public :: clean_dummy_problem_info
-   public :: cleanup_test_artifacts
+    public :: clean_dummy_problem_info
+    public :: cleanup_test_artifacts
+    public :: get_temp_folder
    !===========================
 
    ! Storage for dummy targets
@@ -234,7 +235,7 @@ contains
       nullify(problemInfo%simulationBounds)
    end subroutine clean_dummy_problem_info
 
-   subroutine cleanup_test_artifacts(path, error)
+    subroutine cleanup_test_artifacts(path, error)
        use directoryUtils_m, only: remove_folder
        character(len=*), intent(in) :: path
        integer, intent(out) :: error
@@ -250,7 +251,28 @@ contains
           return
        end if
 
-       call remove_folder(path, error)
-   end subroutine cleanup_test_artifacts
+        call remove_folder(path, error)
+    end subroutine cleanup_test_artifacts
+
+    function get_temp_folder() result(path)
+       character(len=:), allocatable :: path
+
+       character(len=4096) :: value
+       integer :: length, status
+
+       call get_environment_variable('TMPDIR', value, length, status)
+       if (status /= 0 .or. length == 0) then
+          call get_environment_variable('TEMP', value, length, status)
+       end if
+       if (status /= 0 .or. length == 0) then
+          call get_environment_variable('TMP', value, length, status)
+       end if
+
+       if (status == 0 .and. length > 0) then
+          path = value(:length)
+       else
+          path = '/tmp'
+       end if
+    end function get_temp_folder
 
 end module testOutputUtils_m

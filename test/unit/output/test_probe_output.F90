@@ -1578,7 +1578,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
 
    character(len=14), parameter :: test_folder = 'testing_folder'
    character(len=10), parameter :: test_name = 'flushMovie'
-
+   character(len=BUFSIZE) :: testPath
     character(len=BUFSIZE) :: nEntrada
     character(len=BUFSIZE) :: expectedPath
     character(len=BUFSIZE) :: metadataLine
@@ -1586,7 +1586,9 @@ integer function test_flush_movie_probe() bind(c) result(err)
     integer :: binaryBytes, ios, metadataUnit
     logical :: hasBinaryArtifact, hasH5Artifact, hasXdmfArtifact, metadataComplete
 
-   nEntrada = join_path(test_folder, test_name)
+
+   testPath = join_path(get_temp_folder(), test_folder)
+   nEntrada = join_path(testPath, test_name)
 
    err = 1
 
@@ -1729,7 +1731,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
     test_err = test_err + assert_true(hasXdmfArtifact, 'Movie JSON lacks the XDMF artifact')
     test_err = test_err + assert_true(hasH5Artifact, 'Movie JSON lacks the HDF5 artifact')
 
-    call cleanup_test_artifacts(test_folder, ios)
+    call cleanup_test_artifacts(testPath, ios)
 
    err = test_err
 end function
