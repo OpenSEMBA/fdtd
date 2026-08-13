@@ -51,9 +51,10 @@ contains
       type(problem_info_t), intent(in)        :: problemInfo
       character(len=BUFSIZE), intent(in)      :: outputTypeExtension
 
-      integer :: error
-      character(len=BUFSIZE) :: filename
-      real(RKIND), pointer :: xsteps(:), ysteps(:), zsteps(:)
+       integer :: error
+       character(len=BUFSIZE) :: filename
+       real(RKIND), pointer :: xsteps(:), ysteps(:), zsteps(:)
+       type(xdmf_status_t) :: geometry_status, writer_status
 
       this%mainCoords = lowerBound
       this%auxCoords = upperBound
@@ -81,7 +82,16 @@ contains
        call create_folder(this%path, error)
        call create_bin_file(this%filesPath, error)
         call create_movie_files(this, error, xsteps, ysteps, zsteps)
-        if (error == 0) call write_geometry_companion(this%filesPath, lowerBound, upperBound, problemInfo)
+       if (error /= 0) return
+       call write_geometry_companion(this%filesPath, lowerBound, upperBound, problemInfo, geometry_status)
+       if (geometry_status%is_error()) then
+          print *, 'Unable to create movie geometry: ', trim(geometry_status%message())
+          if (associated(this%writer)) then
+             call this%writer%close(writer_status)
+             deallocate(this%writer)
+          end if
+          return
+       end if
        call initialise_movie_metadata(this, error, control%mpidir)
        if (error /= 0) print *, 'error en creacion'
    end subroutine init_movie_probe_output

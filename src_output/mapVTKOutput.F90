@@ -278,15 +278,16 @@ contains
 
     end subroutine create_geometry_simulation_vtu
 
-    subroutine write_geometry_companion(base_path, lower_bound, upper_bound, problemInfo)
+    subroutine write_geometry_companion(base_path, lower_bound, upper_bound, problemInfo, status)
        character(len=*), intent(in) :: base_path
        type(cell_coordinate_t), intent(in) :: lower_bound, upper_bound
        type(problem_info_t), target, intent(in) :: problemInfo
+       type(xdmf_status_t), intent(out) :: status
 
        type(mapvtk_output_t) :: geometry
        type(xdmf_writer_t) :: writer
        type(xdmf_options_t) :: options
-       type(xdmf_status_t) :: status
+       type(xdmf_status_t) :: close_status
        type(xdmf_grid_id_t) :: grid
        type(xdmf_attribute_id_t) :: tags_attribute, media_attribute
        integer :: num_nodes, num_edges, num_quads
@@ -331,6 +332,10 @@ contains
                XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, media_attribute, status)
           if (.not. status%is_error()) call writer%write_attribute(media_attribute, real(media_types(num_edges + 1:), real64), status)
           deallocate(connectivity)
+       end if
+       if (status%is_error()) then
+          call writer%close(close_status)
+          return
        end if
        call writer%close(status)
     end subroutine write_geometry_companion
