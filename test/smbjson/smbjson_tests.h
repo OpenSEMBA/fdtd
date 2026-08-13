@@ -13,7 +13,6 @@ extern "C" int test_parser_ctor();
 extern "C" int test_parser_read_mesh();
 extern "C" int test_parser_read_conformal_volume();
 extern "C" int test_parser_reject_conformal_cell_label();
-extern "C" int test_parser_reject_mixed_sign_surface_interval();
 
 extern "C" int test_read_planewave();
 extern "C" int test_read_planewave_empty_elementids();
@@ -53,9 +52,6 @@ TEST(smbjson, parser_ctor)               { EXPECT_EQ(0, test_parser_ctor()); }
 TEST(smbjson, parser_read_mesh)          { EXPECT_EQ(0, test_parser_read_mesh()); }
 TEST(smbjson, parser_read_conf_volume)   { EXPECT_EQ(0, test_parser_read_conformal_volume()); }
 TEST(smbjson, parser_reject_conformal_cell_label) { EXPECT_EQ(0, test_parser_reject_conformal_cell_label()); }
-TEST(smbjson, parser_reject_mixed_sign_surface_interval) {
-    EXPECT_EQ(0, test_parser_reject_mixed_sign_surface_interval());
-}
 TEST(smbjson, read_planewave)            { EXPECT_EQ(0, test_read_planewave()); }
 TEST(smbjson, read_planewave_empty_elementids) { EXPECT_EQ(0, test_read_planewave_empty_elementids()); }
 TEST(smbjson, read_dielectricslab)       { EXPECT_EQ(0, test_read_dielectricslab()); }

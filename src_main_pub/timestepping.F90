@@ -250,6 +250,9 @@ module Solver_m
       this%control%createh5bin =  input%createh5bin
       this%control%wirecrank =  input%wirecrank
       this%control%fatalerror =  input%fatalerror
+#ifdef CompileWithMTLN
+      this%control%use_mtln_wires = .true.
+#endif
 
       this%control%cfl = input%cfl
       this%control%attfactorc = input%attfactorc

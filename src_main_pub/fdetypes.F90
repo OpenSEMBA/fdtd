@@ -374,6 +374,11 @@ module  FDETYPES_m
       logical :: orientadoalreves
    end type oriented_point_t
 
+#ifdef CompileWithMTLN
+   type  :: Multiwires_t
+   end type
+#endif
+
    type  ::  Wires_t
       REAL (KIND=RKIND_wires)   ::  Radius,R,L,C,P_R,P_L,P_C
       REAL (KIND=RKIND_wires)   ::  Radius_devia,R_devia,L_devia,C_devia
@@ -666,6 +671,9 @@ module  FDETYPES_m
       type (DispersiveParams_t), dimension( : ), pointer  ::  MDispersive
       type (Anisotropic_t)     , dimension( : ), pointer  ::  Anisotropic
       type (Lumped_t)          , dimension( : ), pointer  ::  Lumped
+#ifdef CompileWithMTLN
+      type(Multiwires_t)       , dimension( : ), pointer  ::  Multiwire
+#endif
       ! type (conformal_feature_t), , dimension( : ), pointer  ::  Conformal
       type (edge_t), dimension( : ), allocatable  ::  ConformalEdge
       type (face_t), dimension( : ), allocatable  ::  ConformalFace

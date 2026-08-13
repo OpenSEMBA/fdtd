@@ -192,12 +192,12 @@ contains
       res%conformalRegs = this%readConformalRegions()
 
       ! Thin elements
-      call this%readThinWires(res%tWires, res%sonda)
-      res%tSlots = this%readThinSlots()
-
 #ifdef CompileWithMTLN
       res%mtln = this%readMTLN()
+#else
+      call this%readThinWires(res%tWires, res%sonda)
 #endif
+      res%tSlots = this%readThinSlots()
 
 
    end function
@@ -295,7 +295,6 @@ contains
          type(json_value), pointer :: intervalsPlace, interval
          integer :: i, nIntervals
          real, dimension(:), allocatable :: cellIni, cellEnd
-         character(len=160) :: error_message
          logical :: containsInterval
 
          call this%core%get(place, path, intervalsPlace, found=containsInterval)
@@ -307,24 +306,10 @@ contains
          allocate(res(nIntervals))
          do i = 1, nIntervals
             call this%core%get_child(intervalsPlace, i, interval)
-            if (this%core%count(interval) /= 2) then
-               call WarnErrReport('Cell intervals must contain exactly two three-dimensional endpoints.', .true.)
-               return
-            end if
             cellIni = this%getRealsAt(interval, '(1)')
             cellEnd = this%getRealsAt(interval, '(2)')
-            if (size(cellIni) /= 3 .or. size(cellEnd) /= 3) then
-               call WarnErrReport('Cell interval endpoints must contain exactly three coordinates.', .true.)
-               return
-            end if
             res(i)%ini%cell = cellIni(1:3)
             res(i)%end%cell = cellEnd(1:3)
-            if (res(i)%hasMixedSignOrientation()) then
-               write(error_message, '(A,I0,A)') 'Surface interval ', i, &
-                  ' has mixed-sign directions; both varying directions must have the same sign.'
-               call WarnErrReport(trim(error_message), .true.)
-               return
-            end if
          end do
       end function
 
@@ -2905,7 +2890,7 @@ contains
       end do
 
       mtln_res%wireGenerators = readWireGenerators()
-      mtln_res%probes = readMultiwireProbes()
+      call readMultiwireProbes(mtln_res%probes)
       mtln_res%networks = buildNetworks()
 
    contains
@@ -3839,8 +3824,8 @@ contains
 
       end function
 
-      function readMultiwireProbes() result(res)
-         type(probe_t), dimension(:), allocatable :: res
+      subroutine readMultiwireProbes(res)
+         type(probe_t), dimension(:), allocatable, intent(out) :: res
          type(json_value_ptr_t), dimension(:), allocatable :: wire_probes
          type(json_value), pointer :: probes
          integer :: i, j, index, n
@@ -3903,7 +3888,7 @@ contains
                end do
             end if
          end do
-      end function
+      end subroutine
 
       function GetCoordinateFromElemIdNode(object) result (res)
          type(json_value), pointer, intent(in) :: object

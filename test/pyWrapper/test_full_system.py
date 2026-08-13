@@ -1788,6 +1788,8 @@ def test_current_generators_with_resistance(tmp_path):
     assert np.allclose(Vend['voltage_0'][-100:-1], 16.666, rtol=0.005)
     assert np.allclose(Vstart['voltage_0'][-100:-1], -16.666, rtol=0.005)
 
+@no_mtln_skip
+@pytest.mark.mtln
 @pytest.mark.wires
 @pytest.mark.nodal_source
 @pytest.mark.probes

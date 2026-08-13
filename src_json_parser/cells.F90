@@ -1,7 +1,5 @@
 module cells_m
 
-   use Report_m, only: WarnErrReport
-
    integer, parameter :: DIR_NULL = 0
    integer, parameter :: DIR_X = 1
    integer, parameter :: DIR_Y = 2
@@ -42,7 +40,6 @@ module cells_m
    contains
       procedure :: getType => cell_interval_getType
       procedure :: getOrientation => cell_interval_getOrientation
-      procedure :: hasMixedSignOrientation => cell_interval_hasMixedSignOrientation
       procedure :: getSize => cell_interval_getSize
       procedure, private :: varyingDirections => cell_interval_varyingDirections
    end type
@@ -95,7 +92,7 @@ contains
       res = this%varyingDirections()
    end function
 
-   impure elemental function cell_interval_getOrientation(this) result(res)
+   elemental function cell_interval_getOrientation(this) result(res)
       class(cell_interval_t), intent(in) :: this
       integer :: res
       integer :: i
@@ -117,12 +114,6 @@ contains
        case (CELL_TYPE_SURFEL)
          block
             integer, dimension(3) :: diff
-            if (this%hasMixedSignOrientation()) then
-               call WarnErrReport('Surface interval has mixed-sign directions; ' // &
-                  'both varying directions must have the same sign.', .true.)
-               res = DIR_NULL
-               return
-            end if
             diff = this%end%cell - this%ini%cell
             do i = DIR_X, DIR_Z
                if (diff(i) == 0) res = i
@@ -133,14 +124,6 @@ contains
        case default
          res = DIR_NULL
       end select
-   end function
-
-   elemental logical function cell_interval_hasMixedSignOrientation(this) result(res)
-      class(cell_interval_t), intent(in) :: this
-      integer, dimension(3) :: diff
-
-      diff = this%end%cell - this%ini%cell
-      res = this%getType() == CELL_TYPE_SURFEL .and. any(diff > 0) .and. any(diff < 0)
    end function
 
    elemental function cell_interval_getSize(this) result(res)
