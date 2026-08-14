@@ -11,6 +11,43 @@ from src_pyWrapper.pyWrapper import FDTD, Probe
 OUTPUTS_PATH = Path(OUTPUTS_FOLDER)
 
 
+def make_probe_folder(tmp_path, source_file):
+    source_file = Path(source_file)
+    probe_folder = tmp_path / source_file.stem
+    probe_folder.mkdir()
+    (probe_folder / source_file.name).write_bytes(source_file.read_bytes())
+    return probe_folder
+
+
+def get_probe_stem(probe_case):
+    return "{case}.fdtd_{name}{type}{region}{segment}{domain}".format(
+        case=probe_case["case"]["code"],
+        name=probe_case["name"]["code"],
+        type=probe_case["type"]["code"],
+        region=probe_case["region"]["code"],
+        segment=probe_case.get("segment", {}).get("code", ""),
+        domain=probe_case["domain"]["code"],
+    )
+
+
+def make_schematic_probe_folder(tmp_path, probe_case):
+    probe_folder = tmp_path / get_probe_stem(probe_case)
+    probe_folder.mkdir()
+    return probe_folder
+
+
+def get_expected_output_paths(probe_folder, probe_case):
+    outputs = [
+        probe_folder / f"{probe_folder.name}{extension}"
+        for extension in probe_case["expected_extensions"]
+    ]
+    outputs.extend(
+        probe_folder / f"{probe_folder.name}{suffix}"
+        for suffix in probe_case.get("extra_outputs", [])
+    )
+    return outputs
+
+
 PROBE_TYPES: dict = {
     "wire_time": {
         "case": {"code": "case_name", "expected": "case_name"},
@@ -141,17 +178,9 @@ PROBE_TYPES: dict = {
 @pytest.mark.parametrize("probe_type", PROBE_TYPES)
 def test_read_probe(tmp_path, probe_type):
     probe_case = PROBE_TYPES[probe_type]
-    probe_folder = "{case}.fdtd_{name}{type}{region}{segment}{domain}/".format(
-        case=probe_case["case"]["code"],
-        name=probe_case["name"]["code"],
-        type=probe_case["type"]["code"],
-        region=probe_case["region"]["code"],
-        segment=probe_case.get("segment", {}).get("code", ""),
-        domain=probe_case["domain"]["code"],
-    )
-    probe_path = tmp_path / "results" / probe_folder
-    probe_path.parent.mkdir()
-    probe_path.mkdir()
+    results_folder = tmp_path / "results"
+    results_folder.mkdir()
+    probe_path = make_schematic_probe_folder(results_folder, probe_case)
 
     probe = Probe(probe_path)
 
@@ -176,31 +205,65 @@ def test_read_probe(tmp_path, probe_type):
 @pytest.mark.parametrize("probe_type", PROBE_TYPES)
 def test_getExpectedOutputs_returns_complete_set(tmp_path, probe_type):
     probe_case = PROBE_TYPES[probe_type]
-    probe_folder = tmp_path / "{case}.fdtd_{name}{type}{region}{segment}{domain}".format(
-        case=probe_case["case"]["code"],
-        name=probe_case["name"]["code"],
-        type=probe_case["type"]["code"],
-        region=probe_case["region"]["code"],
-        segment=probe_case.get("segment", {}).get("code", ""),
-        domain=probe_case["domain"]["code"],
-    )
-    probe_folder.mkdir()
-    expected_outputs = [
-        probe_folder / f"{probe_folder.name}{extension}"
-        for extension in probe_case["expected_extensions"]
-    ]
-    expected_outputs.extend(
-        probe_folder / f"{probe_folder.name}{suffix}"
-        for suffix in probe_case.get("extra_outputs", [])
-    )
+    probe_folder = make_schematic_probe_folder(tmp_path, probe_case)
+    probe = Probe(probe_folder)
+    expected_outputs = get_expected_output_paths(probe_folder, probe_case)
     for output in expected_outputs:
         output.touch()
     (probe_folder / "unrelated.dat").touch()
 
-    probe = Probe(probe_folder)
-
     assert probe.getExpectedOutputs() == sorted(
         str(output.resolve()) for output in expected_outputs
+    )
+
+
+@pytest.mark.probes
+@pytest.mark.parametrize("probe_type", PROBE_TYPES)
+def test_get_output_artifact_files(tmp_path, probe_type):
+    probe_case = PROBE_TYPES[probe_type]
+    probe_folder = make_schematic_probe_folder(tmp_path, probe_case)
+    probe = Probe(probe_folder)
+    for output in get_expected_output_paths(probe_folder, probe_case):
+        output.touch()
+
+    expected_dat_file = (
+        probe_folder / f"{probe_folder.name}.dat"
+        if ".dat" in probe_case["expected_extensions"]
+        else None
+    )
+    expected_text_file = expected_dat_file
+    if "" in probe_case["expected_extensions"]:
+        expected_text_file = probe_folder / probe_folder.name
+    expected_xdmf_file = (
+        probe_folder / f"{probe_folder.name}.xdmf"
+        if ".xdmf" in probe_case["expected_extensions"]
+        else None
+    )
+    expected_bin_file = (
+        probe_folder / f"{probe_folder.name}.bin"
+        if ".bin" in probe_case["expected_extensions"]
+        else None
+    )
+    expected_h5_file = (
+        probe_folder / f"{probe_folder.name}.h5"
+        if ".h5" in probe_case["expected_extensions"]
+        else None
+    )
+
+    assert probe.getDatFile() == (
+        str(expected_dat_file) if expected_dat_file is not None else None
+    )
+    assert probe.getTextFile() == (
+        str(expected_text_file) if expected_text_file is not None else None
+    )
+    assert probe.getXDMFFile() == (
+        str(expected_xdmf_file) if expected_xdmf_file is not None else None
+    )
+    assert probe.getBinFile() == (
+        str(expected_bin_file) if expected_bin_file is not None else None
+    )
+    assert probe.getH5File() == (
+        str(expected_h5_file) if expected_h5_file is not None else None
     )
 
 
@@ -212,33 +275,34 @@ def test_get_expected_columns_match_schematic_text_output(tmp_path, probe_type):
     if expected_dat_columns is None:
         pytest.skip("Movie probes do not produce a text .dat output")
 
-    probe_stem = "{case}.fdtd_{name}{type}{region}{segment}{domain}".format(
-        case=probe_case["case"]["code"],
-        name=probe_case["name"]["code"],
-        type=probe_case["type"]["code"],
-        region=probe_case["region"]["code"],
-        segment=probe_case.get("segment", {}).get("code", ""),
-        domain=probe_case["domain"]["code"],
-    )
-    probe_folder = tmp_path / probe_stem
-    probe_folder.mkdir()
+    probe_folder = make_schematic_probe_folder(tmp_path, probe_case)
     extension = ".dat" if ".dat" in probe_case["expected_extensions"] else ""
-    probe_path = probe_folder / f"{probe_stem}{extension}"
+    probe_path = probe_folder / f"{probe_folder.name}{extension}"
     probe_path.write_text(
         " ".join(expected_dat_columns) + "\n" + " ".join("0" for _ in expected_dat_columns) + "\n"
     )
 
-    probe = Probe(probe_path)
+    probe = Probe(probe_folder)
 
     assert probe.getExpectedColumns() == expected_dat_columns
     assert probe_path.read_text().splitlines()[0].split() == expected_dat_columns
 
 
+def test_probe_requires_folder(tmp_path):
+    probe_file = tmp_path / "case.fdtd_probe_Ex_1_2_3_tm.dat"
+    probe_file.touch()
+
+    with pytest.raises(AssertionError, match="Probe requires a probe output folder"):
+        Probe(probe_file)
+
+
 @pytest.mark.probes
 @pytest.mark.wires
-def test_read_wire_probe():
+def test_read_wire_probe(tmp_path):
     probe = Probe(
-        OUTPUTS_PATH / "fakeCurrentProbe.fdtd_mid_point_Wz_11_11_11_s2.dat"
+        make_probe_folder(
+            tmp_path, OUTPUTS_PATH / "fakeCurrentProbe.fdtd_mid_point_Wz_11_11_11_s2.dat"
+        )
     )
 
     assert probe.case_name == "fakeCurrentProbe"
@@ -258,9 +322,11 @@ def test_read_wire_probe():
 
 @pytest.mark.probes
 @pytest.mark.wires
-def test_read_frequency_probe():
+def test_read_frequency_probe(tmp_path):
     probe = Probe(
-        OUTPUTS_PATH / "edelcadfixZ_COR2_log__Wz_21_21_28_s10_df.dat"
+        make_probe_folder(
+            tmp_path, OUTPUTS_PATH / "edelcadfixZ_COR2_log__Wz_21_21_28_s10_df.dat"
+        )
     )
 
     assert probe.type == "wire"
@@ -271,9 +337,11 @@ def test_read_frequency_probe():
 
 
 @pytest.mark.probes
-def test_read_point_probe():
+def test_read_point_probe(tmp_path):
     probe = Probe(
-        OUTPUTS_PATH / "shieldingEffectiveness.fdtd_front_Ex_1_1_1.dat"
+        make_probe_folder(
+            tmp_path, OUTPUTS_PATH / "shieldingEffectiveness.fdtd_front_Ex_1_1_1.dat"
+        )
     )
 
     assert probe.case_name == "shieldingEffectiveness"
@@ -298,8 +366,10 @@ def test_read_point_probe():
 
 
 @pytest.mark.probes
-def test_read_point_probe_without_planewave():
-    probe = Probe(OUTPUTS_PATH / "twoWires.fdtd_ProbeEnd_Ey_25_13_5.dat")
+def test_read_point_probe_without_planewave(tmp_path):
+    probe = Probe(
+        make_probe_folder(tmp_path, OUTPUTS_PATH / "twoWires.fdtd_ProbeEnd_Ey_25_13_5.dat")
+    )
 
     assert probe.case_name == "twoWires"
     assert probe.name == "ProbeEnd"
@@ -325,7 +395,7 @@ def test_read_extensionless_far_field_probe(tmp_path):
         "1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0\n"
     )
 
-    probe = Probe(probe_path)
+    probe = Probe(probe_folder)
 
     assert probe.name == "farfield"
     assert probe.type == "farField"
