@@ -4350,7 +4350,7 @@ contains
 
             call this%core%get(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION, multipolarExpansionPtr)
             allocate(res%multipolar_expansion(1))
-            res%multipolar_expansion(1) = readMultipolarExpansion(multipolarExpansionPtr)
+            call readMultipolarExpansion(multipolarExpansionPtr, res%multipolar_expansion(1))
          else if (hasRadius) then
             res%cell_inductance_per_meter = null_matrix
             res%cell_capacitance_per_meter = null_matrix
@@ -4386,9 +4386,9 @@ contains
 
       end subroutine
 
-      function readMultipolarExpansion(multipolarExpansionPtr) result (res)
-         type(json_value), pointer :: multipolarExpansionPtr
-         type(multipolar_expansion_t) :: res
+      subroutine readMultipolarExpansion(multipolarExpansionPtr, res)
+         type(json_value), pointer, intent(in) :: multipolarExpansionPtr
+         type(multipolar_expansion_t), intent(out) :: res
          type(json_value), pointer :: jvPtr
          logical :: found
 
@@ -4402,14 +4402,14 @@ contains
          if (.not. found) then
             call WarnErrReport("Error reading multipolar expansion electric reconstruction not found", .true.)
          end if
-         res%electric = readFieldReconstruction(jvPtr)
+         call readFieldReconstruction(jvPtr, res%electric)
 
          call this%core%get(multipolarExpansionPtr, J_MAT_MULTIWIRE_ME_MAGNETIC, jvPtr, found)
          if (.not. found) then
             call WarnErrReport("Error reading multipolar expansion magnetic reconstruction not found", .true.)
          end if
-         res%magnetic = readFieldReconstruction(jvPtr)
-      end function
+         call readFieldReconstruction(jvPtr, res%magnetic)
+      end subroutine
 
       function readInnnerRegionBox(ptr) result(inner_region)
          type(json_value), pointer, intent(in) :: ptr
@@ -4418,9 +4418,9 @@ contains
          inner_region%max = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX)
       end function
 
-      function readFieldReconstruction(ptr) result(res)
+      subroutine readFieldReconstruction(ptr, res)
          type(json_value), pointer, intent(in) :: ptr
-         type(field_reconstruction_t), dimension(:), allocatable :: res
+         type(field_reconstruction_t), dimension(:), allocatable, intent(out) :: res
          real, dimension(:), allocatable :: auxAB
          type(json_value), pointer :: frPtr
          type(json_value), pointer :: absPtr
@@ -4449,7 +4449,7 @@ contains
             end do
          end do
 
-      end function
+      end subroutine
 
       function buildSegments(j_cable, despl) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
