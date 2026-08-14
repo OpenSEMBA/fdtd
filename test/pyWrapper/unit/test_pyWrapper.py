@@ -268,6 +268,31 @@ def test_get_output_artifact_files(tmp_path, probe_type):
 
 
 @pytest.mark.probes
+def test_get_output_artifact_files_do_not_depend_on_folder_stem(tmp_path):
+    point_folder = make_schematic_probe_folder(tmp_path, PROBE_TYPES["point_time"])
+    far_field_folder = make_schematic_probe_folder(tmp_path, PROBE_TYPES["far_field"])
+    movie_folder = make_schematic_probe_folder(tmp_path, PROBE_TYPES["movie"])
+    point_probe = Probe(point_folder)
+    far_field_probe = Probe(far_field_folder)
+    movie_probe = Probe(movie_folder)
+
+    dat_file = point_folder / "field.dat"
+    bin_file = point_folder / "field.bin"
+    text_file = far_field_folder / "far_field_data"
+    xdmf_file = movie_folder / "movie_data.xdmf"
+    h5_file = movie_folder / "movie_data.h5"
+    for path in (dat_file, bin_file, text_file, xdmf_file, h5_file):
+        path.touch()
+
+    assert point_probe.getDatFile() == str(dat_file)
+    assert point_probe.getBinFile() == str(bin_file)
+    assert point_probe.getTextFile() == str(dat_file)
+    assert far_field_probe.getTextFile() == str(text_file)
+    assert movie_probe.getXDMFFile() == str(xdmf_file)
+    assert movie_probe.getH5File() == str(h5_file)
+
+
+@pytest.mark.probes
 @pytest.mark.parametrize("probe_type", PROBE_TYPES)
 def test_get_expected_columns_match_schematic_text_output(tmp_path, probe_type):
     probe_case = PROBE_TYPES[probe_type]
@@ -294,6 +319,22 @@ def test_probe_requires_folder(tmp_path):
 
     with pytest.raises(AssertionError, match="Probe requires a probe output folder"):
         Probe(probe_file)
+
+
+@pytest.mark.probes
+def test_read_folder_based_line_integral_probe(tmp_path):
+    probe_folder = tmp_path / "case_name.fdtd_line_probe_LI"
+    probe_folder.mkdir()
+
+    probe = Probe(probe_folder)
+
+    assert probe.case_name == "case_name"
+    assert probe.name == "line_probe"
+    assert probe.type == "lineIntegral"
+    assert probe.domainType == "time"
+    assert probe.field == "L"
+    assert probe.direction == "I"
+    assert probe.cell is None
 
 
 @pytest.mark.probes

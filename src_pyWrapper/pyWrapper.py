@@ -73,7 +73,7 @@ class Probe:
     MTLN_PROBE_TAGS: list[str] = ["_V_", "_I_"]
     CURRENT_PROBE_TAGS: list[str] = ["_Wx_", "_Wy_", "_Wz_"]
     BULK_CURRENT_PROBE_TAGS: list[str] = ["_Jx_", "_Jy_", "_Jz_"]
-    LINE_INTEGRAL_PROBE_TAG: list[str] = ["_LI_"]
+    LINE_INTEGRAL_PROBE_TAG: list[str] = ["_LI_", "_LI"]
     POINT_PROBE_TAGS: list[str] = ["_Ex_", "_Ey_", "_Ez_", "_Hx_", "_Hy_", "_Hz_"]
     FAR_FIELD_TAG: list[str] = ["_FF_"]
     MOVIE_TAGS: list[str] = ["_ExC_", "_EyC_", "_EzC_", "_HxC_", "_HyC_", "_HzC_", "_ME_", "_MH_"]
@@ -159,35 +159,48 @@ class Probe:
     def getDatFile(self):
         if self._type in (_ProbeType.FAR_FIELD, _ProbeType.MOVIE):
             return None
-        path = os.path.join(self.folder, self._getFolderStem() + ".dat")
-        return path if os.path.isfile(path) else None
+        files = sorted(glob.glob(os.path.join(self.folder, "*.dat")))
+        return files[0] if files else None
 
     def getTextFile(self):
         dat_file = self.getDatFile()
         if dat_file is not None:
             return dat_file
         if self._type == _ProbeType.FAR_FIELD:
-            path = os.path.join(self.folder, self._getFolderStem())
-            return path if os.path.isfile(path) else None
+            files = sorted(
+                path
+                for path in glob.glob(os.path.join(self.folder, "*"))
+                if os.path.isfile(path)
+                and not path.endswith(tuple(Probe.FILE_EXTENSIONS))
+            )
+            return files[0] if files else None
         return None
 
     def getXDMFFile(self):
         if self._type != _ProbeType.MOVIE:
             return None
-        path = os.path.join(self.folder, self._getFolderStem() + ".xdmf")
-        return path if os.path.isfile(path) else None
+        files = sorted(
+            path
+            for path in glob.glob(os.path.join(self.folder, "*.xdmf"))
+            if not path.endswith("_geometry.xdmf")
+        )
+        return files[0] if files else None
 
     def getBinFile(self):
         if self._type == _ProbeType.MTLN:
             return None
-        path = os.path.join(self.folder, self._getFolderStem() + ".bin")
-        return path if os.path.isfile(path) else None
+        files = sorted(glob.glob(os.path.join(self.folder, "*.bin")))
+        return files[0] if files else None
 
     def getH5File(self):
         if self._type != _ProbeType.MOVIE:
             return None
-        path = os.path.join(self.folder, self._getFolderStem() + ".h5")
-        return path if os.path.isfile(path) else None
+        files = sorted(
+            path
+            for path in glob.glob(os.path.join(self.folder, "*.h5"))
+            if not path.endswith("_geometry.h5")
+        )
+        return files[0] if files else None
 
     def getExpectedColumns(self):
         try:

@@ -41,7 +41,6 @@ def _get_solved_probe_folder(
 
 # compiled without mtln uses classic wires
 # compiled with mtln, wire is treated as an unshielded multiwire
-@pytest.mark.skip
 def test_lineIntegralProbe(tmp_path):
     fn = CASES_FOLDER + "lineIntegralProbe/lineIntegralProbe_plates.fdtd.json"
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -239,7 +238,9 @@ def test_holland_short_terminals_match_open_terminals(tmp_path):
 @pytest.mark.wires
 @pytest.mark.multiwire
 @pytest.mark.probes
-def test_unshielded_multiwires(tmp_path):
+@pytest.mark.legacy
+@pytest.mark.skip(reason="Probe now requires folder-based outputs")
+def test_unshielded_multiwires_legacy(tmp_path):
     fn = CASES_FOLDER + "unshielded_multiwires/unshielded_multiwires_berenger.fdtd.json"
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
@@ -265,6 +266,32 @@ def test_unshielded_multiwires(tmp_path):
         p_solved.data["current_1"].to_numpy(),
     )
     assert np.corrcoef(solved_1, p_expected["current_1"])[0, 1] > 0.999
+
+
+@no_mtln_skip
+@pytest.mark.mtln
+@pytest.mark.wires
+@pytest.mark.multiwire
+@pytest.mark.probes
+def test_unshielded_multiwires(tmp_path):
+    fn = CASES_FOLDER + "unshielded_multiwires/unshielded_multiwires_berenger.fdtd.json"
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver.run()
+
+    p_solved = Probe(_get_solved_probe_folder(solver, "mid_point", contains="_I_"))
+    p_expected = probe_from_fixture(
+        tmp_path,
+        "unshielded_multiwires_berenger.fdtd_mid_point_unshielded_two_wire_I_2_11_14.dat",
+    )
+
+    for current in ("current_0", "current_1"):
+        solved = np.interp(
+            p_expected["time"].to_numpy(),
+            p_solved["time"].to_numpy(),
+            p_solved[current].to_numpy(),
+        )
+        assert np.corrcoef(solved, p_expected[current])[0, 1] > 0.999
 
 
 @pytest.mark.wires

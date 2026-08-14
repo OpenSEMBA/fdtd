@@ -207,6 +207,8 @@ if(SEMBA_FDTD_ENABLE_HDF)
   target_link_libraries(semba-reports XDMF::HDF5)
 endif()
 
+add_subdirectory(src_utils)
+
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_subdirectory(src_json_parser)
 	if(PROJECT_IS_TOP_LEVEL)
@@ -225,8 +227,6 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 		set(MTLN_LIBRARIES mtlnsolver ngspice_interface PARENT_SCOPE)
 	endif()
 endif()
-
-add_subdirectory(src_utils)
 
 add_subdirectory(src_output)
 set(OUTPUT_LIBRARIES fdtd-output)

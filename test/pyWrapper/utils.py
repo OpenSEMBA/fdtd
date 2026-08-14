@@ -18,7 +18,28 @@ def build_feature_enabled(feature):
     if value is not None:
         return value == "ON"
 
-    cache_path = os.path.join(os.getcwd(), "build", "CMakeCache.txt")
+    if os.getenv("SEMBA_FDTD_ENABLE_MPI") == "ON":
+        build_dirs = ["build-rls-mpi", "build-dbg-mpi", "build-intel-rls"]
+    elif os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF":
+        build_dirs = [
+            "build-rls-nomtln",
+            "build-dbg-nomtln",
+            "build-intel-rls-nomtln",
+        ]
+    else:
+        build_dirs = ["build-rls", "build-dbg", "build-intel-rls"]
+    build_dirs.append("build")
+
+    cache_path = next(
+        (
+            os.path.join(os.getcwd(), build_dir, "CMakeCache.txt")
+            for build_dir in build_dirs
+            if os.path.isfile(os.path.join(os.getcwd(), build_dir, "CMakeCache.txt"))
+        ),
+        None,
+    )
+    if cache_path is None:
+        return False
     try:
         with open(cache_path) as cache_file:
             for line in cache_file:

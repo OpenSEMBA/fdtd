@@ -701,8 +701,8 @@ contains
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = LINE_PROBE_ID
                   allocate (outputs(outputCount)%lineProbe)
-                  call init_line_probe_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
-                                              join_path(outputTypeExtension//'_LI', outputTypeExtension//'_LI'), &
+                   call init_line_probe_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
+                                               join_path(trim(outputTypeExtension)//'_LI', trim(outputTypeExtension)//'_LI'), &
                                               sgg%Sweep, control%layoutnumber, control%num_procs)
                   call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%lineProbe%path)//'.json', &
                                                        get_last_component(outputs(outputCount)%lineProbe%path), 'LI', &

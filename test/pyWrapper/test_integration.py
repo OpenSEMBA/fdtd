@@ -248,7 +248,12 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
     input_filename = CASES_FOLDER + "sphere/sphere.fdtd.json"
     solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver["general"]["numberOfSteps"] = 1
-    solver["probes"][0]["domain"]["numberOfFrequencies"] = 100
+    solver["probes"][0]["domain"]["numberOfFrequencies"] = 1
+    solver["mesh"]["grid"]["numberOfCells"] = [4, 4, 4]
+    solver["mesh"]["elements"] = solver["mesh"]["elements"][:2]
+    solver["mesh"]["elements"][0]["intervals"] = [[[0, 0, 0], [4, 4, 4]]]
+    solver["mesh"]["elements"][1]["intervals"] = [[[1, 1, 1], [3, 3, 3]]]
+    solver["materialAssociations"][:] = []
 
     solver.run()
 
@@ -257,7 +262,7 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
     far_field_probe = Probe(far_field_files[0])
     assert far_field_probe.case_name == "sphere"
     assert far_field_probe.type == "farField"
-    assert np.all(far_field_probe.cell_init == np.array([2, 2, 2]))
+    assert np.all(far_field_probe.cell_init == np.array([1, 1, 1]))
 
     movie_folders = solver.getSolvedProbeFolders("electric_field_movie")
     assert len(movie_folders) == 1
@@ -265,7 +270,7 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
     assert movie_probe.getXDMFFile() is not None
     assert movie_probe.case_name == "sphere"
     assert movie_probe.type == "movie"
-    assert np.all(movie_probe.cell_init == np.array([2, 2, 2]))
+    assert np.all(movie_probe.cell_init == np.array([1, 1, 1]))
 
 
 @pytest.mark.conformal

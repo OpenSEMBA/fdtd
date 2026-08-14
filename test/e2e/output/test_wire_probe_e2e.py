@@ -9,10 +9,15 @@ def test_wire_probe_publishes_complete_descriptor(run_output_case):
 
     assert process.returncode == 0, process.stdout + process.stderr
     descriptors = [
-        json.loads(path.read_text(encoding="utf-8"))
+        (path, json.loads(path.read_text(encoding="utf-8")))
         for path in output_root.rglob("*.json")
         if path.name != "common_geometry.fdtd.json"
     ]
-    probe_descriptors = [value for value in descriptors if "lifecycle" in value]
+    probe_descriptors = [(path, value) for path, value in descriptors if "lifecycle" in value]
     assert probe_descriptors
-    assert probe_descriptors[0]["artifacts"]
+    descriptor_path, descriptor = probe_descriptors[0]
+    assert descriptor["lifecycle"]["state"] == "complete"
+    assert descriptor["quantity"] == "current"
+    artifact = descriptor["artifacts"][0]
+    assert artifact["kind"] == "text"
+    assert (descriptor_path.parent / artifact["relative_path"]).is_file()

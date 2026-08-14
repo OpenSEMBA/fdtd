@@ -17,6 +17,19 @@ OUTPUT_CASES = PROJECT_ROOT / "testData" / "cases" / "output_e2e"
 EXCITATIONS = PROJECT_ROOT / "testData" / "excitations"
 
 
+def _solver_executable() -> Path:
+    configured_executable = os.environ.get("SEMBA_EXE")
+    if configured_executable:
+        return Path(configured_executable)
+
+    executable_name = "semba-fdtd.exe" if os.name == "nt" else "semba-fdtd"
+    for build_dir in ("build", "build-rls", "build-dbg"):
+        executable = PROJECT_ROOT / build_dir / "bin" / executable_name
+        if executable.is_file():
+            return executable
+    return PROJECT_ROOT / "build" / "bin" / executable_name
+
+
 @pytest.fixture
 def stage_output_case(tmp_path: Path) -> Callable[[str], Path]:
     """Copy an input and its source magnitudes into an isolated solver folder."""
@@ -96,8 +109,7 @@ def run_output_case(
         with input_path.open("w", encoding="utf-8") as input_file:
             json.dump(case, input_file)
 
-        executable_name = "semba-fdtd.exe" if os.name == "nt" else "semba-fdtd"
-        executable = PROJECT_ROOT / "build" / "bin" / executable_name
+        executable = _solver_executable()
         process = subprocess.run(
             [str(executable), "-i", str(input_path)],
             cwd=tmp_path,
