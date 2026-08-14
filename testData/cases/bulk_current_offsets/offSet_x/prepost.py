@@ -33,9 +33,9 @@ plt.show()
 
 # %% Visualizing the current on bulk
 
-probe1 = Probe(solver.getSolvedProbeFilenames("BulkCurrent1")[0])
-probe2 = Probe(solver.getSolvedProbeFilenames("BulkCurrent2")[0])
-probe3 = Probe(solver.getSolvedProbeFilenames("BulkCurrent3")[0])
+probe1 = Probe(solver.getSolvedProbeFolders("BulkCurrent1")[0])
+probe2 = Probe(solver.getSolvedProbeFolders("BulkCurrent2")[0])
+probe3 = Probe(solver.getSolvedProbeFolders("BulkCurrent3")[0])
 
 
 

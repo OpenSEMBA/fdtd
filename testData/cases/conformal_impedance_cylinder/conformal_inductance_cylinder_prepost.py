@@ -17,12 +17,12 @@ from pyWrapper import *
 solver = FDTD(input_filename = 'conformal_inductance_cylinder_conformal.fdtd.json', path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
-bulk_conf = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
+bulk_conf = Probe(solver.getSolvedProbeFolders("BulkProbe")[0])
 
 solver = FDTD(input_filename = 'conformal_inductance_cylinder_staircase.fdtd.json', path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
-bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
+bulk = Probe(solver.getSolvedProbeFolders("BulkProbe")[0])
 
 # %%
 exc_file = "predefinedExcitation.1.exc"

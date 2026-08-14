@@ -47,10 +47,10 @@ plt.show()
 
 # %% Visualizing the current on bulk
 
-probe1 = Probe(solver.getSolvedProbeFilenames("Bulk probe1")[0])
-probe2 = Probe(solver.getSolvedProbeFilenames("Bulk probe2")[0])
-probe3 = Probe(solver.getSolvedProbeFilenames("Bulk probe3")[0])
-probeTotal = Probe(solver.getSolvedProbeFilenames("Bulk probe total")[0])
+probe1 = Probe(solver.getSolvedProbeFolders("Bulk probe1")[0])
+probe2 = Probe(solver.getSolvedProbeFolders("Bulk probe2")[0])
+probe3 = Probe(solver.getSolvedProbeFolders("Bulk probe3")[0])
+probeTotal = Probe(solver.getSolvedProbeFolders("Bulk probe total")[0])
 
 
 
@@ -71,9 +71,9 @@ plt.show()
 
 # %% Visualizing no currents in negative case
 
-probe1_negative = Probe(solver_negative.getSolvedProbeFilenames("Bulk probe1")[0])
-probe2_negative = Probe(solver_negative.getSolvedProbeFilenames("Bulk probe2")[0])
-probe3_negative = Probe(solver_negative.getSolvedProbeFilenames("Bulk probe3")[0])
+probe1_negative = Probe(solver_negative.getSolvedProbeFolders("Bulk probe1")[0])
+probe2_negative = Probe(solver_negative.getSolvedProbeFolders("Bulk probe2")[0])
+probe3_negative = Probe(solver_negative.getSolvedProbeFolders("Bulk probe3")[0])
 
 plt.figure()
 plt.plot(probe1_negative["time"].to_numpy(), probe1_negative["current"].to_numpy(), label='Current on bulk1 negative', color='blue')
@@ -85,9 +85,9 @@ plt.show()
 
 # %% Visualizing no currents in positive case
 
-probe1_positive = Probe(solver_positive.getSolvedProbeFilenames("Bulk probe1")[0])
-probe2_positive = Probe(solver_positive.getSolvedProbeFilenames("Bulk probe2")[0])
-probe3_positive = Probe(solver_positive.getSolvedProbeFilenames("Bulk probe3")[0])
+probe1_positive = Probe(solver_positive.getSolvedProbeFolders("Bulk probe1")[0])
+probe2_positive = Probe(solver_positive.getSolvedProbeFolders("Bulk probe2")[0])
+probe3_positive = Probe(solver_positive.getSolvedProbeFolders("Bulk probe3")[0])
 
 plt.figure()
 plt.plot(probe1_positive["time"].to_numpy(), probe1_positive["current"].to_numpy(), label='Current on bulk1 positive', color='blue')

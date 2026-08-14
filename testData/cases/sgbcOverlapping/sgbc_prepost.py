@@ -39,7 +39,7 @@ solver.cleanUp()
 solver.run()
 
 #sgbc sigma= 20 first in materialAssociations
-p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
+p = Probe(solver.getSolvedProbeFolders("Bulk probe")[0])
 t = p['time'].to_numpy()
 iSGBC40_last = p['current'].to_numpy()
 
@@ -48,7 +48,7 @@ solver['materialAssociations'][1]["materialId"] = 6
 solver['materialAssociations'][2]["materialId"] = 2
 solver.cleanUp()
 solver.run()
-iSGBC40_first = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
+iSGBC40_first = Probe(solver.getSolvedProbeFolders("Bulk probe")[0])['current'].to_numpy()
 
 
 

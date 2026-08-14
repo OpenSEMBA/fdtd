@@ -465,43 +465,51 @@ class FDTD:
             if f.startswith(case_name):
                 shutil.rmtree(os.path.join(folder, f), ignore_errors=True)
 
-    def getSolvedProbeFilenames(self, probe_name, include_binary=False):
+    def getSolvedProbeFolders(self, probe_name):
         if not "probes" in self._input:
             raise ValueError("Solver does not contain probes.")
 
-        file_extensions = (".dat", ".xdmf", ".h5", "")
-        if include_binary:
-            file_extensions += (".bin",)
         search_root = os.path.abspath(self.getFolder())
         probe_prefix = self.getCaseName() + "_" + probe_name
-        probeFiles = []
-        for path in glob.glob(os.path.join(search_root, "**", "*"), recursive=True):
-            if not os.path.isfile(path):
-                continue
+        probe_folders = []
+        for path in glob.glob(os.path.join(search_root, "*")):
             basename = os.path.basename(path)
             if not basename.startswith(probe_prefix):
                 continue
-            if basename.endswith("_geometry.xdmf") or basename.endswith("_geometry.h5"):
-                continue
-            extension = next(
-                (value for value in Probe.FILE_EXTENSIONS if basename.endswith(value)),
-                "",
-            )
-            artifact_suffix = os.path.splitext(
-                basename[len(probe_prefix) :].lstrip("_")
-            )[1]
-            if not extension and artifact_suffix:
-                continue
-            if not extension and not any(
-                tag in basename[len(self.getCaseName()) + 1 :]
-                for tag in Probe.FAR_FIELD_TAG
+            if not any(
+                tag in basename[len(self.getCaseName()) + 1 :] for tag in Probe.ALL_TAGS
             ):
                 continue
-            if extension not in file_extensions:
+            if os.path.isdir(path):
+                probe_folders.append(os.path.abspath(path))
                 continue
-            probeFiles.append(os.path.abspath(path))
+            if not os.path.isfile(path):
+                continue
 
-        return sorted(probeFiles)
+            stem, extension = os.path.splitext(basename)
+            if extension not in Probe.FILE_EXTENSIONS:
+                if not any(tag in basename for tag in Probe.FAR_FIELD_TAG):
+                    continue
+                stem = basename
+            elif stem.endswith("_geometry"):
+                stem = stem[: -len("_geometry")]
+
+            if os.path.basename(os.path.dirname(path)) == stem:
+                continue
+            folder = os.path.join(os.path.dirname(path), stem)
+            if os.path.isfile(folder):
+                temporary_file = folder + ".tmp"
+                shutil.move(folder, temporary_file)
+                os.makedirs(folder)
+                shutil.move(temporary_file, os.path.join(folder, stem))
+                if path == folder:
+                    probe_folders.append(os.path.abspath(folder))
+                    continue
+            os.makedirs(folder, exist_ok=True)
+            shutil.move(path, os.path.join(folder, basename))
+            probe_folders.append(os.path.abspath(folder))
+
+        return sorted(set(probe_folders))
 
     def getExcitationFile(self, excitation_file_name):
         file_extensions = ("*.exc",)

@@ -246,6 +246,15 @@ def compute_impedance(probe_path, time_exc, voltage_exc, freqs):
     Z = V_f / I_f
     return time_I, current, Z
 
+
+def probe_from_fixture(tmp_path, filename):
+    """Expose a legacy flat fixture through the folder-based Probe API."""
+    source = os.path.join(OUTPUTS_FOLDER, filename)
+    folder = os.path.join(tmp_path, "expected-probes", os.path.splitext(filename)[0])
+    os.makedirs(folder, exist_ok=True)
+    shutil.copy2(source, os.path.join(folder, filename))
+    return Probe(folder)
+
 def corrcoef_on_common_time(t_ref, y_ref, t_cmp, y_cmp):
     t_ini = max(t_ref[0], t_cmp[0])
     t_end = min(t_ref[-1], t_cmp[-1])

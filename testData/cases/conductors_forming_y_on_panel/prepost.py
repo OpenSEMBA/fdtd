@@ -23,7 +23,7 @@ exc_signal = exc_data[:, 1]
 
 
 # %% Read bulk current probe
-probe_bulk = Probe(solver.getSolvedProbeFilenames("BC")[0])
+probe_bulk = Probe(solver.getSolvedProbeFolders("BC")[0])
 assert not probe_bulk["current"].isnull().any(), "probe_bulk current contains NaN values"
 
 plt.figure()

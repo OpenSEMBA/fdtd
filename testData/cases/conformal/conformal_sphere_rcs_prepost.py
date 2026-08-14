@@ -17,7 +17,7 @@ solver = FDTD(input_filename = 'conformal_str_sphere_rcs.fdtd.json', path_to_exe
 solver.cleanUp()
 solver.run()
 
-far_str = Probe(solver.getSolvedProbeFilenames("n2f")[0])
+far_str = Probe(solver.getSolvedProbeFolders("n2f")[0])
 ra90_0_str = far_str.data.loc[(far_str.data['Theta'] == 90.0) & (far_str.data['Phi'] ==  0.0), 'rcs_arit']
 rg90_0_str = far_str.data.loc[(far_str.data['Theta'] == 90.0) & (far_str.data['Phi'] ==  0.0), 'rcs_geom']
 f90_0_str  = far_str.data.loc[(far_str.data['Theta'] == 90.0) & (far_str.data['Phi'] ==  0.0), 'freq']
@@ -29,7 +29,7 @@ solver = FDTD(input_filename = 'slanted_sphere_rcs.fdtd.json', path_to_exe=SEMBA
 solver.cleanUp()
 solver.run()
 
-far_sl = Probe(solver.getSolvedProbeFilenames("n2f")[0])
+far_sl = Probe(solver.getSolvedProbeFolders("n2f")[0])
 ra90_0_sl = far_sl.data.loc[(far_sl.data['Theta'] == 90.0) & (far_sl.data['Phi'] ==  0.0), 'rcs_arit']
 rg90_0_sl = far_sl.data.loc[(far_sl.data['Theta'] == 90.0) & (far_sl.data['Phi'] ==  0.0), 'rcs_geom']
 f90_0_sl  = far_sl.data.loc[(far_sl.data['Theta'] == 90.0) & (far_sl.data['Phi'] ==  0.0), 'freq']
@@ -40,7 +40,7 @@ solver = FDTD(input_filename = 'conformal_fL_0.15_sphere_rcs.fdtd.json', path_to
 solver.cleanUp()
 solver.run()
 
-far_conf = Probe(solver.getSolvedProbeFilenames("n2f")[0])
+far_conf = Probe(solver.getSolvedProbeFolders("n2f")[0])
 ra90_0_conf = far_conf.data.loc[(far_conf.data['Theta'] == 90.0) & (far_conf.data['Phi'] ==  0.0), 'rcs_arit']
 rg90_0_conf = far_conf.data.loc[(far_conf.data['Theta'] == 90.0) & (far_conf.data['Phi'] ==  0.0), 'rcs_geom']
 f90_0_conf  = far_conf.data.loc[(far_conf.data['Theta'] == 90.0) & (far_conf.data['Phi'] ==  0.0), 'freq']
@@ -51,7 +51,7 @@ solver = FDTD(input_filename = 'conformal_fL_sphere_rcs.fdtd.json', path_to_exe=
 solver.cleanUp()
 solver.run()
 
-far_conf_fine = Probe(solver.getSolvedProbeFilenames("n2f")[0])
+far_conf_fine = Probe(solver.getSolvedProbeFolders("n2f")[0])
 ra90_0_conf_fine = far_conf_fine.data.loc[(far_conf_fine.data['Theta'] == 90.0) & (far_conf_fine.data['Phi'] ==  0.0), 'rcs_arit']
 rg90_0_conf_fine = far_conf_fine.data.loc[(far_conf_fine.data['Theta'] == 90.0) & (far_conf_fine.data['Phi'] ==  0.0), 'rcs_geom']
 f90_0_conf_fine  = far_conf_fine.data.loc[(far_conf_fine.data['Theta'] == 90.0) & (far_conf_fine.data['Phi'] ==  0.0), 'freq']

@@ -97,30 +97,27 @@ def test_fdtd_clean_up_after_run(tmp_path):
 
     solver.run()
 
-    solved_probe_filenames = solver.getSolvedProbeFilenames("inbox")
-    assert os.path.isfile(solved_probe_filenames[0])
+    solved_probe_folders = solver.getSolvedProbeFolders("inbox")
+    assert os.path.isdir(solved_probe_folders[0])
 
     solver.cleanUp()
 
-    assert not os.path.isfile(solved_probe_filenames[0])
+    assert not os.path.exists(solved_probe_folders[0])
 
 
 @pytest.mark.planewave
-def test_fdtd_probe_filenames_exclude_binary_by_default(tmp_path):
+def test_fdtd_probe_folders_include_binary_artifacts(tmp_path):
     input = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
     solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver["general"]["numberOfSteps"] = 1
     solver.run()
 
-    text_artifacts = solver.getSolvedProbeFilenames("inbox")
-    all_artifacts = solver.getSolvedProbeFilenames("inbox", include_binary=True)
+    probe_folders = solver.getSolvedProbeFolders("inbox")
 
-    assert text_artifacts
-    assert all(
-        filename.endswith((".dat", ".xdmf", ".h5")) for filename in text_artifacts
-    )
-    assert set(text_artifacts) < set(all_artifacts)
-    assert any(filename.endswith(".bin") for filename in all_artifacts)
+    assert len(probe_folders) == 1
+    probe = Probe(probe_folders[0])
+    assert probe.getDatFile() is not None
+    assert probe.getBinFile() is not None
 
 
 @pytest.mark.planewave
@@ -155,7 +152,7 @@ def test_holland_case_checking_number_of_outputs_single_wire(tmp_path):
     solver["materials"][0] = createWire(id=1, r=0.02)
     solver.run()
 
-    probe_files = solver.getSolvedProbeFilenames("mid_point")
+    probe_files = solver.getSolvedProbeFolders("mid_point")
 
     assert len(probe_files) == 1
     output_probe = Probe(probe_files[0])
@@ -177,7 +174,7 @@ def test_holland_case_checking_number_of_outputs_wire(tmp_path):
     solver["materials"][0] = createWire(id=1, r=0.02)
     solver.run()
 
-    probe_files = solver.getSolvedProbeFilenames("mid_point")
+    probe_files = solver.getSolvedProbeFolders("mid_point")
 
     assert len(probe_files) == 1
     output_probe = Probe(probe_files[0])
@@ -201,7 +198,7 @@ def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
     expected_output_filename = "holland1981.fdtd_mid_point_single_wire_I_11_11_12.dat"
     solver.run()
 
-    probe_files = solver.getSolvedProbeFilenames("mid_point")
+    probe_files = solver.getSolvedProbeFolders("mid_point")
 
     assert len(probe_files) == 1
     output_probe = Probe(probe_files[0])
@@ -219,20 +216,20 @@ def test_towel_hanger_case_creates_output_probes(tmp_path):
 
     solver.run()
 
-    probe_start = solver.getSolvedProbeFilenames("wire_start")
-    probe_mid = solver.getSolvedProbeFilenames("wire_mid")
-    probe_end = solver.getSolvedProbeFilenames("wire_end")
+    probe_start = solver.getSolvedProbeFolders("wire_start")
+    probe_mid = solver.getSolvedProbeFolders("wire_mid")
+    probe_end = solver.getSolvedProbeFolders("wire_end")
 
     assert len(probe_start) == 1
     assert len(probe_mid) == 1
     assert len(probe_end) == 1
 
-    assert "towelHanger.fdtd_wire_start_wire_I_27_25_30.dat" == Path(probe_start[0]).name
-    assert "towelHanger.fdtd_wire_mid_wire_I_35_25_32.dat" == Path(probe_mid[0]).name
-    assert "towelHanger.fdtd_wire_end_wire_I_43_25_30.dat" == Path(probe_end[0]).name
-    assert countLinesInFile(probe_start[0]) == 3
-    assert countLinesInFile(probe_mid[0]) == 3
-    assert countLinesInFile(probe_end[0]) == 3
+    assert "towelHanger.fdtd_wire_start_wire_I_27_25_30" == Path(probe_start[0]).name
+    assert "towelHanger.fdtd_wire_mid_wire_I_35_25_32" == Path(probe_mid[0]).name
+    assert "towelHanger.fdtd_wire_end_wire_I_43_25_30" == Path(probe_end[0]).name
+    assert countLinesInFile(Probe(probe_start[0]).getDatFile()) == 3
+    assert countLinesInFile(Probe(probe_mid[0]).getDatFile()) == 3
+    assert countLinesInFile(Probe(probe_end[0]).getDatFile()) == 3
 
 
 @pytest.mark.wires
@@ -255,20 +252,17 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
 
     solver.run()
 
-    far_field_files = solver.getSolvedProbeFilenames("farfield")
+    far_field_files = solver.getSolvedProbeFolders("farfield")
     assert len(far_field_files) == 1
     far_field_probe = Probe(far_field_files[0])
     assert far_field_probe.case_name == "sphere"
     assert far_field_probe.type == "farField"
     assert np.all(far_field_probe.cell_init == np.array([2, 2, 2]))
 
-    movie_files = [
-        path
-        for path in solver.getSolvedProbeFilenames("electric_field_movie")
-        if path.endswith(".xdmf")
-    ]
-    assert len(movie_files) == 1
-    movie_probe = Probe(movie_files[0])
+    movie_folders = solver.getSolvedProbeFolders("electric_field_movie")
+    assert len(movie_folders) == 1
+    movie_probe = Probe(movie_folders[0])
+    assert movie_probe.getXDMFFile() is not None
     assert movie_probe.case_name == "sphere"
     assert movie_probe.type == "movie"
     assert np.all(movie_probe.cell_init == np.array([2, 2, 2]))
@@ -450,13 +444,10 @@ def test_movie_with_frequency_domain(tmp_path):
 
     solver.run()
 
-    movie_files = [
-        path
-        for path in solver.getSolvedProbeFilenames("movie_electric")
-        if path.endswith(".xdmf")
-    ]
-    assert len(movie_files) == 1
-    movie_probe = Probe(movie_files[0])
+    movie_folders = solver.getSolvedProbeFolders("movie_electric")
+    assert len(movie_folders) == 1
+    movie_probe = Probe(movie_folders[0])
+    assert movie_probe.getXDMFFile() is not None
     assert movie_probe.case_name == "movieFrequency"
     assert movie_probe.type == "movie"
     assert np.all(movie_probe.cell_init == np.array([1, 1, 1]))
@@ -472,13 +463,10 @@ def test_movie_with_time_domain(tmp_path):
 
     solver.run()
 
-    movie_files = [
-        path
-        for path in solver.getSolvedProbeFilenames("movie_electric")
-        if path.endswith(".xdmf")
-    ]
-    assert len(movie_files) == 1
-    movie_probe = Probe(movie_files[0])
+    movie_folders = solver.getSolvedProbeFolders("movie_electric")
+    assert len(movie_folders) == 1
+    movie_probe = Probe(movie_folders[0])
+    assert movie_probe.getXDMFFile() is not None
     assert movie_probe.case_name == "movieTime"
     assert movie_probe.type == "movie"
     assert np.all(movie_probe.cell_init == np.array([1, 1, 1]))
@@ -1542,7 +1530,7 @@ def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
 
     solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    probe_files = solver.getSolvedProbeFilenames("BulkProbeEntry")
+    probe_files = solver.getSolvedProbeFolders("BulkProbeEntry")
     assert len(probe_files) == 1
     assert Probe(probe_files[0]) is not None
 
@@ -1552,7 +1540,7 @@ def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
 
     solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    probe_files = solver.getSolvedProbeFilenames("BulkProbeEntry")
+    probe_files = solver.getSolvedProbeFolders("BulkProbeEntry")
     assert len(probe_files) == 1
     assert Probe(probe_files[0]) is not None
 
@@ -1573,7 +1561,7 @@ def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arg
     input_filename = CASES_FOLDER + "dielectric/dielectricTransmission.fdtd.json"
     solver = FDTD(input_filename, path_to_exe=executable_path, run_in_folder=tmp_path)
     solver.run()
-    probe_files = solver.getSolvedProbeFilenames("outside")
+    probe_files = solver.getSolvedProbeFolders("outside")
     assert len(probe_files) == 1
     assert Probe(probe_files[0]) is not None
     assert solver.getVTKMap()[0] is not None
@@ -1586,11 +1574,11 @@ def test_bulk_current_outputs(tmp_path):
     solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    bulk_x_plane_filenames = solver.getSolvedProbeFilenames("BulkXPlane")
-    bulk_y_plane_filenames = solver.getSolvedProbeFilenames("BulkYPlane")
-    bulk_z_plane_filenames = solver.getSolvedProbeFilenames("BulkZPlane")
-    bulk_y_point_filenames = solver.getSolvedProbeFilenames("BulkYPoint")
-    bulk_z_volume_filenames = solver.getSolvedProbeFilenames("BulkZVolume")
+    bulk_x_plane_filenames = solver.getSolvedProbeFolders("BulkXPlane")
+    bulk_y_plane_filenames = solver.getSolvedProbeFolders("BulkYPlane")
+    bulk_z_plane_filenames = solver.getSolvedProbeFolders("BulkZPlane")
+    bulk_y_point_filenames = solver.getSolvedProbeFolders("BulkYPoint")
+    bulk_z_volume_filenames = solver.getSolvedProbeFolders("BulkZVolume")
 
     assert len(bulk_x_plane_filenames) == 1
     assert len(bulk_y_plane_filenames) == 1

@@ -50,12 +50,12 @@ solver.cleanUp()
 solver.run()
 # %% Load probes
 
-E_mid_x = Probe(solver.getSolvedProbeFilenames("electric_field_point_probe_mid_Ex_70_75_76")[0])
-E_mid_y = Probe(solver.getSolvedProbeFilenames("electric_field_point_probe_mid_Ey_70_75_76")[0])
-E_mid_z = Probe(solver.getSolvedProbeFilenames("electric_field_point_probe_mid_Ez_70_75_76")[0])
+E_mid_x = Probe(solver.getSolvedProbeFolders("electric_field_point_probe_mid_Ex_70_75_76")[0])
+E_mid_y = Probe(solver.getSolvedProbeFolders("electric_field_point_probe_mid_Ey_70_75_76")[0])
+E_mid_z = Probe(solver.getSolvedProbeFolders("electric_field_point_probe_mid_Ez_70_75_76")[0])
 
-I1 = Probe(solver.getSolvedProbeFilenames("wire_1_end_bundle_cable_1_shield_I_70_70_74")[0])
-I2 = Probe(solver.getSolvedProbeFilenames("wire_2_end_bundle_cable_2_shield_I_80_70_74")[0])
+I1 = Probe(solver.getSolvedProbeFolders("wire_1_end_bundle_cable_1_shield_I_70_70_74")[0])
+I2 = Probe(solver.getSolvedProbeFolders("wire_2_end_bundle_cable_2_shield_I_80_70_74")[0])
 
 plt.plot(I1['time']*1e6, I1['current_1'], label='agressor cable, inner wire') 
 plt.plot(I2['time']*1e6, 1e5*I2['current_0'], label=r'victim cable, shield (x$10^{5}$)') 

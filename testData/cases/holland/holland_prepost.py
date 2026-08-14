@@ -23,13 +23,13 @@ solver_mtln = FDTD(input_filename=fn, path_to_exe=SEMBA_MTLN_EXE, run_in_folder=
 solver_mtln.cleanUp()
 solver_mtln.run()
 probe_files_mtln = [os.path.join(os.getcwd(), f)
-                    for f in solver_mtln.getSolvedProbeFilenames("mid_point")]
+                    for f in solver_mtln.getSolvedProbeFolders("mid_point")]
 
 solver_nomtln = FDTD(input_filename=fn, path_to_exe=SEMBA_NOMTLN_EXE, run_in_folder=nomtln_folder)
 solver_nomtln.cleanUp()
 solver_nomtln.run()
 probe_files_nomtln = [os.path.join(os.getcwd(), f)
-                      for f in solver_nomtln.getSolvedProbeFilenames("mid_point")]
+                      for f in solver_nomtln.getSolvedProbeFolders("mid_point")]
 
 # %% Plot results
 plt.figure()

@@ -404,7 +404,7 @@ def test_read_extensionless_far_field_probe(tmp_path):
 
 
 @pytest.mark.probes
-def test_probe_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch):
+def test_probe_folder_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch):
     run_folder = tmp_path / "own_run"
     other_folder = tmp_path / "other_run"
     run_folder.mkdir()
@@ -417,50 +417,54 @@ def test_probe_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     solver = FDTD(Path("own_run/case.fdtd.json"), path_to_exe=input_path)
 
-    probe_folder = run_folder / "case.fdtd_sample_Ex_1_2_3"
-    probe_folder.mkdir()
-    nested_text = probe_folder / "case.fdtd_sample_Ex_1_2_3_tm.dat"
-    nested_binary = probe_folder / "case.fdtd_sample_Ex_1_2_3_tm.bin"
-    descriptor = probe_folder / "case.fdtd_sample_Ex_1_2_3.json"
-    flat_text = run_folder / "case.fdtd_sample_line_I_1_2_3.dat"
-    mtln_text = run_folder / "case.fdtd_start_voltage_wire_V_5_5_1.dat"
-    wire_text = run_folder / "case.fdtd_wire_start_Wz_27_25_30_s3_tm.dat"
-    unrelated_extensionless = run_folder / "case.fdtd_sample_notes"
-    literal_name = run_folder / "case.fdtd_probe[0]_Ex_4_5_6.dat"
-    regex_like_name = run_folder / "case.fdtd_probe0_Ex_4_5_6.dat"
-    wrong_run_text = other_folder / "case.fdtd_sample_Ex_1_2_3.dat"
-    for path in (
-        nested_text,
-        nested_binary,
-        descriptor,
-        flat_text,
-        mtln_text,
-        wire_text,
-        unrelated_extensionless,
+    sample_point = run_folder / "case.fdtd_sample_Ex_1_2_3_tm"
+    sample_line = run_folder / "case.fdtd_sample_line_I_1_2_3_tm"
+    far_field = run_folder / "case.fdtd_farfield_FF_1_1_1__2_2_2_fq"
+    literal_name = run_folder / "case.fdtd_probe[0]_Ex_4_5_6_tm"
+    regex_like_name = run_folder / "case.fdtd_probe0_Ex_4_5_6_tm"
+    mtln_probe = run_folder / "case.fdtd_start_voltage_wire_V_5_5_1_tm"
+    wire_probe = run_folder / "case.fdtd_wire_start_Wz_27_25_30_s3_tm"
+    wrong_run_probe = other_folder / "case.fdtd_sample_Ex_1_2_3_tm"
+    for folder in (
+        sample_line,
         literal_name,
         regex_like_name,
-        wrong_run_text,
+        mtln_probe,
+        wire_probe,
+        wrong_run_probe,
+    ):
+        folder.mkdir()
+
+    for path in (
+        run_folder / f"{sample_point.name}.dat",
+        run_folder / f"{sample_point.name}.bin",
+        sample_line / f"{sample_line.name}.dat",
+        run_folder / far_field.name,
+        run_folder / f"{far_field.name}.bin",
     ):
         path.touch()
 
-    far_field = run_folder / "case.fdtd_farfield_FF_1_1_1__2_2_2"
-    far_field.touch()
+    (run_folder / "case.fdtd_sample_Ex_1_2_3_tm.dat").touch()
     monkeypatch.chdir(other_folder)
 
     expected_results = [
-        ("sample", False, [flat_text, nested_text]),
-        ("sample", True, [flat_text, nested_binary, nested_text]),
-        ("farfield", False, [far_field]),
-        ("farfield_FF_1_1_1__2_2_2", False, [far_field]),
-        ("probe[0]", False, [literal_name]),
-        ("sample_Ex_1_2_3_tm", False, [nested_text]),
-        ("start_voltage", False, [mtln_text]),
-        ("wire_start", False, [wire_text]),
+        ("sample", [sample_line, sample_point]),
+        ("farfield", [far_field]),
+        ("farfield_FF_1_1_1__2_2_2_fq", [far_field]),
+        ("probe[0]", [literal_name]),
+        ("sample_Ex_1_2_3_tm", [sample_point]),
+        ("start_voltage", [mtln_probe]),
+        ("wire_start", [wire_probe]),
     ]
 
-    for probe_name, include_binary, expected_paths in expected_results:
+    for probe_name, expected_paths in expected_results:
         expected = sorted(str(path.resolve()) for path in expected_paths)
-        assert solver.getSolvedProbeFilenames(probe_name, include_binary) == expected
+        assert solver.getSolvedProbeFolders(probe_name) == expected
+
+    assert (sample_point / f"{sample_point.name}.dat").is_file()
+    assert (sample_point / f"{sample_point.name}.bin").is_file()
+    assert (far_field / far_field.name).is_file()
+    assert (far_field / f"{far_field.name}.bin").is_file()
 
 
 @pytest.mark.spice

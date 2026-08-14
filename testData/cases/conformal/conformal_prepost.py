@@ -38,7 +38,7 @@ solver['mesh']['elements'][3]['intervals'] = [[[0,0,4],[2,2,4]]]
 solver.cleanUp()
 
 solver.run()
-front = Probe(solver.getSolvedProbeFilenames("front")[0])
+front = Probe(solver.getSolvedProbeFolders("front")[0])
 t = front['time']
 t4 = t[front['field'].argmin()]
 
@@ -48,7 +48,7 @@ solver['mesh']['elements'][3]['intervals'] = [[[0,0,5],[2,2,5]]]
 solver.cleanUp()
 
 solver.run()
-front = Probe(solver.getSolvedProbeFilenames("front")[0])
+front = Probe(solver.getSolvedProbeFolders("front")[0])
 t = front['time']
 t5 = t[front['field'].argmin()]
 
@@ -70,7 +70,7 @@ for i in range(11):
     solver.cleanUp()
     solver.run()
     assert solver.hasFinishedSuccessfully()
-    front = Probe(solver.getSolvedProbeFilenames("front")[0])
+    front = Probe(solver.getSolvedProbeFolders("front")[0])
     t = front['time']
     inc = front['incident']
     back = front['field']
@@ -79,8 +79,8 @@ for i in range(11):
 
 
 # %% Postprocess
-front = Probe(solver.getSolvedProbeFilenames("front")[0])
-back = Probe(solver.getSolvedProbeFilenames("back")[0])
+front = Probe(solver.getSolvedProbeFolders("front")[0])
+back = Probe(solver.getSolvedProbeFolders("back")[0])
 
 plt.plot(front['time'], front['incident'], 'k-', label='front incident') 
 plt.plot(front['time'], front['field'], 'b.', label='front field') 

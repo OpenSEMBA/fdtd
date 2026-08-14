@@ -3,10 +3,10 @@ from pathlib import Path
 from utils import *
 
 
-def _get_solved_probe_filename(solver, probe_name, *, filename=None, contains=None) -> str:
-    probe_files = solver.getSolvedProbeFilenames(probe_name)
+def _get_solved_probe_folder(solver, probe_name, *, filename=None, contains=None) -> str:
+    probe_files = solver.getSolvedProbeFolders(probe_name)
     if filename is not None:
-        probe_files = [path for path in probe_files if Path(path).name == filename]
+        probe_files = [path for path in probe_files if Path(path).name == Path(filename).stem]
     if contains is not None:
         probe_files = [path for path in probe_files if contains in Path(path).name]
     assert len(probe_files) == 1, (
@@ -74,10 +74,10 @@ def test_shieldedPair_mpi(tmp_path):
         "shieldedPair.fdtd_wire_end_line_out_I_75_71_74.dat",
         "shieldedPair.fdtd_wire_end_line_out_V_75_71_74.dat",
     ]
-    p_expected = [Probe(OUTPUTS_FOLDER + filename) for filename in probe_files]
+    p_expected = [probe_from_fixture(tmp_path, filename) for filename in probe_files]
     p_solved = [
         Probe(
-            _get_solved_probe_filename(
+            _get_solved_probe_folder(
                 solver,
                 "wire_start" if "_wire_start_" in filename else "wire_end",
                 filename=filename,
@@ -115,7 +115,7 @@ def test_holland_mtln_mpi(tmp_path):
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
     probe_mid_no_mpi = Probe(
-        _get_solved_probe_filename(solver, "mid_point", contains="_I_")
+        _get_solved_probe_folder(solver, "mid_point", contains="_I_")
     )
 
     solver = FDTD(
@@ -127,7 +127,7 @@ def test_holland_mtln_mpi(tmp_path):
     solver.cleanUp()
     solver.run()
     probe_mid_mpi_1 = Probe(
-        _get_solved_probe_filename(solver, "mid_point", contains="_I_")
+        _get_solved_probe_folder(solver, "mid_point", contains="_I_")
     )
 
     solver = FDTD(
@@ -139,7 +139,7 @@ def test_holland_mtln_mpi(tmp_path):
     solver.cleanUp()
     solver.run()
     probe_mid_mpi_2 = Probe(
-        _get_solved_probe_filename(solver, "mid_point", contains="_I_")
+        _get_solved_probe_folder(solver, "mid_point", contains="_I_")
     )
 
     expected_f = json.load(
@@ -190,11 +190,11 @@ def test_towelHanger_mpi(tmp_path):
         solver.run()
 
         p_solved = [
-            Probe(_get_solved_probe_filename(solver, name))
+            Probe(_get_solved_probe_folder(solver, name))
             for name in ["wire_start", "wire_mid", "wire_end"]
         ]
         p_expected = [
-            Probe(OUTPUTS_FOLDER + filename)
+            probe_from_fixture(tmp_path, filename)
             for filename in [
                 "towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat",
                 "towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat",
