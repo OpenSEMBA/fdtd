@@ -93,7 +93,7 @@ module smbjson_m
 
    type, private :: thinwiretermination_t
       integer :: terminationType
-      real :: r, l, c
+      real(kind=RKIND) :: r, l, c
    end type
 
    type, private :: generator_description_t
@@ -118,9 +118,9 @@ module smbjson_m
    end type
 
    type, private :: domain_t
-      real :: tstart = 0.0, tstop = 0.0, tstep = 0.0
-      real :: fstart = 0.0, fstop = 0.0
-      real :: fstep = 0.0
+      real(kind=RKIND) :: tstart = 0.0_RKIND, tstop = 0.0_RKIND, tstep = 0.0_RKIND
+      real(kind=RKIND) :: fstart = 0.0_RKIND, fstop = 0.0_RKIND
+      real(kind=RKIND) :: fstep = 0.0_RKIND
       ! integer :: fstep = 0
       character(len=:), allocatable :: filename
       integer :: type1 = NP_T1_PLAIN, type2 = NP_T2_TIME
@@ -517,8 +517,8 @@ contains
          type(FronteraPML_t) :: res
          character(len=*), intent(in) :: p
          res%numCapas = this%getIntAt(this%root, p//'.'//J_BND_PML_LAYERS, default=8)
-         res%orden = this%getRealAt(this%root, p//'.'//J_BND_PML_ORDER, default=2.0)
-         res%refl = this%getRealAt(this%root, p//'.'//J_BND_PML_REFLECTION, default=0.001)
+         res%orden = this%getRealAt(this%root, p//'.'//J_BND_PML_ORDER, default=2.0_RKIND)
+         res%refl = this%getRealAt(this%root, p//'.'//J_BND_PML_REFLECTION, default=0.001_RKIND)
       end function
 
       function labelToBoundaryPlace(str) result (place)
@@ -834,10 +834,10 @@ contains
 
          matPtr = this%matTable%getId(mA%materialId)
          ! Fills rest of dielectric data.
-         res%sigma  = this%getRealAt(matPtr%p, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
-         res%sigmam = this%getRealAt(matPtr%p, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
-         res%eps    = this%getRealAt(matPtr%p, J_MAT_REL_PERMITTIVITY, default=1.0)*EPSILON_VACUUM
-         res%mu     = this%getRealAt(matPtr%p, J_MAT_REL_PERMEABILITY, default=1.0)*MU_VACUUM
+         res%sigma  = this%getRealAt(matPtr%p, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
+         res%sigmam = this%getRealAt(matPtr%p, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0_RKIND)
+         res%eps    = this%getRealAt(matPtr%p, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND)*EPSILON_VACUUM
+         res%mu     = this%getRealAt(matPtr%p, J_MAT_REL_PERMEABILITY, default=1.0_RKIND)*MU_VACUUM
 
       end function
 
@@ -886,8 +886,8 @@ contains
                write(errorMsg, '(A)') errorMsgInit, mA%materialId, " resistance not found."
                call WarnErrReport(errorMsg, .true.)
             end if
-            res%Rtime_on = this%getRealAt(matPtr%p, J_MAT_LUMPED_STARTING_TIME, default=0.0)
-            res%Rtime_off = this%getRealAt(matPtr%p, J_MAT_LUMPED_END_TIME, default=1.0)
+            res%Rtime_on = this%getRealAt(matPtr%p, J_MAT_LUMPED_STARTING_TIME, default=0.0_RKIND)
+            res%Rtime_off = this%getRealAt(matPtr%p, J_MAT_LUMPED_END_TIME, default=1.0_RKIND)
           case (J_MAT_LUMPED_MODEL_INDUCTOR)
             res%inductor = .true.
             res%L = this%getRealAt(matPtr%p, J_MAT_LUMPED_INDUCTANCE, found)
@@ -895,7 +895,7 @@ contains
                write(errorMsg, '(A)') errorMsgInit, mA%materialId, " inductance not found."
                call WarnErrReport(errorMsg, .true.)
             end if
-            res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, default=0.0)
+            res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, default=0.0_RKIND)
           case (J_MAT_LUMPED_MODEL_CAPACITOR)
             res%capacitor = .true.
             res%C = this%getRealAt(matPtr%p, J_MAT_LUMPED_CAPACITANCE, found)
@@ -2475,15 +2475,15 @@ contains
       domainType = this%getStrAt(domain, J_TYPE, default=J_PR_DOMAIN_TYPE_TIME)
       res%type2 = getNPDomainType(domainType, transferFunctionFound)
 
-      res%tstart = this%getRealAt(domain, J_PR_DOMAIN_TIME_START, default=0.0)
-      res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=0.0)
-      res%tstep = this%getRealAt(domain, J_PR_DOMAIN_TIME_STEP, default=0.0)
-      res%fstart = this%getRealAt(domain, J_PR_DOMAIN_FREQ_START, default=0.0)
-      res%fstop = this%getRealAt(domain, J_PR_DOMAIN_FREQ_STOP, default=0.0)
+      res%tstart = this%getRealAt(domain, J_PR_DOMAIN_TIME_START, default=0.0_RKIND)
+      res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=0.0_RKIND)
+      res%tstep = this%getRealAt(domain, J_PR_DOMAIN_TIME_STEP, default=0.0_RKIND)
+      res%fstart = this%getRealAt(domain, J_PR_DOMAIN_FREQ_START, default=0.0_RKIND)
+      res%fstop = this%getRealAt(domain, J_PR_DOMAIN_FREQ_STOP, default=0.0_RKIND)
 
       numberOfFrequencies = this%getIntAt(domain, J_PR_DOMAIN_FREQ_NUMBER, default=0)
       if (numberOfFrequencies == 0) then
-         res%fstep = 0.0
+         res%fstep = 0.0_RKIND
       else
          res%fstep = (res%fstop - res%fstart) / numberOfFrequencies
       endif
@@ -4765,13 +4765,13 @@ contains
    end function
 
    function getMatrixAt(this, place, path, found) result(res)
-      real, dimension(:,:), allocatable :: res
+      real(kind=RKIND), dimension(:,:), allocatable :: res
       class(parser_t) :: this
       type(json_value), pointer :: place, matrix, row
       character(len=*) :: path
       logical, intent(out), optional :: found
       integer :: i, vartype, nr
-      real, dimension(:), allocatable :: res_row
+      real(kind=RKIND), dimension(:), allocatable :: res_row
       logical :: localFound
 
       call this%core%get(place, path,  matrix, localfound)
