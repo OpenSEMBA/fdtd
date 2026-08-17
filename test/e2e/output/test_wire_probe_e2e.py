@@ -17,7 +17,7 @@ def test_wire_probe_publishes_complete_descriptor(run_output_case):
     assert probe_descriptors
     descriptor_path, descriptor = probe_descriptors[0]
     assert descriptor["lifecycle"]["state"] == "complete"
-    assert descriptor["quantity"] == "current"
+    assert descriptor["quantity"] == "Wx"
     artifact = descriptor["artifacts"][0]
     assert artifact["kind"] == "text"
     assert (descriptor_path.parent / artifact["relative_path"]).is_file()

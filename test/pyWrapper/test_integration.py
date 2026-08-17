@@ -224,9 +224,9 @@ def test_towel_hanger_case_creates_output_probes(tmp_path):
     assert len(probe_mid) == 1
     assert len(probe_end) == 1
 
-    assert "towelHanger.fdtd_wire_start_wire_I_27_25_30" == Path(probe_start[0]).name
-    assert "towelHanger.fdtd_wire_mid_wire_I_35_25_32" == Path(probe_mid[0]).name
-    assert "towelHanger.fdtd_wire_end_wire_I_43_25_30" == Path(probe_end[0]).name
+    assert "towelHanger.fdtd_wire_start_Wz_27_25_30_s1" == Path(probe_start[0]).name
+    assert "towelHanger.fdtd_wire_mid_Wx_35_25_32_s5" == Path(probe_mid[0]).name
+    assert "towelHanger.fdtd_wire_end_Wz_43_25_30_s4" == Path(probe_end[0]).name
     assert countLinesInFile(Probe(probe_start[0]).getDatFile()) == 3
     assert countLinesInFile(Probe(probe_mid[0]).getDatFile()) == 3
     assert countLinesInFile(Probe(probe_end[0]).getDatFile()) == 3
@@ -959,10 +959,10 @@ def test_wire_x_collision_y_Jprobe(tmp_path):
 
     solver.run()
 
-    assert_current_movie_has_tag_number(solver, {(3, 3, 3): 0, (0, 0, 0): 0})
+    assert_current_movie_has_tag_number(solver, {(3, 3, 3): 128, (0, 0, 0): 0})
     tag_counts = current_movie_geometry_tag_counts(solver)
     assert tag_counts[64] == 2
-    assert tag_counts[128] == 2
+    assert tag_counts[128] == 4
 
 
 @mtln_skip

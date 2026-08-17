@@ -7,6 +7,7 @@ module mapVTKOutput_m
     use vtkAPI_m
     use volumicProbeUtils_m
     use report_m
+    use HollandWires_m, only: GetHwires
     use, intrinsic :: iso_fortran_env, only: int64, real64
     use xdmf_hdf5_m, only: xdmf_writer_t, xdmf_options_t, xdmf_status_t, xdmf_grid_id_t, &
                             xdmf_attribute_id_t, XDMF_TOPOLOGY_POLYLINE, XDMF_TOPOLOGY_QUADRILATERAL, &
@@ -90,8 +91,9 @@ contains
        end do
        end do
 #ifdef CompileWithMTLN
-       call count_mtln_external_segments(this, counter)
+        call count_mtln_external_segments(this, counter)
 #endif
+        call count_holland_wire_segments(this, counter)
 
        this%nPoints = counter
        call alloc_and_init(this%coords, 3, this%nPoints, -99)
@@ -127,9 +129,66 @@ contains
        end do
        end do
 #ifdef CompileWithMTLN
-       call store_mtln_external_segments(this, counter, problemInfo)
+        call store_mtln_external_segments(this, counter, problemInfo)
 #endif
+        call store_holland_wire_segments(this, counter, problemInfo)
     end subroutine store_relevant_coordinates
+
+    subroutine count_holland_wire_segments(this, counter)
+       type(mapvtk_output_t), intent(in) :: this
+       integer, intent(inout) :: counter
+
+       type(Thinwires_t), pointer :: wires
+       integer :: segment_index
+
+       wires => GetHwires()
+       do segment_index = 1, wires%NumCurrentSegments
+          if (wires%CurrentSegment(segment_index)%i < this%mainCoords%x .or. &
+              wires%CurrentSegment(segment_index)%i > this%auxCoords%x .or. &
+              wires%CurrentSegment(segment_index)%j < this%mainCoords%y .or. &
+              wires%CurrentSegment(segment_index)%j > this%auxCoords%y .or. &
+              wires%CurrentSegment(segment_index)%k < this%mainCoords%z .or. &
+              wires%CurrentSegment(segment_index)%k > this%auxCoords%z) cycle
+          counter = counter + 1
+       end do
+    end subroutine count_holland_wire_segments
+
+    subroutine store_holland_wire_segments(this, counter, problemInfo)
+       type(mapvtk_output_t), intent(inout) :: this
+       integer, intent(inout) :: counter
+       type(problem_info_t), intent(in) :: problemInfo
+
+       type(Thinwires_t), pointer :: wires
+       integer :: segment_index, field
+
+       wires => GetHwires()
+       do segment_index = 1, wires%NumCurrentSegments
+          if (wires%CurrentSegment(segment_index)%i < this%mainCoords%x .or. &
+              wires%CurrentSegment(segment_index)%i > this%auxCoords%x .or. &
+              wires%CurrentSegment(segment_index)%j < this%mainCoords%y .or. &
+              wires%CurrentSegment(segment_index)%j > this%auxCoords%y .or. &
+              wires%CurrentSegment(segment_index)%k < this%mainCoords%z .or. &
+              wires%CurrentSegment(segment_index)%k > this%auxCoords%z) cycle
+
+          field = wires%CurrentSegment(segment_index)%tipofield
+          counter = counter + 1
+          this%coords(:, counter) = [wires%CurrentSegment(segment_index)%i, &
+                                     wires%CurrentSegment(segment_index)%j, &
+                                     wires%CurrentSegment(segment_index)%k]
+          this%currentType(counter) = currentType(field)
+          this%materialTag(counter) = problemInfo%materialTag%getEdgeTag(field, this%coords(1, counter), &
+                                                                           this%coords(2, counter), &
+                                                                           this%coords(3, counter))
+          if (wires%CurrentSegment(segment_index)%Is_LeftEnd .or. &
+              wires%CurrentSegment(segment_index)%Is_RightEnd) then
+             this%mediaType(counter) = 10.0_RKIND
+          else if (wires%CurrentSegment(segment_index)%IsEnd_norLeft_norRight) then
+             this%mediaType(counter) = 11.0_RKIND
+          else
+             this%mediaType(counter) = 20.0_RKIND + real(wires%CurrentSegment(segment_index)%NumParallel, RKIND)
+          end if
+       end do
+    end subroutine store_holland_wire_segments
 
 #ifdef CompileWithMTLN
     subroutine count_mtln_external_segments(this, counter)
@@ -429,8 +488,26 @@ contains
           else if (material%is%ThinSlot) then
              edge_media_type = 4.5
            else if (material%is%ThinWire) then
-              edge_media_type = 7.0
-           else if (material%is%Multiwire) then
+               edge_media_type = 7.0
+               do candidate_field = iEx, iEz
+                  candidate_media = getMediaIndex(candidate_field, position(1), position(2), position(3), &
+                                                   problemInfo%geometryToMaterialData)
+                  if (candidate_media /= 1 .and. candidate_media /= media) then
+                     edge_media_type = 8.0
+                     return
+                  end if
+               end do
+               candidate_position = position
+               candidate_position(field) = candidate_position(field) + 1
+               do candidate_field = iEx, iEz
+                  candidate_media = getMediaIndex(candidate_field, candidate_position(1), candidate_position(2), &
+                                                   candidate_position(3), problemInfo%geometryToMaterialData)
+                  if (candidate_media /= 1 .and. candidate_media /= media) then
+                     edge_media_type = 8.0
+                     return
+                  end if
+               end do
+            else if (material%is%Multiwire) then
               edge_media_type = 12.0
               do candidate_field = iEx, iEz
                  candidate_media = getMediaIndex(candidate_field, position(1), position(2), position(3), &
