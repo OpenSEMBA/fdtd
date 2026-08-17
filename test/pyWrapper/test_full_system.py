@@ -1648,7 +1648,6 @@ def test_conformal_delay(tmp_path):
 @pytest.mark.conformal
 @pytest.mark.planewave
 @pytest.mark.probes
-@pytest.mark.skip(reason="Conformal PEC surface timestepping is not implemented for open sheets.")
 @pytest.mark.parametrize("normal_axis,propagation,reverse_winding", [
     ('x', 1, False), ('x', -1, False), ('x', 1, True), ('x', -1, True),
     ('y', 1, False), ('y', -1, False), ('z', 1, False), ('z', -1, False)
