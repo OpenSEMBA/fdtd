@@ -1655,7 +1655,7 @@ def test_conformal_delay(tmp_path):
 def test_conformal_surface_midcell_reflection(tmp_path, normal_axis, propagation, reverse_winding):
     fn = CASES_FOLDER + 'conformal_surface/conformal_surface_midcell.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-
+ 
     permutations = {
         'x': (0, 1, 2),
         'y': (1, 0, 2),
