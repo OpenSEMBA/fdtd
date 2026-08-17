@@ -1,8 +1,6 @@
 cmake_minimum_required (VERSION 3.15)
 
 project(semba-fdtd Fortran C)
-enable_language (Fortran)
-
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -86,6 +84,7 @@ endif()
 
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/solver_configuration_summary.cmake")
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 	message(STATUS "Using Linux flags")
@@ -322,3 +321,5 @@ endif()
 include_directories(${CMAKE_BINARY_DIR}/mod)
 include_directories(${HDF5_INCLUDE_DIRS})
 include_directories(${FHASH_INCLUDES})
+
+semba_print_configuration_summary()

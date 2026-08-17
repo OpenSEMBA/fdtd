@@ -83,6 +83,14 @@
       "cacheVariables": {
         "SEMBA_FDTD_ENABLE_MTLN": "OFF"
       }
+    },
+    {
+      "name": "intel-rls-parallel",
+      "inherits": "intel-rls",
+      "binaryDir": "build-intel-rls-parallel/",
+      "cacheVariables": {
+        "HDF5_PREFER_PARALLEL": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -121,6 +129,10 @@
     {
       "name": "intel-rls-nomtln",
       "configurePreset": "intel-rls-nomtln"
+    },
+    {
+      "name": "intel-rls-parallel",
+      "configurePreset": "intel-rls-parallel"
     }
   ]
 }
