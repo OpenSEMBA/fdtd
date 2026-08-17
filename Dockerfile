@@ -113,13 +113,16 @@ USER root
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y \
     locales \
     cmake \
     make \
     ninja-build \
+    python3 \
+    python3-pip \
+    python3-venv \
+    libegl1 \
+    libgl1 \
     && locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -144,14 +147,21 @@ RUN set -eux; \
     elif [ -z "${existing_user}" ]; then \
         useradd --uid ${USER_UID} --gid ${USER_GID} -m -s /bin/bash ${USERNAME}; \
     fi; \
-    mkdir -p /home/${USERNAME}/workspaces/fdtd; \
-    chown -R ${USER_UID}:${USER_GID} /home/${USERNAME}/workspaces
+    mkdir -p /home/${USERNAME}/workspaces/fdtd;
+    
+COPY requirements.txt /tmp/requirements.txt
+RUN python3 -m venv /home/${USERNAME}/workspaces/fdtd/.venv \
+    && /home/${USERNAME}/workspaces/fdtd/.venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt \
+    && rm /tmp/requirements.txt
 
 COPY docker/intel-quality-entrypoint.sh /usr/local/bin/intel-quality-entrypoint
 RUN chmod 0755 /usr/local/bin/intel-quality-entrypoint
-
+COPY . /home/${USERNAME}/workspaces/fdtd
+RUN chown -R ${USER_UID}:${USER_GID} /home/${USERNAME}/workspaces
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}/workspaces/fdtd
+ENV VIRTUAL_ENV=/home/${USERNAME}/workspaces/fdtd/.venv
+ENV PATH=${VIRTUAL_ENV}/bin:${PATH}
 
 ENTRYPOINT ["/usr/local/bin/intel-quality-entrypoint"]
 CMD ["bash", "-l"]

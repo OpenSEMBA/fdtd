@@ -17,12 +17,6 @@ dist/
 # Runtime/development bind mounts do not need to be copied into image layers.
 simulations/
 
-# Linux Docker builds only use the GNU LAPACK bundle.
-precompiled_libraries/**
-!precompiled_libraries/
-!precompiled_libraries/linux-gcc/
-!precompiled_libraries/linux-gcc/**
-
 # The top-level build only consumes selected external sources.
 external/lapack/
 external/ngspice/examples/

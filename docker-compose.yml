@@ -17,10 +17,6 @@ services:
     build:
       context: .
       target: intel-quality
-    volumes:
-      - type: bind
-        source: .
-        target: /home/developer/workspaces/fdtd
     working_dir: /home/developer/workspaces/fdtd
     stdin_open: true
     tty: true

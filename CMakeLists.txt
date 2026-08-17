@@ -114,7 +114,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		message(STATUS "Using IntelLLVM (ifx) flags")
 		
 		set(CMAKE_CXX_FLAGS "-qopenmp")
-		set(CMAKE_Fortran_FLAGS "-qopenmp -fpp -static-intel")
+		set(CMAKE_Fortran_FLAGS "-qopenmp -fpp")
 		
 		if (CMAKE_BUILD_TYPE STREQUAL "Release")
 			set(CMAKE_C_FLAGS_RELEASE "-O3")
