@@ -1987,13 +1987,10 @@ contains
          integer(kind=4) :: mindum
          IF (this%thereAre%Observation) then
 #ifdef CompileWithNewOutputModule
-            if (this%n /= 0) then
-               call update_outputs(this%control, this%sgg%tiempo, this%n, fieldReference, this%sgg)
-               if (this%n>=this%ini_save+BuffObse)  then
-                  mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
-                  call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .FALSE.)
-               end if
+            if (this%n > 0 .and. mod(this%n, BuffObse) == 0) then
+               call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .FALSE.)
             end if
+            call update_outputs(this%control, this%sgg%tiempo, this%n, fieldReference, this%sgg)
 #else
             call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
             if (this%n>=this%ini_save+BuffObse)  then

@@ -907,7 +907,11 @@ contains
       type(SGGFDTDINFO_t), intent(in), optional :: sgg
       real(kind=RKIND_tiempo) :: discreteTime
 
-      discreteTime = discreteTimeArray(timeIndx)
+       if (timeIndx == 0) then
+          discreteTime = 0.0_RKIND_tiempo
+       else
+          discreteTime = discreteTimeArray(timeIndx)
+       end if
 
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)

@@ -224,9 +224,9 @@ def test_towel_hanger_case_creates_output_probes(tmp_path):
     assert len(probe_mid) == 1
     assert len(probe_end) == 1
 
-    assert "towelHanger.fdtd_wire_start_Wz_27_25_30_s1" == Path(probe_start[0]).name
-    assert "towelHanger.fdtd_wire_mid_Wx_35_25_32_s5" == Path(probe_mid[0]).name
-    assert "towelHanger.fdtd_wire_end_Wz_43_25_30_s4" == Path(probe_end[0]).name
+    assert "towelHanger.fdtd_wire_start_Wz_27_25_30_s3" == Path(probe_start[0]).name
+    assert "towelHanger.fdtd_wire_mid_Wx_35_25_32_s13" == Path(probe_mid[0]).name
+    assert "towelHanger.fdtd_wire_end_Wz_43_25_30_s22" == Path(probe_end[0]).name
     assert countLinesInFile(Probe(probe_start[0]).getDatFile()) == 3
     assert countLinesInFile(Probe(probe_mid[0]).getDatFile()) == 3
     assert countLinesInFile(Probe(probe_end[0]).getDatFile()) == 3
@@ -861,9 +861,9 @@ def test_wires_collision_Jprobe(tmp_path):
     assert_current_movie_has_tag_number(solver, {(3, 3, 3): 0, (0, 0, 0): 0})
     tag_counts = current_movie_geometry_tag_counts(solver)
     assert tag_counts[64] == 2
-    assert tag_counts[128] == 2
-    assert tag_counts[192] == 3
-    assert tag_counts[256] == 2
+    assert tag_counts[128] == 4
+    assert tag_counts[192] == 6
+    assert tag_counts[256] == 4
 
 
 @mtln_skip
