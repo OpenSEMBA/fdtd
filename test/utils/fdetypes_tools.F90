@@ -217,7 +217,6 @@ contains
       interval_val = merge(interval, 1.0_RKIND_tiempo, present(interval))
 
       allocate (arr(size_val))
-
       DO i = 1, size_val
          arr(i) = (i - 1)*interval_val
       END DO

@@ -1,4 +1,4 @@
-from utils import *
+from test.utils.utils import *
 
 
 @no_mpi_skip

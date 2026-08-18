@@ -1,4 +1,4 @@
-from utils import *
+from test.utils.utils import *
 from pathlib import Path
 import re
 

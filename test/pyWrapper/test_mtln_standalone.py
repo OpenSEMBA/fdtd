@@ -1,4 +1,4 @@
-from utils import *
+from test.utils.utils import *
 
 
 @no_mtln_skip

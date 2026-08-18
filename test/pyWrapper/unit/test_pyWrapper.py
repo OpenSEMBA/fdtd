@@ -1,5 +1,5 @@
-from utils import *
-import utils
+from test.utils.utils import *
+from test.utils import utils
 from pathlib import Path
 
 import numpy as np

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from utils import *
+from test.utils.utils import *
 
 
 def _get_solved_probe_folder(solver, probe_name, *, filename=None, contains=None) -> str:

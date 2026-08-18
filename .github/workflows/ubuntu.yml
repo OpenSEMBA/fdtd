@@ -9,7 +9,7 @@ on:
       
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
   
 jobs:
   
@@ -80,6 +80,7 @@ jobs:
       uses: seanmiddleditch/gha-setup-ninja@master
         
     - name: Build application
+      id: build
       run: |       
         cmake -S . -B build -G Ninja\
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
@@ -90,20 +91,36 @@ jobs:
         cmake --build build -j
       
     - name: Run ctest
+      id: ctest
+      if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+      continue-on-error: true
       env:
         # The hosted runner exposes fewer cores than the MPI integration tests use.
         OMPI_MCA_rmaps_base_oversubscribe: ${{ matrix.compiler.name == 'gcc' && '1' || '' }}
       run: ctest --test-dir build --output-on-failure
 
     - name: Run python tests
+      id: python-tests
+      if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+      continue-on-error: true
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: python -m pytest test/ --durations=20
 
-    - name: Run native tests 
+    - name: Run native tests
+      id: native-tests
+      if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+      continue-on-error: true
       run: build/bin/fdtd_tests
+
+    - name: Report test failures
+      if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+      run: |
+        test "${{ steps.ctest.outcome }}" = success
+        test "${{ steps.python-tests.outcome }}" = success
+        test "${{ steps.native-tests.outcome }}" = success
 
   parallel-hdf5-build:
     runs-on: ubuntu-latest

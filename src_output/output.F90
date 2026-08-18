@@ -602,14 +602,24 @@ contains
          type(mtln_solver_t), pointer :: mtln_solver
          integer :: i, j
          mtln_solver => GetSolverPtr()
-         if (mtln_solver%number_of_bundles > 0) then
-            do i = 1, ubound(mtln_solver%bundles, 1)
-               if (ubound(mtln_solver%bundles(i)%probes, 1) /= 0) then
-                  do j = 1, ubound(mtln_solver%bundles(i)%probes, 1)
-                     if (mtln_solver%bundles(i)%probes(j)%in_layer) thereAreMtlnObservations = .true.
-                  end do
-               end if
-            end do
+         if (.not. allocated(mtln_solver%bundles)) then
+            if (control%layoutnumber == 0) then
+               call print11(0, 'WARNING: mtln solver has not bundles allocated. No MTLN bundle requests were found.')
+            end if
+         else if (size(mtln_solver%bundles) == 0) then
+            if (control%layoutnumber == 0) then
+               call print11(0, 'WARNING: mtln solver has not bundles registered. No MTLN bundle requests were found.')
+            end if
+         else
+            mtlnObservationExist: do i = 1, size(mtln_solver%bundles)
+               if (.not. allocated(mtln_solver%bundles(i)%probes)) cycle
+               do j = 1, size(mtln_solver%bundles(i)%probes)
+                  if (mtln_solver%bundles(i)%probes(j)%in_layer) then
+                     thereAreMtlnObservations = .true.
+                     exit mtlnObservationExist
+                  end if
+               end do
+            end do mtlnObservationExist
          end if
       end block
 #endif
@@ -664,7 +674,7 @@ contains
                   outputs(outputCount)%outputID = WIRE_CURRENT_PROBE_ID
 
                   allocate (outputs(outputCount)%wireCurrentProbe)
-                   call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, problemInfo%materialList, outputTypeExtension, control%mpidir, control%wiresflavor)
+                  call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, problemInfo%materialList, outputTypeExtension, control%mpidir, control%wiresflavor)
                   call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%wireCurrentProbe%path)//'.json', &
                                                        get_last_component(outputs(outputCount)%wireCurrentProbe%path), &
                                                        get_prefix_extension(outputRequestType, control%mpidir), &
@@ -701,8 +711,8 @@ contains
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = LINE_PROBE_ID
                   allocate (outputs(outputCount)%lineProbe)
-                   call init_line_probe_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
-                                               join_path(trim(outputTypeExtension)//'_LI', trim(outputTypeExtension)//'_LI'), &
+                  call init_line_probe_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
+                                              join_path(trim(outputTypeExtension)//'_LI', trim(outputTypeExtension)//'_LI'), &
                                               sgg%Sweep, control%layoutnumber, control%num_procs)
                   call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%lineProbe%path)//'.json', &
                                                        get_last_component(outputs(outputCount)%lineProbe%path), 'LI', &
@@ -907,11 +917,9 @@ contains
       type(SGGFDTDINFO_t), intent(in), optional :: sgg
       real(kind=RKIND_tiempo) :: discreteTime
 
-       if (timeIndx == 0) then
-          discreteTime = 0.0_RKIND_tiempo
-       else
-          discreteTime = discreteTimeArray(timeIndx)
-       end if
+      ! Assumed-shape arguments are indexed from one, while the solver time
+      ! vector begins at zero. Account for that remapping at the API boundary.
+      discreteTime = discreteTimeArray(timeIndx + 1)
 
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)

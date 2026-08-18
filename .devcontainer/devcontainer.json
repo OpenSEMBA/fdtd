@@ -36,7 +36,8 @@
         "ms-vscode.cmake-tools",
         "ms-vscode.cpptools",
         "ms-python.python",
-        "mhutchie.git-graph"
+        "mhutchie.git-graph",
+        "matepek.vscode-catch2-test-adapter"
       ],
       "settings": {
         "cmake.buildDirectory": "${workspaceFolder}/build",
