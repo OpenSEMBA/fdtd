@@ -18,7 +18,7 @@ module cell_map_m
     end type
 
     type, public :: cell_ratios_t
-        real (kind=rkind), dimension(3) :: area = [1,1,1], length = [1,1,1]
+        real(kind=rkind), dimension(3) :: area = [1,1,1], length = [1,1,1]
     end type
 
     type, extends(fhash_tbl_t) :: cell_ratios_map_t
@@ -100,7 +100,7 @@ contains
         type(triangle_t), intent(in) :: triangle
         class(*), allocatable :: alloc_list
         type(element_set_t) :: aux_list
-        integer (kind=4), dimension(4) :: side_dir
+        integer(kind=4), dimension(4) :: side_dir
         type(side_dir_t), dimension(:), allocatable :: aux_keys
         side_dir(1:3) = side%getCell()
         side_dir(4) = side%getEdge()
@@ -130,6 +130,8 @@ contains
             allocate(this%keys(size(aux_keys)))
             this%keys = aux_keys
         end if
+
+
     end subroutine
 
     subroutine buildSideMap(res, triangles)
@@ -138,7 +140,7 @@ contains
         type(side_triangle_map_t) :: tri_map
         type(side_dir_t), dimension(:), allocatable :: keys
         type(element_set_t) :: elems
-        integer (kind=4) :: i
+        integer(kind=4) :: i
         call buildSideToTrisMap(tri_map, triangles)
         keys = tri_map%keys
         do i = 1, size(keys)
@@ -156,7 +158,7 @@ contains
         type(side_map_t) :: side_map, side_map_on
         type(cell_t), dimension(:), allocatable :: keys
         type(element_set_t) :: elems
-        integer (kind=4) :: i
+        integer(kind=4) :: i
         call buildMapOfTrisOnFaces(tri_map, volume%triangles)
         call buildMapOfIntervals(interval_map, volume%intervals)
         call buildMapOfSidesOnFaceOrEdgeFromTrisNotOnFaces(side_map, volume%triangles)
@@ -177,7 +179,7 @@ contains
     function mergeKeys(tri_keys, side_keys) result(res)
         type(cell_t), dimension(:), allocatable, intent(in) :: tri_keys, side_keys
         type(cell_t), dimension(:), allocatable :: res, aux
-        integer (kind=4) :: i
+        integer(kind=4) :: i
         if (size(tri_keys) == 0) then 
             allocate(res(0))
         else
@@ -206,7 +208,7 @@ contains
     logical function isNewKey(keys, k) 
         type(cell_t), dimension(:), allocatable, intent(in) :: keys
         type(cell_t), intent(in) :: k
-        integer (kind=4) :: i
+        integer(kind=4) :: i
         isNewKey = .true.
         if (size(keys) /= 0) then 
             do i = 1, size(keys)
@@ -218,7 +220,7 @@ contains
     subroutine buildMapOfTrisOnFaces(res, triangles)
         type(triangle_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
-        integer (kind=4) :: i
+        integer(kind=4) :: i
         if (.not. allocated(res%keys)) allocate(res%keys(0))
         do i = 1, size(triangles)
             if (triangles(i)%isOnAnyFace()) then 
@@ -231,7 +233,7 @@ contains
     subroutine buildMapOfIntervals(res, intervals)
         type(interval_map_t), intent(inout) :: res
         type(interval_t), dimension(:), allocatable :: intervals
-        integer (kind=4) :: i
+        integer(kind=4) :: i
         if (.not. allocated(res%keys)) allocate(res%keys(0))
         do i = 1, size(intervals)
             call res%addInterval(intervals(i))
@@ -243,8 +245,8 @@ contains
         type(side_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
         type(side_t), dimension(3) :: sides
-        integer (kind=4) :: i, j
-        integer (kind=4), dimension(3) :: cell
+        integer(kind=4) :: i, j
+        integer(kind=4), dimension(3) :: cell
         if (.not. allocated(res%keys)) allocate(res%keys(0))
         do i = 1, size(triangles)
             if (.not. triangles(i)%isOnAnyFace()) then 
@@ -263,8 +265,8 @@ contains
         type(side_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
         type(side_t), dimension(3) :: sides
-        integer (kind=4) :: i, j
-        integer (kind=4), dimension(3) :: cell
+        integer(kind=4) :: i, j
+        integer(kind=4), dimension(3) :: cell
         if (.not. allocated(res%keys)) allocate(res%keys(0))
         do i = 1, size(triangles)
             if (triangles(i)%isOnAnyFace()) then 
@@ -310,7 +312,7 @@ contains
         type(triangle_t) :: triangle
         class(*), allocatable :: alloc_list
         type(element_set_t) :: aux_list
-        integer (kind=4), dimension(3) :: cell
+        integer(kind=4), dimension(3) :: cell
         type(cell_t), dimension(:), allocatable :: aux_keys
         cell = triangle%getCell()
         if (this%hasKey(cell)) then 
@@ -347,7 +349,7 @@ contains
         type(interval_t) :: interval
         class(*), allocatable :: alloc_list
         type(element_set_t) :: aux_list
-        integer (kind=4), dimension(3) :: cell
+        integer(kind=4), dimension(3) :: cell
         type(cell_t), dimension(:), allocatable :: aux_keys
         type(side_t) :: aux
         aux%init%position = interval%ini%cell
@@ -387,7 +389,7 @@ contains
         type(side_t) :: side
         class(*), allocatable :: alloc_list
         type(element_set_t) :: aux_list
-        integer (kind=4), dimension(3) :: cell
+        integer(kind=4), dimension(3) :: cell
         type(cell_t), dimension(:), allocatable :: aux_keys
         cell = side%getCell()
         if (this%hasKey(cell)) then 
@@ -427,7 +429,7 @@ contains
         type(side_t) :: side
         class(*), allocatable :: alloc_list
         type(element_set_t) :: aux_list
-        integer (kind=4), dimension(3) :: cell
+        integer(kind=4), dimension(3) :: cell
         type(cell_t), dimension(:), allocatable :: aux_keys
         cell = side%getCell()
         if (this%hasKey(cell)) then 
@@ -554,9 +556,9 @@ contains
         class(cell_ratios_map_t) :: this
         class(*), allocatable :: alloc_list
         type(cell_ratios_t) :: aux_cell_ratio
-        integer (kind=4), dimension(3), intent(in) :: cell
-        integer (kind=4), intent(in) :: direction
-        real (kind=rkind), intent(in) :: ratio
+        integer(kind=4), dimension(3), intent(in) :: cell
+        integer(kind=4), intent(in) :: direction
+        real(kind=rkind), intent(in) :: ratio
         type(cell_t), dimension(:), allocatable :: aux_keys
 
         if (this%hasKey(cell)) then 
@@ -586,9 +588,9 @@ contains
         
         class(*), allocatable :: alloc_list
         type(cell_ratios_t) :: aux_cell_ratio
-        integer (kind=4), dimension(3), intent(in) :: cell
-        integer (kind=4), intent(in) :: direction
-        real (kind=rkind), intent(in) :: ratio
+        integer(kind=4), dimension(3), intent(in) :: cell
+        integer(kind=4), intent(in) :: direction
+        real(kind=rkind), intent(in) :: ratio
 
         type(cell_t), dimension(:), allocatable :: aux_keys
         if (this%hasKey(cell)) then 

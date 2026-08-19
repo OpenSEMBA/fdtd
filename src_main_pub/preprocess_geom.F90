@@ -62,7 +62,7 @@ CONTAINS
       CHARACTER (LEN=BUFSIZE) :: tag
 
       TYPE (XYZlimit_t) :: punto, BoundingBox, conf_bounding_box
-      TYPE (XYZlimit_t_scaled) :: punto_s
+      TYPE (XYZlimit_scaled_t) :: punto_s
       INTEGER (KIND=4) :: orientacion,orientacionL,orientacionR, direccion, contamedia,oldcontamedia, maxcontamedia, mincontamedia, inicontamedia, &
          i1, j1, field, k1, pecmedio, ii, medio1, medio2, sondas,CONTACURR,CONTAVOLT,I_,J_
       !
