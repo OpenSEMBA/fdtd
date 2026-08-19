@@ -49,10 +49,10 @@ module Solver_m
    use EDispersives_m
    use Mdispersives_m
    use Anisotropic_m
-   use HollandWires_m
+   use HollandWires_m     
 
 #ifdef CompileWithMTLN  
-   use Wire_bundles_mtln_m
+   use Wire_bundles_mtln_m             
 #endif       
 
 #ifdef CompileWithBerengerWires
@@ -66,7 +66,6 @@ module Solver_m
    use WiresSlanted
    use estructura_slanted_m
 #endif
-
 
    use EpsMuTimeScale_m
    use CALC_CONSTANTS_m
@@ -91,7 +90,6 @@ module Solver_m
       real(kind=rkind) :: lower_h = 0.0_RKIND
       real(kind=rkind) :: upper_h = 0.0_RKIND
    end type conformal_surface_face_state_t
-
 
    type, public :: solver_t
       type(sim_control_t) :: control
@@ -138,8 +136,6 @@ module Solver_m
       procedure :: step
       procedure :: advanceE, advanceEx, advanceEy, advanceEz
       procedure :: advanceH, advanceHx, advanceHy, advanceHz
-      procedure :: advanceConformalE => solver_advanceConformalE
-      procedure :: advanceConformalH => solver_advanceConformalH
       procedure :: advancePlaneWaveE => solver_advancePlaneWaveE
       procedure :: advancePlaneWaveH => solver_advancePlaneWaveH
       procedure :: advanceWiresE => solver_advanceWiresE
@@ -154,6 +150,8 @@ module Solver_m
       procedure :: advanceMagneticCPML => solver_advanceMagneticCPML
       procedure :: advanceSGBCE => solver_advanceSGBCE
       procedure :: advanceSGBCH => solver_advanceSGBCH
+      procedure :: advanceConformalE => solver_advanceConformalE
+      procedure :: advanceConformalH => solver_advanceConformalH
       procedure :: advanceEDispersiveE => solver_advanceEDispersiveE
       procedure :: advanceMDispersiveH => solver_advanceMDispersiveH
       procedure :: MinusCloneMagneticPMC => solver_MinusCloneMagneticPMC
@@ -177,16 +175,16 @@ module Solver_m
 
    function solver_ctor(sgg,media,tag_numbers,SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
                         input, maxSourceValue, time_desdelanzamiento) result(res)
-      type (SGGFDTDINFO_t), intent(in)   ::  sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(taglist_t), intent(in) :: tag_numbers
       type(media_matrices_t), intent(in) :: media
-      type (limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
+      type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
       logical, intent(in) :: finishedwithsuccess
-      REAL (KIND=RKIND), intent(in) :: eps0,mu0
-      type (tagtype_t), intent(in) :: tagtype
+      real(kind=RKIND), intent(in) :: eps0,mu0
+      type(tagtype_t), intent(in) :: tagtype
       type(entrada_t), intent(in) :: input
-      real (kind=RKIND), intent(in) :: maxSourceValue
-      REAL (kind=8), intent(in) :: time_desdelanzamiento
+      real(kind=RKIND), intent(in) :: maxSourceValue
+      real(kind=8), intent(in) :: time_desdelanzamiento
       type(solver_t) :: res
 
       call res%init_control(input,maxSourceValue, time_desdelanzamiento)
@@ -204,8 +202,8 @@ module Solver_m
    subroutine solver_init_control(this, input, maxSourceValue, time_desdelanzamiento)
       class(solver_t) :: this
       type(entrada_t), intent(in) :: input
-      real (kind=RKIND), intent(in) :: maxSourceValue
-      REAL (kind=8), intent(in) :: time_desdelanzamiento
+      real(kind=RKIND), intent(in) :: maxSourceValue
+      real(kind=8), intent(in) :: time_desdelanzamiento
 
 
       this%control%maxSourceValue = maxSourceValue
@@ -249,9 +247,6 @@ module Solver_m
       this%control%createh5bin =  input%createh5bin
       this%control%wirecrank =  input%wirecrank
       this%control%fatalerror =  input%fatalerror
-#ifdef CompileWithMTLN
-      this%control%use_mtln_wires = .true.
-#endif
 
       this%control%cfl = input%cfl
       this%control%attfactorc = input%attfactorc
@@ -284,10 +279,6 @@ module Solver_m
       this%control%facesNF2FF = input%facesNF2FF
       this%EpsMuTimeScale_input_parameters = input%EpsMuTimeScale_input_parameters
 
-#ifdef CompileWithConformal
-      this%control%input_conformal_flag = input%input_conformal_flag
-#endif
-
       call this%thereAre%reset()
 
    end subroutine
@@ -296,10 +287,10 @@ module Solver_m
 #ifdef CompileWithMTLN
    subroutine launch_mtln_simulation(this, mtln_parsed, nEntradaRoot, layoutnumber)
       class(solver_t) :: this
-      type (mtln_t) :: mtln_parsed
-      character (len=*), intent(in)  ::  nEntradaRoot
-      integer (kind=4), intent(in) ::  layoutnumber
-
+      type(mtln_t) :: mtln_parsed
+      character(len=*), intent(in) :: nEntradaRoot
+      integer(kind=4), intent(in) :: layoutnumber
+      
       call solveMTLNProblem(mtln_parsed, nEntradaRoot)
       call reportSimulationEnd(layoutnumber)
    end subroutine
@@ -369,11 +360,11 @@ module Solver_m
 
    subroutine set_field_value(this, field_idx, i_range,j_range,k_range, field_value)
       class(solver_t) :: this
-      integer (kind=4), intent(in) :: field_idx
-      integer (kind=4), dimension(2), intent(in) :: i_range, j_range, k_range
-      real (kind=rkind), intent(in) :: field_value
+      integer(kind=4), intent(in) :: field_idx
+      integer(kind=4), dimension(2), intent(in) :: i_range, j_range, k_range
+      real(kind=rkind), intent(in) :: field_value
       
-      real(kind=rkind), pointer, dimension (:,:,:) :: field
+      real(kind=rkind), pointer, dimension(:,:,:) :: field
       integer(kind=4) :: i, j, k
       select case(field_idx)
       case(iEx)
@@ -400,11 +391,11 @@ module Solver_m
 
    function get_field_value(this, field_idx, fi,fj,fk) result(res)
       class(solver_t) :: this
-      integer (kind=4), intent(in) :: field_idx
-      integer (kind=4), intent(in) :: fi, fj, fk
-      real (kind=rkind) :: res
+      integer(kind=4), intent(in) :: field_idx
+      integer(kind=4), intent(in) :: fi, fj, fk
+      real(kind=rkind) :: res
       
-      real(kind=rkind), pointer, dimension (:,:,:) :: field
+      real(kind=rkind), pointer, dimension(:,:,:) :: field
       select case(field_idx)
       case(iEx)
          field => this%Ex
@@ -433,14 +424,14 @@ module Solver_m
       class(solver_t) :: this
 
       integer(kind=4) :: i, j, k, field
-      character (len=bufsize)  ::  whoami, chari, layoutcharID
+      character(len=bufsize) :: whoami, chari, layoutcharID
 
-      real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
-      real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
+      real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
+      real(kind=rkind), pointer, dimension(:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
 
       real(kind=RKIND_tiempo) :: ultimodt
       
-      character (len=bufsize) :: dubuf
+      character(len=bufsize) :: dubuf
       logical :: attinformado = .false.
 
 ! #ifdef compileWithMPI
@@ -464,7 +455,7 @@ module Solver_m
          if (this%sgg%Alloc(field)%XI /= I) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
          if (this%sgg%Alloc(field)%YI /= J) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
          if (this%sgg%Alloc(field)%ZI /= K) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
-      END DO
+      end do
 
       write(whoami,'(a,i5,a,i5,a)') '(',this%control%layoutnumber+1,'/',this%control%num_procs,') '
       !file names
@@ -503,7 +494,7 @@ module Solver_m
             open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted')
          else
             open (14,file=trim(adjustl(this%control%nresumeable2)),form='unformatted')
-         endif
+         end if
          call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,Ex,Ey,Ez,Hx,Hy,Hz)
          this%sgg%dt=ultimodt !para permit scaling
       !!!!!!!!!!!!No es preciso re-sincronizar pero lo hago !!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -544,8 +535,8 @@ module Solver_m
                else
                   write(dubuf,*) 'SUCCESS: Restarting from .fields.old instead. From n=',this%lastexecutedtimestep
                   call print11(this%control%layoutnumber,dubuf)
-               endif
-            endif
+               end if
+            end if
 #else
             close (14)
 
@@ -554,18 +545,18 @@ module Solver_m
             call this%destroy_and_deallocate()
             return
 #endif
-         endif
+         end if
 #endif
          this%initialtimestep=this%lastexecutedtimestep+1
          write(dubuf,*) '[OK] processing resuming data. Last executed time step ',this%lastexecutedtimestep
          call print11(this%control%layoutnumber,dubuf)
-      endif
+      end if
 
       if (this%initialtimestep>this%control%finaltimestep) then
           call stoponerror (this%control%layoutnumber,this%control%num_procs,'Initial time step greater than final one',.true.) !para que retorne
           call this%destroy_and_deallocate()
           return
-      endif
+      end if
 !!!incializa el vector de tiempos para permit scaling 191118
       call crea_timevector(this%sgg,this%lastexecutedtimestep,this%control%finaltimestep,this%lastexecutedtime)
 !!!!!!!!!!!!!!!!!!!!!
@@ -601,10 +592,8 @@ module Solver_m
       call initializeSGBC()
       call initializeMultiports()
       call initializeConformalElements()
-      
-      ! WIP
       call initializeConformal()
-      !
+      
       call initializeEDispersives()
       call initializeMDispersives()
       call initializePlanewave()
@@ -633,14 +622,14 @@ module Solver_m
       call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue)
 
 
-      CALL CLOSEWARNINGFILE(this%control%layoutnumber,this%control%num_procs,this%control%fatalerror,.false.,this%control%simu_devia) !aqui ya esta dividido el stochastic y hay dos this%control%layoutnumber=0
+      call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%num_procs,this%control%fatalerror,.false.,this%control%simu_devia) !aqui ya esta dividido el stochastic y hay dos this%control%layoutnumber=0
 
       if (this%control%fatalerror) then
          dubuf='FATAL ERRORS. Revise *Warnings.txt file. ABORTING...'
          call stoponerror(this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !para que retorne
          call this%destroy_and_deallocate()
          return
-      endif
+      end if
 #ifdef CompileWithMPI
       call flushMPIdata()
 #endif
@@ -651,7 +640,7 @@ module Solver_m
       if (this%control%stochastic)  then
          call syncstoch_mpi_sgbcs(this%control%simu_devia,this%control%layoutnumber,this%control%num_procs)
          call syncstoch_mpi_lumped(this%control%simu_devia,this%control%layoutnumber,this%control%num_procs)
-      endif
+      end if
 #endif    
 #endif    
 
@@ -661,7 +650,7 @@ contains
 
       subroutine findbounds(b)
          !
-         type (bounds_t), intent(out)  ::  b
+         type(bounds_t), intent(out) :: b
          !
 
          !No tocar. Dejar como estan alocateados
@@ -950,7 +939,7 @@ contains
          logical, intent(inout) :: att
          real(kind=rkind) :: deltaespmax, fmax, skin_depth
          logical :: hayattmedia = .false.
-         REAL (kind = rkind) :: mur,epr
+         real(kind = rkind) :: mur,epr
          character(len=BUFSIZE) :: buff   
          integer :: i
          if (abs(this%control%attfactorc-1.0_RKIND) > 1.0e-12_RKIND) then
@@ -959,7 +948,7 @@ contains
                if (this%sgg%Med(i)%Is%MultiportPadding) then
                   this%sgg%Med(i)%SigmaM =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorc)*this%mu0)/((1 + this%control%attfactorc)*this%sgg%dt)
                   hayattmedia=.true.
-               endif
+               end if
                deltaespmax=max(max(maxval(this%sgg%dx),maxval(this%sgg%dy)),maxval(this%sgg%dz))
                if (hayattmedia.and. .not. att) then
                   !!!!info on stabilization
@@ -985,11 +974,11 @@ contains
                      8.8757061047382236e6*mur + this%control%attfactorc*((0,2.825225e7) + 8.8757061047382236e6*mur)))/ &
                      (1.124121310242e12 + 1.124121310242e12*this%control%attfactorc))*min(deltaespmax,skin_depth)))
                      if (this%control%layoutnumber == 0) call WarnErrReport(buff)
-                  endif
+                  end if
                   att=.true.
-               endif
+               end if
             end do
-         endif
+         end if
       end subroutine updateSigmaM
 
       subroutine updateThinWiresSigma(att)
@@ -1005,10 +994,10 @@ contains
                      write(buff,'(a,2e10.2e3)') ' WIREs stabilization att. factors=',this%control%attfactorw,this%sgg%Med(i)%Sigma
                      if (this%control%layoutnumber == 0) call WarnErrReport(buff)
                      att=.true.
-                  endif
-               endif
+                  end if
+               end if
             end do
-         endif
+         end if
       end subroutine updateThinWiresSigma
 
       subroutine revertThinWiresSigma()
@@ -1017,9 +1006,9 @@ contains
             do i=1,this%sgg%nummedia
                if (this%sgg%Med(i)%Is%ThinWire) then
                   this%sgg%Med(i)%Sigma = 0.0_RKIND !revert!!! !necesario para no lo tome como un lossy luego en wires !solo se toca el g1,g2
-               endif
+               end if
             end do
-         endif
+         end if
       end subroutine
 
       subroutine reportSimulationOptions()
@@ -1031,12 +1020,11 @@ contains
                write(buff,'(a,i5,e9.2e2)') 'CPML correction size,factor to scale sigmamax = ', &
                this%control%medioextra%pml_size,this%control%medioextra%sigma
                call WarnErrReport(buff)
-            endif
+            end if
             write(buff,*) 'saveall=',this%control%saveall,', flushsecondsFields=',this%control%flushsecondsFields,', flushsecondsData=',this%control%flushsecondsData,', maxCPUtime=',this%control%maxCPUtime,', singlefilewrite=',this%control%singlefilewrite
             call WarnErrReport(buff)
             write(buff,*) 'TAPARRABOS=',this%control%TAPARRABOS,', wiresflavor=',trim(adjustl(this%control%wiresflavor)),', mindistwires=',this%control%mindistwires,', wirecrank=',this%control%wirecrank , 'makeholes=',this%control%makeholes
             call WarnErrReport(buff)
-            write(buff,*) 'use_mtln_wires=', this%control%use_mtln_wires
             write(buff,*) 'connectendings=',this%control%connectendings,', isolategroupgroups=',this%control%isolategroupgroups
             call WarnErrReport(buff)
             write(buff,*) 'wirethickness ', this%control%wirethickness, 'stableradholland=',this%control%stableradholland,'mtlnberenger=',this%control%mtlnberenger,' inductance_model=',trim(adjustl(this%control%inductance_model)), &
@@ -1050,14 +1038,14 @@ contains
             call WarnErrReport(buff)
             write(buff,*) 'facesNF2FF%de=',this%control%facesNF2FF%de,', facesNF2FF%ab=',this%control%facesNF2FF%ab,', facesNF2FF%ar=',this%control%facesNF2FF%ar,', NF2FFDecim=',this%control%NF2FFDecim
             call WarnErrReport(buff)
-         endif
+         end if
       end subroutine
 
       subroutine initializeBorders()
          character(len=BUFSIZE) :: dubuf
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
-         integer (kind=4) :: ierr
+         integer(kind=4) :: ierr
 #endif
          write(dubuf,*) 'Init Other Borders...';  call print11(this%control%layoutnumber,dubuf)
          call InitOtherBorders    (this%sgg,this%thereAre)
@@ -1071,7 +1059,7 @@ contains
                write (dubuf,*) '----> there are PEC, PMC or periodic Borders';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no PEC, PMC or periodic Borders found';  call print11(this%control%layoutnumber,dubuf)
-            endif
+            end if
             
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1090,7 +1078,7 @@ contains
                write (dubuf,*) '----> there are CPML Borders';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no CPML Borders found';  call print11(this%control%layoutnumber,dubuf)
-         endif
+         end if
 
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1107,7 +1095,7 @@ contains
                write (dubuf,*) '----> there are PML Bodies';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no PML Bodies found';  call print11(this%control%layoutnumber,dubuf)
-         endif
+         end if
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1123,7 +1111,7 @@ contains
                write (dubuf,*) '----> there are Mur Borders';  call print11(this%control%layoutnumber,dubuf)
          else
                write(dubuf,*) '----> no Mur Borders found';  call print11(this%control%layoutnumber,dubuf)
-         endif
+         end if
 
       end subroutine initializeBorders
 
@@ -1136,7 +1124,7 @@ contains
 
          !init lumped debe ir antes de wires porque toca la conductividad del material !mmmm ojoooo 120123
          write(dubuf,*) 'Init Lumped Elements...';  call print11(this%control%layoutnumber,dubuf)
-         CALL InitLumped(this%sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control,this%thereAre%Lumpeds,this%eps0,this%mu0)
+         call InitLumped(this%sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control,this%thereAre%Lumpeds,this%eps0,this%mu0)
          l_auxinput=this%thereAre%Lumpeds
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1147,12 +1135,11 @@ contains
              write (dubuf,*) '----> there are Structured lumped elements';  call print11(this%control%layoutnumber,dubuf)
          else
               write(dubuf,*) '----> no lumped Structured elements found';  call print11(this%control%layoutnumber,dubuf)
-         endif
+         end if
       end subroutine initializeLumped
 
       subroutine initializeWires()
-         real (kind=rkind_tiempo) :: dtcritico, newdtcritico
-         ! real (kind=rkind) :: dtcritico, newdtcritico
+         real(kind=rkind_tiempo) :: dtcritico, newdtcritico
          character(len=BUFSIZE) :: dubuf, buff
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
@@ -1160,6 +1147,7 @@ contains
 #endif
 
          dtcritico=this%sgg%dt
+#ifndef CompileWithMTLN         
          if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
 #ifdef CompileWithMPI
@@ -1179,8 +1167,8 @@ contains
                write (dubuf,*) '----> there are Holland/transition wires';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no Holland/transition wires found';  call print11(this%control%layoutnumber,dubuf)
-         endif
-         endif
+         end if
+         end if
 
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(this%control%wiresflavor))=='berenger') then
@@ -1205,8 +1193,8 @@ contains
                write (dubuf,*) '----> there are Multi-wires';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no Multi-wires found';  call print11(this%control%layoutnumber,dubuf)
-            endif
-         endif
+            end if
+         end if
 #endif
 #ifdef CompileWithSlantedWires
          if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
@@ -1220,7 +1208,7 @@ contains
                call estructura_slanted(this%sgg,this%control%precision)
             else
                continue
-            endif
+            end if
             call InitWires_Slanted(this%sgg, this%control%layoutnumber,this%control%num_procs, Ex, Ey, Ez,   & 
                                     Idxe, Idye, Idze, Idxh, Idyh, Idzh,   &
                                     this%media%sggMiNo,                              &
@@ -1244,13 +1232,27 @@ contains
                write (dubuf,*) '----> there are Slanted wires';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no Slanted wires found';  call print11(this%control%layoutnumber,dubuf)
-            endif
-         endif
+            end if
+         end if
 #endif
+
+
+#else 
+! else of #ifndef CompileWithMTLN          
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
+         call InitWires_mtln(this%sgg,Ex,Ey,Ez,& 
+                             this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,& 
+                             this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,&
+                             this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles, dtcritico)
+#endif
+
+
       !!!sincroniza el dtcritico
 #ifdef CompileWithMPI
-         newdtcritico = 0.0
-         ! call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
+         newdtcritico = 0.0_RKIND_tiempo
          call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE_tiempo, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
 #endif
@@ -1259,29 +1261,19 @@ contains
             if ((this%control%layoutnumber==0).and.this%control%verbose) call WarnErrReport(buff)
          else
             if (.not.(this%control%resume.and.this%control%permitscaling)) then !no abortasr solo advertir si permittivity scaling
+#ifdef CompileWithMTLN
+               write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, make dt < ',dtcritico
+#else
                write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs, use -stableradholland or make dt < ',dtcritico
+#endif
                if (this%control%layoutnumber==0) call WarnErrReport(buff,.true.)
             else
                write(buff,'(a,e10.2e3)')  'WIR_WARNING: Resume and Pscaling with wires. Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs: dt is over ',dtcritico
                if (this%control%layoutnumber==0) call WarnErrReport(buff,.false.)
-            endif
-         endif
+            end if
+         end if
       !!!
 !!
-         if (this%control%use_mtln_wires) then
-#ifdef CompileWithMTLN
-#ifdef CompileWithMPI
-            call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
-            write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
-            call InitWires_mtln(this%sgg,Ex,Ey,Ez, &
-                                this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, &
-                                this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, &
-                                this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles, dtcritico)
-#else
-            write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
-#endif
-         endif
 
       end subroutine initializeWires
 
@@ -1309,7 +1301,7 @@ contains
                write (dubuf,*) '----> there are Structured anisotropic elements';  call print11(this%control%layoutnumber,dubuf)
          else
                write(dubuf,*) '----> no Structured anisotropic elements found';  call print11(this%control%layoutnumber,dubuf)
-         endif
+         end if
       end subroutine initializeAnisotropic
 
       subroutine initializeSGBC()
@@ -1319,7 +1311,7 @@ contains
          integer(kind=4) :: ierr
 #endif
 
-         IF (this%control%sgbc)  then
+         if (this%control%sgbc)  then
 #ifdef CompileWithMPI
               call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1339,8 +1331,8 @@ contains
                write (dubuf,*) '----> there are Structured sgbc elements';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no Structured sgbc elements found';  call print11(this%control%layoutnumber,dubuf)
-            endif
-         endif
+            end if
+         end if
       end subroutine initializeSGBC
       
       subroutine initializeMultiports()
@@ -1348,7 +1340,7 @@ contains
          logical :: l_auxinput, l_auxoutput
 
 #ifdef CompileWithNIBC
-         IF (this%control%mibc)  then
+         if (this%control%mibc)  then
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1365,57 +1357,52 @@ contains
                write (dubuf,*) '----> there are Structured  multiport elements';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no Structured multiport elements found';  call print11(this%control%layoutnumber,dubuf)
-         endif
-         endif
+         end if
+         end if
 #endif
       end subroutine initializeMultiports
 
       subroutine initializeConformal()
 #ifdef CompileWithMPI
-            call MPI_Barrier(SUBCOMM_MPI,ierr)
+         integer :: ierr
+         call MPI_Barrier(SUBCOMM_MPI, ierr)
 #endif
-            write(dubuf,*) 'Init Conformal Elements ...';  call print11(this%control%layoutnumber,dubuf)
-            call initializeConformalSurfaceStates(this)
-            
-      end subroutine
+         call initializeConformalSurfaceStates(this)
+      end subroutine initializeConformal
 
       subroutine initializeConformalElements()
          character(len=BUFSIZE) :: dubuf
          logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer(kind=4) :: ierr
+#endif
 
 #ifdef CompileWithConformal
-         if(input_conformal_flag)then
+         if (input_conformal_flag) then
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI, ierr)
+#endif
+            write(dubuf,*) 'Init Conformal Elements ...'; call print11(this%control%layoutnumber,dubuf)
+            call initialize_memory_FDTD_conf_fields(this%sgg,this%media%sggMiEx, &
+               this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, &
+               Ex,Ey,Ez,Hx,Hy,Hz,this%control%layoutnumber,this%control%num_procs,this%control%verbose)
+            l_auxinput = input_conformal_flag
+            l_auxoutput = l_auxinput
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,ierr)
+            call MPI_AllReduce(l_auxinput,l_auxoutput,1_4,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,ierr)
 #endif
-            write(dubuf,*) 'Init Conformal Elements ...';  call print11(this%control%layoutnumber,dubuf)
-!WIP
-!DEBUG
-            call initialize_memory_FDTD_conf_fields (this%sgg,this%media%sggMiEx, &
-            & this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,&
-            & this%control%layoutnumber,this%control%num_procs, this%control%verbose);
-            l_auxinput=input_conformal_flag
-            l_auxoutput=l_auxinput
-#ifdef CompileWithMPI
-            call MPI_Barrier(SUBCOMM_MPI,ierr)
-            call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-#endif
-         !       refactor JUN2015
-
-         !!!!!!!sgg 051214 !rellena correctamente los campos magneticos. Necesario para construir los surfaces a partir del wireframe 
-         !        call fillMagnetic(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz, b)
-         !!!!!!!ojo solo es valido para PEC!!!! cambiar luego !!?!?!?!?!?
-            if (l_auxoutput ) then
-               write (dubuf,*) '----> there are conformal elements';  call print11(this%control%layoutnumber,dubuf)
+            if (l_auxoutput) then
+               write(dubuf,*) '----> there are conformal elements'; call print11(this%control%layoutnumber,dubuf)
             else
-               write(dubuf,*) '----> no conformal elements found';  call print11(this%control%layoutnumber,dubuf)
+               write(dubuf,*) '----> no conformal elements found'; call print11(this%control%layoutnumber,dubuf)
             end if
-      endif
+         end if
 #endif
       end subroutine initializeConformalElements
 
       subroutine initializeEDispersives()
-         character (len=bufsize) :: dubuf
+         character(len=bufsize) :: dubuf
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
@@ -1436,11 +1423,11 @@ contains
                write (dubuf,*) '----> there are Structured Electric dispersive elements';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no Structured Electric dispersive elements found';  call print11(this%control%layoutnumber,dubuf)
-         endif
+         end if
       end subroutine initializeEDispersives
 
       subroutine initializeMDispersives()
-         character (len=bufsize) :: dubuf
+         character(len=bufsize) :: dubuf
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
@@ -1461,11 +1448,11 @@ contains
              write (dubuf,*) '----> there are Structured Magnetic dispersive elements';  call print11(this%control%layoutnumber,dubuf)
          else
               write(dubuf,*) '----> no Structured Magnetic dispersive elements found';  call print11(this%control%layoutnumber,dubuf)
-         endif
+         end if
       end subroutine initializeMDispersives
 
       subroutine initializePlanewave()
-         character (len=bufsize) :: dubuf
+         character(len=bufsize) :: dubuf
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
@@ -1486,11 +1473,11 @@ contains
              write (dubuf,*) '----> there are Plane Wave';  call print11(this%control%layoutnumber,dubuf)
          else
               write(dubuf,*) '----> no Plane waves are found';  call print11(this%control%layoutnumber,dubuf)
-         endif
+         end if
       end subroutine initializePlanewave
 
       subroutine initializeNodalSources()
-         character (len=bufsize) :: dubuf
+         character(len=bufsize) :: dubuf
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
@@ -1511,7 +1498,7 @@ contains
              write (dubuf,*) '----> there are Structured Nodal sources';  call print11(this%control%layoutnumber,dubuf)
          else
               write(dubuf,*) '----> no Structured Nodal sources are found';  call print11(this%control%layoutnumber,dubuf)
-         endif
+         end if
 
       end subroutine initializeNodalSources
 
@@ -1529,7 +1516,6 @@ contains
          call InitObservation (this%sgg,this%media,this%tag_numbers, &
                                  this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%initialtimestep,this%lastexecutedtime, &
                                  this%sinPML_fullsize,this%eps0,this%mu0,this%bounds, this%control)
-
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
 
@@ -1541,7 +1527,7 @@ contains
                write (dubuf,*) '----> there are observation requests';  call print11(this%control%layoutnumber,dubuf)
          else
                write(dubuf,*) '----> no observation requests are found';  call print11(this%control%layoutnumber,dubuf)
-         endif
+         end if
       end subroutine initializeObservation
 
 #ifdef CompileWithMPI
@@ -1560,7 +1546,7 @@ contains
             call FlushMPI_E(this%sgg%alloc,this%control%layoutnumber,this%control%num_procs, this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
-         endif
+         end if
 
 !!!!!!!!!!!!!!!!!!!!!fin juego con fuego 210815
 
@@ -1576,13 +1562,12 @@ contains
          !this modifies the initwires stuff and must be called after initwires (typically at the end)
          !llamalo siempre aunque no HAYA WIRES!!! para que no se quede colgado en hilos terminales
             if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
-               (trim(adjustl(this%control%wiresflavor))=='transition') .or. & 
-               this%control%use_mtln_wires) then
+               (trim(adjustl(this%control%wiresflavor))=='transition')) then 
                write(dubuf,*) 'Init MPI Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
                call newInitWiresMPI(this%control%layoutnumber,this%thereAre%wires,this%control%num_procs,this%control%resume,this%sgg%sweep)
                call MPI_Barrier(SUBCOMM_MPI,ierr)
                write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
-            endif
+            end if
 
 #ifdef CompileWithBerengerWires
             if (trim(adjustl(this%control%wiresflavor))=='berenger') then
@@ -1590,7 +1575,7 @@ contains
                call InitWiresMPI_Berenger(this%control%layoutnumber,this%thereAre%wires,this%control%num_procs,this%control%resume,this%sgg%sweep)
                call MPI_Barrier(SUBCOMM_MPI,ierr)
                write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
-            endif
+            end if
 #endif
          !llamalo siempre para forzar los flush extra en caso de materiales anisotropos o multiport
             write(dubuf,*) 'Init Extra Flush MPI...';  call print11(this%control%layoutnumber,dubuf)
@@ -1598,25 +1583,25 @@ contains
             Ex,Ey,Ez,Hx,Hy,Hz,this%thereAre%MURBorders)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
-         endif
+         end if
 
       
       !must be called now in case the MPI has changed the connectivity info
          if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
             call ReportWireJunctions(this%control%layoutnumber,this%control%num_procs,this%thereAre%wires,this%sgg%Sweep(iHz)%ZI, this%sgg%Sweep(iHz)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
-         endif
+         end if
 
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
                call ReportWireJunctionsBerenger(this%control%layoutnumber,this%control%num_procs,this%thereAre%wires,this%sgg%Sweep(iHz)%ZI, this%sgg%Sweep(iHz)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
                   !dama no tenia el equivalente 050416
-      endif
+      end if
 #endif
 #ifdef CompileWithSlantedWires
       if ((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
          continue
-      endif
+      end if
 #endif
       
       end subroutine initializeMPI
@@ -1630,36 +1615,36 @@ contains
          if (this%control%num_procs>1) then
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             call   FlushMPI_H_Cray
-         endif
+         end if
          if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
             if ((this%control%num_procs>1).and.(this%thereAre%wires))   then
                call newFlushWiresMPI(this%control%layoutnumber,this%control%num_procs)
-            endif
+            end if
 #ifdef CompileWithStochastic
             if (this%control%stochastic) then
                call syncstoch_mpi_wires(this%control%simu_devia,this%control%layoutnumber,this%control%num_procs)
-            endif
+            end if
 #endif
-         endif
+         end if
 
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(this%control%wiresflavor))=='berenger') then
             if ((this%control%num_procs>1).and.(this%thereAre%wires))   call FlushWiresMPI_Berenger(this%control%layoutnumber,this%control%num_procs)
-         endif
+         end if
 #endif
       end subroutine flushMPIdata
 #endif
 
       subroutine printSimulationStart()
          character(len=bufsize) :: dubuf
-         TYPE (tiempo_t) :: time_out2
+         type(tiempo_t) :: time_out2
 #ifdef CompileWithMPI
-         integer (kind=4) :: ierr
+         integer(kind=4) :: ierr
 #endif
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         IF (this%control%resume) then
+         if (this%control%resume) then
             write(dubuf,*)'END PREPROCESSING. RESUMING simulation from n=',this%n
             call print11(this%control%layoutnumber,dubuf)
             write(dubuf,*) SEPARADOR//separador//separador
@@ -1672,33 +1657,33 @@ contains
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-            CALL get_secnds (time_out2)
+            call get_secnds (time_out2)
             write(dubuf,*)  'Start Date/time ', time_out2%fecha( 7: 8),'/',&
                &time_out2%fecha( 5: 6),'   ',time_out2%hora( 1: 2), ':',&
                &time_out2%hora( 3: 4),':',time_out2%hora( 5: 6)
             call print11(this%control%layoutnumber,dubuf)
             write(dubuf,*) SEPARADOR//separador//separador
             call print11(this%control%layoutnumber,dubuf)
-         endif  
+         end if  
       end subroutine printSimulationStart
 
       subroutine fillMtag(sgg,sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, b, tag_numbers)
 
          !------------------------>
-         type (SGGFDTDINFO_t), intent(IN)    ::  sgg
-         type (bounds_t), intent( IN)  ::  b
-         INTEGER(KIND = IKINDMTAG), dimension ( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( INOUT)     ::  sggMtag
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHx%NY-1 , 0 : b%sggMiHx%NZ-1 )  , intent( IN   )     ::  sggMiHx
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHy%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHy%NZ-1 )  , intent( IN   )     ::  sggMiHy
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHz%NX-1 , 0 : b%sggMiHz%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( IN   )     ::  sggMiHz
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEx%NX-1 , 0 : b%sggMiEx%NY-1 , 0 : b%sggMiEx%NZ-1 )  , intent( IN   )     ::  sggMiEx
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1 )  , intent( IN   )     ::  sggMiEy
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1 )  , intent( IN   )     ::  sggMiEz
-         type (taglist_t) :: tag_numbers
+         type(SGGFDTDINFO_t), intent(in) :: sgg
+         type(bounds_t), intent( IN) :: b
+         integer(KIND = IKINDMTAG), dimension( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( INOUT) :: sggMtag
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHx%NY-1 , 0 : b%sggMiHx%NZ-1 )  , intent( IN   ) :: sggMiHx
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHy%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHy%NZ-1 )  , intent( IN   ) :: sggMiHy
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHz%NX-1 , 0 : b%sggMiHz%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( IN   ) :: sggMiHz
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEx%NX-1 , 0 : b%sggMiEx%NY-1 , 0 : b%sggMiEx%NZ-1 )  , intent( IN   ) :: sggMiEx
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1 )  , intent( IN   ) :: sggMiEy
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1 )  , intent( IN   ) :: sggMiEz
+         type(taglist_t) :: tag_numbers
          !------------------------> Variables locales
-         integer(kind = 4)  ::  i, j, k
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio1,medio2,medio3,medio4,medio5
-         logical  ::  mediois1,mediois2,mediois3,mediois4
+         integer(kind = 4) :: i, j, k
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio1,medio2,medio3,medio4,medio5
+         logical  :: mediois1,mediois2,mediois3,mediois4
          integer, dimension(3) :: lbx, lby, lbz
          lbx = lbound(tag_numbers%face%x)
          lby = lbound(tag_numbers%face%y)   
@@ -1706,7 +1691,7 @@ contains
 
          mediois3=.true.; mediois4=.true.
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
+!$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
 #endif
          Do k=1,b%sweepHx%NZ
             Do j=1,b%sweepHx%NY
@@ -1723,13 +1708,13 @@ contains
                       !solo lo hace con celdas de vacio porque en particular el mismo medio sgbc con diferentes orientaciones tiene distintos indices de medio y lo activaria erroneamente si lo hago para todos los medios
                       tag_numbers%face%x(i+lbx(1)-1,j+lbx(2)-1,k+lbx(3)-1)=-ibset(iabs(tag_numbers%face%x(i+lbx(1)-1,j+lbx(2)-1,k+lbx(3)-1)),3) 
                       !ojo no cambiar: interacciona con observation tags 141020 !151020 a efectos de mapvtk el signo importa
-                  endif
+                  end if
                End do
             End do
          End do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
-!$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
+!$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
 #endif
          Do k=1,b%sweepHy%NZ
             Do j=1,b%sweepHy%NY
@@ -1744,13 +1729,13 @@ contains
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHy(i,j-1,k)/=1).or.(sggMiHy(i,j+1,k)/=1))))
                   if ((mediois1.or.mediois2).and.(mediois3))  then
                      tag_numbers%face%y(i+lby(1)-1,j+lby(2)-1,k+lby(3)-1)=-ibset(iabs(tag_numbers%face%y(i+lby(1)-1,j+lby(2)-1,k+lby(3)-1)),4) 
-                  endif
+                  end if
                End do
             End do
          End do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
-!$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
+!$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
 #endif
          Do k=1,b%sweepHz%NZ
             Do j=1,b%sweepHz%NY
@@ -1765,7 +1750,7 @@ contains
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHz(i,j,k-1)/=1).or.(sggMiHz(i,j,k+1)/=1))))
                   if ((mediois1.or.mediois2).and.(mediois3))  then
                      tag_numbers%face%z(i+lbz(1)-1,j+lbz(2)-1,k+lbz(3)-1)=-ibset(iabs(tag_numbers%face%z(i+lbz(1)-1,j+lbz(2)-1,k+lbz(3)-1)),5) 
-                  endif
+                  end if
                End do
             End do
          End do
@@ -1776,9 +1761,9 @@ contains
       end subroutine fillMtag
 
       subroutine crea_timevector(sgg,lastexecutedtimestep,finaltimestep,lastexecutedtime)
-         integer (kind=4) :: lastexecutedtimestep,finaltimestep,i
-         real (kind=RKIND_tiempo) :: lastexecutedtime
-         type (SGGFDTDINFO_t), intent(INOUT)   ::  sgg
+         integer(kind=4) :: lastexecutedtimestep,finaltimestep,i
+         real(kind=RKIND_tiempo) :: lastexecutedtime
+         type(SGGFDTDINFO_t), intent(INOUT) :: sgg
          allocate (sgg%tiempo(lastexecutedtimestep:finaltimestep+2))
          sgg%tiempo(lastexecutedtimestep)=lastexecutedtime
          do i=lastexecutedtimestep+1,finaltimestep+2
@@ -1792,26 +1777,26 @@ contains
    subroutine solver_run(this)
       class(solver_t) :: this
 
-      real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
-      real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
+      real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
+      real(kind=rkind), pointer, dimension(:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
 
       logical :: call_timing, l_aux, flushFF, somethingdone, newsomethingdone
       integer :: i
-      real (kind=rkind) :: pscale_alpha
-      REAL (kind=rkind_tiempo) :: at
+      real(kind=rkind) :: pscale_alpha
+      real(kind=rkind_tiempo) :: at
       character(len=bufsize) :: dubuf
+#ifdef CompileWithConformal
+#ifdef CompileWithMPI
+      call this%init_MPIConformalProbes()
+#endif
+#endif
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
 #ifdef CompileWithProfiling
       call nvtxStartRange("Antes del bucle N")
 #endif
-!240424 sgg creo el comunicador mpi de las sondas conformal aqui. debe irse con el nuevo conformal
-#ifdef CompileWithConformal                
-#ifdef CompileWithMPI
-      call this%init_MPIConformalProbes()
-#endif  
-#endif
+
       this%still_planewave_time=.true. !inicializacion de la variable 
       flushFF = .false.
       pscale_alpha=1.0 !se le entra con 1.0 
@@ -1821,7 +1806,7 @@ contains
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 
 
-      ciclo_temporal :  DO while (this%n <= this%control%finaltimestep)
+      ciclo_temporal :  do while (this%n <= this%control%finaltimestep)
       
          call this%step()
          call updateAndFlush()
@@ -1830,7 +1815,7 @@ contains
              call_timing=.true.
          else
              call_timing=.false.
-         endif
+         end if
 #ifdef CompileWithMPI
          l_aux=call_timing
          call MPI_AllReduce( l_aux, call_timing, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
@@ -1848,7 +1833,7 @@ contains
                    if  (this%sgg%Observation(i)%done.and.(.not.this%sgg%Observation(i)%flushed)) then
                       this%perform%flushXdmf=.true.
                       this%perform%flushVTK=.true.
-                   endif
+                   end if
                 end do
 #ifdef CompileWithMPI
                 l_aux=this%perform%flushVTK
@@ -1883,7 +1868,7 @@ contains
                    call print11(this%control%layoutnumber,dubuf)
                    write(dubuf,*) SEPARADOR//separador//separador
                    call print11(this%control%layoutnumber,dubuf)
-                endif
+                end if
                 if (this%perform%isFlush()) then
                       !
                       flushFF=this%perform%postprocess
@@ -1891,7 +1876,7 @@ contains
                           write(dubuf,'(a,i9)')  ' INIT OBSERVATION DATA FLUSHING and Near-to-Far field n= ',this%n
                       else
                           write(dubuf,'(a,i9)')  ' INIT OBSERVATION DATA FLUSHING n= ',this%n
-                      endif
+                      end if
                       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                       call print11(this%control%layoutnumber,dubuf)
                       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
@@ -1905,7 +1890,7 @@ contains
                           write(dubuf,'(a,i9)')  ' Done OBSERVATION DATA FLUSHED and Near-to-Far field n= ',this%n
                       else
                           write(dubuf,'(a,i9)')  ' Done OBSERVATION DATA FLUSHED n= ',this%n
-                      endif
+                      end if
                       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                       call print11(this%control%layoutnumber,dubuf)
                       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
@@ -1933,8 +1918,8 @@ contains
                            call print11(this%control%layoutnumber,dubuf)
                            write(dubuf,*) SEPARADOR//separador//separador
                            call print11(this%control%layoutnumber,dubuf)
-                         endif
-                      endif
+                         end if
+                      end if
                   !!       
                       if (this%perform%flushvtk) then   
                          write(dubuf,'(a,i9)')  ' Post-processing .vtk files n= ',this%n
@@ -1958,8 +1943,8 @@ contains
                                 call print11(this%control%layoutnumber,dubuf)
                                 write(dubuf,*) SEPARADOR//separador//separador
                                 call print11(this%control%layoutnumber,dubuf)
-                          endif
-                      endif  
+                          end if
+                      end if  
                          if (this%perform%flushXdmf) then
                             write(dubuf,'(a,i9)')  ' Post-processing .xdmf files n= ',this%n
                             call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
@@ -1985,13 +1970,13 @@ contains
                                       call print11(this%control%layoutnumber,dubuf)
                                       write(dubuf,*) SEPARADOR//separador//separador
                                       call print11(this%control%layoutnumber,dubuf)
-                            endif
-                      endif
+                            end if
+                      end if
 
 #ifdef CompileWithMPI
                      call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-                 endif !del if (this%performflushDATA.or....
+                 end if !del if (this%performflushDATA.or....
     !
 
 
@@ -2001,17 +1986,17 @@ contains
                      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                      call print11(this%control%layoutnumber,dubuf)
                      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                  endif
+                  end if
 
-                endif !!!del if (.not.this%parar)
-             endif !!!del if(n >= n_info
+                end if !!!del if (.not.this%parar)
+             end if !!!del if(n >= n_info
 !          !!!!!!!!all the previous must be together
               
          this%control%fatalerror=.false.
          if (this%parar) then
              this%control%fatalerror=.true.
              exit ciclo_temporal
-         endif
+         end if
 #ifdef CompileWithPrescale
          if (this%control%permitscaling) then
 #ifndef miguelPscaleStandAlone
@@ -2031,9 +2016,9 @@ contains
 #endif
                                ,this%control%stochastic,this%control%verbose)
 #ifndef miguelPscaleStandAlone
-         endif
+         end if
 #endif
-      endif
+      end if
 #endif
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!  Increase time step
@@ -2045,19 +2030,19 @@ contains
 contains
       subroutine updateAndFlush()
          integer(kind=4) :: mindum
-         IF (this%thereAre%Observation) then
+         if (this%thereAre%Observation) then
             call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
             if (this%n>=this%ini_save+BuffObse)  then
                mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
                call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
-            endif
-         endif
+            end if
+         end if
       end subroutine
 
       subroutine singleUnpack()
-         character (LEN=BUFSIZE) :: dubuf
+         character(len=BUFSIZE) :: dubuf
          logical :: somethingdone
-         real (kind=rkind_tiempo) :: at
+         real(kind=rkind_tiempo) :: at
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
 #endif
@@ -2070,7 +2055,7 @@ contains
          if (this%control%singlefilewrite.and.this%perform%Unpack) then
             at=this%n*this%sgg%dt
             if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
-         endif
+         end if
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -2100,16 +2085,15 @@ contains
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       call this%AdvanceAnisotropicE()
       call this%advanceE()
-      ! WIP
       call this%advanceConformalE()
-      ! 
 #ifdef CompileWithConformal
-      if(this%control%input_conformal_flag) call conformal_advance_E()
+      if (this%control%input_conformal_flag) call conformal_advance_E()
 #endif
+
       call this%advanceWiresE()
       call this%advancePMLE()
 #ifdef CompileWithNIBC
-      IF (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(this%sgg%alloc, this%Ex, this%Ey, this%Ez)
+      if (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(this%sgg%alloc, this%Ex, this%Ey, this%Ez)
 #endif
       call this%AdvancesgbcE()
       call this%advanceLumpedE()
@@ -2121,22 +2105,23 @@ contains
       if (this%control%num_procs>1) then
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          call FlushMPI_E_Cray
-      endif
+      end if
 #endif
 
       call this%advanceAnisotropicH()
       call this%advanceH()
-      ! WIP
       call this%advanceConformalH()
-      !
       call this%advancePMLbodyH()
       call this%AdvanceMagneticCPML()
       call this%MinusCloneMagneticPMC()
       call this%CloneMagneticPeriodic()
+#ifdef CompileWithConformal
+      if (this%control%input_conformal_flag) call conformal_advance_H()
+#endif
       call this%AdvancesgbcH()
       call this%AdvanceMDispersiveH()
 #ifdef CompileWithNIBC
-      IF (this%thereAre%Multiports .and.(this%control%mibc))  &
+      if (this%thereAre%Multiports .and.(this%control%mibc))  &
          call AdvanceMultiportH (this%sgg%alloc,this%Hx,this%Hy,this%Hz, & 
                                  this%Ex,this%Ey,this%Ez,& 
                                  this%Idxe,this%Idye,this%Idze, & 
@@ -2149,10 +2134,6 @@ contains
       call this%MinusCloneMagneticPMC()
       call this%CloneMagneticPeriodic()
 
-#ifdef CompileWithConformal                      
-      if(this%control%input_conformal_flag) call conformal_advance_H()
-#endif
-
 #ifdef CompileWithMPI
       !!Flush all the MPI (esto estaba justo al principo del bucle temporal diciendo que era necesario para correcto resuming)
       !lo he movido aqui a 16/10/2012 porque el farfield necesita tener los campos magneticos correctos
@@ -2161,18 +2142,18 @@ contains
       if (this%control%num_procs>1) then
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          call FlushMPI_H_Cray
-      endif
+      end if
       if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
          if ((this%control%num_procs>1).and.(this%thereAre%wires)) call newFlushWiresMPI(this%control%layoutnumber,this%control%num_procs)
 #ifdef CompileWithStochastic
          if (this%control%stochastic) call syncstoch_mpi_wires(this%control%simu_devia,this%control%layoutnumber,this%control%num_procs)
 #endif
-      endif
+      end if
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
          if ((this%control%num_procs>1).and.(this%thereAre%wires))   call FlushWiresMPI_Berenger(this%control%layoutnumber,this%control%num_procs)
-      endif
+      end if
 #endif
 #endif
 
@@ -2194,7 +2175,7 @@ contains
    subroutine flushPlanewaveOff(pw_switched_off, pw_still_time, pw_thereAre)
       logical, intent(inout) :: pw_switched_off, pw_still_time, pw_thereAre
       logical :: pw_still_time_aux, pw_thereAre_aux
-      integer (kind=4) :: ierr
+      integer(kind=4) :: ierr
       character(len=bufsize) :: dubuf
       if (.not.pw_switched_off) then
          pw_still_time = pw_still_time.and.this%thereAre%PlaneWaveBoxes
@@ -2205,18 +2186,18 @@ contains
             call MPI_AllReduce(pw_still_time_aux, pw_still_time, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
             pw_thereAre_aux = pw_thereAre
             call MPI_AllReduce(pw_thereAre_aux, pw_thereAre, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-         endif
+         end if
 #endif
          if (.not.pw_still_time)  then
             pw_switched_off=.true.
             write(dubuf,*) 'Switching plane-wave off at n=', this%n
             if (pw_thereAre) call print11(this%control%layoutnumber,dubuf)
-         endif
-      endif
+         end if
+      end if
    end subroutine 
 
 
-!       !PML E-field advancing (IT IS IMPORTANT TO FIRST CALL THE PML ADVANCING ROUTINES, SINCE THE DISPERSIVE
+!       !PML E-field advancing (IT IS IMPORTANT TO FIRST call THE PML ADVANCING ROUTINES, SINCE THE DISPERSIVE
 !       !ROUTINES INJECT THE POLARIZATION CURRENTS EVERYWHERE (PML INCLUDED)
 !       !SO THAT DISPERSIVE MATERIALS CAN ALSO BE TRUNCATED BY CPML)
    end subroutine step
@@ -2224,7 +2205,7 @@ contains
 #ifdef CompileWithMPI
    subroutine init_MPIConformalProbes(this)
       class(solver_t) :: this
-      integer (kind=4) :: group_conformalprobes_dummy, ierr
+      integer(kind=4) :: group_conformalprobes_dummy, ierr
 !!!!sgg250424 niapa para que funcionen sondas conformal mpi
 !todos deben crear el subcomunicador mpi una sola vez   
       if (input_conformal_flag) then
@@ -2233,7 +2214,7 @@ contains
       else  
          SUBCOMM_MPI_conformal_probes=0 
          MPI_conformal_probes_root=-1
-      endif
+      end if
       call MPIinitSubcomm(this%control%layoutnumber,this%control%num_procs,SUBCOMM_MPI_conformal_probes,&
                            MPI_conformal_probes_root,group_conformalprobes_dummy)
       ! print *,'-----creating--->',this%control%layoutnumber,SIZE,SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
@@ -2270,9 +2251,9 @@ contains
       class(solver_t) :: this
       integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiEx%NX-1,0:this%bounds%sggMiEx%NY-1,0:this%bounds%sggMiEx%NZ-1), intent(in) :: sggMiEx
 
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Ex
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Hy
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Hz
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ex
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hy
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hz
       real(kind=rkind), dimension(:), pointer :: Idyh
       real(kind=rkind), dimension(:), pointer :: Idzh
 
@@ -2288,7 +2269,7 @@ contains
       Idzh(0:this%bounds%dzh%NZ-1) => this%Idzh
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk,Idyhj) 
+!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk,Idyhj) 
 #endif
 #ifdef CompileWithACC   
 !$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk,Idyhj)  copyin(Ex,sggMiEx,Hy,Hz,Idyh,Idzh,b,G1,G2) copyout(Ex) 
@@ -2311,15 +2292,15 @@ contains
 
    subroutine advanceEy(this,sggMiEy)
       class(solver_t) :: this
-      integer(kind=integersizeofmediamatrices), dimension (0:this%bounds%sggMiEy%NX-1,0:this%bounds%sggMiEy%NY-1,0:this%bounds%sggMiEy%NZ-1), intent(in) :: sggMiEy
+      integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiEy%NX-1,0:this%bounds%sggMiEy%NY-1,0:this%bounds%sggMiEy%NZ-1), intent(in) :: sggMiEy
 
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Ey
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Hz
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Hx
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ey
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hz
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hx
       real(kind=rkind), dimension(:), pointer :: Idzh
       real(kind=rkind), dimension(:), pointer :: Idxh
 
-      real (kind=rkind) :: Idzhk
+      real(kind=rkind) :: Idzhk
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
@@ -2331,7 +2312,7 @@ contains
       Idxh(0:this%bounds%dxh%NX-1) => this%Idxh
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk)  
+!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk)  
 #endif
 #ifdef CompileWithACC   
 !$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk)     copyin(Ey,sggMiEy,Hz,Hx,Idzh,Idxh,b,G1,G2) copyout(Ey) 
@@ -2356,17 +2337,17 @@ contains
 
    subroutine advanceEz(this,sggMiEz)
       class(solver_t) :: this
-      integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiEz%NX-1,0:this%bounds%sggMiEz%NY-1,0:this%bounds%sggMiEz%NZ-1), intent(in) ::  sggMiEz
+      integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiEz%NX-1,0:this%bounds%sggMiEz%NY-1,0:this%bounds%sggMiEz%NZ-1), intent(in) :: sggMiEz
 
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous :: Ez
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous :: Hx
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous :: Hy
-      real (kind=rkind), dimension(:), pointer ::  Idyh
-      real (kind=rkind), dimension(:), pointer ::  Idxh
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ez
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hx
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hy
+      real(kind=rkind), dimension(:), pointer :: Idyh
+      real(kind=rkind), dimension(:), pointer :: Idxh
       !------------------------> Variables locales
-      real (kind = RKIND)  ::   Idyhj
-      integer(kind = 4)  ::  i, j, k
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio
+      real(kind = RKIND) :: Idyhj
+      integer(kind = 4) :: i, j, k
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
 
 
       Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
@@ -2377,7 +2358,7 @@ contains
       Idxh(0:this%bounds%dxh%NX-1) => this%Idxh
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyhj)    
+!$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyhj)    
 #endif
 #ifdef CompileWithACC   
 !$ACC parallel loop   DEFAULT(present) collapse (2) private (i,j,k,medio,Idyhj)        copyin(Ez,sggMiEz,Hx,Hy,Idxh,Idyh,b,G1,G2) copyout(Ez) 
@@ -2422,12 +2403,12 @@ contains
       class(solver_t) :: this
       integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiHx%NX-1,0:this%bounds%sggMiHx%NY-1,0:this%bounds%sggMiHx%NZ-1), intent(in) :: sggMiHx
 
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Hx
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ey
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ez
-      real (kind=rkind), dimension(:), pointer:: IdyE
-      real (kind=rkind), dimension(:), pointer:: IdzE
-      real (kind=rkind) :: Idzek, Idyej
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous  :: Hx
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous  :: Ey
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous  :: Ez
+      real(kind=rkind), dimension(:), pointer:: IdyE
+      real(kind=rkind), dimension(:), pointer:: IdzE
+      real(kind=rkind) :: Idzek, Idyej
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
@@ -2440,7 +2421,7 @@ contains
 
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek,Idyej)     
+!$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek,Idyej)     
 #endif
 #ifdef CompileWithACC   
 !$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek,Idyej)       copyin(Hx,sggMiHx,Ey,Ez,Idye,Idze,b,GM1,GM2) copyout(Hx) 
@@ -2470,7 +2451,7 @@ contains
       real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ex
       real(kind=rkind), dimension(:), pointer :: IdzE
       real(kind=rkind), dimension(:), pointer :: IdxE
-      real (kind=rkind) :: Idzek
+      real(kind=rkind) :: Idzek
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
@@ -2482,7 +2463,7 @@ contains
       IdxE(0:this%bounds%dxE%NX-1) => this%IdxE
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek)     
+!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek)     
 #endif
 #ifdef CompileWithACC   
 !$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek)         copyin(Hy,sggMiHy,Ez,Ex,Idze,Idxe,b,GM1,GM2) copyout(Hy) 
@@ -2511,9 +2492,9 @@ contains
       real(kind=rkind), dimension(:), pointer :: IdyE
       real(kind=rkind), dimension(:), pointer :: IdxE
 
-      real (kind = RKIND)  ::  Idyej
-      integer(kind = 4)  ::  i, j, k
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio
+      real(kind = RKIND) :: Idyej
+      integer(kind = 4) :: i, j, k
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
       Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
       Ex(0:this%bounds%EX%NX-1,0:this%bounds%EX%NY-1,0:this%bounds%EX%NZ-1) => this%Ex
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
@@ -2521,7 +2502,7 @@ contains
       IdxE(0:this%bounds%dxE%NX-1) => this%IdxE
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyej)  
+!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyej)  
 #endif
 #ifdef CompileWithACC   
 !$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idyej)       copyin(Hz,sggMiHz,Ex,Ey,Idxe,Idye,b,GM1,GM2) copyout(Hz)
@@ -2541,6 +2522,7 @@ contains
       return
    end subroutine advanceHz
 
+
    subroutine solver_advanceConformalE(this)
       class(solver_t) :: this
       integer :: n, i, j, k, e, medium
@@ -2551,36 +2533,27 @@ contains
          i = this%conformal_surface_faces(n)%cell(1)
          j = this%conformal_surface_faces(n)%cell(2)
          k = this%conformal_surface_faces(n)%cell(3)
-         e = 6 - this%conformal_surface_faces(n)%face_direction - &
-                 this%conformal_surface_faces(n)%split_direction
+         e = 6 - this%conformal_surface_faces(n)%face_direction - this%conformal_surface_faces(n)%split_direction
          sign = leviCivita(this%conformal_surface_faces(n)%face_direction, &
                            this%conformal_surface_faces(n)%split_direction, e)
-
-         select case(this%conformal_surface_faces(n)%split_direction)
-         case(1)
-            i = i + 1
-            inverse_step = this%Idxh(i)
-         case(2)
-            j = j + 1
-            inverse_step = this%Idyh(j)
-         case(3)
-            k = k + 1
-            inverse_step = this%Idzh(k)
+         select case (this%conformal_surface_faces(n)%split_direction)
+         case (1); i = i + 1; inverse_step = this%Idxh(i)
+         case (2); j = j + 1; inverse_step = this%Idyh(j)
+         case (3); k = k + 1; inverse_step = this%Idzh(k)
          end select
-
-         select case(e)
-         case(1)
+         select case (e)
+         case (1)
             medium = this%media%sggMiEx(i,j,k)
-            this%Ex(i,j,k) = this%Ex(i,j,k) + this%g%g2(medium)*inverse_step*sign* &
-               (this%conformal_surface_faces(n)%upper_h - this%conformal_surface_faces(n)%lower_h)
-         case(2)
+            this%Ex(i,j,k) = this%Ex(i,j,k) + this%g%g2(medium)*inverse_step*sign * &
+               (this%conformal_surface_faces(n)%upper_h-this%conformal_surface_faces(n)%lower_h)
+         case (2)
             medium = this%media%sggMiEy(i,j,k)
-            this%Ey(i,j,k) = this%Ey(i,j,k) + this%g%g2(medium)*inverse_step*sign* &
-               (this%conformal_surface_faces(n)%upper_h - this%conformal_surface_faces(n)%lower_h)
-         case(3)
+            this%Ey(i,j,k) = this%Ey(i,j,k) + this%g%g2(medium)*inverse_step*sign * &
+               (this%conformal_surface_faces(n)%upper_h-this%conformal_surface_faces(n)%lower_h)
+         case (3)
             medium = this%media%sggMiEz(i,j,k)
-            this%Ez(i,j,k) = this%Ez(i,j,k) + this%g%g2(medium)*inverse_step*sign* &
-               (this%conformal_surface_faces(n)%upper_h - this%conformal_surface_faces(n)%lower_h)
+            this%Ez(i,j,k) = this%Ez(i,j,k) + this%g%g2(medium)*inverse_step*sign * &
+               (this%conformal_surface_faces(n)%upper_h-this%conformal_surface_faces(n)%lower_h)
          end select
       end do
    end subroutine solver_advanceConformalE
@@ -2595,42 +2568,38 @@ contains
          i = this%conformal_surface_faces(n)%cell(1)
          j = this%conformal_surface_faces(n)%cell(2)
          k = this%conformal_surface_faces(n)%cell(3)
-         e = 6 - this%conformal_surface_faces(n)%face_direction - &
-                 this%conformal_surface_faces(n)%split_direction
+         e = 6 - this%conformal_surface_faces(n)%face_direction - this%conformal_surface_faces(n)%split_direction
          sign = leviCivita(this%conformal_surface_faces(n)%face_direction, &
                            this%conformal_surface_faces(n)%split_direction, e)
          lower_fraction = this%conformal_surface_faces(n)%lower_fraction
-
-         select case(e)
-         case(1)
+         select case (e)
+         case (1)
             lower_e = this%Ex(i,j,k)
-            select case(this%conformal_surface_faces(n)%split_direction)
-            case(2); upper_e = this%Ex(i,j+1,k); inverse_step = this%Idye(j)
-            case(3); upper_e = this%Ex(i,j,k+1); inverse_step = this%Idze(k)
+            select case (this%conformal_surface_faces(n)%split_direction)
+            case (2); upper_e = this%Ex(i,j+1,k); inverse_step = this%Idyh(j)
+            case (3); upper_e = this%Ex(i,j,k+1); inverse_step = this%Idzh(k)
             end select
-         case(2)
+         case (2)
             lower_e = this%Ey(i,j,k)
-            select case(this%conformal_surface_faces(n)%split_direction)
-            case(1); upper_e = this%Ey(i+1,j,k); inverse_step = this%Idxe(i)
-            case(3); upper_e = this%Ey(i,j,k+1); inverse_step = this%Idze(k)
+            select case (this%conformal_surface_faces(n)%split_direction)
+            case (1); upper_e = this%Ey(i+1,j,k); inverse_step = this%Idxe(i)
+            case (3); upper_e = this%Ey(i,j,k+1); inverse_step = this%Idze(k)
             end select
-         case(3)
+         case (3)
             lower_e = this%Ez(i,j,k)
-            select case(this%conformal_surface_faces(n)%split_direction)
-            case(1); upper_e = this%Ez(i+1,j,k); inverse_step = this%Idxe(i)
-            case(2); upper_e = this%Ez(i,j+1,k); inverse_step = this%Idye(j)
+            select case (this%conformal_surface_faces(n)%split_direction)
+            case (1); upper_e = this%Ez(i+1,j,k); inverse_step = this%Idxe(i)
+            case (2); upper_e = this%Ez(i,j+1,k); inverse_step = this%Idye(j)
             end select
          end select
-
          this%conformal_surface_faces(n)%lower_h = this%conformal_surface_faces(n)%lower_h + &
             this%sgg%dt/(this%mu0*lower_fraction)*(-sign)*(-lower_e)*inverse_step
          this%conformal_surface_faces(n)%upper_h = this%conformal_surface_faces(n)%upper_h + &
             this%sgg%dt/(this%mu0*(1.0_RKIND-lower_fraction))*(-sign)*upper_e*inverse_step
-
-         select case(this%conformal_surface_faces(n)%face_direction)
-         case(1); this%Hx(i,j,k) = this%conformal_surface_faces(n)%lower_h
-         case(2); this%Hy(i,j,k) = this%conformal_surface_faces(n)%lower_h
-         case(3); this%Hz(i,j,k) = this%conformal_surface_faces(n)%lower_h
+         select case (this%conformal_surface_faces(n)%face_direction)
+         case (1); this%Hx(i,j,k) = this%conformal_surface_faces(n)%lower_h
+         case (2); this%Hy(i,j,k) = this%conformal_surface_faces(n)%lower_h
+         case (3); this%Hz(i,j,k) = this%conformal_surface_faces(n)%lower_h
          end select
       end do
    end subroutine solver_advanceConformalH
@@ -2642,9 +2611,6 @@ contains
       type(face_t) :: face
       real(kind=rkind) :: lower_fraction
 
-      ! A coordinate-normal sheet cuts opposite, parallel edges at the same
-      ! fractional coordinate.  Those faces can be split into independent
-      ! lower/upper Yee states without defining a PEC volume.
       allocate(states(0))
       do medium = 1, this%sgg%NumMedia
          if (.not. this%sgg%Med(medium)%Is%ConformalPEC .or. &
@@ -2708,22 +2674,20 @@ contains
       type(edge_t), intent(in) :: edge
       type(face_t), intent(in) :: face
       integer :: remaining_direction
-
       edgeBoundsFace = .false.
       if (edge%direction == face%direction) return
       remaining_direction = 6 - edge%direction - face%direction
       if (edge%cell(face%direction) /= face%cell(face%direction)) return
       if (edge%cell(edge%direction) /= face%cell(edge%direction)) return
       edgeBoundsFace = edge%cell(remaining_direction) == face%cell(remaining_direction) .or. &
-                       edge%cell(remaining_direction) == face%cell(remaining_direction) + 1
+                       edge%cell(remaining_direction) == face%cell(remaining_direction)+1
    end function edgeBoundsFace
 
    real(kind=rkind) function edgeIntersectionFraction(edge) result(fraction)
       type(edge_t), intent(in) :: edge
       real(kind=rkind) :: first_fraction, second_fraction
-
-      first_fraction = edge%material_coords(1) - floor(edge%material_coords(1))
-      second_fraction = edge%material_coords(2) - floor(edge%material_coords(2))
+      first_fraction = edge%material_coords(1)-floor(edge%material_coords(1))
+      second_fraction = edge%material_coords(2)-floor(edge%material_coords(2))
       fraction = 0.0_RKIND
       if (first_fraction > 1.0e-5_RKIND) fraction = first_fraction
       if (second_fraction > 1.0e-5_RKIND) fraction = second_fraction
@@ -2734,7 +2698,6 @@ contains
       integer(kind=4), dimension(3), intent(in) :: cell
       integer, intent(in) :: direction
       integer :: n
-
       surfaceStateExists = .false.
       do n = 1, size(states)
          if (states(n)%face_direction == direction .and. all(states(n)%cell == cell)) then
@@ -2756,7 +2719,6 @@ contains
          value = -1.0_RKIND
       end if
    end function leviCivita
-
 
    subroutine solver_advanceEDispersiveE(this)
       class(solver_t) :: this
@@ -2791,7 +2753,7 @@ contains
                                                                   this%Idxe, this%Idye, this%Idze, & 
                                                                   this%Hx, this%Hy, this%Hz, & 
                                                                   this%still_planewave_time)
-      endif
+      end if
    end subroutine
 
    subroutine solver_advanceNodalE(this)
@@ -2826,7 +2788,7 @@ contains
 
    subroutine solver_advanceAnisotropicH(this)
       class(solver_t) :: this
-      IF (this%thereAre%Anisotropic) call AdvanceAnisotropicH(this%sgg%alloc, this%ex, this%ey, this%ez, & 
+      if (this%thereAre%Anisotropic) call AdvanceAnisotropicH(this%sgg%alloc, this%ex, this%ey, this%ez, & 
                                                               this%hx, this%hy, this%hz, & 
                                                               this%Idxe, this%Idye, this%Idze, &
                                                               this%Idxh, this%Idyh, this%Idzh)
@@ -2862,11 +2824,11 @@ contains
       class (solver_t) :: this
       If (this%thereAre%PMLbodies) then !waveport absorbers
          call AdvancePMLbodyE()
-      endif
+      end if
       If (this%thereAre%PMLBorders) then
          call AdvanceelectricCPML(this%sgg%numMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, & 
                                   this%g%G2, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
-      endif
+      end if
    end subroutine
 
    subroutine solver_advancesgbcE(this)
@@ -2886,33 +2848,31 @@ contains
       class(solver_t) :: this
       character(len=bufsize) :: buff
 
+#ifdef CompileWithMTLN
+      call AdvanceWiresE_mtln(this%sgg,this%Idxh,this%Idyh,this%Idzh,this%eps0,this%mu0)
+#else 
+
       if (( (trim(adjustl(this%control%wiresflavor))=='holland') .or. &
-            (trim(adjustl(this%control%wiresflavor))=='transition')) .and. .not. this%control%use_mtln_wires) then
-         IF (this%thereAre%Wires) then
+            (trim(adjustl(this%control%wiresflavor))=='transition'))) then
+         if (this%thereAre%Wires) then
             if (this%control%wirecrank) then
                call AdvanceWiresEcrank(this%sgg, this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
             else
                call AdvanceWiresE(this%sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,this%eps0,this%mu0)
-            endif
-         endif
-      endif
+            end if
+         end if
+      end if
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-         IF (this%thereAre%Wires) call AdvanceWiresE_Berenger(this%sgg,this%n)
-      endif
+         if (this%thereAre%Wires) call AdvanceWiresE_Berenger(this%sgg,this%n)
+      end if
 #endif
 #ifdef CompileWithSlantedWires
       if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
          call AdvanceWiresE_Slanted(this%sgg,this%n) 
-      endif
-#endif
-      if (this%control%use_mtln_wires) then
-#ifdef CompileWithMTLN
-         call AdvanceWiresE_mtln(this%sgg,this%Idxh,this%Idyh,this%Idzh,this%eps0,this%mu0)
-#else
-         write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
-#endif   
       end if
+#endif
+#endif   
 
    end subroutine
 
@@ -2920,16 +2880,16 @@ contains
       class(solver_t) :: this
       if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
-         IF (this%thereAre%Wires) then
+         if (this%thereAre%Wires) then
             if (this%control%wirecrank) then
                continue
             else
                call AdvanceWiresH(this%sgg, this%n, this%control%layoutnumber, &
                this%control%wiresflavor, this%control%simu_devia, this%control%stochastic, &
                this%control%experimentalVideal, this%control%wirethickness, this%eps0, this%mu0)
-            endif
-         endif
-      endif
+            end if
+         end if
+      end if
 
    end subroutine
 
@@ -2948,25 +2908,25 @@ contains
             if (this%control%num_procs>1) then
                call MPI_Barrier(SUBCOMM_MPI,ierr)
                call FlushMPI_H_Cray
-            endif
-         endif
+            end if
+         end if
 #endif
-      endif
+      end if
    end subroutine
 
 
    subroutine solver_end(this)
       class(solver_t) :: this
 
-      real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
-      real(kind=rkind), pointer, dimension (:) :: dxe, dye, dze, dxh, dyh, dzh
+      real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
+      real(kind=rkind), pointer, dimension(:) :: dxe, dye, dze, dxh, dyh, dzh
       real(kind=rkind_tiempo) :: at
-      integer (kind=4) :: ndummy
+      integer(kind=4) :: ndummy
       logical :: dummylog, somethingdone, newsomethingdone
       character(len=bufsize) :: dubuf
 
 #ifdef CompileWithMPI
-      integer (kind=4) :: ierr
+      integer(kind=4) :: ierr
 #endif
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz;
       dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
@@ -2974,10 +2934,6 @@ contains
 #ifdef CompileWithProfiling
       call nvtxEndRange
 #endif      
-      
-#ifdef CompileWithConformal
-      if(this%control%input_conformal_flag) call conformal_final_simulation  (conf_timeSteps, this%n)
-#endif
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -3005,26 +2961,26 @@ contains
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
          call print11(this%control%layoutnumber,dubuf)
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-      endif
+      end if
 
       if (this%thereAre%FarFields) then
           write(dubuf,'(a,i9)')  ' INIT FINAL OBSERVATION DATA FLUSHING and Near-to-Far field  n= ',this%n
       else
           write(dubuf,'(a,i9)')  ' INIT FINAL OBSERVATION DATA FLUSHING n= ',this%n
-      endif
+      end if
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       call print11(this%control%layoutnumber,dubuf)
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-      if (this%thereAre%Observation) THEN
+      if (this%thereAre%Observation) then
          call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
-      endif
+      end if
       
       if (this%thereAre%FarFields) then
          write(dubuf,'(a,i9)')   ' DONE FINAL OBSERVATION DATA FLUSHED and Near-to-Far field  n= ',this%n
       else
          write(dubuf,'(a,i9)')    ' DONE FINAL OBSERVATION  DATA FLUSHED n= ',this%n
-      endif
+      end if
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       call print11(this%control%layoutnumber,dubuf)
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
@@ -3056,7 +3012,7 @@ contains
          call print11(this%control%layoutnumber,dubuf)
          write(dubuf,*) SEPARADOR//separador//separador
          call print11(this%control%layoutnumber,dubuf)
-      endif
+      end if
 
       write(dubuf,*)'INIT FINAL FLUSHING .vtk if any.'
       call print11(this%control%layoutnumber,dubuf)
@@ -3081,7 +3037,7 @@ contains
         call print11(this%control%layoutnumber,dubuf)
         write(dubuf,*) SEPARADOR//separador//separador
         call print11(this%control%layoutnumber,dubuf)
-      endif
+      end if
 
       write(dubuf,*)'INIT FINAL FLUSHING .xdmf if any.'
       call print11(this%control%layoutnumber,dubuf)
@@ -3106,7 +3062,7 @@ contains
          call print11(this%control%layoutnumber,dubuf)
          write(dubuf,*) SEPARADOR//separador//separador
          call print11(this%control%layoutnumber,dubuf)
-      endif
+      end if
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -3126,11 +3082,11 @@ contains
 
    !las sggmixx se desctruyen el en main pq se alocatean alli
    subroutine Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,wiresflavor )
-      character (len=*) , intent(in)    ::  wiresflavor
-      type (logic_control_t), intent(IN)  ::  thereare
-      type (SGGFDTDINFO_t), intent(INOUT)     ::  sgg
-      REAL (KIND=RKIND), intent(INOUT)     , pointer, dimension ( : , : , : )  ::  Ex,Ey,Ez,Hx,Hy,Hz
-      REAL (KIND=RKIND), intent(INOUT)     , pointer, dimension ( : )  ::  G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
+      character(len=*) , intent(in) :: wiresflavor
+      type(logic_control_t), intent(in) :: thereare
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
+      real(kind=RKIND), intent(INOUT)     , pointer, dimension( : , : , : ) :: Ex,Ey,Ez,Hx,Hy,Hz
+      real(kind=RKIND), intent(INOUT)     , pointer, dimension( : ) :: G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
 
       call DestroyObservation(sgg)
       Call DestroyNodal(sgg)
@@ -3139,33 +3095,33 @@ contains
       call DestroyMultiports(sgg)
 #endif
 
-      call destroysgbcs(sgg) !!todos deben destruir pq alocatean en funcion de sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era IF ((this%thereAre%sgbcs).and.(sgbc))
+      call destroysgbcs(sgg) !!todos deben destruir pq alocatean en funcion de sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era if ((this%thereAre%sgbcs).and.(sgbc))
       call destroyLumped(sgg)
       call DestroyEDispersives(sgg)
       call DestroyMDispersives(sgg)
       if ((trim(adjustl(wiresflavor))=='holland') .or. &
           (trim(adjustl(wiresflavor))=='transition')) then
          call DestroyWires(sgg)
-      endif
+      end if
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(wiresflavor))=='berenger') then
          call DestroyWires_Berenger(sgg)
-      endif
+      end if
 #endif
 #ifdef CompileWithSlantedWires
       if((trim(adjustl(wiresflavor))=='slanted').or.(trim(adjustl(wiresflavor))=='semistructured')) then
          call DestroyWires_Slanted(sgg)
-      endif
+      end if
 #endif      
 
       call DestroyCPMLBorders
       call DestroyPMLbodies(sgg)
       call DestroyMURBorders
       !Destroy the remaining
-      deallocate (sgg%Med,sgg%LineX,sgg%LineY,sgg%LineZ,sgg%DX,sgg%DY,sgg%DZ,sgg%tiempo)
-      deallocate (G1,G2,GM1,GM2)
-      deallocate (Ex, Ey, Ez, Hx, Hy, Hz)
-      deallocate (dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh )
+      deallocate(sgg%Med,sgg%LineX,sgg%LineY,sgg%LineZ,sgg%DX,sgg%DY,sgg%DZ,sgg%tiempo)
+      deallocate(G1,G2,GM1,GM2)
+      deallocate(Ex, Ey, Ez, Hx, Hy, Hz)
+      deallocate(dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh )
       return
    end subroutine Destroy_All_exceptSGGMxx
 
@@ -3179,34 +3135,34 @@ contains
       call DestroyMultiports(this%sgg)
 #endif
 
-      call destroysgbcs(this%sgg) !!todos deben destruir pq alocatean en funcion de this%sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era IF ((this%thereAre%sgbcs).and.(sgbc))
+      call destroysgbcs(this%sgg) !!todos deben destruir pq alocatean en funcion de this%sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era if ((this%thereAre%sgbcs).and.(sgbc))
       call destroyLumped(this%sgg)
       call DestroyEDispersives(this%sgg)
       call DestroyMDispersives(this%sgg)
       if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
           (trim(adjustl(this%control%wiresflavor))=='transition')) then
          call DestroyWires(this%sgg)
-      endif
+      end if
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
          call DestroyWires_Berenger(this%sgg)
-      endif
+      end if
 #endif
 #ifdef CompileWithSlantedWires
       if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
          call DestroyWires_Slanted(this%sgg)
-      endif
+      end if
 #endif      
 
       call DestroyCPMLBorders
       call DestroyPMLbodies(this%sgg)
       call DestroyMURBorders
       !Destroy the remaining
-      deallocate (this%sgg%Med,this%sgg%LineX,this%sgg%LineY,this%sgg%LineZ,this%sgg%DX,this%sgg%DY,this%sgg%DZ,this%sgg%tiempo)
-      call this%g%destroy()
       if (allocated(this%conformal_surface_faces)) deallocate(this%conformal_surface_faces)
-      deallocate (this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
-      deallocate (this%dxe, this%dye, this%dze, this%Idxe, this%Idye, this%Idze, this%dxh, this%dyh, this%dzh, this%Idxh, this%Idyh, this%Idzh)
+      deallocate(this%sgg%Med,this%sgg%LineX,this%sgg%LineY,this%sgg%LineZ,this%sgg%DX,this%sgg%DY,this%sgg%DZ,this%sgg%tiempo)
+      call this%g%destroy()
+      deallocate(this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
+      deallocate(this%dxe, this%dye, this%dze, this%Idxe, this%Idye, this%Idze, this%dxh, this%dyh, this%dzh, this%Idxh, this%Idyh, this%Idzh)
       return
    end subroutine destroy_and_deallocate
 

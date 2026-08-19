@@ -15,9 +15,8 @@ module Preprocess_m
 #ifdef CompileWithMTLN
    use mtln_types_m, only: cable_t, unshielded_multiwire_t
 #endif
-   !healer sgg10
    use CreateMatrices_m
-   !typos que leo desde mi FDE
+   
    use FDETYPES_m
    use DMMA_m
    use conformal_m, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
@@ -33,7 +32,7 @@ module Preprocess_m
    !
 contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   SUBROUTINE read_geomData (sgg,media,tag_numbers, fichin, layoutnumber, size, SINPML_fullsize, fullsize, this, &
+   subroutine read_geomData (sgg,media,tag_numbers, fichin, layoutnumber, num_procs, SINPML_fullsize, fullsize, this, &
       groundwires,attfactor,mibc,SGBC,SGBCDispersive,MEDIOEXTRA,maxSourceValue,skindepthpre,createmapvtk,input_conformal_flag,CLIPREGION,boundwireradius,maxwireradius,updateshared,run_with_dmma, &
       eps00,mu00,simu_devia,hay_slanted_wires,verbose,ignoresamplingerrors,tagtype,wiresflavor)
       type(media_matrices_t), intent(inout) :: media
@@ -69,7 +68,7 @@ contains
       LOGICAL :: isathinwire, VALIDO, existia,medioespecial,input_conformal_flag,nodo_cazado
       LOGICAL :: errnofile,errnofile1,errnofile2,errnofile3,errnofile4
       real(kind=RKIND) :: tiempo1, tiempo2, field1, field2,rdummy
-      INTEGER (KIND=4) :: nsurfs, numus, layoutnumber, size,OrigIndex,numminus
+      integer(kind=4) :: nsurfs, numus, layoutnumber, num_procs,OrigIndex,numminus
       real(kind=RKIND) :: delta,del,sig_max
       integer(kind=4), dimension(:), ALLOCATABLE :: contapuntos
       integer(kind=4) :: conta1, conta2, MEDIO,imenos1,jmenos1,kmenos1,o,p,puntoxi,puntoyi,puntozi, &
@@ -133,25 +132,27 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-      WRITE (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', num_procs, ') '
       write(whoamishort,'(i5)') layoutnumber+1
       !create space for the etangential shared info
       sgg%EShared%Conta = 0
       sgg%EShared%MaxConta = 10
      allocate(sgg%EShared%elem(1:sgg%EShared%MaxConta))
 
+
       call buildConformalMedia(this%conformalRegs, conformal_volumes, conformal_surfaces)
       sgg%dt = changeTimeStepIfConformalNeeded(sgg%dt)
-         if (associated(this%conformalRegs%volumes)) then 
+      if (associated(this%conformalRegs%volumes)) then
          volume_side_maps = buildSideMaps(this%conformalRegs%volumes)
       else
          allocate(volume_side_maps(0))
-               end if
+      end if
       if (associated(this%conformalRegs%surfaces)) then
          surface_side_maps = buildSideMaps(this%conformalRegs%surfaces)
       else
          allocate(surface_side_maps(0))
-            end if
+      end if
+
 
       ! Cuenta los medios
       !!!!!calcula tamanios
@@ -199,21 +200,17 @@ contains
       !!!!!!!!!!!!!
       contamedia = contamedia +1 !para acomodar los nodal sources como caso especial de linea vacia
 
-      
       call getDifferentEdgeRatios(edge_ratios, conformal_volumes)
       call getDifferentEdgeRatios(edge_ratios, conformal_surfaces)
       call getDifferentFaceRatios(face_ratios, conformal_volumes)
       call getDifferentFaceRatios(face_ratios, conformal_surfaces)
-      ! edge_ratios = getDifferentEdgeRatios(conformal_volumes)
-      ! face_ratios = getDifferentFaceRatios(conformal_volumes)
       contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
       if (findloc(edge_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
       if (findloc(face_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
+
 #ifdef CompileWithMTLN
       contamedia = contamedia + this%mtln%n_unsh
 #endif
-      ! Surface updates need media distinct from volume updates even when their
-      ! geometric ratios are equal.
       if (ubound(conformal_volumes, 1) > 0 .and. ubound(conformal_surfaces, 1) > 0) then
          contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
          if (findloc(edge_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
@@ -314,7 +311,7 @@ contains
       !
       tama = (this%plnSrc%nc)
 !!!      write(buff,*) 'More than 1 Huygens box unsupported'
-!!!      IF (tama > 1) CALL STOPONERROR(layoutnumber,size,buff)
+!!!      if (tama > 1) call STOPONERROR(layoutnumber,num_procs,buff)
       !LO PONGO A MANO ojo
       amplitud = 1.0_RKIND
       sgg%NumPlaneWaves = tama
@@ -424,7 +421,7 @@ contains
             if (Abs(px*ex+py*ey+pz*ez) >= 1e-4) then
                write(buff,*) 'NO TEM PLANEWAVE',ex,ey,ez,px,py,pz,(px*ex+py*ey+pz*ez),this%plnSrc%collection(i)%alpha,  &
                   this%plnSrc%collection(i)%beta,this%plnSrc%collection(i)%theta,this%plnSrc%collection(i)%phi
-               CALL STOPONERROR(layoutnumber,size,buff)
+               call STOPONERROR(layoutnumber,num_procs,buff)
             end if
             !
             sgg%PlaneWave(i)%px(1) = px
@@ -887,7 +884,7 @@ contains
          elseif (this%DielRegs%lins(i)%diodo) then
 !!!27/08/15 diodos aun no soportados
             write(buff, '(a)')    'Lumped Diodes currently unsupported. .'
-            CALL STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
 !!!
             sgg%Med(contamedia)%Is%Lumped = .true.
             sgg%Med(contamedia)%Is%lossy = .true. !importante que si es lumped esto se ponga a lossy para que thin-wires haga bien el bonding !bug agb 120123 test_GGGbugresis_wire_stoch_foragasconbug
@@ -908,7 +905,7 @@ contains
             sgg%Med(contamedia)%Is%Lumped = .false.
             if (.not. this%DielRegs%lins(i)%plain) then
                write(buff, '(a)')    'Buggy error 1 in preprocess lumped. .'
-               CALL STOPONERROR(layoutnumber,size,buff)
+               call STOPONERROR(layoutnumber,num_procs,buff)
             end if
          end if
 !!!fin lumped
@@ -1333,11 +1330,11 @@ contains
                         delta=(sgg%DZ(puntoZI)+sgg%Dz(puntoZI-1))/2.0_RKIND
                       case default
                         write(buff, '(a)')    'Buggy error 1 in preprocess composites. .'
-                        CALL STOPONERROR(layoutnumber,size,buff)
+                        call STOPONERROR(layoutnumber,num_procs,buff)
                      end select
                   ELSE
                      write(buff, '(a)')    'Buggy error 2 in preprocess composites. .'
-                     CALL STOPONERROR(layoutnumber,size,buff)
+                     call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
                   sgg%Med(contamedia)%Multiport(1)%numcapas = this%LossyThinSurfs%cs(j)%numcapas
                   !el especificado
@@ -1365,7 +1362,7 @@ contains
                   rdummy=maxval(abs(this%LossyThinSurfs%cs(j)%MU_devia))+maxval(abs(this%LossyThinSurfs%cs(j)%SigmaM_devia))
                   if (rdummy>1.0e-15_RKIND) then
                      write(buff, '(a)')    'Non null deviations found in sigmam or mu in composites. Still unsupported.'
-                     CALL STOPONERROR(layoutnumber,size,buff)
+                     call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
 
                   !!!
@@ -1387,7 +1384,7 @@ contains
                      if (SGBCDispersive)   sgg%Med(contamedia)%Is%SGBCDispersive = .TRUE.
                   else
                      write(buff, '(a)')    'Some -mibc -sgbc switch should be used for Composites.'
-                     CALL STOPONERROR(layoutnumber,size,buff)
+                     call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
                   sgg%Med(contamedia)%Is%Dielectric = .FALSE.
 
@@ -1516,11 +1513,11 @@ contains
                         delta=(sgg%DZ(puntoZI)+sgg%Dz(puntoZI-1))/2.0_RKIND
                       case default
                         write(buff, '(a)')    'Buggy error 1 in preprocess composites. .'
-                        CALL STOPONERROR(layoutnumber,size,buff)
+                        call STOPONERROR(layoutnumber,num_procs,buff)
                      end select
                   ELSE
                      write(buff, '(a)')    'Buggy error 2 in preprocess composites. .'
-                     CALL STOPONERROR(layoutnumber,size,buff)
+                     call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
                   sgg%Med(contamedia)%AnisMultiport(1)%Multiportdir = this%LossyThinSurfs%cs(j)%C(i)%or
                   sgg%Med(contamedia)%AnisMultiport(1)%epr    = this%LossyThinSurfs%cs(j)%eps / Eps0
@@ -1539,7 +1536,7 @@ contains
                      sgg%Med(contamedia)%Is%Lossy = .TRUE.
                   else
                      write(buff, '(a)')    'Some -mibc -sgbc switch should be used for Anisotropic Composites.'
-                     CALL STOPONERROR(layoutnumber,size,buff)
+                     call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
 
                   sgg%Med(contamedia)%Is%Dielectric = .FALSE.
@@ -1873,7 +1870,7 @@ contains
             +abs(sgg%Med(contamedia)%wire(1)%Series_C_LeftEnd_devia)
          if (rdummy>1.0e-15_RKIND) then
             write(buff, '(a)')    'Non null deviations found in L, C or radius in wires stoch. Still unsupported.'
-            CALL STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
 !fin stoch
          !
@@ -1882,7 +1879,7 @@ contains
          !
          !        tama2 = this%twires%TW(j)%N_TWC
          !        if (tama2 == 1) then
-         !           call stoponerror(layoutnumber,size,'A WIRE must have at least two segments')
+         !           call stoponerror(layoutnumber,num_procs,'A WIRE must have at least two segments')
          !        end if
          !
          !esto no es ya necesario porque lo calculo yo luego en el wires
@@ -1977,6 +1974,7 @@ contains
          !              end select
          !        end if
       end do !del tama
+
 
 
       !preanalisis de hilos embeddeds en materiales  antes de asignarlos
@@ -2222,7 +2220,7 @@ contains
       !lo dejo que siga !luego el wires parara
       !if (paraerrhilo.and.(.not.groundwires)) then
       !    buff='Revise WIRE intersections!'
-      !    call STOPONERROR(layoutnumber,size,buff)
+      !    call STOPONERROR(layoutnumber,num_procs,buff)
       !end if
       !end preanalisis
       !perform the assignments
@@ -2330,18 +2328,12 @@ contains
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
             & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientacion, &
             & contamedia, isathinwire,verbose,numeroasignaciones)
-            IF ((trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE))   == 'VOLT') .OR.   &
-            &     (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'CURR').OR.   &
-            &     (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'SOFTVOLT').OR.   &
-            &     (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'SOFTCURR').OR.   &
-            &     (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'HARDVOLT').OR.   &
-            &     (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'HARDCURR')) THEN
+            if ((trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE))   == F_SOURCE_VOLTAGE) .OR.   &
+            &     (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == F_SOURCE_CURRENT)) then
                !!!!!!!!!!!!!
-               IF ((trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'VOLT').OR. &
-                  (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'SOFTVOLT')) THEN
+               if (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == F_SOURCE_VOLTAGE) then
                   CONTAVOLT=CONTAVOLT+1
                   sgg%Med(contamedia)%wire(1)%VsourceExists = .TRUE.
-                  sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%SOFT=.TRUE.
                   sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%Multiplier = this%twires%TW(j)%TWC(i)%m
                   sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%Resistance = 0.0_RKIND
                   !not provided by .nfde but supported by the simulation though untested
@@ -2350,53 +2342,21 @@ contains
                   sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%i = this%twires%TW(j)%TWC(i)%i
                   sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%j = this%twires%TW(j)%TWC(i)%j
                   sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%k = this%twires%TW(j)%TWC(i)%k
-               ELSE IF ((trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'CURR').OR. &
-                  (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'HARDCURR')) THEN
+               ELSE if ((trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == F_SOURCE_CURRENT)) then
                   CONTAVOLT=CONTAVOLT+1
-                  CALL WarnErrReport (buff)
-                  !             CALL STOPONERROR(layoutnumber,size,buff)
                   sgg%Med(contamedia)%wire(1)%VsourceExists = .TRUE.
-                  sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%SOFT=.FALSE. !230323 FUENTES DURAS Y FALSAS SGG
-                  sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%Multiplier = this%twires%TW(j)%TWC(i)%m
-                  sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%fichero%name = trim (adjustl(this%twires%TW(j)%TWC(i)%SRCFILE))
-                  sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%Resistance = 0.0_RKIND
+                  sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%Multiplier = 1.0e22_RKIND
+                  sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%Resistance = 1.0e22_RKIND
                   !not provided by .nfde but supported by the simulation though untested
                   !
                   sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%fichero%name = trim (adjustl(this%twires%TW(j)%TWC(i)%SRCFILE))
                   sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%i = this%twires%TW(j)%TWC(i)%i
                   sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%j = this%twires%TW(j)%TWC(i)%j
                   sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%k = this%twires%TW(j)%TWC(i)%k
-               ELSEIF (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'HARDVOLT') THEN
-                  CONTACURR=CONTACURR+1
-                  sgg%Med(contamedia)%wire(1)%IsourceExists = .TRUE.
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%SOFT=.FALSE. !230323 FUENTES DURAS Y FALSAS SGG
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%Multiplier = this%twires%TW(j)%TWC(i)%m
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%Resistance = 0.0_RKIND
-                  !not provided by .nfde but supported by the simulation though untested
-                  !
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%fichero%name = trim (adjustl(this%twires%TW(j)%TWC(i)%SRCFILE))
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%i = this%twires%TW(j)%TWC(i)%i
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%j = this%twires%TW(j)%TWC(i)%j
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%k = this%twires%TW(j)%TWC(i)%k
-               ELSE IF ((trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'SOFTCURR')) THEN
-                  CONTACURR=CONTACURR+1
-                  CALL WarnErrReport (buff)
-                  !             CALL STOPONERROR(layoutnumber,size,buff)
-                  sgg%Med(contamedia)%wire(1)%IsourceExists = .TRUE.
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%SOFT=.true. !230323 FUENTES DURAS Y FALSAS SGG
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%Multiplier = this%twires%TW(j)%TWC(i)%m
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%fichero%name = trim (adjustl(this%twires%TW(j)%TWC(i)%SRCFILE))
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%Resistance = 0.0_RKIND
-                  !not provided by .nfde but supported by the simulation though untested
-                  !
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%fichero%name = trim (adjustl(this%twires%TW(j)%TWC(i)%SRCFILE))
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%i = this%twires%TW(j)%TWC(i)%i
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%j = this%twires%TW(j)%TWC(i)%j
-                  sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%k = this%twires%TW(j)%TWC(i)%k
                end if
             ELSEIF (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) /= 'None') then
                write(buff,*) 'WRONG type of wire source '//trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE))
-               call stoponerror (layoutnumber,size,buff)
+               call stoponerror (layoutnumber,num_procs,buff)
             end if
          end do hilosbarre
          sgg%Med(contamedia)%wire(1)%NUMVOLTAGESOURCES=CONTAVOLT
@@ -2531,39 +2491,23 @@ contains
             !!!!!!
 
 
-            IF ((trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == 'VOLT').or. &
-               (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == 'SOFTVOLT')) THEN
+            if (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == F_SOURCE_VOLTAGE) then
                allocate (sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource)
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VsourceExists = .TRUE.
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%SOFT=.TRUE.  !fuentes duras sgg 230323. default blandas
+               ! sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%SOFT=.TRUE.  !fuentes duras sgg 230323. default blandas
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%Multiplier = this%swires%SW(j)%swc(i)%m
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%Resistance = 0.0_RKIND
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%fichero%name = trim (adjustl(this%swires%SW(j)%swc(i)%SRCFILE))
-            ELSE IF ((trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == 'CURR').OR. &
-               (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == 'HARDCURR')) THEN !EQUIVALENTES A IMPLEMENTAR UNA DE voltage
-               allocate (sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource)
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VsourceExists = .TRUE.
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource%SOFT=.FALSE.
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource%Multiplier = this%swires%SW(j)%swc(i)%m
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource%Resistance = 0.0_RKIND
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource%fichero%name = trim (adjustl(this%swires%SW(j)%swc(i)%SRCFILE))
-            ELSEIF (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == 'HARDVOLT') THEN !EQUIVALENTES A IMPLEMENTAR UNA DE Corriente
+            ELSE if (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == F_SOURCE_CURRENT) then
                allocate (sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource)
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%IsourceExists = .TRUE.
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%ISource%SOFT=.FALSE.
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%ISource%Multiplier = this%swires%SW(j)%swc(i)%m
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%ISource%Resistance = 0.0_RKIND
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%ISource%fichero%name = trim (adjustl(this%swires%SW(j)%swc(i)%SRCFILE))
-            ELSE IF ((trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == 'SOFTCURR')) THEN
-               allocate (sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource)
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%IsourceExists = .TRUE.
-               sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource%SOFT=.TRUE.
+               ! sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource%SOFT=.TRUE.
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource%Multiplier = this%swires%SW(j)%swc(i)%m
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource%Resistance = 0.0_RKIND
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource%fichero%name = trim (adjustl(this%swires%SW(j)%swc(i)%SRCFILE))
             elseIF (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) /= 'None') then
                write(buff,*) 'WRONG type of wire source '//trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE))
-               call stoponerror (layoutnumber,size,buff)
+               call stoponerror (layoutnumber,num_procs,buff)
             end if
          end do
       end do
@@ -2584,14 +2528,13 @@ contains
       end do
 
       if (ubound(conformal_volumes, 1) > 0) then
-      contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
-      if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
-      if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+         contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
+         if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+         if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
       end if
-      ! faces from V and S with same ratio are considered different media, bc they need to perform different operations
+
       do j = 1, ubound(conformal_surfaces,1)
          call addConformalMedia(sgg, media, conformal_surfaces(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, surface_side_maps(j), isSurface)
-
       end do
 
       if (ubound(conformal_surfaces, 1) > 0) then
@@ -2610,6 +2553,7 @@ contains
                contamedia = contamedia + 1
               allocate(sgg%Med(contamedia)%multiwire(1))
                sgg%Med(contamedia)%Priority = prior_TW
+
                sgg%Med(contamedia)%Epr = sgg%Med(1)%Epr
                sgg%Med(contamedia)%Sigma = sgg%Med(1)%Sigma
                sgg%Med(contamedia)%Mur = sgg%Med(1)%Mur
@@ -2639,7 +2583,6 @@ contains
          end do
       end block
 #endif
-
       !reporta el bounding box
 
 #ifdef CompileWithMPI
@@ -2791,7 +2734,7 @@ contains
                      i1 = i1-1
                   ELSE
                      write(buff,*) 'Cannot determine ortientation of the PEC plane with the Slot',i1, j1, k1, direccion
-                     call stoponerror (layoutnumber,size,buff)
+                     call stoponerror (layoutnumber,num_procs,buff)
                      !ojo con el nfde no se puede hacer Slots en escalera porque no se puede determinar la orientacion de los planos
                      !en los tramos comunes. Por tanto No he podido testear los shared electricos anisotropos. solo los magneticos
                   end if
@@ -2831,7 +2774,7 @@ contains
                      mur1 = 0.5_RKIND  * (sgg%Med(medio1)%Mur+sgg%Med(medio2)%Mur)
                   ELSE
                      write(buff,*) 'Media around the Slot are not plain media: ', medio1, medio2
-                     CALL STOPONERROR(layoutnumber,size,buff)
+                     call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
                   width = this%tSlots%Tg(j)%width
                   if (sgg%NumPlaneWaves == 1) then
@@ -3458,7 +3401,7 @@ contains
                !si no lo ha cazado
                if (.not.nodo_cazado) then
                   write(buff,'(a,i9)') 'Current probe not found in WIRE segment ',this%Sonda%collection(i)%cordinates(j)%XI
-                  call StopOnError(layoutnumber,size,buff)
+                  call StopOnError(layoutnumber,num_procs,buff)
                end if
             ELSE if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_DDP) then
                if (run_with_dmma) then
@@ -3482,11 +3425,11 @@ contains
                   !si no lo ha cazado
                   if (.not.nodo_cazado) then
                      write(buff,'(a,i9)') 'Voltage probe not found ',this%Sonda%collection(i)%cordinates(j)%XI
-                     call StopOnError(layoutnumber,size,buff)
+                     call StopOnError(layoutnumber,num_procs,buff)
                   end if
                else
                   write(buff,'(a,i9)') 'ERROR: Voltage probe in gaps only available under -dmma flag '
-                  call StopOnError(layoutnumber,size,buff)
+                  call StopOnError(layoutnumber,num_procs,buff)
                end if !del run_with_dmma
             else if (abs(tipotemp) == NP_COR_LINE) then
                sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
@@ -3503,7 +3446,7 @@ contains
          tama2 = (this%oldSONDA%probes(i)%n_FarField)
          if (tama2 > 1) then
             buff='Only one Far Field probe allowed'
-            CALL STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          if (tama2 > 0) sgg%observation(ii)%nP = 1 !un punto para todo el farfield (es simbolico)
          !electric FIELDS
@@ -3515,7 +3458,7 @@ contains
             tama6 = (this%oldSONDA%probes(i)%Electric(j)%probe%n_cord)
             buff='TAMANIOS DE PROBES EH RAROS'
             if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6)) &
-            &                CALL STOPONERROR(layoutnumber,size,buff)
+            &                call STOPONERROR(layoutnumber,num_procs,buff)
             do k = 1, tama3
                punto%XI = this%oldSONDA%probes(i)%Electric(j)%probe%i(k)
                punto%YI = this%oldSONDA%probes(i)%Electric(j)%probe%j(k)
@@ -3535,7 +3478,7 @@ contains
             tama6 = (this%oldSONDA%probes(i)%Magnetic(j)%probe%n_cord)
             buff='pre1_ERROR: TAMANIOS DE PROBES EH RAROS'
             if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6)) &
-            &           CALL STOPONERROR(layoutnumber,size,buff)
+            &           call STOPONERROR(layoutnumber,num_procs,buff)
             do k = 1, tama3
                punto%XI = this%oldSONDA%probes(i)%Magnetic(j)%probe%i(k)
                punto%YI = this%oldSONDA%probes(i)%Magnetic(j)%probe%j(k)
@@ -3640,7 +3583,7 @@ contains
       if (sondas > Maxprobes) then
          write(buff,*) 'Too many probes= ', sondas, 'Either  or reduce the number of probes below ', &
          & Maxprobes
-         CALL STOPONERROR(layoutnumber,size,buff)
+         call STOPONERROR(layoutnumber,num_procs,buff)
       end if
       if (sondas > 1024) then
          write(buff,*) 'Number of probes ', &
@@ -3654,7 +3597,7 @@ contains
       !        write(buff,*) 'Too much memory for the probes= ', sondas * BuffObse * 4, 'Probes= ', sondas,   &
       !         &     'Either reduce the number o&
       !       &f probes or recompile decreasing BuffObse ', BuffObse, 'or increasing ', MaxMemoryProbes
-      !        CALL STOPONERROR(layoutnumber,size,buff)
+      !        call STOPONERROR(layoutnumber,num_procs,buff)
       !      end if
       !
       if (sgg%NumberRequest /= 0) then
@@ -3691,28 +3634,28 @@ contains
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
                sgg%observation(ii)%TRANSFER = .FALSE.
-               !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+               !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
              CASE (NP_T2_TRANSFER)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
                sgg%observation(ii)%TRANSFER = .TRUE.
                buff='Transfer function only in Frequency Domain'
-               !!           CALL STOPONERROR(layoutnumber,size,buff)
+               !!           call STOPONERROR(layoutnumber,num_procs,buff)
              CASE (NP_T2_TIMEFREQ )
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
                sgg%observation(ii)%TRANSFER = .FALSE.
-               !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+               !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
              CASE (NP_T2_TIMETRANSF)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
                sgg%observation(ii)%TRANSFER = .TRUE.
-               !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+               !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
              CASE (NP_T2_FREQTRANSF)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
                sgg%observation(ii)%TRANSFER = .TRUE.
-               !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+               !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
              CASE (NP_T2_TIMEFRECTRANSF)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
@@ -3748,7 +3691,7 @@ contains
                (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                (sgg%observation(ii)%FreqStep <= 1e-9)) then
                write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
-               if (sgg%observation(ii)%FreqDomain) CALL STOPONERROR(layoutnumber,size,buff)
+               if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
             end if
             !!!
             do j = 1, tama2
@@ -3941,7 +3884,7 @@ contains
                else if (abs(this%Sonda%collection(i)%cordinates(j)%or) == NP_COR_LINE) then 
                   block
                      integer(kind=4) :: line_size, obs_size, idx
-                     !intrinsic size function coopted by size global variable...
+                     !intrinsic num_procs function coopted by num_procs global variable...
                      line_size = ubound(this%Sonda%collection(i)%cordinates,1)-lbound(this%Sonda%collection(i)%cordinates,1)+1
                      sgg%observation(i)%nP = sgg%observation(i)%nP + 1
                      obs_size =  sgg%observation(i)%nP
@@ -3978,12 +3921,12 @@ contains
             !farfields (no es time domain pero una forma especial de ellos)
             tama2 = (this%oldSONDA%probes(i)%n_FarField)
             write(buff,*) 'More than 1 Far Field box unsupported'
-            IF (tama2 > 1) CALL STOPONERROR(layoutnumber,size,buff)
+            if (tama2 > 1) call STOPONERROR(layoutnumber,num_procs,buff)
             !
             do j = 1, tama2
                tama3 = (this%oldSONDA%probes(i)%FarField(j)%probe%n_cord)
                buff='FAR FIELD PROBE REQUIRES TWO COORDINATES FOR THE BOX'
-               IF (tama3 /= 2)  CALL STOPONERROR(layoutnumber,size,buff)
+               if (tama3 /= 2)  call STOPONERROR(layoutnumber,num_procs,buff)
                !
                sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                punto%XI = this%oldSONDA%probes(i)%FarField(j)%probe%i(1)
@@ -4022,7 +3965,7 @@ contains
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                   (sgg%observation(ii)%FreqStep <= 1e-9)) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
-                  if (sgg%observation(ii)%FreqDomain) CALL STOPONERROR(layoutnumber,size,buff)
+                  if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                !
 
@@ -4036,7 +3979,7 @@ contains
                tama6 = (this%oldSONDA%probes(i)%Electric(j)%probe%n_cord)
                buff='TAMANIOS DE PROBES EH RAROS'
                if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6))  &
-               &                CALL STOPONERROR(layoutnumber,size,buff)
+               &                call STOPONERROR(layoutnumber,num_procs,buff)
                write(probenumber, '(i7)') ii
                do k = 1, tama3
                   punto%XI = this%oldSONDA%probes(i)%Electric(j)%probe%i(k)
@@ -4081,7 +4024,7 @@ contains
                tama6 = (this%oldSONDA%probes(i)%Magnetic(j)%probe%n_cord)
                buff='TAMANIOS DE PROBES EH RAROS'
                if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6))  &
-               &                CALL STOPONERROR(layoutnumber,size,buff)
+               &                call STOPONERROR(layoutnumber,num_procs,buff)
                do k = 1, tama3
                   punto%XI = this%oldSONDA%probes(i)%Magnetic(j)%probe%i(k)
                   punto%YI = this%oldSONDA%probes(i)%Magnetic(j)%probe%j(k)
@@ -4145,28 +4088,28 @@ contains
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
                   sgg%observation(ii)%TRANSFER = .FALSE.
-                  !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+                  !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
                 CASE (NP_T2_TRANSFER)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
                   sgg%observation(ii)%TRANSFER = .TRUE.
                   buff='Transfer function only in Frequency Domain'
-                  !!           CALL STOPONERROR(layoutnumber,size,buff)
+                  !!           call STOPONERROR(layoutnumber,num_procs,buff)
                 CASE (NP_T2_TIMEFREQ )
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
                   sgg%observation(ii)%TRANSFER = .FALSE.
-                  !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+                  !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
                 CASE (NP_T2_TIMETRANSF)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
                   sgg%observation(ii)%TRANSFER = .TRUE.
-                  !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+                  !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
                 CASE (NP_T2_FREQTRANSF)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
                   sgg%observation(ii)%TRANSFER = .TRUE.
-                  !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+                  !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
                 CASE (NP_T2_TIMEFRECTRANSF)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
@@ -4197,7 +4140,7 @@ contains
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                   (sgg%observation(ii)%FreqStep <= 1e-9) ) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
-                  if (sgg%observation(ii)%FreqDomain) CALL STOPONERROR(layoutnumber,size,buff)
+                  if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                !FIN COMPATIBILIDAD 15/07/15
                SELECT CASE (this%BloquePRB%BP(i)%NML)
@@ -4283,7 +4226,7 @@ contains
                tama2 = 1
                if (tama2 >1 ) then
                   write(buff,*) 'Only 1 Volumic probe allown per section'
-                  CALL STOPONERROR(layoutnumber,size,buff)
+                  call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                do j = 1, tama2
                   !I clip these probes to allow out-of-the box snapshot probes !ojo si se cambia aqui tambien mas arriba
@@ -4403,7 +4346,7 @@ contains
                tama2 = (this%VolPrb%collection(i)%len_cor)
                if (tama2 >1 ) then
                   write(buff,*) 'Only 1 Volumic probe allown per section'
-                  CALL STOPONERROR(layoutnumber,size,buff)
+                  call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                do j = 1, tama2
                   !I clip these probes to allow out-of-the box snapshot probes
@@ -4657,7 +4600,7 @@ contains
                call print11 (layoutnumber, buff)
 !fin para debugear
                write(buff,*) 'Buggy error in Volumic probes. np/=1. , np=',sgg%observation(ii)%nP
-               CALL STOPONERROR(layoutnumber,size,buff)
+               call STOPONERROR(layoutnumber,num_procs,buff)
             end if
          end do
 !!!find 210618
@@ -4666,7 +4609,7 @@ contains
          !        if ((memo+sondas)*BuffObse*4 > MaxMemoryProbes) then
          !          write(buff,*) 'Too much memory for the probes= ', (memo+sondas)*BuffObse*4, 'Probes= ', (memo+sondas), &
          !         & 'Either reduce the number of probes or recompile decreasing BuffObse ', BuffObse, 'or increasing ', MaxMemoryProbes
-         !          CALL STOPONERROR(layoutnumber,size,buff)
+         !          call STOPONERROR(layoutnumber,num_procs,buff)
          !        end if
 
          !del if sgg%numberrequest
@@ -4727,14 +4670,11 @@ contains
       if (medioextra%exists) then
          CONTAMEDIA = CONTAMEDIA+1
          if  (MEDIOEXTRA%index /= contamedia) then !should be already done earlier
-            CALL STOPONERROR(layoutnumber,size,'Bug in media count. ')
+            call STOPONERROR(layoutnumber,num_procs,'Bug in media count. ')
          end if
          MEDIOEXTRA%index=CONTAMEDIA
       end if
       !!!!!!!!!!!!!
-      if (contamedia > sgg%AllocMed) then
-         call Readjust(sgg%AllocMed, sgg%Med, contamedia)
-      end if
       sgg%NumMedia = contamedia
       !el medio 0 no precisa compresion
 
@@ -4774,7 +4714,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!fin clipeado
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      CALL CreatePMLmatrix (layoutnumber, SIZE,sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz, SINPML_fullsize, fullsize, BoundingBox, sgg%Med, sgg%NumMedia, sgg%Border,MEDIOEXTRA)
+      call CreatePMLmatrix (layoutnumber, num_procs,sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz, SINPML_fullsize, fullsize, BoundingBox, sgg%Med, sgg%NumMedia, sgg%Border,MEDIOEXTRA)
       sgg%EndPMLMedia = sgg%NumMedia
 
       !
@@ -4783,10 +4723,10 @@ contains
          CLOSE (14)
          if (sgg%NumMedia > 32767) then
             buff='Number of media>32767. Recompile with #define CompileWithInt4'
-            CALL STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          ELSE
             buff='Number of media>127. Recompile with #define CompileWithInt2'
-            CALL STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
       end if
 #endif
@@ -4794,14 +4734,14 @@ contains
       if (sgg%NumMedia > 32767) then
          CLOSE (14)
          buff='Number of media>32767. Recompile with #define CompileWithInt4'
-         CALL STOPONERROR(layoutnumber,size,buff)
+         call STOPONERROR(layoutnumber,num_procs,buff)
       end if
 #endif
 #ifdef CompileWithInt4
       if (sgg%NumMedia > 2.0e9) then
          CLOSE (14)
          buff='Number of media>2^31-1. Cannot continue. '
-         CALL STOPONERROR(layoutnumber,size,buff)
+         call STOPONERROR(layoutnumber,num_procs,buff)
       end if
 #endif
       !read the source files
@@ -4816,7 +4756,7 @@ contains
             inquire(file=trim(adjustl(sgg%observation(ii)%FileNormalize)), EXIST=errnofile)
             if ( .NOT. errnofile) then
                buff=trim(adjustl(sgg%observation(ii)%FileNormalize))//' DOES NOT EXIST'
-               CALL STOPONERROR(layoutnumber,size,buff)
+               call STOPONERROR(layoutnumber,num_procs,buff)
             end if
          end if
          !
@@ -4840,7 +4780,7 @@ contains
       !medioespecial = .false.
       !do ii=1,sgg%NumMedia
       !    buff='PEC media can only have index 0'
-      !    IF (sgg%Med(ii)%Is%PEC.or.sgg%Med(ii)%Is%Lumped) call STOPONERROR(layoutnumber,size,buff)
+      !    if (sgg%Med(ii)%Is%PEC.or.sgg%Med(ii)%Is%Lumped) call STOPONERROR(layoutnumber,num_procs,buff)
       !    medioespecial =medioespecial .or. &
       !                   sgg%Med(ii)%Is%EDispersive   .or. &
       !                   sgg%Med(ii)%Is%multiport     .or. &
@@ -4881,42 +4821,34 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
       function computeConformalTimeFactor(volumes, surfaces) result(res)
-         type(ConformalMedia_t), allocatable, dimension(:), intent(in) :: volumes, surfaces
+         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: volumes, surfaces
          real(kind=rkind) :: res
-         integer :: t
-         res = 1.0
-         do t = 1, ubound(volumes,1)
-            if (volumes(t)%time_step_scale_factor < res) then 
-               res = volumes(t)%time_step_scale_factor
-            end if
+         integer :: i
+         res = 1.0_RKIND
+         do i = 1, ubound(volumes, 1)
+            res = min(res, volumes(i)%time_step_scale_factor)
          end do
-         do t = 1, ubound(surfaces,1)
-            if (surfaces(t)%time_step_scale_factor < res) then 
-               res = surfaces(t)%time_step_scale_factor
-            end if
+         do i = 1, ubound(surfaces, 1)
+            res = min(res, surfaces(i)%time_step_scale_factor)
          end do
-      end function
+      end function computeConformalTimeFactor
 
       function changeTimeStepIfConformalNeeded(sgg_dt) result(res)
          real(kind=RKIND_tiempo), intent(in) :: sgg_dt
-         real(kind=RKIND_tiempo) :: yee_dt, time_scale_factor
-         real(kind=RKIND_tiempo) :: res
+         real(kind=RKIND_tiempo) :: res, yee_dt, time_scale_factor
          time_scale_factor = computeConformalTimeFactor(conformal_volumes, conformal_surfaces)
-         yee_dt = (1.0_RKIND/(cluz*sqrt(((1.0_RKIND / minval(sgg%DX))**2.0_RKIND) + & 
-                  ((1.0_RKIND / minval(sgg%DY))**2.0_RKIND) + & 
-                  ((1.0_RKIND / minval(sgg%DZ))**2.0_RKIND ))))
-         if (sgg_dt > yee_dt*time_scale_factor) then 
+         yee_dt = (1.0_RKIND/(cluz*sqrt(((1.0_RKIND / minval(sgg%DX))**2.0_RKIND) + &
+                  ((1.0_RKIND / minval(sgg%DY))**2.0_RKIND) + &
+                  ((1.0_RKIND / minval(sgg%DZ))**2.0_RKIND))))
+         res = sgg_dt
+         if (sgg_dt > yee_dt*time_scale_factor) then
             write(*,*) '-- Conformal geometry requires a time step change'
             write(*,*) 'Previous time step: ', sgg_dt
             res = yee_dt*time_scale_factor
             write(*,*) 'New time step: ', res
-         else
-            res = sgg_dt
          end if
-
-      end function
+      end function changeTimeStepIfConformalNeeded
 
       subroutine initConformalBoundingBox(sgg, bbox)
          type(SGGFDTDINFO_t), intent(in) :: sgg
@@ -4929,30 +4861,31 @@ contains
          bbox%ZE = -sgg%Alloc(iHz)%ZE
       end subroutine
 
-      subroutine getDifferentEdgeRatios(ratios, conf_media)
-         real (kind=rkind), dimension(:), allocatable, intent(inout) :: ratios
-         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conf_media
+      subroutine getDifferentEdgeRatios(ratios, conformal_media)
+         real(kind=rkind), dimension(:), allocatable, intent(inout) :: ratios
+         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conformal_media
          integer :: i, j, k
          real(kind=rkind), dimension(:), allocatable :: aux
          logical :: isNew
          if (.not. allocated(ratios)) allocate(ratios(0))
-         do i = 1, ubound(conf_media,1)
-            do j = 1, ubound(conf_media(i)%edge_media,1)
+         do i = 1, ubound(conformal_media,1)
+            do j = 1, ubound(conformal_media(i)%edge_media,1)
+
                isNew = .true.
                do k = 1, ubound(ratios,1)
-                  if (eq_ratio(ratios(k), conf_media(i)%edge_media(j)%ratio, EDGE_RATIO_EQ_TOLERANCE)) isNew = .false.
+                  if (eq_ratio(ratios(k), conformal_media(i)%edge_media(j)%ratio, EDGE_RATIO_EQ_TOLERANCE)) isNew = .false.
                end do
                if (isNew) then 
                   block 
-                     if (ubound(ratios,1) == 0) then 
+                     if (ubound(ratios,1) == 0) then
                         deallocate(ratios)
                         allocate(ratios(1))
-                        ratios(1) = conf_media(i)%edge_media(j)%ratio
+                        ratios(1) = conformal_media(i)%edge_media(j)%ratio
                      else
                         if (allocated(aux)) deallocate(aux)
                         allocate(aux(ubound(ratios,1) + 1))
                         aux(1:ubound(ratios,1)) = ratios
-                        aux(ubound(ratios,1) + 1) = conf_media(i)%edge_media(j)%ratio
+                        aux(ubound(ratios,1) + 1) = conformal_media(i)%edge_media(j)%ratio
                         deallocate(ratios)
                         allocate(ratios(ubound(aux,1)))
                         ratios = aux
@@ -4961,32 +4894,32 @@ contains
                end if
             end do
          end do
-      end subroutine
-      subroutine getDifferentFaceRatios(ratios, conf_media)
-         real (kind=rkind), dimension(:), allocatable, intent(inout) :: ratios
-         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conf_media
+      end subroutine getDifferentEdgeRatios
+      subroutine getDifferentFaceRatios(ratios, conformal_media)
+         real(kind=rkind), dimension(:), allocatable, intent(inout) :: ratios
+         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conformal_media
          integer :: i, j, k
          real(kind=rkind), dimension(:), allocatable :: aux
          logical :: isNew
          if (.not. allocated(ratios)) allocate(ratios(0))
-         do i = 1, ubound(conf_media,1)
-            do j = 1, ubound(conf_media(i)%face_media,1)
+         do i = 1, ubound(conformal_media,1)
+            do j = 1, ubound(conformal_media(i)%face_media,1)
 
                isNew = .true.
                do k = 1, ubound(ratios,1)
-                  if (eq_ratio(ratios(k), conf_media(i)%face_media(j)%ratio, FACE_RATIO_EQ_TOLERANCE)) isNew = .false.
+                  if (eq_ratio(ratios(k), conformal_media(i)%face_media(j)%ratio, FACE_RATIO_EQ_TOLERANCE)) isNew = .false.
                end do
                if (isNew) then 
                   block 
-                     if (ubound(ratios,1) == 0) then 
+                     if (ubound(ratios,1) == 0) then
                         deallocate(ratios)
                         allocate(ratios(1))
-                        ratios(1) = conf_media(i)%face_media(j)%ratio
+                        ratios(1) = conformal_media(i)%face_media(j)%ratio
                      else
                         if (allocated(aux)) deallocate(aux)
                         allocate(aux(ubound(ratios,1) + 1))
                         aux(1:ubound(ratios,1)) = ratios
-                        aux(ubound(ratios,1) + 1) = conf_media(i)%face_media(j)%ratio
+                        aux(ubound(ratios,1) + 1) = conformal_media(i)%face_media(j)%ratio
                         deallocate(ratios)
                         allocate(ratios(ubound(aux,1)))
                         ratios = aux
@@ -4995,19 +4928,19 @@ contains
                end if
             end do
          end do
-      end subroutine
+      end subroutine getDifferentFaceRatios
 
-      subroutine addConformalMedia(sgg, media, conformal_volumes, edge_ratios, face_ratios, contamedia, bbox, side_map, type)
+      subroutine addConformalMedia(sgg, media, conformal_media, edge_ratios, face_ratios, contamedia, bbox, side_map, type)
          type(SGGFDTDINFO_t), intent(inout) :: sgg
          type(media_matrices_t), intent(inout) :: media
-         type(ConformalMedia_t), intent(in) :: conformal_volumes
+         type(ConformalMedia_t), intent(in) :: conformal_media
          real(kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios, face_ratios
          real(kind=rkind), dimension(:), allocatable :: edge_ratios_no_zero, face_ratios_no_zero
          integer(kind=4), intent(in) :: contamedia
          integer(kind=4) :: num_media
          type(XYZlimit_t), intent(inout) :: bbox
          type(side_tris_map_t), intent(in) :: side_map
-         integer (kind=4) :: type
+         integer(kind=4), intent(in) :: type
          integer :: i, j
          call initConformalBoundingBox(sgg,bbox)
 
@@ -5037,31 +4970,31 @@ contains
             face_ratios_no_zero = face_ratios
          end if
          num_media = contamedia
-         call addConformalEdgeMedia(sgg, media, conformal_volumes, num_media, edge_ratios_no_zero, bbox, type)
+         call addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox, type)
          num_media = contamedia + ubound(edge_ratios_no_zero,1)
-         call addConformalFaceMedia(sgg, media, conformal_volumes, num_media, face_ratios_no_zero, bbox, type)
+         call addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios_no_zero, bbox, type)
          if (type == isVolume) then
-            call addUndetectedBorderFaces(sgg, media, conformal_volumes, num_media, edge_ratios_no_zero, bbox, side_map)
+            call addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox, side_map)
          end if
       end subroutine
 
-      subroutine addConformalFaceMedia(sgg, media, conformal_volumes, num_media, face_ratios, bbox, type)
+      subroutine addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios, bbox, type)
          type(SGGFDTDINFO_t), intent(INOUT) :: sgg
          type(media_matrices_t), intent(inout) :: media
-         type(ConformalMedia_t), intent(in) :: conformal_volumes
+         type(ConformalMedia_t), intent(in) :: conformal_media
          integer(kind=4), intent(in) :: num_media
          real(kind=rkind), dimension(:), allocatable, intent(in) :: face_ratios
 
          integer(kind=4) :: face_media
          integer(kind=4) :: cell(3)
-         integer (kind=4) :: previous_faces
+         integer(kind=4) :: previous_faces
          type(face_t), dimension(:), allocatable :: combined_faces
          type(XYZlimit_t), intent(inout) :: bbox
-         integer (kind=4), intent(in) :: type
+         integer(kind=4), intent(in) :: type
          integer :: j, k
-         do j = 1, conformal_volumes%n_faces_media
-            if (conformal_volumes%face_media(j)%ratio /= 0) then 
-               face_media = num_media + findloc(face_ratios, conformal_volumes%face_media(j)%ratio, 1)
+         do j = 1, conformal_media%n_faces_media
+            if (conformal_media%face_media(j)%ratio /= 0) then 
+               face_media = num_media + findloc(face_ratios, conformal_media%face_media(j)%ratio, 1)
                sgg%Med(face_media)%Is%ConformalPEC = .TRUE.
                sgg%Med(face_media)%Is%Needed = .TRUE.
                if (type == isVolume) sgg%Med(face_media)%Is%Volume = .TRUE.
@@ -5069,19 +5002,17 @@ contains
                sgg%Med(face_media)%Priority = prior_PEC
                sgg%Med(face_media)%Epr = this%mats%mats(1)%eps / Eps0
                sgg%Med(face_media)%Sigma = 1.0e29_RKIND
-               sgg%Med(face_media)%Mur = conformal_volumes%face_media(j)%ratio * this%mats%mats(1)%mu / Mu0
+               sgg%Med(face_media)%Mur = conformal_media%face_media(j)%ratio * this%mats%mats(1)%mu / Mu0
                sgg%Med(face_media)%SigmaM = 0.0_RKIND
             else
                face_media = 0
             end if
-
             previous_faces = 0
             if (allocated(sgg%Med(face_media)%ConformalFace)) previous_faces = ubound(sgg%Med(face_media)%ConformalFace, 1)
-            allocate(combined_faces(previous_faces + conformal_volumes%face_media(j)%size))
+            allocate(combined_faces(previous_faces + conformal_media%face_media(j)%size))
             if (previous_faces > 0) combined_faces(1:previous_faces) = sgg%Med(face_media)%ConformalFace
-
-            do k = 1, conformal_volumes%face_media(j)%size
-               cell(:) = conformal_volumes%face_media(j)%faces(k)%cell(:)
+            do k = 1, conformal_media%face_media(j)%size
+               cell(:) = conformal_media%face_media(j)%faces(k)%cell(:)
                if (cell(1) < bbox%xi) bbox%xi = cell(1)
                if (cell(1) > bbox%xe) bbox%xe = cell(1)
                if (cell(2) < bbox%yi) bbox%yi = cell(2)
@@ -5089,7 +5020,7 @@ contains
                if (cell(3) < bbox%zi) bbox%zi = cell(3)
                if (cell(3) > bbox%ze) bbox%ze = cell(3)
 
-               select case(conformal_volumes%face_media(j)%faces(k)%direction)
+               select case(conformal_media%face_media(j)%faces(k)%direction)
                case(F_X)
                   media%sggMiHx(cell(1), cell(2), cell(3)) = face_media
                case(F_Y)
@@ -5097,9 +5028,7 @@ contains
                case(F_Z)
                   media%sggMiHz(cell(1), cell(2), cell(3)) = face_media
                end select
-
-               combined_faces(previous_faces+k) = conformal_volumes%face_media(j)%faces(k)
-
+               combined_faces(previous_faces + k) = conformal_media%face_media(j)%faces(k)
             end do
             call move_alloc(combined_faces, sgg%Med(face_media)%ConformalFace)
          end do
@@ -5118,47 +5047,43 @@ contains
          res = res/ubound(triangles,1)
       end function
 
-      subroutine addConformalEdgeMedia(sgg, media, conformal_volumes, num_media, edge_ratios, bbox, type)
+      subroutine addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios, bbox, type)
          type(SGGFDTDINFO_t), intent(INOUT) :: sgg
          type(media_matrices_t), intent(inout) :: media
-         type(ConformalMedia_t), intent(in) :: conformal_volumes
+         type(ConformalMedia_t), intent(in) :: conformal_media
          integer(kind=4), intent(in) :: num_media
 
          real(kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
          integer(kind=4) :: edge_media
          integer(kind=4) :: cell(3)
-         integer (kind=4) :: previous_edges
+         integer(kind=4) :: previous_edges
          type(edge_t), dimension(:), allocatable :: combined_edges
          type(XYZlimit_t), intent(inout) :: bbox
-         integer (kind=4), intent(in) :: type
-         ! integer(kind=4), dimension(4) :: key
+         integer(kind=4), intent(in) :: type
          integer :: j, k
          real, dimension(3) :: normal
 
-         do j = 1, conformal_volumes%n_edges_media
-            if (conformal_volumes%edge_media(j)%ratio /= 0) then 
-               edge_media = num_media + findloc(edge_ratios, conformal_volumes%edge_media(j)%ratio,1)
+         do j = 1, conformal_media%n_edges_media
+            if (conformal_media%edge_media(j)%ratio /= 0) then 
+               edge_media = num_media + findloc(edge_ratios, conformal_media%edge_media(j)%ratio,1)
                sgg%Med(edge_media)%Is%ConformalPEC = .TRUE.
                sgg%Med(edge_media)%Is%Needed = .TRUE.
                if (type == isVolume) sgg%Med(edge_media)%Is%Volume = .TRUE.
                if (type == isSurface) sgg%Med(edge_media)%Is%Surface = .TRUE.
                sgg%Med(edge_media)%Priority = prior_PEC
-               sgg%Med(edge_media)%Epr = (this%mats%mats(1)%eps / conformal_volumes%edge_media(j)%ratio ) / Eps0
+               sgg%Med(edge_media)%Epr = (this%mats%mats(1)%eps / conformal_media%edge_media(j)%ratio ) / Eps0
                sgg%Med(edge_media)%Sigma = 1.0e29_RKIND
                sgg%Med(edge_media)%Mur = this%mats%mats(1)%mu / Mu0
                sgg%Med(edge_media)%SigmaM = 0.0_RKIND
             else
                edge_media = 0
             end if
-
             previous_edges = 0
             if (allocated(sgg%Med(edge_media)%ConformalEdge)) previous_edges = ubound(sgg%Med(edge_media)%ConformalEdge, 1)
-            allocate(combined_edges(previous_edges + conformal_volumes%edge_media(j)%size))
+            allocate(combined_edges(previous_edges + conformal_media%edge_media(j)%size))
             if (previous_edges > 0) combined_edges(1:previous_edges) = sgg%Med(edge_media)%ConformalEdge
-
-
-            do k = 1, conformal_volumes%edge_media(j)%size
-               cell(:) = conformal_volumes%edge_media(j)%edges(k)%cell(:)
+            do k = 1, conformal_media%edge_media(j)%size
+               cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
 
                if (cell(1) < bbox%xi) bbox%xi = cell(1)
                if (cell(1) > bbox%xe) bbox%xe = cell(1)
@@ -5167,7 +5092,7 @@ contains
                if (cell(3) < bbox%zi) bbox%zi = cell(3)
                if (cell(3) > bbox%ze) bbox%ze = cell(3)
 
-               select case(conformal_volumes%edge_media(j)%edges(k)%direction)
+               select case(conformal_media%edge_media(j)%edges(k)%direction)
                case(E_X)
                   media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
                case(E_Y)
@@ -5175,19 +5100,16 @@ contains
                case(E_Z)
                   media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
                end select
-
-               combined_edges(previous_edges+k) = conformal_volumes%edge_media(j)%edges(k)
-
-
+               combined_edges(previous_edges + k) = conformal_media%edge_media(j)%edges(k)
             end do
             call move_alloc(combined_edges, sgg%Med(edge_media)%ConformalEdge)
          end do
       end subroutine
 
-      subroutine addUndetectedBorderFaces(sgg, media, conformal_volumes, num_media, edge_ratios, bbox, side_map)
+      subroutine addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios, bbox, side_map)
          type(SGGFDTDINFO_t), intent(INOUT) :: sgg
          type(media_matrices_t), intent(inout) :: media
-         type(ConformalMedia_t), intent(in) :: conformal_volumes
+         type(ConformalMedia_t), intent(in) :: conformal_media
          integer(kind=4), intent(in) :: num_media
 
          real(kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
@@ -5200,14 +5122,14 @@ contains
          integer :: j, k
          real, dimension(3) :: normal
 
-         do j = 1, conformal_volumes%n_edges_media
-            if (conformal_volumes%edge_media(j)%ratio == 0) then 
+         do j = 1, conformal_media%n_edges_media
+            if (conformal_media%edge_media(j)%ratio == 0) then 
                edge_media = 0
-               do k = 1, conformal_volumes%edge_media(j)%size
-                  cell(:) = conformal_volumes%edge_media(j)%edges(k)%cell(:)
+               do k = 1, conformal_media%edge_media(j)%size
+                  cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
                   key(1:3) = cell
 
-                  select case(conformal_volumes%edge_media(j)%edges(k)%direction)
+                  select case(conformal_media%edge_media(j)%edges(k)%direction)
                   case(E_X)
                      key(4) = E_X
                      if (side_map%hasKey(key)) then
@@ -5333,7 +5255,7 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%name))//' DOES NOT EXIST'
-                        CALL STOPONERROR(layoutnumber,size,buff)
+                        call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
@@ -5367,7 +5289,7 @@ contains
                                  buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     CLOSE(15)
-                                    CALL STOPONERROR(layoutnumber,size,buff)
+                                    call STOPONERROR(layoutnumber,num_procs,buff)
                                  end if
                               end if
                            end if
@@ -5385,7 +5307,7 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%name))//' DOES NOT EXIST'
-                        CALL STOPONERROR(layoutnumber,size,buff)
+                        call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
@@ -5419,7 +5341,7 @@ contains
                                  buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     CLOSE(15)
-                                    CALL STOPONERROR(layoutnumber,size,buff)
+                                    call STOPONERROR(layoutnumber,num_procs,buff)
                                  end if
                               end if
                            end if
@@ -5439,7 +5361,7 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%name))//' DOES NOT EXIST'
-                        CALL STOPONERROR(layoutnumber,size,buff)
+                        call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
@@ -5473,7 +5395,7 @@ contains
                                  buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     CLOSE(15)
-                                    CALL STOPONERROR(layoutnumber,size,buff)
+                                    call STOPONERROR(layoutnumber,num_procs,buff)
                                  end if
                               end if
                            end if
@@ -5488,7 +5410,7 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%name))//' DOES NOT EXIST'
-                        CALL STOPONERROR(layoutnumber,size,buff)
+                        call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
@@ -5522,7 +5444,7 @@ contains
                                  buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     CLOSE(15)
-                                    CALL STOPONERROR(layoutnumber,size,buff)
+                                    call STOPONERROR(layoutnumber,num_procs,buff)
                                  end if
                               end if
                            end if
@@ -5544,7 +5466,7 @@ contains
                inquire(file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)), EXIST=errnofile)
                if ( .NOT. errnofile) then
                   buff=trim(adjustl(sgg%NodalSource(j)%fichero%name))//' DOES NOT EXIST'
-                  CALL STOPONERROR(layoutnumber,size,buff)
+                  call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                open(15, file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)),action='read')
                READ (15,*) tiempo1, field1
@@ -5577,7 +5499,7 @@ contains
                            buff=trim(adjustl(sgg%NodalSource(j)%fichero%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                            if (.not.ignoresamplingerrors) then
                               CLOSE(15)
-                              CALL STOPONERROR(layoutnumber,size,buff)
+                              call STOPONERROR(layoutnumber,num_procs,buff)
                            end if
                         end if
                      end if
@@ -5604,7 +5526,7 @@ contains
             inquire(file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)), EXIST=errnofile)
             if ( .NOT. errnofile) then
                buff=trim(adjustl(sgg%PlaneWave(j)%fichero%name))//' DOES NOT EXIST'
-               CALL STOPONERROR(layoutnumber,size,buff)
+               call STOPONERROR(layoutnumber,num_procs,buff)
             end if
             open(15, file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)),action='read')
             READ (15,*) tiempo1, field1
@@ -5633,7 +5555,7 @@ contains
                         buff=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                         if (.not.ignoresamplingerrors) then
                            CLOSE(15)
-                           CALL STOPONERROR(layoutnumber,size,buff)
+                           call STOPONERROR(layoutnumber,num_procs,buff)
                         end if
                      end if
                   end if
@@ -5890,7 +5812,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   SUBROUTINE read_limits_nogeom (layoutnumber,size, sgg, fullsize, SINPML_fullsize, this,MurAfterPML,mur_exist)
+   subroutine read_limits_nogeom (layoutnumber,num_procs, sgg, fullsize, SINPML_fullsize, this,MurAfterPML,mur_exist)
       type(limit_t), dimension(1:6) :: fullsize, SINPML_fullsize
       type(SGGFDTDINFO_t), intent(INOUT) :: sgg
 
@@ -5898,7 +5820,7 @@ contains
       integer(kind=4) :: tama, i, field,j,k
       character(len=BUFSIZE) :: buff
       logical MurAfterPML,mur_exist
-      integer (kind=4), intent(in)           ::  layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       real(kind=RKIND), pointer, dimension(:) :: DummyD
       real(kind=RKIND) :: delta
       !
@@ -5916,7 +5838,7 @@ contains
       ELSE
          if (tama /= this%despl%mx2-this%despl%mx1) then
             buff='Tamanio discretizacion distinto de la region'
-            CALL STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          do i = this%despl%mx1, this%despl%mx2 - 1
             sgg%dx (i) = this%despl%desx(i)
@@ -5932,7 +5854,7 @@ contains
       ELSE
          if (tama /= this%despl%my2-this%despl%my1) then
             buff='Tamanio discretizacion distinto de la region'
-            CALL STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          do i = this%despl%my1, this%despl%my2 - 1
             sgg%dy (i) = this%despl%desY(i)
@@ -5948,7 +5870,7 @@ contains
       ELSE
          if (tama /= this%despl%mz2-this%despl%mz1) then
             buff='Tamanio discretizacion distinto de la region'
-            CALL STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          do i = this%despl%mz1, this%despl%mz2 - 1
             sgg%dz (i) = this%despl%desZ(i)
@@ -5967,7 +5889,7 @@ contains
       ELSE
          if (tama /= this%despl%mx2-this%despl%mx1) then
             buff='Tamanio discretizacion distinto de la region'
-            CALL STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          do i = this%despl%mx1, this%despl%mx2 - 1
             lineasX (i+1) = this%despl%desx(i) + lineasX (i)
@@ -5984,7 +5906,7 @@ contains
       ELSE
          if (tama /= this%despl%my2-this%despl%my1) then
             buff='Tamanio discretizacion distinto de la region'
-            CALL STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          do i = this%despl%my1, this%despl%my2 - 1
             lineasY (i+1) = this%despl%desY(i) + lineasY (i)
@@ -6001,7 +5923,7 @@ contains
       ELSE
          if (tama /= this%despl%mz2-this%despl%mz1) then
             buff='Tamanio discretizacion distinto de la region'
-            CALL STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          do i = this%despl%mz1, this%despl%mz2 - 1
             lineasZ (i+1) = this%despl%desZ(i) + lineasZ (i)
@@ -6019,6 +5941,7 @@ contains
       sgg%InitialTimeStep = 0
       sgg%TimeSteps = this%general%nmax
       sgg%dt = this%general%dt
+      
       !border
       !this%BORDER%PROPIEDADESPML(I)%ORDEN no lo considero porque en el interior de mi programa lo pongo (esta a 2 normalmente)
       sgg%Border%IsBackPEC = .FALSE.
@@ -6406,13 +6329,8 @@ contains
       return
 
    end subroutine !prepro_skindepth
-   !!!!!!!!end 09/07/13
 
-#ifdef CompileWithConformal
-   subroutine AssigLossyOrPECtoNodes(sgg,media,conf_conflicts,input_conformal_flag)
-#else
    subroutine AssigLossyOrPECtoNodes(sgg,media)
-#endif
       type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       type(media_matrices_t), intent(inout) :: media
 
@@ -6420,18 +6338,6 @@ contains
       real(kind=RKIND) :: sigt,epst,SIGMA,SIGMAM,EPR,MUR
       integer(kind=4) i,j,k,n,kmenos1,jmenos1,imenos1,med(0:5),r,imed,i1
       character(len=BUFSIZE) :: buff
-
-#ifdef CompileWithConformal
-      type (conf_conflicts_t), pointer  :: conf_conflicts
-      type(conf_node_t), dimension (:), pointer :: conf_busy_node
-      integer (KIND=confIKIND) :: dims
-      logical :: mediois1,mediois2,mediois3
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: medio1,medio2,medio3
-#endif
-
-
-      !!!lo dejo aqui para en un futuro hacerlo crecer y asignar la informacion de nodo con su tipo de material correctamente
-      !!copiado de la casuistica de wires !310715  !no esta anulado alli, pero cuando se haga crecer habra que aumenta el sgg%med para acomodar a los nuevos materiales nodales....
 
       do k= sgg%Alloc(iEz)%ZI , sgg%Alloc(iEz)%ZE
          do j= sgg%Alloc(iEy)%YI , sgg%Alloc(iEy)%YE
@@ -6513,52 +6419,6 @@ contains
          end do
       end do
 
-!CORRIGE AHORA CON LA INFO CONFORMAL (HABIA UN BUG 211116 PQ EL NODALMENTE IGUALES LO MACHACABA SI ESTO SE HACIA ANTES)
-#ifdef CompileWithConformal
-      if(input_conformal_flag)then
-         dims      =conf_conflicts%conf_busy_nodesGroup%dims
-         conf_busy_node=> conf_conflicts%conf_busy_nodesGroup%conf_busy_node
-         do n=1,dims
-            i=conf_busy_node(n)%i
-            j=conf_busy_node(n)%j
-            k=conf_busy_node(n)%k
-            if (conf_busy_node(n)%ispec) then
-               media%sggMiNo(i,j,k)=0
-            endif
-         end do
-         !!!conf_busy_node(n)%i = 0
-         !!!conf_busy_node(n)%j = 0
-         !!!conf_busy_node(n)%k = 0
-         !!!conf_busy_node(n)%isfree  = .true.
-         !!!conf_busy_node(n)%ispec   = .false.
-         !!!conf_busy_node(n)%sigmaEquiv      = 0.0_RKIND
-         !!!conf_busy_node(n)%epsilonRelEquiv = 1.0_RKIND
-         !!!conf_busy_node(n)%muRelEquiv      = 1.0_RKIND
-
-!!!      Movido a cada wires.F90. Aqui me parece inreportable y peligroso
-!!!!pedazo de niapa para poner los sggmiNo conformal a voltage nulo y que Dios reparta suerte 130220
-!!!         !barro el interior, por eso el shifing k,x - j,z - i,y
-!!!         Do k=sgg%alloc(iHx)%ZI , sgg%alloc(iHx)%ZE
-!!!            Do j=sgg%alloc(iHz)%YI , sgg%alloc(iHz)%YE
-!!!               Do i=sgg%alloc(iHy)%XI , sgg%alloc(iHy)%XE
-!!!                  medio1 =sggMiEx(i,j,k)
-!!!                  medio2 =sggMiEy(i,j,k)
-!!!                  medio3 =sggMiEz(i,j,k)
-!!!                  mediois1= sgg%med(medio1)%is%already_YEEadvanced_byconformal .or. sgg%med(medio1)%is%split_and_useless
-!!!                  mediois2= sgg%med(medio2)%is%already_YEEadvanced_byconformal .or. sgg%med(medio2)%is%split_and_useless
-!!!                  mediois3= sgg%med(medio3)%is%already_YEEadvanced_byconformal .or. sgg%med(medio3)%is%split_and_useless
-!!!                  if (mediois1.or.mediois2.or.mediois3)  then
-!!!                      sggMiNo(i,j,k)=0 !ojo !esto no sirve para contactos conformal SGBC-wires, solo para conformal PEC-wires
-!!!                  endif
-!!!               End do
-!!!            End do
-!!!         End do
-!!!!fin pedado de niapa
-
-
-      endif
-#endif
-
       return
    end subroutine AssigLossyOrPECtoNodes
 
@@ -6587,7 +6447,7 @@ contains
 !integer, dimension(:), allocatable :: seed
 !real(8) :: r
 !call date_and_time(values=values)
-!call random_seed(size=k)
+!call random_seed(num_procs=k)
 !allocate(seed(1:k))
 !seed(:) = values(8)
 !call random_seed(put=seed)
@@ -6690,7 +6550,7 @@ contains
 !!!!           integer :: i, n, un, istat, dt(8), pid
 !!!!           integer(int64) :: t
 !!!!
-!!!!           call random_seed(size = n)
+!!!!           call random_seed(num_procs = n)
 !!!!           allocate(seed(n))
 !!!!           ! First try if the OS provides a random number generator
 !!!!           open(newunit=un, file="/dev/urandom", access="stream", &
@@ -7061,7 +6921,6 @@ contains
                end do
             end if
          end do
-
 #ifdef CompileWithMTLN
          block 
             class(cable_t), pointer :: ptr
@@ -7070,8 +6929,13 @@ contains
                select type(ptr)
                type is(unshielded_multiwire_t)
                   numertag = numertag + 1
-                  if (precounting == 1) tagtype%tag(numertag) = this%mtln%cables(i)%ptr%tag
                end select  
+               if (precounting == 1) then 
+                  select type(ptr)
+                  type is(unshielded_multiwire_t)
+                     tagtype%tag(numertag) = this%mtln%cables(i)%ptr%tag
+                  end select
+               end if
             end do
          end block
 #endif
