@@ -1,5 +1,5 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  SEMBA_FDTD sOLVER MODULE
+!  SEMBA_FDTD sOLVER module
 !  Creation date Date :  April, 8, 2010
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -68,13 +68,12 @@ module Solver_m
 #endif
 
 
-   USE EpsMuTimeScale_m
-   USE CALC_CONSTANTS_m
+   use EpsMuTimeScale_m
+   use CALC_CONSTANTS_m
 #ifdef CompileWithPrescale
-   USE P_rescale
+   use P_rescale
 #endif              
 #ifdef CompileWithMTLN
-   ! use mtln_solver_mod, mtln_solver_t => mtln_t
    use mtln_types_m, only: mtln_t
    use Wire_bundles_mtln_m
 #endif
@@ -99,31 +98,31 @@ module Solver_m
       type(logic_control_t) :: thereAre
       type(perform_t) :: perform, d_perform
 
-      real(kind=rkind), pointer, dimension (:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
-      real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
+      real(kind=rkind), pointer, dimension(:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
+      real(kind=rkind), pointer, dimension(:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       type(constants_t) :: g
-      real (kind=RKIND_tiempo) :: lastexecutedtime
-      real (kind=RKIND) :: maxSourceValue
+      real(kind=RKIND_tiempo) :: lastexecutedtime
+      real(kind=RKIND) :: maxSourceValue
 
-      integer (kind=4) :: initialtimestep, lastexecutedtimestep, ini_save, n_info, n
+      integer(kind=4) :: initialtimestep, lastexecutedtimestep, ini_save, n_info, n
 
       type(bounds_t) :: bounds
-      type (EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
+      type(EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
 
       logical :: parar, everflushed = .false., still_planewave_time
 
       ! semba variables 
-      type (sggfdtdinfo_t) :: sgg
+      type(SGGFDTDINFO_t) :: sgg
       type(media_matrices_t) :: media
       type(taglist_t) :: tag_numbers
-      type (limit_t), dimension(1:6) :: SINPML_fullsize,fullsize
+      type(limit_t), dimension(1:6) :: SINPML_fullsize,fullsize
       logical :: finishedwithsuccess = .false.
-      real (kind=rkind) :: eps0,mu0
-      type (tagtype_t) :: tagtype
+      real(kind=rkind) :: eps0,mu0
+      type(tagtype_t) :: tagtype
       type(conformal_surface_face_state_t), allocatable :: conformal_surface_faces(:)
 
 #ifdef CompileWithMTLN
-      type (mtln_t) :: mtln_parsed
+      type(mtln_t) :: mtln_parsed
 #endif
 
    contains
