@@ -1,7 +1,9 @@
 # Docker
 
-Docker provides three environments for working with semba-fdtd.
-All environments mount the repository at `/home/developer/workspaces/fdtd`, so build artefacts and simulation output are written to the host workspace.
+Docker provides four environments for working with semba-fdtd.
+The `quality`, `dev`, and `intel-dev` environments mount the repository at
+`/home/developer/workspaces/fdtd`, so build artefacts and simulation output are
+written to the host workspace.
 CMake presets use separate build directories, so their configurations can
 coexist. For example, `rls` uses `build-rls/` and `rls-mpi` uses
 `build-rls-mpi/`.
@@ -33,11 +35,15 @@ git submodule update --init --recursive
 |---|---|---|
 | `quality` | Compile, test, run examples, and inspect generated output | GNU C/C++/Fortran compilers, CMake, Ninja, MPI, HDF5, Python, and ParaView |
 | `intel-quality` | Validate Intel oneAPI compiler and Intel MPI builds | Intel oneAPI HPCKit, Intel MPI, CMake, Ninja, and the Intel HDF5 runtime |
-| `dev` | Interactive development and the Dev Container | Everything in `quality`, plus Git, GitHub CLI, SSH client, Node/npm, OpenCode, Fortran tools, and debuggers |
+| `dev` | GNU interactive development and Dev Container | Everything in `quality`, plus Git, GitHub CLI, SSH client, Node/npm, OpenCode, Fortran tools, and debuggers |
+| `intel-dev` | Intel interactive development and Dev Container | Intel oneAPI HPCKit and Intel MPI, plus the development tools and GDB debugging support |
 
 `quality` intentionally excludes developer-only tools.
-`quality` and `dev` include ParaView.
-`intel-quality` is for Intel-specific compilation checks; it is not the Python test environment or the Dev Container.
+`quality`, `dev`, and `intel-dev` include ParaView.
+`intel-quality` is for Intel-specific compilation checks; it is not the Python
+test environment or the Dev Container.
+`intel-dev` is an independent image and does not inherit the GNU-based `dev`
+target.
 
 ## Build Images
 
@@ -57,6 +63,12 @@ Build the Intel oneAPI validation environment when checking Intel-specific confi
 
 ```bash
 docker compose build intel-quality
+```
+
+Build the Intel development environment for interactive work or debugging:
+
+```bash
+docker compose build intel-dev
 ```
 
 The `dev` target is built from `quality`.
@@ -113,6 +125,14 @@ docker compose run --rm intel-quality
 
 A terminal inside the container should appear.
 
+For a debuggable Intel build, use the separate `intel-dbg` preset:
+
+```bash
+docker compose run --rm intel-dev cmake --fresh --preset intel-dbg
+docker compose run --rm intel-dev cmake --build --preset intel-dbg
+docker compose run --rm intel-dev gdb build-intel-dbg/bin/semba-fdtd
+```
+
 ## Run Binaries And Examples
 
 Use the binary produced in the mounted build directory:
@@ -164,3 +184,8 @@ docker compose run --rm dev
 
 The Dev Container configuration also uses the `dev` service.
 It mounts the host Git, SSH, GitHub CLI, and OpenCode configuration required by the development workflow.
+
+The Intel Dev Container is defined separately at
+`.devcontainer/intel/devcontainer.json` and uses the `intel-dev` service.
+Open that configuration in the Dev Containers extension to develop and debug
+with `ifx`; it selects the `intel-dbg` preset by default.

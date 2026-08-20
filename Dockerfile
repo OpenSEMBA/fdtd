@@ -165,3 +165,43 @@ ENV PATH=${VIRTUAL_ENV}/bin:${PATH}
 
 ENTRYPOINT ["/usr/local/bin/intel-quality-entrypoint"]
 CMD ["bash", "-l"]
+
+# Intel development environment kept separate from the GNU-based dev target.
+# The inherited entrypoint enables oneAPI and Intel MPI for every shell.
+FROM intel-quality AS intel-dev
+
+USER root
+
+RUN apt-get update && apt-get install -y \
+    git \
+    gh \
+    openssh-client \
+    nodejs \
+    npm \
+    gdb \
+    gdbserver \
+    paraview \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN --mount=type=cache,target=/root/.npm \
+    npm install -g opencode-ai
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python3 -m pip install --break-system-packages fortls fprettify fortitude-lint
+
+RUN mkdir -p /home/${USERNAME}/.config \
+    /home/${USERNAME}/.ssh \
+    /home/${USERNAME}/.local/share/opencode \
+    && chmod 700 /home/${USERNAME}/.ssh \
+    && chown -R ${USER_UID}:${USER_GID} /home/${USERNAME}/.config \
+    /home/${USERNAME}/.ssh \
+    /home/${USERNAME}/.local \
+    && usermod -aG sudo ${USERNAME} \
+    && echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/${USERNAME} \
+    && chmod 0440 /etc/sudoers.d/${USERNAME}
+
+ENV HOME=/home/${USERNAME}
+
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}/workspaces/fdtd

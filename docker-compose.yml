@@ -21,6 +21,44 @@ services:
     stdin_open: true
     tty: true
 
+  # Intel oneAPI development environment. It intentionally does not inherit
+  # from the GNU-based dev service or image.
+  intel-dev:
+    build:
+      context: .
+      target: intel-dev
+    volumes:
+      - type: bind
+        source: .
+        target: /home/developer/workspaces/fdtd
+      - type: bind
+        source: ${HOME}/.gitconfig
+        target: /home/developer/.gitconfig
+      - type: bind
+        source: ${HOME}/.ssh
+        target: /home/developer/.ssh
+        read_only: true
+      - type: bind
+        source: ${HOME}/.config/gh
+        target: /home/developer/.config/gh
+      - type: bind
+        source: ${HOME}/.config/opencode
+        target: /home/developer/.config/opencode
+      - type: bind
+        source: ${HOME}/.agents
+        target: /home/developer/.agents
+        read_only: true
+      - type: bind
+        source: ${HOME}/.local/share/opencode
+        target: /home/developer/.local/share/opencode
+    working_dir: /home/developer/workspaces/fdtd
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    stdin_open: true
+    tty: true
+
   # Interactive development image with source-control and OpenCode tooling.
   dev:
     build:

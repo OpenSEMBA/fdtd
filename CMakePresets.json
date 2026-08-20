@@ -85,6 +85,14 @@
       }
     },
     {
+      "name": "intel-dbg",
+      "inherits": "intel-rls",
+      "binaryDir": "build-intel-dbg/",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
       "name": "intel-rls-parallel",
       "inherits": "intel-rls",
       "binaryDir": "build-intel-rls-parallel/",
@@ -129,6 +137,10 @@
     {
       "name": "intel-rls-nomtln",
       "configurePreset": "intel-rls-nomtln"
+    },
+    {
+      "name": "intel-dbg",
+      "configurePreset": "intel-dbg"
     },
     {
       "name": "intel-rls-parallel",
