@@ -259,10 +259,11 @@ module outputTypes_m
    end type wire_current_probe_output_t
 
     type, extends(abstract_time_probe_t) :: bulk_current_probe_output_t
-      !Binary format: timeStamp, Val. Total register size: 16
-      type(cell_coordinate_t) :: auxCoords
-       real(kind=RKIND), allocatable :: valueForTime(:)
-       type(output_artifact_t) :: artifacts(2)
+       !Binary format: timeStamp, Val. Total register size: 16
+       type(cell_coordinate_t) :: auxCoords
+        real(kind=RKIND), allocatable :: valueForTime(:)
+       logical :: isWriter = .true.
+        type(output_artifact_t) :: artifacts(2)
     end type bulk_current_probe_output_t
 
     type, extends(abstract_time_probe_t) :: line_probe_output_t

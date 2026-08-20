@@ -1,6 +1,6 @@
 program test_output_mpi
    use mpi
-   use FDETYPES_m, only: iEx, limit_t
+    use FDETYPES_m, only: iEx, iEz, limit_t
    use outputCollective_m, only: output_collective_t, init_output_collective, &
                                  select_output_participants, &
                                  prepare_output_partition_publication, &
@@ -88,11 +88,32 @@ program test_output_mpi
       end do
       call MPI_Reduce(local_coverage, global_coverage, size(local_coverage), MPI_INTEGER, MPI_SUM, root, &
                       MPI_COMM_WORLD, ierr)
-      if (rank == root) then
-         do z = 0, 2 * rank_count
-            if (global_coverage(z) /= 1) failures = failures + 1
-         end do
-      end if
+       if (rank == root) then
+          do z = 0, 2 * rank_count
+             if (global_coverage(z) /= 1) failures = failures + 1
+          end do
+       end if
+
+       ! Electric-z ranges are already disjoint in MPIdivide and must retain
+       ! every requested coordinate when used to initialise a movie fragment.
+       local_sweep%ZI = 2 * rank
+       local_sweep%ZE = 2 * (rank + 1) - 1
+       if (rank == rank_count - 1) local_sweep%ZE = 2 * rank_count
+       local_sweep%NZ = local_sweep%ZE - local_sweep%ZI + 1
+       call build_output_partition(request_lower, request_upper, global_bounds, local_sweep, &
+                                   iEz, rank, rank_count, partition, status)
+       if (status /= OUTPUT_PARTITION_SUCCESS .or. .not. partition%has_data) failures = failures + 1
+       local_coverage = 0
+       do z = partition%local_lower%z, partition%local_upper%z
+          local_coverage(z) = 1
+       end do
+       call MPI_Reduce(local_coverage, global_coverage, size(local_coverage), MPI_INTEGER, MPI_SUM, root, &
+                       MPI_COMM_WORLD, ierr)
+       if (rank == root) then
+          do z = 0, 2 * rank_count
+             if (global_coverage(z) /= 1) failures = failures + 1
+          end do
+       end if
 
       ! Root aggregation must reconstruct the same ordered values as a serial output.
       call init_output_collective(collective, rank, rank_count, root, .false., status)

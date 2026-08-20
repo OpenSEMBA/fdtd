@@ -256,20 +256,27 @@ contains
         type(generator_t), allocatable, dimension(:) :: aux_generators
         type(generator_t) :: new_generator
         aux_generators = this%generators
-        deallocate(this%generators)
-        allocate(this%generators(size(aux_generators)+1))
 #ifdef CompileWithMPI
         new_generator = generatorCtor(index, conductor, gen_type, resistance, path, layer_indices = layer_indices)
 #else
         new_generator = generatorCtor(index, conductor, gen_type, resistance, path)
 #endif
+        ! Non-owning MPI ranks have no local PUL divisions to update.
+        if (.not. new_generator%in_layer) return
+
+        deallocate(this%generators)
+        allocate(this%generators(size(aux_generators)+1))
         this%generators(1:size(this%generators)-1) = aux_generators
         this%generators(size(aux_generators)+1) = new_generator
 
         if (gen_type == SOURCE_TYPE_VOLTAGE) then
-            this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance/this%du(index, conductor, conductor)
+            this%rpul(new_generator%index, conductor, conductor) = &
+                this%rpul(new_generator%index, conductor, conductor) + &
+                resistance/this%du(new_generator%index, conductor, conductor)
         else if (new_generator%source_type == SOURCE_TYPE_CURRENT) then
-            this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance/this%du(index, conductor, conductor)
+            this%rpul(new_generator%index, conductor, conductor) = &
+                this%rpul(new_generator%index, conductor, conductor) + &
+                resistance/this%du(new_generator%index, conductor, conductor)
 
         end if
 

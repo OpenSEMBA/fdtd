@@ -578,7 +578,6 @@ contains
        if (dataset_id >= 0) call h5dclose_f(dataset_id, hdf_error)
        call h5sclose_f(space_id, hdf_error)
        call h5fclose_f(file_id, hdf_error)
-       call h5close_f(hdf_error)
 
        open(newunit=unit, file=trim(xdmf_path), status='replace', action='write', iostat=hdf_error)
        if (hdf_error /= 0) return

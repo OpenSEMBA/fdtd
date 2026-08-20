@@ -551,12 +551,13 @@ contains
 
       type(domain_t) :: domain
       type(spheric_domain_t) :: sphericRange
-      type(cell_coordinate_t) :: lowerBound, upperBound
+      type(cell_coordinate_t) :: lowerBound, upperBound, localMapLower, localMapUpper
       integer(kind=SINGLE) :: i, ii, outputRequestType
       integer(kind=SINGLE) :: NODE
       integer(kind=SINGLE) :: outputCount
       integer(kind=SINGLE) :: requestedOutputs
       integer :: metadata_status
+      logical :: mapHasData
       character(len=BUFSIZE) :: outputTypeExtension
 
 #ifdef CompileWithMTLN
@@ -642,20 +643,23 @@ contains
             outputRequestType = sgg%observation(ii)%P(i)%what
             select case (outputRequestType)
             case (mapvtk)
-               outputCount = outputCount + 1
-               outputs(outputCount)%outputID = MAPVTK_ID
+                call get_local_map_bounds(lowerBound, upperBound, localMapLower, localMapUpper, mapHasData)
+                if (mapHasData) then
+                   outputCount = outputCount + 1
+                   outputs(outputCount)%outputID = MAPVTK_ID
 
-               allocate (outputs(outputCount)%mapvtkOutput)
-               call init_solver_output(outputs(outputCount)%mapvtkOutput, lowerBound, upperBound, outputRequestType, outputTypeExtension, control%mpidir, problemInfo)
-               call create_geometry_simulation_vtu(outputs(outputCount)%mapvtkOutput, control, sgg%LineX, sgg%LineY, &
-                                                   sgg%LineZ, problemInfo)
-               call register_scalar_output_metadata(outputCount, &
-                                                    join_path(outputs(outputCount)%mapvtkOutput%path, &
-                                                             get_last_component(outputs(outputCount)%mapvtkOutput%path)//'.json'), &
-                                                    get_last_component(outputs(outputCount)%mapvtkOutput%path), &
-                                                    get_prefix_extension(outputRequestType, control%mpidir), &
-                                                    outputs(outputCount)%mapvtkOutput%artifacts, metadata_status)
-               !! call adjust_computation_range --- Required due to issues in mpi region edges
+                   allocate (outputs(outputCount)%mapvtkOutput)
+                   call init_solver_output(outputs(outputCount)%mapvtkOutput, localMapLower, localMapUpper, &
+                                            outputRequestType, outputTypeExtension, control%mpidir, problemInfo)
+                   call create_geometry_simulation_vtu(outputs(outputCount)%mapvtkOutput, control, sgg%LineX, sgg%LineY, &
+                                                       sgg%LineZ, problemInfo)
+                   call register_scalar_output_metadata(outputCount, &
+                                                        join_path(outputs(outputCount)%mapvtkOutput%path, &
+                                                                 get_last_component(outputs(outputCount)%mapvtkOutput%path)//'.json'), &
+                                                        get_last_component(outputs(outputCount)%mapvtkOutput%path), &
+                                                        get_prefix_extension(outputRequestType, control%mpidir), &
+                                                        outputs(outputCount)%mapvtkOutput%artifacts, metadata_status)
+                end if
 
             case (iEx, iEy, iEz, iHx, iHy, iHz)
                outputCount = outputCount + 1
@@ -729,22 +733,36 @@ contains
                end if
 
             case (iCur, iMEC, iMHC, iCurX, iCurY, iCurZ, iExC, iEyC, iEzC, iHxC, iHyC, iHzC)
-               call adjust_bound_range()
-
                if (domain%domainType == TIME_DOMAIN) then
 
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = MOVIE_PROBE_ID
-                  allocate (outputs(outputCount)%movieProbe)
-                   call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, control, problemInfo, outputTypeExtension)
                   call attach_output_partition(outputCount)
+                  if (outputPartitions(outputCount)%has_data) then
+                     allocate (outputs(outputCount)%movieProbe)
+                     call init_solver_output(outputs(outputCount)%movieProbe, outputPartitions(outputCount)%local_lower, &
+                                              outputPartitions(outputCount)%local_upper, outputRequestType, domain, control, &
+                                              problemInfo, outputTypeExtension)
+                     call configure_output_partition(outputCount)
+                  else
+                     outputs(outputCount)%outputID = UNDEFINED_PROBE
+                     outputCount = outputCount - 1
+                  end if
                else if (domain%domainType == FREQUENCY_DOMAIN) then
 
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = FREQUENCY_SLICE_PROBE_ID
-                  allocate (outputs(outputCount)%frequencySliceProbe)
-                   call init_solver_output(outputs(outputCount)%frequencySliceProbe, lowerBound, upperBound, sgg%dt, outputRequestType, domain, outputTypeExtension, control, problemInfo)
                   call attach_output_partition(outputCount)
+                  if (outputPartitions(outputCount)%has_data) then
+                     allocate (outputs(outputCount)%frequencySliceProbe)
+                     call init_solver_output(outputs(outputCount)%frequencySliceProbe, outputPartitions(outputCount)%local_lower, &
+                                              outputPartitions(outputCount)%local_upper, sgg%dt, outputRequestType, domain, &
+                                              outputTypeExtension, control, problemInfo)
+                     call configure_output_partition(outputCount)
+                  else
+                     outputs(outputCount)%outputID = UNDEFINED_PROBE
+                     outputCount = outputCount - 1
+                  end if
                end if
             case (farfield)
                sphericRange = preprocess_polar_range(sgg%Observation(ii))
@@ -796,11 +814,10 @@ contains
          outputs(output_index)%metadata_path = descriptor_path
       end subroutine register_scalar_output_metadata
 
-      subroutine attach_output_partition(output_index)
-         integer(kind=SINGLE), intent(in) :: output_index
-         type(limit_t) :: local_sweep
-         type(output_collective_t) :: collective
-         integer :: field_component, partition_status, collective_status, publication_mode
+       subroutine attach_output_partition(output_index)
+          integer(kind=SINGLE), intent(in) :: output_index
+          type(limit_t) :: local_sweep
+          integer :: field_component, partition_status
 
          field_component = fieldo(outputRequestType, 'Z')
          local_sweep%XI = sgg%Sweep(field_component)%XI
@@ -817,35 +834,50 @@ contains
                                      outputPartitions(output_index), partition_status)
          if (partition_status /= OUTPUT_PARTITION_SUCCESS) return
 
-         ! Parallel visualisation output is available when MPI spans multiple ranks.
-         call init_output_collective(collective, control%layoutnumber, max(control%num_procs, 1), 0, &
-                                     control%num_procs > 1, &
-                                     collective_status)
+       end subroutine attach_output_partition
+
+       subroutine configure_output_partition(output_index)
+          integer(kind=SINGLE), intent(in) :: output_index
+          type(output_collective_t) :: collective
+          integer :: collective_status, publication_mode
+
+          ! Parallel visualisation output is available when MPI spans multiple ranks.
+          call init_output_collective(collective, control%layoutnumber, max(control%num_procs, 1), 0, &
+                                      control%num_procs > 1, &
+                                      collective_status)
          if (collective_status /= OUTPUT_COLLECTIVE_SUCCESS) return
          call select_output_publication_mode(collective, publication_mode)
          select case (outputs(output_index)%outputID)
          case (MOVIE_PROBE_ID)
             call configure_movie_probe_publication(outputs(output_index)%movieProbe, publication_mode, &
                                                    outputPartitions(output_index)%has_data)
-         case (FREQUENCY_SLICE_PROBE_ID)
-            call configure_frequency_slice_probe_publication(outputs(output_index)%frequencySliceProbe, &
-                                                             publication_mode, outputPartitions(output_index)%has_data)
-         end select
-      end subroutine attach_output_partition
+          case (FREQUENCY_SLICE_PROBE_ID)
+             call configure_frequency_slice_probe_publication(outputs(output_index)%frequencySliceProbe, &
+                                                              publication_mode, outputPartitions(output_index)%has_data)
+          end select
+       end subroutine configure_output_partition
 
-      subroutine adjust_bound_range()
-         select case (outputRequestType)
-         case (iExC, iEyC, iHzC, iMhC)
-            lowerBound%z = max(sgg%Sweep(fieldo(outputRequestType, 'Z'))%ZI, sgg%observation(ii)%P(i)%ZI)
-            upperBound%z = min(sgg%Sweep(fieldo(outputRequestType, 'Z'))%ZE - 1, sgg%observation(ii)%P(i)%ZE)
-         case (iEzC, iHxC, iHyC, iMeC)
-            lowerBound%z = max(sgg%Sweep(fieldo(outputRequestType, 'Z'))%ZI, sgg%observation(ii)%P(i)%ZI)
-            upperbound%z = min(sgg%Sweep(fieldo(outputRequestType, 'Z'))%ZE, sgg%observation(ii)%P(i)%ZE)
-         case (iCur, iCurX, iCurY, iCurZ)
-            lowerBound%z = max(sgg%Sweep(fieldo(outputRequestType, 'X'))%ZI, sgg%observation(ii)%P(i)%ZI) !ojo estaba sweep(iEz) para ser conservador...puede dar problemas!! 03/07/15
-            upperbound%z = min(sgg%Sweep(fieldo(outputRequestType, 'X'))%ZE, sgg%observation(ii)%P(i)%ZE) !ojo estaba sweep(iEz) para ser conservador...puede dar problemas!! 03/07/15
-         end select
-      end subroutine
+       subroutine get_local_map_bounds(request_lower, request_upper, local_lower, local_upper, has_data)
+          type(cell_coordinate_t), intent(in) :: request_lower, request_upper
+          type(cell_coordinate_t), intent(out) :: local_lower, local_upper
+          logical, intent(out) :: has_data
+          integer :: field
+
+          local_lower = request_lower
+          local_upper = request_upper
+          do field = iEx, iHz
+             ! Restrict iteration to owned cells; isEdge uses Alloc halos for neighbours.
+             local_lower%x = max(local_lower%x, sgg%Sweep(field)%XI)
+             local_lower%y = max(local_lower%y, sgg%Sweep(field)%YI)
+             local_lower%z = max(local_lower%z, sgg%Sweep(field)%ZI)
+             local_upper%x = min(local_upper%x, sgg%Sweep(field)%XE)
+             local_upper%y = min(local_upper%y, sgg%Sweep(field)%YE)
+             local_upper%z = min(local_upper%z, sgg%Sweep(field)%ZE)
+          end do
+          has_data = local_lower%x <= local_upper%x .and. local_lower%y <= local_upper%y .and. &
+                     local_lower%z <= local_upper%z
+       end subroutine get_local_map_bounds
+
       function preprocess_domain(observation, timeArray, simulationTimeStep, finalStepIndex) result(newDomain)
          type(Obses_t), intent(in) :: observation
          real(kind=RKIND_tiempo), pointer, dimension(:), intent(in) :: timeArray
