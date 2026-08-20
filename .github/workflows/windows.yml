@@ -56,6 +56,12 @@ jobs:
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
 
+    # CMake 4.4 cannot detect the ifx 2025.2 Fortran preprocessor on Windows.
+    - name: Setup CMake
+      uses: jurplel/install-cmake-action@v4
+      with:
+        version: '3.31.6'
+
     - name: CMake build
       shell: bash
       run: |

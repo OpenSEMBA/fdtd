@@ -9,7 +9,7 @@ module bulkProbeOutput_m
      use, intrinsic :: iso_fortran_env, only: real64
     use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
 #ifdef CompileWithMPI
-   use mpi, only: MPI_COMM_WORLD, MPI_SUM, MPI_Allreduce, MPI_Comm_rank
+   use mpi
 #endif
    implicit none
 
