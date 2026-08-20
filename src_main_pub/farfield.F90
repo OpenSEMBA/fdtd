@@ -3297,43 +3297,45 @@ contains
 
 
 #ifdef CompileWithMPI
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  dummy=real(L_theta_final)
-                  call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  dummy=AIMAG(L_theta_final)
-                  call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
+                   if (FF%MPISubComm /= MPI_COMM_NULL) then
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      dummy=real(L_theta_final)
+                      call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      dummy=AIMAG(L_theta_final)
+                      call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
 
-                  L_theta_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
-                  !
-                  dummy=real(L_phi_final)
-                  call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  dummy=AIMAG(L_phi_final)
-                  call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  !
-                  L_phi_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
+                      L_theta_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
+                      !
+                      dummy=real(L_phi_final)
+                      call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      dummy=AIMAG(L_phi_final)
+                      call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      !
+                      L_phi_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
 
-                  dummy=real(N_theta_final)
-                  call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  dummy=AIMAG(N_theta_final)
-                  call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
+                      dummy=real(N_theta_final)
+                      call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      dummy=AIMAG(N_theta_final)
+                      call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
 
-                  N_theta_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
-                  !
-                  dummy=real(N_phi_final)
-                  call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  dummy=AIMAG(N_phi_final)
-                  call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  !
-                  N_phi_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
-                  call MPI_Barrier(FF%MPISubComm,ierr)
+                      N_theta_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
+                      !
+                      dummy=real(N_phi_final)
+                      call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      dummy=AIMAG(N_phi_final)
+                      call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      !
+                      N_phi_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                   end if
 #endif
                   Etheta(pasadas) = -(0,1.0_RKIND)*freq/(2.0_RKIND * cluz)*(L_phi_final + zvac * N_theta_final) !/FF%dftEntrada(ii) !no normalizar para calcular bien potencia
                   Ephi(pasadas)   =  (0,1.0_RKIND)*freq/(2.0_RKIND * cluz)*(L_theta_final - zvac * N_phi_final) !/FF%dftEntrada(ii) !no normalizar para calcular bien potencia
