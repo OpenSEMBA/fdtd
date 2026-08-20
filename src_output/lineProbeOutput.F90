@@ -1,6 +1,6 @@
 module lineProbeOutput_m
    use FDETYPES_m, only: RKIND, RKIND_tiempo, SINGLE, BUFSIZE, direction_t, xyzlimit_t, iEx, iEy, iEz
-   use outputTypes_m, only: field_data_t, line_probe_output_t, domain_t, TIME_DOMAIN, &
+   use outputTypes_m, only: field_data_t, line_probe_output_t, domain_t, TIME_DOMAIN, OUTPUT_TIME_BUFFER_SIZE, &
                              OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY, BINARY_ENDIAN_LITTLE, &
                               BINARY_NUMERIC_REAL64, BINARY_COMPLEX_UNSPECIFIED, binaryExtension, &
                              datFileExtension, timeExtension, declare_probe_artifacts
@@ -73,8 +73,8 @@ contains
       else
          this%segments = segments
       end if
-      call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
-      call alloc_and_init(this%valueForTime, BUFSIZE, 0.0_RKIND)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+      call alloc_and_init(this%valueForTime, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
 
       artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
       artifact_paths(2) = trim(this%path)//'_'//timeExtension//binaryExtension

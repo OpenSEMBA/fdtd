@@ -20,6 +20,7 @@ module outputTypes_m
    integer, parameter :: TIME_DOMAIN       =  0
    integer, parameter :: FREQUENCY_DOMAIN  =  1
    integer, parameter :: BOTH_DOMAIN       =  2
+   integer, parameter :: OUTPUT_TIME_BUFFER_SIZE = 128
 
 
    character(len=4), parameter :: binaryExtension = '.bin'
@@ -247,7 +248,7 @@ module outputTypes_m
 
     type, extends(abstract_time_probe_t) :: wire_current_probe_output_t
       integer(kind=SINGLE) :: sign = +1
-      type(current_values_t) :: currentValues(BuffObse)
+      type(current_values_t) :: currentValues(OUTPUT_TIME_BUFFER_SIZE)
        type(CurrentSegments_t), pointer :: segment
        type(output_artifact_t) :: artifacts(2)
 #ifdef CompileWithBerengerWires

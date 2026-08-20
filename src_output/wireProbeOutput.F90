@@ -70,7 +70,7 @@ module wireProbeOutput_m
        call find_current_segment(this, node, field, media, wiresflavor)
        this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
+       call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
         artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
          artifact_paths(2) = trim(this%path)//'_'//timeExtension//binaryExtension
          artifact_kinds = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]
@@ -106,8 +106,8 @@ module wireProbeOutput_m
        call find_charge_segment(this, node, field, wiresflavor)
        this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
-       call alloc_and_init(this%chargeValue, BuffObse, 0.0_RKIND)
+       call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+       call alloc_and_init(this%chargeValue, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
         artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
          artifact_paths(2) = trim(this%path)//'_'//timeExtension//binaryExtension
          artifact_kinds = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]

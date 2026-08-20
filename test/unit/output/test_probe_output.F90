@@ -1412,8 +1412,8 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, MOVIE_PROBE_ID, 'Unexpected probe id')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nPoints, expectedNumMeasurments, 'Unexpected number of measurements')
-   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%xValueForTime), expectedNumMeasurments*BuffObse, 'Unexpected allocation size')
-   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%timeStep), BuffObse, 'Unexpected timestep buffer size')
+   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%xValueForTime), expectedNumMeasurments*OUTPUT_TIME_BUFFER_SIZE, 'Unexpected allocation size')
+   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%timeStep), OUTPUT_TIME_BUFFER_SIZE, 'Unexpected timestep buffer size')
 
    expectedProbePath = trim(nEntrada)//wordSeparation//'movieProbe_BC_2_2_2__5_5_5'
    pdvFileName = trim(get_last_component(expectedProbePath))//pvdExtension
@@ -1591,7 +1591,7 @@ integer function test_update_movie_probe() bind(c) result(err)
                                            0.0_RKIND, 1e-5_RKIND, 'Value error')
 
    test_err = test_err + assert_integer_equal( &
-              size(outputs(1)%movieProbe%timeStep), BuffObse, 'Unexpected timestep buffer size')
+              size(outputs(1)%movieProbe%timeStep), OUTPUT_TIME_BUFFER_SIZE, 'Unexpected timestep buffer size')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nTime, 1, 'Movie update did not buffer a timestep')
    test_err = test_err + assert_true(outputs(1)%movieProbe%timeStep(1) == dummysgg%tiempo(2), &
                                      'Movie update stored an incorrect timestep')

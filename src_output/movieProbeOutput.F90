@@ -68,12 +68,12 @@ contains
        call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
        call alloc_and_init(this%tagNumber, this%nPoints, 0.0_RKIND)
        call store_tag_numbers(this, problemInfo)
-       call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
+       call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
 
       ! Allocate value arrays based on component type
-      call alloc_and_init(this%xValueForTime, BUFSIZE, this%nPoints, 0.0_RKIND)
-      call alloc_and_init(this%yValueForTime, BUFSIZE, this%nPoints, 0.0_RKIND)
-      call alloc_and_init(this%zValueForTime, BUFSIZE, this%nPoints, 0.0_RKIND)
+      call alloc_and_init(this%xValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
+      call alloc_and_init(this%yValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
+      call alloc_and_init(this%zValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
 
       this%path = get_output_path(this, outputTypeExtension, field, control%mpidir)
       filename = get_last_component(this%path)

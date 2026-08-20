@@ -41,8 +41,8 @@ contains
        this%isWriter = mpi_rank == 0
 #endif
 
-       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
-       call alloc_and_init(this%valueForTime, BuffObse, 0.0_RKIND)
+       call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+       call alloc_and_init(this%valueForTime, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
        artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
         artifact_paths(2) = trim(this%path)//'_'//timeExtension//binaryExtension
         artifact_kinds = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]
