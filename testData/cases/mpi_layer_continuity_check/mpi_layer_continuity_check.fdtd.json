@@ -1,0 +1,57 @@
+{
+  "format": "FDTD Input file",
+  "__comments": "Z-propagating plane-wave pulse for visual MPI layer-continuity checks.",
+  "general": {
+    "timeStep": 5e-11,
+    "numberOfSteps": 200
+  },
+  "boundary": {
+    "all": {"type": "mur"}
+  },
+  "mesh": {
+    "grid": {
+      "numberOfCells": [30, 30, 32],
+      "steps": {"x": [0.01], "y": [0.01], "z": [0.01]}
+    },
+    "elements": [
+      {"id": 1, "type": "cell", "name": "plane-wave-volume", "intervals": [[[1, 1, 1], [29, 29, 31]]]},
+      {"id": 2, "type": "cell", "name": "movie-volume", "intervals": [[[0, 0, 0], [30, 30, 32]]]},
+      {"id": 3, "type": "cell", "name": "dielectric-slab", "intervals": [[[12, 0, 0], [18, 30, 32]]]}
+    ]
+  },
+  "materials": [
+    {
+      "id": 1,
+      "name": "dielectric-slab",
+      "type": "isotropic",
+      "relativePermittivity": 16
+    }
+  ],
+  "materialAssociations": [
+    {"materialId": 1, "elementIds": [3]}
+  ],
+  "sources": [
+    {
+      "type": "planewave",
+      "magnitudeFile": "gauss_1GHz.exc",
+      "elementIds": [1],
+      "direction": {"theta": 0.0, "phi": 0.0},
+      "polarization": {"theta": 1.5708, "phi": 0.0}
+    }
+  ],
+  "probes": [
+    {
+      "name": "electric_field_movie",
+      "type": "movie",
+      "field": "electric",
+      "component": "magnitude",
+      "elementIds": [2],
+      "domain": {
+        "type": "time",
+        "initialTime": 0.0,
+        "finalTime": 1e-8,
+        "samplingPeriod": 1e-9
+      }
+    }
+  ]
+}
