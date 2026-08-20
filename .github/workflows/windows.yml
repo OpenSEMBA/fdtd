@@ -53,6 +53,12 @@ jobs:
         compiler: ${{ matrix.compiler.name }}
         version: ${{ matrix.compiler.version }}
 
+    # ifx requires MSVC's linker and Windows SDK environment on the hosted runner.
+    - name: Setup MSVC toolchain
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
 
