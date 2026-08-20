@@ -16,7 +16,11 @@ module farFieldOutput_m
    !===========================
 contains
 
-  subroutine init_farField_probe_output(this, sgg, lowerBound, upperBound, field, domain, sphericRange, outputTypeExtension, fileNormalize,control, problemInfo, eps0, mu0)
+  subroutine init_farField_probe_output(this, sgg, lowerBound, upperBound, field, domain, sphericRange, outputTypeExtension, fileNormalize,control, problemInfo, &
+#ifdef CompileWithMPI
+                                        mpiSubComm, mpiRoot, &
+#endif
+                                        eps0, mu0)
       type(far_field_probe_output_t), intent(out) :: this
       type(domain_t), intent(in) :: domain
       type(SGGFDTDINFO_t), intent(in) :: sgg
@@ -26,6 +30,9 @@ contains
       type(sim_control_t), intent(in) :: control
       character(len=*), intent(in) :: fileNormalize, outputTypeExtension
        type(problem_info_t), intent(in) :: problemInfo
+#ifdef CompileWithMPI
+       integer(kind=4), intent(in) :: mpiSubComm, mpiRoot
+#endif
        real(kind=RKIND), intent(in) :: mu0, eps0
         character(len=BUFSIZE) :: artifact_paths(2)
         integer :: artifact_kinds(2), ios
@@ -65,7 +72,7 @@ contains
                         fileNormalize, problemInfo%problemDimension, &
                         control%facesNF2FF, control%NF2FFDecim, &
 #ifdef CompileWithMPI
-                        0, 0, &
+                         mpiSubComm, mpiRoot, &
 #endif
                         eps0, mu0)
 

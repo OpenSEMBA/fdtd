@@ -24,6 +24,9 @@ module output_m
                             probe_publication_plan_t, &
                             OUTPUT_LIFECYCLE_DECLARED, OUTPUT_LIFECYCLE_ACTIVE, &
                             OUTPUT_LIFECYCLE_FINALISING, OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
+#ifdef CompileWithMPI
+    use mpi
+#endif
 #ifdef CompileWithMTLN
    use Wire_bundles_mtln_m, only: GetSolverPtr
    use mtln_solver_m, only: mtln_solver_t => mtln_t
@@ -770,7 +773,14 @@ contains
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = FAR_FIELD_PROBE_ID
                allocate (outputs(outputCount)%farFieldOutput)
-                call init_solver_output(outputs(outputCount)%farFieldOutput, sgg, lowerBound, upperBound, outputRequestType, domain, sphericRange, outputTypeExtension, sgg%Observation(ii)%FileNormalize, control, problemInfo, eps0, mu0)
+#ifdef CompileWithMPI
+                call configure_far_field_mpi(outputs(outputCount), lowerBound, upperBound)
+#endif
+                call init_solver_output(outputs(outputCount)%farFieldOutput, sgg, lowerBound, upperBound, outputRequestType, domain, sphericRange, outputTypeExtension, sgg%Observation(ii)%FileNormalize, control, problemInfo, &
+#ifdef CompileWithMPI
+                                         outputs(outputCount)%MPISubcomm, outputs(outputCount)%MPIRoot, &
+#endif
+                                         eps0, mu0)
                call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%farFieldOutput%path)//'.json', &
                                                     get_last_component(outputs(outputCount)%farFieldOutput%path), &
                                                     get_prefix_extension(outputRequestType, control%mpidir), &
@@ -791,7 +801,34 @@ contains
       if (observationsExists) call write_run_output_manifest(control, outputCount)
       return
    contains
-      subroutine register_scalar_output_metadata(output_index, descriptor_path, probe_id, quantity, artifacts, status)
+#ifdef CompileWithMPI
+       subroutine configure_far_field_mpi(output, lower_bound, upper_bound)
+          type(solver_output_t), intent(inout) :: output
+          type(cell_coordinate_t), intent(in) :: lower_bound, upper_bound
+          integer :: color, ierr, root_candidate
+
+          output%MPISubcomm = -1
+          if (lower_bound%z <= sgg%SINPMLSweep(iHz)%ZE .and. &
+              upper_bound%z >= sgg%SINPMLSweep(iHz)%ZI) then
+             output%MPISubcomm = 1
+          end if
+          root_candidate = -1
+          if (lower_bound%z >= sgg%SINPMLSweep(iHz)%ZI .and. &
+              lower_bound%z < sgg%SINPMLSweep(iHz)%ZE) then
+             root_candidate = control%layoutnumber
+          end if
+          call MPI_AllReduce(root_candidate, output%MPIRoot, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
+
+          color = MPI_UNDEFINED
+          if (output%MPISubcomm == 1) color = 0
+          call MPI_Comm_split(SUBCOMM_MPI, color, control%layoutnumber, output%MPISubcomm, ierr)
+          if (output%MPISubcomm /= MPI_COMM_NULL) then
+             call MPI_Comm_rank(output%MPISubcomm, output%MPIGroupIndex, ierr)
+          end if
+       end subroutine configure_far_field_mpi
+#endif
+
+       subroutine register_scalar_output_metadata(output_index, descriptor_path, probe_id, quantity, artifacts, status)
          integer(kind=SINGLE), intent(in) :: output_index
          character(len=*), intent(in) :: descriptor_path, probe_id, quantity
          type(output_artifact_t), intent(in) :: artifacts(:)
