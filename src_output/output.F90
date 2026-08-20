@@ -18,7 +18,8 @@ module output_m
                                  select_output_publication_mode, OUTPUT_COLLECTIVE_SUCCESS, &
                                  OUTPUT_COLLECTIVE_UNOWNED_POINT
    use outputTransport_m, only: output_transport_t, gather_point_eligibility, OUTPUT_TRANSPORT_SUCCESS
-   use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
+   use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, json_escape, &
+                               OUTPUT_METADATA_SUCCESS
    use outputTypes_m, only: probe_metadata_t, output_artifact_t, output_lifecycle_is_terminal, &
                             probe_metadata_is_complete, OUTPUT_ARTIFACT_UNDEFINED, &
                             probe_publication_plan_t, &
@@ -1211,7 +1212,7 @@ contains
             artifact_path = trim(artifacts(artifact_index)%relative_path)
             if (present(base_path)) artifact_path = join_path(trim(base_path), artifact_path)
             if (.not. first_artifact) write (unit, '(a)') ','
-            write (unit, '(a)') '{"path":"'//trim(artifact_path)//'"}'
+            write (unit, '(a)') '{"path":"'//json_escape(trim(artifact_path))//'"}'
             first_artifact = .false.
          end do
       end subroutine write_artifacts

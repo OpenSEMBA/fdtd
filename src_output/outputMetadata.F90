@@ -12,7 +12,7 @@ module outputMetadata_m
    integer, parameter, public :: OUTPUT_METADATA_INVALID = 1
    integer, parameter, public :: OUTPUT_METADATA_IO_ERROR = 2
 
-   public :: publish_initial_probe_metadata, publish_final_probe_metadata
+   public :: publish_initial_probe_metadata, publish_final_probe_metadata, json_escape
 
 contains
 
@@ -213,7 +213,7 @@ contains
       value = trim(path)
       relative_path = len(value) > 0
       if (.not. relative_path) return
-      relative_path = value(1:1) /= '/' .and. value(1:1) /= '\\'
+       relative_path = value(1:1) /= '/' .and. value(1:1) /= '\'
       if (len(value) > 1) relative_path = relative_path .and. value(2:2) /= ':'
    end function relative_path
 
@@ -226,15 +226,15 @@ contains
       do i = 1, len_trim(value)
          select case (value(i:i))
          case ('"')
-            escaped = escaped//'\\"'
-         case ('\\')
-            escaped = escaped//'\\\\'
+            escaped = escaped//'\"'
+         case ('\')
+            escaped = escaped//'\\'
          case (achar(9))
-            escaped = escaped//'\\t'
+            escaped = escaped//'\t'
          case (achar(10))
-            escaped = escaped//'\\n'
+            escaped = escaped//'\n'
          case (achar(13))
-            escaped = escaped//'\\r'
+            escaped = escaped//'\r'
          case default
             if (iachar(value(i:i)) >= 32) escaped = escaped//value(i:i)
          end select

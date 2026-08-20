@@ -538,10 +538,11 @@ def test_default_semba_exe_prefers_environment_override(tmp_path, monkeypatch):
 def test_default_semba_exe_selects_compatible_preset(
     tmp_path, monkeypatch, environment, build_dir
 ):
-    executable = tmp_path / build_dir / "bin" / "semba-fdtd"
+    executable_name = "semba-fdtd.exe" if platform == "win32" else "semba-fdtd"
+    executable = tmp_path / build_dir / "bin" / executable_name
     executable.parent.mkdir(parents=True)
     executable.touch()
-    legacy_executable = tmp_path / "build" / "bin" / "semba-fdtd"
+    legacy_executable = tmp_path / "build" / "bin" / executable_name
     legacy_executable.parent.mkdir(parents=True)
     legacy_executable.touch()
     monkeypatch.chdir(tmp_path)

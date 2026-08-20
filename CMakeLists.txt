@@ -158,6 +158,9 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 	message(STATUS "Using Windows flags")
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		message(STATUS "Using IntelLLVM (ifx) flags")
+		# MSVC links executables with a 1 MiB stack by default, which is too small
+		# for HDF output initialisation with the Intel Fortran runtime.
+		add_link_options(/STACK:67108864)
 
 		# This prevents a compilation error happening due to visual studio headers being too strict.
 		# It can possibly can be removed in the future.
