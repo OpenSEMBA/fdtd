@@ -265,17 +265,7 @@ contains
                CASE (J_ELEM_TYPE_CELL)
                   block
                      type(json_value), pointer :: conformalEntry
-                     type(cell_region_t) :: cR
-                     logical :: foundConformalEntry
-
-                     call this%core%get(je, J_CONF_VOLUME_TRIANGLES, conformalEntry, found=foundConformalEntry)
-                     if (.not. foundConformalEntry) then
-                        call this%core%get(je, J_SUBTYPE, conformalEntry, found=foundConformalEntry)
-                     end if
-                     if (foundConformalEntry) then
-                        call WarnErrReport('Element type "cell" cannot define conformal geometry. Use type "conformal".', .true.)
-                        return
-                     end if
+                     type(cell_region_t) :: cR                   
                      cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
                      call mesh%addCellRegion(id, cR)
                   end block
