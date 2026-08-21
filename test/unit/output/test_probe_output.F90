@@ -170,6 +170,7 @@ integer function test_root_output_manifest() bind(c) result(err)
    use FDETYPES_m
    use FDETYPES_TOOLS
    use output_m
+   use outputMetadata_m, only: json_escape
    use testOutputUtils_m
    use sggMethods_m
    use assertionTools_m
@@ -215,7 +216,7 @@ integer function test_root_output_manifest() bind(c) result(err)
    open (newunit=unit, file=trim(path)//'_output_manifest.json', status='old', action='read', iostat=ios)
    do while (ios == 0)
       read (unit, '(A)', iostat=ios) line
-      if (index(line, trim(probe_path)) > 0) has_artifact = .true.
+      if (index(line, json_escape(trim(probe_path))) > 0) has_artifact = .true.
    end do
    close (unit)
    err = err + assert_true(has_artifact, 'Manifest does not contain the declared point artifact')

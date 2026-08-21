@@ -26,6 +26,7 @@ extern "C" int test_output_transport_serial();
 extern "C" int test_output_metadata_publication();
 extern "C" int test_output_metadata_fragment_descriptors();
 extern "C" int test_atomic_file_replacement();
+extern "C" int test_json_path_escaping();
 extern "C" int test_portable_binary_output();
 extern "C" int test_output_binary_fragment_layout();
 extern "C" int test_output_binary_native_precision();
@@ -104,6 +105,8 @@ TEST(output, test_metadata_publication) { EXPECT_EQ(0, test_output_metadata_publ
 TEST(output, test_metadata_fragment_descriptors) { EXPECT_EQ(0, test_output_metadata_fragment_descriptors()); }
 // Replaces a completed file without exposing a partial target.
 TEST(output, test_atomic_file_replacement) { EXPECT_EQ(0, test_atomic_file_replacement()); }
+// Preserves Windows path separators through JSON manifest serialization.
+TEST(output, test_json_path_escaping) { EXPECT_EQ(0, test_json_path_escaping()); }
 // Writes portable little-endian real32 binary data.
 TEST(output, test_portable_binary_output) { EXPECT_EQ(0, test_portable_binary_output()); }
 // Requires identity metadata for binary fragments.

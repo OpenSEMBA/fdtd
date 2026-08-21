@@ -12,7 +12,7 @@ module outputMetadata_m
    integer, parameter, public :: OUTPUT_METADATA_INVALID = 1
    integer, parameter, public :: OUTPUT_METADATA_IO_ERROR = 2
 
-   public :: publish_initial_probe_metadata, publish_final_probe_metadata, json_escape
+   public :: publish_initial_probe_metadata, publish_final_probe_metadata, json_escape, json_unescape
 
 contains
 
@@ -240,6 +240,44 @@ contains
          end select
       end do
    end function json_escape
+
+   pure function json_unescape(value) result(unescaped)
+      ! Decodes the JSON string escapes emitted by json_escape.
+      character(len=*), intent(in) :: value
+      character(len=:), allocatable :: unescaped
+      integer :: i, value_length
+
+      unescaped = ''
+      value_length = len_trim(value)
+      i = 1
+      do while (i <= value_length)
+         if (value(i:i) /= '\') then
+            unescaped = unescaped//value(i:i)
+            i = i + 1
+         else if (i == value_length) then
+            unescaped = unescaped//'\'
+            i = i + 1
+         else
+            select case (value(i + 1:i + 1))
+            case ('"', '\', '/')
+               unescaped = unescaped//value(i + 1:i + 1)
+            case ('b')
+               unescaped = unescaped//achar(8)
+            case ('f')
+               unescaped = unescaped//achar(12)
+            case ('n')
+               unescaped = unescaped//achar(10)
+            case ('r')
+               unescaped = unescaped//achar(13)
+            case ('t')
+               unescaped = unescaped//achar(9)
+            case default
+               unescaped = unescaped//value(i:i)//value(i + 1:i + 1)
+            end select
+            i = i + 2
+         end if
+      end do
+   end function json_unescape
 
    pure function lifecycle_name(state) result(name)
       integer, intent(in) :: state

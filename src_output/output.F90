@@ -19,7 +19,7 @@ module output_m
                                  OUTPUT_COLLECTIVE_UNOWNED_POINT
    use outputTransport_m, only: output_transport_t, gather_point_eligibility, OUTPUT_TRANSPORT_SUCCESS
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, json_escape, &
-                               OUTPUT_METADATA_SUCCESS
+                               json_unescape, OUTPUT_METADATA_SUCCESS
    use outputTypes_m, only: probe_metadata_t, output_artifact_t, output_lifecycle_is_terminal, &
                             probe_metadata_is_complete, OUTPUT_ARTIFACT_UNDEFINED, &
                             probe_publication_plan_t, &
@@ -1237,7 +1237,7 @@ contains
          path_start = path_start + len('"path":"')
          path_end = index(line(path_start:), '"')
          if (path_end == 0) cycle
-         artifact_path = line(path_start:path_start + path_end - 2)
+         artifact_path = json_unescape(line(path_start:path_start + path_end - 2))
          if (index(trim(artifact_path), trim(run_id)//'_') == 1) then
             call delete_file(trim(artifact_path), ios)
             path_end = scan(trim(artifact_path), '/\\', back=.true.)

@@ -104,3 +104,19 @@ integer function test_atomic_file_replacement() bind(c) result(err)
    err = err + assert_string_equal(line, 'complete', 'Replacement target is incomplete')
    call delete_file(target, ios)
 end function test_atomic_file_replacement
+
+integer function test_json_path_escaping() bind(c) result(err)
+   ! Preserves native Windows separators through JSON serialization.
+   use outputMetadata_m, only: json_escape, json_unescape
+   use assertionTools_m, only: assert_string_equal
+   implicit none
+
+   character(len=*), parameter :: windows_path = 'C:\temporary\point-probe\sample.dat'
+
+   err = 0
+   err = err + assert_string_equal(json_escape(windows_path), &
+                                   'C:\\temporary\\point-probe\\sample.dat', &
+                                   'Windows path was not JSON escaped')
+   err = err + assert_string_equal(json_unescape(json_escape(windows_path)), windows_path, &
+                                   'Windows path was not restored after JSON escaping')
+end function test_json_path_escaping
