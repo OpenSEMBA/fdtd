@@ -6,11 +6,11 @@ integer function test_parser_ctor() bind(C) result(err)
 
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
    type(parser_t) :: parser
-   
+
    parser = parser_t(filename)
    if (parser%isInitialized) then
       err = 0
-   else 
+   else
       err = 1
    end if
 end function
@@ -79,7 +79,6 @@ integer function test_parser_read_mesh() bind(C) result(err)
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mtln.fdtd.json'
    type(parser_t) :: parser
    type(mesh_t) :: mesh
-   type(cell_region_t), dimension(:), allocatable :: regions
    logical :: found
    type(coordinate_t) :: expected, obtained
 
@@ -87,10 +86,10 @@ integer function test_parser_read_mesh() bind(C) result(err)
 
    parser = parser_t(filename)
    mesh = parser%readMesh()
-   
+
    ! call mesh%printCoordHashInfo() !! For debugging only
    expected%position = [10,0,1]
-   
+
    obtained = mesh%getCoordinate(59, found)
    if (.not. found) err = err + 1
    if ( any(obtained%position /= expected%position)) err = err + 1
@@ -110,7 +109,7 @@ integer function test_parser_read_conformal_volume() bind(C) result(err)
 
    use smbjson_m
    use smbjson_testingTools
-   
+
    implicit none
 
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'conformal.fdtd.json'

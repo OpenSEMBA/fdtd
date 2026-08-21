@@ -6,7 +6,7 @@
         "timeStep": 3e-12,
         "numberOfSteps": 50000
     },
-    
+
     "boundary": {
         "xLower": {"type": "pec"},
         "xUpper": {"type": "pec"},
@@ -61,10 +61,10 @@
         ]
     },
 
-    "materials": [ 
+    "materials": [
         {
             "name": "aluminum",
-            "id": 1, 
+            "id": 1,
             "type": "multilayeredSurface",
             "layers": [
                 {"thickness": 10e-3, "electricConductivity": 100}
@@ -72,7 +72,7 @@
         },
         {
             "name": "pec",
-            "id": 2, 
+            "id": 2,
             "type": "pec"
         }
     ],

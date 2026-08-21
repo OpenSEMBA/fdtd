@@ -46,7 +46,7 @@ set(HEALER_TESTS_LIBRARY healer_tests)
 add_subdirectory(sgbc)
 set(SGBC_TESTS_LIBRARY sgbc_tests)
 
-add_executable(fdtd_tests 
+add_executable(fdtd_tests
     "fdtd_tests.cpp"
 )
 

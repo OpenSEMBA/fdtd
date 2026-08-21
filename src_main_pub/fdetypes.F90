@@ -1,5 +1,5 @@
 
- 
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! This module contains the types and parameters shared by all the rest of the modules
 ! No public variables are defined. Only types and parameters
@@ -11,13 +11,13 @@ module  FDETYPES_m
    use omp_lib
 #endif
 
- 
-#ifdef CompileWithReal16 
+
+#ifdef CompileWithReal16
 #undef CompileWithReal8
 #undef CompileWithReal4
 #endif
 
-#ifdef CompileWithReal8 
+#ifdef CompileWithReal8
 #undef CompileWithReal16
 #undef CompileWithReal4
 #endif
@@ -56,7 +56,7 @@ module  FDETYPES_m
 
    integer(kind=4) :: quienmpi,tamaniompi
    integer(kind=4) :: SUBCOMM_MPI
-!240424 para que funcionen las sondas slice de conformal lo pongo como general. niapaa. algun dia hay que reahacer el conformal 
+!240424 para que funcionen las sondas slice de conformal lo pongo como general. niapaa. algun dia hay que reahacer el conformal
    !y esto debe desaparecer
    integer(kind=4) :: SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
 !!!
@@ -66,8 +66,8 @@ module  FDETYPES_m
    integer(kind=8),  parameter  :: MaxProbes=150000 !Maximum number of probes (a limit of 200000 is set with ulimit in Linux)
    !
    !
-   integer, parameter :: topCPUtime=10000000 !maximum cpu time in minutes 
-   !size of character strings 
+   integer, parameter :: topCPUtime=10000000 !maximum cpu time in minutes
+   !size of character strings
    integer, parameter :: BUFSIZE=1024
    integer, parameter :: BUFSIZE_LONG=16384
    !!!integer :: maxmessages=20000 !numero maximo mensajes para alocatear en MPI overrideable con -maxmessages y quitado como parameter fijo !deprecated 07/03/15
@@ -121,7 +121,7 @@ module  FDETYPES_m
 #else
    !default
    integer(kind=2), parameter  :: RKIND=SINGLE
-   integer(kind=2), parameter  :: RKIND_wires=DOUBLE !020719 a peticion 
+   integer(kind=2), parameter  :: RKIND_wires=DOUBLE !020719 a peticion
    integer(kind=2), parameter  :: RKIND_tiempo=DOUBLE
    !! integer(kind=2), parameter  :: CKIND=SINGLE
    integer(kind=2), parameter  :: CKIND=DOUBLE  !LOS COMPLEJOS LOS VOY A MANEJAR SIEMPRE EN DOBLE PRECISION como minimo
@@ -194,13 +194,13 @@ module  FDETYPES_m
    real(kind=RKIND), parameter :: MU_VACUUM        =   &
    1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
    real(kind=rkind), parameter :: c_vacuum = 1.0_RKIND/sqrt(EPSILON_VACUUM*MU_VACUUM)
-   
+
    real(kind=RKIND_tiempo) :: dt0 !aqui para OLDrlo accesible en resume pscale
-   
+
    integer(kind=4), parameter :: FACE_X = 1
    integer(kind=4), parameter :: FACE_Y = 2
    integer(kind=4), parameter :: FACE_Z = 3
-   
+
    integer(kind=4), parameter :: EDGE_X = 1
    integer(kind=4), parameter :: EDGE_Y = 2
    integer(kind=4), parameter :: EDGE_Z = 3
@@ -209,15 +209,15 @@ module  FDETYPES_m
    character(len=*), parameter :: F_SOURCE_VOLTAGE = 'VOLT'
    character(len=*), parameter :: F_SOURCE_CURRENT = 'CURR'
 
-   
+
 #ifdef CompileWithReal4
    character(len=*), parameter  :: fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
 #else
 #ifdef CompileWithReal8
-   character(len=*), parameter  :: fmt='(12(e27.17e3))' !IEEE 754 single-precision 15 to 17 decimals 
-#else   
+   character(len=*), parameter  :: fmt='(12(e27.17e3))' !IEEE 754 single-precision 15 to 17 decimals
+#else
 #ifdef CompileWithReal16
-   character(len=*), parameter  :: fmt='(12(e46.36e3))'  !IEEE 754 single-precision 33 to 36 decimals  
+   character(len=*), parameter  :: fmt='(12(e46.36e3))'  !IEEE 754 single-precision 33 to 36 decimals
 #else !default
    character(len=*), parameter  :: fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
 #endif
@@ -268,7 +268,7 @@ module  FDETYPES_m
       NodalH  , &
       MagneticMedia, PMLMagneticMedia, &
       MTLNbundles
-   contains 
+   contains
       procedure :: reset => logic_reset
    end type
 
@@ -290,7 +290,7 @@ module  FDETYPES_m
    type XYZlimit_t
       integer(kind=4) :: XI,XE,YI,YE,ZI,ZE
    end type
-   type XYZlimit_scaled_t
+   type xyzlimit_scaled_t
       integer(kind=4) :: XI,XE,YI,YE,ZI,ZE
       real(kind=RKIND) :: xc,yc,zc
       integer(kind=4) :: Or   !to include possible orientations (nodal sources 180915)
@@ -344,13 +344,12 @@ module  FDETYPES_m
       type(fichevol_wires_t) :: Fichero
       real(kind=RKIND_wires) :: Resistance
       real(kind=RKIND_wires) :: Multiplier
-      logical :: soft
       integer(kind=4) :: i,j,k
    end type
 
    type  :: NodalSource_t
       type(fichevol_t) :: Fichero
-      type(XYZlimit_scaled_t), pointer, dimension(:) :: punto
+      type(xyzlimit_scaled_t), pointer, dimension(:) :: punto
       integer(kind=4) :: numpuntos
       logical :: IsInitialValue
       logical :: IsHard
@@ -371,7 +370,7 @@ module  FDETYPES_m
       logical :: orientadoalreves
    end type oriented_point_t
 
-#ifdef CompileWithMTLN   
+#ifdef CompileWithMTLN
    type  :: Multiwires_t
    end type
 #endif
@@ -404,14 +403,14 @@ module  FDETYPES_m
       ! integer(kind=4) :: LextremoI,LextremoJ,LextremoK,RextremoI,RextremoJ,RextremoK !no ncesario: yo luego calculo bien los extremos
       integer(kind=4) :: LeftEnd,RightEnd
    end type Wires_t
-   
+
    type  :: SlantedNode_t
       integer(kind=4) :: index
       real(kind=RKIND_wires) :: x, y, z
       logical                 :: VsourceExists, IsourceExists
       type(source_t), pointer  :: Vsource, Isource
    end type SlantedNode_t
-   
+
    type  :: SlantedWires_t
       real(kind=RKIND_wires) :: radius,R,L,C,P_R,P_L,P_C
       type(WireDispersiveParams_t), allocatable, dimension(:) :: disp
@@ -433,7 +432,7 @@ module  FDETYPES_m
       integer(kind=4) :: Orient = 0 !orientation +iEx, -iEx,+iEy.......
 !deprecado 201222      real(kind=RKIND_wires) :: epr,mur,sigma,sigmam
       real(kind=RKIND_wires) :: R,L,C,DiodB,DiodIsat,Rtime_on,Rtime_off
-      logical :: resistor , inductor , capacitor , diodo 
+      logical :: resistor , inductor , capacitor , diodo
       real(kind=RKIND_wires) ::R_devia,L_devia,C_devia
    end type Lumped_t
 !!!
@@ -445,7 +444,7 @@ module  FDETYPES_m
    type  :: Multiport_t
       integer(kind=4) :: Multiportdir = 0 !orientation +iEx, -iEx,+iEy.......
       character(len=BUFSIZE)                            :: multiportFileZ11,multiportFileZ22,multiportFileZ12,multiportFileZ21
-      real(kind=rkind), dimension( : ), pointer :: epr,mur,sigma,sigmam,width   
+      real(kind=rkind), dimension( : ), pointer :: epr,mur,sigma,sigmam,width
                   !_for_devia 090519
       real(kind=rkind), dimension( : ), pointer :: epr_devia,mur_devia,sigma_devia,sigmam_devia,width_devia
                   !!!
@@ -467,7 +466,7 @@ module  FDETYPES_m
       integer(kind=4) :: esqx1,esqy1,esqz1,esqx2,esqy2,esqz2
       type(fichevol_t) :: Fichero
       integer(kind=4) :: nummodes
-      logical :: isRC 
+      logical :: isRC
    end type planeonde_t
    !
    type  :: Border_t
@@ -516,7 +515,7 @@ module  FDETYPES_m
       integer(kind=4) :: XI,YI,ZI,XE,YE,ZE,What,Node  !los valores finales XE,YE,ZE solo se precisan para las CurrentProbes
       integer(kind=4) :: Xtrancos,Ytrancos,Ztrancos
       type(direction_t), dimension(:), allocatable :: line
-      
+
    end type observable_t
    !
    type  :: Obses_t
@@ -714,12 +713,12 @@ module  FDETYPES_m
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) :: sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
       integer(kind=IKINDMTAG) , allocatable , dimension(:,:,:) :: sggMtag
    end type
-      
+
 
    type :: constants_t
       real(kind=rkind), pointer, dimension( : ) :: g1,g2,gM1,gM2
    contains
-      procedure :: destroy => constants_destroy 
+      procedure :: destroy => constants_destroy
    end type
 
 
@@ -741,29 +740,29 @@ module  FDETYPES_m
 
    ! variables for timestepping solver control
    type :: sim_control_t
-      logical :: simu_devia, resume,saveall,makeholes,& 
-                 connectendings,isolategroupgroups,createmap, & 
-                 groundwires,noSlantedcrecepelo, & 
-                 mibc,ADE,conformalskin,sgbc, sgbcDispersive, sgbccrank, & 
-                 NOcompomur,strictOLD,TAPARRABOS, & 
+      logical :: simu_devia, resume,saveall,makeholes,&
+                 connectendings,isolategroupgroups,createmap, &
+                 groundwires,noSlantedcrecepelo, &
+                 mibc,ADE,conformalskin,sgbc, sgbcDispersive, sgbccrank, &
+                 NOcompomur,strictOLD,TAPARRABOS, &
                  noconformalmapvtk, experimentalVideal, &
                  forceresampled, mur_second,MurAfterPML, &
                  stableradholland,singlefilewrite,NF2FFDecim, &
                  fieldtotl,finishedwithsuccess, &
                  permitscaling,mtlnberenger,niapapostprocess, &
                  stochastic, verbose, dontwritevtk, &
-                 use_mtln_wires, resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
+                 resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
       real(kind=8) :: time_desdelanzamiento
       real(kind=RKIND) :: cfl, attfactorc,attfactorw, alphamaxpar, &
                            alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol, maxSourceValue
       real(kind=rkind_wires) :: factorradius,factordelta
-      
+
       character(len=BUFSIZE) :: nEntradaRoot, inductance_model,wiresflavor, nresumeable2
       character(len=BUFSIZE) :: opcionestotales
-      
-      integer(kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 
+
+      integer(kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,&
                           mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, num_procs
-      
+
       type(MedioExtra_t) :: MEDIOEXTRA
       type(nf2ff_T) :: facesNF2FF
 
@@ -817,7 +816,7 @@ contains
       this%postprocess = .false.
       this%flushXdmf = .false.
       this%flushVTK = .false.
-   end subroutine 
+   end subroutine
 
    subroutine logic_reset(this)
       class(logic_control_t) :: this
@@ -844,7 +843,7 @@ contains
       this%MagneticMedia = .false.
       this%PMLMagneticMedia= .false.
       this%MTLNbundles = .false.
-   end subroutine 
+   end subroutine
 
    subroutine setglobal(iu1,iu2)
        integer(kind=4) :: iu1,iu2
@@ -873,10 +872,10 @@ contains
       prior_TG      =155       !thin Slot has more priority than PEC
       !!!!!se aniade la opcion -prioritizeCOMPOoverPEC para subir su prioridad y poder simular SIVA (sgg 070815)
       if (prioritizeTHINWIRE) then
-        prior_TW   = 1500   !cambiado a 231024 y puesto con maxima prioridad. es solo experimental y por visualizacion    
-      else !opcion correcta. lo anterior es solo experimental y por visualizacion      
-        prior_TW   = 15   !prioridad del thin-wire por debajo de todos (excepto del background)  
-      end if  
+        prior_TW   = 1500   !cambiado a 231024 y puesto con maxima prioridad. es solo experimental y por visualizacion
+      else !opcion correcta. lo anterior es solo experimental y por visualizacion
+        prior_TW   = 15   !prioridad del thin-wire por debajo de todos (excepto del background)
+      end if
 !      prior_pmlbody = prior_TW-1 !el hilo tiene prioridad sobre el pmlbody (prueba HOLD coax sgg 251019)
       prior_pmlbody = prior_BV+1 !el pml body puede ser penetrado por todo 311019 sgg
       !!!!
@@ -886,18 +885,18 @@ contains
          prior_CS=prior_PEC-2       !composites has lower than PEC to properly handle junctions PEC-composite !(ss's 210312 mail)
       end if
       if (prioritizeISOTROPICBODYoverall) then  ! Isotropic body
-         prior_IB      = 200   !SOLO PARA EL CASO DEL SIVA SACAR BOCADOS DE vacio 
+         prior_IB      = 200   !SOLO PARA EL CASO DEL SIVA SACAR BOCADOS DE vacio
       else
          prior_IB      =   20 !EL SUSUAL
-      end if 
+      end if
       return
-      
+
 
    end subroutine set_priorities
-   
+
    function taglist_getFaceTag(this, field, i, j, k) result(res)
       class(taglist_t) :: this
-      integer(kind=IKINDMTAG) :: res 
+      integer(kind=IKINDMTAG) :: res
       integer(kind = 4) :: field, i, j, k
       select case(field)
       case(iHx)
@@ -911,7 +910,7 @@ contains
 
    function taglist_getEdgeTag(this, field, i, j, k) result(res)
       class(taglist_t) :: this
-      integer(kind=IKINDMTAG) :: res 
+      integer(kind=IKINDMTAG) :: res
       integer(kind = 4) :: field, i, j, k
       select case(field)
       case(iEx)
@@ -924,7 +923,7 @@ contains
    end function
 
    logical function direction_eq(a,b)
-      class(direction_t), intent(in) :: a,b 
+      class(direction_t), intent(in) :: a,b
       direction_eq = .true.
       direction_eq = direction_eq .and. (a%x == b%x)
       direction_eq = direction_eq .and. (a%y == b%y)

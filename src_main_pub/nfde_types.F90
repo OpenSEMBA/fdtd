@@ -1,8 +1,8 @@
 module NFDETypes_m
    !
    use FDETYPES_m
-#ifdef CompileWithMTLN   
-   USE mtln_types_m, ONLY: mtln_t
+#ifdef CompileWithMTLN
+   use mtln_types_m
 #endif
    use conformal_types_m
    !
@@ -14,7 +14,7 @@ module NFDETypes_m
    ! global variable stochastic
    ! MATERIALS
    real(kind=RK), parameter :: SIGMA_PEC = 1e19_RK
-   real(kind=RK), parameter :: SIGMA_PMC = 1e19_RK 
+   real(kind=RK), parameter :: SIGMA_PMC = 1e19_RK
    ! PROBES
    !!!!
    integer(kind=4), parameter :: NP_T1_PLAIN = 0
@@ -65,8 +65,8 @@ module NFDETypes_m
    integer(kind=4), parameter :: Dielectric = 24
    integer(kind=4), parameter :: PMLbody = 25
    ! conformal
-   INTEGER (KIND=4), PARAMETER :: isVolume = 1
-   INTEGER (KIND=4), PARAMETER :: isSurface = 2
+   integer(kind=4), parameter :: isVolume = 1
+   integer(kind=4), parameter :: isSurface = 2
    !------------------------------------------------------------------------------
    ! TYPES
    !------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ module NFDETypes_m
       integer(kind=4) :: Or = 0 !field orientation nuevo 2015
       character(len=BUFSIZE) :: tag
    end type coords_scaled_t
-   !-----------------> Material_t Types
+   !-----------------> Material Types
    !------------------------------------------------------------------------------
    ! Basic constants for materials
    !------------------------------------------------------------------------------
@@ -128,7 +128,7 @@ module NFDETypes_m
       type(triangle_t), dimension(:), allocatable :: triangles
       type(interval_t), dimension(:), allocatable :: intervals
       character(len=bufsize) :: tag
-   end type 
+   end type
 
    type, public :: ConformalPECRegions_t
       type(ConformalPECElements_t), dimension(:), pointer :: volumes => null()
@@ -314,8 +314,8 @@ module NFDETypes_m
       real(kind=RK), dimension(:), pointer :: thk_devia
       !
       integer(kind=4) :: nc = 0
-      character(len=BUFSIZE) :: files = ' ' 
-      integer(kind=4) :: numcapas  
+      character(len=BUFSIZE) :: files = ' '
+      integer(kind=4) :: numcapas
    end type LossyThinSurface_t
    !------------------------------------------------------------------------------
    ! Locates all the different Comp media found
@@ -324,7 +324,7 @@ module NFDETypes_m
       type(LossyThinSurface_t), dimension(:), pointer :: cs => NULL ()
       integer(kind=4) :: length = 0
       integer(kind=4) :: length_max = 0
-      INTEGER (KIND=4) :: nC_max = 0 !cota de todos los nc de LossyThinSurface_t
+      integer(kind=4) :: nC_max = 0 !cota de todos los nc de LossyThinSurface
    end type LossyThinSurfaces_t
    !------------------------------------------------------------------------------
    ! Component for Thin Wires there is a list of this inside the component
@@ -341,8 +341,8 @@ module NFDETypes_m
       character(len=BUFSIZE) :: tag
    end type ThinWireComp_t
    !------------------------------------------------------------------------------
-   ! ThinWire_t component that defines the overall properties of the definition
-   ! of ThinWires_t
+   ! ThinWire component that defines the overall properties of the definition
+   ! of ThinWires
    !------------------------------------------------------------------------------
    type, public :: ThinWire_t
       type(ThinWireComp_t), dimension(:), pointer :: twc => NULL ()
@@ -393,8 +393,8 @@ module NFDETypes_m
       character(len=BUFSIZE) :: tag
    end type SlantedWireComp_t
    !------------------------------------------------------------------------------
-   ! ThinWire_t component that defines the overall properties of the definition
-   ! of ThinWires_t
+   ! ThinWire component that defines the overall properties of the definition
+   ! of ThinWires
    !------------------------------------------------------------------------------
    type, public :: SlantedWire_t
       type(SlantedWireComp_t), dimension(:), pointer :: swc => NULL ()
@@ -430,7 +430,7 @@ module NFDETypes_m
       type(SlantedWire_t), dimension(:), pointer :: sw => NULL ()
       integer(kind=4) :: n_sw = 0
       integer(kind=4) :: n_sw_max = 0
-   END TYPE SlantedWiresInfo_t
+   end type
    !--------------------------------------------------------------------------
    ! Component for Thin Slots there is a list of this inside the component
    ! that defines the whole Thin Slot Reference
@@ -445,8 +445,8 @@ module NFDETypes_m
       character(len=BUFSIZE) :: tag
    end type ThinSlotComp_t
    !--------------------------------------------------------------------------
-   ! ThinSlot_t component that defines the overall properties of the definition
-   ! of ThinSlots_t in ORIGINAL
+   ! ThinSlot component that defines the overall properties of the definition
+   ! of ThinSlots in ORIGINAL
    !--------------------------------------------------------------------------
    type, public :: ThinSlot_t
       type(ThinSlotComp_t), dimension(:), pointer :: tgc => NULL ()
@@ -579,7 +579,7 @@ module NFDETypes_m
    ! Abstract class which performs the dynamic dispatching
    !------------------------------------------------------------------------------
    type, public :: abstractSonda_t
-      integer(kind=4) :: n_FarField = 0 
+      integer(kind=4) :: n_FarField = 0
       integer(kind=4) :: n_Electric = 0
       integer(kind=4) :: n_Magnetic = 0
       integer(kind=4) :: n_NormalElectric = 0
@@ -727,11 +727,11 @@ module NFDETypes_m
    ! their size is equal to 1 then there is a constant increment. If it is not
    ! then it will be one for each cell position.
    !! WARNING
-   !! Even though, Type MatrizMedios_t defines the total number of cell for each
+   !! Even though, Type MatrizMedios defines the total number of cell for each
    !! axis. n[XYZ] defines it too partially. Meaning that if there is a
    !! constant increment, the pointer will be a scalar. However, when it is
    !! variable the pointer will have the same size as total[XYZ] in the
-   !! MatrizMedios_t type and for each vector position the increment for those
+   !! MatrizMedios type and for each vector position the increment for those
    !! Cells
    !------------------------------------------------------------------------------
    type Desplazamiento_t
@@ -750,13 +750,13 @@ module NFDETypes_m
    ! Parameters needed for the parser
    !------------------------------------------------------------------------------
    type, public :: Parseador_t
-      character(len=BUFSIZE) :: switches=' '  
+      character(len=BUFSIZE) :: switches=' '
       ! Basics
       type(NFDEGeneral_t), pointer :: general => NULL ()
       type(MatrizMedios_t), pointer :: matriz => NULL ()
       type(Desplazamiento_t), pointer :: despl => NULL ()
       type(Frontera_t), pointer :: front => NULL ()
-      ! Materials_t
+      ! Materials
       type(Materials_t), pointer :: Mats => NULL ()
       type(PECRegions_t), pointer :: pecRegs => NULL ()
       type(PECRegions_t), pointer :: pmcRegs => NULL ()
@@ -773,17 +773,17 @@ module NFDETypes_m
       type(MasSondas_t), pointer :: Sonda => NULL ()
       type(BloqueProbes_t), pointer :: BloquePrb => NULL ()
       type(VolProbes_t), pointer :: VolPrb => NULL ()
-      ! Thin Elements                         
+      ! Thin Elements
       type(ThinWires_t), pointer :: tWires => NULL ()
       type(SlantedWiresInfo_t), pointer :: sWires => NULL ()
       type(ThinSlots_t), pointer :: tSlots => NULL ()
       ! Conformal
       type(ConformalPECRegions_t), pointer :: conformalRegs => NULL()
 #ifdef CompileWithMTLN
-      type(mtln_t), pointer :: mtln => NULL () 
+      type(mtln_t), pointer :: mtln => NULL ()
 #endif
    end type Parseador_t
-   
+
    !---> definicion de tipos
    type, public :: t_linea_t
       integer(kind=4) :: LEN
@@ -791,7 +791,6 @@ module NFDETypes_m
    end type t_linea_t
    !--->
    type, public :: t_NFDE_FILE_t
-      INTEGER (KIND=4) mpidir !x=1,y=2,z=3
       integer(kind=8) :: targ
       !--->
       integer(kind=8) :: numero
@@ -805,4 +804,4 @@ contains
 
 end module NFDETypes_m
 
-    
+

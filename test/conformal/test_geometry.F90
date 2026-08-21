@@ -309,13 +309,13 @@ integer function test_geometry_triangle_normal() bind(C) result(err)
     type(triangle_t) :: t
     err = 0
 
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,0.0,1.0]; t%vertices(3)%position = [0.0,1.0,0.0]
     if (t%getFace() /= FACE_X) err = err + 1
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,0.0,1.0]; t%vertices(3)%position = [1.0,0.0,0.0]
     if (t%getFace() /= FACE_Y) err = err + 1
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,1.0,0.0]; t%vertices(3)%position = [1.0,0.0,0.0]
     if (t%getFace() /= FACE_Z) err = err + 1
 
@@ -332,19 +332,19 @@ integer function test_geometry_triangle_edges() bind(C) result(err)
     type(triangle_t) :: t
     type(side_t), dimension(3) :: sides
     err = 0
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,0.0,1.0]; t%vertices(3)%position = [0.0,1.0,0.0]
     sides = t%getSides()
     if (sides(1)%getEdge() /= EDGE_Z) err = err + 1
     if (sides(2)%getEdge() /= NOT_ON_EDGE) err = err + 1
     if (sides(3)%getEdge() /= EDGE_Y) err = err + 1
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,0.0,1.0]; t%vertices(3)%position = [1.0,0.0,0.0]
     sides = t%getSides()
     if (sides(1)%getEdge() /= EDGE_Z) err = err + 1
     if (sides(2)%getEdge() /= NOT_ON_EDGE) err = err + 1
     if (sides(3)%getEdge() /= EDGE_X) err = err + 1
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,1.0,0.0]; t%vertices(3)%position = [1.0,0.0,0.0]
     sides = t%getSides()
     if (sides(1)%getEdge() /= EDGE_Y) err = err + 1
@@ -368,15 +368,15 @@ integer function test_geometry_triangle_cell() bind(C) result(err)
     type(side_t), dimension(3) :: sides
     integer(kind=4), dimension(3) :: cell
     err = 0
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,0.0,1.0]; t%vertices(3)%position = [0.0,1.0,0.0]
     cell = [0.0,0.0,0.0]
     if (all(t%getCell() .eq. cell) .eqv. .false.) err = err + 1
-    
+
     t%vertices(1)%position = [1.0,0.0,0.0]; t%vertices(2)%position = [1.0,0.0,1.0]; t%vertices(3)%position = [1.0,1.0,0.0]
     cell = [1.0,0.0,0.0]
     if (all(t%getCell() .eq. cell) .eqv. .false.) err = err + 1
-    
+
     t%vertices(1)%position = [1.0,0.0,1.0]; t%vertices(2)%position = [1.0,0.0,2.0]; t%vertices(3)%position = [1.0,1.0,1.0]
     cell = [1.0,0.0,1.0]
     if (all(t%getCell() .eq. cell) .eqv. .false.) err = err + 1
@@ -393,7 +393,7 @@ integer function test_geometry_elements_in_cell() bind(C) result(err)
 
     use cell_map_m
     use geometry_m
-    implicit none 
+    implicit none
 
     type(triangle_map_t) :: tri_map
     type(side_map_t) :: side_map
@@ -428,7 +428,7 @@ end function
 integer function test_geometry_map_sides() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(triangle_map_t) :: tri_map
     type(side_map_t) :: side_map
@@ -480,7 +480,7 @@ end function
 integer function test_geometry_path() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(triangle_map_t) :: tri_map
     type(side_map_t) :: side_map
@@ -528,7 +528,7 @@ end function
 integer function test_geometry_vertex_vertex_contour() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -563,7 +563,7 @@ integer function test_geometry_vertex_vertex_contour() bind(C) result(err)
     cell = triangles(1)%getCell()
     call buildMapOfSidesOnFaceOrEdgeFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
-    
+
     sides_on_face = getSidesOnFace(sides, FACE_Z)
     path = getPathOnFace(sides_on_face)
     init = path(1)%init
@@ -580,7 +580,7 @@ end function
 integer function test_geometry_vertex_side_contour() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -633,7 +633,7 @@ end function
 integer function test_geometry_side_vertex_contour() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -686,7 +686,7 @@ end function
 integer function test_geometry_side_side_contour() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -738,7 +738,7 @@ end function
 integer function test_geometry_side_side_contour_2() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -796,7 +796,7 @@ end function
 integer function test_geometry_side_side_contour_3() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -835,14 +835,14 @@ integer function test_geometry_side_side_contour_3() bind(C) result(err)
     if (.not. all(contour(3)%end%position .eq. c4%position)) err = err + 1
     if (.not. all(contour(4)%init%position .eq. c4%position)) err = err + 1
     if (.not. all(contour(4)%end%position .eq. c1%position)) err = err + 1
-    
+
 end function
 
 
 integer function test_geometry_areas() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -858,7 +858,7 @@ integer function test_geometry_areas() bind(C) result(err)
     c1 = coord_t(position = [1.0,0.0,0.0],   id = 1)
     c2 = coord_t(position = [0.0,1.0,0.0],  id=  2)
     c3 = coord_t(position = [0.0,0.0,1.0], id=  3)
-    
+
     allocate(triangles(1))
     triangles(1) = triangle_t(vertices = [c1,c2,c3])
     cell = triangles(1)%getCell()
@@ -883,7 +883,7 @@ integer function test_geometry_areas() bind(C) result(err)
     contour = buildSidesContour(path)
     area = contourArea(contour)
     if (area /= 0.25) err = err + 1
-    
+
     call side_map%unset(key(cell))
     triangles(1)%vertices(2)%position = [0.0,0.25,0.0]
     call buildMapOfSidesOnFaceOrEdgeFromTrisNotOnFaces(side_map, triangles)

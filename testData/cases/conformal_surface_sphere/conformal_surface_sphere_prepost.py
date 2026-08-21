@@ -52,7 +52,7 @@ for n in range(1,50):
 rcs = np.abs(rcs)**2*(l**2/(4*np.pi))
 
 
-# %% plot results 
+# %% plot results
 plt.loglog(f, rcs/(np.pi*a**2), '.', label='analytical')
 plt.loglog(f90_0, rg90_0/(np.pi*(a)**2), '--', label='Structured')
 plt.xlabel('f [Hz]')
@@ -61,7 +61,7 @@ plt.title('Sphere radar cross section')
 plt.hlines(1,0.0,7e8, colors ='red', linestyles='--')
 plt.legend()
 
-# %% plot results 
+# %% plot results
 plt.plot(ex['time']*1e6, ex['field'], label=r'$E_x$')
 plt.plot(ey['time']*1e6, ey['field'], label=r'$E_y$')
 plt.plot(ez['time']*1e6, ez['field'], label=r'$E_z$')
@@ -69,4 +69,3 @@ plt.xlabel(r't [$\mu$s]')
 plt.ylabel(r'|E|')
 plt.title('Field inside hollow PEC sphere')
 plt.legend()
-

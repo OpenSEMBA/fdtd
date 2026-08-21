@@ -7,9 +7,9 @@ module smbjson_testingTools
 
    character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'
    character(len=*), parameter :: INPUT_EXAMPLES='input_examples/'
-   
+
 contains
-   subroutine expect_eq_int(err, ex, pr, msg) 
+   subroutine expect_eq_int(err, ex, pr, msg)
       integer, intent(inout) :: err
       integer, intent(in) :: ex, pr
       character(len=*), intent(in), optional :: msg
@@ -22,7 +22,7 @@ contains
       logical, optional, intent(in) :: ignoreRegions
       logical :: checkRegions
 
-      if (.not. present(ignoreRegions)) then 
+      if (.not. present(ignoreRegions)) then
          checkRegions = .true.
       else
          if (ignoreRegions) then
@@ -36,7 +36,7 @@ contains
       if (.not. ex%matriz == pr%matriz)   call testFails(err, 'Expected and read "media matrix" do not match')
       if (.not. ex%despl == pr%despl)     call testFails(err, 'Expected and read "grid" do not match')
       if (.not. ex%front == pr%front)     call testFails(err, 'Expected and read "boundary" do not match')
-      
+
       ! Materials
       if (.not. ex%Mats == pr%Mats)       call testFails(err, 'Expected and read "materials" do not match')
       if (checkRegions) then
@@ -45,24 +45,24 @@ contains
          if (.not. ex%dielRegs == pr%dielRegs) call testFails(err, 'Expected and read "dielectric regions" do not match')
          if (.not. ex%lossyThinSurfs == pr%lossyThinSurfs) call testFails(err, 'Expected and read "lossy thin surfaces" do not match')
       end if
-      
+
       ! Sources
       if (.not. ex%plnSrc == pr%plnSrc) call testFails(err, 'Expected and read "planewave sources" do not match')
       if (.not. ex%nodSrc == pr%nodSrc) call testFails(err, 'Expected and read "nodal sources" do not match')
-      
+
       ! Probes
       if (.not. ex%oldSONDA == pr%oldSonda)   call testFails(err, 'Expected and read "old probes" do not match')
       if (.not. ex%sonda == pr%sonda)         call testFails(err, 'Expected and read "new probes" do not match')
       if (.not. ex%BloquePrb == pr%BloquePrb) call testFails(err, 'Expected and read "block probes" do not match')
       if (.not. ex%VolPrb == pr%VolPrb)       call testFails(err, 'Expected and read "vol probes" do not match')
-      
+
       ! Thin elements
       if (.not. ex%tSlots == pr%tSlots) call testFails(err, 'Expected and read "thin slots" do not match')
       if (.not. ex%tWires == pr%tWires) call testFails(err, 'Expected and read "thin wires" do not match')
 #ifdef CompileWithMTLN
       if (.not. ex%mtln == pr%mtln) call testFails(err, 'Expected and read mtln types do not match')
 #endif
-      if (err == 0) write(*,*) "Read and expected inputs are equal."      
+      if (err == 0) write(*,*) "Read and expected inputs are equal."
    end subroutine
 
    subroutine testFails(err, msg)

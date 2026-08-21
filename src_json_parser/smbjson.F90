@@ -24,13 +24,13 @@ module smbjson_m
 
    implicit none
 
-   integer, private, parameter  :: MAX_LINE = BUFSIZE
-   character (len=*), parameter :: TAG_MATERIAL = 'material'
-   character (len=*), parameter :: TAG_LAYER = 'layer'
+   integer, private, parameter :: MAX_LINE = BUFSIZE
+   character(len=*), parameter :: TAG_MATERIAL = 'material'
+   character(len=*), parameter :: TAG_LAYER = 'layer'
 
    type, public :: parser_t
       private
-      character (len=:), allocatable :: filename
+      character(len=:), allocatable :: filename
       type(json_file), pointer :: jsonfile => null()
       type(json_core), pointer :: core => null()
       type(json_value), pointer :: root => null()
@@ -106,13 +106,14 @@ module smbjson_m
       character(:), allocatable :: name
       integer :: materialId
       integer, dimension(:), allocatable :: elementIds
-      character(:), allocatable :: matAssType
+      character(len=:), allocatable :: matAssType
       ! Cable specific fields.
       integer :: initialTerminalId = -1
       integer :: endTerminalId = -1
       integer :: initialConnectorId = -1
       integer :: endConnectorId = -1
       integer :: containedWithinElementId = -1
+      ! Optional total resistance override (replaces resistancePerMeter from material).
       real(kind=RKIND), dimension(:), allocatable :: totalResistance
       logical :: hasTotalResistance = .false.
    end type
@@ -234,7 +235,7 @@ contains
 
       subroutine addElements(mesh)
          type(mesh_t), intent(inout) :: mesh
-         character (len=:), allocatable :: elementType
+         character(len=:), allocatable :: elementType
          type(json_value), pointer :: jes, je
          integer :: id, i
          type(node_t) :: node
@@ -284,12 +285,12 @@ contains
                   call WarnErrReport('Invalid element type', .true.)
                end select
             end do
-         end if
+          end if
       end subroutine
 
       function readCellIntervals(place, path) result(res)
          type(json_value), pointer, intent(in) :: place
-         character (len=*), intent(in) :: path
+         character(len=*), intent(in) :: path
          type(cell_interval_t), dimension(:), allocatable :: res
 
          type(json_value), pointer :: intervalsPlace, interval
@@ -315,7 +316,7 @@ contains
 
       function readTriangles(place, path) result(res)
          type(json_value), pointer, intent(in) :: place
-         character (len=*), intent(in) :: path
+         character(len=*), intent(in) :: path
          type(triangle_t), dimension(:), allocatable :: res
 
          type(json_value), pointer :: triangles, triangle_ptr
@@ -375,7 +376,7 @@ contains
 
    function readAdditionalArguments(this) result (res)
       class (parser_t) :: this
-      character (len=BUFSIZE) :: res
+      character(len=BUFSIZE) :: res
       res = this%getStrAt(this%root, J_GENERAL//'.'//J_GEN_ADDITIONAL_ARGUMENTS, default = '')
    end function
 
@@ -383,16 +384,16 @@ contains
       class(parser_t) :: this
       type(NFDEGeneral_t) :: res
       res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP, default = 0.0_RKIND)
-      if (res%dt < 0) call WarnErrReport('timeStep cannot be negative', .true.)
+      if (res%dt < 0) call WarnErrReport('timStep cannot be negative', .true.)
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
-      if (res%nmax <= 0) call WarnErrReport('numberOfSteps has to be positive', .true.)
+      if (res%nmax <=0) call WarnErrReport('numberOfSteps has to be positive', .true.)
       res%mtlnProblem = this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
    end function
 
    function readMediaMatrix(this) result(res)
       class(parser_t) :: this
       type(MatrizMedios_t) :: res
-      character (len=*), parameter :: P = J_MESH//'.'//J_GRID//'.'//J_GRID_NUMBER_OF_CELLS
+      character(len=*), parameter :: P = J_MESH//'.'//J_GRID//'.'//J_GRID_NUMBER_OF_CELLS
       res%totalX = this%getIntAt(this%root, P//'(1)') + 1
       res%totalY = this%getIntAt(this%root, P//'(2)') + 1
       res%totalZ = this%getIntAt(this%root, P//'(3)') + 1
@@ -402,9 +403,9 @@ contains
       class(parser_t) :: this
       type(Desplazamiento_t) :: res
       real, dimension(:), allocatable :: vec
-      character (len=*), parameter :: P = J_MESH//'.'//J_GRID
-
       integer :: nX, nY, nZ
+
+      character(len=*), parameter :: P = J_MESH//'.'//J_GRID
 
       nX = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(1)')
       nY = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(2)')
@@ -433,16 +434,16 @@ contains
    contains
       subroutine assignDes(path, dest, n)
          character(kind=CK, len=*) :: path
-         real (kind=rkind), dimension(:), pointer :: dest
+         real(kind=RKIND), dimension(:), pointer :: dest
          real(kind=RKIND), dimension(:), allocatable :: vec
-         integer (kind=4), intent(inout) :: n
+         integer(kind=4), intent(inout) :: n
          logical :: found = .false.
 
-         vec= this%getRealsAt(this%root, path, found)
+         vec = this%getRealsAt(this%root, path, found)
 
          if (.not. found) then
             call WarnErrReport('Error reading grid: steps not found.', .true.)
-         endif
+         end if
          if (size(vec) /= 1 .and. size(vec) /= n) then
             call WarnErrReport( 'Error reading grid: steps must be arrays of size 1 (for regular grids) or size equal to the number of cells.', .true.)
          end if
@@ -474,7 +475,7 @@ contains
    function readBoundary(this) result (res)
       class(parser_t) :: this
       type(Frontera_t) :: res
-      character (len=:), allocatable :: bdrType
+      character(len=:), allocatable :: bdrType
       type(json_value), pointer :: bdrs
       logical :: found
       character(len=*), parameter :: errorMsgInit = "ERROR reading boundary: "
@@ -572,14 +573,14 @@ contains
 
    function buildPECPMCRegions(this, matType) result(res)
       class(parser_t) :: this
-      character (len=*), intent(in) :: matType
+      character(len=*), intent(in) :: matType
       type(PECRegions_t) :: res
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(coords_t), dimension(:), pointer :: cs
       integer :: i
 
-      mAs = this%getMaterialAssociations([matType], [ &
-         '-'//J_CONF_SUBTYPE_SURFACE, J_ELEM_TYPE_CELL//'    ', '-'//J_CONF_SUBTYPE_VOLUME//' '])
+      ! mAs = this%getMaterialAssociations([matType],[J_ELEM_TYPE_CELL])
+      mAs = this%getMaterialAssociations([matType],['-'//J_CONF_SUBTYPE_SURFACE, J_ELEM_TYPE_CELL//'    ', '-'//J_CONF_SUBTYPE_VOLUME//' '])
       block
          type(coords_t), dimension(:), pointer :: emptyCoords
          if (size(mAs) == 0) then
@@ -642,7 +643,7 @@ contains
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(conformal_region_t) :: cR
       type(triangle_t), dimension(:), allocatable :: aux_tris
-      character (len=:), allocatable :: tagName
+      character(len=:), allocatable :: tagName
       integer :: i, j
       logical :: found
 
@@ -691,7 +692,7 @@ contains
       subroutine appendRegion(regions, region, tagName)
          type(ConformalPECElements_t), dimension(:), pointer :: regions
          type(conformal_region_t), intent(in) :: region
-         character (len=:), allocatable, intent(in) :: tagName
+         character(len=:), allocatable, intent(in) :: tagName
 
          type(ConformalPECElements_t), dimension(:), allocatable :: aux
          integer :: i
@@ -836,8 +837,8 @@ contains
          ! Fills rest of dielectric data.
          res%sigma  = this%getRealAt(matPtr%p, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
          res%sigmam = this%getRealAt(matPtr%p, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0_RKIND)
-         res%eps    = this%getRealAt(matPtr%p, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND)*EPSILON_VACUUM
-         res%mu     = this%getRealAt(matPtr%p, J_MAT_REL_PERMEABILITY, default=1.0_RKIND)*MU_VACUUM
+         res%eps    = this%getRealAt(matPtr%p, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND) * EPSILON_VACUUM
+         res%mu     = this%getRealAt(matPtr%p, J_MAT_REL_PERMEABILITY, default=1.0_RKIND) * MU_VACUUM
 
       end function
 
@@ -888,6 +889,10 @@ contains
             end if
             res%Rtime_on = this%getRealAt(matPtr%p, J_MAT_LUMPED_STARTING_TIME, default=0.0_RKIND)
             res%Rtime_off = this%getRealAt(matPtr%p, J_MAT_LUMPED_END_TIME, default=1.0_RKIND)
+            if (res%Rtime_on < 0 .or. res%Rtime_off <0) then
+               write(errorMsg,'(A)') errorMsgInit, mA%materialId, " starting or end time is negative"
+               call WarnErrReport('', .true.)
+            end if
           case (J_MAT_LUMPED_MODEL_INDUCTOR)
             res%inductor = .true.
             res%L = this%getRealAt(matPtr%p, J_MAT_LUMPED_INDUCTANCE, found)
@@ -938,9 +943,9 @@ contains
       type(materialAssociation_t), intent(in) :: mA
       type(coords_t), dimension(:), pointer :: res
       integer, intent(in) :: cellType
-      character (len=:), allocatable :: tagName
+      character(len=:), allocatable :: tagName
       type(coords_t), dimension(:), allocatable :: newCoords
-      type (cell_region_t) :: cR
+      type(cell_region_t) :: cR
       integer :: nCs
       integer :: e, jIni, jEnd
 
@@ -1003,7 +1008,9 @@ contains
       end do
 
       do i = 1, nLossySurfaces
-         res%nC_max = max(res%nC_max, size(res%cs(i)%c))
+         if (res%nC_max < size(res%cs(i)%c)) then
+            res%nC_max = size(res%cs(i)%c)
+         end if
       end do
 
    contains
@@ -1011,7 +1018,7 @@ contains
          type(materialAssociation_t), intent(in) :: mA
          type(LossyThinSurface_t) :: res
          logical :: found, hasAbsPermittivity, hasAbsPermeability
-         character (len=*), parameter :: errorMsgInit = "ERROR reading lossy thin surface: "
+         character(len=*), parameter :: errorMsgInit = "ERROR reading lossy thin surface: "
          integer :: i
          type(json_value_ptr_t) :: mat
          type(json_value), pointer :: layer
@@ -1039,11 +1046,11 @@ contains
             call this%core%get_child(layers, i, layer)
             res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
             res%sigmam(i) = this%getRealAt(layer, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0_RKIND)
-            res%eps(i) = this%getRealAt(layer, J_MAT_ABS_PERMITTIVITY, hasAbsPermittivity)
+            res%eps(i)    = this%getRealAt(layer, J_MAT_ABS_PERMITTIVITY, hasAbsPermittivity)
             if (.not. hasAbsPermittivity) then
                res%eps(i) = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND) * EPSILON_VACUUM
             end if
-            res%mu(i) = this%getRealAt(layer, J_MAT_ABS_PERMEABILITY, hasAbsPermeability)
+            res%mu(i)     = this%getRealAt(layer, J_MAT_ABS_PERMEABILITY, hasAbsPermeability)
             if (.not. hasAbsPermeability) then
                res%mu(i) = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0_RKIND) * MU_VACUUM
             end if
@@ -1099,7 +1106,7 @@ contains
          type(PlaneWave_t) :: res
          type(json_value), pointer :: pw
 
-         character (len=:), allocatable :: label
+         character(len=:), allocatable :: label
          logical :: found
 
          res%nombre_fichero = trim(adjustl(this%getStrAt(pw,J_SRC_MAGNITUDE_FILE)))
@@ -1110,22 +1117,19 @@ contains
          res%phi = this%getRealAt(pw, J_SRC_PW_DIRECTION//'.'//J_SRC_PW_PHI)
          res%alpha = this%getRealAt(pw, J_SRC_PW_POLARIZATION//'.'//J_SRC_PW_THETA)
          res%beta = this%getRealAt(pw, J_SRC_PW_POLARIZATION//'.'//J_SRC_PW_PHI)
-         res%isRC = .false.
-         res%nummodes = 1
-         res%incertmax = 0.0_RKIND
-
          block
             type(cell_interval_t), dimension(:), allocatable :: cellIntervals
             type(coords_t), dimension(:), allocatable :: nfdeCoords
             cellIntervals = this%getSingleVolumeInElementsIds(pw)
-            if (size(cellIntervals) == 0) then
-               call WarnErrReport('Planewave elementIds must define one non-empty volume.', .true.)
-               return
-            end if
+            if (size(cellIntervals) == 0) return
             nfdeCoords = cellIntervalsToCoords(cellIntervals)
             res%coor1 = [nfdeCoords(1)%Xi, nfdeCoords(1)%Yi, nfdeCoords(1)%Zi]
             res%coor2 = [nfdeCoords(1)%Xe, nfdeCoords(1)%Ye, nfdeCoords(1)%Ze]
          end block
+
+         res%isRC = .false.
+         res%nummodes = 1
+         res%incertmax = 0.0_RKIND
       end function
    end function
 
@@ -1169,7 +1173,7 @@ contains
          type(Curr_Field_Src_t) :: res
          type(json_value), pointer :: jns, entry
          integer, dimension(:), allocatable :: elementIds
-         character (len=BUFSIZE) :: nodalSourceName
+         character(len=BUFSIZE) :: nodalSourceName
          type(coords_scaled_t), dimension(:), pointer :: allCoords
          integer :: j, cnt_c1p, cnt_c2p
 
@@ -1239,7 +1243,7 @@ contains
       type(json_value), pointer :: allProbes
       type(json_value_ptr_t), dimension(:), allocatable :: ps
       ! The only oldProbe present in the format is the far field.
-      character (len=*), dimension(1), parameter :: validTypes = [J_PR_TYPE_FARFIELD]
+      character(len=*), dimension(1), parameter :: validTypes = [J_PR_TYPE_FARFIELD]
       integer :: i
       logical :: found
 
@@ -1265,7 +1269,7 @@ contains
          type(abstractSonda_t) :: res
          type(json_value), pointer :: p
          type(Sonda_t), pointer :: ff
-         character (len=:), allocatable :: outputName
+         character(len=:), allocatable :: outputName
          logical :: transferFunctionFound
          type(domain_t) :: domain
 
@@ -1283,9 +1287,9 @@ contains
          if (domain%type2 /= NP_T2_FREQ) then
             call WarnErrReport("Only frequency domain is accepted for far field probes.", .true.)
          end if
-         ff%tstart = 0.0
-         ff%tstop = 0.0
-         ff%tstep = 0.0
+         ff%tstart = 0.0_RKIND
+         ff%tstop = 0.0_RKIND
+         ff%tstep = 0.0_RKIND
          ff%fstart = domain%fstart
          ff%fstop = domain%fstop
          ff%fstep = domain%fstep
@@ -1293,7 +1297,7 @@ contains
          block
             logical :: sourcesFound
             type(json_value), pointer :: sources, src
-            character (len=:), allocatable :: fn
+            character(len=:), allocatable :: fn
 
             fn = this%getStrAt(p, J_PR_DOMAIN//J_PR_DOMAIN_MAGNITUDE_FILE, found=transferFunctionFound)
             if (.not. transferFunctionFound) then
@@ -1347,9 +1351,9 @@ contains
       subroutine readDirection(p, label, initial, final, step)
          type(json_value), pointer :: p
          type(json_value), pointer :: dir
-         character (len=*), intent(in) :: label
+         character(len=*), intent(in) :: label
          logical :: found
-         real (kind=rkind), intent(inout) :: initial, final, step
+         real(kind=rkind), intent(inout) :: initial, final, step
 
          call this%core%get(p, label, dir, found=found)
          if (.not. found) then
@@ -1368,10 +1372,10 @@ contains
       type(json_value_ptr_t), dimension(:), allocatable :: ps
 
       integer :: i
-      character (len=*), dimension(2), parameter :: validTypes = &
+      character(len=*), dimension(2), parameter :: validTypes = &
          [J_PR_TYPE_POINT, J_PR_TYPE_LINE]
       logical :: found
-      character (len=:), allocatable :: fieldLbl, probeLbl
+      character(len=:), allocatable :: probeLbl
       integer :: filtered_size, n
 
       call this%core%get(this%root, J_PROBES, allProbes, found)
@@ -1387,7 +1391,6 @@ contains
 
       filtered_size = 0
       do i=1, size(ps)
-         fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
          if (isMoreProbe(ps(i)%p)) then
             filtered_size = filtered_size + 1
          end if
@@ -1396,7 +1399,6 @@ contains
       n = 1
       allocate(res%collection(filtered_size))
       do i=1, size(ps)
-         fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
          if (isMoreProbe(ps(i)%p)) then
             probeLbl = this%getStrAt(ps(i)%p, J_TYPE, default=J_FIELD_ELECTRIC)
             if (probeLbl == J_PR_TYPE_POINT) then
@@ -1412,14 +1414,15 @@ contains
       res%length = size(res%collection)
       res%length_max = size(res%collection)
       do i=1, size(res%collection)
-         if (size(res%collection(i)%cordinates) > res%len_cor_max) then
-            res%len_cor_max = size(res%collection(i)%cordinates)
+          if (size(res%collection(i)%cordinates) > res%len_cor_max) then
+              res%len_cor_max = size(res%collection(i)%cordinates)
          end if
       end do
    contains
       logical function isMoreProbe(p)
          type(json_value), pointer :: p
-         isMoreProbe = isPointProbe(p) .or. isLineProbe(p)
+         isMoreProbe = isPointProbe(p) &
+            .or. isLineProbe(p)
       end function
 
       logical function isLineProbe(p)
@@ -1429,7 +1432,7 @@ contains
 
       logical function isPointProbe(p)
          type(json_value), pointer :: p
-         character (len=:), allocatable :: typeLabel, fieldLabel
+         character(len=:), allocatable :: typeLabel, fieldLabel
          logical :: found
 
          typeLabel = this%getStrAt(p, J_TYPE, found=found)
@@ -1454,7 +1457,7 @@ contains
          type(MasSonda_t) :: res
          type(json_value), pointer :: p
          integer :: i
-         character (len=:), allocatable :: outputName
+         character(len=:), allocatable :: outputName
          type(linel_t), dimension(:), allocatable :: linels
          type(polyline_t) :: polyline
 
@@ -1505,7 +1508,7 @@ contains
          type(json_value), pointer :: p, dirLabelPtr
          character(len=1), dimension(:), allocatable :: dirLabels
          integer :: i, j, k
-         character (len=:), allocatable :: typeLabel, fieldLabel, outputName, dirLabel
+         character(len=:), allocatable :: typeLabel, fieldLabel, outputName, dirLabel
          type(pixel_t) :: pixel
 
          integer, dimension(:), allocatable :: elemIds
@@ -1545,9 +1548,9 @@ contains
             allocate(res%cordinates(size(dirLabels)))
             do j = 1, size(dirLabels)
                res%cordinates(j)%tag = outputName
-               res%cordinates(j)%Xi = int (pixel%cell(1))
-               res%cordinates(j)%Yi = int (pixel%cell(2))
-               res%cordinates(j)%Zi = int (pixel%cell(3))
+               res%cordinates(j)%Xi = int(pixel%cell(1))
+               res%cordinates(j)%Yi = int(pixel%cell(2))
+               res%cordinates(j)%Zi = int(pixel%cell(3))
                res%cordinates(j)%Or = strToFieldType(fieldLabel, dirLabels(j))
             end do
          end select
@@ -1593,9 +1596,9 @@ contains
       end subroutine
 
       function strToFieldType(fieldLabel, dirLabel) result(res)
-         integer (kind=4) :: res
-         character (len=:), allocatable, intent(in) :: fieldLabel
-         character (len=1), intent(in), optional :: dirLabel
+         integer(kind=4) :: res
+         character(len=:), allocatable, intent(in) :: fieldLabel
+         character(len=1), intent(in), optional :: dirLabel
          select case (fieldLabel)
           case (J_FIELD_ELECTRIC)
             if (.not. present(dirLabel)) then
@@ -1723,7 +1726,7 @@ contains
          else
             res%fileNormalize = " "
          end if
-         res%type2 = domain%type2
+         res%type2  = domain%type2
 
          if (domain%isLogarithmicFrequencySpacing) then
             call appendLogSufix(res%outputrequest)
@@ -1798,7 +1801,7 @@ contains
          else
             component = J_DIR_M
             res%cordinates(1)%Or  = buildVolProbeType(fieldType, component)
-         endif
+         end if
          res%len_cor = size(res%cordinates)
 
          res%outputrequest = trim(adjustl(this%getStrAt(p, J_NAME, default=" ")))
@@ -1871,7 +1874,7 @@ contains
 
    subroutine appendLogSufix(fn)
       character(len=BUFSIZE), intent(inout) :: fn
-      character (len=*), parameter :: SMBJSON_LOG_SUFFIX = "_log_"
+      character(len=*), parameter :: SMBJSON_LOG_SUFFIX = "_log_"
       fn = trim(fn) // SMBJSON_LOG_SUFFIX
    end subroutine
 
@@ -1895,7 +1898,7 @@ contains
       end do
    contains
       function readThinSlot(mA) result(res)
-         type (materialAssociation_t), intent(in) :: mA
+         type(materialAssociation_t), intent(in) :: mA
          type(ThinSlot_t) :: res
          type(coords_t), dimension(:), pointer :: cs
          type(json_value_ptr_t) :: mat
@@ -2043,7 +2046,7 @@ contains
          type(ThinWire_t) :: res
          type(materialAssociation_t), intent(in) :: cable
 
-         character (len=:), allocatable :: entry
+         character(len=:), allocatable :: entry
          type(json_value), pointer :: je, je2
          integer :: i
          logical :: found
@@ -2058,12 +2061,14 @@ contains
             res%res = resistance
             res%ind = inductance
             res%dispfile = trim(adjustl(" "))
+            res%dispfile_LeftEnd = trim(adjustl(" "))
+            res%dispfile_RightEnd = trim(adjustl(" "))
          end block
 
          block
             type(json_value_ptr_t) :: terminal
             type(thinwiretermination_t) :: term
-            character (len=:), allocatable :: label
+            character(len=:), allocatable :: label
             terminal = this%matTable%getId(cable%initialTerminalId)
             term = readThinWireTermination(terminal%p)
             res%tl = term%terminationType
@@ -2219,7 +2224,7 @@ contains
                   res(position)%srctype = F_SOURCE_VOLTAGE
                 case (J_FIELD_CURRENT)
                   res(position)%srctype = F_SOURCE_CURRENT
-                case default
+               case default
                   call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
                end select
                res(position)%srcfile = this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)
@@ -2235,11 +2240,11 @@ contains
          integer, intent(in) :: position
          integer :: res
          if (position == 1) then
-            res = sign(1, linels(position)%orientation)
-         else if (position == size(linels)) then
-            res = -sign(1, linels(position)%orientation)
+            res = sign(1,linels(position)%orientation)
+         else if  (position == size(linels)) then
+            res = -sign(1,linels(position)%orientation)
          else
-            res = sign(1, linels(position)%orientation)
+            res = sign(1,linels(position)%orientation)
          end if
       end function
 
@@ -2265,7 +2270,7 @@ contains
       function readThinWireTermination(terminal) result(res)
          type(thinwiretermination_t) :: res
          type(json_value), pointer :: terminal, tms, tm
-         character (len=:), allocatable :: label
+         character(len=:), allocatable :: label
          logical :: found
 
          call this%core%get(terminal, J_MAT_TERM_TERMINATIONS, tms, found)
@@ -2306,7 +2311,7 @@ contains
       end function
 
       function strToTerminationType(label) result(res)
-         character (len=:), allocatable, intent(in) :: label
+         character(len=:), allocatable, intent(in) :: label
          integer :: res
          select case (label)
           case (J_MAT_TERM_TYPE_OPEN)
@@ -2397,10 +2402,12 @@ contains
          else
             res%filename = " "
          end if
-         res%type1 = domain%type1
+         res%type1  = domain%type1
          res%type2 = domain%type2
 
-         if (domain%isLogarithmicFrequencySpacing) call appendLogSufix(res%outputrequest)
+         if (domain%isLogarithmicFrequencySpacing) then
+            call appendLogSufix(res%outputrequest)
+         end if
       end subroutine
 
       function getSegmentNdWhichMatchesCoord(coordId, probe_coord) result(nd_index)
@@ -2455,7 +2462,7 @@ contains
 
       integer :: numberOfFrequencies
       type(json_value), pointer :: domain
-      character (len=:), allocatable :: fn, domainType, freqSpacing
+      character(len=:), allocatable :: fn, domainType, freqSpacing
       logical :: found, transferFunctionFound
       real :: val
 
@@ -2468,7 +2475,7 @@ contains
       fn = this%getStrAt(domain, J_PR_DOMAIN_MAGNITUDE_FILE, transferFunctionFound, default=" ")
       if (transferFunctionFound) then
          res%filename = trim(adjustl(fn))
-      endif
+      end if
 
       res%type1 = NP_T1_PLAIN
 
@@ -2478,6 +2485,16 @@ contains
       res%tstart = this%getRealAt(domain, J_PR_DOMAIN_TIME_START, default=0.0_RKIND)
       res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=0.0_RKIND)
       res%tstep = this%getRealAt(domain, J_PR_DOMAIN_TIME_STEP, default=0.0_RKIND)
+      if (res%tstart < 0 .or. res%tstop <0 .or. res%tstep < 0) then
+         block
+            character(len=BUFSIZE) :: errorMsg
+            character(len=:), allocatable :: p_name
+            logical :: nameFound
+            p_name = this%getStrAt(place, J_NAME, found=nameFound)
+            write(errorMsg, *) "Probe named ", p_name, " has negative times in its domain definition"
+            call WarnErrReport(errorMsg, .true.)
+         end block
+      end if
       res%fstart = this%getRealAt(domain, J_PR_DOMAIN_FREQ_START, default=0.0_RKIND)
       res%fstop = this%getRealAt(domain, J_PR_DOMAIN_FREQ_STOP, default=0.0_RKIND)
 
@@ -2486,7 +2503,7 @@ contains
          res%fstep = 0.0_RKIND
       else
          res%fstep = (res%fstop - res%fstart) / numberOfFrequencies
-      endif
+      end if
 
       freqSpacing = &
          this%getStrAt(domain, J_PR_DOMAIN_FREQ_SPACING, default=J_PR_DOMAIN_FREQ_SPACING_LINEAR)
@@ -2499,8 +2516,8 @@ contains
 
    contains
       function getNPDomainType(typeLabel, hasTransferFunction) result(res)
-         integer (kind=4) :: res
-         character (len=:), intent(in), allocatable :: typeLabel
+         integer(kind=4) :: res
+         character(len=:), intent(in), allocatable :: typeLabel
          logical, intent(in) :: hasTransferFunction
          logical :: isTime, isFrequency
          character(BUFSIZE) :: errorMsg
@@ -2551,10 +2568,10 @@ contains
       type(json_value), pointer, intent(in) :: matAss
       type(json_value_ptr_t) :: mat
       type(materialAssociation_t) :: res
-      character (len=*), parameter :: errorMsgInit = "ERROR reading material association: "
+      character(len=*), parameter :: errorMsgInit = "ERROR reading material association: "
       logical :: found
       logical :: isMultiwire, isWireOrMultiwire
-      character (len=BUFSIZE) :: errorMsg
+      character(len=BUFSIZE) :: errorMsg
 
       ! Fills material association.
       res%materialId = this%getIntAt(matAss, J_MATERIAL_ID, found)
@@ -2589,7 +2606,7 @@ contains
       if (this%matTable%checkId(res%materialId) /= 0) then
          write(errorMsg, *) errorMsgInit, "material with id ", res%materialId, " not found."
          call WarnErrReport(errorMsg, .true.)
-      endif
+      end if
 
       if (size(res%elementIds) == 0) then
          write(errorMsg, *) errorMsgInit, J_ELEMENTIDS, "must not be empty."
@@ -2653,7 +2670,7 @@ contains
    contains
       logical function isMaterialIdOfType(matId, matType)
          integer, intent(in) :: matId
-         character (len=*), intent(in) :: matType
+         character(len=*), intent(in) :: matType
          type(json_value_ptr_t) :: mat
          logical :: materialFound
          if (this%matTable%checkId(matId) /= 0) then
@@ -2665,7 +2682,7 @@ contains
       end function
 
       subroutine showLabelNotFoundError(label)
-         character (len=*), intent(in) :: label
+         character(len=*), intent(in) :: label
 
       end subroutine
    end function
@@ -2710,10 +2727,12 @@ contains
                if (present(elementLabels)) then
                   if (isAssociatedWithElementLabel(mAPtr, elementLabels)) then
                      res(j) = this%parseMaterialAssociation(mAPtr)
+                     res(j)%matAssType = trim(materialTypes(k))
                      j = j+1
                   end if
                else
                   res(j) = this%parseMaterialAssociation(mAPtr)
+                  res(j)%matAssType = trim(materialTypes(k))
                   j = j+1
                end if
             end if
@@ -2723,7 +2742,7 @@ contains
    contains
       logical function isAssociatedWithMaterial(mAPtr, materialType)
          type(json_value), pointer, intent(in) :: mAPtr
-         character (len=*), intent(in) :: materialType
+         character(len=*), intent(in) :: materialType
 
          type(materialAssociation_t) :: matAss
          type(json_value_ptr_t) :: mat
@@ -2735,8 +2754,8 @@ contains
 
       logical function isAssociatedWithElementLabel(mAPtr, elementLabels)
          type(json_value), pointer, intent(in) :: mAPtr
-         character (len=*), intent(in) :: elementLabels(:)
-         character (len=:), allocatable :: trimmedLabel
+         character(len=*), intent(in) :: elementLabels(:)
+         character(len=:), allocatable :: trimmedLabel
          character(len=20) :: elementLabel
          type(materialAssociation_t) :: matAss
          type(json_value_ptr_t) :: elm
@@ -2777,7 +2796,7 @@ contains
       character(len=BUFSIZE) :: res
       character(len=:), allocatable :: matName, layerName
       logical :: found
-      character (len=BUFSIZE) :: errorMsg
+      character(len=BUFSIZE) :: errorMsg
 
       block
          type(json_value_ptr_t) :: mat
@@ -2808,8 +2827,8 @@ contains
       res = trim(matName // '@' // layerName)
    contains
       subroutine checkIsValidName(str)
-         character (len=:), allocatable, intent(in) :: str
-         character (len=*), parameter :: notAllowedChars = '@'
+         character(len=:), allocatable, intent(in) :: str
+         character(len=*), parameter :: notAllowedChars = '@'
          integer :: i
          do i = 1, len((notAllowedChars))
             if (index(str, notAllowedChars(i:i)) /= 0) then
@@ -2821,8 +2840,8 @@ contains
       end subroutine
 
       function adaptName(str) result(res)
-         character (len=:), allocatable, intent(in) :: str
-         character (len=:), allocatable :: res
+         character(len=:), allocatable, intent(in) :: str
+         character(len=:), allocatable :: res
          integer :: i
          res = trim(adjustl(str))
          do i = 1, len(res)
@@ -4694,7 +4713,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, present(default))
-      endif
+      end if
    end function
 
 
@@ -4712,7 +4731,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, present(default))
-      endif
+      end if
    end function
 
    function getIntsAt(this, place, path, found) result(res)
@@ -4728,7 +4747,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, .false.)
-      endif
+      end if
    end function
 
    function getRealAt(this, place, path, found, default) result(res)
@@ -4745,7 +4764,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, present(default))
-      endif
+      end if
    end function
 
    function getRealsAt(this, place, path, found) result(res)
@@ -4761,7 +4780,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, .false.)
-      endif
+      end if
    end function
 
    function getMatrixAt(this, place, path, found) result(res)
@@ -4779,7 +4798,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, .false.)
-      endif
+      end if
       call this%core%info(matrix, vartype, nr)
       allocate(res(nr,nr))
 
@@ -4793,12 +4812,12 @@ contains
 
 
    function getStrAt(this, place, path, found, default) result(res)
-      character (len=:), allocatable :: res
+      character(len=:), allocatable :: res
       class(parser_t) :: this
       type(json_value), pointer :: place
       character(len=*) :: path
       logical, intent(out), optional :: found
-      character (len=*), optional :: default
+      character(len=*), optional :: default
       logical :: localFound
 
       call this%core%get(place, path, res, localFound, default)
@@ -4806,7 +4825,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, present(default))
-      endif
+      end if
    end function
 
    function existsAt(this, place, path) result(res)
@@ -4830,10 +4849,10 @@ contains
       type(json_value_ptr_t), dimension(:), allocatable :: res
       type(json_value), pointer :: srcs
 
-      character (kind=JSON_CK, len=*) :: key
-      character (kind=JSON_CK, len=*), dimension(:) :: values
+      character(kind=JSON_CK, len=*) :: key
+      character(kind=JSON_CK, len=*), dimension(:) :: values
 
-      type(json_value_ptr_t), dimension (:), allocatable :: foundEntries
+      type(json_value_ptr_t), dimension(:), allocatable :: foundEntries
       integer :: i, lastEntry, nEntries
 
       allocate(res(0))
@@ -4848,12 +4867,12 @@ contains
    function jsonValueFilterByKeyValue(this, place, key, value) result (res)
       class(parser_t) :: this
       type(json_value_ptr_t), allocatable :: res(:)
-      character (kind=JSON_CK, len=*) :: key, value
+      character(kind=JSON_CK, len=*) :: key, value
       type(json_value), pointer :: place, src
-      character (kind=JSON_CK, len=:), allocatable :: typeStr
+      character(kind=JSON_CK, len=:), allocatable :: typeStr
       integer :: i, j, n
       logical :: found
-      character (len=BUFSIZE) :: errorMsg
+      character(len=BUFSIZE) :: errorMsg
 
       ! Precounting.
       n = 0
@@ -4897,6 +4916,11 @@ contains
          allocate(res(0))
          return
       end if
+      if (size(elemIds) == 0) then
+         call WarnErrReport("Entity elementIds must not be empty.", .true.)
+         allocate(res(0))
+         return
+      end if
       if (size(elemIds) /= 1) then
          call WarnErrReport("Entity must contain a single elementId.", .true.)
          allocate(res(0))
@@ -4913,6 +4937,8 @@ contains
       if (size(res) /= 1) then
          write(errorMsg, *) "Entity must contain a single cell region defining a volume."
          call WarnErrReport(errorMsg, .true.)
+         allocate(res(0))
+         return
       end if
    end function
 

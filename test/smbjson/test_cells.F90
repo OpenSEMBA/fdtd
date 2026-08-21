@@ -37,5 +37,4 @@ integer function test_cells() bind(C) result(err)
    if (interval%getType()        /= CELL_TYPE_SURFEL) err = err + 1
    if (interval%getOrientation() /= - DIR_X) err = err + 1
    if (interval%getSize()        /= 3) err = err + 1
-
 end function

@@ -30,7 +30,7 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
     allocate(tris(1))
     vertices = [c1,c2,c3]
     tris(1) = triangle_t(vertices)
-    
+
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(1))
     allocate(cR%volumes(1)%intervals(0))
@@ -46,7 +46,7 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
     if (abs(cM%edge_media(1)%edges(1)%ratio-0.75) > 0.01) err = err + 1
     if (abs(cM%edge_media(1)%edges(2)%ratio-0.75) > 0.01) err = err + 1
     if (abs(cM%edge_media(1)%edges(3)%ratio-0.75) > 0.01) err = err + 1
-    
+
     if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
     if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
     if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
@@ -74,7 +74,7 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
     if (abs(cM%edge_media(1)%edges(1)%ratio-0.25) > 0.01) err = err + 1
     if (abs(cM%edge_media(1)%edges(2)%ratio-0.25) > 0.01) err = err + 1
     if (abs(cM%edge_media(1)%edges(3)%ratio-0.25) > 0.01) err = err + 1
-    
+
     if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
     if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
     if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
@@ -205,7 +205,7 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
     if (abs(cM%edge_media(1)%edges(1)%ratio-0.25) > 0.01) err = err + 1
     if (abs(cM%edge_media(1)%edges(2)%ratio-0.25) > 0.01) err = err + 1
     if (abs(cM%edge_media(1)%edges(3)%ratio-0.25) > 0.01) err = err + 1
-    
+
     if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
     if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
     if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
@@ -235,7 +235,7 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
     if (abs(cM%edge_media(1)%edges(1)%ratio-0.75) > 0.01) err = err + 1
     if (abs(cM%edge_media(1)%edges(2)%ratio-0.75) > 0.01) err = err + 1
     if (abs(cM%edge_media(1)%edges(3)%ratio-0.75) > 0.01) err = err + 1
-    
+
     if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
     if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
     if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
@@ -301,7 +301,7 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
     if (abs(cM%edge_media(1)%edges(1)%ratio-0.75) > 0.01) err = err + 1
     if (abs(cM%edge_media(1)%edges(2)%ratio-0.75) > 0.01) err = err + 1
     if (abs(cM%edge_media(1)%edges(3)%ratio-0.75) > 0.01) err = err + 1
-    
+
     if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
     if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
     if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
@@ -329,7 +329,7 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
     if (abs(cM%edge_media(1)%edges(1)%ratio-0.25) > 0.01) err = err + 1
     if (abs(cM%edge_media(1)%edges(2)%ratio-0.25) > 0.01) err = err + 1
     if (abs(cM%edge_media(1)%edges(3)%ratio-0.25) > 0.01) err = err + 1
-    
+
     if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
     if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
     if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
@@ -368,7 +368,7 @@ integer function test_conformal_filling_open() bind(C) result(err)
     type(cell_map_t) :: cell_map
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides
-    
+
 
     err = 0
     c1 = coord_t(position = [0.6,0.0,0.0],   id = 1)
@@ -403,7 +403,7 @@ integer function test_conformal_filling_open() bind(C) result(err)
     if (abs(cM%time_step_scale_factor - 0.9055) > 0.01) err = err + 1
 
 end function
-       
+
 
 integer function test_conformal_filling_closed() bind(C) result(err)
 !         /|
@@ -429,7 +429,7 @@ integer function test_conformal_filling_closed() bind(C) result(err)
     type(cell_map_t) :: cell_map
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides
-    
+
 
     err = 0
     c1 = coord_t(position = [0.6,0.0,0.0],   id = 1)
@@ -469,7 +469,7 @@ integer function test_conformal_filling_closed() bind(C) result(err)
 
 end function
 
-       
+
 
 integer function  test_conformal_edge_next_cell() bind(C) result(err)
     use conformal_m
@@ -485,7 +485,7 @@ integer function  test_conformal_edge_next_cell() bind(C) result(err)
     type(cell_map_t) :: cell_map
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides
-    
+
 
     err = 0
     c1 = coord_t(position = [0.0,0.25,0.0], id = 1)
@@ -558,7 +558,7 @@ integer function test_conformal_filling_closed_corner() bind(C) result(err)
     type(cell_map_t) :: cell_map
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides
-    
+
 
     err = 0
     c1 = coord_t(position = [0.0,0.0,0.0], id = 1)
@@ -616,12 +616,12 @@ end function
 
 integer function test_conformal_filling_block_and_corner() bind(C) result(err)
 
-!              9 
+!              9
 !            / |\
 !          5______6
-!         /    |  | 
+!         /    |  |
 !       /  |   10 |
-!     /    |  /  \|   
+!     /    |  /  \|
 !   3______4_/_____
 !   |      7______8|______
 !   |     /        |      /
@@ -641,7 +641,7 @@ integer function test_conformal_filling_block_and_corner() bind(C) result(err)
     type(cell_map_t) :: cell_map
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides
-    
+
 
     err = 0
     c1 = coord_t(position = [0.0,0.0,0.0], id = 1)
@@ -689,7 +689,7 @@ integer function test_conformal_filling_block_and_corner() bind(C) result(err)
     if (abs(cM%edge_media(1)%edges(2)%ratio-0.0) > 0.00) err = err + 1
     if (abs(cM%edge_media(1)%edges(3)%ratio-0.0) > 0.00) err = err + 1
     if (abs(cM%edge_media(1)%edges(4)%ratio-0.0) > 0.00) err = err + 1
-    
+
     if (abs(cM%edge_media(2)%ratio - 0.5) > 0.01) err = err + 1
     if (size(cM%edge_media(2)%edges) /= 6) err = err + 1
     if (abs(cM%edge_media(2)%edges(1)%ratio-0.5) > 0.00) err = err + 1
@@ -747,7 +747,7 @@ integer function test_conformal_filling_cylinder_base_on_grid_plane() bind(C) re
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides
-    
+
 
     err = 0
     c(1) = coord_t(position  = [1.0,0.25,0.0], id = 1)

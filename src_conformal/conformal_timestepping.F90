@@ -26,7 +26,7 @@ module conformal_mod
 
     ! t_t alguno de los tipos conformal
 
-    
+
     ! type Conformal_t
     !     integer (kind=simple) :: nConformalMedia
     !     type(t_t), pointer, dimension(:) :: medium
@@ -138,10 +138,10 @@ contains
         ! make fields in faces and edges point to the corresponding region I or II fields
         integer :: i, j
 
-        do i = 1, sgg%NumMedia    
-            if (sgg%med(i)%Is%conformal .and. sgg%med(i)%Is%surface) then 
-                if (featureIs(sgg%med(i)%conformalSurface(1)), CONFORMAL_FACE) then 
-                    do j = 1, sgg%med(i)%conformalSurface(1)%size 
+        do i = 1, sgg%NumMedia
+            if (sgg%med(i)%Is%conformal .and. sgg%med(i)%Is%surface) then
+                if (featureIs(sgg%med(i)%conformalSurface(1)), CONFORMAL_FACE) then
+                    do j = 1, sgg%med(i)%conformalSurface(1)%size
                         cell(:) = sgg%med(i)%conformalSurface(1)%faces(j)%cell(:)
                         select case(sgg%med(i)%conformalSurface(1)%faces(j)%direction)
                         case(FACE_Z)
@@ -150,27 +150,27 @@ contains
                             ! 1: Ey(cell(1)    , cell(2)    , cell(3))
                             ! si existe
                             call edge_map%get(key(k), edge)
-                            if (edge%ratio == 0) then 
+                            if (edge%ratio == 0) then
                                 sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 = 0
                                 sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 = edge%region_II_fields%E
-                            else if (edge%ratio == 1) then 
+                            else if (edge%ratio == 1) then
                                 sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 => Ey(cell(1)    , cell(2)    , cell(3))
-                                
+
                                 allocate(sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned, 0.0)
-                                sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%p => % 
+                                sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%p => %
                                     sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned
                                 ! sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 = Ey(cell(1)    , cell(2)    , cell(3))
                                 ! sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 = 0
-                            else 
+                            else
                                 sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 => Ey(cell(1)    , cell(2)    , cell(3))
                                 ! sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 => edge%region_II_fields%E
                                 allocate(sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned, 0.0)
-                                sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%p => % 
+                                sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%p => %
                                     sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned
                             end if
                             ! Ex(cell(1)    , cell(2) + 1, cell(3))
                             ! Ey(cell(1) + 1, cell(2)    , cell(3))
-                            ! Ex(cell(1)    , cell(2)    , cell(3))                            
+                            ! Ex(cell(1)    , cell(2)    , cell(3))
                         end select
                     end do
                 end if
@@ -238,7 +238,7 @@ contains
                     E3 => sgg%Med(i)%conformal%faces(j)%region_I_fields%E3%p
                     E4 => sgg%Med(i)%conformal%faces(j)%region_I_fields%E4%p
 
-                    cell(:) = sgg%Med(i)%conformal%faces(j)%cell(:)    
+                    cell(:) = sgg%Med(i)%conformal%faces(j)%cell(:)
                     direction = sgg%Med(i)%conformal%faces(k)%direction
                     medium = media_maps%getMedium(cell, direction, found)
 
@@ -246,14 +246,14 @@ contains
 
                     H = g%gm1(medium)*H + g%gm2(medium)*((E2 - E4)*id1 - (E3-E1)*id2)
 
-                    if (isSurface) then 
+                    if (isSurface) then
                         rIIH  => sgg%Med(i)%conformal%faces(j)%region_II_fields%H%p
                         rIIE1 => sgg%Med(i)%conformal%faces(j)%region_II_fields%E1%p
                         rIIE2 => sgg%Med(i)%conformal%faces(j)%region_II_fields%E2%p
                         rIIE3 => sgg%Med(i)%conformal%faces(j)%region_II_fields%E3%p
                         rIIE4 => sgg%Med(i)%conformal%faces(j)%region_II_fields%E4%p
 
-                        ! medium ? 
+                        ! medium ?
                         ! gm1, gm2?
 
                         rIIH = gm1(medium)*rIIH + gm2(medium)*((rIIE2 - rIIE4)*id1 - (rIIE3-rIIE1)*id2)
@@ -270,7 +270,7 @@ contains
         !         E1 => conformal_media%face_media(i)%faces(j)%region_I_fields%E1
         !         E2 => conformal_media%face_media(i)%faces(j)%region_I_fields%E2
         !         E3 => conformal_media%face_media(i)%faces(j)%region_I_fields%E3
-        !         E4 => conformal_media%face_media(i)%faces(j)%region_I_fields%E4        
+        !         E4 => conformal_media%face_media(i)%faces(j)%region_I_fields%E4
         !         cell(:) = conformal_media%face_media(i)%faces(j)%cell(:)
         !         direction = conformal_media%face_media(j)%faces(k)%direction
         !         ! asignacion de medios: esta en otro sitio?  en este esquema, los medios this%g%gm1(medium)
@@ -281,12 +281,12 @@ contains
         !         ! case(FACE_X)
         !         !     medium = media_maps%Hx%get(key(cell))
         !         !     ! medium = sggMiHx(cell(1), cell(2), cell(3))
-        !         !     ! id1 = 
-        !         !     ! id2 = 
+        !         !     ! id1 =
+        !         !     ! id2 =
         !         ! case(FACE_Y)
         !         !     medium =sggMiHy(cell(1), cell(2), cell(3))
-        !         !     ! id1 = 
-        !         !     ! id2 = 
+        !         !     ! id1 =
+        !         !     ! id2 =
         !         ! case(FACE_Z)
         !         !     medium =sggMiHz(cell(1), cell(2), cell(3))
         !         !     ! id1 = Idye(cell(2))
@@ -296,13 +296,13 @@ contains
         !         ! if Ex in region II, g1 = 0, g2 = 0, and field = 0
         !         H = g%gm1(medium)*H + g%gm2(medium)*((E2 - E4)*id1 - (E3-E1)*id2)
         !         ! H = this%g%gm1(medium)*H + this%g%gm2(medium)*((E2 - E4)*id1 - (E3-E1)*id2)
-        !         ! update region II 
-        !         if (isSurface) then 
+        !         ! update region II
+        !         if (isSurface) then
         !             rIIH  => conformal_media%face_media(i)%faces(j)%region_II_fields%H
         !             rIIE1 => conformal_media%face_media(i)%faces(j)%region_II_fields%E1
         !             rIIE2 => conformal_media%face_media(i)%faces(j)%region_II_fields%E2
         !             rIIE3 => conformal_media%face_media(i)%faces(j)%region_II_fields%E3
-        !             rIIE4 => conformal_media%face_media(i)%faces(j)%region_II_fields%E4        
+        !             rIIE4 => conformal_media%face_media(i)%faces(j)%region_II_fields%E4
 
         !             rIIH = this%g%gm1(medium)*rIIH + this%g%gm2(medium)*((rIIE2 - rIIE4)*id1 - (rIIE3-rIIE1)*id2)
 

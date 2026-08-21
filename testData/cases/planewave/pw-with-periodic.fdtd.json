@@ -6,7 +6,7 @@
         "timeStep": 0.05e-9,
         "numberOfSteps": 400
     },
-    
+
     "boundary": {
         "xLower": {"type": "periodic"},
         "xUpper": {"type": "periodic"},

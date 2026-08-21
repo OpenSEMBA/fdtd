@@ -16,7 +16,7 @@ module Preprocess_m
    use mtln_types_m, only: cable_t, unshielded_multiwire_t
 #endif
    use CreateMatrices_m
-   
+
    use FDETYPES_m
    use DMMA_m
    use conformal_m, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
@@ -305,7 +305,7 @@ contains
       media%sggMiHx (:, :, :) = 1
       media%sggMiHy (:, :, :) = 1
       media%sggMiHz (:, :, :) = 1
-      
+
 
       !planeWaves
       !
@@ -2950,7 +2950,7 @@ contains
             sgg%NodalSource(conta1)%fichero%name = trim (adjustl(this%nodsrc%NodalSource(i)%nombre))
             sgg%NodalSource(conta1)%isElec = this%nodsrc%NodalSource(i)%isElec
             sgg%NodalSource(conta1)%IsHard = this%nodsrc%NodalSource(i)%isHard
-            sgg%NodalSource(conta1)%IsInitialValue = this%nodsrc%NodalSource(i)%IsInitialValue 
+            sgg%NodalSource(conta1)%IsInitialValue = this%nodsrc%NodalSource(i)%IsInitialValue
          end if
          !
          tama2 = this%nodsrc%NodalSource(i)%n_c1P
@@ -3773,9 +3773,9 @@ contains
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = punto%XI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%YI = punto%YI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = punto%ZI
-                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
+                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = iJx
-                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
+                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = iQx
                                  end if
 
@@ -3787,9 +3787,9 @@ contains
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = punto%XI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%YI = punto%YI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = punto%ZI
-                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
+                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = iJy
-                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
+                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = iQy
                                  end if
                                CASE (iEz)
@@ -3798,9 +3798,9 @@ contains
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = punto%XI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%YI = punto%YI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = punto%ZI
-                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
+                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = iJz
-                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
+                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = iQz
                                  end if
                               end select
@@ -3825,9 +3825,9 @@ contains
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = floor(this%swires%SW(j1)%SWC(i1)%x)
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%YI = floor(this%swires%SW(j1)%SWC(i1)%y)
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = floor(this%swires%SW(j1)%SWC(i1)%z)
-                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
+                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = iJx
-                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
+                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = iQx
                                  end if
                                  EXIT do_loop_busqueda3
@@ -3881,7 +3881,7 @@ contains
                         end if
                      end do
                   end do do_loop_busquedatg
-               else if (abs(this%Sonda%collection(i)%cordinates(j)%or) == NP_COR_LINE) then 
+               else if (abs(this%Sonda%collection(i)%cordinates(j)%or) == NP_COR_LINE) then
                   block
                      integer(kind=4) :: line_size, obs_size, idx
                      !intrinsic num_procs function coopted by num_procs global variable...
@@ -3894,11 +3894,11 @@ contains
                         sgg%observation(i)%P(obs_size)%line(idx)%x = this%Sonda%collection(i)%cordinates(idx)%Xi
                         sgg%observation(i)%P(obs_size)%line(idx)%y = this%Sonda%collection(i)%cordinates(idx)%Yi
                         sgg%observation(i)%P(obs_size)%line(idx)%z = this%Sonda%collection(i)%cordinates(idx)%Zi
-                        if (this%Sonda%collection(i)%cordinates(idx)%Xe /= -1) then 
+                        if (this%Sonda%collection(i)%cordinates(idx)%Xe /= -1) then
                            sgg%observation(i)%P(obs_size)%line(idx)%orientation = sign(1, this%Sonda%collection(i)%cordinates(idx)%or)
-                        else if (this%Sonda%collection(i)%cordinates(idx)%Ye /= -1) then 
+                        else if (this%Sonda%collection(i)%cordinates(idx)%Ye /= -1) then
                            sgg%observation(i)%P(obs_size)%line(idx)%orientation = sign(2, this%Sonda%collection(i)%cordinates(idx)%or)
-                        else if (this%Sonda%collection(i)%cordinates(idx)%Ze /= -1) then 
+                        else if (this%Sonda%collection(i)%cordinates(idx)%Ze /= -1) then
                            sgg%observation(i)%P(obs_size)%line(idx)%orientation = sign(3, this%Sonda%collection(i)%cordinates(idx)%or)
                         end if
                      end do
@@ -4875,8 +4875,8 @@ contains
                do k = 1, ubound(ratios,1)
                   if (eq_ratio(ratios(k), conformal_media(i)%edge_media(j)%ratio, EDGE_RATIO_EQ_TOLERANCE)) isNew = .false.
                end do
-               if (isNew) then 
-                  block 
+               if (isNew) then
+                  block
                      if (ubound(ratios,1) == 0) then
                         deallocate(ratios)
                         allocate(ratios(1))
@@ -4909,8 +4909,8 @@ contains
                do k = 1, ubound(ratios,1)
                   if (eq_ratio(ratios(k), conformal_media(i)%face_media(j)%ratio, FACE_RATIO_EQ_TOLERANCE)) isNew = .false.
                end do
-               if (isNew) then 
-                  block 
+               if (isNew) then
+                  block
                      if (ubound(ratios,1) == 0) then
                         deallocate(ratios)
                         allocate(ratios(1))
@@ -4944,29 +4944,29 @@ contains
          integer :: i, j
          call initConformalBoundingBox(sgg,bbox)
 
-         if (findloc(edge_ratios, 0.0, 1) /= 0) then 
+         if (findloc(edge_ratios, 0.0, 1) /= 0) then
             allocate(edge_ratios_no_zero(ubound(edge_ratios,1) - 1))
             k = 0
             do j = 1, ubound(edge_ratios,1)
-               if (edge_ratios(j) /= 0) then 
+               if (edge_ratios(j) /= 0) then
                   k = k + 1
                   edge_ratios_no_zero(k) = edge_ratios(j)
                end if
             end do
-         else  
+         else
             edge_ratios_no_zero = edge_ratios
          end if
 
-         if (findloc(face_ratios, 0.0, 1) /= 0) then 
+         if (findloc(face_ratios, 0.0, 1) /= 0) then
             allocate(face_ratios_no_zero(ubound(face_ratios,1) - 1))
             k = 0
             do j = 1, ubound(face_ratios,1)
-               if (face_ratios(j) /= 0) then 
+               if (face_ratios(j) /= 0) then
                   k = k + 1
                   face_ratios_no_zero(k) = face_ratios(j)
                end if
             end do
-         else  
+         else
             face_ratios_no_zero = face_ratios
          end if
          num_media = contamedia
@@ -4993,7 +4993,7 @@ contains
          integer(kind=4), intent(in) :: type
          integer :: j, k
          do j = 1, conformal_media%n_faces_media
-            if (conformal_media%face_media(j)%ratio /= 0) then 
+            if (conformal_media%face_media(j)%ratio /= 0) then
                face_media = num_media + findloc(face_ratios, conformal_media%face_media(j)%ratio, 1)
                sgg%Med(face_media)%Is%ConformalPEC = .TRUE.
                sgg%Med(face_media)%Is%Needed = .TRUE.
@@ -5064,7 +5064,7 @@ contains
          real, dimension(3) :: normal
 
          do j = 1, conformal_media%n_edges_media
-            if (conformal_media%edge_media(j)%ratio /= 0) then 
+            if (conformal_media%edge_media(j)%ratio /= 0) then
                edge_media = num_media + findloc(edge_ratios, conformal_media%edge_media(j)%ratio,1)
                sgg%Med(edge_media)%Is%ConformalPEC = .TRUE.
                sgg%Med(edge_media)%Is%Needed = .TRUE.
@@ -5123,7 +5123,7 @@ contains
          real, dimension(3) :: normal
 
          do j = 1, conformal_media%n_edges_media
-            if (conformal_media%edge_media(j)%ratio == 0) then 
+            if (conformal_media%edge_media(j)%ratio == 0) then
                edge_media = 0
                do k = 1, conformal_media%edge_media(j)%size
                   cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
@@ -5135,28 +5135,28 @@ contains
                      if (side_map%hasKey(key)) then
                         tris = side_map%getTrianglesFromSide(key)
                         normal = getEdgeNormalFromTriangles(tris)
-                        if (normal(2) < 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                        if (normal(2) < 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2), cell(3)))%is%conformalPEC) then
                            media%sggMiHz(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1), cell(2)+1, cell(3)) = edge_media
                            media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEy(cell(1)+1, cell(2), cell(3)) = edge_media
-                        else if (normal(2) > 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2)-1, cell(3)))%is%conformalPEC) then 
+                        else if (normal(2) > 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2)-1, cell(3)))%is%conformalPEC) then
                            media%sggMiHz(cell(1), cell(2)-1, cell(3)) = edge_media
                            media%sggMiEx(cell(1), cell(2)-1, cell(3)) = edge_media
                            media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEy(cell(1), cell(2)-1, cell(3)) = edge_media
                            media%sggMiEy(cell(1)+1, cell(2)-1, cell(3)) = edge_media
                         end if
-                        
-                        if (normal(3) < 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+
+                        if (normal(3) < 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)))%is%conformalPEC) then
                            media%sggMiHy(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1), cell(2), cell(3)+1) = edge_media
                            media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEz(cell(1)+1, cell(2), cell(3)) = edge_media
 
-                        else if (normal(3) > 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)-1))%is%conformalPEC) then 
+                        else if (normal(3) > 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)-1))%is%conformalPEC) then
                            media%sggMiHy(cell(1), cell(2), cell(3)-1) = edge_media
                            media%sggMiEx(cell(1), cell(2), cell(3)-1) = edge_media
                            media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
@@ -5170,13 +5170,13 @@ contains
                      if (edge_media == 0 .and. side_map%hasKey(key)) then
                         tris = side_map%getTrianglesFromSide(key)
                         normal = getEdgeNormalFromTriangles(tris)
-                        if (normal(3) < 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                        if (normal(3) < 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)))%is%conformalPEC) then
                            media%sggMiHx(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEy(cell(1), cell(2), cell(3)+1) = edge_media
                            media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEz(cell(1), cell(2)+1, cell(3)) = edge_media
-                        else if (normal(3) > 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)-1))%is%conformalPEC) then 
+                        else if (normal(3) > 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)-1))%is%conformalPEC) then
                            media%sggMiHx(cell(1), cell(2), cell(3)-1) = edge_media
                            media%sggMiEy(cell(1), cell(2), cell(3)-1) = edge_media
                            media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
@@ -5184,13 +5184,13 @@ contains
                            media%sggMiEz(cell(1), cell(2)+1, cell(3)-1) = edge_media
                         end if
 
-                        if (normal(1) < 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                        if (normal(1) < 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2), cell(3)))%is%conformalPEC) then
                            media%sggMiHz(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1), cell(2)+1, cell(3)) = edge_media
                            media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEy(cell(1)+1, cell(2), cell(3)) = edge_media
-                        else if (normal(1) > 0 .and. .not. sgg%med(media%sggMiHz(cell(1)-1, cell(2), cell(3)))%is%conformalPEC) then 
+                        else if (normal(1) > 0 .and. .not. sgg%med(media%sggMiHz(cell(1)-1, cell(2), cell(3)))%is%conformalPEC) then
                            media%sggMiHz(cell(1)-1, cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1)-1, cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1)-1, cell(2)+1, cell(3)) = edge_media
@@ -5209,20 +5209,20 @@ contains
                            media%sggMiEy(cell(1), cell(2), cell(3)+1) = edge_media
                            media%sggMiEz(cell(1), cell(2), cell(3))   = edge_media
                            media%sggMiEz(cell(1), cell(2)+1, cell(3)) = edge_media
-                        else if (normal(2) > 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2)-1, cell(3)))%is%conformalPEC) then 
+                        else if (normal(2) > 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2)-1, cell(3)))%is%conformalPEC) then
                            media%sggMiHx(cell(1), cell(2)-1, cell(3)) = edge_media
                            media%sggMiEy(cell(1), cell(2)-1, cell(3)) = edge_media
                            media%sggMiEy(cell(1), cell(2)-1, cell(3)+1) = edge_media
                            media%sggMiEz(cell(1), cell(2)-1, cell(3)) = edge_media
                            media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
                         end if
-                        if (normal(1) < 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                        if (normal(1) < 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)))%is%conformalPEC) then
                            media%sggMiHy(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1), cell(2), cell(3)+1) = edge_media
                            media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEz(cell(1)+1, cell(2), cell(3)) = edge_media
-                        else if (normal(1) > 0 .and. .not. sgg%med(media%sggMiHy(cell(1)-1, cell(2), cell(3)))%is%conformalPEC) then 
+                        else if (normal(1) > 0 .and. .not. sgg%med(media%sggMiHy(cell(1)-1, cell(2), cell(3)))%is%conformalPEC) then
                            media%sggMiHy(cell(1)-1, cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1)-1, cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1)-1, cell(2), cell(3)+1) = edge_media
@@ -5941,7 +5941,7 @@ contains
       sgg%InitialTimeStep = 0
       sgg%TimeSteps = this%general%nmax
       sgg%dt = this%general%dt
-      
+
       !border
       !this%BORDER%PROPIEDADESPML(I)%ORDEN no lo considero porque en el interior de mi programa lo pongo (esta a 2 normalmente)
       sgg%Border%IsBackPEC = .FALSE.
@@ -6922,15 +6922,15 @@ contains
             end if
          end do
 #ifdef CompileWithMTLN
-         block 
+         block
             class(cable_t), pointer :: ptr
             do i = 1, this%mtln%n_unsh + this%mtln%n_sh
                ptr => this%mtln%cables(i)%ptr
                select type(ptr)
                type is(unshielded_multiwire_t)
                   numertag = numertag + 1
-               end select  
-               if (precounting == 1) then 
+               end select
+               if (precounting == 1) then
                   select type(ptr)
                   type is(unshielded_multiwire_t)
                      tagtype%tag(numertag) = this%mtln%cables(i)%ptr%tag
@@ -6994,11 +6994,11 @@ contains
             end if
          end do
 
-         if (associated(this%conformalRegs%volumes)) then 
+         if (associated(this%conformalRegs%volumes)) then
             numertag = numertag + 1
             if (precounting == 1) tagtype%tag(numertag) = this%conformalRegs%volumes(1)%tag
          end if
-         if (associated(this%conformalRegs%surfaces)) then 
+         if (associated(this%conformalRegs%surfaces)) then
             numertag = numertag + 1
             if (precounting == 1) tagtype%tag(numertag) = this%conformalRegs%surfaces(1)%tag
          end if

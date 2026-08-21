@@ -1,7 +1,7 @@
 # The FDTD-JSON format
 
 This format aims to provide a way to input data for a full FDTD simulation.
-Being in JSON, it can be easily navigated with most text editors, such as Visual Studio Code or Notepad++. 
+Being in JSON, it can be easily navigated with most text editors, such as Visual Studio Code or Notepad++.
 There are also multiple tools to read and write them.
 This document assumes that you are familiar with the basic JSON notation, a brief explanation on this notation can be found [here](https://www.w3schools.com/js/js_json_syntax.asp).
 
@@ -35,7 +35,7 @@ This object must always be present and contains general information regarding th
 Additionally, it may contain the following optional entry:
 
 + `<mtlnProblem>` : A boolean indicating whether the problem is a pure MTLN problem and will solved using only the MTLN solver. If it is not present, its default value is `false`
-+ `<additionalArguments>` : A string with flags. Keep in mind that flags passed by console have higher priority. 
++ `<additionalArguments>` : A string with flags. Keep in mind that flags passed by console have higher priority.
 
 **Example:**
 
@@ -54,7 +54,7 @@ This object sets the background electromagnetic media properties to an specified
 + `[absolutePermeability]`: a real number indicating the value of background permeability. Defaults to the value specified in MU_VACUUM at [fdtypes.F90](../src_main_pub/fdetypes.F90).
 
 ### `[boundary]`
-This specifies the boundaries which will be used to terminate the computational domain. 
+This specifies the boundaries which will be used to terminate the computational domain.
 If `boundary` is not present it defaults to a `mur` absorbing condition in all bounds.
 The entries within `boundary` are objects labeled with the place where they will be applied:
 
@@ -65,7 +65,7 @@ These objects must contain a `<type>` label which can be:
 
 + `pec` for perfectly electric conducting termination.
 + `pmc` for perfectly magnetic conducting termination.
-+ `periodic` for periodic boundary conditions. Must be paired with the opposite side. 
++ `periodic` for periodic boundary conditions. Must be paired with the opposite side.
 + `mur` for Mur's first order absorbing boundary condition.
 + `pml` for perfectly matched layer termination. If this `type` is selected, it must also contain:
 
@@ -79,7 +79,7 @@ These objects must contain a `<type>` label which can be:
 "boundary": {
     "all": {
         "type": "pml",
-        "layers": 6, 
+        "layers": 6,
         "order": 2.0,
         "reflection": 0.001
     }
@@ -92,9 +92,9 @@ All the geometrical information of the simulation case is exclusively stored by 
 
 ```json
 "mesh": {
-    "grid": { ... },       
+    "grid": { ... },
     "coordinates": [ ... ],
-    "elements": [ ... ]    
+    "elements": [ ... ]
 }
 ```
 
@@ -102,13 +102,13 @@ All the geometrical information of the simulation case is exclusively stored by 
 The `grid` object represents a collection of rectangular cuboids or *cells* which tessellate the space to form a structured mesh. This object is defined with the following entries:
 - `<numberOfCells>` is an array of three positive integers which indicate the number of cells in each Cartesian direction.
 - `<steps>` is an object which contains three arrays, labeled with `<x>`, `<y>` and `<z>` which represent the cell sizes, expressed in meters, in that direction. Each array may contain a single real to define a [regular grid](https://en.wikipedia.org/wiki/Regular_grid); or, alternatively, a number of reals equal to the number of cells to define a [rectilinear grid](https://en.wikipedia.org/wiki/Regular_grid).
-- `[origin]` is an array of three reals marking the position of the lowest vertex of the $(0, 0, 0)$ cell. Defaults to `[0.0, 0.0, 0.0]`. 
+- `[origin]` is an array of three reals marking the position of the lowest vertex of the $(0, 0, 0)$ cell. Defaults to `[0.0, 0.0, 0.0]`.
 
 The following example describes a regular grid with $20$, $20$, and $22$ cells in the $x$, $y$, and  $z$ directions respectively.
 ```json
 "mesh": {
     "grid": {
-        "numberOfCells": [20, 20, 22], 
+        "numberOfCells": [20, 20, 22],
         "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
     }
 }
@@ -128,7 +128,7 @@ This is an array of objects which represent Cartesian coordinates within the gri
 ```json
 "mesh": {
     "grid": {
-        "numberOfCells": [8, 5, 1], 
+        "numberOfCells": [8, 5, 1],
         "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
     }
     "coordinates": [
@@ -143,7 +143,7 @@ This is an array of objects which represent Cartesian coordinates within the gri
 The `elements` entry contains an array of JSON objects, each of which represents a geometrical entity. Within the context of this format specification, an *element* can be a relatively simple entity such as `node` or a `polyline`, but it can also be a much more complex geometrical entity such as a `cell`.  An *element objects* must contain the entries
 
 + `<id>` formed by an integer which uniquely identifies it within the `elements` array.
-+ `<type>` which can be one of the following: 
++ `<type>` which can be one of the following:
 
   + `node`, representing a point in space. Elements with this type include a `<coordinateIds>` entry which is an array of a single integer representing the `id` of a coordinate and which must exist in the within the `mesh` `coordinates` list.
   + `polyline`, representing an oriented collection of segments. It must contain a list `<coordinateIds>` with at least two coordinates.
@@ -170,7 +170,7 @@ Below there is an example of a mesh object which includes several types of eleme
         {"id": 1, "type": "node", "coordinateIds": [2]},
         {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3] },
         {"id": 3, "type": "cell", "intervals": [ [ [1, 1, 1], [19, 19, 21] ] ] }
-        {"id": 4, "type": "conformal", "subtype": "surface", 
+        {"id": 4, "type": "conformal", "subtype": "surface",
             "intervals": [ [ [1, 1, 1], [19, 19, 1] ] ], "triangles" : [ [1,2,3] ] }
     ]
 }
@@ -187,17 +187,17 @@ An interval allows specifying regions within the grid which can be a point, an o
 + An *oriented line* is defined when the interval has the same initial and ending values in all directions except one, for instance $a_x \neq b_x$. In this case there are two possibilities:
 
   + when $(b_x - a_x) > 0$, the line is oriented towards $+\hat{x}$.
-  + when $(b_x - a_x) < 0$, the line is oriented towards $-\hat{x}$. 
+  + when $(b_x - a_x) < 0$, the line is oriented towards $-\hat{x}$.
 
 + An *oriented surface* is defined when one initial and ending value is the same and the other two are different, e.g. $a_x = b_x$, $a_y \neq b_y$, $a_z \neq b_z$. In this case there are four possibilities:
-  
+
   + when the $(b_y - a_y) > 0$ and $(b_z - a_z) > 0$, the surface normal is assumed to be oriented towards $+\hat{x}$.
   + when the $(b_y - a_y) < 0$ and $(b_z - a_z) < 0$, the surface normal is assumed to be oriented towards $-\hat{x}$.
   + The other two cases, in which there is a mix of positive and negative signs, are undefined.
 
 + A *volume* is defined when each component of $\mathbf{a}$ is strictly smaller than the corresponding component in $\mathbf{b}$ for each direction, i.e. $a_x < b_x$, $a_y < b_y$, and $a_z < b_z$. The rest of the cases in which all numbers are different but not necessarily smaller are undefined.
 
-**Example:** The following figure represents a grid with the numbers of the cells marked in light gray. The third dimension is ignored for clarity. There are four `cell` elements. 
+**Example:** The following figure represents a grid with the numbers of the cells marked in light gray. The third dimension is ignored for clarity. There are four `cell` elements.
 
 + The first one represents a single rectangular surface with its normal oriented towards the $+\hat{z}$ direction (light green).
 + The second one is formed by an square surface oriented towards the $-\hat{z}$ direction (light red) and a line oriented towards $-\hat{x}$.
@@ -209,7 +209,7 @@ An interval allows specifying regions within the grid which can be a point, an o
 ```json
 "mesh": {
     "grid": {
-        "numberOfCells": [8, 5, 1], 
+        "numberOfCells": [8, 5, 1],
         "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
     }
     "elements": [
@@ -224,7 +224,7 @@ An interval allows specifying regions within the grid which can be a point, an o
 ```
 ##### Triangles
 
-Each triangle is a list of three `<coordinateId>`, representing the vertices of the triangle. Vertices have to be oriented so the normal of each triangle points outwards the volume. 
+Each triangle is a list of three `<coordinateId>`, representing the vertices of the triangle. Vertices have to be oriented so the normal of each triangle points outwards the volume.
 
 ## `[materials]`
 This entry is an array formed by all the physical models contained in the simulation. Each object within the array must contain:
@@ -258,11 +258,11 @@ A `material` with `type` `isotropic` represents an isotropic material with const
 ```json
 {
     "name": "teflon",
-    "id": 1, 
+    "id": 1,
     "type": "isotropic",
     "relativePermittivity": 2.5,
     "electricConducitivity": 1e-6
-} 
+}
 ```
 
 ### `lumped`
@@ -286,13 +286,13 @@ Defined by:
 ```json
 {
     "name": "100_ohm_resistor",
-    "id": 1, 
+    "id": 1,
     "type": "lumped",
     "model": "resistor",
     "resistance": 100,
     "startingTime": 0.0,
     "endTime": 1.0
-} 
+}
 ```
 
 #### `inductor` model
@@ -352,8 +352,8 @@ A `wire`, or *thin wire*, represents an electrically conducting wire-like struct
 These structures are solved by an algorithm similar to the one described in:
 
 ```
-R. Holland and L. Simpson, 
-"Finite-Difference Analysis of EMP Coupling to Thin Struts and Wires," 
+R. Holland and L. Simpson,
+"Finite-Difference Analysis of EMP Coupling to Thin Struts and Wires,"
 IEEE Transactions on Electromagnetic Compatibility, vol. EMC-23, no. 2, pp. 88-97, May 1981,
 doi: 10.1109/TEMC.1981.303899.
 ```
@@ -386,7 +386,7 @@ A `shieldedMultiwire`, models $N+1$ electrical wires inside a bundled. The volta
 `shieldedMultiwire` materials are assumed to be contained within an `unshieldedMultiwire` or another `shieldedMultiwire` which is the external domain and is used as voltage reference. Materials of type `shieldedMultiwire` and `unshieldedMultiwre` can only be defined if the compilation flag for MTLN was ON, i.e. `SEMBA_FDTD_ENABLE_MTLN = ON`. Otherwise, the program execution will fail at runtime.
 They must contain the following entries:
 
-+ `<inductancePerMeter>` and `<capacitancePerMeter>` which must be matrices with a size $N \times N$. If the number of wires is equal to $1$, this property must be a $1 \times 1$ matrix, e.g `[[1e-7]]` 
++ `<inductancePerMeter>` and `<capacitancePerMeter>` which must be matrices with a size $N \times N$. If the number of wires is equal to $1$, this property must be a $1 \times 1$ matrix, e.g `[[1e-7]]`
 + `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
 + `[transferImpedancePerMeter]` which represents the coupling with the external domain, described below. If not present, it defaults to zero, i.e. perfect shielding.
 
@@ -438,13 +438,13 @@ They must contain the following entries:
 
 The field reconstruction objects contains information necessary to calculate the in-cell parameters for an `unshieldedMultiwire` with $N$ conductors. The `electric` and `magnetic`potentials are used to compute the in-cell capacitances and in-cell inductances, respectively. Each contains information to perform a multipolar expansion based on
 
-    Tsogtgerel Gantumur. Multipole Expansions in the plane. 2016, lecture notes. 
+    Tsogtgerel Gantumur. Multipole Expansions in the plane. 2016, lecture notes.
 
 and which must contain
 
 + `<conductorPotentials>` is an array of size $N$ indicating the potentials for each conductor. The $n$-th entry of this array should be equal to $1$, for the active conductor, and less than one for the rest (floating conductors).
-+ `<ab>` which is an array of $P$ pairs of real numbers $(a_p, b_p)$, which are the pole coefficients of the field expansion when the $n$-th conductor is active. 
-+ `<expansionCenter>` is an pair of real numbers indicating the place in which the dipole moment is zero, a concept similar to the _center of charge_. 
++ `<ab>` which is an array of $P$ pairs of real numbers $(a_p, b_p)$, which are the pole coefficients of the field expansion when the $n$-th conductor is active.
++ `<expansionCenter>` is an pair of real numbers indicating the place in which the dipole moment is zero, a concept similar to the _center of charge_.
 + `<innerRegionAveragePotential>` is the potential averaged within the `innerRegionBox`. The multipolar expansion only valid outside the inner region.
 
 
@@ -460,27 +460,27 @@ Each entry in `terminations` is specified by a `type`
 + `short` if the wire is short-circuited with another wire or with any surface which might be present.
 + `open` if the wire does not end in an ohmic contact with any other structure.
 + Different configurations of passive circuit elements R, L, and C can be defined:
-  + `series` (for RLC series circuits), 
-  + `parallel` (for RLC parallel circuits), 
-  + `RsLCp` (LC parallel in series with R), 
-  + `RLsCp` (RL series in parallel with C), 
-  + `LsRCp` (RC parallel in series with L), 
+  + `series` (for RLC series circuits),
+  + `parallel` (for RLC parallel circuits),
+  + `RsLCp` (LC parallel in series with R),
+  + `RLsCp` (RL series in parallel with C),
+  + `LsRCp` (RC parallel in series with L),
   + `CsLRp` (LR parallel in parallel with C),
-  + `RCsLp` (RC series in parallel with L), and 
-  + `LCsRp` (LC series in parallel with R). 
+  + `RCsLp` (RC series in parallel with L), and
+  + `LCsRp` (LC series in parallel with R).
 
 The values are defined defined as follows:
   + `[resistance]` which defaults to `0.0`,
   + `[inductance]` which defaults to `0.0`,
   + `[capacitance]` which defaults to `1e22`.
 + 2-terminals SPICE models can used in a termination. In this case the `type` is `circuit`, and is defined with:
-  + `[file]` which is the name of the file where the SPICE model is defined 
+  + `[file]` which is the name of the file where the SPICE model is defined
   + `[name]` which is the name of the subcircuit as defined inside `file`
-  + `[terminal]` which is the number of the subcircuit terminals the termination is connected to. It can be equal to 1 or 2, depending on the side of the SPICE model the termination is connected to. By default it equals 1, meaning that the termination is connected to the first external node in the netlist definition 
+  + `[terminal]` which is the number of the subcircuit terminals the termination is connected to. It can be equal to 1 or 2, depending on the side of the SPICE model the termination is connected to. By default it equals 1, meaning that the termination is connected to the first external node in the netlist definition
 + N-terminals SPICE models can be used to connect a series of terminations to a subcircuit. The `type` is `network`, and is defined with:
-  + `[file]` which is the name of the file where the SPICE model is defined 
+  + `[file]` which is the name of the file where the SPICE model is defined
   + `[name]` which is the name of the subcircuit as defined inside `file`
-  + `[node]` which is the subcircuit node the termination is connected to. Generally, subcircuits will have their terminals external nodes named in non-numerical way. `[node]` is an integer that refers to the position of the node in the netlist 
+  + `[node]` which is the subcircuit node the termination is connected to. Generally, subcircuits will have their terminals external nodes named in non-numerical way. `[node]` is an integer that refers to the position of the node in the netlist
 
 **Example:**
 
@@ -494,7 +494,7 @@ The values are defined defined as follows:
 ```
 #### `SPICE terminations`
 
-There are two types of SPICE terminations, `circuit` and `network`. `circuit` terminations are equivalent to 2-terminal networks. The netlist representing the connection can be composed of an arbitrary number of components, but it must have only two external nodes. 
+There are two types of SPICE terminations, `circuit` and `network`. `circuit` terminations are equivalent to 2-terminal networks. The netlist representing the connection can be composed of an arbitrary number of components, but it must have only two external nodes.
 
 **Example:**
 
@@ -515,7 +515,7 @@ There are two types of SPICE terminations, `circuit` and `network`. `circuit` te
 {
     "name" : "NetworkTerminal",
     "id" : 5,
-    "type" : "terminal", 
+    "type" : "terminal",
     "terminations" : [ {"type": "network", "file": "ListOfComponents.lib", "name": "Component_2", "node" : 1},
                        {"type": "network", "file": "ListOfComponents.lib", "name": "Component_2", "node" : 2},
                        {"type": "network", "file": "ListOfComponents.lib", "name": "Component_2", "node" : 3} ]
@@ -529,7 +529,7 @@ In this case, the three wires of a e-conductor cable are connected to the nodes 
 The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire`, a `shieldedMultiwire` or an `unshieldedMultiwire`. The `connector` can have the following properties:
 
 + `[resistances]`, an array of real numbers which will be converted to resistances per unit length and will replace the resistancePerMeter of that segment.
-+ `[transferImpedancesPerMeter]`, an array of [transferImpedancePerMeter], as described in the [shieldedMultiwire](#shieldedMultiwire) section. 
++ `[transferImpedancesPerMeter]`, an array of [transferImpedancePerMeter], as described in the [shieldedMultiwire](#shieldedMultiwire) section.
 
 The most common situation will be having the connector of a shielded bundle. In that case, the arrays have a single component. However, the `connector` can describe the connections of a (unshielded) bundle of $N$ shielded conductors. In that case, the `connector` has to describe the connections, if any, of the $N$ shielded conductors.
 
@@ -621,7 +621,7 @@ Records a vector field a single position referenced by `elementIds` which must c
 
 #### `wire`
 
-Records a scalar field at a single position referenced by `elementIds`. `elementIds` must contain a single `id` referencing an element of type `node`. Additionally, this `node` must point to a `coordinateId` belonging to at least one `polyline`. 
+Records a scalar field at a single position referenced by `elementIds`. `elementIds` must contain a single `id` referencing an element of type `node`. Additionally, this `node` must point to a `coordinateId` belonging to at least one `polyline`.
 If the node's `coordinateId` is shared by more than one `polyline` a probe will be defined for each one of them
 The `[field]` can be `voltage`, `current` or `charge`  (defaults to `current`). Voltage probes are properly defined only when used placed on `shieldedMultiwires`. The voltage on a conductor will be referred to the shield surrounding that conductor. In an unshielded wire, there is not a well defined reference, and thus the probe is not reliable. Charge probes are implemented only for wires not treated with the MTL module.
 
@@ -672,7 +672,7 @@ In this example `elementId` points to a volume element, therefore `direction` mu
 
 One important aspect to keep in mind when working with `bulkCurrent` with `electric field type` arises from the fact that to measure the electric current it is necessary to calculate the closed path integral of the magnetic field.
 However, the magnetic field is defined by normals located at the center of each cell faced.
-In consequence, the code internally shifts the defined `bulkCurrent`, causing a **half-cell offset**. 
+In consequence, the code internally shifts the defined `bulkCurrent`, causing a **half-cell offset**.
 In the case of surfaces, the coordinates **perpendicular** to the current flowing through the surface experience a **negative offset**, as shown in the figure below:
 
 ![Negative offset](fig/grid-negativeOffSet.svg)
@@ -700,8 +700,8 @@ A `line` probe computes the electric field line integral along a given `polyline
 
 #### `farField`
 
-Probes of type `farField` perform a near to far field transformation of the electric and magnetic vector fields and are typically located in the scattered field region which is defined by a total/scattered field excitation, e.g. [a planewave](#planewave). 
-They must be defined with a single `cell` element which must contain a single `interval` defining a cuboid. 
+Probes of type `farField` perform a near to far field transformation of the electric and magnetic vector fields and are typically located in the scattered field region which is defined by a total/scattered field excitation, e.g. [a planewave](#planewave).
+They must be defined with a single `cell` element which must contain a single `interval` defining a cuboid.
 The direction of  the radiated field $\hat{r}(\theta, \phi)$ is defined with `<theta>` and `<phi>`, which must contain `<initial>`, `<final>`, and `<step>`, expressed in degrees.
 The `domain` of a `farField` probe can only be of type `frequency`.
 If not `magnitudeFile` is specified and only one `source` is defined, the `magnitudeFile` of that source will be used to calculate as normalizing function.
@@ -728,7 +728,7 @@ If not `magnitudeFile` is specified and only one `source` is defined, the `magni
 
 Probes of type `movie` record a vector field in a volume region indicated by `elementIds`. `[field]` can be `electric`, `magnetic`, or `currentDensity`; defaults to `electric`.
 `currentDensity` will store only the surface density currents on `pec` or lossy surfaces.
-For movies in time domain, the `initialTime`, `finalTime`, and `samplingPeriod` must be specified by the user; there is no default value.  
+For movies in time domain, the `initialTime`, `finalTime`, and `samplingPeriod` must be specified by the user; there is no default value.
 The stored values can be selected using the `[component]` entry, which stores one of the following labels `x`, `y`, `z`, or `magnitude`; if no component is specified, defaults to `magnitude`.
 
 An example follows:
@@ -809,8 +809,8 @@ This object represents a time-varying vector field applied along an oriented lin
 ```json
 {
     "name": "entry_line_curent",
-    "type": "nodalSource", 
-    "magnitudeFile": "gauss.exc", 
+    "type": "nodalSource",
+    "magnitudeFile": "gauss.exc",
     "elementIds": [1],
     "hardness": "soft"
 }
@@ -818,7 +818,7 @@ This object represents a time-varying vector field applied along an oriented lin
 
 ### `generator`
 
-A `generator` source must be located on a single `node`. The entry `[field]` can be `voltage` or `current`; defaults to `voltage`. 
+A `generator` source must be located on a single `node`. The entry `[field]` can be `voltage` or `current`; defaults to `voltage`.
 
 **Example:**
 
@@ -835,7 +835,7 @@ A `generator` source must be located on a single `node`. The entry `[field]` can
 
 ##### Holland wires
 
-Using Holland wires, generators can be located on any node of the lines. Voltage(current) generators cannot have a series(parallel) resistance defined. The magnitude of the source already has to include any resistances that belong to the generator. 
+Using Holland wires, generators can be located on any node of the lines. Voltage(current) generators cannot have a series(parallel) resistance defined. The magnitude of the source already has to include any resistances that belong to the generator.
 
 ##### MLTN wires
 
@@ -846,7 +846,7 @@ Using MTLN wires there are some restrictions on the position of the generator:
 | Voltage                           | Only terminal nodes       | Terminal and interior nodes     |
 | Current                           | Terminal and interior nodes        | Only terminal nodes      |
 
-MTLN voltage(current) generators can have a series(parallel) resistance, which is optional. In case no value is provided, the resistance default value will be 0.0. for `voltage` generators and 1.0e22 for `current` generators. 
+MTLN voltage(current) generators can have a series(parallel) resistance, which is optional. In case no value is provided, the resistance default value will be 0.0. for `voltage` generators and 1.0e22 for `current` generators.
 
 If the generator is located at the termination of a wire, the series or parallel `resistance` is added to the connection defined in the corresponding `terminal`. If a current generator is located on a wire intermediate position, its Thévenin equivalent (generator + series resistance) is computed to substitute the current generator.  The per-unit-length properties of the corresponding segment are modified according to the `resistance` of the generator.
 
@@ -860,7 +860,7 @@ In case a generator is on a wire extreme, the current direction will be from the
 
 #### Generators on junctions
 
-In case the generator is located at the junction `node` (connection point) of two of more lines,  the lines whose ends are connected  will share the same  `coordinateId`. In this case, it is necessary to know to which of the lines the generator is attached to. The entry `[attachedToLineId]` is an integer which refers to the `elementId` of the `polyline` the generator is connected to. 
+In case the generator is located at the junction `node` (connection point) of two of more lines,  the lines whose ends are connected  will share the same  `coordinateId`. In this case, it is necessary to know to which of the lines the generator is attached to. The entry `[attachedToLineId]` is an integer which refers to the `elementId` of the `polyline` the generator is connected to.
 
 
 **Example:**
@@ -870,8 +870,8 @@ In case the generator is located at the junction `node` (connection point) of tw
     "name": "voltage_source",
     "type": "generator",
     "field": "voltage",
-    "magnitudeFile": "gauss.exc", 
-    "elementIds": [1], 
+    "magnitudeFile": "gauss.exc",
+    "elementIds": [1],
     "attachedToLineId" : 2
 }
 ```

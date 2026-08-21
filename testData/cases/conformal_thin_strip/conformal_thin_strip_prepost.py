@@ -34,7 +34,7 @@ tbulk = bulk["time"].to_numpy()
 dt_bulk = tbulk[1]-tbulk[0]
 Ifbulk = dt_bulk*np.array([np.sum(Ibulk * np.exp(-1j * 2 * np.pi * f * tbulk)) for f in new_freqs])
 
-#impedance comparison 
+#impedance comparison
 plt.loglog(new_freqs, np.abs(Vfexc/Ifbulk), label='conformal')
 plt.ylabel(r'Z($\Omega$)')
 plt.xlabel('f [Hz]')
