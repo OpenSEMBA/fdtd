@@ -3,7 +3,6 @@ import json
 import os
 import shutil
 import glob
-import re
 from enum import Enum
 import pandas as pd
 import numpy as np
@@ -525,14 +524,18 @@ class FDTD:
 
         return sorted(set(probe_folders))
 
+    def resolveInputPath(self, path):
+        path = os.fspath(path)
+        if not os.path.isabs(path):
+            path = os.path.join(self.getFolder(), path)
+        return os.path.abspath(path)
+
     def getExcitationFile(self, excitation_file_name):
-        file_extensions = ("*.exc",)
-        excitationFile = []
-        for ext in file_extensions:
-            newExcitationFile = [
-                x for x in glob.glob(ext) if re.match(excitation_file_name, x)
-            ]
-            excitationFile.extend(newExcitationFile)
+        excitationFile = sorted(
+            path
+            for path in glob.glob(os.path.join(self.getFolder(), "*.exc"))
+            if os.path.basename(path).startswith(excitation_file_name)
+        )
 
         if (len(excitationFile)) != 1:
             raise ValueError(

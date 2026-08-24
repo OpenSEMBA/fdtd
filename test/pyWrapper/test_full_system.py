@@ -40,6 +40,10 @@ def _get_solved_probe_folder(
     return probe_files[0]
 
 
+def _get_source_magnitude_file(solver, source_index=0) -> str:
+    return solver.resolveInputPath(solver["sources"][source_index]["magnitudeFile"])
+
+
 # compiled without mtln uses classic wires
 # compiled with mtln, wire is treated as an unshielded multiwire
 @pytest.mark.skip(reason='newOutput module has not solved this problem yet')
@@ -1290,8 +1294,8 @@ def test_lumped_resistor(tmp_path):
     system = signal.TransferFunction(num, den)
     tout, I_out, _ = signal.lsim(
         system,
-        U=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=1),
-        T=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=0),
+        U=np.loadtxt(_get_source_magnitude_file(solver_lumped), usecols=1),
+        T=np.loadtxt(_get_source_magnitude_file(solver_lumped), usecols=0),
     )
 
     I_theo = np.interp(AdjacentPreLumpedProbe["time"], tout, I_out)
@@ -1349,8 +1353,8 @@ def test_lumped_capacitor(tmp_path):
     system = signal.TransferFunction(num, den)
     tout, I_out, _ = signal.lsim(
         system,
-        U=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=1),
-        T=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=0),
+        U=np.loadtxt(_get_source_magnitude_file(solver_lumped), usecols=1),
+        T=np.loadtxt(_get_source_magnitude_file(solver_lumped), usecols=0),
     )
 
     I_theo = np.interp(AdjacentPreLumpedProbe["time"], tout, I_out)
@@ -1461,8 +1465,8 @@ def test_lumped_inductor(tmp_path):
     system = signal.TransferFunction(num, den)
     tout, I_out, _ = signal.lsim(
         system,
-        U=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=1),
-        T=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=0),
+        U=np.loadtxt(_get_source_magnitude_file(solver_lumped), usecols=1),
+        T=np.loadtxt(_get_source_magnitude_file(solver_lumped), usecols=0),
     )
 
     I_theo = np.interp(AdjacentPreLumpedProbe["time"], tout, I_out)
@@ -1521,8 +1525,8 @@ def test_lumped_resistor_parallel_terminal_resistor(tmp_path):
     system = signal.TransferFunction(num, den)
     tout, I_out, _ = signal.lsim(
         system,
-        U=np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1),
-        T=np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0),
+        U=np.loadtxt(_get_source_magnitude_file(solver), usecols=1),
+        T=np.loadtxt(_get_source_magnitude_file(solver), usecols=0),
     )
 
     I_theo = np.interp(InitialBulk_probe["time"], tout, I_out)
@@ -1551,8 +1555,8 @@ def test_bulk_current_offset_normal_in_x(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
-    time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
+    I_in = np.loadtxt(_get_source_magnitude_file(solver), usecols=1)
+    time = np.loadtxt(_get_source_magnitude_file(solver), usecols=0)
 
     probe_at_x_18 = Probe(_get_solved_probe_folder(solver, "BulkCurrent1"))
     probe_at_x_20 = Probe(_get_solved_probe_folder(solver, "BulkCurrent2"))
@@ -1578,8 +1582,8 @@ def test_bulk_current_offset_normal_in_y(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
-    time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
+    I_in = np.loadtxt(_get_source_magnitude_file(solver), usecols=1)
+    time = np.loadtxt(_get_source_magnitude_file(solver), usecols=0)
 
     probe_at_y_m2 = Probe(_get_solved_probe_folder(solver, "BulkCurrent1"))
     probe_at_y_0 = Probe(_get_solved_probe_folder(solver, "BulkCurrent2"))
@@ -1607,8 +1611,8 @@ def test_bulk_current_offset_normal_in_z(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
-    time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
+    I_in = np.loadtxt(_get_source_magnitude_file(solver), usecols=1)
+    time = np.loadtxt(_get_source_magnitude_file(solver), usecols=0)
 
     probe_at_z_18 = Probe(_get_solved_probe_folder(solver, "BulkCurrent1"))
     probe_at_z_20 = Probe(_get_solved_probe_folder(solver, "BulkCurrent2"))
@@ -1686,8 +1690,8 @@ def test_bulk_current_offset_perpendicular_in_x(tmp_path):
     probe2_negative = Probe(_get_solved_probe_folder(solver_negative, "Bulk probe2"))
     probe3_negative = Probe(_get_solved_probe_folder(solver_negative, "Bulk probe3"))
 
-    I_in_2 = np.loadtxt(solver["sources"][1]["magnitudeFile"], usecols=1)
-    time_2 = np.loadtxt(solver["sources"][1]["magnitudeFile"], usecols=0)
+    I_in_2 = np.loadtxt(_get_source_magnitude_file(solver, 1), usecols=1)
+    time_2 = np.loadtxt(_get_source_magnitude_file(solver, 1), usecols=0)
 
     I_2_interp = np.interp(probe2_negative["time"].to_numpy(), time_2, I_in_2)
 
@@ -1699,8 +1703,8 @@ def test_bulk_current_offset_perpendicular_in_x(tmp_path):
     probe2_positive = Probe(_get_solved_probe_folder(solver_positive, "Bulk probe2"))
     probe3_positive = Probe(_get_solved_probe_folder(solver_positive, "Bulk probe3"))
 
-    I_in_3 = np.loadtxt(solver["sources"][2]["magnitudeFile"], usecols=1)
-    time_3 = np.loadtxt(solver["sources"][2]["magnitudeFile"], usecols=0)
+    I_in_3 = np.loadtxt(_get_source_magnitude_file(solver, 2), usecols=1)
+    time_3 = np.loadtxt(_get_source_magnitude_file(solver, 2), usecols=0)
 
     I_3_interp = np.interp(probe3_positive["time"].to_numpy(), time_3, I_in_3)
 
@@ -1734,8 +1738,8 @@ def test_bulk_current_negative_offset_in_x(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
-    time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
+    I_in = np.loadtxt(_get_source_magnitude_file(solver), usecols=1)
+    time = np.loadtxt(_get_source_magnitude_file(solver), usecols=0)
 
     probeR = Probe(_get_solved_probe_folder(solver, "Bulk_right"))
     probeL = Probe(_get_solved_probe_folder(solver, "Bulk_left"))
@@ -1758,8 +1762,8 @@ def _run_four_probes(tmp_path, json_filename):
     )
     solver.run()
 
-    exc_time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
-    exc_val = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
+    exc_time = np.loadtxt(_get_source_magnitude_file(solver), usecols=0)
+    exc_val = np.loadtxt(_get_source_magnitude_file(solver), usecols=1)
 
     probe_LL = Probe(_get_solved_probe_folder(solver, "BC_LL"))
     probe_LU = Probe(_get_solved_probe_folder(solver, "BC_LU"))

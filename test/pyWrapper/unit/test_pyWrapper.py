@@ -42,6 +42,33 @@ def test_fdtd_run_keeps_callers_working_directory(tmp_path, monkeypatch):
     assert os.getcwd() == original_directory
 
 
+def test_fdtd_resolve_input_path_is_rooted_in_solver_folder(tmp_path):
+    case = tmp_path / "case.fdtd.json"
+    case.write_text("{}")
+    solver = FDTD(case, path_to_exe=case)
+    relative_path = "nested folder/excitation.exc"
+    absolute_path = tmp_path / "absolute.exc"
+
+    assert solver.resolveInputPath(relative_path) == str(
+        tmp_path / "nested folder" / "excitation.exc"
+    )
+    assert solver.resolveInputPath(absolute_path) == str(absolute_path)
+
+
+def test_fdtd_get_excitation_file_is_rooted_in_solver_folder(tmp_path, monkeypatch):
+    case = tmp_path / "case.fdtd.json"
+    case.write_text("{}")
+    (tmp_path / "predefinedExcitation.1.exc").touch()
+    other_folder = tmp_path / "other"
+    other_folder.mkdir()
+    solver = FDTD(case, path_to_exe=case)
+    monkeypatch.chdir(other_folder)
+
+    assert solver.getExcitationFile("predefinedExcitation") == [
+        str(tmp_path / "predefinedExcitation.1.exc")
+    ]
+
+
 def get_probe_stem(probe_case):
     return "{case}.fdtd_{name}{type}{region}{segment}{domain}".format(
         case=probe_case["case"]["code"],
