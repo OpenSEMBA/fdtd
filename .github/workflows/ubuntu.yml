@@ -107,13 +107,21 @@ jobs:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
-      run: python -m pytest -vv test/ --durations=20
+      run: python -m pytest -vv test/ --durations=20 --junitxml=build/pytest-results.xml
 
     - name: Run native tests
       id: native-tests
       if: ${{ !cancelled() && steps.build.outcome == 'success' }}
       continue-on-error: true
       run: build/bin/fdtd_tests
+
+    - name: Upload failed test diagnostics
+      if: ${{ !cancelled() && (steps.ctest.outcome == 'failure' || steps.python-tests.outcome == 'failure' || steps.native-tests.outcome == 'failure') }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-diagnostics-${{ matrix.compiler.name }}-mpi-${{ matrix.mpi }}-mtln-${{ matrix.mtln }}-double-${{ matrix.double-precision }}
+        path: build/pytest-results.xml
+        if-no-files-found: warn
 
     - name: Report test failures
       if: ${{ !cancelled() && steps.build.outcome == 'success' }}

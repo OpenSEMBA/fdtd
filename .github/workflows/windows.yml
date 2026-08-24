@@ -86,33 +86,49 @@ jobs:
         cmake --build build -j 
 
     - name: Run ctest
+      id: ctest
+      continue-on-error: true
       run: ctest --test-dir build --output-on-failure
 
     - name: Run HDF movie smoke test
+      id: hdf-smoke
+      continue-on-error: true
       env:
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: python -m pytest test/pyWrapper/test_full_system.py::test_movie_in_planewave_in_box --basetemp=build/hdf-smoke
 
     - name: Run python tests (except codemodel)
+      id: python-tests
+      continue-on-error: true
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
-      run: python -m pytest -m 'not codemodel' test/ --durations=20 --basetemp=build/pytest-tmp
+      run: python -m pytest -m 'not codemodel' test/ --durations=20 --junitxml=build/pytest-results.xml --basetemp=build/pytest-tmp
 
-    - name: Run native tests 
+    - name: Run native tests
+      id: native-tests
+      continue-on-error: true
       run: build/bin/fdtd_tests.exe
 
-    - name: Upload failed HDF output diagnostics
-      if: failure()
+    - name: Upload failed test diagnostics
+      if: ${{ !cancelled() && (steps.ctest.outcome == 'failure' || steps.hdf-smoke.outcome == 'failure' || steps.python-tests.outcome == 'failure' || steps.native-tests.outcome == 'failure') }}
       uses: actions/upload-artifact@v4
       with:
-        name: hdf-output-${{ matrix.mtln }}-${{ matrix.double-precision }}
+        name: test-diagnostics-${{ matrix.mtln }}-${{ matrix.double-precision }}
         path: |
-          build/hdf-smoke/**
-          build/pytest-tmp/**/*.h5
-          build/pytest-tmp/**/*.xdmf
-          build/pytest-tmp/**/*.json
+          build/pytest-results.xml
+          build/hdf-smoke/**/*.json
         if-no-files-found: warn
 
+    - name: Report test failures
+      if: ${{ !cancelled() }}
+      shell: pwsh
+      run: |
+        if ("${{ steps.ctest.outcome }}" -ne "success" -or `
+            "${{ steps.hdf-smoke.outcome }}" -ne "success" -or `
+            "${{ steps.python-tests.outcome }}" -ne "success" -or `
+            "${{ steps.native-tests.outcome }}" -ne "success") {
+          exit 1
+        }
         
