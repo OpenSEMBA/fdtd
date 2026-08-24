@@ -81,6 +81,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     gdb \
     gdbserver \
     sudo \
+    sysstat \
     && rm -rf /var/lib/apt/lists/*
 
 # Preserve package-manager caches across BuildKit builds.

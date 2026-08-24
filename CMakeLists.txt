@@ -161,6 +161,9 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 		# MSVC links executables with a 1 MiB stack by default, which is too small
 		# for HDF output initialisation with the Intel Fortran runtime.
 		add_link_options(/STACK:67108864)
+		# HDF output creates size-dependent Fortran temporaries. Keep them off the
+		# limited Windows thread stack even when the final executable uses a larger stack.
+		add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:/heap-arrays>)
 
 		# This prevents a compilation error happening due to visual studio headers being too strict.
 		# It can possibly can be removed in the future.
