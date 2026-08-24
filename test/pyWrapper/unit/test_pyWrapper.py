@@ -1,6 +1,9 @@
 from test.utils.utils import *
 from test.utils import utils
 from pathlib import Path
+from types import SimpleNamespace
+
+import os
 
 import numpy as np
 import pytest
@@ -17,6 +20,26 @@ def make_probe_folder(tmp_path, source_file):
     probe_folder.mkdir()
     (probe_folder / source_file.name).write_bytes(source_file.read_bytes())
     return probe_folder
+
+
+def test_fdtd_run_keeps_callers_working_directory(tmp_path, monkeypatch):
+    case = tmp_path / "case.fdtd.json"
+    case.write_text("{}")
+    executable = tmp_path / "semba-fdtd"
+    executable.touch()
+    solver = FDTD(case, path_to_exe=executable)
+    original_directory = os.getcwd()
+
+    def run(command, capture_output, cwd):
+        assert command == solver.run_command
+        assert capture_output is True
+        assert cwd == str(tmp_path)
+        return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr("src_pyWrapper.pyWrapper.subprocess.run", run)
+    solver.run()
+
+    assert os.getcwd() == original_directory
 
 
 def get_probe_stem(probe_case):

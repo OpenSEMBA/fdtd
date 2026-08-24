@@ -79,21 +79,27 @@ contains
       filename = get_last_component(this%path)
       this%filesPath = join_path(this%path, filename)
 
-       call create_folder(this%path, error)
-       call create_bin_file(this%filesPath, error)
+        call create_folder(this%path, error)
+        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+           'Unable to create movie output directory')
+        call create_bin_file(this%filesPath, error)
+        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+           'Unable to create movie binary output')
         call create_movie_files(this, error, xsteps, ysteps, zsteps)
-       if (error /= 0) return
-       call write_geometry_companion(this%filesPath, lowerBound, upperBound, problemInfo, geometry_status)
-       if (geometry_status%is_error()) then
-          print *, 'Unable to create movie geometry: ', trim(geometry_status%message())
-          if (associated(this%writer)) then
-             call this%writer%close(writer_status)
-             deallocate(this%writer)
-          end if
-          return
-       end if
-       call initialise_movie_metadata(this, error, control%mpidir)
-       if (error /= 0) print *, 'error en creacion'
+        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+           'Unable to initialise movie HDF5 output')
+        call write_geometry_companion(this%filesPath, lowerBound, upperBound, problemInfo, geometry_status)
+        if (geometry_status%is_error()) then
+           if (associated(this%writer)) then
+              call this%writer%close(writer_status)
+              deallocate(this%writer)
+           end if
+           call StopOnError(control%layoutnumber, control%num_procs, &
+              'Unable to create movie geometry: '//trim(geometry_status%message()))
+        end if
+        call initialise_movie_metadata(this, error, control%mpidir)
+        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+           'Unable to initialise movie output metadata')
    end subroutine init_movie_probe_output
 
    subroutine configure_movie_probe_publication(this, publication_mode, local_participates)
@@ -294,36 +300,31 @@ contains
 
    subroutine close_movie_probe_output(this)
       type(movie_probe_output_t), intent(inout) :: this
-      type(xdmf_status_t) :: writer_status
-      integer :: error
-      logical :: writer_ok
+       type(xdmf_status_t) :: writer_status
+       integer :: error
 
       if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
           this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) return
-      writer_ok = .true.
-      if (associated(this%writer)) then
-          call this%writer%close(writer_status)
-          if (writer_status%is_error()) then
-             writer_ok = .false.
-             this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-             this%metadata%lifecycle%diagnostic = 'Unable to close movie visualisation'
-          end if
+       if (associated(this%writer)) then
+           call this%writer%close(writer_status)
+           if (writer_status%is_error()) then
+              call StopOnError(0, 0, 'Unable to close movie HDF5 output: '// &
+                 trim(writer_status%message()))
+           end if
           deallocate(this%writer)
        end if
        call verify_volumetric_visualisation(this%filesPath, error)
        if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. &
-           error == VISUALISATION_SUCCESS .and. writer_ok) then
+            error == VISUALISATION_SUCCESS) then
           this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
           this%metadata%lifecycle%diagnostic = ''
-       else
-          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-          this%metadata%lifecycle%diagnostic = 'Required movie artifacts are incomplete'
-       end if
-       call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
-       if (error /= OUTPUT_METADATA_SUCCESS) then
-          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-          this%metadata%lifecycle%diagnostic = 'Unable to publish movie metadata'
-       end if
+        else
+           call StopOnError(0, 0, 'Required movie output artifacts are incomplete')
+        end if
+        call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
+        if (error /= OUTPUT_METADATA_SUCCESS) then
+           call StopOnError(0, 0, 'Unable to publish movie output metadata')
+        end if
    end subroutine close_movie_probe_output
 
    !===========================
@@ -357,11 +358,10 @@ contains
       integer :: time_index
 
       do time_index = 1, this%nTime
-         call this%writer%begin_step(real(this%timeStep(time_index), real64), status)
-         if (status%is_error()) then
-            print *, trim(status%message())
-            return
-         end if
+          call this%writer%begin_step(real(this%timeStep(time_index), real64), status)
+          if (status%is_error()) then
+             call StopOnError(0, 0, 'Movie HDF5 write failed: '//trim(status%message()))
+          end if
          if (any([iCur, iMEC, iMHC, iCurX, iExC, iHxC] == this%component)) then
             call write_external_attribute(this, this%xAttribute, &
                this%xValueForTime, time_index, status)
@@ -378,10 +378,9 @@ contains
           end if
           if (.not. status%is_error()) call write_external_tag_attribute(this, this%tagAttribute, status)
           if (.not. status%is_error()) call this%writer%end_step(status)
-         if (status%is_error()) then
-            print *, trim(status%message())
-            return
-         end if
+          if (status%is_error()) then
+             call StopOnError(0, 0, 'Movie HDF5 write failed: '//trim(status%message()))
+          end if
       end do
    end subroutine write_to_external_xdmf
 

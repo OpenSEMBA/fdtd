@@ -88,10 +88,18 @@ contains
       filename = get_last_component(this%path)
       this%filesPath = join_path(this%path, filename)
 
-       call create_folder(this%path, error)
-       call create_bin_file(this%filesPath, error)
-       call create_frequency_writer(this, problemInfo, error)
-       call initialise_frequency_metadata(this, error, control%mpidir)
+        call create_folder(this%path, error)
+        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+           'Unable to create frequency slice output directory')
+        call create_bin_file(this%filesPath, error)
+        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+           'Unable to create frequency slice binary output')
+        call create_frequency_writer(this, problemInfo, error)
+        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+           'Unable to initialise frequency slice HDF5 output')
+        call initialise_frequency_metadata(this, error, control%mpidir)
+        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+           'Unable to initialise frequency slice output metadata')
    end subroutine init_frequency_slice_probe_output
 
    subroutine configure_frequency_slice_probe_publication(this, publication_mode, local_participates)
@@ -256,10 +264,9 @@ contains
          if (.not. status%is_error()) call this%writer%write_attribute( &
             this%zPhase, zPhase, status)
          if (.not. status%is_error()) call this%writer%end_step(status)
-         if (status%is_error()) then
-            print *, trim(status%message())
-            exit
-         end if
+          if (status%is_error()) then
+             call StopOnError(0, 0, 'Frequency slice HDF5 write failed: '//trim(status%message()))
+          end if
        end do
        deallocate(xMagnitude, yMagnitude, zMagnitude, xPhase, yPhase, zPhase)
    end subroutine write_to_xdmf_h5
@@ -494,36 +501,32 @@ contains
 
    subroutine close_frequency_slice_probe_output(this)
       type(frequency_slice_probe_output_t), intent(inout) :: this
-      type(xdmf_status_t) :: writer_status
-      integer :: error
-      logical :: writer_ok
+       type(xdmf_status_t) :: writer_status
+       integer :: error
 
       if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
           this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) return
-      writer_ok = .true.
-      call write_to_xdmf_h5(this)
+       call write_to_xdmf_h5(this)
       if (associated(this%writer)) then
-         call this%writer%close(writer_status)
-         if (writer_status%is_error()) then
-            writer_ok = .false.
-            print *, trim(writer_status%message())
-         end if
+          call this%writer%close(writer_status)
+          if (writer_status%is_error()) then
+             call StopOnError(0, 0, 'Unable to close frequency slice HDF5 output: '// &
+                trim(writer_status%message()))
+          end if
          deallocate(this%writer)
       end if
-      call verify_volumetric_visualisation(this%filesPath, error)
-      if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. &
-          error == VISUALISATION_SUCCESS .and. writer_ok) then
+       call verify_volumetric_visualisation(this%filesPath, error)
+       if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. &
+           error == VISUALISATION_SUCCESS) then
          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
          this%metadata%lifecycle%diagnostic = ''
-      else
-         this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-         this%metadata%lifecycle%diagnostic = 'Required frequency slice artifacts are incomplete'
-      end if
-      call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
-      if (error /= OUTPUT_METADATA_SUCCESS) then
-         this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-         this%metadata%lifecycle%diagnostic = 'Unable to publish frequency slice metadata'
-      end if
+       else
+          call StopOnError(0, 0, 'Required frequency slice output artifacts are incomplete')
+       end if
+       call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
+       if (error /= OUTPUT_METADATA_SUCCESS) then
+          call StopOnError(0, 0, 'Unable to publish frequency slice output metadata')
+       end if
    end subroutine
 
 

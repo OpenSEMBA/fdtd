@@ -441,8 +441,9 @@ class FDTD:
         if self._input != json.load(open(self._filename, "r")):
             json.dump(self._input, open(self._filename, "w"))
 
-        os.chdir(self.getFolder())
-        self.output = subprocess.run(self.run_command, capture_output=True)
+        self.output = subprocess.run(
+            self.run_command, capture_output=True, cwd=self.getFolder()
+        )
         self._hasRun = True
         assert self.hasFinishedSuccessfully()
 
@@ -541,30 +542,49 @@ class FDTD:
         return excitationFile
 
     def getVTKMap(self):
-        map_files = sorted(glob.glob(os.path.join("**", "*.vtu"), recursive=True))
+        map_files = sorted(
+            glob.glob(os.path.join(self.getFolder(), "**", "*.vtu"), recursive=True)
+        )
         if not map_files:
-            map_files = sorted(glob.glob(os.path.join("**", "*_1.vtk"), recursive=True))
+            map_files = sorted(
+                glob.glob(
+                    os.path.join(self.getFolder(), "**", "*_1.vtk"), recursive=True
+                )
+            )
         return map_files[0] if map_files else None
 
     def getCurrentVTKMap(self):
         current_maps = sorted(
-            glob.glob(os.path.join("**", "*current*.vtu"), recursive=True)
+            glob.glob(
+                os.path.join(self.getFolder(), "**", "*current*.vtu"), recursive=True
+            )
         )
         if not current_maps:
             current_maps = sorted(
-                glob.glob(os.path.join("**", "*_1_current.vtk"), recursive=True)
+                glob.glob(
+                    os.path.join(self.getFolder(), "**", "*_1_current.vtk"),
+                    recursive=True,
+                )
             )
         return current_maps[0] if current_maps else None
 
     def getCurrentMovie(self):
         current_movies = sorted(
-            glob.glob(os.path.join("**", "*current_movie*", "*.xdmf"), recursive=True)
+            glob.glob(
+                os.path.join(self.getFolder(), "**", "*current_movie*", "*.xdmf"),
+                recursive=True,
+            )
         )
         return current_movies[0] if current_movies else None
 
     def getCurrentMovieGeometry(self):
         geometries = sorted(
-            glob.glob(os.path.join("**", "*current_movie*", "*_geometry.xdmf"), recursive=True)
+            glob.glob(
+                os.path.join(
+                    self.getFolder(), "**", "*current_movie*", "*_geometry.xdmf"
+                ),
+                recursive=True,
+            )
         )
         return geometries[0] if geometries else None
 
