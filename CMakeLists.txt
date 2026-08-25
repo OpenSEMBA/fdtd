@@ -29,11 +29,6 @@ endif()
 option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag (not supported in github actions)" OFF) 
 option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables the interprocedural optimization" OFF)
 
-option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
-option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
-option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
-option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
-
 if(SEMBA_FDTD_ENABLE_MPI)
 	set(HDF5_PREFER_PARALLEL TRUE)
 endif()
@@ -236,77 +231,69 @@ endif()
 
 
 
-if(SEMBA_FDTD_COMPONENTS_LIB)
-	add_library(semba-components
-		"src_main_pub/anisotropic.F90"
-		"src_main_pub/borderscpml.F90"
-		"src_main_pub/bordersmur.F90"
-		"src_main_pub/bordersother.F90"
-		"src_main_pub/electricdispersive.F90"
-		"src_main_pub/magneticdispersive.F90"
-		"src_main_pub/nodalsources.F90"
-		"src_main_pub/planewaves.F90"
-		"src_main_pub/pml_bodies.F90"
-		"src_main_pub/maloney_nostoch.F90"
-		"src_main_pub/lumped.F90"
-		"src_main_pub/dmma_thin_slot.F90"
-		"src_main_pub/farfield.F90"
-		"src_wires_pub/wires.F90"
-		"src_wires_pub/wires_mtln.F90"
-	)
-	target_link_libraries(semba-components semba-types semba-reports ${MTLN_LIBRARIES})
-endif()
+add_library(semba-components
+	"src_main_pub/anisotropic.F90"
+	"src_main_pub/borderscpml.F90"
+	"src_main_pub/bordersmur.F90"
+	"src_main_pub/bordersother.F90"
+	"src_main_pub/electricdispersive.F90"
+	"src_main_pub/magneticdispersive.F90"
+	"src_main_pub/nodalsources.F90"
+	"src_main_pub/planewaves.F90"
+	"src_main_pub/pml_bodies.F90"
+	"src_main_pub/maloney_nostoch.F90"
+	"src_main_pub/lumped.F90"
+	"src_main_pub/dmma_thin_slot.F90"
+	"src_main_pub/farfield.F90"
+	"src_wires_pub/wires.F90"
+	"src_wires_pub/wires_mtln.F90"
+)
+target_link_libraries(semba-components semba-types semba-reports ${MTLN_LIBRARIES})
 
-if(SEMBA_FDTD_OUTPUTS_LIB)
-	add_library(semba-outputs
-		"src_main_pub/mpicomm.F90"
-	)
-	target_link_libraries(semba-outputs
-		semba-components
-		${MPI_Fortran_LIBRARIES})
-endif()
+add_library(semba-outputs
+	"src_main_pub/mpicomm.F90"
+)
+target_link_libraries(semba-outputs
+	semba-components
+	${MPI_Fortran_LIBRARIES})
 
-if(SEMBA_FDTD_MAIN_LIB)
-	# Prepares variables containing information on commit-hash and build flags.
-	# This information is only available at the configuration stage.
-	set(PROGRAM_NAME "semba-fdtd")
-	include("${CMAKE_CURRENT_SOURCE_DIR}/get_commit_info.cmake")
-	configure_file(
+# Prepares variables containing information on commit-hash and build flags.
+# This information is only available at the configuration stage.
+set(PROGRAM_NAME "semba-fdtd")
+include("${CMAKE_CURRENT_SOURCE_DIR}/get_commit_info.cmake")
+configure_file(
 	${CMAKE_SOURCE_DIR}/src_main_pub/version.F90.in
 	${CMAKE_SOURCE_DIR}/src_main_pub/version.F90
 	@ONLY
-	)
+)
 
-	add_library(semba-main
-		"src_main_pub/semba_fdtd.F90"
-		"src_main_pub/calc_constants.F90"
-		"src_main_pub/nfde_rotate.F90"
-		"src_main_pub/EpsMuTimeScale.F90"
-		"src_main_pub/getargs.F90"
-		"src_main_pub/healer.F90"
-		"src_main_pub/preprocess_geom.F90"
-		"src_main_pub/storegeom.F90"
-		"src_main_pub/version.F90"
-		"src_main_pub/interpreta_switches.F90"
-		"src_main_pub/resuming.F90"	
-		"src_main_pub/timestepping.F90"
-	)
-	target_link_libraries(semba-main
-		semba-outputs
-		fdtd-utils
-		${OUTPUT_LIBRARIES}
-		${VTK_API_LIBRARIES}
-		${SMBJSON_LIBRARIES}
-		${MTLN_LIBRARIES})
-endif()
+add_library(semba-main
+	"src_main_pub/semba_fdtd.F90"
+	"src_main_pub/calc_constants.F90"
+	"src_main_pub/nfde_rotate.F90"
+	"src_main_pub/EpsMuTimeScale.F90"
+	"src_main_pub/getargs.F90"
+	"src_main_pub/healer.F90"
+	"src_main_pub/preprocess_geom.F90"
+	"src_main_pub/storegeom.F90"
+	"src_main_pub/version.F90"
+	"src_main_pub/interpreta_switches.F90"
+	"src_main_pub/resuming.F90"
+	"src_main_pub/timestepping.F90"
+)
+target_link_libraries(semba-main
+	semba-outputs
+	fdtd-utils
+	${OUTPUT_LIBRARIES}
+	${VTK_API_LIBRARIES}
+	${SMBJSON_LIBRARIES}
+	${MTLN_LIBRARIES})
 
-if (SEMBA_FDTD_EXECUTABLE)
-	add_executable(semba-fdtd 
-		"src_main_pub/launcher.F90"
-	)
-	target_link_libraries(semba-fdtd semba-main semba-reports)
-	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
-endif()
+add_executable(semba-fdtd
+	"src_main_pub/launcher.F90"
+)
+target_link_libraries(semba-fdtd semba-main semba-reports)
+target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
 
 
 
