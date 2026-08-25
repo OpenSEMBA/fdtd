@@ -113,11 +113,6 @@ def test_lineIntegralProbe(tmp_path):
 @pytest.mark.probes
 def test_shieldedPair(tmp_path):
     """Verify shielded-pair voltage and current probes match reference signals."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "shieldedPair/shieldedPair.fdtd.json"
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
@@ -229,11 +224,6 @@ def test_coated_antenna(tmp_path):
 @pytest.mark.probes
 def test_holland(tmp_path):
     """Verify the Holland wire current agrees with the reference solution."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "holland/holland1981.fdtd.json"
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
@@ -256,11 +246,6 @@ def test_holland(tmp_path):
 @pytest.mark.probes
 def test_holland_short_terminals_match_open_terminals(tmp_path):
     """Verify short terminal definitions preserve this Holland-case response."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "holland/holland1981.fdtd.json"
     number_of_steps = 1000
 
@@ -308,11 +293,6 @@ def test_holland_short_terminals_match_open_terminals(tmp_path):
 @pytest.mark.skip(reason="Probe now requires folder-based outputs")
 def test_unshielded_multiwires_legacy(tmp_path):
     """Verify legacy unshielded-multiwire current outputs match reference signals."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "unshielded_multiwires/unshielded_multiwires_berenger.fdtd.json"
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
@@ -347,11 +327,6 @@ def test_unshielded_multiwires_legacy(tmp_path):
 @pytest.mark.probes
 def test_unshielded_multiwires(tmp_path):
     """Verify unshielded-multiwire current outputs match reference signals."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "unshielded_multiwires/unshielded_multiwires_berenger.fdtd.json"
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
@@ -376,11 +351,6 @@ def test_unshielded_multiwires(tmp_path):
 @pytest.mark.probes
 def test_towelHanger(tmp_path):
     """Verify towel-hanger wire currents match the stored reference probes."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "towelHanger/towelHanger.fdtd.json"
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
@@ -481,11 +451,6 @@ def test_towel_rack_with_and_without_shorting_plane(tmp_path):
 @pytest.mark.probes
 def test_sphere(tmp_path):
     """Verify far-field and movie probes produce the expected HDF artifacts."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "sphere/sphere.fdtd.json"
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver["general"]["numberOfSteps"] = 20
@@ -510,11 +475,6 @@ def test_sphere(tmp_path):
 @pytest.mark.movie
 def test_movie_in_planewave_in_box(tmp_path):
     """Verify time-domain movie HDF and XDMF metadata and field data."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     import h5py
     import xml.etree.ElementTree as ET
 
@@ -626,11 +586,6 @@ def test_movie_in_planewave_in_box(tmp_path):
 @pytest.mark.hdf
 def test_frequency_slice_in_planewave_in_box(tmp_path):
     """Verify frequency-slice HDF and XDMF metadata and field data."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     import h5py
     import xml.etree.ElementTree as ET
 
@@ -710,11 +665,6 @@ def test_frequency_slice_in_planewave_in_box(tmp_path):
 @pytest.mark.hdf
 def test_central_dipole_frequency_slice(tmp_path):
     """Verify dipole frequency slices exhibit the expected equatorial field."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     import h5py
     import xml.etree.ElementTree as ET
 
@@ -767,11 +717,6 @@ def test_central_dipole_frequency_slice(tmp_path):
 @pytest.mark.probes
 def test_planewave_in_box(tmp_path):
     """Verify a plane wave is incident only within the simulation box."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
@@ -796,11 +741,6 @@ def test_planewave_in_box(tmp_path):
 @pytest.mark.probes
 def test_planewave_with_periodic_boundaries(tmp_path):
     """Verify a plane wave remains confined with periodic boundaries."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "planewave/pw-with-periodic.fdtd.json"
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
@@ -886,11 +826,6 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 @pytest.mark.probes
 def test_current_orientation(tmp_path):
     """Verify bulk-current sign follows source rather than mesh orientation."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "current_orientation/currentOrientation.fdtd.json"
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
@@ -930,11 +865,6 @@ def test_current_orientation(tmp_path):
 @pytest.mark.probes
 def test_sgbc_structured_resistance_single_wire(tmp_path):
     """Verify structured SGBC resistance produces the expected wire current."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "sgbcResistance/sgbcResistance.fdtd.json"
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
@@ -1032,11 +962,6 @@ def test_sgbc_overlapping_sgbc(tmp_path):
 @pytest.mark.probes
 def test_dielectric_transmission(tmp_path):
     """Verify dielectric reflection, transmission, and propagation delay."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     _FIELD_TOLERANCE = 0.05
 
     def getPointProbe(probeName: str):
@@ -1128,11 +1053,6 @@ def test_dielectric_transmission(tmp_path):
 @pytest.mark.probes
 def test_rectilinear_mode(tmp_path):
     """Verify rectilinear conformal mode preserves pulse amplitude and timing."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     _FIELD_TOLERANCE = 4
     _TIME_TOLERANCE = 4
 
@@ -1206,11 +1126,6 @@ def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arg
     tmp_path,
 ):
     """Verify execution from paths with spaces and VTK argument handling."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     folderWithSpaces: str = os.path.join(tmp_path, "spaced bin")
     os.mkdir(folderWithSpaces)
     if platform == "win32":
@@ -1286,11 +1201,6 @@ def test_nodal_source_with_total_resistance(tmp_path):
     The material's resistancePerMeter is set to zero and the total resistance is
     supplied through the materialAssociation instead.
     """
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
     assert os.path.isfile(fn)
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -1323,11 +1233,6 @@ def test_nodal_source_with_total_resistance(tmp_path):
 @pytest.mark.sgbc
 def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
     """Verify one surface-impedance material can serve multiple geometries."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "multipleAssigments/multipleSurfaceImpedance.fdtd.json"
 
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -1338,11 +1243,6 @@ def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
 @pytest.mark.dielectric
 def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
     """Verify one dielectric material can serve multiple geometries."""
-    def generate_debug_data():
-        pass
-
-    if is_debugging():
-        generate_debug_data()
     fn = CASES_FOLDER + "multipleAssigments/multipleDielectricMaterial.fdtd.json"
 
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
