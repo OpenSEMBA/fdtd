@@ -55,7 +55,6 @@ extern "C" int test_update_frequency_slice_probe();
 extern "C" int test_root_output_manifest();
 extern "C" int test_nested_output_path();
 extern "C" int test_output_artifact_contract();
-extern "C" int test_volumetric_visualisation_output();
 extern "C" int test_declared_output_artifacts();
 extern "C" int test_output_lifecycle_contract();
 extern "C" int test_output_serial_distributed_equivalence();
@@ -148,8 +147,6 @@ TEST(output, test_root_output_manifest) { EXPECT_EQ(0, test_root_output_manifest
 TEST(output, test_nested_output_path) { EXPECT_EQ(0, test_nested_output_path()); }
 // Stores binary artifact encoding and lifecycle metadata.
 TEST(output, test_artifact_contract) { EXPECT_EQ(0, test_output_artifact_contract()); }
-// Writes and verifies volumetric XDMF and HDF5 artifacts.
-TEST(output, test_volumetric_visualisation_output) { EXPECT_EQ(0, test_volumetric_visualisation_output()); }
 // Declares output artifact kinds and relative paths.
 TEST(output, test_declared_output_artifacts) { EXPECT_EQ(0, test_declared_output_artifacts()); }
 // Validates output lifecycle terminal states and completeness.

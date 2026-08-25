@@ -1,7 +1,7 @@
 module outputTypes_m
    use, intrinsic :: iso_fortran_env, only: int64
    use FDETYPES_m
-   use xdmf_hdf5_m, only: xdmf_writer_t, xdmf_grid_id_t, xdmf_attribute_id_t
+   use outputVisualisation_m, only: visualisation_writer_t
    use HollandWires_m
    use wiresHolland_constants_m
 #ifdef CompileWithBerengerWires
@@ -12,7 +12,7 @@ module outputTypes_m
    use WiresSlanted_Types
    use WiresSlanted_Constants
 #endif
-   implicit none
+   implicit none (type, external)
 
 !=====================================================
 ! Parameters & constants
@@ -304,12 +304,7 @@ module outputTypes_m
       real(kind=RKIND), allocatable :: yValueForTime(:, :)  !(time, coordIdx)
       real(kind=RKIND), allocatable :: zValueForTime(:, :)  !(time, coordIdx)
       character(len=BUFSIZE) :: filesPath
-      type(xdmf_writer_t), pointer :: writer => null()
-      type(xdmf_grid_id_t) :: grid
-       type(xdmf_attribute_id_t) :: xAttribute
-       type(xdmf_attribute_id_t) :: yAttribute
-       type(xdmf_attribute_id_t) :: zAttribute
-       type(xdmf_attribute_id_t) :: tagAttribute
+       type(visualisation_writer_t) :: visualisation
        type(probe_metadata_t) :: metadata
        type(volumetric_publication_t) :: publication
    end type movie_probe_output_t
@@ -325,14 +320,7 @@ module outputTypes_m
       complex(kind=CKIND), allocatable :: yValueForFreq(:, :)  !(time, coordIdx)
       complex(kind=CKIND), allocatable :: zValueForFreq(:, :)  !(time, coordIdx)
       character(len=BUFSIZE) :: filesPath
-      type(xdmf_writer_t), pointer :: writer => null()
-      type(xdmf_grid_id_t) :: grid
-      type(xdmf_attribute_id_t) :: xMagnitude
-      type(xdmf_attribute_id_t) :: yMagnitude
-      type(xdmf_attribute_id_t) :: zMagnitude
-      type(xdmf_attribute_id_t) :: xPhase
-      type(xdmf_attribute_id_t) :: yPhase
-      type(xdmf_attribute_id_t) :: zPhase
+       type(visualisation_writer_t) :: visualisation
       type(probe_metadata_t) :: metadata
       type(volumetric_publication_t) :: publication
       integer(kind=SINGLE), allocatable :: globalCoords(:, :)

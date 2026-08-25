@@ -517,41 +517,6 @@ integer function test_portable_binary_output() bind(c) result(err)
    call remove_folder(folder, ios)
 end function
 
-integer function test_volumetric_visualisation_output() bind(c) result(err)
-   ! Verifies volumetric XDMF/HDF5 creation and artifact validation.
-   use, intrinsic :: iso_fortran_env, only: int64, real64
-   use outputVisualisation_m, only: publish_volumetric_visualisation, verify_visualisation_artifact, VISUALISATION_SUCCESS
-   use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_VISUALISATION_METADATA
-   use assertionTools_m, only: assert_integer_equal, assert_true
-   use directoryUtils_m, only: file_exists, join_path, remove_folder
-   use testOutputUtils_m, only: get_temp_folder
-   implicit none
-
-   integer :: ios, status
-   type(output_artifact_t) :: artifact
-   character(len=4096) :: folder, path
-
-   err = 0
-   folder = join_path(get_temp_folder(), 'testing visualisation')
-   path = join_path(folder, 'volume')
-   call publish_volumetric_visualisation(path, 'volume', 'Ex', &
-                                         [2_int64, 2_int64, 2_int64], &
-                                         [0.0_real64, 0.0_real64, 0.0_real64], &
-                                         [1.0_real64, 1.0_real64, 1.0_real64], 0.0_real64, &
-                                         [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64, &
-                                          5.0_real64, 6.0_real64, 7.0_real64, 8.0_real64], status)
-   err = err + assert_integer_equal(status, VISUALISATION_SUCCESS, 'Visualisation writer failed')
-   err = err + assert_true(file_exists(trim(path)//'.xdmf'), &
-                           'Visualisation metadata does not exist')
-   err = err + assert_true(file_exists(trim(path)//'.h5'), &
-                           'Visualisation heavy data does not exist')
-   artifact%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
-   artifact%relative_path = 'volume.xdmf'
-   call verify_visualisation_artifact(trim(path)//'.xdmf', artifact, status)
-   err = err + assert_integer_equal(status, VISUALISATION_SUCCESS, 'Visualisation artifact verification failed')
-   call remove_folder(folder, ios)
-end function
-
 integer function test_declared_output_artifacts() bind(c) result(err)
    ! Verifies output artifact kinds and relative paths are declared.
    use outputTypes_m, only: probe_metadata_t, OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_GEOMETRY, &

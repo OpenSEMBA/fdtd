@@ -18,7 +18,7 @@ module mapVTKOutput_m
 #endif
     use hdf5
 
-    implicit none
+     implicit none (type, external)
     public :: write_geometry_companion
 contains
    subroutine init_mapvtk_output(this, lowerBound, upperBound, field, outputTypeExtension, mpidir, problemInfo)
@@ -261,7 +261,7 @@ contains
    end subroutine
 
     subroutine create_geometry_simulation_vtu(this, control, realXGrid, realYGrid, realZGrid, problemInfo)
-      implicit none
+      implicit none (type, external)
 
       type(mapvtk_output_t), intent(in) :: this
       type(sim_control_t), intent(in) :: control
@@ -333,16 +333,17 @@ contains
 
     end subroutine create_geometry_simulation_vtu
 
-    subroutine write_geometry_companion(base_path, lower_bound, upper_bound, problemInfo, status)
+    subroutine write_geometry_companion(base_path, lower_bound, upper_bound, problemInfo, status, diagnostic)
        character(len=*), intent(in) :: base_path
        type(cell_coordinate_t), intent(in) :: lower_bound, upper_bound
        type(problem_info_t), target, intent(in) :: problemInfo
-       type(xdmf_status_t), intent(out) :: status
+       integer, intent(out) :: status
+       character(len=BUFSIZE), intent(out) :: diagnostic
 
        type(mapvtk_output_t) :: geometry
        type(xdmf_writer_t) :: writer
        type(xdmf_options_t) :: options
-       type(xdmf_status_t) :: close_status
+       type(xdmf_status_t) :: writer_status, close_status
        type(xdmf_grid_id_t) :: grid
        type(xdmf_attribute_id_t) :: tags_attribute, media_attribute
        integer :: num_nodes, num_edges, num_quads
@@ -360,39 +361,52 @@ contains
        call build_cell_properties(geometry, problemInfo, num_edges, num_quads, tags, media_types)
 
        options%overwrite = .true.
-       call writer%create(trim(base_path)//'_geometry', options, status)
-       if (status%is_error()) return
+       call writer%create(trim(base_path)//'_geometry', options, writer_status)
+       if (writer_status%is_error()) then
+          status = 1
+          diagnostic = writer_status%message()
+          return
+       end if
 
        if (num_edges > 0) then
           allocate(connectivity(2, num_edges))
           connectivity = int(edges, int64) + 1_int64
-          call writer%define_unstructured_grid('lines', XDMF_TOPOLOGY_POLYLINE, real(nodes, real64), connectivity, grid, status)
-          if (.not. status%is_error()) call writer%define_attribute(grid, 'tagnumber', XDMF_CENTER_CELL, &
-               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, tags_attribute, status)
-          if (.not. status%is_error()) call writer%write_attribute(tags_attribute, real(tags(:num_edges), real64), status)
-          if (.not. status%is_error()) call writer%define_attribute(grid, 'mediatype', XDMF_CENTER_CELL, &
-               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, media_attribute, status)
-          if (.not. status%is_error()) call writer%write_attribute(media_attribute, real(media_types(:num_edges), real64), status)
+          call writer%define_unstructured_grid('lines', XDMF_TOPOLOGY_POLYLINE, real(nodes, real64), connectivity, grid, writer_status)
+          if (.not. writer_status%is_error()) call writer%define_attribute(grid, 'tagnumber', XDMF_CENTER_CELL, &
+               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, tags_attribute, writer_status)
+          if (.not. writer_status%is_error()) call writer%write_attribute(tags_attribute, real(tags(:num_edges), real64), writer_status)
+          if (.not. writer_status%is_error()) call writer%define_attribute(grid, 'mediatype', XDMF_CENTER_CELL, &
+               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, media_attribute, writer_status)
+          if (.not. writer_status%is_error()) call writer%write_attribute(media_attribute, real(media_types(:num_edges), real64), writer_status)
           deallocate(connectivity)
        end if
 
-       if (num_quads > 0 .and. .not. status%is_error()) then
+       if (num_quads > 0 .and. .not. writer_status%is_error()) then
           allocate(connectivity(4, num_quads))
           connectivity = int(quads, int64) + 1_int64
-          call writer%define_unstructured_grid('faces', XDMF_TOPOLOGY_QUADRILATERAL, real(nodes, real64), connectivity, grid, status)
-          if (.not. status%is_error()) call writer%define_attribute(grid, 'tagnumber', XDMF_CENTER_CELL, &
-               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, tags_attribute, status)
-          if (.not. status%is_error()) call writer%write_attribute(tags_attribute, real(tags(num_edges + 1:), real64), status)
-          if (.not. status%is_error()) call writer%define_attribute(grid, 'mediatype', XDMF_CENTER_CELL, &
-               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, media_attribute, status)
-          if (.not. status%is_error()) call writer%write_attribute(media_attribute, real(media_types(num_edges + 1:), real64), status)
+          call writer%define_unstructured_grid('faces', XDMF_TOPOLOGY_QUADRILATERAL, real(nodes, real64), connectivity, grid, writer_status)
+          if (.not. writer_status%is_error()) call writer%define_attribute(grid, 'tagnumber', XDMF_CENTER_CELL, &
+               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, tags_attribute, writer_status)
+          if (.not. writer_status%is_error()) call writer%write_attribute(tags_attribute, real(tags(num_edges + 1:), real64), writer_status)
+          if (.not. writer_status%is_error()) call writer%define_attribute(grid, 'mediatype', XDMF_CENTER_CELL, &
+               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, media_attribute, writer_status)
+          if (.not. writer_status%is_error()) call writer%write_attribute(media_attribute, real(media_types(num_edges + 1:), real64), writer_status)
           deallocate(connectivity)
        end if
-       if (status%is_error()) then
+       if (writer_status%is_error()) then
           call writer%close(close_status)
+          status = 1
+          diagnostic = writer_status%message()
           return
        end if
-       call writer%close(status)
+       call writer%close(writer_status)
+       if (writer_status%is_error()) then
+          status = 1
+          diagnostic = writer_status%message()
+       else
+          status = 0
+          diagnostic = ''
+       end if
     end subroutine write_geometry_companion
 
     subroutine build_cell_properties(this, problemInfo, numEdges, numQuads, tags, media_types)

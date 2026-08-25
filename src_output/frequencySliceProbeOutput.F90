@@ -8,20 +8,20 @@ module frequencySliceProbeOutput_m
    use outputUtils_m
    use volumicProbeUtils_m
    use directoryUtils_m
-   use xdmf_hdf5_m, only: xdmf_options_t, xdmf_status_t, &
-      xdmf_attribute_id_t, XDMF_SERIES_FREQUENCY, XDMF_CENTER_NODE, &
-      XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, XDMF_TOPOLOGY_POLYVERTEX
    use outputBinary_m, only: validate_binary_layout, write_binary_complex_record64, BINARY_WRITER_SUCCESS
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
-   use outputVisualisation_m, only: verify_volumetric_visualisation, &
-                                     VISUALISATION_SUCCESS
+   use outputVisualisation_m, only: initialise_frequency_slice_visualisation, begin_visualisation_step, &
+      write_visualisation_attribute, write_visualisation_attribute_hyperslab, end_visualisation_step, &
+      close_visualisation, verify_volumetric_visualisation, VISUALISATION_SUCCESS, &
+      VISUALISATION_ATTRIBUTE_X, VISUALISATION_ATTRIBUTE_Y, VISUALISATION_ATTRIBUTE_Z, &
+      VISUALISATION_ATTRIBUTE_X_PHASE, VISUALISATION_ATTRIBUTE_Y_PHASE, VISUALISATION_ATTRIBUTE_Z_PHASE
    use outputCollective_m, only: OUTPUT_PUBLICATION_COLLECTIVE, OUTPUT_PUBLICATION_ROOT_AGGREGATION
    use outputTransport_m, only: output_transport_t, init_output_transport, transfer_flush_batch, &
                                 OUTPUT_TRANSPORT_SUCCESS
 #ifdef CompileWithMPI
    use mpi
 #endif
-   implicit none
+   implicit none (type, external)
    private
 
    !===========================
@@ -208,16 +208,12 @@ contains
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(out) :: error
 
-      type(xdmf_options_t) :: options
-      type(xdmf_status_t) :: status
       real(real64), allocatable :: points(:, :)
-      integer(int64), allocatable :: connectivity(:, :)
-      integer :: i
+      character(len=BUFSIZE) :: diagnostic
+      integer :: i, status
 
       error = 0
-      allocate(this%writer)
-      allocate(points(3, int(this%publication%global_point_count)), &
-               connectivity(1, int(this%publication%global_point_count)))
+      allocate(points(3, int(this%publication%global_point_count)))
       do i = 1, int(this%publication%global_point_count)
          if (associated(problemInfo%xSteps) .and. &
              associated(problemInfo%ySteps) .and. &
@@ -237,51 +233,17 @@ contains
          else
             points(:, i) = real(this%globalCoords(:, i), real64)
          end if
-         connectivity(1, i) = int(i, int64)
       end do
 
-      options%overwrite = .true.
-      options%series_kind = XDMF_SERIES_FREQUENCY
-      if (this%publication%mode == OUTPUT_PUBLICATION_COLLECTIVE) then
-         options%collective_io = .true.
-         options%communicator = this%publication%communicator
-         options%root_rank = 0
-      end if
-      call this%writer%create(trim(this%filesPath), options, status)
-      if (.not. status%is_error()) then
-         call this%writer%define_unstructured_grid('frequencySlice', &
-            XDMF_TOPOLOGY_POLYVERTEX, points, connectivity, this%grid, status)
-      end if
-      if (.not. status%is_error()) then
-         call define_frequency_attribute(this, 'xMagnitude', &
-            this%xMagnitude, status)
-      end if
-      if (.not. status%is_error()) call define_frequency_attribute(this, 'yMagnitude', &
-            this%yMagnitude, status)
-      if (.not. status%is_error()) call define_frequency_attribute(this, 'zMagnitude', &
-            this%zMagnitude, status)
-      if (.not. status%is_error()) call define_frequency_attribute(this, 'xPhase', &
-         this%xPhase, status)
-      if (.not. status%is_error()) call define_frequency_attribute(this, 'yPhase', &
-         this%yPhase, status)
-      if (.not. status%is_error()) call define_frequency_attribute(this, 'zPhase', &
-         this%zPhase, status)
-      if (status%is_error()) then
+      call initialise_frequency_slice_visualisation(this%visualisation, trim(this%filesPath), points, &
+         this%publication%mode == OUTPUT_PUBLICATION_COLLECTIVE, this%publication%communicator, &
+         status, diagnostic)
+      if (status /= VISUALISATION_SUCCESS) then
          error = 1
-         print *, trim(status%message())
+         print *, trim(diagnostic)
       end if
-      deallocate(points, connectivity)
-   end subroutine create_frequency_writer
-
-   subroutine define_frequency_attribute(this, name, attribute, status)
-      type(frequency_slice_probe_output_t), intent(inout) :: this
-      character(len=*), intent(in) :: name
-      type(xdmf_attribute_id_t), intent(out) :: attribute
-      type(xdmf_status_t), intent(out) :: status
-
-      call this%writer%define_attribute(this%grid, name, XDMF_CENTER_NODE, &
-         XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, .true., attribute, status)
-   end subroutine define_frequency_attribute
+      deallocate(points)
+    end subroutine create_frequency_writer
 
    subroutine create_bin_file(filePath, error)
       character(len=*), intent(in) :: filePath
@@ -323,14 +285,14 @@ contains
        error = 0
    end subroutine initialise_frequency_metadata
 
-   subroutine write_to_xdmf_h5(this)
+   subroutine write_visualisation(this)
       type(frequency_slice_probe_output_t), intent(inout) :: this
 
       type(output_transport_t) :: transport
-      type(xdmf_status_t) :: status
       real(real64), allocatable :: xMagnitude(:), yMagnitude(:), zMagnitude(:)
       real(real64), allocatable :: xPhase(:), yPhase(:), zPhase(:)
-      integer :: f, i, transport_status
+      character(len=BUFSIZE) :: diagnostic
+      integer :: f, i, status, transport_status
 
       allocate(xMagnitude(this%nPoints), yMagnitude(this%nPoints), &
          zMagnitude(this%nPoints), xPhase(this%nPoints), yPhase(this%nPoints), &
@@ -357,58 +319,61 @@ contains
 
          select case (this%publication%mode)
          case (OUTPUT_PUBLICATION_COLLECTIVE)
-            call this%writer%begin_step(real(this%frequencySlice(f), real64), status)
-            call require_xdmf_success(status)
-            call write_collective_attribute(this, this%xMagnitude, xMagnitude)
-            call write_collective_attribute(this, this%yMagnitude, yMagnitude)
-            call write_collective_attribute(this, this%zMagnitude, zMagnitude)
-            call write_collective_attribute(this, this%xPhase, xPhase)
-            call write_collective_attribute(this, this%yPhase, yPhase)
-            call write_collective_attribute(this, this%zPhase, zPhase)
-            call this%writer%end_step(status)
-            call require_xdmf_success(status)
+             call begin_visualisation_step(this%visualisation, real(this%frequencySlice(f), real64), &
+                                           status, diagnostic)
+             call require_visualisation_success(status, diagnostic)
+             call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_X, xMagnitude)
+             call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_Y, yMagnitude)
+             call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_Z, zMagnitude)
+             call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_X_PHASE, xPhase)
+             call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_Y_PHASE, yPhase)
+             call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_Z_PHASE, zPhase)
+             call end_visualisation_step(this%visualisation, status, diagnostic)
+             call require_visualisation_success(status, diagnostic)
          case (OUTPUT_PUBLICATION_ROOT_AGGREGATION)
-            if (this%publication%local_is_owner) then
-               call this%writer%begin_step(real(this%frequencySlice(f), real64), status)
-               call require_xdmf_success(status)
-            end if
-            call gather_and_write_attribute(this, transport, this%xMagnitude, xMagnitude)
-            call gather_and_write_attribute(this, transport, this%yMagnitude, yMagnitude)
-            call gather_and_write_attribute(this, transport, this%zMagnitude, zMagnitude)
-            call gather_and_write_attribute(this, transport, this%xPhase, xPhase)
-            call gather_and_write_attribute(this, transport, this%yPhase, yPhase)
-            call gather_and_write_attribute(this, transport, this%zPhase, zPhase)
-            if (this%publication%local_is_owner) then
-               call this%writer%end_step(status)
-               call require_xdmf_success(status)
-            end if
+             if (this%publication%local_is_owner) then
+                call begin_visualisation_step(this%visualisation, real(this%frequencySlice(f), real64), &
+                                              status, diagnostic)
+                call require_visualisation_success(status, diagnostic)
+             end if
+             call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_X, xMagnitude)
+             call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_Y, yMagnitude)
+             call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_Z, zMagnitude)
+             call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_X_PHASE, xPhase)
+             call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_Y_PHASE, yPhase)
+             call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_Z_PHASE, zPhase)
+             if (this%publication%local_is_owner) then
+                call end_visualisation_step(this%visualisation, status, diagnostic)
+                call require_visualisation_success(status, diagnostic)
+             end if
          case default
             call StopOnError(0, 0, 'Unsupported frequency slice publication mode')
          end select
       end do
       deallocate(xMagnitude, yMagnitude, zMagnitude, xPhase, yPhase, zPhase)
-   end subroutine write_to_xdmf_h5
+   end subroutine write_visualisation
 
    subroutine write_collective_attribute(this, attribute, values)
       type(frequency_slice_probe_output_t), intent(inout) :: this
-      type(xdmf_attribute_id_t), intent(in) :: attribute
+      integer, intent(in) :: attribute
       real(real64), intent(in) :: values(:)
-      type(xdmf_status_t) :: status
+      character(len=BUFSIZE) :: diagnostic
+      integer :: status
 
-      call this%writer%write_attribute_hyperslab(attribute, values, &
-         [this%publication%point_offset], [int(this%nPoints, int64)], status)
-      call require_xdmf_success(status)
+      call write_visualisation_attribute_hyperslab(this%visualisation, attribute, values, &
+         [this%publication%point_offset], [int(this%nPoints, int64)], status, diagnostic)
+      call require_visualisation_success(status, diagnostic)
    end subroutine write_collective_attribute
 
    subroutine gather_and_write_attribute(this, transport, attribute, local_values)
       type(frequency_slice_probe_output_t), intent(inout) :: this
       type(output_transport_t), intent(in) :: transport
-      type(xdmf_attribute_id_t), intent(in) :: attribute
+      integer, intent(in) :: attribute
       real(real64), intent(in) :: local_values(:)
       real(real64), allocatable :: gathered_values(:)
       integer, allocatable :: counts(:), displacements(:)
-      type(xdmf_status_t) :: status
-      integer :: transport_status
+      character(len=BUFSIZE) :: diagnostic
+      integer :: status, transport_status
 
       call transfer_flush_batch(transport, local_values, gathered_values, counts, displacements, transport_status)
       if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
@@ -418,17 +383,18 @@ contains
       if (size(gathered_values, kind=int64) /= this%publication%global_point_count) then
          call StopOnError(0, 0, 'Invalid gathered frequency slice visualisation size')
       end if
-      call this%writer%write_attribute(attribute, gathered_values, status)
-      call require_xdmf_success(status)
-   end subroutine gather_and_write_attribute
+      call write_visualisation_attribute(this%visualisation, attribute, gathered_values, status, diagnostic)
+      call require_visualisation_success(status, diagnostic)
+    end subroutine gather_and_write_attribute
 
-   subroutine require_xdmf_success(status)
-      type(xdmf_status_t), intent(in) :: status
+   subroutine require_visualisation_success(status, diagnostic)
+      integer, intent(in) :: status
+      character(len=*), intent(in) :: diagnostic
 
-      if (status%is_error()) then
-         call StopOnError(0, 0, 'Frequency slice HDF5 write failed: '//trim(status%message()))
+      if (status /= VISUALISATION_SUCCESS) then
+         call StopOnError(0, 0, 'Frequency slice HDF5 write failed: '//trim(diagnostic))
       end if
-   end subroutine require_xdmf_success
+   end subroutine require_visualisation_success
 
    subroutine write_bin_file(this)
       type(frequency_slice_probe_output_t), intent(inout) :: this
@@ -692,8 +658,8 @@ contains
 
    subroutine close_frequency_slice_probe_output(this)
       type(frequency_slice_probe_output_t), intent(inout) :: this
-      type(xdmf_status_t) :: writer_status
       integer :: error
+      character(len=BUFSIZE) :: diagnostic
 #ifdef CompileWithMPI
       integer :: mpi_error
 #endif
@@ -709,15 +675,11 @@ contains
        if (this%metadata%lifecycle%state /= OUTPUT_LIFECYCLE_COMPLETE .and. &
            this%metadata%lifecycle%state /= OUTPUT_LIFECYCLE_FAILED) then
           call flush_frequency_slice_probe_output(this)
-          call write_to_xdmf_h5(this)
+           call write_visualisation(this)
       end if
-      if (associated(this%writer)) then
-         call this%writer%close(writer_status)
-         if (writer_status%is_error()) then
-            call StopOnError(0, 0, 'Unable to close frequency slice HDF5 output: '// &
-               trim(writer_status%message()))
-         end if
-         deallocate(this%writer)
+      call close_visualisation(this%visualisation, error, diagnostic)
+      if (error /= VISUALISATION_SUCCESS) then
+         call StopOnError(0, 0, 'Unable to close frequency slice HDF5 output: '//trim(diagnostic))
       end if
 #ifdef CompileWithMPI
       call MPI_Barrier(this%publication%communicator, mpi_error)
