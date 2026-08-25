@@ -68,24 +68,3 @@ integer function test_output_metadata_contract_edges() bind(c) result(err)
    err = err + assert_true(.not. probe_metadata_is_complete(metadata), &
                            'Metadata without artifacts was accepted')
 end function test_output_metadata_contract_edges
-
-integer function test_scalar_metadata_publication() bind(c) result(err)
-   ! Verifies scalar metadata is published from its declared artifact set.
-   use output_m, only: publish_scalar_probe_metadata, OUTPUT_COORDINATION_SUCCESS
-   use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_TEXT
-   use assertionTools_m, only: assert_integer_equal, assert_true
-   use directoryUtils_m, only: file_exists, remove_folder
-   implicit none
-
-   type(output_artifact_t) :: artifacts(1)
-   integer :: ios, status
-
-   err = 0
-   artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
-   artifacts(1)%relative_path = 'point_tm.dat'
-   call publish_scalar_probe_metadata('testing scalar metadata/point.json', 'point-001', 'Ex', artifacts, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Scalar metadata publication failed')
-   err = err + assert_true(file_exists('testing scalar metadata/point.json'), &
-                           'Scalar descriptor was not created')
-   call remove_folder('testing scalar metadata', ios)
-end function test_scalar_metadata_publication

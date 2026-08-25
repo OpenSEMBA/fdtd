@@ -4,7 +4,6 @@ module bulkProbeOutput_m
    use allocationUtils_m, only: alloc_and_init
    use outputTypes_m
     use outputUtils_m
-     use allocationUtils_m, only: alloc_and_init
     use outputBinary_m, only: append_binary_real64, BINARY_WRITER_SUCCESS
      use, intrinsic :: iso_fortran_env, only: real64
     use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
@@ -12,6 +11,9 @@ module bulkProbeOutput_m
    use mpi
 #endif
    implicit none
+   private
+
+   public :: init_bulk_probe_output, update_bulk_probe_output, flush_bulk_probe_output
 
 contains
 

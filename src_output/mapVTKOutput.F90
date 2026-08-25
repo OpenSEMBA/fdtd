@@ -17,7 +17,9 @@ module mapVTKOutput_m
     use mtln_solver_m, only: mtln_solver_t => mtln_t
 #endif
      implicit none (type, external)
-    public :: write_geometry_companion
+    private
+
+    public :: init_mapvtk_output, create_geometry_simulation_vtu, write_geometry_companion
 contains
    subroutine init_mapvtk_output(this, lowerBound, upperBound, field, outputTypeExtension, mpidir, problemInfo)
       type(mapvtk_output_t), intent(out) :: this
@@ -52,8 +54,6 @@ contains
          return
       end function
 
-      subroutine store_media_tag()
-      end subroutine store_media_tag
    end subroutine init_mapvtk_output
 
    subroutine store_relevant_coordinates(this, problemInfo)
@@ -269,8 +269,7 @@ contains
       !type(vtk_file) :: vtkOutput
       type(vtk_unstructured_grid), target :: ugrid
 
-       integer :: ierr, i, npts, unit
-       real(RKIND), allocatable :: x(:), y(:), z(:), materialTag(:)
+       integer :: ierr, i, unit
       character(len=BUFSIZE) :: info_str
       character(len=BUFSIZE) :: metadata_filename, vtuPath
 

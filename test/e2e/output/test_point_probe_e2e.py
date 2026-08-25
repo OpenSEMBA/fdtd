@@ -25,6 +25,14 @@ def test_point_probe_publishes_complete_descriptor(run_output_case):
         if "lifecycle" in value:
             descriptors.append(value)
     assert descriptors
+    assert len(descriptors) == 1
     descriptor = descriptors[0]
     assert descriptor["lifecycle"]["state"] == "complete"
     assert descriptor["artifacts"]
+    assert descriptor["lower_bound"] == {"x": 5, "y": 4, "z": 4}
+    assert descriptor["upper_bound"] == {"x": 5, "y": 4, "z": 4}
+    assert descriptor["domain"] == "time"
+    assert descriptor["ownership"] == {
+        "participant_ranks": [0],
+        "scalar_writer_rank": 0,
+    }

@@ -20,6 +20,7 @@ integer function test_init_point_probe() bind(c) result(err)
    character(len=BUFSIZE) :: expectedProbePath
    character(len=BUFSIZE) :: expectedDataPath
    character(len=BUFSIZE) :: expectedDescriptorPath
+   character(len=BUFSIZE) :: metadataLine
 
    type(SGGFDTDINFO_t)              :: sgg
    type(sim_control_t)            :: control
@@ -39,7 +40,8 @@ integer function test_init_point_probe() bind(c) result(err)
    logical :: outputRequested
    logical :: hasWires = .false.
    integer(kind=SINGLE) :: test_err = 0
-   integer :: ios
+   integer :: ios, metadataUnit
+   logical :: hasLowerBounds, hasUpperBounds, hasDomain, hasOwnership
 
    ! Setup
    sep = get_path_separator()
@@ -79,6 +81,50 @@ integer function test_init_point_probe() bind(c) result(err)
                                              expectedDataPath, 'Declared payload path changed')
    test_err = test_err + assert_true(file_exists(expectedDataPath), 'Time data file do not exist')
    test_err = test_err + assert_true(file_exists(expectedDescriptorPath), 'Probe descriptor does not exist')
+   test_err = test_err + assert_string_equal(outputs(1)%metadata_path, expectedDescriptorPath, &
+                                              'Stored descriptor path changed')
+   test_err = test_err + assert_string_equal(outputs(1)%metadata%probe_id, get_last_component(expectedProbePath), &
+                                              'Stored probe identity changed')
+   test_err = test_err + assert_string_equal(outputs(1)%metadata%quantity, 'Ex', 'Stored quantity changed')
+   test_err = test_err + assert_integer_equal(outputs(1)%metadata%lower_bound%x, 4, 'Stored lower x bound changed')
+   test_err = test_err + assert_integer_equal(outputs(1)%metadata%lower_bound%y, 4, 'Stored lower y bound changed')
+   test_err = test_err + assert_integer_equal(outputs(1)%metadata%lower_bound%z, 4, 'Stored lower z bound changed')
+   test_err = test_err + assert_integer_equal(outputs(1)%metadata%upper_bound%x, 4, 'Stored upper x bound changed')
+   test_err = test_err + assert_integer_equal(outputs(1)%metadata%upper_bound%y, 4, 'Stored upper y bound changed')
+   test_err = test_err + assert_integer_equal(outputs(1)%metadata%upper_bound%z, 4, 'Stored upper z bound changed')
+   test_err = test_err + assert_integer_equal(outputs(1)%metadata%domain_type, TIME_DOMAIN, 'Stored domain changed')
+   test_err = test_err + assert_true(allocated(outputs(1)%metadata%ownership%participant_ranks), &
+                                     'Stored ownership participants are missing')
+   test_err = test_err + assert_integer_equal(size(outputs(1)%metadata%ownership%participant_ranks), 1, &
+                                              'Stored ownership participant count changed')
+   test_err = test_err + assert_integer_equal(outputs(1)%metadata%ownership%participant_ranks(1), 0, &
+                                              'Stored ownership participant changed')
+   test_err = test_err + assert_integer_equal(outputs(1)%metadata%ownership%scalar_writer_rank, 0, &
+                                              'Stored scalar writer changed')
+   test_err = test_err + assert_string_equal(outputs(1)%metadata%artifacts(1)%relative_path, &
+                                              get_last_component(expectedDataPath), &
+                                              'Stored artifact path was not normalised once')
+
+   hasLowerBounds = .false.
+   hasUpperBounds = .false.
+   hasDomain = .false.
+   hasOwnership = .false.
+   open(newunit=metadataUnit, file=expectedDescriptorPath, status='old', action='read', iostat=ios)
+   if (ios == 0) then
+      do while (ios == 0)
+         read(metadataUnit, '(A)', iostat=ios) metadataLine
+         if (index(metadataLine, '"lower_bound":{"x":4,"y":4,"z":4}') > 0) hasLowerBounds = .true.
+         if (index(metadataLine, '"upper_bound":{"x":4,"y":4,"z":4}') > 0) hasUpperBounds = .true.
+         if (index(metadataLine, '"domain":"time"') > 0) hasDomain = .true.
+         if (index(metadataLine, '"ownership":{"participant_ranks":[0],"scalar_writer_rank":0}') > 0) &
+            hasOwnership = .true.
+      end do
+      close(metadataUnit)
+   end if
+   test_err = test_err + assert_true(hasLowerBounds .and. hasUpperBounds, &
+                                     'Published descriptor bounds are incomplete')
+   test_err = test_err + assert_true(hasDomain, 'Published descriptor domain is incomplete')
+   test_err = test_err + assert_true(hasOwnership, 'Published descriptor ownership is incomplete')
 
    ! Cleanup
    call remove_folder(testPath, ios)
@@ -464,12 +510,12 @@ integer function test_output_artifact_contract() bind(c) result(err)
 end function
 
 integer function test_portable_binary_output() bind(c) result(err)
-   ! Verifies little-endian real32 output and rejects unsupported byte order.
-   use, intrinsic :: iso_fortran_env, only: int8, real32
-   use outputBinary_m, only: write_binary_real32, validate_binary_layout, BINARY_WRITER_SUCCESS, &
-                             BINARY_WRITER_INVALID_LAYOUT
+   ! Verifies little-endian real64 output and rejects unsupported byte order.
+   use, intrinsic :: iso_fortran_env, only: int8, real64
+   use outputBinary_m, only: append_binary_real64, validate_binary_layout, BINARY_WRITER_SUCCESS, &
+                              BINARY_WRITER_INVALID_LAYOUT
    use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_BINARY, BINARY_ENDIAN_LITTLE, &
-                            BINARY_ENDIAN_BIG, BINARY_NUMERIC_REAL32, BINARY_COMPLEX_UNSPECIFIED
+                             BINARY_ENDIAN_BIG, BINARY_NUMERIC_REAL64, BINARY_COMPLEX_UNSPECIFIED
    use assertionTools_m, only: assert_integer_equal, assert_true
    use directoryUtils_m, only: remove_folder
    use testOutputUtils_m, only: get_temp_folder
@@ -477,8 +523,8 @@ integer function test_portable_binary_output() bind(c) result(err)
    implicit none
 
    type(output_artifact_t) :: artifact
-   integer(int8) :: bytes(8)
-   integer :: expected_bytes(8), ios, status, unit
+   integer(int8) :: bytes(16)
+   integer :: expected_bytes(16), ios, status, unit
    character(len=4096) :: folder, path
 
    err = 0
@@ -486,15 +532,15 @@ integer function test_portable_binary_output() bind(c) result(err)
    path = join_path(folder, 'payload.bin')
    artifact%kind = OUTPUT_ARTIFACT_BINARY
    artifact%byte_order = BINARY_ENDIAN_LITTLE
-   artifact%numeric_representation = BINARY_NUMERIC_REAL32
+   artifact%numeric_representation = BINARY_NUMERIC_REAL64
    artifact%complex_representation = BINARY_COMPLEX_UNSPECIFIED
-   artifact%record_bytes = 4
-   artifact%component_order = 'Ex'
-   expected_bytes = [0, 0, -128, 63, 0, 0, 32, -64]
+   artifact%record_bytes = 16
+   artifact%component_order = 'time,value'
+   expected_bytes = [0, 0, 0, 0, 0, 0, -16, 63, 0, 0, 0, 0, 0, 0, 4, -64]
 
    call validate_binary_layout(artifact, status)
-   err = err + assert_integer_equal(status, BINARY_WRITER_SUCCESS, 'Valid real32 layout was rejected')
-   call write_binary_real32(path, artifact, [1.0_real32, -2.5_real32], status)
+   err = err + assert_integer_equal(status, BINARY_WRITER_SUCCESS, 'Valid real64 layout was rejected')
+   call append_binary_real64(path, artifact, [1.0_real64, -2.5_real64], status)
    err = err + assert_integer_equal(status, BINARY_WRITER_SUCCESS, 'Portable binary write failed')
 
    open (newunit=unit, file=path, access='stream', form='unformatted', status='old', &
@@ -1175,7 +1221,6 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    character(len=BUFSIZE) :: testPath, nEntrada
    character(len=BUFSIZE) :: expectedProbePath
-   character(len=BUFSIZE) :: pdvFileName
    character(len=BUFSIZE) :: metadataLine
    integer :: ios, metadataUnit
    logical :: metadataDeclared, metadataOpened
@@ -1249,8 +1294,6 @@ integer function test_init_movie_probe() bind(c) result(err)
    test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%timeStep), OUTPUT_TIME_BUFFER_SIZE, 'Unexpected timestep buffer size')
 
    expectedProbePath = trim(nEntrada)//wordSeparation//'movieProbe_BC_2_2_2__5_5_5'
-   pdvFileName = trim(get_last_component(expectedProbePath))//pvdExtension
-
    test_err = test_err + assert_string_equal(outputs(1)%movieProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Movie folder do not exist')
    test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'.bin'), &
@@ -1755,7 +1798,6 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 
    character(len=BUFSIZE) :: testPath, nEntrada
    character(len=BUFSIZE) :: expectedProbePath
-   character(len=BUFSIZE) :: pdvFileName
    integer :: binaryBytes, ios, unit
    real(real64) :: record(10)
    logical :: metadataComplete
@@ -1825,8 +1867,6 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
               expectedTotalFrequnecies, 'Unexpected frequency count')
 
    expectedProbePath = trim(nEntrada)//wordSeparation//'frequencySliceProbe_BC_2_2_2__5_5_5'
-   pdvFileName = trim(get_last_component(expectedProbePath))//pvdExtension
-
    test_err = test_err + assert_string_equal(outputs(1)%frequencySliceProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Frequency Slice folder do not exist')
 

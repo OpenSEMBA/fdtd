@@ -5,8 +5,7 @@ module wireProbeOutput_m
    use report_m
    use outputTypes_m
     use outputUtils_m
-     use allocationUtils_m, only: alloc_and_init
-     use outputBinary_m, only: append_binary_real64, BINARY_WRITER_SUCCESS
+      use outputBinary_m, only: append_binary_real64, BINARY_WRITER_SUCCESS
      use, intrinsic :: iso_fortran_env, only: real64
       use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
    use wiresHolland_constants_m

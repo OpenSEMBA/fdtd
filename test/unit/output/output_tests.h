@@ -17,7 +17,6 @@ extern "C" int test_output_partition_all_components_cover_volume();
 extern "C" int test_output_collective_contract();
 extern "C" int test_output_publication_contract();
 extern "C" int test_output_metadata_contract_edges();
-extern "C" int test_scalar_metadata_publication();
 extern "C" int test_output_transport_serial();
 
 // Artifact metadata and binary layout.
@@ -84,8 +83,6 @@ TEST(output, test_collective_contract) { EXPECT_EQ(0, test_output_collective_con
 TEST(output, test_publication_contract) { EXPECT_EQ(0, test_output_publication_contract()); }
 // Rejects incomplete metadata identity and non-relative artifact paths.
 TEST(output, test_metadata_contract_edges) { EXPECT_EQ(0, test_output_metadata_contract_edges()); }
-// Publishes metadata for a scalar probe from its declared artifacts.
-TEST(output, test_scalar_metadata_publication) { EXPECT_EQ(0, test_scalar_metadata_publication()); }
 // Preserves serial flush transfers.
 TEST(output, test_transport_serial) { EXPECT_EQ(0, test_output_transport_serial()); }
 // Publishes declared and failed metadata states with their artifacts.
@@ -96,7 +93,7 @@ TEST(output, test_metadata_fragment_descriptors) { EXPECT_EQ(0, test_output_meta
 TEST(output, test_atomic_file_replacement) { EXPECT_EQ(0, test_atomic_file_replacement()); }
 // Preserves Windows path separators through JSON manifest serialization.
 TEST(output, test_json_path_escaping) { EXPECT_EQ(0, test_json_path_escaping()); }
-// Writes portable little-endian real32 binary data.
+// Writes portable little-endian real64 binary data through the production append API.
 TEST(output, test_portable_binary_output) { EXPECT_EQ(0, test_portable_binary_output()); }
 // Requires identity metadata for binary fragments.
 TEST(output, test_binary_fragment_layout) { EXPECT_EQ(0, test_output_binary_fragment_layout()); }

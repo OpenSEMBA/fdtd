@@ -19,9 +19,11 @@ module output_m
                                   prepare_output_partition_publication, OUTPUT_COLLECTIVE_SUCCESS
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, json_escape, &
                                 json_unescape, OUTPUT_METADATA_SUCCESS
-   use outputTypes_m, only: probe_metadata_t, output_artifact_t, output_lifecycle_is_terminal, &
-                             OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_UNDEFINED, TIME_DOMAIN, volumetric_publication_t, &
-                             OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
+   use outputTypes_m, only: solver_output_t, problem_info_t, probe_metadata_t, output_artifact_t, &
+                              spheric_domain_t, cell_coordinate_t, field_data_t, fields_reference_t, &
+                              output_lifecycle_is_terminal, OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_UNDEFINED, &
+                              TIME_DOMAIN, FREQUENCY_DOMAIN, UNDEFINED_DOMAIN, volumetric_publication_t, &
+                              OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
 #ifdef CompileWithMPI
     use mpi
 #endif
@@ -45,14 +47,11 @@ module output_m
    public :: flush_outputs
    public :: close_outputs
    public :: GetOutputPartition
-   public :: publish_scalar_probe_metadata
    public :: delete_run_output_manifest
 #ifdef CompileWithMTLN
    public :: init_mtln_outputs
 #endif
-   public :: OUTPUT_COORDINATION_SUCCESS, OUTPUT_COORDINATION_INVALID_ARTIFACTS
-
-   public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, VOLUMIC_CURRENT_PROBE_ID, &
+   public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, &
              MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID, LINE_PROBE_ID, MTLN_PROBE_ID
    !===========================
 
@@ -67,14 +66,10 @@ module output_m
                                       WIRE_CURRENT_PROBE_ID = 1, &
                                       WIRE_CHARGE_PROBE_ID = 2, &
                                       BULK_PROBE_ID = 3, &
-                                      VOLUMIC_CURRENT_PROBE_ID = 4, &
                                       MOVIE_PROBE_ID = 5, &
                                       FREQUENCY_SLICE_PROBE_ID = 6, &
                                        FAR_FIELD_PROBE_ID = 7, &
                                        MAPVTK_ID = 8, LINE_PROBE_ID = 9, MTLN_PROBE_ID = 10
-
-   integer, parameter :: OUTPUT_COORDINATION_SUCCESS = 0
-   integer, parameter :: OUTPUT_COORDINATION_INVALID_ARTIFACTS = 3
 
    REAL(KIND=RKIND), save           ::  eps0, mu0
    REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
@@ -138,44 +133,6 @@ contains
       return
    end function
 
-   function GetProblemInfo() result(r)
-      type(problem_info_t), pointer ::  r
-      r => problemInfo
-      return
-   end function
-
-   subroutine publish_scalar_probe_metadata(path, probe_id, quantity, artifacts, status)
-      character(len=*), intent(in) :: path, probe_id, quantity
-      type(output_artifact_t), intent(in) :: artifacts(:)
-      integer, intent(out) :: status
-      type(probe_metadata_t) :: metadata
-      type(output_artifact_t), allocatable :: normalised_artifacts(:)
-      integer :: i, artifact_count, metadata_status
-
-      status = OUTPUT_COORDINATION_INVALID_ARTIFACTS
-      if (len_trim(probe_id) == 0 .or. len_trim(quantity) == 0) return
-      artifact_count = count(artifacts%kind /= OUTPUT_ARTIFACT_UNDEFINED)
-      if (artifact_count == 0) return
-
-      metadata%probe_id = probe_id
-      metadata%quantity = quantity
-      allocate (metadata%artifacts(artifact_count))
-      allocate (normalised_artifacts(artifact_count))
-      artifact_count = 0
-      do i = 1, size(artifacts)
-         if (artifacts(i)%kind == OUTPUT_ARTIFACT_UNDEFINED) cycle
-         artifact_count = artifact_count + 1
-         normalised_artifacts(artifact_count) = artifacts(i)
-         normalised_artifacts(artifact_count)%relative_path = &
-            get_last_component(artifacts(i)%relative_path)
-      end do
-      metadata%artifacts = normalised_artifacts
-      call publish_initial_probe_metadata(path, metadata, metadata_status)
-      if (metadata_status == OUTPUT_METADATA_SUCCESS) then
-         status = OUTPUT_COORDINATION_SUCCESS
-      end if
-   end subroutine publish_scalar_probe_metadata
-
    subroutine finalise_scalar_output_metadata(output_index)
       integer(kind=SINGLE), intent(in) :: output_index
       integer :: i, path_end, status
@@ -202,7 +159,9 @@ contains
          outputs(output_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
          outputs(output_index)%metadata%lifecycle%diagnostic = 'Required scalar artifacts are incomplete'
       end if
-      call publish_final_probe_metadata(outputs(output_index)%metadata_path, outputs(output_index)%metadata, status)
+      if (runOutputRank == outputs(output_index)%metadata%ownership%scalar_writer_rank) then
+         call publish_final_probe_metadata(outputs(output_index)%metadata_path, outputs(output_index)%metadata, status)
+      end if
    end subroutine finalise_scalar_output_metadata
 
    subroutine GetOutputPartition(output_index, partition, status)
@@ -343,12 +302,13 @@ contains
                                             outputRequestType, outputTypeExtension, control%mpidir, problemInfo)
                    call create_geometry_simulation_vtu(outputs(outputCount)%mapvtkOutput, control, sgg%LineX, sgg%LineY, &
                                                        sgg%LineZ, problemInfo)
-                   call register_scalar_output_metadata(outputCount, &
-                                                         join_path(outputs(outputCount)%mapvtkOutput%path, &
-                                                                  trim(get_last_component(outputs(outputCount)%mapvtkOutput%path))//'.json'), &
-                                                        get_last_component(outputs(outputCount)%mapvtkOutput%path), &
-                                                         'geometry', &
-                                                         outputs(outputCount)%mapvtkOutput%artifacts, metadata_status)
+                    call register_scalar_output_metadata(outputCount, &
+                                                          join_path(outputs(outputCount)%mapvtkOutput%path, &
+                                                                   trim(get_last_component(outputs(outputCount)%mapvtkOutput%path))//'.json'), &
+                                                         get_last_component(outputs(outputCount)%mapvtkOutput%path), &
+                                                          'geometry', &
+                                                          outputs(outputCount)%mapvtkOutput%artifacts, localMapLower, &
+                                                          localMapUpper, UNDEFINED_DOMAIN, control%layoutnumber, metadata_status)
                 end if
 
             case (iEx, iEy, iEz, iHx, iHy, iHz)
@@ -359,9 +319,10 @@ contains
                 call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt, &
                                        sgg%NumPlaneWaves >= 1)
                call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%pointProbe%path)//'.json', &
-                                                    get_last_component(outputs(outputCount)%pointProbe%path), &
-                                                    get_prefix_extension(outputRequestType, control%mpidir), &
-                                                    outputs(outputCount)%pointProbe%artifacts, metadata_status)
+                                                     get_last_component(outputs(outputCount)%pointProbe%path), &
+                                                     get_prefix_extension(outputRequestType, control%mpidir), &
+                                                     outputs(outputCount)%pointProbe%artifacts, lowerBound, lowerBound, &
+                                                     domain%domainType, control%layoutnumber, metadata_status)
             case (iJx, iJy, iJz)
                if (wiresExists) then
                   outputCount = outputCount + 1
@@ -372,7 +333,8 @@ contains
                   call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%wireCurrentProbe%path)//'.json', &
                                                        get_last_component(outputs(outputCount)%wireCurrentProbe%path), &
                                                        get_prefix_extension(outputRequestType, control%mpidir), &
-                                                       outputs(outputCount)%wireCurrentProbe%artifacts, metadata_status)
+                                                       outputs(outputCount)%wireCurrentProbe%artifacts, lowerBound, lowerBound, &
+                                                       domain%domainType, control%layoutnumber, metadata_status)
                end if
 
             case (iQx, iQy, iQz)
@@ -382,9 +344,10 @@ contains
                allocate (outputs(outputCount)%wireChargeProbe)
                 call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
                call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%wireChargeProbe%path)//'.json', &
-                                                    get_last_component(outputs(outputCount)%wireChargeProbe%path), &
-                                                    get_prefix_extension(outputRequestType, control%mpidir), &
-                                                    outputs(outputCount)%wireChargeProbe%artifacts, metadata_status)
+                                                     get_last_component(outputs(outputCount)%wireChargeProbe%path), &
+                                                     get_prefix_extension(outputRequestType, control%mpidir), &
+                                                     outputs(outputCount)%wireChargeProbe%artifacts, lowerBound, lowerBound, &
+                                                     domain%domainType, control%layoutnumber, metadata_status)
 
             case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
                outputCount = outputCount + 1
@@ -393,9 +356,10 @@ contains
                allocate (outputs(outputCount)%bulkCurrentProbe)
                 call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
                call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%bulkCurrentProbe%path)//'.json', &
-                                                    get_last_component(outputs(outputCount)%bulkCurrentProbe%path), &
-                                                    get_prefix_extension(outputRequestType, control%mpidir), &
-                                                    outputs(outputCount)%bulkCurrentProbe%artifacts, metadata_status)
+                                                     get_last_component(outputs(outputCount)%bulkCurrentProbe%path), &
+                                                     get_prefix_extension(outputRequestType, control%mpidir), &
+                                                     outputs(outputCount)%bulkCurrentProbe%artifacts, lowerBound, upperBound, &
+                                                     domain%domainType, 0, metadata_status)
                 !! call adjust_computation_range --- Required due to issues in mpi region edges
 
             case (lineIntegral)
@@ -410,16 +374,8 @@ contains
                                               sgg%Sweep, control%layoutnumber, control%num_procs)
                   call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%lineProbe%path)//'.json', &
                                                        get_last_component(outputs(outputCount)%lineProbe%path), 'LI', &
-                                                       outputs(outputCount)%lineProbe%artifacts, metadata_status)
-                  outputs(outputCount)%metadata%domain_type = domain%domainType
-                  if (allocated(outputs(outputCount)%metadata%ownership%participant_ranks)) then
-                     deallocate (outputs(outputCount)%metadata%ownership%participant_ranks)
-                  end if
-                  allocate (outputs(outputCount)%metadata%ownership%participant_ranks(1))
-                  outputs(outputCount)%metadata%ownership%participant_ranks(1) = control%layoutnumber
-                  outputs(outputCount)%metadata%ownership%scalar_writer_rank = control%layoutnumber
-                  call publish_initial_probe_metadata(outputs(outputCount)%metadata_path, outputs(outputCount)%metadata, &
-                                                      metadata_status)
+                                                       outputs(outputCount)%lineProbe%artifacts, lowerBound, upperBound, &
+                                                       domain%domainType, control%layoutnumber, metadata_status)
                end if
 
             case (iCur, iMEC, iMHC, iCurX, iCurY, iCurZ, iExC, iEyC, iEzC, iHxC, iHyC, iHzC)
@@ -465,9 +421,16 @@ contains
 #endif
                                          eps0, mu0)
                call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%farFieldOutput%path)//'.json', &
-                                                    get_last_component(outputs(outputCount)%farFieldOutput%path), &
-                                                    get_prefix_extension(outputRequestType, control%mpidir), &
-                                                    outputs(outputCount)%farFieldOutput%artifacts, metadata_status)
+                                                     get_last_component(outputs(outputCount)%farFieldOutput%path), &
+                                                     get_prefix_extension(outputRequestType, control%mpidir), &
+                                                     outputs(outputCount)%farFieldOutput%artifacts, lowerBound, upperBound, &
+                                                     domain%domainType, &
+#ifdef CompileWithMPI
+                                                     outputs(outputCount)%MPIRoot, &
+#else
+                                                     control%layoutnumber, &
+#endif
+                                                     metadata_status)
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
             end select
@@ -504,26 +467,27 @@ contains
           end if
           call MPI_AllReduce(root_candidate, output%MPIRoot, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
 
-          color = MPI_UNDEFINED
-          if (output%MPISubcomm == 1) color = 0
-          call MPI_Comm_split(SUBCOMM_MPI, color, control%layoutnumber, output%MPISubcomm, ierr)
-          if (output%MPISubcomm /= MPI_COMM_NULL) then
-             call MPI_Comm_rank(output%MPISubcomm, output%MPIGroupIndex, ierr)
-          end if
+           color = MPI_UNDEFINED
+           if (output%MPISubcomm == 1) color = 0
+           call MPI_Comm_split(SUBCOMM_MPI, color, control%layoutnumber, output%MPISubcomm, ierr)
        end subroutine configure_far_field_mpi
 #endif
 
-       subroutine register_scalar_output_metadata(output_index, descriptor_path, probe_id, quantity, artifacts, status)
+       subroutine register_scalar_output_metadata(output_index, descriptor_path, probe_id, quantity, artifacts, &
+                                                  metadata_lower, metadata_upper, domain_type, writer_rank, status)
          integer(kind=SINGLE), intent(in) :: output_index
          character(len=*), intent(in) :: descriptor_path, probe_id, quantity
          type(output_artifact_t), intent(in) :: artifacts(:)
+         type(cell_coordinate_t), intent(in) :: metadata_lower, metadata_upper
+         integer, intent(in) :: domain_type, writer_rank
          integer, intent(out) :: status
          integer :: i, artifact_count
 
-         call publish_scalar_probe_metadata(descriptor_path, probe_id, quantity, artifacts, status)
-         if (status /= OUTPUT_COORDINATION_SUCCESS) return
-         outputs(output_index)%metadata%probe_id = probe_id
-         outputs(output_index)%metadata%quantity = quantity
+         outputs(output_index)%metadata%probe_id = trim(probe_id)
+         outputs(output_index)%metadata%quantity = trim(quantity)
+         outputs(output_index)%metadata%lower_bound = metadata_lower
+         outputs(output_index)%metadata%upper_bound = metadata_upper
+         outputs(output_index)%metadata%domain_type = domain_type
          allocate (outputs(output_index)%metadata%artifacts(count(artifacts%kind /= OUTPUT_ARTIFACT_UNDEFINED)))
          artifact_count = 0
          do i = 1, size(artifacts)
@@ -533,7 +497,15 @@ contains
             outputs(output_index)%metadata%artifacts(artifact_count)%relative_path = &
                get_last_component(artifacts(i)%relative_path)
          end do
-         outputs(output_index)%metadata_path = descriptor_path
+         allocate (outputs(output_index)%metadata%ownership%participant_ranks(1))
+         outputs(output_index)%metadata%ownership%participant_ranks(1) = writer_rank
+         outputs(output_index)%metadata%ownership%scalar_writer_rank = writer_rank
+         outputs(output_index)%metadata_path = trim(descriptor_path)
+         status = OUTPUT_METADATA_SUCCESS
+         if (control%layoutnumber == writer_rank) then
+            call publish_initial_probe_metadata(outputs(output_index)%metadata_path, &
+                                                outputs(output_index)%metadata, status)
+         end if
       end subroutine register_scalar_output_metadata
 
        subroutine attach_output_partition(output_index)
@@ -981,8 +953,6 @@ contains
             call finalise_scalar_output_metadata(i)
          case (LINE_PROBE_ID)
             call finalise_scalar_output_metadata(i)
-         case (VOLUMIC_CURRENT_PROBE_ID)
-            call finalise_scalar_output_metadata(i)
          case (FAR_FIELD_PROBE_ID)
             call finalise_scalar_output_metadata(i)
          case (MAPVTK_ID)
@@ -1001,34 +971,6 @@ contains
 #endif
       call finalise_run_outputs()
    end subroutine
-
-   subroutine create_pvd(pvdPath)
-      implicit none
-      character(len=*), intent(in) :: pvdPath
-      integer :: ios
-      integer :: unit
-
-      open (newunit=unit, file=trim(pvdPath), status="replace", action="write", iostat=ios)
-      if (ios /= 0) stop "Error al crear archivo PVD"
-
-      ! Escribimos encabezados XML
-      write (unit, *) '<?xml version="1.0"?>'
-      write (unit, *) '<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">'
-      write (unit, *) '  <Collection>'
-      close (unit)
-   end subroutine create_pvd
-
-   subroutine close_pvd(pvdPath)
-      implicit none
-      character(len=*), intent(in) :: pvdPath
-      integer :: unit
-      integer :: ios
-      open (newunit=unit, file=trim(pvdPath), status="old", action="write", iostat=ios)
-      if (ios /= 0) stop "Error al abrir archivo PVD"
-      write (unit, *) '  </Collection>'
-      write (unit, *) '</VTKFile>'
-      close (unit)
-   end subroutine close_pvd
 
    function get_required_output_count(sgg) result(count)
       type(SGGFDTDINFO_t), intent(in) :: sgg

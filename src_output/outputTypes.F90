@@ -25,7 +25,6 @@ module outputTypes_m
 
 
    character(len=4), parameter :: binaryExtension = '.bin'
-   character(len=4), parameter :: pvdExtension = '.pvd'
    character(len=4), parameter :: datFileExtension = '.dat'
    character(len=4), parameter :: vtkFileExtension = '.vtk'
    character(len=4), parameter :: vtuFileExtension = '.vtu'
@@ -201,7 +200,6 @@ module outputTypes_m
 ! Abstract probe hierarchy
 !=====================================================
     type :: abstract_probe_t
-       integer(kind=SINGLE)      :: columnas
        type(domain_t)            :: domain
        type(cell_coordinate_t)   :: mainCoords
        integer(kind=SINGLE)      :: component
@@ -313,9 +311,7 @@ module outputTypes_m
         ! Binary format: frequency, x, y, z, then real/imaginary pairs for X, Y, and Z. Total record size: 40.
        type(cell_coordinate_t) :: auxCoords
        integer(kind=SINGLE)    :: nPoints = -1
-       integer(kind=SINGLE)    :: gridDimensions(3) = 0
        integer(kind=SINGLE), allocatable :: coords(:, :)        !(3, coordIdx)
-       real(kind=RKIND), allocatable :: xCoordinates(:), yCoordinates(:), zCoordinates(:)
        complex(kind=CKIND), allocatable :: xValueForFreq(:, :)  !(time, coordIdx)
       complex(kind=CKIND), allocatable :: yValueForFreq(:, :)  !(time, coordIdx)
       complex(kind=CKIND), allocatable :: zValueForFreq(:, :)  !(time, coordIdx)
@@ -343,8 +339,7 @@ module outputTypes_m
       type(far_field_probe_output_t), allocatable     :: farFieldOutput
       type(mapvtk_output_t), allocatable              :: mapvtkOutput
 #ifdef CompileWithMPI
-      integer(kind=4) :: MPISubcomm, MPIRoot, MPIGroupIndex
-      integer(kind=4) :: ZIorig, ZEorig
+      integer(kind=4) :: MPISubcomm, MPIRoot
 #endif
    end type solver_output_t
 

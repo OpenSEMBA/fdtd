@@ -139,9 +139,8 @@ contains
 
    subroutine flush_line_probe_output(this)
       type(line_probe_output_t), intent(inout) :: this
-      integer :: index, ios, unit
-       real(real64), allocatable :: records(:)
-      real(kind=RKIND_tiempo) :: time_value
+       integer :: index, ios, unit
+        real(real64), allocatable :: records(:)
 
       if (this%nTime == 0) return
       open(newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)

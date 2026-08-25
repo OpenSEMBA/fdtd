@@ -18,7 +18,14 @@ def test_geometry_map_publishes_a_complete_descriptor(run_output_case):
     descriptor_path, descriptor = next(
         (path, value) for path, value in descriptors if "lifecycle" in value
     )
+    assert sum("lifecycle" in value for _, value in descriptors) == 1
     assert descriptor["lifecycle"]["state"] == "complete"
+    assert descriptor["quantity"] == "geometry"
+    assert descriptor["domain"] == "undefined"
+    assert descriptor["ownership"] == {
+        "participant_ranks": [0],
+        "scalar_writer_rank": 0,
+    }
     assert {artifact["kind"] for artifact in descriptor["artifacts"]} == {
         "geometry",
         "text",
