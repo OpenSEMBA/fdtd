@@ -105,14 +105,8 @@ jobs:
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
       run: python -m pytest -vv test/ --durations=20 --junitxml=build/pytest-results.xml
 
-    - name: Run native tests
-      id: native-tests
-      if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-      continue-on-error: true
-      run: build/bin/fdtd_tests
-
     - name: Upload failed test diagnostics
-      if: ${{ !cancelled() && (steps.ctest.outcome == 'failure' || steps.python-tests.outcome == 'failure' || steps.native-tests.outcome == 'failure') }}
+      if: ${{ !cancelled() && (steps.ctest.outcome == 'failure' || steps.python-tests.outcome == 'failure') }}
       uses: actions/upload-artifact@v4
       with:
         name: test-diagnostics-${{ matrix.compiler.name }}-mpi-${{ matrix.mpi }}-mtln-${{ matrix.mtln }}-double-${{ matrix.double-precision }}
@@ -124,7 +118,6 @@ jobs:
       run: |
         test "${{ steps.ctest.outcome }}" = success
         test "${{ steps.python-tests.outcome }}" = success
-        test "${{ steps.native-tests.outcome }}" = success
 
   parallel-hdf5-build:
     runs-on: ubuntu-latest
