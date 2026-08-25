@@ -300,12 +300,7 @@ class Probe:
     def _getPositionStrFromFolder(folder):
         stem = os.path.basename(folder)
         tag = Probe._getTagFromFolder(folder)
-        if tag in stem:
-            position_str = stem.split(tag, 1)[1]
-        elif stem.endswith(tag[:-1]):
-            position_str = ""
-        else:
-            raise ValueError("Unable to determine probe position")
+        position_str = stem.split(tag, 1)[1]
         for marker in Probe.DOMAIN_MARKERS:
             if position_str.endswith(marker):
                 return position_str[: -len(marker)]

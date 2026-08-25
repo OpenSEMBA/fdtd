@@ -289,42 +289,6 @@ def test_holland_short_terminals_match_open_terminals(tmp_path):
 @pytest.mark.wires
 @pytest.mark.multiwire
 @pytest.mark.probes
-@pytest.mark.legacy
-@pytest.mark.skip(reason="Probe now requires folder-based outputs")
-def test_unshielded_multiwires_legacy(tmp_path):
-    """Verify legacy unshielded-multiwire current outputs match reference signals."""
-    fn = CASES_FOLDER + "unshielded_multiwires/unshielded_multiwires_berenger.fdtd.json"
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-
-    solver.run()
-
-    p_solved = Probe(_get_solved_probe_folder(solver, "mid_point", contains="_I_"))
-
-    p_expected = Probe(
-        OUTPUTS_FOLDER
-        + "unshielded_multiwires_berenger.fdtd_mid_point_unshielded_two_wire_I_2_11_14.dat"
-    )
-
-    solved_0 = np.interp(
-        p_expected["time"].to_numpy(),
-        p_solved.data["time"].to_numpy(),
-        p_solved.data["current_0"].to_numpy(),
-    )
-    assert np.corrcoef(solved_0, p_expected["current_0"])[0, 1] > 0.999
-
-    solved_1 = np.interp(
-        p_expected["time"].to_numpy(),
-        p_solved.data["time"].to_numpy(),
-        p_solved.data["current_1"].to_numpy(),
-    )
-    assert np.corrcoef(solved_1, p_expected["current_1"])[0, 1] > 0.999
-
-
-@no_mtln_skip
-@pytest.mark.mtln
-@pytest.mark.wires
-@pytest.mark.multiwire
-@pytest.mark.probes
 def test_unshielded_multiwires(tmp_path):
     """Verify unshielded-multiwire current outputs match reference signals."""
     fn = CASES_FOLDER + "unshielded_multiwires/unshielded_multiwires_berenger.fdtd.json"

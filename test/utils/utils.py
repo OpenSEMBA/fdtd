@@ -2,7 +2,6 @@ from src_pyWrapper.pyWrapper import *
 import os
 import shutil
 import glob
-import re
 import json
 import numpy as np
 import pyvista as pv
@@ -12,42 +11,7 @@ from os import environ as env
 from sys import platform
 from scipy.special import hankel2 as h
 from scipy.special import h2vp as hp
-
-def build_feature_enabled(feature):
-    value = os.getenv(feature)
-    if value is not None:
-        return value == "ON"
-
-    if os.getenv("SEMBA_FDTD_ENABLE_MPI") == "ON":
-        build_dirs = ["build-rls-mpi", "build-dbg-mpi", "build-intel-rls"]
-    elif os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF":
-        build_dirs = [
-            "build-rls-nomtln",
-            "build-dbg-nomtln",
-            "build-intel-rls-nomtln",
-        ]
-    else:
-        build_dirs = ["build-rls", "build-dbg", "build-intel-rls"]
-    build_dirs.append("build")
-
-    cache_path = next(
-        (
-            os.path.join(os.getcwd(), build_dir, "CMakeCache.txt")
-            for build_dir in build_dirs
-            if os.path.isfile(os.path.join(os.getcwd(), build_dir, "CMakeCache.txt"))
-        ),
-        None,
-    )
-    if cache_path is None:
-        return False
-    try:
-        with open(cache_path) as cache_file:
-            for line in cache_file:
-                if line.startswith(feature + ":"):
-                    return line.rstrip().endswith("=ON")
-    except OSError:
-        pass
-    return False
+from test.utils.build_resolver import build_feature_enabled, solver_executable
 
 
 mtln_skip = pytest.mark.skipif(
@@ -65,31 +29,8 @@ no_mpi_skip = pytest.mark.skipif(
     reason="MPI is not available",
 )
 
-def _default_semba_exe():
-    exe_name = 'semba-fdtd.exe' if platform == "win32" else 'semba-fdtd'
-    configured_exe = os.getenv('SEMBA_EXE')
-    if configured_exe:
-        return os.path.abspath(configured_exe)
-
-    if os.getenv("SEMBA_FDTD_ENABLE_MPI") == "ON":
-        build_dirs = ['build-rls-mpi', 'build-dbg-mpi', 'build-intel-rls']
-    elif os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF":
-        build_dirs = [
-            'build-rls-nomtln',
-            'build-dbg-nomtln',
-            'build-intel-rls-nomtln',
-        ]
-    else:
-        build_dirs = ['build-rls', 'build-dbg', 'build-intel-rls']
-
-    # A manual cmake -B build configuration remains a compatibility fallback.
-    build_dirs.append('build')
-    for build_dir in build_dirs:
-        candidate = os.path.join(os.getcwd(), build_dir, 'bin', exe_name)
-        if os.path.isfile(candidate):
-            return candidate
-
-    return os.path.join(os.getcwd(), 'build', 'bin', exe_name)
+def _default_semba_exe(project_root=None):
+    return str(solver_executable(project_root))
 
 
 # Use an absolute path to avoid conflicts when changing directory.
@@ -122,18 +63,6 @@ def copyInputFiles(temp_dir, input, excitation, executable):
     makeCopy(temp_dir, input)
     makeCopy(temp_dir, excitation)
     makeCopy(temp_dir, executable)
-
-
-def getProbeFile(prefix, probe_name):
-    extensions = ["dat", "xdmf", "h5", "bin"]
-
-    probeFiles = []
-    for ext in extensions:
-        newFiles = ([x for x in glob.glob('*'+ext)
-                    if re.match(prefix + '_' + probe_name + '.*'+ext,  x)])[0]
-        probeFiles.append(newFiles)
-
-    return probeFiles
 
 
 def countLinesInFile(probe_fn):

@@ -11,23 +11,12 @@ from typing import Callable
 
 import pytest
 
+from test.utils.build_resolver import solver_executable
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 OUTPUT_CASES = PROJECT_ROOT / "testData" / "cases" / "output_e2e"
 EXCITATIONS = PROJECT_ROOT / "testData" / "excitations"
-
-
-def _solver_executable() -> Path:
-    configured_executable = os.environ.get("SEMBA_EXE")
-    if configured_executable:
-        return Path(configured_executable)
-
-    executable_name = "semba-fdtd.exe" if os.name == "nt" else "semba-fdtd"
-    for build_dir in ("build", "build-rls", "build-dbg"):
-        executable = PROJECT_ROOT / build_dir / "bin" / executable_name
-        if executable.is_file():
-            return executable
-    return PROJECT_ROOT / "build" / "bin" / executable_name
 
 
 @pytest.fixture
@@ -48,20 +37,6 @@ def stage_output_case(tmp_path: Path) -> Callable[[str], Path]:
         return destination
 
     return stage
-
-
-@pytest.fixture
-def output_root(tmp_path: Path) -> Path:
-    """Return a nested output path containing a space for path tests."""
-
-    return tmp_path / "nested output" / "results"
-
-
-@pytest.fixture
-def failed_output_root(tmp_path: Path) -> Path:
-    """Return an isolated path used by publication failure tests."""
-
-    return tmp_path / "failed output" / "results"
 
 
 @pytest.fixture
@@ -109,7 +84,7 @@ def run_output_case(
         with input_path.open("w", encoding="utf-8") as input_file:
             json.dump(case, input_file)
 
-        executable = _solver_executable()
+        executable = solver_executable(PROJECT_ROOT)
         process = subprocess.run(
             [str(executable), "-i", str(input_path)],
             cwd=tmp_path,

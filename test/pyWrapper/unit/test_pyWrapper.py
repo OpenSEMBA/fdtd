@@ -1,5 +1,6 @@
 from test.utils.utils import *
 from test.utils import utils
+from test.utils.build_resolver import build_feature_enabled, resolve_build
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -570,11 +571,11 @@ def test_fdtd_get_used_files():
 
 
 def test_default_semba_exe_prefers_environment_override(tmp_path, monkeypatch):
-    configured_exe = tmp_path / "configured" / "semba-fdtd"
+    configured_exe = Path("configured") / "semba-fdtd"
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("SEMBA_EXE", str(configured_exe))
 
-    assert utils._default_semba_exe() == str(configured_exe)
+    assert utils._default_semba_exe() == str(tmp_path / configured_exe)
 
 
 @pytest.mark.parametrize(
@@ -583,6 +584,13 @@ def test_default_semba_exe_prefers_environment_override(tmp_path, monkeypatch):
         ({}, "build-rls"),
         ({"SEMBA_FDTD_ENABLE_MPI": "ON"}, "build-rls-mpi"),
         ({"SEMBA_FDTD_ENABLE_MTLN": "OFF"}, "build-rls-nomtln"),
+        (
+            {
+                "SEMBA_FDTD_ENABLE_MPI": "ON",
+                "SEMBA_FDTD_ENABLE_MTLN": "OFF",
+            },
+            "build-intel-rls-nomtln",
+        ),
     ],
 )
 def test_default_semba_exe_selects_compatible_preset(
@@ -592,6 +600,8 @@ def test_default_semba_exe_selects_compatible_preset(
     executable = tmp_path / build_dir / "bin" / executable_name
     executable.parent.mkdir(parents=True)
     executable.touch()
+    cache_lines = [f"{name}:BOOL={value}\n" for name, value in environment.items()]
+    (executable.parents[1] / "CMakeCache.txt").write_text("".join(cache_lines))
     legacy_executable = tmp_path / "build" / "bin" / executable_name
     legacy_executable.parent.mkdir(parents=True)
     legacy_executable.touch()
@@ -602,4 +612,33 @@ def test_default_semba_exe_selects_compatible_preset(
     for name, value in environment.items():
         monkeypatch.setenv(name, value)
 
-    assert utils._default_semba_exe() == str(executable)
+    assert utils._default_semba_exe(tmp_path) == str(executable)
+
+
+def test_build_feature_uses_selected_executable_cache(tmp_path, monkeypatch):
+    executable_name = "semba-fdtd.exe" if platform == "win32" else "semba-fdtd"
+    executable = tmp_path / "custom-build" / "bin" / executable_name
+    executable.parent.mkdir(parents=True)
+    executable.touch()
+    (executable.parents[1] / "CMakeCache.txt").write_text(
+        "SEMBA_FDTD_ENABLE_MPI:BOOL=ON\n"
+    )
+    monkeypatch.setenv("SEMBA_EXE", str(executable))
+    monkeypatch.delenv("SEMBA_FDTD_ENABLE_MPI", raising=False)
+
+    build_directory, selected_executable = resolve_build(tmp_path)
+
+    assert build_directory == executable.parents[1]
+    assert selected_executable == executable
+    assert build_feature_enabled("SEMBA_FDTD_ENABLE_MPI", tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("folder", "position"),
+    [
+        ("case.fdtd_probe_Ex_1_2_3_tm", "1_2_3"),
+        ("case.fdtd_probe_LI", ""),
+    ],
+)
+def test_probe_position_is_derived_from_the_detected_tag(folder, position):
+    assert Probe._getPositionStrFromFolder(folder) == position
