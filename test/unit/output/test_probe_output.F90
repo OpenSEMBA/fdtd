@@ -123,50 +123,8 @@ integer function test_init_point_probe_with_incident() bind(c) result(err)
    call remove_folder(trim(path)//'_Ex_1_1_1', ios)
 end function test_init_point_probe_with_incident
 
-integer function test_output_failure_coordination() bind(c) result(err)
-   ! Verifies failed publication retains diagnostics and cannot complete.
-   use output_m, only: run_output_manifest_t, init_run_output_manifest, declare_probe_output, &
-                       begin_probe_output, finalise_probe_output, fail_probe_output, &
-                       OUTPUT_COORDINATION_SUCCESS, OUTPUT_COORDINATION_INVALID_ARTIFACTS, &
-                       OUTPUT_COORDINATION_INVALID_STATE
-   use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_UNDEFINED, &
-                            OUTPUT_LIFECYCLE_FAILED
-   use assertionTools_m, only: assert_integer_equal, assert_string_equal
-   implicit none
-
-   type(run_output_manifest_t) :: manifest
-   type(output_artifact_t) :: artifacts(1)
-   integer :: probe_index, status
-
-   err = 0
-   artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
-   artifacts(1)%relative_path = 'point.dat'
-   call init_run_output_manifest(manifest, 'failed-run', 0)
-   call declare_probe_output(manifest, 'point-001', 'Ex', artifacts, probe_index, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Failure probe declaration failed')
-   call begin_probe_output(manifest, probe_index, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Failure probe activation failed')
-   call fail_probe_output(manifest, probe_index, 'disk full', status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Failure state was not recorded')
-   err = err + assert_integer_equal(manifest%probes(probe_index)%metadata%lifecycle%state, OUTPUT_LIFECYCLE_FAILED, &
-                                    'Failed probe did not enter failed state')
-   err = err + assert_string_equal(manifest%probes(probe_index)%metadata%lifecycle%diagnostic, 'disk full', &
-                                   'Failure diagnostic was not retained')
-   call finalise_probe_output(manifest, probe_index, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_INVALID_STATE, &
-                                    'Failed probe was allowed to finalise')
-
-   call init_run_output_manifest(manifest, 'incomplete-run', 0)
-   call declare_probe_output(manifest, 'point-002', 'Ex', artifacts, probe_index, status)
-   call begin_probe_output(manifest, probe_index, status)
-   manifest%probes(probe_index)%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_UNDEFINED
-   call finalise_probe_output(manifest, probe_index, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_INVALID_ARTIFACTS, &
-                                    'Incomplete artifacts were reported complete')
-end function test_output_failure_coordination
-
 integer function test_root_output_manifest() bind(c) result(err)
-   ! Verifies root manifest creation, artifact declaration, and cleanup.
+   ! Verifies final root manifest publication, terminal state, artifacts, and cleanup.
    use FDETYPES_m
    use FDETYPES_TOOLS
    use output_m
@@ -189,11 +147,13 @@ integer function test_root_output_manifest() bind(c) result(err)
    real(kind=RKIND_tiempo), pointer :: time_array(:)
    character(len=BUFSIZE) :: line, path, probe_path
    integer :: ios, unit
-   logical :: observations_exist, wires_exist, has_artifact
+   logical :: observations_exist, wires_exist, has_artifact, has_complete_state, has_probe
 
    err = 0
    wires_exist = .false.
    has_artifact = .false.
+   has_complete_state = .false.
+   has_probe = .false.
    path = join_path(get_temp_folder(), 'rootManifest')
    probe_path = trim(path)//'_pointProbe_Ex_4_4_4'
    call delete_file(trim(path)//'_Outputrequests_1.txt', ios)
@@ -210,16 +170,24 @@ integer function test_root_output_manifest() bind(c) result(err)
 
    call init_outputs(sgg, media, sinpml, tag_numbers, bounds, control, observations_exist, wires_exist)
 
-   err = err + assert_true(file_exists(trim(path)//'_output_manifest.json'), 'Root output manifest does not exist')
+   err = err + assert_true(.not. file_exists(trim(path)//'_output_manifest.json'), &
+                           'Root output manifest was published before probe finalisation')
    err = err + assert_true(.not. file_exists(trim(path)//'_Outputrequests_1.txt'), &
                            'New output path created a per-rank register')
+   call close_outputs()
+   err = err + assert_true(file_exists(trim(path)//'_output_manifest.json'), &
+                           'Root output manifest does not exist after finalisation')
    open (newunit=unit, file=trim(path)//'_output_manifest.json', status='old', action='read', iostat=ios)
    do while (ios == 0)
       read (unit, '(A)', iostat=ios) line
       if (index(line, json_escape(trim(probe_path))) > 0) has_artifact = .true.
+      if (index(line, '"state":"complete"') > 0) has_complete_state = .true.
+      if (index(line, '"probe_id":"rootManifest_pointProbe_Ex_4_4_4"') > 0) has_probe = .true.
    end do
    close (unit)
    err = err + assert_true(has_artifact, 'Manifest does not contain the declared point artifact')
+   err = err + assert_true(has_complete_state, 'Manifest does not contain the terminal probe state')
+   err = err + assert_true(has_probe, 'Manifest does not contain the declared probe identity')
 
    call delete_run_output_manifest(path, 0)
    err = err + assert_true(.not. file_exists(join_path(trim(probe_path), get_last_component(probe_path)//'_tm.dat')), &
@@ -636,85 +604,6 @@ integer function test_output_lifecycle_contract() bind(c) result(err)
    metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
    err = err + assert_true(output_lifecycle_is_terminal(metadata%lifecycle), 'Failed lifecycle is not terminal')
    err = err + assert_true(.not. probe_metadata_is_complete(metadata), 'Failed metadata is complete')
-end function
-
-integer function test_output_lifecycle_coordination() bind(c) result(err)
-   ! Verifies probe finalisation and root-only manifest publication.
-   use output_m, only: run_output_manifest_t, init_run_output_manifest, declare_probe_output, &
-                       begin_probe_output, finalise_probe_output, finalise_run_outputs, &
-                       OUTPUT_COORDINATION_SUCCESS, OUTPUT_COORDINATION_NOT_ROOT, OUTPUT_COORDINATION_NOT_TERMINAL
-   use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY, &
-                            OUTPUT_LIFECYCLE_COMPLETE
-   use assertionTools_m, only: assert_integer_equal, assert_true
-   implicit none
-
-   type(run_output_manifest_t) :: manifest
-   type(output_artifact_t) :: artifacts(2)
-   integer :: probe_index, status
-
-   err = 0
-   artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
-   artifacts(1)%relative_path = 'point.dat'
-   artifacts(2)%kind = OUTPUT_ARTIFACT_BINARY
-   artifacts(2)%relative_path = 'point.bin'
-
-   call init_run_output_manifest(manifest, 'run-001', 0)
-   call declare_probe_output(manifest, 'point-001', 'Ex', artifacts, probe_index, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Probe declaration failed')
-   err = err + assert_integer_equal(probe_index, 1, 'Unexpected probe index')
-   err = err + assert_true(allocated(manifest%probes), 'Manifest did not retain declared probe')
-
-   call finalise_run_outputs(manifest, 0, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_NOT_TERMINAL, 'Non-terminal manifest was published')
-
-   call begin_probe_output(manifest, probe_index, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Probe activation failed')
-   call finalise_probe_output(manifest, probe_index, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Probe finalisation failed')
-   err = err + assert_integer_equal(manifest%probes(1)%metadata%lifecycle%state, OUTPUT_LIFECYCLE_COMPLETE, &
-                                    'Probe is not complete')
-
-   call finalise_run_outputs(manifest, 1, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_NOT_ROOT, 'Non-root published manifest')
-   err = err + assert_true(.not. manifest%published, 'Non-root manifest was published')
-
-   call finalise_run_outputs(manifest, 0, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Root manifest finalisation failed')
-   err = err + assert_true(manifest%published, 'Root manifest was not published')
-end function
-
-integer function test_output_probe_ownership() bind(c) result(err)
-   ! Verifies probe participants and scalar-writer ownership.
-   use output_m, only: run_output_manifest_t, init_run_output_manifest, declare_probe_output, &
-                       select_probe_participants, OUTPUT_COORDINATION_SUCCESS, &
-                       OUTPUT_COORDINATION_INVALID_OWNERSHIP
-   use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_TEXT
-   use assertionTools_m, only: assert_integer_equal, assert_true
-   implicit none
-
-   type(run_output_manifest_t) :: manifest
-   type(output_artifact_t) :: artifacts(1)
-   integer :: participants(1), probe_index, status
-
-   err = 0
-   artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
-   artifacts(1)%relative_path = 'point.dat'
-   participants = [0]
-
-   call init_run_output_manifest(manifest, 'serial-run', 0)
-   call declare_probe_output(manifest, 'point-001', 'Ex', artifacts, probe_index, status)
-   call select_probe_participants(manifest, probe_index, participants, 0, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_SUCCESS, 'Serial ownership selection failed')
-   err = err + assert_true(allocated(manifest%probes(probe_index)%metadata%ownership%participant_ranks), &
-                           'Participants were not retained in the output contract')
-   err = err + assert_integer_equal(manifest%probes(probe_index)%metadata%ownership%participant_ranks(1), 0, &
-                                    'Unexpected serial participant')
-   err = err + assert_integer_equal(manifest%probes(probe_index)%metadata%ownership%scalar_writer_rank, 0, &
-                                    'Unexpected serial scalar writer')
-
-   call select_probe_participants(manifest, probe_index, participants, 1, status)
-   err = err + assert_integer_equal(status, OUTPUT_COORDINATION_INVALID_OWNERSHIP, &
-                                    'Non-participant selected as scalar writer')
 end function
 
 integer function test_output_serial_distributed_equivalence() bind(c) result(err)

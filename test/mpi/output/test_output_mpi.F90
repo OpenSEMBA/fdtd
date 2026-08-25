@@ -9,26 +9,20 @@ program test_output_mpi
                                  OUTPUT_PUBLICATION_ROOT_AGGREGATION
     use outputDecomposition_m, only: output_partition_t, build_output_partition, &
                                      OUTPUT_PARTITION_SUCCESS
-    use outputTransport_m, only: output_transport_t, init_output_transport, OUTPUT_TRANSPORT_SUCCESS
-    use outputTypes_m, only: cell_coordinate_t, output_artifact_t, OUTPUT_ARTIFACT_TEXT
-    use output_m, only: run_output_manifest_t, init_run_output_manifest, declare_probe_output, begin_probe_output, &
-                         finalise_probe_output, finalise_transport_run_outputs, OUTPUT_COORDINATION_SUCCESS
+    use outputTypes_m, only: cell_coordinate_t
    implicit none
 
    integer, parameter :: root = 0
     integer :: ierr, rank, rank_count, status, owner, publication_mode
-    integer :: local_count, total_count, i, probe_index, z, failures
+    integer :: local_count, total_count, i, z, failures
    integer, allocatable :: participants(:), local_values(:), gathered_values(:), counts(:), displacements(:)
    integer, allocatable :: local_coverage(:), global_coverage(:)
    logical, allocatable :: rank_has_data(:)
      logical :: local_participates
     type(output_collective_t) :: collective
-    type(output_transport_t) :: transport
     type(output_partition_t) :: partition
     type(cell_coordinate_t) :: request_lower, request_upper
     type(limit_t) :: global_bounds, local_sweep
-    type(run_output_manifest_t) :: manifest
-    type(output_artifact_t) :: artifacts(1)
 
    call MPI_Init(ierr)
    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
@@ -58,21 +52,6 @@ program test_output_mpi
                                                 local_participates, publication_mode, status)
        if (status /= OUTPUT_COLLECTIVE_SUCCESS .or. .not. local_participates .or. &
            publication_mode /= OUTPUT_PUBLICATION_COLLECTIVE) failures = failures + 1
-
-       call init_output_transport(transport, root, status)
-       if (status /= OUTPUT_TRANSPORT_SUCCESS) failures = failures + 1
-       artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
-       artifacts(1)%relative_path = 'point.dat'
-       call init_run_output_manifest(manifest, 'mpi-run', root)
-        call declare_probe_output(manifest, 'point-001', 'Ex', artifacts, probe_index, status)
-       if (status /= OUTPUT_COORDINATION_SUCCESS) failures = failures + 1
-       call begin_probe_output(manifest, probe_index, status)
-       if (status /= OUTPUT_COORDINATION_SUCCESS) failures = failures + 1
-       call finalise_probe_output(manifest, probe_index, status)
-       if (status /= OUTPUT_COORDINATION_SUCCESS) failures = failures + 1
-       call finalise_transport_run_outputs(manifest, transport, status)
-       if (status /= OUTPUT_COORDINATION_SUCCESS) failures = failures + 1
-       if (manifest%published .neqv. (rank == root)) failures = failures + 1
 
       allocate(local_coverage(0:2 * rank_count), global_coverage(0:2 * rank_count))
       local_coverage = 0

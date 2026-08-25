@@ -3,7 +3,8 @@ module output_m
    use report_m
    use domain_m
    use outputUtils_m
-   use directoryUtils_m, only: delete_file, file_exists, get_last_component, join_path, remove_folder
+   use directoryUtils_m, only: atomic_replace_file, create_file_with_path, delete_file, file_exists, &
+                               get_last_component, join_path, remove_folder
    use pointProbeOutput_m
    use wireProbeOutput_m
    use bulkProbeOutput_m
@@ -16,14 +17,11 @@ module output_m
                                     OUTPUT_PARTITION_SUCCESS, OUTPUT_PARTITION_INVALID_ARGUMENT
    use outputCollective_m, only: output_collective_t, init_output_collective, select_output_participants, &
                                   prepare_output_partition_publication, OUTPUT_COLLECTIVE_SUCCESS
-   use outputTransport_m, only: output_transport_t
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, json_escape, &
-                               json_unescape, OUTPUT_METADATA_SUCCESS
+                                json_unescape, OUTPUT_METADATA_SUCCESS
    use outputTypes_m, only: probe_metadata_t, output_artifact_t, output_lifecycle_is_terminal, &
-                            probe_metadata_is_complete, OUTPUT_ARTIFACT_UNDEFINED, &
-                             volumetric_publication_t, &
-                            OUTPUT_LIFECYCLE_DECLARED, OUTPUT_LIFECYCLE_ACTIVE, &
-                            OUTPUT_LIFECYCLE_FINALISING, OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
+                             OUTPUT_ARTIFACT_UNDEFINED, volumetric_publication_t, &
+                             OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
 #ifdef CompileWithMPI
     use mpi
 #endif
@@ -45,16 +43,9 @@ module output_m
    public :: flush_outputs
    public :: close_outputs
    public :: GetOutputPartition
-   public :: probe_output_t, run_output_manifest_t
-   public :: init_run_output_manifest, declare_probe_output, begin_probe_output, finalise_probe_output, &
-             fail_probe_output, finalise_run_outputs, select_probe_participants
-   public :: finalise_transport_run_outputs
    public :: publish_scalar_probe_metadata
    public :: delete_run_output_manifest
-   public :: OUTPUT_COORDINATION_SUCCESS, OUTPUT_COORDINATION_INVALID_PROBE, &
-              OUTPUT_COORDINATION_INVALID_STATE, OUTPUT_COORDINATION_INVALID_ARTIFACTS, &
-              OUTPUT_COORDINATION_NOT_TERMINAL, OUTPUT_COORDINATION_NOT_ROOT, &
-              OUTPUT_COORDINATION_INVALID_OWNERSHIP
+   public :: OUTPUT_COORDINATION_SUCCESS, OUTPUT_COORDINATION_INVALID_ARTIFACTS
 
    public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, VOLUMIC_CURRENT_PROBE_ID, &
              MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID, LINE_PROBE_ID
@@ -78,29 +69,16 @@ module output_m
                                       MAPVTK_ID = 8, LINE_PROBE_ID = 9
 
    integer, parameter :: OUTPUT_COORDINATION_SUCCESS = 0
-   integer, parameter :: OUTPUT_COORDINATION_INVALID_PROBE = 1
-   integer, parameter :: OUTPUT_COORDINATION_INVALID_STATE = 2
    integer, parameter :: OUTPUT_COORDINATION_INVALID_ARTIFACTS = 3
-   integer, parameter :: OUTPUT_COORDINATION_NOT_TERMINAL = 4
-   integer, parameter :: OUTPUT_COORDINATION_NOT_ROOT = 5
-   integer, parameter :: OUTPUT_COORDINATION_INVALID_OWNERSHIP = 6
-
-   type :: probe_output_t
-      type(probe_metadata_t) :: metadata
-   end type probe_output_t
-
-   type :: run_output_manifest_t
-      character(len=BUFSIZE) :: run_id = ''
-      integer :: root_rank = 0
-      logical :: published = .false.
-      type(probe_output_t), allocatable :: probes(:)
-   end type run_output_manifest_t
 
    REAL(KIND=RKIND), save           ::  eps0, mu0
    REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
    type(solver_output_t), pointer, dimension(:), save  ::  outputs
    type(output_partition_t), allocatable, save :: outputPartitions(:)
    type(problem_info_t), save, target :: problemInfo
+   character(len=BUFSIZE), save :: runOutputId = ''
+   integer, save :: runOutputRank = 0
+   integer, parameter :: RUN_OUTPUT_ROOT_RANK = 0
 
    interface init_solver_output
       module procedure &
@@ -234,230 +212,6 @@ contains
       status = OUTPUT_PARTITION_SUCCESS
    end subroutine GetOutputPartition
 
-   subroutine init_run_output_manifest(manifest, run_id, root_rank)
-      type(run_output_manifest_t), intent(out) :: manifest
-      character(len=*), intent(in) :: run_id
-      integer, intent(in) :: root_rank
-
-      manifest%run_id = run_id
-      manifest%root_rank = root_rank
-   end subroutine init_run_output_manifest
-
-   subroutine declare_probe_output(manifest, probe_id, quantity, artifacts, probe_index, status)
-      type(run_output_manifest_t), intent(inout) :: manifest
-      character(len=*), intent(in) :: probe_id
-      character(len=*), intent(in) :: quantity
-      type(output_artifact_t), intent(in) :: artifacts(:)
-      integer, intent(out) :: probe_index, status
-      type(probe_output_t), allocatable :: expanded_probes(:)
-      integer :: i, probe_count
-
-      probe_index = 0
-      if (len_trim(probe_id) == 0 .or. len_trim(quantity) == 0 .or. &
-          .not. artifacts_are_declared(artifacts)) then
-         status = OUTPUT_COORDINATION_INVALID_ARTIFACTS
-         return
-      end if
-
-      if (allocated(manifest%probes)) then
-         do i = 1, size(manifest%probes)
-            if (trim(manifest%probes(i)%metadata%probe_id) == trim(probe_id)) then
-               status = OUTPUT_COORDINATION_INVALID_PROBE
-               return
-            end if
-         end do
-         probe_count = size(manifest%probes)
-      else
-         probe_count = 0
-      end if
-
-      allocate (expanded_probes(probe_count + 1))
-      if (probe_count > 0) expanded_probes(:probe_count) = manifest%probes
-      expanded_probes(probe_count + 1)%metadata%probe_id = probe_id
-      expanded_probes(probe_count + 1)%metadata%quantity = quantity
-      allocate (expanded_probes(probe_count + 1)%metadata%artifacts(size(artifacts)))
-      expanded_probes(probe_count + 1)%metadata%artifacts = artifacts
-      call move_alloc(expanded_probes, manifest%probes)
-      probe_index = probe_count + 1
-      status = OUTPUT_COORDINATION_SUCCESS
-   end subroutine declare_probe_output
-
-   subroutine begin_probe_output(manifest, probe_index, status)
-      type(run_output_manifest_t), intent(inout) :: manifest
-      integer, intent(in) :: probe_index
-      integer, intent(out) :: status
-
-      if (.not. valid_probe_index(manifest, probe_index)) then
-         status = OUTPUT_COORDINATION_INVALID_PROBE
-      else if (manifest%probes(probe_index)%metadata%lifecycle%state /= OUTPUT_LIFECYCLE_DECLARED) then
-         status = OUTPUT_COORDINATION_INVALID_STATE
-      else
-         manifest%probes(probe_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
-         status = OUTPUT_COORDINATION_SUCCESS
-      end if
-   end subroutine begin_probe_output
-
-   subroutine select_probe_participants(manifest, probe_index, participant_ranks, scalar_writer_rank, status)
-      type(run_output_manifest_t), intent(inout) :: manifest
-      integer, intent(in) :: probe_index
-      integer, intent(in) :: participant_ranks(:)
-      integer, intent(in) :: scalar_writer_rank
-      integer, intent(out) :: status
-
-      if (.not. valid_probe_index(manifest, probe_index)) then
-         status = OUTPUT_COORDINATION_INVALID_PROBE
-         return
-      end if
-      if (manifest%probes(probe_index)%metadata%lifecycle%state /= OUTPUT_LIFECYCLE_DECLARED) then
-         status = OUTPUT_COORDINATION_INVALID_STATE
-         return
-      end if
-      if (.not. valid_probe_ownership(participant_ranks, scalar_writer_rank)) then
-         status = OUTPUT_COORDINATION_INVALID_OWNERSHIP
-         return
-      end if
-
-      associate (ownership => manifest%probes(probe_index)%metadata%ownership)
-         ownership%participant_ranks = participant_ranks
-         ownership%scalar_writer_rank = scalar_writer_rank
-      end associate
-      status = OUTPUT_COORDINATION_SUCCESS
-   end subroutine select_probe_participants
-
-   subroutine finalise_probe_output(manifest, probe_index, status)
-      type(run_output_manifest_t), intent(inout) :: manifest
-      integer, intent(in) :: probe_index
-      integer, intent(out) :: status
-
-      if (.not. valid_probe_index(manifest, probe_index)) then
-         status = OUTPUT_COORDINATION_INVALID_PROBE
-         return
-      end if
-
-      associate (metadata => manifest%probes(probe_index)%metadata)
-         if (metadata%lifecycle%state /= OUTPUT_LIFECYCLE_DECLARED .and. &
-             metadata%lifecycle%state /= OUTPUT_LIFECYCLE_ACTIVE) then
-            status = OUTPUT_COORDINATION_INVALID_STATE
-            return
-         end if
-
-         metadata%lifecycle%state = OUTPUT_LIFECYCLE_FINALISING
-         metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
-         if (probe_metadata_is_complete(metadata)) then
-            status = OUTPUT_COORDINATION_SUCCESS
-         else
-            metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-            metadata%lifecycle%diagnostic = 'Required artifacts are incomplete'
-            status = OUTPUT_COORDINATION_INVALID_ARTIFACTS
-         end if
-      end associate
-   end subroutine finalise_probe_output
-
-   subroutine fail_probe_output(manifest, probe_index, diagnostic, status)
-      type(run_output_manifest_t), intent(inout) :: manifest
-      integer, intent(in) :: probe_index
-      character(len=*), intent(in) :: diagnostic
-      integer, intent(out) :: status
-
-      if (.not. valid_probe_index(manifest, probe_index)) then
-         status = OUTPUT_COORDINATION_INVALID_PROBE
-         return
-      end if
-      if (output_lifecycle_is_terminal(manifest%probes(probe_index)%metadata%lifecycle)) then
-         status = OUTPUT_COORDINATION_INVALID_STATE
-         return
-      end if
-
-      manifest%probes(probe_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-      manifest%probes(probe_index)%metadata%lifecycle%diagnostic = diagnostic
-      status = OUTPUT_COORDINATION_SUCCESS
-   end subroutine fail_probe_output
-
-   subroutine finalise_run_outputs(manifest, writer_rank, status)
-      type(run_output_manifest_t), intent(inout) :: manifest
-      integer, intent(in) :: writer_rank
-      integer, intent(out) :: status
-      integer :: i
-
-      if (writer_rank /= manifest%root_rank) then
-         status = OUTPUT_COORDINATION_NOT_ROOT
-         return
-      end if
-      if (allocated(manifest%probes)) then
-         do i = 1, size(manifest%probes)
-            if (.not. output_lifecycle_is_terminal(manifest%probes(i)%metadata%lifecycle)) then
-               status = OUTPUT_COORDINATION_NOT_TERMINAL
-               return
-            end if
-         end do
-      end if
-
-      manifest%published = .true.
-      status = OUTPUT_COORDINATION_SUCCESS
-   end subroutine finalise_run_outputs
-
-   subroutine finalise_transport_run_outputs(manifest, transport, status)
-      type(run_output_manifest_t), intent(inout) :: manifest
-      type(output_transport_t), intent(in) :: transport
-      integer, intent(out) :: status
-      integer :: i
-
-      if (transport%root_rank /= manifest%root_rank) then
-         status = OUTPUT_COORDINATION_INVALID_OWNERSHIP
-         return
-      end if
-      if (transport%rank == transport%root_rank) then
-         call finalise_run_outputs(manifest, transport%rank, status)
-         return
-      end if
-      if (allocated(manifest%probes)) then
-         do i = 1, size(manifest%probes)
-            if (.not. output_lifecycle_is_terminal(manifest%probes(i)%metadata%lifecycle)) then
-               status = OUTPUT_COORDINATION_NOT_TERMINAL
-               return
-            end if
-         end do
-      end if
-      status = OUTPUT_COORDINATION_SUCCESS
-   end subroutine finalise_transport_run_outputs
-
-   pure logical function valid_probe_index(manifest, probe_index)
-      type(run_output_manifest_t), intent(in) :: manifest
-      integer, intent(in) :: probe_index
-
-      valid_probe_index = allocated(manifest%probes) .and. probe_index >= 1
-      if (valid_probe_index) valid_probe_index = probe_index <= size(manifest%probes)
-   end function valid_probe_index
-
-   pure logical function artifacts_are_declared(artifacts)
-      type(output_artifact_t), intent(in) :: artifacts(:)
-      integer :: i
-
-      artifacts_are_declared = size(artifacts) > 0
-      if (.not. artifacts_are_declared) return
-      do i = 1, size(artifacts)
-         if (artifacts(i)%kind == OUTPUT_ARTIFACT_UNDEFINED .or. len_trim(artifacts(i)%relative_path) == 0) then
-            artifacts_are_declared = .false.
-            return
-         end if
-      end do
-   end function artifacts_are_declared
-
-   pure logical function valid_probe_ownership(participant_ranks, scalar_writer_rank)
-      integer, intent(in) :: participant_ranks(:)
-      integer, intent(in) :: scalar_writer_rank
-      integer :: i
-
-      valid_probe_ownership = size(participant_ranks) > 0 .and. any(participant_ranks == scalar_writer_rank)
-      if (.not. valid_probe_ownership) return
-      do i = 1, size(participant_ranks) - 1
-         if (any(participant_ranks(i + 1:) == participant_ranks(i))) then
-            valid_probe_ownership = .false.
-            return
-         end if
-      end do
-   end function valid_probe_ownership
-
    subroutine init_outputs(sgg, media, sinpml_fullsize, materialTags, bounds, control, observationsExists, &
                            wiresExists, eps0_input, mu0_input)
 
@@ -503,6 +257,8 @@ contains
 
       outputs => NULL()
       allocate (outputs(requestedOutputs))
+      runOutputId = control%nEntradaRoot
+      runOutputRank = control%layoutnumber
       if (allocated(outputPartitions)) deallocate (outputPartitions)
       allocate (outputPartitions(requestedOutputs))
 
@@ -665,6 +421,8 @@ contains
                      allocate (outputs(outputCount)%movieProbe)
                      call init_solver_output(outputs(outputCount)%movieProbe, publication, outputRequestType, domain, &
                                              control, problemInfo, outputTypeExtension)
+                     outputs(outputCount)%metadata = outputs(outputCount)%movieProbe%metadata
+                     outputs(outputCount)%metadata_path = trim(outputs(outputCount)%movieProbe%filesPath)//'.json'
                   end block
                else if (domain%domainType == FREQUENCY_DOMAIN) then
                   block
@@ -676,6 +434,8 @@ contains
                      allocate (outputs(outputCount)%frequencySliceProbe)
                      call init_solver_output(outputs(outputCount)%frequencySliceProbe, publication, sgg%dt, &
                                              outputRequestType, domain, outputTypeExtension, control, problemInfo)
+                     outputs(outputCount)%metadata = outputs(outputCount)%frequencySliceProbe%metadata
+                     outputs(outputCount)%metadata_path = trim(outputs(outputCount)%frequencySliceProbe%filesPath)//'.json'
                   end block
                end if
             case (farfield)
@@ -709,7 +469,6 @@ contains
 #ifdef CompileWithMTLN
       observationsExists = observationsExists .or. thereAreMtlnObservations
 #endif
-      if (observationsExists) call write_run_output_manifest(control, outputCount)
       return
    contains
 #ifdef CompileWithMPI
@@ -1075,10 +834,13 @@ contains
             call finalise_scalar_output_metadata(i)
          case (MOVIE_PROBE_ID)
             call close_solver_output(outputs(i)%movieProbe)
+            outputs(i)%metadata = outputs(i)%movieProbe%metadata
          case (FREQUENCY_SLICE_PROBE_ID)
             call close_solver_output(outputs(i)%frequencySliceProbe)
+            outputs(i)%metadata = outputs(i)%frequencySliceProbe%metadata
          end select
       end do
+      call finalise_run_outputs()
    end subroutine
 
    subroutine create_pvd(pvdPath)
@@ -1119,67 +881,114 @@ contains
       return
    end function
 
-   subroutine write_run_output_manifest(control, outputCount)
-      type(sim_control_t), intent(in) :: control
-      integer, intent(in) :: outputCount
+   subroutine finalise_run_outputs()
+      character(len=BUFSIZE) :: manifest_path, temporary_path
+      integer :: close_status, i, ios, unit
 
-      character(len=BUFSIZE) :: manifest_path
-      integer :: i, iostat, unit
-      logical :: first_artifact
+      if (runOutputRank /= RUN_OUTPUT_ROOT_RANK) return
+      do i = 1, size(outputs)
+         if (.not. output_lifecycle_is_terminal(outputs(i)%metadata%lifecycle)) then
+            call StopOnError(runOutputRank, 1, 'Cannot publish output manifest before all probes are finalised')
+            return
+         end if
+      end do
 
-      if (control%layoutnumber /= 0) return
-      manifest_path = trim(control%nEntradaRoot)//'_output_manifest.json'
-      open (newunit=unit, file=trim(manifest_path), status='replace', action='write', iostat=iostat)
-      if (iostat /= 0) then
-         call StopOnError(control%layoutnumber, control%num_procs, 'Error while creating output manifest')
+      manifest_path = trim(runOutputId)//'_output_manifest.json'
+      temporary_path = trim(manifest_path)//'.tmp'
+      call create_file_with_path(temporary_path, ios)
+      if (ios /= 0) then
+         call StopOnError(runOutputRank, 1, 'Error while creating output manifest')
+         return
+      end if
+      open (newunit=unit, file=trim(temporary_path), status='replace', action='write', iostat=ios)
+      if (ios /= 0) then
+         call StopOnError(runOutputRank, 1, 'Error while opening output manifest')
          return
       end if
 
-      first_artifact = .true.
-      write (unit, '(a)') '{'
-      write (unit, '(a)') '"artifacts":['
-      do i = 1, outputCount
-         select case (outputs(i)%outputID)
-         case (POINT_PROBE_ID)
-            call write_artifacts(outputs(i)%pointProbe%artifacts)
-         case (WIRE_CURRENT_PROBE_ID)
-            call write_artifacts(outputs(i)%wireCurrentProbe%artifacts)
-         case (WIRE_CHARGE_PROBE_ID)
-            call write_artifacts(outputs(i)%wireChargeProbe%artifacts)
-         case (BULK_PROBE_ID)
-            call write_artifacts(outputs(i)%bulkCurrentProbe%artifacts)
-         case (LINE_PROBE_ID)
-            call write_artifacts(outputs(i)%lineProbe%artifacts)
-         case (MOVIE_PROBE_ID)
-            call write_artifacts(outputs(i)%movieProbe%metadata%artifacts, outputs(i)%movieProbe%path)
-         case (FREQUENCY_SLICE_PROBE_ID)
-            call write_artifacts(outputs(i)%frequencySliceProbe%metadata%artifacts, outputs(i)%frequencySliceProbe%path)
-         case (FAR_FIELD_PROBE_ID)
-            call write_artifacts(outputs(i)%farFieldOutput%artifacts)
-         case (MAPVTK_ID)
-            call write_artifacts(outputs(i)%mapvtkOutput%artifacts)
-         end select
+      write (unit, '(a)', iostat=ios) '{'
+      if (ios == 0) write (unit, '(a)', iostat=ios) '"schema_version":1,'
+      if (ios == 0) write (unit, '(a)', iostat=ios) '"run_id":"'//json_escape(trim(runOutputId))//'",'
+      if (ios == 0) write (unit, '(a)', iostat=ios) '"probes":['
+      do i = 1, size(outputs)
+         if (i > 1 .and. ios == 0) write (unit, '(a)', iostat=ios) ','
+         if (ios == 0) call write_manifest_probe(unit, outputs(i)%metadata, outputs(i)%metadata_path, ios)
       end do
-      write (unit, '(a)') ']'
-      write (unit, '(a)') '}'
-      close (unit)
-   contains
-      subroutine write_artifacts(artifacts, base_path)
-         type(output_artifact_t), intent(in) :: artifacts(:)
-         character(len=*), intent(in), optional :: base_path
-         character(len=:), allocatable :: artifact_path
-         integer :: artifact_index
+      if (ios == 0) write (unit, '(a)', iostat=ios) ']'
+      if (ios == 0) write (unit, '(a)', iostat=ios) '}'
+      close_status = ios
+      close (unit, iostat=ios)
+      if (close_status /= 0 .or. ios /= 0) then
+         call delete_file(temporary_path, close_status)
+         call StopOnError(runOutputRank, 1, 'Error while writing output manifest')
+         return
+      end if
 
-         do artifact_index = 1, size(artifacts)
-            if (artifacts(artifact_index)%kind == OUTPUT_ARTIFACT_UNDEFINED) cycle
-            artifact_path = trim(artifacts(artifact_index)%relative_path)
-            if (present(base_path)) artifact_path = join_path(trim(base_path), artifact_path)
-            if (.not. first_artifact) write (unit, '(a)') ','
-            write (unit, '(a)') '{"path":"'//json_escape(trim(artifact_path))//'"}'
-            first_artifact = .false.
-         end do
-      end subroutine write_artifacts
-   end subroutine write_run_output_manifest
+      call atomic_replace_file(temporary_path, manifest_path, ios)
+      if (ios /= 0) then
+         call delete_file(temporary_path, close_status)
+         call StopOnError(runOutputRank, 1, 'Error while publishing output manifest')
+      end if
+   end subroutine finalise_run_outputs
+
+   subroutine write_manifest_probe(unit, metadata, metadata_path, ios)
+      integer, intent(in) :: unit
+      type(probe_metadata_t), intent(in) :: metadata
+      character(len=*), intent(in) :: metadata_path
+      integer, intent(inout) :: ios
+      integer :: artifact_index
+
+      write (unit, '(a)', iostat=ios) '{'
+      if (ios == 0) write (unit, '(a)', iostat=ios) '"probe_id":"'//json_escape(trim(metadata%probe_id))//'",'
+      if (ios == 0) write (unit, '(a)', iostat=ios) '"quantity":"'//json_escape(trim(metadata%quantity))//'",'
+      if (ios == 0) write (unit, '(a)', iostat=ios) '"lifecycle":{"state":"'// &
+         terminal_lifecycle_name(metadata%lifecycle%state)//'","diagnostic":"'// &
+         json_escape(trim(metadata%lifecycle%diagnostic))//'"},'
+      if (ios == 0) write (unit, '(a)', iostat=ios) '"artifacts":['
+      if (ios == 0) call write_manifest_artifact(unit, metadata_path, ios)
+      do artifact_index = 1, size(metadata%artifacts)
+         if (metadata%artifacts(artifact_index)%kind == OUTPUT_ARTIFACT_UNDEFINED) cycle
+         if (ios == 0) write (unit, '(a)', iostat=ios) ','
+         if (ios == 0) call write_manifest_artifact(unit, &
+            resolve_artifact_path(metadata_path, metadata%artifacts(artifact_index)%relative_path), ios)
+      end do
+      if (ios == 0) write (unit, '(a)', iostat=ios) ']'
+      if (ios == 0) write (unit, '(a)', iostat=ios) '}'
+   end subroutine write_manifest_probe
+
+   subroutine write_manifest_artifact(unit, path, ios)
+      integer, intent(in) :: unit
+      character(len=*), intent(in) :: path
+      integer, intent(inout) :: ios
+
+      write (unit, '(a)', iostat=ios) '{"path":"'//json_escape(trim(path))//'"}'
+   end subroutine write_manifest_artifact
+
+   function resolve_artifact_path(metadata_path, relative_path) result(path)
+      character(len=*), intent(in) :: metadata_path, relative_path
+      character(len=:), allocatable :: path
+      integer :: separator
+
+      separator = scan(trim(metadata_path), '/\', back=.true.)
+      if (separator > 1) then
+         path = join_path(metadata_path(:separator - 1), relative_path)
+      else
+         path = trim(relative_path)
+      end if
+   end function resolve_artifact_path
+
+   pure function terminal_lifecycle_name(state) result(name)
+      integer, intent(in) :: state
+      character(len=:), allocatable :: name
+
+      if (state == OUTPUT_LIFECYCLE_COMPLETE) then
+         name = 'complete'
+      else if (state == OUTPUT_LIFECYCLE_FAILED) then
+         name = 'failed'
+      else
+         name = 'unknown'
+      end if
+   end function terminal_lifecycle_name
 
    subroutine delete_run_output_manifest(run_id, writer_rank)
       character(len=*), intent(in) :: run_id

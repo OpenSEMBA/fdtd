@@ -58,9 +58,6 @@ extern "C" int test_output_artifact_contract();
 extern "C" int test_volumetric_visualisation_output();
 extern "C" int test_declared_output_artifacts();
 extern "C" int test_output_lifecycle_contract();
-extern "C" int test_output_lifecycle_coordination();
-extern "C" int test_output_failure_coordination();
-extern "C" int test_output_probe_ownership();
 extern "C" int test_output_serial_distributed_equivalence();
 extern "C" int test_volumetric_output_partition_attachment();
 
@@ -157,12 +154,6 @@ TEST(output, test_volumetric_visualisation_output) { EXPECT_EQ(0, test_volumetri
 TEST(output, test_declared_output_artifacts) { EXPECT_EQ(0, test_declared_output_artifacts()); }
 // Validates output lifecycle terminal states and completeness.
 TEST(output, test_lifecycle_contract) { EXPECT_EQ(0, test_output_lifecycle_contract()); }
-// Finalizes probes and restricts manifest publication to the root rank.
-TEST(output, test_lifecycle_coordination) { EXPECT_EQ(0, test_output_lifecycle_coordination()); }
-// Retains failure diagnostics and rejects incomplete finalisation.
-TEST(output, test_failure_coordination) { EXPECT_EQ(0, test_output_failure_coordination()); }
-// Retains probe participants and validates the scalar writer.
-TEST(output, test_probe_ownership) { EXPECT_EQ(0, test_output_probe_ownership()); }
 // Keeps artifact identity and partition coverage equivalent across modes.
 TEST(output, test_serial_distributed_equivalence) { EXPECT_EQ(0, test_output_serial_distributed_equivalence()); }
 // Attaches a volumetric partition and selects serial publication fallback.
