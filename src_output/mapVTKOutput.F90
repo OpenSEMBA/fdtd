@@ -16,8 +16,6 @@ module mapVTKOutput_m
     use Wire_bundles_mtln_m, only: GetSolverPtr
     use mtln_solver_m, only: mtln_solver_t => mtln_t
 #endif
-    use hdf5
-
      implicit none (type, external)
     public :: write_geometry_companion
 contains
@@ -310,8 +308,7 @@ contains
            call build_cell_properties(this, problemInfo, numEdges, numQuads, cell_tags, cell_media_types)
            call ugrid%add_cell_scalar('tagnumber', cell_tags)
            call ugrid%add_cell_scalar('mediatype', cell_media_types)
-           call write_geometry_xdmf_hdf5(vtuPath, cell_tags, cell_media_types)
-        end if
+         end if
 
       call ugrid%write_file(vtuPath)
 
@@ -562,43 +559,6 @@ contains
           end select
        end function magnetic_field
     end subroutine build_cell_properties
-
-    subroutine write_geometry_xdmf_hdf5(vtu_path, tags, media_types)
-       character(len=*), intent(in) :: vtu_path
-       real, intent(in) :: tags(:), media_types(:)
-       character(len=BUFSIZE) :: hdf_path, xdmf_path, hdf_name
-       integer(hid_t) :: file_id, space_id, dataset_id = -1
-       integer(hsize_t) :: dimensions(1)
-       integer :: hdf_error, unit
-
-       hdf_path = trim(vtu_path(:len_trim(vtu_path) - len(vtuFileExtension)))//'.h5'
-       xdmf_path = trim(vtu_path(:len_trim(vtu_path) - len(vtuFileExtension)))//'.xdmf'
-       hdf_name = get_last_component(hdf_path)
-       dimensions = [int(size(tags), hsize_t)]
-       call h5open_f(hdf_error)
-       call h5fcreate_f(trim(hdf_path), H5F_ACC_TRUNC_F, file_id, hdf_error)
-       if (hdf_error /= 0) return
-       call h5screate_simple_f(1, dimensions, space_id, hdf_error)
-       call h5dcreate_f(file_id, 'tagnumber', H5T_NATIVE_REAL, space_id, dataset_id, hdf_error)
-       if (hdf_error == 0) call h5dwrite_f(dataset_id, H5T_NATIVE_REAL, tags, dimensions, hdf_error)
-       if (dataset_id >= 0) call h5dclose_f(dataset_id, hdf_error)
-       call h5dcreate_f(file_id, 'mediatype', H5T_NATIVE_REAL, space_id, dataset_id, hdf_error)
-       if (hdf_error == 0) call h5dwrite_f(dataset_id, H5T_NATIVE_REAL, media_types, dimensions, hdf_error)
-       if (dataset_id >= 0) call h5dclose_f(dataset_id, hdf_error)
-       call h5sclose_f(space_id, hdf_error)
-       call h5fclose_f(file_id, hdf_error)
-
-       open(newunit=unit, file=trim(xdmf_path), status='replace', action='write', iostat=hdf_error)
-       if (hdf_error /= 0) return
-       write(unit, '(A)') '<Xdmf Version="3.0"><Domain><Grid Name="geometry" GridType="Uniform">'
-       write(unit, '(A,I0,A)') '<Topology TopologyType="Polyvertex" NumberOfElements="', size(tags), '"/>'
-       write(unit, '(A,I0,A)') '<Attribute Name="tagnumber" Center="Cell"><DataItem Dimensions="', size(tags), &
-                                '" Format="HDF">'//trim(hdf_name)//':/tagnumber</DataItem></Attribute>'
-       write(unit, '(A,I0,A)') '<Attribute Name="mediatype" Center="Cell"><DataItem Dimensions="', size(tags), &
-                                '" Format="HDF">'//trim(hdf_name)//':/mediatype</DataItem></Attribute>'
-       write(unit, '(A)') '</Grid></Domain></Xdmf>'
-       close(unit)
-    end subroutine write_geometry_xdmf_hdf5
 
    logical function isEdge(campo, iii, jjj, kkk, problemInfo)
       integer(4), intent(in) :: campo, iii, jjj, kkk

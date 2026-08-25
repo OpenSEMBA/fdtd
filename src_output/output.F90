@@ -344,11 +344,11 @@ contains
                    call create_geometry_simulation_vtu(outputs(outputCount)%mapvtkOutput, control, sgg%LineX, sgg%LineY, &
                                                        sgg%LineZ, problemInfo)
                    call register_scalar_output_metadata(outputCount, &
-                                                        join_path(outputs(outputCount)%mapvtkOutput%path, &
-                                                                 get_last_component(outputs(outputCount)%mapvtkOutput%path)//'.json'), &
+                                                         join_path(outputs(outputCount)%mapvtkOutput%path, &
+                                                                  trim(get_last_component(outputs(outputCount)%mapvtkOutput%path))//'.json'), &
                                                         get_last_component(outputs(outputCount)%mapvtkOutput%path), &
-                                                        get_prefix_extension(outputRequestType, control%mpidir), &
-                                                        outputs(outputCount)%mapvtkOutput%artifacts, metadata_status)
+                                                         'geometry', &
+                                                         outputs(outputCount)%mapvtkOutput%artifacts, metadata_status)
                 end if
 
             case (iEx, iEy, iEz, iHx, iHy, iHz)

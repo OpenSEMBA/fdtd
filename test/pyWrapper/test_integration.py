@@ -636,37 +636,6 @@ def test_1_volume(tmp_path):
     assert len(line_media_dict) == 0
 
 
-def test_1_volume_map_publishes_geometry_in_xdmf_hdf5(tmp_path):
-    import h5py
-
-    input_filename = CASES_FOLDER + "observation/pec_volume.fdtd.json"
-    solver = FDTD(
-        input_filename=input_filename,
-        path_to_exe=SEMBA_EXE,
-        run_in_folder=tmp_path,
-        flags=["-mapvtk"],
-    )
-    solver["general"]["numberOfSteps"] = 1
-    solver.run()
-
-    map_path = Path(solver.getVTKMap())
-    hdf_path = map_path.with_suffix(".h5")
-    xdmf_path = map_path.with_suffix(".xdmf")
-
-    assert hdf_path.is_file()
-    assert xdmf_path.is_file()
-    with h5py.File(hdf_path, "r") as hdf_file:
-        assert set(hdf_file.keys()) == {"tagnumber", "mediatype"}
-        assert np.all(hdf_file["tagnumber"][()] == 64)
-        assert np.all(hdf_file["mediatype"][()] == 0.0)
-        assert len(hdf_file["tagnumber"]) == 36
-
-    xdmf_contents = xdmf_path.read_text()
-    assert hdf_path.name in xdmf_contents
-    assert "tagnumber" in xdmf_contents
-    assert "mediatype" in xdmf_contents
-
-
 def test_2_volumes(tmp_path):
     input_filename = CASES_FOLDER + "observation/pec_volumes.fdtd.json"
     solver = FDTD(
