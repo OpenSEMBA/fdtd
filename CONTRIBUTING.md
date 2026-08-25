@@ -69,6 +69,8 @@ pytest test/
 ```
 
 (You can also use `python -m pytest test/`.)
+See the [testing guide](doc/testing.md) for build selection, test markers,
+MPI execution, and focused test commands.
 
 ### Fortran tooling
 
