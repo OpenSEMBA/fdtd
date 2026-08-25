@@ -20,7 +20,7 @@ module output_m
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, json_escape, &
                                 json_unescape, OUTPUT_METADATA_SUCCESS
    use outputTypes_m, only: probe_metadata_t, output_artifact_t, output_lifecycle_is_terminal, &
-                             OUTPUT_ARTIFACT_UNDEFINED, volumetric_publication_t, &
+                             OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_UNDEFINED, TIME_DOMAIN, volumetric_publication_t, &
                              OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
 #ifdef CompileWithMPI
     use mpi
@@ -28,6 +28,8 @@ module output_m
 #ifdef CompileWithMTLN
    use Wire_bundles_mtln_m, only: GetSolverPtr
    use mtln_solver_m, only: mtln_solver_t => mtln_t
+   use mtln_types_m, only: PROBE_TYPE_CURRENT, PROBE_TYPE_VOLTAGE
+   use probes_m, only: MTLN_PROBE_OUTPUT_COMPLETE, MTLN_PROBE_OUTPUT_FAILED
 #endif
 
    implicit none
@@ -45,10 +47,13 @@ module output_m
    public :: GetOutputPartition
    public :: publish_scalar_probe_metadata
    public :: delete_run_output_manifest
+#ifdef CompileWithMTLN
+   public :: init_mtln_outputs
+#endif
    public :: OUTPUT_COORDINATION_SUCCESS, OUTPUT_COORDINATION_INVALID_ARTIFACTS
 
    public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, VOLUMIC_CURRENT_PROBE_ID, &
-             MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID, LINE_PROBE_ID
+             MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID, LINE_PROBE_ID, MTLN_PROBE_ID
    !===========================
 
    !===========================
@@ -65,8 +70,8 @@ module output_m
                                       VOLUMIC_CURRENT_PROBE_ID = 4, &
                                       MOVIE_PROBE_ID = 5, &
                                       FREQUENCY_SLICE_PROBE_ID = 6, &
-                                      FAR_FIELD_PROBE_ID = 7, &
-                                      MAPVTK_ID = 8, LINE_PROBE_ID = 9
+                                       FAR_FIELD_PROBE_ID = 7, &
+                                       MAPVTK_ID = 8, LINE_PROBE_ID = 9, MTLN_PROBE_ID = 10
 
    integer, parameter :: OUTPUT_COORDINATION_SUCCESS = 0
    integer, parameter :: OUTPUT_COORDINATION_INVALID_ARTIFACTS = 3
@@ -79,6 +84,9 @@ module output_m
    character(len=BUFSIZE), save :: runOutputId = ''
    integer, save :: runOutputRank = 0
    integer, parameter :: RUN_OUTPUT_ROOT_RANK = 0
+#ifdef CompileWithMTLN
+   integer, save :: firstMtlnOutput = 0
+#endif
 
    interface init_solver_output
       module procedure &
@@ -245,6 +253,10 @@ contains
       if (present(eps0_input)) eps0 = eps0_input
       if (present(mu0_input)) mu0 = mu0_input
       requestedOutputs = get_required_output_count(sgg)
+#ifdef CompileWithMTLN
+      requestedOutputs = requestedOutputs + get_mtln_output_count()
+      firstMtlnOutput = 0
+#endif
 
       problemInfo%geometryToMaterialData => media
       problemInfo%materialList => sgg%Med
@@ -293,7 +305,7 @@ contains
             mtlnObservationExist: do i = 1, size(mtln_solver%bundles)
                if (.not. allocated(mtln_solver%bundles(i)%probes)) cycle
                do j = 1, size(mtln_solver%bundles(i)%probes)
-                  if (mtln_solver%bundles(i)%probes(j)%in_layer) then
+                   if (mtln_solver%bundles(i)%probes(j)%output_writer_rank >= 0) then
                      thereAreMtlnObservations = .true.
                      exit mtlnObservationExist
                   end if
@@ -461,6 +473,9 @@ contains
             end select
          end do
       end do
+#ifdef CompileWithMTLN
+      call append_mtln_outputs(outputCount)
+#endif
       if (outputCount /= requestedOutputs) then
          call remove_unused_outputs(outputs)
          outputCount = size(outputs)
@@ -698,6 +713,145 @@ contains
 
    end subroutine init_outputs
 
+#ifdef CompileWithMTLN
+   subroutine init_mtln_outputs(run_id, writer_rank)
+      character(len=*), intent(in) :: run_id
+      integer, intent(in) :: writer_rank
+      integer(kind=SINGLE) :: output_count
+
+      runOutputId = trim(run_id)
+      runOutputRank = writer_rank
+      firstMtlnOutput = 0
+      output_count = 0
+      if (associated(outputs)) deallocate(outputs)
+      allocate(outputs(get_mtln_output_count()))
+      if (allocated(outputPartitions)) deallocate(outputPartitions)
+      allocate(outputPartitions(size(outputs)))
+      call append_mtln_outputs(output_count)
+   end subroutine init_mtln_outputs
+
+   integer function get_mtln_output_count() result(count)
+      type(mtln_solver_t), pointer :: mtln_solver
+      integer :: i
+
+      count = 0
+      mtln_solver => GetSolverPtr()
+      if (.not. allocated(mtln_solver%bundles)) return
+      do i = 1, size(mtln_solver%bundles)
+         if (allocated(mtln_solver%bundles(i)%probes)) count = count + size(mtln_solver%bundles(i)%probes)
+      end do
+   end function get_mtln_output_count
+
+   subroutine append_mtln_outputs(output_count)
+      integer(kind=SINGLE), intent(inout) :: output_count
+      type(mtln_solver_t), pointer :: mtln_solver
+      integer :: i, j, metadata_status, path_length
+      character(len=BUFSIZE) :: data_path, descriptor_path, probe_id, quantity
+
+      mtln_solver => GetSolverPtr()
+      if (.not. allocated(mtln_solver%bundles)) return
+      firstMtlnOutput = output_count + 1
+      do i = 1, size(mtln_solver%bundles)
+         if (.not. allocated(mtln_solver%bundles(i)%probes)) cycle
+         do j = 1, size(mtln_solver%bundles(i)%probes)
+            output_count = output_count + 1
+            outputs(output_count)%outputID = MTLN_PROBE_ID
+            data_path = mtln_solver%bundles(i)%probes(j)%output_path
+            path_length = len_trim(data_path)
+            descriptor_path = trim(data_path(:path_length - len('.dat')))//'.json'
+            probe_id = get_last_component(data_path(:path_length - len('.dat')))
+            select case (mtln_solver%bundles(i)%probes(j)%type)
+            case (PROBE_TYPE_CURRENT)
+               quantity = 'current'
+            case (PROBE_TYPE_VOLTAGE)
+               quantity = 'voltage'
+            case default
+               quantity = 'mtln'
+            end select
+
+            outputs(output_count)%metadata%probe_id = probe_id
+            outputs(output_count)%metadata%quantity = quantity
+            outputs(output_count)%metadata%domain_type = TIME_DOMAIN
+            allocate(outputs(output_count)%metadata%artifacts(1))
+            outputs(output_count)%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
+            outputs(output_count)%metadata%artifacts(1)%relative_path = get_last_component(data_path)
+            allocate(outputs(output_count)%metadata%ownership%participant_ranks(1))
+            outputs(output_count)%metadata%ownership%participant_ranks(1) = &
+               mtln_solver%bundles(i)%probes(j)%output_writer_rank
+            outputs(output_count)%metadata%ownership%scalar_writer_rank = &
+               mtln_solver%bundles(i)%probes(j)%output_writer_rank
+            outputs(output_count)%metadata_path = descriptor_path
+
+            if (mtln_solver%bundles(i)%probes(j)%output_writer) then
+               call publish_initial_probe_metadata(descriptor_path, outputs(output_count)%metadata, metadata_status)
+               if (mtln_solver%bundles(i)%probes(j)%output_state == MTLN_PROBE_OUTPUT_FAILED) then
+                  outputs(output_count)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+                  outputs(output_count)%metadata%lifecycle%diagnostic = &
+                     mtln_solver%bundles(i)%probes(j)%output_diagnostic
+                  call publish_final_probe_metadata(descriptor_path, outputs(output_count)%metadata, metadata_status)
+               end if
+            end if
+         end do
+      end do
+      if (output_count < firstMtlnOutput) firstMtlnOutput = 0
+   end subroutine append_mtln_outputs
+
+   subroutine finalise_mtln_outputs()
+      type(mtln_solver_t), pointer :: mtln_solver
+      integer :: i, j, metadata_status, output_index
+#ifdef CompileWithMPI
+      integer :: ierr
+#endif
+
+      if (firstMtlnOutput == 0) return
+      mtln_solver => GetSolverPtr()
+      if (.not. allocated(mtln_solver%bundles)) return
+      output_index = firstMtlnOutput - 1
+      do i = 1, size(mtln_solver%bundles)
+         if (.not. allocated(mtln_solver%bundles(i)%probes)) cycle
+         do j = 1, size(mtln_solver%bundles(i)%probes)
+            output_index = output_index + 1
+            if (mtln_solver%bundles(i)%probes(j)%output_writer_rank < 0) then
+               outputs(output_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+               outputs(output_index)%metadata%lifecycle%diagnostic = 'No MTLN probe output writer is available'
+               cycle
+            end if
+
+            if (mtln_solver%bundles(i)%probes(j)%output_writer) then
+               if (mtln_solver%bundles(i)%probes(j)%output_state == MTLN_PROBE_OUTPUT_COMPLETE) then
+                  outputs(output_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
+                  outputs(output_index)%metadata%lifecycle%diagnostic = ''
+               else
+                  outputs(output_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+                  outputs(output_index)%metadata%lifecycle%diagnostic = &
+                     mtln_solver%bundles(i)%probes(j)%output_diagnostic
+                  if (len_trim(outputs(output_index)%metadata%lifecycle%diagnostic) == 0) then
+                     outputs(output_index)%metadata%lifecycle%diagnostic = 'MTLN probe output did not reach completion'
+                  end if
+               end if
+               call publish_final_probe_metadata(outputs(output_index)%metadata_path, &
+                                                  outputs(output_index)%metadata, metadata_status)
+               if (metadata_status /= OUTPUT_METADATA_SUCCESS) then
+                  outputs(output_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+                  outputs(output_index)%metadata%lifecycle%diagnostic = 'Unable to publish MTLN probe metadata'
+               end if
+            end if
+#ifdef CompileWithMPI
+            call MPI_Bcast(outputs(output_index)%metadata%lifecycle%state, 1, MPI_INTEGER, &
+                           mtln_solver%bundles(i)%probes(j)%output_writer_rank, SUBCOMM_MPI, ierr)
+            if (ierr == MPI_SUCCESS) then
+               call MPI_Bcast(outputs(output_index)%metadata%lifecycle%diagnostic, BUFSIZE, MPI_CHARACTER, &
+                              mtln_solver%bundles(i)%probes(j)%output_writer_rank, SUBCOMM_MPI, ierr)
+            end if
+            if (ierr /= MPI_SUCCESS) then
+               call StopOnError(runOutputRank, 1, 'Unable to synchronise MTLN probe metadata')
+            end if
+#endif
+         end do
+      end do
+   end subroutine finalise_mtln_outputs
+#endif
+
    subroutine update_outputs(control, discreteTimeArray, timeIndx, fieldsReference, sgg)
       integer(kind=SINGLE), intent(in) :: timeIndx
       real(kind=RKIND_tiempo), dimension(:), intent(in) :: discreteTimeArray
@@ -735,11 +889,12 @@ contains
             call update_solver_output(outputs(i)%movieProbe, discreteTime, fieldsReference, control, problemInfo)
          case (FREQUENCY_SLICE_PROBE_ID)
             call update_solver_output(outputs(i)%frequencySliceProbe, discreteTime, fieldsReference, control, problemInfo)
-         case (FAR_FIELD_PROBE_ID)
-            call update_solver_output(outputs(i)%farFieldOutput, timeIndx, problemInfo%simulationBounds, fieldsReference)
-         case (MAPVTK_ID)
-         case default
-            call stoponerror(0, 0, 'Output update not implemented')
+          case (FAR_FIELD_PROBE_ID)
+             call update_solver_output(outputs(i)%farFieldOutput, timeIndx, problemInfo%simulationBounds, fieldsReference)
+          case (MAPVTK_ID)
+         case (MTLN_PROBE_ID)
+          case default
+             call stoponerror(0, 0, 'Output update not implemented')
          end select
       end do
 
@@ -838,8 +993,12 @@ contains
          case (FREQUENCY_SLICE_PROBE_ID)
             call close_solver_output(outputs(i)%frequencySliceProbe)
             outputs(i)%metadata = outputs(i)%frequencySliceProbe%metadata
+         case (MTLN_PROBE_ID)
          end select
       end do
+#ifdef CompileWithMTLN
+      call finalise_mtln_outputs()
+#endif
       call finalise_run_outputs()
    end subroutine
 

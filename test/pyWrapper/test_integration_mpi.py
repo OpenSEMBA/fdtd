@@ -161,3 +161,48 @@ def test_simple_cabin_initialization_with_mpi(tmp_path):
 
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
+
+
+@no_mpi_skip
+@no_mtln_skip
+@pytest.mark.mpi
+@pytest.mark.mtln
+@pytest.mark.probes
+def test_mtln_non_root_writer_publishes_complete_metadata(tmp_path):
+    input_data = json.loads(
+        (Path(CASES_FOLDER) / "mpi" / "bundles_for_mpi.fdtd.json").read_text()
+    )
+    input_data["mesh"]["elements"].append(
+        {"id": 2, "type": "node", "coordinateIds": [2]}
+    )
+    input_data["probes"] = [
+        {
+            "name": "upper",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [2],
+            "domain": {"type": "time"},
+        }
+    ]
+    input_path = tmp_path / "mtln_non_root.fdtd.json"
+    input_path.write_text(json.dumps(input_data))
+    solver = FDTD(
+        input_path,
+        path_to_exe=SEMBA_EXE,
+        mpi_command="mpirun -np 2",
+    )
+
+    solver.run()
+
+    probe_folder = Path(solver.getSolvedProbeFolders("upper")[0])
+    probe_id = probe_folder.name
+    descriptor = json.loads((probe_folder / f"{probe_id}.json").read_text())
+    manifest = json.loads(
+        (tmp_path / f"{solver.getCaseName()}_output_manifest.json").read_text()
+    )
+    assert descriptor["lifecycle"]["state"] == "complete"
+    assert descriptor["ownership"] == {
+        "participant_ranks": [1],
+        "scalar_writer_rank": 1,
+    }
+    assert sum(probe["probe_id"] == probe_id for probe in manifest["probes"]) == 1

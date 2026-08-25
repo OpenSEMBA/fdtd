@@ -281,7 +281,10 @@ module Solver_m
       character(len=*), intent(in) :: nEntradaRoot
       integer(kind=4), intent(in) :: layoutnumber
       
-      call solveMTLNProblem(mtln_parsed, nEntradaRoot)
+      call initializeMTLNProblem(mtln_parsed, nEntradaRoot)
+      call init_mtln_outputs(nEntradaRoot, layoutnumber)
+      call runMTLNProblem()
+      call close_outputs()
       call reportSimulationEnd(layoutnumber)
    end subroutine
 #endif
@@ -2661,11 +2664,11 @@ contains
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       if (this%thereAre%Observation) then
          call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .TRUE.)
-         call close_outputs()
       end if
 #ifdef CompileWithMTLN
-       if (this%mtlnObservationInitialized) call CloseMTLNObservation()
+      if (this%mtlnObservationInitialized) call CloseMTLNObservation()
 #endif
+      if (this%thereAre%Observation) call close_outputs()
       if (this%thereAre%FarFields) then
          write(dubuf,'(a,i9)')   ' DONE FINAL OBSERVATION DATA FLUSHED and Near-to-Far field  n= ',this%n
       else

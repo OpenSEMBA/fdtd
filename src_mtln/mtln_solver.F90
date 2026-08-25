@@ -3,11 +3,13 @@ module mtln_solver_m
     use mtl_bundle_m
     use network_manager_m
     use mtln_preprocess_m
-    use mtln_types_m, only: PROBE_TYPE_CURRENT, PROBE_TYPE_VOLTAGE
+    use probes_m, only: MTLN_PROBE_OUTPUT_ACTIVE, MTLN_PROBE_OUTPUT_COMPLETE, &
+                        MTLN_PROBE_OUTPUT_DECLARED, MTLN_PROBE_OUTPUT_FAILED
     use FDETYPES_m, only: XYZlimit_t, RKIND_TIEMPO
     use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
+    use mpi, only: MPI_Allreduce, MPI_Comm_rank, MPI_INTEGER, MPI_MIN, MPI_SUCCESS
 #endif
     implicit none
 
@@ -20,8 +22,6 @@ module mtln_solver_m
         integer :: number_of_bundles
         integer :: number_of_steps
         real(kind=rkind) :: null_field
-        character(len=BUFSIZE) :: observation_root = ''
-
     contains
 
         procedure :: updateBundlesTimeStep
@@ -301,44 +301,71 @@ contains
     subroutine mtln_initObservation(this, nEntradaRoot)
         class(mtln_t) :: this
         character(len=*), intent(in) :: nEntradaRoot
-        integer :: i, ios, j, k, unit
+        integer :: close_ios, i, ios, j, k, unit
         character(len=bufsize) :: path
         character(len=bufsize) :: temp
         character(len=:), allocatable :: buffer
+#ifdef CompileWithMPI
+        integer :: candidate_rank, ierr, rank, writer_rank
+#endif
 
         if (.not. allocated(this%bundles)) return
-        this%observation_root = trim(nEntradaRoot)
-        unit = 2000
+#ifdef CompileWithMPI
+        call MPI_Comm_rank(SUBCOMM_MPI, rank, ierr)
+        if (ierr /= MPI_SUCCESS) rank = -2
+#endif
         do i = 1, size(this%bundles)
             do j = 1, size(this%bundles(i)%probes)
-#ifdef CompileWithMPI
-                if (.not. this%bundles(i)%probes(j)%in_layer) cycle
-#endif          
                 path = mtln_probe_data_path(nEntradaRoot, this%bundles(i)%probes(j)%name)
+                this%bundles(i)%probes(j)%output_path = trim(path)
+                this%bundles(i)%probes(j)%output_state = MTLN_PROBE_OUTPUT_DECLARED
+                this%bundles(i)%probes(j)%output_diagnostic = ''
+                this%bundles(i)%probes(j)%output_is_open = .false.
+#ifdef CompileWithMPI
+                candidate_rank = huge(candidate_rank)
+                if (this%bundles(i)%bundle_in_layer .and. this%bundles(i)%probes(j)%in_layer) candidate_rank = rank
+                call MPI_Allreduce(candidate_rank, writer_rank, 1, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, ierr)
+                if (ierr /= MPI_SUCCESS .or. writer_rank == huge(writer_rank)) writer_rank = -1
+                this%bundles(i)%probes(j)%output_writer_rank = writer_rank
+                this%bundles(i)%probes(j)%output_writer = rank == writer_rank
+#else
+                this%bundles(i)%probes(j)%output_writer_rank = 0
+                this%bundles(i)%probes(j)%output_writer = .true.
+#endif
+                if (.not. this%bundles(i)%probes(j)%output_writer) cycle
                 call create_file_with_path(path, ios)
                 if (ios /= 0) then
-                    this%bundles(i)%probes(j)%unit = -1
-                    call publish_mtln_probe_descriptor(path, this%bundles(i)%probes(j)%type, 'failed', &
-                                                       'Unable to create MTLN probe output')
+                    this%bundles(i)%probes(j)%output_state = MTLN_PROBE_OUTPUT_FAILED
+                    this%bundles(i)%probes(j)%output_diagnostic = 'Unable to create MTLN probe output'
                     cycle
                 end if
-                open(unit=unit, file=trim(path), status='old', action='write', iostat=ios)
+                open(newunit=unit, file=trim(path), status='old', action='write', iostat=ios)
                 if (ios /= 0) then
-                    this%bundles(i)%probes(j)%unit = -1
-                    call publish_mtln_probe_descriptor(path, this%bundles(i)%probes(j)%type, 'failed', &
-                                                       'Unable to open MTLN probe output')
+                    this%bundles(i)%probes(j)%output_state = MTLN_PROBE_OUTPUT_FAILED
+                    this%bundles(i)%probes(j)%output_diagnostic = 'Unable to open MTLN probe output'
                     cycle
                 end if
                 this%bundles(i)%probes(j)%unit = unit
+                this%bundles(i)%probes(j)%output_is_open = .true.
                 write (*, *) 'name: ', trim(this%bundles(i)%probes(j)%name)
                 buffer = "time"
                 do k = 1, size(this%bundles(i)%probes(j)%val, 2)
                     write (temp, *) k
                     buffer = buffer//" "//"conductor_"//trim(adjustl(temp))
                 end do
-                write (unit, '(a)') trim(buffer)
-                call publish_mtln_probe_descriptor(path, this%bundles(i)%probes(j)%type, 'declared', '')
-                unit = unit + 1
+                write (unit, '(a)', iostat=ios) trim(buffer)
+                if (ios /= 0) then
+                    this%bundles(i)%probes(j)%output_state = MTLN_PROBE_OUTPUT_FAILED
+                    this%bundles(i)%probes(j)%output_diagnostic = 'Unable to write MTLN probe header'
+                    close(unit, iostat=close_ios)
+                    this%bundles(i)%probes(j)%output_is_open = .false.
+                    if (close_ios /= 0) then
+                        this%bundles(i)%probes(j)%output_diagnostic = &
+                            'Unable to close MTLN probe output after header failure'
+                    end if
+                    cycle
+                end if
+                this%bundles(i)%probes(j)%output_state = MTLN_PROBE_OUTPUT_ACTIVE
             end do
         end do
     end subroutine
@@ -346,10 +373,8 @@ contains
     subroutine mtln_updateObservation(this, step)
         class(mtln_t) :: this
         integer, intent(in) :: step
-        integer :: i, j, k, n
-        integer :: unit
+        integer :: i, ios, j, n
         character(len=bufsize) :: temp
-        character(len=bufsize) :: path
         character(len=:), allocatable :: buffer
 #ifdef CompileWithMPI
         integer(kind=4) :: ierr
@@ -358,9 +383,10 @@ contains
         do i = 1, size(this%bundles)
             do j = 1, size(this%bundles(i)%probes)
 #ifdef CompileWithMPI
-                if (.not. this%bundles(i)%probes(j)%in_layer) cycle
-#endif          
-                if (this%bundles(i)%probes(j)%unit < 0) cycle
+                if (.not. this%bundles(i)%probes(j)%output_writer) cycle
+#endif
+                if (this%bundles(i)%probes(j)%output_state /= MTLN_PROBE_OUTPUT_ACTIVE .or. &
+                    .not. this%bundles(i)%probes(j)%output_is_open) cycle
                 buffer = ""
                 write(temp, *) this%bundles(i)%probes(j)%t(1)
                 buffer = buffer//trim(temp)
@@ -368,7 +394,11 @@ contains
                     write (temp, *) this%bundles(i)%probes(j)%val(1, n)
                     buffer = buffer//" "//trim(temp)
                 end do
-                write (this%bundles(i)%probes(j)%unit, '(a)') trim(buffer)
+                write (this%bundles(i)%probes(j)%unit, '(a)', iostat=ios) trim(buffer)
+                if (ios /= 0) then
+                    this%bundles(i)%probes(j)%output_state = MTLN_PROBE_OUTPUT_FAILED
+                    this%bundles(i)%probes(j)%output_diagnostic = 'Unable to write MTLN probe output'
+                end if
             end do
         end do
     end subroutine
@@ -376,21 +406,20 @@ contains
     subroutine mtln_closeObservation(this)
         class(mtln_t) :: this
         integer :: i, ios, j
-        character(len=BUFSIZE) :: path
         if (.not. allocated(this%bundles)) return
         do i = 1, size(this%bundles)
             do j = 1, size(this%bundles(i)%probes)
 #ifdef CompileWithMPI
-                if (.not. this%bundles(i)%probes(j)%in_layer) cycle
-#endif          
-                if (this%bundles(i)%probes(j)%unit < 0) cycle
-                path = mtln_probe_data_path(this%observation_root, this%bundles(i)%probes(j)%name)
+                if (.not. this%bundles(i)%probes(j)%output_writer) cycle
+#endif
+                if (.not. this%bundles(i)%probes(j)%output_is_open) cycle
                 close(this%bundles(i)%probes(j)%unit, iostat=ios)
-                if (ios == 0) then
-                    call publish_mtln_probe_descriptor(path, this%bundles(i)%probes(j)%type, 'complete', '')
-                else
-                    call publish_mtln_probe_descriptor(path, this%bundles(i)%probes(j)%type, 'failed', &
-                                                       'Unable to close MTLN probe output')
+                this%bundles(i)%probes(j)%output_is_open = .false.
+                if (ios /= 0) then
+                    this%bundles(i)%probes(j)%output_state = MTLN_PROBE_OUTPUT_FAILED
+                    this%bundles(i)%probes(j)%output_diagnostic = 'Unable to close MTLN probe output'
+                else if (this%bundles(i)%probes(j)%output_state /= MTLN_PROBE_OUTPUT_FAILED) then
+                    this%bundles(i)%probes(j)%output_state = MTLN_PROBE_OUTPUT_COMPLETE
                 end if
             end do
       end do
@@ -405,48 +434,4 @@ contains
         data_path = trim(probe_path)//'.dat'
     end function mtln_probe_data_path
 
-    subroutine publish_mtln_probe_descriptor(data_path, probe_type, state, diagnostic)
-        character(len=*), intent(in) :: data_path, state, diagnostic
-        integer, intent(in) :: probe_type
-        character(len=BUFSIZE) :: descriptor_path, probe_id, quantity
-        integer :: ios, unit
-
-        descriptor_path = trim(data_path(:len_trim(data_path) - 4))//'.json'
-        probe_id = get_last_component(data_path(:len_trim(data_path) - 4))
-        if (probe_type == PROBE_TYPE_CURRENT) then
-            quantity = 'current'
-        else if (probe_type == PROBE_TYPE_VOLTAGE) then
-            quantity = 'voltage'
-        else
-            quantity = 'mtln'
-        end if
-        call create_file_with_path(descriptor_path, ios)
-        if (ios /= 0) return
-        open(newunit=unit, file=trim(descriptor_path), status='replace', action='write', iostat=ios)
-        if (ios /= 0) return
-
-        write(unit, '(a)', iostat=ios) '{'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '"schema_version":1,'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '"probe_id":"'//trim(probe_id)//'",'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '"parent_probe_id":"",'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '"contributor_rank":-1,'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '"quantity":"'//trim(quantity)//'",'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '"lower_bound":{"x":0,"y":0,"z":0},'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '"upper_bound":{"x":0,"y":0,"z":0},'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '"domain":"time",'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '"lifecycle":{"state":"'//trim(state)//'","diagnostic":"'// &
-                                                           trim(diagnostic)//'"},'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '"artifacts":[{"kind":"text","role":"canonical",'// &
-                                                           '"relative_path":"'//trim(get_last_component(data_path))// &
-                                                           '","required":true,"byte_order":"unspecified",'// &
-                                                           '"numeric_representation":"unspecified",'// &
-                                                           '"complex_representation":"unspecified",'// &
-                                                           '"record_bytes":0,"component_order":""}],'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '"fragment_descriptors":[],'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '"ownership":{"participant_ranks":[],"scalar_writer_rank":-1}'
-        if (ios == 0) write(unit, '(a)', iostat=ios) '}'
-        close(unit)
-    end subroutine publish_mtln_probe_descriptor
-
-    
 end module mtln_solver_m
