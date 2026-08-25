@@ -70,7 +70,7 @@ Treat numerical and memory semantics as part of behaviour:
 - Be careful when changing `pointer` to `allocatable` or vice versa; this can alter aliasing and ownership.
 - Do not reorder loops over field arrays unless there is a measured performance or correctness reason.
 - Preserve OpenMP and MPI assumptions around shared data, halo exchanges, reductions, and output ordering.
-- Keep preprocessor branches such as `CompileWithMPI`, `CompileWithMTLN`, `CompileWithSMBJSON`, `CompileWithNewOutputModule`, and `CompileWithReal8` valid even if the local build uses only one configuration.
+- Keep preprocessor branches such as `CompileWithMPI`, `CompileWithMTLN`, `CompileWithSMBJSON`, and `CompileWithReal8` valid even if the local build uses only one configuration.
 - Preserve file formats, exact labels, and serialized names used by JSON, VTK, XDMF, HDF5, probe `.dat` files, or legacy `.fdtd` inputs.
 - New API and implementation must target strict Fortran 2018 or newer; preserve its CMake standard requirement and disabled compiler extensions.
 

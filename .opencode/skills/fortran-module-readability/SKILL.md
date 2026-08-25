@@ -100,7 +100,7 @@ Keep imports narrow and dependency direction clear:
 - Prefer `use module_name, only: symbol_a, symbol_b` for new modules and touched imports.
 - Do not introduce circular dependencies.
 - Respect the existing CMake library layering: lower-level type/report/parser/component code should not depend on higher-level solver, launcher, or output orchestration code.
-- Keep optional-feature boundaries intact for `CompileWithMPI`, `CompileWithMTLN`, `CompileWithSMBJSON`, `CompileWithNewOutputModule`, `CompileWithReal8`, and similar preprocessor paths.
+- Keep optional-feature boundaries intact for `CompileWithMPI`, `CompileWithMTLN`, `CompileWithSMBJSON`, `CompileWithReal8`, and similar preprocessor paths.
 - Avoid a shared utility module unless there is a concrete repeated pattern across multiple callers.
 - Prefer passing dependencies as arguments over reaching into unrelated modules for mutable state.
 

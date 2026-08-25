@@ -72,7 +72,6 @@ endif()
 add_definitions(
 	-DCompileWithInt2
 	-DCompileWithOpenMP
-	-DCompileWithNewOutputModule
 )
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")

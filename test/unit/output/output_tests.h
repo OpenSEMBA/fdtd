@@ -1,4 +1,4 @@
-#ifdef CompileWithNewOutputModule
+#pragma once
 
 #include <gtest/gtest.h>
 
@@ -175,5 +175,3 @@ TEST(output, test_probe_ownership) { EXPECT_EQ(0, test_output_probe_ownership())
 TEST(output, test_serial_distributed_equivalence) { EXPECT_EQ(0, test_output_serial_distributed_equivalence()); }
 // Attaches a volumetric partition and selects serial publication fallback.
 TEST(output, test_volumetric_partition_attachment) { EXPECT_EQ(0, test_volumetric_output_partition_attachment()); }
-
-#endif
