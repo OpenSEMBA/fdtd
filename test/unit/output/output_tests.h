@@ -18,8 +18,6 @@ extern "C" int test_output_collective_contract();
 extern "C" int test_output_publication_contract();
 extern "C" int test_output_metadata_contract_edges();
 extern "C" int test_scalar_metadata_publication();
-extern "C" int test_point_publication_plan();
-extern "C" int test_planned_metadata_publication();
 extern "C" int test_output_transport_serial();
 
 // Artifact metadata and binary layout.
@@ -39,7 +37,6 @@ extern "C" int test_init_point_probe_with_incident();
 extern "C" int test_line_probe_integral();
 extern "C" int test_line_probe_empty_path();
 extern "C" int test_line_probe_artifacts();
-extern "C" int test_line_probe_serial_reduction();
 extern "C" int test_line_probe_shared_interface_owner();
 extern "C" int test_update_point_probe();
 extern "C" int test_flush_point_probe();
@@ -93,11 +90,7 @@ TEST(output, test_publication_contract) { EXPECT_EQ(0, test_output_publication_c
 TEST(output, test_metadata_contract_edges) { EXPECT_EQ(0, test_output_metadata_contract_edges()); }
 // Publishes metadata for a scalar probe from its declared artifacts.
 TEST(output, test_scalar_metadata_publication) { EXPECT_EQ(0, test_scalar_metadata_publication()); }
-// Selects a canonical point writer and rejects unowned points.
-TEST(output, test_point_publication_plan) { EXPECT_EQ(0, test_point_publication_plan()); }
-// Publishes metadata only from the planned canonical writer.
-TEST(output, test_planned_metadata_publication) { EXPECT_EQ(0, test_planned_metadata_publication()); }
-// Preserves serial eligibility, reductions, and flush transfers.
+// Preserves serial flush transfers.
 TEST(output, test_transport_serial) { EXPECT_EQ(0, test_output_transport_serial()); }
 // Publishes declared and failed metadata states with their artifacts.
 TEST(output, test_metadata_publication) { EXPECT_EQ(0, test_output_metadata_publication()); }
@@ -127,7 +120,6 @@ TEST(output, test_line_probe_integral) { EXPECT_EQ(0, test_line_probe_integral()
 TEST(output, test_line_probe_empty_path) { EXPECT_EQ(0, test_line_probe_empty_path()); }
 // Publishes every line sample to both scalar artifact representations.
 TEST(output, test_line_probe_artifacts) { EXPECT_EQ(0, test_line_probe_artifacts()); }
-TEST(output, test_line_probe_serial_reduction) { EXPECT_EQ(0, test_line_probe_serial_reduction()); }
 TEST(output, test_line_probe_shared_interface_owner) { EXPECT_EQ(0, test_line_probe_shared_interface_owner()); }
 // Records point-probe values and their corresponding timesteps.
 TEST(output, test_update_point_probe_info) { EXPECT_EQ(0, test_update_point_probe()); }

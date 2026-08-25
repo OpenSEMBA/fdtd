@@ -1,4 +1,5 @@
 module outputTypes_m
+   use, intrinsic :: iso_fortran_env, only: int64
    use FDETYPES_m
    use xdmf_hdf5_m, only: xdmf_writer_t, xdmf_grid_id_t, xdmf_attribute_id_t
    use HollandWires_m
@@ -117,12 +118,23 @@ module outputTypes_m
          integer :: scalar_writer_rank = -1
      end type probe_output_ownership_t
 
-     type :: probe_publication_plan_t
-        integer :: canonical_writer_rank = -1
-        logical :: local_eligible = .false.
-        logical :: local_participates = .false.
-        logical :: local_is_canonical_writer = .false.
-     end type probe_publication_plan_t
+     type :: volumetric_publication_t
+        integer :: mode = 0
+        integer :: communicator = 0
+        integer :: communicator_rank = 0
+        integer :: communicator_size = 1
+        integer :: owner_rank = 0
+        logical :: local_participates = .true.
+        logical :: local_is_owner = .true.
+        logical :: owns_communicator = .false.
+        integer, allocatable :: participant_ranks(:)
+        integer(int64) :: file_offset(3) = 0_int64
+        integer(int64) :: local_shape(3) = 0_int64
+        integer(int64) :: point_offset = 0_int64
+        integer(int64) :: global_point_count = 0_int64
+        type(cell_coordinate_t) :: global_lower = cell_coordinate_t(0_SINGLE, 0_SINGLE, 0_SINGLE)
+        type(cell_coordinate_t) :: global_upper = cell_coordinate_t(0_SINGLE, 0_SINGLE, 0_SINGLE)
+     end type volumetric_publication_t
 
      type :: probe_metadata_t
         integer :: schema_version = 1
@@ -298,9 +310,8 @@ module outputTypes_m
        type(xdmf_attribute_id_t) :: yAttribute
        type(xdmf_attribute_id_t) :: zAttribute
        type(xdmf_attribute_id_t) :: tagAttribute
-      type(probe_metadata_t) :: metadata
-      integer :: publication_mode = 0
-      logical :: local_participates = .true.
+       type(probe_metadata_t) :: metadata
+       type(volumetric_publication_t) :: publication
    end type movie_probe_output_t
 
      type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
@@ -323,8 +334,8 @@ module outputTypes_m
       type(xdmf_attribute_id_t) :: yPhase
       type(xdmf_attribute_id_t) :: zPhase
       type(probe_metadata_t) :: metadata
-      integer :: publication_mode = 0
-      logical :: local_participates = .true.
+      type(volumetric_publication_t) :: publication
+      integer(kind=SINGLE), allocatable :: globalCoords(:, :)
    end type frequency_slice_probe_output_t
 
 !=====================================================

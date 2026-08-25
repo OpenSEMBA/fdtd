@@ -1,21 +1,26 @@
 module frequencySliceProbeOutput_m
-    use, intrinsic :: iso_fortran_env, only: int64, real64
+   use, intrinsic :: iso_fortran_env, only: int64, real64
    use FDETYPES_m
    use utils_m
    use allocationUtils_m, only: alloc_and_init
    use report_m
    use outputTypes_m
    use outputUtils_m
-   use allocationUtils_m, only: alloc_and_init
    use volumicProbeUtils_m
    use directoryUtils_m
    use xdmf_hdf5_m, only: xdmf_options_t, xdmf_status_t, &
       xdmf_attribute_id_t, XDMF_SERIES_FREQUENCY, XDMF_CENTER_NODE, &
       XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, XDMF_TOPOLOGY_POLYVERTEX
-    use outputBinary_m, only: validate_binary_layout, write_binary_complex_record64, BINARY_WRITER_SUCCESS
+   use outputBinary_m, only: validate_binary_layout, write_binary_complex_record64, BINARY_WRITER_SUCCESS
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
    use outputVisualisation_m, only: verify_volumetric_visualisation, &
-                                    VISUALISATION_SUCCESS
+                                     VISUALISATION_SUCCESS
+   use outputCollective_m, only: OUTPUT_PUBLICATION_COLLECTIVE, OUTPUT_PUBLICATION_ROOT_AGGREGATION
+   use outputTransport_m, only: output_transport_t, init_output_transport, transfer_flush_batch, &
+                                OUTPUT_TRANSPORT_SUCCESS
+#ifdef CompileWithMPI
+   use mpi
+#endif
    implicit none
    private
 
@@ -26,7 +31,6 @@ module frequencySliceProbeOutput_m
    public :: update_frequency_slice_probe_output
    public :: flush_frequency_slice_probe_output
    public :: close_frequency_slice_probe_output
-   public :: configure_frequency_slice_probe_publication
    !===========================
 
    !===========================
@@ -45,9 +49,10 @@ module frequencySliceProbeOutput_m
 
 contains
 
-    subroutine init_frequency_slice_probe_output(this, lowerBound, upperBound, timeInterval, field, domain, outputTypeExtension, control, problemInfo)
+   subroutine init_frequency_slice_probe_output(this, publication, timeInterval, field, domain, &
+                                                outputTypeExtension, control, problemInfo)
       type(frequency_slice_probe_output_t), intent(out) :: this
-      type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
+      type(volumetric_publication_t), intent(in) :: publication
       real(kind=RKIND_tiempo), intent(in) :: timeInterval
       integer(kind=SINGLE), intent(in) :: field
       type(domain_t), intent(in) :: domain
@@ -58,18 +63,29 @@ contains
       integer :: i
       integer :: error
       character(len=BUFSIZE) :: filename
+#ifdef CompileWithMPI
+      integer :: mpi_error
+#endif
 
-      this%mainCoords = lowerBound
-      this%auxCoords = upperBound
+      this%publication = publication
+      this%mainCoords = publication%global_lower
+      this%auxCoords = publication%global_upper
+      if (publication%local_participates) call set_local_bounds(this)
       this%component = field !This can refer to electric, magnetic or currentDensity
-       this%domain = domain
-       this%nFreq = domain%fnum
-       this%quadratureDt = timeInterval
+      this%domain = domain
+      this%nFreq = domain%fnum
+      this%quadratureDt = timeInterval
 
-       call alloc_and_init(this%frequencySlice, this%nFreq, 0.0_RKIND)
-       call init_frequency_slice(this%frequencySlice, this%domain)
+      call alloc_and_init(this%frequencySlice, this%nFreq, 0.0_RKIND)
+      call init_frequency_slice(this%frequencySlice, this%domain)
 
-      call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
+      this%nPoints = 0_SINGLE
+      if (publication%local_participates) then
+         call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, &
+                                              problemInfo, this%nPoints, this%coords)
+      else
+         allocate(this%coords(3, 0))
+      end if
 
       call alloc_and_init(this%xValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
       call alloc_and_init(this%yValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
@@ -78,9 +94,9 @@ contains
       call alloc_and_init(this%auxExp_E, this%nFreq, (0.0_CKIND, 0.0_CKIND))
       call alloc_and_init(this%auxExp_H, this%nFreq, (0.0_CKIND, 0.0_CKIND))
 
-       do i = 1, this%nFreq
-          this%auxExp_E(i) = mcpi2*this%frequencySlice(i)
-          this%auxExp_H(i) = this%auxExp_E(i)
+      do i = 1, this%nFreq
+         this%auxExp_E(i) = mcpi2*this%frequencySlice(i)
+         this%auxExp_H(i) = this%auxExp_E(i)
       end do
 
       this%path = get_output_path_freq(this, outputTypeExtension, field, control)
@@ -88,28 +104,104 @@ contains
       filename = get_last_component(this%path)
       this%filesPath = join_path(this%path, filename)
 
-        call create_folder(this%path, error)
-        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-           'Unable to create frequency slice output directory')
-        call create_bin_file(this%filesPath, error)
-        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-           'Unable to create frequency slice binary output')
-        call create_frequency_writer(this, problemInfo, error)
-        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-           'Unable to initialise frequency slice HDF5 output')
-        call initialise_frequency_metadata(this, error, control%mpidir)
-        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-           'Unable to initialise frequency slice output metadata')
+      call initialise_frequency_metadata(this, error, control%mpidir)
+      if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+         'Unable to initialise frequency slice output metadata')
+
+      if (.not. publication%local_participates) then
+         this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
+         return
+      end if
+
+      call gather_global_coordinates(this, control)
+
+      if (publication%local_is_owner) then
+         call create_folder(this%path, error)
+         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+            'Unable to create frequency slice output directory')
+         call create_bin_file(this%filesPath, error)
+         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+            'Unable to create frequency slice binary output')
+      end if
+#ifdef CompileWithMPI
+      call MPI_Barrier(this%publication%communicator, mpi_error)
+      if (mpi_error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
+         'Unable to synchronise frequency slice output participants')
+#endif
+
+      if (publication%mode == OUTPUT_PUBLICATION_COLLECTIVE .or. publication%local_is_owner) then
+         call create_frequency_writer(this, problemInfo, error)
+         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+            'Unable to initialise frequency slice HDF5 output')
+      end if
+
+      if (publication%local_is_owner) then
+         call publish_initial_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
+         if (error /= OUTPUT_METADATA_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
+            'Unable to publish initial frequency slice output metadata')
+      end if
+      this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
    end subroutine init_frequency_slice_probe_output
 
-   subroutine configure_frequency_slice_probe_publication(this, publication_mode, local_participates)
+   subroutine set_local_bounds(this)
        type(frequency_slice_probe_output_t), intent(inout) :: this
-       integer, intent(in) :: publication_mode
-       logical, intent(in) :: local_participates
 
-       this%publication_mode = publication_mode
-       this%local_participates = local_participates
-   end subroutine configure_frequency_slice_probe_publication
+       this%mainCoords%x = this%publication%global_lower%x + int(this%publication%file_offset(1), SINGLE)
+       this%mainCoords%y = this%publication%global_lower%y + int(this%publication%file_offset(2), SINGLE)
+       this%mainCoords%z = this%publication%global_lower%z + int(this%publication%file_offset(3), SINGLE)
+       this%auxCoords%x = this%mainCoords%x + int(this%publication%local_shape(1), SINGLE) - 1_SINGLE
+       this%auxCoords%y = this%mainCoords%y + int(this%publication%local_shape(2), SINGLE) - 1_SINGLE
+       this%auxCoords%z = this%mainCoords%z + int(this%publication%local_shape(3), SINGLE) - 1_SINGLE
+   end subroutine set_local_bounds
+
+   subroutine gather_global_coordinates(this, control)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      type(sim_control_t), intent(in) :: control
+      integer, allocatable :: point_counts(:), point_displacements(:)
+      integer, allocatable :: coordinate_counts(:), coordinate_displacements(:)
+      integer :: i, rank_count
+#ifdef CompileWithMPI
+      integer :: mpi_error
+#endif
+
+      rank_count = this%publication%communicator_size
+      allocate(point_counts(rank_count), point_displacements(rank_count))
+      point_counts = 0
+      point_displacements = 0
+#ifdef CompileWithMPI
+      call MPI_Allgather(this%nPoints, 1, MPI_INTEGER, point_counts, 1, MPI_INTEGER, &
+                         this%publication%communicator, mpi_error)
+      if (mpi_error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
+         'Unable to gather frequency slice point counts')
+#else
+      point_counts(1) = this%nPoints
+#endif
+
+      do i = 2, rank_count
+         point_displacements(i) = point_displacements(i - 1) + point_counts(i - 1)
+      end do
+      this%publication%point_offset = int(point_displacements(this%publication%communicator_rank + 1), int64)
+      this%publication%global_point_count = sum(int(point_counts, int64))
+      if (this%publication%global_point_count <= 0_int64 .or. &
+          this%publication%global_point_count > int(huge(1), int64)) then
+         call StopOnError(control%layoutnumber, control%num_procs, &
+            'Invalid global frequency slice point count')
+      end if
+
+      allocate(this%globalCoords(3, int(this%publication%global_point_count)))
+      allocate(coordinate_counts(rank_count), coordinate_displacements(rank_count))
+      coordinate_counts = 3 * point_counts
+      coordinate_displacements = 3 * point_displacements
+#ifdef CompileWithMPI
+      call MPI_Allgatherv(this%coords, 3 * this%nPoints, MPI_INTEGER, this%globalCoords, &
+                          coordinate_counts, coordinate_displacements, MPI_INTEGER, &
+                          this%publication%communicator, mpi_error)
+      if (mpi_error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
+         'Unable to gather frequency slice coordinates')
+#else
+      this%globalCoords = this%coords
+#endif
+   end subroutine gather_global_coordinates
 
    subroutine create_frequency_writer(this, problemInfo, error)
       type(frequency_slice_probe_output_t), intent(inout) :: this
@@ -124,31 +216,37 @@ contains
 
       error = 0
       allocate(this%writer)
-      allocate(points(3, this%nPoints), connectivity(1, this%nPoints))
-      do i = 1, this%nPoints
+      allocate(points(3, int(this%publication%global_point_count)), &
+               connectivity(1, int(this%publication%global_point_count)))
+      do i = 1, int(this%publication%global_point_count)
          if (associated(problemInfo%xSteps) .and. &
              associated(problemInfo%ySteps) .and. &
              associated(problemInfo%zSteps)) then
-            if (this%coords(1, i) >= lbound(problemInfo%xSteps, 1) .and. &
-                this%coords(1, i) <= ubound(problemInfo%xSteps, 1) .and. &
-                this%coords(2, i) >= lbound(problemInfo%ySteps, 1) .and. &
-                this%coords(2, i) <= ubound(problemInfo%ySteps, 1) .and. &
-                this%coords(3, i) >= lbound(problemInfo%zSteps, 1) .and. &
-                this%coords(3, i) <= ubound(problemInfo%zSteps, 1)) then
-               points(:, i) = [real(problemInfo%xSteps(this%coords(1, i)), real64), &
-                  real(problemInfo%ySteps(this%coords(2, i)), real64), &
-                  real(problemInfo%zSteps(this%coords(3, i)), real64)]
+            if (this%globalCoords(1, i) >= lbound(problemInfo%xSteps, 1) .and. &
+                this%globalCoords(1, i) <= ubound(problemInfo%xSteps, 1) .and. &
+                this%globalCoords(2, i) >= lbound(problemInfo%ySteps, 1) .and. &
+                this%globalCoords(2, i) <= ubound(problemInfo%ySteps, 1) .and. &
+                this%globalCoords(3, i) >= lbound(problemInfo%zSteps, 1) .and. &
+                this%globalCoords(3, i) <= ubound(problemInfo%zSteps, 1)) then
+               points(:, i) = [real(problemInfo%xSteps(this%globalCoords(1, i)), real64), &
+                  real(problemInfo%ySteps(this%globalCoords(2, i)), real64), &
+                  real(problemInfo%zSteps(this%globalCoords(3, i)), real64)]
             else
-               points(:, i) = real(this%coords(:, i), real64)
+               points(:, i) = real(this%globalCoords(:, i), real64)
             end if
          else
-            points(:, i) = real(this%coords(:, i), real64)
+            points(:, i) = real(this%globalCoords(:, i), real64)
          end if
          connectivity(1, i) = int(i, int64)
       end do
 
       options%overwrite = .true.
       options%series_kind = XDMF_SERIES_FREQUENCY
+      if (this%publication%mode == OUTPUT_PUBLICATION_COLLECTIVE) then
+         options%collective_io = .true.
+         options%communicator = this%publication%communicator
+         options%root_rank = 0
+      end if
       call this%writer%create(trim(this%filesPath), options, status)
       if (.not. status%is_error()) then
          call this%writer%define_unstructured_grid('frequencySlice', &
@@ -200,9 +298,11 @@ contains
        base_name = get_last_component(this%filesPath)
        this%metadata%probe_id = trim(base_name)
         this%metadata%quantity = get_prefix_extension(this%component, mpidir)
-       this%metadata%lower_bound = this%mainCoords
-       this%metadata%upper_bound = this%auxCoords
-       this%metadata%domain_type = FREQUENCY_DOMAIN
+        this%metadata%lower_bound = this%publication%global_lower
+        this%metadata%upper_bound = this%publication%global_upper
+        this%metadata%domain_type = FREQUENCY_DOMAIN
+        this%metadata%ownership%participant_ranks = this%publication%participant_ranks
+        this%metadata%ownership%scalar_writer_rank = this%publication%owner_rank
        if (allocated(this%metadata%artifacts)) deallocate(this%metadata%artifacts)
        allocate(this%metadata%artifacts(3))
        this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
@@ -220,23 +320,28 @@ contains
 
        call validate_binary_layout(this%metadata%artifacts(1), error)
        if (error /= BINARY_WRITER_SUCCESS) return
-       call publish_initial_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
-       if (error /= OUTPUT_METADATA_SUCCESS) return
-       this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
        error = 0
    end subroutine initialise_frequency_metadata
 
    subroutine write_to_xdmf_h5(this)
       type(frequency_slice_probe_output_t), intent(inout) :: this
 
-       type(xdmf_status_t) :: status
+      type(output_transport_t) :: transport
+      type(xdmf_status_t) :: status
       real(real64), allocatable :: xMagnitude(:), yMagnitude(:), zMagnitude(:)
       real(real64), allocatable :: xPhase(:), yPhase(:), zPhase(:)
-      integer :: f, i
+      integer :: f, i, transport_status
 
       allocate(xMagnitude(this%nPoints), yMagnitude(this%nPoints), &
          zMagnitude(this%nPoints), xPhase(this%nPoints), yPhase(this%nPoints), &
          zPhase(this%nPoints))
+      if (this%publication%mode == OUTPUT_PUBLICATION_ROOT_AGGREGATION) then
+         call init_output_transport(transport, 0, transport_status, this%publication%communicator)
+         if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
+            call StopOnError(0, 0, 'Unable to initialise frequency slice output transport')
+         end if
+      end if
+
       do f = 1, this%nFreq
          do i = 1, this%nPoints
             xMagnitude(i) = real(abs(this%xValueForFreq(f, i)), real64)
@@ -247,50 +352,129 @@ contains
             yPhase(i) = atan2(real(aimag(this%yValueForFreq(f, i)), real64), &
                real(this%yValueForFreq(f, i), real64))
             zPhase(i) = atan2(real(aimag(this%zValueForFreq(f, i)), real64), &
-               real(this%zValueForFreq(f, i), real64))
+                real(this%zValueForFreq(f, i), real64))
          end do
 
-         call this%writer%begin_step(real(this%frequencySlice(f), real64), status)
-         if (.not. status%is_error()) call this%writer%write_attribute( &
-            this%xMagnitude, xMagnitude, status)
-         if (.not. status%is_error()) call this%writer%write_attribute( &
-            this%yMagnitude, yMagnitude, status)
-         if (.not. status%is_error()) call this%writer%write_attribute( &
-            this%zMagnitude, zMagnitude, status)
-         if (.not. status%is_error()) call this%writer%write_attribute( &
-            this%xPhase, xPhase, status)
-         if (.not. status%is_error()) call this%writer%write_attribute( &
-            this%yPhase, yPhase, status)
-         if (.not. status%is_error()) call this%writer%write_attribute( &
-            this%zPhase, zPhase, status)
-         if (.not. status%is_error()) call this%writer%end_step(status)
-          if (status%is_error()) then
-             call StopOnError(0, 0, 'Frequency slice HDF5 write failed: '//trim(status%message()))
-          end if
-       end do
-       deallocate(xMagnitude, yMagnitude, zMagnitude, xPhase, yPhase, zPhase)
+         select case (this%publication%mode)
+         case (OUTPUT_PUBLICATION_COLLECTIVE)
+            call this%writer%begin_step(real(this%frequencySlice(f), real64), status)
+            call require_xdmf_success(status)
+            call write_collective_attribute(this, this%xMagnitude, xMagnitude)
+            call write_collective_attribute(this, this%yMagnitude, yMagnitude)
+            call write_collective_attribute(this, this%zMagnitude, zMagnitude)
+            call write_collective_attribute(this, this%xPhase, xPhase)
+            call write_collective_attribute(this, this%yPhase, yPhase)
+            call write_collective_attribute(this, this%zPhase, zPhase)
+            call this%writer%end_step(status)
+            call require_xdmf_success(status)
+         case (OUTPUT_PUBLICATION_ROOT_AGGREGATION)
+            if (this%publication%local_is_owner) then
+               call this%writer%begin_step(real(this%frequencySlice(f), real64), status)
+               call require_xdmf_success(status)
+            end if
+            call gather_and_write_attribute(this, transport, this%xMagnitude, xMagnitude)
+            call gather_and_write_attribute(this, transport, this%yMagnitude, yMagnitude)
+            call gather_and_write_attribute(this, transport, this%zMagnitude, zMagnitude)
+            call gather_and_write_attribute(this, transport, this%xPhase, xPhase)
+            call gather_and_write_attribute(this, transport, this%yPhase, yPhase)
+            call gather_and_write_attribute(this, transport, this%zPhase, zPhase)
+            if (this%publication%local_is_owner) then
+               call this%writer%end_step(status)
+               call require_xdmf_success(status)
+            end if
+         case default
+            call StopOnError(0, 0, 'Unsupported frequency slice publication mode')
+         end select
+      end do
+      deallocate(xMagnitude, yMagnitude, zMagnitude, xPhase, yPhase, zPhase)
    end subroutine write_to_xdmf_h5
+
+   subroutine write_collective_attribute(this, attribute, values)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      type(xdmf_attribute_id_t), intent(in) :: attribute
+      real(real64), intent(in) :: values(:)
+      type(xdmf_status_t) :: status
+
+      call this%writer%write_attribute_hyperslab(attribute, values, &
+         [this%publication%point_offset], [int(this%nPoints, int64)], status)
+      call require_xdmf_success(status)
+   end subroutine write_collective_attribute
+
+   subroutine gather_and_write_attribute(this, transport, attribute, local_values)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      type(output_transport_t), intent(in) :: transport
+      type(xdmf_attribute_id_t), intent(in) :: attribute
+      real(real64), intent(in) :: local_values(:)
+      real(real64), allocatable :: gathered_values(:)
+      integer, allocatable :: counts(:), displacements(:)
+      type(xdmf_status_t) :: status
+      integer :: transport_status
+
+      call transfer_flush_batch(transport, local_values, gathered_values, counts, displacements, transport_status)
+      if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
+         call StopOnError(0, 0, 'Unable to gather frequency slice visualisation values')
+      end if
+      if (.not. this%publication%local_is_owner) return
+      if (size(gathered_values, kind=int64) /= this%publication%global_point_count) then
+         call StopOnError(0, 0, 'Invalid gathered frequency slice visualisation size')
+      end if
+      call this%writer%write_attribute(attribute, gathered_values, status)
+      call require_xdmf_success(status)
+   end subroutine gather_and_write_attribute
+
+   subroutine require_xdmf_success(status)
+      type(xdmf_status_t), intent(in) :: status
+
+      if (status%is_error()) then
+         call StopOnError(0, 0, 'Frequency slice HDF5 write failed: '//trim(status%message()))
+      end if
+   end subroutine require_xdmf_success
 
    subroutine write_bin_file(this)
       type(frequency_slice_probe_output_t), intent(inout) :: this
-       real(real64), allocatable :: records(:)
-      integer :: i, f, record_index, status
+      type(output_transport_t) :: transport
+      real(real64), allocatable :: local_records(:), gathered_records(:), canonical_records(:)
+      integer, allocatable :: counts(:), displacements(:)
+      integer :: i, f, record_index, status, transport_status, frequency_offset
 
-      allocate(records(10 * this%nPoints * this%nFreq))
-      record_index = 0
+      call init_output_transport(transport, 0, transport_status, this%publication%communicator)
+      if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
+         call StopOnError(0, 0, 'Unable to initialise frequency slice binary transport')
+      end if
+      allocate(local_records(10 * this%nPoints))
+      if (this%publication%local_is_owner) then
+         allocate(canonical_records(10 * int(this%publication%global_point_count) * this%nFreq))
+      end if
+
       do f = 1, this%nFreq
-      do i = 1, this%nPoints
-          records(record_index + 1:record_index + 10) = [real(this%frequencySlice(f), real64), &
-             real(this%coords(1, i), real64), real(this%coords(2, i), real64), real(this%coords(3, i), real64), &
-             real(this%xValueForFreq(f, i), real64), real(aimag(this%xValueForFreq(f, i)), real64), &
-             real(this%yValueForFreq(f, i), real64), real(aimag(this%yValueForFreq(f, i)), real64), &
-             real(this%zValueForFreq(f, i), real64), real(aimag(this%zValueForFreq(f, i)), real64)]
-         record_index = record_index + 10
+         record_index = 0
+         do i = 1, this%nPoints
+            local_records(record_index + 1:record_index + 10) = [real(this%frequencySlice(f), real64), &
+               real(this%coords(1, i), real64), real(this%coords(2, i), real64), real(this%coords(3, i), real64), &
+               real(this%xValueForFreq(f, i), real64), real(aimag(this%xValueForFreq(f, i)), real64), &
+               real(this%yValueForFreq(f, i), real64), real(aimag(this%yValueForFreq(f, i)), real64), &
+               real(this%zValueForFreq(f, i), real64), real(aimag(this%zValueForFreq(f, i)), real64)]
+            record_index = record_index + 10
+         end do
+         call transfer_flush_batch(transport, local_records, gathered_records, counts, displacements, transport_status)
+         if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
+            call StopOnError(0, 0, 'Unable to gather frequency slice binary records')
+         end if
+         if (this%publication%local_is_owner) then
+            if (size(gathered_records, kind=int64) /= 10_int64 * this%publication%global_point_count) then
+               call StopOnError(0, 0, 'Invalid gathered frequency slice binary size')
+            end if
+            frequency_offset = 10 * int(this%publication%global_point_count) * (f - 1)
+            canonical_records(frequency_offset + 1:frequency_offset + size(gathered_records)) = gathered_records
+         end if
       end do
-      end do
-       call write_binary_complex_record64(add_extension(this%filesPath, binaryExtension), this%metadata%artifacts(1), &
-                                         records, status)
-      deallocate(records)
+      if (this%publication%local_is_owner) then
+         call write_binary_complex_record64(add_extension(this%filesPath, binaryExtension), &
+                                            this%metadata%artifacts(1), canonical_records, status)
+         if (status /= BINARY_WRITER_SUCCESS) then
+            call StopOnError(0, 0, 'Unable to replace frequency slice binary output')
+         end if
+      end if
    end subroutine
 
    function get_output_path_freq(this, outputTypeExtension, field, control) result(outputPath)
@@ -300,7 +484,8 @@ contains
       type(sim_control_t), intent(in) :: control
       character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
       character(len=BUFSIZE) :: outputPath
-      probeBoundsExtension = get_coordinates_extension(this%mainCoords, this%auxCoords, control%mpidir)
+      probeBoundsExtension = get_coordinates_extension(this%publication%global_lower, &
+                                                       this%publication%global_upper, control%mpidir)
       prefixFieldExtension = get_prefix_extension(field, control%mpidir)
       outputPath = &
          trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
@@ -314,6 +499,9 @@ contains
       type(fields_reference_t), intent(in) :: fieldsReference
 
       integer(kind=4) :: request
+      if (.not. this%publication%local_participates .or. &
+          this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
+          this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) return
       request = this%component
 
       if (any(VOLUMIC_M_MEASURE == request)) then
@@ -496,37 +684,82 @@ contains
 
    subroutine flush_frequency_slice_probe_output(this)
       type(frequency_slice_probe_output_t), intent(inout) :: this
+      if (.not. this%publication%local_participates .or. &
+          this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
+          this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) return
       call write_bin_file(this)
    end subroutine flush_frequency_slice_probe_output
 
    subroutine close_frequency_slice_probe_output(this)
       type(frequency_slice_probe_output_t), intent(inout) :: this
-       type(xdmf_status_t) :: writer_status
-       integer :: error
+      type(xdmf_status_t) :: writer_status
+      integer :: error
+#ifdef CompileWithMPI
+      integer :: mpi_error
+#endif
 
-      if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
-          this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) return
-       call write_to_xdmf_h5(this)
+       if (.not. this%publication%local_participates) then
+          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
+          this%metadata%lifecycle%diagnostic = ''
+          return
+       end if
+      if ((this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
+           this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) .and. &
+          .not. this%publication%owns_communicator) return
+       if (this%metadata%lifecycle%state /= OUTPUT_LIFECYCLE_COMPLETE .and. &
+           this%metadata%lifecycle%state /= OUTPUT_LIFECYCLE_FAILED) then
+          call flush_frequency_slice_probe_output(this)
+          call write_to_xdmf_h5(this)
+      end if
       if (associated(this%writer)) then
-          call this%writer%close(writer_status)
-          if (writer_status%is_error()) then
-             call StopOnError(0, 0, 'Unable to close frequency slice HDF5 output: '// &
-                trim(writer_status%message()))
-          end if
+         call this%writer%close(writer_status)
+         if (writer_status%is_error()) then
+            call StopOnError(0, 0, 'Unable to close frequency slice HDF5 output: '// &
+               trim(writer_status%message()))
+         end if
          deallocate(this%writer)
       end if
-       call verify_volumetric_visualisation(this%filesPath, error)
-       if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. &
-           error == VISUALISATION_SUCCESS) then
+#ifdef CompileWithMPI
+      call MPI_Barrier(this%publication%communicator, mpi_error)
+      if (mpi_error /= MPI_SUCCESS) then
+         call StopOnError(0, 0, 'Unable to synchronise closing frequency slice participants')
+      end if
+#endif
+      if (this%publication%local_is_owner) then
+         call verify_volumetric_visualisation(this%filesPath, error)
+          if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. &
+              error == VISUALISATION_SUCCESS) then
+             this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
+             this%metadata%lifecycle%diagnostic = ''
+          else
+             this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+             this%metadata%lifecycle%diagnostic = 'Required frequency slice output artifacts are incomplete'
+          end if
+          call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
+          if (error /= OUTPUT_METADATA_SUCCESS) then
+             call StopOnError(0, 0, 'Unable to publish frequency slice output metadata')
+          end if
+          if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) then
+             call StopOnError(0, 0, trim(this%metadata%lifecycle%diagnostic))
+          end if
+      else
          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
          this%metadata%lifecycle%diagnostic = ''
-       else
-          call StopOnError(0, 0, 'Required frequency slice output artifacts are incomplete')
-       end if
-       call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
-       if (error /= OUTPUT_METADATA_SUCCESS) then
-          call StopOnError(0, 0, 'Unable to publish frequency slice output metadata')
-       end if
+      end if
+#ifdef CompileWithMPI
+      call MPI_Barrier(this%publication%communicator, mpi_error)
+      if (mpi_error /= MPI_SUCCESS) then
+         call StopOnError(0, 0, 'Unable to complete frequency slice publication')
+      end if
+      if (this%publication%owns_communicator) then
+         call MPI_Comm_free(this%publication%communicator, mpi_error)
+         if (mpi_error /= MPI_SUCCESS) then
+            call StopOnError(0, 0, 'Unable to free frequency slice output communicator')
+         end if
+         this%publication%owns_communicator = .false.
+         this%publication%communicator = MPI_COMM_NULL
+      end if
+#endif
    end subroutine
 
 

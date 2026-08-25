@@ -1,5 +1,5 @@
 module outputTransport_m
-   use FDETYPES_m, only: RKIND
+   use, intrinsic :: iso_fortran_env, only: real64
 #ifdef CompileWithMPI
    use mpi
 #endif
@@ -14,20 +14,20 @@ module outputTransport_m
       integer :: rank = 0
       integer :: rank_count = 1
       integer :: root_rank = 0
-      logical :: distributed = .false.
+      integer :: communicator = 0
+      integer :: real64_datatype = 0
    end type output_transport_t
 
    public :: init_output_transport
-   public :: gather_point_eligibility
-   public :: reduce_scalar_batch
    public :: transfer_flush_batch
 
 contains
 
-   subroutine init_output_transport(transport, root_rank, status)
+   subroutine init_output_transport(transport, root_rank, status, communicator)
       type(output_transport_t), intent(out) :: transport
       integer, intent(in), optional :: root_rank
       integer, intent(out) :: status
+      integer, intent(in), optional :: communicator
 #ifdef CompileWithMPI
       integer :: ierr
 #endif
@@ -36,17 +36,24 @@ contains
       if (present(root_rank)) transport%root_rank = root_rank
 
 #ifdef CompileWithMPI
-      call MPI_Comm_rank(MPI_COMM_WORLD, transport%rank, ierr)
+      transport%communicator = MPI_COMM_WORLD
+      if (present(communicator)) transport%communicator = communicator
+      call MPI_Type_match_size(MPI_TYPECLASS_REAL, storage_size(0.0_real64) / 8, &
+                               transport%real64_datatype, ierr)
       if (ierr /= MPI_SUCCESS) then
          status = OUTPUT_TRANSPORT_RUNTIME_FAILURE
          return
       end if
-      call MPI_Comm_size(MPI_COMM_WORLD, transport%rank_count, ierr)
+      call MPI_Comm_rank(transport%communicator, transport%rank, ierr)
       if (ierr /= MPI_SUCCESS) then
          status = OUTPUT_TRANSPORT_RUNTIME_FAILURE
          return
       end if
-      transport%distributed = transport%rank_count > 1
+      call MPI_Comm_size(transport%communicator, transport%rank_count, ierr)
+      if (ierr /= MPI_SUCCESS) then
+         status = OUTPUT_TRANSPORT_RUNTIME_FAILURE
+         return
+      end if
 #endif
 
       if (.not. valid_transport(transport)) then
@@ -56,72 +63,10 @@ contains
       status = OUTPUT_TRANSPORT_SUCCESS
    end subroutine init_output_transport
 
-   subroutine gather_point_eligibility(transport, local_eligible, rank_is_eligible, status)
-      type(output_transport_t), intent(in) :: transport
-      logical, intent(in) :: local_eligible
-      logical, allocatable, intent(out) :: rank_is_eligible(:)
-      integer, intent(out) :: status
-#ifdef CompileWithMPI
-      integer :: ierr
-#endif
-
-      if (allocated(rank_is_eligible)) deallocate(rank_is_eligible)
-      if (.not. valid_transport(transport)) then
-         status = OUTPUT_TRANSPORT_INVALID_CONTEXT
-         return
-      end if
-      allocate(rank_is_eligible(transport%rank_count))
-
-#ifdef CompileWithMPI
-      call MPI_Allgather(local_eligible, 1, MPI_LOGICAL, rank_is_eligible, 1, MPI_LOGICAL, MPI_COMM_WORLD, ierr)
-      if (ierr /= MPI_SUCCESS) then
-         deallocate(rank_is_eligible)
-         status = OUTPUT_TRANSPORT_RUNTIME_FAILURE
-         return
-      end if
-#else
-      rank_is_eligible(1) = local_eligible
-#endif
-
-      status = OUTPUT_TRANSPORT_SUCCESS
-   end subroutine gather_point_eligibility
-
-   subroutine reduce_scalar_batch(transport, local_values, canonical_values, status)
-      type(output_transport_t), intent(in) :: transport
-      real(kind=RKIND), intent(in) :: local_values(:)
-      real(kind=RKIND), allocatable, intent(out) :: canonical_values(:)
-      integer, intent(out) :: status
-#ifdef CompileWithMPI
-      integer :: ierr
-#endif
-
-      if (allocated(canonical_values)) deallocate(canonical_values)
-      if (.not. valid_transport(transport)) then
-         status = OUTPUT_TRANSPORT_INVALID_CONTEXT
-         return
-      end if
-      allocate(canonical_values(size(local_values)))
-      canonical_values = 0.0_RKIND
-
-#ifdef CompileWithMPI
-      call MPI_Reduce(local_values, canonical_values, size(local_values), mpi_rkind(), MPI_SUM, transport%root_rank, &
-                      MPI_COMM_WORLD, ierr)
-      if (ierr /= MPI_SUCCESS) then
-         deallocate(canonical_values)
-         status = OUTPUT_TRANSPORT_RUNTIME_FAILURE
-         return
-      end if
-#else
-      canonical_values = local_values
-#endif
-
-      status = OUTPUT_TRANSPORT_SUCCESS
-   end subroutine reduce_scalar_batch
-
    subroutine transfer_flush_batch(transport, local_batch, gathered_batch, counts, displacements, status)
       type(output_transport_t), intent(in) :: transport
-      real(kind=RKIND), intent(in) :: local_batch(:)
-      real(kind=RKIND), allocatable, intent(out) :: gathered_batch(:)
+      real(real64), intent(in) :: local_batch(:)
+      real(real64), allocatable, intent(out) :: gathered_batch(:)
       integer, allocatable, intent(out) :: counts(:), displacements(:)
       integer, intent(out) :: status
       integer :: i, total_count
@@ -143,7 +88,7 @@ contains
 
 #ifdef CompileWithMPI
       call MPI_Gather(size(local_batch), 1, MPI_INTEGER, counts, 1, MPI_INTEGER, transport%root_rank, &
-                      MPI_COMM_WORLD, ierr)
+                      transport%communicator, ierr)
       if (ierr /= MPI_SUCCESS) then
          call clear_flush_batch(gathered_batch, counts, displacements)
          status = OUTPUT_TRANSPORT_RUNTIME_FAILURE
@@ -164,8 +109,8 @@ contains
       end if
 
 #ifdef CompileWithMPI
-      call MPI_Gatherv(local_batch, size(local_batch), mpi_rkind(), gathered_batch, counts, displacements, mpi_rkind(), &
-                       transport%root_rank, MPI_COMM_WORLD, ierr)
+      call MPI_Gatherv(local_batch, size(local_batch), transport%real64_datatype, gathered_batch, counts, displacements, &
+                       transport%real64_datatype, transport%root_rank, transport%communicator, ierr)
       if (ierr /= MPI_SUCCESS) then
          call clear_flush_batch(gathered_batch, counts, displacements)
          status = OUTPUT_TRANSPORT_RUNTIME_FAILURE
@@ -187,22 +132,12 @@ contains
    end function valid_transport
 
    subroutine clear_flush_batch(gathered_batch, counts, displacements)
-      real(kind=RKIND), allocatable, intent(inout) :: gathered_batch(:)
+      real(real64), allocatable, intent(inout) :: gathered_batch(:)
       integer, allocatable, intent(inout) :: counts(:), displacements(:)
 
       if (allocated(gathered_batch)) deallocate(gathered_batch)
       if (allocated(counts)) deallocate(counts)
       if (allocated(displacements)) deallocate(displacements)
    end subroutine clear_flush_batch
-
-#ifdef CompileWithMPI
-   integer function mpi_rkind()
-#ifdef CompileWithReal8
-      mpi_rkind = MPI_DOUBLE_PRECISION
-#else
-      mpi_rkind = MPI_REAL
-#endif
-   end function mpi_rkind
-#endif
 
 end module outputTransport_m

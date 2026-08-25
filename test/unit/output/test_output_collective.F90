@@ -47,12 +47,4 @@ integer function test_output_collective_contract() bind(c) result(err)
    err = err + assert_integer_equal(status, OUTPUT_COLLECTIVE_INVALID_OWNER, &
                                     'Non-deterministic owner was accepted')
 
-   call select_point_owner(collective, [.false., .true., .true.], owner, status)
-   err = err + assert_integer_equal(status, OUTPUT_COLLECTIVE_SUCCESS, 'Point owner selection failed')
-   err = err + assert_integer_equal(owner, 1, 'Point owner is not the lowest eligible rank')
-   err = err + assert_true(point_owner_is_local(collective, owner), 'Point owner is not local')
-
-   call select_point_owner(collective, [.false., .false., .false.], owner, status)
-   err = err + assert_integer_equal(status, OUTPUT_COLLECTIVE_UNOWNED_POINT, &
-                                    'Unowned point was accepted')
 end function test_output_collective_contract

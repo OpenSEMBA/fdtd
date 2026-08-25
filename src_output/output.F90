@@ -14,15 +14,14 @@ module output_m
    use mapVTKOutput_m
    use outputDecomposition_m, only: output_partition_t, build_output_partition, &
                                     OUTPUT_PARTITION_SUCCESS, OUTPUT_PARTITION_INVALID_ARGUMENT
-   use outputCollective_m, only: output_collective_t, init_output_collective, select_point_owner, &
-                                 select_output_publication_mode, OUTPUT_COLLECTIVE_SUCCESS, &
-                                 OUTPUT_COLLECTIVE_UNOWNED_POINT
-   use outputTransport_m, only: output_transport_t, gather_point_eligibility, OUTPUT_TRANSPORT_SUCCESS
+   use outputCollective_m, only: output_collective_t, init_output_collective, select_output_participants, &
+                                  prepare_output_partition_publication, OUTPUT_COLLECTIVE_SUCCESS
+   use outputTransport_m, only: output_transport_t
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, json_escape, &
                                json_unescape, OUTPUT_METADATA_SUCCESS
    use outputTypes_m, only: probe_metadata_t, output_artifact_t, output_lifecycle_is_terminal, &
                             probe_metadata_is_complete, OUTPUT_ARTIFACT_UNDEFINED, &
-                            probe_publication_plan_t, &
+                             volumetric_publication_t, &
                             OUTPUT_LIFECYCLE_DECLARED, OUTPUT_LIFECYCLE_ACTIVE, &
                             OUTPUT_LIFECYCLE_FINALISING, OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
 #ifdef CompileWithMPI
@@ -49,16 +48,13 @@ module output_m
    public :: probe_output_t, run_output_manifest_t
    public :: init_run_output_manifest, declare_probe_output, begin_probe_output, finalise_probe_output, &
              fail_probe_output, finalise_run_outputs, select_probe_participants
-   public :: prepare_point_publication_plan, publication_plan_allows_canonical_write
-   public :: prepare_distributed_point_publication_plan, publish_planned_probe_metadata, &
-             finalise_transport_run_outputs
+   public :: finalise_transport_run_outputs
    public :: publish_scalar_probe_metadata
    public :: delete_run_output_manifest
    public :: OUTPUT_COORDINATION_SUCCESS, OUTPUT_COORDINATION_INVALID_PROBE, &
-             OUTPUT_COORDINATION_INVALID_STATE, OUTPUT_COORDINATION_INVALID_ARTIFACTS, &
-             OUTPUT_COORDINATION_NOT_TERMINAL, OUTPUT_COORDINATION_NOT_ROOT, &
-             OUTPUT_COORDINATION_INVALID_OWNERSHIP, OUTPUT_COORDINATION_UNOWNED_POINT, &
-             OUTPUT_COORDINATION_TRANSPORT_ERROR
+              OUTPUT_COORDINATION_INVALID_STATE, OUTPUT_COORDINATION_INVALID_ARTIFACTS, &
+              OUTPUT_COORDINATION_NOT_TERMINAL, OUTPUT_COORDINATION_NOT_ROOT, &
+              OUTPUT_COORDINATION_INVALID_OWNERSHIP
 
    public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, VOLUMIC_CURRENT_PROBE_ID, &
              MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID, LINE_PROBE_ID
@@ -88,12 +84,9 @@ module output_m
    integer, parameter :: OUTPUT_COORDINATION_NOT_TERMINAL = 4
    integer, parameter :: OUTPUT_COORDINATION_NOT_ROOT = 5
    integer, parameter :: OUTPUT_COORDINATION_INVALID_OWNERSHIP = 6
-   integer, parameter :: OUTPUT_COORDINATION_UNOWNED_POINT = 7
-   integer, parameter :: OUTPUT_COORDINATION_TRANSPORT_ERROR = 8
 
    type :: probe_output_t
       type(probe_metadata_t) :: metadata
-      type(probe_publication_plan_t) :: publication_plan
    end type probe_output_t
 
    type :: run_output_manifest_t
@@ -164,81 +157,6 @@ contains
       r => problemInfo
       return
    end function
-
-   subroutine prepare_point_publication_plan(plan, rank, rank_count, rank_is_eligible, status)
-      type(probe_publication_plan_t), intent(out) :: plan
-      integer, intent(in) :: rank, rank_count
-      logical, intent(in) :: rank_is_eligible(:)
-      integer, intent(out) :: status
-      type(output_collective_t) :: collective
-
-      plan = probe_publication_plan_t()
-      call init_output_collective(collective, rank, rank_count, 0, .false., status)
-      if (status /= OUTPUT_COLLECTIVE_SUCCESS) return
-
-      call select_point_owner(collective, rank_is_eligible, plan%canonical_writer_rank, status)
-      if (status /= OUTPUT_COLLECTIVE_SUCCESS) return
-
-      plan%local_eligible = rank_is_eligible(rank + 1)
-      plan%local_participates = plan%local_eligible
-      plan%local_is_canonical_writer = plan%canonical_writer_rank == rank
-   end subroutine prepare_point_publication_plan
-
-   pure logical function publication_plan_allows_canonical_write(plan)
-      type(probe_publication_plan_t), intent(in) :: plan
-
-      publication_plan_allows_canonical_write = plan%canonical_writer_rank >= 0 .and. &
-                                                plan%local_is_canonical_writer
-   end function publication_plan_allows_canonical_write
-
-   subroutine prepare_distributed_point_publication_plan(plan, transport, local_eligible, status)
-      type(probe_publication_plan_t), intent(out) :: plan
-      type(output_transport_t), intent(in) :: transport
-      logical, intent(in) :: local_eligible
-      logical, allocatable :: rank_is_eligible(:)
-      integer, intent(out) :: status
-      integer :: collective_status, transport_status
-
-      plan = probe_publication_plan_t()
-      call gather_point_eligibility(transport, local_eligible, rank_is_eligible, transport_status)
-      if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
-         status = OUTPUT_COORDINATION_TRANSPORT_ERROR
-         return
-      end if
-
-      call prepare_point_publication_plan(plan, transport%rank, transport%rank_count, rank_is_eligible, &
-                                          collective_status)
-      if (collective_status == OUTPUT_COLLECTIVE_SUCCESS) then
-         status = OUTPUT_COORDINATION_SUCCESS
-      else if (collective_status == OUTPUT_COLLECTIVE_UNOWNED_POINT) then
-         status = OUTPUT_COORDINATION_UNOWNED_POINT
-      else
-         status = OUTPUT_COORDINATION_INVALID_OWNERSHIP
-      end if
-   end subroutine prepare_distributed_point_publication_plan
-
-   subroutine publish_planned_probe_metadata(path, metadata, plan, status)
-      character(len=*), intent(in) :: path
-      type(probe_metadata_t), intent(in) :: metadata
-      type(probe_publication_plan_t), intent(in) :: plan
-      integer, intent(out) :: status
-      integer :: metadata_status
-
-      if (.not. publication_plan_allows_canonical_write(plan)) then
-         status = OUTPUT_COORDINATION_SUCCESS
-         return
-      end if
-      if (output_lifecycle_is_terminal(metadata%lifecycle)) then
-         call publish_final_probe_metadata(path, metadata, metadata_status)
-      else
-         call publish_initial_probe_metadata(path, metadata, metadata_status)
-      end if
-      if (metadata_status == OUTPUT_METADATA_SUCCESS) then
-         status = OUTPUT_COORDINATION_SUCCESS
-      else
-         status = OUTPUT_COORDINATION_INVALID_ARTIFACTS
-      end if
-   end subroutine publish_planned_probe_metadata
 
    subroutine publish_scalar_probe_metadata(path, probe_id, quantity, artifacts, status)
       character(len=*), intent(in) :: path, probe_id, quantity
@@ -738,35 +656,27 @@ contains
 
             case (iCur, iMEC, iMHC, iCurX, iCurY, iCurZ, iExC, iEyC, iEzC, iHxC, iHyC, iHzC)
                if (domain%domainType == TIME_DOMAIN) then
-
-                  outputCount = outputCount + 1
-                  outputs(outputCount)%outputID = MOVIE_PROBE_ID
-                  call attach_output_partition(outputCount)
-                  if (outputPartitions(outputCount)%has_data) then
+                  block
+                     type(volumetric_publication_t) :: publication
+                     outputCount = outputCount + 1
+                     outputs(outputCount)%outputID = MOVIE_PROBE_ID
+                     call attach_output_partition(outputCount)
+                     call configure_output_publication(outputCount, publication)
                      allocate (outputs(outputCount)%movieProbe)
-                     call init_solver_output(outputs(outputCount)%movieProbe, outputPartitions(outputCount)%local_lower, &
-                                              outputPartitions(outputCount)%local_upper, outputRequestType, domain, control, &
-                                              problemInfo, outputTypeExtension)
-                     call configure_output_partition(outputCount)
-                  else
-                     outputs(outputCount)%outputID = UNDEFINED_PROBE
-                     outputCount = outputCount - 1
-                  end if
+                     call init_solver_output(outputs(outputCount)%movieProbe, publication, outputRequestType, domain, &
+                                             control, problemInfo, outputTypeExtension)
+                  end block
                else if (domain%domainType == FREQUENCY_DOMAIN) then
-
-                  outputCount = outputCount + 1
-                  outputs(outputCount)%outputID = FREQUENCY_SLICE_PROBE_ID
-                  call attach_output_partition(outputCount)
-                  if (outputPartitions(outputCount)%has_data) then
+                  block
+                     type(volumetric_publication_t) :: publication
+                     outputCount = outputCount + 1
+                     outputs(outputCount)%outputID = FREQUENCY_SLICE_PROBE_ID
+                     call attach_output_partition(outputCount)
+                     call configure_output_publication(outputCount, publication)
                      allocate (outputs(outputCount)%frequencySliceProbe)
-                     call init_solver_output(outputs(outputCount)%frequencySliceProbe, outputPartitions(outputCount)%local_lower, &
-                                              outputPartitions(outputCount)%local_upper, sgg%dt, outputRequestType, domain, &
-                                              outputTypeExtension, control, problemInfo)
-                     call configure_output_partition(outputCount)
-                  else
-                     outputs(outputCount)%outputID = UNDEFINED_PROBE
-                     outputCount = outputCount - 1
-                  end if
+                     call init_solver_output(outputs(outputCount)%frequencySliceProbe, publication, sgg%dt, &
+                                             outputRequestType, domain, outputTypeExtension, control, problemInfo)
+                  end block
                end if
             case (farfield)
                sphericRange = preprocess_polar_range(sgg%Observation(ii))
@@ -874,26 +784,79 @@ contains
 
        end subroutine attach_output_partition
 
-       subroutine configure_output_partition(output_index)
-          integer(kind=SINGLE), intent(in) :: output_index
-          type(output_collective_t) :: collective
-          integer :: collective_status, publication_mode
+        subroutine configure_output_publication(output_index, publication)
+           integer(kind=SINGLE), intent(in) :: output_index
+           type(volumetric_publication_t), intent(out) :: publication
+           type(output_collective_t) :: collective
+           integer, allocatable :: participants(:)
+           logical, allocatable :: rank_has_data(:)
+           integer :: collective_status, owner_rank
+           logical :: parallel_hdf5_available
+#ifdef CompileWithMPI
+           integer :: color, ierr
+#endif
 
-          ! Parallel visualisation output is available when MPI spans multiple ranks.
-          call init_output_collective(collective, control%layoutnumber, max(control%num_procs, 1), 0, &
-                                      control%num_procs > 1, &
-                                      collective_status)
-         if (collective_status /= OUTPUT_COLLECTIVE_SUCCESS) return
-         call select_output_publication_mode(collective, publication_mode)
-         select case (outputs(output_index)%outputID)
-         case (MOVIE_PROBE_ID)
-            call configure_movie_probe_publication(outputs(output_index)%movieProbe, publication_mode, &
-                                                   outputPartitions(output_index)%has_data)
-          case (FREQUENCY_SLICE_PROBE_ID)
-             call configure_frequency_slice_probe_publication(outputs(output_index)%frequencySliceProbe, &
-                                                              publication_mode, outputPartitions(output_index)%has_data)
-          end select
-       end subroutine configure_output_partition
+           publication = volumetric_publication_t()
+           allocate(rank_has_data(max(control%num_procs, 1)))
+#ifdef CompileWithMPI
+           call MPI_Allgather(outputPartitions(output_index)%has_data, 1, MPI_LOGICAL, rank_has_data, 1, &
+                              MPI_LOGICAL, SUBCOMM_MPI, ierr)
+           if (ierr /= MPI_SUCCESS) then
+              call StopOnError(control%layoutnumber, control%num_procs, &
+                               'Unable to identify distributed output participants')
+           end if
+#else
+           rank_has_data(1) = outputPartitions(output_index)%has_data
+#endif
+
+           parallel_hdf5_available = .false.
+#ifdef XDMF_HDF5_PARALLEL_AVAILABLE
+           parallel_hdf5_available = .true.
+#endif
+           call init_output_collective(collective, control%layoutnumber, max(control%num_procs, 1), 0, &
+                                       parallel_hdf5_available, collective_status)
+           if (collective_status == OUTPUT_COLLECTIVE_SUCCESS) then
+              call select_output_participants(collective, rank_has_data, participants, owner_rank, collective_status)
+              collective%collective_publication_available = parallel_hdf5_available .and. size(participants) > 1
+           end if
+           if (collective_status == OUTPUT_COLLECTIVE_SUCCESS) then
+              call prepare_output_partition_publication(collective, participants, owner_rank, &
+                                                        outputPartitions(output_index), &
+                                                        publication%local_participates, publication%mode, &
+                                                        collective_status)
+           end if
+           if (collective_status /= OUTPUT_COLLECTIVE_SUCCESS) then
+              call StopOnError(control%layoutnumber, control%num_procs, &
+                               'Unable to configure distributed output publication')
+           end if
+
+           publication%participant_ranks = participants
+           publication%owner_rank = owner_rank
+           publication%local_is_owner = control%layoutnumber == owner_rank
+           publication%file_offset = outputPartitions(output_index)%file_offset
+           publication%local_shape = outputPartitions(output_index)%local_shape
+           publication%global_lower = outputPartitions(output_index)%global_lower
+           publication%global_upper = outputPartitions(output_index)%global_upper
+
+#ifdef CompileWithMPI
+           if (control%num_procs > 1) then
+              color = MPI_UNDEFINED
+              if (publication%local_participates) color = 0
+              call MPI_Comm_split(SUBCOMM_MPI, color, control%layoutnumber, publication%communicator, ierr)
+              if (ierr /= MPI_SUCCESS) then
+                 call StopOnError(control%layoutnumber, control%num_procs, &
+                                  'Unable to create distributed output communicator')
+              end if
+              if (publication%local_participates) then
+                 publication%owns_communicator = .true.
+                 call MPI_Comm_rank(publication%communicator, publication%communicator_rank, ierr)
+                 call MPI_Comm_size(publication%communicator, publication%communicator_size, ierr)
+              end if
+           else
+              publication%communicator = SUBCOMM_MPI
+           end if
+#endif
+        end subroutine configure_output_publication
 
        subroutine get_local_map_bounds(request_lower, request_upper, local_lower, local_upper, has_data)
           type(cell_coordinate_t), intent(in) :: request_lower, request_upper

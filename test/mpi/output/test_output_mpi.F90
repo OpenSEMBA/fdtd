@@ -10,10 +10,9 @@ program test_output_mpi
     use outputDecomposition_m, only: output_partition_t, build_output_partition, &
                                      OUTPUT_PARTITION_SUCCESS
     use outputTransport_m, only: output_transport_t, init_output_transport, OUTPUT_TRANSPORT_SUCCESS
-    use outputTypes_m, only: cell_coordinate_t, output_artifact_t, probe_publication_plan_t, OUTPUT_ARTIFACT_TEXT
+    use outputTypes_m, only: cell_coordinate_t, output_artifact_t, OUTPUT_ARTIFACT_TEXT
     use output_m, only: run_output_manifest_t, init_run_output_manifest, declare_probe_output, begin_probe_output, &
-                        finalise_probe_output, finalise_transport_run_outputs, &
-                        prepare_distributed_point_publication_plan, OUTPUT_COORDINATION_SUCCESS
+                         finalise_probe_output, finalise_transport_run_outputs, OUTPUT_COORDINATION_SUCCESS
    implicit none
 
    integer, parameter :: root = 0
@@ -22,13 +21,12 @@ program test_output_mpi
    integer, allocatable :: participants(:), local_values(:), gathered_values(:), counts(:), displacements(:)
    integer, allocatable :: local_coverage(:), global_coverage(:)
    logical, allocatable :: rank_has_data(:)
-    logical :: local_eligible, local_participates
+     logical :: local_participates
     type(output_collective_t) :: collective
     type(output_transport_t) :: transport
     type(output_partition_t) :: partition
     type(cell_coordinate_t) :: request_lower, request_upper
     type(limit_t) :: global_bounds, local_sweep
-    type(probe_publication_plan_t) :: plan
     type(run_output_manifest_t) :: manifest
     type(output_artifact_t) :: artifacts(1)
 
@@ -63,11 +61,6 @@ program test_output_mpi
 
        call init_output_transport(transport, root, status)
        if (status /= OUTPUT_TRANSPORT_SUCCESS) failures = failures + 1
-       local_eligible = rank == 1 .or. rank == rank_count - 1
-       call prepare_distributed_point_publication_plan(plan, transport, local_eligible, status)
-       if (status /= OUTPUT_COORDINATION_SUCCESS .or. plan%canonical_writer_rank /= 1) failures = failures + 1
-       if (plan%local_is_canonical_writer .neqv. (rank == 1)) failures = failures + 1
-
        artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
        artifacts(1)%relative_path = 'point.dat'
        call init_run_output_manifest(manifest, 'mpi-run', root)

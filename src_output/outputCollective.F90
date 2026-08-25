@@ -8,7 +8,6 @@ module outputCollective_m
     integer, parameter, public :: OUTPUT_COLLECTIVE_INVALID_PARTICIPANTS = 2
     integer, parameter, public :: OUTPUT_COLLECTIVE_INVALID_OWNER = 3
     integer, parameter, public :: OUTPUT_COLLECTIVE_INVALID_PARTITION = 4
-    integer, parameter, public :: OUTPUT_COLLECTIVE_UNOWNED_POINT = 5
 
    integer, parameter, public :: OUTPUT_PUBLICATION_COLLECTIVE = 1
    integer, parameter, public :: OUTPUT_PUBLICATION_ROOT_AGGREGATION = 2
@@ -22,8 +21,6 @@ module outputCollective_m
 
    public :: init_output_collective
     public :: select_output_participants
-    public :: select_point_owner
-    public :: point_owner_is_local
    public :: validate_output_ownership
    public :: select_output_publication_mode
    public :: prepare_output_partition_publication
@@ -73,36 +70,6 @@ contains
       owner_rank = participants(1)
       status = OUTPUT_COLLECTIVE_SUCCESS
     end subroutine select_output_participants
-
-    pure subroutine select_point_owner(collective, rank_is_eligible, owner_rank, status)
-       type(output_collective_t), intent(in) :: collective
-       logical, intent(in) :: rank_is_eligible(:)
-       integer, intent(out) :: owner_rank, status
-       integer :: rank
-
-       owner_rank = -1
-       if (.not. valid_context(collective) .or. size(rank_is_eligible) /= collective%rank_count) then
-          status = OUTPUT_COLLECTIVE_INVALID_CONTEXT
-          return
-       end if
-
-       do rank = 0, collective%rank_count - 1
-          if (rank_is_eligible(rank + 1)) then
-             owner_rank = rank
-             status = OUTPUT_COLLECTIVE_SUCCESS
-             return
-          end if
-       end do
-
-       status = OUTPUT_COLLECTIVE_UNOWNED_POINT
-    end subroutine select_point_owner
-
-    pure logical function point_owner_is_local(collective, owner_rank)
-       type(output_collective_t), intent(in) :: collective
-       integer, intent(in) :: owner_rank
-
-       point_owner_is_local = valid_context(collective) .and. owner_rank == collective%rank
-    end function point_owner_is_local
 
    pure subroutine validate_output_ownership(collective, participants, owner_rank, status)
       type(output_collective_t), intent(in) :: collective

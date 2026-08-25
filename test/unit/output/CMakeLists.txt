@@ -10,7 +10,6 @@ add_library(
     "test_output_decomposition.F90"
     "test_output_collective.F90"
     "test_output_publication_contract.F90"
-    "test_output_lifecycle.F90"
     "test_output_transport.F90"
 
     # Artifact adapters.

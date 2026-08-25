@@ -372,24 +372,6 @@ integer function test_line_probe_artifacts() bind(c) result(err)
    call delete_file(trim(path)//'_tm.bin', ios)
 end function test_line_probe_artifacts
 
-integer function test_line_probe_serial_reduction() bind(c) result(err)
-   use FDETYPES_m, only: RKIND
-   use lineProbeOutput_m, only: reduce_line_probe_sample
-   use outputTransport_m, only: output_transport_t, init_output_transport, OUTPUT_TRANSPORT_SUCCESS
-   use assertionTools_m, only: assert_integer_equal, assert_real_equal
-   implicit none
-
-   type(output_transport_t) :: transport
-   real(kind=RKIND) :: value
-   integer :: status
-
-   err = 0
-   call init_output_transport(transport, status=status)
-   call reduce_line_probe_sample(transport, 3.5_RKIND, value, status)
-   err = err + assert_integer_equal(status, OUTPUT_TRANSPORT_SUCCESS, 'Serial line reduction failed')
-   err = err + assert_real_equal(value, 3.5_RKIND, 1.0e-6_RKIND, 'Serial line reduction changed the value')
-end function test_line_probe_serial_reduction
-
 integer function test_line_probe_shared_interface_owner() bind(c) result(err)
    use FDETYPES_m, only: direction_t, xyzlimit_t, iEx
    use lineProbeOutput_m, only: line_segment_is_local
@@ -850,10 +832,10 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
    err = err + assert_integer_equal(partition%global_upper%z, 5, 'Unexpected global upper z')
    err = err + assert_integer_equal(partition%local_lower%z, 2, 'Unexpected local lower z')
    err = err + assert_integer_equal(partition%local_upper%z, 5, 'Unexpected local upper z')
-   err = err + assert_integer_equal(outputs(1)%movieProbe%publication_mode, OUTPUT_PUBLICATION_ROOT_AGGREGATION, &
-                                    'Serial movie output did not select root aggregation fallback')
-   err = err + assert_true(outputs(1)%movieProbe%local_participates, &
-                           'Serial movie output was excluded from publication')
+    err = err + assert_integer_equal(outputs(1)%movieProbe%publication%mode, OUTPUT_PUBLICATION_ROOT_AGGREGATION, &
+                                     'Serial movie output did not select root aggregation fallback')
+    err = err + assert_true(outputs(1)%movieProbe%publication%local_participates, &
+                            'Serial movie output was excluded from publication')
    call remove_folder(trim(path)//'_movieProbe_BC_2_2_2__5_5_5', ios)
    call delete_file(trim(path)//'_Outputrequests_1.txt', ios)
    call delete_file(trim(path)//'_output_manifest.json', ios)

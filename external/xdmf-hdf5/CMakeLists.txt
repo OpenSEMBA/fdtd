@@ -76,6 +76,7 @@ if(XDMF_HDF5_MPI_ENABLED)
 endif()
 if(XDMF_HDF5_PARALLEL_AVAILABLE)
   target_compile_definitions(xdmf_hdf5 PRIVATE XDMF_HDF5_WITH_PARALLEL_HDF5)
+  target_compile_definitions(xdmf_hdf5 PUBLIC XDMF_HDF5_PARALLEL_AVAILABLE)
 endif()
 
 if(XDMF_HDF5_BUILD_TESTING)

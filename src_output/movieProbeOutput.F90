@@ -5,18 +5,23 @@ module movieProbeOutput_m
    use report_m
    use outputTypes_m
    use outputUtils_m
-   use allocationUtils_m, only: alloc_and_init
    use volumicProbeUtils_m
    use, intrinsic :: iso_fortran_env, only: int64, real64
    use xdmf_hdf5_m, only: xdmf_options_t, xdmf_status_t, &
       xdmf_attribute_id_t, XDMF_SERIES_TIME, XDMF_CENTER_NODE, &
       XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64
-    use outputBinary_m, only: validate_binary_layout, append_binary_real64, BINARY_WRITER_SUCCESS
+   use outputCollective_m, only: OUTPUT_PUBLICATION_COLLECTIVE, OUTPUT_PUBLICATION_ROOT_AGGREGATION
+   use outputTransport_m, only: output_transport_t, init_output_transport, transfer_flush_batch, &
+                               OUTPUT_TRANSPORT_SUCCESS, OUTPUT_TRANSPORT_INVALID_CONTEXT
+   use outputBinary_m, only: validate_binary_layout, append_binary_real64, BINARY_WRITER_SUCCESS
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
-    use outputVisualisation_m, only: verify_volumetric_visualisation, VISUALISATION_SUCCESS
-    use mapVTKOutput_m, only: write_geometry_companion
+   use outputVisualisation_m, only: verify_volumetric_visualisation, VISUALISATION_SUCCESS
+   use mapVTKOutput_m, only: write_geometry_companion
    use directoryUtils_m, only: add_extension, create_file_with_path, create_folder, file_exists, &
                                get_last_component, join_path
+#ifdef CompileWithMPI
+   use mpi
+#endif
    implicit none
    private
 
@@ -27,7 +32,6 @@ module movieProbeOutput_m
    public :: update_movie_probe_output
    public :: flush_movie_probe_output
    public :: close_movie_probe_output
-   public :: configure_movie_probe_publication
    !===========================
 
    !===========================
@@ -42,80 +46,101 @@ contains
    ! Public routines
    !===========================
 
-    subroutine init_movie_probe_output(this, lowerBound, upperBound, field, domain, control, problemInfo, outputTypeExtension)
-      type(movie_probe_output_t), intent(out) :: this
-      type(cell_coordinate_t), intent(in)     :: lowerBound, upperBound
-      integer(kind=SINGLE), intent(in)        :: field
-      type(domain_t), intent(in)              :: domain
-      type(sim_control_t), intent(in)         :: control
-      type(problem_info_t), intent(in)        :: problemInfo
-      character(len=BUFSIZE), intent(in)      :: outputTypeExtension
+    subroutine init_movie_probe_output(this, publication, field, domain, control, problemInfo, outputTypeExtension)
+       type(movie_probe_output_t), intent(out) :: this
+       type(volumetric_publication_t), intent(in) :: publication
+       integer(kind=SINGLE), intent(in)        :: field
+       type(domain_t), intent(in)              :: domain
+       type(sim_control_t), intent(in)         :: control
+       type(problem_info_t), intent(in)        :: problemInfo
+       character(len=BUFSIZE), intent(in)      :: outputTypeExtension
 
        integer :: error
        character(len=BUFSIZE) :: filename
-       real(RKIND), pointer :: xsteps(:), ysteps(:), zsteps(:)
-       type(xdmf_status_t) :: geometry_status, writer_status
+       type(xdmf_status_t) :: geometry_status
 
-      this%mainCoords = lowerBound
-      this%auxCoords = upperBound
-      this%component = field
-      this%domain = domain
+       this%publication = publication
+       this%mainCoords = publication%global_lower
+       this%auxCoords = publication%global_upper
+       if (publication%local_participates) then
+          this%mainCoords%x = publication%global_lower%x + int(publication%file_offset(1), kind=SINGLE)
+          this%mainCoords%y = publication%global_lower%y + int(publication%file_offset(2), kind=SINGLE)
+          this%mainCoords%z = publication%global_lower%z + int(publication%file_offset(3), kind=SINGLE)
+          this%auxCoords%x = this%mainCoords%x + int(publication%local_shape(1), kind=SINGLE) - 1_SINGLE
+          this%auxCoords%y = this%mainCoords%y + int(publication%local_shape(2), kind=SINGLE) - 1_SINGLE
+          this%auxCoords%z = this%mainCoords%z + int(publication%local_shape(3), kind=SINGLE) - 1_SINGLE
+       end if
+       this%component = field
+       this%domain = domain
 
-      xsteps => problemInfo%xSteps(lowerBound%x:upperBound%x)
-      ysteps => problemInfo%ySteps(lowerBound%y:upperBound%y)
-      zsteps => problemInfo%zSteps(lowerBound%z:upperBound%z)
+       this%path = get_output_path(publication%global_lower, publication%global_upper, &
+                                   outputTypeExtension, field, control%mpidir)
+       filename = get_last_component(this%path)
+       this%filesPath = join_path(this%path, filename)
+       call initialise_movie_metadata(this, error, control%mpidir)
+       if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+          'Unable to initialise movie output metadata')
+       this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
 
-       call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
+       if (.not. publication%local_participates) return
+
+       call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, &
+                                            problemInfo, this%nPoints, this%coords)
        call alloc_and_init(this%tagNumber, this%nPoints, 0.0_RKIND)
        call store_tag_numbers(this, problemInfo)
        call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+       call alloc_and_init(this%xValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
+       call alloc_and_init(this%yValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
+       call alloc_and_init(this%zValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
 
-      ! Allocate value arrays based on component type
-      call alloc_and_init(this%xValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
-      call alloc_and_init(this%yValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
-      call alloc_and_init(this%zValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
+       if (publication%local_is_owner) then
+          call create_folder(this%path, error)
+          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+             'Unable to create movie output directory')
+          call create_bin_file(this%filesPath, error)
+          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+             'Unable to create movie binary output')
+          call write_geometry_companion(this%filesPath, publication%global_lower, publication%global_upper, &
+                                        problemInfo, geometry_status)
+          if (geometry_status%is_error()) then
+             call StopOnError(control%layoutnumber, control%num_procs, &
+                'Unable to create movie geometry: '//trim(geometry_status%message()))
+          end if
+       end if
+       call synchronise_movie_participants(this, control)
 
-      this%path = get_output_path(this, outputTypeExtension, field, control%mpidir)
-      filename = get_last_component(this%path)
-      this%filesPath = join_path(this%path, filename)
+       if (publication%mode == OUTPUT_PUBLICATION_COLLECTIVE .or. publication%local_is_owner) then
+          call create_movie_files(this, problemInfo, error)
+          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+             'Unable to initialise movie HDF5 output')
+       end if
 
-        call create_folder(this%path, error)
-        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-           'Unable to create movie output directory')
-        call create_bin_file(this%filesPath, error)
-        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-           'Unable to create movie binary output')
-        call create_movie_files(this, error, xsteps, ysteps, zsteps)
-        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-           'Unable to initialise movie HDF5 output')
-        call write_geometry_companion(this%filesPath, lowerBound, upperBound, problemInfo, geometry_status)
-        if (geometry_status%is_error()) then
-           if (associated(this%writer)) then
-              call this%writer%close(writer_status)
-              deallocate(this%writer)
-           end if
-           call StopOnError(control%layoutnumber, control%num_procs, &
-              'Unable to create movie geometry: '//trim(geometry_status%message()))
-        end if
-        call initialise_movie_metadata(this, error, control%mpidir)
-        if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-           'Unable to initialise movie output metadata')
-   end subroutine init_movie_probe_output
-
-   subroutine configure_movie_probe_publication(this, publication_mode, local_participates)
-      type(movie_probe_output_t), intent(inout) :: this
-      integer, intent(in) :: publication_mode
-      logical, intent(in) :: local_participates
-
-      this%publication_mode = publication_mode
-      this%local_participates = local_participates
-   end subroutine configure_movie_probe_publication
+       if (publication%local_is_owner) then
+          call publish_initial_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
+          if (error /= OUTPUT_METADATA_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
+             'Unable to publish initial movie output metadata')
+       end if
+    end subroutine init_movie_probe_output
 
      subroutine create_bin_file(filePath, error)
       character(len=*), intent(in) :: filePath
       integer, intent(out) :: error
       call create_file_with_path(add_extension(filePath, binaryExtension), error)
-    end subroutine
+     end subroutine
+
+   subroutine synchronise_movie_participants(this, control)
+      type(movie_probe_output_t), intent(in) :: this
+      type(sim_control_t), intent(in) :: control
+#ifdef CompileWithMPI
+      integer :: error
+
+      if (this%publication%communicator_size > 1) then
+         call MPI_Barrier(this%publication%communicator, error)
+         if (error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
+            'Unable to synchronise movie output participants')
+      end if
+#endif
+   end subroutine synchronise_movie_participants
 
    subroutine initialise_movie_metadata(this, error, mpidir)
        type(movie_probe_output_t), intent(inout) :: this
@@ -126,9 +151,11 @@ contains
        base_name = get_last_component(this%filesPath)
        this%metadata%probe_id = trim(base_name)
         this%metadata%quantity = get_prefix_extension(this%component, mpidir)
-       this%metadata%lower_bound = this%mainCoords
-       this%metadata%upper_bound = this%auxCoords
+       this%metadata%lower_bound = this%publication%global_lower
+       this%metadata%upper_bound = this%publication%global_upper
        this%metadata%domain_type = TIME_DOMAIN
+       this%metadata%ownership%participant_ranks = this%publication%participant_ranks
+       this%metadata%ownership%scalar_writer_rank = this%publication%owner_rank
        if (allocated(this%metadata%artifacts)) deallocate(this%metadata%artifacts)
         allocate(this%metadata%artifacts(5))
        this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
@@ -148,35 +175,39 @@ contains
 
        call validate_binary_layout(this%metadata%artifacts(1), error)
        if (error /= BINARY_WRITER_SUCCESS) return
-       call publish_initial_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
-       if (error /= OUTPUT_METADATA_SUCCESS) return
-       this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
        error = 0
-   end subroutine initialise_movie_metadata
+    end subroutine initialise_movie_metadata
 
-   subroutine create_movie_files(this, error, xsteps, ysteps, zsteps)
-      type(movie_probe_output_t), intent(inout) :: this
-      real(RKIND), pointer, intent(in) :: xsteps(:), ysteps(:), zsteps(:)
-      integer, intent(out) :: error
+    subroutine create_movie_files(this, problemInfo, error)
+       type(movie_probe_output_t), intent(inout) :: this
+       type(problem_info_t), intent(in) :: problemInfo
+       integer, intent(out) :: error
 
       type(xdmf_options_t) :: options
       type(xdmf_status_t) :: status
       character(len=BUFSIZE) :: attributeBaseName
 
       error = 0
-      allocate(this%writer)
-      options%overwrite = .true.
-      options%series_kind = XDMF_SERIES_TIME
-      call this%writer%create(trim(this%filesPath), options, status)
+       allocate(this%writer)
+       options%overwrite = .true.
+       options%series_kind = XDMF_SERIES_TIME
+       if (this%publication%mode == OUTPUT_PUBLICATION_COLLECTIVE) then
+          options%collective_io = .true.
+          options%communicator = this%publication%communicator
+          options%root_rank = 0
+       end if
+       call this%writer%create(trim(this%filesPath), options, status)
       if (status%is_error()) then
          error = 1
          print *, trim(status%message())
          return
       end if
 
-      call this%writer%define_rectilinear_grid('movieProbe', &
-         real(xsteps, real64), real(ysteps, real64), real(zsteps, real64), &
-         this%grid, status)
+       call this%writer%define_rectilinear_grid('movieProbe', &
+          real(problemInfo%xSteps(this%publication%global_lower%x:this%publication%global_upper%x), real64), &
+          real(problemInfo%ySteps(this%publication%global_lower%y:this%publication%global_upper%y), real64), &
+          real(problemInfo%zSteps(this%publication%global_lower%z:this%publication%global_upper%z), real64), &
+          this%grid, status)
       if (status%is_error()) then
          error = 1
          print *, trim(status%message())
@@ -238,6 +269,10 @@ contains
       type(problem_info_t), intent(in)          :: problemInfo
 
       integer(kind=4) :: request
+      if (.not. this%publication%local_participates .or. &
+          this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
+          this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) return
+
       request = this%component
       this%nTime = this%nTime + 1
 
@@ -289,147 +324,287 @@ contains
       end if
    end subroutine update_movie_probe_output
 
-    subroutine flush_movie_probe_output(this)
+   subroutine flush_movie_probe_output(this)
       type(movie_probe_output_t), intent(inout) :: this
-      if (this%nTime /= 0) then
-          call write_bin_file(this)
-          call write_to_external_xdmf(this)
+      type(output_transport_t) :: transport
+      type(xdmf_status_t) :: writer_status
+      integer :: error
+
+      if (.not. this%publication%local_participates .or. this%nTime == 0 .or. &
+          this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
+          this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) return
+      call init_output_transport(transport, root_rank=0, status=error, &
+                                 communicator=this%publication%communicator)
+      if (error /= OUTPUT_TRANSPORT_SUCCESS) then
+         call StopOnError(0, 0, 'Unable to initialise movie output transport')
       end if
-       call clear_memory_data(this)
-    end subroutine flush_movie_probe_output
+
+      call write_bin_file(this, transport)
+      call write_to_external_xdmf(this, transport)
+      if (associated(this%writer)) then
+         call this%writer%flush(writer_status)
+         if (writer_status%is_error()) call StopOnError(0, 0, &
+            'Unable to flush movie HDF5 output: '//trim(writer_status%message()))
+      end if
+      call clear_memory_data(this)
+   end subroutine flush_movie_probe_output
 
    subroutine close_movie_probe_output(this)
       type(movie_probe_output_t), intent(inout) :: this
-       type(xdmf_status_t) :: writer_status
-       integer :: error
+      type(xdmf_status_t) :: writer_status
+      integer :: error
+      logical :: lifecycle_is_terminal
 
-      if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
-          this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) return
-       if (associated(this%writer)) then
-           call this%writer%close(writer_status)
-           if (writer_status%is_error()) then
-              call StopOnError(0, 0, 'Unable to close movie HDF5 output: '// &
-                 trim(writer_status%message()))
-           end if
-          deallocate(this%writer)
-       end if
-       call verify_volumetric_visualisation(this%filesPath, error)
-       if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. &
-            error == VISUALISATION_SUCCESS) then
-          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
-          this%metadata%lifecycle%diagnostic = ''
-        else
-           call StopOnError(0, 0, 'Required movie output artifacts are incomplete')
-        end if
-        call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
-        if (error /= OUTPUT_METADATA_SUCCESS) then
-           call StopOnError(0, 0, 'Unable to publish movie output metadata')
-        end if
+      lifecycle_is_terminal = this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
+                              this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED
+      if (this%publication%local_participates .and. .not. lifecycle_is_terminal) then
+         call flush_movie_probe_output(this)
+      end if
+      if (associated(this%writer)) then
+         call this%writer%close(writer_status)
+         if (writer_status%is_error()) then
+            call StopOnError(0, 0, 'Unable to close movie HDF5 output: '//trim(writer_status%message()))
+         end if
+         deallocate(this%writer)
+      end if
+#ifdef CompileWithMPI
+      if (this%publication%owns_communicator .and. this%publication%local_participates) then
+         call MPI_Comm_free(this%publication%communicator, error)
+         if (error /= MPI_SUCCESS) call StopOnError(0, 0, 'Unable to free movie output communicator')
+         this%publication%owns_communicator = .false.
+         this%publication%communicator = MPI_COMM_NULL
+      end if
+#endif
+
+      if (lifecycle_is_terminal) return
+      if (.not. this%publication%local_is_owner) then
+         this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
+         this%metadata%lifecycle%diagnostic = ''
+         return
+      end if
+
+      call verify_volumetric_visualisation(this%filesPath, error)
+      if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. &
+          file_exists(trim(this%filesPath)//'_geometry.xdmf') .and. &
+          file_exists(trim(this%filesPath)//'_geometry.h5') .and. &
+          error == VISUALISATION_SUCCESS) then
+         this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
+         this%metadata%lifecycle%diagnostic = ''
+      else
+         this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+         this%metadata%lifecycle%diagnostic = 'Required movie output artifacts are incomplete'
+      end if
+      call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
+      if (error /= OUTPUT_METADATA_SUCCESS) then
+         call StopOnError(0, 0, 'Unable to publish movie output metadata')
+      end if
+      if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) then
+         call StopOnError(0, 0, trim(this%metadata%lifecycle%diagnostic))
+      end if
    end subroutine close_movie_probe_output
 
    !===========================
    ! Private routines
    !===========================
 
-    subroutine write_bin_file(this)
-       ! Check type definition for binary format
-       type(movie_probe_output_t), intent(inout) :: this
-        integer :: i, status, t, record_index
-        real(real64), allocatable :: records(:)
-
-        allocate(records(7 * this%nPoints * this%nTime))
-        record_index = 0
-        do t = 1, this%nTime
-       do i = 1, this%nPoints
-          records(record_index + 1:record_index + 7) = [real(this%timeStep(t), real64), &
-             real(this%coords(1, i), real64), real(this%coords(2, i), real64), real(this%coords(3, i), real64), &
-             real(this%xValueForTime(t, i), real64), real(this%yValueForTime(t, i), real64), &
-             real(this%zValueForTime(t, i), real64)]
-          record_index = record_index + 7
-       end do
-       end do
-       call append_binary_real64(add_extension(this%filesPath, binaryExtension), this%metadata%artifacts(1), records, status)
-   end subroutine
-
-   subroutine write_to_external_xdmf(this)
+   subroutine write_bin_file(this, transport)
       type(movie_probe_output_t), intent(inout) :: this
+      type(output_transport_t), intent(in) :: transport
+      integer :: counts_status, i, record_index, status, time_index
+      integer, allocatable :: counts(:), displacements(:)
+      real(real64), allocatable :: gathered_records(:), local_records(:)
+
+      allocate(local_records(7 * this%nPoints))
+      do time_index = 1, this%nTime
+         record_index = 0
+         do i = 1, this%nPoints
+            local_records(record_index + 1:record_index + 7) = [real(this%timeStep(time_index), real64), &
+               real(this%coords(1, i), real64), real(this%coords(2, i), real64), &
+               real(this%coords(3, i), real64), real(this%xValueForTime(time_index, i), real64), &
+               real(this%yValueForTime(time_index, i), real64), &
+               real(this%zValueForTime(time_index, i), real64)]
+            record_index = record_index + 7
+         end do
+         call transfer_flush_batch(transport, local_records, gathered_records, counts, displacements, counts_status)
+         if (counts_status /= OUTPUT_TRANSPORT_SUCCESS) then
+            call StopOnError(0, 0, 'Unable to gather movie binary records')
+         end if
+         if (this%publication%local_is_owner) then
+            call append_binary_real64(add_extension(this%filesPath, binaryExtension), &
+                                      this%metadata%artifacts(1), gathered_records, status)
+            if (status /= BINARY_WRITER_SUCCESS) then
+               call StopOnError(0, 0, 'Unable to append movie binary records')
+            end if
+         end if
+      end do
+   end subroutine write_bin_file
+
+   subroutine write_to_external_xdmf(this, transport)
+      type(movie_probe_output_t), intent(inout) :: this
+      type(output_transport_t), intent(in) :: transport
 
       type(xdmf_status_t) :: status
       integer :: time_index
 
       do time_index = 1, this%nTime
-          call this%writer%begin_step(real(this%timeStep(time_index), real64), status)
-          if (status%is_error()) then
-             call StopOnError(0, 0, 'Movie HDF5 write failed: '//trim(status%message()))
-          end if
+         if (associated(this%writer)) then
+            call this%writer%begin_step(real(this%timeStep(time_index), real64), status)
+            if (status%is_error()) call StopOnError(0, 0, &
+               'Movie HDF5 write failed: '//trim(status%message()))
+         end if
          if (any([iCur, iMEC, iMHC, iCurX, iExC, iHxC] == this%component)) then
-            call write_external_attribute(this, this%xAttribute, &
-               this%xValueForTime, time_index, status)
+            call write_external_attribute(this, this%xAttribute, this%xValueForTime, &
+                                          time_index, transport)
          end if
-         if (.not. status%is_error() .and. &
-             any([iCur, iMEC, iMHC, iCurY, iEyC, iHyC] == this%component)) then
-            call write_external_attribute(this, this%yAttribute, &
-               this%yValueForTime, time_index, status)
+         if (any([iCur, iMEC, iMHC, iCurY, iEyC, iHyC] == this%component)) then
+            call write_external_attribute(this, this%yAttribute, this%yValueForTime, &
+                                          time_index, transport)
          end if
-          if (.not. status%is_error() .and. &
-              any([iCur, iMEC, iMHC, iCurZ, iEzC, iHzC] == this%component)) then
-            call write_external_attribute(this, this%zAttribute, &
-               this%zValueForTime, time_index, status)
-          end if
-          if (.not. status%is_error()) call write_external_tag_attribute(this, this%tagAttribute, status)
-          if (.not. status%is_error()) call this%writer%end_step(status)
-          if (status%is_error()) then
-             call StopOnError(0, 0, 'Movie HDF5 write failed: '//trim(status%message()))
-          end if
+         if (any([iCur, iMEC, iMHC, iCurZ, iEzC, iHzC] == this%component)) then
+            call write_external_attribute(this, this%zAttribute, this%zValueForTime, &
+                                          time_index, transport)
+         end if
+         call write_external_tag_attribute(this, this%tagAttribute, transport)
+         if (associated(this%writer)) then
+            call this%writer%end_step(status)
+            if (status%is_error()) call StopOnError(0, 0, &
+               'Movie HDF5 write failed: '//trim(status%message()))
+         end if
       end do
    end subroutine write_to_external_xdmf
 
-    subroutine write_external_attribute(this, attribute, values, time_index, status)
+   subroutine write_external_attribute(this, attribute, values, time_index, transport)
       type(movie_probe_output_t), intent(inout) :: this
       type(xdmf_attribute_id_t), intent(in) :: attribute
       real(RKIND), intent(in) :: values(:, :)
       integer, intent(in) :: time_index
-      type(xdmf_status_t), intent(out) :: status
+      type(output_transport_t), intent(in) :: transport
 
-      integer :: i, nx, ny, nz
-      real(real64), allocatable :: field(:, :, :)
+      integer :: i, local_index, nx, ny
+      real(real64), allocatable :: field(:)
 
-      nx = this%auxCoords%x - this%mainCoords%x + 1
-      ny = this%auxCoords%y - this%mainCoords%y + 1
-      nz = this%auxCoords%z - this%mainCoords%z + 1
-      allocate(field(nx, ny, nz))
+      nx = int(this%publication%local_shape(1))
+      ny = int(this%publication%local_shape(2))
+      allocate(field(int(product(this%publication%local_shape))))
       field = 0.0_real64
       do i = 1, this%nPoints
-         field(this%coords(1, i) - this%mainCoords%x + 1, &
-               this%coords(2, i) - this%mainCoords%y + 1, &
-               this%coords(3, i) - this%mainCoords%z + 1) = &
-            real(values(time_index, i), real64)
+         local_index = this%coords(1, i) - this%mainCoords%x + 1 + &
+            (this%coords(2, i) - this%mainCoords%y) * nx + &
+            (this%coords(3, i) - this%mainCoords%z) * nx * ny
+         field(local_index) = real(values(time_index, i), real64)
       end do
-      call this%writer%write_attribute(attribute, reshape(field, [size(field)]), status)
-       deallocate(field)
-    end subroutine write_external_attribute
+      call publish_dense_attribute(this, attribute, field, transport)
+   end subroutine write_external_attribute
 
-    subroutine write_external_tag_attribute(this, attribute, status)
-       type(movie_probe_output_t), intent(inout) :: this
-       type(xdmf_attribute_id_t), intent(in) :: attribute
-       type(xdmf_status_t), intent(out) :: status
+   subroutine write_external_tag_attribute(this, attribute, transport)
+      type(movie_probe_output_t), intent(inout) :: this
+      type(xdmf_attribute_id_t), intent(in) :: attribute
+      type(output_transport_t), intent(in) :: transport
 
-       integer :: i, nx, ny, nz
-       real(real64), allocatable :: tags(:, :, :)
+      integer :: i, local_index, nx, ny
+      real(real64), allocatable :: tags(:)
 
-       nx = this%auxCoords%x - this%mainCoords%x + 1
-       ny = this%auxCoords%y - this%mainCoords%y + 1
-       nz = this%auxCoords%z - this%mainCoords%z + 1
-       allocate(tags(nx, ny, nz))
-       tags = 0.0_real64
-       do i = 1, this%nPoints
-          tags(this%coords(1, i) - this%mainCoords%x + 1, &
-               this%coords(2, i) - this%mainCoords%y + 1, &
-               this%coords(3, i) - this%mainCoords%z + 1) = real(this%tagNumber(i), real64)
-       end do
-       call this%writer%write_attribute(attribute, reshape(tags, [size(tags)]), status)
-       deallocate(tags)
-    end subroutine write_external_tag_attribute
+      nx = int(this%publication%local_shape(1))
+      ny = int(this%publication%local_shape(2))
+      allocate(tags(int(product(this%publication%local_shape))))
+      tags = 0.0_real64
+      do i = 1, this%nPoints
+         local_index = this%coords(1, i) - this%mainCoords%x + 1 + &
+            (this%coords(2, i) - this%mainCoords%y) * nx + &
+            (this%coords(3, i) - this%mainCoords%z) * nx * ny
+         tags(local_index) = real(this%tagNumber(i), real64)
+      end do
+      call publish_dense_attribute(this, attribute, tags, transport)
+   end subroutine write_external_tag_attribute
+
+   subroutine publish_dense_attribute(this, attribute, local_values, transport)
+      type(movie_probe_output_t), intent(inout) :: this
+      type(xdmf_attribute_id_t), intent(in) :: attribute
+      real(real64), intent(in) :: local_values(:)
+      type(output_transport_t), intent(in) :: transport
+      type(xdmf_status_t) :: status
+      real(real64), allocatable :: global_values(:)
+      integer :: transport_status
+
+      select case (this%publication%mode)
+      case (OUTPUT_PUBLICATION_COLLECTIVE)
+         call this%writer%write_attribute_hyperslab(attribute, local_values, &
+            this%publication%file_offset, this%publication%local_shape, status)
+         if (status%is_error()) call StopOnError(0, 0, &
+            'Movie HDF5 hyperslab write failed: '//trim(status%message()))
+      case (OUTPUT_PUBLICATION_ROOT_AGGREGATION)
+         call gather_global_dense(this, local_values, transport, global_values, transport_status)
+         if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
+            call StopOnError(0, 0, 'Unable to aggregate movie HDF5 values')
+         end if
+         if (this%publication%local_is_owner) then
+            call this%writer%write_attribute(attribute, global_values, status)
+            if (status%is_error()) call StopOnError(0, 0, &
+               'Movie HDF5 write failed: '//trim(status%message()))
+         end if
+      case default
+         call StopOnError(0, 0, 'Unsupported movie output publication mode')
+      end select
+   end subroutine publish_dense_attribute
+
+   subroutine gather_global_dense(this, local_values, transport, global_values, status)
+      type(movie_probe_output_t), intent(in) :: this
+      real(real64), intent(in) :: local_values(:)
+      type(output_transport_t), intent(in) :: transport
+      real(real64), allocatable, intent(out) :: global_values(:)
+      integer, intent(out) :: status
+
+      integer, allocatable :: counts(:), displacements(:)
+      real(real64), allocatable :: gathered_values(:), local_batch(:)
+      integer(int64) :: global_shape(3), offset(3), shape(3)
+      integer :: global_index, i, j, k, local_index, rank_index, value_start
+
+      allocate(local_batch(6 + size(local_values)))
+      local_batch(1:3) = real(this%publication%file_offset, real64)
+      local_batch(4:6) = real(this%publication%local_shape, real64)
+      local_batch(7:) = local_values
+      call transfer_flush_batch(transport, local_batch, gathered_values, counts, displacements, status)
+      if (status /= OUTPUT_TRANSPORT_SUCCESS) return
+
+      if (transport%rank /= transport%root_rank) then
+         allocate(global_values(0))
+         return
+      end if
+
+      global_shape = [ &
+         int(this%publication%global_upper%x, int64) - int(this%publication%global_lower%x, int64) + 1_int64, &
+         int(this%publication%global_upper%y, int64) - int(this%publication%global_lower%y, int64) + 1_int64, &
+         int(this%publication%global_upper%z, int64) - int(this%publication%global_lower%z, int64) + 1_int64]
+      allocate(global_values(int(product(global_shape))))
+      global_values = 0.0_real64
+      do rank_index = 1, transport%rank_count
+         if (counts(rank_index) < 6) then
+            status = OUTPUT_TRANSPORT_INVALID_CONTEXT
+            return
+         end if
+         value_start = displacements(rank_index)
+         offset = nint(gathered_values(value_start + 1:value_start + 3), kind=int64)
+         shape = nint(gathered_values(value_start + 4:value_start + 6), kind=int64)
+         if (any(shape <= 0_int64) .or. any(offset < 0_int64) .or. &
+             any(offset + shape > global_shape) .or. &
+             int(counts(rank_index) - 6, int64) /= product(shape)) then
+            status = OUTPUT_TRANSPORT_INVALID_CONTEXT
+            return
+         end if
+         do k = 1, int(shape(3))
+         do j = 1, int(shape(2))
+         do i = 1, int(shape(1))
+            local_index = i + (j - 1) * int(shape(1)) + &
+               (k - 1) * int(shape(1) * shape(2))
+            global_index = int(offset(1)) + i + &
+               (int(offset(2)) + j - 1) * int(global_shape(1)) + &
+               (int(offset(3)) + k - 1) * int(global_shape(1) * global_shape(2))
+            global_values(global_index) = gathered_values(value_start + 6 + local_index)
+         end do
+         end do
+         end do
+      end do
+   end subroutine gather_global_dense
 
     subroutine store_tag_numbers(this, problemInfo)
        type(movie_probe_output_t), intent(inout) :: this
@@ -462,13 +637,13 @@ contains
        end select
     end function tag_field
 
-   function get_output_path(this, outputTypeExtension, field, mpidir) result(path)
-      type(movie_probe_output_t), intent(in) :: this
-      character(len=*), intent(in)           :: outputTypeExtension
-      integer(kind=SINGLE), intent(in)       :: field, mpidir
-      character(len=BUFSIZE)                 :: path, probeBoundsExtension, prefixFieldExtension
+   function get_output_path(global_lower, global_upper, outputTypeExtension, field, mpidir) result(path)
+      type(cell_coordinate_t), intent(in) :: global_lower, global_upper
+      character(len=*), intent(in) :: outputTypeExtension
+      integer(kind=SINGLE), intent(in) :: field, mpidir
+      character(len=BUFSIZE) :: path, probeBoundsExtension, prefixFieldExtension
 
-      probeBoundsExtension = get_coordinates_extension(this%mainCoords, this%auxCoords, mpidir)
+      probeBoundsExtension = get_coordinates_extension(global_lower, global_upper, mpidir)
       prefixFieldExtension = get_prefix_extension(field, mpidir)
       path = trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
    end function get_output_path

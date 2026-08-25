@@ -8,12 +8,11 @@ module lineProbeOutput_m
    use directoryUtils_m, only: create_file_with_path
     use outputBinary_m, only: append_binary_real64, BINARY_WRITER_SUCCESS
     use, intrinsic :: iso_fortran_env, only: real64
-   use outputTransport_m, only: output_transport_t, reduce_scalar_batch, OUTPUT_TRANSPORT_SUCCESS
    implicit none
    private
 
    public :: calculate_line_integral, init_line_probe_output, update_line_probe_output, &
-              flush_line_probe_output, complete_line_probe_sample, reduce_line_probe_sample, line_segment_is_local
+               flush_line_probe_output, complete_line_probe_sample, line_segment_is_local
 
 contains
 
@@ -137,17 +136,6 @@ contains
       this%timeStep = 0.0_RKIND_tiempo
       this%valueForTime = 0.0_RKIND
    end subroutine complete_line_probe_sample
-
-   subroutine reduce_line_probe_sample(transport, local_value, canonical_value, status)
-      type(output_transport_t), intent(in) :: transport
-      real(kind=RKIND), intent(in) :: local_value
-      real(kind=RKIND), intent(out) :: canonical_value
-      integer, intent(out) :: status
-      real(kind=RKIND), allocatable :: reduced(:)
-
-      call reduce_scalar_batch(transport, [local_value], reduced, status)
-      if (status == OUTPUT_TRANSPORT_SUCCESS) canonical_value = reduced(1)
-   end subroutine reduce_line_probe_sample
 
    subroutine flush_line_probe_output(this)
       type(line_probe_output_t), intent(inout) :: this
