@@ -16,7 +16,6 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 endif()
 if (SEMBA_FDTD_ENABLE_SMBJSON)
     add_subdirectory(utils)
-    set(UTILS_TEST, test_utils_fortran)
     add_subdirectory(smbjson)
     set(SMBJSON_TESTS_LIBRARY smbjson_tests)
     add_subdirectory(unit/rotate)
@@ -46,7 +45,6 @@ target_link_libraries(fdtd_tests
     ${CONFORMAL_TESTS_LIBRARY}
     ${PREPROCESS_TESTS_LIBRARY}
     ${ROTATE_TESTS_LIBRARY}
-    ${HDF_TESTS_LIBRARY}
     ${OUTPUT_TESTS_LIBRARY}
     ${VTK_API_TESTS_LIBRARY}
     ${SYSTEM_TESTS_LIBRARY}

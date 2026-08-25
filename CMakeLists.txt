@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.15)
 
-project(semba-fdtd Fortran C)
+project(semba-fdtd LANGUAGES Fortran C)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -26,7 +26,7 @@ if(SEMBA_FDTD_ENABLE_TEST OR XDMF_HDF5_BUILD_TESTING)
 	enable_testing()
 endif()
 
-option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag (not supported in github actions)" OFF) 
+option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag (not supported in github actions)" OFF)
 option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables the interprocedural optimization" OFF)
 
 if(SEMBA_FDTD_ENABLE_MPI)
@@ -42,11 +42,11 @@ else()
 	add_definitions(-DCompileWithDebug)
 endif()
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-add_compile_definitions(__WIN32__)
+	add_compile_definitions(__WIN32__)
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-add_compile_definitions(__APPLE__)
+	add_compile_definitions(__APPLE__)
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-add_compile_definitions(__linux__)
+	add_compile_definitions(__linux__)
 endif()
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
@@ -71,7 +71,6 @@ endif()
 if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 	add_definitions(-DIFXCompiler)
 endif()
-
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/solver_configuration_summary.cmake")
@@ -98,10 +97,10 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		message(STATUS "Using IntelLLVM (ifx) flags")
-		
+
 		set(CMAKE_CXX_FLAGS "-qopenmp")
 		set(CMAKE_Fortran_FLAGS "-qopenmp -fpp")
-		
+
 		if (CMAKE_BUILD_TYPE STREQUAL "Release")
 			set(CMAKE_C_FLAGS_RELEASE "-O3")
 			set(CMAKE_CXX_FLAGS_RELEASE "-O3")
@@ -193,8 +192,7 @@ add_library(semba-reports
 	"src_main_pub/errorreport.F90"
 	"src_main_pub/snapxdmf.F90"
 )
-target_link_libraries(semba-reports semba-types)
-target_link_libraries(semba-reports XDMF::HDF5)
+target_link_libraries(semba-reports semba-types XDMF::HDF5)
 
 add_subdirectory(src_utils)
 

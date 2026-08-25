@@ -102,7 +102,7 @@ module Solver_m
       logical :: mtlnObservationInitialized = .false.
 #endif
 
-      ! semba variables 
+      ! semba variables
       type(SGGFDTDINFO_t) :: sgg
       type(media_matrices_t) :: media
       type(taglist_t) :: tag_numbers
@@ -1148,8 +1148,8 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
-            call InitWires_mtln(this%sgg,Ex,Ey,Ez,& 
-                                this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,& 
+            call InitWires_mtln(this%sgg,Ex,Ey,Ez,&
+                                this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,&
                                 this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,&
                                 this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles, dtcritico)
 #else
@@ -1227,7 +1227,7 @@ contains
             l_auxoutput=l_auxinput
             !check for MUR1 nodes sgg 230124
             call init_murABC_slanted(this%sgg,this%sinPML_fullsize,this%eps0,this%mu0)
-            !!!!!!         
+            !!!!!!
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
@@ -1239,10 +1239,8 @@ contains
                write(dubuf,*) '----> no Slanted wires found';  call print11(this%control%layoutnumber,dubuf)
             end if
          end if
-#endif 
 #endif
-
-
+#endif
 #ifdef CompileWithMPI
          !!!sincroniza el dtcritico
          newdtcritico = 0.0_RKIND_tiempo
@@ -1749,15 +1747,15 @@ contains
 
       this%still_planewave_time=.true. !inicializacion de la variable 
       flushFF = .false.
-      pscale_alpha=1.0 !se le entra con 1.0 
+      pscale_alpha=1.0 !se le entra con 1.0
 
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez
       Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
-      
-      Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze 
+
+      Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze
       Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh
-      
-      dxe => this%dxe; dye => this%dye; dze => this%dze 
+
+      dxe => this%dxe; dye => this%dye; dze => this%dze
       dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 
       fieldReference%E%x => this%Ex
@@ -1908,7 +1906,7 @@ contains
          call printMessageWithSeparator(this%control%layoutnumber, dubuf)
 
       end subroutine performFlushField
-      
+
       subroutine updateAndFlush()
          integer(kind=4) :: mindum
          if (this%thereAre%Observation) then

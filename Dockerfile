@@ -148,7 +148,7 @@ RUN set -eux; \
         useradd --uid ${USER_UID} --gid ${USER_GID} -m -s /bin/bash ${USERNAME}; \
     fi; \
     mkdir -p /home/${USERNAME}/workspaces/fdtd;
-    
+
 COPY requirements.txt /tmp/requirements.txt
 RUN python3 -m venv /home/${USERNAME}/workspaces/fdtd/.venv \
     && /home/${USERNAME}/workspaces/fdtd/.venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt \
