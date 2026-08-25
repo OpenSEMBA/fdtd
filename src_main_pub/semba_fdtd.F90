@@ -22,8 +22,7 @@ module SEMBA_FDTD_m
 
    use Preprocess_m
     use storeData_m
-    use xdmf_h5_m
-    use output_m, only: delete_run_output_manifest
+     use output_m, only: delete_run_output_manifest
    !
 #ifdef CompileWithMPI
    use MPIcomm_m
@@ -79,15 +78,11 @@ contains
       
       logical :: dummylog,l_auxinput, l_auxoutput, ThereArethinslots
       logical :: hayinput
-      logical :: lexis
-
       character(len=BUFSIZE) :: f= ' ', chain = ' ', chain3 = ' ',chain4 = ' ', chaindummy= ' '
       character(len=BUFSIZE_LONG) :: slices = ' '
       character(len=BUFSIZE) :: dubuf
       character(len=BUFSIZE) :: buff
-      character(len=BUFSIZE) :: filename_h5bin ! File name
-
-      integer(kind=4) :: myunit,jmed
+      integer(kind=4) :: jmed
       integer(kind=4) :: finaltimestepantesdecorregir,NEWfinaltimestep,thefileno
       integer(kind=4) :: statuse
       integer(kind=4) :: status, i, field
@@ -344,29 +339,6 @@ contains
       STOP
    end if
 #endif
-
-   !!!!tunel a lo bestia para crear el .h5 a 021219
-      if (this%l%createh5filefromsinglebin) then
-      if (this%l%layoutnumber==0) then
-         inquire(file=trim(adjustl(this%sgg%nEntradaRoot))//'_h5bin.txt',exist=lexis)
-         if (.not.lexis) goto 9083
-         open(newunit=myunit,file=trim(adjustl(this%sgg%nEntradaRoot))//'_h5bin.txt',form='formatted',err=9083) !lista de todos los .h5bin
-         do 
-            read (myunit,'(a)',end=84552) filename_h5bin
-            call createh5filefromsinglebin(filename_h5bin,this%l%vtkindex) 
-            print *, 'Processed '//trim(adjustl(filename_h5bin))
-         end do
-   84552  close(myunit)
-         print *, 'END: SUCCESS creating '//trim(adjustl(this%sgg%nEntradaRoot))//'_h5bin.txt'
-         stop
-   9083   call stoponerror (0, this%l%num_procs, 'Invalid _h5bin.txt file',.true.); statuse=-1; !return
-      end if
-#ifdef CompileWithMPI
-         !wait until everything comes out
-         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#endif
-         stop
-      end if
 
       if (status /= 0) then
          call print11(this%l%layoutnumber,'Remove running and pause files. If error persists check switches for error.  '//this%l%chain2,.true.)
@@ -1176,9 +1148,6 @@ contains
    subroutine semba_end(this)
       class(semba_fdtd_t) :: this
       character(len=BUFSIZE) :: dubuf
-      logical :: existe  
-      character(len=BUFSIZE) :: filenombre= ' '
-
       if (this%l%layoutnumber == 0) then
          if (this%l%run) then
             open(38, file='running')
@@ -1207,28 +1176,6 @@ contains
           write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
           call print11 (this%l%layoutnumber, dubuf)
           call delete_run_output_manifest(this%l%nEntradaRoot, this%l%layoutnumber)
-          ! Legacy observation dispatch still owns its per-rank register until T19.
-          inquire(file=trim(adjustl(this%l%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(this%whoamishort))//'.txt', EXIST=existe)
-         if (existe) then
-            open(19, file=trim(adjustl(this%l%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(this%whoamishort))//'.txt')
-            buscafile: DO
-               READ (19, '(a)', end=76) filenombre
-               if (trim(adjustl(filenombre)) == '!END') then
-                  EXIT buscafile
-               ELSE
-                  open(34, file=trim(adjustl(filenombre)))
-                  write(34,*) '!END'
-                  CLOSE (34, STATUS='delete')
-               end if
-            end do buscafile
-   76       continue
-            CLOSE (19, STATUS='delete')
-            if (this%l%layoutnumber == 0) then
-               open(33, file=trim(adjustl(this%l%nEntradaRoot))//'_Outputlists.dat')
-               write(33,*) '!END'
-               CLOSE (33, STATUS='delete')
-            end if
-         end if
       end if
       !
 #ifdef CompileWithMPI

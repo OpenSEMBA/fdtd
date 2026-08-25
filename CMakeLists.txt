@@ -265,12 +265,9 @@ endif()
 if(SEMBA_FDTD_OUTPUTS_LIB)
 	add_library(semba-outputs
 		"src_main_pub/mpicomm.F90"
-		# Retained for the standalone -createh5filefromsinglebin utility.
-		"src_main_pub/xdmf_h5.F90"
 	)
 	target_link_libraries(semba-outputs
 		semba-components
-		XDMF::HDF5
 		${MPI_Fortran_LIBRARIES})
 endif()
 

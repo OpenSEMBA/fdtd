@@ -84,7 +84,6 @@ module interpreta_switches_m
          experimentalVideal, &
          simu_devia, &
          noconformalmapvtk, &
-         createh5filefromsinglebin, &
          creditosyaprinteados, &
          read_command_line
 
@@ -1819,7 +1818,6 @@ contains
       l%simu_devia = .false.
 
       l%createh5bin = .false.
-      l%createh5filefromsinglebin = .false.
       l%permitscaling = .false.
       l%niapapostprocess = .false.
       l%prioritizeCOMPOoverPEC = .false.  !pec has default more priority than compo (para siva hay que cambiarlo)

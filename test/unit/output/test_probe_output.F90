@@ -156,7 +156,6 @@ integer function test_root_output_manifest() bind(c) result(err)
    has_probe = .false.
    path = join_path(get_temp_folder(), 'rootManifest')
    probe_path = trim(path)//'_pointProbe_Ex_4_4_4'
-   call delete_file(trim(path)//'_Outputrequests_1.txt', ios)
    call sgg_init(sgg)
    call init_time_array(time_array, 2_SINGLE, 0.1_RKIND_tiempo)
    call sgg_set_tiempo(sgg, time_array)
@@ -172,8 +171,6 @@ integer function test_root_output_manifest() bind(c) result(err)
 
    err = err + assert_true(.not. file_exists(trim(path)//'_output_manifest.json'), &
                            'Root output manifest was published before probe finalisation')
-   err = err + assert_true(.not. file_exists(trim(path)//'_Outputrequests_1.txt'), &
-                           'New output path created a per-rank register')
    call close_outputs()
    err = err + assert_true(file_exists(trim(path)//'_output_manifest.json'), &
                            'Root output manifest does not exist after finalisation')
@@ -691,7 +688,6 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
     err = err + assert_true(outputs(1)%movieProbe%publication%local_participates, &
                             'Serial movie output was excluded from publication')
    call remove_folder(trim(path)//'_movieProbe_BC_2_2_2__5_5_5', ios)
-   call delete_file(trim(path)//'_Outputrequests_1.txt', ios)
    call delete_file(trim(path)//'_output_manifest.json', ios)
 end function
 
