@@ -4,19 +4,20 @@
     {
       "label": "CMake: configure Release no-MPI",
       "type": "shell",
-      "command": "cmake --preset rls",
+      "command": "cmake --fresh --preset rls",
       "problemMatcher": []
     },
     {
       "label": "CMake: build Release no-MPI",
       "type": "shell",
       "command": "cmake --build --preset rls",
+      "dependsOn": ["CMake: configure Release no-MPI"],
       "problemMatcher": []
     },
     {
       "label": "CMake: configure Debug no-MPI",
       "type": "shell",
-      "command": "cmake --preset dbg",
+      "command": "cmake --fresh --preset dbg",
       "problemMatcher": []
     },
     {
@@ -27,13 +28,13 @@
       "problemMatcher": []
     },
     {
-      "label": "CMake: configure Debug GNU strict no-MTLN",
+      "label": "CMake: configure Debug MPI",
       "type": "shell",
-      "command": "cmake --preset dbg-gnu-strict",
+      "command": "cmake --fresh --preset dbg-mpi",
       "problemMatcher": []
     },
     {
-      "label": "CMake: build Debug GNU strict no-MTLN",
+      "label": "CMake: build Debug MPI",
       "type": "shell",
       "command": "cmake --build --preset dbg-mpi",
       "dependsOn": ["CMake: configure Debug MPI"],
@@ -88,13 +89,14 @@
     {
       "label": "CMake: configure Release MPI",
       "type": "shell",
-      "command": "cmake --preset rls-mpi",
+      "command": "cmake --fresh --preset rls-mpi",
       "problemMatcher": []
     },
     {
       "label": "CMake: build Release MPI",
       "type": "shell",
       "command": "cmake --build --preset rls-mpi",
+      "dependsOn": ["CMake: configure Release MPI"],
       "problemMatcher": []
     },
     {
