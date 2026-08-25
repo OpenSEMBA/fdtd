@@ -212,8 +212,7 @@
       "env": {
         "SEMBA_EXE": "${workspaceFolder}/${config:semba-fdtd.debug.buildFolderName}/bin/semba-fdtd",
         "SEMBA_FDTD_ENABLE_MPI": "OFF",
-        "SEMBA_FDTD_ENABLE_MTLN": "ON",
-        "SEMBA_FDTD_ENABLE_HDF": "ON"
+        "SEMBA_FDTD_ENABLE_MTLN": "ON"
       }
     },
     {
@@ -228,8 +227,7 @@
       "env": {
         "SEMBA_EXE": "${workspaceFolder}/${config:semba-fdtd.debug.buildFolderName}/bin/semba-fdtd",
         "SEMBA_FDTD_ENABLE_MPI": "ON",
-        "SEMBA_FDTD_ENABLE_MTLN": "ON",
-        "SEMBA_FDTD_ENABLE_HDF": "ON"
+        "SEMBA_FDTD_ENABLE_MTLN": "ON"
       }
     },
     {

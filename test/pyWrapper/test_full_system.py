@@ -475,7 +475,6 @@ def test_towel_rack_with_and_without_shorting_plane(tmp_path):
     )
 
 
-@no_hdf_skip
 @pytest.mark.hdf
 @pytest.mark.farfield
 @pytest.mark.movie
@@ -506,7 +505,6 @@ def test_sphere(tmp_path):
     assert p.type == "movie"
 
 
-@no_hdf_skip
 @pytest.mark.hdf
 @pytest.mark.planewave
 @pytest.mark.movie
@@ -625,7 +623,6 @@ def test_movie_in_planewave_in_box(tmp_path):
                 )
 
 
-@no_hdf_skip
 @pytest.mark.hdf
 def test_frequency_slice_in_planewave_in_box(tmp_path):
     """Verify frequency-slice HDF and XDMF metadata and field data."""
@@ -710,7 +707,6 @@ def test_frequency_slice_in_planewave_in_box(tmp_path):
         assert np.max(np.abs(f["attributes/a0001/values"][()])) > 0.0
 
 
-@no_hdf_skip
 @pytest.mark.hdf
 def test_central_dipole_frequency_slice(tmp_path):
     """Verify dipole frequency slices exhibit the expected equatorial field."""

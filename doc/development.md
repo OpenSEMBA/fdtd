@@ -91,12 +91,11 @@ cmake --install build-hdf5-parallel --prefix ~/hdf5-parallel
 ```
 
 MPI builds automatically prefer parallel HDF5 when it is available.
-Select the parallel HDF5 installation while enabling the normal MPI option:
+Select the parallel HDF5 installation while enabling MPI:
 
 ```shell
 cmake -S . -B build-parallel \
   -DSEMBA_FDTD_ENABLE_MPI=ON \
-  -DSEMBA_FDTD_ENABLE_HDF=ON \
   -DHDF5_ROOT=~/hdf5-parallel
 ```
 
@@ -653,4 +652,3 @@ See the [MIEngine troubleshooting guide][miengine-troubleshooting]
 for more information.
 
 [miengine-troubleshooting]: https://github.com/Microsoft/MIEngine/wiki/Troubleshoot-attaching-to-processes-using-GDB
-

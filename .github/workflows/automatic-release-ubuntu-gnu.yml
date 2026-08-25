@@ -12,7 +12,6 @@ jobs:
       matrix:
         build-type: ["Release"]
         mtln: ["ON"]
-        hdf: ["ON"]
         include:
           - mpi: "OFF"
             suffix: ""
@@ -37,7 +36,6 @@ jobs:
         cmake -S . -B build \
           -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
           -DSEMBA_FDTD_ENABLE_MPI=${{ matrix.mpi }} \
-          -DSEMBA_FDTD_ENABLE_HDF=${{ matrix.hdf }} \
           -DSEMBA_FDTD_ENABLE_MTLN=${{ matrix.mtln }}
         cmake --build build -j
 

@@ -36,8 +36,8 @@ Before being merged PRs must:
 
 ## Development environment
 
-The project uses CMake and Fortran (with optional MPI, HDF5 and MTLN
-support). For details about compilation, pre‑compiled libraries and
+The project uses CMake and Fortran, requires HDF5, and supports optional MPI
+and MTLN. For details about compilation, pre‑compiled libraries and
 platform‑specific notes, refer to:
 
 - `doc/development.md`

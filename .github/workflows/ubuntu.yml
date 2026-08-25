@@ -25,7 +25,6 @@ jobs:
         build-type: ["Release"]
         mpi: ["ON", "OFF"]
         mtln: ["ON", "OFF"]
-        hdf: ["ON"]
         double-precision: ["ON", "OFF"]
 
         #include:
@@ -35,13 +34,12 @@ jobs:
           #   build-type: "Release"
           #   mpi: "OFF"
           #   mtln: "OFF"
-          #   hdf: "OFF"
           #   double-precision: "OFF"
             
       fail-fast: false
             
     runs-on: ${{ matrix.os }}
-    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})-double(${{matrix.double-precision}})
+    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-double(${{matrix.double-precision}})
 
     steps:       
     - name: Checkout
@@ -85,7 +83,6 @@ jobs:
         cmake -S . -B build -G Ninja\
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
           -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
-          -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
           -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}} \
           -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=${{matrix.double-precision}}
         cmake --build build -j
@@ -106,7 +103,6 @@ jobs:
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
-        SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: python -m pytest -vv test/ --durations=20 --junitxml=build/pytest-results.xml
 
     - name: Run native tests
@@ -151,7 +147,6 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_Fortran_COMPILER=gfortran-11 \
           -DSEMBA_FDTD_ENABLE_MPI=ON \
-          -DSEMBA_FDTD_ENABLE_HDF=ON \
           -DSEMBA_FDTD_ENABLE_MTLN=OFF \
           -DSEMBA_FDTD_ENABLE_TEST=OFF \
           -DXDMF_HDF5_BUILD_TESTING=ON \

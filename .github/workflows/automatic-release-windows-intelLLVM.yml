@@ -14,7 +14,6 @@ jobs:
         build-type: ["Release"]
         mpi: ["OFF"]
         mtln: ["ON"]
-        hdf: ["ON"]
 
     steps:
 
@@ -59,7 +58,6 @@ jobs:
         cmake -S . -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
           -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
-          -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
           -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}} \
           -DHDF5_DIR="$PWD/precompiled_libraries/windows-intel/hdf5/cmake" \
           -DHDF5_USE_STATIC_LIBRARIES=ON
@@ -74,15 +72,12 @@ jobs:
         python -m pip install -r requirements.txt
 
     - name: Run HDF movie smoke test
-      env:
-        SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: python -m pytest test/pyWrapper/test_full_system.py::test_movie_in_planewave_in_box --basetemp=build/hdf-smoke
 
     - name: Run all wrapper tests (except codemodel)
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
-        SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: python -m pytest -m 'not codemodel' test/ --basetemp=build/pytest-tmp
 
     - name: Upload failed HDF output diagnostics

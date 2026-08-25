@@ -60,11 +60,6 @@ no_mtln_skip = pytest.mark.skipif(
     reason="MTLN is not available",
 )
 
-no_hdf_skip = pytest.mark.skipif(
-    not build_feature_enabled("SEMBA_FDTD_ENABLE_HDF"),
-    reason="HDF5 is not available",
-)
-
 no_mpi_skip = pytest.mark.skipif(
     not build_feature_enabled("SEMBA_FDTD_ENABLE_MPI"),
     reason="MPI is not available",

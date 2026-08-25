@@ -16,9 +16,7 @@ module mapVTKOutput_m
     use Wire_bundles_mtln_m, only: GetSolverPtr
     use mtln_solver_m, only: mtln_solver_t => mtln_t
 #endif
-#ifdef CompileWithHDF
     use hdf5
-#endif
 
     implicit none
     public :: write_geometry_companion
@@ -312,9 +310,7 @@ contains
            call build_cell_properties(this, problemInfo, numEdges, numQuads, cell_tags, cell_media_types)
            call ugrid%add_cell_scalar('tagnumber', cell_tags)
            call ugrid%add_cell_scalar('mediatype', cell_media_types)
-#ifdef CompileWithHDF
            call write_geometry_xdmf_hdf5(vtuPath, cell_tags, cell_media_types)
-#endif
         end if
 
       call ugrid%write_file(vtuPath)
@@ -553,7 +549,6 @@ contains
        end function magnetic_field
     end subroutine build_cell_properties
 
-#ifdef CompileWithHDF
     subroutine write_geometry_xdmf_hdf5(vtu_path, tags, media_types)
        character(len=*), intent(in) :: vtu_path
        real, intent(in) :: tags(:), media_types(:)
@@ -590,7 +585,6 @@ contains
        write(unit, '(A)') '</Grid></Domain></Xdmf>'
        close(unit)
     end subroutine write_geometry_xdmf_hdf5
-#endif
 
    logical function isEdge(campo, iii, jjj, kkk, problemInfo)
       integer(4), intent(in) :: campo, iii, jjj, kkk

@@ -1,5 +1,4 @@
 module snapxdmf_m
-#ifdef CompileWithHDF
    use, intrinsic :: iso_fortran_env, only: int64, real64
    use FDETYPES_m
    use xdmf_hdf5_m, only: xdmf_writer_t, xdmf_options_t, xdmf_status_t, &
@@ -63,5 +62,4 @@ contains
          if (result%is_error()) error stop result%message()
       end subroutine check_status
    end subroutine write_xdmfsnap
-#endif
 end module snapxdmf_m

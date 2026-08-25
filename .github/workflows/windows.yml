@@ -24,13 +24,12 @@ jobs:
         build-type: ["Release"]
         mpi: ["OFF"]
         mtln: ["ON", "OFF"]
-        hdf: ["ON"]
         double-precision: ["ON", "OFF"]
 
       fail-fast: false
     runs-on: ${{matrix.os}}
 
-    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})-double(${{matrix.double-precision}})
+    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-double(${{matrix.double-precision}})
 
     steps:
     - name: Checkout
@@ -78,7 +77,6 @@ jobs:
         cmake -S . -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
           -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
-          -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
           -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}} \
           -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=${{matrix.double-precision}} \
           -DHDF5_DIR="$PWD/precompiled_libraries/windows-intel/hdf5/cmake" \
@@ -93,8 +91,6 @@ jobs:
     - name: Run HDF movie smoke test
       id: hdf-smoke
       continue-on-error: true
-      env:
-        SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: python -m pytest test/pyWrapper/test_full_system.py::test_movie_in_planewave_in_box --basetemp=build/hdf-smoke
 
     - name: Run python tests (except codemodel)
@@ -103,7 +99,6 @@ jobs:
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
-        SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: python -m pytest -m 'not codemodel' test/ --durations=20 --junitxml=build/pytest-results.xml --basetemp=build/pytest-tmp
 
     - name: Run native tests

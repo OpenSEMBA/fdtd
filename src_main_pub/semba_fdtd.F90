@@ -345,7 +345,6 @@ contains
    end if
 #endif
 
-#ifdef CompileWithHDF
    !!!!tunel a lo bestia para crear el .h5 a 021219
       if (this%l%createh5filefromsinglebin) then
       if (this%l%layoutnumber==0) then
@@ -368,7 +367,6 @@ contains
 #endif
          stop
       end if
-#endif
 
       if (status /= 0) then
          call print11(this%l%layoutnumber,'Remove running and pause files. If error persists check switches for error.  '//this%l%chain2,.true.)

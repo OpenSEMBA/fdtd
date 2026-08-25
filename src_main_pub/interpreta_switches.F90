@@ -1313,9 +1313,7 @@ contains
 #ifdef CompileWithMPI
       call print11(l%layoutnumber, 'Compiled WITH MPI support')
 #endif
-#ifdef CompileWithHDF
       call print11(l%layoutnumber, 'Compiled WITH .h5 HDF support')
-#endif
 #ifdef CompileWithMTLN
       call print11(l%layoutnumber, 'Compiled WITH MTLN support')
 #endif
@@ -1539,9 +1537,7 @@ contains
 #endif
       call print11(l%layoutnumber, 'SUPPORTED:   Loaded and grounded thin-wires with juntions')
       call print11(l%layoutnumber, 'SUPPORTED:   Nodal hard/soft electric and magnetic sources')
-#ifdef CompileWithHDF
       call print11(l%layoutnumber, 'SUPPORTED:   .xdmf+.h5 probes ')
-#endif
 #ifdef CompileWithOldSaving
       call print11(l%layoutnumber, 'SUPPORTED:   .fields.old files created (fail-safe)')
 #endif
@@ -1822,11 +1818,7 @@ contains
       l%chosenyesornostochastic = .false. !es un flag informativo que debe inicializarse a .false. a pesar de qu el sentido comun diga lo contrario
       l%simu_devia = .false.
 
-#ifdef CompileWithHDF
       l%createh5bin = .false.
-#else
-      l%createh5bin = .true.
-#endif
       l%createh5filefromsinglebin = .false.
       l%permitscaling = .false.
       l%niapapostprocess = .false.
@@ -1956,4 +1948,3 @@ contains
    end subroutine default_flags
 
 end module interpreta_switches_m
-

@@ -11,7 +11,6 @@ message(STATUS "Compiler Id is: ${CMAKE_Fortran_COMPILER_ID}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 option(SEMBA_FDTD_ENABLE_MPI "Use MPI" OFF)
-option(SEMBA_FDTD_ENABLE_HDF "Use HDF" ON)
 option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
 option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
@@ -36,13 +35,11 @@ option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
 option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
 option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
 
-if(SEMBA_FDTD_ENABLE_MPI AND SEMBA_FDTD_ENABLE_HDF)
+if(SEMBA_FDTD_ENABLE_MPI)
 	set(HDF5_PREFER_PARALLEL TRUE)
 endif()
 
-if(SEMBA_FDTD_ENABLE_HDF)
-	set(XDMF_HDF5_ENABLE_MPI "${SEMBA_FDTD_ENABLE_MPI}")
-endif()
+set(XDMF_HDF5_ENABLE_MPI "${SEMBA_FDTD_ENABLE_MPI}")
 
 # Compilation defines.
 if(CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "release" )
@@ -207,9 +204,7 @@ add_library(semba-reports
 	"src_main_pub/snapxdmf.F90"
 )
 target_link_libraries(semba-reports semba-types)
-if(SEMBA_FDTD_ENABLE_HDF)
-  target_link_libraries(semba-reports XDMF::HDF5)
-endif()
+target_link_libraries(semba-reports XDMF::HDF5)
 
 add_subdirectory(src_utils)
 

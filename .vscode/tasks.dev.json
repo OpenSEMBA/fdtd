@@ -107,14 +107,14 @@
     {
       "label": "Test: pytest Release no-MPI",
       "type": "shell",
-      "command": "SEMBA_FDTD_ENABLE_MPI=OFF SEMBA_FDTD_ENABLE_MTLN=ON SEMBA_FDTD_ENABLE_HDF=ON SEMBA_EXE=build-rls/bin/semba-fdtd .venv/bin/python -m pytest test/ -m 'not mpi' --durations=20",
+      "command": "SEMBA_FDTD_ENABLE_MPI=OFF SEMBA_FDTD_ENABLE_MTLN=ON SEMBA_EXE=build-rls/bin/semba-fdtd .venv/bin/python -m pytest test/ -m 'not mpi' --durations=20",
       "dependsOn": ["CMake: build Release no-MPI"],
       "problemMatcher": []
     },
     {
       "label": "Test: pytest Release MPI",
       "type": "shell",
-      "command": "SEMBA_FDTD_ENABLE_MPI=ON SEMBA_FDTD_ENABLE_MTLN=ON SEMBA_FDTD_ENABLE_HDF=ON SEMBA_EXE=build-rls-mpi/bin/semba-fdtd .venv/bin/python -m pytest test/ -m mpi --durations=20",
+      "command": "SEMBA_FDTD_ENABLE_MPI=ON SEMBA_FDTD_ENABLE_MTLN=ON SEMBA_EXE=build-rls-mpi/bin/semba-fdtd .venv/bin/python -m pytest test/ -m mpi --durations=20",
       "dependsOn": ["CMake: build Release MPI"],
       "problemMatcher": []
     },

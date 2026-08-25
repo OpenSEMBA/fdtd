@@ -1,5 +1,4 @@
 module xdmf_h5_m
-#ifdef CompileWithHDF
    use, intrinsic :: iso_fortran_env, only: int64, real64
    use FDETYPES_m
    use xdmf_hdf5_m, only: xdmf_writer_t, xdmf_options_t, xdmf_status_t, &
@@ -200,5 +199,4 @@ contains
          stop 1
       end if
    end subroutine check_status
-#endif
 end module xdmf_h5_m

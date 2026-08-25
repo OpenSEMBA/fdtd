@@ -636,7 +636,6 @@ def test_1_volume(tmp_path):
     assert len(line_media_dict) == 0
 
 
-@no_hdf_skip
 def test_1_volume_map_publishes_geometry_in_xdmf_hdf5(tmp_path):
     import h5py
 

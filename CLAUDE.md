@@ -21,7 +21,6 @@ cmake --build --preset rls -j
 
 **Key CMake options:**
 - `-DSEMBA_FDTD_ENABLE_MPI=ON` — distributed cluster support
-- `-DSEMBA_FDTD_ENABLE_HDF=ON` — HDF5 output (ON by default)
 - `-DSEMBA_FDTD_ENABLE_MTLN=ON` — transmission line solver (ON by default)
 - `-DSEMBA_FDTD_ENABLE_SMBJSON=ON` — JSON input parser (ON by default)
 - `-DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=ON` — 8-byte reals (OFF by default)
