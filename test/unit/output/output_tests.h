@@ -29,6 +29,7 @@ extern "C" int test_output_binary_fragment_layout();
 extern "C" int test_output_binary_native_precision();
 extern "C" int test_output_binary_mixed_complex_layout();
 extern "C" int test_output_binary_append_real64();
+extern "C" int test_output_binary_append_empty_real64();
 
 // Probe lifecycle behaviour.
 extern "C" int test_init_point_probe();
@@ -103,6 +104,8 @@ TEST(output, test_binary_native_precision) { EXPECT_EQ(0, test_output_binary_nat
 TEST(output, test_binary_mixed_complex_layout) { EXPECT_EQ(0, test_output_binary_mixed_complex_layout()); }
 // Appends complete double-precision records without replacing prior samples.
 TEST(output, test_binary_append_real64) { EXPECT_EQ(0, test_output_binary_append_real64()); }
+// Treats an empty double-precision batch as a successful no-op append.
+TEST(output, test_binary_append_empty_real64) { EXPECT_EQ(0, test_output_binary_append_empty_real64()); }
 // Registers a point probe and its declared output paths.
 TEST(output, test_initialize_point_probe) { EXPECT_EQ(0, test_init_point_probe()); }
 // Declares the incident field alongside point-probe time samples.

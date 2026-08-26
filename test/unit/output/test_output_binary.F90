@@ -110,3 +110,36 @@ integer function test_output_binary_append_real64() bind(c) result(err)
                             'Real64 appends did not retain two complete records')
    call delete_file(path, ios)
 end function test_output_binary_append_real64
+
+integer function test_output_binary_append_empty_real64() bind(c) result(err)
+   use, intrinsic :: iso_fortran_env, only: real64
+   use outputBinary_m, only: append_binary_real64, BINARY_WRITER_SUCCESS
+   use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_BINARY, &
+                            BINARY_ENDIAN_LITTLE, BINARY_NUMERIC_REAL64, &
+                            BINARY_COMPLEX_UNSPECIFIED
+   use assertionTools_m, only: assert_integer_equal, assert_true
+   use directoryUtils_m, only: delete_file, file_exists
+   implicit none
+
+   type(output_artifact_t) :: artifact
+   real(real64), allocatable :: values(:)
+   integer :: file_size, ios, status
+   character(len=*), parameter :: path = 'testing binary/append-empty-real64.bin'
+
+   err = 0
+   artifact%kind = OUTPUT_ARTIFACT_BINARY
+   artifact%byte_order = BINARY_ENDIAN_LITTLE
+   artifact%numeric_representation = BINARY_NUMERIC_REAL64
+   artifact%complex_representation = BINARY_COMPLEX_UNSPECIFIED
+   artifact%record_bytes = 56
+   artifact%component_order = 'time,x,y,z,Ex,Ey,Ez'
+   allocate(values(0))
+
+   call append_binary_real64(path, artifact, values, status)
+
+   err = err + assert_integer_equal(status, BINARY_WRITER_SUCCESS, 'Empty real64 append failed')
+   inquire(file=path, size=file_size, iostat=ios)
+   err = err + assert_true(file_exists(path) .and. ios == 0 .and. file_size == 0, &
+                            'Empty real64 append did not preserve an empty artifact')
+   call delete_file(path, ios)
+end function test_output_binary_append_empty_real64
