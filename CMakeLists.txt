@@ -95,6 +95,15 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 		set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -fno-inline -fcheck=all -fbacktrace")
 
+		if(SEMBA_FDTD_ENABLE_COVERAGE)
+			message(STATUS "Enabling coverage instrumentation")
+			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+			set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} --coverage")
+			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+			set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
+		endif()
+
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		message(STATUS "Using IntelLLVM (ifx) flags")
 

@@ -22,6 +22,8 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
     set(ROTATE_TESTS_LIBRARY rotate_tests)
     add_subdirectory(unit/output)
     set(OUTPUT_TESTS_LIBRARY output_tests)
+    add_subdirectory(wires)
+    set(WIRES_TESTS_LIBRARY wires_tests)
     set(VTK_API_TESTS_LIBRARY vtkAPI_tests)
 endif()
 
@@ -35,6 +37,12 @@ set(CONFORMAL_TESTS_LIBRARY conformal_tests)
 add_subdirectory(unit/preprocess)
 set(PREPROCESS_TESTS_LIBRARY preprocess_tests)
 
+add_subdirectory(healer)
+set(HEALER_TESTS_LIBRARY healer_tests)
+
+add_subdirectory(sgbc)
+set(SGBC_TESTS_LIBRARY sgbc_tests)
+
 add_executable(fdtd_tests 
     "fdtd_tests.cpp"
 )
@@ -45,9 +53,10 @@ target_link_libraries(fdtd_tests
     ${CONFORMAL_TESTS_LIBRARY}
     ${PREPROCESS_TESTS_LIBRARY}
     ${ROTATE_TESTS_LIBRARY}
-    ${OUTPUT_TESTS_LIBRARY}
-    ${VTK_API_TESTS_LIBRARY}
+    ${HDF_TESTS_LIBRARY}
+    ${VTK_TESTS_LIBRARY}
     ${SYSTEM_TESTS_LIBRARY}
+    ${OBSERVATION_TESTS_LIBRARY}
     GTest::gtest_main
 )
 

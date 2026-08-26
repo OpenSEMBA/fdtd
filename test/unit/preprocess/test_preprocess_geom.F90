@@ -306,3 +306,123 @@ integer function test_checkLossyTag_basic() bind(C, name="test_checkLossyTag_bas
         print *, 'test_checkLossyTag_basic PASSED'
     end if
 end function test_checkLossyTag_basic
+
+! Test checkDielectricTagForDuplicate - duplicate in current c2P list
+integer function test_checkDielectricTag_c2P_duplicate_current() bind(C, name="test_checkDielectricTag_c2P_duplicate_current") result(status)
+    use, intrinsic :: iso_c_binding
+    use FDETYPES_m
+    use NFDETypes_m
+    use Preprocess_m
+    implicit none
+    type(Dielectric_t) :: diel_comp, prev_diel(1)
+    type(tagtype_t) :: tagtype
+    integer(c_int) :: numertag
+    character(len=100) :: error_msg
+
+    status = 0
+
+    diel_comp%n_c1P = 0
+    diel_comp%n_c2P = 2
+    allocate(diel_comp%c2P(2))
+    diel_comp%c2P(1)%tag = 'shared_tag'
+    diel_comp%c2P(2)%tag = 'shared_tag'
+
+    prev_diel(1)%n_c1P = 0
+    prev_diel(1)%n_c2P = 0
+
+    tagtype%numertags = 0
+    allocate(tagtype%tag(10))
+
+    numertag = 2
+    error_msg = 'Error in dielectric tag check'
+    call checkDielectricTagForDuplicate(diel_comp, prev_diel, 0, 2, 'c2P', numertag, tagtype, 1, error_msg)
+    if (numertag /= 1) then
+        print *, 'test_checkDielectricTag_c2P_duplicate_current FAILED: Expected numertag=1, got', numertag
+        status = 1
+    end if
+
+    deallocate(diel_comp%c2P)
+    deallocate(tagtype%tag)
+
+    if (status == 0) then
+        print *, 'test_checkDielectricTag_c2P_duplicate_current PASSED'
+    end if
+end function test_checkDielectricTag_c2P_duplicate_current
+
+! Test checkLossyTagForDuplicate - duplicate in current component list
+integer function test_checkLossyTag_duplicate_current() bind(C, name="test_checkLossyTag_duplicate_current") result(status)
+    use, intrinsic :: iso_c_binding
+    use FDETYPES_m
+    use NFDETypes_m
+    use Preprocess_m
+    implicit none
+    type(LossyThinSurface_t) :: lossy_comp, prev_lossy(1)
+    type(tagtype_t) :: tagtype
+    integer(c_int) :: numertag
+
+    status = 0
+
+    lossy_comp%nc = 2
+    allocate(lossy_comp%C(2))
+    lossy_comp%C(1)%tag = 'dup_lossy'
+    lossy_comp%C(2)%tag = 'dup_lossy'
+
+    prev_lossy(1)%nc = 0
+
+    tagtype%numertags = 0
+    allocate(tagtype%tag(10))
+
+    numertag = 2
+    call checkLossyTagForDuplicate(lossy_comp, prev_lossy, 0, 2, numertag, tagtype, 1)
+    if (numertag /= 1) then
+        print *, 'test_checkLossyTag_duplicate_current FAILED: Expected numertag=1, got', numertag
+        status = 1
+    end if
+
+    deallocate(lossy_comp%C)
+    deallocate(tagtype%tag)
+
+    if (status == 0) then
+        print *, 'test_checkLossyTag_duplicate_current PASSED'
+    end if
+end function test_checkLossyTag_duplicate_current
+
+! Test checkLossyTagForDuplicate - duplicate against previous components
+integer function test_checkLossyTag_duplicate_previous() bind(C, name="test_checkLossyTag_duplicate_previous") result(status)
+    use, intrinsic :: iso_c_binding
+    use FDETYPES_m
+    use NFDETypes_m
+    use Preprocess_m
+    implicit none
+    type(LossyThinSurface_t) :: lossy_comp, prev_lossy(1)
+    type(tagtype_t) :: tagtype
+    integer(c_int) :: numertag
+
+    status = 0
+
+    lossy_comp%nc = 1
+    allocate(lossy_comp%C(1))
+    lossy_comp%C(1)%tag = 'prev_dup'
+
+    prev_lossy(1)%nc = 1
+    allocate(prev_lossy(1)%C(1))
+    prev_lossy(1)%C(1)%tag = 'prev_dup'
+
+    tagtype%numertags = 0
+    allocate(tagtype%tag(10))
+
+    numertag = 1
+    call checkLossyTagForDuplicate(lossy_comp, prev_lossy, 1, 1, numertag, tagtype, 1)
+    if (numertag /= 0) then
+        print *, 'test_checkLossyTag_duplicate_previous FAILED: Expected numertag=0, got', numertag
+        status = 1
+    end if
+
+    deallocate(lossy_comp%C)
+    deallocate(prev_lossy(1)%C)
+    deallocate(tagtype%tag)
+
+    if (status == 0) then
+        print *, 'test_checkLossyTag_duplicate_previous PASSED'
+    end if
+end function test_checkLossyTag_duplicate_previous

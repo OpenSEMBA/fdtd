@@ -12,10 +12,13 @@
     #include "smbjson/smbjson_tests.h"
     #include "unit/rotate/rotate_tests.h"
     #include "unit/output/output_tests.h"
+    #include "wires/wires_tests.h"
     #include "unit/output/vtkAPI_tests.h"
 #endif
 #include "conformal/conformal_tests.h"
 #include "unit/preprocess/preprocess_tests.h"
+#include "healer/healer_tests.h"
+#include "sgbc/sgbc_tests.h"
 
 int main(int argc, char **argv) {
 #ifdef CompileWithMPI
