@@ -545,11 +545,15 @@ contains
            publication = volumetric_publication_t()
            allocate(rank_has_data(max(control%num_procs, 1)))
 #ifdef CompileWithMPI
-           call MPI_Allgather(outputPartitions(output_index)%has_data, 1, MPI_LOGICAL, rank_has_data, 1, &
-                              MPI_LOGICAL, SUBCOMM_MPI, ierr)
-           if (ierr /= MPI_SUCCESS) then
-              call StopOnError(control%layoutnumber, control%num_procs, &
-                               'Unable to identify distributed output participants')
+           if (control%num_procs > 1) then
+               call MPI_Allgather(outputPartitions(output_index)%has_data, 1, MPI_LOGICAL, rank_has_data, 1, &
+                                  MPI_LOGICAL, SUBCOMM_MPI, ierr)
+               if (ierr /= MPI_SUCCESS) then
+                  call StopOnError(control%layoutnumber, control%num_procs, &
+                                   'Unable to identify distributed output participants')
+               end if
+           else
+               rank_has_data(1) = outputPartitions(output_index)%has_data
            end if
 #else
            rank_has_data(1) = outputPartitions(output_index)%has_data
@@ -599,7 +603,7 @@ contains
                  call MPI_Comm_size(publication%communicator, publication%communicator_size, ierr)
               end if
            else
-              publication%communicator = SUBCOMM_MPI
+               publication%communicator = MPI_COMM_WORLD
            end if
 #endif
         end subroutine configure_output_publication
