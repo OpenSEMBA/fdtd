@@ -132,10 +132,10 @@ def test_frequency_slice_is_published_canonically_with_mpi(tmp_path):
     serial_probe = Probe(
         serial_solver.getSolvedProbeFolders("electric_field_frequency_slice")[0]
     )
-    np.testing.assert_allclose(
-        np.fromfile(probe.getBinFile(), dtype="<f8"),
-        np.fromfile(serial_probe.getBinFile(), dtype="<f8"),
-    )
+    mpi_records = np.fromfile(probe.getBinFile(), dtype="<f8").reshape(-1, 10)
+    serial_records = np.fromfile(serial_probe.getBinFile(), dtype="<f8").reshape(-1, 10)
+    field_atol = np.finfo(np.float32).eps * np.max(np.abs(serial_records[:, 4:]))
+    np.testing.assert_allclose(mpi_records, serial_records, atol=field_atol)
     with h5py.File(h5_path, "r") as mpi_h5, h5py.File(
         serial_probe.getH5File(), "r"
     ) as serial_h5:

@@ -21,7 +21,10 @@ module frequencySliceProbeOutput_m
 #ifdef CompileWithMPI
    use mpi
 #endif
-   implicit none (type, external)
+   implicit none
+#if defined(CompileWithMPI) && defined(IFXCompiler)
+   external :: MPI_Allgather, MPI_Allgatherv
+#endif
    private
 
    !===========================

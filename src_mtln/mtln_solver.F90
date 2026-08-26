@@ -9,9 +9,12 @@ module mtln_solver_m
     use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
-    use mpi, only: MPI_Allreduce, MPI_Comm_rank, MPI_INTEGER, MPI_MIN, MPI_SUCCESS
+    use mpi
 #endif
     implicit none
+#if defined(CompileWithMPI) && defined(IFXCompiler)
+    external :: MPI_Allreduce
+#endif
 
 
     type, public :: mtln_t
