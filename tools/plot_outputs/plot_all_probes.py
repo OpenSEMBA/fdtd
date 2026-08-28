@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot every canonical text-series probe descriptor below an output directory."""
+"""Plot every supported text-series probe below an output directory."""
 
 import argparse
 import json
@@ -18,6 +18,11 @@ def parse_arguments():
 def main():
     arguments = parse_arguments()
     descriptors = sorted(arguments.input.rglob("*.json"))
+    flat_data_files = sorted(
+        path
+        for path in arguments.input.rglob("*.dat")
+        if any(path.parent.glob("*.fdtd.json"))
+    )
     plotted = 0
 
     for descriptor in descriptors:
@@ -33,8 +38,17 @@ def main():
         print(output_path)
         plotted += 1
 
+    for data_path in flat_data_files:
+        output_path = arguments.output / data_path.with_suffix(".png").name
+        try:
+            plot(data_path, data_path.stem, None, output_path)
+        except ValueError:
+            continue
+        print(output_path)
+        plotted += 1
+
     if not plotted:
-        raise RuntimeError(f"No canonical text-series probe descriptors found in {arguments.input}")
+        raise RuntimeError(f"No supported text-series probes found in {arguments.input}")
 
 
 if __name__ == "__main__":

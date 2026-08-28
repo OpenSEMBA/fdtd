@@ -40,7 +40,10 @@ def resolve_probe(path):
 
 
 def plot(data_path, quantity, title, output):
-    values = np.loadtxt(data_path, ndmin=2)
+    try:
+        values = np.loadtxt(data_path, ndmin=2)
+    except ValueError:
+        values = np.loadtxt(data_path, ndmin=2, skiprows=1)
     if values.shape[1] != 2:
         raise ValueError(f"Expected two columns (time and value), found {values.shape[1]} in {data_path}")
 
