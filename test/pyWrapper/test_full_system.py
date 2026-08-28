@@ -18,7 +18,7 @@ def _get_solved_probe_folder(
 ) -> str:
     probe_files = solver.getSolvedProbeFolders(probe_name)
     if filename is not None:
-        probe_files = [path for path in probe_files if Path(path).name == Path(filename).stem]
+        probe_files = [path for path in probe_files if Path(path).stem == Path(filename).stem]
     if contains is not None:
         probe_files = [path for path in probe_files if contains in Path(path).name]
     if suffix is not None:
@@ -929,10 +929,8 @@ def test_dielectric_transmission(tmp_path):
     _FIELD_TOLERANCE = 0.05
 
     def getPointProbe(probeName: str):
-        binaryFilename = _get_solved_probe_folder(
-            solver, probeName, suffix=".bin", include_binary=True
-        )
-        samples = np.fromfile(binaryFilename, dtype="<f8").reshape(-1, 3)
+        dat_filename = _get_solved_probe_folder(solver, probeName, suffix=".dat")
+        samples = np.loadtxt(dat_filename, skiprows=1)
         return samples[:, 0], samples[:, 1]
 
     def getIncidentField(time: np.ndarray, field: np.ndarray) -> Dict:

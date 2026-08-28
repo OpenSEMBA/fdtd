@@ -98,7 +98,7 @@ def test_fdtd_clean_up_after_run(tmp_path):
     solver.run()
 
     solved_probe_folders = solver.getSolvedProbeFolders("inbox")
-    assert os.path.isdir(solved_probe_folders[0])
+    assert os.path.isfile(solved_probe_folders[0])
 
     solver.cleanUp()
 
@@ -106,7 +106,7 @@ def test_fdtd_clean_up_after_run(tmp_path):
 
 
 @pytest.mark.planewave
-def test_fdtd_probe_folders_include_binary_artifacts(tmp_path):
+def test_fdtd_scalar_probe_discovery_returns_only_dat_output(tmp_path):
     input = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
     solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver["general"]["numberOfSteps"] = 1
@@ -117,7 +117,7 @@ def test_fdtd_probe_folders_include_binary_artifacts(tmp_path):
     assert len(probe_folders) == 1
     probe = Probe(probe_folders[0])
     assert probe.getDatFile() is not None
-    assert probe.getBinFile() is not None
+    assert probe.getBinFile() is None
 
 
 @pytest.mark.planewave
@@ -224,9 +224,9 @@ def test_towel_hanger_case_creates_output_probes(tmp_path):
     assert len(probe_mid) == 1
     assert len(probe_end) == 1
 
-    assert "towelHanger.fdtd_wire_start_Wz_27_25_30_s3" == Path(probe_start[0]).name
-    assert "towelHanger.fdtd_wire_mid_Wx_35_25_32_s13" == Path(probe_mid[0]).name
-    assert "towelHanger.fdtd_wire_end_Wz_43_25_30_s22" == Path(probe_end[0]).name
+    assert "towelHanger.fdtd_wire_start_Wz_27_25_30_s3_tm.dat" == Path(probe_start[0]).name
+    assert "towelHanger.fdtd_wire_mid_Wx_35_25_32_s13_tm.dat" == Path(probe_mid[0]).name
+    assert "towelHanger.fdtd_wire_end_Wz_43_25_30_s22_tm.dat" == Path(probe_end[0]).name
     assert countLinesInFile(Probe(probe_start[0]).getDatFile()) == 3
     assert countLinesInFile(Probe(probe_mid[0]).getDatFile()) == 3
     assert countLinesInFile(Probe(probe_end[0]).getDatFile()) == 3

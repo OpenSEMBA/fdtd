@@ -12,7 +12,9 @@ DEFAULT_SEMBA_FDTD_PATH = "build/bin/semba-fdtd"
 
 class _ProbeType(str, Enum):
     WIRE = "wire"
+    WIRE_CHARGE = "wireCharge"
     BULK_CURRENT = "bulkCurrent"
+    BULK_MAGNETIC = "bulkMagnetic"
     LINE_INTEGRAL = "lineIntegral"
     POINT = "point"
     FAR_FIELD = "farField"
@@ -35,7 +37,9 @@ _EXPECTED_DAT_COLUMNS = {
         "voltage_difference",
     ),
     (_ProbeType.WIRE, _ProbeDomain.FREQUENCY): ("frequency", "magnitude", "phase"),
+    (_ProbeType.WIRE_CHARGE, _ProbeDomain.TIME): ("t", "charge"),
     (_ProbeType.BULK_CURRENT, _ProbeDomain.TIME): ("t", "current"),
+    (_ProbeType.BULK_MAGNETIC, _ProbeDomain.TIME): ("t", "circulation"),
     (_ProbeType.LINE_INTEGRAL, _ProbeDomain.TIME): ("t", "lineIntegral"),
     (_ProbeType.POINT, _ProbeDomain.TIME): ("t", "field"),
     (_ProbeType.POINT, _ProbeDomain.FREQUENCY): ("frequency", "real", "imaginary"),
@@ -71,7 +75,9 @@ class Probe:
 
     MTLN_PROBE_TAGS: list[str] = ["_V_", "_I_"]
     CURRENT_PROBE_TAGS: list[str] = ["_Wx_", "_Wy_", "_Wz_"]
+    CHARGE_PROBE_TAGS: list[str] = ["_Qx_", "_Qy_", "_Qz_"]
     BULK_CURRENT_PROBE_TAGS: list[str] = ["_Jx_", "_Jy_", "_Jz_"]
+    BULK_MAGNETIC_PROBE_TAGS: list[str] = ["_Mx_", "_My_", "_Mz_"]
     LINE_INTEGRAL_PROBE_TAG: list[str] = ["_LI_", "_LI"]
     POINT_PROBE_TAGS: list[str] = ["_Ex_", "_Ey_", "_Ez_", "_Hx_", "_Hy_", "_Hz_"]
     FAR_FIELD_TAG: list[str] = ["_FF_"]
@@ -80,36 +86,64 @@ class Probe:
     ALL_TAGS: list[str] = (
         MTLN_PROBE_TAGS
         + CURRENT_PROBE_TAGS
+        + CHARGE_PROBE_TAGS
         + BULK_CURRENT_PROBE_TAGS
+        + BULK_MAGNETIC_PROBE_TAGS
         + LINE_INTEGRAL_PROBE_TAG
         + POINT_PROBE_TAGS
         + FAR_FIELD_TAG
         + MOVIE_TAGS
     )
+    FLAT_TEXT_TAGS: list[str] = (
+        MTLN_PROBE_TAGS
+        + CURRENT_PROBE_TAGS
+        + CHARGE_PROBE_TAGS
+        + BULK_CURRENT_PROBE_TAGS
+        + BULK_MAGNETIC_PROBE_TAGS
+        + LINE_INTEGRAL_PROBE_TAG
+        + POINT_PROBE_TAGS
+        + FAR_FIELD_TAG
+    )
 
     FILE_EXTENSIONS: list[str] = [".dat", ".xdmf", ".h5", ".bin"]
     DOMAIN_MARKERS: list[str] = ["_tm", "_fq", "_df"]
 
-    def __init__(self, probe_folder):
-        self.folder = os.path.abspath(os.fspath(probe_folder))
-        assert os.path.isdir(self.folder), "Probe requires a probe output folder"
+    def __init__(self, probe_path):
+        probe_path = os.path.abspath(os.fspath(probe_path))
+        assert os.path.isdir(probe_path) or os.path.isfile(probe_path), (
+            "Probe requires a probe output file or folder"
+        )
+        self.output_file = probe_path if os.path.isfile(probe_path) else None
+        self.folder = os.path.dirname(probe_path) if self.output_file else probe_path
+        self._stem = os.path.basename(probe_path)
+        if self.output_file and os.path.splitext(self._stem)[1] in Probe.FILE_EXTENSIONS:
+            self._stem = os.path.splitext(self._stem)[0]
 
-        self.case_name = self._getCaseNameFromFolder(self.folder)
-        self.name = self._getProbeNameFromFolder(self.folder)
-        self.domainType = self._getDomainTypeFromFolder(self.folder)
+        self.case_name = self._getCaseNameFromFolder(self._stem)
+        self.name = self._getProbeNameFromFolder(self._stem)
+        self.domainType = self._getDomainTypeFromFolder(self._stem)
         self._domain = _ProbeDomain(self.domainType)
         self.data = None
 
-        tag = self._getTagFromFolder(self.folder)
+        tag = self._getTagFromFolder(self._stem)
 
-        position_str = self._getPositionStrFromFolder(self.folder)
+        position_str = self._getPositionStrFromFolder(self._stem)
         if tag in Probe.CURRENT_PROBE_TAGS:
             self.type = "wire"
             self.field, self.direction = Probe._getFieldAndDirection(tag)
             self.cell = self._positionStrToCell(position_str)
             self.segment = int(position_str.split("_s")[1])
+        elif tag in Probe.CHARGE_PROBE_TAGS:
+            self.type = "wireCharge"
+            self.field, self.direction = Probe._getFieldAndDirection(tag)
+            self.cell = self._positionStrToCell(position_str)
+            self.segment = int(position_str.split("_s")[1])
         elif tag in Probe.BULK_CURRENT_PROBE_TAGS:
             self.type = "bulkCurrent"
+            self.field, self.direction = Probe._getFieldAndDirection(tag)
+            self.cell_init, self.cell_end = Probe._positionStrToTwoCells(position_str)
+        elif tag in Probe.BULK_MAGNETIC_PROBE_TAGS:
+            self.type = "bulkMagnetic"
             self.field, self.direction = Probe._getFieldAndDirection(tag)
             self.cell_init, self.cell_end = Probe._positionStrToTwoCells(position_str)
         elif tag in Probe.LINE_INTEGRAL_PROBE_TAG:
@@ -140,23 +174,32 @@ class Probe:
 
     def getExpectedOutputs(self):
         extensions = {
-            _ProbeType.WIRE: [".dat", ".bin"],
-            _ProbeType.BULK_CURRENT: [".dat", ".bin"],
-            _ProbeType.LINE_INTEGRAL: [".dat", ".bin"],
-            _ProbeType.POINT: [".dat", ".bin"],
-            _ProbeType.FAR_FIELD: ["", ".bin"],
+            _ProbeType.WIRE: [".dat"],
+            _ProbeType.WIRE_CHARGE: [".dat"],
+            _ProbeType.BULK_CURRENT: [".dat"],
+            _ProbeType.BULK_MAGNETIC: [".dat"],
+            _ProbeType.LINE_INTEGRAL: [".dat"],
+            _ProbeType.POINT: [".dat"],
+            _ProbeType.FAR_FIELD: [".dat"],
             _ProbeType.MOVIE: [".bin", ".xdmf", ".h5", "_geometry.xdmf", "_geometry.h5"],
             _ProbeType.MTLN: [".dat"],
         }[self._type]
 
-        return sorted(
+        outputs = sorted(
             os.path.join(self.folder, self._getFolderStem() + extension)
             for extension in extensions
             if os.path.isfile(os.path.join(self.folder, self._getFolderStem() + extension))
         )
+        if not outputs and self._type == _ProbeType.FAR_FIELD:
+            text_file = self.getTextFile()
+            if text_file is not None:
+                return [text_file]
+        return outputs
 
     def getDatFile(self):
-        if self._type in (_ProbeType.FAR_FIELD, _ProbeType.MOVIE):
+        if self.output_file is not None:
+            return self.output_file if self.output_file.endswith(".dat") else None
+        if self._type == _ProbeType.MOVIE:
             return None
         files = sorted(glob.glob(os.path.join(self.folder, "*.dat")))
         return files[0] if files else None
@@ -166,6 +209,8 @@ class Probe:
         if dat_file is not None:
             return dat_file
         if self._type == _ProbeType.FAR_FIELD:
+            if self.output_file is not None:
+                return self.output_file
             files = sorted(
                 path
                 for path in glob.glob(os.path.join(self.folder, "*"))
@@ -187,6 +232,8 @@ class Probe:
 
     def getBinFile(self):
         if self._type == _ProbeType.MTLN:
+            return None
+        if self.output_file is not None:
             return None
         files = sorted(glob.glob(os.path.join(self.folder, "*.bin")))
         return files[0] if files else None
@@ -210,7 +257,7 @@ class Probe:
             ) from error
 
         if self._type == _ProbeType.MTLN:
-            quantity = "voltage" if self._getTagFromFolder(self.folder) == "_V_" else "current"
+            quantity = "voltage" if self._getTagFromFolder(self._stem) == "_V_" else "current"
             return [column.format(quantity=quantity) for column in columns]
         return list(columns)
 
@@ -226,8 +273,12 @@ class Probe:
                         self.data.columns[2]: "phase",
                     }
                 )
+        elif self._type == _ProbeType.WIRE_CHARGE:
+            self.data = self.data.rename(columns={"t": "time", self.data.columns[1]: "charge"})
         elif self._type == _ProbeType.BULK_CURRENT:
             self.data = self.data.rename(columns={"t": "time", self.data.columns[1]: "current"})
+        elif self._type == _ProbeType.BULK_MAGNETIC:
+            self.data = self.data.rename(columns={"t": "time", self.data.columns[1]: "circulation"})
         elif self._type == _ProbeType.LINE_INTEGRAL:
             self.data = self.data.rename(columns={"t": "time", self.data.columns[1]: "lineIntegral"})
         elif self._type == _ProbeType.POINT and self._domain == _ProbeDomain.TIME:
@@ -294,7 +345,7 @@ class Probe:
         raise ValueError("Unable to determine probe tag")
 
     def _getFolderStem(self):
-        return os.path.basename(self.folder)
+        return self._stem
 
     @staticmethod
     def _getPositionStrFromFolder(folder):
@@ -308,7 +359,10 @@ class Probe:
 
     @staticmethod
     def _getDomainTypeFromFolder(folder):
-        if os.path.basename(folder).endswith(("_fq", "_df")):
+        basename = os.path.basename(folder)
+        if any(tag in basename for tag in Probe.FAR_FIELD_TAG):
+            return "frequency"
+        if basename.endswith(("_fq", "_df")):
             return "frequency"
         else:
             return "time"
@@ -472,6 +526,9 @@ class FDTD:
         for f in subfolders:
             if f.startswith(case_name):
                 shutil.rmtree(os.path.join(folder, f), ignore_errors=True)
+        manifest = os.path.join(folder, case_name + "_output_manifest.json")
+        if os.path.isfile(manifest):
+            os.remove(manifest)
 
     def getSolvedProbeFolders(self, probe_name):
         if not "probes" in self._input:
@@ -495,6 +552,14 @@ class FDTD:
                 continue
 
             stem, extension = os.path.splitext(basename)
+            if any(tag in stem for tag in Probe.FLAT_TEXT_TAGS):
+                if extension == ".dat":
+                    probe_folders.append(os.path.abspath(path))
+                continue
+            if any(tag in basename for tag in Probe.FAR_FIELD_TAG):
+                if not basename.endswith(tuple(Probe.FILE_EXTENSIONS)):
+                    probe_folders.append(os.path.abspath(path))
+                continue
             if extension not in Probe.FILE_EXTENSIONS:
                 if not any(tag in basename for tag in Probe.FAR_FIELD_TAG):
                     continue

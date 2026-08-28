@@ -109,7 +109,7 @@ PROBE_TYPES: dict = {
         "domain": {"code": "_tm", "expected": "time"},
         "field": "W",
         "direction": "x",
-        "expected_extensions": [".dat", ".bin"],
+        "expected_extensions": [".dat"],
         "expected_dat_columns": [
             "t",
             "current",
@@ -128,8 +128,20 @@ PROBE_TYPES: dict = {
         "domain": {"code": "_fq", "expected": "frequency"},
         "field": "W",
         "direction": "z",
-        "expected_extensions": [".dat", ".bin"],
+        "expected_extensions": [".dat"],
         "expected_dat_columns": ["frequency", "magnitude", "phase"],
+    },
+    "wire_charge": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "charge_probe", "expected": "charge_probe"},
+        "type": {"code": "_Qx_", "expected": "wireCharge"},
+        "region": {"code": "11_12_13", "expected": [11, 12, 13]},
+        "segment": {"code": "_s2", "expected": 2},
+        "domain": {"code": "_tm", "expected": "time"},
+        "field": "Q",
+        "direction": "x",
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": ["t", "charge"],
     },
     "bulk_current": {
         "case": {"code": "case_name", "expected": "case_name"},
@@ -139,8 +151,19 @@ PROBE_TYPES: dict = {
         "domain": {"code": "_tm", "expected": "time"},
         "field": "J",
         "direction": "y",
-        "expected_extensions": [".dat", ".bin"],
+        "expected_extensions": [".dat"],
         "expected_dat_columns": ["t", "current"],
+    },
+    "bulk_magnetic": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "bulk_probe", "expected": "bulk_probe"},
+        "type": {"code": "_Mz_", "expected": "bulkMagnetic"},
+        "region": {"code": "1_2_3__4_5_6", "expected": ([1, 2, 3], [4, 5, 6])},
+        "domain": {"code": "_tm", "expected": "time"},
+        "field": "M",
+        "direction": "z",
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": ["t", "circulation"],
     },
     "line_integral": {
         "case": {"code": "case_name", "expected": "case_name"},
@@ -150,7 +173,7 @@ PROBE_TYPES: dict = {
         "domain": {"code": "_tm", "expected": "time"},
         "field": "L",
         "direction": "I",
-        "expected_extensions": [".dat", ".bin"],
+        "expected_extensions": [".dat"],
         "expected_dat_columns": ["t", "lineIntegral"],
     },
     "point_time": {
@@ -161,7 +184,7 @@ PROBE_TYPES: dict = {
         "domain": {"code": "_tm", "expected": "time"},
         "field": "E",
         "direction": "x",
-        "expected_extensions": [".dat", ".bin"],
+        "expected_extensions": [".dat"],
         "expected_dat_columns": ["t", "field"],
     },
     "point_frequency": {
@@ -172,7 +195,7 @@ PROBE_TYPES: dict = {
         "domain": {"code": "_fq", "expected": "frequency"},
         "field": "H",
         "direction": "z",
-        "expected_extensions": [".dat", ".bin"],
+        "expected_extensions": [".dat"],
         "expected_dat_columns": ["frequency", "real", "imaginary"],
     },
     "far_field": {
@@ -181,7 +204,7 @@ PROBE_TYPES: dict = {
         "type": {"code": "_FF_", "expected": "farField"},
         "region": {"code": "1_2_3__4_5_6", "expected": ([1, 2, 3], [4, 5, 6])},
         "domain": {"code": "_fq", "expected": "frequency"},
-        "expected_extensions": ["", ".bin"],
+        "expected_extensions": [".dat"],
         "expected_dat_columns": [
             "frequency",
             "Theta",
@@ -242,7 +265,7 @@ def test_read_probe(tmp_path, probe_type):
     if "field" in probe_case:
         assert probe.field == probe_case["field"]
         assert probe.direction == probe_case["direction"]
-    if probe.type in ("bulkCurrent", "farField", "movie"):
+    if probe.type in ("bulkCurrent", "bulkMagnetic", "farField", "movie"):
         expected_cell_init, expected_cell_end = probe_case["region"]["expected"]
         assert np.all(probe.cell_init == expected_cell_init)
         assert np.all(probe.cell_end == expected_cell_end)
@@ -364,12 +387,16 @@ def test_get_expected_columns_match_schematic_text_output(tmp_path, probe_type):
     assert probe_path.read_text().splitlines()[0].split() == expected_dat_columns
 
 
-def test_probe_requires_folder(tmp_path):
+def test_probe_accepts_flat_dat_file(tmp_path):
     probe_file = tmp_path / "case.fdtd_probe_Ex_1_2_3_tm.dat"
-    probe_file.touch()
+    probe_file.write_text("t field\n0 1\n")
 
-    with pytest.raises(AssertionError, match="Probe requires a probe output folder"):
-        Probe(probe_file)
+    probe = Probe(probe_file)
+
+    assert probe.getDatFile() == str(probe_file)
+    assert probe.folder == str(tmp_path)
+    assert probe.name == "probe"
+    assert probe.domainType == "time"
 
 
 @pytest.mark.probes
@@ -493,6 +520,25 @@ def test_read_extensionless_far_field_probe(tmp_path):
     assert probe.type == "farField"
     assert np.array_equal(probe.cell_init, [1, 1, 1])
     assert np.array_equal(probe.cell_end, [2, 2, 2])
+    assert probe.getExpectedOutputs() == [str(probe_path)]
+
+
+@pytest.mark.probes
+@pytest.mark.farfield
+def test_read_flat_extensionless_far_field_with_sibling_dat(tmp_path):
+    far_field = tmp_path / "case.fdtd_farfield_FF_1_1_1__2_2_2"
+    far_field.write_text(
+        "frequency Theta Phi Etheta_mod Etheta_phase Ephi_mod "
+        "Ephi_phase RCS_arithmetic RCS_geometric\n"
+        "1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0\n"
+    )
+    (tmp_path / "case.fdtd_point_Ex_1_1_1_tm.dat").write_text("t field\n0 1\n")
+
+    probe = Probe(far_field)
+
+    assert probe.getTextFile() == str(far_field)
+    assert probe.getExpectedOutputs() == [str(far_field)]
+    assert list(probe.data.columns)[7:] == ["rcs_arit", "rcs_geom"]
 
 
 @pytest.mark.probes
@@ -515,6 +561,7 @@ def test_probe_folder_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch
     literal_name = run_folder / "case.fdtd_probe[0]_Ex_4_5_6_tm"
     regex_like_name = run_folder / "case.fdtd_probe0_Ex_4_5_6_tm"
     mtln_probe = run_folder / "case.fdtd_start_voltage_wire_V_5_5_1_tm"
+    flat_mtln_probe = run_folder / "case.fdtd_flat_voltage_V_5_5_1_tm.dat"
     wire_probe = run_folder / "case.fdtd_wire_start_Wz_27_25_30_s3_tm"
     wrong_run_probe = other_folder / "case.fdtd_sample_Ex_1_2_3_tm"
     for folder in (
@@ -533,6 +580,7 @@ def test_probe_folder_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch
         sample_line / f"{sample_line.name}.dat",
         run_folder / far_field.name,
         run_folder / f"{far_field.name}.bin",
+        flat_mtln_probe,
     ):
         path.touch()
 
@@ -540,12 +588,13 @@ def test_probe_folder_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch
     monkeypatch.chdir(other_folder)
 
     expected_results = [
-        ("sample", [sample_line, sample_point]),
-        ("farfield", [far_field]),
-        ("farfield_FF_1_1_1__2_2_2_fq", [far_field]),
+        ("sample", [sample_line, run_folder / f"{sample_point.name}.dat"]),
+        ("farfield", [run_folder / far_field.name]),
+        ("farfield_FF_1_1_1__2_2_2_fq", [run_folder / far_field.name]),
         ("probe[0]", [literal_name]),
-        ("sample_Ex_1_2_3_tm", [sample_point]),
+        ("sample_Ex_1_2_3_tm", [run_folder / f"{sample_point.name}.dat"]),
         ("start_voltage", [mtln_probe]),
+        ("flat_voltage", [flat_mtln_probe]),
         ("wire_start", [wire_probe]),
     ]
 
@@ -553,10 +602,14 @@ def test_probe_folder_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch
         expected = sorted(str(path.resolve()) for path in expected_paths)
         assert solver.getSolvedProbeFolders(probe_name) == expected
 
-    assert (sample_point / f"{sample_point.name}.dat").is_file()
-    assert (sample_point / f"{sample_point.name}.bin").is_file()
-    assert (far_field / far_field.name).is_file()
-    assert (far_field / f"{far_field.name}.bin").is_file()
+    assert (run_folder / f"{sample_point.name}.dat").is_file()
+    assert (run_folder / f"{sample_point.name}.bin").is_file()
+    assert (run_folder / far_field.name).is_file()
+    assert (run_folder / f"{far_field.name}.bin").is_file()
+    assert flat_mtln_probe.is_file()
+    assert not (run_folder / flat_mtln_probe.stem).exists()
+    assert not sample_point.exists()
+    assert far_field.is_file()
 
 
 @pytest.mark.spice
