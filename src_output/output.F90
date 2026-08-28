@@ -16,16 +16,16 @@ module output_m
    use outputDecomposition_m, only: output_partition_t, build_output_partition, &
                                     OUTPUT_PARTITION_SUCCESS, OUTPUT_PARTITION_INVALID_ARGUMENT
    use outputCollective_m, only: output_collective_t, init_output_collective, select_output_participants, &
-                                  prepare_output_partition_publication, OUTPUT_COLLECTIVE_SUCCESS
+                                 prepare_output_partition_publication, OUTPUT_COLLECTIVE_SUCCESS
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, json_escape, &
-                                json_unescape, OUTPUT_METADATA_SUCCESS
+                               json_unescape, OUTPUT_METADATA_SUCCESS
    use outputTypes_m, only: solver_output_t, problem_info_t, probe_metadata_t, output_artifact_t, &
-                              spheric_domain_t, cell_coordinate_t, field_data_t, fields_reference_t, &
-                              output_lifecycle_is_terminal, OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_UNDEFINED, &
-                              TIME_DOMAIN, FREQUENCY_DOMAIN, UNDEFINED_DOMAIN, volumetric_publication_t, &
-                              OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
+                            spheric_domain_t, cell_coordinate_t, field_data_t, fields_reference_t, &
+                            output_lifecycle_is_terminal, OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_UNDEFINED, &
+                            TIME_DOMAIN, FREQUENCY_DOMAIN, UNDEFINED_DOMAIN, volumetric_publication_t, &
+                            OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
 #ifdef CompileWithMPI
-    use mpi
+   use mpi
 #endif
 #ifdef CompileWithMTLN
    use Wire_bundles_mtln_m, only: GetSolverPtr
@@ -68,8 +68,8 @@ module output_m
                                       BULK_PROBE_ID = 3, &
                                       MOVIE_PROBE_ID = 5, &
                                       FREQUENCY_SLICE_PROBE_ID = 6, &
-                                       FAR_FIELD_PROBE_ID = 7, &
-                                       MAPVTK_ID = 8, LINE_PROBE_ID = 9, MTLN_PROBE_ID = 10
+                                      FAR_FIELD_PROBE_ID = 7, &
+                                      MAPVTK_ID = 8, LINE_PROBE_ID = 9, MTLN_PROBE_ID = 10
 
    REAL(KIND=RKIND), save           ::  eps0, mu0
    REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
@@ -264,7 +264,7 @@ contains
             mtlnObservationExist: do i = 1, size(mtln_solver%bundles)
                if (.not. allocated(mtln_solver%bundles(i)%probes)) cycle
                do j = 1, size(mtln_solver%bundles(i)%probes)
-                   if (mtln_solver%bundles(i)%probes(j)%output_writer_rank >= 0) then
+                  if (mtln_solver%bundles(i)%probes(j)%output_writer_rank >= 0) then
                      thereAreMtlnObservations = .true.
                      exit mtlnObservationExist
                   end if
@@ -292,38 +292,38 @@ contains
             outputRequestType = sgg%observation(ii)%P(i)%what
             select case (outputRequestType)
             case (mapvtk)
-                call get_local_map_bounds(lowerBound, upperBound, localMapLower, localMapUpper, mapHasData)
-                if (mapHasData) then
-                   outputCount = outputCount + 1
-                   outputs(outputCount)%outputID = MAPVTK_ID
+               call get_local_map_bounds(lowerBound, upperBound, localMapLower, localMapUpper, mapHasData)
+               if (mapHasData) then
+                  outputCount = outputCount + 1
+                  outputs(outputCount)%outputID = MAPVTK_ID
 
-                   allocate (outputs(outputCount)%mapvtkOutput)
-                   call init_solver_output(outputs(outputCount)%mapvtkOutput, localMapLower, localMapUpper, &
-                                            outputRequestType, outputTypeExtension, control%mpidir, problemInfo)
-                   call create_geometry_simulation_vtu(outputs(outputCount)%mapvtkOutput, control, sgg%LineX, sgg%LineY, &
-                                                       sgg%LineZ, problemInfo)
-                    call register_scalar_output_metadata(outputCount, &
-                                                          join_path(outputs(outputCount)%mapvtkOutput%path, &
-                                                                   trim(get_last_component(outputs(outputCount)%mapvtkOutput%path))//'.json'), &
-                                                         get_last_component(outputs(outputCount)%mapvtkOutput%path), &
-                                                          'geometry', &
-                                                          outputs(outputCount)%mapvtkOutput%artifacts, localMapLower, &
-                                                          localMapUpper, UNDEFINED_DOMAIN, control%layoutnumber, metadata_status)
-                end if
+                  allocate (outputs(outputCount)%mapvtkOutput)
+                  call init_solver_output(outputs(outputCount)%mapvtkOutput, localMapLower, localMapUpper, &
+                                          outputRequestType, outputTypeExtension, control%mpidir, problemInfo)
+                  call create_geometry_simulation_vtu(outputs(outputCount)%mapvtkOutput, control, sgg%LineX, sgg%LineY, &
+                                                      sgg%LineZ, problemInfo)
+                  call register_scalar_output_metadata(outputCount, &
+                                                       join_path(outputs(outputCount)%mapvtkOutput%path, &
+                                                       trim(get_last_component(outputs(outputCount)%mapvtkOutput%path))//'.json'), &
+                                                       get_last_component(outputs(outputCount)%mapvtkOutput%path), &
+                                                       'geometry', &
+                                                       outputs(outputCount)%mapvtkOutput%artifacts, localMapLower, &
+                                                       localMapUpper, UNDEFINED_DOMAIN, control%layoutnumber, metadata_status)
+               end if
 
             case (iEx, iEy, iEz, iHx, iHy, iHz)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
-                allocate (outputs(outputCount)%pointProbe)
+               allocate (outputs(outputCount)%pointProbe)
                  call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt, &
-                                        sgg%NumPlaneWaves >= 1)
+                                       sgg%NumPlaneWaves >= 1)
             case (iJx, iJy, iJz)
                if (wiresExists) then
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = WIRE_CURRENT_PROBE_ID
 
-                   allocate (outputs(outputCount)%wireCurrentProbe)
+                  allocate (outputs(outputCount)%wireCurrentProbe)
                    call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, problemInfo%materialList, outputTypeExtension, control%mpidir, control%wiresflavor)
                end if
 
@@ -331,14 +331,14 @@ contains
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
 
-                allocate (outputs(outputCount)%wireChargeProbe)
+               allocate (outputs(outputCount)%wireChargeProbe)
                  call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
 
             case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = BULK_PROBE_ID
 
-                allocate (outputs(outputCount)%bulkCurrentProbe)
+               allocate (outputs(outputCount)%bulkCurrentProbe)
                  call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
                  !! call adjust_computation_range --- Required due to issues in mpi region edges
 
@@ -347,11 +347,11 @@ contains
                   call stoponerror(0, 0, 'Line probes only support the time domain')
                else
                   outputCount = outputCount + 1
-                   outputs(outputCount)%outputID = LINE_PROBE_ID
-                   allocate (outputs(outputCount)%lineProbe)
-                   call init_line_probe_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
-                                               trim(outputTypeExtension)//'_LI', &
-                                               sgg%Sweep, control%layoutnumber, control%num_procs)
+                  outputs(outputCount)%outputID = LINE_PROBE_ID
+                  allocate (outputs(outputCount)%lineProbe)
+                  call init_line_probe_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
+                                              trim(outputTypeExtension)//'_LI', &
+                                              sgg%Sweep, control%layoutnumber, control%num_procs)
                end if
 
             case (iCur, iMEC, iMHC, iCurX, iCurY, iCurZ, iExC, iEyC, iEzC, iHxC, iHyC, iHzC)
@@ -389,13 +389,13 @@ contains
                outputs(outputCount)%outputID = FAR_FIELD_PROBE_ID
                allocate (outputs(outputCount)%farFieldOutput)
 #ifdef CompileWithMPI
-                call configure_far_field_mpi(outputs(outputCount), lowerBound, upperBound)
+               call configure_far_field_mpi(outputs(outputCount), lowerBound, upperBound)
 #endif
                 call init_solver_output(outputs(outputCount)%farFieldOutput, sgg, lowerBound, upperBound, outputRequestType, domain, sphericRange, outputTypeExtension, sgg%Observation(ii)%FileNormalize, control, problemInfo, &
 #ifdef CompileWithMPI
-                                         outputs(outputCount)%MPISubcomm, outputs(outputCount)%MPIRoot, &
+                                       outputs(outputCount)%MPISubcomm, outputs(outputCount)%MPIRoot, &
 #endif
-                                         eps0, mu0)
+                                       eps0, mu0)
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
             end select
@@ -415,31 +415,31 @@ contains
       return
    contains
 #ifdef CompileWithMPI
-       subroutine configure_far_field_mpi(output, lower_bound, upper_bound)
-          type(solver_output_t), intent(inout) :: output
-          type(cell_coordinate_t), intent(in) :: lower_bound, upper_bound
-          integer :: color, ierr, root_candidate
+      subroutine configure_far_field_mpi(output, lower_bound, upper_bound)
+         type(solver_output_t), intent(inout) :: output
+         type(cell_coordinate_t), intent(in) :: lower_bound, upper_bound
+         integer :: color, ierr, root_candidate
 
-          output%MPISubcomm = -1
-          if (lower_bound%z <= sgg%SINPMLSweep(iHz)%ZE .and. &
-              upper_bound%z >= sgg%SINPMLSweep(iHz)%ZI) then
-             output%MPISubcomm = 1
-          end if
-          root_candidate = -1
-          if (lower_bound%z >= sgg%SINPMLSweep(iHz)%ZI .and. &
-              lower_bound%z < sgg%SINPMLSweep(iHz)%ZE) then
-             root_candidate = control%layoutnumber
-          end if
-          call MPI_AllReduce(root_candidate, output%MPIRoot, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
+         output%MPISubcomm = -1
+         if (lower_bound%z <= sgg%SINPMLSweep(iHz)%ZE .and. &
+             upper_bound%z >= sgg%SINPMLSweep(iHz)%ZI) then
+            output%MPISubcomm = 1
+         end if
+         root_candidate = -1
+         if (lower_bound%z >= sgg%SINPMLSweep(iHz)%ZI .and. &
+             lower_bound%z < sgg%SINPMLSweep(iHz)%ZE) then
+            root_candidate = control%layoutnumber
+         end if
+         call MPI_AllReduce(root_candidate, output%MPIRoot, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
 
-           color = MPI_UNDEFINED
-           if (output%MPISubcomm == 1) color = 0
-           call MPI_Comm_split(SUBCOMM_MPI, color, control%layoutnumber, output%MPISubcomm, ierr)
-       end subroutine configure_far_field_mpi
+         color = MPI_UNDEFINED
+         if (output%MPISubcomm == 1) color = 0
+         call MPI_Comm_split(SUBCOMM_MPI, color, control%layoutnumber, output%MPISubcomm, ierr)
+      end subroutine configure_far_field_mpi
 #endif
 
-       subroutine register_scalar_output_metadata(output_index, descriptor_path, probe_id, quantity, artifacts, &
-                                                  metadata_lower, metadata_upper, domain_type, writer_rank, status)
+      subroutine register_scalar_output_metadata(output_index, descriptor_path, probe_id, quantity, artifacts, &
+                                                 metadata_lower, metadata_upper, domain_type, writer_rank, status)
          integer(kind=SINGLE), intent(in) :: output_index
          character(len=*), intent(in) :: descriptor_path, probe_id, quantity
          type(output_artifact_t), intent(in) :: artifacts(:)
@@ -473,10 +473,10 @@ contains
          end if
       end subroutine register_scalar_output_metadata
 
-       subroutine attach_output_partition(output_index)
-          integer(kind=SINGLE), intent(in) :: output_index
-          type(limit_t) :: local_sweep
-          integer :: field_component, partition_status
+      subroutine attach_output_partition(output_index)
+         integer(kind=SINGLE), intent(in) :: output_index
+         type(limit_t) :: local_sweep
+         integer :: field_component, partition_status
 
          field_component = fieldo(outputRequestType, 'Z')
          local_sweep%XI = sgg%Sweep(field_component)%XI
@@ -493,106 +493,106 @@ contains
                                      outputPartitions(output_index), partition_status)
          if (partition_status /= OUTPUT_PARTITION_SUCCESS) return
 
-       end subroutine attach_output_partition
+      end subroutine attach_output_partition
 
-        subroutine configure_output_publication(output_index, publication)
-           integer(kind=SINGLE), intent(in) :: output_index
-           type(volumetric_publication_t), intent(out) :: publication
-           type(output_collective_t) :: collective
-           integer, allocatable :: participants(:)
-           logical, allocatable :: rank_has_data(:)
-           integer :: collective_status, owner_rank
-           logical :: parallel_hdf5_available
+      subroutine configure_output_publication(output_index, publication)
+         integer(kind=SINGLE), intent(in) :: output_index
+         type(volumetric_publication_t), intent(out) :: publication
+         type(output_collective_t) :: collective
+         integer, allocatable :: participants(:)
+         logical, allocatable :: rank_has_data(:)
+         integer :: collective_status, owner_rank
+         logical :: parallel_hdf5_available
 #ifdef CompileWithMPI
-           integer :: color, ierr
+         integer :: color, ierr
 #endif
 
-           publication = volumetric_publication_t()
-           allocate(rank_has_data(max(control%num_procs, 1)))
+         publication = volumetric_publication_t()
+         allocate (rank_has_data(max(control%num_procs, 1)))
 #ifdef CompileWithMPI
-           if (control%num_procs > 1) then
-               call MPI_Allgather(outputPartitions(output_index)%has_data, 1, MPI_LOGICAL, rank_has_data, 1, &
-                                  MPI_LOGICAL, SUBCOMM_MPI, ierr)
-               if (ierr /= MPI_SUCCESS) then
-                  call StopOnError(control%layoutnumber, control%num_procs, &
-                                   'Unable to identify distributed output participants')
-               end if
-           else
-               rank_has_data(1) = outputPartitions(output_index)%has_data
-           end if
+         if (control%num_procs > 1) then
+            call MPI_Allgather(outputPartitions(output_index)%has_data, 1, MPI_LOGICAL, rank_has_data, 1, &
+                               MPI_LOGICAL, SUBCOMM_MPI, ierr)
+            if (ierr /= MPI_SUCCESS) then
+               call StopOnError(control%layoutnumber, control%num_procs, &
+                                'Unable to identify distributed output participants')
+            end if
+         else
+            rank_has_data(1) = outputPartitions(output_index)%has_data
+         end if
 #else
-           rank_has_data(1) = outputPartitions(output_index)%has_data
+         rank_has_data(1) = outputPartitions(output_index)%has_data
 #endif
 
-           parallel_hdf5_available = .false.
+         parallel_hdf5_available = .false.
 #ifdef XDMF_HDF5_PARALLEL_AVAILABLE
-           parallel_hdf5_available = .true.
+         parallel_hdf5_available = .true.
 #endif
-           call init_output_collective(collective, control%layoutnumber, max(control%num_procs, 1), 0, &
-                                       parallel_hdf5_available, collective_status)
-           if (collective_status == OUTPUT_COLLECTIVE_SUCCESS) then
-              call select_output_participants(collective, rank_has_data, participants, owner_rank, collective_status)
-              collective%collective_publication_available = parallel_hdf5_available .and. size(participants) > 1
-           end if
-           if (collective_status == OUTPUT_COLLECTIVE_SUCCESS) then
-              call prepare_output_partition_publication(collective, participants, owner_rank, &
-                                                        outputPartitions(output_index), &
-                                                        publication%local_participates, publication%mode, &
-                                                        collective_status)
-           end if
-           if (collective_status /= OUTPUT_COLLECTIVE_SUCCESS) then
-              call StopOnError(control%layoutnumber, control%num_procs, &
-                               'Unable to configure distributed output publication')
-           end if
+         call init_output_collective(collective, control%layoutnumber, max(control%num_procs, 1), 0, &
+                                     parallel_hdf5_available, collective_status)
+         if (collective_status == OUTPUT_COLLECTIVE_SUCCESS) then
+            call select_output_participants(collective, rank_has_data, participants, owner_rank, collective_status)
+            collective%collective_publication_available = parallel_hdf5_available .and. size(participants) > 1
+         end if
+         if (collective_status == OUTPUT_COLLECTIVE_SUCCESS) then
+            call prepare_output_partition_publication(collective, participants, owner_rank, &
+                                                      outputPartitions(output_index), &
+                                                      publication%local_participates, publication%mode, &
+                                                      collective_status)
+         end if
+         if (collective_status /= OUTPUT_COLLECTIVE_SUCCESS) then
+            call StopOnError(control%layoutnumber, control%num_procs, &
+                             'Unable to configure distributed output publication')
+         end if
 
-           publication%participant_ranks = participants
-           publication%owner_rank = owner_rank
-           publication%local_is_owner = control%layoutnumber == owner_rank
-           publication%file_offset = outputPartitions(output_index)%file_offset
-           publication%local_shape = outputPartitions(output_index)%local_shape
-           publication%global_lower = outputPartitions(output_index)%global_lower
-           publication%global_upper = outputPartitions(output_index)%global_upper
+         publication%participant_ranks = participants
+         publication%owner_rank = owner_rank
+         publication%local_is_owner = control%layoutnumber == owner_rank
+         publication%file_offset = outputPartitions(output_index)%file_offset
+         publication%local_shape = outputPartitions(output_index)%local_shape
+         publication%global_lower = outputPartitions(output_index)%global_lower
+         publication%global_upper = outputPartitions(output_index)%global_upper
 
 #ifdef CompileWithMPI
-           if (control%num_procs > 1) then
-              color = MPI_UNDEFINED
-              if (publication%local_participates) color = 0
-              call MPI_Comm_split(SUBCOMM_MPI, color, control%layoutnumber, publication%communicator, ierr)
-              if (ierr /= MPI_SUCCESS) then
-                 call StopOnError(control%layoutnumber, control%num_procs, &
-                                  'Unable to create distributed output communicator')
-              end if
-              if (publication%local_participates) then
-                 publication%owns_communicator = .true.
-                 call MPI_Comm_rank(publication%communicator, publication%communicator_rank, ierr)
-                 call MPI_Comm_size(publication%communicator, publication%communicator_size, ierr)
-              end if
-           else
-               publication%communicator = MPI_COMM_WORLD
-           end if
+         if (control%num_procs > 1) then
+            color = MPI_UNDEFINED
+            if (publication%local_participates) color = 0
+            call MPI_Comm_split(SUBCOMM_MPI, color, control%layoutnumber, publication%communicator, ierr)
+            if (ierr /= MPI_SUCCESS) then
+               call StopOnError(control%layoutnumber, control%num_procs, &
+                                'Unable to create distributed output communicator')
+            end if
+            if (publication%local_participates) then
+               publication%owns_communicator = .true.
+               call MPI_Comm_rank(publication%communicator, publication%communicator_rank, ierr)
+               call MPI_Comm_size(publication%communicator, publication%communicator_size, ierr)
+            end if
+         else
+            publication%communicator = MPI_COMM_WORLD
+         end if
 #endif
-        end subroutine configure_output_publication
+      end subroutine configure_output_publication
 
-       subroutine get_local_map_bounds(request_lower, request_upper, local_lower, local_upper, has_data)
-          type(cell_coordinate_t), intent(in) :: request_lower, request_upper
-          type(cell_coordinate_t), intent(out) :: local_lower, local_upper
-          logical, intent(out) :: has_data
-          integer :: field
+      subroutine get_local_map_bounds(request_lower, request_upper, local_lower, local_upper, has_data)
+         type(cell_coordinate_t), intent(in) :: request_lower, request_upper
+         type(cell_coordinate_t), intent(out) :: local_lower, local_upper
+         logical, intent(out) :: has_data
+         integer :: field
 
-          local_lower = request_lower
-          local_upper = request_upper
-          do field = iEx, iHz
-             ! Restrict iteration to owned cells; isEdge uses Alloc halos for neighbours.
-             local_lower%x = max(local_lower%x, sgg%Sweep(field)%XI)
-             local_lower%y = max(local_lower%y, sgg%Sweep(field)%YI)
-             local_lower%z = max(local_lower%z, sgg%Sweep(field)%ZI)
-             local_upper%x = min(local_upper%x, sgg%Sweep(field)%XE)
-             local_upper%y = min(local_upper%y, sgg%Sweep(field)%YE)
-             local_upper%z = min(local_upper%z, sgg%Sweep(field)%ZE)
-          end do
-          has_data = local_lower%x <= local_upper%x .and. local_lower%y <= local_upper%y .and. &
-                     local_lower%z <= local_upper%z
-       end subroutine get_local_map_bounds
+         local_lower = request_lower
+         local_upper = request_upper
+         do field = iEx, iHz
+            ! Restrict iteration to owned cells; isEdge uses Alloc halos for neighbours.
+            local_lower%x = max(local_lower%x, sgg%Sweep(field)%XI)
+            local_lower%y = max(local_lower%y, sgg%Sweep(field)%YI)
+            local_lower%z = max(local_lower%z, sgg%Sweep(field)%ZI)
+            local_upper%x = min(local_upper%x, sgg%Sweep(field)%XE)
+            local_upper%y = min(local_upper%y, sgg%Sweep(field)%YE)
+            local_upper%z = min(local_upper%z, sgg%Sweep(field)%ZE)
+         end do
+         has_data = local_lower%x <= local_upper%x .and. local_lower%y <= local_upper%y .and. &
+                    local_lower%z <= local_upper%z
+      end subroutine get_local_map_bounds
 
       function preprocess_domain(observation, timeArray, simulationTimeStep, finalStepIndex) result(newDomain)
          type(Obses_t), intent(in) :: observation
@@ -664,10 +664,10 @@ contains
       runOutputRank = writer_rank
       firstMtlnOutput = 0
       output_count = 0
-      if (associated(outputs)) deallocate(outputs)
-      allocate(outputs(get_mtln_output_count()))
-      if (allocated(outputPartitions)) deallocate(outputPartitions)
-      allocate(outputPartitions(size(outputs)))
+      if (associated(outputs)) deallocate (outputs)
+      allocate (outputs(get_mtln_output_count()))
+      if (allocated(outputPartitions)) deallocate (outputPartitions)
+      allocate (outputPartitions(size(outputs)))
       call append_mtln_outputs(output_count)
    end subroutine init_mtln_outputs
 
@@ -713,10 +713,10 @@ contains
             outputs(output_count)%metadata%probe_id = probe_id
             outputs(output_count)%metadata%quantity = quantity
             outputs(output_count)%metadata%domain_type = TIME_DOMAIN
-            allocate(outputs(output_count)%metadata%artifacts(1))
+            allocate (outputs(output_count)%metadata%artifacts(1))
             outputs(output_count)%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
             outputs(output_count)%metadata%artifacts(1)%relative_path = get_last_component(data_path)
-            allocate(outputs(output_count)%metadata%ownership%participant_ranks(1))
+            allocate (outputs(output_count)%metadata%ownership%participant_ranks(1))
             outputs(output_count)%metadata%ownership%participant_ranks(1) = &
                mtln_solver%bundles(i)%probes(j)%output_writer_rank
             outputs(output_count)%metadata%ownership%scalar_writer_rank = &
@@ -771,7 +771,7 @@ contains
                   end if
                end if
                call publish_final_probe_metadata(outputs(output_index)%metadata_path, &
-                                                  outputs(output_index)%metadata, metadata_status)
+                                                 outputs(output_index)%metadata, metadata_status)
                if (metadata_status /= OUTPUT_METADATA_SUCCESS) then
                   outputs(output_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
                   outputs(output_index)%metadata%lifecycle%diagnostic = 'Unable to publish MTLN probe metadata'
@@ -830,12 +830,12 @@ contains
             call update_solver_output(outputs(i)%movieProbe, discreteTime, fieldsReference, control, problemInfo)
          case (FREQUENCY_SLICE_PROBE_ID)
             call update_solver_output(outputs(i)%frequencySliceProbe, discreteTime, fieldsReference, control, problemInfo)
-          case (FAR_FIELD_PROBE_ID)
-             call update_solver_output(outputs(i)%farFieldOutput, timeIndx, problemInfo%simulationBounds, fieldsReference)
-          case (MAPVTK_ID)
+         case (FAR_FIELD_PROBE_ID)
+            call update_solver_output(outputs(i)%farFieldOutput, timeIndx, problemInfo%simulationBounds, fieldsReference)
+         case (MAPVTK_ID)
          case (MTLN_PROBE_ID)
-          case default
-             call stoponerror(0, 0, 'Output update not implemented')
+         case default
+            call stoponerror(0, 0, 'Output update not implemented')
          end select
       end do
 
@@ -1019,7 +1019,7 @@ contains
          if (metadata%artifacts(artifact_index)%kind == OUTPUT_ARTIFACT_UNDEFINED) cycle
          if (ios == 0) write (unit, '(a)', iostat=ios) ','
          if (ios == 0) call write_manifest_artifact(unit, &
-            resolve_artifact_path(metadata_path, metadata%artifacts(artifact_index)%relative_path), ios)
+                                        resolve_artifact_path(metadata_path, metadata%artifacts(artifact_index)%relative_path), ios)
       end do
       if (ios == 0) write (unit, '(a)', iostat=ios) ']'
       if (ios == 0) write (unit, '(a)', iostat=ios) '}'

@@ -4,7 +4,7 @@ module wireProbeOutput_m
    use allocationUtils_m, only: alloc_and_init
    use report_m
    use outputTypes_m
-    use outputUtils_m
+   use outputUtils_m
    use wiresHolland_constants_m
    use HollandWires_m
 
@@ -42,7 +42,7 @@ module wireProbeOutput_m
 #endif
    !===========================
 
-   contains
+contains
    !======================================================================
    ! INITIALIZATION
    !======================================================================
@@ -52,55 +52,54 @@ module wireProbeOutput_m
       type(cell_coordinate_t), intent(in)            :: coordinates
       type(domain_t), intent(in)                     :: domain
       type(MediaData_t), intent(in)                  :: media(:)
-       integer(kind=SINGLE), intent(in)               :: node, field, mpidir
-       character(len=*), intent(in)                   :: outputTypeExtension, wiresflavor
-        character(len=BUFSIZE) :: artifact_paths(1)
-        integer :: artifact_kinds(1)
+      integer(kind=SINGLE), intent(in)               :: node, field, mpidir
+      character(len=*), intent(in)                   :: outputTypeExtension, wiresflavor
+      character(len=BUFSIZE) :: artifact_paths(1)
+      integer :: artifact_kinds(1)
 
       this%mainCoords = coordinates
       this%component = field
-      this%domain    = domain
-      this%sign      = 1
+      this%domain = domain
+      this%sign = 1
 
-       call find_current_segment(this, node, field, media, wiresflavor)
-       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
+      call find_current_segment(this, node, field, media, wiresflavor)
+      this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-       call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
-        artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
-         artifact_kinds = OUTPUT_ARTIFACT_TEXT
-         call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
-        this%filePathTime = this%artifacts(1)%relative_path
-         call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, &
-                               't current delta_voltage plus_voltage minus_voltage voltage_difference')
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+      artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+      artifact_kinds = OUTPUT_ARTIFACT_TEXT
+      call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
+      this%filePathTime = this%artifacts(1)%relative_path
+      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, &
+                            't current delta_voltage plus_voltage minus_voltage voltage_difference')
 
    end subroutine init_wire_current_probe_output
-
 
    subroutine init_wire_charge_probe_output(this, coordinates, node, field, domain, &
                                             outputTypeExtension, mpidir, wiresflavor)
       type(wire_charge_probe_output_t), intent(out) :: this
       type(cell_coordinate_t), intent(in)           :: coordinates
       type(domain_t), intent(in)                    :: domain
-       integer(kind=SINGLE), intent(in)              :: node, field, mpidir
-       character(len=*), intent(in)                  :: outputTypeExtension, wiresflavor
-        character(len=BUFSIZE) :: artifact_paths(1)
-        integer :: artifact_kinds(1)
+      integer(kind=SINGLE), intent(in)              :: node, field, mpidir
+      character(len=*), intent(in)                  :: outputTypeExtension, wiresflavor
+      character(len=BUFSIZE) :: artifact_paths(1)
+      integer :: artifact_kinds(1)
 
       this%mainCoords = coordinates
       this%component = field
-      this%domain    = domain
-      this%sign      = 1
+      this%domain = domain
+      this%sign = 1
 
-       call find_charge_segment(this, node, field, wiresflavor)
-       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
+      call find_charge_segment(this, node, field, wiresflavor)
+      this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-       call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
-       call alloc_and_init(this%chargeValue, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
-        artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
-         artifact_kinds = OUTPUT_ARTIFACT_TEXT
-         call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
-        this%filePathTime = this%artifacts(1)%relative_path
-         call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, 't charge')
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+      call alloc_and_init(this%chargeValue, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
+      artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+      artifact_kinds = OUTPUT_ARTIFACT_TEXT
+      call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
+      this%filePathTime = this%artifacts(1)%relative_path
+      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, 't charge')
 
    end subroutine init_wire_charge_probe_output
 
@@ -111,25 +110,24 @@ module wireProbeOutput_m
       type(wire_current_probe_output_t), intent(inout) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
       type(sim_control_t), intent(in)     :: control
-       real(kind=RKIND), intent(in)        :: InvEps(0:), InvMu(0:)
+      real(kind=RKIND), intent(in)        :: InvEps(0:), InvMu(0:)
 
       this%nTime = this%nTime + 1
       this%timeStep(this%nTime) = step
 
       select case (trim(control%wiresflavor))
-      case ('holland','transition')
+      case ('holland', 'transition')
          call update_current_holland(this, control, InvEps, InvMu)
 #ifdef CompileWithBerengerWires
       case ('berenger')
          call update_current_berenger(this, InvEps, InvMu)
 #endif
 #ifdef CompileWithSlantedWires
-      case ('slanted','semistructured')
+      case ('slanted', 'semistructured')
          call update_current_slanted(this)
 #endif
       end select
    end subroutine
-
 
    subroutine update_wire_charge_probe_output(this, step)
       type(wire_charge_probe_output_t), intent(inout) :: this
@@ -144,43 +142,42 @@ module wireProbeOutput_m
    ! FLUSH
    !======================================================================
    subroutine flush_wire_current_probe_output(this)
-       type(wire_current_probe_output_t), intent(inout) :: this
-       integer :: i, ios, unit
+      type(wire_current_probe_output_t), intent(inout) :: this
+      integer :: i, ios, unit
 
-       open(newunit=unit, file=this%filePathTime, status='old', action='write', position='append', iostat=ios)
-       if (ios /= 0) return
+      open (newunit=unit, file=this%filePathTime, status='old', action='write', position='append', iostat=ios)
+      if (ios /= 0) return
 
-       do i = 1, this%nTime
-          write(unit, fmt, iostat=ios) this%timeStep(i), &
-             this%currentValues(i)%current, &
+      do i = 1, this%nTime
+         write (unit, fmt, iostat=ios) this%timeStep(i), &
+            this%currentValues(i)%current, &
             this%currentValues(i)%deltaVoltage, &
             this%currentValues(i)%plusVoltage, &
-             this%currentValues(i)%minusVoltage, &
-             this%currentValues(i)%voltageDiference
-          if (ios /= 0) exit
-       end do
-        close(unit, iostat=ios)
+            this%currentValues(i)%minusVoltage, &
+            this%currentValues(i)%voltageDiference
+         if (ios /= 0) exit
+      end do
+      close (unit, iostat=ios)
 
-        if (ios /= 0) return
-        call clear_current_time_data(this)
+      if (ios /= 0) return
+      call clear_current_time_data(this)
    end subroutine
 
-
    subroutine flush_wire_charge_probe_output(this)
-       type(wire_charge_probe_output_t), intent(inout) :: this
-       integer :: i, ios, unit
+      type(wire_charge_probe_output_t), intent(inout) :: this
+      integer :: i, ios, unit
 
-       open(newunit=unit, file=this%filePathTime, status='old', action='write', position='append', iostat=ios)
-       if (ios /= 0) return
+      open (newunit=unit, file=this%filePathTime, status='old', action='write', position='append', iostat=ios)
+      if (ios /= 0) return
 
-       do i = 1, this%nTime
-          write(unit, fmt, iostat=ios) this%timeStep(i), this%chargeValue(i)
-          if (ios /= 0) exit
-       end do
-        close(unit, iostat=ios)
+      do i = 1, this%nTime
+         write (unit, fmt, iostat=ios) this%timeStep(i), this%chargeValue(i)
+         if (ios /= 0) exit
+      end do
+      close (unit, iostat=ios)
 
-        if (ios /= 0) return
-        call clear_charge_time_data(this)
+      if (ios /= 0) return
+      call clear_charge_time_data(this)
    end subroutine
 
    subroutine find_current_segment(this, node, field, media, wiresflavor)
@@ -198,19 +195,19 @@ module wireProbeOutput_m
       type(WiresData), pointer :: Hwireslocal_S
 #endif
 
-       integer :: n, iwi, iwj, node2
-       integer :: probe_i, probe_j, probe_k
+      integer :: n, iwi, iwj, node2
+      integer :: probe_i, probe_j, probe_k
       logical :: found
       character(len=BUFSIZE) :: buff
 
-       found = .false.
-       this%sign = 1
-       probe_i = this%mainCoords%x
-       probe_j = this%mainCoords%y
-       probe_k = this%mainCoords%z
+      found = .false.
+      this%sign = 1
+      probe_i = this%mainCoords%x
+      probe_j = this%mainCoords%y
+      probe_k = this%mainCoords%z
 
       select case (trim(adjustl(wiresflavor)))
-      case ('holland','transition')
+      case ('holland', 'transition')
          Hwireslocal => GetHwires()
          this%segment => Hwireslocal%NullSegment
 
@@ -240,7 +237,7 @@ module wireProbeOutput_m
 #endif
 
 #ifdef CompileWithSlantedWires
-      case ('slanted','semistructured')
+      case ('slanted', 'semistructured')
          Hwireslocal_S => GetHwires_Slanted()
          do n = 1, Hwireslocal_S%NumSegments
             if (Hwireslocal_S%Segments(n)%ptr%Index == node) then
@@ -275,8 +272,8 @@ module wireProbeOutput_m
       end if
 
       if (.not. found) then
-          write(buff,'(a,4i7,a)') 'ERROR: WIRE probe ',node,probe_i,probe_j,probe_k,' DOES NOT EXIST'
-         call WarnErrReport(buff,.true.)
+         write (buff, '(a,4i7,a)') 'ERROR: WIRE probe ', node, probe_i, probe_j, probe_k, ' DOES NOT EXIST'
+         call WarnErrReport(buff, .true.)
       end if
    end subroutine find_current_segment
 
@@ -286,17 +283,17 @@ module wireProbeOutput_m
       character(len=*), intent(in) :: wiresflavor
 
       type(Thinwires_t), pointer :: Hwireslocal
-       type(CurrentSegments_t), pointer :: seg
-       integer :: n
-       integer :: probe_i, probe_j, probe_k
+      type(CurrentSegments_t), pointer :: seg
+      integer :: n
+      integer :: probe_i, probe_j, probe_k
       logical :: found
       character(len=BUFSIZE) :: buff
 
-       found = .false.
-       this%sign = 1
-       probe_i = this%mainCoords%x
-       probe_j = this%mainCoords%y
-       probe_k = this%mainCoords%z
+      found = .false.
+      this%sign = 1
+      probe_i = this%mainCoords%x
+      probe_j = this%mainCoords%y
+      probe_k = this%mainCoords%z
 
       if (trim(adjustl(wiresflavor)) /= 'holland' .and. &
           trim(adjustl(wiresflavor)) /= 'transition') then
@@ -309,7 +306,7 @@ module wireProbeOutput_m
       do n = 1, Hwireslocal%NumCurrentSegments
          seg => Hwireslocal%CurrentSegment(n)
          if (seg%origindex == node .and. &
-              seg%i == probe_i .and. seg%j == probe_j .and. seg%k == probe_k .and. &
+             seg%i == probe_i .and. seg%j == probe_j .and. seg%k == probe_k .and. &
              seg%tipofield*10000 == field) then
             found = .true.
             this%segment => seg
@@ -319,8 +316,8 @@ module wireProbeOutput_m
       end do
 
       if (.not. found) then
-          write(buff,'(a,4i7,a)') 'ERROR: CHARGE probe ',node,probe_i,probe_j,probe_k,' DOES NOT EXIST'
-         call WarnErrReport(buff,.true.)
+         write (buff, '(a,4i7,a)') 'ERROR: CHARGE probe ', node, probe_i, probe_j, probe_k, ' DOES NOT EXIST'
+         call WarnErrReport(buff, .true.)
       end if
    end subroutine find_charge_segment
 
@@ -330,9 +327,9 @@ module wireProbeOutput_m
       character(len=BUFSIZE) :: ext
       character(len=BUFSIZE) :: ci, cj, ck
 
-      write(ci,'(i7)') coords%x
-      write(cj,'(i7)') coords%y
-      write(ck,'(i7)') coords%z
+      write (ci, '(i7)') coords%x
+      write (cj, '(i7)') coords%y
+      write (ck, '(i7)') coords%z
 
 #if CompileWithMPI
       select case (mpidir)
@@ -343,7 +340,7 @@ module wireProbeOutput_m
       case (1)
          ext = trim(adjustl(ck))//'_'//trim(adjustl(ci))//'_'//trim(adjustl(cj))
       case default
-         call stoponerror(0,0,'Buggy error in mpidir.')
+         call stoponerror(0, 0, 'Buggy error in mpidir.')
       end select
 #else
       ext = trim(adjustl(ci))//'_'//trim(adjustl(cj))//'_'//trim(adjustl(ck))
@@ -357,22 +354,22 @@ module wireProbeOutput_m
       character(len=BUFSIZE) :: path
       character(len=BUFSIZE) :: nodeStr, fieldExt, boundsExt
 
-      write(nodeStr,'(i7)') node
-      fieldExt  = get_prefix_extension(field, mpidir)
+      write (nodeStr, '(i7)') node
+      fieldExt = get_prefix_extension(field, mpidir)
       boundsExt = probe_bounds_extension(mpidir, coords)
 
-       path = trim(outExt)//'_'//trim(fieldExt)//'_'// &
-              trim(boundsExt)//'_s'//trim(adjustl(nodeStr))
+      path = trim(outExt)//'_'//trim(fieldExt)//'_'// &
+             trim(boundsExt)//'_s'//trim(adjustl(nodeStr))
    end function build_output_path
 
    subroutine clear_current_time_data(this)
       type(wire_current_probe_output_t), intent(inout) :: this
 
       this%timeStep = 0.0_RKIND_tiempo
-      this%currentValues%current          = 0.0_RKIND
-      this%currentValues%deltaVoltage     = 0.0_RKIND
-      this%currentValues%plusVoltage      = 0.0_RKIND
-      this%currentValues%minusVoltage     = 0.0_RKIND
+      this%currentValues%current = 0.0_RKIND
+      this%currentValues%deltaVoltage = 0.0_RKIND
+      this%currentValues%plusVoltage = 0.0_RKIND
+      this%currentValues%minusVoltage = 0.0_RKIND
       this%currentValues%voltageDiference = 0.0_RKIND
       this%nTime = 0
    end subroutine clear_current_time_data
@@ -380,7 +377,7 @@ module wireProbeOutput_m
    subroutine clear_charge_time_data(this)
       type(wire_charge_probe_output_t), intent(inout) :: this
 
-      this%timeStep    = 0.0_RKIND_tiempo
+      this%timeStep = 0.0_RKIND_tiempo
       this%chargeValue = 0.0_RKIND
       this%nTime = 0
    end subroutine clear_charge_time_data
@@ -388,34 +385,34 @@ module wireProbeOutput_m
    subroutine update_current_holland(this, control, InvEps, InvMu)
       type(wire_current_probe_output_t), intent(inout) :: this
       type(sim_control_t), intent(in) :: control
-       real(kind=RKIND), intent(in) :: InvEps(0:), InvMu(0:)
+      real(kind=RKIND), intent(in) :: InvEps(0:), InvMu(0:)
 
       type(CurrentSegments_t), pointer :: seg
 
       seg => this%segment
 
       this%currentValues(this%nTime)%current = &
-         this%sign * seg%currentpast
+         this%sign*seg%currentpast
 
       this%currentValues(this%nTime)%deltaVoltage = &
-         - seg%Efield_wire2main * seg%delta
+         -seg%Efield_wire2main*seg%delta
 
       if (control%wirecrank) then
-         this%currentValues(this%nTime)%plusVoltage = this%sign * &
-            (seg%ChargePlus%ChargePresent) * seg%Lind * &
-            (InvMu(seg%indexmed) * InvEps(seg%indexmed))
+         this%currentValues(this%nTime)%plusVoltage = this%sign* &
+                                                      (seg%ChargePlus%ChargePresent)*seg%Lind* &
+                                                      (InvMu(seg%indexmed)*InvEps(seg%indexmed))
 
-         this%currentValues(this%nTime)%minusVoltage = this%sign * &
-            (seg%ChargeMinus%ChargePresent) * seg%Lind * &
-            (InvMu(seg%indexmed) * InvEps(seg%indexmed))
+         this%currentValues(this%nTime)%minusVoltage = this%sign* &
+                                                       (seg%ChargeMinus%ChargePresent)*seg%Lind* &
+                                                       (InvMu(seg%indexmed)*InvEps(seg%indexmed))
       else
-         this%currentValues(this%nTime)%plusVoltage = this%sign * &
-            ((seg%ChargePlus%ChargePresent + seg%ChargePlus%ChargePast) / 2.0_RKIND) * &
-            seg%Lind * (InvMu(seg%indexmed) * InvEps(seg%indexmed))
+         this%currentValues(this%nTime)%plusVoltage = this%sign* &
+                                                      ((seg%ChargePlus%ChargePresent + seg%ChargePlus%ChargePast)/2.0_RKIND)* &
+                                                      seg%Lind*(InvMu(seg%indexmed)*InvEps(seg%indexmed))
 
-         this%currentValues(this%nTime)%minusVoltage = this%sign * &
-            ((seg%ChargeMinus%ChargePresent + seg%ChargeMinus%ChargePast) / 2.0_RKIND) * &
-            seg%Lind * (InvMu(seg%indexmed) * InvEps(seg%indexmed))
+         this%currentValues(this%nTime)%minusVoltage = this%sign* &
+                                                       ((seg%ChargeMinus%ChargePresent + seg%ChargeMinus%ChargePast)/2.0_RKIND)* &
+                                                       seg%Lind*(InvMu(seg%indexmed)*InvEps(seg%indexmed))
       end if
 
       this%currentValues(this%nTime)%voltageDiference = &
@@ -426,25 +423,25 @@ module wireProbeOutput_m
 #ifdef CompileWithBerengerWires
    subroutine update_current_berenger(this, InvEps, InvMu)
       type(wire_current_probe_output_t), intent(inout) :: this
-       real(kind=RKIND), intent(in) :: InvEps(0:), InvMu(0:)
+      real(kind=RKIND), intent(in) :: InvEps(0:), InvMu(0:)
 
       type(TSegment), pointer :: seg
 
       seg => this%segmentBerenger
 
       this%currentValues(this%nTime)%current = &
-         this%sign * seg%currentpast
+         this%sign*seg%currentpast
 
       this%currentValues(this%nTime)%deltaVoltage = &
-         - seg%field * seg%dl
+         -seg%field*seg%dl
 
-      this%currentValues(this%nTime)%plusVoltage = this%sign * &
-         ((seg%ChargePlus + seg%ChargePlusPast) / 2.0_RKIND) * &
-         seg%L * (InvMu(seg%imed) * InvEps(seg%imed))
+      this%currentValues(this%nTime)%plusVoltage = this%sign* &
+                                                   ((seg%ChargePlus + seg%ChargePlusPast)/2.0_RKIND)* &
+                                                   seg%L*(InvMu(seg%imed)*InvEps(seg%imed))
 
-      this%currentValues(this%nTime)%minusVoltage = this%sign * &
-         ((seg%ChargeMinus + seg%ChargeMinusPast) / 2.0_RKIND) * &
-         seg%L * (InvMu(seg%imed) * InvEps(seg%imed))
+      this%currentValues(this%nTime)%minusVoltage = this%sign* &
+                                                    ((seg%ChargeMinus + seg%ChargeMinusPast)/2.0_RKIND)* &
+                                                    seg%L*(InvMu(seg%imed)*InvEps(seg%imed))
 
       this%currentValues(this%nTime)%voltageDiference = &
          this%currentValues(this%nTime)%plusVoltage - &
@@ -464,15 +461,15 @@ module wireProbeOutput_m
          seg%Currentpast
 
       this%currentValues(this%nTime)%deltaVoltage = &
-         - seg%field * seg%dl
+         -seg%field*seg%dl
 
       this%currentValues(this%nTime)%plusVoltage = &
          (seg%Voltage(iPlus)%ptr%Voltage + &
-          seg%Voltage(iPlus)%ptr%VoltagePast) / 2.0_RKIND
+          seg%Voltage(iPlus)%ptr%VoltagePast)/2.0_RKIND
 
       this%currentValues(this%nTime)%minusVoltage = &
          (seg%Voltage(iMinus)%ptr%Voltage + &
-          seg%Voltage(iMinus)%ptr%VoltagePast) / 2.0_RKIND
+          seg%Voltage(iMinus)%ptr%VoltagePast)/2.0_RKIND
 
       this%currentValues(this%nTime)%voltageDiference = &
          this%currentValues(this%nTime)%plusVoltage - &

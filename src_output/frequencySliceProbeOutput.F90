@@ -11,10 +11,10 @@ module frequencySliceProbeOutput_m
    use outputBinary_m, only: validate_binary_layout, write_binary_complex_record64, BINARY_WRITER_SUCCESS
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
    use outputVisualisation_m, only: initialise_frequency_slice_visualisation, begin_visualisation_step, &
-      write_visualisation_attribute, write_visualisation_attribute_hyperslab, end_visualisation_step, &
-      close_visualisation, verify_volumetric_visualisation, VISUALISATION_SUCCESS, &
-      VISUALISATION_ATTRIBUTE_X, VISUALISATION_ATTRIBUTE_Y, VISUALISATION_ATTRIBUTE_Z, &
-      VISUALISATION_ATTRIBUTE_X_PHASE, VISUALISATION_ATTRIBUTE_Y_PHASE, VISUALISATION_ATTRIBUTE_Z_PHASE
+                                   write_visualisation_attribute, write_visualisation_attribute_hyperslab, end_visualisation_step, &
+                                    close_visualisation, verify_volumetric_visualisation, VISUALISATION_SUCCESS, &
+                                    VISUALISATION_ATTRIBUTE_X, VISUALISATION_ATTRIBUTE_Y, VISUALISATION_ATTRIBUTE_Z, &
+                                   VISUALISATION_ATTRIBUTE_X_PHASE, VISUALISATION_ATTRIBUTE_Y_PHASE, VISUALISATION_ATTRIBUTE_Z_PHASE
    use outputCollective_m, only: OUTPUT_PUBLICATION_COLLECTIVE, OUTPUT_PUBLICATION_ROOT_AGGREGATION
    use outputTransport_m, only: output_transport_t, init_output_transport, transfer_flush_batch, &
                                 OUTPUT_TRANSPORT_SUCCESS
@@ -87,7 +87,7 @@ contains
          call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, &
                                               problemInfo, this%nPoints, this%coords)
       else
-         allocate(this%coords(3, 0))
+         allocate (this%coords(3, 0))
       end if
 
       call alloc_and_init(this%xValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
@@ -109,7 +109,7 @@ contains
 
       call initialise_frequency_metadata(this, error, control%mpidir)
       if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-         'Unable to initialise frequency slice output metadata')
+                                       'Unable to initialise frequency slice output metadata')
 
       if (.not. publication%local_participates) then
          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
@@ -121,40 +121,40 @@ contains
       if (publication%local_is_owner) then
          call create_folder(this%path, error)
          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-            'Unable to create frequency slice output directory')
+                                          'Unable to create frequency slice output directory')
          call create_bin_file(this%filesPath, error)
          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-            'Unable to create frequency slice binary output')
+                                          'Unable to create frequency slice binary output')
       end if
 #ifdef CompileWithMPI
       call MPI_Barrier(this%publication%communicator, mpi_error)
       if (mpi_error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
-         'Unable to synchronise frequency slice output participants')
+                                                     'Unable to synchronise frequency slice output participants')
 #endif
 
       if (publication%mode == OUTPUT_PUBLICATION_COLLECTIVE .or. publication%local_is_owner) then
          call create_frequency_writer(this, problemInfo, error)
          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-            'Unable to initialise frequency slice HDF5 output')
+                                          'Unable to initialise frequency slice HDF5 output')
       end if
 
       if (publication%local_is_owner) then
          call publish_initial_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
          if (error /= OUTPUT_METADATA_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
-            'Unable to publish initial frequency slice output metadata')
+                                                                'Unable to publish initial frequency slice output metadata')
       end if
       this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
    end subroutine init_frequency_slice_probe_output
 
    subroutine set_local_bounds(this)
-       type(frequency_slice_probe_output_t), intent(inout) :: this
+      type(frequency_slice_probe_output_t), intent(inout) :: this
 
-       this%mainCoords%x = this%publication%global_lower%x + int(this%publication%file_offset(1), SINGLE)
-       this%mainCoords%y = this%publication%global_lower%y + int(this%publication%file_offset(2), SINGLE)
-       this%mainCoords%z = this%publication%global_lower%z + int(this%publication%file_offset(3), SINGLE)
-       this%auxCoords%x = this%mainCoords%x + int(this%publication%local_shape(1), SINGLE) - 1_SINGLE
-       this%auxCoords%y = this%mainCoords%y + int(this%publication%local_shape(2), SINGLE) - 1_SINGLE
-       this%auxCoords%z = this%mainCoords%z + int(this%publication%local_shape(3), SINGLE) - 1_SINGLE
+      this%mainCoords%x = this%publication%global_lower%x + int(this%publication%file_offset(1), SINGLE)
+      this%mainCoords%y = this%publication%global_lower%y + int(this%publication%file_offset(2), SINGLE)
+      this%mainCoords%z = this%publication%global_lower%z + int(this%publication%file_offset(3), SINGLE)
+      this%auxCoords%x = this%mainCoords%x + int(this%publication%local_shape(1), SINGLE) - 1_SINGLE
+      this%auxCoords%y = this%mainCoords%y + int(this%publication%local_shape(2), SINGLE) - 1_SINGLE
+      this%auxCoords%z = this%mainCoords%z + int(this%publication%local_shape(3), SINGLE) - 1_SINGLE
    end subroutine set_local_bounds
 
    subroutine gather_global_coordinates(this, control)
@@ -168,14 +168,14 @@ contains
 #endif
 
       rank_count = this%publication%communicator_size
-      allocate(point_counts(rank_count), point_displacements(rank_count))
+      allocate (point_counts(rank_count), point_displacements(rank_count))
       point_counts = 0
       point_displacements = 0
 #ifdef CompileWithMPI
       call MPI_Allgather(this%nPoints, 1, MPI_INTEGER, point_counts, 1, MPI_INTEGER, &
                          this%publication%communicator, mpi_error)
       if (mpi_error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
-         'Unable to gather frequency slice point counts')
+                                                     'Unable to gather frequency slice point counts')
 #else
       point_counts(1) = this%nPoints
 #endif
@@ -188,19 +188,19 @@ contains
       if (this%publication%global_point_count <= 0_int64 .or. &
           this%publication%global_point_count > int(huge(1), int64)) then
          call StopOnError(control%layoutnumber, control%num_procs, &
-            'Invalid global frequency slice point count')
+                          'Invalid global frequency slice point count')
       end if
 
-      allocate(this%globalCoords(3, int(this%publication%global_point_count)))
-      allocate(coordinate_counts(rank_count), coordinate_displacements(rank_count))
-      coordinate_counts = 3 * point_counts
-      coordinate_displacements = 3 * point_displacements
+      allocate (this%globalCoords(3, int(this%publication%global_point_count)))
+      allocate (coordinate_counts(rank_count), coordinate_displacements(rank_count))
+      coordinate_counts = 3*point_counts
+      coordinate_displacements = 3*point_displacements
 #ifdef CompileWithMPI
-      call MPI_Allgatherv(this%coords, 3 * this%nPoints, MPI_INTEGER, this%globalCoords, &
+      call MPI_Allgatherv(this%coords, 3*this%nPoints, MPI_INTEGER, this%globalCoords, &
                           coordinate_counts, coordinate_displacements, MPI_INTEGER, &
                           this%publication%communicator, mpi_error)
       if (mpi_error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
-         'Unable to gather frequency slice coordinates')
+                                                     'Unable to gather frequency slice coordinates')
 #else
       this%globalCoords = this%coords
 #endif
@@ -216,7 +216,7 @@ contains
       integer :: i, status
 
       error = 0
-      allocate(points(3, int(this%publication%global_point_count)))
+      allocate (points(3, int(this%publication%global_point_count)))
       do i = 1, int(this%publication%global_point_count)
          if (associated(problemInfo%xSteps) .and. &
              associated(problemInfo%ySteps) .and. &
@@ -228,8 +228,8 @@ contains
                 this%globalCoords(3, i) >= lbound(problemInfo%zSteps, 1) .and. &
                 this%globalCoords(3, i) <= ubound(problemInfo%zSteps, 1)) then
                points(:, i) = [real(problemInfo%xSteps(this%globalCoords(1, i)), real64), &
-                  real(problemInfo%ySteps(this%globalCoords(2, i)), real64), &
-                  real(problemInfo%zSteps(this%globalCoords(3, i)), real64)]
+                               real(problemInfo%ySteps(this%globalCoords(2, i)), real64), &
+                               real(problemInfo%zSteps(this%globalCoords(3, i)), real64)]
             else
                points(:, i) = real(this%globalCoords(:, i), real64)
             end if
@@ -239,14 +239,14 @@ contains
       end do
 
       call initialise_frequency_slice_visualisation(this%visualisation, trim(this%filesPath), points, &
-         this%publication%mode == OUTPUT_PUBLICATION_COLLECTIVE, this%publication%communicator, &
-         status, diagnostic)
+                                            this%publication%mode == OUTPUT_PUBLICATION_COLLECTIVE, this%publication%communicator, &
+                                                    status, diagnostic)
       if (status /= VISUALISATION_SUCCESS) then
          error = 1
          print *, trim(diagnostic)
       end if
-      deallocate(points)
-    end subroutine create_frequency_writer
+      deallocate (points)
+   end subroutine create_frequency_writer
 
    subroutine create_bin_file(filePath, error)
       character(len=*), intent(in) :: filePath
@@ -254,38 +254,38 @@ contains
       call create_file_with_path(add_extension(filePath, binaryExtension), error)
    end subroutine
 
-     subroutine initialise_frequency_metadata(this, error, mpidir)
-       type(frequency_slice_probe_output_t), intent(inout) :: this
-       integer, intent(out) :: error
-       integer(kind=SINGLE), intent(in) :: mpidir
-       character(len=BUFSIZE) :: base_name
+   subroutine initialise_frequency_metadata(this, error, mpidir)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      integer, intent(out) :: error
+      integer(kind=SINGLE), intent(in) :: mpidir
+      character(len=BUFSIZE) :: base_name
 
-       base_name = get_last_component(this%filesPath)
-       this%metadata%probe_id = trim(base_name)
-        this%metadata%quantity = get_prefix_extension(this%component, mpidir)
-        this%metadata%lower_bound = this%publication%global_lower
-        this%metadata%upper_bound = this%publication%global_upper
-        this%metadata%domain_type = FREQUENCY_DOMAIN
-        this%metadata%ownership%participant_ranks = this%publication%participant_ranks
-        this%metadata%ownership%scalar_writer_rank = this%publication%owner_rank
-       if (allocated(this%metadata%artifacts)) deallocate(this%metadata%artifacts)
-       allocate(this%metadata%artifacts(3))
-       this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
-       this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
-       this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
-         this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL64
-        this%metadata%artifacts(1)%complex_representation = BINARY_COMPLEX_REAL_IMAG
-         this%metadata%artifacts(1)%record_bytes = 80
-        this%metadata%artifacts(1)%component_order = &
-           'frequency,x,y,z,Ex.real,Ex.imag,Ey.real,Ey.imag,Ez.real,Ez.imag'
-       this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
-       this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
-       this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
-       this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
+      base_name = get_last_component(this%filesPath)
+      this%metadata%probe_id = trim(base_name)
+      this%metadata%quantity = get_prefix_extension(this%component, mpidir)
+      this%metadata%lower_bound = this%publication%global_lower
+      this%metadata%upper_bound = this%publication%global_upper
+      this%metadata%domain_type = FREQUENCY_DOMAIN
+      this%metadata%ownership%participant_ranks = this%publication%participant_ranks
+      this%metadata%ownership%scalar_writer_rank = this%publication%owner_rank
+      if (allocated(this%metadata%artifacts)) deallocate (this%metadata%artifacts)
+      allocate (this%metadata%artifacts(3))
+      this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
+      this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
+      this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
+      this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL64
+      this%metadata%artifacts(1)%complex_representation = BINARY_COMPLEX_REAL_IMAG
+      this%metadata%artifacts(1)%record_bytes = 80
+      this%metadata%artifacts(1)%component_order = &
+         'frequency,x,y,z,Ex.real,Ex.imag,Ey.real,Ey.imag,Ez.real,Ez.imag'
+      this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
+      this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
+      this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
 
-       call validate_binary_layout(this%metadata%artifacts(1), error)
-       if (error /= BINARY_WRITER_SUCCESS) return
-       error = 0
+      call validate_binary_layout(this%metadata%artifacts(1), error)
+      if (error /= BINARY_WRITER_SUCCESS) return
+      error = 0
    end subroutine initialise_frequency_metadata
 
    subroutine write_visualisation(this)
@@ -297,9 +297,9 @@ contains
       character(len=BUFSIZE) :: diagnostic
       integer :: f, i, status, transport_status
 
-      allocate(xMagnitude(this%nPoints), yMagnitude(this%nPoints), &
-         zMagnitude(this%nPoints), xPhase(this%nPoints), yPhase(this%nPoints), &
-         zPhase(this%nPoints))
+      allocate (xMagnitude(this%nPoints), yMagnitude(this%nPoints), &
+                zMagnitude(this%nPoints), xPhase(this%nPoints), yPhase(this%nPoints), &
+                zPhase(this%nPoints))
       if (this%publication%mode == OUTPUT_PUBLICATION_ROOT_AGGREGATION) then
          call init_output_transport(transport, 0, transport_status, this%publication%communicator)
          if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
@@ -313,47 +313,47 @@ contains
             yMagnitude(i) = real(abs(this%yValueForFreq(f, i)), real64)
             zMagnitude(i) = real(abs(this%zValueForFreq(f, i)), real64)
             xPhase(i) = atan2(real(aimag(this%xValueForFreq(f, i)), real64), &
-               real(this%xValueForFreq(f, i), real64))
+                              real(this%xValueForFreq(f, i), real64))
             yPhase(i) = atan2(real(aimag(this%yValueForFreq(f, i)), real64), &
-               real(this%yValueForFreq(f, i), real64))
+                              real(this%yValueForFreq(f, i), real64))
             zPhase(i) = atan2(real(aimag(this%zValueForFreq(f, i)), real64), &
-                real(this%zValueForFreq(f, i), real64))
+                              real(this%zValueForFreq(f, i), real64))
          end do
 
          select case (this%publication%mode)
          case (OUTPUT_PUBLICATION_COLLECTIVE)
-             call begin_visualisation_step(this%visualisation, real(this%frequencySlice(f), real64), &
-                                           status, diagnostic)
-             call require_visualisation_success(status, diagnostic)
-             call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_X, xMagnitude)
-             call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_Y, yMagnitude)
-             call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_Z, zMagnitude)
-             call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_X_PHASE, xPhase)
-             call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_Y_PHASE, yPhase)
-             call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_Z_PHASE, zPhase)
-             call end_visualisation_step(this%visualisation, status, diagnostic)
-             call require_visualisation_success(status, diagnostic)
+            call begin_visualisation_step(this%visualisation, real(this%frequencySlice(f), real64), &
+                                          status, diagnostic)
+            call require_visualisation_success(status, diagnostic)
+            call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_X, xMagnitude)
+            call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_Y, yMagnitude)
+            call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_Z, zMagnitude)
+            call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_X_PHASE, xPhase)
+            call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_Y_PHASE, yPhase)
+            call write_collective_attribute(this, VISUALISATION_ATTRIBUTE_Z_PHASE, zPhase)
+            call end_visualisation_step(this%visualisation, status, diagnostic)
+            call require_visualisation_success(status, diagnostic)
          case (OUTPUT_PUBLICATION_ROOT_AGGREGATION)
-             if (this%publication%local_is_owner) then
-                call begin_visualisation_step(this%visualisation, real(this%frequencySlice(f), real64), &
-                                              status, diagnostic)
-                call require_visualisation_success(status, diagnostic)
-             end if
-             call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_X, xMagnitude)
-             call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_Y, yMagnitude)
-             call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_Z, zMagnitude)
-             call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_X_PHASE, xPhase)
-             call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_Y_PHASE, yPhase)
-             call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_Z_PHASE, zPhase)
-             if (this%publication%local_is_owner) then
-                call end_visualisation_step(this%visualisation, status, diagnostic)
-                call require_visualisation_success(status, diagnostic)
-             end if
+            if (this%publication%local_is_owner) then
+               call begin_visualisation_step(this%visualisation, real(this%frequencySlice(f), real64), &
+                                             status, diagnostic)
+               call require_visualisation_success(status, diagnostic)
+            end if
+            call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_X, xMagnitude)
+            call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_Y, yMagnitude)
+            call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_Z, zMagnitude)
+            call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_X_PHASE, xPhase)
+            call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_Y_PHASE, yPhase)
+            call gather_and_write_attribute(this, transport, VISUALISATION_ATTRIBUTE_Z_PHASE, zPhase)
+            if (this%publication%local_is_owner) then
+               call end_visualisation_step(this%visualisation, status, diagnostic)
+               call require_visualisation_success(status, diagnostic)
+            end if
          case default
             call StopOnError(0, 0, 'Unsupported frequency slice publication mode')
          end select
       end do
-      deallocate(xMagnitude, yMagnitude, zMagnitude, xPhase, yPhase, zPhase)
+      deallocate (xMagnitude, yMagnitude, zMagnitude, xPhase, yPhase, zPhase)
    end subroutine write_visualisation
 
    subroutine write_collective_attribute(this, attribute, values)
@@ -364,7 +364,7 @@ contains
       integer :: status
 
       call write_visualisation_attribute_hyperslab(this%visualisation, attribute, values, &
-         [this%publication%point_offset], [int(this%nPoints, int64)], status, diagnostic)
+                                                   [this%publication%point_offset], [int(this%nPoints, int64)], status, diagnostic)
       call require_visualisation_success(status, diagnostic)
    end subroutine write_collective_attribute
 
@@ -388,7 +388,7 @@ contains
       end if
       call write_visualisation_attribute(this%visualisation, attribute, gathered_values, status, diagnostic)
       call require_visualisation_success(status, diagnostic)
-    end subroutine gather_and_write_attribute
+   end subroutine gather_and_write_attribute
 
    subroutine require_visualisation_success(status, diagnostic)
       integer, intent(in) :: status
@@ -410,19 +410,19 @@ contains
       if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
          call StopOnError(0, 0, 'Unable to initialise frequency slice binary transport')
       end if
-      allocate(local_records(10 * this%nPoints))
+      allocate (local_records(10*this%nPoints))
       if (this%publication%local_is_owner) then
-         allocate(canonical_records(10 * int(this%publication%global_point_count) * this%nFreq))
+         allocate (canonical_records(10*int(this%publication%global_point_count)*this%nFreq))
       end if
 
       do f = 1, this%nFreq
          record_index = 0
          do i = 1, this%nPoints
             local_records(record_index + 1:record_index + 10) = [real(this%frequencySlice(f), real64), &
-               real(this%coords(1, i), real64), real(this%coords(2, i), real64), real(this%coords(3, i), real64), &
-               real(this%xValueForFreq(f, i), real64), real(aimag(this%xValueForFreq(f, i)), real64), &
-               real(this%yValueForFreq(f, i), real64), real(aimag(this%yValueForFreq(f, i)), real64), &
-               real(this%zValueForFreq(f, i), real64), real(aimag(this%zValueForFreq(f, i)), real64)]
+                                real(this%coords(1, i), real64), real(this%coords(2, i), real64), real(this%coords(3, i), real64), &
+                                            real(this%xValueForFreq(f, i), real64), real(aimag(this%xValueForFreq(f, i)), real64), &
+                                            real(this%yValueForFreq(f, i), real64), real(aimag(this%yValueForFreq(f, i)), real64), &
+                                              real(this%zValueForFreq(f, i), real64), real(aimag(this%zValueForFreq(f, i)), real64)]
             record_index = record_index + 10
          end do
          call transfer_flush_batch(transport, local_records, gathered_records, counts, displacements, transport_status)
@@ -430,10 +430,10 @@ contains
             call StopOnError(0, 0, 'Unable to gather frequency slice binary records')
          end if
          if (this%publication%local_is_owner) then
-            if (size(gathered_records, kind=int64) /= 10_int64 * this%publication%global_point_count) then
+            if (size(gathered_records, kind=int64) /= 10_int64*this%publication%global_point_count) then
                call StopOnError(0, 0, 'Invalid gathered frequency slice binary size')
             end if
-            frequency_offset = 10 * int(this%publication%global_point_count) * (f - 1)
+            frequency_offset = 10*int(this%publication%global_point_count)*(f - 1)
             canonical_records(frequency_offset + 1:frequency_offset + size(gathered_records)) = gathered_records
          end if
       end do
@@ -516,17 +516,17 @@ contains
       integer :: i, j, k, coordIdx
 
       coordIdx = 0
-       do k = this%mainCoords%z, this%auxCoords%z
-       do j = this%mainCoords%y, this%auxCoords%y
-       do i = this%mainCoords%x, this%auxCoords%x
+      do k = this%mainCoords%z, this%auxCoords%z
+      do j = this%mainCoords%y, this%auxCoords%y
+      do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForCurrent(iCur, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-             call save_current(this%xValueForFreq, iEx, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
-                               this%quadratureDt, this%nFreq, step)
-             call save_current(this%yValueForFreq, iEy, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
-                               this%quadratureDt, this%nFreq, step)
-             call save_current(this%zValueForFreq, iEz, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
-                               this%quadratureDt, this%nFreq, step)
+            call save_current(this%xValueForFreq, iEx, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+                              this%quadratureDt, this%nFreq, step)
+            call save_current(this%yValueForFreq, iEy, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+                              this%quadratureDt, this%nFreq, step)
+            call save_current(this%zValueForFreq, iEz, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+                              this%quadratureDt, this%nFreq, step)
          end if
       end do
       end do
@@ -545,27 +545,27 @@ contains
       integer :: i, j, k, coordIdx
 
       coordIdx = 0
-       do k = this%mainCoords%z, this%auxCoords%z
-       do j = this%mainCoords%y, this%auxCoords%y
-       do i = this%mainCoords%x, this%auxCoords%x
+      do k = this%mainCoords%z, this%auxCoords%z
+      do j = this%mainCoords%y, this%auxCoords%y
+      do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForCurrent(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-             call save_current(currentData, fieldDir, coordIdx, i, j, k, fieldsReference, auxExp, &
-                               this%quadratureDt, nFreq, step)
+            call save_current(currentData, fieldDir, coordIdx, i, j, k, fieldsReference, auxExp, &
+                              this%quadratureDt, nFreq, step)
          end if
       end do
       end do
       end do
    end subroutine
 
-    subroutine save_current(valorComplex, direction, coordIdx, i, j, k, fieldsReference, auxExponential, &
-                            quadratureDt, nFreq, step)
+   subroutine save_current(valorComplex, direction, coordIdx, i, j, k, fieldsReference, auxExponential, &
+                           quadratureDt, nFreq, step)
       integer, intent(in) :: direction
       complex(kind=CKIND), intent(inout) :: valorComplex(:, :)
-       complex(kind=CKIND), intent(in) :: auxExponential(:)
-       integer, intent(in) :: i, j, k, coordIdx, nFreq
-       type(fields_reference_t), intent(in) :: fieldsReference
-       real(kind=RKIND_tiempo), intent(in) :: quadratureDt
+      complex(kind=CKIND), intent(in) :: auxExponential(:)
+      integer, intent(in) :: i, j, k, coordIdx, nFreq
+      type(fields_reference_t), intent(in) :: fieldsReference
+      real(kind=RKIND_tiempo), intent(in) :: quadratureDt
       real(kind=RKIND_tiempo), intent(in) :: step
 
       integer :: iter
@@ -575,8 +575,8 @@ contains
       jdir = computej(direction, i, j, k, fieldsReference)
 
       do iter = 1, nFreq
-          valorComplex(iter, coordIdx) = valorComplex(iter, coordIdx) + quadratureDt* &
-                                         exp(auxExponential(iter)*step)*jdir
+         valorComplex(iter, coordIdx) = valorComplex(iter, coordIdx) + quadratureDt* &
+                                        exp(auxExponential(iter)*step)*jdir
       end do
    end subroutine
 
@@ -590,13 +590,13 @@ contains
       complex(kind=CKIND), dimension(this%nFreq) :: auxExponential
       integer :: i, j, k, coordIdx
 
-       if (iMHC == request) auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_tiempo*this%quadratureDt))
-       if (iMEC == request) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
+      if (iMHC == request) auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_tiempo*this%quadratureDt))
+      if (iMEC == request) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
 
       coordIdx = 0
-       do k = this%mainCoords%z, this%auxCoords%z
-       do j = this%mainCoords%y, this%auxCoords%y
-       do i = this%mainCoords%x, this%auxCoords%x
+      do k = this%mainCoords%z, this%auxCoords%z
+      do j = this%mainCoords%y, this%auxCoords%y
+      do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForField(request, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
             call save_field(this%xValueForFreq, auxExponential, fieldInfo%x(i, j, k), this%nFreq, coordIdx)
@@ -620,15 +620,15 @@ contains
       complex(kind=CKIND), dimension(this%nFreq) :: auxExponential
       integer :: i, j, k, coordIdx
 
-       if (any(MAGNETIC_FIELD_DIRECTION == fieldDir)) then
-          auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_tiempo*this%quadratureDt))
-       end if
-       if (any(ELECTRIC_FIELD_DIRECTION == fieldDir)) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
+      if (any(MAGNETIC_FIELD_DIRECTION == fieldDir)) then
+         auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_tiempo*this%quadratureDt))
+      end if
+      if (any(ELECTRIC_FIELD_DIRECTION == fieldDir)) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
 
       coordIdx = 0
-       do k = this%mainCoords%z, this%auxCoords%z
-       do j = this%mainCoords%y, this%auxCoords%y
-       do i = this%mainCoords%x, this%auxCoords%x
+      do k = this%mainCoords%z, this%auxCoords%z
+      do j = this%mainCoords%y, this%auxCoords%y
+      do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForField(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
             call save_field(fieldData, auxExponential, fieldComponent(i, j, k), this%nFreq, coordIdx)
@@ -647,7 +647,7 @@ contains
       integer :: freq
 
       do freq = 1, nFreq
-          valorComplex(freq, coordIdx) = valorComplex(freq, coordIdx) + auxExp(freq)*fieldValue
+         valorComplex(freq, coordIdx) = valorComplex(freq, coordIdx) + auxExp(freq)*fieldValue
       end do
    end subroutine
 
@@ -667,18 +667,18 @@ contains
       integer :: mpi_error
 #endif
 
-       if (.not. this%publication%local_participates) then
-          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
-          this%metadata%lifecycle%diagnostic = ''
-          return
-       end if
+      if (.not. this%publication%local_participates) then
+         this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
+         this%metadata%lifecycle%diagnostic = ''
+         return
+      end if
       if ((this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
            this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) .and. &
           .not. this%publication%owns_communicator) return
-       if (this%metadata%lifecycle%state /= OUTPUT_LIFECYCLE_COMPLETE .and. &
-           this%metadata%lifecycle%state /= OUTPUT_LIFECYCLE_FAILED) then
-          call flush_frequency_slice_probe_output(this)
-           call write_visualisation(this)
+      if (this%metadata%lifecycle%state /= OUTPUT_LIFECYCLE_COMPLETE .and. &
+          this%metadata%lifecycle%state /= OUTPUT_LIFECYCLE_FAILED) then
+         call flush_frequency_slice_probe_output(this)
+         call write_visualisation(this)
       end if
       call close_visualisation(this%visualisation, error, diagnostic)
       if (error /= VISUALISATION_SUCCESS) then
@@ -692,21 +692,21 @@ contains
 #endif
       if (this%publication%local_is_owner) then
          call verify_volumetric_visualisation(this%filesPath, error)
-          if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. &
-              error == VISUALISATION_SUCCESS) then
-             this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
-             this%metadata%lifecycle%diagnostic = ''
-          else
-             this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-             this%metadata%lifecycle%diagnostic = 'Required frequency slice output artifacts are incomplete'
-          end if
-          call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
-          if (error /= OUTPUT_METADATA_SUCCESS) then
-             call StopOnError(0, 0, 'Unable to publish frequency slice output metadata')
-          end if
-          if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) then
-             call StopOnError(0, 0, trim(this%metadata%lifecycle%diagnostic))
-          end if
+         if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. &
+             error == VISUALISATION_SUCCESS) then
+            this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
+            this%metadata%lifecycle%diagnostic = ''
+         else
+            this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
+            this%metadata%lifecycle%diagnostic = 'Required frequency slice output artifacts are incomplete'
+         end if
+         call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
+         if (error /= OUTPUT_METADATA_SUCCESS) then
+            call StopOnError(0, 0, 'Unable to publish frequency slice output metadata')
+         end if
+         if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) then
+            call StopOnError(0, 0, trim(this%metadata%lifecycle%diagnostic))
+         end if
       else
          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
          this%metadata%lifecycle%diagnostic = ''
@@ -726,7 +726,5 @@ contains
       end if
 #endif
    end subroutine
-
-
 
 end module frequencySliceProbeOutput_m

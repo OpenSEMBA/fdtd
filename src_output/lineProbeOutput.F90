@@ -12,7 +12,7 @@ module lineProbeOutput_m
    private
 
    public :: calculate_line_integral, init_line_probe_output, update_line_probe_output, &
-               flush_line_probe_output, complete_line_probe_sample, line_segment_is_local
+             flush_line_probe_output, complete_line_probe_sample, line_segment_is_local
 
 contains
 
@@ -28,16 +28,16 @@ contains
          select case (abs(orientation))
          case (iEx)
             value = value + electric_field%x(segments(segment_index)%x, segments(segment_index)%y, &
-                                              segments(segment_index)%z) * sign(1, orientation) * &
-                            electric_field%deltaX(segments(segment_index)%x)
+                                             segments(segment_index)%z)*sign(1, orientation)* &
+                    electric_field%deltaX(segments(segment_index)%x)
          case (iEy)
             value = value + electric_field%y(segments(segment_index)%x, segments(segment_index)%y, &
-                                              segments(segment_index)%z) * sign(1, orientation) * &
-                            electric_field%deltaY(segments(segment_index)%y)
+                                             segments(segment_index)%z)*sign(1, orientation)* &
+                    electric_field%deltaY(segments(segment_index)%y)
          case (iEz)
             value = value + electric_field%z(segments(segment_index)%x, segments(segment_index)%y, &
-                                              segments(segment_index)%z) * sign(1, orientation) * &
-                            electric_field%deltaZ(segments(segment_index)%z)
+                                             segments(segment_index)%z)*sign(1, orientation)* &
+                    electric_field%deltaZ(segments(segment_index)%z)
          end select
       end do
    end function calculate_line_integral
@@ -50,7 +50,7 @@ contains
       type(xyzlimit_t), intent(in), optional :: sweeps(:)
       integer(kind=SINGLE), intent(in), optional :: rank, rank_count
       character(len=BUFSIZE) :: artifact_paths(1)
-       integer :: artifact_kinds(1), ios, unit, segment_index, local_count
+      integer :: artifact_kinds(1), ios, unit, segment_index, local_count
 
       this%domain = domain
       this%path = output_path
@@ -65,7 +65,7 @@ contains
             if (line_segment_is_local(segments(segment_index), sweeps, rank, rank_count)) local_count = local_count + 1
          end do
       end if
-      allocate(this%segments(local_count))
+      allocate (this%segments(local_count))
       if (present(sweeps)) then
          local_count = 0
          do segment_index = 1, size(segments)
@@ -82,15 +82,15 @@ contains
       artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
-       if (this%isWriter) then
-          call create_file_with_path(this%artifacts(1)%relative_path, ios)
-          if (ios /= 0) return
-          open(newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
-          if (ios /= 0) return
-          write(unit, '(A)', iostat=ios) 't lineIntegral'
-          close(unit)
-          if (ios /= 0) return
-       end if
+      if (this%isWriter) then
+         call create_file_with_path(this%artifacts(1)%relative_path, ios)
+         if (ios /= 0) return
+         open (newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
+         if (ios /= 0) return
+         write (unit, '(A)', iostat=ios) 't lineIntegral'
+         close (unit)
+         if (ios /= 0) return
+      end if
    end subroutine init_line_probe_output
 
    pure logical function line_segment_is_local(segment, sweeps, rank, rank_count)
@@ -149,17 +149,17 @@ contains
 
    subroutine flush_line_probe_output(this)
       type(line_probe_output_t), intent(inout) :: this
-       integer :: index, ios, unit
+      integer :: index, ios, unit
 
       if (this%nTime == 0) return
       if (this%isWriter) then
-         open(newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
+         open (newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
          if (ios /= 0) return
          do index = 1, this%nTime
-            write(unit, '(ES24.16E3,1X,ES24.16E3)', iostat=ios) this%timeStep(index), this%valueForTime(index)
+            write (unit, '(ES24.16E3,1X,ES24.16E3)', iostat=ios) this%timeStep(index), this%valueForTime(index)
             if (ios /= 0) exit
          end do
-         close(unit)
+         close (unit)
          if (ios /= 0) return
       end if
       call complete_line_probe_sample(this)

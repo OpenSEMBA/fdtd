@@ -9,21 +9,21 @@ module movieProbeOutput_m
    use, intrinsic :: iso_fortran_env, only: int64, real64
    use outputCollective_m, only: OUTPUT_PUBLICATION_COLLECTIVE, OUTPUT_PUBLICATION_ROOT_AGGREGATION
    use outputTransport_m, only: output_transport_t, init_output_transport, transfer_flush_batch, &
-                               OUTPUT_TRANSPORT_SUCCESS, OUTPUT_TRANSPORT_INVALID_CONTEXT
+                                OUTPUT_TRANSPORT_SUCCESS, OUTPUT_TRANSPORT_INVALID_CONTEXT
    use outputBinary_m, only: validate_binary_layout, append_binary_real64, BINARY_WRITER_SUCCESS
    use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
    use outputVisualisation_m, only: initialise_movie_visualisation, begin_visualisation_step, &
-      write_visualisation_attribute, write_visualisation_attribute_hyperslab, end_visualisation_step, &
-      flush_visualisation, close_visualisation, visualisation_is_open, verify_volumetric_visualisation, &
-      VISUALISATION_SUCCESS, VISUALISATION_ATTRIBUTE_X, VISUALISATION_ATTRIBUTE_Y, &
-      VISUALISATION_ATTRIBUTE_Z, VISUALISATION_ATTRIBUTE_TAG
+                                   write_visualisation_attribute, write_visualisation_attribute_hyperslab, end_visualisation_step, &
+                                 flush_visualisation, close_visualisation, visualisation_is_open, verify_volumetric_visualisation, &
+                                    VISUALISATION_SUCCESS, VISUALISATION_ATTRIBUTE_X, VISUALISATION_ATTRIBUTE_Y, &
+                                    VISUALISATION_ATTRIBUTE_Z, VISUALISATION_ATTRIBUTE_TAG
    use mapVTKOutput_m, only: write_geometry_companion
    use directoryUtils_m, only: add_extension, create_file_with_path, create_folder, file_exists, &
                                get_last_component, join_path
 #ifdef CompileWithMPI
    use mpi
 #endif
-   implicit none (type, external)
+   implicit none(type, external)
    private
 
    !===========================
@@ -47,88 +47,88 @@ contains
    ! Public routines
    !===========================
 
-    subroutine init_movie_probe_output(this, publication, field, domain, control, problemInfo, outputTypeExtension)
-       type(movie_probe_output_t), intent(out) :: this
-       type(volumetric_publication_t), intent(in) :: publication
-       integer(kind=SINGLE), intent(in)        :: field
-       type(domain_t), intent(in)              :: domain
-       type(sim_control_t), intent(in)         :: control
-       type(problem_info_t), intent(in)        :: problemInfo
-       character(len=BUFSIZE), intent(in)      :: outputTypeExtension
+   subroutine init_movie_probe_output(this, publication, field, domain, control, problemInfo, outputTypeExtension)
+      type(movie_probe_output_t), intent(out) :: this
+      type(volumetric_publication_t), intent(in) :: publication
+      integer(kind=SINGLE), intent(in)        :: field
+      type(domain_t), intent(in)              :: domain
+      type(sim_control_t), intent(in)         :: control
+      type(problem_info_t), intent(in)        :: problemInfo
+      character(len=BUFSIZE), intent(in)      :: outputTypeExtension
 
-       integer :: error
-       character(len=BUFSIZE) :: filename
-        integer :: geometry_status
-        character(len=BUFSIZE) :: geometry_diagnostic
+      integer :: error
+      character(len=BUFSIZE) :: filename
+      integer :: geometry_status
+      character(len=BUFSIZE) :: geometry_diagnostic
 
-       this%publication = publication
-       this%mainCoords = publication%global_lower
-       this%auxCoords = publication%global_upper
-       if (publication%local_participates) then
-          this%mainCoords%x = publication%global_lower%x + int(publication%file_offset(1), kind=SINGLE)
-          this%mainCoords%y = publication%global_lower%y + int(publication%file_offset(2), kind=SINGLE)
-          this%mainCoords%z = publication%global_lower%z + int(publication%file_offset(3), kind=SINGLE)
-          this%auxCoords%x = this%mainCoords%x + int(publication%local_shape(1), kind=SINGLE) - 1_SINGLE
-          this%auxCoords%y = this%mainCoords%y + int(publication%local_shape(2), kind=SINGLE) - 1_SINGLE
-          this%auxCoords%z = this%mainCoords%z + int(publication%local_shape(3), kind=SINGLE) - 1_SINGLE
-       end if
-       this%component = field
-       this%domain = domain
+      this%publication = publication
+      this%mainCoords = publication%global_lower
+      this%auxCoords = publication%global_upper
+      if (publication%local_participates) then
+         this%mainCoords%x = publication%global_lower%x + int(publication%file_offset(1), kind=SINGLE)
+         this%mainCoords%y = publication%global_lower%y + int(publication%file_offset(2), kind=SINGLE)
+         this%mainCoords%z = publication%global_lower%z + int(publication%file_offset(3), kind=SINGLE)
+         this%auxCoords%x = this%mainCoords%x + int(publication%local_shape(1), kind=SINGLE) - 1_SINGLE
+         this%auxCoords%y = this%mainCoords%y + int(publication%local_shape(2), kind=SINGLE) - 1_SINGLE
+         this%auxCoords%z = this%mainCoords%z + int(publication%local_shape(3), kind=SINGLE) - 1_SINGLE
+      end if
+      this%component = field
+      this%domain = domain
 
-       this%path = get_output_path(publication%global_lower, publication%global_upper, &
-                                   outputTypeExtension, field, control%mpidir)
-       filename = get_last_component(this%path)
-       this%filesPath = join_path(this%path, filename)
-       call initialise_movie_metadata(this, error, control%mpidir)
-       if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-          'Unable to initialise movie output metadata')
-       this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
+      this%path = get_output_path(publication%global_lower, publication%global_upper, &
+                                  outputTypeExtension, field, control%mpidir)
+      filename = get_last_component(this%path)
+      this%filesPath = join_path(this%path, filename)
+      call initialise_movie_metadata(this, error, control%mpidir)
+      if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+                                       'Unable to initialise movie output metadata')
+      this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
 
-       if (.not. publication%local_participates) return
+      if (.not. publication%local_participates) return
 
-       call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, &
-                                            problemInfo, this%nPoints, this%coords)
-       call alloc_and_init(this%tagNumber, this%nPoints, 0.0_RKIND)
-       call store_tag_numbers(this, problemInfo)
-       call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
-       call alloc_and_init(this%xValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
-       call alloc_and_init(this%yValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
-       call alloc_and_init(this%zValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
+      call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, &
+                                           problemInfo, this%nPoints, this%coords)
+      call alloc_and_init(this%tagNumber, this%nPoints, 0.0_RKIND)
+      call store_tag_numbers(this, problemInfo)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+      call alloc_and_init(this%xValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
+      call alloc_and_init(this%yValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
+      call alloc_and_init(this%zValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
 
-       if (publication%local_is_owner) then
-          call create_folder(this%path, error)
-          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-             'Unable to create movie output directory')
-          call create_bin_file(this%filesPath, error)
-          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-             'Unable to create movie binary output')
-          call write_geometry_companion(this%filesPath, publication%global_lower, publication%global_upper, &
-                                         problemInfo, geometry_status, geometry_diagnostic)
-           if (geometry_status /= VISUALISATION_SUCCESS) then
-              call StopOnError(control%layoutnumber, control%num_procs, &
-                 'Unable to create movie geometry: '//trim(geometry_diagnostic))
-           end if
-       end if
-       call synchronise_movie_participants(this, control)
+      if (publication%local_is_owner) then
+         call create_folder(this%path, error)
+         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+                                          'Unable to create movie output directory')
+         call create_bin_file(this%filesPath, error)
+         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+                                          'Unable to create movie binary output')
+         call write_geometry_companion(this%filesPath, publication%global_lower, publication%global_upper, &
+                                       problemInfo, geometry_status, geometry_diagnostic)
+         if (geometry_status /= VISUALISATION_SUCCESS) then
+            call StopOnError(control%layoutnumber, control%num_procs, &
+                             'Unable to create movie geometry: '//trim(geometry_diagnostic))
+         end if
+      end if
+      call synchronise_movie_participants(this, control)
 
-       if (publication%mode == OUTPUT_PUBLICATION_COLLECTIVE .or. publication%local_is_owner) then
-          call create_movie_files(this, problemInfo, error)
-          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-             'Unable to initialise movie HDF5 output')
-       end if
+      if (publication%mode == OUTPUT_PUBLICATION_COLLECTIVE .or. publication%local_is_owner) then
+         call create_movie_files(this, problemInfo, error)
+         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+                                          'Unable to initialise movie HDF5 output')
+      end if
 
-       if (publication%local_is_owner) then
-          call publish_initial_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
-          if (error /= OUTPUT_METADATA_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
-             'Unable to publish initial movie output metadata')
-       end if
-    end subroutine init_movie_probe_output
+      if (publication%local_is_owner) then
+         call publish_initial_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
+         if (error /= OUTPUT_METADATA_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
+                                                                'Unable to publish initial movie output metadata')
+      end if
+   end subroutine init_movie_probe_output
 
-     subroutine create_bin_file(filePath, error)
+   subroutine create_bin_file(filePath, error)
       character(len=*), intent(in) :: filePath
       integer, intent(out) :: error
       call create_file_with_path(add_extension(filePath, binaryExtension), error)
-     end subroutine
+   end subroutine
 
    subroutine synchronise_movie_participants(this, control)
       type(movie_probe_output_t), intent(in) :: this
@@ -139,51 +139,51 @@ contains
       if (this%publication%communicator_size > 1) then
          call MPI_Barrier(this%publication%communicator, error)
          if (error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
-            'Unable to synchronise movie output participants')
+                                                    'Unable to synchronise movie output participants')
       end if
 #endif
    end subroutine synchronise_movie_participants
 
    subroutine initialise_movie_metadata(this, error, mpidir)
-       type(movie_probe_output_t), intent(inout) :: this
-       integer, intent(out) :: error
-       integer(kind=SINGLE), intent(in) :: mpidir
-       character(len=BUFSIZE) :: base_name
+      type(movie_probe_output_t), intent(inout) :: this
+      integer, intent(out) :: error
+      integer(kind=SINGLE), intent(in) :: mpidir
+      character(len=BUFSIZE) :: base_name
 
-       base_name = get_last_component(this%filesPath)
-       this%metadata%probe_id = trim(base_name)
-        this%metadata%quantity = get_prefix_extension(this%component, mpidir)
-       this%metadata%lower_bound = this%publication%global_lower
-       this%metadata%upper_bound = this%publication%global_upper
-       this%metadata%domain_type = TIME_DOMAIN
-       this%metadata%ownership%participant_ranks = this%publication%participant_ranks
-       this%metadata%ownership%scalar_writer_rank = this%publication%owner_rank
-       if (allocated(this%metadata%artifacts)) deallocate(this%metadata%artifacts)
-        allocate(this%metadata%artifacts(5))
-       this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
-       this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
-        this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
-         this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL64
-         this%metadata%artifacts(1)%record_bytes = 56
-        this%metadata%artifacts(1)%component_order = 'time,x,y,z,Ex,Ey,Ez'
-       this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
-       this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
-        this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
-        this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
-        this%metadata%artifacts(4)%kind = OUTPUT_ARTIFACT_GEOMETRY
-        this%metadata%artifacts(4)%relative_path = trim(base_name)//'_geometry.xdmf'
-        this%metadata%artifacts(5)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
-        this%metadata%artifacts(5)%relative_path = trim(base_name)//'_geometry.h5'
+      base_name = get_last_component(this%filesPath)
+      this%metadata%probe_id = trim(base_name)
+      this%metadata%quantity = get_prefix_extension(this%component, mpidir)
+      this%metadata%lower_bound = this%publication%global_lower
+      this%metadata%upper_bound = this%publication%global_upper
+      this%metadata%domain_type = TIME_DOMAIN
+      this%metadata%ownership%participant_ranks = this%publication%participant_ranks
+      this%metadata%ownership%scalar_writer_rank = this%publication%owner_rank
+      if (allocated(this%metadata%artifacts)) deallocate (this%metadata%artifacts)
+      allocate (this%metadata%artifacts(5))
+      this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
+      this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
+      this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
+      this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL64
+      this%metadata%artifacts(1)%record_bytes = 56
+      this%metadata%artifacts(1)%component_order = 'time,x,y,z,Ex,Ey,Ez'
+      this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
+      this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
+      this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
+      this%metadata%artifacts(4)%kind = OUTPUT_ARTIFACT_GEOMETRY
+      this%metadata%artifacts(4)%relative_path = trim(base_name)//'_geometry.xdmf'
+      this%metadata%artifacts(5)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(5)%relative_path = trim(base_name)//'_geometry.h5'
 
-       call validate_binary_layout(this%metadata%artifacts(1), error)
-       if (error /= BINARY_WRITER_SUCCESS) return
-       error = 0
-    end subroutine initialise_movie_metadata
+      call validate_binary_layout(this%metadata%artifacts(1), error)
+      if (error /= BINARY_WRITER_SUCCESS) return
+      error = 0
+   end subroutine initialise_movie_metadata
 
-    subroutine create_movie_files(this, problemInfo, error)
-       type(movie_probe_output_t), intent(inout) :: this
-       type(problem_info_t), intent(in) :: problemInfo
-       integer, intent(out) :: error
+   subroutine create_movie_files(this, problemInfo, error)
+      type(movie_probe_output_t), intent(inout) :: this
+      type(problem_info_t), intent(in) :: problemInfo
+      integer, intent(out) :: error
 
       character(len=BUFSIZE) :: attribute_names(4), diagnostic
       character(len=BUFSIZE) :: attributeBaseName
@@ -191,49 +191,49 @@ contains
       integer :: status
 
       error = 0
-       attribute_names = ''
-       attribute_enabled = .false.
-       attribute_names(VISUALISATION_ATTRIBUTE_TAG) = 'tagnumber'
-       attribute_enabled(VISUALISATION_ATTRIBUTE_TAG) = .true.
-       select case(this%component)
-       case(iCur, iMEC, iMHC)
-          attributeBaseName = 'CurrenDensity'
-          if (this%component == iMEC) attributeBaseName = 'ElectricField'
-          if (this%component == iMHC) attributeBaseName = 'MagneticField'
-          attribute_names(VISUALISATION_ATTRIBUTE_X) = trim(attributeBaseName)//'X'
-          attribute_names(VISUALISATION_ATTRIBUTE_Y) = trim(attributeBaseName)//'Y'
-          attribute_names(VISUALISATION_ATTRIBUTE_Z) = trim(attributeBaseName)//'Z'
-          attribute_enabled(1:3) = .true.
-       case(iCurX, iEXC, iHXC)
-          attributeBaseName = 'CurrenDensity'
-          if (this%component == iEXC) attributeBaseName = 'ElectricField'
-          if (this%component == iHXC) attributeBaseName = 'MagneticField'
-          attribute_names(VISUALISATION_ATTRIBUTE_X) = trim(attributeBaseName)//'X'
-          attribute_enabled(VISUALISATION_ATTRIBUTE_X) = .true.
-       case(iCurY, iEyC, iHyC)
-          attributeBaseName = 'CurrenDensity'
-          if (this%component == iEyC) attributeBaseName = 'ElectricField'
-          if (this%component == iHyC) attributeBaseName = 'MagneticField'
-          attribute_names(VISUALISATION_ATTRIBUTE_Y) = trim(attributeBaseName)//'Y'
-          attribute_enabled(VISUALISATION_ATTRIBUTE_Y) = .true.
-       case(iCurZ, iEZC, iHzC)
-          attributeBaseName = 'CurrenDensity'
-          if (this%component == iEZC) attributeBaseName = 'ElectricField'
-          if (this%component == iHzC) attributeBaseName = 'MagneticField'
-          attribute_names(VISUALISATION_ATTRIBUTE_Z) = trim(attributeBaseName)//'Z'
-          attribute_enabled(VISUALISATION_ATTRIBUTE_Z) = .true.
-       end select
-       call initialise_movie_visualisation(this%visualisation, trim(this%filesPath), &
-          real(problemInfo%xSteps(this%publication%global_lower%x:this%publication%global_upper%x), real64), &
-          real(problemInfo%ySteps(this%publication%global_lower%y:this%publication%global_upper%y), real64), &
-          real(problemInfo%zSteps(this%publication%global_lower%z:this%publication%global_upper%z), real64), &
-          attribute_names, attribute_enabled, this%publication%mode == OUTPUT_PUBLICATION_COLLECTIVE, &
-          this%publication%communicator, status, diagnostic)
-       if (status /= VISUALISATION_SUCCESS) then
-          error = 1
-          print *, trim(diagnostic)
-       end if
-    end subroutine create_movie_files
+      attribute_names = ''
+      attribute_enabled = .false.
+      attribute_names(VISUALISATION_ATTRIBUTE_TAG) = 'tagnumber'
+      attribute_enabled(VISUALISATION_ATTRIBUTE_TAG) = .true.
+      select case (this%component)
+      case (iCur, iMEC, iMHC)
+         attributeBaseName = 'CurrenDensity'
+         if (this%component == iMEC) attributeBaseName = 'ElectricField'
+         if (this%component == iMHC) attributeBaseName = 'MagneticField'
+         attribute_names(VISUALISATION_ATTRIBUTE_X) = trim(attributeBaseName)//'X'
+         attribute_names(VISUALISATION_ATTRIBUTE_Y) = trim(attributeBaseName)//'Y'
+         attribute_names(VISUALISATION_ATTRIBUTE_Z) = trim(attributeBaseName)//'Z'
+         attribute_enabled(1:3) = .true.
+      case (iCurX, iEXC, iHXC)
+         attributeBaseName = 'CurrenDensity'
+         if (this%component == iEXC) attributeBaseName = 'ElectricField'
+         if (this%component == iHXC) attributeBaseName = 'MagneticField'
+         attribute_names(VISUALISATION_ATTRIBUTE_X) = trim(attributeBaseName)//'X'
+         attribute_enabled(VISUALISATION_ATTRIBUTE_X) = .true.
+      case (iCurY, iEyC, iHyC)
+         attributeBaseName = 'CurrenDensity'
+         if (this%component == iEyC) attributeBaseName = 'ElectricField'
+         if (this%component == iHyC) attributeBaseName = 'MagneticField'
+         attribute_names(VISUALISATION_ATTRIBUTE_Y) = trim(attributeBaseName)//'Y'
+         attribute_enabled(VISUALISATION_ATTRIBUTE_Y) = .true.
+      case (iCurZ, iEZC, iHzC)
+         attributeBaseName = 'CurrenDensity'
+         if (this%component == iEZC) attributeBaseName = 'ElectricField'
+         if (this%component == iHzC) attributeBaseName = 'MagneticField'
+         attribute_names(VISUALISATION_ATTRIBUTE_Z) = trim(attributeBaseName)//'Z'
+         attribute_enabled(VISUALISATION_ATTRIBUTE_Z) = .true.
+      end select
+      call initialise_movie_visualisation(this%visualisation, trim(this%filesPath), &
+                                real(problemInfo%xSteps(this%publication%global_lower%x:this%publication%global_upper%x), real64), &
+                                real(problemInfo%ySteps(this%publication%global_lower%y:this%publication%global_upper%y), real64), &
+                                real(problemInfo%zSteps(this%publication%global_lower%z:this%publication%global_upper%z), real64), &
+                                       attribute_names, attribute_enabled, this%publication%mode == OUTPUT_PUBLICATION_COLLECTIVE, &
+                                          this%publication%communicator, status, diagnostic)
+      if (status /= VISUALISATION_SUCCESS) then
+         error = 1
+         print *, trim(diagnostic)
+      end if
+   end subroutine create_movie_files
 
    subroutine update_movie_probe_output(this, step, fieldsReference, control, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
@@ -314,10 +314,10 @@ contains
       end if
 
       call write_bin_file(this, transport)
-       call write_visualisation(this, transport)
-       call flush_visualisation(this%visualisation, error, diagnostic)
-       if (error /= VISUALISATION_SUCCESS) call StopOnError(0, 0, &
-          'Unable to flush movie HDF5 output: '//trim(diagnostic))
+      call write_visualisation(this, transport)
+      call flush_visualisation(this%visualisation, error, diagnostic)
+      if (error /= VISUALISATION_SUCCESS) call StopOnError(0, 0, &
+                                                           'Unable to flush movie HDF5 output: '//trim(diagnostic))
       call clear_memory_data(this)
    end subroutine flush_movie_probe_output
 
@@ -332,10 +332,10 @@ contains
       if (this%publication%local_participates .and. .not. lifecycle_is_terminal) then
          call flush_movie_probe_output(this)
       end if
-       call close_visualisation(this%visualisation, error, diagnostic)
-       if (error /= VISUALISATION_SUCCESS) then
-          call StopOnError(0, 0, 'Unable to close movie HDF5 output: '//trim(diagnostic))
-       end if
+      call close_visualisation(this%visualisation, error, diagnostic)
+      if (error /= VISUALISATION_SUCCESS) then
+         call StopOnError(0, 0, 'Unable to close movie HDF5 output: '//trim(diagnostic))
+      end if
 #ifdef CompileWithMPI
       if (this%publication%owns_communicator .and. this%publication%local_participates) then
          call MPI_Comm_free(this%publication%communicator, error)
@@ -383,15 +383,15 @@ contains
       integer, allocatable :: counts(:), displacements(:)
       real(real64), allocatable :: gathered_records(:), local_records(:)
 
-      allocate(local_records(7 * this%nPoints))
+      allocate (local_records(7*this%nPoints))
       do time_index = 1, this%nTime
          record_index = 0
          do i = 1, this%nPoints
             local_records(record_index + 1:record_index + 7) = [real(this%timeStep(time_index), real64), &
-               real(this%coords(1, i), real64), real(this%coords(2, i), real64), &
-               real(this%coords(3, i), real64), real(this%xValueForTime(time_index, i), real64), &
-               real(this%yValueForTime(time_index, i), real64), &
-               real(this%zValueForTime(time_index, i), real64)]
+                                                                real(this%coords(1, i), real64), real(this%coords(2, i), real64), &
+                                                 real(this%coords(3, i), real64), real(this%xValueForTime(time_index, i), real64), &
+                                                                real(this%yValueForTime(time_index, i), real64), &
+                                                                real(this%zValueForTime(time_index, i), real64)]
             record_index = record_index + 7
          end do
          call transfer_flush_batch(transport, local_records, gathered_records, counts, displacements, counts_status)
@@ -416,28 +416,28 @@ contains
       integer :: status, time_index
 
       do time_index = 1, this%nTime
-          if (visualisation_is_open(this%visualisation)) then
-             call begin_visualisation_step(this%visualisation, real(this%timeStep(time_index), real64), &
-                                           status, diagnostic)
-             call require_visualisation_success(status, diagnostic, 'Movie HDF5 write failed: ')
-          end if
-          if (any([iCur, iMEC, iMHC, iCurX, iExC, iHxC] == this%component)) then
-             call write_external_attribute(this, VISUALISATION_ATTRIBUTE_X, this%xValueForTime, &
-                                           time_index, transport)
-          end if
-          if (any([iCur, iMEC, iMHC, iCurY, iEyC, iHyC] == this%component)) then
-             call write_external_attribute(this, VISUALISATION_ATTRIBUTE_Y, this%yValueForTime, &
-                                           time_index, transport)
-          end if
-          if (any([iCur, iMEC, iMHC, iCurZ, iEzC, iHzC] == this%component)) then
-             call write_external_attribute(this, VISUALISATION_ATTRIBUTE_Z, this%zValueForTime, &
-                                           time_index, transport)
-          end if
-          call write_external_tag_attribute(this, VISUALISATION_ATTRIBUTE_TAG, transport)
-          if (visualisation_is_open(this%visualisation)) then
-             call end_visualisation_step(this%visualisation, status, diagnostic)
-             call require_visualisation_success(status, diagnostic, 'Movie HDF5 write failed: ')
-          end if
+         if (visualisation_is_open(this%visualisation)) then
+            call begin_visualisation_step(this%visualisation, real(this%timeStep(time_index), real64), &
+                                          status, diagnostic)
+            call require_visualisation_success(status, diagnostic, 'Movie HDF5 write failed: ')
+         end if
+         if (any([iCur, iMEC, iMHC, iCurX, iExC, iHxC] == this%component)) then
+            call write_external_attribute(this, VISUALISATION_ATTRIBUTE_X, this%xValueForTime, &
+                                          time_index, transport)
+         end if
+         if (any([iCur, iMEC, iMHC, iCurY, iEyC, iHyC] == this%component)) then
+            call write_external_attribute(this, VISUALISATION_ATTRIBUTE_Y, this%yValueForTime, &
+                                          time_index, transport)
+         end if
+         if (any([iCur, iMEC, iMHC, iCurZ, iEzC, iHzC] == this%component)) then
+            call write_external_attribute(this, VISUALISATION_ATTRIBUTE_Z, this%zValueForTime, &
+                                          time_index, transport)
+         end if
+         call write_external_tag_attribute(this, VISUALISATION_ATTRIBUTE_TAG, transport)
+         if (visualisation_is_open(this%visualisation)) then
+            call end_visualisation_step(this%visualisation, status, diagnostic)
+            call require_visualisation_success(status, diagnostic, 'Movie HDF5 write failed: ')
+         end if
       end do
    end subroutine write_visualisation
 
@@ -453,12 +453,12 @@ contains
 
       nx = int(this%publication%local_shape(1))
       ny = int(this%publication%local_shape(2))
-      allocate(field(int(product(this%publication%local_shape))))
+      allocate (field(int(product(this%publication%local_shape))))
       field = 0.0_real64
       do i = 1, this%nPoints
          local_index = this%coords(1, i) - this%mainCoords%x + 1 + &
-            (this%coords(2, i) - this%mainCoords%y) * nx + &
-            (this%coords(3, i) - this%mainCoords%z) * nx * ny
+                       (this%coords(2, i) - this%mainCoords%y)*nx + &
+                       (this%coords(3, i) - this%mainCoords%z)*nx*ny
          field(local_index) = real(values(time_index, i), real64)
       end do
       call publish_dense_attribute(this, attribute, field, transport)
@@ -474,12 +474,12 @@ contains
 
       nx = int(this%publication%local_shape(1))
       ny = int(this%publication%local_shape(2))
-      allocate(tags(int(product(this%publication%local_shape))))
+      allocate (tags(int(product(this%publication%local_shape))))
       tags = 0.0_real64
       do i = 1, this%nPoints
          local_index = this%coords(1, i) - this%mainCoords%x + 1 + &
-            (this%coords(2, i) - this%mainCoords%y) * nx + &
-            (this%coords(3, i) - this%mainCoords%z) * nx * ny
+                       (this%coords(2, i) - this%mainCoords%y)*nx + &
+                       (this%coords(3, i) - this%mainCoords%z)*nx*ny
          tags(local_index) = real(this%tagNumber(i), real64)
       end do
       call publish_dense_attribute(this, attribute, tags, transport)
@@ -496,22 +496,22 @@ contains
 
       select case (this%publication%mode)
       case (OUTPUT_PUBLICATION_COLLECTIVE)
-          call write_visualisation_attribute_hyperslab(this%visualisation, attribute, local_values, &
-             this%publication%file_offset, this%publication%local_shape, status, diagnostic)
-          call require_visualisation_success(status, diagnostic, 'Movie HDF5 hyperslab write failed: ')
+         call write_visualisation_attribute_hyperslab(this%visualisation, attribute, local_values, &
+                                                     this%publication%file_offset, this%publication%local_shape, status, diagnostic)
+         call require_visualisation_success(status, diagnostic, 'Movie HDF5 hyperslab write failed: ')
       case (OUTPUT_PUBLICATION_ROOT_AGGREGATION)
          call gather_global_dense(this, local_values, transport, global_values, transport_status)
          if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
             call StopOnError(0, 0, 'Unable to aggregate movie HDF5 values')
          end if
          if (this%publication%local_is_owner) then
-             call write_visualisation_attribute(this%visualisation, attribute, global_values, status, diagnostic)
-             call require_visualisation_success(status, diagnostic, 'Movie HDF5 write failed: ')
+            call write_visualisation_attribute(this%visualisation, attribute, global_values, status, diagnostic)
+            call require_visualisation_success(status, diagnostic, 'Movie HDF5 write failed: ')
          end if
       case default
          call StopOnError(0, 0, 'Unsupported movie output publication mode')
       end select
-    end subroutine publish_dense_attribute
+   end subroutine publish_dense_attribute
 
    subroutine require_visualisation_success(status, diagnostic, context)
       integer, intent(in) :: status
@@ -534,7 +534,7 @@ contains
       integer(int64) :: global_shape(3), offset(3), shape(3)
       integer :: global_index, i, j, k, local_index, rank_index, value_start
 
-      allocate(local_batch(6 + size(local_values)))
+      allocate (local_batch(6 + size(local_values)))
       local_batch(1:3) = real(this%publication%file_offset, real64)
       local_batch(4:6) = real(this%publication%local_shape, real64)
       local_batch(7:) = local_values
@@ -542,15 +542,15 @@ contains
       if (status /= OUTPUT_TRANSPORT_SUCCESS) return
 
       if (transport%rank /= transport%root_rank) then
-         allocate(global_values(0))
+         allocate (global_values(0))
          return
       end if
 
       global_shape = [ &
-         int(this%publication%global_upper%x, int64) - int(this%publication%global_lower%x, int64) + 1_int64, &
-         int(this%publication%global_upper%y, int64) - int(this%publication%global_lower%y, int64) + 1_int64, &
-         int(this%publication%global_upper%z, int64) - int(this%publication%global_lower%z, int64) + 1_int64]
-      allocate(global_values(int(product(global_shape))))
+                     int(this%publication%global_upper%x, int64) - int(this%publication%global_lower%x, int64) + 1_int64, &
+                     int(this%publication%global_upper%y, int64) - int(this%publication%global_lower%y, int64) + 1_int64, &
+                     int(this%publication%global_upper%z, int64) - int(this%publication%global_lower%z, int64) + 1_int64]
+      allocate (global_values(int(product(global_shape))))
       global_values = 0.0_real64
       do rank_index = 1, transport%rank_count
          if (counts(rank_index) < 6) then
@@ -569,11 +569,11 @@ contains
          do k = 1, int(shape(3))
          do j = 1, int(shape(2))
          do i = 1, int(shape(1))
-            local_index = i + (j - 1) * int(shape(1)) + &
-               (k - 1) * int(shape(1) * shape(2))
+            local_index = i + (j - 1)*int(shape(1)) + &
+                          (k - 1)*int(shape(1)*shape(2))
             global_index = int(offset(1)) + i + &
-               (int(offset(2)) + j - 1) * int(global_shape(1)) + &
-               (int(offset(3)) + k - 1) * int(global_shape(1) * global_shape(2))
+                           (int(offset(2)) + j - 1)*int(global_shape(1)) + &
+                           (int(offset(3)) + k - 1)*int(global_shape(1)*global_shape(2))
             global_values(global_index) = gathered_values(value_start + 6 + local_index)
          end do
          end do
@@ -581,36 +581,36 @@ contains
       end do
    end subroutine gather_global_dense
 
-    subroutine store_tag_numbers(this, problemInfo)
-       type(movie_probe_output_t), intent(inout) :: this
-       type(problem_info_t), intent(in) :: problemInfo
+   subroutine store_tag_numbers(this, problemInfo)
+      type(movie_probe_output_t), intent(inout) :: this
+      type(problem_info_t), intent(in) :: problemInfo
 
-       integer :: i, field
+      integer :: i, field
 
-       field = tag_field(this%component)
-       do i = 1, this%nPoints
-          if (field <= iEz) then
-             this%tagNumber(i) = real(iabs(problemInfo%materialTag%getEdgeTag(field, this%coords(1, i), &
-                                                this%coords(2, i), this%coords(3, i))), RKIND)
-          else
-             this%tagNumber(i) = real(iabs(problemInfo%materialTag%getFaceTag(field, this%coords(1, i), &
-                                                this%coords(2, i), this%coords(3, i))), RKIND)
-          end if
-       end do
-    end subroutine store_tag_numbers
+      field = tag_field(this%component)
+      do i = 1, this%nPoints
+         if (field <= iEz) then
+            this%tagNumber(i) = real(iabs(problemInfo%materialTag%getEdgeTag(field, this%coords(1, i), &
+                                                                             this%coords(2, i), this%coords(3, i))), RKIND)
+         else
+            this%tagNumber(i) = real(iabs(problemInfo%materialTag%getFaceTag(field, this%coords(1, i), &
+                                                                             this%coords(2, i), this%coords(3, i))), RKIND)
+         end if
+      end do
+   end subroutine store_tag_numbers
 
-    integer function tag_field(component)
-       integer(kind=SINGLE), intent(in) :: component
+   integer function tag_field(component)
+      integer(kind=SINGLE), intent(in) :: component
 
-       select case (component)
-       case (iCur, iCurX, iMEC, iExC); tag_field = iEx
-       case (iCurY, iEyC); tag_field = iEy
-       case (iCurZ, iEzC); tag_field = iEz
-       case (iMHC, iHxC); tag_field = iHx
-       case (iHyC); tag_field = iHy
-       case (iHzC); tag_field = iHz
-       end select
-    end function tag_field
+      select case (component)
+      case (iCur, iCurX, iMEC, iExC); tag_field = iEx
+      case (iCurY, iEyC); tag_field = iEy
+      case (iCurZ, iEzC); tag_field = iEz
+      case (iMHC, iHxC); tag_field = iHx
+      case (iHyC); tag_field = iHy
+      case (iHzC); tag_field = iHz
+      end select
+   end function tag_field
 
    function get_output_path(global_lower, global_upper, outputTypeExtension, field, mpidir) result(path)
       type(cell_coordinate_t), intent(in) :: global_lower, global_upper

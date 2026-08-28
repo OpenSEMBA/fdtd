@@ -30,9 +30,9 @@ module outputUtils_m
    public :: computeJ1
    public :: computeJ2
    public :: fieldo
-    public :: create_data_file
-    public :: currentType
-    public :: getMediaIndex
+   public :: create_data_file
+   public :: currentType
+   public :: getMediaIndex
    public :: get_media_from_coord_and_h_neighbours
    !===========================
 
@@ -103,7 +103,7 @@ contains
       ! Neighboring media
       !First Direction
       firstPositiveMedia = getMediaIndex(HFieldTable(field), i, j, k, CoordToMaterial)
-      firstNegativeMedia = getMediaIndex(HFieldTable(field), i + shift_i(field), j + shift_j(field), k + shift_k(field), CoordToMaterial)
+ firstNegativeMedia = getMediaIndex(HFieldTable(field), i + shift_i(field), j + shift_j(field), k + shift_k(field), CoordToMaterial)
 
       !Second Direction
       secondPositiveMedia = getMediaIndex(HFieldTable(mod(field, nFields) + 1), i, j, k, CoordToMaterial)
@@ -362,24 +362,24 @@ contains
    function get_field_reference(fieldId, fieldReference) result(field)
       type(fields_reference_t), intent(in) :: fieldReference
       integer(kind=SINGLE), intent(in) :: fieldId
-       type(field_data_t) :: field
-       select case (fieldId)
-       case (iBloqueJx, iBloqueJy, iBloqueJz)
-          field%x => fieldReference%H%x
-          field%y => fieldReference%H%y
-          field%z => fieldReference%H%z
+      type(field_data_t) :: field
+      select case (fieldId)
+      case (iBloqueJx, iBloqueJy, iBloqueJz)
+         field%x => fieldReference%H%x
+         field%y => fieldReference%H%y
+         field%z => fieldReference%H%z
 
-          field%deltaX => fieldReference%H%deltax
-          field%deltaY => fieldReference%H%deltay
-          field%deltaZ => fieldReference%H%deltaz
-       case (iBloqueMx, iBloqueMy, iBloqueMz)
-          field%x => fieldReference%E%x
-          field%y => fieldReference%E%y
-          field%z => fieldReference%E%z
+         field%deltaX => fieldReference%H%deltax
+         field%deltaY => fieldReference%H%deltay
+         field%deltaZ => fieldReference%H%deltaz
+      case (iBloqueMx, iBloqueMy, iBloqueMz)
+         field%x => fieldReference%E%x
+         field%y => fieldReference%E%y
+         field%z => fieldReference%E%z
 
-          field%deltaX => fieldReference%E%deltax
-          field%deltaY => fieldReference%E%deltay
-          field%deltaZ => fieldReference%E%deltaz
+         field%deltaX => fieldReference%E%deltax
+         field%deltaY => fieldReference%E%deltay
+         field%deltaZ => fieldReference%E%deltaz
       end select
    end function get_field_reference
 
@@ -531,9 +531,9 @@ contains
 
       res = &
          ! TERM B: (Negative term in the difference)
-         - (get_delta(curl_component_b, i, j, k, fields_reference)* &
+         -(get_delta(curl_component_b, i, j, k, fields_reference)* &
       ( get_field(curl_component_b + 3, i, j, k, fields_reference) - get_field(curl_component_b + 3, i_shift_b, j_shift_b, k_shift_b, fields_reference) ) &
-          ) + &
+           ) + &
          ! TERM A: (Positive term in the difference)
          (get_delta(curl_component_a, i, j, k, fields_reference)* &
       ( get_field(curl_component_a + 3, i, j, k, fields_reference) - get_field(curl_component_a + 3, i_shift_a, j_shift_a, k_shift_a, fields_reference) ) &
@@ -659,24 +659,24 @@ contains
       end select
    end function get_delta
 
-     subroutine create_data_file(filePathReference, probePathReference, domainTypeReference, fileExtension, header)
-       use directoryUtils_m
-       character(len=*), intent(out) :: filePathReference
-       character(len=*), intent(in) :: probePathReference
-       character(len=*), intent(in) :: domainTypeReference
-       character(len=*), intent(in) :: fileExtension
-       character(len=*), intent(in), optional :: header
+   subroutine create_data_file(filePathReference, probePathReference, domainTypeReference, fileExtension, header)
+      use directoryUtils_m
+      character(len=*), intent(out) :: filePathReference
+      character(len=*), intent(in) :: probePathReference
+      character(len=*), intent(in) :: domainTypeReference
+      character(len=*), intent(in) :: fileExtension
+      character(len=*), intent(in), optional :: header
 
-       character(len=1) :: sep = '_'
-       integer :: err, unit
+      character(len=1) :: sep = '_'
+      integer :: err, unit
 
-       filePathReference = trim(probePathReference)//sep//trim(domainTypeReference)//fileExtension
-       call create_file_with_path(filePathReference, err)
-       if (err /= 0 .or. .not. present(header)) return
-       open(newunit=unit, file=filePathReference, status='old', action='write', position='append', iostat=err)
-       if (err /= 0) return
-       write(unit, '(A)', iostat=err) trim(header)
-       close(unit)
-     end subroutine
+      filePathReference = trim(probePathReference)//sep//trim(domainTypeReference)//fileExtension
+      call create_file_with_path(filePathReference, err)
+      if (err /= 0 .or. .not. present(header)) return
+      open (newunit=unit, file=filePathReference, status='old', action='write', position='append', iostat=err)
+      if (err /= 0) return
+      write (unit, '(A)', iostat=err) trim(header)
+      close (unit)
+   end subroutine
 
 end module outputUtils_m

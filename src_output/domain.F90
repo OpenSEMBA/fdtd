@@ -7,7 +7,7 @@ module domain_m
    public :: domain_t
 
    interface domain_t
-     module procedure new_domain_time, new_domain_freq, new_domain_both, null_domain
+      module procedure new_domain_time, new_domain_freq, new_domain_both, null_domain
    end interface domain_t
 
 contains
@@ -30,15 +30,14 @@ contains
       new_domain%fstart = fstart
       new_domain%fstop = fstop
       new_domain%fnum = fnum
-       if (fnum > 1_SINGLE) then
-          new_domain%fstep = (fstop - fstart) / real(fnum - 1_SINGLE, RKIND)
-       else
-          new_domain%fstep = 0.0_RKIND
-       end if
+      if (fnum > 1_SINGLE) then
+         new_domain%fstep = (fstop - fstart)/real(fnum - 1_SINGLE, RKIND)
+      else
+         new_domain%fstep = 0.0_RKIND
+      end if
       new_domain%logarithmicSpacing = logarithmicSpacing
 
       new_domain%domainType = FREQUENCY_DOMAIN
-
 
    end function new_domain_freq
 
@@ -56,11 +55,11 @@ contains
       new_domain%fstart = fstart
       new_domain%fstop = fstop
       new_domain%fnum = fnum
-       if (fnum > 1_SINGLE) then
-          new_domain%fstep = (fstop - fstart) / real(fnum - 1_SINGLE, RKIND)
-       else
-          new_domain%fstep = 0.0_RKIND
-       end if
+      if (fnum > 1_SINGLE) then
+         new_domain%fstep = (fstop - fstart)/real(fnum - 1_SINGLE, RKIND)
+      else
+         new_domain%fstep = 0.0_RKIND
+      end if
       new_domain%logarithmicSpacing = logarithmicSpacing
 
       new_domain%domainType = BOTH_DOMAIN

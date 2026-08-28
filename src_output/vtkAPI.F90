@@ -241,7 +241,7 @@ contains
       write (iunit, '(A)') '<VTKFile type="UnstructuredGrid" version="1.0" byte_order="LittleEndian" header_type="UInt64">'
       write (iunit, '(A)') '  <UnstructuredGrid>'
       write (iunit, '(A,I0,A,I0,A)') '    <Piece NumberOfPoints="', this%num_points, &
-                                     '" NumberOfCells="', this%num_cells, '">'
+         '" NumberOfCells="', this%num_cells, '">'
       call write_pointdata(iunit, this%scalars, this%vectors)
       call write_celldata(iunit, this%cell_scalars, this%cell_vectors)
       call write_cells(iunit, this%connectivity, this%offsets, this%types)
@@ -306,7 +306,7 @@ contains
             write (iunit, '(A)') '        </DataArray>'
          end do
       end if
-       write (iunit, '(A)') '      </PointData>'
+      write (iunit, '(A)') '      </PointData>'
    end subroutine write_pointdata
 
    subroutine write_celldata(iunit, scalars, vectors)
@@ -319,7 +319,7 @@ contains
          write (iunit, '(A)') '      </CellData>'
          return
       end if
-       write (iunit, '(A)') '      <CellData>'
+      write (iunit, '(A)') '      <CellData>'
       if (allocated(scalars)) then
          do i = 1, size(scalars)
             write (iunit, '(A)') '        <DataArray type="Float32" Name="'//trim(scalars(i)%name)//'" format="ascii">'
@@ -334,33 +334,33 @@ contains
             write (iunit, '(A)') '        </DataArray>'
          end do
       end if
-       write (iunit, '(A)') '      </CellData>'
+      write (iunit, '(A)') '      </CellData>'
    end subroutine write_celldata
 
    subroutine write_points(iunit, pts)
       integer, intent(in) :: iunit
       real, intent(in) :: pts(:, :)
-       write (iunit, '(A)') '      <Points>'
-       write (iunit, '(A)') '        <DataArray type="Float32" Name="Points" NumberOfComponents="3" format="ascii">'
+      write (iunit, '(A)') '      <Points>'
+      write (iunit, '(A)') '        <DataArray type="Float32" Name="Points" NumberOfComponents="3" format="ascii">'
       write (iunit, '(1000(F12.6,1X))') pts
-       write (iunit, '(A)') '        </DataArray>'
-       write (iunit, '(A)') '      </Points>'
+      write (iunit, '(A)') '        </DataArray>'
+      write (iunit, '(A)') '      </Points>'
    end subroutine write_points
 
    subroutine write_cells(iunit, conn, offsets, types)
       integer, intent(in) :: iunit
       integer, intent(in) :: conn(:), offsets(:), types(:)
-       write (iunit, '(A)') '      <Cells>'
-       write (iunit, '(A)') '        <DataArray type="Int32" Name="connectivity" format="ascii">'
+      write (iunit, '(A)') '      <Cells>'
+      write (iunit, '(A)') '        <DataArray type="Int32" Name="connectivity" format="ascii">'
       write (iunit, '(1000(I8,1X))') conn
-       write (iunit, '(A)') '        </DataArray>'
-       write (iunit, '(A)') '        <DataArray type="Int32" Name="offsets" format="ascii">'
+      write (iunit, '(A)') '        </DataArray>'
+      write (iunit, '(A)') '        <DataArray type="Int32" Name="offsets" format="ascii">'
       write (iunit, '(1000(I8,1X))') offsets
-       write (iunit, '(A)') '        </DataArray>'
-       write (iunit, '(A)') '        <DataArray type="UInt8" Name="types" format="ascii">'
+      write (iunit, '(A)') '        </DataArray>'
+      write (iunit, '(A)') '        <DataArray type="UInt8" Name="types" format="ascii">'
       write (iunit, '(1000(I3,1X))') types
-       write (iunit, '(A)') '        </DataArray>'
-       write (iunit, '(A)') '      </Cells>'
+      write (iunit, '(A)') '        </DataArray>'
+      write (iunit, '(A)') '      </Cells>'
    end subroutine write_cells
 
 end module vtkAPI_m

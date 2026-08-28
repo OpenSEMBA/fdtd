@@ -5,9 +5,9 @@ module outputCollective_m
 
    integer, parameter, public :: OUTPUT_COLLECTIVE_SUCCESS = 0
    integer, parameter, public :: OUTPUT_COLLECTIVE_INVALID_CONTEXT = 1
-    integer, parameter, public :: OUTPUT_COLLECTIVE_INVALID_PARTICIPANTS = 2
-    integer, parameter, public :: OUTPUT_COLLECTIVE_INVALID_OWNER = 3
-    integer, parameter, public :: OUTPUT_COLLECTIVE_INVALID_PARTITION = 4
+   integer, parameter, public :: OUTPUT_COLLECTIVE_INVALID_PARTICIPANTS = 2
+   integer, parameter, public :: OUTPUT_COLLECTIVE_INVALID_OWNER = 3
+   integer, parameter, public :: OUTPUT_COLLECTIVE_INVALID_PARTITION = 4
 
    integer, parameter, public :: OUTPUT_PUBLICATION_COLLECTIVE = 1
    integer, parameter, public :: OUTPUT_PUBLICATION_ROOT_AGGREGATION = 2
@@ -20,7 +20,7 @@ module outputCollective_m
    end type output_collective_t
 
    public :: init_output_collective
-    public :: select_output_participants
+   public :: select_output_participants
    public :: validate_output_ownership
    public :: select_output_publication_mode
    public :: prepare_output_partition_publication
@@ -48,14 +48,14 @@ contains
       status = OUTPUT_COLLECTIVE_SUCCESS
    end subroutine init_output_collective
 
-    subroutine select_output_participants(collective, rank_has_data, participants, owner_rank, status)
+   subroutine select_output_participants(collective, rank_has_data, participants, owner_rank, status)
       type(output_collective_t), intent(in) :: collective
       logical, intent(in) :: rank_has_data(:)
       integer, allocatable, intent(out) :: participants(:)
       integer, intent(out) :: owner_rank, status
       integer :: rank
 
-      if (allocated(participants)) deallocate(participants)
+      if (allocated(participants)) deallocate (participants)
       owner_rank = -1
       if (.not. valid_context(collective) .or. size(rank_has_data) /= collective%rank_count) then
          status = OUTPUT_COLLECTIVE_INVALID_CONTEXT
@@ -66,10 +66,10 @@ contains
          return
       end if
 
-      participants = pack([(rank - 1, rank = 1, collective%rank_count)], rank_has_data)
+      participants = pack([(rank - 1, rank=1, collective%rank_count)], rank_has_data)
       owner_rank = participants(1)
       status = OUTPUT_COLLECTIVE_SUCCESS
-    end subroutine select_output_participants
+   end subroutine select_output_participants
 
    pure subroutine validate_output_ownership(collective, participants, owner_rank, status)
       type(output_collective_t), intent(in) :: collective
@@ -116,7 +116,7 @@ contains
    end subroutine select_output_publication_mode
 
    pure subroutine prepare_output_partition_publication(collective, participants, owner_rank, partition, &
-                                                         local_participates, publication_mode, status)
+                                                        local_participates, publication_mode, status)
       type(output_collective_t), intent(in) :: collective
       integer, intent(in) :: participants(:)
       integer, intent(in) :: owner_rank

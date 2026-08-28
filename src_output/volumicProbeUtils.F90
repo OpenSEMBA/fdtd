@@ -3,7 +3,7 @@ module volumicProbeUtils_m
    use utils_m
    use allocationUtils_m, only: alloc_and_init
    use outputTypes_m
-    use outputUtils_m
+   use outputUtils_m
    implicit none
    private
 
@@ -104,7 +104,7 @@ contains
       numEdges = 0
       numQuads = 0
       if (counter <= 0) then
-         allocate(Edges(2, 0), Quads(4, 0), Nodes(3, 0))
+         allocate (Edges(2, 0), Quads(4, 0), Nodes(3, 0))
          return
       end if
 
@@ -196,84 +196,84 @@ contains
          case (iJx)
             nodeIdx = nodeIdx + 2
             if (usevtkindex) then
-               call registerNode(Nodes, nodeIdx - 1, xCoord    , yCoord, zCoord    )
-               call registerNode(Nodes, nodeIdx    , xCoord + 1, yCoord, zCoord    )
+               call registerNode(Nodes, nodeIdx - 1, xCoord, yCoord, zCoord)
+               call registerNode(Nodes, nodeIdx, xCoord + 1, yCoord, zCoord)
             else
-               call registerNode(Nodes, nodeIdx - 1, realXGrid(xCoord)    , realYGrid(yCoord), realZGrid(zCoord)    )
-               call registerNode(Nodes, nodeIdx    , realXGrid(xCoord + 1), realYGrid(yCoord), realZGrid(zCoord)    )
-            endif
+               call registerNode(Nodes, nodeIdx - 1, realXGrid(xCoord), realYGrid(yCoord), realZGrid(zCoord))
+               call registerNode(Nodes, nodeIdx, realXGrid(xCoord + 1), realYGrid(yCoord), realZGrid(zCoord))
+            end if
             edgeIdx = edgeIdx + 1
             call registerEdge(Edges, edgeIdx, nodeIdx - 1, nodeIdx)
 
          case (iJy)
             nodeIdx = nodeIdx + 2
             if (usevtkindex) then
-               call registerNode(Nodes, nodeIdx - 1, xCoord    , yCoord    , zCoord    )
-               call registerNode(Nodes, nodeIdx    , xCoord    , yCoord + 1, zCoord    )
+               call registerNode(Nodes, nodeIdx - 1, xCoord, yCoord, zCoord)
+               call registerNode(Nodes, nodeIdx, xCoord, yCoord + 1, zCoord)
             else
-               call registerNode(Nodes, nodeIdx - 1, realXGrid(xCoord)    , realYGrid(yCoord)    , realZGrid(zCoord)    )
-               call registerNode(Nodes, nodeIdx    , realXGrid(xCoord)    , realYGrid(yCoord + 1), realZGrid(zCoord)    )
-            endif
+               call registerNode(Nodes, nodeIdx - 1, realXGrid(xCoord), realYGrid(yCoord), realZGrid(zCoord))
+               call registerNode(Nodes, nodeIdx, realXGrid(xCoord), realYGrid(yCoord + 1), realZGrid(zCoord))
+            end if
             edgeIdx = edgeIdx + 1
             call registerEdge(Edges, edgeIdx, nodeIdx - 1, nodeIdx)
 
          case (iJz)
             nodeIdx = nodeIdx + 2
             if (usevtkindex) then
-               call registerNode(Nodes, nodeIdx - 1, xCoord, yCoord    , zCoord    )
-               call registerNode(Nodes, nodeIdx    , xCoord, yCoord    , zCoord + 1)
+               call registerNode(Nodes, nodeIdx - 1, xCoord, yCoord, zCoord)
+               call registerNode(Nodes, nodeIdx, xCoord, yCoord, zCoord + 1)
             else
-               call registerNode(Nodes, nodeIdx - 1, realXGrid(xCoord)    , realYGrid(yCoord)    , realZGrid(zCoord)    )
-               call registerNode(Nodes, nodeIdx    , realXGrid(xCoord)    , realYGrid(yCoord)    , realZGrid(zCoord + 1))
-            endif
+               call registerNode(Nodes, nodeIdx - 1, realXGrid(xCoord), realYGrid(yCoord), realZGrid(zCoord))
+               call registerNode(Nodes, nodeIdx, realXGrid(xCoord), realYGrid(yCoord), realZGrid(zCoord + 1))
+            end if
             edgeIdx = edgeIdx + 1
             call registerEdge(Edges, edgeIdx, nodeIdx - 1, nodeIdx)
 
          case (iBloqueJx)
             nodeIdx = nodeIdx + 4
             if (usevtkindex) then
-               call registerNode(Nodes, nodeIdx - 3, xCoord, yCoord    , zCoord    )
-               call registerNode(Nodes, nodeIdx - 2, xCoord, yCoord + 1, zCoord    )
+               call registerNode(Nodes, nodeIdx - 3, xCoord, yCoord, zCoord)
+               call registerNode(Nodes, nodeIdx - 2, xCoord, yCoord + 1, zCoord)
                call registerNode(Nodes, nodeIdx - 1, xCoord, yCoord + 1, zCoord + 1)
-               call registerNode(Nodes, nodeIdx    , xCoord, yCoord    , zCoord + 1)
+               call registerNode(Nodes, nodeIdx, xCoord, yCoord, zCoord + 1)
             else
-               call registerNode(Nodes, nodeIdx - 3, realXGrid(xCoord), realYGrid(yCoord)    , realZGrid(zCoord)    )
-               call registerNode(Nodes, nodeIdx - 2, realXGrid(xCoord), realYGrid(yCoord + 1), realZGrid(zCoord)    )
+               call registerNode(Nodes, nodeIdx - 3, realXGrid(xCoord), realYGrid(yCoord), realZGrid(zCoord))
+               call registerNode(Nodes, nodeIdx - 2, realXGrid(xCoord), realYGrid(yCoord + 1), realZGrid(zCoord))
                call registerNode(Nodes, nodeIdx - 1, realXGrid(xCoord), realYGrid(yCoord + 1), realZGrid(zCoord + 1))
-               call registerNode(Nodes, nodeIdx    , realXGrid(xCoord), realYGrid(yCoord)    , realZGrid(zCoord + 1))
-            endif
+               call registerNode(Nodes, nodeIdx, realXGrid(xCoord), realYGrid(yCoord), realZGrid(zCoord + 1))
+            end if
             quadIdx = quadIdx + 1
             call registerQuad(Quads, quadIdx, nodeIdx - 3, nodeIdx - 2, nodeIdx - 1, nodeIdx)
 
          case (iBloqueJy)
             nodeIdx = nodeIdx + 4
             if (usevtkindex) then
-               call registerNode(Nodes, nodeIdx - 3, xCoord    , yCoord, zCoord    )
-               call registerNode(Nodes, nodeIdx - 2, xCoord + 1, yCoord, zCoord    )
+               call registerNode(Nodes, nodeIdx - 3, xCoord, yCoord, zCoord)
+               call registerNode(Nodes, nodeIdx - 2, xCoord + 1, yCoord, zCoord)
                call registerNode(Nodes, nodeIdx - 1, xCoord + 1, yCoord, zCoord + 1)
-               call registerNode(Nodes, nodeIdx    , xCoord    , yCoord, zCoord + 1)
+               call registerNode(Nodes, nodeIdx, xCoord, yCoord, zCoord + 1)
             else
-               call registerNode(Nodes, nodeIdx - 3, realXGrid(xCoord)    , realYGrid(yCoord), realZGrid(zCoord)    )
-               call registerNode(Nodes, nodeIdx - 2, realXGrid(xCoord + 1), realYGrid(yCoord), realZGrid(zCoord)    )
+               call registerNode(Nodes, nodeIdx - 3, realXGrid(xCoord), realYGrid(yCoord), realZGrid(zCoord))
+               call registerNode(Nodes, nodeIdx - 2, realXGrid(xCoord + 1), realYGrid(yCoord), realZGrid(zCoord))
                call registerNode(Nodes, nodeIdx - 1, realXGrid(xCoord + 1), realYGrid(yCoord), realZGrid(zCoord + 1))
-               call registerNode(Nodes, nodeIdx    , realXGrid(xCoord)    , realYGrid(yCoord), realZGrid(zCoord + 1))
-            endif
+               call registerNode(Nodes, nodeIdx, realXGrid(xCoord), realYGrid(yCoord), realZGrid(zCoord + 1))
+            end if
             quadIdx = quadIdx + 1
             call registerQuad(Quads, quadIdx, nodeIdx - 3, nodeIdx - 2, nodeIdx - 1, nodeIdx)
 
          case (iBloqueJz)
             nodeIdx = nodeIdx + 4
             if (usevtkindex) then
-               call registerNode(Nodes, nodeIdx - 3, xCoord    , yCoord    , zCoord)
-               call registerNode(Nodes, nodeIdx - 2, xCoord + 1, yCoord    , zCoord)
+               call registerNode(Nodes, nodeIdx - 3, xCoord, yCoord, zCoord)
+               call registerNode(Nodes, nodeIdx - 2, xCoord + 1, yCoord, zCoord)
                call registerNode(Nodes, nodeIdx - 1, xCoord + 1, yCoord + 1, zCoord)
-               call registerNode(Nodes, nodeIdx    , xCoord    , yCoord + 1, zCoord)
+               call registerNode(Nodes, nodeIdx, xCoord, yCoord + 1, zCoord)
             else
-               call registerNode(Nodes, nodeIdx - 3, realXGrid(xCoord)    , realYGrid(yCoord)    , realZGrid(zCoord))
-               call registerNode(Nodes, nodeIdx - 2, realXGrid(xCoord + 1), realYGrid(yCoord)    , realZGrid(zCoord))
+               call registerNode(Nodes, nodeIdx - 3, realXGrid(xCoord), realYGrid(yCoord), realZGrid(zCoord))
+               call registerNode(Nodes, nodeIdx - 2, realXGrid(xCoord + 1), realYGrid(yCoord), realZGrid(zCoord))
                call registerNode(Nodes, nodeIdx - 1, realXGrid(xCoord + 1), realYGrid(yCoord + 1), realZGrid(zCoord))
-               call registerNode(Nodes, nodeIdx    , realXGrid(xCoord)    , realYGrid(yCoord + 1), realZGrid(zCoord))
-            endif
+               call registerNode(Nodes, nodeIdx, realXGrid(xCoord), realYGrid(yCoord + 1), realZGrid(zCoord))
+            end if
             quadIdx = quadIdx + 1
             call registerQuad(Quads, quadIdx, nodeIdx - 3, nodeIdx - 2, nodeIdx - 1, nodeIdx)
          end select

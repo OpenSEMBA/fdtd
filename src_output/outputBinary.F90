@@ -1,11 +1,11 @@
 module outputBinary_m
    use, intrinsic :: iso_fortran_env, only: int64, real64
-    use outputTypes_m, only: output_artifact_t, output_artifact_identity_is_valid, OUTPUT_ARTIFACT_BINARY, &
-                             BINARY_ENDIAN_LITTLE, &
+   use outputTypes_m, only: output_artifact_t, output_artifact_identity_is_valid, OUTPUT_ARTIFACT_BINARY, &
+                            BINARY_ENDIAN_LITTLE, &
                             BINARY_NUMERIC_REAL32, BINARY_NUMERIC_REAL64, &
                             BINARY_COMPLEX_UNSPECIFIED, BINARY_COMPLEX_REAL_IMAG, &
                             BINARY_BYTES_REAL32, BINARY_BYTES_REAL64
-    use directoryUtils_m, only: create_file_with_path, file_exists
+   use directoryUtils_m, only: create_file_with_path, file_exists
    implicit none
    private
 
@@ -14,20 +14,20 @@ module outputBinary_m
    integer, parameter :: BINARY_WRITER_SIZE_MISMATCH = 2
    integer, parameter :: BINARY_WRITER_IO_ERROR = 3
 
-      public :: validate_binary_layout, append_binary_real64, write_binary_complex_record64
+   public :: validate_binary_layout, append_binary_real64, write_binary_complex_record64
 
 contains
 
-    subroutine validate_binary_layout(artifact, status)
+   subroutine validate_binary_layout(artifact, status)
       type(output_artifact_t), intent(in) :: artifact
       integer, intent(out) :: status
       integer(kind=8) :: scalar_bytes
 
-        status = BINARY_WRITER_INVALID_LAYOUT
-        if (artifact%kind /= OUTPUT_ARTIFACT_BINARY) return
-        if (.not. output_artifact_identity_is_valid(artifact)) return
-        if (len_trim(artifact%component_order) == 0) return
-        if (artifact%byte_order /= BINARY_ENDIAN_LITTLE) return
+      status = BINARY_WRITER_INVALID_LAYOUT
+      if (artifact%kind /= OUTPUT_ARTIFACT_BINARY) return
+      if (.not. output_artifact_identity_is_valid(artifact)) return
+      if (len_trim(artifact%component_order) == 0) return
+      if (artifact%byte_order /= BINARY_ENDIAN_LITTLE) return
       select case (artifact%numeric_representation)
       case (BINARY_NUMERIC_REAL32)
          scalar_bytes = BINARY_BYTES_REAL32
@@ -36,81 +36,81 @@ contains
       case default
          return
       end select
-       select case (artifact%complex_representation)
-       case (BINARY_COMPLEX_UNSPECIFIED)
-       case (BINARY_COMPLEX_REAL_IMAG)
-       case default
-          return
-       end select
+      select case (artifact%complex_representation)
+      case (BINARY_COMPLEX_UNSPECIFIED)
+      case (BINARY_COMPLEX_REAL_IMAG)
+      case default
+         return
+      end select
       if (artifact%record_bytes < scalar_bytes) return
       if (mod(artifact%record_bytes, scalar_bytes) /= 0) return
       status = BINARY_WRITER_SUCCESS
-    end subroutine validate_binary_layout
+   end subroutine validate_binary_layout
 
-    subroutine open_binary_append(path, artifact, unit, status)
-       character(len=*), intent(in) :: path
-       type(output_artifact_t), intent(in) :: artifact
-       integer, intent(out) :: unit, status
-       integer :: ios
+   subroutine open_binary_append(path, artifact, unit, status)
+      character(len=*), intent(in) :: path
+      type(output_artifact_t), intent(in) :: artifact
+      integer, intent(out) :: unit, status
+      integer :: ios
 
-       unit = -1
-       call validate_binary_layout(artifact, status)
-       if (status /= BINARY_WRITER_SUCCESS) return
-        if (.not. file_exists(path)) then
-           call create_file_with_path(path, ios)
-           if (ios /= 0) then
-              status = BINARY_WRITER_IO_ERROR
-              return
-           end if
-        end if
-       open(newunit=unit, file=trim(path), access='stream', form='unformatted', status='old', &
+      unit = -1
+      call validate_binary_layout(artifact, status)
+      if (status /= BINARY_WRITER_SUCCESS) return
+      if (.not. file_exists(path)) then
+         call create_file_with_path(path, ios)
+         if (ios /= 0) then
+            status = BINARY_WRITER_IO_ERROR
+            return
+         end if
+      end if
+      open (newunit=unit, file=trim(path), access='stream', form='unformatted', status='old', &
             position='append', action='write', iostat=ios)
-       if (ios == 0) then
-          status = BINARY_WRITER_SUCCESS
-       else
-          status = BINARY_WRITER_IO_ERROR
-       end if
-    end subroutine open_binary_append
+      if (ios == 0) then
+         status = BINARY_WRITER_SUCCESS
+      else
+         status = BINARY_WRITER_IO_ERROR
+      end if
+   end subroutine open_binary_append
 
-     subroutine append_binary_real64(path, artifact, values, status)
-        character(len=*), intent(in) :: path
-        type(output_artifact_t), intent(in) :: artifact
-        real(real64), intent(in) :: values(:)
-        integer, intent(out) :: status
-        integer :: index, ios, unit, write_ios
+   subroutine append_binary_real64(path, artifact, values, status)
+      character(len=*), intent(in) :: path
+      type(output_artifact_t), intent(in) :: artifact
+      real(real64), intent(in) :: values(:)
+      integer, intent(out) :: status
+      integer :: index, ios, unit, write_ios
 
-        call validate_binary_layout(artifact, status)
-        if (status /= BINARY_WRITER_SUCCESS) return
-        if (artifact%numeric_representation /= BINARY_NUMERIC_REAL64 .or. &
-            artifact%complex_representation /= BINARY_COMPLEX_UNSPECIFIED .or. &
-            mod(int(size(values), kind=8) * BINARY_BYTES_REAL64, artifact%record_bytes) /= 0) then
-           status = BINARY_WRITER_INVALID_LAYOUT
-           return
-        end if
-        call open_binary_append(path, artifact, unit, status)
-        if (status /= BINARY_WRITER_SUCCESS) return
-        ios = 0
-        do index = 1, size(values)
-           call write_int64_little_endian(unit, transfer(values(index), 0_int64), ios)
-           if (ios /= 0) exit
-        end do
-        write_ios = ios
-        close(unit, iostat=ios)
-        if (write_ios == 0 .and. ios == 0) then
-           status = BINARY_WRITER_SUCCESS
-        else
-           status = BINARY_WRITER_IO_ERROR
-        end if
-     end subroutine append_binary_real64
+      call validate_binary_layout(artifact, status)
+      if (status /= BINARY_WRITER_SUCCESS) return
+      if (artifact%numeric_representation /= BINARY_NUMERIC_REAL64 .or. &
+          artifact%complex_representation /= BINARY_COMPLEX_UNSPECIFIED .or. &
+          mod(int(size(values), kind=8)*BINARY_BYTES_REAL64, artifact%record_bytes) /= 0) then
+         status = BINARY_WRITER_INVALID_LAYOUT
+         return
+      end if
+      call open_binary_append(path, artifact, unit, status)
+      if (status /= BINARY_WRITER_SUCCESS) return
+      ios = 0
+      do index = 1, size(values)
+         call write_int64_little_endian(unit, transfer(values(index), 0_int64), ios)
+         if (ios /= 0) exit
+      end do
+      write_ios = ios
+      close (unit, iostat=ios)
+      if (write_ios == 0 .and. ios == 0) then
+         status = BINARY_WRITER_SUCCESS
+      else
+         status = BINARY_WRITER_IO_ERROR
+      end if
+   end subroutine append_binary_real64
 
-     subroutine write_binary_complex_record64(path, artifact, values, status)
-        character(len=*), intent(in) :: path
-        type(output_artifact_t), intent(in) :: artifact
-        real(real64), intent(in) :: values(:)
-        integer, intent(out) :: status
+   subroutine write_binary_complex_record64(path, artifact, values, status)
+      character(len=*), intent(in) :: path
+      type(output_artifact_t), intent(in) :: artifact
+      real(real64), intent(in) :: values(:)
+      integer, intent(out) :: status
 
-        call write_real64_values(path, artifact, values, BINARY_COMPLEX_REAL_IMAG, status)
-     end subroutine write_binary_complex_record64
+      call write_real64_values(path, artifact, values, BINARY_COMPLEX_REAL_IMAG, status)
+   end subroutine write_binary_complex_record64
 
    subroutine write_real64_values(path, artifact, values, complex_representation, status)
       character(len=*), intent(in) :: path
@@ -121,10 +121,10 @@ contains
       integer :: i, ios, unit, write_ios
 
       call prepare_write(path, artifact, BINARY_NUMERIC_REAL64, complex_representation, &
-                         int(size(values), kind=8) * BINARY_BYTES_REAL64, status)
+                         int(size(values), kind=8)*BINARY_BYTES_REAL64, status)
       if (status /= BINARY_WRITER_SUCCESS) return
-      open(newunit=unit, file=trim(path), access='stream', form='unformatted', status='replace', &
-           action='write', iostat=ios)
+      open (newunit=unit, file=trim(path), access='stream', form='unformatted', status='replace', &
+            action='write', iostat=ios)
       if (ios /= 0) then
          status = BINARY_WRITER_IO_ERROR
          return
@@ -134,7 +134,7 @@ contains
          if (ios /= 0) exit
       end do
       write_ios = ios
-      close(unit, iostat=ios)
+      close (unit, iostat=ios)
       if (write_ios == 0 .and. ios == 0) then
          status = BINARY_WRITER_SUCCESS
       else
@@ -172,7 +172,7 @@ contains
       integer :: byte_index
 
       do byte_index = 0, BINARY_BYTES_REAL64 - 1
-         write(unit, iostat=ios) achar(ibits(value, 8 * byte_index, 8))
+         write (unit, iostat=ios) achar(ibits(value, 8*byte_index, 8))
          if (ios /= 0) return
       end do
    end subroutine write_int64_little_endian

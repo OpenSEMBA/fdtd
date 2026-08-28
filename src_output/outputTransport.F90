@@ -38,7 +38,7 @@ contains
 #ifdef CompileWithMPI
       transport%communicator = MPI_COMM_WORLD
       if (present(communicator)) transport%communicator = communicator
-      call MPI_Type_match_size(MPI_TYPECLASS_REAL, storage_size(0.0_real64) / 8, &
+      call MPI_Type_match_size(MPI_TYPECLASS_REAL, storage_size(0.0_real64)/8, &
                                transport%real64_datatype, ierr)
       if (ierr /= MPI_SUCCESS) then
          status = OUTPUT_TRANSPORT_RUNTIME_FAILURE
@@ -74,15 +74,15 @@ contains
       integer :: ierr
 #endif
 
-      if (allocated(gathered_batch)) deallocate(gathered_batch)
-      if (allocated(counts)) deallocate(counts)
-      if (allocated(displacements)) deallocate(displacements)
+      if (allocated(gathered_batch)) deallocate (gathered_batch)
+      if (allocated(counts)) deallocate (counts)
+      if (allocated(displacements)) deallocate (displacements)
       if (.not. valid_transport(transport)) then
          status = OUTPUT_TRANSPORT_INVALID_CONTEXT
          return
       end if
 
-      allocate(counts(transport%rank_count), displacements(transport%rank_count))
+      allocate (counts(transport%rank_count), displacements(transport%rank_count))
       counts = 0
       displacements = 0
 
@@ -103,9 +103,9 @@ contains
             displacements(i) = displacements(i - 1) + counts(i - 1)
          end do
          total_count = sum(counts)
-         allocate(gathered_batch(total_count))
+         allocate (gathered_batch(total_count))
       else
-         allocate(gathered_batch(0))
+         allocate (gathered_batch(0))
       end if
 
 #ifdef CompileWithMPI
@@ -135,9 +135,9 @@ contains
       real(real64), allocatable, intent(inout) :: gathered_batch(:)
       integer, allocatable, intent(inout) :: counts(:), displacements(:)
 
-      if (allocated(gathered_batch)) deallocate(gathered_batch)
-      if (allocated(counts)) deallocate(counts)
-      if (allocated(displacements)) deallocate(displacements)
+      if (allocated(gathered_batch)) deallocate (gathered_batch)
+      if (allocated(counts)) deallocate (counts)
+      if (allocated(displacements)) deallocate (displacements)
    end subroutine clear_flush_batch
 
 end module outputTransport_m

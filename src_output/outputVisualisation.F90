@@ -3,10 +3,10 @@ module outputVisualisation_m
    use FDETYPES_m, only: BUFSIZE
    use directoryUtils_m, only: file_exists
    use xdmf_hdf5_m, only: xdmf_writer_t, xdmf_options_t, xdmf_status_t, &
-                           xdmf_grid_id_t, xdmf_attribute_id_t, XDMF_SERIES_FREQUENCY, XDMF_SERIES_TIME, &
-                           XDMF_CENTER_NODE, XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, &
-                           XDMF_TOPOLOGY_POLYVERTEX
-   implicit none (type, external)
+                          xdmf_grid_id_t, xdmf_attribute_id_t, XDMF_SERIES_FREQUENCY, XDMF_SERIES_TIME, &
+                          XDMF_CENTER_NODE, XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, &
+                          XDMF_TOPOLOGY_POLYVERTEX
+   implicit none(type, external)
    private
 
    integer, parameter, public :: VISUALISATION_SUCCESS = 0
@@ -57,7 +57,7 @@ contains
       type(xdmf_status_t) :: writer_status
       integer :: attribute_index
 
-      allocate(visualisation%writer)
+      allocate (visualisation%writer)
       options%overwrite = .true.
       options%series_kind = XDMF_SERIES_TIME
       options%collective_io = collective_io
@@ -68,7 +68,7 @@ contains
       call visualisation%writer%create(trim(path), options, writer_status)
       if (.not. writer_status%is_error()) then
          call visualisation%writer%define_rectilinear_grid('movieProbe', x_coordinates, y_coordinates, &
-                                                            z_coordinates, visualisation%grid, writer_status)
+                                                           z_coordinates, visualisation%grid, writer_status)
       end if
       do attribute_index = 1, size(attribute_names)
          if (writer_status%is_error()) exit
@@ -94,15 +94,15 @@ contains
       type(xdmf_status_t) :: writer_status
       integer(int64), allocatable :: connectivity(:, :)
       character(len=10), parameter :: attribute_names(6) = [character(len=10) :: &
-         'xMagnitude', 'yMagnitude', 'zMagnitude', 'xPhase', 'yPhase', 'zPhase']
+                                                            'xMagnitude', 'yMagnitude', 'zMagnitude', 'xPhase', 'yPhase', 'zPhase']
       integer :: attribute_index, point_index
 
-      allocate(connectivity(1, size(points, 2)))
+      allocate (connectivity(1, size(points, 2)))
       do point_index = 1, size(points, 2)
          connectivity(1, point_index) = int(point_index, int64)
       end do
 
-      allocate(visualisation%writer)
+      allocate (visualisation%writer)
       options%overwrite = .true.
       options%series_kind = XDMF_SERIES_FREQUENCY
       options%collective_io = collective_io
@@ -113,7 +113,7 @@ contains
       call visualisation%writer%create(trim(path), options, writer_status)
       if (.not. writer_status%is_error()) then
          call visualisation%writer%define_unstructured_grid('frequencySlice', XDMF_TOPOLOGY_POLYVERTEX, &
-                                                             points, connectivity, visualisation%grid, writer_status)
+                                                            points, connectivity, visualisation%grid, writer_status)
       end if
       do attribute_index = 1, size(attribute_names)
          if (writer_status%is_error()) exit
@@ -129,7 +129,7 @@ contains
       type(xdmf_status_t), intent(out) :: status
 
       call visualisation%writer%define_attribute(visualisation%grid, name, XDMF_CENTER_NODE, &
-         XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, .true., visualisation%attributes(attribute_index), status)
+                              XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, .true., visualisation%attributes(attribute_index), status)
    end subroutine define_attribute
 
    subroutine begin_visualisation_step(visualisation, coordinate, status, diagnostic)
@@ -166,7 +166,7 @@ contains
       type(xdmf_status_t) :: writer_status
 
       call visualisation%writer%write_attribute_hyperslab(visualisation%attributes(attribute_index), values, &
-                                                           offset, shape, writer_status)
+                                                          offset, shape, writer_status)
       call convert_status(writer_status, status, diagnostic)
    end subroutine write_visualisation_attribute_hyperslab
 
@@ -207,7 +207,7 @@ contains
          return
       end if
       call visualisation%writer%close(writer_status)
-      deallocate(visualisation%writer)
+      deallocate (visualisation%writer)
       call convert_status(writer_status, status, diagnostic)
    end subroutine close_visualisation
 
