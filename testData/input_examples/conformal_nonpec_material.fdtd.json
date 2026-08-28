@@ -1,0 +1,11 @@
+{
+  "general": {"timeStep": 1e-12, "numberOfSteps": 1},
+  "mesh": {
+    "grid": {"numberOfCells": [2, 2, 2], "steps": {"x": [1.0], "y": [1.0], "z": [1.0]}},
+    "elements": [
+      {"id": 1, "type": "conformal", "subtype": "surface", "intervals": [], "triangles": []}
+    ]
+  },
+  "materials": [{"id": 1, "type": "pmc"}],
+  "materialAssociations": [{"materialId": 1, "elementIds": [1]}]
+}

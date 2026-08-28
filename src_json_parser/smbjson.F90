@@ -349,7 +349,7 @@ contains
                res%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
             end do
          end do
-         res%intervals = readCellIntervals(place, J_CELL_INTERVALS)
+         call readConformalIntervals(place, res%intervals, res%triangles)
          subtype = this%getStrAt(place, J_SUBTYPE)
 
          if (subtype == J_CONF_SUBTYPE_VOLUME) then
@@ -361,6 +361,149 @@ contains
             return
          end if
       end function
+
+      subroutine readConformalIntervals(place, structured, triangles)
+         type(json_value), pointer, intent(in) :: place
+         type(cell_interval_t), dimension(:), allocatable, intent(out) :: structured
+         type(triangle_t), dimension(:), allocatable, intent(inout) :: triangles
+
+         type(json_value), pointer :: intervalsPlace, interval
+         real, dimension(:), allocatable :: ini, fin
+         real, dimension(3) :: delta
+         integer :: i, nIntervals, nStructured, varying, normal, first, second
+         integer :: generatedId
+         logical :: found, integral
+
+         call this%core%get(place, J_CELL_INTERVALS, intervalsPlace, found=found)
+         if (.not. found) then
+            allocate(structured(0))
+            return
+         end if
+
+         nIntervals = this%core%count(intervalsPlace)
+         allocate(structured(nIntervals))
+         nStructured = 0
+         generatedId = -1000000
+         do i = 1, nIntervals
+            call this%core%get_child(intervalsPlace, i, interval)
+            ini = this%getRealsAt(interval, '(1)')
+            fin = this%getRealsAt(interval, '(2)')
+            delta = fin(1:3) - ini(1:3)
+            varying = count(abs(delta) > 1.0e-5)
+            integral = all(abs(ini(1:3)-anint(ini(1:3))) < 1.0e-5) .and. &
+                       all(abs(fin(1:3)-anint(fin(1:3))) < 1.0e-5)
+
+            select case (varying)
+            case (1)
+               if (.not. integral) then
+                  call invalidConformalInterval(i, 'lines must be grid-aligned and use integer coordinates')
+                  return
+               end if
+               nStructured = nStructured + 1
+               structured(nStructured)%ini%cell = nint(ini(1:3))
+               structured(nStructured)%end%cell = nint(fin(1:3))
+            case (2)
+               normal = minloc(abs(delta), 1)
+               first = mod(normal, 3) + 1
+               second = mod(normal + 1, 3) + 1
+               if (abs(ini(normal)-anint(ini(normal))) < 1.0e-5) then
+                  if (.not. integral) then
+                     call invalidConformalInterval(i, 'grid-face surfaces must use integer coordinates')
+                     return
+                  end if
+                  if ((delta(first) < 0.0) .neqv. (delta(second) < 0.0)) then
+                     call invalidConformalInterval(i, 'surface spans cannot have mixed-sign directions')
+                     return
+                  end if
+                  nStructured = nStructured + 1
+                  structured(nStructured)%ini%cell = nint(ini(1:3))
+                  structured(nStructured)%end%cell = nint(fin(1:3))
+               else
+                  if (abs(fin(normal)-ini(normal)) > 1.0e-5 .or. &
+                      abs(ini(first)-anint(ini(first))) >= 1.0e-5 .or. &
+                      abs(ini(second)-anint(ini(second))) >= 1.0e-5 .or. &
+                      abs(fin(first)-anint(fin(first))) >= 1.0e-5 .or. &
+                      abs(fin(second)-anint(fin(second))) >= 1.0e-5) then
+                     call invalidConformalInterval(i, 'mid-cell surfaces require integer in-plane bounds')
+                     return
+                  end if
+                  if ((delta(first) < 0.0) .neqv. (delta(second) < 0.0)) then
+                     call invalidConformalInterval(i, 'surface spans cannot have mixed-sign directions')
+                     return
+                  end if
+                  call tessellateConformalPanel(ini(1:3), fin(1:3), normal, triangles, generatedId)
+               end if
+            case (0)
+               call invalidConformalInterval(i, 'points are not supported')
+               return
+            case default
+               call invalidConformalInterval(i, 'must define a line or rectangular surface')
+               return
+            end select
+         end do
+         structured = structured(:nStructured)
+
+      end subroutine
+
+      subroutine invalidConformalInterval(index, detail)
+         integer, intent(in) :: index
+         character(len=*), intent(in) :: detail
+         character(len=256) :: message
+         write(message, '(A,I0,A,A)') 'Invalid conformal interval ', index, ': ', trim(detail)
+         call WarnErrReport(trim(message), .true.)
+      end subroutine
+
+      subroutine tessellateConformalPanel(firstPoint, secondPoint, normal, output, nextId)
+         real, dimension(3), intent(in) :: firstPoint, secondPoint
+         integer, intent(in) :: normal
+         type(triangle_t), dimension(:), allocatable, intent(inout) :: output
+         integer, intent(inout) :: nextId
+         integer :: a, b, ia, ib, a0, a1, b0, b1
+         real, dimension(3) :: p00, p10, p11, p01
+         type(triangle_t) :: firstTriangle, secondTriangle
+
+         a = mod(normal, 3) + 1
+         b = mod(normal + 1, 3) + 1
+         a0 = nint(min(firstPoint(a), secondPoint(a)))
+         a1 = nint(max(firstPoint(a), secondPoint(a)))
+         b0 = nint(min(firstPoint(b), secondPoint(b)))
+         b1 = nint(max(firstPoint(b), secondPoint(b)))
+         do ia = a0, a1 - 1
+            do ib = b0, b1 - 1
+               p00 = firstPoint; p00(a) = ia;   p00(b) = ib
+               p10 = firstPoint; p10(a) = ia+1; p10(b) = ib
+               p11 = firstPoint; p11(a) = ia+1; p11(b) = ib+1
+               p01 = firstPoint; p01(a) = ia;   p01(b) = ib+1
+               call setGeneratedTriangle(firstTriangle, p00, p10, p11, nextId)
+               call setGeneratedTriangle(secondTriangle, p00, p11, p01, nextId)
+               if (secondPoint(a) < firstPoint(a)) then
+                  firstTriangle%vertices = [firstTriangle%vertices(1), firstTriangle%vertices(3), firstTriangle%vertices(2)]
+                  secondTriangle%vertices = [secondTriangle%vertices(1), secondTriangle%vertices(3), secondTriangle%vertices(2)]
+               end if
+               call appendConformalTriangle(output, firstTriangle)
+               call appendConformalTriangle(output, secondTriangle)
+            end do
+         end do
+      end subroutine
+
+      subroutine setGeneratedTriangle(triangle, p1, p2, p3, nextId)
+         type(triangle_t), intent(out) :: triangle
+         real, dimension(3), intent(in) :: p1, p2, p3
+         integer, intent(inout) :: nextId
+         triangle%vertices(1)%position = p1; triangle%vertices(1)%id = nextId; nextId = nextId - 1
+         triangle%vertices(2)%position = p2; triangle%vertices(2)%id = nextId; nextId = nextId - 1
+         triangle%vertices(3)%position = p3; triangle%vertices(3)%id = nextId; nextId = nextId - 1
+      end subroutine
+
+      subroutine appendConformalTriangle(output, triangle)
+         type(triangle_t), dimension(:), allocatable, intent(inout) :: output
+         type(triangle_t), intent(in) :: triangle
+         type(triangle_t), dimension(:), allocatable :: expanded
+         allocate(expanded(size(output)+1))
+         expanded(:size(output)) = output
+         expanded(size(expanded)) = triangle
+         call move_alloc(expanded, output)
+      end subroutine
 
    end function
 
@@ -569,8 +712,9 @@ contains
       type(coords_t), dimension(:), pointer :: cs
       integer :: i
 
-      ! mAs = this%getMaterialAssociations([matType],[J_ELEM_TYPE_CELL])
-      mAs = this%getMaterialAssociations([matType],['-'//J_CONF_SUBTYPE_SURFACE, J_ELEM_TYPE_CELL//'    ', '-'//J_CONF_SUBTYPE_VOLUME//' '])
+      ! Conformal elements may contribute grid-aligned intervals.  Those intervals
+      ! are handled by this standard structured-material path.
+      mAs = this%getMaterialAssociations([matType])
       block
          type(coords_t), dimension(:), pointer :: emptyCoords
          if (size(mAs) == 0) then
@@ -637,6 +781,9 @@ contains
       integer :: i, j
       logical :: found
 
+      call validateConformalMaterialAssociations()
+      if (isFatalError()) return
+
       ! Put the longest label first so the Fortran character constructor does not
       ! truncate "surface" to the length of "volume".
       mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC], [J_CONF_SUBTYPE_SURFACE, J_CONF_SUBTYPE_VOLUME])
@@ -645,6 +792,7 @@ contains
          do j = 1, size(mAs(i)%elementIds)
             cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j), found)
             if (found) then
+               if (size(cR%triangles) == 0) cycle
                tagName = this%buildTagName(mAs(i)%materialId, mAs(i)%elementIds(j))
                if (cR%type == REGION_TYPE_VOLUME) then
                   call appendRegion(res%volumes, cR, tagName)
@@ -663,6 +811,30 @@ contains
       end do
 
    contains
+      subroutine validateConformalMaterialAssociations()
+         type(json_value), pointer :: allAssociations, association
+         type(materialAssociation_t) :: materialAssociation
+         type(json_value_ptr_t) :: element, material
+         integer :: associationIndex, elementIndex
+         logical :: associationsFound
+
+         call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, allAssociations, found=associationsFound)
+         if (.not. associationsFound) return
+         do associationIndex = 1, this%core%count(allAssociations)
+            call this%core%get_child(allAssociations, associationIndex, association)
+            materialAssociation = this%parseMaterialAssociation(association)
+            material = this%matTable%getId(materialAssociation%materialId)
+            do elementIndex = 1, size(materialAssociation%elementIds)
+               element = this%elementTable%getId(materialAssociation%elementIds(elementIndex))
+               if (this%getStrAt(element%p, J_TYPE, default='') /= J_ELEM_TYPE_CONFORMAL) cycle
+               if (this%getStrAt(material%p, J_TYPE) /= J_MAT_TYPE_PEC) then
+                  call WarnErrReport('Conformal elements can only be associated with PEC materials.', .true.)
+                  return
+               end if
+            end do
+         end do
+      end subroutine
+
       logical function isClosedRegion(region)
          type(conformal_region_t), intent(in) :: region
          type(ConformalPECElements_t) :: element
@@ -670,12 +842,8 @@ contains
          character(len=256) :: validation_message
 
          element%triangles = region%triangles
-         element%intervals = copyIntervals(region%intervals)
-         if (size(element%intervals) == 0) then
-            call validateClosedSurfaceTopology(element%triangles, is_valid, validation_message)
-         else
-            call validateConformalVolume(element, is_valid, validation_message)
-         end if
+         allocate(element%intervals(0))
+         call validateClosedSurfaceTopology(element%triangles, is_valid, validation_message)
          isClosedRegion = is_valid
       end function isClosedRegion
 
@@ -691,7 +859,7 @@ contains
          if (.not. associated(regions)) then
             allocate(regions(1))
             regions(1)%triangles = region%triangles
-            regions(1)%intervals = copyIntervals(region%intervals)
+            allocate(regions(1)%intervals(0))
             regions(1)%tag = tagName
             call validateRegion(regions(1), region%type, tagName, is_valid, validation_message)
          else
@@ -700,7 +868,7 @@ contains
                aux(i) = regions(i)
             end do
             aux(size(regions) + 1)%triangles = region%triangles
-            aux(size(regions) + 1)%intervals = copyIntervals(region%intervals)
+            allocate(aux(size(regions) + 1)%intervals(0))
             aux(size(regions) + 1)%tag  = tagName
             deallocate(regions)
 
@@ -936,13 +1104,20 @@ contains
       character(len=:), allocatable :: tagName
       type(coords_t), dimension(:), allocatable :: newCoords
       type(cell_region_t) :: cR
+      type(conformal_region_t) :: conformalRegion
       integer :: nCs
       integer :: e, jIni, jEnd
+      logical :: found
 
       ! Precount
       nCs = 0
       do e = 1, size(mA%elementIds)
-         cR = this%mesh%getCellRegion(mA%elementIds(e))
+         cR = this%mesh%getCellRegion(mA%elementIds(e), found)
+         if (.not. found) then
+            conformalRegion = this%mesh%getConformalRegion(mA%elementIds(e), found)
+            if (found) cR%intervals = conformalRegion%intervals
+         end if
+         if (.not. found) cycle
          newCoords = cellRegionToCoords(cR, cellType)
          nCs = nCs + size(newCoords)
       end do
@@ -951,7 +1126,12 @@ contains
       jIni = 1
       allocate(res(nCs))
       do e = 1, size(mA%elementIds)
-         cR = this%mesh%getCellRegion(mA%elementIds(e))
+         cR = this%mesh%getCellRegion(mA%elementIds(e), found)
+         if (.not. found) then
+            conformalRegion = this%mesh%getConformalRegion(mA%elementIds(e), found)
+            if (found) cR%intervals = conformalRegion%intervals
+         end if
+         if (.not. found) cycle
          tagName = this%buildTagName(mA%materialId, mA%elementIds(e))
          newCoords = cellRegionToCoords(cR, cellType, tag=tagName)
          if (size(newCoords) == 0) cycle

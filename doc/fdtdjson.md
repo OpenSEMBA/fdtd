@@ -148,7 +148,7 @@ The `elements` entry contains an array of JSON objects, each of which represents
   + `node`, representing a point in space. Elements with this type include a `<coordinateIds>` entry which is an array of a single integer representing the `id` of a coordinate and which must exist in the within the `mesh` `coordinates` list.
   + `polyline`, representing an oriented collection of segments. It must contain a list `<coordinateIds>` with at least two coordinates.
   + `cell`, containing a list of one or more `<intervals>` defined following the [interval convention](#the-interval-convention).
-  + `conformal` represents a conformal element which contains a list of `[intervals]` which define surfaces or lines, and a list of `<triangles>`. The cells occupied by intervals and triangles can not contain both.
+  + `conformal` represents a conformal PEC element which contains a list of `[intervals]` and a list of `<triangles>`. An axis-aligned line with integer endpoints, or a rectangular surface on an integer grid face, is treated as ordinary PEC geometry. A rectangular surface with integer in-plane bounds and a non-integer constant coordinate is tessellated into conformal patches. Points, diagonal/non-grid-aligned lines, mixed-sign surface spans, and surfaces with non-integer in-plane bounds are invalid. The cells occupied by intervals and triangles can not contain both.
   It also must contain an entry `subtype`, which can be:
     + `surface`, the intervals and triangles will be treated as a surface, which can be open or closed.
     + `volume`, the intervals and triangles must define a closed surface with all normals pointing outwards.
