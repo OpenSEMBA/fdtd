@@ -33,8 +33,13 @@ no_mpi_skip = pytest.mark.skipif(
 )
 
 # Use of absolute path to avoid conflicts when changing directory.
-if platform == "linux":
-    SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd')
+# Check environment variable first, then fall back to build detection.
+if "SEMBA_FDTD_EXECUTABLE" in os.environ:
+    SEMBA_EXE = os.environ["SEMBA_FDTD_EXECUTABLE"]
+elif platform == "linux":
+    SEMBA_EXE = os.path.join(os.getcwd(), 'build-dbg', 'bin', 'semba-fdtd')
+    if not os.path.isfile(SEMBA_EXE):
+        SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd')
 elif platform == "win32":
     SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd.exe')
 
@@ -204,3 +209,12 @@ def compute_impedance(probe_path, time_exc, voltage_exc, freqs):
     V_f = dtft(V_interp, time_I, freqs)
     Z = V_f / I_f
     return time_I, current, Z
+
+def corrcoef_on_common_time(t_ref, y_ref, t_cmp, y_cmp):
+    t_ini = max(t_ref[0], t_cmp[0])
+    t_end = min(t_ref[-1], t_cmp[-1])
+    mask = (t_ref >= t_ini) & (t_ref <= t_end)
+    t_common = t_ref[mask]
+    y_ref_common = y_ref[mask]
+    y_cmp_interp = np.interp(t_common, t_cmp, y_cmp)
+    return np.corrcoef(y_ref_common, y_cmp_interp)[0, 1]
