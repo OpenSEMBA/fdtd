@@ -315,67 +315,43 @@ contains
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
-               allocate (outputs(outputCount)%pointProbe)
-                call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt, &
-                                       sgg%NumPlaneWaves >= 1)
-               call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%pointProbe%path)//'.json', &
-                                                     get_last_component(outputs(outputCount)%pointProbe%path), &
-                                                     get_prefix_extension(outputRequestType, control%mpidir), &
-                                                     outputs(outputCount)%pointProbe%artifacts, lowerBound, lowerBound, &
-                                                     domain%domainType, control%layoutnumber, metadata_status)
+                allocate (outputs(outputCount)%pointProbe)
+                 call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt, &
+                                        sgg%NumPlaneWaves >= 1)
             case (iJx, iJy, iJz)
                if (wiresExists) then
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = WIRE_CURRENT_PROBE_ID
 
-                  allocate (outputs(outputCount)%wireCurrentProbe)
-                  call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, problemInfo%materialList, outputTypeExtension, control%mpidir, control%wiresflavor)
-                  call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%wireCurrentProbe%path)//'.json', &
-                                                       get_last_component(outputs(outputCount)%wireCurrentProbe%path), &
-                                                       get_prefix_extension(outputRequestType, control%mpidir), &
-                                                       outputs(outputCount)%wireCurrentProbe%artifacts, lowerBound, lowerBound, &
-                                                       domain%domainType, control%layoutnumber, metadata_status)
+                   allocate (outputs(outputCount)%wireCurrentProbe)
+                   call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, problemInfo%materialList, outputTypeExtension, control%mpidir, control%wiresflavor)
                end if
 
             case (iQx, iQy, iQz)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
 
-               allocate (outputs(outputCount)%wireChargeProbe)
-                call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
-               call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%wireChargeProbe%path)//'.json', &
-                                                     get_last_component(outputs(outputCount)%wireChargeProbe%path), &
-                                                     get_prefix_extension(outputRequestType, control%mpidir), &
-                                                     outputs(outputCount)%wireChargeProbe%artifacts, lowerBound, lowerBound, &
-                                                     domain%domainType, control%layoutnumber, metadata_status)
+                allocate (outputs(outputCount)%wireChargeProbe)
+                 call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
 
             case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = BULK_PROBE_ID
 
-               allocate (outputs(outputCount)%bulkCurrentProbe)
-                call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
-               call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%bulkCurrentProbe%path)//'.json', &
-                                                     get_last_component(outputs(outputCount)%bulkCurrentProbe%path), &
-                                                     get_prefix_extension(outputRequestType, control%mpidir), &
-                                                     outputs(outputCount)%bulkCurrentProbe%artifacts, lowerBound, upperBound, &
-                                                     domain%domainType, 0, metadata_status)
-                !! call adjust_computation_range --- Required due to issues in mpi region edges
+                allocate (outputs(outputCount)%bulkCurrentProbe)
+                 call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
+                 !! call adjust_computation_range --- Required due to issues in mpi region edges
 
             case (lineIntegral)
                if (domain%domainType /= TIME_DOMAIN) then
                   call stoponerror(0, 0, 'Line probes only support the time domain')
                else
                   outputCount = outputCount + 1
-                  outputs(outputCount)%outputID = LINE_PROBE_ID
-                  allocate (outputs(outputCount)%lineProbe)
-                  call init_line_probe_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
-                                              join_path(trim(outputTypeExtension)//'_LI', trim(outputTypeExtension)//'_LI'), &
-                                              sgg%Sweep, control%layoutnumber, control%num_procs)
-                  call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%lineProbe%path)//'.json', &
-                                                       get_last_component(outputs(outputCount)%lineProbe%path), 'LI', &
-                                                       outputs(outputCount)%lineProbe%artifacts, lowerBound, upperBound, &
-                                                       domain%domainType, control%layoutnumber, metadata_status)
+                   outputs(outputCount)%outputID = LINE_PROBE_ID
+                   allocate (outputs(outputCount)%lineProbe)
+                   call init_line_probe_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
+                                               trim(outputTypeExtension)//'_LI', &
+                                               sgg%Sweep, control%layoutnumber, control%num_procs)
                end if
 
             case (iCur, iMEC, iMHC, iCurX, iCurY, iCurZ, iExC, iEyC, iEzC, iHxC, iHyC, iHzC)
@@ -420,17 +396,6 @@ contains
                                          outputs(outputCount)%MPISubcomm, outputs(outputCount)%MPIRoot, &
 #endif
                                          eps0, mu0)
-               call register_scalar_output_metadata(outputCount, trim(outputs(outputCount)%farFieldOutput%path)//'.json', &
-                                                     get_last_component(outputs(outputCount)%farFieldOutput%path), &
-                                                     get_prefix_extension(outputRequestType, control%mpidir), &
-                                                     outputs(outputCount)%farFieldOutput%artifacts, lowerBound, upperBound, &
-                                                     domain%domainType, &
-#ifdef CompileWithMPI
-                                                     outputs(outputCount)%MPIRoot, &
-#else
-                                                     control%layoutnumber, &
-#endif
-                                                     metadata_status)
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
             end select
@@ -947,18 +912,6 @@ contains
       integer :: i
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
-         case (POINT_PROBE_ID)
-            call finalise_scalar_output_metadata(i)
-         case (WIRE_CURRENT_PROBE_ID)
-            call finalise_scalar_output_metadata(i)
-         case (WIRE_CHARGE_PROBE_ID)
-            call finalise_scalar_output_metadata(i)
-         case (BULK_PROBE_ID)
-            call finalise_scalar_output_metadata(i)
-         case (LINE_PROBE_ID)
-            call finalise_scalar_output_metadata(i)
-         case (FAR_FIELD_PROBE_ID)
-            call finalise_scalar_output_metadata(i)
          case (MAPVTK_ID)
             call finalise_scalar_output_metadata(i)
          case (MOVIE_PROBE_ID)
@@ -988,17 +941,25 @@ contains
 
    subroutine finalise_run_outputs()
       character(len=BUFSIZE) :: manifest_path, temporary_path
-      integer :: close_status, i, ios, unit
+      integer :: close_status, i, ios, published_count, unit
+      logical :: first_probe
 
       if (runOutputRank /= RUN_OUTPUT_ROOT_RANK) return
+      manifest_path = trim(runOutputId)//'_output_manifest.json'
+      published_count = 0
       do i = 1, size(outputs)
+         if (len_trim(outputs(i)%metadata_path) == 0) cycle
+         published_count = published_count + 1
          if (.not. output_lifecycle_is_terminal(outputs(i)%metadata%lifecycle)) then
             call StopOnError(runOutputRank, 1, 'Cannot publish output manifest before all probes are finalised')
             return
          end if
       end do
+      if (published_count == 0) then
+         call delete_file(manifest_path, ios)
+         return
+      end if
 
-      manifest_path = trim(runOutputId)//'_output_manifest.json'
       temporary_path = trim(manifest_path)//'.tmp'
       call create_file_with_path(temporary_path, ios)
       if (ios /= 0) then
@@ -1015,9 +976,12 @@ contains
       if (ios == 0) write (unit, '(a)', iostat=ios) '"schema_version":1,'
       if (ios == 0) write (unit, '(a)', iostat=ios) '"run_id":"'//json_escape(trim(runOutputId))//'",'
       if (ios == 0) write (unit, '(a)', iostat=ios) '"probes":['
+      first_probe = .true.
       do i = 1, size(outputs)
-         if (i > 1 .and. ios == 0) write (unit, '(a)', iostat=ios) ','
+         if (len_trim(outputs(i)%metadata_path) == 0) cycle
+         if (.not. first_probe .and. ios == 0) write (unit, '(a)', iostat=ios) ','
          if (ios == 0) call write_manifest_probe(unit, outputs(i)%metadata, outputs(i)%metadata_path, ios)
+         first_probe = .false.
       end do
       if (ios == 0) write (unit, '(a)', iostat=ios) ']'
       if (ios == 0) write (unit, '(a)', iostat=ios) '}'

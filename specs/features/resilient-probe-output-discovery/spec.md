@@ -36,12 +36,19 @@ Discovery MUST return matching candidates rather than guess artifact ownership.
 WHEN coordinated probe artifacts are published in a probe-specific directory
 THEN discovery MUST find their supported payload artifacts recursively.
 
+WHEN point, non-MTLN wire, bulk, line, or far-field `.dat` artifacts are
+published directly in the run directory
+THEN discovery MUST return their absolute file paths without moving or copying
+them.
+
 WHEN transmission-line artifacts are published directly in the run directory
 THEN discovery MUST find those flat artifacts through the same interface.
 
-WHEN a far-field text artifact has no filename extension
+WHEN a legacy far-field text artifact has no filename extension
 THEN discovery MUST include it without including probe descriptors or unrelated
 file types.
+
+Current far-field text artifacts MUST use the `.dat` extension.
 
 ## Artifact Filtering
 

@@ -1,7 +1,4 @@
-import json
-
-
-def test_far_field_probe_publishes_complete_descriptor(run_output_case):
+def test_far_field_probe_publishes_only_flat_dat_output(run_output_case):
     process, output_root = run_output_case(
         "far-field",
         [
@@ -16,16 +13,16 @@ def test_far_field_probe_publishes_complete_descriptor(run_output_case):
                     "initialFrequency": 1e6,
                     "finalFrequency": 1e9,
                     "numberOfFrequencies": 30,
-                    "frequencySpacing": "logarithmic"
-                }
+                    "frequencySpacing": "logarithmic",
+                },
             }
         ],
     )
 
     assert process.returncode == 0, process.stdout + process.stderr
-    descriptors = [
-        json.loads(path.read_text(encoding="utf-8"))
-        for path in output_root.rglob("*.json")
-        if path.name != "common_geometry.fdtd.json"
-    ]
-    assert any("lifecycle" in value for value in descriptors)
+    outputs = sorted(output_root.glob("common_geometry.fdtd_far_field_probe*"))
+    assert len(outputs) == 1
+    assert outputs[0].is_file()
+    assert outputs[0].suffix == ".dat"
+    assert outputs[0].parent == output_root
+    assert not (output_root / "common_geometry.fdtd_output_manifest.json").exists()

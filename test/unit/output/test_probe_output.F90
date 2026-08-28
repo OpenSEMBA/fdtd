@@ -1,5 +1,5 @@
 integer function test_init_point_probe() bind(c) result(err)
-   ! Verifies point-probe registration, identity, paths, and declared time output.
+   ! Verifies point probes publish one flat text file without metadata sidecars.
    use FDETYPES_m
    use FDETYPES_TOOLS
    use output_m
@@ -15,12 +15,10 @@ integer function test_init_point_probe() bind(c) result(err)
    character(len=*), parameter :: test_name = 'nested output/initPointProbeTest'
 
    ! Local variables
-   character(len=1) :: sep
    character(len=BUFSIZE) :: testPath, nEntrada
    character(len=BUFSIZE) :: expectedProbePath
    character(len=BUFSIZE) :: expectedDataPath
    character(len=BUFSIZE) :: expectedDescriptorPath
-   character(len=BUFSIZE) :: metadataLine
 
    type(SGGFDTDINFO_t)              :: sgg
    type(sim_control_t)            :: control
@@ -40,13 +38,11 @@ integer function test_init_point_probe() bind(c) result(err)
    logical :: outputRequested
    logical :: hasWires = .false.
    integer(kind=SINGLE) :: test_err = 0
-   integer :: ios, metadataUnit
-   logical :: hasLowerBounds, hasUpperBounds, hasDomain, hasOwnership
+   integer :: ios
 
    ! Setup
-   sep = get_path_separator()
    testPath = join_path(get_temp_folder(), test_folder)
-   nEntrada = testPath//sep//test_name
+   nEntrada = join_path(testPath, test_name)
 
    call sgg_init(sgg)
    call init_time_array(timeArray, nSteps, dt)
@@ -71,60 +67,20 @@ integer function test_init_point_probe() bind(c) result(err)
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, POINT_PROBE_ID, 'Unexpected probe id')
 
    expectedProbePath = trim(nEntrada)//wordSeparation//'pointProbe_Ex_4_4_4'
-   expectedProbePath = trim(expectedProbePath)//sep//get_last_component(expectedProbePath)
    expectedDataPath = trim(expectedProbePath)//wordSeparation//timeExtension//datFileExtension
    expectedDescriptorPath = trim(expectedProbePath)//'.json'
 
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%filePathTime, expectedDataPath, 'Unexpected path')
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%artifacts(1)%relative_path, &
-                                             expectedDataPath, 'Declared payload path changed')
+                                              expectedDataPath, 'Declared payload path changed')
    test_err = test_err + assert_true(file_exists(expectedDataPath), 'Time data file do not exist')
-   test_err = test_err + assert_true(file_exists(expectedDescriptorPath), 'Probe descriptor does not exist')
-   test_err = test_err + assert_string_equal(outputs(1)%metadata_path, expectedDescriptorPath, &
-                                              'Stored descriptor path changed')
-   test_err = test_err + assert_string_equal(outputs(1)%metadata%probe_id, get_last_component(expectedProbePath), &
-                                              'Stored probe identity changed')
-   test_err = test_err + assert_string_equal(outputs(1)%metadata%quantity, 'Ex', 'Stored quantity changed')
-   test_err = test_err + assert_integer_equal(outputs(1)%metadata%lower_bound%x, 4, 'Stored lower x bound changed')
-   test_err = test_err + assert_integer_equal(outputs(1)%metadata%lower_bound%y, 4, 'Stored lower y bound changed')
-   test_err = test_err + assert_integer_equal(outputs(1)%metadata%lower_bound%z, 4, 'Stored lower z bound changed')
-   test_err = test_err + assert_integer_equal(outputs(1)%metadata%upper_bound%x, 4, 'Stored upper x bound changed')
-   test_err = test_err + assert_integer_equal(outputs(1)%metadata%upper_bound%y, 4, 'Stored upper y bound changed')
-   test_err = test_err + assert_integer_equal(outputs(1)%metadata%upper_bound%z, 4, 'Stored upper z bound changed')
-   test_err = test_err + assert_integer_equal(outputs(1)%metadata%domain_type, TIME_DOMAIN, 'Stored domain changed')
-   test_err = test_err + assert_true(allocated(outputs(1)%metadata%ownership%participant_ranks), &
-                                     'Stored ownership participants are missing')
-   test_err = test_err + assert_integer_equal(size(outputs(1)%metadata%ownership%participant_ranks), 1, &
-                                              'Stored ownership participant count changed')
-   test_err = test_err + assert_integer_equal(outputs(1)%metadata%ownership%participant_ranks(1), 0, &
-                                              'Stored ownership participant changed')
-   test_err = test_err + assert_integer_equal(outputs(1)%metadata%ownership%scalar_writer_rank, 0, &
-                                              'Stored scalar writer changed')
-   test_err = test_err + assert_string_equal(outputs(1)%metadata%artifacts(1)%relative_path, &
-                                              get_last_component(expectedDataPath), &
-                                              'Stored artifact path was not normalised once')
-
-   hasLowerBounds = .false.
-   hasUpperBounds = .false.
-   hasDomain = .false.
-   hasOwnership = .false.
-   open(newunit=metadataUnit, file=expectedDescriptorPath, status='old', action='read', iostat=ios)
-   if (ios == 0) then
-      do while (ios == 0)
-         read(metadataUnit, '(A)', iostat=ios) metadataLine
-         if (index(metadataLine, '"lower_bound":{"x":4,"y":4,"z":4}') > 0) hasLowerBounds = .true.
-         if (index(metadataLine, '"upper_bound":{"x":4,"y":4,"z":4}') > 0) hasUpperBounds = .true.
-         if (index(metadataLine, '"domain":"time"') > 0) hasDomain = .true.
-         if (index(metadataLine, '"ownership":{"participant_ranks":[0],"scalar_writer_rank":0}') > 0) &
-            hasOwnership = .true.
-      end do
-      close(metadataUnit)
-   end if
-   test_err = test_err + assert_true(hasLowerBounds .and. hasUpperBounds, &
-                                     'Published descriptor bounds are incomplete')
-   test_err = test_err + assert_true(hasDomain, 'Published descriptor domain is incomplete')
-   test_err = test_err + assert_true(hasOwnership, 'Published descriptor ownership is incomplete')
+   test_err = test_err + assert_true(.not. file_exists(expectedDescriptorPath), &
+                                     'Point probe created a descriptor sidecar')
+   test_err = test_err + assert_true(.not. folder_exists(expectedProbePath), &
+                                     'Point probe created a probe-specific folder')
+   test_err = test_err + assert_true(len_trim(outputs(1)%metadata_path) == 0, &
+                                     'Point probe registered metadata')
 
    ! Cleanup
    call remove_folder(testPath, ios)
@@ -134,14 +90,13 @@ integer function test_init_point_probe() bind(c) result(err)
 end function
 
 integer function test_init_point_probe_with_incident() bind(c) result(err)
-   ! Verifies incident point probes declare a three-component time record.
+   ! Verifies incident point probes preserve their text header without a binary sidecar.
    use FDETYPES_m
    use FDETYPES_TOOLS
-   use outputTypes_m, only: point_probe_output_t, domain_t, cell_coordinate_t, TIME_DOMAIN, &
-                            BINARY_COMPONENTS_SCALAR_TIME_INCIDENT
+   use outputTypes_m, only: point_probe_output_t, domain_t, cell_coordinate_t, TIME_DOMAIN, OUTPUT_ARTIFACT_UNDEFINED
    use pointProbeOutput_m, only: init_point_probe_output
    use assertionTools_m, only: assert_true, assert_string_equal
-   use directoryUtils_m, only: join_path, remove_folder
+   use directoryUtils_m, only: delete_file, file_exists, join_path
    use testOutputUtils_m, only: get_temp_folder
    implicit none
 
@@ -159,22 +114,23 @@ integer function test_init_point_probe_with_incident() bind(c) result(err)
 
    err = err + assert_true(probe%hasIncident .and. allocated(probe%incidentForTime), &
                            'Incident point probe did not allocate incident samples')
-   err = err + assert_true(probe%artifacts(2)%record_bytes == 24, 'Incident binary record size is incorrect')
-   err = err + assert_string_equal(probe%artifacts(2)%component_order, BINARY_COMPONENTS_SCALAR_TIME_INCIDENT, &
-                                   'Incident binary component order is incorrect')
+   err = err + assert_true(size(probe%artifacts) == 1 .and. &
+                           probe%artifacts(1)%kind /= OUTPUT_ARTIFACT_UNDEFINED, &
+                           'Incident point probe declared a non-text sidecar')
    open (newunit=unit, file=probe%filePathTime, status='old', action='read', iostat=ios)
    read (unit, '(A)', iostat=ios) header
    close (unit)
    err = err + assert_true(ios == 0 .and. trim(header) == 't field incident', 'Incident text header is incorrect')
-   call remove_folder(trim(path)//'_Ex_1_1_1', ios)
+   err = err + assert_true(.not. file_exists(trim(path)//'_Ex_1_1_1_tm.bin'), &
+                           'Incident point probe created a binary sidecar')
+   call delete_file(probe%filePathTime, ios)
 end function test_init_point_probe_with_incident
 
-integer function test_root_output_manifest() bind(c) result(err)
-   ! Verifies final root manifest publication, terminal state, artifacts, and cleanup.
+integer function test_scalar_probe_has_no_manifest() bind(c) result(err)
+   ! Verifies a scalar-only run does not publish descriptors or a root manifest.
    use FDETYPES_m
    use FDETYPES_TOOLS
    use output_m
-   use outputMetadata_m, only: json_escape
    use testOutputUtils_m
    use sggMethods_m
    use assertionTools_m
@@ -191,15 +147,12 @@ integer function test_root_output_manifest() bind(c) result(err)
    type(MediaData_t), pointer :: materials_ptr(:)
    type(taglist_t) :: tag_numbers
    real(kind=RKIND_tiempo), pointer :: time_array(:)
-   character(len=BUFSIZE) :: line, path, probe_path
-   integer :: ios, unit
-   logical :: observations_exist, wires_exist, has_artifact, has_complete_state, has_probe
+   character(len=BUFSIZE) :: path, probe_path
+   integer :: ios
+   logical :: observations_exist, wires_exist
 
    err = 0
    wires_exist = .false.
-   has_artifact = .false.
-   has_complete_state = .false.
-   has_probe = .false.
    path = join_path(get_temp_folder(), 'rootManifest')
    probe_path = trim(path)//'_pointProbe_Ex_4_4_4'
    call sgg_init(sgg)
@@ -215,31 +168,18 @@ integer function test_root_output_manifest() bind(c) result(err)
 
    call init_outputs(sgg, media, sinpml, tag_numbers, bounds, control, observations_exist, wires_exist)
 
-   err = err + assert_true(.not. file_exists(trim(path)//'_output_manifest.json'), &
-                           'Root output manifest was published before probe finalisation')
-   call close_outputs()
-   err = err + assert_true(file_exists(trim(path)//'_output_manifest.json'), &
-                           'Root output manifest does not exist after finalisation')
-   open (newunit=unit, file=trim(path)//'_output_manifest.json', status='old', action='read', iostat=ios)
-   do while (ios == 0)
-      read (unit, '(A)', iostat=ios) line
-      if (index(line, json_escape(trim(probe_path))) > 0) has_artifact = .true.
-      if (index(line, '"state":"complete"') > 0) has_complete_state = .true.
-      if (index(line, '"probe_id":"rootManifest_pointProbe_Ex_4_4_4"') > 0) has_probe = .true.
-   end do
-   close (unit)
-   err = err + assert_true(has_artifact, 'Manifest does not contain the declared point artifact')
-   err = err + assert_true(has_complete_state, 'Manifest does not contain the terminal probe state')
-   err = err + assert_true(has_probe, 'Manifest does not contain the declared probe identity')
-
-   call delete_run_output_manifest(path, 0)
-   err = err + assert_true(.not. file_exists(join_path(trim(probe_path), get_last_component(probe_path)//'_tm.dat')), &
-                           'Manifest deletion did not remove the declared artifact')
-   err = err + assert_true(.not. folder_exists(probe_path), &
-                           'Manifest deletion did not remove the probe directory')
-   err = err + assert_true(.not. file_exists(trim(path)//'_output_manifest.json'), &
-                           'Manifest deletion did not remove the manifest')
-end function
+    err = err + assert_true(.not. file_exists(trim(path)//'_output_manifest.json'), &
+                            'Root output manifest was published before probe finalisation')
+    call create_file_with_path(trim(path)//'_output_manifest.json', ios)
+    call close_outputs()
+    err = err + assert_true(.not. file_exists(trim(path)//'_output_manifest.json'), &
+                            'Scalar-only run retained a stale root manifest')
+   err = err + assert_true(file_exists(trim(probe_path)//'_tm.dat'), &
+                           'Scalar-only run did not retain its flat data file')
+   err = err + assert_true(.not. file_exists(trim(probe_path)//'.json'), &
+                           'Scalar-only run published a probe descriptor')
+   call delete_file(trim(probe_path)//'_tm.dat', ios)
+end function test_scalar_probe_has_no_manifest
 
 integer function test_line_probe_integral() bind(c) result(err)
    ! Verifies the legacy signed E.dl line-integral convention in isolation.
@@ -326,11 +266,10 @@ integer function test_line_probe_empty_path() bind(c) result(err)
    call update_line_probe_output(probe, 0.0_RKIND_tiempo, electric_field)
    err = err + assert_integer_equal(probe%nTime, 0, 'Empty line probe recorded a fabricated sample')
    call delete_file(trim(path)//'_tm.dat', ios)
-   call delete_file(trim(path)//'_tm.bin', ios)
 end function test_line_probe_empty_path
 
-integer function test_line_probe_artifacts() bind(c) result(err)
-   ! Verifies line-probe flush retains text and binary records for every sample.
+integer function test_line_probe_dat_output() bind(c) result(err)
+   ! Verifies line-probe flush retains every sample in one text file.
    use FDETYPES_m, only: RKIND, RKIND_tiempo, direction_t, iEx
    use outputTypes_m, only: line_probe_output_t, field_data_t, domain_t, TIME_DOMAIN
    use lineProbeOutput_m, only: init_line_probe_output, update_line_probe_output, flush_line_probe_output
@@ -346,7 +285,7 @@ integer function test_line_probe_artifacts() bind(c) result(err)
    type(field_data_t) :: electric_field
    real(kind=RKIND), target :: ex(1, 1, 1), ey(1, 1, 1), ez(1, 1, 1), spacing(1)
    character(len=4096) :: path
-   integer :: ios, text_unit, text_records, binary_size
+   integer :: ios, text_unit, text_records
    character(len=128) :: line
 
    err = 0
@@ -375,13 +314,11 @@ integer function test_line_probe_artifacts() bind(c) result(err)
       if (ios == 0) text_records = text_records + 1
    end do
    close (text_unit)
-   inquire (file=trim(path)//'_tm.bin', size=binary_size, iostat=ios)
    err = err + assert_integer_equal(text_records, 3, 'Line text artifact lost its header or samples')
-   err = err + assert_true(file_exists(trim(path)//'_tm.bin') .and. binary_size == 32, &
-                           'Line binary artifact does not contain two records')
+   err = err + assert_true(.not. file_exists(trim(path)//'_tm.bin'), &
+                           'Line probe created a binary sidecar')
    call delete_file(trim(path)//'_tm.dat', ios)
-   call delete_file(trim(path)//'_tm.bin', ios)
-end function test_line_probe_artifacts
+end function test_line_probe_dat_output
 
 integer function test_line_probe_shared_interface_owner() bind(c) result(err)
    use FDETYPES_m, only: direction_t, xyzlimit_t, iEx
@@ -860,7 +797,7 @@ integer function test_flush_point_probe() bind(c) result(err)
    type(domain_t)             :: domain
    type(cell_coordinate_t)    :: coordinates
 
-   integer :: file_size, frequency_binary_size, time_binary_size, n, i
+   integer :: file_size, n, i
    integer :: test_err = 0
    integer :: ios
 
@@ -879,17 +816,17 @@ integer function test_flush_point_probe() bind(c) result(err)
 
    call init_point_probe_output(probe, coordinates, iEx, domain, nEntrada, 3, 0.1_RKIND_tiempo)
 
-   test_err = test_err + assert_integer_equal(size(probe%artifacts), 4, &
-                                              'Point probe does not declare all text and binary artifacts')
+   test_err = test_err + assert_integer_equal(size(probe%artifacts), 2, &
+                                               'Point probe did not declare both text domains')
 
    ! A declared scalar artifact remains discoverable when no sample is recorded.
    call flush_point_probe_output(probe)
    inquire (file=probe%filePathTime, size=file_size)
    test_err = test_err + assert_true(file_size > 0, 'Zero-sample point artifact is missing its header')
-   test_err = test_err + assert_true(file_exists(probe%artifacts(2)%relative_path), &
-                                     'Zero-sample point time binary artifact is missing')
-   test_err = test_err + assert_true(file_exists(probe%artifacts(4)%relative_path), &
-                                     'Zero-sample point frequency binary artifact is missing')
+   test_err = test_err + assert_true(.not. file_exists(trim(probe%path)//'_tm.bin'), &
+                                     'Zero-sample point probe created a time binary sidecar')
+   test_err = test_err + assert_true(.not. file_exists(trim(probe%path)//'_fq.bin'), &
+                                     'Zero-sample point probe created a frequency binary sidecar')
 
    ! Action
    n = 10
@@ -908,13 +845,10 @@ integer function test_flush_point_probe() bind(c) result(err)
    ! Assertions
    test_err = test_err + assert_written_output_file(probe%filePathTime)
    test_err = test_err + assert_written_output_file(probe%filePathFreq)
-   inquire (file=probe%artifacts(2)%relative_path, size=time_binary_size)
-   inquire (file=probe%artifacts(4)%relative_path, size=frequency_binary_size)
-   test_err = test_err + assert_true(file_exists(probe%artifacts(2)%relative_path) .and. time_binary_size == 16*n, &
-                                     'Point time binary artifact has an unexpected size')
-   test_err = test_err + assert_true(file_exists(probe%artifacts(4)%relative_path) .and. &
-                                     frequency_binary_size == 24*n, &
-                                     'Point frequency binary artifact has an unexpected size')
+   test_err = test_err + assert_true(.not. file_exists(trim(probe%path)//'_tm.bin'), &
+                                     'Point probe created a time binary sidecar')
+   test_err = test_err + assert_true(.not. file_exists(trim(probe%path)//'_fq.bin'), &
+                                     'Point probe created a frequency binary sidecar')
 
    test_err = test_err + assert_integer_equal(probe%nTime, 0, 'ERROR: clear_time_data did not reset serializedTimeSize!')
 
@@ -934,12 +868,9 @@ integer function test_flush_point_probe() bind(c) result(err)
    err = test_err
 end function
 
-integer function test_flush_wire_probe_binary() bind(c) result(err)
+integer function test_flush_wire_probe_dat() bind(c) result(err)
    use FDETYPES_m, only: RKIND, RKIND_tiempo
-   use outputTypes_m, only: wire_current_probe_output_t, wire_charge_probe_output_t, &
-                            OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY, &
-                            BINARY_ENDIAN_LITTLE, BINARY_NUMERIC_REAL64, &
-                            BINARY_COMPLEX_UNSPECIFIED
+   use outputTypes_m, only: wire_current_probe_output_t, wire_charge_probe_output_t, OUTPUT_ARTIFACT_TEXT
    use wireProbeOutput_m, only: flush_wire_current_probe_output, flush_wire_charge_probe_output
    use assertionTools_m, only: assert_true
    use directoryUtils_m, only: create_file_with_path, delete_file, file_exists
@@ -957,54 +888,38 @@ integer function test_flush_wire_probe_binary() bind(c) result(err)
    current_probe%filePathTime = join_path(folder, 'current_tm.dat')
    current_probe%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
    current_probe%artifacts(1)%relative_path = current_probe%filePathTime
-   current_probe%artifacts(2)%kind = OUTPUT_ARTIFACT_BINARY
-   current_probe%artifacts(2)%relative_path = join_path(folder, 'current_tm.bin')
-   current_probe%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
-   current_probe%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
-   current_probe%artifacts(2)%complex_representation = BINARY_COMPLEX_UNSPECIFIED
-   current_probe%artifacts(2)%record_bytes = 48
-   current_probe%artifacts(2)%component_order = 'time,current,delta_voltage,plus_voltage,minus_voltage,voltage_difference'
    allocate (current_probe%timeStep(1))
    current_probe%nTime = 1
    current_probe%timeStep(1) = 1.0_RKIND_tiempo
    current_probe%currentValues(1)%current = 2.0_RKIND
    call create_file_with_path(current_probe%filePathTime, ios)
    call flush_wire_current_probe_output(current_probe)
-   inquire (file=current_probe%artifacts(2)%relative_path, size=current_size, iostat=ios)
-   err = err + assert_true(file_exists(current_probe%artifacts(2)%relative_path) .and. ios == 0 .and. current_size == 48, &
-                           'Wire-current binary record was not published')
+   inquire (file=current_probe%filePathTime, size=current_size, iostat=ios)
+   err = err + assert_true(ios == 0 .and. current_size > 0, 'Wire-current text record was not published')
+   err = err + assert_true(.not. file_exists(join_path(folder, 'current_tm.bin')), &
+                           'Wire-current probe created a binary sidecar')
 
    charge_probe%filePathTime = join_path(folder, 'charge_tm.dat')
    charge_probe%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
    charge_probe%artifacts(1)%relative_path = charge_probe%filePathTime
-   charge_probe%artifacts(2)%kind = OUTPUT_ARTIFACT_BINARY
-   charge_probe%artifacts(2)%relative_path = join_path(folder, 'charge_tm.bin')
-   charge_probe%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
-   charge_probe%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
-   charge_probe%artifacts(2)%complex_representation = BINARY_COMPLEX_UNSPECIFIED
-   charge_probe%artifacts(2)%record_bytes = 16
-   charge_probe%artifacts(2)%component_order = 'time,charge'
    allocate (charge_probe%timeStep(1), charge_probe%chargeValue(1))
    charge_probe%nTime = 1
    charge_probe%timeStep(1) = 1.0_RKIND_tiempo
    charge_probe%chargeValue(1) = 2.0_RKIND
    call create_file_with_path(charge_probe%filePathTime, ios)
    call flush_wire_charge_probe_output(charge_probe)
-   inquire (file=charge_probe%artifacts(2)%relative_path, size=charge_size, iostat=ios)
-   err = err + assert_true(file_exists(charge_probe%artifacts(2)%relative_path) .and. ios == 0 .and. charge_size == 16, &
-                           'Wire-charge binary record was not published')
+   inquire (file=charge_probe%filePathTime, size=charge_size, iostat=ios)
+   err = err + assert_true(ios == 0 .and. charge_size > 0, 'Wire-charge text record was not published')
+   err = err + assert_true(.not. file_exists(join_path(folder, 'charge_tm.bin')), &
+                           'Wire-charge probe created a binary sidecar')
 
    call delete_file(current_probe%filePathTime, ios)
-   call delete_file(current_probe%artifacts(2)%relative_path, ios)
    call delete_file(charge_probe%filePathTime, ios)
-   call delete_file(charge_probe%artifacts(2)%relative_path, ios)
-end function test_flush_wire_probe_binary
+end function test_flush_wire_probe_dat
 
-integer function test_flush_bulk_probe_binary() bind(c) result(err)
+integer function test_flush_bulk_probe_dat() bind(c) result(err)
    use FDETYPES_m, only: RKIND, RKIND_tiempo
-   use outputTypes_m, only: bulk_current_probe_output_t, OUTPUT_ARTIFACT_TEXT, &
-                            OUTPUT_ARTIFACT_BINARY, BINARY_ENDIAN_LITTLE, &
-                            BINARY_NUMERIC_REAL64, BINARY_COMPLEX_UNSPECIFIED
+   use outputTypes_m, only: bulk_current_probe_output_t, OUTPUT_ARTIFACT_TEXT
    use bulkProbeOutput_m, only: flush_bulk_probe_output
    use assertionTools_m, only: assert_true
    use directoryUtils_m, only: create_file_with_path, delete_file, file_exists
@@ -1013,7 +928,7 @@ integer function test_flush_bulk_probe_binary() bind(c) result(err)
    implicit none
 
    type(bulk_current_probe_output_t) :: probe
-   integer :: binary_size, ios
+   integer :: text_size, ios
    character(len=4096) :: folder
 
    err = 0
@@ -1021,49 +936,18 @@ integer function test_flush_bulk_probe_binary() bind(c) result(err)
    probe%filePathTime = join_path(folder, 'probe_tm.dat')
    probe%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
    probe%artifacts(1)%relative_path = probe%filePathTime
-   probe%artifacts(2)%kind = OUTPUT_ARTIFACT_BINARY
-   probe%artifacts(2)%relative_path = join_path(folder, 'probe_tm.bin')
-   probe%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
-   probe%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
-   probe%artifacts(2)%complex_representation = BINARY_COMPLEX_UNSPECIFIED
-   probe%artifacts(2)%record_bytes = 16
-   probe%artifacts(2)%component_order = 'time,value'
    allocate (probe%timeStep(1), probe%valueForTime(1))
    probe%nTime = 1
    probe%timeStep(1) = 1.0_RKIND_tiempo
    probe%valueForTime(1) = 2.0_RKIND
    call create_file_with_path(probe%filePathTime, ios)
    call flush_bulk_probe_output(probe)
-   inquire (file=probe%artifacts(2)%relative_path, size=binary_size, iostat=ios)
-   err = err + assert_true(file_exists(probe%artifacts(2)%relative_path) .and. ios == 0 .and. binary_size == 16, &
-                           'Bulk binary record was not published')
+   inquire (file=probe%filePathTime, size=text_size, iostat=ios)
+   err = err + assert_true(ios == 0 .and. text_size > 0, 'Bulk text record was not published')
+   err = err + assert_true(.not. file_exists(join_path(folder, 'probe_tm.bin')), &
+                           'Bulk probe created a binary sidecar')
    call delete_file(probe%filePathTime, ios)
-   call delete_file(probe%artifacts(2)%relative_path, ios)
-end function test_flush_bulk_probe_binary
-
-integer function test_farfield_binary_row() bind(c) result(err)
-   use FDETYPES_m, only: RKIND, CKIND
-   use farfield_m, only: append_farfield_binary
-   use assertionTools_m, only: assert_true
-   use directoryUtils_m, only: create_file_with_path, delete_file, file_exists
-   use testOutputUtils_m, only: get_temp_folder
-   use directoryUtils_m, only: join_path
-   implicit none
-
-   character(len=4096) :: path
-   integer :: ios, size
-
-   err = 0
-   path = join_path(get_temp_folder(), 'testing farfield/result.bin')
-   call create_file_with_path(path, ios)
-   call append_farfield_binary(path, 1.0_RKIND, 2.0_RKIND, 3.0_RKIND, &
-                               cmplx(4.0_RKIND, 5.0_RKIND, CKIND), &
-                               cmplx(6.0_RKIND, 7.0_RKIND, CKIND), 8.0_RKIND, 9.0_RKIND)
-   inquire (file=path, size=size, iostat=ios)
-   err = err + assert_true(file_exists(path) .and. ios == 0 .and. size == 72, &
-                           'Far-field binary row does not contain nine real64 values')
-   call delete_file(path, ios)
-end function test_farfield_binary_row
+end function test_flush_bulk_probe_dat
 
 integer function test_multiple_flush_point_probe() bind(c) result(err)
    ! Verifies consecutive point-probe flushes preserve time and frequency data.

@@ -1,13 +1,13 @@
 module lineProbeOutput_m
    use FDETYPES_m, only: RKIND, RKIND_tiempo, SINGLE, BUFSIZE, direction_t, xyzlimit_t, iEx, iEy, iEz
    use outputTypes_m, only: field_data_t, line_probe_output_t, domain_t, TIME_DOMAIN, OUTPUT_TIME_BUFFER_SIZE, &
-                             OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY, BINARY_ENDIAN_LITTLE, &
-                              BINARY_NUMERIC_REAL64, BINARY_COMPLEX_UNSPECIFIED, binaryExtension, &
-                             datFileExtension, timeExtension, declare_probe_artifacts
+                            OUTPUT_ARTIFACT_TEXT, datFileExtension, timeExtension, declare_probe_artifacts
    use allocationUtils_m, only: alloc_and_init
    use directoryUtils_m, only: create_file_with_path
-    use outputBinary_m, only: append_binary_real64, BINARY_WRITER_SUCCESS
-    use, intrinsic :: iso_fortran_env, only: real64
+#ifdef CompileWithMPI
+   use FDETYPES_m, only: REALSIZE
+   use mpi
+#endif
    implicit none
    private
 
@@ -49,11 +49,15 @@ contains
       character(len=*), intent(in) :: output_path
       type(xyzlimit_t), intent(in), optional :: sweeps(:)
       integer(kind=SINGLE), intent(in), optional :: rank, rank_count
-      character(len=BUFSIZE) :: artifact_paths(2)
-       integer :: artifact_kinds(2), ios, unit, segment_index, local_count
+      character(len=BUFSIZE) :: artifact_paths(1)
+       integer :: artifact_kinds(1), ios, unit, segment_index, local_count
 
       this%domain = domain
       this%path = output_path
+#ifdef CompileWithMPI
+      if (present(rank_count)) this%isDistributed = rank_count > 1
+      if (this%isDistributed .and. present(rank)) this%isWriter = rank == 0
+#endif
       local_count = size(segments)
       if (present(sweeps)) then
          local_count = 0
@@ -76,22 +80,17 @@ contains
       call alloc_and_init(this%valueForTime, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
 
       artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
-      artifact_paths(2) = trim(this%path)//'_'//timeExtension//binaryExtension
-      artifact_kinds = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]
+      artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
-      this%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
-       this%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
-      this%artifacts(2)%complex_representation = BINARY_COMPLEX_UNSPECIFIED
-       this%artifacts(2)%record_bytes = 16
-      this%artifacts(2)%component_order = 'time,line_integral'
-       call create_file_with_path(this%artifacts(1)%relative_path, ios)
-       if (ios /= 0) return
-       open(newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
-       if (ios /= 0) return
-       write(unit, '(A)', iostat=ios) 't lineIntegral'
-       close(unit)
-       if (ios /= 0) return
-       call create_file_with_path(this%artifacts(2)%relative_path, ios)
+       if (this%isWriter) then
+          call create_file_with_path(this%artifacts(1)%relative_path, ios)
+          if (ios /= 0) return
+          open(newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
+          if (ios /= 0) return
+          write(unit, '(A)', iostat=ios) 't lineIntegral'
+          close(unit)
+          if (ios /= 0) return
+       end if
    end subroutine init_line_probe_output
 
    pure logical function line_segment_is_local(segment, sweeps, rank, rank_count)
@@ -120,11 +119,22 @@ contains
       type(line_probe_output_t), intent(inout) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
       type(field_data_t), intent(in) :: electric_field
+#ifdef CompileWithMPI
+      integer :: ierr
+      real(kind=RKIND) :: local_value
+#endif
 
-      if (this%domain%domainType /= TIME_DOMAIN .or. size(this%segments) == 0) return
+      if (this%domain%domainType /= TIME_DOMAIN) return
+      if (size(this%segments) == 0 .and. .not. this%isDistributed) return
       this%nTime = this%nTime + 1
       this%timeStep(this%nTime) = step
       this%valueForTime(this%nTime) = calculate_line_integral(this%segments, electric_field)
+#ifdef CompileWithMPI
+      if (this%isDistributed) then
+         local_value = this%valueForTime(this%nTime)
+         call MPI_Allreduce(local_value, this%valueForTime(this%nTime), 1, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
+      end if
+#endif
    end subroutine update_line_probe_output
 
    subroutine complete_line_probe_sample(this)
@@ -140,25 +150,19 @@ contains
    subroutine flush_line_probe_output(this)
       type(line_probe_output_t), intent(inout) :: this
        integer :: index, ios, unit
-        real(real64), allocatable :: records(:)
 
       if (this%nTime == 0) return
-      open(newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
-      if (ios /= 0) return
-      do index = 1, this%nTime
-         write(unit, '(ES24.16E3,1X,ES24.16E3)', iostat=ios) this%timeStep(index), this%valueForTime(index)
-         if (ios /= 0) exit
-      end do
-      close(unit)
-      if (ios /= 0) return
-
-      allocate(records(2 * this%nTime))
-      do index = 1, this%nTime
-          records(2 * index - 1) = real(this%timeStep(index), real64)
-          records(2 * index) = real(this%valueForTime(index), real64)
-      end do
-       call append_binary_real64(this%artifacts(2)%relative_path, this%artifacts(2), records, ios)
-      if (ios == BINARY_WRITER_SUCCESS) call complete_line_probe_sample(this)
+      if (this%isWriter) then
+         open(newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
+         if (ios /= 0) return
+         do index = 1, this%nTime
+            write(unit, '(ES24.16E3,1X,ES24.16E3)', iostat=ios) this%timeStep(index), this%valueForTime(index)
+            if (ios /= 0) exit
+         end do
+         close(unit)
+         if (ios /= 0) return
+      end if
+      call complete_line_probe_sample(this)
    end subroutine flush_line_probe_output
 
 end module lineProbeOutput_m

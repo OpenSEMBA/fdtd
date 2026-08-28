@@ -2,14 +2,17 @@
 
 ## Binary Artifacts
 
-WHEN a supported sampled probe is initialised
+WHEN a volumetric time-domain or frequency-domain probe is initialised
 THEN the solver MUST declare a binary artifact for every applicable sampling
 series.
 
-WHEN a probe records no samples
+Point, non-MTLN wire, bulk, line, and far-field probes MUST NOT publish binary
+artifacts.
+
+WHEN a volumetric probe records no samples
 THEN its declared binary artifacts MUST remain discoverable as empty artifacts.
 
-WHEN a probe publishes time and frequency series
+WHEN a volumetric probe publishes time and frequency series
 THEN it MUST publish one binary artifact for each series.
 
 ## Record Contract

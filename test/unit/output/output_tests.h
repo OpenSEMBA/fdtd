@@ -36,13 +36,12 @@ extern "C" int test_init_point_probe();
 extern "C" int test_init_point_probe_with_incident();
 extern "C" int test_line_probe_integral();
 extern "C" int test_line_probe_empty_path();
-extern "C" int test_line_probe_artifacts();
+extern "C" int test_line_probe_dat_output();
 extern "C" int test_line_probe_shared_interface_owner();
 extern "C" int test_update_point_probe();
 extern "C" int test_flush_point_probe();
-extern "C" int test_flush_wire_probe_binary();
-extern "C" int test_flush_bulk_probe_binary();
-extern "C" int test_farfield_binary_row();
+extern "C" int test_flush_wire_probe_dat();
+extern "C" int test_flush_bulk_probe_dat();
 extern "C" int test_multiple_flush_point_probe();
 extern "C" int test_init_movie_probe();
 extern "C" int test_update_movie_probe();
@@ -52,7 +51,7 @@ extern "C" int test_init_frequency_slice_probe();
 extern "C" int test_update_frequency_slice_probe();
 
 // Generic output lifecycle and adapters.
-extern "C" int test_root_output_manifest();
+extern "C" int test_scalar_probe_has_no_manifest();
 extern "C" int test_nested_output_path();
 extern "C" int test_output_artifact_contract();
 extern "C" int test_declared_output_artifacts();
@@ -114,19 +113,17 @@ TEST(output, test_initialize_point_probe_with_incident) { EXPECT_EQ(0, test_init
 TEST(output, test_line_probe_integral) { EXPECT_EQ(0, test_line_probe_integral()); }
 // Keeps an empty line discoverable without fabricating measurements.
 TEST(output, test_line_probe_empty_path) { EXPECT_EQ(0, test_line_probe_empty_path()); }
-// Publishes every line sample to both scalar artifact representations.
-TEST(output, test_line_probe_artifacts) { EXPECT_EQ(0, test_line_probe_artifacts()); }
+// Publishes every line sample to one flat text artifact.
+TEST(output, test_line_probe_dat_output) { EXPECT_EQ(0, test_line_probe_dat_output()); }
 TEST(output, test_line_probe_shared_interface_owner) { EXPECT_EQ(0, test_line_probe_shared_interface_owner()); }
 // Records point-probe values and their corresponding timesteps.
 TEST(output, test_update_point_probe_info) { EXPECT_EQ(0, test_update_point_probe()); }
 // Flushes point-probe samples and resets serialized time data.
 TEST(output, test_flush_point_probe_info) { EXPECT_EQ(0, test_flush_point_probe()); }
-// Writes binary records for wire-current and wire-charge samples.
-TEST(output, test_flush_wire_probe_binary) { EXPECT_EQ(0, test_flush_wire_probe_binary()); }
-// Writes binary records for bulk-current samples.
-TEST(output, test_flush_bulk_probe_binary) { EXPECT_EQ(0, test_flush_bulk_probe_binary()); }
-// Writes one portable far-field binary row from final computed values.
-TEST(output, test_farfield_binary_row) { EXPECT_EQ(0, test_farfield_binary_row()); }
+// Writes wire-current and wire-charge samples without binary sidecars.
+TEST(output, test_flush_wire_probe_dat) { EXPECT_EQ(0, test_flush_wire_probe_dat()); }
+// Writes bulk-current samples without a binary sidecar.
+TEST(output, test_flush_bulk_probe_dat) { EXPECT_EQ(0, test_flush_bulk_probe_dat()); }
 // Preserves point-probe data across consecutive flushes.
 TEST(output, test_flush_multiple_point_probe_info) { EXPECT_EQ(0, test_multiple_flush_point_probe()); }
 // Allocates a movie probe and creates its output directory.
@@ -141,8 +138,8 @@ TEST(output, test_close_movie_probe_data) { EXPECT_EQ(0, test_close_movie_probe(
 TEST(output, test_init_frequency_slice) { EXPECT_EQ(0, test_init_frequency_slice_probe()); }
 // Computes frequency-slice values for a field gradient.
 TEST(output, test_update_frequency_slice) { EXPECT_EQ(0, test_update_frequency_slice_probe()); }
-// Creates a root manifest containing declared output artifacts.
-TEST(output, test_root_output_manifest) { EXPECT_EQ(0, test_root_output_manifest()); }
+// Does not create metadata or a manifest for a scalar-only run.
+TEST(output, test_scalar_probe_has_no_manifest) { EXPECT_EQ(0, test_scalar_probe_has_no_manifest()); }
 // Creates files and parent directories for nested output paths.
 TEST(output, test_nested_output_path) { EXPECT_EQ(0, test_nested_output_path()); }
 // Stores binary artifact encoding and lifecycle metadata.

@@ -4,9 +4,6 @@ module bulkProbeOutput_m
    use allocationUtils_m, only: alloc_and_init
    use outputTypes_m
     use outputUtils_m
-    use outputBinary_m, only: append_binary_real64, BINARY_WRITER_SUCCESS
-     use, intrinsic :: iso_fortran_env, only: real64
-    use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
 #ifdef CompileWithMPI
    use mpi
 #endif
@@ -24,9 +21,9 @@ contains
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
       type(domain_t), intent(in) :: domain
 
-       character(len=BUFSIZE) :: artifact_paths(2)
-       integer :: artifact_kinds(2)
-       integer :: ios
+       character(len=BUFSIZE) :: artifact_paths(1)
+       character(len=13) :: data_header
+       integer :: artifact_kinds(1)
 #ifdef CompileWithMPI
        integer :: mpi_rank, ierr
 #endif
@@ -46,18 +43,18 @@ contains
        call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
        call alloc_and_init(this%valueForTime, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
        artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
-        artifact_paths(2) = trim(this%path)//'_'//timeExtension//binaryExtension
-        artifact_kinds = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]
-        call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
-        this%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
-        this%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
-        this%artifacts(2)%record_bytes = 16
-        this%artifacts(2)%component_order = 'time,value'
-        this%filePathTime = this%artifacts(1)%relative_path
-         if (this%isWriter) then
-            call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, 't current')
-            call create_file_with_path(this%artifacts(2)%relative_path, ios)
-         end if
+        artifact_kinds = OUTPUT_ARTIFACT_TEXT
+         call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
+         this%filePathTime = this%artifacts(1)%relative_path
+         select case (field)
+         case (iBloqueMx, iBloqueMy, iBloqueMz)
+            data_header = 't circulation'
+         case default
+            data_header = 't current'
+         end select
+          if (this%isWriter) then
+             call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, data_header)
+          end if
 
    contains
 
@@ -68,7 +65,6 @@ contains
          prefixFieldExtension = get_prefix_extension(field, mpidir)
           outputPath = &
              trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
-          outputPath = join_path(outputPath, get_last_component(outputPath))
          return
       end function get_output_path
 
@@ -229,17 +225,6 @@ contains
           end do
 
           close (unit)
-          block
-           real(real64), allocatable :: records(:)
-           integer :: status
-
-          allocate(records(2 * this%nTime))
-          do i = 1, this%nTime
-             records(2 * i - 1:2 * i) = [real(this%timeStep(i), real64), real(this%valueForTime(i), real64)]
-          end do
-           call append_binary_real64(this%artifacts(2)%relative_path, this%artifacts(2), records, status)
-           if (status /= BINARY_WRITER_SUCCESS) return
-          end block
        end if
        call clear_time_data()
    contains

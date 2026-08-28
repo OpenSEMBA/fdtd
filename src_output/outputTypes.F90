@@ -244,23 +244,23 @@ module outputTypes_m
      type, extends(abstract_time_frequency_probe_t) :: point_probe_output_t
         real(kind=RKIND), allocatable :: valueForTime(:)
        real(kind=RKIND), allocatable :: incidentForTime(:)
-        complex(kind=CKIND), allocatable :: valueForFreq(:)
+       complex(kind=CKIND), allocatable :: valueForFreq(:)
        logical :: hasIncident = .false.
-       type(output_artifact_t) :: artifacts(4)
+       type(output_artifact_t), allocatable :: artifacts(:)
      end type point_probe_output_t
 
     type, extends(abstract_time_probe_t) :: wire_charge_probe_output_t
       integer(kind=SINGLE) :: sign = +1
-      real(kind=RKIND), allocatable :: chargeValue(:)
-       type(CurrentSegments_t), pointer :: segment
-       type(output_artifact_t) :: artifacts(2)
+       real(kind=RKIND), allocatable :: chargeValue(:)
+        type(CurrentSegments_t), pointer :: segment
+        type(output_artifact_t) :: artifacts(1)
    end type wire_charge_probe_output_t
 
     type, extends(abstract_time_probe_t) :: wire_current_probe_output_t
       integer(kind=SINGLE) :: sign = +1
       type(current_values_t) :: currentValues(OUTPUT_TIME_BUFFER_SIZE)
        type(CurrentSegments_t), pointer :: segment
-       type(output_artifact_t) :: artifacts(2)
+        type(output_artifact_t) :: artifacts(1)
 #ifdef CompileWithBerengerWires
       type(TSegment), pointer :: segmentBerenger
 #endif
@@ -270,17 +270,18 @@ module outputTypes_m
    end type wire_current_probe_output_t
 
     type, extends(abstract_time_probe_t) :: bulk_current_probe_output_t
-       !Binary format: timeStamp, Val. Total register size: 16
        type(cell_coordinate_t) :: auxCoords
         real(kind=RKIND), allocatable :: valueForTime(:)
        logical :: isWriter = .true.
-        type(output_artifact_t) :: artifacts(2)
+        type(output_artifact_t) :: artifacts(1)
     end type bulk_current_probe_output_t
 
     type, extends(abstract_time_probe_t) :: line_probe_output_t
        type(direction_t), allocatable :: segments(:)
        real(kind=RKIND), allocatable :: valueForTime(:)
-       type(output_artifact_t) :: artifacts(2)
+       logical :: isDistributed = .false.
+       logical :: isWriter = .true.
+       type(output_artifact_t) :: artifacts(1)
     end type line_probe_output_t
 
     type, extends(abstract_frequency_probe_t) :: far_field_probe_output_t

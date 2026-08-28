@@ -21,7 +21,7 @@ where the selected environment provides them.
 
 ## Terminology
 
-- **Descriptor:** one machine-readable metadata file for a configured probe.
+- **Descriptor:** one machine-readable metadata file for a coordinated probe.
 - **Canonical artifact:** the one logical result exposed to consumers.
 - **Fragment:** one worker-owned contribution to a volumetric result.
 - **Collective publication:** participating workers publish disjoint regions
@@ -31,11 +31,12 @@ where the selected environment provides them.
 
 | Probe family | Canonical result | Worker fragments | Unit lifecycle coverage | End-to-end coverage |
 | --- | --- | --- | --- | --- |
-| Point electric or magnetic field | One owner-selected text series | No | Initialise, update, flush, cleanup, unowned location | One point on and away from a shared boundary |
-| Wire current | One owner-selected text series | No | Initialise, update, flush, cleanup, absent local segment | One current probe |
-| Wire charge | One owner-selected text series | No | Initialise, update, flush, cleanup, absent local segment | One charge probe |
-| Bulk current or magnetic circulation | One reduced text series | No | Initialise, update, flush, cleanup | One bulk probe crossing a worker boundary |
-| Far field | One canonical result and descriptor | No | Initialise, update, flush, finalise | One far-field probe |
+| Point electric or magnetic field | Flat `.dat` series only | No | Initialise, update, flush, cleanup, flat layout | One point probe with no sidecars |
+| Wire current | Flat `.dat` series only | No | Initialise, update, flush, cleanup, absent local segment | One current probe with no sidecars |
+| Wire charge | Flat `.dat` series only | No | Initialise, update, flush, cleanup, absent local segment | Not exposed by the JSON parser |
+| Bulk current or magnetic circulation | Flat reduced `.dat` series only | No | Initialise, update, flush, cleanup, flat layout | One bulk probe with no sidecars |
+| Line integral | Flat `.dat` series only | No | Initialise, update, flush, cleanup, flat layout | One line probe with no sidecars |
+| Far field | Flat `.dat` result only | No | Initialise, update, flush, flat layout | One far-field probe with no sidecars |
 | Geometry map | One canonical geometry map and descriptor | No | Initialise, publish, finalise | One geometry-map probe |
 | Time-domain volumetric movie | One canonical binary and visualisation result | Yes | Initialise, update, flush, cleanup, finalise | One movie probe crossing a worker boundary |
 | Frequency-domain volumetric slice | One canonical binary and visualisation result | Yes | Initialise, update, flush, cleanup, finalise | One frequency-slice probe crossing a worker boundary |

@@ -3,7 +3,7 @@ module farFieldOutput_m
    use report_m
     use outputUtils_m
     use farfield_m
-    use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
+    use directoryUtils_m, only: create_file_with_path
    implicit none
    private
    !===========================
@@ -34,8 +34,8 @@ contains
        integer(kind=4), intent(in) :: mpiSubComm, mpiRoot
 #endif
        real(kind=RKIND), intent(in) :: mu0, eps0
-        character(len=BUFSIZE) :: artifact_paths(2)
-        integer :: artifact_kinds(2), ios
+        character(len=BUFSIZE) :: artifact_paths(1)
+        integer :: artifact_kinds(1), ios
 
       if (domain%domainType /= FREQUENCY_DOMAIN) call StopOnError(0, 0, "Unexpected domain type for farField probe")
 
@@ -45,17 +45,10 @@ contains
         this%mainCoords = lowerBound
         this%auxCoords = upperBound
         this%path = get_output_path()
-        allocate(this%artifacts(2))
-        artifact_paths(1) = trim(this%path)
-        artifact_paths(2) = trim(this%path)//binaryExtension
-        artifact_kinds = [OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_BINARY]
+        allocate(this%artifacts(1))
+        artifact_paths(1) = trim(this%path)//datFileExtension
+        artifact_kinds = OUTPUT_ARTIFACT_TEXT
         call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
-        this%artifacts(2)%byte_order = BINARY_ENDIAN_LITTLE
-        this%artifacts(2)%numeric_representation = BINARY_NUMERIC_REAL64
-        this%artifacts(2)%complex_representation = BINARY_COMPLEX_MAGNITUDE_PHASE
-        this%artifacts(2)%record_bytes = 72
-        this%artifacts(2)%component_order = &
-           'frequency,theta,phi,Etheta.magnitude,Etheta.phase,Ephi.magnitude,Ephi.phase,RCS.arithmetic,RCS.geometric'
         this%filePathFreq = this%artifacts(1)%relative_path
         call create_file_with_path(this%filePathFreq, ios)
         call InitFarField(sgg, &
@@ -84,7 +77,6 @@ contains
          prefixFieldExtension = get_prefix_extension(field, control%mpidir)
           outputPath = &
              trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
-          outputPath = join_path(outputPath, get_last_component(outputPath))
          return
       end function get_output_path
 

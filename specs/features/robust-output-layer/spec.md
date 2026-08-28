@@ -9,7 +9,7 @@ distributed runs.
 
 ### Declared Probe
 
-WHEN a configured probe is initialised
+WHEN a geometry, volumetric, or MTLN probe is initialised
 THEN the solver MUST create a machine-readable descriptor for that probe.
 
 The descriptor MUST identify the schema version, probe, sampled quantity,
@@ -18,9 +18,12 @@ Schema version `1` MUST describe one probe output.
 Spatial probe descriptors MUST identify their lower and upper bounds.
 Artifact references MUST be relative to the descriptor location.
 
+Point, non-MTLN wire, bulk, line, and far-field probes MUST NOT create probe
+descriptors or manifest entries.
+
 ### Empty Probe
 
-WHEN a configured probe records zero samples
+WHEN a configured coordinated probe records zero samples
 THEN its descriptor and declared artifacts MUST remain discoverable.
 
 ### Failed Publication
@@ -30,11 +33,19 @@ THEN the descriptor MUST report failure and MUST NOT report completion.
 
 ## Artifact Sets
 
-### Scalar And Geometry Probes
+### Scalar Probes
 
-WHEN a scalar, wire, bulk, far-field, or geometry probe is published
-THEN the solver MUST preserve its applicable human-readable artifact and
-reference it from probe metadata.
+WHEN a point, non-MTLN wire, bulk, line, or far-field probe is published
+THEN the solver MUST publish only its applicable formatted `.dat` file.
+
+The `.dat` file MUST be located beside the originating `.fdtd.json` input.
+The solver MUST NOT create a probe-specific directory for that file.
+
+### Geometry Probes
+
+WHEN a geometry probe is published
+THEN the solver MUST preserve its applicable artifacts and reference them from
+probe metadata.
 
 ### Volumetric Probes
 
@@ -47,8 +58,8 @@ size, and complex-value convention.
 
 ## Lifecycle
 
-An output MUST be `declared` after its descriptor and required artifact set are
-known.
+An output with coordinated metadata MUST be `declared` after its descriptor and
+required artifact set are known.
 It MUST be `active` while samples may be recorded and `finalising` while
 required artifacts are made durable.
 It MUST be `complete` only after every required artifact is finalised.
@@ -69,6 +80,6 @@ THEN the designated root MUST publish the gathered logical result.
 
 ## Filesystem Behaviour
 
-WHEN an output path contains nested directories or spaces
+WHEN a coordinated output path contains nested directories or spaces
 THEN output creation and removal MUST succeed on supported Windows and Linux
 environments.

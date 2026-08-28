@@ -1,7 +1,4 @@
-import json
-
-
-def test_point_probe_publishes_complete_descriptor(run_output_case):
+def test_point_probe_publishes_only_flat_dat_output(run_output_case):
     process, output_root = run_output_case(
         "point",
         [
@@ -17,22 +14,9 @@ def test_point_probe_publishes_complete_descriptor(run_output_case):
     )
 
     assert process.returncode == 0, process.stdout + process.stderr
-    descriptors = []
-    for path in output_root.rglob("*.json"):
-        if path.name == "common_geometry.fdtd.json":
-            continue
-        value = json.loads(path.read_text(encoding="utf-8"))
-        if "lifecycle" in value:
-            descriptors.append(value)
-    assert descriptors
-    assert len(descriptors) == 1
-    descriptor = descriptors[0]
-    assert descriptor["lifecycle"]["state"] == "complete"
-    assert descriptor["artifacts"]
-    assert descriptor["lower_bound"] == {"x": 5, "y": 4, "z": 4}
-    assert descriptor["upper_bound"] == {"x": 5, "y": 4, "z": 4}
-    assert descriptor["domain"] == "time"
-    assert descriptor["ownership"] == {
-        "participant_ranks": [0],
-        "scalar_writer_rank": 0,
-    }
+    outputs = sorted(output_root.glob("common_geometry.fdtd_point_probe*"))
+    assert [path.name for path in outputs] == [
+        "common_geometry.fdtd_point_probe_Ex_5_4_4_tm.dat"
+    ]
+    assert outputs[0].is_file()
+    assert not (output_root / "common_geometry.fdtd_output_manifest.json").exists()

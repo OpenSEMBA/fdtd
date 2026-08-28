@@ -1,7 +1,6 @@
 module farfield_m
    use FDETYPES_m
    use Report_m
-   use, intrinsic :: iso_fortran_env, only: int64, real64
 
    implicit none
    private
@@ -59,7 +58,6 @@ module farfield_m
       character(len=BUFSIZE) :: FileNormalize
       integer(kind=4) :: unitfarfield
        character(len=BUFSIZE) :: filefarfield
-       character(len=BUFSIZE) :: filefarfield_binary
       real(kind=RKIND) :: XDobleAncho,YDobleAncho,ZDobleAncho
       real(kind=RKIND) :: XOffsetPlus,YOffsetPlus,ZOffsetPlus
       real(kind=RKIND) :: XOffsetMinus,YOffsetMinus,ZOffsetMinus
@@ -72,7 +70,7 @@ module farfield_m
    real(kind=RKIND), save           :: eps0,mu0
 !!!
    !
-    public UpdateFarField,InitFarField,Destroyfarfield,FlushFarfield,StoreFarfields,append_farfield_binary
+    public UpdateFarField,InitFarField,Destroyfarfield,FlushFarfield,StoreFarfields
    public farfield_t
    !
    type(farfield_t), save, target :: FF
@@ -118,7 +116,7 @@ contains
       sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
       sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
       real(kind=RKIND) ::tiempo1,tiempo2,field1,field2,dtevol
-       integer j,k,field,i,layoutnumber,num_procs,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi,binary_unit
+       integer j,k,field,i,layoutnumber,num_procs,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
       character(len=BUFSIZE) :: buFF
       logical :: errnofile,error
 
@@ -144,10 +142,6 @@ contains
       !!!!!!!!
       FF%unitfarfield =    unitfarfield
        FF%filefarfield =    filefarfield
-       FF%filefarfield_binary = trim(filefarfield)//'.bin'
-       open(newunit=binary_unit, file=trim(FF%filefarfield_binary), access='stream', form='unformatted', &
-            status='replace', action='write')
-       close(binary_unit)
       FF%InitialFreq  =    InitialFreq
       FF%FinalFreq    =    FinalFreq
       FF%FreqStep     =    FreqStep
@@ -3349,8 +3343,6 @@ contains
                    if (pasadas==1) write(FF%unitfarfield,fmt) freq,theta,phi,&
                    abs(Etheta(2)),ATAN2( AIMAG( Etheta(2)) , real( Etheta(2) ) ), & !!! PASADAS=2=GEOMETRICA,, PASADAS=1=ARITMETICA
                    abs(Ephi(2)) , ATAN2( AIMAG( Ephi(2)  ) , real( Ephi(2)   ) ), RCS(1),RCS(2)
-                   if (pasadas == 1) call append_farfield_binary(FF%filefarfield_binary, freq, theta, phi, &
-                                                                 Etheta(2), Ephi(2), RCS(1), RCS(2))
 
 #ifdef CompileWithMPI
                end if
@@ -3376,42 +3368,6 @@ contains
       if (layoutnumber == 0) call print11(layoutnumber,dubuf,.TRUE.)
 
     end subroutine
-
-   subroutine append_farfield_binary(path, freq, theta, phi, etheta, ephi, rcs_arithmetic, rcs_geometric)
-      character(len=*), intent(in) :: path
-      real(kind=RKIND), intent(in) :: freq, theta, phi, rcs_arithmetic, rcs_geometric
-      complex(kind=CKIND), intent(in) :: etheta, ephi
-      real(real64) :: values(9)
-      integer :: ios, unit, index
-
-      values = [real(freq, real64), real(theta, real64), real(phi, real64), &
-                real(abs(etheta), real64), real(atan2(aimag(etheta), real(etheta)), real64), &
-                real(abs(ephi), real64), real(atan2(aimag(ephi), real(ephi)), real64), &
-                real(rcs_arithmetic, real64), real(rcs_geometric, real64)]
-      open(newunit=unit, file=trim(path), access='stream', form='unformatted', &
-           status='old', position='append', action='write', iostat=ios)
-      if (ios /= 0) return
-      do index = 1, size(values)
-         call write_real64_little_endian(unit, values(index), ios)
-         if (ios /= 0) exit
-      end do
-      close(unit)
-   end subroutine append_farfield_binary
-
-   subroutine write_real64_little_endian(unit, value, ios)
-      integer, intent(in) :: unit
-      real(real64), intent(in) :: value
-      integer, intent(inout) :: ios
-      integer(int64) :: bits
-      integer :: byte_index
-
-      bits = transfer(value, bits)
-      do byte_index = 0, 7
-         write(unit, iostat=ios) achar(ibits(bits, 8 * byte_index, 8))
-         if (ios /= 0) return
-      end do
-   end subroutine write_real64_little_endian
-
 
    subroutine update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)
 
