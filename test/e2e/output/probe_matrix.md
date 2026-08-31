@@ -21,7 +21,6 @@ where the selected environment provides them.
 
 ## Terminology
 
-- **Descriptor:** one machine-readable metadata file for a coordinated probe.
 - **Canonical artifact:** the one logical result exposed to consumers.
 - **Fragment:** one worker-owned contribution to a volumetric result.
 - **Collective publication:** participating workers publish disjoint regions
@@ -37,10 +36,11 @@ where the selected environment provides them.
 | Bulk current or magnetic circulation | Flat reduced `.dat` series only | No | Initialise, update, flush, cleanup, flat layout | One bulk probe with no sidecars |
 | Line integral | Flat `.dat` series only | No | Initialise, update, flush, cleanup, flat layout | One line probe with no sidecars |
 | Far field | Flat `.dat` result only | No | Initialise, update, flush, flat layout | One far-field probe with no sidecars |
-| Geometry map | One canonical geometry map and descriptor | No | Initialise, publish, finalise | One geometry-map probe |
+| Geometry map | One canonical geometry map without JSON metadata | No | Initialise and publish | One geometry-map probe |
 | Time-domain volumetric movie | One canonical binary and visualisation result | Yes | Initialise, update, flush, cleanup, finalise | One movie probe crossing a worker boundary |
 | Frequency-domain volumetric slice | One canonical binary and visualisation result | Yes | Initialise, update, flush, cleanup, finalise | One frequency-slice probe crossing a worker boundary |
 
 Every end-to-end case runs in single-worker and two-worker modes.
 The canonical result must be equivalent in both modes.
 Volumetric cases must additionally expose one fragment for each contributing worker.
+No probe family may publish a JSON descriptor or run output manifest.

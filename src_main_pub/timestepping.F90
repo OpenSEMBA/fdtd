@@ -280,11 +280,9 @@ module Solver_m
       type(mtln_t) :: mtln_parsed
       character(len=*), intent(in) :: nEntradaRoot
       integer(kind=4), intent(in) :: layoutnumber
-      
+
       call initializeMTLNProblem(mtln_parsed, nEntradaRoot)
-      call init_mtln_outputs(nEntradaRoot, layoutnumber)
       call runMTLNProblem()
-      call close_outputs()
       call reportSimulationEnd(layoutnumber)
    end subroutine
 #endif

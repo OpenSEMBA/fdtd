@@ -526,10 +526,6 @@ class FDTD:
         for f in subfolders:
             if f.startswith(case_name):
                 shutil.rmtree(os.path.join(folder, f), ignore_errors=True)
-        manifest = os.path.join(folder, case_name + "_output_manifest.json")
-        if os.path.isfile(manifest):
-            os.remove(manifest)
-
     def getSolvedProbeFolders(self, probe_name):
         if not "probes" in self._input:
             raise ValueError("Solver does not contain probes.")

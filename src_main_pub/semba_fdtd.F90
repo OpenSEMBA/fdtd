@@ -22,7 +22,7 @@ module SEMBA_FDTD_m
 
    use Preprocess_m
     use storeData_m
-     use output_m, only: delete_run_output_manifest
+     use output_m, only: delete_outputs
    !
 #ifdef CompileWithMPI
    use MPIcomm_m
@@ -1175,8 +1175,8 @@ contains
          call print11 (this%l%layoutnumber, dubuf)
           write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
           call print11 (this%l%layoutnumber, dubuf)
-          call delete_run_output_manifest(this%l%nEntradaRoot, this%l%layoutnumber)
-      end if
+          call delete_outputs(this%l%layoutnumber)
+       end if
       !
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)

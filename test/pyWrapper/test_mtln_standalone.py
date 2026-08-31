@@ -1,5 +1,5 @@
-import json
 import os
+from pathlib import Path
 
 from test.utils.utils import *
 
@@ -24,17 +24,7 @@ def test_paul_8_6_square(tmp_path):
     probe_files = [probe_voltage, probe_current]
     p_solved = Probe(probe_files[0])
 
-    manifest_path = os.path.join(solver.getFolder(), solver.getCaseName() + "_output_manifest.json")
-    with open(manifest_path, encoding="utf-8") as manifest_file:
-        manifest = json.load(manifest_file)
-    manifest_probe_ids = [probe["probe_id"] for probe in manifest["probes"]]
-    for probe_folder in probe_files:
-        probe_id = os.path.basename(probe_folder)
-        assert manifest_probe_ids.count(probe_id) == 1
-        descriptor_path = os.path.join(probe_folder, probe_id + ".json")
-        with open(descriptor_path, encoding="utf-8") as descriptor_file:
-            descriptor = json.load(descriptor_file)
-        assert descriptor["lifecycle"]["state"] == "complete"
+
 
     solved = np.interp(
         p_expected["time"].to_numpy(),

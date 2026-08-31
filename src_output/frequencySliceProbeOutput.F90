@@ -9,7 +9,6 @@ module frequencySliceProbeOutput_m
    use volumicProbeUtils_m
    use directoryUtils_m
    use outputBinary_m, only: validate_binary_layout, write_binary_complex_record64, BINARY_WRITER_SUCCESS
-   use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, OUTPUT_METADATA_SUCCESS
    use outputVisualisation_m, only: initialise_frequency_slice_visualisation, begin_visualisation_step, &
                                    write_visualisation_attribute, write_visualisation_attribute_hyperslab, end_visualisation_step, &
                                     close_visualisation, verify_volumetric_visualisation, VISUALISATION_SUCCESS, &
@@ -138,11 +137,6 @@ contains
                                           'Unable to initialise frequency slice HDF5 output')
       end if
 
-      if (publication%local_is_owner) then
-         call publish_initial_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
-         if (error /= OUTPUT_METADATA_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
-                                                                'Unable to publish initial frequency slice output metadata')
-      end if
       this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
    end subroutine init_frequency_slice_probe_output
 
@@ -699,10 +693,6 @@ contains
          else
             this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
             this%metadata%lifecycle%diagnostic = 'Required frequency slice output artifacts are incomplete'
-         end if
-         call publish_final_probe_metadata(add_extension(this%filesPath, '.json'), this%metadata, error)
-         if (error /= OUTPUT_METADATA_SUCCESS) then
-            call StopOnError(0, 0, 'Unable to publish frequency slice output metadata')
          end if
          if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) then
             call StopOnError(0, 0, trim(this%metadata%lifecycle%diagnostic))

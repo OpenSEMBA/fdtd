@@ -18,7 +18,6 @@ integer function test_init_point_probe() bind(c) result(err)
    character(len=BUFSIZE) :: testPath, nEntrada
    character(len=BUFSIZE) :: expectedProbePath
    character(len=BUFSIZE) :: expectedDataPath
-   character(len=BUFSIZE) :: expectedDescriptorPath
 
    type(SGGFDTDINFO_t)              :: sgg
    type(sim_control_t)            :: control
@@ -68,19 +67,16 @@ integer function test_init_point_probe() bind(c) result(err)
 
    expectedProbePath = trim(nEntrada)//wordSeparation//'pointProbe_Ex_4_4_4'
    expectedDataPath = trim(expectedProbePath)//wordSeparation//timeExtension//datFileExtension
-   expectedDescriptorPath = trim(expectedProbePath)//'.json'
 
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%filePathTime, expectedDataPath, 'Unexpected path')
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%artifacts(1)%relative_path, &
                                               expectedDataPath, 'Declared payload path changed')
    test_err = test_err + assert_true(file_exists(expectedDataPath), 'Time data file do not exist')
-   test_err = test_err + assert_true(.not. file_exists(expectedDescriptorPath), &
-                                     'Point probe created a descriptor sidecar')
+   test_err = test_err + assert_true(.not. file_exists(trim(expectedProbePath)//'.json'), &
+                                      'Point probe created a descriptor sidecar')
    test_err = test_err + assert_true(.not. folder_exists(expectedProbePath), &
                                      'Point probe created a probe-specific folder')
-   test_err = test_err + assert_true(len_trim(outputs(1)%metadata_path) == 0, &
-                                     'Point probe registered metadata')
 
    ! Cleanup
    call remove_folder(testPath, ios)
@@ -148,7 +144,6 @@ integer function test_scalar_probe_has_no_manifest() bind(c) result(err)
    type(taglist_t) :: tag_numbers
    real(kind=RKIND_tiempo), pointer :: time_array(:)
    character(len=BUFSIZE) :: path, probe_path
-   integer :: ios
    logical :: observations_exist, wires_exist
 
    err = 0
@@ -168,17 +163,16 @@ integer function test_scalar_probe_has_no_manifest() bind(c) result(err)
 
    call init_outputs(sgg, media, sinpml, tag_numbers, bounds, control, observations_exist, wires_exist)
 
-    err = err + assert_true(.not. file_exists(trim(path)//'_output_manifest.json'), &
-                            'Root output manifest was published before probe finalisation')
-    call create_file_with_path(trim(path)//'_output_manifest.json', ios)
-    call close_outputs()
-    err = err + assert_true(.not. file_exists(trim(path)//'_output_manifest.json'), &
-                            'Scalar-only run retained a stale root manifest')
+   call close_outputs()
+   err = err + assert_true(.not. file_exists(trim(path)//'_output_manifest.json'), &
+                           'Scalar-only run published a root manifest')
    err = err + assert_true(file_exists(trim(probe_path)//'_tm.dat'), &
                            'Scalar-only run did not retain its flat data file')
    err = err + assert_true(.not. file_exists(trim(probe_path)//'.json'), &
                            'Scalar-only run published a probe descriptor')
-   call delete_file(trim(probe_path)//'_tm.dat', ios)
+   call delete_outputs(0)
+   err = err + assert_true(.not. file_exists(trim(probe_path)//'_tm.dat'), &
+                           'Direct output cleanup retained scalar data')
 end function test_scalar_probe_has_no_manifest
 
 integer function test_line_probe_integral() bind(c) result(err)
@@ -357,70 +351,6 @@ integer function test_nested_output_path() bind(c) result(err)
    err = err + assert_true(file_exists(path), 'Nested output file does not exist')
    call remove_folder(join_path(get_temp_folder(), 'testing folder'), ios)
    err = err + assert_integer_equal(ios, 0, 'Nested path cleanup failed')
-end function
-
-integer function test_output_metadata_publication() bind(c) result(err)
-   ! Verifies declared and failed metadata retain artifacts and diagnostics.
-   use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, &
-                               OUTPUT_METADATA_SUCCESS
-   use outputTypes_m, only: probe_metadata_t, output_artifact_t, OUTPUT_ARTIFACT_BINARY, &
-                            OUTPUT_LIFECYCLE_FAILED
-   use assertionTools_m, only: assert_integer_equal, assert_true
-   use directoryUtils_m, only: remove_folder
-   use testOutputUtils_m, only: get_temp_folder
-   use directoryUtils_m, only: join_path
-   implicit none
-
-   type(probe_metadata_t) :: metadata
-   character(len=8192) :: line
-   character(len=4096) :: folder, initial_path, final_path
-   integer :: ios, status, unit
-   logical :: initial_declared, final_failed, has_relative_artifact, has_diagnostic
-
-   err = 0
-   folder = join_path(get_temp_folder(), 'testing metadata')
-   initial_path = join_path(folder, 'initial.json')
-   final_path = join_path(folder, 'final.json')
-   metadata%probe_id = 'point-001'
-   metadata%quantity = 'Ex'
-   metadata%lower_bound%x = 4
-   metadata%lower_bound%y = 5
-   metadata%lower_bound%z = 6
-   metadata%upper_bound = metadata%lower_bound
-   allocate (metadata%artifacts(1))
-   metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
-   metadata%artifacts(1)%relative_path = 'payload/point.bin'
-
-   call publish_initial_probe_metadata(initial_path, metadata, status)
-   err = err + assert_integer_equal(status, OUTPUT_METADATA_SUCCESS, 'Initial metadata publication failed')
-   initial_declared = .false.
-   open (newunit=unit, file=initial_path, status='old', action='read', iostat=ios)
-   do while (ios == 0)
-      read (unit, '(A)', iostat=ios) line
-      if (index(line, '"state":"declared"') > 0) initial_declared = .true.
-   end do
-   close (unit)
-   err = err + assert_true(initial_declared, 'Initial descriptor is not declared JSON')
-
-   metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-   metadata%lifecycle%diagnostic = 'disk full'
-   call publish_final_probe_metadata(final_path, metadata, status)
-   err = err + assert_integer_equal(status, OUTPUT_METADATA_SUCCESS, 'Final metadata publication failed')
-   final_failed = .false.
-   has_relative_artifact = .false.
-   has_diagnostic = .false.
-   open (newunit=unit, file=final_path, status='old', action='read', iostat=ios)
-   do while (ios == 0)
-      read (unit, '(A)', iostat=ios) line
-      if (index(line, '"state":"failed"') > 0) final_failed = .true.
-      if (index(line, '"relative_path":"payload/point.bin"') > 0) has_relative_artifact = .true.
-      if (index(line, '"diagnostic":"disk full"') > 0) has_diagnostic = .true.
-   end do
-   close (unit)
-   err = err + assert_true(final_failed, 'Final descriptor does not report failure')
-   err = err + assert_true(has_relative_artifact, 'Descriptor does not publish relative artifact path')
-   err = err + assert_true(has_diagnostic, 'Failed descriptor does not retain diagnostic')
-   call remove_folder(folder, ios)
 end function
 
 integer function test_output_artifact_contract() bind(c) result(err)
@@ -605,7 +535,7 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
                            sgg_set_Sweep, sgg_set_SINPMLSweep, sgg_set_NumPlaneWaves, sgg_set_Alloc, &
                            sgg_set_LineX, sgg_set_LineY, sgg_set_LineZ, sgg_add_observation
    use assertionTools_m, only: assert_integer_equal, assert_true
-   use directoryUtils_m, only: delete_file, join_path, remove_folder
+   use directoryUtils_m, only: delete_file, file_exists, join_path, remove_folder
    use testOutputUtils_m, only: get_temp_folder
    implicit none
 
@@ -670,8 +600,9 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
                                      'Serial movie output did not select root aggregation fallback')
     err = err + assert_true(outputs(1)%movieProbe%publication%local_participates, &
                             'Serial movie output was excluded from publication')
+   err = err + assert_true(.not. file_exists(trim(outputs(1)%movieProbe%filesPath)//'.json'), &
+                           'Movie probe published a JSON descriptor during initialisation')
    call remove_folder(trim(path)//'_movieProbe_BC_2_2_2__5_5_5', ios)
-   call delete_file(trim(path)//'_output_manifest.json', ios)
 end function
 
 integer function test_update_point_probe() bind(c) result(err)
@@ -1105,9 +1036,7 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    character(len=BUFSIZE) :: testPath, nEntrada
    character(len=BUFSIZE) :: expectedProbePath
-   character(len=BUFSIZE) :: metadataLine
-   integer :: ios, metadataUnit
-   logical :: metadataDeclared, metadataOpened
+   integer :: ios
 
    testPath = join_path(get_temp_folder(), test_folder)
    nEntrada = join_path(testPath, test_name)
@@ -1182,24 +1111,12 @@ integer function test_init_movie_probe() bind(c) result(err)
    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Movie folder do not exist')
    test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'.bin'), &
                                      'Movie binary payload was not created')
-   test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'.json'), &
-                                     'Movie JSON descriptor was not created')
+   test_err = test_err + assert_true(.not. file_exists(trim(outputs(1)%movieProbe%filesPath)//'.json'), &
+                                     'Movie JSON descriptor was created')
    test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'_geometry.xdmf'), &
                                      'Movie geometry XDMF was not created')
    test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'_geometry.h5'), &
                                      'Movie geometry HDF5 was not created')
-   metadataDeclared = .false.
-   metadataOpened = .false.
-   open (newunit=metadataUnit, file=trim(outputs(1)%movieProbe%filesPath)//'.json', status='old', action='read', iostat=ios)
-   test_err = test_err + assert_integer_equal(ios, 0, 'Movie JSON descriptor could not be opened')
-   metadataOpened = ios == 0
-   do while (ios == 0)
-      read (metadataUnit, '(A)', iostat=ios) metadataLine
-      if (index(metadataLine, '"state":"declared"') > 0) metadataDeclared = .true.
-   end do
-   if (metadataOpened) close (metadataUnit)
-   test_err = test_err + assert_true(metadataDeclared, 'Movie JSON descriptor is not declared')
-
    !Cleanup
    call remove_folder(testPath, ios)
 
@@ -1545,7 +1462,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
 end function
 
 integer function test_close_movie_probe() bind(c) result(err)
-   ! Verifies movie close publishes final visualisation artifacts and metadata.
+   ! Verifies movie close finalises visualisation artifacts without a JSON sidecar.
    use output_m
    use outputTypes_m
    use testOutputUtils_m
@@ -1570,11 +1487,11 @@ integer function test_close_movie_probe() bind(c) result(err)
    real(kind=RKIND), pointer :: x_steps(:), y_steps(:), z_steps(:)
    real(kind=RKIND_tiempo) :: dt = 0.1_RKIND_tiempo
    integer(kind=SINGLE) :: iter, mpidir = 3_SINGLE, test_err = 0_SINGLE
-   logical :: outputRequested, thereAreWires = .false., metadataComplete, metadataOpened
+   logical :: outputRequested, thereAreWires = .false.
    character(len=14), parameter :: test_folder = 'testing_folder'
    character(len=10), parameter :: test_name = 'closeMovie'
-   character(len=BUFSIZE) :: testPath, inputPath, metadataLine, expectedPath
-   integer :: ios, metadataUnit
+   character(len=BUFSIZE) :: testPath, inputPath, expectedPath
+   integer :: ios
 
    err = 1
    testPath = join_path(get_temp_folder(), test_folder)
@@ -1613,18 +1530,8 @@ integer function test_close_movie_probe() bind(c) result(err)
    expectedPath = trim(outputs(1)%movieProbe%filesPath)
    test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.xdmf'), 'Movie XDMF metadata was not finalised')
    test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.h5'), 'Movie HDF5 payload was not finalised')
-   test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.json'), 'Movie JSON descriptor was not finalised')
-   metadataComplete = .false.
-   metadataOpened = .false.
-   open (newunit=metadataUnit, file=trim(expectedPath)//'.json', status='old', action='read', iostat=ios)
-   test_err = test_err + assert_integer_equal(ios, 0, 'Movie JSON descriptor could not be opened after close')
-   metadataOpened = ios == 0
-   do while (ios == 0)
-      read (metadataUnit, '(A)', iostat=ios) metadataLine
-      if (index(metadataLine, '"state":"complete"') > 0) metadataComplete = .true.
-   end do
-   if (metadataOpened) close (metadataUnit)
-   test_err = test_err + assert_true(metadataComplete, 'Movie JSON descriptor is not complete')
+   test_err = test_err + assert_true(.not. file_exists(trim(expectedPath)//'.json'), &
+                                     'Movie JSON descriptor was published')
 
    call cleanup_test_artifacts(testPath, ios)
    err = test_err
@@ -1684,7 +1591,6 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    character(len=BUFSIZE) :: expectedProbePath
    integer :: binaryBytes, ios, unit
    real(real64) :: record(10)
-   logical :: metadataComplete
 
    testPath = join_path(get_temp_folder(), test_folder)
    nEntrada = join_path(testPath, test_name)
@@ -1768,7 +1674,8 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.bin'), 'Frequency binary payload does not exist')
    test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.xdmf'), 'Frequency XDMF metadata does not exist')
    test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.h5'), 'Frequency HDF5 payload does not exist')
-   test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.json'), 'Frequency JSON descriptor does not exist')
+   test_err = test_err + assert_true(.not. file_exists(trim(expectedProbePath)//'.json'), &
+                                     'Frequency JSON descriptor was published')
    inquire (file=trim(expectedProbePath)//'.bin', size=binaryBytes)
    test_err = test_err + assert_integer_equal(binaryBytes, 6*4*80, 'Frequency binary record layout changed')
     open(newunit=unit, file=trim(expectedProbePath)//'.bin', access='stream', form='unformatted', status='old', action='read', iostat=ios)
@@ -1785,15 +1692,6 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    else
       test_err = test_err + assert_integer_equal(ios, 0, 'Cannot open frequency binary payload')
    end if
-   metadataComplete = .false.
-   open (newunit=unit, file=trim(expectedProbePath)//'.json', status='old', action='read', iostat=ios)
-   do while (ios == 0)
-      read (unit, '(A)', iostat=ios) expectedProbePath
-      if (index(expectedProbePath, '"state":"complete"') > 0) metadataComplete = .true.
-   end do
-   close (unit)
-   test_err = test_err + assert_true(metadataComplete, 'Frequency JSON descriptor is not complete')
-
    call remove_folder(testPath, ios)
 
    err = test_err

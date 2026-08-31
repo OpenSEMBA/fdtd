@@ -327,8 +327,6 @@ module outputTypes_m
 !=====================================================
    type :: solver_output_t
       integer(kind=SINGLE) :: outputID = -1
-      type(probe_metadata_t) :: metadata
-      character(len=BUFSIZE) :: metadata_path = ''
       type(point_probe_output_t), allocatable :: pointProbe
       type(wire_current_probe_output_t), allocatable :: wireCurrentProbe
       type(wire_charge_probe_output_t), allocatable  :: wireChargeProbe

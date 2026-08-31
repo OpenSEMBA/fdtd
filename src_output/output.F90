@@ -3,8 +3,7 @@ module output_m
    use report_m
    use domain_m
    use outputUtils_m
-   use directoryUtils_m, only: atomic_replace_file, create_file_with_path, delete_file, file_exists, &
-                               get_last_component, join_path, remove_folder
+   use directoryUtils_m, only: delete_file, remove_folder
    use pointProbeOutput_m
    use wireProbeOutput_m
    use bulkProbeOutput_m
@@ -17,21 +16,16 @@ module output_m
                                     OUTPUT_PARTITION_SUCCESS, OUTPUT_PARTITION_INVALID_ARGUMENT
    use outputCollective_m, only: output_collective_t, init_output_collective, select_output_participants, &
                                  prepare_output_partition_publication, OUTPUT_COLLECTIVE_SUCCESS
-   use outputMetadata_m, only: publish_initial_probe_metadata, publish_final_probe_metadata, json_escape, &
-                               json_unescape, OUTPUT_METADATA_SUCCESS
-   use outputTypes_m, only: solver_output_t, problem_info_t, probe_metadata_t, output_artifact_t, &
-                            spheric_domain_t, cell_coordinate_t, field_data_t, fields_reference_t, &
-                            output_lifecycle_is_terminal, OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_UNDEFINED, &
-                            TIME_DOMAIN, FREQUENCY_DOMAIN, UNDEFINED_DOMAIN, volumetric_publication_t, &
-                            OUTPUT_LIFECYCLE_COMPLETE, OUTPUT_LIFECYCLE_FAILED
+   use outputTypes_m, only: solver_output_t, problem_info_t, output_artifact_t, &
+                             spheric_domain_t, cell_coordinate_t, field_data_t, fields_reference_t, &
+                             TIME_DOMAIN, FREQUENCY_DOMAIN, UNDEFINED_DOMAIN, volumetric_publication_t, &
+                             OUTPUT_ARTIFACT_UNDEFINED
 #ifdef CompileWithMPI
    use mpi
 #endif
 #ifdef CompileWithMTLN
    use Wire_bundles_mtln_m, only: GetSolverPtr
    use mtln_solver_m, only: mtln_solver_t => mtln_t
-   use mtln_types_m, only: PROBE_TYPE_CURRENT, PROBE_TYPE_VOLTAGE
-   use probes_m, only: MTLN_PROBE_OUTPUT_COMPLETE, MTLN_PROBE_OUTPUT_FAILED
 #endif
 
    implicit none
@@ -46,11 +40,8 @@ module output_m
    public :: update_outputs
    public :: flush_outputs
    public :: close_outputs
+   public :: delete_outputs
    public :: GetOutputPartition
-   public :: delete_run_output_manifest
-#ifdef CompileWithMTLN
-   public :: init_mtln_outputs
-#endif
    public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, &
              MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID, LINE_PROBE_ID, MTLN_PROBE_ID
    !===========================
@@ -76,12 +67,6 @@ module output_m
    type(solver_output_t), pointer, dimension(:), save  ::  outputs
    type(output_partition_t), allocatable, save :: outputPartitions(:)
    type(problem_info_t), save, target :: problemInfo
-   character(len=BUFSIZE), save :: runOutputId = ''
-   integer, save :: runOutputRank = 0
-   integer, parameter :: RUN_OUTPUT_ROOT_RANK = 0
-#ifdef CompileWithMTLN
-   integer, save :: firstMtlnOutput = 0
-#endif
 
    interface init_solver_output
       module procedure &
@@ -133,37 +118,6 @@ contains
       return
    end function
 
-   subroutine finalise_scalar_output_metadata(output_index)
-      integer(kind=SINGLE), intent(in) :: output_index
-      integer :: i, path_end, status
-      logical :: complete
-      character(len=:), allocatable :: artifact_path
-
-      if (.not. allocated(outputs(output_index)%metadata%artifacts)) return
-      complete = .true.
-      do i = 1, size(outputs(output_index)%metadata%artifacts)
-         path_end = scan(trim(outputs(output_index)%metadata_path), '/\', back=.true.)
-         if (path_end > 0) then
-            artifact_path = trim(outputs(output_index)%metadata_path(:path_end))// &
-                            trim(outputs(output_index)%metadata%artifacts(i)%relative_path)
-         else
-            artifact_path = trim(outputs(output_index)%metadata%artifacts(i)%relative_path)
-         end if
-         if (outputs(output_index)%metadata%artifacts(i)%required .and. &
-             .not. file_exists(artifact_path)) complete = .false.
-      end do
-      if (complete) then
-         outputs(output_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
-         outputs(output_index)%metadata%lifecycle%diagnostic = ''
-      else
-         outputs(output_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-         outputs(output_index)%metadata%lifecycle%diagnostic = 'Required scalar artifacts are incomplete'
-      end if
-      if (runOutputRank == outputs(output_index)%metadata%ownership%scalar_writer_rank) then
-         call publish_final_probe_metadata(outputs(output_index)%metadata_path, outputs(output_index)%metadata, status)
-      end if
-   end subroutine finalise_scalar_output_metadata
-
    subroutine GetOutputPartition(output_index, partition, status)
       integer, intent(in) :: output_index
       type(output_partition_t), intent(out) :: partition
@@ -199,7 +153,6 @@ contains
       integer(kind=SINGLE) :: NODE
       integer(kind=SINGLE) :: outputCount
       integer(kind=SINGLE) :: requestedOutputs
-      integer :: metadata_status
       logical :: mapHasData
       character(len=BUFSIZE) :: outputTypeExtension
 
@@ -212,10 +165,6 @@ contains
       if (present(eps0_input)) eps0 = eps0_input
       if (present(mu0_input)) mu0 = mu0_input
       requestedOutputs = get_required_output_count(sgg)
-#ifdef CompileWithMTLN
-      requestedOutputs = requestedOutputs + get_mtln_output_count()
-      firstMtlnOutput = 0
-#endif
 
       problemInfo%geometryToMaterialData => media
       problemInfo%materialList => sgg%Med
@@ -228,8 +177,6 @@ contains
 
       outputs => NULL()
       allocate (outputs(requestedOutputs))
-      runOutputId = control%nEntradaRoot
-      runOutputRank = control%layoutnumber
       if (allocated(outputPartitions)) deallocate (outputPartitions)
       allocate (outputPartitions(requestedOutputs))
 
@@ -302,13 +249,6 @@ contains
                                           outputRequestType, outputTypeExtension, control%mpidir, problemInfo)
                   call create_geometry_simulation_vtu(outputs(outputCount)%mapvtkOutput, control, sgg%LineX, sgg%LineY, &
                                                       sgg%LineZ, problemInfo)
-                  call register_scalar_output_metadata(outputCount, &
-                                                       join_path(outputs(outputCount)%mapvtkOutput%path, &
-                                                       trim(get_last_component(outputs(outputCount)%mapvtkOutput%path))//'.json'), &
-                                                       get_last_component(outputs(outputCount)%mapvtkOutput%path), &
-                                                       'geometry', &
-                                                       outputs(outputCount)%mapvtkOutput%artifacts, localMapLower, &
-                                                       localMapUpper, UNDEFINED_DOMAIN, control%layoutnumber, metadata_status)
                end if
 
             case (iEx, iEy, iEz, iHx, iHy, iHz)
@@ -365,8 +305,6 @@ contains
                      allocate (outputs(outputCount)%movieProbe)
                      call init_solver_output(outputs(outputCount)%movieProbe, publication, outputRequestType, domain, &
                                              control, problemInfo, outputTypeExtension)
-                     outputs(outputCount)%metadata = outputs(outputCount)%movieProbe%metadata
-                     outputs(outputCount)%metadata_path = trim(outputs(outputCount)%movieProbe%filesPath)//'.json'
                   end block
                else if (domain%domainType == FREQUENCY_DOMAIN) then
                   block
@@ -378,8 +316,6 @@ contains
                      allocate (outputs(outputCount)%frequencySliceProbe)
                      call init_solver_output(outputs(outputCount)%frequencySliceProbe, publication, sgg%dt, &
                                              outputRequestType, domain, outputTypeExtension, control, problemInfo)
-                     outputs(outputCount)%metadata = outputs(outputCount)%frequencySliceProbe%metadata
-                     outputs(outputCount)%metadata_path = trim(outputs(outputCount)%frequencySliceProbe%filesPath)//'.json'
                   end block
                end if
             case (farfield)
@@ -401,9 +337,6 @@ contains
             end select
          end do
       end do
-#ifdef CompileWithMTLN
-      call append_mtln_outputs(outputCount)
-#endif
       if (outputCount /= requestedOutputs) then
          call remove_unused_outputs(outputs)
          outputCount = size(outputs)
@@ -437,41 +370,6 @@ contains
          call MPI_Comm_split(SUBCOMM_MPI, color, control%layoutnumber, output%MPISubcomm, ierr)
       end subroutine configure_far_field_mpi
 #endif
-
-      subroutine register_scalar_output_metadata(output_index, descriptor_path, probe_id, quantity, artifacts, &
-                                                 metadata_lower, metadata_upper, domain_type, writer_rank, status)
-         integer(kind=SINGLE), intent(in) :: output_index
-         character(len=*), intent(in) :: descriptor_path, probe_id, quantity
-         type(output_artifact_t), intent(in) :: artifacts(:)
-         type(cell_coordinate_t), intent(in) :: metadata_lower, metadata_upper
-         integer, intent(in) :: domain_type, writer_rank
-         integer, intent(out) :: status
-         integer :: i, artifact_count
-
-         outputs(output_index)%metadata%probe_id = trim(probe_id)
-         outputs(output_index)%metadata%quantity = trim(quantity)
-         outputs(output_index)%metadata%lower_bound = metadata_lower
-         outputs(output_index)%metadata%upper_bound = metadata_upper
-         outputs(output_index)%metadata%domain_type = domain_type
-         allocate (outputs(output_index)%metadata%artifacts(count(artifacts%kind /= OUTPUT_ARTIFACT_UNDEFINED)))
-         artifact_count = 0
-         do i = 1, size(artifacts)
-            if (artifacts(i)%kind == OUTPUT_ARTIFACT_UNDEFINED) cycle
-            artifact_count = artifact_count + 1
-            outputs(output_index)%metadata%artifacts(artifact_count) = artifacts(i)
-            outputs(output_index)%metadata%artifacts(artifact_count)%relative_path = &
-               get_last_component(artifacts(i)%relative_path)
-         end do
-         allocate (outputs(output_index)%metadata%ownership%participant_ranks(1))
-         outputs(output_index)%metadata%ownership%participant_ranks(1) = writer_rank
-         outputs(output_index)%metadata%ownership%scalar_writer_rank = writer_rank
-         outputs(output_index)%metadata_path = trim(descriptor_path)
-         status = OUTPUT_METADATA_SUCCESS
-         if (control%layoutnumber == writer_rank) then
-            call publish_initial_probe_metadata(outputs(output_index)%metadata_path, &
-                                                outputs(output_index)%metadata, status)
-         end if
-      end subroutine register_scalar_output_metadata
 
       subroutine attach_output_partition(output_index)
          integer(kind=SINGLE), intent(in) :: output_index
@@ -654,145 +552,6 @@ contains
 
    end subroutine init_outputs
 
-#ifdef CompileWithMTLN
-   subroutine init_mtln_outputs(run_id, writer_rank)
-      character(len=*), intent(in) :: run_id
-      integer, intent(in) :: writer_rank
-      integer(kind=SINGLE) :: output_count
-
-      runOutputId = trim(run_id)
-      runOutputRank = writer_rank
-      firstMtlnOutput = 0
-      output_count = 0
-      if (associated(outputs)) deallocate (outputs)
-      allocate (outputs(get_mtln_output_count()))
-      if (allocated(outputPartitions)) deallocate (outputPartitions)
-      allocate (outputPartitions(size(outputs)))
-      call append_mtln_outputs(output_count)
-   end subroutine init_mtln_outputs
-
-   integer function get_mtln_output_count() result(count)
-      type(mtln_solver_t), pointer :: mtln_solver
-      integer :: i
-
-      count = 0
-      mtln_solver => GetSolverPtr()
-      if (.not. allocated(mtln_solver%bundles)) return
-      do i = 1, size(mtln_solver%bundles)
-         if (allocated(mtln_solver%bundles(i)%probes)) count = count + size(mtln_solver%bundles(i)%probes)
-      end do
-   end function get_mtln_output_count
-
-   subroutine append_mtln_outputs(output_count)
-      integer(kind=SINGLE), intent(inout) :: output_count
-      type(mtln_solver_t), pointer :: mtln_solver
-      integer :: i, j, metadata_status, path_length
-      character(len=BUFSIZE) :: data_path, descriptor_path, probe_id, quantity
-
-      mtln_solver => GetSolverPtr()
-      if (.not. allocated(mtln_solver%bundles)) return
-      firstMtlnOutput = output_count + 1
-      do i = 1, size(mtln_solver%bundles)
-         if (.not. allocated(mtln_solver%bundles(i)%probes)) cycle
-         do j = 1, size(mtln_solver%bundles(i)%probes)
-            output_count = output_count + 1
-            outputs(output_count)%outputID = MTLN_PROBE_ID
-            data_path = mtln_solver%bundles(i)%probes(j)%output_path
-            path_length = len_trim(data_path)
-            descriptor_path = trim(data_path(:path_length - len('.dat')))//'.json'
-            probe_id = get_last_component(data_path(:path_length - len('.dat')))
-            select case (mtln_solver%bundles(i)%probes(j)%type)
-            case (PROBE_TYPE_CURRENT)
-               quantity = 'current'
-            case (PROBE_TYPE_VOLTAGE)
-               quantity = 'voltage'
-            case default
-               quantity = 'mtln'
-            end select
-
-            outputs(output_count)%metadata%probe_id = probe_id
-            outputs(output_count)%metadata%quantity = quantity
-            outputs(output_count)%metadata%domain_type = TIME_DOMAIN
-            allocate (outputs(output_count)%metadata%artifacts(1))
-            outputs(output_count)%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
-            outputs(output_count)%metadata%artifacts(1)%relative_path = get_last_component(data_path)
-            allocate (outputs(output_count)%metadata%ownership%participant_ranks(1))
-            outputs(output_count)%metadata%ownership%participant_ranks(1) = &
-               mtln_solver%bundles(i)%probes(j)%output_writer_rank
-            outputs(output_count)%metadata%ownership%scalar_writer_rank = &
-               mtln_solver%bundles(i)%probes(j)%output_writer_rank
-            outputs(output_count)%metadata_path = descriptor_path
-
-            if (mtln_solver%bundles(i)%probes(j)%output_writer) then
-               call publish_initial_probe_metadata(descriptor_path, outputs(output_count)%metadata, metadata_status)
-               if (mtln_solver%bundles(i)%probes(j)%output_state == MTLN_PROBE_OUTPUT_FAILED) then
-                  outputs(output_count)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-                  outputs(output_count)%metadata%lifecycle%diagnostic = &
-                     mtln_solver%bundles(i)%probes(j)%output_diagnostic
-                  call publish_final_probe_metadata(descriptor_path, outputs(output_count)%metadata, metadata_status)
-               end if
-            end if
-         end do
-      end do
-      if (output_count < firstMtlnOutput) firstMtlnOutput = 0
-   end subroutine append_mtln_outputs
-
-   subroutine finalise_mtln_outputs()
-      type(mtln_solver_t), pointer :: mtln_solver
-      integer :: i, j, metadata_status, output_index
-#ifdef CompileWithMPI
-      integer :: ierr
-#endif
-
-      if (firstMtlnOutput == 0) return
-      mtln_solver => GetSolverPtr()
-      if (.not. allocated(mtln_solver%bundles)) return
-      output_index = firstMtlnOutput - 1
-      do i = 1, size(mtln_solver%bundles)
-         if (.not. allocated(mtln_solver%bundles(i)%probes)) cycle
-         do j = 1, size(mtln_solver%bundles(i)%probes)
-            output_index = output_index + 1
-            if (mtln_solver%bundles(i)%probes(j)%output_writer_rank < 0) then
-               outputs(output_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-               outputs(output_index)%metadata%lifecycle%diagnostic = 'No MTLN probe output writer is available'
-               cycle
-            end if
-
-            if (mtln_solver%bundles(i)%probes(j)%output_writer) then
-               if (mtln_solver%bundles(i)%probes(j)%output_state == MTLN_PROBE_OUTPUT_COMPLETE) then
-                  outputs(output_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
-                  outputs(output_index)%metadata%lifecycle%diagnostic = ''
-               else
-                  outputs(output_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-                  outputs(output_index)%metadata%lifecycle%diagnostic = &
-                     mtln_solver%bundles(i)%probes(j)%output_diagnostic
-                  if (len_trim(outputs(output_index)%metadata%lifecycle%diagnostic) == 0) then
-                     outputs(output_index)%metadata%lifecycle%diagnostic = 'MTLN probe output did not reach completion'
-                  end if
-               end if
-               call publish_final_probe_metadata(outputs(output_index)%metadata_path, &
-                                                 outputs(output_index)%metadata, metadata_status)
-               if (metadata_status /= OUTPUT_METADATA_SUCCESS) then
-                  outputs(output_index)%metadata%lifecycle%state = OUTPUT_LIFECYCLE_FAILED
-                  outputs(output_index)%metadata%lifecycle%diagnostic = 'Unable to publish MTLN probe metadata'
-               end if
-            end if
-#ifdef CompileWithMPI
-            call MPI_Bcast(outputs(output_index)%metadata%lifecycle%state, 1, MPI_INTEGER, &
-                           mtln_solver%bundles(i)%probes(j)%output_writer_rank, SUBCOMM_MPI, ierr)
-            if (ierr == MPI_SUCCESS) then
-               call MPI_Bcast(outputs(output_index)%metadata%lifecycle%diagnostic, BUFSIZE, MPI_CHARACTER, &
-                              mtln_solver%bundles(i)%probes(j)%output_writer_rank, SUBCOMM_MPI, ierr)
-            end if
-            if (ierr /= MPI_SUCCESS) then
-               call StopOnError(runOutputRank, 1, 'Unable to synchronise MTLN probe metadata')
-            end if
-#endif
-         end do
-      end do
-   end subroutine finalise_mtln_outputs
-#endif
-
    subroutine update_outputs(control, discreteTimeArray, timeIndx, fieldsReference, sgg)
       integer(kind=SINGLE), intent(in) :: timeIndx
       real(kind=RKIND_tiempo), dimension(:), intent(in) :: discreteTimeArray
@@ -912,22 +671,80 @@ contains
       integer :: i
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
-         case (MAPVTK_ID)
-            call finalise_scalar_output_metadata(i)
          case (MOVIE_PROBE_ID)
             call close_solver_output(outputs(i)%movieProbe)
-            outputs(i)%metadata = outputs(i)%movieProbe%metadata
          case (FREQUENCY_SLICE_PROBE_ID)
             call close_solver_output(outputs(i)%frequencySliceProbe)
-            outputs(i)%metadata = outputs(i)%frequencySliceProbe%metadata
-         case (MTLN_PROBE_ID)
          end select
       end do
-#ifdef CompileWithMTLN
-      call finalise_mtln_outputs()
-#endif
-      call finalise_run_outputs()
    end subroutine
+
+   subroutine delete_outputs(writer_rank)
+      integer, intent(in) :: writer_rank
+      integer :: i, ios
+
+      if (writer_rank /= 0) return
+      if (associated(outputs)) then
+         do i = 1, size(outputs)
+            select case (outputs(i)%outputID)
+            case (POINT_PROBE_ID)
+               call delete_artifacts(outputs(i)%pointProbe%artifacts)
+            case (WIRE_CURRENT_PROBE_ID)
+               call delete_artifacts(outputs(i)%wireCurrentProbe%artifacts)
+            case (WIRE_CHARGE_PROBE_ID)
+               call delete_artifacts(outputs(i)%wireChargeProbe%artifacts)
+            case (BULK_PROBE_ID)
+               call delete_artifacts(outputs(i)%bulkCurrentProbe%artifacts)
+            case (LINE_PROBE_ID)
+               call delete_artifacts(outputs(i)%lineProbe%artifacts)
+            case (FAR_FIELD_PROBE_ID)
+               if (allocated(outputs(i)%farFieldOutput%artifacts)) then
+                  call delete_artifacts(outputs(i)%farFieldOutput%artifacts)
+               end if
+            case (MOVIE_PROBE_ID)
+               call remove_folder(outputs(i)%movieProbe%path, ios)
+            case (FREQUENCY_SLICE_PROBE_ID)
+               call remove_folder(outputs(i)%frequencySliceProbe%path, ios)
+            case (MAPVTK_ID)
+               call remove_folder(outputs(i)%mapvtkOutput%path, ios)
+            end select
+         end do
+      end if
+#ifdef CompileWithMTLN
+      call delete_mtln_probe_outputs()
+#endif
+   end subroutine delete_outputs
+
+   subroutine delete_artifacts(artifacts)
+      type(output_artifact_t), intent(in) :: artifacts(:)
+      integer :: i, ios
+
+      do i = 1, size(artifacts)
+         if (artifacts(i)%kind == OUTPUT_ARTIFACT_UNDEFINED .or. &
+             len_trim(artifacts(i)%relative_path) == 0) cycle
+         call delete_file(artifacts(i)%relative_path, ios)
+      end do
+   end subroutine delete_artifacts
+
+#ifdef CompileWithMTLN
+   subroutine delete_mtln_probe_outputs()
+      type(mtln_solver_t), pointer :: mtln_solver
+      integer :: i, ios, j, separator
+
+      mtln_solver => GetSolverPtr()
+      if (.not. allocated(mtln_solver%bundles)) return
+      do i = 1, size(mtln_solver%bundles)
+         if (.not. allocated(mtln_solver%bundles(i)%probes)) cycle
+         do j = 1, size(mtln_solver%bundles(i)%probes)
+            call delete_file(mtln_solver%bundles(i)%probes(j)%output_path, ios)
+            separator = scan(trim(mtln_solver%bundles(i)%probes(j)%output_path), '/\', back=.true.)
+            if (separator > 1) then
+               call remove_folder(mtln_solver%bundles(i)%probes(j)%output_path(:separator - 1), ios)
+            end if
+         end do
+      end do
+   end subroutine delete_mtln_probe_outputs
+#endif
 
    function get_required_output_count(sgg) result(count)
       type(SGGFDTDINFO_t), intent(in) :: sgg
@@ -938,159 +755,6 @@ contains
       end do
       return
    end function
-
-   subroutine finalise_run_outputs()
-      character(len=BUFSIZE) :: manifest_path, temporary_path
-      integer :: close_status, i, ios, published_count, unit
-      logical :: first_probe
-
-      if (runOutputRank /= RUN_OUTPUT_ROOT_RANK) return
-      manifest_path = trim(runOutputId)//'_output_manifest.json'
-      published_count = 0
-      do i = 1, size(outputs)
-         if (len_trim(outputs(i)%metadata_path) == 0) cycle
-         published_count = published_count + 1
-         if (.not. output_lifecycle_is_terminal(outputs(i)%metadata%lifecycle)) then
-            call StopOnError(runOutputRank, 1, 'Cannot publish output manifest before all probes are finalised')
-            return
-         end if
-      end do
-      if (published_count == 0) then
-         call delete_file(manifest_path, ios)
-         return
-      end if
-
-      temporary_path = trim(manifest_path)//'.tmp'
-      call create_file_with_path(temporary_path, ios)
-      if (ios /= 0) then
-         call StopOnError(runOutputRank, 1, 'Error while creating output manifest')
-         return
-      end if
-      open (newunit=unit, file=trim(temporary_path), status='replace', action='write', iostat=ios)
-      if (ios /= 0) then
-         call StopOnError(runOutputRank, 1, 'Error while opening output manifest')
-         return
-      end if
-
-      write (unit, '(a)', iostat=ios) '{'
-      if (ios == 0) write (unit, '(a)', iostat=ios) '"schema_version":1,'
-      if (ios == 0) write (unit, '(a)', iostat=ios) '"run_id":"'//json_escape(trim(runOutputId))//'",'
-      if (ios == 0) write (unit, '(a)', iostat=ios) '"probes":['
-      first_probe = .true.
-      do i = 1, size(outputs)
-         if (len_trim(outputs(i)%metadata_path) == 0) cycle
-         if (.not. first_probe .and. ios == 0) write (unit, '(a)', iostat=ios) ','
-         if (ios == 0) call write_manifest_probe(unit, outputs(i)%metadata, outputs(i)%metadata_path, ios)
-         first_probe = .false.
-      end do
-      if (ios == 0) write (unit, '(a)', iostat=ios) ']'
-      if (ios == 0) write (unit, '(a)', iostat=ios) '}'
-      close_status = ios
-      close (unit, iostat=ios)
-      if (close_status /= 0 .or. ios /= 0) then
-         call delete_file(temporary_path, close_status)
-         call StopOnError(runOutputRank, 1, 'Error while writing output manifest')
-         return
-      end if
-
-      call atomic_replace_file(temporary_path, manifest_path, ios)
-      if (ios /= 0) then
-         call delete_file(temporary_path, close_status)
-         call StopOnError(runOutputRank, 1, 'Error while publishing output manifest')
-      end if
-   end subroutine finalise_run_outputs
-
-   subroutine write_manifest_probe(unit, metadata, metadata_path, ios)
-      integer, intent(in) :: unit
-      type(probe_metadata_t), intent(in) :: metadata
-      character(len=*), intent(in) :: metadata_path
-      integer, intent(inout) :: ios
-      integer :: artifact_index
-
-      write (unit, '(a)', iostat=ios) '{'
-      if (ios == 0) write (unit, '(a)', iostat=ios) '"probe_id":"'//json_escape(trim(metadata%probe_id))//'",'
-      if (ios == 0) write (unit, '(a)', iostat=ios) '"quantity":"'//json_escape(trim(metadata%quantity))//'",'
-      if (ios == 0) write (unit, '(a)', iostat=ios) '"lifecycle":{"state":"'// &
-         terminal_lifecycle_name(metadata%lifecycle%state)//'","diagnostic":"'// &
-         json_escape(trim(metadata%lifecycle%diagnostic))//'"},'
-      if (ios == 0) write (unit, '(a)', iostat=ios) '"artifacts":['
-      if (ios == 0) call write_manifest_artifact(unit, metadata_path, ios)
-      do artifact_index = 1, size(metadata%artifacts)
-         if (metadata%artifacts(artifact_index)%kind == OUTPUT_ARTIFACT_UNDEFINED) cycle
-         if (ios == 0) write (unit, '(a)', iostat=ios) ','
-         if (ios == 0) call write_manifest_artifact(unit, &
-                                        resolve_artifact_path(metadata_path, metadata%artifacts(artifact_index)%relative_path), ios)
-      end do
-      if (ios == 0) write (unit, '(a)', iostat=ios) ']'
-      if (ios == 0) write (unit, '(a)', iostat=ios) '}'
-   end subroutine write_manifest_probe
-
-   subroutine write_manifest_artifact(unit, path, ios)
-      integer, intent(in) :: unit
-      character(len=*), intent(in) :: path
-      integer, intent(inout) :: ios
-
-      write (unit, '(a)', iostat=ios) '{"path":"'//json_escape(trim(path))//'"}'
-   end subroutine write_manifest_artifact
-
-   function resolve_artifact_path(metadata_path, relative_path) result(path)
-      character(len=*), intent(in) :: metadata_path, relative_path
-      character(len=:), allocatable :: path
-      integer :: separator
-
-      separator = scan(trim(metadata_path), '/\', back=.true.)
-      if (separator > 1) then
-         path = join_path(metadata_path(:separator - 1), relative_path)
-      else
-         path = trim(relative_path)
-      end if
-   end function resolve_artifact_path
-
-   pure function terminal_lifecycle_name(state) result(name)
-      integer, intent(in) :: state
-      character(len=:), allocatable :: name
-
-      if (state == OUTPUT_LIFECYCLE_COMPLETE) then
-         name = 'complete'
-      else if (state == OUTPUT_LIFECYCLE_FAILED) then
-         name = 'failed'
-      else
-         name = 'unknown'
-      end if
-   end function terminal_lifecycle_name
-
-   subroutine delete_run_output_manifest(run_id, writer_rank)
-      character(len=*), intent(in) :: run_id
-      integer, intent(in) :: writer_rank
-      character(len=BUFSIZE) :: artifact_path, artifact_folder, line, manifest_path
-      integer :: ios, path_end, path_start, unit
-
-      if (writer_rank /= 0) return
-      manifest_path = trim(run_id)//'_output_manifest.json'
-      if (.not. file_exists(manifest_path)) return
-      open (newunit=unit, file=trim(manifest_path), status='old', action='read', iostat=ios)
-      if (ios /= 0) return
-      do
-         read (unit, '(A)', iostat=ios) line
-         if (ios /= 0) exit
-         path_start = index(line, '"path":"')
-         if (path_start == 0) cycle
-         path_start = path_start + len('"path":"')
-         path_end = index(line(path_start:), '"')
-         if (path_end == 0) cycle
-         artifact_path = json_unescape(line(path_start:path_start + path_end - 2))
-         if (index(trim(artifact_path), trim(run_id)//'_') == 1) then
-            call delete_file(trim(artifact_path), ios)
-            path_end = scan(trim(artifact_path), '/\\', back=.true.)
-            if (path_end > 0) then
-               artifact_folder = artifact_path(:path_end - 1)
-               call remove_folder(trim(artifact_folder), ios)
-            end if
-         end if
-      end do
-      close (unit)
-      call delete_file(trim(manifest_path), ios)
-   end subroutine delete_run_output_manifest
 
    function frequency_count(observation) result(count)
       type(Obses_t), intent(in) :: observation

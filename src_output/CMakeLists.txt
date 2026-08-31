@@ -7,7 +7,6 @@ add_library(fdtd-output
   "outputTypes.F90"
   "outputBinary.F90"
   "outputVisualisation.F90"
-  "outputMetadata.F90"
   "outputDecomposition.F90"
   "outputCollective.F90"
   "outputTransport.F90"

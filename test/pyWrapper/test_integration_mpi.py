@@ -76,13 +76,6 @@ def test_airplane_movie_is_published_canonically_with_mpi(tmp_path):
     assert len(np.unique(movie_coordinates, axis=0)) == len(movie_coordinates)
     assert np.array_equal(np.unique(movie_coordinates[:, 2]), np.arange(10, 37))
 
-    descriptor_path = next(Path(probe.folder).glob("*.json"))
-    descriptor = json.loads(descriptor_path.read_text())
-    assert descriptor["lifecycle"]["state"] == "complete"
-    assert descriptor["ownership"] == {
-        "participant_ranks": [0, 1],
-        "scalar_writer_rank": 0,
-    }
 
     serial_folder = tmp_path / "serial"
     serial_folder.mkdir()
@@ -117,13 +110,8 @@ def test_frequency_slice_is_published_canonically_with_mpi(tmp_path):
         assert h5_file["attributes/a0001/values"].shape == (4, 120)
         assert np.max(np.abs(h5_file["attributes/a0001/values"][()])) > 0.0
 
-    descriptor_path = next(Path(probe.folder).glob("*.json"))
-    descriptor = json.loads(descriptor_path.read_text())
-    assert descriptor["lifecycle"]["state"] == "complete"
-    assert descriptor["ownership"] == {
-        "participant_ranks": [0, 1],
-        "scalar_writer_rank": 0,
-    }
+    assert not list(Path(probe.folder).glob("*.json"))
+    assert not (tmp_path / f"{solver.getCaseName()}_output_manifest.json").exists()
 
     serial_folder = tmp_path / "serial"
     serial_folder.mkdir()
@@ -168,7 +156,7 @@ def test_simple_cabin_initialization_with_mpi(tmp_path):
 @pytest.mark.mpi
 @pytest.mark.mtln
 @pytest.mark.probes
-def test_mtln_non_root_writer_publishes_complete_metadata(tmp_path):
+def test_mtln_non_root_writer_publishes_data_without_metadata(tmp_path):
     input_data = json.loads(
         (Path(CASES_FOLDER) / "mpi" / "bundles_for_mpi.fdtd.json").read_text()
     )
@@ -195,14 +183,6 @@ def test_mtln_non_root_writer_publishes_complete_metadata(tmp_path):
     solver.run()
 
     probe_folder = Path(solver.getSolvedProbeFolders("upper")[0])
-    probe_id = probe_folder.name
-    descriptor = json.loads((probe_folder / f"{probe_id}.json").read_text())
-    manifest = json.loads(
-        (tmp_path / f"{solver.getCaseName()}_output_manifest.json").read_text()
-    )
-    assert descriptor["lifecycle"]["state"] == "complete"
-    assert descriptor["ownership"] == {
-        "participant_ranks": [1],
-        "scalar_writer_rank": 1,
-    }
-    assert sum(probe["probe_id"] == probe_id for probe in manifest["probes"]) == 1
+    assert list(probe_folder.glob("*.dat"))
+    assert not list(probe_folder.glob("*.json"))
+    assert not (tmp_path / f"{solver.getCaseName()}_output_manifest.json").exists()

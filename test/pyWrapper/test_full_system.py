@@ -450,9 +450,7 @@ def test_movie_in_planewave_in_box(tmp_path):
     xdmffile = _get_solved_probe_folder(
         solver, "electric_field_movie", suffix=".xdmf"
     )
-    descriptor = os.path.splitext(h5file)[0] + ".json"
 
-    assert os.path.isfile(descriptor)
     root = ET.parse(xdmffile).getroot()
     h5_name = os.path.basename(h5file)
     temporal = root.find("./Domain/Grid")

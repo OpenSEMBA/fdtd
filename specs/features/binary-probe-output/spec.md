@@ -18,14 +18,15 @@ THEN it MUST publish one binary artifact for each series.
 ## Record Contract
 
 WHEN a binary artifact is published
-THEN its descriptor MUST identify byte order, numeric representation, record
-size, component order, and complex-value convention.
+THEN its byte order, numeric representation, record size, component order, and
+complex-value convention MUST remain stable and documented.
 
 Binary records MUST use the highest native precision required by their values.
 Binary records MUST use one documented byte order on supported platforms.
 
 WHEN a binary record contains complex values
-THEN its descriptor MUST identify their representation and order.
+THEN real and imaginary values MUST use the documented representation and
+order.
 
 ## Result Equivalence
 
