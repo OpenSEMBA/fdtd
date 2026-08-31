@@ -70,6 +70,32 @@ def test_fdtd_get_excitation_file_is_rooted_in_solver_folder(tmp_path, monkeypat
     ]
 
 
+def test_fdtd_get_vtk_map_prefers_parallel_descriptor(tmp_path):
+    case = tmp_path / "case.fdtd.json"
+    case.write_text("{}")
+    piece_folder = tmp_path / "case.fdtd__MAP_piece"
+    piece_folder.mkdir()
+    piece = piece_folder / "case.fdtd__MAP_piece.vtu"
+    piece.touch()
+    descriptor = tmp_path / "case.fdtd__MAP_global.pvtu"
+    descriptor.touch()
+    solver = FDTD(case, path_to_exe=case)
+
+    assert solver.getVTKMap() == str(descriptor)
+
+
+def test_fdtd_get_vtk_map_falls_back_to_serial_piece(tmp_path):
+    case = tmp_path / "case.fdtd.json"
+    case.write_text("{}")
+    piece_folder = tmp_path / "case.fdtd__MAP_piece"
+    piece_folder.mkdir()
+    piece = piece_folder / "case.fdtd__MAP_piece.vtu"
+    piece.touch()
+    solver = FDTD(case, path_to_exe=case)
+
+    assert solver.getVTKMap() == str(piece)
+
+
 def get_probe_stem(probe_case):
     return "{case}.fdtd_{name}{type}{region}{segment}{domain}".format(
         case=probe_case["case"]["code"],

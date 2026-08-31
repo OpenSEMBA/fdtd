@@ -27,6 +27,7 @@ module outputTypes_m
    character(len=4), parameter :: datFileExtension = '.dat'
    character(len=4), parameter :: vtkFileExtension = '.vtk'
    character(len=4), parameter :: vtuFileExtension = '.vtu'
+   character(len=5), parameter :: pvtuFileExtension = '.pvtu'
    character(len=2), parameter :: timeExtension = 'tm'
    character(len=2), parameter :: frequencyExtension = 'fq'
    character(len=1), parameter :: wordseparation = '_'
@@ -238,7 +239,9 @@ module outputTypes_m
       integer(kind=SINGLE), allocatable :: materialTag(:)
       real(kind=RKIND), allocatable :: mediaType(:)
       integer :: nPoints = -1
-      type(output_artifact_t) :: artifacts(2)
+      logical :: localParticipates = .false.
+      character(len=BUFSIZE) :: masterPath = ''
+      type(output_artifact_t) :: artifacts(1)
    end type mapvtk_output_t
    type, extends(abstract_time_frequency_probe_t) :: point_probe_output_t
       real(kind=RKIND), allocatable :: valueForTime(:)

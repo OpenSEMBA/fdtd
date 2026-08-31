@@ -19,42 +19,52 @@ module mapVTKOutput_m
    implicit none(type, external)
    private
 
-   public :: init_mapvtk_output, create_geometry_simulation_vtu, write_geometry_companion
+   public :: init_mapvtk_output, create_geometry_simulation_vtu, create_parallel_geometry_vtu, &
+             write_geometry_companion
 contains
-   subroutine init_mapvtk_output(this, lowerBound, upperBound, field, outputTypeExtension, mpidir, problemInfo)
+   subroutine init_mapvtk_output(this, lowerBound, upperBound, globalLowerBound, globalUpperBound, &
+                                 localParticipates, field, outputTypeExtension, mpidir, problemInfo)
       type(mapvtk_output_t), intent(out) :: this
       type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
+      type(cell_coordinate_t), intent(in) :: globalLowerBound, globalUpperBound
       type(problem_info_t), target, intent(in) :: problemInfo
       integer(kind=SINGLE), intent(in) :: mpidir, field
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
+      logical, intent(in) :: localParticipates
 
-      character(len=BUFSIZE) :: artifact_paths(2)
-      integer :: artifact_kinds(2)
+      character(len=BUFSIZE) :: artifact_paths(1)
+      integer :: artifact_kinds(1)
 
       this%mainCoords = lowerBound
       this%auxCoords = upperBound
       this%component = field
+      this%localParticipates = localParticipates
+      this%masterPath = trim(get_map_output_path(globalLowerBound, globalUpperBound, field, &
+                                                 outputTypeExtension, mpidir))//pvtuFileExtension
 
-      this%path = get_output_path()
-      artifact_paths(1) = trim(join_path(this%path, get_last_component(this%path)))//vtuFileExtension
-      artifact_paths(2) = trim(join_path(this%path, get_last_component(this%path)))//'.txt'
-      artifact_kinds = [OUTPUT_ARTIFACT_GEOMETRY, OUTPUT_ARTIFACT_TEXT]
+      artifact_paths = ''
+      if (localParticipates) then
+         this%path = get_map_output_path(lowerBound, upperBound, field, outputTypeExtension, mpidir)
+         artifact_paths(1) = trim(join_path(this%path, get_last_component(this%path)))//vtuFileExtension
+      end if
+      artifact_kinds = [OUTPUT_ARTIFACT_GEOMETRY]
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
-      call store_relevant_coordinates(this, problemInfo)
-
-   contains
-
-      function get_output_path() result(outputPath)
-         character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
-         character(len=BUFSIZE) :: outputPath
-         probeBoundsExtension = get_coordinates_extension(this%mainCoords, this%auxCoords, mpidir)
-         prefixFieldExtension = get_prefix_extension(field, mpidir)
-         outputPath = &
-            trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
-         return
-      end function
+      if (localParticipates) call store_relevant_coordinates(this, problemInfo)
 
    end subroutine init_mapvtk_output
+
+   function get_map_output_path(lowerBound, upperBound, field, outputTypeExtension, mpidir) result(outputPath)
+      type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
+      integer(kind=SINGLE), intent(in) :: field, mpidir
+      character(len=BUFSIZE), intent(in) :: outputTypeExtension
+      character(len=BUFSIZE) :: outputPath
+      character(len=BUFSIZE) :: probeBoundsExtension, prefixFieldExtension
+
+      probeBoundsExtension = get_coordinates_extension(lowerBound, upperBound, mpidir)
+      prefixFieldExtension = get_prefix_extension(field, mpidir)
+      outputPath = trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'// &
+                   trim(adjustl(probeBoundsExtension))
+   end function get_map_output_path
 
    subroutine store_relevant_coordinates(this, problemInfo)
       type(mapvtk_output_t), intent(inout) :: this
@@ -269,9 +279,8 @@ contains
       !type(vtk_file) :: vtkOutput
       type(vtk_unstructured_grid), target :: ugrid
 
-      integer :: ierr, i, unit
-      character(len=BUFSIZE) :: info_str
-      character(len=BUFSIZE) :: metadata_filename, vtuPath
+      integer :: ierr, i
+      character(len=BUFSIZE) :: vtuPath
 
       integer, allocatable :: conn(:), offsets(:), types(:)
       integer :: numNodes, numEdges, numQuads
@@ -285,49 +294,39 @@ contains
       call createUnstructuredDataForVTU(this%nPoints, this%coords, this%currentType, nodes, edges, quads, numNodes, numEdges, numQuads, control%vtkindex, realXGrid, realYGrid, realZGrid)
       call ugrid%add_points(real(nodes, 4))
 
-      if (numEdges + numQuads > 0) then
-         allocate (conn(2*numEdges + 4*numQuads))
-         if (numEdges > 0) conn(1:2*numEdges) = reshape(edges, [2*numEdges])
-         if (numQuads > 0) conn(2*numEdges + 1:2*numEdges + 4*numQuads) = reshape(quads, [4*numQuads])
+      allocate (conn(2*numEdges + 4*numQuads))
+      if (numEdges > 0) conn(1:2*numEdges) = reshape(edges, [2*numEdges])
+      if (numQuads > 0) conn(2*numEdges + 1:2*numEdges + 4*numQuads) = reshape(quads, [4*numQuads])
 
-         allocate (offsets(numEdges + numQuads))
-         do i = 1, numEdges + numQuads
-            if (i <= numEdges) then
-               offsets(i) = 2*i
-            else
-               offsets(i) = 2*numEdges + 4*(i - numEdges)
-            end if
-         end do
+      allocate (offsets(numEdges + numQuads))
+      do i = 1, numEdges + numQuads
+         if (i <= numEdges) then
+            offsets(i) = 2*i
+         else
+            offsets(i) = 2*numEdges + 4*(i - numEdges)
+         end if
+      end do
 
-         allocate (types(numEdges + numQuads))
-         if (numEdges > 0) types(1:numEdges) = 3
-         if (numQuads > 0) types(numEdges + 1:numEdges + numQuads) = 9
+      allocate (types(numEdges + numQuads))
+      if (numEdges > 0) types(1:numEdges) = 3
+      if (numQuads > 0) types(numEdges + 1:numEdges + numQuads) = 9
 
-         call ugrid%add_cell_connectivity(conn, offsets, types)
-         call build_cell_properties(this, problemInfo, numEdges, numQuads, cell_tags, cell_media_types)
-         call ugrid%add_cell_scalar('tagnumber', cell_tags)
-         call ugrid%add_cell_scalar('mediatype', cell_media_types)
-      end if
+      call ugrid%add_cell_connectivity(conn, offsets, types)
+      call build_cell_properties(this, problemInfo, numEdges, numQuads, cell_tags, cell_media_types)
+      call ugrid%add_cell_scalar('tagnumber', cell_tags)
+      call ugrid%add_cell_scalar('mediatype', cell_media_types)
 
       call ugrid%write_file(vtuPath)
 
-      !---------------------------------------------
-      ! Metadata: write to .txt file
-      !---------------------------------------------
-      info_str = 'PEC=0, already_YEEadvanced_byconformal=5, NOTOUCHNOUSE=6, '// &
-                 'WIRE=7, WIRE-COLISION=8, COMPO=3, DISPER=1, DIEL=2, SLOT=4, '// &
-                 'CONF=5/6, OTHER=-1 (ADD +0.5 for borders)'
-
-      metadata_filename = this%artifacts(2)%relative_path
-      open (newunit=unit, file=metadata_filename, status='replace', action='write', iostat=ierr)
-      if (ierr /= 0) then
-         print *, 'Error opening metadata file: ', metadata_filename
-      else
-         write (unit, '(A)') trim(info_str)
-         close (unit)
-      end if
-
    end subroutine create_geometry_simulation_vtu
+
+   subroutine create_parallel_geometry_vtu(this, piecePaths)
+      type(mapvtk_output_t), intent(in) :: this
+      character(len=*), intent(in) :: piecePaths(:)
+      character(len=10), parameter :: cellScalarNames(2) = ['tagnumber ', 'mediatype ']
+
+      call write_pvtu_file(this%masterPath, piecePaths, cellScalarNames)
+   end subroutine create_parallel_geometry_vtu
 
    subroutine write_geometry_companion(base_path, lower_bound, upper_bound, problemInfo, status, diagnostic)
       character(len=*), intent(in) :: base_path

@@ -404,3 +404,56 @@ integer function test_vtkAPI_vtu_content() bind(C) result(error_cnt)
 
    call remove_folder(folder, ierr)
 end function
+
+!==============================
+! Test 11: PVTU parallel descriptor content
+!==============================
+integer function test_vtkAPI_pvtu_content() bind(C) result(error_cnt)
+   use vtkAPI_m
+   use directoryUtils_m
+   implicit none
+   character(len=64) :: piece_paths(2)
+   character(len=10) :: scalar_names(2)
+   character(len=14), parameter :: folder = 'testing_folder'
+   character(len=1024) :: file
+   character(len=256) :: line
+   integer :: ierr
+   logical :: found_grid, found_tag, found_media, found_first_piece, found_second_piece
+
+   error_cnt = 0
+   piece_paths = ''
+   piece_paths(1) = 'piece_0\piece_0.vtu'
+   piece_paths(2) = 'piece&1/piece&1.vtu'
+   scalar_names = ['tagnumber ', 'mediatype ']
+   file = join_path(folder, 'test.pvtu')
+   call create_folder(folder, ierr)
+   call write_pvtu_file(file, piece_paths, scalar_names)
+
+   found_grid = .false.
+   found_tag = .false.
+   found_media = .false.
+   found_first_piece = .false.
+   found_second_piece = .false.
+   open (unit=10, file=file, status='old', action='read', iostat=ierr)
+   if (ierr /= 0) then
+      error_cnt = error_cnt + 1
+      return
+   end if
+   do
+      read (10, '(A)', iostat=ierr) line
+      if (ierr /= 0) exit
+      if (index(line, 'type="PUnstructuredGrid"') /= 0) found_grid = .true.
+      if (index(line, 'Name="tagnumber"') /= 0) found_tag = .true.
+      if (index(line, 'Name="mediatype"') /= 0) found_media = .true.
+      if (index(line, 'Source="piece_0/piece_0.vtu"') /= 0) found_first_piece = .true.
+      if (index(line, 'Source="piece&amp;1/piece&amp;1.vtu"') /= 0) found_second_piece = .true.
+   end do
+   close (10)
+
+   if (.not. found_grid) error_cnt = error_cnt + 1
+   if (.not. found_tag) error_cnt = error_cnt + 1
+   if (.not. found_media) error_cnt = error_cnt + 1
+   if (.not. found_first_piece) error_cnt = error_cnt + 1
+   if (.not. found_second_piece) error_cnt = error_cnt + 1
+   call remove_folder(folder, ierr)
+end function test_vtkAPI_pvtu_content

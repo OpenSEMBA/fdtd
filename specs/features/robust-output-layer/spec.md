@@ -36,7 +36,8 @@ The solver MUST NOT create a probe-specific directory for those files.
 ### Geometry Probes
 
 WHEN a geometry probe is published
-THEN the solver MUST preserve its applicable geometry and text artifacts.
+THEN the solver MUST publish its applicable geometry artifacts without a text
+sidecar.
 
 ### Volumetric Probes
 
@@ -48,6 +49,10 @@ and visualisation heavy data without a JSON metadata sidecar.
 
 WHEN a probe spans distributed partitions
 THEN each sample location MUST have exactly one owner.
+
+WHEN a geometry map spans distributed partitions
+THEN each participating rank MUST publish its disjoint `.vtu` piece and the
+root rank MUST publish one `.pvtu` descriptor referencing all pieces.
 
 WHEN collective publication is available
 THEN participating ranks MUST publish their disjoint regions collectively.

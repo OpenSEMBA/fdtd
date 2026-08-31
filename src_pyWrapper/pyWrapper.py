@@ -511,7 +511,15 @@ class FDTD:
     def cleanUp(self):
         folder = self.getFolder()
         case_name = self.getCaseName()
-        extensions = ("*.dat", "*.pl", "*.txt", "*.xdmf", "*.bin", "*.h5")
+        extensions = (
+            "*.dat",
+            "*.pl",
+            "*.txt",
+            "*.xdmf",
+            "*.bin",
+            "*.h5",
+            "*.pvtu",
+        )
         for ext in extensions:
             files = glob.glob(os.path.join(folder, ext))
             for file in files:
@@ -602,8 +610,12 @@ class FDTD:
 
     def getVTKMap(self):
         map_files = sorted(
-            glob.glob(os.path.join(self.getFolder(), "**", "*.vtu"), recursive=True)
+            glob.glob(os.path.join(self.getFolder(), "**", "*.pvtu"), recursive=True)
         )
+        if not map_files:
+            map_files = sorted(
+                glob.glob(os.path.join(self.getFolder(), "**", "*.vtu"), recursive=True)
+            )
         if not map_files:
             map_files = sorted(
                 glob.glob(

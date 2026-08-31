@@ -149,12 +149,19 @@ contains
       type(domain_t) :: domain
       type(spheric_domain_t) :: sphericRange
       type(cell_coordinate_t) :: lowerBound, upperBound, localMapLower, localMapUpper
+      type(cell_coordinate_t) :: globalMapLower, globalMapUpper
       integer(kind=SINGLE) :: i, ii, outputRequestType
       integer(kind=SINGLE) :: NODE
       integer(kind=SINGLE) :: outputCount
       integer(kind=SINGLE) :: requestedOutputs
       logical :: mapHasData
       character(len=BUFSIZE) :: outputTypeExtension
+#ifdef CompileWithMPI
+      character(len=BUFSIZE) :: localMapPath
+      character(len=BUFSIZE), allocatable :: mapPiecePaths(:)
+      integer :: localMapMinimum(3), localMapMaximum(3), globalMapMinimum(3), globalMapMaximum(3)
+      integer :: mpiError
+#endif
 
 #ifdef CompileWithMTLN
       logical :: thereAreMtlnObservations = .false.
@@ -240,16 +247,64 @@ contains
             select case (outputRequestType)
             case (mapvtk)
                call get_local_map_bounds(lowerBound, upperBound, localMapLower, localMapUpper, mapHasData)
+               globalMapLower = localMapLower
+               globalMapUpper = localMapUpper
+#ifdef CompileWithMPI
+               if (control%num_procs > 1) then
+                  localMapMinimum = huge(0)
+                  localMapMaximum = -huge(0)
+                  if (mapHasData) then
+                     localMapMinimum = [localMapLower%x, localMapLower%y, localMapLower%z]
+                     localMapMaximum = [localMapUpper%x, localMapUpper%y, localMapUpper%z]
+                  end if
+                  call MPI_Allreduce(localMapMinimum, globalMapMinimum, 3, MPI_INTEGER, MPI_MIN, &
+                                     SUBCOMM_MPI, mpiError)
+                  if (mpiError /= MPI_SUCCESS) then
+                     call StopOnError(control%layoutnumber, control%num_procs, &
+                                      'Unable to determine distributed geometry map lower bounds')
+                  end if
+                  call MPI_Allreduce(localMapMaximum, globalMapMaximum, 3, MPI_INTEGER, MPI_MAX, &
+                                     SUBCOMM_MPI, mpiError)
+                  if (mpiError /= MPI_SUCCESS) then
+                     call StopOnError(control%layoutnumber, control%num_procs, &
+                                      'Unable to determine distributed geometry map upper bounds')
+                  end if
+                  globalMapLower = cell_coordinate_t(globalMapMinimum(1), globalMapMinimum(2), globalMapMinimum(3))
+                  globalMapUpper = cell_coordinate_t(globalMapMaximum(1), globalMapMaximum(2), globalMapMaximum(3))
+               end if
+#endif
+               outputCount = outputCount + 1
+               outputs(outputCount)%outputID = MAPVTK_ID
+               allocate (outputs(outputCount)%mapvtkOutput)
+               call init_solver_output(outputs(outputCount)%mapvtkOutput, localMapLower, localMapUpper, &
+                                       globalMapLower, globalMapUpper, mapHasData, outputRequestType, &
+                                       outputTypeExtension, control%mpidir, problemInfo)
                if (mapHasData) then
-                  outputCount = outputCount + 1
-                  outputs(outputCount)%outputID = MAPVTK_ID
-
-                  allocate (outputs(outputCount)%mapvtkOutput)
-                  call init_solver_output(outputs(outputCount)%mapvtkOutput, localMapLower, localMapUpper, &
-                                          outputRequestType, outputTypeExtension, control%mpidir, problemInfo)
                   call create_geometry_simulation_vtu(outputs(outputCount)%mapvtkOutput, control, sgg%LineX, sgg%LineY, &
                                                       sgg%LineZ, problemInfo)
                end if
+#ifdef CompileWithMPI
+               if (control%num_procs > 1) then
+                  localMapPath = ''
+                  if (mapHasData) localMapPath = outputs(outputCount)%mapvtkOutput%artifacts(1)%relative_path
+                  allocate (mapPiecePaths(control%num_procs))
+                  call MPI_Allgather(localMapPath, BUFSIZE, MPI_CHARACTER, mapPiecePaths, BUFSIZE, &
+                                     MPI_CHARACTER, SUBCOMM_MPI, mpiError)
+                  if (mpiError /= MPI_SUCCESS) then
+                     call StopOnError(control%layoutnumber, control%num_procs, &
+                                      'Unable to collect distributed geometry map paths')
+                  end if
+                  call MPI_Barrier(SUBCOMM_MPI, mpiError)
+                  if (mpiError /= MPI_SUCCESS) then
+                     call StopOnError(control%layoutnumber, control%num_procs, &
+                                      'Unable to synchronize distributed geometry map output')
+                  end if
+                  if (control%layoutnumber == 0) then
+                     call create_parallel_geometry_vtu(outputs(outputCount)%mapvtkOutput, mapPiecePaths)
+                  end if
+                  deallocate (mapPiecePaths)
+               end if
+#endif
 
             case (iEx, iEy, iEz, iHx, iHy, iHz)
                outputCount = outputCount + 1
@@ -683,6 +738,15 @@ contains
       integer, intent(in) :: writer_rank
       integer :: i, ios
 
+      if (associated(outputs)) then
+         do i = 1, size(outputs)
+            if (outputs(i)%outputID /= MAPVTK_ID) cycle
+            if (outputs(i)%mapvtkOutput%localParticipates) then
+               call remove_folder(outputs(i)%mapvtkOutput%path, ios)
+            end if
+            if (writer_rank == 0) call delete_file(outputs(i)%mapvtkOutput%masterPath, ios)
+         end do
+      end if
       if (writer_rank /= 0) return
       if (associated(outputs)) then
          do i = 1, size(outputs)
@@ -705,8 +769,6 @@ contains
                call remove_folder(outputs(i)%movieProbe%path, ios)
             case (FREQUENCY_SLICE_PROBE_ID)
                call remove_folder(outputs(i)%frequencySliceProbe%path, ios)
-            case (MAPVTK_ID)
-               call remove_folder(outputs(i)%mapvtkOutput%path, ios)
             end select
          end do
       end if

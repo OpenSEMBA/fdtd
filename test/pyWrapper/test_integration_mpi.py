@@ -1,7 +1,9 @@
 import json
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import h5py
+import pyvista as pv
 
 from test.utils.utils import *
 
@@ -34,13 +36,29 @@ def test_airplane_case_with_mpi(tmp_path):
 
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
+    assert Path(vtkmapfile).suffix == ".pvtu"
 
-    map_directories = sorted(tmp_path.glob("airplane.fdtd__MAP_*"))
+    map_directories = sorted(
+        path for path in tmp_path.glob("airplane.fdtd__MAP_*") if path.is_dir()
+    )
     assert [path.name for path in map_directories] == [
         "airplane.fdtd__MAP_0_0_0__49_49_24",
         "airplane.fdtd__MAP_0_0_25__49_49_49",
     ]
     assert all((path / f"{path.name}.vtu").is_file() for path in map_directories)
+    assert not list(tmp_path.rglob("*MAP*.txt"))
+
+    root = ET.parse(vtkmapfile).getroot()
+    piece_sources = [piece.attrib["Source"] for piece in root.findall(".//Piece")]
+    assert piece_sources == [
+        f"{path.name}/{path.name}.vtu" for path in map_directories
+    ]
+    assert all((tmp_path / source).is_file() for source in piece_sources)
+
+    parallel_map = pv.read(vtkmapfile)
+    pieces = [pv.read(tmp_path / source) for source in piece_sources]
+    assert parallel_map.n_cells == sum(piece.n_cells for piece in pieces)
+    assert set(parallel_map.cell_data) == {"tagnumber", "mediatype"}
 
 
 @no_mpi_skip

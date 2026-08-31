@@ -12,6 +12,7 @@ extern "C" int test_vtkapi_vtu_file_creation();
 extern "C" int test_vtkapi_vtu_cell_data();
 extern "C" int test_vtkapi_vts_content();
 extern "C" int test_vtkapi_vtu_content();
+extern "C" int test_vtkapi_pvtu_content();
 
 // Allocates the structured-grid point array with the expected shape.
 TEST(vtkapi, test_points_allocation) {EXPECT_EQ(0, test_vtkapi_points_allocation());}
@@ -33,3 +34,5 @@ TEST(vtkapi, test_vtu_cell_data) {EXPECT_EQ(0, test_vtkapi_vtu_cell_data());}
 TEST(vtkapi, test_vts_content) {EXPECT_EQ(0, test_vtkapi_vts_content());}
 // Writes points, cells, and point/cell data declarations to a VTU file.
 TEST(vtkapi, test_vtu_content) {EXPECT_EQ(0, test_vtkapi_vtu_content());}
+// Writes a parallel unstructured-grid descriptor with escaped piece paths.
+TEST(vtkapi, test_pvtu_content) {EXPECT_EQ(0, test_vtkapi_pvtu_content());}

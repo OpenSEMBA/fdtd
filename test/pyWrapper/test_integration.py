@@ -130,14 +130,20 @@ def test_fdtd_clean_up_does_not_delete_other_cases_files(tmp_path):
 
     own_file = os.path.join(str(tmp_path), case_name + "_probe_Ex_1_2_3.dat")
     other_file = os.path.join(str(tmp_path), other_case_name + "_probe_Ex_1_2_3.dat")
+    own_pvtu = os.path.join(str(tmp_path), case_name + "__MAP.pvtu")
+    other_pvtu = os.path.join(str(tmp_path), other_case_name + "__MAP.pvtu")
 
     open(own_file, "w").close()
     open(other_file, "w").close()
+    open(own_pvtu, "w").close()
+    open(other_pvtu, "w").close()
 
     solver.cleanUp()
 
     assert not os.path.isfile(own_file)
     assert os.path.isfile(other_file)
+    assert not os.path.isfile(own_pvtu)
+    assert os.path.isfile(other_pvtu)
 
 
 @pytest.mark.wires

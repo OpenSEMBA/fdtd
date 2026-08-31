@@ -9,7 +9,8 @@ def test_geometry_map_publishes_payloads_without_metadata(run_output_case):
     geometry_paths = list(output_root.rglob("*.vtu"))
     assert len(geometry_paths) == 1
     geometry_path = geometry_paths[0]
-    assert geometry_path.with_suffix(".txt").is_file()
+    assert not geometry_path.with_suffix(".txt").exists()
+    assert not list(output_root.rglob("*.pvtu"))
     assert not geometry_path.with_suffix(".json").exists()
     assert not geometry_path.with_suffix(".h5").exists()
     assert not geometry_path.with_suffix(".xdmf").exists()

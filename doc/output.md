@@ -16,7 +16,10 @@ Far-field filenames end in `.dat` and are always frequency-domain results.
 
 ## Volumetric And Geometry Output
 
-Geometry maps retain their geometry and text artifacts.
+Serial geometry maps publish one `.vtu` geometry file.
+MPI geometry maps publish one `.vtu` piece per participating rank and one
+root-level `.pvtu` descriptor that references the complete distributed map.
+Geometry maps do not publish text sidecars.
 Volumetric outputs retain their binary, XDMF, and HDF5 artifacts.
 
 Probe outputs do not create JSON descriptors or a run output manifest.

@@ -1,7 +1,7 @@
 module vtkAPI_m
    implicit none
    private
-   public :: vtk_data_array, vtk_grid, vtk_structured_grid, vtk_unstructured_grid
+   public :: vtk_data_array, vtk_grid, vtk_structured_grid, vtk_unstructured_grid, write_pvtu_file
 
    !==========================
    ! Data array type
@@ -252,6 +252,35 @@ contains
       close (iunit)
    end subroutine write_vtu_file
 
+   subroutine write_pvtu_file(filename, piece_paths, cell_scalar_names)
+      character(len=*), intent(in) :: filename
+      character(len=*), intent(in) :: piece_paths(:)
+      character(len=*), intent(in) :: cell_scalar_names(:)
+      integer :: i, iunit
+
+      open (newunit=iunit, file=filename, status='replace', action='write', form='formatted')
+      write (iunit, '(A)') '<VTKFile type="PUnstructuredGrid" version="1.0" byte_order="LittleEndian" header_type="UInt64">'
+      write (iunit, '(A)') '  <PUnstructuredGrid GhostLevel="0">'
+      write (iunit, '(A)') '    <PPointData/>'
+      write (iunit, '(A)') '    <PCellData>'
+      do i = 1, size(cell_scalar_names)
+         write (iunit, '(A)') '      <PDataArray type="Float32" Name="'// &
+                              xml_escape(trim(cell_scalar_names(i)))//'"/>'
+      end do
+      write (iunit, '(A)') '    </PCellData>'
+      write (iunit, '(A)') '    <PPoints>'
+      write (iunit, '(A)') '      <PDataArray type="Float32" Name="Points" NumberOfComponents="3"/>'
+      write (iunit, '(A)') '    </PPoints>'
+      do i = 1, size(piece_paths)
+         if (len_trim(piece_paths(i)) == 0) cycle
+         write (iunit, '(A)') '    <Piece Source="'// &
+                              xml_escape(normalize_vtk_path(trim(piece_paths(i))))//'"/>'
+      end do
+      write (iunit, '(A)') '  </PUnstructuredGrid>'
+      write (iunit, '(A)') '</VTKFile>'
+      close (iunit)
+   end subroutine write_pvtu_file
+
 !==========================
 !==== Shared helper routines ====
 !==========================
@@ -362,5 +391,40 @@ contains
       write (iunit, '(A)') '        </DataArray>'
       write (iunit, '(A)') '      </Cells>'
    end subroutine write_cells
+
+   pure function normalize_vtk_path(value) result(normalized)
+      character(len=*), intent(in) :: value
+      character(len=:), allocatable :: normalized
+      integer :: i
+
+      normalized = value
+      do i = 1, len(normalized)
+         if (normalized(i:i) == '\') normalized(i:i) = '/'
+      end do
+   end function normalize_vtk_path
+
+   pure function xml_escape(value) result(escaped)
+      character(len=*), intent(in) :: value
+      character(len=:), allocatable :: escaped
+      integer :: i
+
+      escaped = ''
+      do i = 1, len(value)
+         select case (value(i:i))
+         case ('&')
+            escaped = escaped//'&amp;'
+         case ('<')
+            escaped = escaped//'&lt;'
+         case ('>')
+            escaped = escaped//'&gt;'
+         case ('"')
+            escaped = escaped//'&quot;'
+         case ("'")
+            escaped = escaped//'&apos;'
+         case default
+            escaped = escaped//value(i:i)
+         end select
+      end do
+   end function xml_escape
 
 end module vtkAPI_m
