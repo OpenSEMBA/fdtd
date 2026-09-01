@@ -18,7 +18,10 @@ def _get_solved_probe_folder(
 ) -> str:
     probe_files = solver.getSolvedProbeFolders(probe_name)
     if filename is not None:
-        probe_files = [path for path in probe_files if Path(path).stem == Path(filename).stem]
+        expected_name = Path(filename).name.removesuffix(".dat")
+        probe_files = [
+            path for path in probe_files if Path(path).name.removesuffix(".dat") == expected_name
+        ]
     if contains is not None:
         probe_files = [path for path in probe_files if contains in Path(path).name]
     if suffix is not None:
