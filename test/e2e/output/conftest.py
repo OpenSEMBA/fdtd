@@ -6,10 +6,14 @@ import json
 import os
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Callable
 
+import h5py
+import pyvista as pv
 import pytest
+from vtkmodules.vtkIOXdmf2 import vtkXdmfReader
 
 from test.utils.build_resolver import solver_executable
 
@@ -17,6 +21,45 @@ from test.utils.build_resolver import solver_executable
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 OUTPUT_CASES = PROJECT_ROOT / "testData" / "cases" / "output_e2e"
 EXCITATIONS = PROJECT_ROOT / "testData" / "excitations"
+
+
+def assert_static_point_attributes(
+    xdmf_path: Path,
+    attribute_names: tuple[str, ...],
+) -> None:
+    """Require node attributes backed by one non-series HDF5 dataset."""
+    root = ET.parse(xdmf_path).getroot()
+    with h5py.File(xdmf_path.with_suffix(".h5"), "r") as hdf5:
+        for name in attribute_names:
+            dataset_paths = []
+            for attribute in root.findall(f'.//Attribute[@Name="{name}"]'):
+                data_item = attribute.find("DataItem")
+                assert data_item is not None
+                assert data_item.get("ItemType") != "HyperSlab", (
+                    f"Node attribute {name} must be static"
+                )
+                assert data_item.text is not None
+                dataset_paths.append(data_item.text.strip().split(":", maxsplit=1)[1])
+
+            assert dataset_paths, f"Missing static node attribute {name}"
+            assert len(set(dataset_paths)) == 1
+            assert hdf5[dataset_paths[0]].ndim in (1, 3)
+
+
+def read_xdmf_point_data_names(xdmf_path: Path) -> set[str]:
+    """Read all leaf point arrays without assuming a time-series collection."""
+    reader = vtkXdmfReader()
+    reader.SetFileName(str(xdmf_path))
+    reader.Update()
+    pending = [pv.wrap(reader.GetOutputDataObject(0))]
+    names = set()
+    while pending:
+        dataset = pending.pop()
+        if isinstance(dataset, pv.MultiBlock):
+            pending.extend(dataset)
+        else:
+            names.update(dataset.point_data)
+    return names
 
 
 @pytest.fixture

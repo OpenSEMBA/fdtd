@@ -19,7 +19,7 @@ def assert_current_movie_has_tag_number(solver, expected_tags=None):
     )
     assert tag_match is not None
     with h5py.File(hdf_path, "r") as hdf_file:
-        tag_values = hdf_file[f"attributes/{tag_match.group(1)}/values"][0]
+        tag_values = hdf_file[f"attributes/{tag_match.group(1)}/values"][()]
         for coordinates, expected_tag in (expected_tags or {}).items():
             assert tag_values[coordinates] == expected_tag
 

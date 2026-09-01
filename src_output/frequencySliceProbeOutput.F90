@@ -13,7 +13,12 @@ module frequencySliceProbeOutput_m
                                    write_visualisation_attribute, write_visualisation_attribute_hyperslab, end_visualisation_step, &
                                     close_visualisation, verify_volumetric_visualisation, VISUALISATION_SUCCESS, &
                                     VISUALISATION_ATTRIBUTE_X, VISUALISATION_ATTRIBUTE_Y, VISUALISATION_ATTRIBUTE_Z, &
-                                   VISUALISATION_ATTRIBUTE_X_PHASE, VISUALISATION_ATTRIBUTE_Y_PHASE, VISUALISATION_ATTRIBUTE_Z_PHASE
+                                    VISUALISATION_ATTRIBUTE_X_PHASE, VISUALISATION_ATTRIBUTE_Y_PHASE, &
+                                    VISUALISATION_ATTRIBUTE_Z_PHASE, VISUALISATION_ATTRIBUTE_TAG, &
+                                    VISUALISATION_ATTRIBUTE_MEDIA, VISUALISATION_ATTRIBUTE_TAG_X, &
+                                    VISUALISATION_ATTRIBUTE_TAG_Y, VISUALISATION_ATTRIBUTE_TAG_Z, &
+                                    VISUALISATION_ATTRIBUTE_MEDIA_X, VISUALISATION_ATTRIBUTE_MEDIA_Y, &
+                                    VISUALISATION_ATTRIBUTE_MEDIA_Z
    use outputCollective_m, only: OUTPUT_PUBLICATION_COLLECTIVE, OUTPUT_PUBLICATION_ROOT_AGGREGATION
    use outputTransport_m, only: output_transport_t, init_output_transport, transfer_flush_batch, &
                                 OUTPUT_TRANSPORT_SUCCESS
@@ -88,6 +93,10 @@ contains
       else
          allocate (this%coords(3, 0))
       end if
+      allocate (this%tagNumber(3, this%nPoints), this%mediaType(3, this%nPoints))
+      this%tagNumber = 0_IKINDMTAG
+      this%mediaType = -1.0_RKIND
+      if (publication%local_participates) call store_classification(this, problemInfo)
 
       call alloc_and_init(this%xValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
       call alloc_and_init(this%yValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
@@ -206,10 +215,30 @@ contains
       integer, intent(out) :: error
 
       real(real64), allocatable :: points(:, :)
-      character(len=BUFSIZE) :: diagnostic
+      character(len=BUFSIZE) :: attribute_names(14), diagnostic
+      logical :: attribute_enabled(14)
       integer :: i, status
 
       error = 0
+      attribute_names = ''
+      attribute_enabled = .false.
+      attribute_names(1:6) = [character(len=BUFSIZE) :: &
+                              'xMagnitude', 'yMagnitude', 'zMagnitude', 'xPhase', 'yPhase', 'zPhase']
+      attribute_enabled(1:6) = .true.
+      if (any([iCur, iMEC, iMHC] == this%component)) then
+         attribute_names(VISUALISATION_ATTRIBUTE_TAG_X) = 'tagnumber_x'
+         attribute_names(VISUALISATION_ATTRIBUTE_TAG_Y) = 'tagnumber_y'
+         attribute_names(VISUALISATION_ATTRIBUTE_TAG_Z) = 'tagnumber_z'
+         attribute_names(VISUALISATION_ATTRIBUTE_MEDIA_X) = 'mediatype_x'
+         attribute_names(VISUALISATION_ATTRIBUTE_MEDIA_Y) = 'mediatype_y'
+         attribute_names(VISUALISATION_ATTRIBUTE_MEDIA_Z) = 'mediatype_z'
+         attribute_enabled(VISUALISATION_ATTRIBUTE_TAG_X:VISUALISATION_ATTRIBUTE_MEDIA_Z) = .true.
+      else
+         attribute_names(VISUALISATION_ATTRIBUTE_TAG) = 'tagnumber'
+         attribute_names(VISUALISATION_ATTRIBUTE_MEDIA) = 'mediatype'
+         attribute_enabled(VISUALISATION_ATTRIBUTE_TAG) = .true.
+         attribute_enabled(VISUALISATION_ATTRIBUTE_MEDIA) = .true.
+      end if
       allocate (points(3, int(this%publication%global_point_count)))
       do i = 1, int(this%publication%global_point_count)
          if (associated(problemInfo%xSteps) .and. &
@@ -233,8 +262,8 @@ contains
       end do
 
       call initialise_frequency_slice_visualisation(this%visualisation, trim(this%filesPath), points, &
-                                            this%publication%mode == OUTPUT_PUBLICATION_COLLECTIVE, this%publication%communicator, &
-                                                    status, diagnostic)
+                                       attribute_names, attribute_enabled, this%publication%mode == OUTPUT_PUBLICATION_COLLECTIVE, &
+                                                    this%publication%communicator, status, diagnostic)
       if (status /= VISUALISATION_SUCCESS) then
          error = 1
          print *, trim(diagnostic)
@@ -300,6 +329,7 @@ contains
             call StopOnError(0, 0, 'Unable to initialise frequency slice output transport')
          end if
       end if
+      call write_classification_attributes(this, transport)
 
       do f = 1, this%nFreq
          do i = 1, this%nPoints
@@ -350,6 +380,55 @@ contains
       deallocate (xMagnitude, yMagnitude, zMagnitude, xPhase, yPhase, zPhase)
    end subroutine write_visualisation
 
+   subroutine write_classification_attributes(this, transport)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      type(output_transport_t), intent(in) :: transport
+      integer, parameter :: tag_attributes(3) = [VISUALISATION_ATTRIBUTE_TAG_X, &
+                                                 VISUALISATION_ATTRIBUTE_TAG_Y, &
+                                                 VISUALISATION_ATTRIBUTE_TAG_Z]
+      integer, parameter :: media_attributes(3) = [VISUALISATION_ATTRIBUTE_MEDIA_X, &
+                                                   VISUALISATION_ATTRIBUTE_MEDIA_Y, &
+                                                   VISUALISATION_ATTRIBUTE_MEDIA_Z]
+      integer :: axis
+
+      if (any([iCur, iMEC, iMHC] == this%component)) then
+         do axis = 1, 3
+            call write_classification_attribute(this, transport, tag_attributes(axis), axis, .true.)
+            call write_classification_attribute(this, transport, media_attributes(axis), axis, .false.)
+         end do
+      else
+         do axis = 1, 3
+            if (.not. classification_axis_enabled(this%component, axis)) cycle
+            call write_classification_attribute(this, transport, VISUALISATION_ATTRIBUTE_TAG, axis, .true.)
+            call write_classification_attribute(this, transport, VISUALISATION_ATTRIBUTE_MEDIA, axis, .false.)
+         end do
+      end if
+   end subroutine write_classification_attributes
+
+   subroutine write_classification_attribute(this, transport, attribute, axis, write_tag)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      type(output_transport_t), intent(in) :: transport
+      integer, intent(in) :: attribute, axis
+      logical, intent(in) :: write_tag
+      real(real64), allocatable :: values(:)
+      integer :: i
+
+      allocate (values(this%nPoints))
+      do i = 1, this%nPoints
+         if (write_tag) then
+            values(i) = real(this%tagNumber(axis, i), real64)
+         else
+            values(i) = real(this%mediaType(axis, i), real64)
+         end if
+      end do
+      select case (this%publication%mode)
+      case (OUTPUT_PUBLICATION_COLLECTIVE)
+         call write_collective_attribute(this, attribute, values)
+      case (OUTPUT_PUBLICATION_ROOT_AGGREGATION)
+         call gather_and_write_attribute(this, transport, attribute, values)
+      end select
+   end subroutine write_classification_attribute
+
    subroutine write_collective_attribute(this, attribute, values)
       type(frequency_slice_probe_output_t), intent(inout) :: this
       integer, intent(in) :: attribute
@@ -392,6 +471,44 @@ contains
          call StopOnError(0, 0, 'Frequency slice HDF5 write failed: '//trim(diagnostic))
       end if
    end subroutine require_visualisation_success
+
+   subroutine store_classification(this, problemInfo)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      type(problem_info_t), intent(in) :: problemInfo
+      integer :: axis, field, i
+
+      do axis = 1, 3
+         if (.not. classification_axis_enabled(this%component, axis)) cycle
+         field = get_volumetric_classification_field(this%component, axis)
+         do i = 1, this%nPoints
+            if (.not. classification_point_is_valid(this%component, field, this%coords(:, i), problemInfo)) cycle
+            this%tagNumber(axis, i) = get_output_tag_number(field, this%coords(:, i), problemInfo)
+            this%mediaType(axis, i) = get_output_media_type(field, this%coords(:, i), problemInfo)
+         end do
+      end do
+   end subroutine store_classification
+
+   logical function classification_axis_enabled(component, axis)
+      integer(kind=SINGLE), intent(in) :: component
+      integer, intent(in) :: axis
+
+      classification_axis_enabled = any([iCur, iMEC, iMHC] == component) .or. &
+                                    (axis == 1 .and. any([iCurX, iExC, iHxC] == component)) .or. &
+                                    (axis == 2 .and. any([iCurY, iEyC, iHyC] == component)) .or. &
+                                    (axis == 3 .and. any([iCurZ, iEzC, iHzC] == component))
+   end function classification_axis_enabled
+
+   logical function classification_point_is_valid(component, field, position, problemInfo)
+      integer(kind=SINGLE), intent(in) :: component
+      integer, intent(in) :: field, position(3)
+      type(problem_info_t), intent(in) :: problemInfo
+
+      if (any([iCur, iCurX, iCurY, iCurZ] == component)) then
+         classification_point_is_valid = isValidPointForCurrent(field, position(1), position(2), position(3), problemInfo)
+      else
+         classification_point_is_valid = isValidPointForField(field, position(1), position(2), position(3), problemInfo)
+      end if
+   end function classification_point_is_valid
 
    subroutine write_bin_file(this)
       type(frequency_slice_probe_output_t), intent(inout) :: this

@@ -482,7 +482,12 @@ def test_movie_in_planewave_in_box(tmp_path):
             "ElectricFieldX",
             "ElectricFieldY",
             "ElectricFieldZ",
-            "tagnumber",
+            "tagnumber_x",
+            "tagnumber_y",
+            "tagnumber_z",
+            "mediatype_x",
+            "mediatype_y",
+            "mediatype_z",
         }
 
         def dataset_for(attribute):
@@ -521,6 +526,12 @@ def test_movie_in_planewave_in_box(tmp_path):
 
             for attribute in grid.findall("./Attribute"):
                 hyperslab = attribute.find("./DataItem")
+                if hyperslab.attrib.get("ItemType") is None:
+                    source_name, dataset = hyperslab.text.strip().split(":/", 1)
+                    assert source_name == h5_name
+                    assert dataset in f
+                    assert f[dataset].shape == (10, 30, 30)
+                    continue
                 selection, source = hyperslab.findall("./DataItem")
                 assert hyperslab.attrib["ItemType"] == "HyperSlab"
                 dataset = dataset_for(attribute)
@@ -602,9 +613,16 @@ def test_frequency_slice_in_planewave_in_box(tmp_path):
                 "xPhase",
                 "yPhase",
                 "zPhase",
+                "tagnumber",
+                "mediatype",
             }
             for attribute in attributes:
                 hyperslab = attribute.find("./DataItem")
+                if hyperslab.attrib.get("ItemType") is None:
+                    _, dataset = hyperslab.text.strip().split(":/", 1)
+                    assert f[dataset].shape == (120,)
+                    assert np.all(np.isfinite(f[dataset][()]))
+                    continue
                 selection, source = hyperslab.findall("./DataItem")
                 offset, stride, count = [
                     tuple(int(value) for value in line.split())

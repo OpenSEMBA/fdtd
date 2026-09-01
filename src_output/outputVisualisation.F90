@@ -16,16 +16,23 @@ module outputVisualisation_m
    integer, parameter, public :: VISUALISATION_ATTRIBUTE_X = 1
    integer, parameter, public :: VISUALISATION_ATTRIBUTE_Y = 2
    integer, parameter, public :: VISUALISATION_ATTRIBUTE_Z = 3
-   integer, parameter, public :: VISUALISATION_ATTRIBUTE_TAG = 4
    integer, parameter, public :: VISUALISATION_ATTRIBUTE_X_PHASE = 4
    integer, parameter, public :: VISUALISATION_ATTRIBUTE_Y_PHASE = 5
    integer, parameter, public :: VISUALISATION_ATTRIBUTE_Z_PHASE = 6
+   integer, parameter, public :: VISUALISATION_ATTRIBUTE_TAG = 7
+   integer, parameter, public :: VISUALISATION_ATTRIBUTE_MEDIA = 8
+   integer, parameter, public :: VISUALISATION_ATTRIBUTE_TAG_X = 9
+   integer, parameter, public :: VISUALISATION_ATTRIBUTE_TAG_Y = 10
+   integer, parameter, public :: VISUALISATION_ATTRIBUTE_TAG_Z = 11
+   integer, parameter, public :: VISUALISATION_ATTRIBUTE_MEDIA_X = 12
+   integer, parameter, public :: VISUALISATION_ATTRIBUTE_MEDIA_Y = 13
+   integer, parameter, public :: VISUALISATION_ATTRIBUTE_MEDIA_Z = 14
 
    type, public :: visualisation_writer_t
       private
       type(xdmf_writer_t), pointer :: writer => null()
       type(xdmf_grid_id_t) :: grid
-      type(xdmf_attribute_id_t) :: attributes(6)
+      type(xdmf_attribute_id_t) :: attributes(14)
    end type visualisation_writer_t
 
    public :: initialise_movie_visualisation
@@ -47,8 +54,8 @@ contains
       type(visualisation_writer_t), intent(inout) :: visualisation
       character(len=*), intent(in) :: path
       real(real64), intent(in) :: x_coordinates(:), y_coordinates(:), z_coordinates(:)
-      character(len=*), intent(in) :: attribute_names(4)
-      logical, intent(in) :: attribute_enabled(4), collective_io
+      character(len=*), intent(in) :: attribute_names(14)
+      logical, intent(in) :: attribute_enabled(14), collective_io
       integer, intent(in) :: communicator
       integer, intent(out) :: status
       character(len=BUFSIZE), intent(out) :: diagnostic
@@ -74,18 +81,19 @@ contains
          if (writer_status%is_error()) exit
          if (attribute_enabled(attribute_index)) then
             call define_attribute(visualisation, attribute_index, trim(attribute_names(attribute_index)), &
-                                  writer_status)
+                                  attribute_index <= VISUALISATION_ATTRIBUTE_Z, writer_status)
          end if
       end do
       call convert_status(writer_status, status, diagnostic)
    end subroutine initialise_movie_visualisation
 
-   subroutine initialise_frequency_slice_visualisation(visualisation, path, points, collective_io, communicator, &
-                                                       status, diagnostic)
+   subroutine initialise_frequency_slice_visualisation(visualisation, path, points, attribute_names, &
+                                                       attribute_enabled, collective_io, communicator, status, diagnostic)
       type(visualisation_writer_t), intent(inout) :: visualisation
       character(len=*), intent(in) :: path
       real(real64), intent(in) :: points(:, :)
-      logical, intent(in) :: collective_io
+      character(len=*), intent(in) :: attribute_names(14)
+      logical, intent(in) :: attribute_enabled(14), collective_io
       integer, intent(in) :: communicator
       integer, intent(out) :: status
       character(len=BUFSIZE), intent(out) :: diagnostic
@@ -93,8 +101,6 @@ contains
       type(xdmf_options_t) :: options
       type(xdmf_status_t) :: writer_status
       integer(int64), allocatable :: connectivity(:, :)
-      character(len=10), parameter :: attribute_names(6) = [character(len=10) :: &
-                                                            'xMagnitude', 'yMagnitude', 'zMagnitude', 'xPhase', 'yPhase', 'zPhase']
       integer :: attribute_index, point_index
 
       allocate (connectivity(1, size(points, 2)))
@@ -117,19 +123,28 @@ contains
       end if
       do attribute_index = 1, size(attribute_names)
          if (writer_status%is_error()) exit
-         call define_attribute(visualisation, attribute_index, trim(attribute_names(attribute_index)), writer_status)
+         if (attribute_enabled(attribute_index)) then
+            call define_attribute(visualisation, attribute_index, trim(attribute_names(attribute_index)), &
+                                  attribute_index <= VISUALISATION_ATTRIBUTE_Z_PHASE, writer_status)
+         end if
       end do
       call convert_status(writer_status, status, diagnostic)
    end subroutine initialise_frequency_slice_visualisation
 
-   subroutine define_attribute(visualisation, attribute_index, name, status)
+   subroutine define_attribute(visualisation, attribute_index, name, is_series, status)
       type(visualisation_writer_t), intent(inout) :: visualisation
       integer, intent(in) :: attribute_index
       character(len=*), intent(in) :: name
+      logical, intent(in) :: is_series
       type(xdmf_status_t), intent(out) :: status
 
-      call visualisation%writer%define_attribute(visualisation%grid, name, XDMF_CENTER_NODE, &
+      if (is_series) then
+         call visualisation%writer%define_attribute(visualisation%grid, name, XDMF_CENTER_NODE, &
                               XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, .true., visualisation%attributes(attribute_index), status)
+      else
+         call visualisation%writer%define_attribute(visualisation%grid, name, XDMF_CENTER_NODE, &
+                                      XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, visualisation%attributes(attribute_index), status)
+      end if
    end subroutine define_attribute
 
    subroutine begin_visualisation_step(visualisation, coordinate, status, diagnostic)

@@ -300,7 +300,8 @@ module outputTypes_m
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE)    :: nPoints = -1
       integer(kind=SINGLE), allocatable :: coords(:, :)     !(3, coordIdx)
-      real(kind=RKIND), allocatable :: tagNumber(:)         !(coordIdx)
+      integer(IKINDMTAG), allocatable :: tagNumber(:, :)    !(component, coordIdx)
+      real(kind=RKIND), allocatable :: mediaType(:, :)      !(component, coordIdx)
       real(kind=RKIND), allocatable :: xValueForTime(:, :)  !(time, coordIdx)
       real(kind=RKIND), allocatable :: yValueForTime(:, :)  !(time, coordIdx)
       real(kind=RKIND), allocatable :: zValueForTime(:, :)  !(time, coordIdx)
@@ -308,6 +309,7 @@ module outputTypes_m
       type(visualisation_writer_t) :: visualisation
       type(probe_metadata_t) :: metadata
       type(volumetric_publication_t) :: publication
+      logical :: classificationWritten = .false.
    end type movie_probe_output_t
 
    type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
@@ -315,6 +317,8 @@ module outputTypes_m
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE)    :: nPoints = -1
       integer(kind=SINGLE), allocatable :: coords(:, :)        !(3, coordIdx)
+      integer(IKINDMTAG), allocatable :: tagNumber(:, :)       !(component, coordIdx)
+      real(kind=RKIND), allocatable :: mediaType(:, :)         !(component, coordIdx)
       complex(kind=CKIND), allocatable :: xValueForFreq(:, :)  !(time, coordIdx)
       complex(kind=CKIND), allocatable :: yValueForFreq(:, :)  !(time, coordIdx)
       complex(kind=CKIND), allocatable :: zValueForFreq(:, :)  !(time, coordIdx)

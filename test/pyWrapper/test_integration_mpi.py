@@ -20,6 +20,18 @@ def movie_binary_coordinates(movie_probe):
     return movie_binary_records(movie_probe)[:, 1:4].astype(int)
 
 
+def assert_static_point_attributes(xdmf_path, attribute_names):
+    root = ET.parse(xdmf_path).getroot()
+    for name in attribute_names:
+        attributes = root.findall(f'.//Attribute[@Name="{name}"]')
+        assert attributes
+        for attribute in attributes:
+            data_item = attribute.find("DataItem")
+            assert data_item is not None
+            assert data_item.attrib.get("ItemType") is None
+            assert data_item.attrib.get("Format") == "HDF"
+
+
 @no_mpi_skip
 @pytest.mark.mpi
 @pytest.mark.wires
@@ -81,6 +93,17 @@ def test_airplane_movie_is_published_canonically_with_mpi(tmp_path):
     probe = movie_probes[0]
     assert probe.getXDMFFile() is not None
     assert probe.getH5File() is not None
+    assert_static_point_attributes(
+        probe.getXDMFFile(),
+        (
+            "tagnumber_x",
+            "tagnumber_y",
+            "tagnumber_z",
+            "mediatype_x",
+            "mediatype_y",
+            "mediatype_z",
+        ),
+    )
 
     movie_coordinates = np.unique(movie_binary_coordinates(probe), axis=0)
     assert np.all(movie_coordinates >= probe.cell_init)
@@ -123,6 +146,10 @@ def test_frequency_slice_is_published_canonically_with_mpi(tmp_path):
     h5_path = probe.getH5File()
     assert probe.getXDMFFile() is not None
     assert h5_path is not None
+    assert_static_point_attributes(
+        probe.getXDMFFile(),
+        ("tagnumber", "mediatype"),
+    )
 
     with h5py.File(h5_path, "r") as h5_file:
         assert h5_file["attributes/a0001/values"].shape == (4, 120)

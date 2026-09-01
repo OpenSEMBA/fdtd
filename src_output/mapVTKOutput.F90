@@ -409,7 +409,7 @@ contains
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: numEdges, numQuads
       real, allocatable, intent(out) :: tags(:), media_types(:)
-      integer :: edge_index, quad_index, index, field, media
+      integer :: edge_index, quad_index, index, field
 
       allocate (tags(numEdges + numQuads), media_types(numEdges + numQuads))
       edge_index = 0
@@ -419,124 +419,20 @@ contains
          case (iJx, iJy, iJz)
             edge_index = edge_index + 1
             field = electric_field(this%currentType(index))
-            media = getMediaIndex(field, this%coords(1, index), this%coords(2, index), this%coords(3, index), &
-                                  problemInfo%geometryToMaterialData)
             tags(edge_index) = real(this%materialTag(index))
             if (this%mediaType(index) >= 0.0_RKIND) then
                media_types(edge_index) = this%mediaType(index)
             else
-               media_types(edge_index) = edge_media_type(field, this%coords(:, index), problemInfo, media)
+               media_types(edge_index) = get_output_media_type(field, this%coords(:, index), problemInfo)
             end if
          case (iBloqueJx, iBloqueJy, iBloqueJz)
             quad_index = quad_index + 1
             field = magnetic_field(this%currentType(index))
-            media = getMediaIndex(field, this%coords(1, index), this%coords(2, index), this%coords(3, index), &
-                                  problemInfo%geometryToMaterialData)
             tags(quad_index) = real(this%materialTag(index))
-            media_types(quad_index) = surface_media_type(problemInfo%materialList(media), media)
+            media_types(quad_index) = get_output_media_type(field, this%coords(:, index), problemInfo)
          end select
       end do
    contains
-      real function surface_media_type(material, media)
-         type(MediaData_t), intent(in) :: material
-         integer, intent(in) :: media
-
-         if (material%is%Pec) then
-            surface_media_type = 0.0
-         else if (material%is%PMC) then
-            surface_media_type = 16.0
-         else if (material%is%ConformalPec) then
-            surface_media_type = 1000.0 + media
-         else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
-            surface_media_type = 300.0 + media
-         else if (material%is%EDispersive .or. material%is%MDispersive .or. material%is%EDispersiveAnis .or. &
-                  material%is%MDispersiveAnis) then
-            surface_media_type = 100.0 + media
-         else if (material%is%Dielectric .or. material%is%Anisotropic) then
-            surface_media_type = 200.0 + media
-         else if (material%is%ThinSlot) then
-            surface_media_type = 400.0 + media
-         else if (material%is%already_YEEadvanced_byconformal) then
-            surface_media_type = 5.0
-         else if (material%is%split_and_useless) then
-            surface_media_type = 6.0
-         else
-            surface_media_type = -1.0
-         end if
-      end function surface_media_type
-
-      real function edge_media_type(field, position, problemInfo, media)
-         integer, intent(in) :: field, position(3), media
-         type(problem_info_t), intent(in) :: problemInfo
-         integer :: candidate_field, candidate_media, candidate_position(3)
-         type(MediaData_t), pointer :: material
-
-         material => problemInfo%materialList(media)
-
-         if (material%is%already_YEEadvanced_byconformal) then
-            edge_media_type = 5.5
-         else if (material%is%split_and_useless) then
-            edge_media_type = 6.5
-         else if (material%is%Pec) then
-            edge_media_type = 0.5
-         else if (material%is%PMC) then
-            edge_media_type = 16.5
-         else if (material%is%ConformalPec) then
-            edge_media_type = 2000.0 + media
-         else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
-            edge_media_type = 3.5
-         else if (material%is%EDispersive .or. material%is%MDispersive .or. material%is%EDispersiveAnis .or. &
-                  material%is%MDispersiveAnis) then
-            edge_media_type = 1.5
-         else if (material%is%Dielectric .or. material%is%Anisotropic) then
-            edge_media_type = 2.5
-         else if (material%is%ThinSlot) then
-            edge_media_type = 4.5
-         else if (material%is%ThinWire) then
-            edge_media_type = 7.0
-            do candidate_field = iEx, iEz
-               candidate_media = getMediaIndex(candidate_field, position(1), position(2), position(3), &
-                                               problemInfo%geometryToMaterialData)
-               if (candidate_media /= 1 .and. candidate_media /= media) then
-                  edge_media_type = 8.0
-                  return
-               end if
-            end do
-            candidate_position = position
-            candidate_position(field) = candidate_position(field) + 1
-            do candidate_field = iEx, iEz
-               candidate_media = getMediaIndex(candidate_field, candidate_position(1), candidate_position(2), &
-                                               candidate_position(3), problemInfo%geometryToMaterialData)
-               if (candidate_media /= 1 .and. candidate_media /= media) then
-                  edge_media_type = 8.0
-                  return
-               end if
-            end do
-         else if (material%is%Multiwire) then
-            edge_media_type = 12.0
-            do candidate_field = iEx, iEz
-               candidate_media = getMediaIndex(candidate_field, position(1), position(2), position(3), &
-                                               problemInfo%geometryToMaterialData)
-               if (candidate_media /= 1 .and. candidate_media /= media) then
-                  edge_media_type = 13.0
-                  return
-               end if
-            end do
-            candidate_position = position
-            candidate_position(field) = candidate_position(field) + 1
-            do candidate_field = iEx, iEz
-               candidate_media = getMediaIndex(candidate_field, candidate_position(1), candidate_position(2), &
-                                               candidate_position(3), problemInfo%geometryToMaterialData)
-               if (candidate_media /= 1 .and. candidate_media /= media) then
-                  edge_media_type = 13.0
-                  return
-               end if
-            end do
-         else
-            edge_media_type = -0.5
-         end if
-      end function edge_media_type
-
       integer function electric_field(current_type)
          integer(kind=SINGLE), intent(in) :: current_type
 

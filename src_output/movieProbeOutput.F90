@@ -15,7 +15,10 @@ module movieProbeOutput_m
                                    write_visualisation_attribute, write_visualisation_attribute_hyperslab, end_visualisation_step, &
                                  flush_visualisation, close_visualisation, visualisation_is_open, verify_volumetric_visualisation, &
                                     VISUALISATION_SUCCESS, VISUALISATION_ATTRIBUTE_X, VISUALISATION_ATTRIBUTE_Y, &
-                                    VISUALISATION_ATTRIBUTE_Z, VISUALISATION_ATTRIBUTE_TAG
+                                    VISUALISATION_ATTRIBUTE_Z, VISUALISATION_ATTRIBUTE_TAG, VISUALISATION_ATTRIBUTE_MEDIA, &
+                                    VISUALISATION_ATTRIBUTE_TAG_X, VISUALISATION_ATTRIBUTE_TAG_Y, &
+                                    VISUALISATION_ATTRIBUTE_TAG_Z, VISUALISATION_ATTRIBUTE_MEDIA_X, &
+                                    VISUALISATION_ATTRIBUTE_MEDIA_Y, VISUALISATION_ATTRIBUTE_MEDIA_Z
    use mapVTKOutput_m, only: write_geometry_companion
    use directoryUtils_m, only: add_extension, create_file_with_path, create_folder, file_exists, &
                                get_last_component, join_path
@@ -56,6 +59,7 @@ contains
       character(len=BUFSIZE), intent(in)      :: outputTypeExtension
 
       integer :: error
+      type(output_transport_t) :: transport
       character(len=BUFSIZE) :: filename
       integer :: geometry_status
       character(len=BUFSIZE) :: geometry_diagnostic
@@ -87,8 +91,10 @@ contains
 
       call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, &
                                            problemInfo, this%nPoints, this%coords)
-      call alloc_and_init(this%tagNumber, this%nPoints, 0.0_RKIND)
-      call store_tag_numbers(this, problemInfo)
+      allocate (this%tagNumber(3, this%nPoints), this%mediaType(3, this%nPoints))
+      this%tagNumber = 0_IKINDMTAG
+      this%mediaType = -1.0_RKIND
+      call store_classification(this, problemInfo)
       call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
       call alloc_and_init(this%xValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
       call alloc_and_init(this%yValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
@@ -115,6 +121,13 @@ contains
          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
                                           'Unable to initialise movie HDF5 output')
       end if
+      call init_output_transport(transport, root_rank=0, status=error, &
+                                 communicator=this%publication%communicator)
+      if (error /= OUTPUT_TRANSPORT_SUCCESS) then
+         call StopOnError(control%layoutnumber, control%num_procs, &
+                          'Unable to initialise movie classification transport')
+      end if
+      call write_classification_attributes(this, transport)
 
    end subroutine init_movie_probe_output
 
@@ -179,16 +192,14 @@ contains
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(out) :: error
 
-      character(len=BUFSIZE) :: attribute_names(4), diagnostic
+      character(len=BUFSIZE) :: attribute_names(14), diagnostic
       character(len=BUFSIZE) :: attributeBaseName
-      logical :: attribute_enabled(4)
+      logical :: attribute_enabled(14)
       integer :: status
 
       error = 0
       attribute_names = ''
       attribute_enabled = .false.
-      attribute_names(VISUALISATION_ATTRIBUTE_TAG) = 'tagnumber'
-      attribute_enabled(VISUALISATION_ATTRIBUTE_TAG) = .true.
       select case (this%component)
       case (iCur, iMEC, iMHC)
          attributeBaseName = 'CurrenDensity'
@@ -198,6 +209,13 @@ contains
          attribute_names(VISUALISATION_ATTRIBUTE_Y) = trim(attributeBaseName)//'Y'
          attribute_names(VISUALISATION_ATTRIBUTE_Z) = trim(attributeBaseName)//'Z'
          attribute_enabled(1:3) = .true.
+         attribute_names(VISUALISATION_ATTRIBUTE_TAG_X) = 'tagnumber_x'
+         attribute_names(VISUALISATION_ATTRIBUTE_TAG_Y) = 'tagnumber_y'
+         attribute_names(VISUALISATION_ATTRIBUTE_TAG_Z) = 'tagnumber_z'
+         attribute_names(VISUALISATION_ATTRIBUTE_MEDIA_X) = 'mediatype_x'
+         attribute_names(VISUALISATION_ATTRIBUTE_MEDIA_Y) = 'mediatype_y'
+         attribute_names(VISUALISATION_ATTRIBUTE_MEDIA_Z) = 'mediatype_z'
+         attribute_enabled(VISUALISATION_ATTRIBUTE_TAG_X:VISUALISATION_ATTRIBUTE_MEDIA_Z) = .true.
       case (iCurX, iEXC, iHXC)
          attributeBaseName = 'CurrenDensity'
          if (this%component == iEXC) attributeBaseName = 'ElectricField'
@@ -217,6 +235,12 @@ contains
          attribute_names(VISUALISATION_ATTRIBUTE_Z) = trim(attributeBaseName)//'Z'
          attribute_enabled(VISUALISATION_ATTRIBUTE_Z) = .true.
       end select
+      if (.not. any([iCur, iMEC, iMHC] == this%component)) then
+         attribute_names(VISUALISATION_ATTRIBUTE_TAG) = 'tagnumber'
+         attribute_names(VISUALISATION_ATTRIBUTE_MEDIA) = 'mediatype'
+         attribute_enabled(VISUALISATION_ATTRIBUTE_TAG) = .true.
+         attribute_enabled(VISUALISATION_ATTRIBUTE_MEDIA) = .true.
+      end if
       call initialise_movie_visualisation(this%visualisation, trim(this%filesPath), &
                                 real(problemInfo%xSteps(this%publication%global_lower%x:this%publication%global_upper%x), real64), &
                                 real(problemInfo%ySteps(this%publication%global_lower%y:this%publication%global_upper%y), real64), &
@@ -405,6 +429,7 @@ contains
       character(len=BUFSIZE) :: diagnostic
       integer :: status, time_index
 
+      call write_classification_attributes(this, transport)
       do time_index = 1, this%nTime
          if (visualisation_is_open(this%visualisation)) then
             call begin_visualisation_step(this%visualisation, real(this%timeStep(time_index), real64), &
@@ -423,7 +448,6 @@ contains
             call write_external_attribute(this, VISUALISATION_ATTRIBUTE_Z, this%zValueForTime, &
                                           time_index, transport)
          end if
-         call write_external_tag_attribute(this, VISUALISATION_ATTRIBUTE_TAG, transport)
          if (visualisation_is_open(this%visualisation)) then
             call end_visualisation_step(this%visualisation, status, diagnostic)
             call require_visualisation_success(status, diagnostic, 'Movie HDF5 write failed: ')
@@ -454,26 +478,58 @@ contains
       call publish_dense_attribute(this, attribute, field, transport)
    end subroutine write_external_attribute
 
-   subroutine write_external_tag_attribute(this, attribute, transport)
+   subroutine write_classification_attributes(this, transport)
       type(movie_probe_output_t), intent(inout) :: this
-      integer, intent(in) :: attribute
+      type(output_transport_t), intent(in) :: transport
+      integer, parameter :: tag_attributes(3) = [VISUALISATION_ATTRIBUTE_TAG_X, &
+                                                 VISUALISATION_ATTRIBUTE_TAG_Y, &
+                                                 VISUALISATION_ATTRIBUTE_TAG_Z]
+      integer, parameter :: media_attributes(3) = [VISUALISATION_ATTRIBUTE_MEDIA_X, &
+                                                   VISUALISATION_ATTRIBUTE_MEDIA_Y, &
+                                                   VISUALISATION_ATTRIBUTE_MEDIA_Z]
+      integer :: axis
+
+      if (this%classificationWritten) return
+      if (any([iCur, iMEC, iMHC] == this%component)) then
+         do axis = 1, 3
+            call write_external_classification_attribute(this, tag_attributes(axis), axis, .true., transport)
+            call write_external_classification_attribute(this, media_attributes(axis), axis, .false., transport)
+         end do
+      else
+         do axis = 1, 3
+            if (.not. classification_axis_enabled(this%component, axis)) cycle
+            call write_external_classification_attribute(this, VISUALISATION_ATTRIBUTE_TAG, axis, .true., transport)
+            call write_external_classification_attribute(this, VISUALISATION_ATTRIBUTE_MEDIA, axis, .false., transport)
+         end do
+      end if
+      this%classificationWritten = .true.
+   end subroutine write_classification_attributes
+
+   subroutine write_external_classification_attribute(this, attribute, axis, write_tag, transport)
+      type(movie_probe_output_t), intent(inout) :: this
+      integer, intent(in) :: attribute, axis
+      logical, intent(in) :: write_tag
       type(output_transport_t), intent(in) :: transport
 
       integer :: i, local_index, nx, ny
-      real(real64), allocatable :: tags(:)
+      real(real64), allocatable :: values(:)
 
       nx = int(this%publication%local_shape(1))
       ny = int(this%publication%local_shape(2))
-      allocate (tags(int(product(this%publication%local_shape))))
-      tags = 0.0_real64
+      allocate (values(int(product(this%publication%local_shape))))
+      values = 0.0_real64
       do i = 1, this%nPoints
          local_index = this%coords(1, i) - this%mainCoords%x + 1 + &
                        (this%coords(2, i) - this%mainCoords%y)*nx + &
                        (this%coords(3, i) - this%mainCoords%z)*nx*ny
-         tags(local_index) = real(this%tagNumber(i), real64)
+         if (write_tag) then
+            values(local_index) = real(this%tagNumber(axis, i), real64)
+         else
+            values(local_index) = real(this%mediaType(axis, i), real64)
+         end if
       end do
-      call publish_dense_attribute(this, attribute, tags, transport)
-   end subroutine write_external_tag_attribute
+      call publish_dense_attribute(this, attribute, values, transport)
+   end subroutine write_external_classification_attribute
 
    subroutine publish_dense_attribute(this, attribute, local_values, transport)
       type(movie_probe_output_t), intent(inout) :: this
@@ -571,36 +627,44 @@ contains
       end do
    end subroutine gather_global_dense
 
-   subroutine store_tag_numbers(this, problemInfo)
+   subroutine store_classification(this, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
       type(problem_info_t), intent(in) :: problemInfo
 
-      integer :: i, field
+      integer :: axis, i, field
 
-      field = tag_field(this%component)
-      do i = 1, this%nPoints
-         if (field <= iEz) then
-            this%tagNumber(i) = real(iabs(problemInfo%materialTag%getEdgeTag(field, this%coords(1, i), &
-                                                                             this%coords(2, i), this%coords(3, i))), RKIND)
-         else
-            this%tagNumber(i) = real(iabs(problemInfo%materialTag%getFaceTag(field, this%coords(1, i), &
-                                                                             this%coords(2, i), this%coords(3, i))), RKIND)
-         end if
+      do axis = 1, 3
+         if (.not. classification_axis_enabled(this%component, axis)) cycle
+         field = get_volumetric_classification_field(this%component, axis)
+         do i = 1, this%nPoints
+            if (.not. classification_point_is_valid(this%component, field, this%coords(:, i), problemInfo)) cycle
+            this%tagNumber(axis, i) = get_output_tag_number(field, this%coords(:, i), problemInfo)
+            this%mediaType(axis, i) = get_output_media_type(field, this%coords(:, i), problemInfo)
+         end do
       end do
-   end subroutine store_tag_numbers
+   end subroutine store_classification
 
-   integer function tag_field(component)
+   logical function classification_axis_enabled(component, axis)
       integer(kind=SINGLE), intent(in) :: component
+      integer, intent(in) :: axis
 
-      select case (component)
-      case (iCur, iCurX, iMEC, iExC); tag_field = iEx
-      case (iCurY, iEyC); tag_field = iEy
-      case (iCurZ, iEzC); tag_field = iEz
-      case (iMHC, iHxC); tag_field = iHx
-      case (iHyC); tag_field = iHy
-      case (iHzC); tag_field = iHz
-      end select
-   end function tag_field
+      classification_axis_enabled = any([iCur, iMEC, iMHC] == component) .or. &
+                                    (axis == 1 .and. any([iCurX, iExC, iHxC] == component)) .or. &
+                                    (axis == 2 .and. any([iCurY, iEyC, iHyC] == component)) .or. &
+                                    (axis == 3 .and. any([iCurZ, iEzC, iHzC] == component))
+   end function classification_axis_enabled
+
+   logical function classification_point_is_valid(component, field, position, problemInfo)
+      integer(kind=SINGLE), intent(in) :: component
+      integer, intent(in) :: field, position(3)
+      type(problem_info_t), intent(in) :: problemInfo
+
+      if (any([iCur, iCurX, iCurY, iCurZ] == component)) then
+         classification_point_is_valid = isValidPointForCurrent(field, position(1), position(2), position(3), problemInfo)
+      else
+         classification_point_is_valid = isValidPointForField(field, position(1), position(2), position(3), problemInfo)
+      end if
+   end function classification_point_is_valid
 
    function get_output_path(global_lower, global_upper, outputTypeExtension, field, mpidir) result(path)
       type(cell_coordinate_t), intent(in) :: global_lower, global_upper

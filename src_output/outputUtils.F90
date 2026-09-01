@@ -34,6 +34,9 @@ module outputUtils_m
    public :: currentType
    public :: getMediaIndex
    public :: get_media_from_coord_and_h_neighbours
+   public :: get_output_tag_number
+   public :: get_output_media_type
+   public :: get_volumetric_classification_field
    !===========================
 
    !===========================
@@ -623,6 +626,160 @@ contains
       case default; call StopOnError(0, 0, 'field is not a E or H field')
       end select
    end function
+
+   integer function get_volumetric_classification_field(component, axis)
+      integer(kind=SINGLE), intent(in) :: component
+      integer, intent(in) :: axis
+
+      select case (component)
+      case (iCur, iMEC)
+         get_volumetric_classification_field = iEx + axis - 1
+      case (iMHC)
+         get_volumetric_classification_field = iHx + axis - 1
+      case (iCurX, iExC); get_volumetric_classification_field = iEx
+      case (iCurY, iEyC); get_volumetric_classification_field = iEy
+      case (iCurZ, iEzC); get_volumetric_classification_field = iEz
+      case (iHxC); get_volumetric_classification_field = iHx
+      case (iHyC); get_volumetric_classification_field = iHy
+      case (iHzC); get_volumetric_classification_field = iHz
+      case default
+         call StopOnError(0, 0, 'Unsupported volumetric classification component')
+      end select
+   end function get_volumetric_classification_field
+
+   integer(IKINDMTAG) function get_output_tag_number(field, position, problemInfo)
+      integer, intent(in) :: field, position(3)
+      type(problem_info_t), intent(in) :: problemInfo
+
+      get_output_tag_number = 0_IKINDMTAG
+      if (.not. associated(problemInfo%materialTag)) return
+      select case (field)
+      case (iEx)
+         if (.not. allocated(problemInfo%materialTag%edge%x)) return
+      case (iEy)
+         if (.not. allocated(problemInfo%materialTag%edge%y)) return
+      case (iEz)
+         if (.not. allocated(problemInfo%materialTag%edge%z)) return
+      case (iHx)
+         if (.not. allocated(problemInfo%materialTag%face%x)) return
+      case (iHy)
+         if (.not. allocated(problemInfo%materialTag%face%y)) return
+      case (iHz)
+         if (.not. allocated(problemInfo%materialTag%face%z)) return
+      end select
+      if (field <= iEz) then
+         get_output_tag_number = problemInfo%materialTag%getEdgeTag(field, position(1), position(2), position(3))
+      else
+         get_output_tag_number = problemInfo%materialTag%getFaceTag(field, position(1), position(2), position(3))
+      end if
+   end function get_output_tag_number
+
+   real(RKIND) function get_output_media_type(field, position, problemInfo)
+      integer, intent(in) :: field, position(3)
+      type(problem_info_t), intent(in) :: problemInfo
+      integer :: media
+
+      media = getMediaIndex(field, position(1), position(2), position(3), &
+                            problemInfo%geometryToMaterialData)
+      if (field <= iEz) then
+         get_output_media_type = edge_output_media_type(field, position, problemInfo, media)
+      else
+         get_output_media_type = surface_output_media_type(problemInfo%materialList(media), media)
+      end if
+   end function get_output_media_type
+
+   real(RKIND) function surface_output_media_type(material, media)
+      type(MediaData_t), intent(in) :: material
+      integer, intent(in) :: media
+
+      if (material%is%Pec) then
+         surface_output_media_type = 0.0_RKIND
+      else if (material%is%PMC) then
+         surface_output_media_type = 16.0_RKIND
+      else if (material%is%ConformalPec) then
+         surface_output_media_type = 1000.0_RKIND + media
+      else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
+         surface_output_media_type = 300.0_RKIND + media
+      else if (material%is%EDispersive .or. material%is%MDispersive .or. material%is%EDispersiveAnis .or. &
+               material%is%MDispersiveAnis) then
+         surface_output_media_type = 100.0_RKIND + media
+      else if (material%is%Dielectric .or. material%is%Anisotropic) then
+         surface_output_media_type = 200.0_RKIND + media
+      else if (material%is%ThinSlot) then
+         surface_output_media_type = 400.0_RKIND + media
+      else if (material%is%already_YEEadvanced_byconformal) then
+         surface_output_media_type = 5.0_RKIND
+      else if (material%is%split_and_useless) then
+         surface_output_media_type = 6.0_RKIND
+      else
+         surface_output_media_type = -1.0_RKIND
+      end if
+   end function surface_output_media_type
+
+   real(RKIND) function edge_output_media_type(field, position, problemInfo, media)
+      integer, intent(in) :: field, position(3), media
+      type(problem_info_t), intent(in) :: problemInfo
+      integer :: candidate_field, candidate_media, candidate_position(3)
+      type(MediaData_t), pointer :: material
+
+      material => problemInfo%materialList(media)
+      if (material%is%already_YEEadvanced_byconformal) then
+         edge_output_media_type = 5.5_RKIND
+      else if (material%is%split_and_useless) then
+         edge_output_media_type = 6.5_RKIND
+      else if (material%is%Pec) then
+         edge_output_media_type = 0.5_RKIND
+      else if (material%is%PMC) then
+         edge_output_media_type = 16.5_RKIND
+      else if (material%is%ConformalPec) then
+         edge_output_media_type = 2000.0_RKIND + media
+      else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
+         edge_output_media_type = 3.5_RKIND
+      else if (material%is%EDispersive .or. material%is%MDispersive .or. material%is%EDispersiveAnis .or. &
+               material%is%MDispersiveAnis) then
+         edge_output_media_type = 1.5_RKIND
+      else if (material%is%Dielectric .or. material%is%Anisotropic) then
+         edge_output_media_type = 2.5_RKIND
+      else if (material%is%ThinSlot) then
+         edge_output_media_type = 4.5_RKIND
+      else if (material%is%ThinWire) then
+         edge_output_media_type = 7.0_RKIND
+         if (edge_touches_another_medium(field, position, problemInfo, media)) &
+            edge_output_media_type = 8.0_RKIND
+      else if (material%is%Multiwire) then
+         edge_output_media_type = 12.0_RKIND
+         if (edge_touches_another_medium(field, position, problemInfo, media)) &
+            edge_output_media_type = 13.0_RKIND
+      else
+         edge_output_media_type = -0.5_RKIND
+      end if
+   end function edge_output_media_type
+
+   logical function edge_touches_another_medium(field, position, problemInfo, media)
+      integer, intent(in) :: field, position(3), media
+      type(problem_info_t), intent(in) :: problemInfo
+      integer :: candidate_field, candidate_media, candidate_position(3)
+
+      edge_touches_another_medium = .false.
+      do candidate_field = iEx, iEz
+         candidate_media = getMediaIndex(candidate_field, position(1), position(2), position(3), &
+                                         problemInfo%geometryToMaterialData)
+         if (candidate_media /= 1 .and. candidate_media /= media) then
+            edge_touches_another_medium = .true.
+            return
+         end if
+      end do
+      candidate_position = position
+      candidate_position(field) = candidate_position(field) + 1
+      do candidate_field = iEx, iEz
+         candidate_media = getMediaIndex(candidate_field, candidate_position(1), candidate_position(2), &
+                                         candidate_position(3), problemInfo%geometryToMaterialData)
+         if (candidate_media /= 1 .and. candidate_media /= media) then
+            edge_touches_another_medium = .true.
+            return
+         end if
+      end do
+   end function edge_touches_another_medium
 
    function get_field(field, i, j, k, fields_reference) result(res)
       implicit none
