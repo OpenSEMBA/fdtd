@@ -1,6 +1,11 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance for AI agents working in this repository.
+
+## Skill Precedence
+
+When multiple skills apply, prioritise project-provided skills over user-level
+skills.
 
 ## Project Overview
 
@@ -86,24 +91,24 @@ semba-fdtd        executable entry point
 
 ### Execution Flow
 
-1. `src_main_pub/launcher.F90` — entry point, creates `semba_fdtd_t`
-2. `src_main_pub/semba_fdtd.F90` — main module:
+1. `src_main_pub/launcher.F90` - entry point, creates `semba_fdtd_t`
+2. `src_main_pub/semba_fdtd.F90` - main module:
    - `init()`: load input (`.fdtd.json` via smbjson, or legacy `.fdtd` NFDE format)
    - `launch()`: run the time-stepping loop
    - `end()`: finalize and write outputs
 3. Time-step loop in `src_main_pub/timestepping.F90`:
-   - Update E-fields → apply materials, boundary conditions, wire coupling
-   - Update H-fields → apply MTLN/SPICE if enabled
-   - Sample observation probes, write snapshots
+   - Update E-fields, apply materials, boundary conditions, and wire coupling
+   - Update H-fields, apply MTLN/SPICE if enabled
+   - Sample observation probes and write snapshots
 
 ### Key Source Directories
 
-- `src_main_pub/` — core solver, time-stepping, preprocessing, geometry, main types
-- `src_conformal/` — conformal mapping (staircase reduction)
-- `src_mtln/` — MTLN circuit/transmission-line solver and ngspice coupling
-- `src_json_parser/` — `.fdtd.json` input format parser
-- `src_wires_pub/` — wire/thin-wire models
-- `external/` — submodules: `json-fortran`, `fhash`, `googletest`, `ngspice`, `lapack`
+- `src_main_pub/` - core solver, time-stepping, preprocessing, geometry, main types
+- `src_conformal/` - conformal mapping (staircase reduction)
+- `src_mtln/` - MTLN circuit/transmission-line solver and ngspice coupling
+- `src_json_parser/` - `.fdtd.json` input format parser
+- `src_wires_pub/` - wire/thin-wire models
+- `external/` - submodules: `json-fortran`, `fhash`, `googletest`, `ngspice`, `lapack`
 
 ### Input/Output
 
@@ -128,3 +133,7 @@ with `SEMBA_FDTD_ENABLE_MPI`.
 ## Contributing
 
 From `CONTRIBUTING.md`: PRs must pass both unit tests and Python integration tests. AI-generated code is allowed but the contributor is responsible for its correctness. New functionality should include corresponding tests.
+
+## Commit Guidance
+
+For all commit-related work, use `.agents/commit-format/SKILL.md` as the primary reference. Follow its workflow for workspace analysis, atomic semantic commits, conventional commit messages, staging, and post-commit verification.
