@@ -2525,84 +2525,128 @@ contains
 
    subroutine solver_advanceConformalE(this)
       class(solver_t) :: this
-      integer :: n, i, j, k, e, medium
-      real(kind=rkind) :: sign, inverse_step
+      integer :: n, i, j, k, normal_direction, split_direction, transverse_direction
+      real(kind=rkind) :: sign, inverse_step, field_correction, lower_fraction
 
       if (.not. allocated(this%conformal_surface_faces)) return
       do n = 1, size(this%conformal_surface_faces)
          i = this%conformal_surface_faces(n)%cell(1)
          j = this%conformal_surface_faces(n)%cell(2)
          k = this%conformal_surface_faces(n)%cell(3)
-         e = 6 - this%conformal_surface_faces(n)%face_direction - this%conformal_surface_faces(n)%split_direction
-         sign = leviCivita(this%conformal_surface_faces(n)%face_direction, &
-                           this%conformal_surface_faces(n)%split_direction, e)
-         select case (this%conformal_surface_faces(n)%split_direction)
+         normal_direction = this%conformal_surface_faces(n)%face_direction
+         split_direction = this%conformal_surface_faces(n)%split_direction
+         transverse_direction = 6-normal_direction-split_direction
+         sign = leviCivita(normal_direction, split_direction, transverse_direction)
+         lower_fraction = this%conformal_surface_faces(n)%lower_fraction
+         field_correction = this%conformal_surface_faces(n)%upper_h - &
+                            this%conformal_surface_faces(n)%lower_h
+
+         ! The ordinary Yee update sees the area-weighted H stored on the grid.
+         ! Replace it with lower_h and upper_h on the two electric boundaries
+         ! normal to the split, respectively.
+         select case (split_direction)
+         case (1); inverse_step = this%Idxh(i)
+         case (2); inverse_step = this%Idyh(j)
+         case (3); inverse_step = this%Idzh(k)
+         end select
+         call addConformalElectricCorrection(this, transverse_direction, i, j, k, &
+                                              sign*inverse_step*(1.0_RKIND-lower_fraction)*field_correction)
+         select case (split_direction)
          case (1); i = i + 1; inverse_step = this%Idxh(i)
          case (2); j = j + 1; inverse_step = this%Idyh(j)
          case (3); k = k + 1; inverse_step = this%Idzh(k)
          end select
-         select case (e)
-         case (1)
-            medium = this%media%sggMiEx(i,j,k)
-            this%Ex(i,j,k) = this%Ex(i,j,k) + this%g%g2(medium)*inverse_step*sign * &
-               (this%conformal_surface_faces(n)%upper_h-this%conformal_surface_faces(n)%lower_h)
-         case (2)
-            medium = this%media%sggMiEy(i,j,k)
-            this%Ey(i,j,k) = this%Ey(i,j,k) + this%g%g2(medium)*inverse_step*sign * &
-               (this%conformal_surface_faces(n)%upper_h-this%conformal_surface_faces(n)%lower_h)
-         case (3)
-            medium = this%media%sggMiEz(i,j,k)
-            this%Ez(i,j,k) = this%Ez(i,j,k) + this%g%g2(medium)*inverse_step*sign * &
-               (this%conformal_surface_faces(n)%upper_h-this%conformal_surface_faces(n)%lower_h)
-         end select
+         call addConformalElectricCorrection(this, transverse_direction, i, j, k, &
+                                              sign*inverse_step*lower_fraction*field_correction)
       end do
    end subroutine solver_advanceConformalE
 
+   subroutine addConformalElectricCorrection(this, direction, i, j, k, correction)
+      class(solver_t) :: this
+      integer, intent(in) :: direction, i, j, k
+      real(kind=rkind), intent(in) :: correction
+      integer :: medium
+
+      select case (direction)
+      case (1)
+         medium = this%media%sggMiEx(i,j,k)
+         this%Ex(i,j,k) = this%Ex(i,j,k)+this%g%g2(medium)*correction
+      case (2)
+         medium = this%media%sggMiEy(i,j,k)
+         this%Ey(i,j,k) = this%Ey(i,j,k)+this%g%g2(medium)*correction
+      case (3)
+         medium = this%media%sggMiEz(i,j,k)
+         this%Ez(i,j,k) = this%Ez(i,j,k)+this%g%g2(medium)*correction
+      end select
+   end subroutine addConformalElectricCorrection
+
    subroutine solver_advanceConformalH(this)
       class(solver_t) :: this
-      integer :: n, i, j, k, e
-      real(kind=rkind) :: sign, inverse_step, lower_e, upper_e, lower_fraction
+      integer :: n, i, j, k, normal_direction, split_direction, transverse_direction
+      real(kind=rkind) :: sign, split_inverse_step, transverse_inverse_step
+      real(kind=rkind) :: lower_e, upper_e, transverse_lower_e, transverse_upper_e
+      real(kind=rkind) :: lower_fraction, common_curl, magnetic_factor
 
       if (.not. allocated(this%conformal_surface_faces)) return
       do n = 1, size(this%conformal_surface_faces)
          i = this%conformal_surface_faces(n)%cell(1)
          j = this%conformal_surface_faces(n)%cell(2)
          k = this%conformal_surface_faces(n)%cell(3)
-         e = 6 - this%conformal_surface_faces(n)%face_direction - this%conformal_surface_faces(n)%split_direction
-         sign = leviCivita(this%conformal_surface_faces(n)%face_direction, &
-                           this%conformal_surface_faces(n)%split_direction, e)
+         normal_direction = this%conformal_surface_faces(n)%face_direction
+         split_direction = this%conformal_surface_faces(n)%split_direction
+         transverse_direction = 6-normal_direction-split_direction
+         sign = leviCivita(normal_direction, split_direction, transverse_direction)
          lower_fraction = this%conformal_surface_faces(n)%lower_fraction
-         select case (e)
-         case (1)
-            lower_e = this%Ex(i,j,k)
-            select case (this%conformal_surface_faces(n)%split_direction)
-            case (2); upper_e = this%Ex(i,j+1,k); inverse_step = this%Idyh(j)
-            case (3); upper_e = this%Ex(i,j,k+1); inverse_step = this%Idzh(k)
-            end select
-         case (2)
-            lower_e = this%Ey(i,j,k)
-            select case (this%conformal_surface_faces(n)%split_direction)
-            case (1); upper_e = this%Ey(i+1,j,k); inverse_step = this%Idxe(i)
-            case (3); upper_e = this%Ey(i,j,k+1); inverse_step = this%Idze(k)
-            end select
-         case (3)
-            lower_e = this%Ez(i,j,k)
-            select case (this%conformal_surface_faces(n)%split_direction)
-            case (1); upper_e = this%Ez(i+1,j,k); inverse_step = this%Idxe(i)
-            case (2); upper_e = this%Ez(i,j+1,k); inverse_step = this%Idye(j)
-            end select
-         end select
+         call getConformalElectricPair(this, transverse_direction, split_direction, i, j, k, &
+                                       lower_e, upper_e, split_inverse_step)
+         call getConformalElectricPair(this, split_direction, transverse_direction, i, j, k, &
+                                       transverse_lower_e, transverse_upper_e, transverse_inverse_step)
+         common_curl = sign*(transverse_upper_e-transverse_lower_e)*transverse_inverse_step
+         magnetic_factor = this%sgg%dt/this%mu0
          this%conformal_surface_faces(n)%lower_h = this%conformal_surface_faces(n)%lower_h + &
-            this%sgg%dt/(this%mu0*lower_fraction)*(-sign)*(-lower_e)*inverse_step
+            magnetic_factor*(common_curl+sign*lower_e*split_inverse_step/lower_fraction)
          this%conformal_surface_faces(n)%upper_h = this%conformal_surface_faces(n)%upper_h + &
-            this%sgg%dt/(this%mu0*(1.0_RKIND-lower_fraction))*(-sign)*upper_e*inverse_step
-         select case (this%conformal_surface_faces(n)%face_direction)
-         case (1); this%Hx(i,j,k) = this%conformal_surface_faces(n)%lower_h
-         case (2); this%Hy(i,j,k) = this%conformal_surface_faces(n)%lower_h
-         case (3); this%Hz(i,j,k) = this%conformal_surface_faces(n)%lower_h
+            magnetic_factor*(common_curl-sign*upper_e*split_inverse_step/(1.0_RKIND-lower_fraction))
+         ! Preserve the full-face magnetic flux represented by the Yee field.
+         ! The weighted subface updates reduce exactly to the ordinary Yee curl.
+         select case (normal_direction)
+         case (1); this%Hx(i,j,k) = lower_fraction*this%conformal_surface_faces(n)%lower_h + &
+                                    (1.0_RKIND-lower_fraction)*this%conformal_surface_faces(n)%upper_h
+         case (2); this%Hy(i,j,k) = lower_fraction*this%conformal_surface_faces(n)%lower_h + &
+                                    (1.0_RKIND-lower_fraction)*this%conformal_surface_faces(n)%upper_h
+         case (3); this%Hz(i,j,k) = lower_fraction*this%conformal_surface_faces(n)%lower_h + &
+                                    (1.0_RKIND-lower_fraction)*this%conformal_surface_faces(n)%upper_h
          end select
       end do
    end subroutine solver_advanceConformalH
+
+   subroutine getConformalElectricPair(this, field_direction, offset_direction, i, j, k, &
+                                       lower_e, upper_e, inverse_step)
+      class(solver_t) :: this
+      integer, intent(in) :: field_direction, offset_direction, i, j, k
+      real(kind=rkind), intent(out) :: lower_e, upper_e, inverse_step
+      integer :: upper_i, upper_j, upper_k
+
+      upper_i = i
+      upper_j = j
+      upper_k = k
+      select case (offset_direction)
+      case (1); upper_i = upper_i+1; inverse_step = this%Idxe(i)
+      case (2); upper_j = upper_j+1; inverse_step = this%Idye(j)
+      case (3); upper_k = upper_k+1; inverse_step = this%Idze(k)
+      end select
+      select case (field_direction)
+      case (1)
+         lower_e = this%Ex(i,j,k)
+         upper_e = this%Ex(upper_i,upper_j,upper_k)
+      case (2)
+         lower_e = this%Ey(i,j,k)
+         upper_e = this%Ey(upper_i,upper_j,upper_k)
+      case (3)
+         lower_e = this%Ez(i,j,k)
+         upper_e = this%Ez(upper_i,upper_j,upper_k)
+      end select
+   end subroutine getConformalElectricPair
 
    subroutine initializeConformalSurfaceStates(this)
       class(solver_t) :: this
@@ -2618,8 +2662,9 @@ contains
          if (.not. allocated(this%sgg%Med(medium)%ConformalFace)) cycle
          do feature = 1, size(this%sgg%Med(medium)%ConformalFace)
             face = this%sgg%Med(medium)%ConformalFace(feature)
-            call findSurfaceFaceSplit(this%sgg, face, split_direction, lower_fraction)
-            if (split_direction == 0) cycle
+            if (.not. face%is_two_sided) cycle
+            split_direction = face%split_direction
+            lower_fraction = face%lower_fraction
             if (lower_fraction <= 1.0e-5_RKIND .or. lower_fraction >= 1.0_RKIND-1.0e-5_RKIND) cycle
             if (surfaceStateExists(states, face%cell, face%direction)) cycle
             allocate(enlarged(size(states)+1))
@@ -2633,65 +2678,6 @@ contains
       end do
       call move_alloc(states, this%conformal_surface_faces)
    end subroutine initializeConformalSurfaceStates
-
-   subroutine findSurfaceFaceSplit(sgg, face, split_direction, lower_fraction)
-      type(SGGFDTDINFO_t), intent(in) :: sgg
-      type(face_t), intent(in) :: face
-      integer, intent(out) :: split_direction
-      real(kind=rkind), intent(out) :: lower_fraction
-      integer :: medium, feature, candidate
-      real(kind=rkind) :: candidate_fraction
-
-      split_direction = 0
-      lower_fraction = 0.0_RKIND
-      do medium = 1, sgg%NumMedia
-         if (.not. sgg%Med(medium)%Is%ConformalPEC .or. .not. sgg%Med(medium)%Is%Surface) cycle
-         if (.not. allocated(sgg%Med(medium)%ConformalEdge)) cycle
-         do feature = 1, size(sgg%Med(medium)%ConformalEdge)
-            candidate = sgg%Med(medium)%ConformalEdge(feature)%direction
-            if (candidate == face%direction) cycle
-            if (.not. edgeBoundsFace(sgg%Med(medium)%ConformalEdge(feature), face)) cycle
-            candidate_fraction = edgeIntersectionFraction(sgg%Med(medium)%ConformalEdge(feature))
-            if (candidate_fraction <= 0.0_RKIND) cycle
-            if (split_direction /= 0 .and. split_direction /= candidate) then
-               split_direction = 0
-               lower_fraction = 0.0_RKIND
-               return
-            end if
-            if (split_direction == candidate .and. lower_fraction > 0.0_RKIND .and. &
-                abs(lower_fraction-candidate_fraction) > 1.0e-5_RKIND) then
-               split_direction = 0
-               lower_fraction = 0.0_RKIND
-               return
-            end if
-            split_direction = candidate
-            lower_fraction = candidate_fraction
-         end do
-      end do
-   end subroutine findSurfaceFaceSplit
-
-   logical function edgeBoundsFace(edge, face)
-      type(edge_t), intent(in) :: edge
-      type(face_t), intent(in) :: face
-      integer :: remaining_direction
-      edgeBoundsFace = .false.
-      if (edge%direction == face%direction) return
-      remaining_direction = 6 - edge%direction - face%direction
-      if (edge%cell(face%direction) /= face%cell(face%direction)) return
-      if (edge%cell(edge%direction) /= face%cell(edge%direction)) return
-      edgeBoundsFace = edge%cell(remaining_direction) == face%cell(remaining_direction) .or. &
-                       edge%cell(remaining_direction) == face%cell(remaining_direction)+1
-   end function edgeBoundsFace
-
-   real(kind=rkind) function edgeIntersectionFraction(edge) result(fraction)
-      type(edge_t), intent(in) :: edge
-      real(kind=rkind) :: first_fraction, second_fraction
-      first_fraction = edge%material_coords(1)-floor(edge%material_coords(1))
-      second_fraction = edge%material_coords(2)-floor(edge%material_coords(2))
-      fraction = 0.0_RKIND
-      if (first_fraction > 1.0e-5_RKIND) fraction = first_fraction
-      if (second_fraction > 1.0e-5_RKIND) fraction = second_fraction
-   end function edgeIntersectionFraction
 
    logical function surfaceStateExists(states, cell, direction)
       type(conformal_surface_face_state_t), dimension(:), intent(in) :: states

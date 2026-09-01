@@ -1728,6 +1728,24 @@ def test_conformal_surface_midcell_reflection(tmp_path, normal_axis, propagation
     assert abs(lag*dt-expected_delay) <= 4*dt
     assert np.max(np.abs(shadow)) <= 0.01*np.max(np.abs(incident))
 
+
+@no_mtln_skip
+@pytest.mark.conformal
+@pytest.mark.wires
+@pytest.mark.probes
+def test_conformal_solenoid_remains_stable(tmp_path):
+    fn = CASES_FOLDER + 'solenoid/solenoid_45deg_with_conformal.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver['general']['numberOfSteps'] = 36
+
+    solver.run()
+
+    assert solver.hasFinishedSuccessfully()
+    probe_filename = solver.getSolvedProbeFilenames('Bulk probe')[0]
+    current = Probe(probe_filename)['current'].to_numpy()
+    assert np.all(np.isfinite(current))
+    assert np.max(np.abs(current)) < 1.0e-6
+
 @pytest.mark.conformal
 @pytest.mark.xfail(
     run=False,

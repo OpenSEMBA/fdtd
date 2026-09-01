@@ -632,6 +632,9 @@ module  FDETYPES_m
       integer(kind=4), dimension(3) :: cell
       integer(kind=4) :: direction = -1
       real(kind=rkind) :: ratio = -1
+      logical :: is_two_sided = .false.
+      integer(kind=4) :: split_direction = 0
+      real(kind=rkind) :: lower_fraction = 0.0_RKIND
       type(conformal_face_fields_t) :: region_I_fields, region_II_fields
    end type
 

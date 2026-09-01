@@ -966,6 +966,7 @@ contains
             call fillEdges(sides_on_edge, edges)
          end do
       end do
+      call initializeFaceSplits(faces, edges)
    end subroutine
 
    function buildSidesFromCellInterval(interval) result(res)
@@ -1112,7 +1113,7 @@ contains
       ratio = 0.0
       aux%init%position = interval%ini%cell
       aux%end%position = interval%end%cell
-      call addFace(faces, aux%getCell(), aux%getFace(), ratio)
+      call addFace(faces, aux%getCell(), aux%getFace(), ratio, .false.)
    end subroutine
 
    subroutine fillFaceFromContour(contour, faces)
@@ -1125,7 +1126,7 @@ contains
       face = findContourFace(contour)
       if (size(contour) /= 0) then
          area = 1.0 - contourArea(contour)
-         call addFace(faces, cell, face , area)
+         call addFace(faces, cell, face, area, .true.)
       end if
    end subroutine
 
@@ -1243,31 +1244,94 @@ contains
       edges = aux
    end subroutine
 
-   subroutine addFace(faces, cell, face, ratio)
+   subroutine addFace(faces, cell, face, ratio, is_two_sided)
       type(face_t), dimension(:), allocatable, intent(inout) :: faces
       type(face_t), dimension(:), allocatable :: aux
       integer(kind=4), dimension(3), intent(in) :: cell
       integer(kind=4) :: face
       type(face_t) :: new_face
       real(kind=rkind) :: ratio
+      logical, optional, intent(in) :: is_two_sided
       integer :: i
+      logical :: split_candidate
+
+      split_candidate = .false.
+      if (present(is_two_sided)) split_candidate = is_two_sided
 
       do i = 1, size(faces)
          if (all(faces(i)%cell == cell) .and. faces(i)%direction == face) then
             faces(i)%ratio = min(faces(i)%ratio, ratio)
+            faces(i)%is_two_sided = faces(i)%is_two_sided .and. split_candidate
             return
          end if
       end do
 
       allocate(aux(size(faces) + 1))
       aux(1:size(faces)) = faces
-      new_face = face_t(cell=cell, ratio=ratio, direction=face)
+      new_face = face_t(cell=cell, ratio=ratio, direction=face, is_two_sided=split_candidate)
       aux(size(faces) + 1) = new_face
 
       deallocate(faces)
       allocate(faces(size(aux)))
       faces = aux
    end subroutine
+
+   subroutine initializeFaceSplits(faces, edges)
+      type(face_t), dimension(:), allocatable, intent(inout) :: faces
+      type(edge_t), dimension(:), allocatable, intent(in) :: edges
+      integer :: i, j, candidate
+      real(kind=rkind) :: candidate_fraction
+
+      do i = 1, size(faces)
+         if (.not. faces(i)%is_two_sided) cycle
+         faces(i)%split_direction = 0
+         faces(i)%lower_fraction = 0.0_RKIND
+         do j = 1, size(edges)
+            candidate = edges(j)%direction
+            if (candidate == faces(i)%direction) cycle
+            if (.not. edgeBoundsFace(edges(j), faces(i))) cycle
+            candidate_fraction = edgeIntersectionFraction(edges(j))
+            if (candidate_fraction <= TOPOLOGY_TOLERANCE .or. &
+                candidate_fraction >= 1.0_RKIND-TOPOLOGY_TOLERANCE) cycle
+            if (faces(i)%split_direction /= 0 .and. &
+                (faces(i)%split_direction /= candidate .or. &
+                 abs(faces(i)%lower_fraction-candidate_fraction) > TOPOLOGY_TOLERANCE)) then
+               faces(i)%is_two_sided = .false.
+               faces(i)%split_direction = 0
+               faces(i)%lower_fraction = 0.0_RKIND
+               exit
+            end if
+            faces(i)%split_direction = candidate
+            faces(i)%lower_fraction = candidate_fraction
+         end do
+         if (faces(i)%split_direction == 0) faces(i)%is_two_sided = .false.
+      end do
+   end subroutine initializeFaceSplits
+
+   logical function edgeBoundsFace(edge, face)
+      type(edge_t), intent(in) :: edge
+      type(face_t), intent(in) :: face
+      integer :: remaining_direction
+
+      edgeBoundsFace = .false.
+      if (edge%direction == face%direction) return
+      remaining_direction = 6-edge%direction-face%direction
+      if (edge%cell(face%direction) /= face%cell(face%direction)) return
+      if (edge%cell(edge%direction) /= face%cell(edge%direction)) return
+      edgeBoundsFace = edge%cell(remaining_direction) == face%cell(remaining_direction) .or. &
+                       edge%cell(remaining_direction) == face%cell(remaining_direction)+1
+   end function edgeBoundsFace
+
+   real(kind=rkind) function edgeIntersectionFraction(edge) result(fraction)
+      type(edge_t), intent(in) :: edge
+      real(kind=rkind) :: first_fraction, second_fraction
+
+      first_fraction = edge%material_coords(1)-floor(edge%material_coords(1))
+      second_fraction = edge%material_coords(2)-floor(edge%material_coords(2))
+      fraction = 0.0_RKIND
+      if (first_fraction > TOPOLOGY_TOLERANCE) fraction = first_fraction
+      if (second_fraction > TOPOLOGY_TOLERANCE) fraction = second_fraction
+   end function edgeIntersectionFraction
 
    subroutine addRatio(ratios, ratio)
       real(kind=rkind), dimension(:), allocatable, intent(inout) :: ratios

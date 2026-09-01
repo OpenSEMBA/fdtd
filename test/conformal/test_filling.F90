@@ -21,6 +21,7 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
     type(coord_t), dimension(3) :: vertices
+    integer :: face_index
     err = 0
     c1 = coord_t(position = [0.75,0.0,0.0],  id = 1)
     c2 = coord_t(position = [0.75,0.0,1.0],  id=  2)
@@ -57,6 +58,11 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
     if (size(cM%face_media(1)%faces) /= 2) err = err + 1
     if (abs(cM%face_media(1)%faces(1)%ratio-0.75) > 0.01) err = err + 1
     if (abs(cM%face_media(1)%faces(2)%ratio-0.75) > 0.01) err = err + 1
+    do face_index = 1, size(cM%face_media(1)%faces)
+        if (.not. cM%face_media(1)%faces(face_index)%is_two_sided) err = err + 1
+        if (cM%face_media(1)%faces(face_index)%split_direction /= 1) err = err + 1
+        if (abs(cM%face_media(1)%faces(face_index)%lower_fraction-0.75_RKIND) > 0.01_RKIND) err = err + 1
+    end do
 
     ! inside in -x
     vertices = [c1,c3,c2]
@@ -193,6 +199,8 @@ integer function test_conformal_partial_triangle_on_grid_face() bind(C) result(e
         else
             if (abs(media(1)%face_media(1)%ratio - 0.5_RKIND) > 0.01_RKIND) err = err + 1
             if (size(media(1)%face_media(1)%faces) /= 1) err = err + 1
+            if (media(1)%face_media(1)%faces(1)%is_two_sided) err = err + 1
+            if (media(1)%face_media(1)%faces(1)%split_direction /= 0) err = err + 1
         end if
     end do
 
@@ -207,6 +215,7 @@ integer function test_conformal_partial_triangle_on_grid_face() bind(C) result(e
     else
         if (abs(media(1)%face_media(1)%ratio) > 0.01_RKIND) err = err + 1
         if (size(media(1)%face_media(1)%faces) /= 1) err = err + 1
+        if (media(1)%face_media(1)%faces(1)%is_two_sided) err = err + 1
     end if
 end function test_conformal_partial_triangle_on_grid_face
 

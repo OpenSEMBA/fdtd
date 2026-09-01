@@ -7,10 +7,7 @@
   },
   "boundary": {
     "all": {
-      "type": "pml",
-      "layers": 10,
-      "order": 2,
-      "reflection": 0.001
+      "type": "mur"
     }
   },
   "materials": [
