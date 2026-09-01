@@ -450,6 +450,10 @@ def test_movie_in_planewave_in_box(tmp_path):
     xdmffile = _get_solved_probe_folder(
         solver, "electric_field_movie", suffix=".xdmf"
     )
+    geometry_xdmffile = str(
+        Path(xdmffile).with_name(Path(xdmffile).stem + "_geometry.xdmf")
+    )
+    geometry_h5file = str(Path(geometry_xdmffile).with_suffix(".h5"))
 
     root = ET.parse(xdmffile).getroot()
     h5_name = os.path.basename(h5file)
@@ -554,6 +558,28 @@ def test_movie_in_planewave_in_box(tmp_path):
                     tuple(int(value) for value in source.attrib["Dimensions"].split())
                     == f[dataset].shape
                 )
+
+    geometry_root = ET.parse(geometry_xdmffile).getroot()
+    point_data_items = geometry_root.findall(".//Geometry/DataItem")
+    assert point_data_items
+    geometry_points = []
+    with h5py.File(geometry_h5file, "r") as f:
+        for point_data_item in point_data_items:
+            source_name, dataset = point_data_item.text.strip().split(":/", 1)
+            assert source_name == Path(geometry_h5file).name
+            points = f[dataset][()]
+            if points.shape[0] == 3:
+                points = points.T
+            assert points.ndim == 2
+            assert points.shape[1] == 3
+            geometry_points.append(points)
+
+    points = np.concatenate(geometry_points)
+    assert np.all(points >= -1e-12)
+    np.testing.assert_allclose(points / 0.01, np.rint(points / 0.01))
+    assert np.max(points[:, 0]) <= 0.30 + 1e-12
+    assert np.max(points[:, 1]) <= 0.30 + 1e-12
+    assert np.max(points[:, 2]) <= 0.10 + 1e-12
 
 
 @pytest.mark.hdf
