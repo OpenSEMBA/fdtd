@@ -1,0 +1,149 @@
+{
+  "_format": "FDTD Input file",
+  "general": {
+    "timeStep": 1.540667e-10,
+    "numberOfSteps": 194,
+    "additionalArguments": ""
+  },
+  "boundary": {
+    "all": {
+      "type": "mur"
+    }
+  },
+  "materials": [
+    { "name": "PEC", "id": 1,
+      "type": "pec"
+    },
+    { "name": "wire_10um", "id": 2,
+      "type": "wire",
+      "radius": 1e-05,
+      "resistancePerMeter": 0.0,
+      "inductancePerMeter": 0.0
+    },
+    { "name": "terminal_50ohm", "id": 3,
+      "type": "terminal",
+      "terminations": [
+        {
+          "type": "series",
+          "resistance": 50.0,
+          "capacitance": 1e+22
+        }
+      ]
+    },
+    { "name": "Short", "id": 4,
+      "type": "terminal",
+      "terminations": [
+        {
+          "type": "short"
+        }
+      ]
+    }
+  ],
+  "materialAssociations": [
+    { "materialId": 1,
+      "elementIds": [5]
+    },
+    { "name": "Cable", "materialId": 2,
+      "type": "cable",
+      "elementIds": [3],
+      "initialTerminalId": 3,
+      "endTerminalId": 4
+    },
+    { "name": "Cable001", "materialId": 2,
+      "type": "cable",
+      "elementIds": [4],
+      "initialTerminalId": 4,
+      "endTerminalId": 3
+    }
+  ],
+  "sources": [
+    { "name": "Generator",
+      "type": "generator",
+      "magnitudeFile": "predefinedExcitation.1.exc",
+      "elementIds": [2],
+      "field": "voltage",
+      "attachedToLineId": 3
+    }
+  ],
+  "probes": [
+    { "name": "BC",
+      "type": "bulkCurrent",
+      "field": "electric",
+      "elementIds": [1],
+      "domain": {
+        "type": "time"
+      }
+    },
+    { "name": "wire_left_current",
+      "type": "wire",
+      "field": "current",
+      "elementIds": [6],
+      "domain": {
+        "type": "time"
+      }
+    }
+  ],
+  "mesh": {
+    "grid": {
+      "numberOfCells": [60, 60, 60],
+      "steps": {
+        "x": [0.001],
+        "y": [0.001],
+        "z": [0.001]
+      },
+      "origin": [-0.02, -0.02, -0.02]
+    },
+    "coordinates": [
+      { "id": 1, "relativePosition": [16, 16, 30] },
+      { "id": 2, "relativePosition": [44, 24, 30] },
+      { "id": 3, "relativePosition": [30, 30, 20] },
+      { "id": 4, "relativePosition": [30, 31, 20] },
+      { "id": 5, "relativePosition": [30, 30, 20] },
+      { "id": 6, "relativePosition": [30, 29, 20] },
+      { "id": 7, "relativePosition": [40, 20, 40] },
+      { "id": 8, "relativePosition": [20, 20, 20] },
+      { "id": 9, "relativePosition": [20, 20, 20] },
+      { "id": 10, "relativePosition": [40, 29, 20] },
+      { "id": 11, "relativePosition": [20, 31, 20] },
+      { "id": 12, "relativePosition": [40, 40, 20] },
+      { "id": 13, "relativePosition": [40, 40, 40] },
+      { "id": 14, "relativePosition": [20, 40, 20] },
+      { "id": 15, "relativePosition": [20, 20, 40] },
+      { "id": 16, "relativePosition": [40, 40, 40] }
+    ],
+    "elements": [
+      { "id": 1, "name": "BC",
+        "type": "cell",
+        "intervals": [
+          [[16, 16, 30], [44, 24, 30]]
+        ]
+      },
+      { "id": 2, "name": "Generator",
+        "type": "node",
+        "coordinateIds": [3]
+      },
+      { "id": 3, "name": "Wire",
+        "type": "polyline",
+        "coordinateIds": [4, 3]
+      },
+      { "id": 4, "name": "Wire001",
+        "type": "polyline",
+        "coordinateIds": [3, 6]
+      },
+      { "id": 5, "name": "solenoid",
+        "type": "cell",
+        "intervals": [
+          [[40, 20, 40], [20, 20, 20]],
+          [[20, 20, 20], [40, 29, 20]],
+          [[20, 31, 20], [40, 40, 20]],
+          [[40, 40, 40], [20, 40, 20]],
+          [[20, 20, 40], [40, 40, 40]]
+        ]
+      },
+      { "id": 6, "name": "wireLeftProbe",
+        "type": "node",
+        "coordinateIds": [4]
+      }
+    ]
+  }
+}

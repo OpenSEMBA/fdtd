@@ -61,7 +61,8 @@
       "type": "generator",
       "magnitudeFile": "predefinedExcitation.1.exc",
       "elementIds": [2],
-      "field": "voltage"
+      "field": "voltage",
+      "attachedToLineId": 4
     }
   ],
   "probes": [
@@ -76,6 +77,14 @@
         "samplingPeriod": 1.0
       },
       "direction": "z"
+    },
+    { "name": "wire_left_current",
+      "type": "wire",
+      "field": "current",
+      "elementIds": [6],
+      "domain": {
+        "type": "time"
+      }
     }
   ],
   "mesh": {
@@ -3656,6 +3665,10 @@
       { "id": 5, "name": "wireRight",
         "type": "polyline",
         "coordinateIds": [3, 1395, 1396]
+      },
+      { "id": 6, "name": "wireLeftProbe",
+        "type": "node",
+        "coordinateIds": [1392]
       }
     ]
   }

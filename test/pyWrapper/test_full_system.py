@@ -1733,18 +1733,58 @@ def test_conformal_surface_midcell_reflection(tmp_path, normal_axis, propagation
 @pytest.mark.conformal
 @pytest.mark.wires
 @pytest.mark.probes
-def test_conformal_solenoid_remains_stable(tmp_path):
-    fn = CASES_FOLDER + 'solenoid/solenoid_45deg_with_conformal.fdtd.json'
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver['general']['numberOfSteps'] = 36
+@pytest.mark.parametrize(
+    'plain_probe_name, conformal_probe_name',
+    [
+        ('wire_left_current', 'wire_left_current'),
+        ('BC', 'Bulk probe'),
+    ],
+)
+def test_solenoid_and_conformal_solenoid_currents_agree(
+    tmp_path, plain_probe_name, conformal_probe_name
+):
+    """Compare current waveforms over the first 3.85 ns of each solenoid case."""
+    case_definitions = [
+        ('solenoid', CASES_FOLDER + 'solenoid/solenoid.fdtd.json'),
+        (
+            'conformal',
+            CASES_FOLDER
+            + 'solenoid_45deg_with_conformal/'
+            + 'solenoid_45deg_with_conformal.fdtd.json',
+        ),
+    ]
+    currents = []
 
-    solver.run()
+    for case_name, filename in case_definitions:
+        case_folder = tmp_path / case_name
+        case_folder.mkdir()
+        solver = FDTD(filename, path_to_exe=SEMBA_EXE, run_in_folder=case_folder)
+        solver['general']['numberOfSteps'] = 25
+        solver.run()
 
-    assert solver.hasFinishedSuccessfully()
-    probe_filename = solver.getSolvedProbeFilenames('Bulk probe')[0]
-    current = Probe(probe_filename)['current'].to_numpy()
-    assert np.all(np.isfinite(current))
-    assert np.max(np.abs(current)) < 1.0e-6
+        assert solver.hasFinishedSuccessfully()
+        probe_name = (
+            plain_probe_name if case_name == 'solenoid' else conformal_probe_name
+        )
+        probe_filename = solver.getSolvedProbeFilenames(probe_name)[0]
+        probe = Probe(probe_filename)
+        currents.append((probe['time'].to_numpy(), probe['current'].to_numpy()))
+
+    time_plain, current_plain = currents[0]
+    time_conformal, current_conformal = currents[1]
+    common_start = max(time_plain[0], time_conformal[0])
+    common_end = min(time_plain[-1], time_conformal[-1])
+    mask = (time_plain >= common_start) & (time_plain <= common_end)
+    time_common = time_plain[mask]
+    current_plain = current_plain[mask]
+    current_conformal = np.interp(time_common, time_conformal, current_conformal)
+
+    assert np.isclose(
+        np.max(np.abs(current_plain)),
+        np.max(np.abs(current_conformal)),
+        rtol=0.03,
+    )
+    assert np.corrcoef(current_plain, current_conformal)[0, 1] > 0.999
 
 @pytest.mark.conformal
 @pytest.mark.xfail(
