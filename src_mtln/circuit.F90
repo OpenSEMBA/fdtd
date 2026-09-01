@@ -16,12 +16,11 @@ module circuit_m
         real(kind=RKIND_TIEMPO), dimension(:), allocatable :: time
         real(kind=RKIND), dimension(:), allocatable :: value
         integer :: source_type
-    contains 
-        procedure :: interpolate
     end type
 
     type VI_t
         real(kind=RKIND) :: voltage
+        ! real(kind=RKIND), pointer :: voltage => null()
         real(kind=RKIND) :: current
         real(kind=RKIND_TIEMPO) :: time
     end type
@@ -49,66 +48,44 @@ module circuit_m
         procedure :: setStopTimes
         procedure :: setModStopTimes
         procedure :: getNodeVoltage
-        procedure :: getNodeCurrent
         procedure :: updateNodes
         procedure :: getTime
         procedure :: updateNodeCurrent
-        procedure :: updateCircuitSources
+        procedure :: updateNodeCurrentList
         procedure :: modifyLineCapacitorValue
 
+        procedure :: clearControlStructures
         procedure :: printCWD
 
     end type circuit_t
 
 contains
 
-    real(kind=rkind) function interpolate(this, time, dt) result(res)
-        class(source_t) :: this
-        real(kind=RKIND_TIEMPO) :: time, dt
-        real(kind=RKIND_TIEMPO) :: t_eval
-        real(kind=RKIND) :: x1, x2, y1, y2
-        integer :: index, n
-        real(kind=rkind), dimension(:), allocatable :: timediff
+    subroutine append(arr, str)
+        ! This has been implemented because there seems to be a bug in gfortran: 
+        ! https://fortran-lang.discourse.group/t/read-data-and-append-it-to-array-best-practice/1915
+        ! and arr = [ arr, str ] can't be used.
+        character(len=256), allocatable, intent(inout) :: arr(:)
+        character(len=256), intent(in) :: str
+        character(len=256), allocatable :: old_arr(:)
+        
+        old_arr = arr
+        deallocate(arr)
+        allocate(arr(size(old_arr)+1))
+        arr(1:size(old_arr)) = old_arr 
+        arr(size(old_arr)+1) = str
+    end subroutine
 
-        n = size(this%time)
-        if (n == 0) then
-            res = 0.0_RKIND
-            return
-        end if
 
-        t_eval = time - dt
-
-        ! Clamp to avoid extrapolation and division by zero at source tail.
-        if (t_eval <= this%time(1)) then
-            res = this%value(1)
-            return
-        end if
-        if (t_eval >= this%time(n)) then
-            res = this%value(n)
-            return
-        end if
-
-        timediff = this%time - t_eval
-        index = maxloc(timediff, 1, (timediff) <= 0)
-        if (index == 0) index = 1
-        if (index >= n) index = n - 1
-
-        x1 = this%time(index)
-        y1 = this%value(index)
-        x2 = this%time(index+1)
-        y2 = this%value(index+1)
-
-        if (x2 == x1) then
-            res = y2
-            return
-        end if
-
-        res = (t_eval*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
-    end function
 
     subroutine printCWD(this)
         class(circuit_t) :: this
         call command('getcwd' // c_null_char)
+    end subroutine
+
+    subroutine clearControlStructures(this)
+        class(circuit_t) :: this
+        call command(c_null_char)
     end subroutine
 
     subroutine init(this, names, sources, netlist)
@@ -130,7 +107,6 @@ contains
 
         allocate(this%nodes%names(size(names)))
         allocate(this%nodes%values(size(names)))
-
         allocate(this%nodes%sources(size(names)))
         do i = 1, size(names)
             this%nodes%names(i) = names(i)
@@ -141,6 +117,7 @@ contains
                 this%nodes%sources(i)%source_type = sources(i)%source_type
             end do
         end if
+
 
     end subroutine
 
@@ -206,7 +183,6 @@ contains
             return
         end if
 
-        call this%updateCircuitSources(this%time)
         if (this%time == 0) then
             call this%run()
         else
@@ -217,8 +193,7 @@ contains
             call WarnErrReport('Ngspice reported a controlled exit after run/resume.', .true.)
             return
         end if
-
-        call this%updateNodes()
+        this%time = this%time + this%dt
 
     end subroutine
 
@@ -226,8 +201,6 @@ contains
         class(circuit_t) :: this
         call command('run ' // c_null_char)
     end subroutine
-
-
 
     subroutine setStopTimes(this, finalTime, dt)
         class(circuit_t) :: this
@@ -311,27 +284,6 @@ contains
 
     end function
 
-    subroutine updateCircuitSources(this, time)
-        class(circuit_t) :: this
-        real(kind=RKIND_TIEMPO), intent(in) :: time
-        real(kind=RKIND) :: interp
-        character(50) :: source_value
-        integer :: i, index
-        do i = 1, size(this%nodes%sources)
-            if (this%nodes%sources(i)%has_source) then
-                if (this%nodes%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
-                    write(source_value, *) interp
-                    call command("alter @V"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
-                else if (this%nodes%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
-                    write(source_value, *) interp
-                    call command("alter @I"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
-                end if
-            end if
-        end do
-    end subroutine
-
     subroutine modifyLineCapacitorValue(this, name, c)
         class(circuit_t) :: this
         character(*), intent(in) :: name
@@ -343,17 +295,25 @@ contains
 
     end subroutine
 
-    subroutine updateNodeCurrent(this, node_name, current)
+    subroutine updateNodeCurrentList(this, node_name, current, batch)
         class(circuit_t) :: this
         real(kind=rkind) :: current
         character(50) :: sCurrent
         character(*) :: node_name
+        character(:), allocatable, intent(inout) :: batch
+        character(len=256) :: buff
         if (index(node_name, "initial") /= 0) then
             write(sCurrent, *) current
         else if (index(node_name, "end") /= 0) then
             write(sCurrent, *) -current
         end if
-        call command("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
+        batch = trim(batch) // trim("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent)) // '; '
+    end subroutine
+
+    subroutine updateNodeCurrent(this, batch)
+        class(circuit_t) :: this
+        character(:), allocatable, intent(in) :: batch
+        call command(batch// c_null_char)
     end subroutine
 
     subroutine updateNodes(this) 
@@ -362,7 +322,7 @@ contains
         type(vectorInfo_t), pointer :: info
         type(c_ptr) :: info_ptr
         real(kind=c_double), pointer :: values(:)
-
+        type(string_t), allocatable :: names(:)
         if (has_error() /= 0) then
             call WarnErrReport('Ngspice reported a controlled exit while updating nodes.', .true.)
             return
@@ -401,17 +361,12 @@ contains
         res = this%nodes%values(findVoltageIndexByName(this%nodes%names, name))%voltage
     end function
 
-    function getNodeCurrent(this, name) result(res)
-        class(circuit_t) :: this
-        character(len=*), intent(in) :: name
-        real(kind=rkind) :: res
-        res = this%nodes%values(findVoltageIndexByName(this%nodes%names, name))%current
-    end function
 
     function getTime(this) result(res)
         class(circuit_t) :: this
         real(kind=rkind_tiempo) :: res
-        res = this%nodes%values(findIndexByName(this%nodes%names, "time"))%time
+        res = this%time
+        ! res = this%nodes%values(findIndexByName(this%nodes%names, "time"))%time
     end function
 
     function findIndexByName(names, name) result(res)
@@ -443,4 +398,7 @@ contains
         end do
     end function    
 
+
+
+    
 end module 

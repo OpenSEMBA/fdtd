@@ -22,6 +22,8 @@ add_library(mtlnsolver
 	"circuit.F90"
 	"ngspice_interface.F90"
 	"preprocess.F90"
+	"termination_handler.F90"
+	"benchmark.F90"
 )
 
 target_link_libraries(mtlnsolver PRIVATE

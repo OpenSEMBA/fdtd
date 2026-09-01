@@ -34,7 +34,7 @@ def readCSV(f):
         i = i + 1
     return t, v
 
-t_meas, v_meas = readCSV(open('./zener_measurement.csv'))
+t_meas, v_meas = readCSV(open('./zener_measurement.CSV'))
 t_meas += 1.9700E-05
 
 bulk = Probe(solver.getSolvedProbeFilenames("end_voltage")[0])

@@ -12,11 +12,16 @@ module network_m
         integer :: source_type
         real(kind=rkind) :: line_c_per_meter, line_g_per_meter
         real(kind=rkind) :: step
-        real(kind=rkind) :: v
-        real(kind=rkind) :: i
+        real(kind=rkind), pointer :: v
+        real(kind=rkind), pointer :: i
         integer :: bundle_number, conductor_number, v_index, i_index
         integer :: side
         logical :: open = .false.
+        ! Termination information for hybrid handler
+        integer :: termination_type = -1
+        real(kind=rkind) :: R = 0.0_rkind
+        real(kind=rkind) :: L = 0.0_rkind
+        real(kind=rkind) :: C = 1e22_rkind
     end type
 
 

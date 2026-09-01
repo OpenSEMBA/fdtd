@@ -417,6 +417,13 @@ so far by ngspice.dll */
 IMPEXP
 char** ngSpice_AllPlots(void);
 
+IMPEXP
+char*  ngSpice_cur_plot(void);
+IMPEXP
+char** ngSpice_all_vecs_current(void);
+IMPEXP
+char** ngspice_all_plots(void);
+
 
 /* return to the caller a pointer to an array of vector names in the plot
 named by plotname */

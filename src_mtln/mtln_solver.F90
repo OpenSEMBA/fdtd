@@ -27,6 +27,7 @@ module mtln_solver_m
         procedure :: getTimeRange
         procedure :: updateProbes
         procedure :: advanceNWVoltage
+        procedure :: updateOpenNodes
         procedure :: advanceBundlesVoltage
         procedure :: advanceBundlesCurrent
         procedure :: advanceTime
@@ -89,19 +90,18 @@ contains
         res%null_field = 0.0_rkind
     end function
 
-    subroutine initNodes(this)
-        class(mtln_t) :: this
-        integer :: i,j
-        do i = 1, size(this%network_manager%networks)
-            do j = 1, size(this%network_manager%networks(i)%nodes)
-                this%network_manager%networks(i)%nodes(j)%v = 0.0
-                this%network_manager%networks(i)%nodes(j)%i = 0.0
-            end do
-        end do
-    end subroutine
+
 
     subroutine mtln_step(this)
         class(mtln_t) :: this
+        if (this%number_of_bundles == 0) then
+            call this%advanceTime()
+            return
+        end if
+        if (.not. hasActiveBundles(this)) then
+            call this%advanceTime()
+            return
+        end if
         call this%setExternalLongitudinalField()
         call this%advanceBundlesVoltage()
         call this%advanceNWVoltage()
@@ -110,6 +110,18 @@ contains
         call this%advanceTime()
 
     end subroutine
+
+    logical function hasActiveBundles(this)
+        class(mtln_t), intent(in) :: this
+        integer :: i
+        hasActiveBundles = .false.
+        do i = 1, this%number_of_bundles
+            if (this%bundles(i)%bundle_in_layer) then
+                hasActiveBundles = .true.
+                return
+            end if
+        end do
+    end function
 
     subroutine step_alone(this)
         class(mtln_t) :: this
@@ -150,47 +162,64 @@ contains
 
     end subroutine
 
+    subroutine initNodes(this)
+        class(mtln_t) :: this
+        integer :: i,j
+        integer ::b, c, v_idx, i_idx
+        integer :: n
+        if (this%number_of_bundles == 0) return
+        if (size(this%network_manager%networks) == 0) return
+        do i = 1, size(this%network_manager%networks)
+            do j = 1, size(this%network_manager%networks(i)%nodes)
+                b = this%network_manager%networks(i)%nodes(j)%bundle_number
+                c = this%network_manager%networks(i)%nodes(j)%conductor_number
+                v_idx = this%network_manager%networks(i)%nodes(j)%v_index
+                i_idx = this%network_manager%networks(i)%nodes(j)%i_index
+                if (this%bundles(b)%bundle_in_layer) then
+                    this%network_manager%networks(i)%nodes(j)%i => this%bundles(b)%i(c, i_idx)
+                    this%network_manager%networks(i)%nodes(j)%v => this%bundles(b)%v(c, v_idx)
+                    this%network_manager%has_active_node = .true.
+                end if
+            end do
+        end do
+
+    end subroutine
+
     subroutine advanceNWVoltage(this)
         class(mtln_t) :: this
         integer :: i,j
         integer ::b, c, v_idx, i_idx
         integer :: n
+        logical :: has_active_node
 ! #ifdef CompileWithMPI
 !         integer(kind=4) :: ierr
 !         call mpi_barrier(subcomm_mpi, ierr)
 ! #endif
-        if (this%number_of_bundles /= 0) then 
-            do i = 1, size(this%network_manager%networks)
-                do j = 1, size(this%network_manager%networks(i)%nodes)
-                    b = this%network_manager%networks(i)%nodes(j)%bundle_number
-                    c = this%network_manager%networks(i)%nodes(j)%conductor_number
-                    v_idx = this%network_manager%networks(i)%nodes(j)%v_index
-                    i_idx = this%network_manager%networks(i)%nodes(j)%i_index
-                    if (this%bundles(b)%bundle_in_layer) this%network_manager%networks(i)%nodes(j)%i = this%bundles(b)%i(c, i_idx)
-                end do
-            end do
-            
-            call this%network_manager%advanceVoltage()
+        if (this%number_of_bundles == 0) return
+        if (size(this%network_manager%networks) == 0) return
+        if (.not. this%network_manager%has_active_node) return
 
-            do i = 1, size(this%network_manager%networks)
-                do j = 1, size(this%network_manager%networks(i)%nodes)
-                    b = this%network_manager%networks(i)%nodes(j)%bundle_number
-                    c = this%network_manager%networks(i)%nodes(j)%conductor_number
-                    if (.not. this%network_manager%networks(i)%nodes(j)%open) then 
-                        v_idx = this%network_manager%networks(i)%nodes(j)%v_index
-                        i_idx = this%network_manager%networks(i)%nodes(j)%i_index
-                        if (this%bundles(b)%bundle_in_layer) this%bundles(b)%v(c, v_idx) = this%network_manager%networks(i)%nodes(j)%v
-                    else 
-                        if (this%network_manager%networks(i)%nodes(j)%side == TERMINAL_NODE_SIDE_INI) then 
-                            this%bundles(b)%v(c,1) = this%bundles(b)%v(c,1) - 2*dot_product(this%bundles(b)%i_diff(1,c,:), this%bundles(b)%i(:,1))
-                        else if (this%network_manager%networks(i)%nodes(j)%side == TERMINAL_NODE_SIDE_END) then 
-                            n = this%bundles(b)%number_of_divisions
-                            this%bundles(b)%v(c,n+1) = this%bundles(b)%v(c,n+1) + 2*dot_product(this%bundles(b)%i_diff(n,c,:), this%bundles(b)%i(:,n))
-                        end if
+        call this%network_manager%advanceVoltage()
+        call this%updateOpenNodes()
+    end subroutine
+
+    subroutine updateOpenNodes(this)
+        class(mtln_t) :: this
+        integer :: i, b, c, n
+        do i = 1, size(this%network_manager%open_nodes)
+            b = this%network_manager%open_nodes(i)%bundle_number
+            if (this%bundles(b)%bundle_in_layer) then
+                c = this%network_manager%open_nodes(i)%conductor_number
+                if (this%network_manager%open_nodes(i)%open) then
+                    if (this%network_manager%open_nodes(i)%side == TERMINAL_NODE_SIDE_INI) then
+                        this%bundles(b)%v(c,1) = this%bundles(b)%v(c,1) - 2*dot_product(this%bundles(b)%i_diff(1,c,:), this%bundles(b)%i(:,1))
+                    else if (this%network_manager%open_nodes(i)%side == TERMINAL_NODE_SIDE_END) then
+                        n = this%bundles(b)%number_of_divisions
+                        this%bundles(b)%v(c,n+1) = this%bundles(b)%v(c,n+1) + 2*dot_product(this%bundles(b)%i_diff(n,c,:), this%bundles(b)%i(:,n))
                     end if
-                end do
-            end do
-        end if
+                end if
+            end if
+        end do
     end subroutine
 
     subroutine advanceBundlesCurrent(this)
@@ -201,8 +230,9 @@ contains
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
         do i = 1, this%number_of_bundles
-            if (this%bundles(i)%bundle_in_layer) call this%bundles(i)%advanceCurrent()
-
+            if (this%bundles(i)%bundle_in_layer) then
+                call this%bundles(i)%advanceCurrent()
+            end if
         end do
     end subroutine
 
