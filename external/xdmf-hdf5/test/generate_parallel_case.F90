@@ -9,7 +9,7 @@ program generate_parallel_case
   type(xdmf_options_t) :: options
   type(xdmf_status_t) :: status
   type(xdmf_grid_id_t) :: grid
-  type(xdmf_attribute_id_t) :: field
+  type(xdmf_attribute_id_t) :: field, static_field
   character(len=1024) :: output_directory
   integer(int64) :: local_offset(3), local_count(3)
   real(real64), allocatable :: values(:)
@@ -42,6 +42,9 @@ program generate_parallel_case
   call writer%define_attribute(grid, 'field', XDMF_CENTER_NODE, &
     XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, .true., field, status)
   call require_ok(status, 'define distributed field')
+  call writer%define_attribute(grid, 'static-field', XDMF_CENTER_NODE, &
+    XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, static_field, status)
+  call require_ok(status, 'define distributed static field')
 
   if (rank < 2) then
     local_offset = [0_int64, 0_int64, int(2 * rank, int64)]
@@ -52,6 +55,22 @@ program generate_parallel_case
     local_count = 0_int64
     allocate(values(0))
   end if
+
+  if (rank < 2) then
+    value_index = 0
+    do local_k = 1, 2
+      k = 2 * rank + local_k
+      do j = 1, 2
+        do i = 1, 2
+          value_index = value_index + 1
+          values(value_index) = real(100 * k + 10 * j + i, real64)
+        end do
+      end do
+    end do
+  end if
+  call writer%write_attribute_hyperslab(static_field, values, local_offset, &
+    local_count, status)
+  call require_ok(status, 'write collective static hyperslab')
 
   do step = 1, 2
     if (rank < 2) then

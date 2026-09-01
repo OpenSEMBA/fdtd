@@ -1108,10 +1108,17 @@ contains
       XDMF_NUMERIC_REAL32, size(values, kind=int64), spatial_offset, &
       spatial_count, index, storage_offset, storage_count, status)
     if (status%is_error()) return
+    if (this%attributes(index)%is_series) then
     call hdf_append_series_hyperslab(this%hdf5_file, &
       this%attributes(index)%dataset_path, values, &
       this%attributes(index)%storage_shape, storage_offset, storage_count, &
       this%committed_steps, status)
+    else
+      call hdf_write_dataset(this%hdf5_file, &
+                             this%attributes(index)%dataset_path, values, &
+                             this%attributes(index)%storage_shape, status, storage_offset, &
+                             storage_count)
+    end if
     call synchronize_collective_status(this, status, &
       'Collective attribute hyperslab write failed')
     call finish_attribute_write(this, index, status)
@@ -1132,10 +1139,17 @@ contains
       XDMF_NUMERIC_REAL64, size(values, kind=int64), spatial_offset, &
       spatial_count, index, storage_offset, storage_count, status)
     if (status%is_error()) return
+    if (this%attributes(index)%is_series) then
     call hdf_append_series_hyperslab(this%hdf5_file, &
       this%attributes(index)%dataset_path, values, &
       this%attributes(index)%storage_shape, storage_offset, storage_count, &
       this%committed_steps, status)
+    else
+      call hdf_write_dataset(this%hdf5_file, &
+                             this%attributes(index)%dataset_path, values, &
+                             this%attributes(index)%storage_shape, status, storage_offset, &
+                             storage_count)
+    end if
     call synchronize_collective_status(this, status, &
       'Collective attribute hyperslab write failed')
     call finish_attribute_write(this, index, status)
@@ -1156,10 +1170,17 @@ contains
       XDMF_NUMERIC_INT32, size(values, kind=int64), spatial_offset, &
       spatial_count, index, storage_offset, storage_count, status)
     if (status%is_error()) return
+    if (this%attributes(index)%is_series) then
     call hdf_append_series_hyperslab(this%hdf5_file, &
       this%attributes(index)%dataset_path, values, &
       this%attributes(index)%storage_shape, storage_offset, storage_count, &
       this%committed_steps, status)
+    else
+      call hdf_write_dataset(this%hdf5_file, &
+                             this%attributes(index)%dataset_path, values, &
+                             this%attributes(index)%storage_shape, status, storage_offset, &
+                             storage_count)
+    end if
     call synchronize_collective_status(this, status, &
       'Collective attribute hyperslab write failed')
     call finish_attribute_write(this, index, status)
@@ -1180,10 +1201,17 @@ contains
       XDMF_NUMERIC_INT64, size(values, kind=int64), spatial_offset, &
       spatial_count, index, storage_offset, storage_count, status)
     if (status%is_error()) return
+    if (this%attributes(index)%is_series) then
     call hdf_append_series_hyperslab(this%hdf5_file, &
       this%attributes(index)%dataset_path, values, &
       this%attributes(index)%storage_shape, storage_offset, storage_count, &
       this%committed_steps, status)
+    else
+      call hdf_write_dataset(this%hdf5_file, &
+                             this%attributes(index)%dataset_path, values, &
+                             this%attributes(index)%storage_shape, status, storage_offset, &
+                             storage_count)
+    end if
     call synchronize_collective_status(this, status, &
       'Collective attribute hyperslab write failed')
     call finish_attribute_write(this, index, status)
@@ -1964,9 +1992,6 @@ contains
       if (this%attributes(index)%numeric_type /= numeric_type) then
         call set_status_error(status, XDMF_ERROR_ARGUMENT, &
           'Attribute values have the wrong numeric type')
-      else if (.not. this%attributes(index)%is_series) then
-        call set_status_error(status, XDMF_ERROR_STATE, &
-          'Collective hyperslabs currently support series attributes only')
       else if (size(this%attributes(index)%component_shape) /= 0) then
         call set_status_error(status, XDMF_ERROR_ARGUMENT, &
           'Collective hyperslabs currently support scalar attributes only')
@@ -2006,13 +2031,18 @@ contains
       if (expected_count < 0_int64 .or. value_count /= expected_count) then
         call set_status_error(status, XDMF_ERROR_ARGUMENT, &
           'Hyperslab value count does not match its local shape')
-      else if (.not. this%step_is_active) then
+      else if (this%attributes(index)%is_series) then
+        if (.not. this%step_is_active) then
         call set_status_error(status, XDMF_ERROR_STATE, &
           'A series attribute can only be written inside an active step')
       else if (this%attributes(index)%last_step == &
           this%committed_steps + 1) then
         call set_status_error(status, XDMF_ERROR_STATE, &
           'A series attribute can only be written once per step')
+      end if
+      else if (this%attributes(index)%is_written) then
+        call set_status_error(status, XDMF_ERROR_STATE, &
+                              'A static attribute can only be written once')
       end if
     end if
 

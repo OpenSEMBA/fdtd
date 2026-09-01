@@ -306,6 +306,23 @@ def verify_parallel_hyperslab(document: ET.Element, hdf5: h5py.File) -> None:
                     )
     np.testing.assert_allclose(values, expected)
 
+    static_values = hdf5["/attributes/a0002/values"][:]
+    require(static_values.shape == (4, 2, 2), "parallel-hyperslab: static shape")
+    expected_static = np.empty((4, 2, 2), dtype=np.float64)
+    for k in range(4):
+        for j in range(2):
+            for i in range(2):
+                expected_static[k, j, i] = 100 * (k + 1) + 10 * (j + 1) + i + 1
+    np.testing.assert_allclose(static_values, expected_static)
+
+    static_attributes = document.findall(".//Attribute[@Name='static-field']")
+    require(len(static_attributes) == 2, "parallel-hyperslab: static metadata")
+    for attribute in static_attributes:
+        item = attribute.find("DataItem")
+        require(item is not None, "parallel-hyperslab: missing static DataItem")
+        require(item.attrib.get("Format") == "HDF", "parallel-hyperslab: static format")
+        require(item.attrib.get("ItemType") is None, "parallel-hyperslab: static XDMF slab")
+
 
 def main() -> int:
     root = Path(sys.argv[1]).resolve()

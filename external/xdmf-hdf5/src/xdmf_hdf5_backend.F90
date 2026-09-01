@@ -250,13 +250,16 @@ contains
     end if
   end subroutine hdf_create_group
 
-  subroutine hdf_write_dataset_r4(file, path, data, shape, status)
+  subroutine hdf_write_dataset_r4(file, path, data, shape, status, &
+                                  local_offset, local_count)
     type(hdf5_file_t), intent(in) :: file
     character(len=*), intent(in) :: path
     real(real32), intent(in) :: data(:)
     integer(int64), intent(in) :: shape(:)
     type(xdmf_status_t), intent(out) :: status
+    integer(int64), intent(in), optional :: local_offset(:), local_count(:)
 
+    real(real32) :: dummy(1)
     integer(HID_T) :: dataset_id, filespace, memspace
     integer(HSIZE_T) :: buffer_dims(1)
     integer :: error
@@ -266,27 +269,36 @@ contains
       dataset_id, status)
     if (status%is_error()) return
 
-    buffer_dims(1) = int(size(data), HSIZE_T)
+    dummy = 0.0_real32
+    buffer_dims(1) = int(max(1, size(data)), HSIZE_T)
     call prepare_full_transfer(file, dataset_id, buffer_dims, filespace, &
-      memspace, status)
+                               memspace, status, local_offset, local_count)
     if (status%is_error()) then
       call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
         -1, status)
       return
     end if
+    if (size(data) == 0) then
+      call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_REAL32), &
+                      dummy, buffer_dims, error, memspace, filespace, file%transfer_property)
+    else
     call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_REAL32), &
       data, buffer_dims, error, memspace, filespace, file%transfer_property)
+    end if
     call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
       error, status)
   end subroutine hdf_write_dataset_r4
 
-  subroutine hdf_write_dataset_r8(file, path, data, shape, status)
+  subroutine hdf_write_dataset_r8(file, path, data, shape, status, &
+                                  local_offset, local_count)
     type(hdf5_file_t), intent(in) :: file
     character(len=*), intent(in) :: path
     real(real64), intent(in) :: data(:)
     integer(int64), intent(in) :: shape(:)
     type(xdmf_status_t), intent(out) :: status
+    integer(int64), intent(in), optional :: local_offset(:), local_count(:)
 
+    real(real64) :: dummy(1)
     integer(HID_T) :: dataset_id, filespace, memspace
     integer(HSIZE_T) :: buffer_dims(1)
     integer :: error
@@ -296,27 +308,36 @@ contains
       dataset_id, status)
     if (status%is_error()) return
 
-    buffer_dims(1) = int(size(data), HSIZE_T)
+    dummy = 0.0_real64
+    buffer_dims(1) = int(max(1, size(data)), HSIZE_T)
     call prepare_full_transfer(file, dataset_id, buffer_dims, filespace, &
-      memspace, status)
+                               memspace, status, local_offset, local_count)
     if (status%is_error()) then
       call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
         -1, status)
       return
     end if
+    if (size(data) == 0) then
+      call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_REAL64), &
+                      dummy, buffer_dims, error, memspace, filespace, file%transfer_property)
+    else
     call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_REAL64), &
       data, buffer_dims, error, memspace, filespace, file%transfer_property)
+    end if
     call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
       error, status)
   end subroutine hdf_write_dataset_r8
 
-  subroutine hdf_write_dataset_i4(file, path, data, shape, status)
+  subroutine hdf_write_dataset_i4(file, path, data, shape, status, &
+                                  local_offset, local_count)
     type(hdf5_file_t), intent(in) :: file
     character(len=*), intent(in) :: path
     integer(int32), intent(in) :: data(:)
     integer(int64), intent(in) :: shape(:)
     type(xdmf_status_t), intent(out) :: status
+    integer(int64), intent(in), optional :: local_offset(:), local_count(:)
 
+    integer(int32) :: dummy(1)
     integer(HID_T) :: dataset_id, filespace, memspace
     integer(HSIZE_T) :: buffer_dims(1)
     integer :: error
@@ -326,27 +347,36 @@ contains
       dataset_id, status)
     if (status%is_error()) return
 
-    buffer_dims(1) = int(size(data), HSIZE_T)
+    dummy = 0_int32
+    buffer_dims(1) = int(max(1, size(data)), HSIZE_T)
     call prepare_full_transfer(file, dataset_id, buffer_dims, filespace, &
-      memspace, status)
+                               memspace, status, local_offset, local_count)
     if (status%is_error()) then
       call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
         -1, status)
       return
     end if
+    if (size(data) == 0) then
+      call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_INT32), &
+                      dummy, buffer_dims, error, memspace, filespace, file%transfer_property)
+    else
     call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_INT32), &
       data, buffer_dims, error, memspace, filespace, file%transfer_property)
+    end if
     call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
       error, status)
   end subroutine hdf_write_dataset_i4
 
-  subroutine hdf_write_dataset_i8(file, path, data, shape, status)
+  subroutine hdf_write_dataset_i8(file, path, data, shape, status, &
+                                  local_offset, local_count)
     type(hdf5_file_t), intent(in) :: file
     character(len=*), intent(in) :: path
     integer(int64), intent(in) :: data(:)
     integer(int64), intent(in) :: shape(:)
     type(xdmf_status_t), intent(out) :: status
+    integer(int64), intent(in), optional :: local_offset(:), local_count(:)
 
+    integer(int64) :: dummy(1)
     integer(HID_T) :: dataset_id, filespace, memspace
     integer(HSIZE_T) :: buffer_dims(1)
     integer :: error
@@ -356,16 +386,22 @@ contains
       dataset_id, status)
     if (status%is_error()) return
 
-    buffer_dims(1) = int(size(data), HSIZE_T)
+    dummy = 0_int64
+    buffer_dims(1) = int(max(1, size(data)), HSIZE_T)
     call prepare_full_transfer(file, dataset_id, buffer_dims, filespace, &
-      memspace, status)
+                               memspace, status, local_offset, local_count)
     if (status%is_error()) then
       call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
         -1, status)
       return
     end if
+    if (size(data) == 0) then
+      call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_INT64), &
+                      dummy, buffer_dims, error, memspace, filespace, file%transfer_property)
+    else
     call h5dwrite_f(dataset_id, hdf_datatype(XDMF_NUMERIC_INT64), &
       data, buffer_dims, error, memspace, filespace, file%transfer_property)
+    end if
     call finish_fixed_write(file, dataset_id, filespace, memspace, path, &
       error, status)
   end subroutine hdf_write_dataset_i8
@@ -795,13 +831,15 @@ contains
   end subroutine create_fixed_dataset
 
   subroutine prepare_full_transfer(file, dataset_id, buffer_dims, filespace, &
-      memspace, status)
+                                   memspace, status, local_offset, local_count)
     type(hdf5_file_t), intent(in) :: file
     integer(HID_T), intent(in) :: dataset_id
     integer(HSIZE_T), intent(in) :: buffer_dims(1)
     integer(HID_T), intent(out) :: filespace, memspace
     type(xdmf_status_t), intent(out) :: status
+    integer(int64), intent(in), optional :: local_offset(:), local_count(:)
 
+    integer(HSIZE_T), allocatable :: hdf_offset(:), hdf_count(:)
     integer :: error, close_error
 
     call set_status_success(status)
@@ -809,7 +847,23 @@ contains
     memspace = -1_HID_T
     call h5dget_space_f(dataset_id, filespace, error)
     if (error == 0) call h5screate_simple_f(1, buffer_dims, memspace, error)
-    if (error == 0 .and. file%collective .and. file%rank /= file%root_rank) then
+    if (error == 0 .and. present(local_offset) .neqv. present(local_count)) then
+      error = -1
+    else if (error == 0 .and. present(local_offset)) then
+      if (size(local_offset) /= size(local_count)) then
+        error = -1
+      else if (all(local_count == 0_int64)) then
+        call h5sselect_none_f(filespace, error)
+        if (error == 0) call h5sselect_none_f(memspace, error)
+      else
+        allocate (hdf_offset(size(local_offset)), hdf_count(size(local_count)))
+        hdf_offset = int(local_offset, HSIZE_T)
+        hdf_count = int(local_count, HSIZE_T)
+        call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, hdf_offset, &
+                                   hdf_count, error)
+      end if
+    else if (error == 0 .and. file%collective .and. &
+             file%rank /= file%root_rank) then
       call h5sselect_none_f(filespace, error)
       if (error == 0) call h5sselect_none_f(memspace, error)
     end if
