@@ -351,7 +351,7 @@ contains
       geometry%auxCoords = upper_bound
       call store_relevant_coordinates(geometry, problemInfo)
       call createUnstructuredDataForVTU(geometry%nPoints, geometry%coords, geometry%currentType, nodes, edges, quads, &
-                                        num_nodes, num_edges, num_quads, .true., problemInfo%xSteps, &
+                                        num_nodes, num_edges, num_quads, .false., problemInfo%xSteps, &
                                         problemInfo%ySteps, problemInfo%zSteps)
       call build_cell_properties(geometry, problemInfo, num_edges, num_quads, tags, media_types)
 
