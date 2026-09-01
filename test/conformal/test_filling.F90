@@ -152,6 +152,64 @@ integer function test_conformal_surface_complementary_ratios() bind(C) result(er
     end do
 end function test_conformal_surface_complementary_ratios
 
+integer function test_conformal_partial_triangle_on_grid_face() bind(C) result(err)
+    use conformal_m
+    implicit none
+
+    type(coord_t), dimension(4) :: coords
+    type(ConformalPECRegions_t) :: regions
+    type(ConformalMedia_t), dimension(:), allocatable :: media
+    integer :: axis
+
+    err = 0
+    allocate(regions%surfaces(1))
+    allocate(regions%surfaces(1)%triangles(1))
+    allocate(regions%surfaces(1)%intervals(0))
+
+    do axis = 1, 3
+        select case(axis)
+        case(1)
+            coords(1) = coord_t(position=[0.0_RKIND,0.0_RKIND,0.0_RKIND], id=1)
+            coords(2) = coord_t(position=[0.0_RKIND,1.0_RKIND,0.0_RKIND], id=2)
+            coords(3) = coord_t(position=[0.0_RKIND,0.0_RKIND,1.0_RKIND], id=3)
+            coords(4) = coord_t(position=[0.0_RKIND,1.0_RKIND,1.0_RKIND], id=4)
+        case(2)
+            coords(1) = coord_t(position=[0.0_RKIND,0.0_RKIND,0.0_RKIND], id=1)
+            coords(2) = coord_t(position=[0.0_RKIND,0.0_RKIND,1.0_RKIND], id=2)
+            coords(3) = coord_t(position=[1.0_RKIND,0.0_RKIND,0.0_RKIND], id=3)
+            coords(4) = coord_t(position=[1.0_RKIND,0.0_RKIND,1.0_RKIND], id=4)
+        case(3)
+            coords(1) = coord_t(position=[0.0_RKIND,0.0_RKIND,0.0_RKIND], id=1)
+            coords(2) = coord_t(position=[1.0_RKIND,0.0_RKIND,0.0_RKIND], id=2)
+            coords(3) = coord_t(position=[0.0_RKIND,1.0_RKIND,0.0_RKIND], id=3)
+            coords(4) = coord_t(position=[1.0_RKIND,1.0_RKIND,0.0_RKIND], id=4)
+        end select
+
+        regions%surfaces(1)%triangles(1) = triangle_t(vertices=[coords(1),coords(2),coords(3)])
+        media = buildMedia(regions%surfaces)
+
+        if (size(media(1)%face_media) /= 1) then
+            err = err + 1
+        else
+            if (abs(media(1)%face_media(1)%ratio - 0.5_RKIND) > 0.01_RKIND) err = err + 1
+            if (size(media(1)%face_media(1)%faces) /= 1) err = err + 1
+        end if
+    end do
+
+    deallocate(regions%surfaces(1)%triangles)
+    allocate(regions%surfaces(1)%triangles(2))
+    regions%surfaces(1)%triangles(1) = triangle_t(vertices=[coords(1),coords(2),coords(3)])
+    regions%surfaces(1)%triangles(2) = triangle_t(vertices=[coords(2),coords(4),coords(3)])
+    media = buildMedia(regions%surfaces)
+
+    if (size(media(1)%face_media) /= 1) then
+        err = err + 1
+    else
+        if (abs(media(1)%face_media(1)%ratio) > 0.01_RKIND) err = err + 1
+        if (size(media(1)%face_media(1)%faces) /= 1) err = err + 1
+    end if
+end function test_conformal_partial_triangle_on_grid_face
+
 integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err)
 
 !         /|

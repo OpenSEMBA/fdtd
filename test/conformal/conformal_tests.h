@@ -27,6 +27,7 @@ extern "C" int test_conformal_filling_off_face_triangle_x();
 extern "C" int test_conformal_filling_off_face_triangle_y();
 extern "C" int test_conformal_filling_off_face_triangle_z();
 extern "C" int test_conformal_surface_complementary_ratios();
+extern "C" int test_conformal_partial_triangle_on_grid_face();
 extern "C" int test_conformal_filling_open();
 extern "C" int test_conformal_filling_closed();
 extern "C" int test_conformal_edge_next_cell();
@@ -64,6 +65,7 @@ TEST(conformal, conformal_filling_off_face_triangle_x)     { EXPECT_EQ(0, test_c
 TEST(conformal, conformal_filling_off_face_triangle_y)     { EXPECT_EQ(0, test_conformal_filling_off_face_triangle_y()); }
 TEST(conformal, conformal_filling_off_face_triangle_z)     { EXPECT_EQ(0, test_conformal_filling_off_face_triangle_z()); }
 TEST(conformal, conformal_surface_complementary_ratios)    { EXPECT_EQ(0, test_conformal_surface_complementary_ratios()); }
+TEST(conformal, conformal_partial_triangle_on_grid_face)   { EXPECT_EQ(0, test_conformal_partial_triangle_on_grid_face()); }
 TEST(conformal, conformal_filling_open)                        { EXPECT_EQ(0, test_conformal_filling_open()); }
 TEST(conformal, conformal_filling_closed)                      { EXPECT_EQ(0, test_conformal_filling_closed()); }
 TEST(conformal, conformal_edge_next_cell)                      { EXPECT_EQ(0, test_conformal_edge_next_cell()); }

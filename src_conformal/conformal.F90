@@ -946,7 +946,7 @@ contains
                call fillEdgesFromContour(contour, edges)
             end if
             tris_on_face = getTrianglesOnFace(tris, face)
-            if (size(tris_on_face) /= 0) call fillFullFaces(tris_on_face, faces, edges)
+            if (size(tris_on_face) /= 0) call fillFacesFromTriangles(tris_on_face, faces, edges)
          end do
          call fillIntervals(intervals,edges, faces)
       end do
@@ -1014,7 +1014,7 @@ contains
       end do
    end subroutine
 
-   subroutine fillFullFaces(tris_on_face, faces, edges)
+   subroutine fillFacesFromTriangles(tris_on_face, faces, edges)
       type(triangle_t), dimension(:), allocatable, intent(in) :: tris_on_face
       type(face_t), dimension(:), allocatable, intent(inout) :: faces
       type(edge_t), dimension(:), allocatable, intent(inout) :: edges
@@ -1024,14 +1024,16 @@ contains
       integer :: edge, face
       integer, dimension(3) :: cell
       area = 0.0
-      ratio = 0.0
       do j = 1, size(tris_on_face)
-         area = area + getArea(tris_on_face(j))
+         area = area + abs(getArea(tris_on_face(j)))
       end do
-      if (abs(area-1.0) < 1e-4) then
+      if (area > FACE_RATIO_EQ_TOLERANCE) then
          cell = tris_on_face(1)%getCell()
          face = tris_on_face(1)%getFace()
+         ratio = max(0.0_RKIND, 1.0_RKIND - area)
          call addFace(faces, cell, face, ratio)
+      end if
+      if (abs(area-1.0) < 1e-4) then
          do k = 1, size(tris_on_face)
             tri_sides = tris_on_face(k)%getSides()
             do s = 1, 3
@@ -1046,7 +1048,7 @@ contains
          end do
       end if
 
-   end subroutine
+   end subroutine fillFacesFromTriangles
 
    subroutine fillEdgesFromContour(contour, edges)
       type(side_t), dimension(:), allocatable, intent(in) :: contour
@@ -1248,6 +1250,15 @@ contains
       integer(kind=4) :: face
       type(face_t) :: new_face
       real(kind=rkind) :: ratio
+      integer :: i
+
+      do i = 1, size(faces)
+         if (all(faces(i)%cell == cell) .and. faces(i)%direction == face) then
+            faces(i)%ratio = min(faces(i)%ratio, ratio)
+            return
+         end if
+      end do
+
       allocate(aux(size(faces) + 1))
       aux(1:size(faces)) = faces
       new_face = face_t(cell=cell, ratio=ratio, direction=face)

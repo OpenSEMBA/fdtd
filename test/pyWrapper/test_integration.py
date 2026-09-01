@@ -210,6 +210,35 @@ def test_fill_mixed_conformal_volume_and_surfaces(tmp_path):
     assert createPropertyDictionary(vtkmapfile, celltype=3, property='mediatype')
     assert createPropertyDictionary(vtkmapfile, celltype=9, property='mediatype')
 
+
+@pytest.mark.conformal
+@pytest.mark.vtk
+def test_partial_triangle_on_grid_face_is_conformal(tmp_path):
+    fn = CASES_FOLDER + 'conformal_surface/conformal_surface_midcell.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    positions = {
+        1: [8, 0, 0],
+        2: [8, 1, 0],
+        4: [8, 0, 1],
+    }
+    for coordinate in solver['mesh']['coordinates']:
+        if coordinate['id'] in positions:
+            coordinate['relativePosition'] = positions[coordinate['id']]
+    solver['mesh']['elements'][0]['triangles'] = [[1, 2, 4]]
+
+    solver.run()
+
+    face_media = createPropertyDictionary(
+        solver.getVTKMap(), celltype=9, property='mediatype')
+    conformal_faces = {
+        medium: count for medium, count in face_media.items()
+        if 1000 < medium < 2000
+    }
+    assert sum(conformal_faces.values()) == 1
+
 @pytest.mark.conformal
 @pytest.mark.vtk
 def test_fill_conformal_fL_0_005_vtk_large_sphere(tmp_path):
