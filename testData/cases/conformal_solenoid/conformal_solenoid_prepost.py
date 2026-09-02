@@ -73,7 +73,7 @@ for label, input_filename, probe_name in CASES:
 
 
 # %% Time-domain comparison
-excitation = ExcitationFile(CASE_DIR / 'predefinedExcitation.1.exc')
+excitation = ExcitationFile(CASE_DIR / 'gauss.exc')
 voltage_time = excitation['time'].to_numpy()
 voltage = excitation['value'].to_numpy()
 

@@ -2,7 +2,7 @@
   "_format": "FDTD Input file",
   "general": {
     "timeStep": 1.540667e-10,
-    "numberOfSteps": 26,
+    "numberOfSteps": 32,
     "additionalArguments": ""
   },
   "boundary": {
@@ -20,12 +20,12 @@
       "resistancePerMeter": 0.0,
       "inductancePerMeter": 0.0
     },
-    { "name": "terminal_50ohm", "id": 3,
+    { "name": "terminal_25ohm", "id": 3,
       "type": "terminal",
       "terminations": [
         {
           "type": "series",
-          "resistance": 50.0,
+          "resistance": 25.0,
           "capacitance": 1e+22
         }
       ]
@@ -59,7 +59,7 @@
   "sources": [
     { "name": "Generator",
       "type": "generator",
-      "magnitudeFile": "predefinedExcitation.1.exc",
+      "magnitudeFile": "gauss.exc",
       "elementIds": [2],
       "field": "voltage",
       "attachedToLineId": 4
