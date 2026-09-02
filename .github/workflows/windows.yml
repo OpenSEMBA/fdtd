@@ -99,7 +99,17 @@ jobs:
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
-      run: python -m pytest -m 'not codemodel' test/ --deselect=test/pyWrapper/test_full_system.py::test_movie_in_planewave_in_box --durations=20 --junitxml=build/pytest-results.xml --basetemp=build/pytest-tmp
+      run: |
+        python -m pytest -m 'not codemodel' test/ --deselect=test/pyWrapper/test_full_system.py::test_movie_in_planewave_in_box --durations=0 --junitxml=build/pytest-results.xml --basetemp=build/pytest-tmp 2>&1 | Tee-Object -FilePath build/pytest-duration.log
+        exit $LASTEXITCODE
+
+    - name: Upload pytest duration log
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: pytest-duration-log-${{ matrix.compiler.name }}-mpi-${{ matrix.mpi }}-mtln-${{ matrix.mtln }}-double-${{ matrix.double-precision }}
+        path: build/pytest-duration.log
+        if-no-files-found: warn
 
     - name: Upload failed test diagnostics
       if: ${{ !cancelled() && (steps.ctest.outcome == 'failure' || steps.hdf-smoke.outcome == 'failure' || steps.python-tests.outcome == 'failure') }}

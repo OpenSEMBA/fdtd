@@ -6,7 +6,7 @@ module mtln_solver_m
     use probes_m, only: MTLN_PROBE_OUTPUT_ACTIVE, MTLN_PROBE_OUTPUT_COMPLETE, &
                         MTLN_PROBE_OUTPUT_DECLARED, MTLN_PROBE_OUTPUT_FAILED
     use FDETYPES_m, only: XYZlimit_t, RKIND_TIEMPO
-    use directoryUtils_m, only: create_file_with_path, get_last_component, join_path
+    use directoryUtils_m, only: create_file_with_path
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
     use mpi
@@ -430,11 +430,9 @@ contains
 
     function mtln_probe_data_path(root, name) result(data_path)
         character(len=*), intent(in) :: root, name
-        character(len=BUFSIZE) :: data_path, probe_path
+        character(len=BUFSIZE) :: data_path
 
-        probe_path = trim(root)//'_'//trim(name)
-        probe_path = join_path(probe_path, get_last_component(probe_path))
-        data_path = trim(probe_path)//'.dat'
+        data_path = trim(root)//'_'//trim(name)//'.dat'
     end function mtln_probe_data_path
 
 end module mtln_solver_m

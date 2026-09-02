@@ -100,23 +100,23 @@ contains
       call alloc_and_init(this%yValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
       call alloc_and_init(this%zValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
 
-      if (publication%local_is_owner) then
-         call create_folder(this%path, error)
-         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-                                          'Unable to create movie output directory')
-         call create_bin_file(this%filesPath, error)
-         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-                                          'Unable to create movie binary output')
-         call write_geometry_companion(this%filesPath, publication%global_lower, publication%global_upper, &
-                                       problemInfo, geometry_status, geometry_diagnostic)
-         if (geometry_status /= VISUALISATION_SUCCESS) then
-            call StopOnError(control%layoutnumber, control%num_procs, &
-                             'Unable to create movie geometry: '//trim(geometry_diagnostic))
-         end if
-      end if
-      call synchronise_movie_participants(this, control)
+       if (publication%local_is_owner) then
+          call create_folder(this%path, error)
+          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+                                           'Unable to create movie output directory')
+          call create_bin_file(this%filesPath, error)
+          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+                                           'Unable to create movie binary output')
+       end if
+       call synchronise_movie_participants(this, control)
+       call write_geometry_companion(this%filesPath, this%mainCoords, this%auxCoords, problemInfo, &
+                                     this%publication%communicator, geometry_status, geometry_diagnostic)
+       if (this%publication%local_is_owner .and. geometry_status /= VISUALISATION_SUCCESS) then
+          call StopOnError(control%layoutnumber, control%num_procs, &
+                           'Unable to create movie geometry: '//trim(geometry_diagnostic))
+       end if
 
-      if (publication%mode == OUTPUT_PUBLICATION_COLLECTIVE .or. publication%local_is_owner) then
+       if (publication%mode == OUTPUT_PUBLICATION_COLLECTIVE .or. publication%local_is_owner) then
          call create_movie_files(this, problemInfo, error)
          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
                                           'Unable to initialise movie HDF5 output')

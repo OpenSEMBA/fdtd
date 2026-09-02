@@ -24,3 +24,9 @@ add_test(
         $<TARGET_FILE:output_transport_mpi_test>
         ${MPIEXEC_POSTFLAGS}
 )
+
+set_tests_properties(
+    output_mpi_collective_and_root_aggregation
+    output_transport
+    PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=1"
+)

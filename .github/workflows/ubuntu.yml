@@ -103,7 +103,17 @@ jobs:
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
-      run: python -m pytest -vv test/ --durations=20 --junitxml=build/pytest-results.xml
+      run: |
+        set -o pipefail
+        python -m pytest -vv test/ --durations=0 --junitxml=build/pytest-results.xml 2>&1 | tee build/pytest-duration.log
+
+    - name: Upload pytest duration log
+      if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: pytest-duration-log-${{ matrix.compiler.name }}-mpi-${{ matrix.mpi }}-mtln-${{ matrix.mtln }}-double-${{ matrix.double-precision }}
+        path: build/pytest-duration.log
+        if-no-files-found: warn
 
     - name: Upload failed test diagnostics
       if: ${{ !cancelled() && (steps.ctest.outcome == 'failure' || steps.python-tests.outcome == 'failure') }}

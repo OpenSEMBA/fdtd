@@ -9,6 +9,8 @@ module mapVTKOutput_m
    use report_m
    use HollandWires_m, only: GetHwires
    use, intrinsic :: iso_fortran_env, only: int64, real64
+   use outputTransport_m, only: output_transport_t, init_output_transport, transfer_flush_batch, &
+                                 OUTPUT_TRANSPORT_SUCCESS
    use xdmf_hdf5_m, only: xdmf_writer_t, xdmf_options_t, xdmf_status_t, xdmf_grid_id_t, &
                           xdmf_attribute_id_t, XDMF_TOPOLOGY_POLYLINE, XDMF_TOPOLOGY_QUADRILATERAL, &
                           XDMF_CENTER_CELL, XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64
@@ -328,67 +330,72 @@ contains
       call write_pvtu_file(this%masterPath, piecePaths, cellScalarNames)
    end subroutine create_parallel_geometry_vtu
 
-   subroutine write_geometry_companion(base_path, lower_bound, upper_bound, problemInfo, status, diagnostic)
-      character(len=*), intent(in) :: base_path
-      type(cell_coordinate_t), intent(in) :: lower_bound, upper_bound
-      type(problem_info_t), target, intent(in) :: problemInfo
-      integer, intent(out) :: status
-      character(len=BUFSIZE), intent(out) :: diagnostic
+    subroutine write_geometry_companion(base_path, lower_bound, upper_bound, problemInfo, communicator, status, diagnostic)
+       character(len=*), intent(in) :: base_path
+       type(cell_coordinate_t), intent(in) :: lower_bound, upper_bound
+       type(problem_info_t), target, intent(in) :: problemInfo
+       integer, intent(in) :: communicator
+       integer, intent(out) :: status
+       character(len=BUFSIZE), intent(out) :: diagnostic
 
-      type(mapvtk_output_t) :: geometry
-      type(xdmf_writer_t) :: writer
-      type(xdmf_options_t) :: options
-      type(xdmf_status_t) :: writer_status, close_status
-      type(xdmf_grid_id_t) :: grid
-      type(xdmf_attribute_id_t) :: tags_attribute, media_attribute
-      integer :: num_nodes, num_edges, num_quads
-      real(RKIND), allocatable :: nodes(:, :)
-      integer(kind=SINGLE), allocatable :: edges(:, :), quads(:, :)
-      real, allocatable :: tags(:), media_types(:)
-      integer(int64), allocatable :: connectivity(:, :)
+       type(mapvtk_output_t) :: geometry
+       type(output_transport_t) :: transport
+       type(xdmf_writer_t) :: writer
+       type(xdmf_options_t) :: options
+       type(xdmf_status_t) :: writer_status, close_status
+       integer :: num_nodes, num_edges, num_quads
+       real(RKIND), allocatable :: nodes(:, :)
+       integer(kind=SINGLE), allocatable :: edges(:, :), quads(:, :)
+       real, allocatable :: tags(:), media_types(:)
+       real(real64), allocatable :: local_fragment(:), gathered_fragments(:)
+       integer, allocatable :: counts(:), displacements(:)
+       integer :: transport_status
+       logical :: invalid_fragment
 
-      geometry%mainCoords = lower_bound
-      geometry%auxCoords = upper_bound
+       geometry%mainCoords = lower_bound
+       geometry%auxCoords = upper_bound
       call store_relevant_coordinates(geometry, problemInfo)
       call createUnstructuredDataForVTU(geometry%nPoints, geometry%coords, geometry%currentType, nodes, edges, quads, &
-                                        num_nodes, num_edges, num_quads, .false., problemInfo%xSteps, &
-                                        problemInfo%ySteps, problemInfo%zSteps)
-      call build_cell_properties(geometry, problemInfo, num_edges, num_quads, tags, media_types)
+                                         num_nodes, num_edges, num_quads, .false., problemInfo%xSteps, &
+                                         problemInfo%ySteps, problemInfo%zSteps)
+       call build_cell_properties(geometry, problemInfo, num_edges, num_quads, tags, media_types)
+       call serialise_geometry_fragment(nodes, edges, quads, tags, media_types, local_fragment)
 
-      options%overwrite = .true.
-      call writer%create(trim(base_path)//'_geometry', options, writer_status)
+       call init_output_transport(transport, root_rank=0, status=transport_status, communicator=communicator)
+       if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
+          status = 1
+          diagnostic = 'Unable to initialise movie geometry transport'
+          return
+       end if
+       call transfer_flush_batch(transport, local_fragment, gathered_fragments, counts, displacements, transport_status)
+       if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
+          status = 1
+          diagnostic = 'Unable to gather movie geometry fragments'
+          return
+       end if
+
+       ! Only the transport root opens the companion; every participant supplied its local material fragment above.
+       if (transport%rank /= transport%root_rank) then
+          status = 0
+          diagnostic = ''
+          return
+       end if
+
+       options%overwrite = .true.
+       call writer%create(trim(base_path)//'_geometry', options, writer_status)
       if (writer_status%is_error()) then
          status = 1
-         diagnostic = writer_status%message()
-         return
-      end if
-
-      if (num_edges > 0) then
-         allocate (connectivity(2, num_edges))
-         connectivity = int(edges, int64) + 1_int64
-       call writer%define_unstructured_grid('lines', XDMF_TOPOLOGY_POLYLINE, real(nodes, real64), connectivity, grid, writer_status)
-         if (.not. writer_status%is_error()) call writer%define_attribute(grid, 'tagnumber', XDMF_CENTER_CELL, &
-                                                          XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, tags_attribute, writer_status)
-      if (.not. writer_status%is_error()) call writer%write_attribute(tags_attribute, real(tags(:num_edges), real64), writer_status)
-         if (.not. writer_status%is_error()) call writer%define_attribute(grid, 'mediatype', XDMF_CENTER_CELL, &
-                                                         XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, media_attribute, writer_status)
-          if (.not. writer_status%is_error()) call writer%write_attribute(media_attribute, real(media_types(:num_edges), real64), writer_status)
-         deallocate (connectivity)
-      end if
-
-      if (num_quads > 0 .and. .not. writer_status%is_error()) then
-         allocate (connectivity(4, num_quads))
-         connectivity = int(quads, int64) + 1_int64
-  call writer%define_unstructured_grid('faces', XDMF_TOPOLOGY_QUADRILATERAL, real(nodes, real64), connectivity, grid, writer_status)
-         if (.not. writer_status%is_error()) call writer%define_attribute(grid, 'tagnumber', XDMF_CENTER_CELL, &
-                                                          XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, tags_attribute, writer_status)
-  if (.not. writer_status%is_error()) call writer%write_attribute(tags_attribute, real(tags(num_edges + 1:), real64), writer_status)
-         if (.not. writer_status%is_error()) call writer%define_attribute(grid, 'mediatype', XDMF_CENTER_CELL, &
-                                                         XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, media_attribute, writer_status)
-          if (.not. writer_status%is_error()) call writer%write_attribute(media_attribute, real(media_types(num_edges + 1:), real64), writer_status)
-         deallocate (connectivity)
-      end if
-      if (writer_status%is_error()) then
+          diagnostic = writer_status%message()
+          return
+       end if
+       call write_geometry_fragments(writer, gathered_fragments, counts, displacements, invalid_fragment, writer_status)
+       if (invalid_fragment) then
+          call writer%close(close_status)
+          status = 1
+          diagnostic = 'Invalid movie geometry fragment'
+          return
+       end if
+       if (writer_status%is_error()) then
          call writer%close(close_status)
          status = 1
          diagnostic = writer_status%message()
@@ -400,9 +407,126 @@ contains
          diagnostic = writer_status%message()
       else
          status = 0
-         diagnostic = ''
-      end if
-   end subroutine write_geometry_companion
+          diagnostic = ''
+       end if
+    end subroutine write_geometry_companion
+
+    subroutine serialise_geometry_fragment(nodes, edges, quads, tags, media_types, fragment)
+       real(RKIND), intent(in) :: nodes(:, :)
+       integer(kind=SINGLE), intent(in) :: edges(:, :), quads(:, :)
+       real, intent(in) :: tags(:), media_types(:)
+       real(real64), allocatable, intent(out) :: fragment(:)
+       integer :: cursor, num_edges, num_quads
+
+       num_edges = size(edges, 2)
+       num_quads = size(quads, 2)
+       allocate (fragment(3 + size(nodes) + size(edges) + size(quads) + size(tags) + size(media_types)))
+       fragment(1:3) = [real(size(nodes, 2), real64), real(num_edges, real64), real(num_quads, real64)]
+       cursor = 4
+       if (size(nodes) > 0) then
+          fragment(cursor:cursor + size(nodes) - 1) = real(reshape(nodes, [size(nodes)]), real64)
+          cursor = cursor + size(nodes)
+       end if
+       if (size(edges) > 0) then
+          fragment(cursor:cursor + size(edges) - 1) = real(reshape(edges, [size(edges)]), real64)
+          cursor = cursor + size(edges)
+       end if
+       if (size(quads) > 0) then
+          fragment(cursor:cursor + size(quads) - 1) = real(reshape(quads, [size(quads)]), real64)
+          cursor = cursor + size(quads)
+       end if
+       if (size(tags) > 0) then
+          fragment(cursor:cursor + size(tags) - 1) = real(tags, real64)
+          cursor = cursor + size(tags)
+       end if
+       if (size(media_types) > 0) fragment(cursor:) = real(media_types, real64)
+    end subroutine serialise_geometry_fragment
+
+    subroutine write_geometry_fragments(writer, fragments, counts, displacements, invalid_fragment, writer_status)
+       type(xdmf_writer_t), intent(inout) :: writer
+       real(real64), intent(in) :: fragments(:)
+       integer, intent(in) :: counts(:), displacements(:)
+       logical, intent(out) :: invalid_fragment
+       type(xdmf_status_t), intent(inout) :: writer_status
+       type(xdmf_grid_id_t) :: grid
+       type(xdmf_attribute_id_t) :: tags_attribute, media_attribute
+       real(real64), allocatable :: nodes(:, :), tags(:), media_types(:)
+       integer(kind=SINGLE), allocatable :: edges(:, :), quads(:, :)
+       integer(int64), allocatable :: connectivity(:, :)
+       integer :: fragment_index, cursor, num_nodes, num_edges, num_quads, expected_size
+       character(len=32) :: grid_name
+
+       invalid_fragment = .false.
+       do fragment_index = 1, size(counts)
+          if (writer_status%is_error()) return
+          if (counts(fragment_index) < 3) then
+             invalid_fragment = .true.
+             return
+          end if
+          cursor = displacements(fragment_index) + 1
+          num_nodes = nint(fragments(cursor)); num_edges = nint(fragments(cursor + 1)); num_quads = nint(fragments(cursor + 2))
+          expected_size = 3 + 3*num_nodes + 2*num_edges + 4*num_quads + 2*(num_edges + num_quads)
+          if (num_nodes < 0 .or. num_edges < 0 .or. num_quads < 0 .or. counts(fragment_index) /= expected_size) then
+             invalid_fragment = .true.
+             return
+          end if
+          cursor = cursor + 3
+          allocate (nodes(3, num_nodes), edges(2, num_edges), quads(4, num_quads), tags(num_edges + num_quads), &
+                    media_types(num_edges + num_quads))
+          if (num_nodes > 0) then
+             nodes = reshape(fragments(cursor:cursor + 3*num_nodes - 1), shape(nodes)); cursor = cursor + 3*num_nodes
+          end if
+          if (num_edges > 0) then
+             edges = reshape(int(nint(fragments(cursor:cursor + 2*num_edges - 1)), kind=SINGLE), shape(edges))
+             cursor = cursor + 2*num_edges
+          end if
+          if (num_quads > 0) then
+             quads = reshape(int(nint(fragments(cursor:cursor + 4*num_quads - 1)), kind=SINGLE), shape(quads))
+             cursor = cursor + 4*num_quads
+          end if
+          if (num_edges + num_quads > 0) then
+             tags = fragments(cursor:cursor + num_edges + num_quads - 1); cursor = cursor + num_edges + num_quads
+             media_types = fragments(cursor:cursor + num_edges + num_quads - 1)
+          end if
+          if (num_edges > 0) then
+             write (grid_name, '("lines_rank_", I0)') fragment_index - 1
+             allocate (connectivity(2, num_edges)); connectivity = int(edges, int64) + 1_int64
+             call write_geometry_grid(writer, trim(grid_name), XDMF_TOPOLOGY_POLYLINE, nodes, connectivity, tags(:num_edges), &
+                                      media_types(:num_edges), grid, tags_attribute, media_attribute, writer_status)
+             deallocate (connectivity)
+          end if
+          if (num_quads > 0 .and. .not. writer_status%is_error()) then
+             write (grid_name, '("faces_rank_", I0)') fragment_index - 1
+             allocate (connectivity(4, num_quads)); connectivity = int(quads, int64) + 1_int64
+             call write_geometry_grid(writer, trim(grid_name), XDMF_TOPOLOGY_QUADRILATERAL, nodes, connectivity, &
+                                      tags(num_edges + 1:), media_types(num_edges + 1:), grid, tags_attribute, media_attribute, writer_status)
+             deallocate (connectivity)
+          end if
+          deallocate (nodes, edges, quads, tags, media_types)
+       end do
+    end subroutine write_geometry_fragments
+
+    subroutine write_geometry_grid(writer, name, topology, nodes, connectivity, tags, media_types, grid, tags_attribute, &
+                                   media_attribute, writer_status)
+       type(xdmf_writer_t), intent(inout) :: writer
+       character(len=*), intent(in) :: name
+       integer, intent(in) :: topology
+       real(real64), intent(in) :: nodes(:, :), tags(:), media_types(:)
+       integer(int64), intent(in) :: connectivity(:, :)
+       type(xdmf_grid_id_t), intent(out) :: grid
+       type(xdmf_attribute_id_t), intent(out) :: tags_attribute, media_attribute
+       type(xdmf_status_t), intent(inout) :: writer_status
+
+       call writer%define_unstructured_grid(name, topology, nodes, connectivity, grid, writer_status)
+       if (.not. writer_status%is_error()) call writer%define_attribute(grid, 'tagnumber', XDMF_CENTER_CELL, &
+                                                                         XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, &
+                                                                         tags_attribute, writer_status)
+       if (.not. writer_status%is_error()) call writer%write_attribute(tags_attribute, tags, writer_status)
+       if (.not. writer_status%is_error()) call writer%define_attribute(grid, 'mediatype', XDMF_CENTER_CELL, &
+                                                                         XDMF_ATTRIBUTE_SCALAR, XDMF_NUMERIC_REAL64, &
+                                                                         media_attribute, writer_status)
+       if (.not. writer_status%is_error()) call writer%write_attribute(media_attribute, media_types, writer_status)
+    end subroutine write_geometry_grid
 
    subroutine build_cell_properties(this, problemInfo, numEdges, numQuads, tags, media_types)
       type(mapvtk_output_t), intent(in) :: this

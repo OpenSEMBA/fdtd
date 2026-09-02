@@ -50,3 +50,7 @@ add_test(
         -DPROJECT_SOURCE_DIR=${CMAKE_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/test_output_implementation_wiring.cmake
 )
+
+if(SEMBA_FDTD_ENABLE_MPI)
+    set_tests_properties(output_implementation_wiring PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=1")
+endif()
