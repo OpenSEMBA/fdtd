@@ -148,7 +148,7 @@ The `elements` entry contains an array of JSON objects, each of which represents
   + `node`, representing a point in space. Elements with this type include a `<coordinateIds>` entry which is an array of a single integer representing the `id` of a coordinate and which must exist in the within the `mesh` `coordinates` list.
   + `polyline`, representing an oriented collection of segments. It must contain a list `<coordinateIds>` with at least two coordinates.
   + `cell`, containing a list of one or more `<intervals>` defined following the [interval convention](#the-interval-convention).
-  + `conformal` represents a conformal PEC element which contains a list of `[intervals]` and a list of `<triangles>`. An axis-aligned line with integer endpoints, or a rectangular surface on an integer grid face, is treated as ordinary PEC geometry. A rectangular surface with integer in-plane bounds and a non-integer constant coordinate is tessellated into conformal patches. Points, diagonal/non-grid-aligned lines, mixed-sign surface spans, and surfaces with non-integer in-plane bounds are invalid. The cells occupied by intervals and triangles can not contain both.
+  + `conformal` represents a conformal PEC or multilayered-surface element which contains a list of `[intervals]` and a list of `<triangles>`. An axis-aligned line with integer endpoints, or a rectangular surface on an integer grid face, is treated as ordinary geometry. A rectangular surface with integer in-plane bounds and a non-integer constant coordinate is tessellated into conformal patches. Points, diagonal/non-grid-aligned lines, mixed-sign surface spans, and surfaces with non-integer in-plane bounds are invalid. The cells occupied by intervals and triangles can not contain both.
   It also must contain an entry `subtype`, which can be:
     + `surface`, the intervals and triangles will be treated as a surface, which can be open or closed.
     + `volume`, the intervals and triangles must define a closed surface with all normals pointing outwards.
@@ -318,7 +318,18 @@ For each layer:
 
 For `multilayeredSurface`, the material `[name]` is also used as the NFDE file identifier.
 
-Its `elementIds` must reference `cell` elements. All `intervals` modeling entities different to oriented surfaces are ignored.
+Its `elementIds` can reference `cell` elements or `conformal` elements with
+`subtype: "surface"`. All `intervals` modeling entities different to oriented
+surfaces are ignored. A conformal multilayered surface currently supports only
+non-dispersive layers and serial/OpenMP execution with Crank-Nicolson SGBC time
+advancement; MPI, restart/resume, and stochastic material deviations are
+rejected. Each affected magnetic face must be split into two subfaces by the
+triangulation.
+
+For conformal surfaces, layer order follows triangle winding: the first layer
+is on the side opposite the oriented normal and the last layer is on the side
+towards it. Reversing all triangle vertices therefore reverses an asymmetric
+stack.
 
 ```json
 {

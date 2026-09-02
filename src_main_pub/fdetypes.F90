@@ -563,6 +563,7 @@ module  FDETYPES_m
       PML , &
       PEC , &
       ConformalPEC , &
+      ConformalSGBC , &
       PMC , &
       ThinWire , &
       Multiwire , &
@@ -620,6 +621,20 @@ module  FDETYPES_m
       integer(kind=4) :: size
    end type
 
+   ! Nominal, non-dispersive material profile used by both the JSON parser and
+   ! the conformal SGBC time-domain solver. Allocatable components make normal
+   ! derived-type assignment a deep copy.
+   type, public :: SGBCMaterialProfile_t
+      integer(kind=4) :: material_id = 0
+      integer(kind=4) :: num_layers = 0
+      character(len=BUFSIZE) :: name = ' '
+      real(kind=rkind), dimension(:), allocatable :: thickness
+      real(kind=rkind), dimension(:), allocatable :: eps
+      real(kind=rkind), dimension(:), allocatable :: mu
+      real(kind=rkind), dimension(:), allocatable :: sigma
+      real(kind=rkind), dimension(:), allocatable :: sigmam
+   end type SGBCMaterialProfile_t
+
    type, public :: edge_t
       integer(kind=4), dimension(3) :: cell
       integer(kind=4) :: direction = -1
@@ -635,6 +650,8 @@ module  FDETYPES_m
       logical :: is_two_sided = .false.
       integer(kind=4) :: split_direction = 0
       real(kind=rkind) :: lower_fraction = 0.0_RKIND
+      integer(kind=4) :: sgbc_profile_index = 0
+      integer(kind=4) :: surface_normal_sign = 0
       type(conformal_face_fields_t) :: region_I_fields, region_II_fields
    end type
 
@@ -653,6 +670,8 @@ module  FDETYPES_m
       type(conformal_edge_media_t), dimension(:), pointer :: edge_media => null()
       real(kind=rkind) :: time_step_scale_factor = 1.0
       character(len=BUFSIZE) :: tag
+      logical :: is_sgbc = .false.
+      type(SGBCMaterialProfile_t) :: sgbc_profile
    end type
 
 
@@ -703,6 +722,7 @@ module  FDETYPES_m
       type(Shared_t)                                        :: Hshared !hnormal info
       type(XYZlimit_t), dimension(1:6)                      :: Alloc,Sweep,SINPMLSweep
       type(MediaData_t), pointer, dimension( : )            :: Med
+      type(SGBCMaterialProfile_t), dimension(:), allocatable :: ConformalSGBCProfiles
       type(NodalSource_t), dimension( : ), pointer           :: NodalSource
       type(obses_t)  , pointer, dimension( : )              :: Observation
       !

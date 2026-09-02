@@ -69,6 +69,7 @@ module Solver_m
 
    use EpsMuTimeScale_m
    use CALC_CONSTANTS_m
+   use conformal_sgbc_m, only: conformal_sgbc_state_t
 #ifdef CompileWithPrescale
    use P_rescale
 #endif              
@@ -89,6 +90,9 @@ module Solver_m
       real(kind=rkind) :: lower_fraction = 0.0_RKIND
       real(kind=rkind) :: lower_h = 0.0_RKIND
       real(kind=rkind) :: upper_h = 0.0_RKIND
+      logical :: is_sgbc = .false.
+      integer(kind=4) :: surface_normal_sign = 0
+      type(conformal_sgbc_state_t) :: sgbc
    end type conformal_surface_face_state_t
 
    type, public :: solver_t
@@ -2558,6 +2562,11 @@ contains
          end select
          call addConformalElectricCorrection(this, transverse_direction, i, j, k, &
                                               sign*inverse_step*lower_fraction*field_correction)
+         if (this%conformal_surface_faces(n)%is_sgbc) then
+            call this%conformal_surface_faces(n)%sgbc%advance( &
+               sign*this%conformal_surface_faces(n)%lower_h, &
+               sign*this%conformal_surface_faces(n)%upper_h)
+         end if
       end do
    end subroutine solver_advanceConformalE
 
@@ -2586,6 +2595,7 @@ contains
       real(kind=rkind) :: sign, split_inverse_step, transverse_inverse_step
       real(kind=rkind) :: lower_e, upper_e, transverse_lower_e, transverse_upper_e
       real(kind=rkind) :: lower_fraction, common_curl, magnetic_factor
+      real(kind=rkind) :: surface_lower_e, surface_upper_e
 
       if (.not. allocated(this%conformal_surface_faces)) return
       do n = 1, size(this%conformal_surface_faces)
@@ -2603,10 +2613,16 @@ contains
                                        transverse_lower_e, transverse_upper_e, transverse_inverse_step)
          common_curl = sign*(transverse_upper_e-transverse_lower_e)*transverse_inverse_step
          magnetic_factor = this%sgg%dt/this%mu0
+         surface_lower_e = 0.0_RKIND
+         surface_upper_e = 0.0_RKIND
+         if (this%conformal_surface_faces(n)%is_sgbc) then
+            surface_lower_e = this%conformal_surface_faces(n)%sgbc%lower_e()
+            surface_upper_e = this%conformal_surface_faces(n)%sgbc%upper_e()
+         end if
          this%conformal_surface_faces(n)%lower_h = this%conformal_surface_faces(n)%lower_h + &
-            magnetic_factor*(common_curl+sign*lower_e*split_inverse_step/lower_fraction)
+            magnetic_factor*(common_curl+sign*(lower_e-surface_lower_e)*split_inverse_step/lower_fraction)
          this%conformal_surface_faces(n)%upper_h = this%conformal_surface_faces(n)%upper_h + &
-            magnetic_factor*(common_curl-sign*upper_e*split_inverse_step/(1.0_RKIND-lower_fraction))
+            magnetic_factor*(common_curl+sign*(surface_upper_e-upper_e)*split_inverse_step/(1.0_RKIND-lower_fraction))
          ! Preserve the full-face magnetic flux represented by the Yee field.
          ! The weighted subface updates reduce exactly to the ordinary Yee curl.
          select case (normal_direction)
@@ -2651,14 +2667,38 @@ contains
    subroutine initializeConformalSurfaceStates(this)
       class(solver_t) :: this
       type(conformal_surface_face_state_t), allocatable :: states(:), enlarged(:)
-      integer :: medium, feature, split_direction
+      integer :: medium, feature, split_direction, transverse_direction
       type(face_t) :: face
-      real(kind=rkind) :: lower_fraction
+      real(kind=rkind) :: lower_fraction, grid_step
+      logical :: medium_is_sgbc
+
+      if (allocated(this%sgg%ConformalSGBCProfiles)) then
+         if (size(this%sgg%ConformalSGBCProfiles) > 0) then
+            if (this%control%num_procs > 1) then
+               call WarnErrReport('Conformal SGBC is not supported with more than one MPI rank.', .true.)
+               return
+            end if
+            if (this%control%resume) then
+               call WarnErrReport('Restart/resume is not supported for conformal SGBC.', .true.)
+               return
+            end if
+            if (.not. this%control%sgbccrank) then
+               call WarnErrReport('Conformal SGBC requires Crank-Nicolson time advancement.', .true.)
+               return
+            end if
+            if (this%control%stochastic) then
+               call WarnErrReport('Stochastic material deviations are not supported for conformal SGBC.', .true.)
+               return
+            end if
+         end if
+      end if
 
       allocate(states(0))
       do medium = 1, this%sgg%NumMedia
-         if (.not. this%sgg%Med(medium)%Is%ConformalPEC .or. &
+         if (.not. (this%sgg%Med(medium)%Is%ConformalPEC .or. &
+             this%sgg%Med(medium)%Is%ConformalSGBC) .or. &
              .not. this%sgg%Med(medium)%Is%Surface) cycle
+         medium_is_sgbc = this%sgg%Med(medium)%Is%ConformalSGBC
          if (.not. allocated(this%sgg%Med(medium)%ConformalFace)) cycle
          do feature = 1, size(this%sgg%Med(medium)%ConformalFace)
             face = this%sgg%Med(medium)%ConformalFace(feature)
@@ -2673,6 +2713,31 @@ contains
             enlarged(size(enlarged))%face_direction = face%direction
             enlarged(size(enlarged))%split_direction = split_direction
             enlarged(size(enlarged))%lower_fraction = lower_fraction
+            enlarged(size(enlarged))%is_sgbc = medium_is_sgbc
+            enlarged(size(enlarged))%surface_normal_sign = face%surface_normal_sign
+            if (medium_is_sgbc) then
+               if (face%sgbc_profile_index < 1 .or. &
+                   face%sgbc_profile_index > size(this%sgg%ConformalSGBCProfiles) .or. &
+                   face%surface_normal_sign == 0) then
+                  call WarnErrReport('Conformal SGBC face has invalid material or winding metadata.', .true.)
+                  return
+               end if
+               transverse_direction = 6-face%direction-split_direction
+               if (transverse_direction < 1 .or. transverse_direction > 3) then
+                  call WarnErrReport('Conformal SGBC face has an invalid split topology.', .true.)
+                  return
+               end if
+               select case(split_direction)
+               case(1); grid_step = 1.0_RKIND/this%Idxe(face%cell(1))
+               case(2); grid_step = 1.0_RKIND/this%Idye(face%cell(2))
+               case(3); grid_step = 1.0_RKIND/this%Idze(face%cell(3))
+               end select
+               call enlarged(size(enlarged))%sgbc%init( &
+                  this%sgg%ConformalSGBCProfiles(face%sgbc_profile_index), this%sgg%dt, &
+                  lower_fraction*grid_step, (1.0_RKIND-lower_fraction)*grid_step, &
+                  this%control%sgbcFreq, this%control%sgbcresol, this%control%sgbcdepth, &
+                  face%surface_normal_sign < 0)
+            end if
             call move_alloc(enlarged, states)
          end do
       end do

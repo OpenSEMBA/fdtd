@@ -128,11 +128,14 @@ module NFDETypes_m
       type(triangle_t), dimension(:), allocatable :: triangles
       type(interval_t), dimension(:), allocatable :: intervals
       character(len=bufsize) :: tag
+      logical :: is_sgbc = .false.
+      type(SGBCMaterialProfile_t) :: sgbc_profile
    end type
 
    type, public :: ConformalPECRegions_t
       type(ConformalPECElements_t), dimension(:), pointer :: volumes => null()
       type(ConformalPECElements_t), dimension(:), pointer :: surfaces => null()
+      type(ConformalPECElements_t), dimension(:), pointer :: sgbc_surfaces => null()
    end type
 
    !------------------------------------------------------------------------------
@@ -803,5 +806,4 @@ contains
 
 
 end module NFDETypes_m
-
 
