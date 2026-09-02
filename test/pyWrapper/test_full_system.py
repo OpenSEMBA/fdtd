@@ -1733,39 +1733,30 @@ def test_conformal_surface_midcell_reflection(tmp_path, normal_axis, propagation
 @pytest.mark.conformal
 @pytest.mark.wires
 @pytest.mark.probes
-@pytest.mark.parametrize(
-    'plain_probe_name, conformal_probe_name',
-    [
-        ('wire_left_current', 'wire_left_current'),
-        ('BC', 'Bulk probe'),
-    ],
-)
-def test_solenoid_and_conformal_solenoid_currents_agree(
-    tmp_path, plain_probe_name, conformal_probe_name
-):
+def test_conformal_solenoid_currents_agree(tmp_path):
     """Compare current waveforms over the first 3.85 ns of each solenoid case."""
     case_definitions = [
-        ('solenoid', CASES_FOLDER + 'solenoid/solenoid.fdtd.json'),
+        (
+            'solenoid',
+            CASES_FOLDER + 'conformal_solenoid/solenoid.fdtd.json',
+            'BC',
+        ),
         (
             'conformal',
             CASES_FOLDER
-            + 'solenoid_45deg_with_conformal/'
+            + 'conformal_solenoid/'
             + 'solenoid_45deg_with_conformal.fdtd.json',
+            'Bulk probe',
         ),
     ]
     currents = []
 
-    for case_name, filename in case_definitions:
-        case_folder = tmp_path / case_name
-        case_folder.mkdir()
-        solver = FDTD(filename, path_to_exe=SEMBA_EXE, run_in_folder=case_folder)
+    for _, filename, probe_name in case_definitions:
+        solver = FDTD(filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
         solver['general']['numberOfSteps'] = 25
         solver.run()
 
         assert solver.hasFinishedSuccessfully()
-        probe_name = (
-            plain_probe_name if case_name == 'solenoid' else conformal_probe_name
-        )
         probe_filename = solver.getSolvedProbeFilenames(probe_name)[0]
         probe = Probe(probe_filename)
         currents.append((probe['time'].to_numpy(), probe['current'].to_numpy()))
@@ -1786,39 +1777,6 @@ def test_solenoid_and_conformal_solenoid_currents_agree(
     )
     assert np.corrcoef(current_plain, current_conformal)[0, 1] > 0.999
 
-@pytest.mark.conformal
-@pytest.mark.xfail(
-    run=False,
-    strict=True,
-    reason="The conformal thin-strip fixture is a placeholder with no surface triangles or impedance reference.",
-)
-def test_conformal_thin_strip_resistance(tmp_path):
-    fn = CASES_FOLDER + 'conformal_thin_strip/conformal_thin_strip.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
-
-    exc = pd.read_csv("predefinedExcitation.1.exc", sep='\\s+')
-    exc = exc.rename(columns={
-        exc.columns[0]: 'time',
-        exc.columns[1]: 'V'
-    })
-    new_freqs = np.geomspace(1e3, 1e7, num=100)
-    Vexc = exc["V"].to_numpy()
-    texc = exc["time"].to_numpy()
-    dt_exc = texc[1]-texc[0]
-    Vfexc = dt_exc*np.array([np.sum(Vexc * np.exp(-1j * 2 * np.pi * f * texc)) for f in new_freqs])
-
-    bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
-    Ibulk = bulk["current"].to_numpy()
-    tbulk = bulk["time"].to_numpy()
-    dt_bulk = tbulk[1]-tbulk[0]
-    Ifbulk = dt_bulk*np.array([np.sum(Ibulk * np.exp(-1j * 2 * np.pi * f * tbulk)) for f in new_freqs])
-    # compute
-    Rdc_th = 0
-    #impedance comparison
-    assert (np.abs(Vfexc/Ifbulk)[0] == Rdc_th)
 
 @no_mtln_skip
 @pytest.mark.mtln

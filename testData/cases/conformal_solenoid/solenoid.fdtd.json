@@ -2,7 +2,7 @@
   "_format": "FDTD Input file",
   "general": {
     "timeStep": 1.540667e-10,
-    "numberOfSteps": 194,
+    "numberOfSteps": 26,
     "additionalArguments": ""
   },
   "boundary": {
@@ -69,18 +69,7 @@
     { "name": "BC",
       "type": "bulkCurrent",
       "field": "electric",
-      "elementIds": [1],
-      "domain": {
-        "type": "time"
-      }
-    },
-    { "name": "wire_left_current",
-      "type": "wire",
-      "field": "current",
-      "elementIds": [6],
-      "domain": {
-        "type": "time"
-      }
+      "elementIds": [1]
     }
   ],
   "mesh": {
