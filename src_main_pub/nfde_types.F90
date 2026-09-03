@@ -1,7 +1,7 @@
 module NFDETypes_m
    !
    use FDETYPES_m
-#ifdef CompileWithMTLN   
+#ifdef CompileWithMTLN
    use mtln_types_m
 #endif
    use conformal_types_m
@@ -14,7 +14,7 @@ module NFDETypes_m
    ! global variable stochastic
    ! MATERIALS
    real(kind=RK), parameter :: SIGMA_PEC = 1e19_RK
-   real(kind=RK), parameter :: SIGMA_PMC = 1e19_RK 
+   real(kind=RK), parameter :: SIGMA_PMC = 1e19_RK
    ! PROBES
    !!!!
    integer(kind=4), parameter :: NP_T1_PLAIN = 0
@@ -64,7 +64,9 @@ module NFDETypes_m
    integer(kind=4), parameter :: diodo = 23
    integer(kind=4), parameter :: Dielectric = 24
    integer(kind=4), parameter :: PMLbody = 25
-
+   ! conformal
+   integer(kind=4), parameter :: isVolume = 1
+   integer(kind=4), parameter :: isSurface = 2
    !------------------------------------------------------------------------------
    ! TYPES
    !------------------------------------------------------------------------------
@@ -126,46 +128,15 @@ module NFDETypes_m
       type(triangle_t), dimension(:), allocatable :: triangles
       type(interval_t), dimension(:), allocatable :: intervals
       character(len=bufsize) :: tag
-   end type 
+      logical :: is_sgbc = .false.
+      type(SGBCMaterialProfile_t) :: sgbc_profile
+   end type
 
    type, public :: ConformalPECRegions_t
       type(ConformalPECElements_t), dimension(:), pointer :: volumes => null()
       type(ConformalPECElements_t), dimension(:), pointer :: surfaces => null()
+      type(ConformalPECElements_t), dimension(:), pointer :: sgbc_surfaces => null()
    end type
-
-
-   type, public :: edge_t 
-      integer(kind=4), dimension(3) :: cell
-      integer(kind=4) :: direction = -1
-      real(kind=rkind) :: ratio = -1
-      real(kind=rkind), dimension(2) :: material_coords
-   end type 
-   type, public :: face_t 
-      integer(kind=4), dimension(3) :: cell
-      integer(kind=4) :: direction = -1
-      real(kind=rkind) :: ratio = -1
-   end type 
-
-   type, public :: conformal_edge_media_t
-      type(edge_t), dimension(:), allocatable :: edges
-      real(kind=rkind) :: ratio
-      integer(kind=4) :: n_elements
-   end type
-   type, public :: conformal_face_media_t
-      type(face_t), dimension(:), allocatable :: faces
-      real(kind=rkind) :: ratio
-      integer(kind=4) :: n_elements
-   end type
-
-   type, public :: ConformalMedia_t
-      integer(kind=4) :: n_edges_media = 0
-      integer(kind=4) :: n_faces_media = 0
-      type(conformal_face_media_t), dimension(:), pointer :: face_media => NULL ()
-      type(conformal_edge_media_t), dimension(:), pointer :: edge_media => NULL ()
-      real(kind=rkind) :: time_step_scale_factor = 1.0
-      character(len=bufsize) :: tag
-   end type ConformalMedia_t
-
 
    !------------------------------------------------------------------------------
    ! Locates all the different PEC media found
@@ -346,8 +317,8 @@ module NFDETypes_m
       real(kind=RK), dimension(:), pointer :: thk_devia
       !
       integer(kind=4) :: nc = 0
-      character(len=BUFSIZE) :: files = ' ' 
-      integer(kind=4) :: numcapas  
+      character(len=BUFSIZE) :: files = ' '
+      integer(kind=4) :: numcapas
    end type LossyThinSurface_t
    !------------------------------------------------------------------------------
    ! Locates all the different Comp media found
@@ -611,7 +582,7 @@ module NFDETypes_m
    ! Abstract class which performs the dynamic dispatching
    !------------------------------------------------------------------------------
    type, public :: abstractSonda_t
-      integer(kind=4) :: n_FarField = 0 
+      integer(kind=4) :: n_FarField = 0
       integer(kind=4) :: n_Electric = 0
       integer(kind=4) :: n_Magnetic = 0
       integer(kind=4) :: n_NormalElectric = 0
@@ -782,7 +753,7 @@ module NFDETypes_m
    ! Parameters needed for the parser
    !------------------------------------------------------------------------------
    type, public :: Parseador_t
-      character(len=BUFSIZE) :: switches=' '  
+      character(len=BUFSIZE) :: switches=' '
       ! Basics
       type(NFDEGeneral_t), pointer :: general => NULL ()
       type(MatrizMedios_t), pointer :: matriz => NULL ()
@@ -805,17 +776,17 @@ module NFDETypes_m
       type(MasSondas_t), pointer :: Sonda => NULL ()
       type(BloqueProbes_t), pointer :: BloquePrb => NULL ()
       type(VolProbes_t), pointer :: VolPrb => NULL ()
-      ! Thin Elements                         
+      ! Thin Elements
       type(ThinWires_t), pointer :: tWires => NULL ()
       type(SlantedWiresInfo_t), pointer :: sWires => NULL ()
       type(ThinSlots_t), pointer :: tSlots => NULL ()
       ! Conformal
       type(ConformalPECRegions_t), pointer :: conformalRegs => NULL()
 #ifdef CompileWithMTLN
-      type(mtln_t), pointer :: mtln => NULL () 
+      type(mtln_t), pointer :: mtln => NULL ()
 #endif
    end type Parseador_t
-   
+
    !---> definicion de tipos
    type, public :: t_linea_t
       integer(kind=4) :: LEN
@@ -836,4 +807,3 @@ contains
 
 end module NFDETypes_m
 
-    

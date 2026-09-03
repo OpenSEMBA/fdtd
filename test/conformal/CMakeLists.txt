@@ -6,6 +6,7 @@ add_library (conformal_test_fortran
     "test_geometry.F90"
     "test_cell_map.F90"
     "test_filling.F90"
+    "test_conformal_sgbc.F90"
     # "test_pec_volume.F90"
 )
 

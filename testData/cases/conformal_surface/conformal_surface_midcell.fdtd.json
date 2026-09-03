@@ -1,0 +1,72 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Pseudo-1D plane wave reflecting from a two-sided conformal PEC sheet.",
+    "general": {
+        "timeStep": 1.5e-11,
+        "numberOfSteps": 600
+    },
+    "boundary": {
+        "xLower": {"type": "mur"},
+        "xUpper": {"type": "mur"},
+        "yLower": {"type": "periodic"},
+        "yUpper": {"type": "periodic"},
+        "zLower": {"type": "periodic"},
+        "zUpper": {"type": "periodic"}
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [16, 2, 2],
+            "steps": {"x": [0.01], "y": [0.01], "z": [0.01]}
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [8.5, 0, 0]},
+            {"id": 2, "relativePosition": [8.5, 1, 0]},
+            {"id": 3, "relativePosition": [8.5, 2, 0]},
+            {"id": 4, "relativePosition": [8.5, 0, 1]},
+            {"id": 5, "relativePosition": [8.5, 1, 1]},
+            {"id": 6, "relativePosition": [8.5, 2, 1]},
+            {"id": 7, "relativePosition": [8.5, 0, 2]},
+            {"id": 8, "relativePosition": [8.5, 1, 2]},
+            {"id": 9, "relativePosition": [8.5, 2, 2]},
+            {"id": 10, "relativePosition": [4, 1, 1]},
+            {"id": 11, "relativePosition": [12, 1, 1]}
+        ],
+        "elements": [
+            {
+                "id": 1,
+                "name": "mid-cell PEC sheet",
+                "type": "conformal",
+                "subtype": "surface",
+                "intervals": [],
+                "triangles": [
+                    [1, 2, 5], [1, 5, 4],
+                    [2, 3, 6], [2, 6, 5],
+                    [4, 5, 8], [4, 8, 7],
+                    [5, 6, 9], [5, 9, 8]
+                ]
+            },
+            {"id": 2, "name": "total-field box", "type": "cell", "intervals": [[[1, -1, -1], [15, 3, 3]]]},
+            {"id": 3, "type": "node", "coordinateIds": [10]},
+            {"id": 4, "type": "node", "coordinateIds": [11]}
+        ]
+    },
+    "materials": [
+        {"id": 1, "name": "PEC sheet", "type": "pec"}
+    ],
+    "materialAssociations": [
+        {"materialId": 1, "elementIds": [1]}
+    ],
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [2],
+            "direction": {"theta": 1.5707963267948966, "phi": 0.0},
+            "polarization": {"theta": 0.0, "phi": 0.0}
+        }
+    ],
+    "probes": [
+        {"name": "left", "type": "point", "field": "electric", "elementIds": [3], "directions": ["z"], "domain": {"type": "time"}},
+        {"name": "right", "type": "point", "field": "electric", "elementIds": [4], "directions": ["z"], "domain": {"type": "time"}}
+    ]
+}

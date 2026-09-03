@@ -17,6 +17,8 @@ extern "C" int test_geometry_side_side_contour();
 extern "C" int test_geometry_side_side_contour_2();
 extern "C" int test_geometry_side_side_contour_3();
 extern "C" int test_geometry_areas();
+extern "C" int test_geometry_closed_surface_orientation();
+extern "C" int test_geometry_combined_surface_topology();
 extern "C" int test_cell_map_coords();
 extern "C" int test_cell_map_array();
 extern "C" int test_cell_map_add_triangle();
@@ -24,6 +26,8 @@ extern "C" int test_cell_map_cellmap_set_get();
 extern "C" int test_conformal_filling_off_face_triangle_x();
 extern "C" int test_conformal_filling_off_face_triangle_y();
 extern "C" int test_conformal_filling_off_face_triangle_z();
+extern "C" int test_conformal_surface_complementary_ratios();
+extern "C" int test_conformal_partial_triangle_on_grid_face();
 extern "C" int test_conformal_filling_open();
 extern "C" int test_conformal_filling_closed();
 extern "C" int test_conformal_edge_next_cell();
@@ -32,6 +36,10 @@ extern "C" int test_conformal_filling_closed_corner();
 extern "C" int test_conformal_filling_block_and_corner();
 extern "C" int test_conformal_pec_media();
 extern "C" int test_conformal_pec_corner();
+extern "C" int test_conformal_sgbc_zero_state();
+extern "C" int test_conformal_sgbc_layer_orientation();
+extern "C" int test_conformal_sgbc_geometry_winding();
+extern "C" int test_conformal_sgbc_rejects_unsplit_geometry();
 
 TEST(conformal, geometry_coord_position)   { EXPECT_EQ(0, test_geometry_coord_position()); }
 TEST(conformal, geometry_side_position)    { EXPECT_EQ(0, test_geometry_side_position()); }
@@ -49,6 +57,8 @@ TEST(conformal, geometry_ss_contour)       { EXPECT_EQ(0, test_geometry_side_sid
 TEST(conformal, geometry_ss_contour2)      { EXPECT_EQ(0, test_geometry_side_side_contour_2()); }
 TEST(conformal, geometry_ss_contour3)      { EXPECT_EQ(0, test_geometry_side_side_contour_3()); }
 TEST(conformal, geometry_areas)            { EXPECT_EQ(0, test_geometry_areas()); }
+TEST(conformal, geometry_closed_surface_orientation) { EXPECT_EQ(0, test_geometry_closed_surface_orientation()); }
+TEST(conformal, geometry_combined_surface_topology) { EXPECT_EQ(0, test_geometry_combined_surface_topology()); }
 
 TEST(conformal, cell_map_coords)              { EXPECT_EQ(0, test_cell_map_coords()); }
 TEST(conformal, cell_map_array)               { EXPECT_EQ(0, test_cell_map_array()); }
@@ -58,11 +68,17 @@ TEST(conformal, cell_map_cellmap_set_get)     { EXPECT_EQ(0, test_cell_map_cellm
 TEST(conformal, conformal_filling_off_face_triangle_x)     { EXPECT_EQ(0, test_conformal_filling_off_face_triangle_x()); }
 TEST(conformal, conformal_filling_off_face_triangle_y)     { EXPECT_EQ(0, test_conformal_filling_off_face_triangle_y()); }
 TEST(conformal, conformal_filling_off_face_triangle_z)     { EXPECT_EQ(0, test_conformal_filling_off_face_triangle_z()); }
+TEST(conformal, conformal_surface_complementary_ratios)    { EXPECT_EQ(0, test_conformal_surface_complementary_ratios()); }
+TEST(conformal, conformal_partial_triangle_on_grid_face)   { EXPECT_EQ(0, test_conformal_partial_triangle_on_grid_face()); }
 TEST(conformal, conformal_filling_open)                        { EXPECT_EQ(0, test_conformal_filling_open()); }
 TEST(conformal, conformal_filling_closed)                      { EXPECT_EQ(0, test_conformal_filling_closed()); }
 TEST(conformal, conformal_edge_next_cell)                      { EXPECT_EQ(0, test_conformal_edge_next_cell()); }
 TEST(conformal, conformal_filling_closed_corner)               { EXPECT_EQ(0, test_conformal_filling_closed_corner()); }
 TEST(conformal, conformal_filling_block_and_corner)            { EXPECT_EQ(0, test_conformal_filling_block_and_corner()); }
+TEST(conformal, conformal_sgbc_zero_state)                     { EXPECT_EQ(0, test_conformal_sgbc_zero_state()); }
+TEST(conformal, conformal_sgbc_layer_orientation)              { EXPECT_EQ(0, test_conformal_sgbc_layer_orientation()); }
+TEST(conformal, conformal_sgbc_geometry_winding)               { EXPECT_EQ(0, test_conformal_sgbc_geometry_winding()); }
+TEST(conformal, conformal_sgbc_rejects_unsplit_geometry)       { EXPECT_EQ(0, test_conformal_sgbc_rejects_unsplit_geometry()); }
 
 // TEST(conformal, conformal_pec_corner)        { EXPECT_EQ(0, test_conformal_pec_corner()); }
 // TEST(conformal, conformal_pec_media)        { EXPECT_EQ(0, test_conformal_pec_media()); }

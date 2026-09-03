@@ -1,0 +1,31 @@
+{
+  "general": {"timeStep": 1e-12, "numberOfSteps": 1},
+  "mesh": {
+    "grid": {"numberOfCells": [2, 2, 2], "steps": {"x": [1.0], "y": [1.0], "z": [1.0]}},
+    "coordinates": [
+      {"id": 1, "relativePosition": [0.5, 0.0, 0.0]},
+      {"id": 2, "relativePosition": [0.5, 1.0, 0.0]},
+      {"id": 3, "relativePosition": [0.5, 0.0, 1.0]}
+    ],
+    "elements": [
+      {"id": 1, "type": "conformal", "subtype": "surface", "intervals": [], "triangles": [[1, 2, 3]]}
+    ]
+  },
+  "materials": [
+    {
+      "id": 7,
+      "name": "two layer panel",
+      "type": "multilayeredSurface",
+      "layers": [
+        {"thickness": 0.001, "relativePermittivity": 2.0, "electricConductivity": 3.0},
+        {"thickness": 0.002, "relativePermeability": 4.0, "magneticConductivity": 5.0}
+      ]
+    }
+  ],
+  "boundary": {
+    "xLower": {"type": "mur"}, "xUpper": {"type": "mur"},
+    "yLower": {"type": "mur"}, "yUpper": {"type": "mur"},
+    "zLower": {"type": "mur"}, "zUpper": {"type": "mur"}
+  },
+  "materialAssociations": [{"materialId": 7, "elementIds": [1]}]
+}

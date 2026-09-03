@@ -69,6 +69,7 @@ module Solver_m
 
    use EpsMuTimeScale_m
    use CALC_CONSTANTS_m
+   use conformal_sgbc_m, only: conformal_sgbc_state_t
 #ifdef CompileWithPrescale
    use P_rescale
 #endif              
@@ -82,6 +83,17 @@ module Solver_m
 #endif
    implicit none
 
+   type :: conformal_surface_face_state_t
+      integer(kind=4), dimension(3) :: cell = 0
+      integer(kind=4) :: face_direction = 0
+      integer(kind=4) :: split_direction = 0
+      real(kind=rkind) :: lower_fraction = 0.0_RKIND
+      real(kind=rkind) :: lower_h = 0.0_RKIND
+      real(kind=rkind) :: upper_h = 0.0_RKIND
+      logical :: is_sgbc = .false.
+      integer(kind=4) :: surface_normal_sign = 0
+      type(conformal_sgbc_state_t) :: sgbc
+   end type conformal_surface_face_state_t
 
    type, public :: solver_t
       type(sim_control_t) :: control
@@ -109,6 +121,7 @@ module Solver_m
       logical :: finishedwithsuccess = .false.
       real(kind=rkind) :: eps0,mu0
       type(tagtype_t) :: tagtype
+      type(conformal_surface_face_state_t), allocatable :: conformal_surface_faces(:)
 
 #ifdef CompileWithMTLN
       type(mtln_t) :: mtln_parsed
@@ -141,6 +154,8 @@ module Solver_m
       procedure :: advanceMagneticCPML => solver_advanceMagneticCPML
       procedure :: advanceSGBCE => solver_advanceSGBCE
       procedure :: advanceSGBCH => solver_advanceSGBCH
+      procedure :: advanceConformalE => solver_advanceConformalE
+      procedure :: advanceConformalH => solver_advanceConformalH
       procedure :: advanceEDispersiveE => solver_advanceEDispersiveE
       procedure :: advanceMDispersiveH => solver_advanceMDispersiveH
       procedure :: MinusCloneMagneticPMC => solver_MinusCloneMagneticPMC
@@ -580,6 +595,8 @@ module Solver_m
       call initializeAnisotropic()
       call initializeSGBC()
       call initializeMultiports()
+      call initializeConformalElements()
+      call initializeConformal()
       
       call initializeEDispersives()
       call initializeMDispersives()
@@ -1349,6 +1366,45 @@ contains
 #endif
       end subroutine initializeMultiports
 
+      subroutine initializeConformal()
+#ifdef CompileWithMPI
+         integer :: ierr
+         call MPI_Barrier(SUBCOMM_MPI, ierr)
+#endif
+         call initializeConformalSurfaceStates(this)
+      end subroutine initializeConformal
+
+      subroutine initializeConformalElements()
+         character(len=BUFSIZE) :: dubuf
+         logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer(kind=4) :: ierr
+#endif
+
+#ifdef CompileWithConformal
+         if (input_conformal_flag) then
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI, ierr)
+#endif
+            write(dubuf,*) 'Init Conformal Elements ...'; call print11(this%control%layoutnumber,dubuf)
+            call initialize_memory_FDTD_conf_fields(this%sgg,this%media%sggMiEx, &
+               this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, &
+               Ex,Ey,Ez,Hx,Hy,Hz,this%control%layoutnumber,this%control%num_procs,this%control%verbose)
+            l_auxinput = input_conformal_flag
+            l_auxoutput = l_auxinput
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+            call MPI_AllReduce(l_auxinput,l_auxoutput,1_4,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,ierr)
+#endif
+            if (l_auxoutput) then
+               write(dubuf,*) '----> there are conformal elements'; call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no conformal elements found'; call print11(this%control%layoutnumber,dubuf)
+            end if
+         end if
+#endif
+      end subroutine initializeConformalElements
+
       subroutine initializeEDispersives()
          character(len=bufsize) :: dubuf
          logical :: l_auxinput, l_auxoutput
@@ -1733,6 +1789,11 @@ contains
       real(kind=rkind) :: pscale_alpha
       real(kind=rkind_tiempo) :: at
       character(len=bufsize) :: dubuf
+#ifdef CompileWithConformal
+#ifdef CompileWithMPI
+      call this%init_MPIConformalProbes()
+#endif
+#endif
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
@@ -2028,6 +2089,10 @@ contains
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       call this%AdvanceAnisotropicE()
       call this%advanceE()
+      call this%advanceConformalE()
+#ifdef CompileWithConformal
+      if (this%control%input_conformal_flag) call conformal_advance_E()
+#endif
 
       call this%advanceWiresE()
       call this%advancePMLE()
@@ -2049,10 +2114,14 @@ contains
 
       call this%advanceAnisotropicH()
       call this%advanceH()
+      call this%advanceConformalH()
       call this%advancePMLbodyH()
       call this%AdvanceMagneticCPML()
       call this%MinusCloneMagneticPMC()
       call this%CloneMagneticPeriodic()
+#ifdef CompileWithConformal
+      if (this%control%input_conformal_flag) call conformal_advance_H()
+#endif
       call this%AdvancesgbcH()
       call this%AdvanceMDispersiveH()
 #ifdef CompileWithNIBC
@@ -2457,6 +2526,250 @@ contains
       return
    end subroutine advanceHz
 
+
+   subroutine solver_advanceConformalE(this)
+      class(solver_t) :: this
+      integer :: n, i, j, k, normal_direction, split_direction, transverse_direction
+      real(kind=rkind) :: sign, inverse_step, field_correction, lower_fraction
+
+      if (.not. allocated(this%conformal_surface_faces)) return
+      do n = 1, size(this%conformal_surface_faces)
+         i = this%conformal_surface_faces(n)%cell(1)
+         j = this%conformal_surface_faces(n)%cell(2)
+         k = this%conformal_surface_faces(n)%cell(3)
+         normal_direction = this%conformal_surface_faces(n)%face_direction
+         split_direction = this%conformal_surface_faces(n)%split_direction
+         transverse_direction = 6-normal_direction-split_direction
+         sign = leviCivita(normal_direction, split_direction, transverse_direction)
+         lower_fraction = this%conformal_surface_faces(n)%lower_fraction
+         field_correction = this%conformal_surface_faces(n)%upper_h - &
+                            this%conformal_surface_faces(n)%lower_h
+
+         ! The ordinary Yee update sees the area-weighted H stored on the grid.
+         ! Replace it with lower_h and upper_h on the two electric boundaries
+         ! normal to the split, respectively.
+         select case (split_direction)
+         case (1); inverse_step = this%Idxh(i)
+         case (2); inverse_step = this%Idyh(j)
+         case (3); inverse_step = this%Idzh(k)
+         end select
+         call addConformalElectricCorrection(this, transverse_direction, i, j, k, &
+                                              sign*inverse_step*(1.0_RKIND-lower_fraction)*field_correction)
+         select case (split_direction)
+         case (1); i = i + 1; inverse_step = this%Idxh(i)
+         case (2); j = j + 1; inverse_step = this%Idyh(j)
+         case (3); k = k + 1; inverse_step = this%Idzh(k)
+         end select
+         call addConformalElectricCorrection(this, transverse_direction, i, j, k, &
+                                              sign*inverse_step*lower_fraction*field_correction)
+         if (this%conformal_surface_faces(n)%is_sgbc) then
+            call this%conformal_surface_faces(n)%sgbc%advance( &
+               sign*this%conformal_surface_faces(n)%lower_h, &
+               sign*this%conformal_surface_faces(n)%upper_h)
+         end if
+      end do
+   end subroutine solver_advanceConformalE
+
+   subroutine addConformalElectricCorrection(this, direction, i, j, k, correction)
+      class(solver_t) :: this
+      integer, intent(in) :: direction, i, j, k
+      real(kind=rkind), intent(in) :: correction
+      integer :: medium
+
+      select case (direction)
+      case (1)
+         medium = this%media%sggMiEx(i,j,k)
+         this%Ex(i,j,k) = this%Ex(i,j,k)+this%g%g2(medium)*correction
+      case (2)
+         medium = this%media%sggMiEy(i,j,k)
+         this%Ey(i,j,k) = this%Ey(i,j,k)+this%g%g2(medium)*correction
+      case (3)
+         medium = this%media%sggMiEz(i,j,k)
+         this%Ez(i,j,k) = this%Ez(i,j,k)+this%g%g2(medium)*correction
+      end select
+   end subroutine addConformalElectricCorrection
+
+   subroutine solver_advanceConformalH(this)
+      class(solver_t) :: this
+      integer :: n, i, j, k, normal_direction, split_direction, transverse_direction
+      real(kind=rkind) :: sign, split_inverse_step, transverse_inverse_step
+      real(kind=rkind) :: lower_e, upper_e, transverse_lower_e, transverse_upper_e
+      real(kind=rkind) :: lower_fraction, common_curl, magnetic_factor
+      real(kind=rkind) :: surface_lower_e, surface_upper_e
+
+      if (.not. allocated(this%conformal_surface_faces)) return
+      do n = 1, size(this%conformal_surface_faces)
+         i = this%conformal_surface_faces(n)%cell(1)
+         j = this%conformal_surface_faces(n)%cell(2)
+         k = this%conformal_surface_faces(n)%cell(3)
+         normal_direction = this%conformal_surface_faces(n)%face_direction
+         split_direction = this%conformal_surface_faces(n)%split_direction
+         transverse_direction = 6-normal_direction-split_direction
+         sign = leviCivita(normal_direction, split_direction, transverse_direction)
+         lower_fraction = this%conformal_surface_faces(n)%lower_fraction
+         call getConformalElectricPair(this, transverse_direction, split_direction, i, j, k, &
+                                       lower_e, upper_e, split_inverse_step)
+         call getConformalElectricPair(this, split_direction, transverse_direction, i, j, k, &
+                                       transverse_lower_e, transverse_upper_e, transverse_inverse_step)
+         common_curl = sign*(transverse_upper_e-transverse_lower_e)*transverse_inverse_step
+         magnetic_factor = this%sgg%dt/this%mu0
+         surface_lower_e = 0.0_RKIND
+         surface_upper_e = 0.0_RKIND
+         if (this%conformal_surface_faces(n)%is_sgbc) then
+            surface_lower_e = this%conformal_surface_faces(n)%sgbc%lower_e()
+            surface_upper_e = this%conformal_surface_faces(n)%sgbc%upper_e()
+         end if
+         this%conformal_surface_faces(n)%lower_h = this%conformal_surface_faces(n)%lower_h + &
+            magnetic_factor*(common_curl+sign*(lower_e-surface_lower_e)*split_inverse_step/lower_fraction)
+         this%conformal_surface_faces(n)%upper_h = this%conformal_surface_faces(n)%upper_h + &
+            magnetic_factor*(common_curl+sign*(surface_upper_e-upper_e)*split_inverse_step/(1.0_RKIND-lower_fraction))
+         ! Preserve the full-face magnetic flux represented by the Yee field.
+         ! The weighted subface updates reduce exactly to the ordinary Yee curl.
+         select case (normal_direction)
+         case (1); this%Hx(i,j,k) = lower_fraction*this%conformal_surface_faces(n)%lower_h + &
+                                    (1.0_RKIND-lower_fraction)*this%conformal_surface_faces(n)%upper_h
+         case (2); this%Hy(i,j,k) = lower_fraction*this%conformal_surface_faces(n)%lower_h + &
+                                    (1.0_RKIND-lower_fraction)*this%conformal_surface_faces(n)%upper_h
+         case (3); this%Hz(i,j,k) = lower_fraction*this%conformal_surface_faces(n)%lower_h + &
+                                    (1.0_RKIND-lower_fraction)*this%conformal_surface_faces(n)%upper_h
+         end select
+      end do
+   end subroutine solver_advanceConformalH
+
+   subroutine getConformalElectricPair(this, field_direction, offset_direction, i, j, k, &
+                                       lower_e, upper_e, inverse_step)
+      class(solver_t) :: this
+      integer, intent(in) :: field_direction, offset_direction, i, j, k
+      real(kind=rkind), intent(out) :: lower_e, upper_e, inverse_step
+      integer :: upper_i, upper_j, upper_k
+
+      upper_i = i
+      upper_j = j
+      upper_k = k
+      select case (offset_direction)
+      case (1); upper_i = upper_i+1; inverse_step = this%Idxe(i)
+      case (2); upper_j = upper_j+1; inverse_step = this%Idye(j)
+      case (3); upper_k = upper_k+1; inverse_step = this%Idze(k)
+      end select
+      select case (field_direction)
+      case (1)
+         lower_e = this%Ex(i,j,k)
+         upper_e = this%Ex(upper_i,upper_j,upper_k)
+      case (2)
+         lower_e = this%Ey(i,j,k)
+         upper_e = this%Ey(upper_i,upper_j,upper_k)
+      case (3)
+         lower_e = this%Ez(i,j,k)
+         upper_e = this%Ez(upper_i,upper_j,upper_k)
+      end select
+   end subroutine getConformalElectricPair
+
+   subroutine initializeConformalSurfaceStates(this)
+      class(solver_t) :: this
+      type(conformal_surface_face_state_t), allocatable :: states(:), enlarged(:)
+      integer :: medium, feature, split_direction, transverse_direction
+      type(face_t) :: face
+      real(kind=rkind) :: lower_fraction, grid_step
+      logical :: medium_is_sgbc
+
+      if (allocated(this%sgg%ConformalSGBCProfiles)) then
+         if (size(this%sgg%ConformalSGBCProfiles) > 0) then
+            if (this%control%num_procs > 1) then
+               call WarnErrReport('Conformal SGBC is not supported with more than one MPI rank.', .true.)
+               return
+            end if
+            if (this%control%resume) then
+               call WarnErrReport('Restart/resume is not supported for conformal SGBC.', .true.)
+               return
+            end if
+            if (.not. this%control%sgbccrank) then
+               call WarnErrReport('Conformal SGBC requires Crank-Nicolson time advancement.', .true.)
+               return
+            end if
+            if (this%control%stochastic) then
+               call WarnErrReport('Stochastic material deviations are not supported for conformal SGBC.', .true.)
+               return
+            end if
+         end if
+      end if
+
+      allocate(states(0))
+      do medium = 1, this%sgg%NumMedia
+         if (.not. (this%sgg%Med(medium)%Is%ConformalPEC .or. &
+             this%sgg%Med(medium)%Is%ConformalSGBC) .or. &
+             .not. this%sgg%Med(medium)%Is%Surface) cycle
+         medium_is_sgbc = this%sgg%Med(medium)%Is%ConformalSGBC
+         if (.not. allocated(this%sgg%Med(medium)%ConformalFace)) cycle
+         do feature = 1, size(this%sgg%Med(medium)%ConformalFace)
+            face = this%sgg%Med(medium)%ConformalFace(feature)
+            if (.not. face%is_two_sided) cycle
+            split_direction = face%split_direction
+            lower_fraction = face%lower_fraction
+            if (lower_fraction <= 1.0e-5_RKIND .or. lower_fraction >= 1.0_RKIND-1.0e-5_RKIND) cycle
+            if (surfaceStateExists(states, face%cell, face%direction)) cycle
+            allocate(enlarged(size(states)+1))
+            if (size(states) > 0) enlarged(1:size(states)) = states
+            enlarged(size(enlarged))%cell = face%cell
+            enlarged(size(enlarged))%face_direction = face%direction
+            enlarged(size(enlarged))%split_direction = split_direction
+            enlarged(size(enlarged))%lower_fraction = lower_fraction
+            enlarged(size(enlarged))%is_sgbc = medium_is_sgbc
+            enlarged(size(enlarged))%surface_normal_sign = face%surface_normal_sign
+            if (medium_is_sgbc) then
+               if (face%sgbc_profile_index < 1 .or. &
+                   face%sgbc_profile_index > size(this%sgg%ConformalSGBCProfiles) .or. &
+                   face%surface_normal_sign == 0) then
+                  call WarnErrReport('Conformal SGBC face has invalid material or winding metadata.', .true.)
+                  return
+               end if
+               transverse_direction = 6-face%direction-split_direction
+               if (transverse_direction < 1 .or. transverse_direction > 3) then
+                  call WarnErrReport('Conformal SGBC face has an invalid split topology.', .true.)
+                  return
+               end if
+               select case(split_direction)
+               case(1); grid_step = 1.0_RKIND/this%Idxe(face%cell(1))
+               case(2); grid_step = 1.0_RKIND/this%Idye(face%cell(2))
+               case(3); grid_step = 1.0_RKIND/this%Idze(face%cell(3))
+               end select
+               call enlarged(size(enlarged))%sgbc%init( &
+                  this%sgg%ConformalSGBCProfiles(face%sgbc_profile_index), this%sgg%dt, &
+                  lower_fraction*grid_step, (1.0_RKIND-lower_fraction)*grid_step, &
+                  this%control%sgbcFreq, this%control%sgbcresol, this%control%sgbcdepth, &
+                  face%surface_normal_sign < 0)
+            end if
+            call move_alloc(enlarged, states)
+         end do
+      end do
+      call move_alloc(states, this%conformal_surface_faces)
+   end subroutine initializeConformalSurfaceStates
+
+   logical function surfaceStateExists(states, cell, direction)
+      type(conformal_surface_face_state_t), dimension(:), intent(in) :: states
+      integer(kind=4), dimension(3), intent(in) :: cell
+      integer, intent(in) :: direction
+      integer :: n
+      surfaceStateExists = .false.
+      do n = 1, size(states)
+         if (states(n)%face_direction == direction .and. all(states(n)%cell == cell)) then
+            surfaceStateExists = .true.
+            return
+         end if
+      end do
+   end function surfaceStateExists
+
+   real(kind=rkind) function leviCivita(first, second, third) result(value)
+      integer, intent(in) :: first, second, third
+      if (first == second .or. second == third .or. first == third) then
+         value = 0.0_RKIND
+      else if ((first == 1 .and. second == 2 .and. third == 3) .or. &
+               (first == 2 .and. second == 3 .and. third == 1) .or. &
+               (first == 3 .and. second == 1 .and. third == 2)) then
+         value = 1.0_RKIND
+      else
+         value = -1.0_RKIND
+      end if
+   end function leviCivita
 
    subroutine solver_advanceEDispersiveE(this)
       class(solver_t) :: this
@@ -2896,6 +3209,7 @@ contains
       call DestroyPMLbodies(this%sgg)
       call DestroyMURBorders
       !Destroy the remaining
+      if (allocated(this%conformal_surface_faces)) deallocate(this%conformal_surface_faces)
       deallocate(this%sgg%Med,this%sgg%LineX,this%sgg%LineY,this%sgg%LineZ,this%sgg%DX,this%sgg%DY,this%sgg%DZ,this%sgg%tiempo)
       call this%g%destroy()
       deallocate(this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
