@@ -6,7 +6,7 @@ from test.utils.utils import *
 def _get_solved_probe_folder(solver, probe_name, *, filename=None, contains=None) -> str:
     probe_files = solver.getSolvedProbeFolders(probe_name)
     if filename is not None:
-        probe_files = [path for path in probe_files if Path(path).name == Path(filename).stem]
+        probe_files = [path for path in probe_files if Path(path).stem == Path(filename).stem]
     if contains is not None:
         probe_files = [path for path in probe_files if contains in Path(path).name]
     assert len(probe_files) == 1, (
