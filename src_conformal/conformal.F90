@@ -35,9 +35,10 @@ contains
       end do
    end function
 
-   subroutine buildConformalMedia(conformalRegs, volumes, surfaces)
+   subroutine buildConformalMedia(conformalRegs, volumes, surfaces, sgbc_surfaces)
       type(ConformalPECRegions_t), pointer, intent(in) :: conformalRegs
       type(ConformalMedia_t), allocatable, dimension(:), intent(inout) :: volumes, surfaces
+      type(ConformalMedia_t), allocatable, dimension(:), optional, intent(inout) :: sgbc_surfaces
       if (associated(conformalRegs%volumes)) then
          volumes = buildMedia(conformalRegs%volumes)
       else
@@ -47,6 +48,13 @@ contains
          surfaces = buildSurfaceMedia(conformalRegs%surfaces)
       else
          allocate(surfaces(0))
+      end if
+      if (present(sgbc_surfaces)) then
+         if (associated(conformalRegs%sgbc_surfaces)) then
+            sgbc_surfaces = buildSGBCSurfaceMedia(conformalRegs%sgbc_surfaces)
+         else
+            allocate(sgbc_surfaces(0))
+         end if
       end if
    end subroutine
 
@@ -62,6 +70,50 @@ contains
          res(i) = buildMediaFromElement(canonical_element)
       end do
    end function buildSurfaceMedia
+
+   function buildSGBCSurfaceMedia(elements) result(res)
+      type(ConformalPECElements_t), dimension(:), pointer, intent(in) :: elements
+      type(ConformalMedia_t), dimension(:), allocatable :: res
+      type(side_t), dimension(:), allocatable :: local_sides
+      real(kind=rkind), dimension(3) :: oriented_normal
+      integer :: i, j, k, side_index, split_direction
+
+      allocate(res(size(elements)))
+      do i = 1, size(elements)
+         ! SGBC layer ordering is defined by user winding, so unlike PEC closed
+         ! surfaces this path must not canonicalize triangle orientation.
+         res(i) = buildMediaFromElement(elements(i))
+         res(i)%is_sgbc = .true.
+         res(i)%sgbc_profile = elements(i)%sgbc_profile
+         block
+            type(cell_map_t) :: cell_map
+            call buildCellMap(cell_map, elements(i))
+            do j = 1, res(i)%n_faces_media
+               do k = 1, res(i)%face_media(j)%size
+                  split_direction = res(i)%face_media(j)%faces(k)%split_direction
+                  local_sides = cell_map%getSidesInCell(res(i)%face_media(j)%faces(k)%cell)
+                  oriented_normal = 0.0_RKIND
+                  do side_index = 1, size(local_sides)
+                     oriented_normal = oriented_normal+local_sides(side_index)%normal
+                  end do
+                  if (.not. res(i)%face_media(j)%faces(k)%is_two_sided .or. split_direction == 0 .or. &
+                      res(i)%face_media(j)%faces(k)%lower_fraction <= TOPOLOGY_TOLERANCE .or. &
+                      res(i)%face_media(j)%faces(k)%lower_fraction >= 1.0_RKIND-TOPOLOGY_TOLERANCE) then
+                     call WarnErrReport('Conformal SGBC geometry must split each affected magnetic face into two subfaces.', .true.)
+                     res(i)%face_media(j)%faces(k)%surface_normal_sign = 0
+                  else if (abs(oriented_normal(split_direction)) <= TOPOLOGY_TOLERANCE) then
+                     call WarnErrReport('Conformal SGBC triangle winding does not define an unambiguous layer direction.', .true.)
+                     res(i)%face_media(j)%faces(k)%surface_normal_sign = 0
+                  else if (oriented_normal(split_direction) > 0.0_RKIND) then
+                     res(i)%face_media(j)%faces(k)%surface_normal_sign = 1
+                  else
+                     res(i)%face_media(j)%faces(k)%surface_normal_sign = -1
+                  end if
+               end do
+            end do
+         end block
+      end do
+   end function buildSGBCSurfaceMedia
 
    subroutine validateConformalSurface(element, is_valid, message)
       type(ConformalPECElements_t), intent(in) :: element

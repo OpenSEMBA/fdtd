@@ -260,8 +260,9 @@ if(SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/timestepping.F90"
 	)
 	target_link_libraries(semba-main
-		semba-outputs 
-		${SMBJSON_LIBRARIES} 
+		semba-outputs
+		conformal
+		${SMBJSON_LIBRARIES}
 		${MTLN_LIBRARIES})
 endif()
 

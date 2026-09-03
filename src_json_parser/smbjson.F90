@@ -810,6 +810,19 @@ contains
          end do
       end do
 
+      ! A multilayered surface can contain both structured intervals and
+      ! conformal triangles. readLossyThinSurfaces handles the former; only the
+      ! triangle representation is appended here.
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_MULTILAYERED_SURFACE])
+      do i = 1, size(mAs)
+         do j = 1, size(mAs(i)%elementIds)
+            cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j), found)
+            if (.not. found .or. cR%type /= REGION_TYPE_SURFACE .or. size(cR%triangles) == 0) cycle
+            tagName = this%buildTagName(mAs(i)%materialId, mAs(i)%elementIds(j))
+            call appendSGBCRegion(res%sgbc_surfaces, cR, tagName, readSGBCProfile(mAs(i)%materialId))
+         end do
+      end do
+
    contains
       subroutine validateConformalMaterialAssociations()
          type(json_value), pointer :: allAssociations, association
@@ -827,13 +840,99 @@ contains
             do elementIndex = 1, size(materialAssociation%elementIds)
                element = this%elementTable%getId(materialAssociation%elementIds(elementIndex))
                if (this%getStrAt(element%p, J_TYPE, default='') /= J_ELEM_TYPE_CONFORMAL) cycle
-               if (this%getStrAt(material%p, J_TYPE) /= J_MAT_TYPE_PEC) then
-                  call WarnErrReport('Conformal elements can only be associated with PEC materials.', .true.)
+               if (this%getStrAt(material%p, J_TYPE) == J_MAT_TYPE_MULTILAYERED_SURFACE) then
+                  if (this%getStrAt(element%p, J_SUBTYPE, default='') /= J_CONF_SUBTYPE_SURFACE) then
+                     call WarnErrReport('Conformal multilayeredSurface materials require subtype surface.', .true.)
+                     return
+                  end if
+               else if (this%getStrAt(material%p, J_TYPE) /= J_MAT_TYPE_PEC) then
+                  call WarnErrReport('Conformal elements only support PEC or multilayeredSurface materials.', .true.)
                   return
                end if
             end do
          end do
       end subroutine
+
+      function readSGBCProfile(material_id) result(profile)
+         integer, intent(in) :: material_id
+         type(SGBCMaterialProfile_t) :: profile
+         type(json_value_ptr_t) :: material
+         type(json_value), pointer :: layers, layer
+         integer :: layer_index
+         logical :: has_value
+
+         material = this%matTable%getId(material_id)
+         profile%material_id = material_id
+         profile%name = trim(adjustl(this%getStrAt(material%p, J_NAME, default=' ')))
+         call this%core%get(material%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers, found=has_value)
+         if (.not. has_value) then
+            call WarnErrReport('Conformal multilayeredSurface material has no layers.', .true.)
+            return
+         end if
+         profile%num_layers = this%core%count(layers)
+         if (profile%num_layers == 0) then
+            call WarnErrReport('Conformal multilayeredSurface material has an empty layer list.', .true.)
+            return
+         end if
+         allocate(profile%thickness(profile%num_layers), profile%eps(profile%num_layers), &
+                  profile%mu(profile%num_layers), profile%sigma(profile%num_layers), &
+                  profile%sigmam(profile%num_layers))
+         do layer_index = 1, profile%num_layers
+            call this%core%get_child(layers, layer_index, layer)
+            profile%sigma(layer_index) = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
+            profile%sigmam(layer_index) = this%getRealAt(layer, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0_RKIND)
+            profile%eps(layer_index) = this%getRealAt(layer, J_MAT_ABS_PERMITTIVITY, has_value)
+            if (.not. has_value) profile%eps(layer_index) = &
+               this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND)*EPSILON_VACUUM
+            profile%mu(layer_index) = this%getRealAt(layer, J_MAT_ABS_PERMEABILITY, has_value)
+            if (.not. has_value) profile%mu(layer_index) = &
+               this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0_RKIND)*MU_VACUUM
+            profile%thickness(layer_index) = &
+               this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, has_value)
+            if (.not. has_value) then
+               call WarnErrReport('Conformal multilayeredSurface layer is missing thickness.', .true.)
+               return
+            end if
+            if (profile%thickness(layer_index) <= 0.0_RKIND .or. &
+                profile%eps(layer_index) <= 0.0_RKIND .or. profile%mu(layer_index) <= 0.0_RKIND .or. &
+                profile%sigma(layer_index) < 0.0_RKIND .or. profile%sigmam(layer_index) < 0.0_RKIND) then
+               call WarnErrReport('Conformal multilayeredSurface layer contains invalid material values.', .true.)
+               return
+            end if
+         end do
+      end function readSGBCProfile
+
+      subroutine appendSGBCRegion(regions, region, tag_name, profile)
+         type(ConformalPECElements_t), dimension(:), pointer :: regions
+         type(conformal_region_t), intent(in) :: region
+         character(len=*), intent(in) :: tag_name
+         type(SGBCMaterialProfile_t), intent(in) :: profile
+         type(ConformalPECElements_t), dimension(:), allocatable :: enlarged
+         logical :: is_valid
+         character(len=256) :: validation_message
+         integer :: previous, index
+
+         previous = 0
+         if (associated(regions)) previous = size(regions)
+         allocate(enlarged(previous+1))
+         do index = 1, previous
+            enlarged(index) = regions(index)
+         end do
+         enlarged(previous+1)%triangles = region%triangles
+         ! Integer-grid intervals from the same element are owned by the
+         ! established structured SGBC path.  Keeping them here as well would
+         ! instantiate the sheet twice.
+         allocate(enlarged(previous+1)%intervals(0))
+         enlarged(previous+1)%tag = tag_name
+         enlarged(previous+1)%is_sgbc = .true.
+         enlarged(previous+1)%sgbc_profile = profile
+         if (associated(regions)) deallocate(regions)
+         allocate(regions(previous+1))
+         regions = enlarged
+         call validateConformalSurface(regions(previous+1), is_valid, validation_message)
+         if (.not. is_valid .and. .not. isFatalError()) &
+            call WarnErrReport('Invalid conformal SGBC surface '//trim(tag_name)//': '//trim(validation_message), .true.)
+      end subroutine appendSGBCRegion
 
       logical function isClosedRegion(region)
          type(conformal_region_t), intent(in) :: region
