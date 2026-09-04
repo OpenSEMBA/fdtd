@@ -999,7 +999,11 @@ contains
       if (pozi/=0) then
          FF%InitialFreq=log10(FF%InitialFreq)
          FF%FinalFreq=log10(FF%FinalFreq)
-         FF%FreqStep=abs(FF%InitialFreq-FF%FinalFreq)/(FF%NumFreqs)
+         if (FF%NumFreqs > 1) then
+            FF%FreqStep=abs(FF%InitialFreq-FF%FinalFreq)/(FF%NumFreqs-1)
+         else
+            FF%FreqStep=0.0_RKIND
+         end if
       end if
 
       if (pozi == 0) then
