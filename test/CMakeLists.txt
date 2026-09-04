@@ -16,25 +16,25 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 endif()
 if (SEMBA_FDTD_ENABLE_SMBJSON)
     add_subdirectory(utils)
-    set(UTILS_TEST, test_utils_fortran)
     add_subdirectory(smbjson)
     set(SMBJSON_TESTS_LIBRARY smbjson_tests)
-    add_subdirectory(rotate)
+    add_subdirectory(unit/rotate)
     set(ROTATE_TESTS_LIBRARY rotate_tests)
-    add_subdirectory(vtk)
-    set(VTK_TESTS_LIBRARY vtk_tests)
+    add_subdirectory(unit/output)
+    set(OUTPUT_TESTS_LIBRARY output_tests)
     add_subdirectory(wires)
     set(WIRES_TESTS_LIBRARY wires_tests)
-    if (NOT SEMBA_FDTD_ENABLE_MPI)
-        add_subdirectory(observation)
-        set(OBSERVATION_TESTS_LIBRARY observation_tests)
-    endif()
+    set(VTK_API_TESTS_LIBRARY vtkAPI_tests)
+endif()
+
+if(SEMBA_FDTD_ENABLE_MPI)
+    add_subdirectory(mpi/output)
 endif()
 
 add_subdirectory(conformal)
 set(CONFORMAL_TESTS_LIBRARY conformal_tests)
 
-add_subdirectory(preprocess)
+add_subdirectory(unit/preprocess)
 set(PREPROCESS_TESTS_LIBRARY preprocess_tests)
 
 add_subdirectory(healer)
@@ -53,8 +53,8 @@ target_link_libraries(fdtd_tests
     ${CONFORMAL_TESTS_LIBRARY}
     ${PREPROCESS_TESTS_LIBRARY}
     ${ROTATE_TESTS_LIBRARY}
-    ${HDF_TESTS_LIBRARY}
-    ${VTK_TESTS_LIBRARY}
+    ${OUTPUT_TESTS_LIBRARY}
+    ${VTK_API_TESTS_LIBRARY}
     ${WIRES_TESTS_LIBRARY}
     ${SYSTEM_TESTS_LIBRARY}
     ${OBSERVATION_TESTS_LIBRARY}
@@ -62,3 +62,12 @@ target_link_libraries(fdtd_tests
     ${SGBC_TESTS_LIBRARY}
     GTest::gtest_main
 )
+
+add_test(NAME fdtd_unit COMMAND $<TARGET_FILE:fdtd_tests>)
+set_tests_properties(fdtd_unit PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+if(SEMBA_FDTD_ENABLE_MPI)
+    set_tests_properties(fdtd_unit PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=1")
+    find_package(MPI REQUIRED COMPONENTS CXX)
+    target_link_libraries(fdtd_tests MPI::MPI_Fortran MPI::MPI_CXX)
+endif()

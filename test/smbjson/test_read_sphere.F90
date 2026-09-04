@@ -94,7 +94,7 @@ contains
       ex%oldSonda%probes(1)%FarField(1)%probe%tstep = 0.0_RKIND
       ex%oldSonda%probes(1)%FarField(1)%probe%fstart = 1e6_RKIND
       ex%oldSonda%probes(1)%FarField(1)%probe%fstop = 1e9_RKIND
-      ex%oldSonda%probes(1)%FarField(1)%probe%fstep = (1e9_RKIND-1e6_RKIND)/5
+      ex%oldSonda%probes(1)%FarField(1)%probe%fstep = (1e9_RKIND-1e6_RKIND)/4
       ex%oldSONDA%probes(1)%FarField(1)%probe%FileNormalize = "gauss.exc"
       allocate(ex%oldSonda%probes(1)%FarField(1)%probe%i(2))
       allocate(ex%oldSonda%probes(1)%FarField(1)%probe%j(2))
@@ -141,4 +141,3 @@ contains
       ex%VolPrb%collection(1)%type2 = NP_T2_TIME
    end function
 end function
-

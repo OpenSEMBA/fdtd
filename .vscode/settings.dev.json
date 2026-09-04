@@ -1,0 +1,26 @@
+{
+  "semba-fdtd.debug.buildFolderName": "build-dbg-mpi",
+  "semba-fdtd.debug.inputFile": "nodal-source-with-movie.fdtd.json",
+  "semba-fdtd.debug.inputCwd": "Testing",
+  "semba-fdtd.debug.mpiGtestFilter": "conformal.geometry_coord_position",
+  "fortran.fortls.path": "/usr/local/bin/fortls",
+  "fortran.fortls.notifyInit": true,
+  "fortran.fortls.disableAutoupdate": true,
+  "fortran.provide.hover": "Both",
+  "fortran.formatting.formatter": "fprettify",
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [
+      {
+        "scope": [
+          "entity.name.function.fortran",
+          "entity.name.function.procedure.fortran",
+          "entity.name.function.subroutine.fortran"
+        ],
+        "settings": {
+          "foreground": "#DCDCAA",
+          "fontStyle": "bold"
+        }
+      }
+    ]
+  }
+}

@@ -2444,10 +2444,10 @@ contains
       res%fstop = this%getRealAt(domain, J_PR_DOMAIN_FREQ_STOP, default=0.0_RKIND)
 
       numberOfFrequencies = this%getIntAt(domain, J_PR_DOMAIN_FREQ_NUMBER, default=0)
-      if (numberOfFrequencies == 0) then
+      if (numberOfFrequencies <= 1) then
          res%fstep = 0.0_RKIND
       else
-         res%fstep = (res%fstop - res%fstart) / numberOfFrequencies
+         res%fstep = (res%fstop - res%fstart) / (numberOfFrequencies - 1)
       end if
 
       freqSpacing = &

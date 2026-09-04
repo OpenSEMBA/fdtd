@@ -59,7 +59,7 @@ contains
                     do i = 1, slice - 1
                         layer_index = layer_index + layer_indices(i,2) + 1 - (layer_indices(i,1) - 1)
                     end do
-                    layer_index = layer_index + res%index - layer_indices(i,1) + 1
+                    layer_index = layer_index + res%index - layer_indices(slice,1) + 1
                 end if
                 res%index = layer_index
             end if

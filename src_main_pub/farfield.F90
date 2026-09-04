@@ -57,7 +57,7 @@ module farfield_m
       real(kind=RKIND) :: phiStart,phiStop,phiStep
       character(len=BUFSIZE) :: FileNormalize
       integer(kind=4) :: unitfarfield
-      character(len=BUFSIZE) :: filefarfield
+       character(len=BUFSIZE) :: filefarfield
       real(kind=RKIND) :: XDobleAncho,YDobleAncho,ZDobleAncho
       real(kind=RKIND) :: XOffsetPlus,YOffsetPlus,ZOffsetPlus
       real(kind=RKIND) :: XOffsetMinus,YOffsetMinus,ZOffsetMinus
@@ -70,7 +70,7 @@ module farfield_m
    real(kind=RKIND), save           :: eps0,mu0
 !!!
    !
-   public UpdateFarField,InitFarField,Destroyfarfield,FlushFarfield,StoreFarfields
+    public UpdateFarField,InitFarField,Destroyfarfield,FlushFarfield,StoreFarfields
    public farfield_t
    !
    type(farfield_t), save, target :: FF
@@ -116,7 +116,7 @@ contains
       sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
       sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
       real(kind=RKIND) ::tiempo1,tiempo2,field1,field2,dtevol
-      integer j,k,field,i,layoutnumber,num_procs,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
+       integer j,k,field,i,layoutnumber,num_procs,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
       character(len=BUFSIZE) :: buFF
       logical :: errnofile,error
 
@@ -141,7 +141,7 @@ contains
       FF%esqz2=min(esqz2,SINPML_fullsize(iHz)%ZE)
       !!!!!!!!
       FF%unitfarfield =    unitfarfield
-      FF%filefarfield =    filefarfield
+       FF%filefarfield =    filefarfield
       FF%InitialFreq  =    InitialFreq
       FF%FinalFreq    =    FinalFreq
       FF%FreqStep     =    FreqStep
@@ -999,7 +999,11 @@ contains
       if (pozi/=0) then
          FF%InitialFreq=log10(FF%InitialFreq)
          FF%FinalFreq=log10(FF%FinalFreq)
-         FF%FreqStep=abs(FF%InitialFreq-FF%FinalFreq)/(FF%NumFreqs)
+         if (FF%NumFreqs > 1) then
+            FF%FreqStep=abs(FF%InitialFreq-FF%FinalFreq)/(FF%NumFreqs-1)
+         else
+            FF%FreqStep=0.0_RKIND
+         end if
       end if
 
       if (pozi == 0) then
@@ -3291,43 +3295,45 @@ contains
 
 
 #ifdef CompileWithMPI
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  dummy=real(L_theta_final)
-                  call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  dummy=AIMAG(L_theta_final)
-                  call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
+                   if (FF%MPISubComm /= MPI_COMM_NULL) then
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      dummy=real(L_theta_final)
+                      call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      dummy=AIMAG(L_theta_final)
+                      call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
 
-                  L_theta_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
-                  !
-                  dummy=real(L_phi_final)
-                  call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  dummy=AIMAG(L_phi_final)
-                  call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  !
-                  L_phi_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
+                      L_theta_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
+                      !
+                      dummy=real(L_phi_final)
+                      call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      dummy=AIMAG(L_phi_final)
+                      call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      !
+                      L_phi_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
 
-                  dummy=real(N_theta_final)
-                  call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  dummy=AIMAG(N_theta_final)
-                  call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
+                      dummy=real(N_theta_final)
+                      call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      dummy=AIMAG(N_theta_final)
+                      call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
 
-                  N_theta_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
-                  !
-                  dummy=real(N_phi_final)
-                  call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  dummy=AIMAG(N_phi_final)
-                  call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
-                  call MPI_Barrier(FF%MPISubComm,ierr)
-                  !
-                  N_phi_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
-                  call MPI_Barrier(FF%MPISubComm,ierr)
+                      N_theta_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
+                      !
+                      dummy=real(N_phi_final)
+                      call MPI_AllReduce(dummy, newdummy1, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      dummy=AIMAG(N_phi_final)
+                      call MPI_AllReduce(dummy, newdummy2, 1_4, REALSIZE, MPI_SUM, FF%MPISubComm, ierr)
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                      !
+                      N_phi_final= newdummy1+(0.0_RKIND,1.0_RKIND)*newdummy2
+                      call MPI_Barrier(FF%MPISubComm,ierr)
+                   end if
 #endif
                   Etheta(pasadas) = -(0,1.0_RKIND)*freq/(2.0_RKIND * cluz)*(L_phi_final + zvac * N_theta_final) !/FF%dftEntrada(ii) !no normalizar para calcular bien potencia
                   Ephi(pasadas)   =  (0,1.0_RKIND)*freq/(2.0_RKIND * cluz)*(L_theta_final - zvac * N_phi_final) !/FF%dftEntrada(ii) !no normalizar para calcular bien potencia
@@ -3338,9 +3344,9 @@ contains
 #ifdef CompileWithMPI
                   if (FF%MPIRoot == layoutnumber)  then
 #endif
-                  if (pasadas==1) write(FF%unitfarfield,fmt) freq,theta,phi,&
-                  abs(Etheta(2)),ATAN2( AIMAG( Etheta(2)) , real( Etheta(2) ) ), & !!! PASADAS=2=GEOMETRICA,, PASADAS=1=ARITMETICA
-                  abs(Ephi(2)) , ATAN2( AIMAG( Ephi(2)  ) , real( Ephi(2)   ) ), RCS(1),RCS(2)
+                   if (pasadas==1) write(FF%unitfarfield,fmt) freq,theta,phi,&
+                   abs(Etheta(2)),ATAN2( AIMAG( Etheta(2)) , real( Etheta(2) ) ), & !!! PASADAS=2=GEOMETRICA,, PASADAS=1=ARITMETICA
+                   abs(Ephi(2)) , ATAN2( AIMAG( Ephi(2)  ) , real( Ephi(2)   ) ), RCS(1),RCS(2)
 
 #ifdef CompileWithMPI
                end if
@@ -3365,8 +3371,7 @@ contains
       write(dubuf,'(a)')  ' NF2FF: END '
       if (layoutnumber == 0) call print11(layoutnumber,dubuf,.TRUE.)
 
-   end subroutine
-
+    end subroutine
 
    subroutine update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)
 

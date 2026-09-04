@@ -72,8 +72,8 @@ den = [L, R]
 system = signal.TransferFunction(num, den)
 tout, I_theo, _ = signal.lsim(system, U=V_in, T=time)
 
-InitialTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Initial current")[0])
-InitialLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Initial current")[0])
+InitialTerminal_probe = Probe(solver_terminal.getSolvedProbeFolders("Initial current")[0])
+InitialLumped_probe = Probe(solver_lumped.getSolvedProbeFolders("Initial current")[0])
 
 plt.figure()
 plt.plot(InitialTerminal_probe['time'].to_numpy(), InitialTerminal_probe['current'].to_numpy(), label='Terminal case', color='green')
@@ -86,17 +86,17 @@ plt.legend()
 plt.grid(which='both')
 
 #%% Comparison of currents between terminals and lumped
-StartTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("TerminalCellStart")[0])
-StartLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellStart")[0])
+StartTerminalProbe = Probe(solver_terminal.getSolvedProbeFolders("TerminalCellStart")[0])
+StartLumpedProbe = Probe(solver_lumped.getSolvedProbeFolders("LumpedCellStart")[0])
 
-EndTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("TerminalCellEnd")[0])
-EndLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellEnd")[0])
+EndTerminalProbe = Probe(solver_terminal.getSolvedProbeFolders("TerminalCellEnd")[0])
+EndLumpedProbe = Probe(solver_lumped.getSolvedProbeFolders("LumpedCellEnd")[0])
 
-AdjacentPostLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PostLumpedCell")[0])
-AdjacentPostTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PostTerminalCell")[0])
+AdjacentPostLumpedProbe = Probe(solver_lumped.getSolvedProbeFolders("PostLumpedCell")[0])
+AdjacentPostTerminalProbe = Probe(solver_terminal.getSolvedProbeFolders("PostTerminalCell")[0])
 
-AdjacentPreLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PreLumpedCell")[0])
-AdjacentPreTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PreTerminalCell")[0])
+AdjacentPreLumpedProbe = Probe(solver_lumped.getSolvedProbeFolders("PreLumpedCell")[0])
+AdjacentPreTerminalProbe = Probe(solver_terminal.getSolvedProbeFolders("PreTerminalCell")[0])
 
 plt.figure()
 plt.plot(AdjacentPreTerminalProbe['time'].to_numpy(), AdjacentPreTerminalProbe['current'].to_numpy(), label='PreTerminalCell', color='green')

@@ -69,3 +69,23 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
     !check size of pul matrices and V I vectors
 
 end function
+
+integer function test_mtl_bundle_generator() bind(C) result(error_cnt)
+    use FDETYPES_m, only: RKIND
+    use mtl_bundle_m, only: mtl_bundle_t
+    use mtln_types_m, only: SOURCE_TYPE_CURRENT
+    implicit none
+
+    type(mtl_bundle_t) :: bundle
+
+    error_cnt = 0
+    allocate(bundle%generators(0))
+    allocate(bundle%rpul(3, 1, 1), source=0.0_rkind)
+    allocate(bundle%du(3, 1, 1), source=2.0_rkind)
+
+    call bundle%addGenerator(2, 1, SOURCE_TYPE_CURRENT, 4.0_rkind, &
+                             './testData/cases/planewave/gauss_1GHz.exc')
+
+    if (size(bundle%generators) /= 1) error_cnt = error_cnt + 1
+    if (bundle%rpul(2, 1, 1) /= 2.0_rkind) error_cnt = error_cnt + 1
+end function

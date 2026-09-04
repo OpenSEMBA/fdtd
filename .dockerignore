@@ -1,6 +1,10 @@
 .git
 build/
+build-*/
 .venv/
+.devcontainer/
+.vscode/
+.github/
 __pycache__/
 *.pyc
 *.pyo
@@ -9,4 +13,18 @@ __pycache__/
 dist/
 *.o
 *.mod
-# Keep precompiled_libraries and external/ submodule contents
+
+# Runtime/development bind mounts do not need to be copied into image layers.
+simulations/
+
+# The top-level build only consumes selected external sources.
+external/lapack/
+external/ngspice/examples/
+external/ngspice/tests/
+external/ngspice/visualc/
+external/ngspice/man/
+external/ngspice/doc/
+external/ngspice/.git/
+external/googletest/.git/
+external/json-fortran/.git/
+external/fhash/.git/

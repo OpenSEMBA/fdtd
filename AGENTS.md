@@ -15,30 +15,29 @@ skills.
 
 **First time setup (required):**
 ```bash
-git submodule init
+git submodule update --init --recursive
 ```
 
 **Configure and build:**
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
+cmake --fresh --preset rls
+cmake --build --preset rls -j
 ```
 
 **Key CMake options:**
-- `-DSEMBA_FDTD_ENABLE_MPI=ON` - distributed cluster support
-- `-DSEMBA_FDTD_ENABLE_HDF=ON` - HDF5 output (ON by default)
-- `-DSEMBA_FDTD_ENABLE_MTLN=ON` - transmission line solver (ON by default)
-- `-DSEMBA_FDTD_ENABLE_SMBJSON=ON` - JSON input parser (ON by default)
-- `-DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=ON` - 8-byte reals (OFF by default)
-- `-DSEMBA_FDTD_ENABLE_TEST=ON` - compile unit tests (ON by default)
+- `-DSEMBA_FDTD_ENABLE_MPI=ON` — distributed cluster support
+- `-DSEMBA_FDTD_ENABLE_MTLN=ON` — transmission line solver (ON by default)
+- `-DSEMBA_FDTD_ENABLE_SMBJSON=ON` — JSON input parser (ON by default)
+- `-DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=ON` — 8-byte reals (OFF by default)
+- `-DSEMBA_FDTD_ENABLE_TEST=ON` — compile unit tests (ON by default)
 
-**Binary output:** `./build/bin/semba-fdtd`
+**Binary output:** `./build-rls/bin/semba-fdtd` for the `rls` preset.
 
 ## Running Tests
 
 **C++/Fortran unit tests (GoogleTest):**
 ```bash
-./build/bin/fdtd_tests
+./build-rls/bin/fdtd_tests
 ```
 
 **Python integration tests:**
@@ -52,12 +51,15 @@ pytest test/ --durations=20
 # Run by marker
 pytest test/ -m mtln
 pytest test/ -m hdf
-pytest test/ -m mpi
+SEMBA_FDTD_ENABLE_MPI=ON pytest test/ -m mpi
 ```
 
 Test markers are defined in `pytest.ini`: `mtln`, `codemodel`, `hdf`, `mpi`.
+See `doc/testing.md` for the complete testing workflow.
 
-Unit test source is under `test/` in subdirectories: `mtln/`, `smbjson/`, `conformal/`, `observation/`, `rotate/`, `vtk/`, `pyWrapper/`.
+Native test source is under `test/conformal/`, `test/mpi/`, `test/mtln/`,
+`test/smbjson/`, `test/system/`, `test/unit/`, and `test/utils/`.
+Python tests are under `test/e2e/` and `test/pyWrapper/`.
 
 ## Architecture
 
@@ -69,20 +71,23 @@ Unit test source is under `test/` in subdirectories: `mtln/`, `smbjson/`, `confo
 
 ### Library Dependency Chain
 
-The project compiles into layered static libraries linked into the final executable:
+The project compiles into layered static libraries linked into the final
+executable:
 
 ```
-semba-types          (FDTD/NFDE/MTLN/conformal type definitions)
-    \u2514\u2500\u2500 semba-reports      (error reporting, XDMF snapshot I/O)
-        \u2514\u2500\u2500 smbjson        (JSON input parser - optional)
-        \u2514\u2500\u2500 conformal      (conformal mapping module)
-        \u2514\u2500\u2500 semba-components  (all physics: PML/Mur BCs, dispersive materials,
-                               plane waves, nodal sources, far-field, MTLN wires)
-            \u2514\u2500\u2500 mtlnsolver    (MTLN circuit solver + ngspice interface - optional)
-            \u2514\u2500\u2500 semba-outputs (MPI comm, observation probes, VTK/XDMF/HDF5 output)
-                \u2514\u2500\u2500 semba-main   (time-stepping, preprocessing/postprocessing, launcher)
-                    \u2514\u2500\u2500 semba-fdtd  (executable entry point)
+semba-types       FDTD/NFDE/MTLN/conformal type definitions
+semba-reports     error reporting
+smbjson           JSON input parser (optional)
+conformal         conformal mapping
+semba-components  field, material, boundary, source, and wire physics
+mtlnsolver        MTLN circuit solver and ngspice interface (optional)
+semba-outputs     MPI communication
+fdtd-output       probe writers, metadata, binary, XDMF/HDF5, and VTK output
+semba-main        time-stepping, preprocessing, postprocessing, and launch flow
+semba-fdtd        executable entry point
 ```
+
+`semba-main` links the communication and output libraries into the solver.
 
 ### Execution Flow
 
@@ -107,13 +112,17 @@ semba-types          (FDTD/NFDE/MTLN/conformal type definitions)
 
 ### Input/Output
 
-- **Input**: `.fdtd.json` (primary - see `doc/fdtdjson.md`) or legacy `.fdtd` NFDE format
-- **Output**: ASCII probe `.dat` files, XDMF+HDF5 movies/snapshots, VTK (Paraview)
+- **Input**: `.fdtd.json` (primary — see `doc/fdtdjson.md`) or legacy `.fdtd` NFDE format
+- **Output**: ASCII probe `.dat` files, XDMF+HDF5 movies/snapshots, and VTK;
+  see `doc/output.md`
 - Test data and example cases live under `testData/`
 
 ### Optional Features and Conditional Compilation
 
-Many modules are only compiled when their CMake flag is enabled. The smbjson parser, MTLN solver, and HDF5 output are all conditionally compiled. MPI support wraps communication in `src_main_pub/mpicomm.F90` and is activated via the `SEMBA_FDTD_ENABLE_MPI` flag.
+The smbjson parser, MTLN solver, and MPI support are conditionally compiled.
+HDF5/XDMF output is required.
+MPI communication is implemented in `src_main_pub/mpicomm.F90` and activated
+with `SEMBA_FDTD_ENABLE_MPI`.
 
 ## Platform Notes
 

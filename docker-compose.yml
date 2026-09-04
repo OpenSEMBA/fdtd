@@ -1,43 +1,95 @@
 services:
-
-  # Run a simulation: docker compose run --rm solver path/to/case.fdtd.json
-  solver:
+  # Lightweight image for compiling and testing the solver.
+  quality:
     build:
       context: .
-      target: runtime
+      target: quality
     volumes:
-      - ./simulations:/work
-    working_dir: /work
+      # Work directly against the checked-out source tree.
+      - type: bind
+        source: .
+        target: /home/developer/workspaces/fdtd
+    working_dir: /home/developer/workspaces/fdtd
+    tty: true
 
-  # Debug a simulation with gdbserver (connect from VSCode with launch.json)
-  # Usage: docker compose run --rm -p 2345:2345 debug case.fdtd.json
-  debug:
+  # Intel oneAPI compiler and Intel MPI environment for manual quality builds.
+  intel-quality:
     build:
       context: .
-      target: builder
-      args:
-        BUILD_TYPE: Debug
-        ENABLE_MTLN: "ON"
+      target: intel-quality
+    working_dir: /home/developer/workspaces/fdtd
+    stdin_open: true
+    tty: true
+
+  # Intel oneAPI development environment. It intentionally does not inherit
+  # from the GNU-based dev service or image.
+  intel-dev:
+    build:
+      context: .
+      target: intel-dev
     volumes:
-      - ./simulations:/work
-    ports:
-      - "2345:2345"
-    working_dir: /work
-    entrypoint: ["gdbserver", ":2345", "/src/build/bin/semba-fdtd", "-i"]
+      - type: bind
+        source: .
+        target: /home/developer/workspaces/fdtd
+      - type: bind
+        source: ${HOME}/.gitconfig
+        target: /home/developer/.gitconfig
+      - type: bind
+        source: ${HOME}/.ssh
+        target: /home/developer/.ssh
+        read_only: true
+      - type: bind
+        source: ${HOME}/.config/gh
+        target: /home/developer/.config/gh
+      - type: bind
+        source: ${HOME}/.config/opencode
+        target: /home/developer/.config/opencode
+      - type: bind
+        source: ${HOME}/.agents
+        target: /home/developer/.agents
+        read_only: true
+      - type: bind
+        source: ${HOME}/.local/share/opencode
+        target: /home/developer/.local/share/opencode
+    working_dir: /home/developer/workspaces/fdtd
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    stdin_open: true
+    tty: true
 
-  # Build the project and run all tests
-  test:
+  # Interactive development image with source-control and OpenCode tooling.
+  dev:
     build:
       context: .
-      target: builder
-      args:
-        BUILD_TYPE: Release
-        ENABLE_MPI: "OFF"
-        ENABLE_MTLN: "ON"
-    environment:
-      SEMBA_FDTD_ENABLE_MPI: "OFF"
-      SEMBA_FDTD_ENABLE_MTLN: "ON"
-      SEMBA_FDTD_ENABLE_HDF: "ON"
-    working_dir: /src
-    command: >
-      sh -c "build/bin/fdtd_tests && python3 -m pytest test/ --durations=20"
+      target: dev
+    volumes:
+      - type: bind
+        source: .
+        target: /home/developer/workspaces/fdtd
+      # Use the host Git identity and SSH keys for authenticated Git operations.
+      - type: bind
+        source: ${HOME}/.gitconfig
+        target: /home/developer/.gitconfig
+      - type: bind
+        source: ${HOME}/.ssh
+        target: /home/developer/.ssh
+        read_only: true
+      - type: bind
+        source: ${HOME}/.config/gh
+        target: /home/developer/.config/gh
+      # Share local OpenCode configuration and agent resources with the container.
+      - type: bind
+        source: ${HOME}/.config/opencode
+        target: /home/developer/.config/opencode
+      - type: bind
+        source: ${HOME}/.agents
+        target: /home/developer/.agents
+        read_only: true
+      # Keep OpenCode's local data available between disposable containers.
+      - type: bind
+        source: ${HOME}/.local/share/opencode
+        target: /home/developer/.local/share/opencode
+    working_dir: /home/developer/workspaces/fdtd
+    tty: true

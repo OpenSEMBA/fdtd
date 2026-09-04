@@ -88,13 +88,13 @@ FOLDER_WITH_SHORTING_PLANE = "with_shorting_plane"
 FOLDER_WITHOUT_SHORTING_PLANE = "without_shorting_plane"
 
 os.makedirs(os.path.join(case_dir, FOLDER_WITH_SHORTING_PLANE), exist_ok=True)
-solver = FDTD(
+solver_with = FDTD(
 	input_filename = os.path.join(case_dir, CASE_NAME),
 	path_to_exe=SEMBA_EXE,
 	run_in_folder=os.path.join(case_dir, FOLDER_WITH_SHORTING_PLANE)
 )
-solver.cleanUp()
-solver.run()
+solver_with.cleanUp()
+solver_with.run()
 
 os.makedirs(os.path.join(case_dir, FOLDER_WITHOUT_SHORTING_PLANE), exist_ok=True)
 solver = FDTD(
@@ -105,7 +105,8 @@ solver = FDTD(
 solver['materialAssociations'][0]['elementIds'] = [1]
 solver.cleanUp()
 solver.run()
-PROBE_NAME = solver.getSolvedProbeFilenames("Wire probe")[0]
+probe_with_path = solver_with.getSolvedProbeFolders("Wire probe")[0]
+probe_without_path = solver.getSolvedProbeFolders("Wire probe")[0]
 
 # %% Postprocessing
 excitation_filename = os.path.join(case_dir, 'gauss.exc')
@@ -116,9 +117,6 @@ voltage_exc = exc["value"].to_numpy()
 
 freqs = np.geomspace(1e3, 1e9, 61)
 
-
-probe_with_path    = os.path.join(case_dir, FOLDER_WITH_SHORTING_PLANE,    PROBE_NAME)
-probe_without_path = os.path.join(case_dir, FOLDER_WITHOUT_SHORTING_PLANE, PROBE_NAME)
 
 time_I_w,  current_w,  Z_in_w  = compute_impedance(probe_with_path,    time_exc, voltage_exc, freqs)
 time_I_wo, current_wo, Z_in_wo = compute_impedance(probe_without_path, time_exc, voltage_exc, freqs)
