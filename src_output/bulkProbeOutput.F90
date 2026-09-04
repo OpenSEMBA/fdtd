@@ -213,8 +213,10 @@ contains
       integer :: i
       integer :: unit
       if (this%nTime <= 0) then
+#ifdef CompileWithDebug
          print *, "No data to write."
-         return
+#endif
+          return
       end if
 
       if (this%isWriter) then

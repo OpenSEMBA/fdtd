@@ -171,8 +171,10 @@ contains
          integer :: unit
 
          if (this%nTime <= 0) then
+#ifdef CompileWithDebug
             print *, "No data to write."
-            return
+#endif
+             return
          end if
          open (newunit=unit, file=this%filePathTime, status="old", action="write", position="append")
 
@@ -198,8 +200,10 @@ contains
          end if
 
          if (this%nFreq <= 0) then
+#ifdef CompileWithDebug
             print *, "No data to write."
-            return
+#endif
+             return
          end if
          open (newunit=unit, file=this%filePathFreq, status="replace", action="write")
          write (unit, '(A)') 'frequency real imaginary'
