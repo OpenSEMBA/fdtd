@@ -1753,11 +1753,10 @@ integer function test_close_movie_probe() bind(c) result(err)
 end function test_close_movie_probe
 
 integer function test_init_frequency_slice_probe() bind(c) result(err)
-   ! Verifies frequency-slice allocation, dimensions, paths, and serialized output.
+   ! Verifies frequency-slice allocation, dimensions, paths, and visualisation output.
    use output_m
    use outputTypes_m
    use frequencySliceProbeOutput_m, only: flush_frequency_slice_probe_output, close_frequency_slice_probe_output
-   use, intrinsic :: iso_fortran_env, only: real64
    use testOutputUtils_m
    use FDETYPES_TOOLS
    use sggMethods_m
@@ -1788,6 +1787,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    type(Obses_t)                  :: frequencySliceObservation
 
    real(kind=RKIND_tiempo), pointer :: timeArray(:)
+   real(kind=RKIND), pointer        :: x_steps(:), y_steps(:), z_steps(:)
    real(kind=RKIND_tiempo)          :: dt = 0.1_RKIND_tiempo
    integer(kind=SINGLE)             :: nTimeSteps = 100_SINGLE
 
@@ -1804,8 +1804,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 
    character(len=BUFSIZE) :: testPath, nEntrada
    character(len=BUFSIZE) :: expectedProbePath
-   integer :: binaryBytes, ios, unit
-   real(real64) :: record(10)
+   integer :: ios
 
    testPath = join_path(get_temp_folder(), test_folder)
    nEntrada = join_path(testPath, test_name)
@@ -1829,6 +1828,14 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
    allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
    call sgg_set_Alloc(dummysgg, allocationRange)
+   tagNumbers = create_tag_list(allocationRange)
+
+   allocate (x_steps(6), source=1.0_RKIND)
+   allocate (y_steps(6), source=1.0_RKIND)
+   allocate (z_steps(6), source=1.0_RKIND)
+   call sgg_set_LineX(dummysgg, x_steps)
+   call sgg_set_LineY(dummysgg, y_steps)
+   call sgg_set_LineZ(dummysgg, z_steps)
 
    frequencySliceObservation = create_frequency_slice_observation(2, 2, 2, 5, 5, 5, iCur)
    call sgg_add_observation(dummysgg, frequencySliceObservation)
@@ -1875,7 +1882,6 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    test_err = test_err + assert_string_equal(outputs(1)%frequencySliceProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Frequency Slice folder do not exist')
 
-   ! Use distinct complex component values to catch both lossy serialisation and the historical duplicated X record.
    outputs(1)%frequencySliceProbe%xValueForFreq = (0.0_CKIND, 0.0_CKIND)
    outputs(1)%frequencySliceProbe%yValueForFreq = (0.0_CKIND, 0.0_CKIND)
    outputs(1)%frequencySliceProbe%zValueForFreq = (0.0_CKIND, 0.0_CKIND)
@@ -1886,27 +1892,16 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    call close_frequency_slice_probe_output(outputs(1)%frequencySliceProbe)
 
    expectedProbePath = trim(outputs(1)%frequencySliceProbe%filesPath)
-   test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.bin'), 'Frequency binary payload does not exist')
+   test_err = test_err + assert_true(.not. file_exists(trim(expectedProbePath)//'.bin'), &
+                                     'Frequency binary payload was published')
    test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.xdmf'), 'Frequency XDMF metadata does not exist')
    test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'.h5'), 'Frequency HDF5 payload does not exist')
+   test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'_geometry.xdmf'), &
+                                     'Frequency geometry XDMF metadata does not exist')
+   test_err = test_err + assert_true(file_exists(trim(expectedProbePath)//'_geometry.h5'), &
+                                     'Frequency geometry HDF5 payload does not exist')
    test_err = test_err + assert_true(.not. file_exists(trim(expectedProbePath)//'.json'), &
                                      'Frequency JSON descriptor was published')
-   inquire (file=trim(expectedProbePath)//'.bin', size=binaryBytes)
-   test_err = test_err + assert_integer_equal(binaryBytes, 6*4*80, 'Frequency binary record layout changed')
-    open(newunit=unit, file=trim(expectedProbePath)//'.bin', access='stream', form='unformatted', status='old', action='read', iostat=ios)
-   if (ios == 0) then
-      read (unit, iostat=ios) record
-      close (unit)
-      test_err = test_err + assert_integer_equal(ios, 0, 'Cannot read frequency binary record')
-      test_err = test_err + assert_real_equal(real(record(5), RKIND), 1.0_RKIND, 1e-5_RKIND, 'X real value was not retained')
-      test_err = test_err + assert_real_equal(real(record(6), RKIND), 2.0_RKIND, 1e-5_RKIND, 'X imaginary value was not retained')
-      test_err = test_err + assert_real_equal(real(record(7), RKIND), 3.0_RKIND, 1e-5_RKIND, 'Y real value was not retained')
-      test_err = test_err + assert_real_equal(real(record(8), RKIND), 4.0_RKIND, 1e-5_RKIND, 'Y imaginary value was not retained')
-      test_err = test_err + assert_real_equal(real(record(9), RKIND), 5.0_RKIND, 1e-5_RKIND, 'Z real value duplicates X')
-      test_err = test_err + assert_real_equal(real(record(10), RKIND), 6.0_RKIND, 1e-5_RKIND, 'Z imaginary value was not retained')
-   else
-      test_err = test_err + assert_integer_equal(ios, 0, 'Cannot open frequency binary payload')
-   end if
    call remove_folder(testPath, ios)
 
    err = test_err
@@ -1946,6 +1941,7 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    type(Obses_t)                  :: frequencySliceObservation
 
    real(kind=RKIND_tiempo), pointer :: timeArray(:)
+   real(kind=RKIND), pointer        :: x_steps(:), y_steps(:), z_steps(:)
    real(kind=RKIND_tiempo)          :: dt = 0.1_RKIND_tiempo
    integer(kind=SINGLE)             :: nTimeSteps = 100_SINGLE
 
@@ -1989,6 +1985,14 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
    allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
    call sgg_set_Alloc(dummysgg, allocationRange)
+   tagNumbers = create_tag_list(allocationRange)
+
+   allocate (x_steps(6), source=1.0_RKIND)
+   allocate (y_steps(6), source=1.0_RKIND)
+   allocate (z_steps(6), source=1.0_RKIND)
+   call sgg_set_LineX(dummysgg, x_steps)
+   call sgg_set_LineY(dummysgg, y_steps)
+   call sgg_set_LineZ(dummysgg, z_steps)
 
    frequencySliceObservation = create_frequency_slice_observation(2, 2, 2, 5, 5, 5, iCur)
    call sgg_add_observation(dummysgg, frequencySliceObservation)

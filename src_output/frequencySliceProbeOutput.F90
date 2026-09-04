@@ -8,7 +8,6 @@ module frequencySliceProbeOutput_m
    use outputUtils_m
    use volumicProbeUtils_m
    use directoryUtils_m
-   use outputBinary_m, only: validate_binary_layout, write_binary_complex_record64, BINARY_WRITER_SUCCESS
    use outputVisualisation_m, only: initialise_frequency_slice_visualisation, begin_visualisation_step, &
                                    write_visualisation_attribute, write_visualisation_attribute_hyperslab, end_visualisation_step, &
                                     close_visualisation, verify_volumetric_visualisation, VISUALISATION_SUCCESS, &
@@ -22,6 +21,7 @@ module frequencySliceProbeOutput_m
    use outputCollective_m, only: OUTPUT_PUBLICATION_COLLECTIVE, OUTPUT_PUBLICATION_ROOT_AGGREGATION
    use outputTransport_m, only: output_transport_t, init_output_transport, transfer_flush_batch, &
                                 OUTPUT_TRANSPORT_SUCCESS
+   use mapVTKOutput_m, only: write_geometry_companion
 #ifdef CompileWithMPI
    use mpi
 #endif
@@ -67,9 +67,8 @@ contains
       type(sim_control_t), intent(in) :: control
       type(problem_info_t), intent(in) :: problemInfo
 
-      integer :: i
-      integer :: error
-      character(len=BUFSIZE) :: filename
+      integer :: i, error, geometry_status
+      character(len=BUFSIZE) :: filename, geometry_diagnostic
 #ifdef CompileWithMPI
       integer :: mpi_error
 #endif
@@ -130,15 +129,18 @@ contains
          call create_folder(this%path, error)
          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
                                           'Unable to create frequency slice output directory')
-         call create_bin_file(this%filesPath, error)
-         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-                                          'Unable to create frequency slice binary output')
       end if
 #ifdef CompileWithMPI
       call MPI_Barrier(this%publication%communicator, mpi_error)
       if (mpi_error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
                                                      'Unable to synchronise frequency slice output participants')
 #endif
+      call write_geometry_companion(this%filesPath, this%mainCoords, this%auxCoords, problemInfo, &
+                                    this%publication%communicator, geometry_status, geometry_diagnostic)
+      if (this%publication%local_is_owner .and. geometry_status /= VISUALISATION_SUCCESS) then
+          call StopOnError(control%layoutnumber, control%num_procs, &
+                           'Unable to create frequency slice geometry: '//trim(geometry_diagnostic))
+      end if
 
       if (publication%mode == OUTPUT_PUBLICATION_COLLECTIVE .or. publication%local_is_owner) then
          call create_frequency_writer(this, problemInfo, error)
@@ -271,12 +273,6 @@ contains
       deallocate (points)
    end subroutine create_frequency_writer
 
-   subroutine create_bin_file(filePath, error)
-      character(len=*), intent(in) :: filePath
-      integer, intent(out) :: error
-      call create_file_with_path(add_extension(filePath, binaryExtension), error)
-   end subroutine
-
    subroutine initialise_frequency_metadata(this, error, mpidir)
       type(frequency_slice_probe_output_t), intent(inout) :: this
       integer, intent(out) :: error
@@ -292,22 +288,16 @@ contains
       this%metadata%ownership%participant_ranks = this%publication%participant_ranks
       this%metadata%ownership%scalar_writer_rank = this%publication%owner_rank
       if (allocated(this%metadata%artifacts)) deallocate (this%metadata%artifacts)
-      allocate (this%metadata%artifacts(3))
-      this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
-      this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
-      this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
-      this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL64
-      this%metadata%artifacts(1)%complex_representation = BINARY_COMPLEX_REAL_IMAG
-      this%metadata%artifacts(1)%record_bytes = 80
-      this%metadata%artifacts(1)%component_order = &
-         'frequency,x,y,z,Ex.real,Ex.imag,Ey.real,Ey.imag,Ez.real,Ez.imag'
-      this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
-      this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
-      this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
-      this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
+      allocate (this%metadata%artifacts(4))
+      this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
+      this%metadata%artifacts(1)%relative_path = trim(base_name)//'.xdmf'
+      this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(2)%relative_path = trim(base_name)//'.h5'
+      this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_GEOMETRY
+      this%metadata%artifacts(3)%relative_path = trim(base_name)//'_geometry.xdmf'
+      this%metadata%artifacts(4)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(4)%relative_path = trim(base_name)//'_geometry.h5'
 
-      call validate_binary_layout(this%metadata%artifacts(1), error)
-      if (error /= BINARY_WRITER_SUCCESS) return
       error = 0
    end subroutine initialise_frequency_metadata
 
@@ -509,53 +499,6 @@ contains
          classification_point_is_valid = isValidPointForField(field, position(1), position(2), position(3), problemInfo)
       end if
    end function classification_point_is_valid
-
-   subroutine write_bin_file(this)
-      type(frequency_slice_probe_output_t), intent(inout) :: this
-      type(output_transport_t) :: transport
-      real(real64), allocatable :: local_records(:), gathered_records(:), canonical_records(:)
-      integer, allocatable :: counts(:), displacements(:)
-      integer :: i, f, record_index, status, transport_status, frequency_offset
-
-      call init_output_transport(transport, 0, transport_status, this%publication%communicator)
-      if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
-         call StopOnError(0, 0, 'Unable to initialise frequency slice binary transport')
-      end if
-      allocate (local_records(10*this%nPoints))
-      if (this%publication%local_is_owner) then
-         allocate (canonical_records(10*int(this%publication%global_point_count)*this%nFreq))
-      end if
-
-      do f = 1, this%nFreq
-         record_index = 0
-         do i = 1, this%nPoints
-            local_records(record_index + 1:record_index + 10) = [real(this%frequencySlice(f), real64), &
-                                real(this%coords(1, i), real64), real(this%coords(2, i), real64), real(this%coords(3, i), real64), &
-                                            real(this%xValueForFreq(f, i), real64), real(aimag(this%xValueForFreq(f, i)), real64), &
-                                            real(this%yValueForFreq(f, i), real64), real(aimag(this%yValueForFreq(f, i)), real64), &
-                                              real(this%zValueForFreq(f, i), real64), real(aimag(this%zValueForFreq(f, i)), real64)]
-            record_index = record_index + 10
-         end do
-         call transfer_flush_batch(transport, local_records, gathered_records, counts, displacements, transport_status)
-         if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
-            call StopOnError(0, 0, 'Unable to gather frequency slice binary records')
-         end if
-         if (this%publication%local_is_owner) then
-            if (size(gathered_records, kind=int64) /= 10_int64*this%publication%global_point_count) then
-               call StopOnError(0, 0, 'Invalid gathered frequency slice binary size')
-            end if
-            frequency_offset = 10*int(this%publication%global_point_count)*(f - 1)
-            canonical_records(frequency_offset + 1:frequency_offset + size(gathered_records)) = gathered_records
-         end if
-      end do
-      if (this%publication%local_is_owner) then
-         call write_binary_complex_record64(add_extension(this%filesPath, binaryExtension), &
-                                            this%metadata%artifacts(1), canonical_records, status)
-         if (status /= BINARY_WRITER_SUCCESS) then
-            call StopOnError(0, 0, 'Unable to replace frequency slice binary output')
-         end if
-      end if
-   end subroutine
 
    function get_output_path_freq(this, outputTypeExtension, field, control) result(outputPath)
       type(frequency_slice_probe_output_t), intent(in) :: this
@@ -763,11 +706,10 @@ contains
    end subroutine
 
    subroutine flush_frequency_slice_probe_output(this)
-      type(frequency_slice_probe_output_t), intent(inout) :: this
-      if (.not. this%publication%local_participates .or. &
-          this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_COMPLETE .or. &
-          this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) return
-      call write_bin_file(this)
+       type(frequency_slice_probe_output_t), intent(inout) :: this
+
+       ! Frequency slices publish their complete field spectrum when closed.
+       if (.not. this%publication%local_participates) return
    end subroutine flush_frequency_slice_probe_output
 
    subroutine close_frequency_slice_probe_output(this)
@@ -802,9 +744,10 @@ contains
       end if
 #endif
       if (this%publication%local_is_owner) then
-         call verify_volumetric_visualisation(this%filesPath, error)
-         if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. &
-             error == VISUALISATION_SUCCESS) then
+          call verify_volumetric_visualisation(this%filesPath, error)
+          if (file_exists(trim(this%filesPath)//'_geometry.xdmf') .and. &
+              file_exists(trim(this%filesPath)//'_geometry.h5') .and. &
+              error == VISUALISATION_SUCCESS) then
             this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
             this%metadata%lifecycle%diagnostic = ''
          else

@@ -144,10 +144,18 @@ def test_frequency_slice_is_published_canonically_with_mpi(tmp_path):
     assert len(probe_folders) == 1
     probe = Probe(probe_folders[0])
     h5_path = probe.getH5File()
-    assert probe.getXDMFFile() is not None
+    xdmf_path = probe.getXDMFFile()
+    assert xdmf_path is not None
     assert h5_path is not None
+    geometry_xdmf_path = Path(xdmf_path).with_name(
+        Path(xdmf_path).stem + "_geometry.xdmf"
+    )
+    geometry_h5_path = geometry_xdmf_path.with_suffix(".h5")
+    assert geometry_xdmf_path.is_file()
+    assert geometry_h5_path.is_file()
+    assert not list(Path(probe.folder).glob("*.bin"))
     assert_static_point_attributes(
-        probe.getXDMFFile(),
+        xdmf_path,
         ("tagnumber", "mediatype"),
     )
 
@@ -165,9 +173,15 @@ def test_frequency_slice_is_published_canonically_with_mpi(tmp_path):
     serial_probe = Probe(
         serial_solver.getSolvedProbeFolders("electric_field_frequency_slice")[0]
     )
-    mpi_records = np.fromfile(probe.getBinFile(), dtype="<f8").reshape(-1, 10)
-    serial_records = np.fromfile(serial_probe.getBinFile(), dtype="<f8").reshape(-1, 10)
-    np.testing.assert_allclose(mpi_records, serial_records, atol=1e-14)
+    serial_xdmf_path = serial_probe.getXDMFFile()
+    assert serial_xdmf_path is not None
+    serial_geometry_xdmf_path = Path(serial_xdmf_path).with_name(
+        Path(serial_xdmf_path).stem + "_geometry.xdmf"
+    )
+    serial_geometry_h5_path = serial_geometry_xdmf_path.with_suffix(".h5")
+    assert serial_geometry_xdmf_path.is_file()
+    assert serial_geometry_h5_path.is_file()
+    assert not list(Path(serial_probe.folder).glob("*.bin"))
     with h5py.File(h5_path, "r") as mpi_h5, h5py.File(
         serial_probe.getH5File(), "r"
     ) as serial_h5:
@@ -230,4 +244,3 @@ def test_mtln_non_root_writer_publishes_data_without_metadata(tmp_path):
     probe_path = Path(solver.getSolvedProbeFolders("upper")[0])
     assert probe_path.is_file()
     assert probe_path.suffix == ".dat"
-

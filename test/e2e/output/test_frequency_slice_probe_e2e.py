@@ -1,7 +1,7 @@
 from conftest import assert_static_point_attributes, read_xdmf_point_data_names
 
 
-def test_frequency_slice_probe_publishes_payloads_without_metadata(run_output_case):
+def test_frequency_slice_probe_publishes_xdmf_and_geometry_without_binary(run_output_case):
     process, output_root = run_output_case(
         "frequency-slice",
         [
@@ -23,12 +23,15 @@ def test_frequency_slice_probe_publishes_payloads_without_metadata(run_output_ca
 
     assert process.returncode == 0, process.stdout + process.stderr
     output_directory = next(output_root.glob("common_geometry.fdtd_frequency_slice_probe_*"))
-    assert list(output_directory.glob("*.bin"))
-    assert list(output_directory.glob("*.xdmf"))
-    assert list(output_directory.glob("*.h5"))
+    output_name = output_directory.name
+    assert not list(output_directory.glob("*.bin"))
+    assert (output_directory / f"{output_name}.xdmf").is_file()
+    assert (output_directory / f"{output_name}.h5").is_file()
+    assert (output_directory / f"{output_name}_geometry.xdmf").is_file()
+    assert (output_directory / f"{output_name}_geometry.h5").is_file()
     assert not list(output_directory.glob("*.json"))
     assert not (output_root / "common_geometry.fdtd_output_manifest.json").exists()
-    frequency_xdmf = next(output_directory.glob("*.xdmf"))
+    frequency_xdmf = output_directory / f"{output_name}.xdmf"
     assert_static_point_attributes(frequency_xdmf, ("tagnumber", "mediatype"))
     assert {"tagnumber", "mediatype"} <= read_xdmf_point_data_names(frequency_xdmf)
 
@@ -55,7 +58,9 @@ def test_vector_frequency_slice_publishes_component_classification(run_output_ca
 
     assert process.returncode == 0, process.stdout + process.stderr
     output_directory = next(output_root.glob("common_geometry.fdtd_frequency_slice_probe_*"))
-    frequency_xdmf = next(output_directory.glob("*.xdmf"))
+    output_name = output_directory.name
+    assert not list(output_directory.glob("*.bin"))
+    frequency_xdmf = output_directory / f"{output_name}.xdmf"
     assert_static_point_attributes(
         frequency_xdmf,
         (
