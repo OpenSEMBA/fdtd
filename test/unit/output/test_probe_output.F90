@@ -606,7 +606,7 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
 end function
 
 integer function test_update_point_probe() bind(c) result(err)
-   ! Verifies point-probe values and timestamps are recorded over two timesteps.
+   ! Verifies time-frequency point probes honour their time window without decimating frequency updates.
    use FDETYPES_m
    use FDETYPES_TOOLS
    use output_m
@@ -646,7 +646,7 @@ integer function test_update_point_probe() bind(c) result(err)
    logical :: outputRequested
    logical :: hasWires = .false.
    integer(kind=SINGLE) :: test_err = 0
-   integer :: ios
+   integer :: i, ios
 
    ! Setup
    sep = get_path_separator()
@@ -659,13 +659,21 @@ integer function test_update_point_probe() bind(c) result(err)
    call sgg_set_dt(sgg, dt)
 
    probe = create_point_probe_observation(4, 4, 4)
+   probe%InitialTime = 0.25_RKIND
+   probe%FinalTime = 0.65_RKIND
+   probe%TimeStep = 0.2_RKIND
+   probe%FreqDomain = .true.
+   probe%InitialFreq = 0.0_RKIND
+   probe%FinalFreq = 0.0_RKIND
+   probe%FreqStep = 0.0_RKIND
    call sgg_add_observation(sgg, probe)
 
    call init_simulation_material_list(materials)
    materialsPtr => materials
    call sgg_set_Med(sgg, materialsPtr)
 
-   control = create_control_flags(mpidir=3, nEntradaRoot=nEntrada, wiresflavor='holland')
+   control = create_control_flags(mpidir=3, finaltimestep=nSteps - 2, nEntradaRoot=nEntrada, &
+                                  wiresflavor='holland')
    call init_outputs(sgg, media, sinpml, tagNumbers, bounds, control, outputRequested, hasWires)
 
    call create_dummy_fields(dummyFields, 1, 10, 0.01_RKIND)
@@ -685,25 +693,226 @@ integer function test_update_point_probe() bind(c) result(err)
    fields%H%deltaZ => dummyFields%dzh
 
    ! Action
-   dummyFields%Ex(4, 4, 4) = 5.0_RKIND
-   call update_outputs(control, sgg%tiempo, 1_SINGLE, fields)
+   do i = 0, 8
+      dummyFields%Ex(4, 4, 4) = real(i, RKIND)
+      call update_outputs(control, sgg%tiempo(i + 1), int(i, SINGLE), fields)
+   end do
    outputs => GetOutputs()
 
    ! Assertions
-   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%timeStep(1), 0.1_RKIND_tiempo, 1e-5_RKIND_tiempo, 'Unexpected timestep 1')
-   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(1), 5.0_RKIND, 1e-5_RKIND, 'Unexpected field 1')
-
-   dummyFields%Ex(4, 4, 4) = -4.0_RKIND
-   call update_outputs(control, sgg%tiempo, 2_SINGLE, fields)
-
-   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%timeStep(2), 0.2_RKIND_tiempo, 1e-5_RKIND_tiempo, 'Unexpected timestep 2')
-   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(2), -4.0_RKIND, 1e-5_RKIND, 'Unexpected field 2')
+   test_err = test_err + assert_integer_equal(outputs(1)%pointProbe%nTime, 2, 'Unexpected time sample count')
+   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%timeStep(1), 0.4_RKIND_tiempo, &
+                                           1e-5_RKIND_tiempo, 'Unexpected timestep 1')
+   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(1), 4.0_RKIND, &
+                                           1e-5_RKIND, 'Unexpected field 1')
+   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%timeStep(2), 0.6_RKIND_tiempo, &
+                                           1e-5_RKIND_tiempo, 'Unexpected timestep 2')
+   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(2), 6.0_RKIND, &
+                                           1e-5_RKIND, 'Unexpected field 2')
+   test_err = test_err + assert_real_equal(real(outputs(1)%pointProbe%valueForFreq(1), RKIND), 3.6_RKIND, &
+                                           1e-5_RKIND, 'Frequency accumulation was decimated')
 
    !Cleanup
    call remove_folder(testPath, ios)
 
    err = test_err
 end function
+
+integer function test_update_time_probe_ranges() bind(c) result(err)
+   ! Verifies each scalar time output honours an explicit time window and sampling period.
+   use FDETYPES_m
+   use FDETYPES_TOOLS
+   use output_m
+   use outputTypes_m
+   use testOutputUtils_m
+   use sggMethods_m
+   use assertionTools_m
+   use directoryUtils_m
+   use HollandWires_m, only: GetHwires
+   use wiresHolland_constants_m, only: ThinWires_t
+   implicit none
+
+   character(len=22), parameter :: test_name = 'updateTimeProbeRanges'
+   integer, parameter :: current_output = 1, charge_output = 2, bulk_output = 3, line_output = 4
+
+   type(SGGFDTDINFO_t) :: sgg
+   type(sim_control_t) :: control
+   type(bounds_t) :: bounds
+   type(media_matrices_t) :: media
+   type(limit_t), allocatable :: sinpml(:)
+   type(taglist_t) :: tagNumbers
+   type(MediaData_t), allocatable, target :: materials(:)
+   type(MediaData_t), pointer :: materialsPtr(:)
+   type(observation_domain_t) :: domain
+   type(observable_t) :: requestedOutput(1)
+   type(Obses_t) :: observations(4)
+   type(direction_t) :: lineSegments(1)
+   type(XYZlimit_t) :: sweep(6)
+   type(solver_output_t), pointer :: outputs(:)
+   type(ThinWires_t), pointer :: wires
+   type(dummyFields_t), target :: dummyFields
+   type(fields_reference_t) :: fields
+   real(kind=RKIND_tiempo), pointer :: timeArray(:)
+   real(kind=RKIND_tiempo), parameter :: dt = 0.1_RKIND_tiempo
+   real(kind=RKIND), target :: wireField
+   character(len=BUFSIZE) :: testPath, nEntrada
+   integer(kind=SINGLE), parameter :: nSteps = 100_SINGLE
+   integer(kind=SINGLE) :: test_err
+   integer :: i, ios
+   logical :: outputRequested, hasWires
+
+   test_err = 0
+   testPath = join_path(get_temp_folder(), 'testing_folder')
+   nEntrada = join_path(testPath, test_name)
+
+   call sgg_init(sgg)
+   call init_time_array(timeArray, nSteps, dt)
+   call sgg_set_tiempo(sgg, timeArray)
+   call sgg_set_dt(sgg, dt)
+   sweep = create_xyz_limit_array(1, 1, 1, 5, 5, 5)
+   call sgg_set_Sweep(sgg, sweep)
+
+   call init_simulation_material_list(materials)
+   materialsPtr => materials
+   call sgg_set_Med(sgg, materialsPtr)
+
+   call initialize_observation_time_domain(domain, 0.25_RKIND, 0.65_RKIND, 0.2_RKIND)
+
+   requestedOutput(1) = create_observable(3, 3, 3, 3, 3, 3, iJx)
+   requestedOutput(1)%Node = 1
+   call set_observation(observations(current_output), requestedOutput, 'wireCurrentRange', domain, '')
+
+   requestedOutput(1) = create_observable(3, 3, 3, 3, 3, 3, iQx)
+   requestedOutput(1)%Node = 1
+   call set_observation(observations(charge_output), requestedOutput, 'wireChargeRange', domain, '')
+
+   requestedOutput(1) = create_observable(2, 2, 2, 3, 3, 3, iBloqueMx)
+   call set_observation(observations(bulk_output), requestedOutput, 'bulkRange', domain, '')
+
+   lineSegments(1) = direction_t(3, 3, 3, iEx)
+   requestedOutput(1) = create_observable(3, 3, 3, 3, 3, 3, lineIntegral, lineSegments)
+   call set_observation(observations(line_output), requestedOutput, 'lineRange', domain, '')
+
+   do i = 1, size(observations)
+      call sgg_add_observation(sgg, observations(i))
+   end do
+
+   wires => GetHwires()
+   if (associated(wires%CurrentSegment)) deallocate (wires%CurrentSegment)
+   if (associated(wires%ChargeNode)) deallocate (wires%ChargeNode)
+   wires%NumDifferentWires = 0
+   wires%NumCurrentSegments = 1
+   wires%NumChargeNodes = 2
+   allocate (wires%CurrentSegment(1), wires%ChargeNode(2))
+   wires%CurrentSegment(1)%OrigIndex = 1
+   wires%CurrentSegment(1)%i = 3
+   wires%CurrentSegment(1)%j = 3
+   wires%CurrentSegment(1)%k = 3
+   wires%CurrentSegment(1)%tipofield = iEx
+   wires%CurrentSegment(1)%indexmed = 0
+   wires%CurrentSegment(1)%orientadoalreves = .false.
+   wires%CurrentSegment(1)%delta = 1.0_RKIND_wires
+   wires%CurrentSegment(1)%Lind = 1.0_RKIND_wires
+   wires%CurrentSegment(1)%ChargePlus => wires%ChargeNode(1)
+   wires%CurrentSegment(1)%ChargeMinus => wires%ChargeNode(2)
+   wireField = 0.0_RKIND
+   wires%CurrentSegment(1)%Efield_wire2main => wireField
+   wires%ChargeNode%ChargePresent = 0.0_RKIND_wires
+   wires%ChargeNode%ChargePast = 0.0_RKIND_wires
+
+   control = create_control_flags(mpidir=3, finaltimestep=nSteps - 2, nEntradaRoot=nEntrada, &
+                                  wiresflavor='holland')
+   hasWires = .true.
+   call init_outputs(sgg, media, sinpml, tagNumbers, bounds, control, outputRequested, hasWires)
+   outputs => GetOutputs()
+
+   call create_dummy_fields(dummyFields, 1, 5, 0.01_RKIND)
+   fields%E%x => dummyFields%Ex
+   fields%E%y => dummyFields%Ey
+   fields%E%z => dummyFields%Ez
+   fields%E%deltaX => dummyFields%dxe
+   fields%E%deltaY => dummyFields%dye
+   fields%E%deltaZ => dummyFields%dze
+   fields%H%x => dummyFields%Hx
+   fields%H%y => dummyFields%Hy
+   fields%H%z => dummyFields%Hz
+   fields%H%deltaX => dummyFields%dxh
+   fields%H%deltaY => dummyFields%dyh
+   fields%H%deltaZ => dummyFields%dzh
+
+   do i = 0, 8
+      wires%CurrentSegment(1)%CurrentPast = real(i, RKIND_wires)
+      wires%ChargeNode(2)%ChargePresent = 10.0_RKIND_wires + real(i, RKIND_wires)
+      dummyFields%Ex(3, 3, 3) = real(i, RKIND)
+      call update_outputs(control, sgg%tiempo(i + 1), int(i, SINGLE), fields)
+   end do
+
+   test_err = test_err + assert_integer_equal(size(outputs), 4, 'Unexpected time output count')
+   test_err = test_err + assert_integer_equal(outputs(current_output)%outputID, WIRE_CURRENT_PROBE_ID, &
+                                               'Unexpected wire-current output id')
+   test_err = test_err + assert_integer_equal(outputs(charge_output)%outputID, WIRE_CHARGE_PROBE_ID, &
+                                               'Unexpected wire-charge output id')
+   test_err = test_err + assert_integer_equal(outputs(bulk_output)%outputID, BULK_PROBE_ID, &
+                                               'Unexpected bulk output id')
+   test_err = test_err + assert_integer_equal(outputs(line_output)%outputID, LINE_PROBE_ID, &
+                                               'Unexpected line output id')
+
+   test_err = test_err + assert_integer_equal(outputs(current_output)%wireCurrentProbe%nTime, 2, &
+                                               'Wire-current probe ignored its time range')
+   test_err = test_err + assert_integer_equal(outputs(charge_output)%wireChargeProbe%nTime, 2, &
+                                               'Wire-charge probe ignored its time range')
+   test_err = test_err + assert_integer_equal(outputs(bulk_output)%bulkCurrentProbe%nTime, 2, &
+                                               'Bulk probe ignored its time range')
+   test_err = test_err + assert_integer_equal(outputs(line_output)%lineProbe%nTime, 2, &
+                                               'Line probe ignored its time range')
+
+   test_err = test_err + assert_real_equal(outputs(current_output)%wireCurrentProbe%timeStep(1), &
+                                           0.4_RKIND_tiempo, 1e-5_RKIND_tiempo, &
+                                           'Wire-current probe stored the wrong first time')
+   test_err = test_err + assert_real_equal(outputs(current_output)%wireCurrentProbe%timeStep(2), &
+                                           0.6_RKIND_tiempo, 1e-5_RKIND_tiempo, &
+                                           'Wire-current probe stored the wrong second time')
+   test_err = test_err + assert_real_equal(outputs(charge_output)%wireChargeProbe%timeStep(1), &
+                                           0.4_RKIND_tiempo, 1e-5_RKIND_tiempo, &
+                                           'Wire-charge probe stored the wrong first time')
+   test_err = test_err + assert_real_equal(outputs(charge_output)%wireChargeProbe%timeStep(2), &
+                                           0.6_RKIND_tiempo, 1e-5_RKIND_tiempo, &
+                                           'Wire-charge probe stored the wrong second time')
+   test_err = test_err + assert_real_equal(outputs(bulk_output)%bulkCurrentProbe%timeStep(1), &
+                                           0.4_RKIND_tiempo, 1e-5_RKIND_tiempo, &
+                                           'Bulk probe stored the wrong first time')
+   test_err = test_err + assert_real_equal(outputs(bulk_output)%bulkCurrentProbe%timeStep(2), &
+                                           0.6_RKIND_tiempo, 1e-5_RKIND_tiempo, &
+                                           'Bulk probe stored the wrong second time')
+   test_err = test_err + assert_real_equal(outputs(line_output)%lineProbe%timeStep(1), &
+                                           0.4_RKIND_tiempo, 1e-5_RKIND_tiempo, &
+                                           'Line probe stored the wrong first time')
+   test_err = test_err + assert_real_equal(outputs(line_output)%lineProbe%timeStep(2), &
+                                           0.6_RKIND_tiempo, 1e-5_RKIND_tiempo, &
+                                           'Line probe stored the wrong second time')
+
+   test_err = test_err + assert_real_equal(outputs(current_output)%wireCurrentProbe%currentValues(1)%current, &
+                                           4.0_RKIND, 1e-5_RKIND, 'Wire-current probe stored an out-of-range value')
+   test_err = test_err + assert_real_equal(outputs(current_output)%wireCurrentProbe%currentValues(2)%current, &
+                                           6.0_RKIND, 1e-5_RKIND, 'Wire-current probe applied the wrong cadence')
+   test_err = test_err + assert_real_equal(outputs(charge_output)%wireChargeProbe%chargeValue(1), &
+                                           14.0_RKIND, 1e-5_RKIND, 'Wire-charge probe stored an out-of-range value')
+   test_err = test_err + assert_real_equal(outputs(charge_output)%wireChargeProbe%chargeValue(2), &
+                                           16.0_RKIND, 1e-5_RKIND, 'Wire-charge probe applied the wrong cadence')
+   test_err = test_err + assert_real_equal(outputs(line_output)%lineProbe%valueForTime(1), &
+                                           0.04_RKIND, 1e-5_RKIND, 'Line probe stored an out-of-range value')
+   test_err = test_err + assert_real_equal(outputs(line_output)%lineProbe%valueForTime(2), &
+                                           0.06_RKIND, 1e-5_RKIND, 'Line probe applied the wrong cadence')
+
+   call delete_outputs(0)
+   call remove_folder(testPath, ios)
+   nullify (wires%CurrentSegment(1)%Efield_wire2main)
+   deallocate (wires%CurrentSegment, wires%ChargeNode)
+   wires%NumCurrentSegments = 0
+   wires%NumChargeNodes = 0
+
+   err = test_err
+end function test_update_time_probe_ranges
 
 integer function test_flush_point_probe() bind(c) result(err)
    ! Verifies point-probe time and frequency data are written and reset on flush.
@@ -1124,7 +1333,7 @@ integer function test_init_movie_probe() bind(c) result(err)
 end function
 
 integer function test_update_movie_probe() bind(c) result(err)
-   ! Verifies movie-probe field components and timestep buffering for one update.
+   ! Verifies movie probes honour an explicit time window and sampling period.
    use output_m
    use outputTypes_m
    use testOutputUtils_m
@@ -1210,6 +1419,9 @@ integer function test_update_movie_probe() bind(c) result(err)
    call sgg_set_LineZ(dummysgg, z_steps)
 
    movieObservable = create_movie_observation(2, 2, 2, 5, 5, 5, iCur)
+   movieObservable%InitialTime = 0.15_RKIND
+   movieObservable%FinalTime = 0.35_RKIND
+   movieObservable%TimeStep = 0.2_RKIND
    call sgg_add_observation(dummysgg, movieObservable)
 
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
@@ -1227,7 +1439,8 @@ integer function test_update_movie_probe() bind(c) result(err)
    end do
    sinpml_fullsizePtr => sinpml_fullsize
 
-   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
+   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir, &
+                                       finaltimestep=nTimeSteps - 2)
 
    call init_outputs(dummysgg, media, sinpml_fullsize, tagNumbers, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
@@ -1253,7 +1466,9 @@ integer function test_update_movie_probe() bind(c) result(err)
    dummyFields%Hy(3, 3, 3) = 5.0_RKIND
    dummyFields%Hz(3, 3, 3) = 4.0_RKIND
 
-   call update_outputs(dummyControl, dummysgg%tiempo, 1_SINGLE, fields)
+   do iter = 1, 4
+      call update_outputs(dummyControl, dummysgg%tiempo(iter + 1), iter, fields)
+   end do
 
    test_err = test_err + assert_real_equal(outputs(1)%movieProbe%yValueForTime(1, 1), &
                                            -0.2_RKIND, 1e-5_RKIND, 'Value error')
@@ -1270,8 +1485,8 @@ integer function test_update_movie_probe() bind(c) result(err)
    test_err = test_err + assert_integer_equal( &
               size(outputs(1)%movieProbe%timeStep), OUTPUT_TIME_BUFFER_SIZE, 'Unexpected timestep buffer size')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nTime, 1, 'Movie update did not buffer a timestep')
-   test_err = test_err + assert_true(outputs(1)%movieProbe%timeStep(1) == dummysgg%tiempo(2), &
-                                     'Movie update stored an incorrect timestep')
+   test_err = test_err + assert_true(outputs(1)%movieProbe%timeStep(1) == dummysgg%tiempo(3), &
+                                      'Movie update stored an incorrect timestep')
 
    !Cleanup
    call remove_folder(testPath, ios)
@@ -1698,7 +1913,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 end function
 
 integer function test_update_frequency_slice_probe() bind(c) result(err)
-   ! Verifies frequency-slice gradients produce zero X current and Y = -Z.
+   ! Verifies frequency-slice gradients accumulate on every simulation step.
    use output_m
    use outputTypes_m
    use testOutputUtils_m
@@ -1736,6 +1951,7 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 
    type(dummyFields_t), target     :: dummyFields
    type(fields_reference_t)        :: fields
+   complex(kind=CKIND), allocatable :: firstFrequencyUpdate(:)
 
    integer(kind=SINGLE)             :: expectedNumMeasurments
    integer(kind=SINGLE)             :: expectedNumberFrequencies
@@ -1816,7 +2032,11 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 
    call fillGradient(dummyFields, 1, 0.0_RKIND, 10.0_RKIND)
 
-   call update_outputs(dummyControl, dummysgg%tiempo, 2_SINGLE, fields)
+   call update_outputs(dummyControl, dummysgg%tiempo(3), 2_SINGLE, fields)
+   firstFrequencyUpdate = outputs(1)%frequencySliceProbe%yValueForFreq(1, :)
+   do iter = 3, 5
+      call update_outputs(dummyControl, dummysgg%tiempo(iter + 1), iter, fields)
+   end do
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, &
                                               FREQUENCY_SLICE_PROBE_ID, 'Unexpected probe id')
@@ -1825,14 +2045,23 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
                                               expectedNumMeasurments, 'Unexpected number of measurements')
 
    test_err = test_err + assert_integer_equal( &
-              size(outputs(1)%frequencySliceProbe%frequencySlice), &
-              expectedNumberFrequencies, 'Unexpected allocation size')
+               size(outputs(1)%frequencySliceProbe%frequencySlice), &
+               expectedNumberFrequencies, 'Unexpected allocation size')
+   test_err = test_err + assert_real_equal(outputs(1)%frequencySliceProbe%frequencySlice(1), &
+                                           0.0_RKIND, 1e-5_RKIND, 'Unexpected initial frequency')
+   test_err = test_err + assert_real_equal(outputs(1)%frequencySliceProbe%frequencySlice(6), &
+                                           100.0_RKIND, 1e-5_RKIND, 'Unexpected final frequency')
 
    !This test generates X Gradient for H. It is expected to detect none Current accros X axis and Opposite values for Y and Z
 
    test_err = test_err + assert_array_value(outputs(1)%frequencySliceProbe%xValueForFreq, (0.0_CKIND , 0.0_CKIND), errormessage='Detected Current on X Axis for Hx gradient')
    test_err = test_err + assert_arrays_equal(outputs(1)%frequencySliceProbe%yValueForFreq, &
-                                -1.0_RKIND*outputs(1)%frequencySliceProbe%zValueForFreq, errormessage='Unequal values for Y and -Z')
+                                 -1.0_RKIND*outputs(1)%frequencySliceProbe%zValueForFreq, errormessage='Unequal values for Y and -Z')
+   test_err = test_err + assert_true(any(abs(firstFrequencyUpdate) > 1e-6_RKIND), &
+                                         'First frequency update produced no measurable value')
+   test_err = test_err + assert_arrays_equal(outputs(1)%frequencySliceProbe%yValueForFreq(1, :), &
+                                              4.0_RKIND*firstFrequencyUpdate, &
+                                              errormessage='Frequency slice was not updated on every step')
 
    call remove_folder(testPath, ios)
 

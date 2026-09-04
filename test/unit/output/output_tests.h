@@ -36,6 +36,7 @@ extern "C" int test_line_probe_empty_path();
 extern "C" int test_line_probe_dat_output();
 extern "C" int test_line_probe_shared_interface_owner();
 extern "C" int test_update_point_probe();
+extern "C" int test_update_time_probe_ranges();
 extern "C" int test_flush_point_probe();
 extern "C" int test_flush_wire_probe_dat();
 extern "C" int test_flush_bulk_probe_dat();
@@ -109,6 +110,8 @@ TEST(output, test_line_probe_dat_output) { EXPECT_EQ(0, test_line_probe_dat_outp
 TEST(output, test_line_probe_shared_interface_owner) { EXPECT_EQ(0, test_line_probe_shared_interface_owner()); }
 // Records point-probe values and their corresponding timesteps.
 TEST(output, test_update_point_probe_info) { EXPECT_EQ(0, test_update_point_probe()); }
+// Applies explicit time windows and sampling periods to every scalar time probe.
+TEST(output, test_update_time_probe_ranges) { EXPECT_EQ(0, test_update_time_probe_ranges()); }
 // Flushes point-probe samples and resets serialized time data.
 TEST(output, test_flush_point_probe_info) { EXPECT_EQ(0, test_flush_point_probe()); }
 // Writes wire-current and wire-charge samples without binary sidecars.

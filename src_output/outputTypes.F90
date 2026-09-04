@@ -154,6 +154,7 @@ module outputTypes_m
       real(kind=RKIND_tiempo) :: tstart = 0.0_RKIND_tiempo
       real(kind=RKIND_tiempo) :: tstop = 0.0_RKIND_tiempo
       real(kind=RKIND_tiempo) :: tstep = 0.0_RKIND_tiempo
+      integer(kind=SINGLE)    :: tstride = 1_SINGLE
       real(kind=RKIND)        :: fstart = 0.0_RKIND
       real(kind=RKIND)        :: fstop = 0.0_RKIND
       real(kind=RKIND)        :: fstep

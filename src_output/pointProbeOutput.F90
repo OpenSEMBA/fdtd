@@ -110,16 +110,20 @@ contains
 
    end subroutine init_point_probe_output
 
-   subroutine update_point_probe_output(this, step, field, sgg)
+   subroutine update_point_probe_output(this, step, field, sgg, saveTimeSample)
       type(point_probe_output_t), intent(inout) :: this
       real(kind=RKIND), pointer, dimension(:, :, :), intent(in) :: field
       real(kind=RKIND_tiempo), intent(in) :: step
       type(SGGFDTDINFO_t), intent(in), optional :: sgg
+      logical, intent(in), optional :: saveTimeSample
 
       integer(kind=SINGLE) :: iter
-      logical :: still_planewave_time
+      logical :: recordTimeSample, still_planewave_time
 
-      if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
+      recordTimeSample = .true.
+      if (present(saveTimeSample)) recordTimeSample = saveTimeSample
+
+      if (recordTimeSample .and. any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
          this%nTime = this%nTime + 1
          this%timeStep(this%nTime) = step
          this%valueForTime(this%nTime) = field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)

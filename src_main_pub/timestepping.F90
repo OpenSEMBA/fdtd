@@ -1911,7 +1911,7 @@ contains
             if (this%n > 0 .and. mod(this%n, OUTPUT_TIME_BUFFER_SIZE) == 0) then
                call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .FALSE.)
             end if
-            call update_outputs(this%control, this%sgg%tiempo, this%n, fieldReference, this%sgg)
+            call update_outputs(this%control, this%sgg%tiempo(this%n), this%n, fieldReference, this%sgg)
          end if
       end subroutine
 

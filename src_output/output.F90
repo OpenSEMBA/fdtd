@@ -17,9 +17,9 @@ module output_m
    use outputCollective_m, only: output_collective_t, init_output_collective, select_output_participants, &
                                  prepare_output_partition_publication, OUTPUT_COLLECTIVE_SUCCESS
    use outputTypes_m, only: solver_output_t, problem_info_t, output_artifact_t, &
-                             spheric_domain_t, cell_coordinate_t, field_data_t, fields_reference_t, &
-                             TIME_DOMAIN, FREQUENCY_DOMAIN, UNDEFINED_DOMAIN, volumetric_publication_t, &
-                             OUTPUT_ARTIFACT_UNDEFINED
+                              spheric_domain_t, cell_coordinate_t, field_data_t, fields_reference_t, &
+                              TIME_DOMAIN, FREQUENCY_DOMAIN, BOTH_DOMAIN, UNDEFINED_DOMAIN, volumetric_publication_t, &
+                              OUTPUT_ARTIFACT_UNDEFINED
 #ifdef CompileWithMPI
    use mpi
 #endif
@@ -229,7 +229,8 @@ contains
 #endif
 
       do ii = 1, sgg%NumberRequest
-         domain = preprocess_domain(sgg%Observation(ii), sgg%tiempo, sgg%dt, control%finaltimestep)
+         domain = preprocess_domain(sgg%Observation(ii), sgg%tiempo, sgg%dt, control%finaltimestep, &
+                                    control%saveall)
          if (domain%domainType == UNDEFINED_DOMAIN) cycle
          do i = 1, sgg%Observation(ii)%nP
             lowerBound%x = sgg%observation(ii)%P(i)%XI
@@ -547,18 +548,22 @@ contains
                     local_lower%z <= local_upper%z
       end subroutine get_local_map_bounds
 
-      function preprocess_domain(observation, timeArray, simulationTimeStep, finalStepIndex) result(newDomain)
-         type(Obses_t), intent(in) :: observation
-         real(kind=RKIND_tiempo), pointer, dimension(:), intent(in) :: timeArray
-         real(kind=RKIND_tiempo), intent(in) :: simulationTimeStep
-         integer(kind=4), intent(in) :: finalStepIndex
-         type(domain_t) :: newDomain
+       function preprocess_domain(observation, timeArray, simulationTimeStep, finalStepIndex, globalSaveAll) &
+          result(newDomain)
+          type(Obses_t), intent(in) :: observation
+          real(kind=RKIND_tiempo), pointer, dimension(:), intent(in) :: timeArray
+          real(kind=RKIND_tiempo), intent(in) :: simulationTimeStep
+          integer(kind=4), intent(in) :: finalStepIndex
+          logical, intent(in) :: globalSaveAll
+          type(domain_t) :: newDomain
 
-         integer(kind=SINGLE) :: nFreq
+          integer(kind=SINGLE) :: nFreq
+          integer :: simulationEndIndex
+          logical :: saveAllTimeSteps
 
-         if (observation%TimeDomain .and. observation%FreqDomain) then
-            nFreq = frequency_count(observation)
-            newdomain = domain_t(real(observation%InitialTime, kind=RKIND_tiempo), &
+          if (observation%TimeDomain .and. observation%FreqDomain) then
+             nFreq = frequency_count(observation)
+             newdomain = domain_t(real(observation%InitialTime, kind=RKIND_tiempo), &
                                  real(observation%FinalTime, kind=RKIND_tiempo), &
                                  real(observation%TimeStep, kind=RKIND_tiempo), &
                                  observation%InitialFreq, frequency_stop(observation, nFreq), nFreq, .false.)
@@ -568,30 +573,33 @@ contains
                                  real(observation%FinalTime, kind=RKIND_tiempo), &
                                  real(observation%TimeStep, kind=RKIND_tiempo))
 
-            newdomain%tstep = max(newdomain%tstep, simulationTimeStep)
-
-            if (10.0_RKIND*(newdomain%tstop - newdomain%tstart)/min(simulationTimeStep, newdomain%tstep) >= huge(1_4)) then
-               newdomain%tstop = newdomain%tstart + min(simulationTimeStep, newdomain%tstep)*huge(1_4)/10.0_RKIND
-            end if
-
-            if (newDomain%tstart < newDomain%tstep) then
-               newDomain%tstart = 0.0_RKIND_tiempo
-            end if
-
-            if (newDomain%tstep > (newdomain%tstop - newdomain%tstart)) then
-               newDomain%tstop = newDomain%tstart + newDomain%tstep
-            end if
-
-         elseif (observation%FreqDomain) then
+          elseif (observation%FreqDomain) then
             nFreq = frequency_count(observation)
             newdomain = domain_t(observation%InitialFreq, frequency_stop(observation, nFreq), nFreq, &
                                  logarithmicspacing=.false.)
 
-         else
-            newDomain = domain_t()
-         end if
-         return
-      end function preprocess_domain
+          else
+             newDomain = domain_t()
+          end if
+
+          if (any(newDomain%domainType == [TIME_DOMAIN, BOTH_DOMAIN])) then
+             simulationEndIndex = min(max(finalStepIndex + 2, lbound(timeArray, 1)), ubound(timeArray, 1))
+             saveAllTimeSteps = globalSaveAll .or. observation%FinalTime < tiny(1.0_RKIND) .or. &
+                                observation%TimeStep < tiny(1.0_RKIND)
+             if (saveAllTimeSteps) then
+                newDomain%tstart = 0.0_RKIND_tiempo
+                newDomain%tstop = timeArray(simulationEndIndex)
+                newDomain%tstep = simulationTimeStep
+             else
+                newDomain%tstart = max(0.0_RKIND_tiempo, newDomain%tstart)
+                newDomain%tstop = min(timeArray(simulationEndIndex), newDomain%tstop)
+                newDomain%tstop = max(newDomain%tstart, newDomain%tstop)
+                newDomain%tstep = max(simulationTimeStep, newDomain%tstep)
+             end if
+             newDomain%tstride = max(1_SINGLE, int(newDomain%tstep/simulationTimeStep, kind=SINGLE))
+          end if
+          return
+       end function preprocess_domain
 
       function preprocess_polar_range(observation) result(sphericDomain)
          type(spheric_domain_t) :: sphericDomain
@@ -607,40 +615,43 @@ contains
 
    end subroutine init_outputs
 
-   subroutine update_outputs(control, discreteTimeArray, timeIndx, fieldsReference, sgg)
+   subroutine update_outputs(control, discreteTime, timeIndx, fieldsReference, sgg)
       integer(kind=SINGLE), intent(in) :: timeIndx
-      real(kind=RKIND_tiempo), dimension(:), intent(in) :: discreteTimeArray
+      real(kind=RKIND_tiempo), intent(in) :: discreteTime
       integer(kind=SINGLE) :: i, id
       type(sim_control_t), intent(in) :: control
       real(kind=RKIND), pointer, dimension(:, :, :) :: fieldComponent
       type(field_data_t) :: fieldReference
       type(fields_reference_t), intent(in) :: fieldsReference
       type(SGGFDTDINFO_t), intent(in), optional :: sgg
-      real(kind=RKIND_tiempo) :: discreteTime
-
-      ! Assumed-shape arguments are indexed from one, while the solver time
-      ! vector begins at zero. Account for that remapping at the API boundary.
-      discreteTime = discreteTimeArray(timeIndx + 1)
+      logical :: timeSampleDue
 
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
          case (POINT_PROBE_ID)
+            timeSampleDue = is_time_sample_due(outputs(i)%pointProbe%domain, timeIndx, discreteTime)
             fieldComponent => get_field_component(outputs(i)%pointProbe%component, fieldsReference) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
             if (present(sgg)) then
-               call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent, sgg)
+               call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent, sgg, timeSampleDue)
             else
-               call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent)
+               call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent, &
+                                         saveTimeSample=timeSampleDue)
             end if
          case (WIRE_CURRENT_PROBE_ID)
+            if (.not. is_time_sample_due(outputs(i)%wireCurrentProbe%domain, timeIndx, discreteTime)) cycle
             call update_solver_output(outputs(i)%wireCurrentProbe, discreteTime, control, InvEps, InvMu)
          case (WIRE_CHARGE_PROBE_ID)
+            if (.not. is_time_sample_due(outputs(i)%wireChargeProbe%domain, timeIndx, discreteTime)) cycle
             call update_solver_output(outputs(i)%wireChargeProbe, discreteTime)
          case (BULK_PROBE_ID)
+            if (.not. is_time_sample_due(outputs(i)%bulkCurrentProbe%domain, timeIndx, discreteTime)) cycle
             fieldReference = get_field_reference(outputs(i)%bulkCurrentProbe%component, fieldsReference)
             call update_solver_output(outputs(i)%bulkCurrentProbe, discreteTime, fieldReference)
          case (LINE_PROBE_ID)
+            if (.not. is_time_sample_due(outputs(i)%lineProbe%domain, timeIndx, discreteTime)) cycle
             call update_solver_output(outputs(i)%lineProbe, discreteTime, fieldsReference%E)
          case (MOVIE_PROBE_ID)
+            if (.not. is_time_sample_due(outputs(i)%movieProbe%domain, timeIndx, discreteTime)) cycle
             call update_solver_output(outputs(i)%movieProbe, discreteTime, fieldsReference, control, problemInfo)
          case (FREQUENCY_SLICE_PROBE_ID)
             call update_solver_output(outputs(i)%frequencySliceProbe, discreteTime, fieldsReference, control, problemInfo)
@@ -654,6 +665,22 @@ contains
       end do
 
    end subroutine update_outputs
+
+   logical function is_time_sample_due(domain, timeIndex, discreteTime) result(sampleDue)
+      type(domain_t), intent(in) :: domain
+      integer(kind=SINGLE), intent(in) :: timeIndex
+      real(kind=RKIND_tiempo), intent(in) :: discreteTime
+      real(kind=RKIND_tiempo) :: boundaryTolerance, timeScale
+
+      sampleDue = .false.
+      if (.not. any(domain%domainType == [TIME_DOMAIN, BOTH_DOMAIN])) return
+      if (modulo(timeIndex, domain%tstride) /= 0) return
+
+      timeScale = max(abs(discreteTime), abs(domain%tstart), abs(domain%tstop), domain%tstep)
+      boundaryTolerance = 4.0_RKIND_tiempo*real(epsilon(1.0_RKIND), RKIND_tiempo)*timeScale
+      sampleDue = discreteTime >= domain%tstart - boundaryTolerance .and. &
+                  discreteTime <= domain%tstop + boundaryTolerance
+   end function is_time_sample_due
 
    subroutine flush_outputs(simulationTimeArray, simulationTimeIndex, control, fields, bounds, farFieldFlushRequested)
       implicit none
