@@ -160,7 +160,11 @@ def test_frequency_slice_is_published_canonically_with_mpi(tmp_path):
     )
 
     with h5py.File(h5_path, "r") as h5_file:
-        assert h5_file["attributes/a0001/values"].shape == (4, 120)
+        expected_frequency_count = solver["probes"][0]["domain"]["numberOfFrequencies"]
+        assert h5_file["attributes/a0001/values"].shape == (
+            expected_frequency_count,
+            120,
+        )
         assert np.max(np.abs(h5_file["attributes/a0001/values"][()])) > 0.0
 
     assert not list(Path(probe.folder).glob("*.json"))

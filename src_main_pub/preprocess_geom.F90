@@ -3681,8 +3681,7 @@ contains
             !!!
                 if ((sgg%observation(ii)%InitialFreq < 0.).or. &
                    (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
-                   (sgg%observation(ii)%FreqStep <= 1e-9 .and. &
-                    sgg%observation(ii)%InitialFreq /= sgg%observation(ii)%FinalFreq)) then
+                   (sgg%observation(ii)%FreqStep < 0.0_RKIND)) then
                write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
             end if
@@ -3955,7 +3954,7 @@ contains
 
                if ((sgg%observation(ii)%InitialFreq < 0.).or. &
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
-                  (sgg%observation(ii)%FreqStep <= 1e-9)) then
+                  (sgg%observation(ii)%FreqStep < 0.0_RKIND)) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                   if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
                end if
@@ -4130,7 +4129,7 @@ contains
 
                if ((sgg%observation(ii)%InitialFreq < 0.).or. &
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
-                  (sgg%observation(ii)%FreqStep <= 1e-9) ) then
+                  (sgg%observation(ii)%FreqStep < 0.0_RKIND) ) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                   if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
                end if
