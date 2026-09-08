@@ -21,8 +21,8 @@ module SEMBA_FDTD_m
 #endif
 
    use Preprocess_m
-    use storeData_m
-     use output_m, only: delete_outputs
+   use storeData_m
+   use output_m, only: delete_outputs
    !
 #ifdef CompileWithMPI
    use MPIcomm_m
@@ -1168,15 +1168,15 @@ contains
       call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
       !
-       if (this%l%deleteintermediates) then
+      if (this%l%deleteintermediates) then
          write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
          call print11 (this%l%layoutnumber, dubuf)
          write(dubuf,*) 'Attempting to delete all intermediate data files'
          call print11 (this%l%layoutnumber, dubuf)
-          write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
-          call print11 (this%l%layoutnumber, dubuf)
-          call delete_outputs(this%l%layoutnumber)
-       end if
+         write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
+         call print11 (this%l%layoutnumber, dubuf)
+         call delete_outputs(this%l%layoutnumber)
+      end if
       !
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)

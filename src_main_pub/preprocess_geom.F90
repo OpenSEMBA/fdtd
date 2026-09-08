@@ -3679,11 +3679,11 @@ contains
             sgg%observation(ii)%FreqStep = this%Sonda%collection(i)%fstep
             sgg%observation(ii)%FileNormalize = trim (adjustl(this%Sonda%collection(i)%filename))
             !!!
-                if ((sgg%observation(ii)%InitialFreq < 0.).or. &
-                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
-                   (sgg%observation(ii)%FreqStep < 0.0_RKIND)) then
-               write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
-               if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
+            if ((sgg%observation(ii)%InitialFreq < 0.).or. &
+                (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
+                (sgg%observation(ii)%FreqStep < 0.0_RKIND)) then
+                  write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
+                  if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
             end if
             !!!
             do j = 1, tama2

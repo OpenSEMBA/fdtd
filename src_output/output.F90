@@ -194,12 +194,6 @@ contains
       InvEps = 1.0_RKIND/(eps0*sgg%Med%Epr)
       InvMu = 1.0_RKIND/(mu0*sgg%Med%Mur)
 
-      !do ii = 1, sgg%NumberRequest
-      !do i = 1, sgg%Observation(ii)%nP
-      !   call eliminate_unnecesary_observation_points(sgg%Observation(ii)%P(i), output(ii)%item(i), &
-      !     sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE, control%layoutnumber, control%num_procs)
-      !end do
-      !end do
 
 #ifdef CompileWithMTLN
       block

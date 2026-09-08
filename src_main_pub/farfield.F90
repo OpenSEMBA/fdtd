@@ -57,7 +57,7 @@ module farfield_m
       real(kind=RKIND) :: phiStart,phiStop,phiStep
       character(len=BUFSIZE) :: FileNormalize
       integer(kind=4) :: unitfarfield
-       character(len=BUFSIZE) :: filefarfield
+      character(len=BUFSIZE) :: filefarfield
       real(kind=RKIND) :: XDobleAncho,YDobleAncho,ZDobleAncho
       real(kind=RKIND) :: XOffsetPlus,YOffsetPlus,ZOffsetPlus
       real(kind=RKIND) :: XOffsetMinus,YOffsetMinus,ZOffsetMinus
@@ -70,7 +70,7 @@ module farfield_m
    real(kind=RKIND), save           :: eps0,mu0
 !!!
    !
-    public UpdateFarField,InitFarField,Destroyfarfield,FlushFarfield,StoreFarfields
+   public UpdateFarField,InitFarField,Destroyfarfield,FlushFarfield,StoreFarfields
    public farfield_t
    !
    type(farfield_t), save, target :: FF
@@ -116,7 +116,7 @@ contains
       sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
       sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
       real(kind=RKIND) ::tiempo1,tiempo2,field1,field2,dtevol
-       integer j,k,field,i,layoutnumber,num_procs,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
+      integer j,k,field,i,layoutnumber,num_procs,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
       character(len=BUFSIZE) :: buFF
       logical :: errnofile,error
 
@@ -141,7 +141,7 @@ contains
       FF%esqz2=min(esqz2,SINPML_fullsize(iHz)%ZE)
       !!!!!!!!
       FF%unitfarfield =    unitfarfield
-       FF%filefarfield =    filefarfield
+      FF%filefarfield =    filefarfield
       FF%InitialFreq  =    InitialFreq
       FF%FinalFreq    =    FinalFreq
       FF%FreqStep     =    FreqStep
@@ -3344,9 +3344,9 @@ contains
 #ifdef CompileWithMPI
                   if (FF%MPIRoot == layoutnumber)  then
 #endif
-                   if (pasadas==1) write(FF%unitfarfield,fmt) freq,theta,phi,&
-                   abs(Etheta(2)),ATAN2( AIMAG( Etheta(2)) , real( Etheta(2) ) ), & !!! PASADAS=2=GEOMETRICA,, PASADAS=1=ARITMETICA
-                   abs(Ephi(2)) , ATAN2( AIMAG( Ephi(2)  ) , real( Ephi(2)   ) ), RCS(1),RCS(2)
+                  if (pasadas==1) write(FF%unitfarfield,fmt) freq,theta,phi,&
+                  abs(Etheta(2)),ATAN2( AIMAG( Etheta(2)) , real( Etheta(2) ) ), & !!! PASADAS=2=GEOMETRICA,, PASADAS=1=ARITMETICA
+                  abs(Ephi(2)) , ATAN2( AIMAG( Ephi(2)  ) , real( Ephi(2)   ) ), RCS(1),RCS(2)
 
 #ifdef CompileWithMPI
                end if
