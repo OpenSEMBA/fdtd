@@ -330,7 +330,6 @@ contains
 
                allocate (outputs(outputCount)%bulkCurrentProbe)
                  call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
-                 !! call adjust_computation_range --- Required due to issues in mpi region edges
 
             case (lineIntegral)
                if (domain%domainType /= TIME_DOMAIN) then
