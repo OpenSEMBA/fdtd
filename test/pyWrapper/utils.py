@@ -33,8 +33,13 @@ no_mpi_skip = pytest.mark.skipif(
 )
 
 # Use of absolute path to avoid conflicts when changing directory.
-if platform == "linux":
-    SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd')
+# Check environment variable first, then fall back to build detection.
+if "SEMBA_FDTD_EXECUTABLE" in os.environ:
+    SEMBA_EXE = os.environ["SEMBA_FDTD_EXECUTABLE"]
+elif platform == "linux":
+    SEMBA_EXE = os.path.join(os.getcwd(), 'build-dbg', 'bin', 'semba-fdtd')
+    if not os.path.isfile(SEMBA_EXE):
+        SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd')
 elif platform == "win32":
     SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd.exe')
 

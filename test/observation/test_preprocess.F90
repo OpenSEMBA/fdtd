@@ -300,6 +300,49 @@ integer function test_final_less_than_initial() bind(C) result(err)
   end if
 end function test_final_less_than_initial
 
+integer function test_volumic_true_forces_saveall_false() bind(C) result(err)
+  use observation_testingTools
+  use FDETYPES_m
+  use Observa_m
+
+  type(Obses_t) :: obs
+  type(output_t) :: out
+
+  integer :: finalTimeIndex
+  real(kind=RKIND_tiempo) :: dt
+  real(kind=RKIND_tiempo), pointer, dimension(:) :: tiempo
+  logical :: saveall
+
+  finalTimeIndex = 90
+  dt = 0.1_RKIND
+  tiempo => create_time_array(100, dt)
+  saveall = .true.
+
+  ! Volumic = .TRUE. should force both privateOutput%SaveAll and obs%Saveall to .FALSE.
+  obs%Volumic = .true.
+  obs%Saveall = .true.
+  obs%TimeStep = 0.2_RKIND
+  obs%InitialTime = 0.0_RKIND
+  obs%FinalTime = 1.0_RKIND
+  obs%InitialFreq = 0.0_RKIND
+  obs%FinalFreq = 1.0_RKIND
+  obs%FreqStep = 0.1_RKIND
+  obs%nP = 0
+  out%SaveAll = .true.
+
+  call preprocess_observation(obs, out, tiempo, finalTimeIndex, dt, saveall)
+
+  err = 0
+  if (out%SaveAll .neqv. .false.) then
+    print *, "test_volumic_true_forces_saveall_false FAILED: out%SaveAll=", out%SaveAll
+    err = 1
+  end if
+  if (obs%Saveall .neqv. .false.) then
+    print *, "test_volumic_true_forces_saveall_false FAILED: obs%Saveall=", obs%Saveall
+    err = 1
+  end if
+end function test_volumic_true_forces_saveall_false
+
 integer function test_huge_cap() bind(C) result(err)
   use observation_testingTools
   use FDETYPES_m
