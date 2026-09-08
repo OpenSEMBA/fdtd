@@ -60,7 +60,7 @@ def test_fdtd_set_new_folder_to_run(tmp_path):
     solver["general"]["numberOfSteps"] = 1
 
     solver.run()
-
+    assert solver.hasFinishedSuccessfully()
 
 @pytest.mark.planewave
 def test_fdtd_with_string_args(tmp_path):
@@ -69,6 +69,7 @@ def test_fdtd_with_string_args(tmp_path):
     solver["general"]["numberOfSteps"] = 1
 
     solver.run()
+    assert solver.hasFinishedSuccessfully()
 
 
 @no_mpi_skip
@@ -86,6 +87,7 @@ def test_fdtd_with_mpi_run(tmp_path):
     solver["general"]["numberOfSteps"] = 1
 
     solver.run()
+    assert solver.hasFinishedSuccessfully()
 
 
 @pytest.mark.planewave
@@ -775,12 +777,14 @@ def test_count_bug(tmp_path):
     solver["materialAssociations"][2]["materialId"] = 3
     solver.cleanUp()
     solver.run()
-
+    assert solver.hasFinishedSuccessfully()
+    
     solver["materialAssociations"][0]["materialId"] = 3
     solver["materialAssociations"][1]["materialId"] = 3
     solver["materialAssociations"][2]["materialId"] = 1
     solver.cleanUp()
     solver.run()
+    assert solver.hasFinishedSuccessfully()
 
 
 @mtln_skip
