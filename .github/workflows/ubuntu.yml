@@ -6,9 +6,6 @@ on:
       - main
 
   pull_request:
-    branches:
-      - main
-      - dev
       
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -22,36 +19,27 @@ jobs:
         os: [ubuntu-latest]
         compiler: [
           {name: 'intel', version: '2025.1'},
+          # Match the HDF5 Fortran ABI used by the Ubuntu packages.
           {name: 'gcc', version: 11}
         ]
         build-type: ["Release"]
         mpi: ["ON", "OFF"]
         mtln: ["ON", "OFF"]
-        hdf: ["ON"]
-        double-precision: ["OFF"]
+        double-precision: ["ON", "OFF"]
 
-        include:
+        #include:
           # Disable by lack of space on github action
           # - os: ubuntu-latest
           #   compiler: {name: 'nvidia-hpc', version: '24.5'}
           #   build-type: "Release"
           #   mpi: "OFF"
           #   mtln: "OFF"
-          #   hdf: "OFF"
           #   double-precision: "OFF"
-
-          - os: ubuntu-latest # This is the only test with double precision.
-            compiler: {name: 'intel', version: '2025.1'}
-            build-type: "Release"
-            mpi: "ON"
-            mtln: "OFF"
-            hdf: "ON"
-            double-precision: "ON"
             
       fail-fast: false
             
     runs-on: ${{ matrix.os }}
-    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})-double(${{matrix.double-precision}})
+    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-double(${{matrix.double-precision}})
 
     steps:       
     - name: Checkout
@@ -59,48 +47,122 @@ jobs:
       with:
         submodules: 'recursive'
     
-       
+    - name: Apt update
+      run: sudo apt update
+
     - name: Install python wrapper requirements
       run: python -m pip install -r requirements.txt
 
-    - name: Setup MPI
+    - name: Setup intel MPI
       if: matrix.mpi=='ON' && matrix.compiler.name=='intel'
       uses: mpi4py/setup-mpi@v1
       with:
         mpi: 'intelmpi'
 
-    - name: Install gcc required packages
+    - name: Install gcc MPI
+      if: matrix.mpi=='ON' && matrix.compiler.name=='gcc'
+      run: sudo apt install libhdf5-openmpi-dev libopenmpi-dev
+
+    - name: Install gcc required hdf5 packages
       if: matrix.compiler.name=='gcc'
-      run: |
-        sudo apt update
-        sudo apt install libhdf5-dev libopenmpi-dev
-   
+      run: sudo apt install libhdf5-dev
+
     - name: Setup fortran compiler
       uses: fortran-lang/setup-fortran@v1
       id: setup-fortran
       with:
         compiler: ${{matrix.compiler.name}}
         version: ${{matrix.compiler.version}}
+
+    - name: Setup ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
         
     - name: Build application
+      id: build
       run: |       
-        cmake -S . -B build \
+        cmake -S . -B build -G Ninja\
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
           -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
-          -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
           -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}} \
           -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=${{matrix.double-precision}}
         cmake --build build -j
       
-    - name: Run unit tests 
-      run: build/bin/fdtd_tests
+    - name: Run ctest
+      id: ctest
+      if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+      continue-on-error: true
+      env:
+        # The hosted runner exposes fewer cores than the MPI integration tests use.
+        OMPI_MCA_rmaps_base_oversubscribe: ${{ matrix.compiler.name == 'gcc' && '1' || '' }}
+      run: ctest --test-dir build --output-on-failure
 
     - name: Run python tests
+      id: python-tests
+      if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+      continue-on-error: true
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
-        SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
-      run: python -m pytest test/ --durations=20
+      run: |
+        set -o pipefail
+        python -m pytest -vv test/ --durations=0 --junitxml=build/pytest-results.xml 2>&1 | tee build/pytest-duration.log
+
+    - name: Upload pytest duration log
+      if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: pytest-duration-log-${{ matrix.compiler.name }}-mpi-${{ matrix.mpi }}-mtln-${{ matrix.mtln }}-double-${{ matrix.double-precision }}
+        path: build/pytest-duration.log
+        if-no-files-found: warn
+
+    - name: Upload failed test diagnostics
+      if: ${{ !cancelled() && (steps.ctest.outcome == 'failure' || steps.python-tests.outcome == 'failure') }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-diagnostics-${{ matrix.compiler.name }}-mpi-${{ matrix.mpi }}-mtln-${{ matrix.mtln }}-double-${{ matrix.double-precision }}
+        path: build/pytest-results.xml
+        if-no-files-found: warn
+
+    - name: Report test failures
+      if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+      run: |
+        test "${{ steps.ctest.outcome }}" = success
+        test "${{ steps.python-tests.outcome }}" = success
+
+  parallel-hdf5-build:
+    runs-on: ubuntu-latest
+    name: ubuntu / gcc / parallel-hdf5
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Install parallel HDF5
+      run: |
+        sudo apt update
+        sudo apt install gfortran-11 libhdf5-openmpi-dev libopenmpi-dev python3-h5py python3-numpy libhdf5-dev
+
+    - name: Configure parallel HDF5 output
+      run: |
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_Fortran_COMPILER=gfortran-11 \
+          -DSEMBA_FDTD_ENABLE_MPI=ON \
+          -DSEMBA_FDTD_ENABLE_MTLN=OFF \
+          -DSEMBA_FDTD_ENABLE_TEST=OFF \
+          -DXDMF_HDF5_BUILD_TESTING=ON \
+          -DHDF5_ROOT=/usr/lib/x86_64-linux-gnu/hdf5/openmpi
+
+    - name: Build parallel HDF5 output
+      run: cmake --build build -j
+
+    - name: Test parallel HDF5 output
+      env:
+        # The test uses three ranks, while the hosted runner provides two slots.
+        OMPI_MCA_rmaps_base_oversubscribe: 1
+      run: ctest --test-dir build --output-on-failure -R '^xdmf-hdf5-(generate|verify|mpi-generate|mpi-verify)$'
         
        
       

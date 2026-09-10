@@ -17,9 +17,9 @@ solver.cleanUp()
 solver.run() 
 
 # %% Postprocess
-before = Probe(solver.getSolvedProbeFilenames("before")[0])
-inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
-after = Probe(solver.getSolvedProbeFilenames("after")[0])
+before = Probe(solver.getSolvedProbeFolders("before")[0])
+inbox = Probe(solver.getSolvedProbeFolders("inbox")[0])
+after = Probe(solver.getSolvedProbeFolders("after")[0])
 
 plt.plot(inbox['time'], inbox['incident'], 'b.', label='incident') 
 plt.plot(before['time'], before['field'], 'r-', label='before')
@@ -38,7 +38,8 @@ solver.run()
 
 # %% Postprocess
 import h5py
-fn = solver.getSolvedProbeFilenames("electric_field_movie")[2]
+movie_probe = Probe(solver.getSolvedProbeFolders("electric_field_movie")[0])
+fn = movie_probe.getH5File()
 with h5py.File(fn, "r") as f:
     time_key = list(f.keys())[0]
     field_key = list(f.keys())[1]

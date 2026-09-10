@@ -39,18 +39,30 @@ In a nutshell, semba-fdtd capabilities are
 
 # Usage
 
-Compilation and debugging instructions can be found [here](doc/development.md).
+Compilation and debugging instructions are in the
+[development guide](doc/development.md).
 
-A short tutorial on usage can be found [here](doc/tutorials/veritasium/veritasium.md).
+A short tutorial is available in the
+[Veritasium example](doc/tutorials/veritasium/veritasium.md).
 
-The main binary is `semba-fdtd` which uses the `.fdtd.json` format, [described here](doc/fdtdjson.md), as input files.
+The main binary is `semba-fdtd`, which uses the `.fdtd.json`
+[input format](doc/fdtdjson.md).
 It can be run with
 
 ```shell
   semba-fdtd -i CASE_NAME.fdtd.json
 ```
 
-Tests must be run from the root folder. `python` wrapper test assumes that `semba-fdtd` has been compiled successfully and is located in folder `build/bin/`. For intel compilation it also assumes that the intel runtime libraries are accessible.
+See the [output guide](doc/output.md) for probe artifact formats and
+the [testing guide](doc/testing.md) for native, Python, and MPI test commands.
+
+Tests must be run from the root folder. Python tests automatically select the
+first compatible preset binary, preferring Release builds, based on
+`SEMBA_FDTD_ENABLE_MPI` and `SEMBA_FDTD_ENABLE_MTLN`, and then fall back to an
+explicitly configured `build/bin/semba-fdtd` binary.
+Set `SEMBA_EXE` to select a particular executable, for example
+`SEMBA_EXE=$PWD/build-rls/bin/semba-fdtd pytest test/`.
+For Intel compilation, the Intel runtime libraries must be accessible.
 
 
 # License

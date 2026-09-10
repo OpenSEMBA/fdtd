@@ -1,0 +1,723 @@
+from test.utils.utils import *
+from test.utils import utils
+from test.utils.build_resolver import build_feature_enabled, resolve_build
+from pathlib import Path
+from types import SimpleNamespace
+
+import os
+
+import numpy as np
+import pytest
+
+from src_pyWrapper.pyWrapper import FDTD, Probe
+
+
+OUTPUTS_PATH = Path(OUTPUTS_FOLDER)
+
+
+def make_probe_folder(tmp_path, source_file):
+    source_file = Path(source_file)
+    probe_folder = tmp_path / source_file.stem
+    probe_folder.mkdir()
+    (probe_folder / source_file.name).write_bytes(source_file.read_bytes())
+    return probe_folder
+
+
+def test_fdtd_run_keeps_callers_working_directory(tmp_path, monkeypatch):
+    case = tmp_path / "case.fdtd.json"
+    case.write_text("{}")
+    executable = tmp_path / "semba-fdtd"
+    executable.touch()
+    solver = FDTD(case, path_to_exe=executable)
+    original_directory = os.getcwd()
+
+    def run(command, capture_output, cwd):
+        assert command == solver.run_command
+        assert capture_output is True
+        assert cwd == str(tmp_path)
+        return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr("src_pyWrapper.pyWrapper.subprocess.run", run)
+    solver.run()
+
+    assert os.getcwd() == original_directory
+
+
+def test_fdtd_resolve_input_path_is_rooted_in_solver_folder(tmp_path):
+    case = tmp_path / "case.fdtd.json"
+    case.write_text("{}")
+    solver = FDTD(case, path_to_exe=case)
+    relative_path = "nested folder/excitation.exc"
+    absolute_path = tmp_path / "absolute.exc"
+
+    assert solver.resolveInputPath(relative_path) == str(
+        tmp_path / "nested folder" / "excitation.exc"
+    )
+    assert solver.resolveInputPath(absolute_path) == str(absolute_path)
+
+
+def test_fdtd_get_excitation_file_is_rooted_in_solver_folder(tmp_path, monkeypatch):
+    case = tmp_path / "case.fdtd.json"
+    case.write_text("{}")
+    (tmp_path / "predefinedExcitation.1.exc").touch()
+    other_folder = tmp_path / "other"
+    other_folder.mkdir()
+    solver = FDTD(case, path_to_exe=case)
+    monkeypatch.chdir(other_folder)
+
+    assert solver.getExcitationFile("predefinedExcitation") == [
+        str(tmp_path / "predefinedExcitation.1.exc")
+    ]
+
+
+def test_fdtd_get_vtk_map_prefers_parallel_descriptor(tmp_path):
+    case = tmp_path / "case.fdtd.json"
+    case.write_text("{}")
+    piece_folder = tmp_path / "case.fdtd__MAP_piece"
+    piece_folder.mkdir()
+    piece = piece_folder / "case.fdtd__MAP_piece.vtu"
+    piece.touch()
+    descriptor = tmp_path / "case.fdtd__MAP_global.pvtu"
+    descriptor.touch()
+    solver = FDTD(case, path_to_exe=case)
+
+    assert solver.getVTKMap() == str(descriptor)
+
+
+def test_fdtd_get_vtk_map_falls_back_to_serial_piece(tmp_path):
+    case = tmp_path / "case.fdtd.json"
+    case.write_text("{}")
+    piece_folder = tmp_path / "case.fdtd__MAP_piece"
+    piece_folder.mkdir()
+    piece = piece_folder / "case.fdtd__MAP_piece.vtu"
+    piece.touch()
+    solver = FDTD(case, path_to_exe=case)
+
+    assert solver.getVTKMap() == str(piece)
+
+
+def get_probe_stem(probe_case):
+    return "{case}.fdtd_{name}{type}{region}{segment}{domain}".format(
+        case=probe_case["case"]["code"],
+        name=probe_case["name"]["code"],
+        type=probe_case["type"]["code"],
+        region=probe_case["region"]["code"],
+        segment=probe_case.get("segment", {}).get("code", ""),
+        domain=probe_case["domain"]["code"],
+    )
+
+
+def make_schematic_probe_folder(tmp_path, probe_case):
+    probe_folder = tmp_path / get_probe_stem(probe_case)
+    probe_folder.mkdir()
+    return probe_folder
+
+
+def get_expected_output_paths(probe_folder, probe_case):
+    outputs = [
+        probe_folder / f"{probe_folder.name}{extension}"
+        for extension in probe_case["expected_extensions"]
+    ]
+    outputs.extend(
+        probe_folder / f"{probe_folder.name}{suffix}"
+        for suffix in probe_case.get("extra_outputs", [])
+    )
+    return outputs
+
+
+PROBE_TYPES: dict = {
+    "wire_time": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "wire_probe", "expected": "wire_probe"},
+        "type": {"code": "_Wx_", "expected": "wire"},
+        "region": {"code": "11_12_13", "expected": [11, 12, 13]},
+        "segment": {"code": "_s2", "expected": 2},
+        "domain": {"code": "_tm", "expected": "time"},
+        "field": "W",
+        "direction": "x",
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": [
+            "t",
+            "current",
+            "delta_voltage",
+            "plus_voltage",
+            "minus_voltage",
+            "voltage_difference",
+        ],
+    },
+    "wire_frequency": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "wire_probe", "expected": "wire_probe"},
+        "type": {"code": "_Wz_", "expected": "wire"},
+        "region": {"code": "21_22_23", "expected": [21, 22, 23]},
+        "segment": {"code": "_s10", "expected": 10},
+        "domain": {"code": "_fq", "expected": "frequency"},
+        "field": "W",
+        "direction": "z",
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": ["frequency", "magnitude", "phase"],
+    },
+    "wire_charge": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "charge_probe", "expected": "charge_probe"},
+        "type": {"code": "_Qx_", "expected": "wireCharge"},
+        "region": {"code": "11_12_13", "expected": [11, 12, 13]},
+        "segment": {"code": "_s2", "expected": 2},
+        "domain": {"code": "_tm", "expected": "time"},
+        "field": "Q",
+        "direction": "x",
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": ["t", "charge"],
+    },
+    "bulk_current": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "bulk_probe", "expected": "bulk_probe"},
+        "type": {"code": "_Jy_", "expected": "bulkCurrent"},
+        "region": {"code": "1_2_3__4_5_6", "expected": ([1, 2, 3], [4, 5, 6])},
+        "domain": {"code": "_tm", "expected": "time"},
+        "field": "J",
+        "direction": "y",
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": ["t", "current"],
+    },
+    "bulk_magnetic": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "bulk_probe", "expected": "bulk_probe"},
+        "type": {"code": "_Mz_", "expected": "bulkMagnetic"},
+        "region": {"code": "1_2_3__4_5_6", "expected": ([1, 2, 3], [4, 5, 6])},
+        "domain": {"code": "_tm", "expected": "time"},
+        "field": "M",
+        "direction": "z",
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": ["t", "circulation"],
+    },
+    "line_integral": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "line_probe", "expected": "line_probe"},
+        "type": {"code": "_LI_", "expected": "lineIntegral"},
+        "region": {"code": "4_5_6", "expected": [4, 5, 6]},
+        "domain": {"code": "_tm", "expected": "time"},
+        "field": "L",
+        "direction": "I",
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": ["t", "lineIntegral"],
+    },
+    "point_time": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "point_probe", "expected": "point_probe"},
+        "type": {"code": "_Ex_", "expected": "point"},
+        "region": {"code": "7_8_9", "expected": [7, 8, 9]},
+        "domain": {"code": "_tm", "expected": "time"},
+        "field": "E",
+        "direction": "x",
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": ["t", "field"],
+    },
+    "point_frequency": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "point_probe", "expected": "point_probe"},
+        "type": {"code": "_Hz_", "expected": "point"},
+        "region": {"code": "10_11_12", "expected": [10, 11, 12]},
+        "domain": {"code": "_fq", "expected": "frequency"},
+        "field": "H",
+        "direction": "z",
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": ["frequency", "real", "imaginary"],
+    },
+    "far_field": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "far_field", "expected": "far_field"},
+        "type": {"code": "_FF_", "expected": "farField"},
+        "region": {"code": "1_2_3__4_5_6", "expected": ([1, 2, 3], [4, 5, 6])},
+        "domain": {"code": "_fq", "expected": "frequency"},
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": [
+            "frequency",
+            "Theta",
+            "Phi",
+            "Etheta_mod",
+            "Etheta_phase",
+            "Ephi_mod",
+            "Ephi_phase",
+            "RCS_arithmetic",
+            "RCS_geometric",
+        ],
+    },
+    "movie": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "movie_probe", "expected": "movie_probe"},
+        "type": {"code": "_ExC_", "expected": "movie"},
+        "region": {"code": "1_2_3__4_5_6", "expected": ([1, 2, 3], [4, 5, 6])},
+        "domain": {"code": "_tm", "expected": "time"},
+        "expected_extensions": [".bin", ".xdmf", ".h5"],
+        "extra_outputs": ["_geometry.xdmf", "_geometry.h5"],
+        "expected_dat_columns": None,
+    },
+    "mtln_time": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "mtln_probe", "expected": "mtln_probe"},
+        "type": {"code": "_V_", "expected": "mtln"},
+        "region": {"code": "13_14_15", "expected": [13, 14, 15]},
+        "domain": {"code": "_tm", "expected": "time"},
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": ["t", "voltage_0"],
+    },
+    "mtln_frequency": {
+        "case": {"code": "case_name", "expected": "case_name"},
+        "name": {"code": "mtln_probe", "expected": "mtln_probe"},
+        "type": {"code": "_I_", "expected": "mtln"},
+        "region": {"code": "16_17_18", "expected": [16, 17, 18]},
+        "domain": {"code": "_fq", "expected": "frequency"},
+        "expected_extensions": [".dat"],
+        "expected_dat_columns": ["frequency", "current_0"],
+    },
+}
+
+
+@pytest.mark.probes
+@pytest.mark.parametrize("probe_type", PROBE_TYPES)
+def test_read_probe(tmp_path, probe_type):
+    probe_case = PROBE_TYPES[probe_type]
+    results_folder = tmp_path / "results"
+    results_folder.mkdir()
+    probe_path = make_schematic_probe_folder(results_folder, probe_case)
+
+    probe = Probe(probe_path)
+
+    assert probe.case_name == probe_case["case"]["expected"]
+    assert probe.name == probe_case["name"]["expected"]
+    assert probe.type == probe_case["type"]["expected"]
+    assert probe.domainType == probe_case["domain"]["expected"]
+    if "field" in probe_case:
+        assert probe.field == probe_case["field"]
+        assert probe.direction == probe_case["direction"]
+    if probe.type in ("bulkCurrent", "bulkMagnetic", "farField", "movie"):
+        expected_cell_init, expected_cell_end = probe_case["region"]["expected"]
+        assert np.all(probe.cell_init == expected_cell_init)
+        assert np.all(probe.cell_end == expected_cell_end)
+    else:
+        assert np.all(probe.cell == probe_case["region"]["expected"])
+    if "segment" in probe_case:
+        assert probe.segment == probe_case["segment"]["expected"]
+
+
+@pytest.mark.probes
+@pytest.mark.parametrize("probe_type", PROBE_TYPES)
+def test_getExpectedOutputs_returns_complete_set(tmp_path, probe_type):
+    probe_case = PROBE_TYPES[probe_type]
+    probe_folder = make_schematic_probe_folder(tmp_path, probe_case)
+    probe = Probe(probe_folder)
+    expected_outputs = get_expected_output_paths(probe_folder, probe_case)
+    for output in expected_outputs:
+        output.touch()
+    (probe_folder / "unrelated.dat").touch()
+
+    assert probe.getExpectedOutputs() == sorted(
+        str(output.resolve()) for output in expected_outputs
+    )
+
+
+@pytest.mark.probes
+@pytest.mark.parametrize("probe_type", PROBE_TYPES)
+def test_get_output_artifact_files(tmp_path, probe_type):
+    probe_case = PROBE_TYPES[probe_type]
+    probe_folder = make_schematic_probe_folder(tmp_path, probe_case)
+    probe = Probe(probe_folder)
+    for output in get_expected_output_paths(probe_folder, probe_case):
+        output.touch()
+
+    expected_dat_file = (
+        probe_folder / f"{probe_folder.name}.dat"
+        if ".dat" in probe_case["expected_extensions"]
+        else None
+    )
+    expected_text_file = expected_dat_file
+    if "" in probe_case["expected_extensions"]:
+        expected_text_file = probe_folder / probe_folder.name
+    expected_xdmf_file = (
+        probe_folder / f"{probe_folder.name}.xdmf"
+        if ".xdmf" in probe_case["expected_extensions"]
+        else None
+    )
+    expected_bin_file = (
+        probe_folder / f"{probe_folder.name}.bin"
+        if ".bin" in probe_case["expected_extensions"]
+        else None
+    )
+    expected_h5_file = (
+        probe_folder / f"{probe_folder.name}.h5"
+        if ".h5" in probe_case["expected_extensions"]
+        else None
+    )
+
+    assert probe.getDatFile() == (
+        str(expected_dat_file) if expected_dat_file is not None else None
+    )
+    assert probe.getTextFile() == (
+        str(expected_text_file) if expected_text_file is not None else None
+    )
+    assert probe.getXDMFFile() == (
+        str(expected_xdmf_file) if expected_xdmf_file is not None else None
+    )
+    assert probe.getBinFile() == (
+        str(expected_bin_file) if expected_bin_file is not None else None
+    )
+    assert probe.getH5File() == (
+        str(expected_h5_file) if expected_h5_file is not None else None
+    )
+
+
+@pytest.mark.probes
+def test_get_output_artifact_files_do_not_depend_on_folder_stem(tmp_path):
+    point_folder = make_schematic_probe_folder(tmp_path, PROBE_TYPES["point_time"])
+    far_field_folder = make_schematic_probe_folder(tmp_path, PROBE_TYPES["far_field"])
+    movie_folder = make_schematic_probe_folder(tmp_path, PROBE_TYPES["movie"])
+    point_probe = Probe(point_folder)
+    far_field_probe = Probe(far_field_folder)
+    movie_probe = Probe(movie_folder)
+
+    dat_file = point_folder / "field.dat"
+    bin_file = point_folder / "field.bin"
+    text_file = far_field_folder / "far_field_data"
+    xdmf_file = movie_folder / "movie_data.xdmf"
+    h5_file = movie_folder / "movie_data.h5"
+    for path in (dat_file, bin_file, text_file, xdmf_file, h5_file):
+        path.touch()
+
+    assert point_probe.getDatFile() == str(dat_file)
+    assert point_probe.getBinFile() == str(bin_file)
+    assert point_probe.getTextFile() == str(dat_file)
+    assert far_field_probe.getTextFile() == str(text_file)
+    assert movie_probe.getXDMFFile() == str(xdmf_file)
+    assert movie_probe.getH5File() == str(h5_file)
+
+
+@pytest.mark.probes
+@pytest.mark.parametrize("probe_type", PROBE_TYPES)
+def test_get_expected_columns_match_schematic_text_output(tmp_path, probe_type):
+    probe_case = PROBE_TYPES[probe_type]
+    expected_dat_columns = probe_case["expected_dat_columns"]
+    if expected_dat_columns is None:
+        pytest.skip("Movie probes do not produce a text .dat output")
+
+    probe_folder = make_schematic_probe_folder(tmp_path, probe_case)
+    extension = ".dat" if ".dat" in probe_case["expected_extensions"] else ""
+    probe_path = probe_folder / f"{probe_folder.name}{extension}"
+    probe_path.write_text(
+        " ".join(expected_dat_columns) + "\n" + " ".join("0" for _ in expected_dat_columns) + "\n"
+    )
+
+    probe = Probe(probe_folder)
+
+    assert probe.getExpectedColumns() == expected_dat_columns
+    assert probe_path.read_text().splitlines()[0].split() == expected_dat_columns
+
+
+def test_probe_accepts_flat_dat_file(tmp_path):
+    probe_file = tmp_path / "case.fdtd_probe_Ex_1_2_3_tm.dat"
+    probe_file.write_text("t field\n0 1\n")
+
+    probe = Probe(probe_file)
+
+    assert probe.getDatFile() == str(probe_file)
+    assert probe.folder == str(tmp_path)
+    assert probe.name == "probe"
+    assert probe.domainType == "time"
+
+
+@pytest.mark.probes
+def test_read_folder_based_line_integral_probe(tmp_path):
+    probe_folder = tmp_path / "case_name.fdtd_line_probe_LI"
+    probe_folder.mkdir()
+
+    probe = Probe(probe_folder)
+
+    assert probe.case_name == "case_name"
+    assert probe.name == "line_probe"
+    assert probe.type == "lineIntegral"
+    assert probe.domainType == "time"
+    assert probe.field == "L"
+    assert probe.direction == "I"
+    assert probe.cell is None
+
+
+@pytest.mark.probes
+@pytest.mark.wires
+def test_read_wire_probe(tmp_path):
+    probe = Probe(
+        make_probe_folder(
+            tmp_path, OUTPUTS_PATH / "fakeCurrentProbe.fdtd_mid_point_Wz_11_11_11_s2.dat"
+        )
+    )
+
+    assert probe.case_name == "fakeCurrentProbe"
+    assert probe.name == "mid_point"
+    assert probe.type == "wire"
+    assert probe.domainType == "time"
+    assert np.array_equal(probe.cell, [11, 11, 11])
+    assert probe.segment == 2
+
+    assert len(probe["time"]) == 3
+    assert probe["time"].iat[0] == 0.0
+    assert np.isclose(probe["time"].iat[-1], 0.59999998025528356e-10)
+
+    assert len(probe["current"]) == 3
+    assert probe["current"].iat[0] == 0.0
+    assert probe["current"].iat[-1] == 0.0
+
+@pytest.mark.probes
+@pytest.mark.wires
+def test_read_frequency_probe(tmp_path):
+    probe = Probe(
+        make_probe_folder(
+            tmp_path, OUTPUTS_PATH / "edelcadfixZ_COR2_log__Wz_21_21_28_s10_df.dat"
+        )
+    )
+
+    assert probe.type == "wire"
+    assert probe.domainType == "frequency"
+    assert np.array_equal(probe.cell, [21, 21, 28])
+    assert probe.segment == 10
+    assert list(probe.data.columns[:3]) == ["frequency", "magnitude", "phase"]
+
+
+@pytest.mark.probes
+def test_read_point_probe(tmp_path):
+    probe = Probe(
+        make_probe_folder(
+            tmp_path, OUTPUTS_PATH / "shieldingEffectiveness.fdtd_front_Ex_1_1_1.dat"
+        )
+    )
+
+    assert probe.case_name == "shieldingEffectiveness"
+    assert probe.name == "front"
+    assert probe.type == "point"
+    assert probe.domainType == "time"
+    assert probe.direction == "x"
+    assert probe.field == "E"
+    assert np.array_equal(probe.cell, [1, 1, 1])
+
+    assert len(probe["time"]) == 5193
+    assert probe["time"].iat[0] == 0.0
+    assert np.isclose(probe["time"].iat[-1], 0.19997851853637005e-7)
+
+    assert len(probe["field"]) == 5193
+    assert probe["field"].iat[0] == 0.0
+    assert np.isclose(probe["field"].iat[-1], 0.120145380)
+
+    assert len(probe["incident"]) == 5193
+    assert np.isclose(probe["incident"].iat[0], 0.134010895e-5)
+    assert probe["incident"].iat[-1] == 0.0
+
+
+@pytest.mark.probes
+def test_read_point_probe_without_planewave(tmp_path):
+    probe = Probe(
+        make_probe_folder(tmp_path, OUTPUTS_PATH / "twoWires.fdtd_ProbeEnd_Ey_25_13_5.dat")
+    )
+
+    assert probe.case_name == "twoWires"
+    assert probe.name == "ProbeEnd"
+    assert probe.type == "point"
+    assert probe.domainType == "time"
+    assert probe.direction == "y"
+    assert probe.field == "E"
+    assert np.array_equal(probe.cell, [25, 13, 5])
+    assert "incident" not in probe.data.columns
+
+
+
+
+@pytest.mark.probes
+@pytest.mark.farfield
+def test_read_extensionless_far_field_probe(tmp_path):
+    probe_folder = tmp_path / "case.fdtd_farfield_FF_1_1_1__2_2_2"
+    probe_folder.mkdir()
+    probe_path = probe_folder / "case.fdtd_farfield_FF_1_1_1__2_2_2"
+    probe_path.write_text(
+        "frequency Theta Phi Etheta_mod Etheta_phase Ephi_mod "
+        "Ephi_phase RCS_arithmetic RCS_geometric\n"
+        "1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0\n"
+    )
+
+    probe = Probe(probe_folder)
+
+    assert probe.name == "farfield"
+    assert probe.type == "farField"
+    assert np.array_equal(probe.cell_init, [1, 1, 1])
+    assert np.array_equal(probe.cell_end, [2, 2, 2])
+    assert probe.getExpectedOutputs() == [str(probe_path)]
+
+
+@pytest.mark.probes
+@pytest.mark.farfield
+def test_read_flat_extensionless_far_field_with_sibling_dat(tmp_path):
+    far_field = tmp_path / "case.fdtd_farfield_FF_1_1_1__2_2_2"
+    far_field.write_text(
+        "frequency Theta Phi Etheta_mod Etheta_phase Ephi_mod "
+        "Ephi_phase RCS_arithmetic RCS_geometric\n"
+        "1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0\n"
+    )
+    (tmp_path / "case.fdtd_point_Ex_1_1_1_tm.dat").write_text("t field\n0 1\n")
+
+    probe = Probe(far_field)
+
+    assert probe.getTextFile() == str(far_field)
+    assert probe.getExpectedOutputs() == [str(far_field)]
+    assert list(probe.data.columns)[7:] == ["rcs_arit", "rcs_geom"]
+
+
+@pytest.mark.probes
+def test_probe_folder_discovery_is_scoped_to_solver_folder(tmp_path, monkeypatch):
+    run_folder = tmp_path / "own_run"
+    other_folder = tmp_path / "other_run"
+    run_folder.mkdir()
+    other_folder.mkdir()
+
+    input_path = run_folder / "case.fdtd.json"
+    input_path.write_text(
+        '{"probes": [{"name": "sample"}, {"name": "probe[0]"}, {"name": "farfield"}]}'
+    )
+    monkeypatch.chdir(tmp_path)
+    solver = FDTD(Path("own_run/case.fdtd.json"), path_to_exe=input_path)
+
+    sample_point = run_folder / "case.fdtd_sample_Ex_1_2_3_tm"
+    sample_line = run_folder / "case.fdtd_sample_line_I_1_2_3_tm"
+    far_field = run_folder / "case.fdtd_farfield_FF_1_1_1__2_2_2_fq"
+    literal_name = run_folder / "case.fdtd_probe[0]_Ex_4_5_6_tm"
+    regex_like_name = run_folder / "case.fdtd_probe0_Ex_4_5_6_tm"
+    mtln_probe = run_folder / "case.fdtd_start_voltage_wire_V_5_5_1_tm"
+    flat_mtln_probe = run_folder / "case.fdtd_flat_voltage_V_5_5_1_tm.dat"
+    wire_probe = run_folder / "case.fdtd_wire_start_Wz_27_25_30_s3_tm"
+    wrong_run_probe = other_folder / "case.fdtd_sample_Ex_1_2_3_tm"
+    for folder in (
+        sample_line,
+        literal_name,
+        regex_like_name,
+        mtln_probe,
+        wire_probe,
+        wrong_run_probe,
+    ):
+        folder.mkdir()
+
+    for path in (
+        run_folder / f"{sample_point.name}.dat",
+        run_folder / f"{sample_point.name}.bin",
+        sample_line / f"{sample_line.name}.dat",
+        run_folder / far_field.name,
+        run_folder / f"{far_field.name}.bin",
+        flat_mtln_probe,
+    ):
+        path.touch()
+
+    (run_folder / "case.fdtd_sample_Ex_1_2_3_tm.dat").touch()
+    monkeypatch.chdir(other_folder)
+
+    expected_results = [
+        ("sample", [sample_line, run_folder / f"{sample_point.name}.dat"]),
+        ("farfield", [run_folder / far_field.name]),
+        ("farfield_FF_1_1_1__2_2_2_fq", [run_folder / far_field.name]),
+        ("probe[0]", [literal_name]),
+        ("sample_Ex_1_2_3_tm", [run_folder / f"{sample_point.name}.dat"]),
+        ("start_voltage", [mtln_probe]),
+        ("flat_voltage", [flat_mtln_probe]),
+        ("wire_start", [wire_probe]),
+    ]
+
+    for probe_name, expected_paths in expected_results:
+        expected = sorted(str(path.resolve()) for path in expected_paths)
+        assert solver.getSolvedProbeFolders(probe_name) == expected
+
+    assert (run_folder / f"{sample_point.name}.dat").is_file()
+    assert (run_folder / f"{sample_point.name}.bin").is_file()
+    assert (run_folder / far_field.name).is_file()
+    assert (run_folder / f"{far_field.name}.bin").is_file()
+    assert flat_mtln_probe.is_file()
+    assert not (run_folder / flat_mtln_probe.stem).exists()
+    assert not sample_point.exists()
+    assert far_field.is_file()
+
+
+@pytest.mark.spice
+@pytest.mark.mtln
+def test_fdtd_get_used_files():
+    input_path = (
+        Path(CASES_FOLDER) / "multilines_opamp" / "multilines_opamp.fdtd.json"
+    )
+    solver = FDTD(input_path, path_to_exe=input_path)
+
+    assert solver.getUsedFiles() == ["spice_4port_pulse_start_75.exc", "opamp.model"]
+
+
+def test_default_semba_exe_prefers_environment_override(tmp_path, monkeypatch):
+    configured_exe = Path("configured") / "semba-fdtd"
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("SEMBA_EXE", str(configured_exe))
+
+    assert utils._default_semba_exe() == str(tmp_path / configured_exe)
+
+
+@pytest.mark.parametrize(
+    ("environment", "build_dir"),
+    [
+        ({}, "build-rls"),
+        ({"SEMBA_FDTD_ENABLE_MPI": "ON"}, "build-rls-mpi"),
+        ({"SEMBA_FDTD_ENABLE_MTLN": "OFF"}, "build-rls-nomtln"),
+        (
+            {
+                "SEMBA_FDTD_ENABLE_MPI": "ON",
+                "SEMBA_FDTD_ENABLE_MTLN": "OFF",
+            },
+            "build-intel-rls-nomtln",
+        ),
+    ],
+)
+def test_default_semba_exe_selects_compatible_preset(
+    tmp_path, monkeypatch, environment, build_dir
+):
+    executable_name = "semba-fdtd.exe" if platform == "win32" else "semba-fdtd"
+    executable = tmp_path / build_dir / "bin" / executable_name
+    executable.parent.mkdir(parents=True)
+    executable.touch()
+    cache_lines = [f"{name}:BOOL={value}\n" for name, value in environment.items()]
+    (executable.parents[1] / "CMakeCache.txt").write_text("".join(cache_lines))
+    legacy_executable = tmp_path / "build" / "bin" / executable_name
+    legacy_executable.parent.mkdir(parents=True)
+    legacy_executable.touch()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("SEMBA_EXE", raising=False)
+    monkeypatch.delenv("SEMBA_FDTD_ENABLE_MPI", raising=False)
+    monkeypatch.delenv("SEMBA_FDTD_ENABLE_MTLN", raising=False)
+    for name, value in environment.items():
+        monkeypatch.setenv(name, value)
+
+    assert utils._default_semba_exe(tmp_path) == str(executable)
+
+
+def test_build_feature_uses_selected_executable_cache(tmp_path, monkeypatch):
+    executable_name = "semba-fdtd.exe" if platform == "win32" else "semba-fdtd"
+    executable = tmp_path / "custom-build" / "bin" / executable_name
+    executable.parent.mkdir(parents=True)
+    executable.touch()
+    (executable.parents[1] / "CMakeCache.txt").write_text(
+        "SEMBA_FDTD_ENABLE_MPI:BOOL=ON\n"
+    )
+    monkeypatch.setenv("SEMBA_EXE", str(executable))
+    monkeypatch.delenv("SEMBA_FDTD_ENABLE_MPI", raising=False)
+
+    build_directory, selected_executable = resolve_build(tmp_path)
+
+    assert build_directory == executable.parents[1]
+    assert selected_executable == executable
+    assert build_feature_enabled("SEMBA_FDTD_ENABLE_MPI", tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("folder", "position"),
+    [
+        ("case.fdtd_probe_Ex_1_2_3_tm", "1_2_3"),
+        ("case.fdtd_probe_LI", ""),
+    ],
+)
+def test_probe_position_is_derived_from_the_detected_tag(folder, position):
+    assert Probe._getPositionStrFromFolder(folder) == position
