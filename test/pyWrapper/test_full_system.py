@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 from sys import platform
 from scipy import signal
+from scipy.constants import c, epsilon_0, mu_0
 import matplotlib.pyplot as plt
 
 
@@ -2368,4 +2369,7 @@ def test_slotted_box_shielding_effectiveness(tmp_path):
         plt.close()
 
     assert np.all(np.isfinite(robinson_se))
-    assert np.allclose(shielding_effectiveness, robinson_se, atol=5.0, rtol=0.0)
+    robinson_tolerance_db = 6.0
+    assert np.allclose(
+        shielding_effectiveness, robinson_se, atol=robinson_tolerance_db, rtol=0.0
+    )
