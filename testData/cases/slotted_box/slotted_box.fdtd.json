@@ -2,13 +2,13 @@
   "_format": "FDTD Input file",
   "general": {
     "timeStep": 1.5406665612371765e-11,
-    "numberOfSteps": 1947,
+    "numberOfSteps": 100000,
     "additionalArguments": ""
   },
   "boundary": {
     "all": {
       "type": "pml",
-      "layers": 10,
+      "layers": 6,
       "order": 2,
       "reflection": 0.001
     }
@@ -37,12 +37,12 @@
       "magnitudeFile": "gauss_1ghz.exc",
       "elementIds": [4],
       "direction": {
-        "theta": 2.356194490192345,
+        "theta": 1.5707963267948966,
         "phi": 1.5707963267948966
       },
       "polarization": {
-        "theta": 0.7853981633974483,
-        "phi": 1.5707963267948966
+        "theta": 0.0,
+        "phi": 0.0
       }
     }
   ],
