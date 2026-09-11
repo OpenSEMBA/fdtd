@@ -36,7 +36,7 @@ solver.run()
 
 #####################################################
 # %% Plot results
-lineInt  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_20_20_10")[0])
+lineInt  = Probe(solver.getSolvedProbeFolders("vprobe_LI_20_20_10")[0])
 lineC = np.interp(t, lineInt['time'], lineInt['lineIntegral'])
 
 plt.figure()

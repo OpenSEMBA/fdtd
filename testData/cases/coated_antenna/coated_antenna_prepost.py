@@ -3,12 +3,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 
-import sys, os
+import sys, os, shutil, tempfile
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../../', 'src_pyWrapper'))
 SEMBA_EXE = '../../../build/bin/semba-fdtd'
 OUTPUTS_FOLDER = '../../outputs/'
 
 from pyWrapper import *
+
+
+def probe_from_fixture(filename):
+    folder = os.path.join(tempfile.mkdtemp(), os.path.splitext(os.path.basename(filename))[0])
+    os.mkdir(folder)
+    shutil.copy2(filename, folder)
+    return Probe(folder)
 
 
 #####################################################
@@ -17,14 +24,14 @@ fn = 'coated_antenna.fdtd.json'
 solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
-probe_names = solver.getSolvedProbeFilenames("mid_point")
+probe_names = solver.getSolvedProbeFolders("mid_point")
 p = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
 
 #####################################################
 # %% Plot results
 pf = "coated_antenna.fdtd_mid_point_bundle_half_1_I_11_11_12.dat"
-expected = Probe(OUTPUTS_FOLDER+pf)
+expected = probe_from_fixture(OUTPUTS_FOLDER + pf)
 
 jcoated = json.load(open('./coated.json'))
 jbare = json.load(open('./bare.json'))

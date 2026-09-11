@@ -1,0 +1,56 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Central z-oriented Hertzian dipole with spatial frequency slices.",
+
+    "general": {
+        "timeStep": 12e-12,
+        "numberOfSteps": 1000
+    },
+
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 6,
+            "order": 2.0,
+            "reflection": 0.001
+        }
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [48, 48, 48],
+            "steps": {"x": [0.008333333333333333], "y": [0.008333333333333333], "z": [0.008333333333333333]}
+        },
+        "elements": [
+            {"id": 1, "type": "cell", "name": "hertzian_dipole", "intervals": [[[24, 24, 23], [24, 24, 25]]]},
+            {"id": 2, "type": "cell", "name": "frequency-volume", "intervals": [[[0, 0, 0], [48, 48, 48]]]}
+        ]
+    },
+
+    "sources": [
+        {
+            "name": "hertzian_dipole_feed",
+            "type": "nodalSource",
+            "magnitudeFile": "sine_1GHz.exc",
+            "elementIds": [1],
+            "field": "current"
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "dipole_frequency_slice",
+            "type": "movie",
+            "field": "electric",
+            "component": "magnitude",
+            "elementIds": [2],
+            "domain": {
+                "type": "frequency",
+                "initialFrequency": 7.5e8,
+                "finalFrequency": 1.25e9,
+                "numberOfFrequencies": 2,
+                "frequencySpacing": "linear"
+            }
+        }
+    ]
+}

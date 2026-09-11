@@ -3680,10 +3680,10 @@ contains
             sgg%observation(ii)%FileNormalize = trim (adjustl(this%Sonda%collection(i)%filename))
             !!!
             if ((sgg%observation(ii)%InitialFreq < 0.).or. &
-               (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
-               (sgg%observation(ii)%FreqStep <= 1e-9)) then
-               write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
-               if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
+                (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
+                (sgg%observation(ii)%FreqStep < 0.0_RKIND)) then
+                  write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
+                  if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
             end if
             !!!
             do j = 1, tama2
@@ -3906,9 +3906,8 @@ contains
          !
          do i = 1, tamaoldSONDA
             ii = i + tamaSonda
-            !only the MasSondas accept the freqdomain
-            sgg%observation(ii)%TimeDomain = .TRUE. !NO  CONSIDERO EL FARFIELD FREQDOMAIN PQ LA TRATO BIEN COMO TIMEDOMAIN Y NO QUIERO JODERLA !26/02/14
-            sgg%observation(ii)%FreqDomain = .FALSE.
+            sgg%observation(ii)%TimeDomain = .FALSE.
+            sgg%observation(ii)%FreqDomain = .TRUE.
             sgg%observation(ii)%TRANSFER = .FALSE.
             !farfields (no es time domain pero una forma especial de ellos)
             tama2 = (this%oldSONDA%probes(i)%n_FarField)
@@ -3955,7 +3954,7 @@ contains
 
                if ((sgg%observation(ii)%InitialFreq < 0.).or. &
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
-                  (sgg%observation(ii)%FreqStep <= 1e-9)) then
+                  (sgg%observation(ii)%FreqStep < 0.0_RKIND)) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                   if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
                end if
@@ -4130,7 +4129,7 @@ contains
 
                if ((sgg%observation(ii)%InitialFreq < 0.).or. &
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
-                  (sgg%observation(ii)%FreqStep <= 1e-9) ) then
+                  (sgg%observation(ii)%FreqStep < 0.0_RKIND) ) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                   if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
                end if

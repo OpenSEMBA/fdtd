@@ -6,6 +6,7 @@ extern "C" int test_mtl_time_step();
 extern "C" int test_mtl_wrong_dt();
 //test_mtl_bundle.F90
 extern "C" int test_mtl_bundle_init();
+extern "C" int test_mtl_bundle_generator();
 
 extern "C" int test_mtln_types();
 extern "C" int test_derived_type_submodule();
@@ -61,6 +62,7 @@ TEST(mtln, mtl_homogeneous)   { EXPECT_EQ(0, test_mtl_init_homogeneous()); }
 TEST(mtln, mtl_time_step) { EXPECT_EQ(0, test_mtl_time_step()); }
 TEST(mtln, mtl_wrong_dt) { EXPECT_EQ(0, test_mtl_wrong_dt()); }
 TEST(mtln, mtl_bundle_init) { EXPECT_EQ(0, test_mtl_bundle_init()); }
+TEST(mtln, mtl_bundle_generator) { EXPECT_EQ(0, test_mtl_bundle_generator()); }
 
 TEST(mtln, mtln_types) {EXPECT_EQ(0, test_mtln_types()); }
 TEST(mtln, mtln_derived_types) {EXPECT_EQ(0, test_derived_type_submodule()); }

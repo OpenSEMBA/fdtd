@@ -1,0 +1,133 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CMake: configure Release no-MPI",
+      "type": "shell",
+      "command": "cmake --fresh --preset rls",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: build Release no-MPI",
+      "type": "shell",
+      "command": "cmake --build --preset rls",
+      "dependsOn": ["CMake: configure Release no-MPI"],
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: configure Debug no-MPI",
+      "type": "shell",
+      "command": "cmake --fresh --preset dbg",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: build Debug no-MPI",
+      "type": "shell",
+      "command": "cmake --build --preset dbg",
+      "dependsOn": ["CMake: configure Debug no-MPI"],
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: configure Debug MPI",
+      "type": "shell",
+      "command": "cmake --fresh --preset dbg-mpi",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: build Debug MPI",
+      "type": "shell",
+      "command": "cmake --build --preset dbg-mpi",
+      "dependsOn": ["CMake: configure Debug MPI"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Debug: prepare MPI fdtd_tests",
+      "type": "process",
+      "command": "${workspaceFolder}/scripts/debug-mpi-gdbserver.sh",
+      "args": [
+        "2",
+        "${workspaceFolder}/${config:semba-fdtd.debug.buildFolderName}/bin/fdtd_tests",
+        "--gtest_filter=${config:semba-fdtd.debug.mpiGtestFilter}"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Debug: stop MPI gdbservers",
+      "type": "process",
+      "command": "${workspaceFolder}/scripts/debug-mpi-gdbserver.sh",
+      "args": ["--stop"],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "never",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CMake: configure Debug no-MTLN",
+      "type": "shell",
+      "command": "cmake --fresh --preset dbg-nomtln",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: build Debug no-MTLN",
+      "type": "shell",
+      "command": "cmake --build --preset dbg-nomtln",
+      "dependsOn": ["CMake: configure Debug no-MTLN"],
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "Lint: Fortitude (advisory)",
+      "type": "shell",
+      "command": "fortitude check --exit-zero",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: configure Release MPI",
+      "type": "shell",
+      "command": "cmake --fresh --preset rls-mpi",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: build Release MPI",
+      "type": "shell",
+      "command": "cmake --build --preset rls-mpi",
+      "dependsOn": ["CMake: configure Release MPI"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: unit Release no-MPI",
+      "type": "shell",
+      "command": "build-rls/bin/fdtd_tests",
+      "dependsOn": ["CMake: build Release no-MPI"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: pytest Release no-MPI",
+      "type": "shell",
+      "command": "SEMBA_FDTD_ENABLE_MPI=OFF SEMBA_FDTD_ENABLE_MTLN=ON SEMBA_EXE=build-rls/bin/semba-fdtd .venv/bin/python -m pytest test/ -m 'not mpi' --durations=20",
+      "dependsOn": ["CMake: build Release no-MPI"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: pytest Release MPI",
+      "type": "shell",
+      "command": "SEMBA_FDTD_ENABLE_MPI=ON SEMBA_FDTD_ENABLE_MTLN=ON SEMBA_EXE=build-rls-mpi/bin/semba-fdtd .venv/bin/python -m pytest test/ -m mpi --durations=20",
+      "dependsOn": ["CMake: build Release MPI"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: all Release no-MPI",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Test: unit Release no-MPI",
+        "Test: pytest Release no-MPI"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

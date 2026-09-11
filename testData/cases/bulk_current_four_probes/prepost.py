@@ -39,10 +39,10 @@ solver.cleanUp()
 solver.run()
 
 # %% Show outputs
-probe_LL = Probe(solver.getSolvedProbeFilenames("BC_LL")[0])
-probe_LU = Probe(solver.getSolvedProbeFilenames("BC_LU")[0])
-probe_UU = Probe(solver.getSolvedProbeFilenames("BC_UU")[0])
-probe_UL = Probe(solver.getSolvedProbeFilenames("BC_UL")[0])
+probe_LL = Probe(solver.getSolvedProbeFolders("BC_LL")[0])
+probe_LU = Probe(solver.getSolvedProbeFolders("BC_LU")[0])
+probe_UU = Probe(solver.getSolvedProbeFolders("BC_UU")[0])
+probe_UL = Probe(solver.getSolvedProbeFolders("BC_UL")[0])
 
 probe_time = probe_LL["time"].to_numpy()
 exc_interp = np.interp(probe_time, t, gauss)

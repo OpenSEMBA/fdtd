@@ -55,16 +55,16 @@ solver["general"]["numberOfSteps"] = 6000
 solver.cleanUp()
 solver.run()
 #%%
-probe_names = solver.getSolvedProbeFilenames("probe_end")
+probe_names = solver.getSolvedProbeFolders("probe_end")
 pendI = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
-probe_names = solver.getSolvedProbeFilenames("probe_start")
+probe_names = solver.getSolvedProbeFolders("probe_start")
 pstI = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
-probe_names = solver.getSolvedProbeFilenames("probe_end")
+probe_names = solver.getSolvedProbeFolders("probe_end")
 pendV = Probe(list(filter(lambda x: '_V_' in x, probe_names))[0])
 
-probe_names = solver.getSolvedProbeFilenames("probe_start")
+probe_names = solver.getSolvedProbeFolders("probe_start")
 pstV = Probe(list(filter(lambda x: '_V_' in x, probe_names))[0])
 
 

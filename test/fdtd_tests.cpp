@@ -1,24 +1,41 @@
 #include <gtest/gtest.h>
 
+#ifdef CompileWithMPI
+#include <mpi.h>
+#endif
+
 #ifdef CompileWithMTLN
     #include "mtln/mtln_tests.h"
     //#include "system/system_tests.h"
 #endif
 #ifdef CompileWithSMBJSON
     #include "smbjson/smbjson_tests.h"
-    #include "rotate/rotate_tests.h"
-    #include "vtk/vtk_tests.h"
+    #include "unit/rotate/rotate_tests.h"
+    #include "unit/output/output_tests.h"
     #include "wires/wires_tests.h"
-#endif
-#ifndef CompileWithMPI
-    #include "observation/observation_tests.h"
+    #include "unit/output/vtkAPI_tests.h"
 #endif
 #include "conformal/conformal_tests.h"
-#include "preprocess/preprocess_tests.h"
+#include "unit/preprocess/preprocess_tests.h"
 #include "healer/healer_tests.h"
 #include "sgbc/sgbc_tests.h"
 
 int main(int argc, char **argv) {
+#ifdef CompileWithMPI
+    int initialized = 0;
+    MPI_Initialized(&initialized);
+    if (!initialized) {
+        MPI_Init(&argc, &argv);
+    }
+#endif
     ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    const int result = RUN_ALL_TESTS();
+#ifdef CompileWithMPI
+    int finalized = 0;
+    MPI_Finalized(&finalized);
+    if (!finalized) {
+        MPI_Finalize();
+    }
+#endif
+    return result;
 }
