@@ -216,3 +216,29 @@ integer function test_preprocess_zt_conductor_ranges_2() bind(C) result(error_cn
 
 end function
 
+
+integer function test_preprocess_mpi_segment_ownership() bind(C) result(error_cnt)
+    use mtln_preprocess_m, only: isSegmentOwnedByMTLNRank
+    use mtln_types_m, only: segment_t, DIRECTION_X_POS, DIRECTION_Z_POS
+    implicit none
+
+    type(segment_t) :: segment
+    integer(kind=4), dimension(2) :: rank0_alloc, rank0_sweep, rank1_alloc, rank1_sweep
+
+    error_cnt = 0
+    rank0_alloc = [-1_4, 34_4]
+    rank0_sweep = [0_4, 34_4]
+    rank1_alloc = [33_4, 68_4]
+    rank1_sweep = [34_4, 67_4]
+
+    segment%z = 33
+    segment%orientation = DIRECTION_X_POS
+    if (.not. isSegmentOwnedByMTLNRank(segment, rank0_alloc, rank0_sweep)) error_cnt = error_cnt + 1
+    if (isSegmentOwnedByMTLNRank(segment, rank1_alloc, rank1_sweep)) error_cnt = error_cnt + 1
+
+    segment%z = 34
+    segment%orientation = DIRECTION_Z_POS
+    if (.not. isSegmentOwnedByMTLNRank(segment, rank0_alloc, rank0_sweep)) error_cnt = error_cnt + 1
+    segment%z = 33
+    if (.not. isSegmentOwnedByMTLNRank(segment, rank1_alloc, rank1_sweep)) error_cnt = error_cnt + 1
+end function

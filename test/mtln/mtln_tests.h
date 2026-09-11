@@ -4,6 +4,8 @@
 extern "C" int test_mtl_init_homogeneous();
 extern "C" int test_mtl_time_step();
 extern "C" int test_mtl_wrong_dt();
+extern "C" int test_mtl_inactive_mpi_slice();
+extern "C" int test_mtl_replicated_mpi_probe();
 //test_mtl_bundle.F90
 extern "C" int test_mtl_bundle_init();
 extern "C" int test_mtl_bundle_generator();
@@ -44,6 +46,7 @@ extern "C" int test_preprocess_conductors_before_cable();
 extern "C" int test_preprocess_conductors_in_level();
 extern "C" int test_preprocess_zt_conductor_ranges_2();
 extern "C" int test_preprocess_zt_conductor_ranges();
+extern "C" int test_preprocess_mpi_segment_ownership();
 // extern "C" int test_coaxial_line_paul_8_6_square();
 // extern "C" int test_coaxial_line_paul_8_6_triangle();
 // extern "C" int test_2_conductor_line_paul_9_6();
@@ -61,6 +64,8 @@ extern "C" int test_preprocess_zt_conductor_ranges();
 TEST(mtln, mtl_homogeneous)   { EXPECT_EQ(0, test_mtl_init_homogeneous()); }
 TEST(mtln, mtl_time_step) { EXPECT_EQ(0, test_mtl_time_step()); }
 TEST(mtln, mtl_wrong_dt) { EXPECT_EQ(0, test_mtl_wrong_dt()); }
+TEST(mtln, mtl_inactive_mpi_slice) { EXPECT_EQ(0, test_mtl_inactive_mpi_slice()); }
+TEST(mtln, mtl_replicated_mpi_probe) { EXPECT_EQ(0, test_mtl_replicated_mpi_probe()); }
 TEST(mtln, mtl_bundle_init) { EXPECT_EQ(0, test_mtl_bundle_init()); }
 TEST(mtln, mtl_bundle_generator) { EXPECT_EQ(0, test_mtl_bundle_generator()); }
 
@@ -73,6 +78,7 @@ TEST(mtln, preprocess_conductors_before_cable) { EXPECT_EQ(0, test_preprocess_co
 TEST(mtln, preprocess_conductors_in_level) { EXPECT_EQ(0, test_preprocess_conductors_in_level()); }
 TEST(mtln, preprocess_zt_conductor_ranges_2) { EXPECT_EQ(0, test_preprocess_zt_conductor_ranges_2()); }
 TEST(mtln, preprocess_zt_conductor_ranges) { EXPECT_EQ(0, test_preprocess_zt_conductor_ranges()); }
+TEST(mtln, preprocess_mpi_segment_ownership) { EXPECT_EQ(0, test_preprocess_mpi_segment_ownership()); }
 
 TEST(mtln, math_eigvals) { EXPECT_EQ(0, test_math_eigvals()); }
 TEST(mtln, math_matmul_broadcast) { EXPECT_EQ(0, test_math_matmul_broadcast()); }

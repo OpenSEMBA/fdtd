@@ -52,9 +52,10 @@ module mtln_preprocess_m
 contains
 
 
-    function preprocess(parsed, alloc) result(res)
+    function preprocess(parsed, alloc, sweep) result(res)
         type(parsed_mtln_t), intent(in):: parsed
         type(XYZlimit_t), dimension(1:6), intent(in), optional :: alloc
+        type(XYZlimit_t), dimension(1:6), intent(in), optional :: sweep
         type(preprocess_t) :: res
         type(fhash_tbl_t) :: cable_name_to_bundle_id
         type(transmission_line_bundle_t), dimension(:), allocatable :: line_bundles
@@ -80,7 +81,11 @@ contains
 #endif
         ! Create mtl objets from cables
         if (present(alloc)) then 
-            line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
+            if (present(sweep)) then
+                line_bundles = buildLineBundles(cable_bundles, res%dt, alloc, sweep)
+            else
+                line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
+            end if
         else 
             line_bundles = buildLineBundles(cable_bundles, res%dt)
         end if
@@ -334,16 +339,17 @@ contains
 
     end function
 
-    function buildLineBundles(cable_bundles, dt, alloc) result(res)
+    function buildLineBundles(cable_bundles, dt, alloc, sweep) result(res)
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
         type(transmission_line_bundle_t), dimension(:), allocatable :: res
         real(kind=RKIND_TIEMPO), intent(in) :: dt
         type(XYZlimit_t), dimension(1:6), intent(in), optional :: alloc
+        type(XYZlimit_t), dimension(1:6), intent(in), optional :: sweep
         integer :: i, j, k
         integer :: nb, nl, nc
         integer(kind=4), allocatable, dimension(:,:) :: layer_indices
         logical :: bundle_in_layer = .false.
-        integer(kind=4), dimension(2) :: alloc_z
+        integer(kind=4), dimension(2) :: alloc_z, sweep_z
         if (present(alloc)) then
             alloc_z(1) = alloc(3)%zi
             alloc_z(2) = alloc(3)%ze
@@ -353,13 +359,16 @@ contains
         do i = 1, nb
             if (present(alloc)) then
                 if (allocated(layer_indices)) deallocate(layer_indices)
-                bundle_in_layer = isBundleInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
-                if (bundle_in_layer) then 
-                    layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
-                else 
-                    allocate(layer_indices(0,2), source = 0)
+                if (present(sweep)) then
+                    sweep_z(1) = sweep(iHz)%zi
+                    sweep_z(2) = sweep(iHz)%ze
+                    bundle_in_layer = isBundleInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z, sweep_z)
+                    if (bundle_in_layer) layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z, sweep_z)
+                else
+                    bundle_in_layer = isBundleInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
+                    if (bundle_in_layer) layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
                 end if
-                ! if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
+                if (.not. bundle_in_layer) allocate(layer_indices(0,2), source = 0)
             end if
             nl = size(cable_bundles(i)%levels)
             allocate(res(i)%levels(nl))
@@ -377,15 +386,16 @@ contains
         end do
 
     contains
-        logical function isBundleInLayer(cable, alloc_z)
+        logical function isBundleInLayer(cable, alloc_z, sweep_z)
             integer(kind=4), dimension(2), intent(in) :: alloc_z
+            integer(kind=4), dimension(2), intent(in), optional :: sweep_z
             class (cable_t), pointer, intent(in) :: cable
             integer :: n, i
             logical :: in_layer
             in_layer = .false.
             n = 0
             do i = 1, size(cable%segments)
-                if (isSegmentWithinAllocBox(cable%segments, i, alloc_z)) then 
+                if (isSegmentWithinAllocBox(cable%segments, i, alloc_z, sweep_z)) then
                     if (.not. in_layer) then 
                         in_layer = .true.
                     end if
@@ -400,8 +410,9 @@ contains
             isBundleInLayer = (n/=0)
         end function
 
-        function findIndicesInLayer(cable, alloc_z) result(res)
+        function findIndicesInLayer(cable, alloc_z, sweep_z) result(res)
             integer(kind=4), dimension(2), intent(in) :: alloc_z
+            integer(kind=4), dimension(2), intent(in), optional :: sweep_z
             class (cable_t), pointer, intent(in) :: cable
             integer(kind=4), allocatable, dimension(:,:) :: res
             integer :: n, i, direction, position(1:3)
@@ -410,7 +421,7 @@ contains
             ! precount
             n = 0
             do i = 1, size(cable%segments)
-                if (isSegmentWithinAllocBox(cable%segments, i, alloc_z)) then 
+                if (isSegmentWithinAllocBox(cable%segments, i, alloc_z, sweep_z)) then
                     if (.not. in_layer) then 
                         in_layer = .true.
                     end if
@@ -427,7 +438,7 @@ contains
             n = 1 
             in_layer = .false.
             do i = 1, size(cable%segments)
-                if (isSegmentWithinAllocBox(cable%segments, i, alloc_z)) then 
+                if (isSegmentWithinAllocBox(cable%segments, i, alloc_z, sweep_z)) then
                     if (.not. in_layer) then 
                         res(n,1) = i
                         in_layer = .true.
@@ -445,14 +456,28 @@ contains
             end if
         end function
 
-        logical function isSegmentWithinAllocBox(segs, i,  z)
+        logical function isSegmentWithinAllocBox(segs, i, alloc_z, sweep_z)
             type(segment_t), intent(in), dimension(:), allocatable :: segs
-            type(segment_t) :: prev
             integer :: i
-            integer(kind=4), dimension(2), intent(in) :: z
-            isSegmentWithinAllocBox = (segs(i)%z >= z(1)) .and. (segs(i)%z <= z(2))
+            integer(kind=4), dimension(2), intent(in) :: alloc_z
+            integer(kind=4), dimension(2), intent(in), optional :: sweep_z
+            if (present(sweep_z)) then
+                isSegmentWithinAllocBox = isSegmentOwnedByMTLNRank(segs(i), alloc_z, sweep_z)
+            else
+                isSegmentWithinAllocBox = (segs(i)%z >= alloc_z(1)) .and. (segs(i)%z <= alloc_z(2))
+            end if
         end function
 
+    end function
+    logical function isSegmentOwnedByMTLNRank(segment, alloc_z, sweep_z)
+        type(segment_t), intent(in) :: segment
+        integer(kind=4), dimension(2), intent(in) :: alloc_z, sweep_z
+
+        if (abs(segment%orientation) == ZPOS) then
+            isSegmentOwnedByMTLNRank = (segment%z >= alloc_z(1)) .and. (segment%z <= alloc_z(2))
+        else
+            isSegmentOwnedByMTLNRank = (segment%z > sweep_z(1)) .and. (segment%z <= sweep_z(2))
+        end if
     end function
 
     function buildCableBundleFromParent(parent, cables) result(res)

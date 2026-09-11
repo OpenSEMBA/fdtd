@@ -53,13 +53,14 @@ contains
       logical :: thereAreMTLNbundles
       real(kind=rkind_tiempo), intent(inout) :: dtcritico
 #ifdef CompileWithMPI
-      integer(kind=4) :: ierr
+      integer(kind=4) :: ierr, m
 #endif
       eps0 = eps00
       mu0 = mu00
 
 #ifdef CompileWithMPI
-      mtln_solver = mtlnCtor(mtln_parsed, sgg%alloc)
+      ! Keep the MTLN state whole on every rank; field samples are synchronized in mtl_bundle_t.
+      mtln_solver = mtlnCtor(mtln_parsed)
       call mpi_barrier(subcomm_mpi,ierr)
 #else
       mtln_solver = mtlnCtor(mtln_parsed)
@@ -73,6 +74,11 @@ contains
       end if
       if (mtln_solver%dt < dtcritico) dtcritico = mtln_solver%dt
       call pointSegmentsToFields()
+#ifdef CompileWithMPI
+      do m = 1, mtln_solver%number_of_bundles
+         call mtln_solver%bundles(m)%initMPIStateOwnership()
+      end do
+#endif
       call mtln_solver%updatePULTerms()
 
    contains
@@ -88,30 +94,63 @@ contains
             if (mtln_solver%bundles(m)%bundle_in_layer) then 
                do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
                   call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))
+                  mtln_solver%bundles(m)%external_field_segments(n)%field_is_local = .false.
+                  mtln_solver%bundles(m)%external_field_segments(n)%field_is_owned = segmentIsOwnedByThisRank(mtln_solver%bundles(m)%external_field_segments(n))
+                  if (.not. mtln_solver%bundles(m)%external_field_segments(n)%field_is_owned) then
+                     mtln_solver%bundles(m)%external_field_segments(n)%field => mtln_solver%null_field
+                     cycle
+                  end if
                   select case (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction))
                      case(DIRECTION_X_POS)
                         if (isEmbeddedInPECorLossy(sggmiEx(i,j,k))) then 
                            mtln_solver%bundles(m)%external_field_segments(n)%field => mtln_solver%null_field
                         else
                            mtln_solver%bundles(m)%external_field_segments(n)%field => Ex(i, j, k) 
+                           mtln_solver%bundles(m)%external_field_segments(n)%field_is_local = .true.
                         end if
                      case(DIRECTION_Y_POS)     
                         if (isEmbeddedInPECorLossy(sggmiEy(i,j,k))) then 
                            mtln_solver%bundles(m)%external_field_segments(n)%field => mtln_solver%null_field
                         else
                            mtln_solver%bundles(m)%external_field_segments(n)%field => Ey(i, j, k) 
+                           mtln_solver%bundles(m)%external_field_segments(n)%field_is_local = .true.
                         end if
                      case(DIRECTION_Z_POS)        
                         if (isEmbeddedInPECorLossy(sggmiEz(i,j,k))) then 
                            mtln_solver%bundles(m)%external_field_segments(n)%field => mtln_solver%null_field
                         else
                            mtln_solver%bundles(m)%external_field_segments(n)%field => Ez(i, j, k) 
+                           mtln_solver%bundles(m)%external_field_segments(n)%field_is_local = .true.
                         end if
                      end select
                end do
             end if
          end do
       end subroutine
+
+      logical function segmentIsOwnedByThisRank(field_segment)
+         type(external_field_segment_t), intent(in) :: field_segment
+         integer :: field_component
+
+         select case (abs(field_segment%direction))
+         case (DIRECTION_X_POS)
+            field_component = iEx
+         case (DIRECTION_Y_POS)
+            field_component = iEy
+         case (DIRECTION_Z_POS)
+            field_component = iEz
+         case default
+            segmentIsOwnedByThisRank = .false.
+            return
+         end select
+
+         segmentIsOwnedByThisRank = field_segment%position(1) >= sgg%sweep(field_component)%xi .and. &
+                                    field_segment%position(1) <= sgg%sweep(field_component)%xe .and. &
+                                    field_segment%position(2) >= sgg%sweep(field_component)%yi .and. &
+                                    field_segment%position(2) <= sgg%sweep(field_component)%ye .and. &
+                                    field_segment%position(3) >= sgg%sweep(field_component)%zi .and. &
+                                    field_segment%position(3) <= sgg%sweep(field_component)%ze
+      end function
 
       logical function isEmbeddedInPECorLossy(media)
          integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: media
@@ -136,6 +175,7 @@ contains
       do m = 1, mtln_solver%number_of_bundles
          if (mtln_solver%bundles(m)%bundle_in_layer) then 
             do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
+               if (.not. mtln_solver%bundles(m)%external_field_segments(n)%field_is_local) cycle
                punt => mtln_solver%bundles(m)%external_field_segments(n)%field
                punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
             end do

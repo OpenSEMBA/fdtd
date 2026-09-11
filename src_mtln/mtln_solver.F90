@@ -59,9 +59,10 @@ module mtln_solver_m
 
 contains
 
-    function mtlnCtor(parsed, alloc) result(res)
+    function mtlnCtor(parsed, alloc, sweep) result(res)
         type(parsed_mtln_t) :: parsed
         type(XYZlimit_t), dimension(1:6), intent(in), optional :: alloc
+        type(XYZlimit_t), dimension(1:6), intent(in), optional :: sweep
         type(mtln_t) :: res
         integer :: i
         type(preprocess_t) :: pre
@@ -74,7 +75,11 @@ contains
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
         if (present(alloc)) then 
-            pre = preprocess(parsed, alloc)
+            if (present(sweep)) then
+                pre = preprocess(parsed, alloc, sweep)
+            else
+                pre = preprocess(parsed, alloc)
+            end if
         else  
             pre = preprocess(parsed)
         end if

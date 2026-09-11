@@ -140,6 +140,8 @@ contains
                 allocate(res%segments(0))
                 allocate(res%mpi_comm%comms(0))
             end if
+            res%layer_indices = layer_indices
+            if (present(bundle_in_layer)) res%bundle_in_layer = bundle_in_layer
         else
             res%step_size =  step_size
             allocate(res%layer_indices(0,0))
@@ -156,9 +158,13 @@ contains
         res%number_of_conductors = size(lpul, 1)
         call res%initDirections()
         call res%allocatePULMatrices()
-        call res%initLC(lpul, cpul)
-        call res%initRG(rpul, gpul)
-        call res%checkTimeStep(getMax = (lpul(1,1) /= 0.0), dt = dt)
+        if (size(res%step_size) /= 0) then
+            call res%initLC(lpul, cpul)
+            call res%initRG(rpul, gpul)
+            call res%checkTimeStep(getMax = (lpul(1,1) /= 0.0), dt = dt)
+        else
+            res%dt = dt
+        end if
         res%parent_name = parent_name
         res%conductor_in_parent = conductor_in_parent
         res%transfer_impedance = transfer_impedance
@@ -195,7 +201,7 @@ contains
                 allocate(res%mpi_comm%comms(0))
             end if
             res%layer_indices = layer_indices
-            res%bundle_in_layer = bundle_in_layer 
+            if (present(bundle_in_layer)) res%bundle_in_layer = bundle_in_layer
         else
             res%step_size =  step_size
             allocate(res%layer_indices(0,0))
@@ -220,9 +226,11 @@ contains
             else 
                 call res%initLC(lpul, cpul)
             end if
+            call res%initRG(rpul, gpul)
+            call res%checkTimeStep(getMax = (lpul(1,1) /= 0.0), dt = dt)
+        else
+            res%dt = dt
         end if
-        call res%initRG(rpul, gpul)
-        call res%checkTimeStep(getMax = (lpul(1,1) /= 0.0), dt = dt)
         res%lumped_elements = dispersive_lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
     end function
 
