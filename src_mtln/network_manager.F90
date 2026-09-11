@@ -10,12 +10,14 @@ module network_manager_m
     type network_manager_t
         type(network_t), dimension(:), allocatable :: networks
         type(circuit_t) :: circuit
+        type(nw_node_t), allocatable :: open_nodes(:)
         real(kind=rkind) :: time, dt
+        logical :: has_active_node = .false.
+
     contains
         procedure :: advanceVoltage => network_advanceVoltage
         procedure :: updateCircuitCurrentsFromNetwork
-        procedure :: updateNetworkVoltages
-
+        procedure :: updateNetworkVoltagesFromCircuit
     end type
 
     interface network_manager_t
@@ -89,6 +91,9 @@ contains
         res%dt = dt
         res%time = 0.0
         res%networks = networks
+
+        res%open_nodes = collectOpenNodes(networks)
+
         call res%circuit%init(copy_node_names(networks), copy_sources(networks))
         res%circuit%dt = dt
 #ifdef CompileWithRelease
@@ -96,6 +101,33 @@ contains
 #endif        
         call res%circuit%readInput(description, printInput)
         call res%circuit%setModStopTimes(dt)
+
+        contains
+        
+        function collectOpenNodes(nws) result(res)
+            type(network_t), dimension(:), intent(in) :: nws
+            integer :: i, j, n
+            type(nw_node_t), allocatable :: res(:)
+            n = 0
+            do i = 1, size(nws)
+                do j = 1, nws(i)%number_of_nodes
+                    if (nws(i)%nodes(j)%open) n = n + 1
+                end do
+            end do
+            allocate(res(n))
+            if (n==0) return
+            n = 0
+            do i = 1, size(nws)
+                do j = 1, nws(i)%number_of_nodes
+                    if (nws(i)%nodes(j)%open) then 
+                        n = n + 1
+                        res(n) = nws(i)%nodes(j)
+                    end if
+                end do
+            end do
+            
+        end function
+
 
     end function
 
@@ -124,8 +156,42 @@ contains
         class(network_manager_t) :: this
         call this%updateCircuitCurrentsFromNetwork()
         call this%circuit%step()
-        this%circuit%time = this%circuit%time + this%circuit%dt
-        call this%updateNetworkVoltages()
+        ! this%circuit%time = this%circuit%time + this%circuit%dt
+        call this%updateNetworkVoltagesFromCircuit()
     end subroutine
 
+    subroutine updateNetworkVoltagesFromCircuit(this)
+        class(network_manager_t) :: this
+        integer :: i, j, idx
+        type(vectorInfo_t), pointer :: info
+        type(c_ptr) :: info_ptr
+        real(kind=c_double), pointer :: values(:)
+        type(string_t), allocatable :: names(:)
+
+        do i = 1, size(this%networks)
+            do j = 1, this%networks(i)%number_of_nodes
+                info_ptr = get_vector_info(trim(this%networks(i)%nodes(j)%name)//c_null_char)
+                if (.not. c_associated(info_ptr)) then
+                    call WarnErrReport('Ngspice returned null vector info for '//trim(this%networks(i)%nodes(j)%name), .true.)
+                    return
+                end if
+
+                call c_f_pointer(info_ptr, info)
+                if (.not. c_associated(info%vRealData)) then
+                    call WarnErrReport('Ngspice returned null vector data for '//trim(this%networks(i)%nodes(j)%name), .true.)
+                    return
+                end if
+                if (info%vLength <= 0) then
+                    call WarnErrReport('Ngspice returned empty vector for '//trim(this%networks(i)%nodes(j)%name), .true.)
+                    return
+                end if
+
+                call c_f_pointer(info%vRealData, values,shape=[info%vLength])
+                if (this%networks(i)%nodes(j)%name /= "time" .and. .not. this%networks(i)%nodes(j)%open) then 
+                    this%networks(i)%nodes(j)%v = values(ubound(values,1))
+                end if
+            end do
+        end do
+    end subroutine
+    
 end module

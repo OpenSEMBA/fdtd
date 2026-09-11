@@ -218,7 +218,7 @@ contains
             return
         end if
 
-        call this%updateNodes()
+        this%time = this%time + this%dt
 
     end subroutine
 
