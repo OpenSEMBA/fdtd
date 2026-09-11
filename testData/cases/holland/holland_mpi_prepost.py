@@ -3,11 +3,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 
-import sys, os
+import sys, os, shutil, tempfile
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../../', 'src_pyWrapper'))
 SEMBA_EXE = '../../../build/bin/semba-fdtd'
 
 from pyWrapper import *
+
+
+def probe_from_fixture(filename):
+    folder = os.path.join(tempfile.mkdtemp(), os.path.splitext(os.path.basename(filename))[0])
+    os.mkdir(folder)
+    shutil.copy2(filename, folder)
+    return Probe(folder)
 fn = 'holland1981.fdtd.json'
 fn_mtln = 'holland1981_unshielded.fdtd.json'
 
@@ -16,34 +23,34 @@ fn_mtln = 'holland1981_unshielded.fdtd.json'
 solver = FDTD(input_filename = fn_mtln, path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
-probe_names = solver.getSolvedProbeFilenames("mid_point")
+probe_names = solver.getSolvedProbeFolders("mid_point")
 mid_mtln = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 # %% Run solver
 
 solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
-probe_names = solver.getSolvedProbeFilenames("mid_point")
+probe_names = solver.getSolvedProbeFolders("mid_point")
 mid = Probe(list(filter(lambda x: '_Wz_' in x, probe_names))[0])
 # %% Run solver
 solver = FDTD(input_filename = fn_mtln, path_to_exe=SEMBA_EXE,mpi_command='mpirun -np 1')
 solver.cleanUp()
 solver.run()
-probe_names = solver.getSolvedProbeFilenames("mid_point")
+probe_names = solver.getSolvedProbeFolders("mid_point")
 mid_mpi1 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 # %% Run solver
 
 solver = FDTD(input_filename = fn_mtln, path_to_exe=SEMBA_EXE,mpi_command='mpirun -np 2')
 solver.cleanUp()
 solver.run()
-probe_names = solver.getSolvedProbeFilenames("mid_point")
+probe_names = solver.getSolvedProbeFolders("mid_point")
 mid_mpi2 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
 # %% Run solver
 solver = FDTD(input_filename = fn_mtln, path_to_exe=SEMBA_EXE,mpi_command='mpirun -np 3')
 solver.cleanUp()
 solver.run()
-probe_names = solver.getSolvedProbeFilenames("mid_point")
+probe_names = solver.getSolvedProbeFolders("mid_point")
 mid_mpi3 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 # %% Run solver
 
@@ -58,7 +65,7 @@ for data in jpaper12['datasetColl'][0]['data']:
     tp12 = np.append(tp12, float(data['value'][0]))    
     ip12 = np.append(ip12, float(data['value'][1]))    
 
-p_expected = Probe('../../outputs/holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
+p_expected = probe_from_fixture('../../outputs/holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
 
 i_inter = np.interp(mid['time']-3.05*1e-9, tp12, ip12)
 assert np.allclose(

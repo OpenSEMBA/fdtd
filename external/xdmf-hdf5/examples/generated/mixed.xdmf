@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Xdmf Version="3.0">
+  <Domain Name="XDMF-HDF5">
+    <Information Name="Schema" Value="XDMF-HDF5 1.0"/>
+    <Grid Name="mixed-elements" GridType="Uniform">
+      <Topology TopologyType="Mixed" NumberOfElements="8">
+        <DataItem Dimensions="55" NumberType="Int" Precision="8" Format="HDF">
+          mixed.h5:/grids/g0001/connectivity
+        </DataItem>
+      </Topology>
+      <Geometry GeometryType="XYZ">
+        <DataItem Dimensions="8 3" NumberType="Float" Precision="8" Format="HDF">
+          mixed.h5:/grids/g0001/points
+        </DataItem>
+      </Geometry>
+    </Grid>
+  </Domain>
+</Xdmf>

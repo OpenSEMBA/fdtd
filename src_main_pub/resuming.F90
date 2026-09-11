@@ -35,8 +35,6 @@ module resuming_m
 
    !Plane Wave Module
    use ilumina_m
-   !Observation Module
-   use Observa_m
    !PMC and PML Module
    use BORDERS_CPML_m
    use BORDERS_MUR_m
@@ -444,4 +442,3 @@ contains
 
 
 end module
-

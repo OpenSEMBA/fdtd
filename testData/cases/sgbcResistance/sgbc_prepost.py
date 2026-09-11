@@ -44,7 +44,7 @@ solver.cleanUp()
 solver.run()
 #####################################################
 # %% Postprocess
-bulk = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
+bulk = Probe(solver.getSolvedProbeFolders("Bulk probe")[0])
 
 
 t = bulk['time']

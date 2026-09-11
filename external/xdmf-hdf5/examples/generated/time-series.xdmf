@@ -1,0 +1,768 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Xdmf Version="3.0">
+  <Domain Name="XDMF-HDF5">
+    <Information Name="Schema" Value="XDMF-HDF5 1.0"/>
+    <Grid Name="Time Series" GridType="Collection" CollectionType="Temporal">
+      <Grid Name="Step 1" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.0000000000000000"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                0 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                0 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 2" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.52631579339504242E-001"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                1 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                1 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 3" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.10526315867900848"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                2 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                2 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 4" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.15789473056793213"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                3 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                3 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 5" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.21052631735801697"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                4 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                4 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 6" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.26315790414810181"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                5 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                5 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 7" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.31578946113586426"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                6 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                6 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 8" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.36842104792594910"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                7 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                7 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 9" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.42105263471603394"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                8 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                8 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 10" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.47368422150611877"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                9 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                9 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 11" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.52631580829620361"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                10 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                10 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 12" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.57894736528396606"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                11 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                11 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 13" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.63157892227172852"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                12 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                12 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 14" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.68421053886413574"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                13 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                13 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 15" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.73684209585189819"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                14 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                14 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 16" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.78947371244430542"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                15 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                15 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 17" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.84210526943206787"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                16 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                16 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 18" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.89473682641983032"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                17 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                17 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 19" GridType="Collection" CollectionType="Spatial">
+        <Time Value="0.94736844301223755"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                18 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                18 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+      <Grid Name="Step 20" GridType="Collection" CollectionType="Spatial">
+        <Time Value="1.0000000000000000"/>
+        <Grid Name="travelling-wave-pulse" GridType="Uniform">
+          <Topology TopologyType="3DCoRectMesh" Dimensions="25 25 25"/>
+          <Geometry GeometryType="ORIGIN_DXDYDZ">
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/origin
+            </DataItem>
+            <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="HDF">
+              time-series.h5:/grids/g0001/spacing
+            </DataItem>
+          </Geometry>
+          <Attribute Name="electric-field-magnitude" Center="Node" AttributeType="Scalar">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25">
+              <DataItem Dimensions="3 4" Format="XML">
+                19 0 0 0
+                1 1 1 1
+                1 25 25 25
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0001/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Name="electric-field" Center="Node" AttributeType="Vector">
+            <DataItem ItemType="HyperSlab" Dimensions="25 25 25 3">
+              <DataItem Dimensions="3 5" Format="XML">
+                19 0 0 0 0
+                1 1 1 1 1
+                1 25 25 25 3
+              </DataItem>
+              <DataItem Dimensions="20 25 25 25 3" NumberType="Float" Precision="4" Format="HDF">
+                time-series.h5:/attributes/a0002/values
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+    </Grid>
+  </Domain>
+</Xdmf>
