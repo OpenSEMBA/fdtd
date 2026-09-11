@@ -1,0 +1,146 @@
+{
+  "_format": "FDTD Input file",
+  "general": {
+    "timeStep": 1.5406665612371765e-11,
+    "numberOfSteps": 100000,
+    "additionalArguments": ""
+  },
+  "boundary": {
+    "all": {
+      "type": "pml",
+      "layers": 6,
+      "order": 2,
+      "reflection": 0.001
+    }
+  },
+  "materials": [
+    { "name": "PEC", "id": 1,
+      "type": "pec"
+    },
+    { "name": "Thin_slot", "id": 2,
+      "type": "thinSlot",
+      "width": 0.005
+    }
+  ],
+  "materialAssociations": [
+    { "materialId": 1,
+      "elementIds": [1]
+    },
+    { "materialId": 2,
+      "type": "thinSlot",
+      "elementIds": [2]
+    }
+  ],
+  "sources": [
+    {
+      "type": "planewave",
+      "magnitudeFile": "gauss_1ghz.exc",
+      "elementIds": [4],
+      "direction": {
+        "theta": 1.5707963267948966,
+        "phi": 1.5707963267948966
+      },
+      "polarization": {
+        "theta": 0.0,
+        "phi": 0.0
+      }
+    }
+  ],
+  "probes": [
+    { "name": "Point probe",
+      "type": "point",
+      "field": "electric",
+      "elementIds": [3],
+      "directions": ["x", "y", "z"],
+      "domain": {
+        "type": "time"
+      }
+    }
+  ],
+  "mesh": {
+    "grid": {
+      "numberOfCells": [70, 70, 52],
+      "steps": {
+        "x": [0.01],
+        "y": [0.01],
+        "z": [0.01]
+      },
+      "origin": [-0.2, -0.2, -0.2]
+    },
+    "coordinates": [
+      { "id": 1, "relativePosition": [20, 50, 32] },
+      { "id": 2, "relativePosition": [20, 20, 20] },
+      { "id": 3, "relativePosition": [50, 20, 32] },
+      { "id": 4, "relativePosition": [20, 20, 20] },
+      { "id": 5, "relativePosition": [50, 50, 20] },
+      { "id": 6, "relativePosition": [20, 20, 20] },
+      { "id": 7, "relativePosition": [20, 20, 32] },
+      { "id": 8, "relativePosition": [50, 50, 32] },
+      { "id": 9, "relativePosition": [50, 20, 20] },
+      { "id": 10, "relativePosition": [50, 50, 32] },
+      { "id": 11, "relativePosition": [20, 50, 20] },
+      { "id": 12, "relativePosition": [50, 50, 32] },
+      { "id": 13, "relativePosition": [30, 20, 26] },
+      { "id": 14, "relativePosition": [31, 20, 26] },
+      { "id": 15, "relativePosition": [31, 20, 26] },
+      { "id": 16, "relativePosition": [32, 20, 26] },
+      { "id": 17, "relativePosition": [32, 20, 26] },
+      { "id": 18, "relativePosition": [33, 20, 26] },
+      { "id": 19, "relativePosition": [33, 20, 26] },
+      { "id": 20, "relativePosition": [34, 20, 26] },
+      { "id": 21, "relativePosition": [34, 20, 26] },
+      { "id": 22, "relativePosition": [35, 20, 26] },
+      { "id": 23, "relativePosition": [35, 20, 26] },
+      { "id": 24, "relativePosition": [36, 20, 26] },
+      { "id": 25, "relativePosition": [36, 20, 26] },
+      { "id": 26, "relativePosition": [37, 20, 26] },
+      { "id": 27, "relativePosition": [37, 20, 26] },
+      { "id": 28, "relativePosition": [38, 20, 26] },
+      { "id": 29, "relativePosition": [38, 20, 26] },
+      { "id": 30, "relativePosition": [39, 20, 26] },
+      { "id": 31, "relativePosition": [39, 20, 26] },
+      { "id": 32, "relativePosition": [40, 20, 26] },
+      { "id": 33, "relativePosition": [35, 35, 26] },
+      { "id": 34, "relativePosition": [10, 10, 10] },
+      { "id": 35, "relativePosition": [60, 60, 42] }
+    ],
+    "elements": [
+      { "id": 1, "name": "Box",
+        "type": "cell",
+        "intervals": [
+          [[20, 50, 32], [20, 20, 20]],
+          [[50, 20, 32], [20, 20, 20]],
+          [[50, 50, 20], [20, 20, 20]],
+          [[20, 20, 32], [50, 50, 32]],
+          [[50, 20, 20], [50, 50, 32]],
+          [[20, 50, 20], [50, 50, 32]]
+        ]
+      },
+      { "id": 2, "name": "Line",
+        "type": "cell",
+        "intervals": [
+          [[30, 20, 26], [31, 20, 26]],
+          [[31, 20, 26], [32, 20, 26]],
+          [[32, 20, 26], [33, 20, 26]],
+          [[33, 20, 26], [34, 20, 26]],
+          [[34, 20, 26], [35, 20, 26]],
+          [[35, 20, 26], [36, 20, 26]],
+          [[36, 20, 26], [37, 20, 26]],
+          [[37, 20, 26], [38, 20, 26]],
+          [[38, 20, 26], [39, 20, 26]],
+          [[39, 20, 26], [40, 20, 26]]
+        ]
+      },
+      { "id": 3, "name": "Point_probe",
+        "type": "node",
+        "coordinateIds": [33]
+      },
+      { "id": 4, "name": "planewave",
+        "type": "cell",
+        "intervals": [
+          [[10, 10, 10], [60, 60, 42]]
+        ]
+      }
+    ]
+  }
+}
