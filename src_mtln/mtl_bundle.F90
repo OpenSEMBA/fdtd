@@ -1,12 +1,13 @@
 module mtl_bundle_m
 
     use mtln_utils_m
-    use probes_m
+    use probes_m, only: probe_t, probeCtor, PROBE_TYPE_CURRENT
     use generators_m
     use dispersive_m
     use mtl_m
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
+    use mpi
 #endif
     use mtln_types_m, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
     use FDETYPES_m, only: RKIND, RKIND_TIEMPO
@@ -38,6 +39,8 @@ module mtl_bundle_m
 #ifdef CompileWithMPI
         integer(kind=4), allocatable, dimension(:,:) :: layer_indices
         type(comm_t) :: mpi_comm
+        ! Owner rank of each physical current segment.
+        integer(kind=4), allocatable :: segment_owner(:)
 #endif
 
     contains
@@ -57,6 +60,8 @@ module mtl_bundle_m
 #ifdef CompileWithMPI
         procedure :: Comm_MPI_V
         procedure :: Comm_MPI_Fields
+        procedure :: Comm_MPI_I
+        procedure :: initMPIStateOwnership
 #endif
 
 
@@ -70,6 +75,10 @@ module mtl_bundle_m
         integer, dimension(3) ::position
         integer :: direction = 0
         real(kind=rkind) , pointer  :: field => null()
+        ! True only on the rank that updates this FDTD field cell.
+        logical :: field_is_local = .false.
+        ! True on the geometric FDTD owner even when the cell is PEC/lossy.
+        logical :: field_is_owned = .false.
     end type
 
 contains
@@ -401,10 +410,52 @@ contains
 
     end subroutine
 
+#ifdef CompileWithMPI
+    subroutine initMPIStateOwnership(this)
+        class(mtl_bundle_t) :: this
+        integer :: i, ierr, rank, n
+        integer, allocatable :: candidate(:), owner(:)
+
+        n = this%number_of_divisions
+        allocate(candidate(n), owner(n), source = -1)
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+        do i = 1, n
+            if (this%external_field_segments(i)%field_is_owned) candidate(i) = rank
+        end do
+        call MPI_Allreduce(candidate, owner, n, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
+        if (any(owner < 0)) error stop "MTLN MPI ownership missing for a current segment"
+        if (allocated(this%segment_owner)) deallocate(this%segment_owner)
+        call move_alloc(owner, this%segment_owner)
+        do i = 1, n
+            this%external_field_segments(i)%field_is_local = this%external_field_segments(i)%field_is_local .and. &
+                this%segment_owner(i) == rank
+        end do
+        do i = 1, size(this%probes)
+            if (this%probes(i)%type == PROBE_TYPE_CURRENT) then
+                this%probes(i)%in_layer = this%segment_owner(this%probes(i)%index) == rank
+            else
+                this%probes(i)%in_layer = this%segment_owner(min(this%probes(i)%index, n)) == rank
+            end if
+        end do
+        do i = 1, size(this%generators)
+            this%generators(i)%in_layer = this%segment_owner(this%generators(i)%index) == rank
+        end do
+    end subroutine initMPIStateOwnership
+#endif
+
     subroutine bundle_advanceVoltage(this)
         class(mtl_bundle_t) ::this
         integer :: i
+#ifdef CompileWithMPI
+        integer :: ierr, rank
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+#endif
         do i = 2,this%number_of_divisions
+#ifdef CompileWithMPI
+            if (allocated(this%segment_owner)) then
+                if (this%segment_owner(i) /= rank) cycle
+            end if
+#endif
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:), (this%i(:,i) - this%i(:,i-1)) + matmul(this%du(i,:,:), this%i_source(:,i)))
         end do
@@ -417,17 +468,20 @@ contains
         integer :: i
         real(kind=rkind) :: eps_r
 #ifdef CompileWithMPI
-        integer(kind=4) :: sizeof, ierr
-
-#endif
-#ifdef CompileWithMPI
+        integer(kind=4) :: sizeof, ierr, rank
         call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
         if (sizeof > 1) call this%Comm_MPI_V()
 #endif
         call this%transfer_impedance%updateQ3Phi()
         this%i_prev = this%i
 
         do i = 1, this%number_of_divisions
+#ifdef CompileWithMPI
+            if (allocated(this%segment_owner)) then
+                if (this%segment_owner(i) /= rank) cycle
+            end if
+#endif
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
                           matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - &
                                                       this%e_L(:,i) * this%step_size(i) - &
@@ -435,57 +489,81 @@ contains
                           matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
         call this%transfer_impedance%updatePhi(this%i_prev, this%i)
+#ifdef CompileWithMPI
+        if (sizeof > 1) call this%Comm_MPI_I()
+#endif
     end subroutine
 
     subroutine bundle_setExternalLongitudinalField(this)
         class(mtl_bundle_t) :: this
         integer :: i, j
 #ifdef CompileWithMPI
-        integer :: sizeof, ierr
-
-        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
-        if (sizeof > 1) call this%Comm_MPI_Fields()
+        integer :: ierr, rank
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
 #endif
-
+        this%e_L = 0.0_rkind
         do j = 1, this%conductors_in_level(1)
             do i = 1, size(this%e_L,2)
-                    this%e_L(j,i) = this%external_field_segments(i)%field * &
-                                    this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
-                                    
+#ifdef CompileWithMPI
+                if (allocated(this%segment_owner)) then
+                    if (this%segment_owner(i) /= rank) cycle
+                end if
+#endif
+                this%e_L(j,i) = this%external_field_segments(i)%field * &
+                                  this%external_field_segments(i)%direction / abs(this%external_field_segments(i)%direction)
             end do
         end do
-
     end subroutine
 
 #ifdef CompileWithMPI
     subroutine Comm_MPI_V(this)
         class(mtl_bundle_t) :: this
-        integer :: number_of_conductors, i, c
-        integer :: ierr, rank, status(MPI_STATUS_SIZE)
+        integer :: i, ierr, rank, nreq, source_rank, destination_rank
+        integer, allocatable :: requests(:), statuses(:,:)
+
+        if (.not. allocated(this%segment_owner)) return
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
-        number_of_conductors = size(this%v,1)
-        do i = 1, size(this%mpi_comm%comms)
-            if (this%mpi_comm%comms(i)%comm_type == COMM_V .or. this%mpi_comm%comms(i)%comm_type == COMM_BOTH) then
-                if (this%mpi_comm%comms(i)%comm_task == COMM_SEND) then
-                    do c = 1, number_of_conductors
-                        call MPI_send(this%v(c, this%mpi_comm%comms(i)%v_index),1, REALSIZE, &
-                                      rank+this%mpi_comm%comms(i)%delta_rank, &
-                                      200*(rank+this%mpi_comm%comms(i)%delta_rank+1)+c, &
-                                      SUBCOMM_MPI, ierr)
-                    end do
-                end if
-                if (this%mpi_comm%comms(i)%comm_task == COMM_RECV) then
-                    do c = 1, number_of_conductors
-                        call MPI_recv(this%v(c, this%mpi_comm%comms(i)%v_index),1, REALSIZE, &
-                                      rank+this%mpi_comm%comms(i)%delta_rank, &
-                                      200*(rank+1)+c, &
-                                      SUBCOMM_MPI, status, ierr)
-                    end do
-                end if
+        allocate(requests(2 * max(0, this%number_of_divisions - 1)), &
+                 statuses(MPI_STATUS_SIZE, 2 * max(0, this%number_of_divisions - 1)))
+        nreq = 0
+        do i = 2, this%number_of_divisions
+            source_rank = this%segment_owner(i)
+            destination_rank = this%segment_owner(i-1)
+            if (source_rank == destination_rank) cycle
+            if (rank == source_rank) then
+                nreq = nreq + 1
+                call MPI_Isend(this%v(:,i), size(this%v,1), REALSIZE, destination_rank, 501, SUBCOMM_MPI, requests(nreq), ierr)
+            else if (rank == destination_rank) then
+                nreq = nreq + 1
+                call MPI_Irecv(this%v(:,i), size(this%v,1), REALSIZE, source_rank, 501, SUBCOMM_MPI, requests(nreq), ierr)
             end if
         end do
+        if (nreq > 0) call MPI_Waitall(nreq, requests, statuses, ierr)
+    end subroutine
 
+    subroutine Comm_MPI_I(this)
+        class(mtl_bundle_t) :: this
+        integer :: i, ierr, rank, nreq, source_rank, destination_rank
+        integer, allocatable :: requests(:), statuses(:,:)
 
+        if (.not. allocated(this%segment_owner)) return
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+        allocate(requests(2 * max(0, this%number_of_divisions - 1)), &
+                 statuses(MPI_STATUS_SIZE, 2 * max(0, this%number_of_divisions - 1)))
+        nreq = 0
+        do i = 2, this%number_of_divisions
+            source_rank = this%segment_owner(i-1)
+            destination_rank = this%segment_owner(i)
+            if (source_rank == destination_rank) cycle
+            if (rank == source_rank) then
+                nreq = nreq + 1
+                call MPI_Isend(this%i(:,i-1), size(this%i,1), REALSIZE, destination_rank, 502, SUBCOMM_MPI, requests(nreq), ierr)
+            else if (rank == destination_rank) then
+                nreq = nreq + 1
+                call MPI_Irecv(this%i(:,i-1), size(this%i,1), REALSIZE, source_rank, 502, SUBCOMM_MPI, requests(nreq), ierr)
+            end if
+        end do
+        if (nreq > 0) call MPI_Waitall(nreq, requests, statuses, ierr)
     end subroutine
 
         subroutine Comm_MPI_Fields(this)
