@@ -16,8 +16,8 @@ module circuit_m
         real(kind=RKIND_TIEMPO), dimension(:), allocatable :: time
         real(kind=RKIND), dimension(:), allocatable :: value
         integer :: source_type
-    contains 
-        procedure :: interpolate
+    ! contains 
+    !     procedure :: interpolate
     end type
 
     type VI_t
@@ -54,7 +54,7 @@ module circuit_m
         procedure :: getTime
         procedure :: updateNodesCurrent
         procedure :: updateNodeCurrentList
-        procedure :: updateCircuitSources
+        ! procedure :: updateCircuitSources
         procedure :: modifyLineCapacitorValue
 
         procedure :: clearControlStructures
@@ -64,49 +64,49 @@ module circuit_m
 
 contains
 
-    real(kind=rkind) function interpolate(this, time, dt) result(res)
-        class(source_t) :: this
-        real(kind=RKIND_TIEMPO) :: time, dt
-        real(kind=RKIND_TIEMPO) :: t_eval
-        real(kind=RKIND) :: x1, x2, y1, y2
-        integer :: index, n
-        real(kind=rkind), dimension(:), allocatable :: timediff
+    ! real(kind=rkind) function interpolate(this, time, dt) result(res)
+    !     class(source_t) :: this
+    !     real(kind=RKIND_TIEMPO) :: time, dt
+    !     real(kind=RKIND_TIEMPO) :: t_eval
+    !     real(kind=RKIND) :: x1, x2, y1, y2
+    !     integer :: index, n
+    !     real(kind=rkind), dimension(:), allocatable :: timediff
 
-        n = size(this%time)
-        if (n == 0) then
-            res = 0.0_RKIND
-            return
-        end if
+    !     n = size(this%time)
+    !     if (n == 0) then
+    !         res = 0.0_RKIND
+    !         return
+    !     end if
 
-        t_eval = time - dt
+    !     t_eval = time - dt
 
-        ! Clamp to avoid extrapolation and division by zero at source tail.
-        if (t_eval <= this%time(1)) then
-            res = this%value(1)
-            return
-        end if
-        if (t_eval >= this%time(n)) then
-            res = this%value(n)
-            return
-        end if
+    !     ! Clamp to avoid extrapolation and division by zero at source tail.
+    !     if (t_eval <= this%time(1)) then
+    !         res = this%value(1)
+    !         return
+    !     end if
+    !     if (t_eval >= this%time(n)) then
+    !         res = this%value(n)
+    !         return
+    !     end if
 
-        timediff = this%time - t_eval
-        index = maxloc(timediff, 1, (timediff) <= 0)
-        if (index == 0) index = 1
-        if (index >= n) index = n - 1
+    !     timediff = this%time - t_eval
+    !     index = maxloc(timediff, 1, (timediff) <= 0)
+    !     if (index == 0) index = 1
+    !     if (index >= n) index = n - 1
 
-        x1 = this%time(index)
-        y1 = this%value(index)
-        x2 = this%time(index+1)
-        y2 = this%value(index+1)
+    !     x1 = this%time(index)
+    !     y1 = this%value(index)
+    !     x2 = this%time(index+1)
+    !     y2 = this%value(index+1)
 
-        if (x2 == x1) then
-            res = y2
-            return
-        end if
+    !     if (x2 == x1) then
+    !         res = y2
+    !         return
+    !     end if
 
-        res = (t_eval*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
-    end function
+    !     res = (t_eval*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
+    ! end function
 
     subroutine printCWD(this)
         class(circuit_t) :: this
@@ -144,7 +144,7 @@ contains
         end do
         if (present(sources)) then 
             do i = 1, size(sources)
-                this%nodes%sources(i) = setSource(sources(i)%path_to_excitation)
+                ! this%nodes%sources(i) = setSource(sources(i)%path_to_excitation)
                 this%nodes%sources(i)%source_type = sources(i)%source_type
             end do
         end if
@@ -213,7 +213,7 @@ contains
             return
         end if
 
-        call this%updateCircuitSources(this%time)
+        ! call this%updateCircuitSources(this%time)
         if (this%time == 0) then
             call this%run()
         else
@@ -316,26 +316,26 @@ contains
 
     end function
 
-    subroutine updateCircuitSources(this, time)
-        class(circuit_t) :: this
-        real(kind=RKIND_TIEMPO), intent(in) :: time
-        real(kind=RKIND) :: interp
-        character(50) :: source_value
-        integer :: i, index
-        do i = 1, size(this%nodes%sources)
-            if (this%nodes%sources(i)%has_source) then
-                if (this%nodes%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
-                    write(source_value, *) interp
-                    call command("alter @V"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
-                else if (this%nodes%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
-                    write(source_value, *) interp
-                    call command("alter @I"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
-                end if
-            end if
-        end do
-    end subroutine
+    ! subroutine updateCircuitSources(this, time)
+    !     class(circuit_t) :: this
+    !     real(kind=RKIND_TIEMPO), intent(in) :: time
+    !     real(kind=RKIND) :: interp
+    !     character(50) :: source_value
+    !     integer :: i, index
+    !     do i = 1, size(this%nodes%sources)
+    !         if (this%nodes%sources(i)%has_source) then
+    !             if (this%nodes%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
+    !                 interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
+    !                 write(source_value, *) interp
+    !                 call command("alter @V"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
+    !             else if (this%nodes%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
+    !                 interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
+    !                 write(source_value, *) interp
+    !                 call command("alter @I"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
+    !             end if
+    !         end if
+    !     end do
+    ! end subroutine
 
     subroutine modifyLineCapacitorValue(this, name, c)
         class(circuit_t) :: this
