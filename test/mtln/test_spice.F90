@@ -186,7 +186,7 @@ integer function test_spice_current_source() bind(C) result(error_cnt)
     real(kind=RKIND_TIEMPO) :: finalTime
     real(kind=rkind) ::resistance
     integer :: i
-    real(kind=rkind) :: current
+    real(kind=rkind) :: current, voltage
     character(50) :: sCurrent
     type(string_t), dimension(1) :: names
     names(1) = string_t("1_initial", 9)
@@ -204,10 +204,11 @@ integer function test_spice_current_source() bind(C) result(error_cnt)
     call circuit%setStopTimes(finalTime, circuit%dt)
     do while (circuit%time < finalTime)
         write(sCurrent, *) current
-        call command("alter @I1_initial[dc]="//trim(sCurrent))
+        call command("alter @I1_initial[dc]="//trim(sCurrent) // c_null_char)
         call circuit%step()
         call circuit%updateNodes()
-        if (checkNear(circuit%getNodeVoltage("1_initial"), current*resistance, 0.01_rkind) .eqv. .false. ) then 
+        voltage = circuit%getNodeVoltage("1_initial")
+        if (checkNear(voltage, current*resistance, 0.01_rkind) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
         current = 2.0*current
