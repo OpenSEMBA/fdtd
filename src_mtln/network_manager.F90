@@ -13,6 +13,7 @@ module network_manager_m
         type(nw_node_t), allocatable :: open_nodes(:)
         real(kind=rkind) :: time, dt
         logical :: has_active_node = .false.
+        integer :: counter = 0
 
     contains
         procedure :: advanceVoltage => network_advanceVoltage
@@ -142,14 +143,27 @@ contains
 
     end subroutine
 
+    ! subroutine updateCircuitCurrentsFromNetwork(this)
+    !     class(network_manager_t) :: this
+    !     integer :: i, j
+    !     do i = 1, size(this%networks)
+    !         do j = 1, this%networks(i)%number_of_nodes
+    !             call this%circuit%updateNodeCurrent(this%networks(i)%nodes(j)%name, this%networks(i)%nodes(j)%i)
+    !         end do
+    !     end do
+    ! end subroutine
+
     subroutine updateCircuitCurrentsFromNetwork(this)
         class(network_manager_t) :: this
         integer :: i, j
+        character(len=:), allocatable :: batch
+        batch = ''
         do i = 1, size(this%networks)
             do j = 1, this%networks(i)%number_of_nodes
-                call this%circuit%updateNodeCurrent(this%networks(i)%nodes(j)%name, this%networks(i)%nodes(j)%i)
+                call this%circuit%updateNodeCurrentList(this%networks(i)%nodes(j)%name, this%networks(i)%nodes(j)%i, batch)
             end do
         end do
+        call this%circuit%updateNodesCurrent(batch)
     end subroutine
 
     subroutine network_advanceVoltage(this)
@@ -158,6 +172,10 @@ contains
         call this%circuit%step()
         ! this%circuit%time = this%circuit%time + this%circuit%dt
         call this%updateNetworkVoltagesFromCircuit()
+
+        this%counter = this%counter + 1
+        if (mod(this%counter, 100) == 0) call this%circuit%clearControlStructures()
+
     end subroutine
 
     subroutine updateNetworkVoltagesFromCircuit(this)

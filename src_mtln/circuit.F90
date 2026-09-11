@@ -52,10 +52,12 @@ module circuit_m
         procedure :: getNodeCurrent
         procedure :: updateNodes
         procedure :: getTime
-        procedure :: updateNodeCurrent
+        procedure :: updateNodesCurrent
+        procedure :: updateNodeCurrentList
         procedure :: updateCircuitSources
         procedure :: modifyLineCapacitorValue
 
+        procedure :: clearControlStructures
         procedure :: printCWD
 
     end type circuit_t
@@ -109,6 +111,11 @@ contains
     subroutine printCWD(this)
         class(circuit_t) :: this
         call command('getcwd' // c_null_char)
+    end subroutine
+
+    subroutine clearControlStructures(this)
+        class(circuit_t) :: this
+        call command(c_null_char)
     end subroutine
 
     subroutine init(this, names, sources, netlist)
@@ -343,18 +350,41 @@ contains
 
     end subroutine
 
-    subroutine updateNodeCurrent(this, node_name, current)
+    subroutine updateNodeCurrentList(this, node_name, current, batch)
         class(circuit_t) :: this
         real(kind=rkind) :: current
         character(50) :: sCurrent
         character(*) :: node_name
+        character(:), allocatable, intent(inout) :: batch
+        character(len=256) :: buff
         if (index(node_name, "initial") /= 0) then
             write(sCurrent, *) current
         else if (index(node_name, "end") /= 0) then
             write(sCurrent, *) -current
         end if
-        call command("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
+        batch = trim(batch) // trim("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent)) // '; '
     end subroutine
+
+    subroutine updateNodesCurrent(this, batch)
+        class(circuit_t) :: this
+        character(:), allocatable, intent(in) :: batch
+        call command(batch// c_null_char)
+    end subroutine
+
+
+    
+    ! subroutine updateNodeCurrent(this, node_name, current)
+    !     class(circuit_t) :: this
+    !     real(kind=rkind) :: current
+    !     character(50) :: sCurrent
+    !     character(*) :: node_name
+    !     if (index(node_name, "initial") /= 0) then
+    !         write(sCurrent, *) current
+    !     else if (index(node_name, "end") /= 0) then
+    !         write(sCurrent, *) -current
+    !     end if
+    !     call command("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
+    ! end subroutine
 
     subroutine updateNodes(this) 
         class(circuit_t) :: this
