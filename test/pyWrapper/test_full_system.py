@@ -2061,6 +2061,7 @@ def test_current_generators_without_resistance(tmp_path):
     """Verify ideal-wire current-source sign and magnitude at each position."""
     # Checks current probes at the extremes of a wire
     # with a current generator in the middle of the wire and on the extremes of the wire
+    setNgspice(tmp_path)
 
     fn = CASES_FOLDER + "sources/sources_current_no_resistance.fdtd.json"
     solver = FDTD(
