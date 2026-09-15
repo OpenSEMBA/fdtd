@@ -173,7 +173,7 @@ def test_towelHanger_mpi(tmp_path):
                 path_to_exe=SEMBA_EXE,
                 run_in_folder=tmp_path,
                 flags=["-mpidir " + direction],
-                mpi_command="/usr/local/bin/mpirun -np " + str(layers),
+                mpi_command="mpirun -np " + str(layers),
             )
             for coordinate in solver["mesh"]["coordinates"]:
                 position = coordinate["relativePosition"]
