@@ -2,7 +2,7 @@ module network_manager_m
 
     use network_m
     use circuit_m
-    use mtln_types_m, only: node_source_t
+    ! use mtln_types_m, only: node_source_t
     use FDETYPES_m, only: RKIND, RKIND_TIEMPO
 
     implicit none 
@@ -43,30 +43,6 @@ contains
         arr(size(old_arr)+1) = str
     end subroutine
 
-
-    function copy_sources(networks) result(res)
-        type(network_t), dimension(:), intent(in) :: networks
-        type(node_source_t), dimension(:), allocatable :: res
-        integer :: i,j,n
-        type(string_t) :: temp
-        n = 0
-        do i = 1, size(networks)
-            do j = 1, size(networks(i)%nodes)
-                n = n + 1
-            end do
-        end do
-        allocate(res(n))
-        n = 1
-        do i = 1, size(networks)
-            do j = 1, size(networks(i)%nodes)
-                res(n)%path_to_excitation = trim(networks(i)%nodes(j)%source%path_to_excitation)
-                res(n)%source_type = networks(i)%nodes(j)%source%source_type
-                res(n)%resistance = networks(i)%nodes(j)%source%resistance
-                n = n + 1
-            end do
-        end do
-    end function
-
     function copy_node_names(networks) result(res)
         type(network_t), dimension(:), intent(in) :: networks
         type(string_t), dimension(:), allocatable :: res
@@ -95,7 +71,7 @@ contains
 
         res%open_nodes = collectOpenNodes(networks)
 
-        call res%circuit%init(copy_node_names(networks), copy_sources(networks))
+        call res%circuit%init(copy_node_names(networks))
         res%circuit%dt = dt
 #ifdef CompileWithRelease
         printInput = .false.
@@ -143,16 +119,6 @@ contains
 
     end subroutine
 
-    ! subroutine updateCircuitCurrentsFromNetwork(this)
-    !     class(network_manager_t) :: this
-    !     integer :: i, j
-    !     do i = 1, size(this%networks)
-    !         do j = 1, this%networks(i)%number_of_nodes
-    !             call this%circuit%updateNodeCurrent(this%networks(i)%nodes(j)%name, this%networks(i)%nodes(j)%i)
-    !         end do
-    !     end do
-    ! end subroutine
-
     subroutine updateCircuitCurrentsFromNetwork(this)
         class(network_manager_t) :: this
         integer :: i, j
@@ -170,7 +136,6 @@ contains
         class(network_manager_t) :: this
         call this%updateCircuitCurrentsFromNetwork()
         call this%circuit%step()
-        ! this%circuit%time = this%circuit%time + this%circuit%dt
         call this%updateNetworkVoltagesFromCircuit()
 
         this%counter = this%counter + 1

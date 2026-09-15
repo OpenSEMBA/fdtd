@@ -191,7 +191,7 @@ def test_coated_antenna(tmp_path):
     Antalya, Turkey, 1994, pp. 1174-1176 vol.3, doi: 10.1109/MELCON.1994.380859.
     """
     fn = CASES_FOLDER + "coated_antenna/coated_antenna.fdtd.json"
-
+    setNgspice(tmp_path)
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
@@ -318,6 +318,7 @@ def test_unshielded_multiwires(tmp_path):
 @pytest.mark.probes
 def test_towelHanger(tmp_path):
     """Verify towel-hanger wire currents match the stored reference probes."""
+    setNgspice(tmp_path)
     fn = CASES_FOLDER + "towelHanger/towelHanger.fdtd.json"
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
@@ -364,6 +365,7 @@ def test_towel_rack_with_and_without_shorting_plane(tmp_path):
         CASES_FOLDER
         + "towel_rack_with_shorting_plane/towel_rack_with_shorting_plane.fdtd.json"
     )
+    setNgspice(tmp_path)
 
     # --- excitation ---
     dt = 1e-12
@@ -873,6 +875,7 @@ def test_current_orientation(tmp_path):
 def test_sgbc_structured_resistance_single_wire(tmp_path):
     """Verify structured SGBC resistance produces the expected wire current."""
     fn = CASES_FOLDER + "sgbcResistance/sgbcResistance.fdtd.json"
+    setNgspice(tmp_path)
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver["materials"][2] = createWire(id=3, r=1e-4)
@@ -899,6 +902,7 @@ def test_pec_overlapping_sgbcs(tmp_path):
         plt.close()
 
     fn = CASES_FOLDER + "sgbcOverlapping/sgbcOverlapping.fdtd.json"
+    setNgspice(tmp_path)    
     # Runs case without overlap.
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
@@ -937,7 +941,7 @@ def test_sgbc_overlapping_sgbc(tmp_path):
         plt.close()
 
     fn = CASES_FOLDER + "sgbcOverlapping/sgbcOverlapping.fdtd.json"
-
+    setNgspice(tmp_path)
     # Runs case without overlap.
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     # Changes materialId in first SGBC in MatAss to material with larger conductivity.
@@ -1898,6 +1902,7 @@ def test_bulk_current_four_probes_Z_oriented(tmp_path):
 @pytest.mark.probes
 def test_conformal_impedance_cylinder_unshielded(tmp_path):
     """Verify conformal-cylinder impedance matches the reference spectrum."""
+    setNgspice(tmp_path)
     case_name = "conformal_impedance_cylinder_conformal"
     solver = FDTD(
         input_filename=TEST_DATA_FOLDER
@@ -1979,6 +1984,7 @@ def test_conformal_sphere_rcs(tmp_path):
 @pytest.mark.probes
 def test_conformal_delay(tmp_path):
     """Verify conformal geometry produces the expected propagation delay."""
+    setNgspice(tmp_path)
     fn = CASES_FOLDER + "conformal/conformal.fdtd.json"
     solver = FDTD(
         input_filename=fn,
@@ -2055,6 +2061,7 @@ def test_current_generators_without_resistance(tmp_path):
     """Verify ideal-wire current-source sign and magnitude at each position."""
     # Checks current probes at the extremes of a wire
     # with a current generator in the middle of the wire and on the extremes of the wire
+    setNgspice(tmp_path)
 
     fn = CASES_FOLDER + "sources/sources_current_no_resistance.fdtd.json"
     solver = FDTD(
