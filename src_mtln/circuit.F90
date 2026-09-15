@@ -1,7 +1,6 @@
 module circuit_m
 
     use ngspice_interface_m
-    use mtln_types_m, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
     use Report_m, only: WarnErrReport
     use FDETYPES_m, only: RKIND, RKIND_TIEMPO, SINGLE
     implicit none
@@ -11,15 +10,6 @@ module circuit_m
         integer :: length
     end type string_t
 
-    type source_t
-        logical :: has_source = .false.
-        real(kind=RKIND_TIEMPO), dimension(:), allocatable :: time
-        real(kind=RKIND), dimension(:), allocatable :: value
-        integer :: source_type
-    ! contains 
-    !     procedure :: interpolate
-    end type
-
     type VI_t
         real(kind=RKIND) :: voltage
         real(kind=RKIND) :: current
@@ -28,7 +18,6 @@ module circuit_m
 
     type nodes_t
         type(VI_T), allocatable :: values(:)
-        type(source_t), allocatable :: sources(:)
         type(string_t), allocatable :: names(:)
     end type nodes_t
 
@@ -54,7 +43,6 @@ module circuit_m
         procedure :: getTime
         procedure :: updateNodesCurrent
         procedure :: updateNodeCurrentList
-        ! procedure :: updateCircuitSources
         procedure :: modifyLineCapacitorValue
 
         procedure :: clearControlStructures
@@ -63,50 +51,6 @@ module circuit_m
     end type circuit_t
 
 contains
-
-    ! real(kind=rkind) function interpolate(this, time, dt) result(res)
-    !     class(source_t) :: this
-    !     real(kind=RKIND_TIEMPO) :: time, dt
-    !     real(kind=RKIND_TIEMPO) :: t_eval
-    !     real(kind=RKIND) :: x1, x2, y1, y2
-    !     integer :: index, n
-    !     real(kind=rkind), dimension(:), allocatable :: timediff
-
-    !     n = size(this%time)
-    !     if (n == 0) then
-    !         res = 0.0_RKIND
-    !         return
-    !     end if
-
-    !     t_eval = time - dt
-
-    !     ! Clamp to avoid extrapolation and division by zero at source tail.
-    !     if (t_eval <= this%time(1)) then
-    !         res = this%value(1)
-    !         return
-    !     end if
-    !     if (t_eval >= this%time(n)) then
-    !         res = this%value(n)
-    !         return
-    !     end if
-
-    !     timediff = this%time - t_eval
-    !     index = maxloc(timediff, 1, (timediff) <= 0)
-    !     if (index == 0) index = 1
-    !     if (index >= n) index = n - 1
-
-    !     x1 = this%time(index)
-    !     y1 = this%value(index)
-    !     x2 = this%time(index+1)
-    !     y2 = this%value(index+1)
-
-    !     if (x2 == x1) then
-    !         res = y2
-    !         return
-    !     end if
-
-    !     res = (t_eval*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
-    ! end function
 
     subroutine printCWD(this)
         class(circuit_t) :: this
@@ -118,10 +62,9 @@ contains
         call command(c_null_char)
     end subroutine
 
-    subroutine init(this, names, sources, netlist)
+    subroutine init(this, names, netlist)
         class(circuit_t) :: this
         type(string_t), intent(in), dimension(:), optional :: names
-        type(node_source_t), intent(in), dimension(:), optional :: sources
         character(len=*), intent(in), optional :: netlist
         integer :: i
 
@@ -138,67 +81,10 @@ contains
         allocate(this%nodes%names(size(names)))
         allocate(this%nodes%values(size(names)))
 
-        allocate(this%nodes%sources(size(names)))
         do i = 1, size(names)
             this%nodes%names(i) = names(i)
         end do
-        if (present(sources)) then 
-            do i = 1, size(sources)
-                ! this%nodes%sources(i) = setSource(sources(i)%path_to_excitation)
-                this%nodes%sources(i)%source_type = sources(i)%source_type
-            end do
-        end if
-
     end subroutine
-
-    type(source_t) function setSource(source_path) result(res)
-        character(*), intent(in) :: source_path
-        real(kind=RKIND_TIEMPO) :: time
-        real(kind=RKIND) ::value
-        integer :: io, line_count, i
-        
-        if (source_path == "" ) then 
-            allocate(res%time(0), res%value(0))
-            res%has_source = .false.
-            return
-        end if
-        
-        res%has_source = .true.
-        
-        ! First pass: count the number of lines
-        line_count = 0
-        open(unit = 1, file = source_path, iostat = io)
-        if (io /= 0) then
-            call WarnErrReport('Cannot open excitation file: ' // trim(source_path), .true.)
-            allocate(res%time(0), res%value(0))
-            res%has_source = .false.
-            return
-        end if
-        do
-            read(1, *, iostat = io) time, value
-            if (io < 0) exit
-            if (io > 0) then
-                close(1)
-                call WarnErrReport('Error reading excitation file: ' // trim(source_path), .true.)
-                allocate(res%time(0), res%value(0))
-                res%has_source = .false.
-                return
-            end if
-            line_count = line_count + 1
-        end do
-        close(1)
-        
-        ! Allocate arrays with the exact size needed
-        allocate(res%time(line_count))
-        allocate(res%value(line_count))
-        
-        ! Second pass: fill the arrays (file was verified readable in first pass)
-        open(unit = 1, file = source_path)
-        do i = 1, line_count
-            read(1, *) res%time(i), res%value(i)
-        end do
-        close(1)
-    end function    
 
     subroutine loadNetlist(this, netlist)
         class(circuit_t) :: this
@@ -213,7 +99,6 @@ contains
             return
         end if
 
-        ! call this%updateCircuitSources(this%time)
         if (this%time == 0) then
             call this%run()
         else
@@ -316,36 +201,13 @@ contains
 
     end function
 
-    ! subroutine updateCircuitSources(this, time)
-    !     class(circuit_t) :: this
-    !     real(kind=RKIND_TIEMPO), intent(in) :: time
-    !     real(kind=RKIND) :: interp
-    !     character(50) :: source_value
-    !     integer :: i, index
-    !     do i = 1, size(this%nodes%sources)
-    !         if (this%nodes%sources(i)%has_source) then
-    !             if (this%nodes%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
-    !                 interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
-    !                 write(source_value, *) interp
-    !                 call command("alter @V"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
-    !             else if (this%nodes%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
-    !                 interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
-    !                 write(source_value, *) interp
-    !                 call command("alter @I"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
-    !             end if
-    !         end if
-    !     end do
-    ! end subroutine
-
     subroutine modifyLineCapacitorValue(this, name, c)
         class(circuit_t) :: this
         character(*), intent(in) :: name
         real(kind=rkind), intent(in) :: c
         character(50) :: sC
-
         write(sC, *) c
         call command("alter @CL"//trim(name)//" = "//trim(sC) // c_null_char)
-
     end subroutine
 
     subroutine updateNodeCurrentList(this, node_name, current, batch)
@@ -368,21 +230,6 @@ contains
         character(:), allocatable, intent(in) :: batch
         call command(batch// c_null_char)
     end subroutine
-
-
-    
-    ! subroutine updateNodeCurrent(this, node_name, current)
-    !     class(circuit_t) :: this
-    !     real(kind=rkind) :: current
-    !     character(50) :: sCurrent
-    !     character(*) :: node_name
-    !     if (index(node_name, "initial") /= 0) then
-    !         write(sCurrent, *) current
-    !     else if (index(node_name, "end") /= 0) then
-    !         write(sCurrent, *) -current
-    !     end if
-    !     call command("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
-    ! end subroutine
 
     subroutine updateNodes(this) 
         class(circuit_t) :: this
@@ -440,7 +287,6 @@ contains
         class(circuit_t) :: this
         real(kind=rkind_tiempo) :: res
         res = this%time
-        ! res = this%nodes%values(findIndexByName(this%nodes%names, "time"))%time
     end function
 
     function findIndexByName(names, name) result(res)
