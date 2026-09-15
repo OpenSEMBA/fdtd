@@ -166,14 +166,14 @@ def test_holland_mtln_mpi(tmp_path):
 def test_towelHanger_mpi(tmp_path):
     fn = CASES_FOLDER + "towelHanger/towelHanger_mpi.fdtd.json"
     setNgspice(tmp_path)
-    for layers in range[1,2]:
+    for layers in range(1,3):
         for direction_index, direction in enumerate(["x", "y", "z"]):
             solver = FDTD(
                 input_filename=fn,
                 path_to_exe=SEMBA_EXE,
                 run_in_folder=tmp_path,
                 flags=["-mpidir " + direction],
-                mpi_command="mpirun -np " + layers,
+                mpi_command="/usr/local/bin/mpirun -np " + str(layers),
             )
             for coordinate in solver["mesh"]["coordinates"]:
                 position = coordinate["relativePosition"]
