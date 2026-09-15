@@ -166,6 +166,7 @@ def test_holland_mtln_mpi(tmp_path):
 def test_towelHanger_mpi(tmp_path):
     fn = CASES_FOLDER + "towelHanger/towelHanger_mpi.fdtd.json"
     setNgspice(tmp_path)
+    print(SEMBA_EXE)
     for layers in range(1,3):
         for direction_index, direction in enumerate(["x", "y", "z"]):
             solver = FDTD(
@@ -178,13 +179,13 @@ def test_towelHanger_mpi(tmp_path):
             for coordinate in solver["mesh"]["coordinates"]:
                 position = coordinate["relativePosition"]
                 coordinate["relativePosition"] = [
-                    position[(axis + direction_index) % 3] for axis in range(3)
+                    position[(axis - direction_index) % 3] for axis in range(3)
                 ]
 
             element = solver["mesh"]["elements"][2]
             element["intervals"] = [
                 [
-                    [endpoint[(axis + direction_index) % 3] for axis in range(3)]
+                    [endpoint[(axis - direction_index) % 3] for axis in range(3)]
                     for endpoint in element["intervals"][0]
                 ]
             ]
