@@ -168,10 +168,6 @@ contains
     subroutine setExternalLongitudinalField(this)
         class(mtln_t) :: this
         integer :: i
-#ifdef CompileWithMPI
-        integer :: ierr
-      call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
         do i = 1, this%number_of_bundles
             if (this%bundles(i)%bundle_in_layer) call this%bundles(i)%setExternalLongitudinalField()
         end do
@@ -230,10 +226,6 @@ contains
     subroutine advanceBundlesCurrent(this)
         class(mtln_t) :: this
         integer :: i
-#ifdef CompileWithMPI
-        integer :: ierr
-        call mpi_barrier(subcomm_mpi, ierr)
-#endif
         do i = 1, this%number_of_bundles
             if (this%bundles(i)%bundle_in_layer) then 
                 call this%bundles(i)%advanceCurrent()
