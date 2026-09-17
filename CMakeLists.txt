@@ -269,8 +269,8 @@ target_link_libraries(semba-outputs
 set(PROGRAM_NAME "semba-fdtd")
 include("${CMAKE_CURRENT_SOURCE_DIR}/get_commit_info.cmake")
 configure_file(
-	${CMAKE_SOURCE_DIR}/src_main_pub/version.F90.in
-	${CMAKE_SOURCE_DIR}/src_main_pub/version.F90
+	${CMAKE_CURRENT_SOURCE_DIR}/src_main_pub/version.F90.in
+	${CMAKE_CURRENT_SOURCE_DIR}/src_main_pub/version.F90
 	@ONLY
 )
 
