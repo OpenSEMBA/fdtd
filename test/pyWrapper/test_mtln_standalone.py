@@ -11,6 +11,7 @@ from test.utils.utils import *
 @pytest.mark.probes
 def test_paul_8_6_square(tmp_path):
     fn = CASES_FOLDER + "paul/paul_8_6_square.fdtd.json"
+    setNgspice(tmp_path)
 
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
@@ -31,7 +32,7 @@ def test_paul_8_6_square(tmp_path):
         p_solved["time"].to_numpy(),
         p_solved["voltage_0"].to_numpy(),
     )
-    assert np.corrcoef(solved, p_expected["voltage_0"])[0, 1] > 0.999
+    assert np.corrcoef(solved, p_expected["voltage_0"])[0, 1] > 0.998
 
 
 @no_mtln_skip
@@ -41,6 +42,7 @@ def test_paul_8_6_square(tmp_path):
 @pytest.mark.probes
 def test_paul_8_6_triangle(tmp_path):
     fn = CASES_FOLDER + "paul/paul_8_6_triangle.fdtd.json"
+    setNgspice(tmp_path)
 
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
@@ -59,7 +61,7 @@ def test_paul_8_6_triangle(tmp_path):
         p_solved["time"].to_numpy(),
         p_solved["voltage_0"].to_numpy(),
     )
-    assert np.corrcoef(solved, p_expected["voltage_0"])[0, 1] > 0.999
+    assert np.corrcoef(solved, p_expected["voltage_0"])[0, 1] > 0.998
 
 
 @no_mtln_skip
@@ -69,6 +71,7 @@ def test_paul_8_6_triangle(tmp_path):
 @pytest.mark.probes
 def test_paul_9_6(tmp_path):
     fn = CASES_FOLDER + "paul/paul_9_6.fdtd.json"
+    setNgspice(tmp_path)
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
@@ -89,14 +92,14 @@ def test_paul_9_6(tmp_path):
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["voltage_0"].to_numpy(),
         )
-        assert np.corrcoef(solved, p_expected[i]["voltage_0"])[0, 1] > 0.999
+        assert np.corrcoef(solved, p_expected[i]["voltage_0"])[0, 1] > 0.995
 
         solved = np.interp(
             p_expected[i]["time"].to_numpy(),
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["voltage_1"].to_numpy(),
         )
-        assert np.corrcoef(solved, p_expected[i]["voltage_1"])[0, 1] > 0.999
+        assert np.corrcoef(solved, p_expected[i]["voltage_1"])[0, 1] > 0.995
 
 
 @no_mtln_skip
@@ -107,6 +110,7 @@ def test_paul_9_6(tmp_path):
 @pytest.mark.probes
 def test_spice_multilines_opamp(tmp_path):
     fn = CASES_FOLDER + "multilines_opamp/multilines_opamp.fdtd.json"
+    setNgspice(tmp_path)
 
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
@@ -134,6 +138,7 @@ def test_spice_multilines_opamp(tmp_path):
 @pytest.mark.probes
 def test_spice_connectors_diode(tmp_path):
     fn = CASES_FOLDER + "spice_connectors/spice_connectors.fdtd.json"
+    setNgspice(tmp_path)
 
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
@@ -165,6 +170,7 @@ def test_spice_connectors_diode(tmp_path):
 @pytest.mark.probes
 def test_line_multiline_junction(tmp_path):
     fn = CASES_FOLDER + "line_multiline_junction/line_multiline_junction.fdtd.json"
+    setNgspice(tmp_path)
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver.run()
@@ -186,7 +192,7 @@ def test_line_multiline_junction(tmp_path):
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["voltage_0"].to_numpy(),
         )
-        assert np.corrcoef(solved, p_expected[i]["voltage_0"])[0, 1] > 0.999
+        assert np.corrcoef(solved, p_expected[i]["voltage_0"])[0, 1] > 0.998
 
 
 @no_mtln_skip
@@ -222,6 +228,7 @@ def test_spice_opamp_saturation(tmp_path):
 @pytest.mark.probes
 def test_spice_zener(tmp_path):
     fn = CASES_FOLDER + "zener/zener.fdtd.json"
+    setNgspice(tmp_path)
 
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()

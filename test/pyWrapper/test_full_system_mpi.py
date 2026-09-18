@@ -165,46 +165,49 @@ def test_holland_mtln_mpi(tmp_path):
 @pytest.mark.probes
 def test_towelHanger_mpi(tmp_path):
     fn = CASES_FOLDER + "towelHanger/towelHanger_mpi.fdtd.json"
-    for direction_index, direction in enumerate(["x", "y", "z"]):
-        solver = FDTD(
-            input_filename=fn,
-            path_to_exe=SEMBA_EXE,
-            run_in_folder=tmp_path,
-            flags=["-mpidir " + direction],
-            mpi_command="mpirun -np 1",
-        )
-        for coordinate in solver["mesh"]["coordinates"]:
-            position = coordinate["relativePosition"]
-            coordinate["relativePosition"] = [
-                position[(axis + direction_index) % 3] for axis in range(3)
-            ]
-
-        element = solver["mesh"]["elements"][2]
-        element["intervals"] = [
-            [
-                [endpoint[(axis + direction_index) % 3] for axis in range(3)]
-                for endpoint in element["intervals"][0]
-            ]
-        ]
-        solver.cleanUp()
-        solver.run()
-
-        p_solved = [
-            Probe(_get_solved_probe_folder(solver, name))
-            for name in ["wire_start", "wire_mid", "wire_end"]
-        ]
-        p_expected = [
-            probe_from_fixture(tmp_path, filename)
-            for filename in [
-                "towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat",
-                "towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat",
-                "towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat",
-            ]
-        ]
-        for solved_probe, expected_probe in zip(p_solved, p_expected):
-            solved = np.interp(
-                expected_probe["time"].to_numpy(),
-                solved_probe["time"].to_numpy(),
-                solved_probe["current_0"].to_numpy(),
+    setNgspice(tmp_path)
+    print(SEMBA_EXE)
+    for layers in range(1,3):
+        for direction_index, direction in enumerate(["x", "y", "z"]):
+            solver = FDTD(
+                input_filename=fn,
+                path_to_exe=SEMBA_EXE,
+                run_in_folder=tmp_path,
+                flags=["-mpidir " + direction],
+                mpi_command="mpirun -np " + str(layers),
             )
-            assert np.corrcoef(solved, expected_probe["current_0"])[0, 1] > 0.999
+            for coordinate in solver["mesh"]["coordinates"]:
+                position = coordinate["relativePosition"]
+                coordinate["relativePosition"] = [
+                    position[(axis - direction_index) % 3] for axis in range(3)
+                ]
+
+            element = solver["mesh"]["elements"][2]
+            element["intervals"] = [
+                [
+                    [endpoint[(axis - direction_index) % 3] for axis in range(3)]
+                    for endpoint in element["intervals"][0]
+                ]
+            ]
+            solver.cleanUp()
+            solver.run()
+
+            p_solved = [
+                Probe(_get_solved_probe_folder(solver, name))
+                for name in ["wire_start", "wire_mid", "wire_end"]
+            ]
+            p_expected = [
+                probe_from_fixture(tmp_path, filename)
+                for filename in [
+                    "towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat",
+                    "towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat",
+                    "towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat",
+                ]
+            ]
+            for solved_probe, expected_probe in zip(p_solved, p_expected):
+                solved = np.interp(
+                    expected_probe["time"].to_numpy(),
+                    solved_probe["time"].to_numpy(),
+                    solved_probe["current_0"].to_numpy(),
+                )
+                assert np.corrcoef(solved, expected_probe["current_0"])[0, 1] > 0.999
