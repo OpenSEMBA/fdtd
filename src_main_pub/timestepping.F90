@@ -31,7 +31,9 @@ module Solver_m
    use interpreta_switches_m, only: entrada_t
 #ifdef CompileWithMPI
    use MPIcomm_m
+#ifdef CompileWithOpenMP
    use omp_lib, only: omp_set_num_threads
+#endif
 #endif
 #ifdef CompileWithStochastic
    use MPI_stochastic
@@ -277,12 +279,16 @@ module Solver_m
 #ifdef CompileWithMPI
    subroutine configure_default_openmp_threads(num_procs)
       integer(kind=4), intent(in) :: num_procs
+#ifdef CompileWithOpenMP
       character(len=128) :: omp_num_threads
+#endif
 
       if (num_procs <= 1) return
+#ifdef CompileWithOpenMP
       omp_num_threads = ""
       call get_environment_variable("OMP_NUM_THREADS", omp_num_threads)
       if (len_trim(omp_num_threads) == 0) call omp_set_num_threads(1)
+#endif
    end subroutine configure_default_openmp_threads
 #endif
 
