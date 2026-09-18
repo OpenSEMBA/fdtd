@@ -22,9 +22,9 @@ module mtln_solver_m
         type(mtl_bundle_t), allocatable, dimension(:) :: bundles
         type(network_manager_t) :: network_manager
         ! type(probe_t), allocatable, dimension(:) :: probes
-        integer :: number_of_bundles
+        integer(kind=4) :: number_of_bundles
         logical :: has_active_bundles
-        integer :: number_of_steps
+        integer(kind=4) :: number_of_steps
         real(kind=rkind) :: null_field
     contains
 
@@ -63,7 +63,7 @@ contains
         type(parsed_mtln_t) :: parsed
         type(XYZlimit_t), dimension(1:6), intent(in), optional :: alloc
         type(mtln_t) :: res
-        integer :: i
+        integer(kind=4) :: i
         type(preprocess_t) :: pre
 
 #ifdef CompileWithMPI
@@ -101,9 +101,9 @@ contains
 
     subroutine initNodes(this)
         class(mtln_t) :: this
-        integer :: i,j
-        integer ::b, c, v_idx, i_idx
-        integer :: n
+        integer(kind=4) :: i,j
+        integer(kind=4) ::b, c, v_idx, i_idx
+        integer(kind=4) :: n
         if (this%number_of_bundles == 0) return
         if (size(this%network_manager%networks) == 0) return
         do i = 1, size(this%network_manager%networks)
@@ -143,7 +143,7 @@ contains
 
     logical function hasActiveBundles(this)
         class(mtln_t) :: this
-        integer :: i
+        integer(kind=4) :: i
         this%has_active_bundles = .false.
         do i = 1, this%number_of_bundles
             if (this%bundles(i)%bundle_in_layer) then
@@ -154,7 +154,7 @@ contains
 
     subroutine step_alone(this)
         class(mtln_t) :: this
-        integer :: i 
+        integer(kind=4) :: i 
 
         call this%advanceBundlesVoltage()
         call this%advanceNWVoltage()
@@ -167,7 +167,7 @@ contains
 
     subroutine setExternalLongitudinalField(this)
         class(mtln_t) :: this
-        integer :: i
+        integer(kind=4) :: i
         do i = 1, this%number_of_bundles
             if (this%bundles(i)%bundle_in_layer) call this%bundles(i)%setExternalLongitudinalField()
         end do
@@ -176,7 +176,7 @@ contains
 
     subroutine advanceBundlesVoltage(this)
         class(mtln_t) :: this
-        integer :: i
+        integer(kind=4) :: i
 
         do i = 1, this%number_of_bundles
             if (this%bundles(i)%bundle_in_layer) then
@@ -189,9 +189,9 @@ contains
 
     subroutine advanceNWVoltage(this)
         class(mtln_t) :: this
-        integer :: i,j
-        integer ::b, c, v_idx, i_idx
-        integer :: n
+        integer(kind=4) :: i,j
+        integer(kind=4) ::b, c, v_idx, i_idx
+        integer(kind=4) :: n
 ! #ifdef CompileWithMPI
 !         integer(kind=4) :: ierr
 !         call mpi_barrier(subcomm_mpi, ierr)
@@ -206,7 +206,7 @@ contains
 
     subroutine updateOpenNodes(this)
         class(mtln_t) :: this
-        integer :: i, b, c, n
+        integer(kind=4) :: i, b, c, n
         do i = 1, size(this%network_manager%open_nodes)
             b = this%network_manager%open_nodes(i)%bundle_number
             if (this%bundles(b)%bundle_in_layer) then
@@ -225,7 +225,7 @@ contains
 
     subroutine advanceBundlesCurrent(this)
         class(mtln_t) :: this
-        integer :: i
+        integer(kind=4) :: i
         do i = 1, this%number_of_bundles
             if (this%bundles(i)%bundle_in_layer) then 
                 call this%bundles(i)%advanceCurrent()
@@ -240,7 +240,7 @@ contains
 
     subroutine updateProbes(this)
         class(mtln_t) :: this
-        integer :: i, j
+        integer(kind=4) :: i, j
         do i = 1, this%number_of_bundles
             if (size(this%bundles(i)%probes) /= 0 .and. this%bundles(i)%bundle_in_layer) then 
                 do j = 1, size(this%bundles(i)%probes)
@@ -255,7 +255,7 @@ contains
     function getTimeRange(this, time) result(res)
         class(mtln_t) :: this
         real(kind=RKIND_TIEMPO), intent(in), optional :: time
-        integer :: res
+        integer(kind=4) :: res
         if (present(time)) then 
             res =  floor(time / this%dt)
         else
@@ -266,7 +266,7 @@ contains
     subroutine updateBundlesTimeStep(this, dt)
         class(mtln_t) :: this
         real(kind=RKIND_TIEMPO) :: dt
-        integer :: i
+        integer(kind=4) :: i
         do i = 1, this%number_of_bundles
             this%bundles(i)%dt = dt
         end do
@@ -274,7 +274,7 @@ contains
 
     subroutine updatePULTerms(this)
         class(mtln_t) :: this
-        integer :: i, j 
+        integer(kind=4) :: i, j 
         do i = 1, this%number_of_bundles
             if (this%bundles(i)%bundle_in_layer) then
                 call this%bundles(i)%updateLRTerms()
@@ -293,7 +293,7 @@ contains
         class(mtln_t) :: this
         real(kind=RKIND_TIEMPO), intent(in):: final_time
         real(kind=RKIND_TIEMPO) :: time
-        integer :: i
+        integer(kind=4) :: i
 
         do i = 0, this%getTimeRange(final_time)
             call this%advanceBundlesVoltage()
@@ -309,7 +309,7 @@ contains
     subroutine mtln_run(this)
         class(mtln_t) :: this
         real(kind=RKIND_TIEMPO) :: time
-        integer :: i
+        integer(kind=4) :: i
 
         do i = 0, this%getTimeRange(this%final_time)
             call this%advanceBundlesVoltage()
@@ -325,12 +325,12 @@ contains
     subroutine mtln_initObservation(this, nEntradaRoot)
         class(mtln_t) :: this
         character(len=*), intent(in) :: nEntradaRoot
-        integer :: close_ios, i, ios, j, k, unit
+        integer(kind=4) :: close_ios, i, ios, j, k, unit
         character(len=bufsize) :: path
         character(len=bufsize) :: temp
         character(len=:), allocatable :: buffer
 #ifdef CompileWithMPI
-        integer :: candidate_rank, ierr, rank, writer_rank
+        integer(kind=4) :: candidate_rank, ierr, rank, writer_rank
 #endif
 
         if (.not. allocated(this%bundles)) return
@@ -397,7 +397,7 @@ contains
     subroutine mtln_updateObservation(this, step)
         class(mtln_t) :: this
         integer, intent(in) :: step
-        integer :: i, ios, j, n
+        integer(kind=4) :: i, ios, j, n
         character(len=bufsize) :: temp
         character(len=:), allocatable :: buffer
 #ifdef CompileWithMPI
@@ -429,7 +429,7 @@ contains
 
     subroutine mtln_closeObservation(this)
         class(mtln_t) :: this
-        integer :: i, ios, j
+        integer(kind=4) :: i, ios, j
         if (.not. allocated(this%bundles)) return
         do i = 1, size(this%bundles)
             do j = 1, size(this%bundles(i)%probes)

@@ -27,7 +27,7 @@ module mtl_bundle_m
 
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance
-        integer, dimension(:), allocatable :: conductors_in_level
+        integer(kind=4), dimension(:), allocatable :: conductors_in_level
         
         real(kind=rkind), dimension(:,:,:), allocatable :: v_term, i_term
         real(kind=rkind), dimension(:,:,:), allocatable :: v_diff, i_diff
@@ -67,8 +67,8 @@ module mtl_bundle_m
     end interface
 
     type :: external_field_segment_t
-        integer, dimension(3) ::position
-        integer :: direction = 0
+        integer(kind=4), dimension(3) ::position
+        integer(kind=4) :: direction = 0
         real(kind=rkind) , pointer  :: field => null()
     end type
 
@@ -131,7 +131,7 @@ contains
 
     function countNumberOfConductors(levels) result(res)
         type(transmission_line_level_t), dimension(:), intent(in) :: levels
-        integer :: i,j, res
+        integer(kind=4) :: i,j, res
         res = 0
         do i = 1, size(levels)
             do j = 1, size(levels(i)%lines)
@@ -143,7 +143,7 @@ contains
     subroutine mergePULMatrices(this, levels)
         class(mtl_bundle_t) :: this
         type(transmission_line_level_t), dimension(:), intent(in) :: levels
-        integer :: i, j, n, n_sum
+        integer(kind=4) :: i, j, n, n_sum
         n_sum = 0
         do i = 1, size(levels)
             do j = 1, size(levels(i)%lines)
@@ -161,7 +161,7 @@ contains
     subroutine mergeDispersiveMatrices(this, levels)
         class(mtl_bundle_t) :: this
         type(transmission_line_level_t), dimension(:), intent(in) :: levels
-        integer :: i, j, n, n_sum, number_of_poles
+        integer(kind=4) :: i, j, n, n_sum, number_of_poles
         n_sum = 0
         number_of_poles = 0
         do i = 1, size(levels)
@@ -212,7 +212,7 @@ contains
         type(transmission_line_level_t), dimension(:), intent(in) :: levels
         type(external_field_segment_t), dimension(:), allocatable :: res
         type(segment_t), dimension(:), allocatable :: segments
-        integer :: i
+        integer(kind=4) :: i
         segments = levels(1)%lines(1)%segments
         allocate(res(size(segments)))
         do i = 1, size(segments)
@@ -225,8 +225,8 @@ contains
 
     subroutine addProbe(this, index, probe_type, name, position, layer_indices)
         class(mtl_bundle_t) :: this
-        integer, intent(in) :: index
-        integer, intent(in) :: probe_type
+        integer(kind=4), intent(in) :: index
+        integer(kind=4), intent(in) :: probe_type
         real(kind=rkind), dimension(3) :: position
         character(len=:), allocatable :: name
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
@@ -248,7 +248,7 @@ contains
 
     subroutine addGenerator(this, index, conductor, gen_type, resistance, path, layer_indices)
         class(mtl_bundle_t) :: this
-        integer, intent(in) :: index, conductor, gen_type
+        integer(kind=4), intent(in) :: index, conductor, gen_type
         real(kind=rkind) :: resistance
         character(*), intent(in) :: path
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
@@ -284,9 +284,9 @@ contains
 
     subroutine bundle_setConnectorTransferImpedance(this, index, conductor_out, range_in, transfer_impedance)
         class(mtl_bundle_t) :: this
-        integer, intent(in) :: index
-        integer, intent(in) :: conductor_out
-        integer, dimension(:), intent(in) :: range_in
+        integer(kind=4), intent(in) :: index
+        integer(kind=4), intent(in) :: conductor_out
+        integer(kind=4), dimension(:), intent(in) :: range_in
         type(transfer_impedance_per_meter_t) :: transfer_impedance
 
         call this%transfer_impedance%setTransferImpedance(index, conductor_out, range_in, transfer_impedance)
@@ -295,8 +295,8 @@ contains
 
     subroutine bundle_addTransferImpedance(this, conductor_out, range_in, transfer_impedance)
         class(mtl_bundle_t) :: this
-        integer, intent(in) :: conductor_out
-        integer, dimension(:), intent(in) :: range_in
+        integer(kind=4), intent(in) :: conductor_out
+        integer(kind=4), dimension(:), intent(in) :: range_in
         type(transfer_impedance_per_meter_t) :: transfer_impedance
 
         call this%transfer_impedance%addTransferImpedance(conductor_out, range_in, transfer_impedance)
@@ -306,7 +306,7 @@ contains
     subroutine updateLRTerms(this)
         class(mtl_bundle_t) ::this
         real(kind=rkind), dimension(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors) :: F1, F2, IF1
-        integer :: i
+        integer(kind=4) :: i
 
         F1 = reshape(source=[(matmul( &
             this%du(i,:,:), &
@@ -347,7 +347,7 @@ contains
         class(mtl_bundle_t) ::this
         real(kind=rkind), dimension(this%number_of_divisions + 1,this%number_of_conductors,this%number_of_conductors) :: F1, F2, IF1
         real(kind=rkind), dimension(this%number_of_divisions + 1, this%number_of_conductors,this%number_of_conductors) :: extended_du
-        integer :: i
+        integer(kind=4) :: i
 
         extended_du(1,:,:) = this%du(1,:,:)
         do i = 2, this%number_of_divisions
@@ -384,7 +384,7 @@ contains
         class(mtl_bundle_t) ::this
         real(kind=RKIND_TIEMPO), intent(in) :: time, dt
         real(kind=rkind) :: val
-        integer :: i
+        integer(kind=4) :: i
         do i = 1, size(this%generators)
             if (this%generators(i)%in_layer) then 
                 if (this%generators(i)%source_type == SOURCE_TYPE_VOLTAGE) then
@@ -403,7 +403,7 @@ contains
 
     subroutine bundle_advanceVoltage(this)
         class(mtl_bundle_t) ::this
-        integer :: i
+        integer(kind=4) :: i
         do i = 2,this%number_of_divisions
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:), (this%i(:,i) - this%i(:,i-1)) + matmul(this%du(i,:,:), this%i_source(:,i)))
@@ -414,7 +414,7 @@ contains
 
     subroutine bundle_advanceCurrent(this)
         class(mtl_bundle_t) ::this
-        integer :: i
+        integer(kind=4) :: i
         real(kind=rkind) :: eps_r
 #ifdef CompileWithMPI
         integer(kind=4) :: sizeof, ierr
@@ -439,9 +439,9 @@ contains
 
     subroutine bundle_setExternalLongitudinalField(this)
         class(mtl_bundle_t) :: this
-        integer :: i, j
+        integer(kind=4) :: i, j
 #ifdef CompileWithMPI
-        integer :: sizeof, ierr
+        integer(kind=4) :: sizeof, ierr
 
         call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
         if (sizeof > 1) call this%Comm_MPI_Fields()
@@ -449,9 +449,10 @@ contains
 
         do j = 1, this%conductors_in_level(1)
             do i = 1, size(this%e_L,2)
-                    this%e_L(j,i) = this%external_field_segments(i)%field * &
-                                    this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
-                                    
+                    if (abs(this%external_field_segments(i)%direction) <= 3) then 
+                        this%e_L(j,i) = this%external_field_segments(i)%field * &
+                                        this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
+                    end if
             end do
         end do
 
@@ -460,8 +461,8 @@ contains
 #ifdef CompileWithMPI
     subroutine Comm_MPI_V(this)
         class(mtl_bundle_t) :: this
-        integer :: number_of_conductors, i, c
-        integer :: ierr, rank, status(MPI_STATUS_SIZE)
+        integer(kind=4) :: number_of_conductors, i, c
+        integer(kind=4) :: ierr, rank, status(MPI_STATUS_SIZE)
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
         number_of_conductors = size(this%v,1)
         do i = 1, size(this%mpi_comm%comms)
@@ -490,7 +491,7 @@ contains
 
         subroutine Comm_MPI_Fields(this)
         class(mtl_bundle_t) :: this
-        integer :: i, ierr, rank, status(MPI_STATUS_SIZE)
+        integer(kind=4) :: i, ierr, rank, status(MPI_STATUS_SIZE)
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
         do i = 1, size(this%mpi_comm%comms)
             if (this%mpi_comm%comms(i)%comm_type == COMM_FIELD .or. this%mpi_comm%comms(i)%comm_type == COMM_BOTH) then
