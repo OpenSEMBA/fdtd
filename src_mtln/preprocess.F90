@@ -10,12 +10,12 @@ module mtln_preprocess_m
     use json_string_utilities, only: lowercase_string
     implicit none
 
-    integer, parameter :: XPOS = 1
-    integer, parameter :: XNEG = -1
-    integer, parameter :: YPOS = 2
-    integer, parameter :: YNEG = -2
-    integer, parameter :: ZPOS = 3
-    integer, parameter :: ZNEG = -3
+    integer(kind=4), parameter :: XPOS = 1
+    integer(kind=4), parameter :: XNEG = -1
+    integer(kind=4), parameter :: YPOS = 2
+    integer(kind=4), parameter :: YNEG = -2
+    integer(kind=4), parameter :: ZPOS = 3
+    integer(kind=4), parameter :: ZNEG = -3
 
     type, public :: preprocess_t
         type(mtl_bundle_t), dimension(:), allocatable :: bundles
@@ -119,8 +119,8 @@ contains
 
     function conductorsInLevel(line) result(res)
         type(transmission_line_bundle_t), intent(in) :: line
-        integer, dimension(:), allocatable :: res
-        integer :: i,j
+        integer(kind=4), dimension(:), allocatable :: res
+        integer(kind=4) :: i,j
 
         allocate(res(size(line%levels)), source = 0)
         do i = 1, size(line%levels)
@@ -133,8 +133,8 @@ contains
     function findConductorsBeforeCable(name, level) result(res)
         character(len=*), intent(in) :: name
         type(transmission_line_level_t), intent(in) :: level
-        integer :: res 
-        integer :: i
+        integer(kind=4) :: res 
+        integer(kind=4) :: i
         res = 0
         do i = 1, size(level%lines)
             if (level%lines(i)%name /= name) then
@@ -148,8 +148,8 @@ contains
     function findOuterConductorNumber(line, level, conductors_in_level) result(res)
         type(mtl_t), intent(in) :: line
         type(transmission_line_level_t), intent(in) :: level
-        integer, intent(in) :: conductors_in_level
-        integer :: res
+        integer(kind=4), intent(in) :: conductors_in_level
+        integer(kind=4) :: res
         res = findConductorsBeforeCable(line%parent_name, level) + &
               conductors_in_level + &
               line%conductor_in_parent
@@ -158,9 +158,9 @@ contains
     function findInnerConductorRange(line, level, conductors_in_level) result(res)
         type(mtl_t), intent(in) :: line
         type(transmission_line_level_t), intent(in) :: level
-        integer, intent(in) :: conductors_in_level
-        integer, dimension(:), allocatable :: res
-        integer :: k
+        integer(kind=4), intent(in) :: conductors_in_level
+        integer(kind=4), dimension(:), allocatable :: res
+        integer(kind=4) :: k
         res = findConductorsBeforeCable(line%name, level) + & 
               conductors_in_level + &
               [(k, k = 1, line%number_of_conductors)]
@@ -170,12 +170,12 @@ contains
     subroutine setBundleTransferImpedance(bundle, line)
         type(mtl_bundle_t), intent(inout) :: bundle
         type(transmission_line_bundle_t), intent(in) :: line
-        integer :: i,j,k, conductor_in_parent
-        integer, dimension(:), allocatable :: range_in
-        integer :: conductor_out
+        integer(kind=4) :: i,j,k, conductor_in_parent
+        integer(kind=4), dimension(:), allocatable :: range_in
+        integer(kind=4) :: conductor_out
         type(transfer_impedance_per_meter_t) :: zt
 
-        integer, dimension(:), allocatable :: conductors_in_level
+        integer(kind=4), dimension(:), allocatable :: conductors_in_level
 
         conductors_in_level = conductorsInLevel(line)
         bundle%conductors_in_level = conductors_in_level
@@ -213,9 +213,9 @@ contains
     subroutine mapConductorsBeforeCable(conductors_before_cable, line)
         type(fhash_tbl_t), intent(inout) :: conductors_before_cable
         type(transmission_line_bundle_t), intent(in) :: line
-        integer, dimension(:), allocatable :: range_in
-        integer, dimension(:), allocatable :: conductors_in_level
-        integer :: i,j
+        integer(kind=4), dimension(:), allocatable :: range_in
+        integer(kind=4), dimension(:), allocatable :: conductors_in_level
+        integer(kind=4) :: i,j
         conductors_in_level = conductorsInLevel(line)
         call conductors_before_cable%set(key(line%levels(1)%lines(1)%name), 0)
         do i = 2, size(line%levels)
@@ -236,7 +236,7 @@ contains
         type(transmission_line_bundle_t), dimension(:), intent(in) :: lines
         type(mtl_bundle_t), dimension(:), allocatable :: res
         type(fhash_tbl_t) :: conductors_before_cable
-        integer :: i
+        integer(kind=4) :: i
 #ifdef CompileWithMPI
         integer(kind=4) :: ierr
 #endif
@@ -266,7 +266,7 @@ contains
         integer(kind=4), dimension(2), intent(in), optional :: alloc_z
         type(mtl_t) :: res
         
-        integer :: conductor_in_parent = 0
+        integer(kind=4) :: conductor_in_parent = 0
         character(len=:), allocatable :: parent_name
 
         select type(cable)
@@ -314,7 +314,7 @@ contains
         subroutine addInitialConnector(line, connector)
             type(mtl_t), intent(inout) :: line
             type(connector_t) :: connector
-            integer :: i
+            integer(kind=4) :: i
             do i = 1, line%number_of_conductors
                 line%rpul(1, i, i) = connector%resistances(i)/line%du(1, i, i)
             end do
@@ -325,7 +325,7 @@ contains
         subroutine addEndConnector(line, connector)
             type(mtl_t), intent(inout) :: line
             type(connector_t) :: connector
-            integer :: i
+            integer(kind=4) :: i
             do i = 1, line%number_of_conductors
                 line%rpul(size(line%du,1), i, i) = connector%resistances(i)/line%du(size(line%du,1), i, i)
             end do
@@ -340,8 +340,8 @@ contains
         type(transmission_line_bundle_t), dimension(:), allocatable :: res
         real(kind=RKIND_TIEMPO), intent(in) :: dt
         type(XYZlimit_t), dimension(1:6), intent(in), optional :: alloc
-        integer :: i, j, k
-        integer :: nb, nl, nc
+        integer(kind=4) :: i, j, k
+        integer(kind=4) :: nb, nl, nc
         integer(kind=4), allocatable, dimension(:,:) :: layer_indices
         logical :: bundle_in_layer = .false.
         integer(kind=4), dimension(2) :: alloc_z
@@ -360,7 +360,6 @@ contains
                 else 
                     allocate(layer_indices(0,2), source = 0)
                 end if
-                ! if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
             end if
             nl = size(cable_bundles(i)%levels)
             allocate(res(i)%levels(nl))
@@ -381,7 +380,7 @@ contains
         logical function isBundleInLayer(cable, alloc_z)
             integer(kind=4), dimension(2), intent(in) :: alloc_z
             class (cable_t), pointer, intent(in) :: cable
-            integer :: n, i
+            integer(kind=4) :: n, i
             logical :: in_layer
             in_layer = .false.
             n = 0
@@ -405,7 +404,7 @@ contains
             integer(kind=4), dimension(2), intent(in) :: alloc_z
             class (cable_t), pointer, intent(in) :: cable
             integer(kind=4), allocatable, dimension(:,:) :: res
-            integer :: n, i, direction, position(1:3)
+            integer(kind=4) :: n, i, direction, position(1:3)
             logical :: in_layer
             in_layer = .false.
             ! precount
@@ -449,7 +448,7 @@ contains
         logical function isSegmentWithinAllocBox(segs, i,  z)
             type(segment_t), intent(in), dimension(:), allocatable :: segs
             type(segment_t) :: prev
-            integer :: i
+            integer(kind=4) :: i
             integer(kind=4), dimension(2), intent(in) :: z
             isSegmentWithinAllocBox = (segs(i)%z >= z(1)) .and. (segs(i)%z <= z(2))
         end function
@@ -493,8 +492,8 @@ contains
             type(cable_abstract_t), dimension(:), intent(in) :: cs
             type(cable_level_t) :: next_level
             class(cable_t), pointer :: ptr
-            integer :: i,j, next_level_size
-            integer :: n
+            integer(kind=4) :: i,j, next_level_size
+            integer(kind=4) :: n
             next_level_size = 0
             do i = 1, size(curr_level%cables) 
                 do j = 1, size(cs)
@@ -532,8 +531,8 @@ contains
         type(cable_abstract_t), dimension(:), intent(in) :: cables
         type(cable_abstract_t), dimension(:), allocatable :: res
         class(cable_t), pointer :: ptr
-        integer :: i
-        integer, dimension(:), allocatable :: parent_ids
+        integer(kind=4) :: i
+        integer(kind=4), dimension(:), allocatable :: parent_ids
 #ifdef CompileWithMPI
         integer(kind=4) :: ierr
 #endif
@@ -565,7 +564,7 @@ contains
         type(cable_abstract_t), dimension(:), intent(in) :: cables
         type(cable_abstract_t), dimension(:), allocatable :: parents
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
-        integer :: i
+        integer(kind=4) :: i
 
         parents = findParentCables(cables)
         allocate(cable_bundles(size(parents)))
@@ -579,7 +578,7 @@ contains
         type(transmission_line_bundle_t), dimension(:), allocatable :: lines
         type(mtl_bundle_t), dimension(:), allocatable :: bundles
         type(fhash_tbl_t) :: res
-        integer :: i, j, k
+        integer(kind=4) :: i, j, k
 
         do i = 1, size(lines)
             do j = 1, size(lines(i)%levels)
@@ -595,7 +594,7 @@ contains
         type(transmission_line_bundle_t), dimension(:), allocatable :: lines
         type(mtl_bundle_t), dimension(:), allocatable :: bundles
         type(fhash_tbl_t) :: res
-        integer :: i, j, k
+        integer(kind=4) :: i, j, k
 
         do i = 1, size(lines)
             do j = 1, size(lines(i)%levels)
@@ -1131,11 +1130,11 @@ contains
     function addNodeWithId(this, node) result(res)
         class(preprocess_t) :: this
         type(terminal_node_t) :: node
-        integer :: stat
-        integer :: d
+        integer(kind=4) :: stat
+        integer(kind=4) :: d
         type(nw_node_t) :: res
         character(len=4) :: sConductor
-        integer :: conductor_number
+        integer(kind=4) :: conductor_number
 
         call this%conductors_before_cable%get(key(node%belongs_to_cable%name), conductor_number)
         conductor_number = conductor_number + node%conductor_in_cable
@@ -1151,7 +1150,7 @@ contains
         res%conductor_number = conductor_number
         
         block
-            integer :: v_index, i_index
+            integer(kind=4) :: v_index, i_index
             real(kind=rkind) :: line_c_per_meter, line_g_per_meter, step
             if (node%side == TERMINAL_NODE_SIDE_INI) then 
                 v_index = lbound(this%bundles(d)%v,2)
@@ -1182,7 +1181,7 @@ contains
     contains
         function nodeSideToString(side) result(cSide)
             character(len=:), allocatable :: cSide
-            integer, intent(in) :: side
+            integer(kind=4), intent(in) :: side
             select case (side)
             case (TERMINAL_NODE_SIDE_INI)
                 cSide = "initial"
@@ -1229,7 +1228,7 @@ contains
         character(len=256) :: network_circuit_node, str_term
         
         type(nw_node_t) :: new_node
-        integer :: i
+        integer(kind=4) :: i
 
         aux_nodes = nodes
         deallocate(nodes)
@@ -1269,7 +1268,7 @@ contains
         character(256), dimension(:), allocatable :: node_description, old_description
 
         type(nw_node_t) :: new_node
-        integer :: i
+        integer(kind=4) :: i
         character(len=256) :: interior_node
         character(len=256) :: buff
 
@@ -1308,7 +1307,7 @@ contains
         character(256), dimension(:), allocatable :: description
         character(256), dimension(:), allocatable :: listOfModels
         type(network_t) :: res
-        integer :: i
+        integer(kind=4) :: i
         type(terminal_connection_t), dimension(:), allocatable :: network_circuit_connections, node2node_connections
 
         call filterConnections(terminal_network%connections, network_circuit_connections, node2node_connections)
@@ -1342,7 +1341,7 @@ contains
         character(256), dimension(:), intent(in) :: listOfModels
         character(*) :: model
         logical :: res
-        integer :: i
+        integer(kind=4) :: i
         if (size(listOfModels) == 0) then 
             res = .false.
             return
@@ -1363,7 +1362,7 @@ contains
 
         character(:), allocatable :: ports
         character(10) :: str_term
-        integer :: i
+        integer(kind=4) :: i
 
         ports = " "
         do i = 1, network_circuit%number_of_nodes
@@ -1384,7 +1383,7 @@ contains
 
         character(:), allocatable :: ports
         character(10) :: str_term
-        integer :: i
+        integer(kind=4) :: i
 
         buff = trim(network_circuit%model_file)
         if (isModelIncluded(buff, listOfModels)) return
@@ -1399,7 +1398,7 @@ contains
     subroutine filterConnections(all_conn, subckt_conn, node_conn)
         type(terminal_connection_t), dimension(:), intent(in) :: all_conn
         type(terminal_connection_t), dimension(:), allocatable, intent(inout) :: subckt_conn, node_conn
-        integer :: i, j, subckt_size, node_size, numberOfNodes, numberOfCktNodes
+        integer(kind=4) :: i, j, subckt_size, node_size, numberOfNodes, numberOfCktNodes
         logical :: is_ckt
 
         subckt_size = 0
@@ -1447,7 +1446,7 @@ contains
     subroutine addNetworksDescription(description, networks)
         character(256), dimension(:), allocatable, intent(inout) :: description
         type(network_t), dimension(:), intent(in) :: networks
-        integer :: i,j 
+        integer(kind=4) :: i,j 
         character(256) :: buff
         do i = 1, size(networks)
             do j = 1, size(networks(i)%description)
@@ -1462,7 +1461,7 @@ contains
         character(256) :: buff
         real(kind=RKIND_TIEMPO), intent(in) :: final_time, dt
         character(30) :: sTime, sdt, sDelta, sPrint
-        integer, intent(in) :: print_step        
+        integer(kind=4), intent(in) :: print_step        
 
         write(sTime, '(E10.2)') final_time
         write(sdt, '(E10.2)') dt
@@ -1480,7 +1479,7 @@ contains
         character(256) :: buff
         type(network_t), dimension(:), intent(in) :: networks
         character(len=:), allocatable :: saved_nodes
-        integer :: i,j
+        integer(kind=4) :: i,j
         do j = 1, size(networks)
             do i = 1, size(networks(j)%nodes)
                 saved_nodes = ".save  V1"//trim(networks(j)%nodes(i)%name)//"#branch "
@@ -1501,11 +1500,11 @@ contains
         type(network_manager_t) :: res
         character(256), dimension(:), allocatable :: description
         character(256) :: buff
-        integer :: i, n
+        integer(kind=4) :: i, n
         logical, dimension(:), allocatable :: network_in_MPIslice
 
 #ifdef CompileWithMPI
-        integer :: j,k,d, stat
+        integer(kind=4) :: j,k,d, stat
 #endif
         allocate(network_in_MPIslice(size(terminal_networks)), source = .true.)
         n = size(terminal_networks)
@@ -1554,7 +1553,7 @@ contains
     subroutine addGenerators(this, parsed_generators)
         class(preprocess_t) :: this
         type(parsed_generator_t), dimension(:), allocatable :: parsed_generators
-        integer :: i, d, stat, n
+        integer(kind=4) :: i, d, stat, n
 
         do i = 1, size(parsed_generators)
             call this%cable_name_to_bundle_id%get(key = key(parsed_generators(i)%attached_to_cable%name), &
@@ -1579,7 +1578,7 @@ contains
     subroutine addProbesWithId(this, parsed_probes)
         class(preprocess_t) :: this
         type(parsed_probe_t), dimension(:), allocatable :: parsed_probes
-        integer :: i, d, stat
+        integer(kind=4) :: i, d, stat
         type(mtl_bundle_t), target :: tbundle
         character(len=:), allocatable :: probe_name
 

@@ -31,6 +31,9 @@ module Solver_m
    use interpreta_switches_m, only: entrada_t
 #ifdef CompileWithMPI
    use MPIcomm_m
+#ifdef CompileWithOpenMP
+   use omp_lib, only: omp_set_num_threads
+#endif
 #endif
 #ifdef CompileWithStochastic
    use MPI_stochastic
@@ -273,6 +276,21 @@ module Solver_m
 
    end subroutine
 
+#ifdef CompileWithMPI
+   subroutine configure_default_openmp_threads(num_procs)
+      integer(kind=4), intent(in) :: num_procs
+#ifdef CompileWithOpenMP
+      character(len=128) :: omp_num_threads
+#endif
+
+      if (num_procs <= 1) return
+#ifdef CompileWithOpenMP
+      omp_num_threads = ""
+      call get_environment_variable("OMP_NUM_THREADS", omp_num_threads)
+      if (len_trim(omp_num_threads) == 0) call omp_set_num_threads(1)
+#endif
+   end subroutine configure_default_openmp_threads
+#endif
 
 #ifdef CompileWithMTLN
    subroutine launch_mtln_simulation(this, mtln_parsed, nEntradaRoot, layoutnumber)
@@ -1484,6 +1502,7 @@ contains
       subroutine initializeMPI()
          character(len=bufsize) :: dubuf      
          integer(kind=4) :: ierr
+         call configure_default_openmp_threads(this%control%num_procs)
          if (this%control%num_procs>1) then
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             write(dubuf,*) 'Init MPI MediaMatrix flush...';  call print11(this%control%layoutnumber,dubuf)
@@ -1794,8 +1813,6 @@ contains
             Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
 
             if (.not.this%parar) then !!! si es por parada se gestiona al final
-               call request_flush_if_any_observation_is_done()
-
                if (this%perform%flushFIELDS) then
                   call performFlushField()
                end if
@@ -1858,18 +1875,6 @@ contains
 
 
 contains
-
-      subroutine request_flush_if_any_observation_is_done()
-         do i=1,this%sgg%NumberRequest
-            if  (this%sgg%Observation(i)%done.and.(.not.this%sgg%Observation(i)%flushed)) then
-               this%perform%flushXdmf=.true.
-               this%perform%flushVTK=.true.
-            end if
-         end do
-#ifdef CompileWithMPI
-         call syncroniceFlushFlags(this%perform, ierr)
-#endif
-      end subroutine
 
 #ifdef CompileWithMPI
       subroutine syncroniceFlushFlags(performFlags, integerError)

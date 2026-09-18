@@ -13,7 +13,7 @@ module network_manager_m
         type(nw_node_t), allocatable :: open_nodes(:)
         real(kind=rkind) :: time, dt
         logical :: has_active_node = .false.
-        integer :: counter = 0
+        integer(kind=4) :: counter = 0
 
     contains
         procedure :: advanceVoltage => network_advanceVoltage
@@ -46,7 +46,7 @@ contains
     function copy_node_names(networks) result(res)
         type(network_t), dimension(:), intent(in) :: networks
         type(string_t), dimension(:), allocatable :: res
-        integer :: i,j
+        integer(kind=4) :: i,j
         type(string_t) :: temp
         allocate(res(0))
         do i = 1, size(networks)
@@ -83,7 +83,7 @@ contains
         
         function collectOpenNodes(nws) result(res)
             type(network_t), dimension(:), intent(in) :: nws
-            integer :: i, j, n
+            integer(kind=4) :: i, j, n
             type(nw_node_t), allocatable :: res(:)
             n = 0
             do i = 1, size(nws)
@@ -110,7 +110,7 @@ contains
 
     subroutine updateNetworkVoltages(this)
         class(network_manager_t) :: this
-        integer :: i, j
+        integer(kind=4) :: i, j
         do i = 1, size(this%networks)
             do j = 1, this%networks(i)%number_of_nodes
                 this%networks(i)%nodes(j)%v = this%circuit%getNodeVoltage(this%networks(i)%nodes(j)%name)
@@ -121,7 +121,7 @@ contains
 
     subroutine updateCircuitCurrentsFromNetwork(this)
         class(network_manager_t) :: this
-        integer :: i, j
+        integer(kind=4) :: i, j
         character(len=:), allocatable :: batch
         batch = ''
         do i = 1, size(this%networks)
@@ -145,7 +145,7 @@ contains
 
     subroutine updateNetworkVoltagesFromCircuit(this)
         class(network_manager_t) :: this
-        integer :: i, j, idx
+        integer(kind=4) :: i, j, idx
         type(vectorInfo_t), pointer :: info
         type(c_ptr) :: info_ptr
         real(kind=c_double), pointer :: values(:)

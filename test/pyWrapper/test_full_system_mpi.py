@@ -167,7 +167,7 @@ def test_towelHanger_mpi(tmp_path):
     fn = CASES_FOLDER + "towelHanger/towelHanger_mpi.fdtd.json"
     setNgspice(tmp_path)
     print(SEMBA_EXE)
-    for layers in range(1,3):
+    for layers in [1, 2]:
         for direction_index, direction in enumerate(["x", "y", "z"]):
             solver = FDTD(
                 input_filename=fn,
