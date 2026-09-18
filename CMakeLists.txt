@@ -16,6 +16,9 @@ option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
 option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
 
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
+option(SEMBA_FDTD_OUTPUTS_LIB "Build standalone outputs library" ON)
+option(SEMBA_FDTD_MAIN_LIB "Build standalone main library" ON)
+option(SEMBA_FDTD_EXECUTABLE "Build standalone executable" ON)
 
 if(SEMBA_FDTD_ENABLE_MPI AND SEMBA_FDTD_ENABLE_TEST)
 	set(SEMBA_FDTD_OUTPUT_MPI_TEST_RANKS 3 CACHE STRING
@@ -257,22 +260,25 @@ add_library(semba-components
 )
 target_link_libraries(semba-components semba-types semba-reports ${MTLN_LIBRARIES})
 
-add_library(semba-outputs
-	"src_main_pub/mpicomm.F90"
-)
-target_link_libraries(semba-outputs
-	semba-components
-	${MPI_Fortran_LIBRARIES})
+if(SEMBA_FDTD_OUTPUTS_LIB)
+	add_library(semba-outputs
+		"src_main_pub/mpicomm.F90"
+	)
+	target_link_libraries(semba-outputs
+		semba-components
+		${MPI_Fortran_LIBRARIES})
+endif()
 
-# Prepares variables containing information on commit-hash and build flags.
-# This information is only available at the configuration stage.
-set(PROGRAM_NAME "semba-fdtd")
-include("${CMAKE_CURRENT_SOURCE_DIR}/get_commit_info.cmake")
-configure_file(
-	${CMAKE_SOURCE_DIR}/src_main_pub/version.F90.in
-	${CMAKE_SOURCE_DIR}/src_main_pub/version.F90
-	@ONLY
-)
+if(SEMBA_FDTD_MAIN_LIB)
+	# Prepares variables containing information on commit-hash and build flags.
+	# This information is only available at the configuration stage.
+	set(PROGRAM_NAME "semba-fdtd")
+	include("${CMAKE_CURRENT_SOURCE_DIR}/get_commit_info.cmake")
+	configure_file(
+		${CMAKE_CURRENT_SOURCE_DIR}/src_main_pub/version.F90.in
+		${CMAKE_CURRENT_SOURCE_DIR}/src_main_pub/version.F90
+		@ONLY
+	)
 
 add_library(semba-main
 	"src_main_pub/semba_fdtd.F90"
@@ -288,19 +294,22 @@ add_library(semba-main
 	"src_main_pub/resuming.F90"
 	"src_main_pub/timestepping.F90"
 )
-target_link_libraries(semba-main
-	semba-outputs
-	fdtd-utils
-	${OUTPUT_LIBRARIES}
-	${VTK_API_LIBRARIES}
-	${SMBJSON_LIBRARIES}
-	${MTLN_LIBRARIES})
+ target_link_libraries(semba-main
+		semba-outputs
+		fdtd-utils
+		${OUTPUT_LIBRARIES}
+		${VTK_API_LIBRARIES}
+		${SMBJSON_LIBRARIES}
+		${MTLN_LIBRARIES})
+endif()
 
-add_executable(semba-fdtd
-	"src_main_pub/launcher.F90"
-)
-target_link_libraries(semba-fdtd semba-main semba-reports)
-target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
+if(SEMBA_FDTD_EXECUTABLE)
+	add_executable(semba-fdtd
+		"src_main_pub/launcher.F90"
+	)
+	target_link_libraries(semba-fdtd semba-main semba-reports)
+	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
+endif()
 
 
 
