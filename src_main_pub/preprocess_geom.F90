@@ -2661,42 +2661,46 @@ contains
                   !&         ( .NOT. sgg%Med(sggmiHx(i1, j1, k1))%Is%ThinSlot))
 
                   !encuentra la orientacion del plano PEC que contiene al Slot (considera los vecinos)
-                  oriX2 = (direccion == iEy) .AND.   &
-                  &        (((               media%sggMiHx(i1, j1, k1-1) ==0).or.(sgg%med(               media%sggMiHx(i1, j1, k1-1) )%is%pec)) .OR.     &
-                  &         (       sgg%Med(media%sggMiHx(i1, j1, k1-1))%Is%ThinSlot)) !&
-                  !& .AND.  (((              sggmiHz(i1, j1, k1-1) /=0).and.(.not.(sgg%med(               sggmiHz(i1, j1, k1-1) )%is%pec))) .AND.    &
-                  !&         ( .NOT. sgg%Med(sggmiHz(i1, j1, k1-1))%Is%ThinSlot))
+                  !bounds must be checked with nested if/else: Fortran .AND. does not short-circuit,
+                  !so k1-1/j1-1/i1-1 could still be evaluated out-of-bounds otherwise (bug fix 2026)
+                  if (k1 > BoundingBox%ZI) then
+                     oriX2 = (direccion == iEy) .AND.   &
+                     &        (((               media%sggMiHx(i1, j1, k1-1) ==0).or.(sgg%med(               media%sggMiHx(i1, j1, k1-1) )%is%pec)) .OR.     &
+                     &         (       sgg%Med(media%sggMiHx(i1, j1, k1-1))%Is%ThinSlot))
 
-                  oriX3 = (direccion == iEz) .AND.   &
-                  &        (((                media%sggMiHx(i1, j1-1, k1) ==0).or.(sgg%med(                media%sggMiHx(i1, j1-1, k1) )%is%pec)) .OR.     &
-                  &         (        sgg%Med(media%sggMiHx(i1, j1-1, k1))%Is%ThinSlot)) !&
-                  !& .AND.  (((              sggmiHy(i1, j1-1, k1) /=0).and.(.not.(sgg%med(                sggmiHy(i1, j1-1, k1) )%is%pec))) .AND.    &
-                  !&         ( .NOT.  sgg%Med(sggmiHy(i1, j1-1, k1))%Is%ThinSlot))
+                     oriY2 = (direccion == iEx) .AND.   &
+                     &        (((               media%sggMiHy(i1, j1, k1-1) ==0).or.(sgg%med(               media%sggMiHy(i1, j1, k1-1) )%is%pec)) .OR.      &
+                     &         (sgg%Med(       media%sggMiHy(i1, j1, k1-1))%Is%ThinSlot))
+                  else
+                     oriX2 = .FALSE.
+                     oriY2 = .FALSE.
+                  end if
 
-                  oriY2 = (direccion == iEx) .AND.   &
-                  &        (((               media%sggMiHy(i1, j1, k1-1) ==0).or.(sgg%med(               media%sggMiHy(i1, j1, k1-1) )%is%pec)) .OR.      &
-                  &         (sgg%Med(       media%sggMiHy(i1, j1, k1-1))%Is%ThinSlot))  !&
-                  !& .AND.  (((              sggmiHz(i1, j1, k1-1) /=0).and.(.not.(sgg%med(               sggmiHz(i1, j1, k1-1) )%is%pec))) .AND.     &
-                  !&         ( .NOT. sgg%Med(sggmiHz(i1, j1, k1-1))%Is%ThinSlot))
+                  if (j1 > BoundingBox%YI) then
+                     oriX3 = (direccion == iEz) .AND.   &
+                     &        (((                media%sggMiHx(i1, j1-1, k1) ==0).or.(sgg%med(                media%sggMiHx(i1, j1-1, k1) )%is%pec)) .OR.     &
+                     &         (        sgg%Med(media%sggMiHx(i1, j1-1, k1))%Is%ThinSlot))
 
-                  oriY3 = (direccion == iEz) .AND.   &
-                  &        (((               media%sggMiHy(i1-1, j1, k1) ==0).or.(sgg%med(               media%sggMiHy(i1-1, j1, k1) )%is%pec)) .OR.      &
-                  &         (       sgg%Med(media%sggMiHy(i1-1, j1, k1))%Is%ThinSlot))  !&
-                  !& .AND.  (((              sggmiHx(i1-1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHx(i1-1, j1, k1) )%is%pec))) .AND.     &
-                  !&         ( .NOT. sgg%Med(sggmiHx(i1-1, j1, k1))%Is%ThinSlot))
+                     oriZ2 = (direccion == iEx)  .AND.   &
+                     &        (((               media%sggMiHz(i1, j1-1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1, j1-1, k1) )%is%pec)) .OR.      &
+                     &         (       sgg%Med(media%sggMiHz(i1, j1-1, k1))%Is%ThinSlot))
+                  else
+                     oriX3 = .FALSE.
+                     oriZ2 = .FALSE.
+                  end if
 
-                  oriZ2 = (direccion == iEx)  .AND.   &
-                  &        (((               media%sggMiHz(i1, j1-1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1, j1-1, k1) )%is%pec)) .OR.      &
-                  &         (       sgg%Med(media%sggMiHz(i1, j1-1, k1))%Is%ThinSlot))  !&
-                  !& .AND.  (((              sggmiHy(i1, j1-1, k1) /=0).and.(.not.(sgg%med(               sggmiHy(i1, j1-1, k1) )%is%pec))) .AND.     &
-                  !&         ( .NOT. sgg%Med(sggmiHy(i1, j1-1, k1))%Is%ThinSlot))
+                  if (i1 > BoundingBox%XI) then
+                     oriY3 = (direccion == iEz) .AND.   &
+                     &        (((               media%sggMiHy(i1-1, j1, k1) ==0).or.(sgg%med(               media%sggMiHy(i1-1, j1, k1) )%is%pec)) .OR.      &
+                     &         (       sgg%Med(media%sggMiHy(i1-1, j1, k1))%Is%ThinSlot))
 
-
-                  oriZ3 = (direccion == iEy) .AND.   &
-                  &        (((               media%sggMiHz(i1-1, j1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1-1, j1, k1) )%is%pec)) .OR.      &
-                  &         (       sgg%Med(media%sggMiHz(i1-1, j1, k1))%Is%ThinSlot))  !&
-                  !& .AND.  (((              sggmiHx(i1-1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHx(i1-1, j1, k1) )%is%pec))) .AND.     &
-                  !&         ( .NOT. sgg%Med(sggmiHx(i1-1, j1, k1))%Is%ThinSlot))
+                     oriZ3 = (direccion == iEy) .AND.   &
+                     &        (((               media%sggMiHz(i1-1, j1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1-1, j1, k1) )%is%pec)) .OR.      &
+                     &         (       sgg%Med(media%sggMiHz(i1-1, j1, k1))%Is%ThinSlot))
+                  else
+                     oriY3 = .FALSE.
+                     oriZ3 = .FALSE.
+                  end if
 
                   if (oriX.or.oriX4) then
                      orientacion = iEx
