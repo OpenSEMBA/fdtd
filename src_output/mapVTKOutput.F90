@@ -700,6 +700,8 @@ contains
              (imed1 == 1 .and. imed2 == 1 .and. imed3 == 1 .and. imed4 == 1) .or. &
              (contaborde > 0)) isEdge = .true.
 
+         if (mData(imed)%is%ThinSlot) isEdge = .true.
+
          if ((iii > problemDimension(campo)%XE) .or. (jjj > problemDimension(campo)%YE) .or. &
              (kkk > problemDimension(campo)%ZE)) isEdge = .false.
 
