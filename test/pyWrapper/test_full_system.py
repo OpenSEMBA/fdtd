@@ -366,6 +366,7 @@ def test_towelHanger(tmp_path):
 @pytest.mark.wires
 @pytest.mark.termination
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_towel_rack_with_and_without_shorting_plane(tmp_path):
     """Verify a shorting plane leaves low-frequency input impedance unchanged."""
     def generate_debug_data():
