@@ -281,6 +281,35 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
     assert np.all(movie_probe.cell_init == np.array([1, 1, 1]))
 
 
+@pytest.mark.thinSlot
+@pytest.mark.vtk
+def test_map_vtk_includes_thin_slot_geometry(tmp_path):
+    input_filename = CASES_FOLDER + "slotted_box/slotted_box.fdtd.json"
+    solver = FDTD(
+        input_filename=input_filename,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+        flags=["-dmma", "-mapvtk"],
+    )
+    solver["general"]["numberOfSteps"] = 1
+
+    solver.run()
+
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
+
+    line_media_dict = createPropertyDictionary(
+        vtk_map_filename, celltype=3, property="mediatype"
+    )
+    face_media_dict = createPropertyDictionary(
+        vtk_map_filename, celltype=9, property="mediatype"
+    )
+
+    assert line_media_dict.get(4.5, 0) > 0
+    assert any(media_type >= 400.0 for media_type in face_media_dict)
+    assert sum(face_media_dict.values()) > 0
+
+
 @pytest.mark.conformal
 @pytest.mark.vtk
 def test_fill_conformal_vtk_sphere(tmp_path):

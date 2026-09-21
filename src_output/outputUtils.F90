@@ -703,10 +703,10 @@ contains
       else if (material%is%EDispersive .or. material%is%MDispersive .or. material%is%EDispersiveAnis .or. &
                material%is%MDispersiveAnis) then
          surface_output_media_type = 100.0_RKIND + media
-      else if (material%is%Dielectric .or. material%is%Anisotropic) then
-         surface_output_media_type = 200.0_RKIND + media
       else if (material%is%ThinSlot) then
          surface_output_media_type = 400.0_RKIND + media
+      else if (material%is%Dielectric .or. material%is%Anisotropic) then
+         surface_output_media_type = 200.0_RKIND + media
       else if (material%is%already_YEEadvanced_byconformal) then
          surface_output_media_type = 5.0_RKIND
       else if (material%is%split_and_useless) then
@@ -738,10 +738,10 @@ contains
       else if (material%is%EDispersive .or. material%is%MDispersive .or. material%is%EDispersiveAnis .or. &
                material%is%MDispersiveAnis) then
          edge_output_media_type = 1.5_RKIND
-      else if (material%is%Dielectric .or. material%is%Anisotropic) then
-         edge_output_media_type = 2.5_RKIND
       else if (material%is%ThinSlot) then
          edge_output_media_type = 4.5_RKIND
+      else if (material%is%Dielectric .or. material%is%Anisotropic) then
+         edge_output_media_type = 2.5_RKIND
       else if (material%is%ThinWire) then
          edge_output_media_type = 7.0_RKIND
          if (edge_touches_another_medium(field, position, problemInfo, media)) &
