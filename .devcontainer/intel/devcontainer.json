@@ -1,0 +1,57 @@
+{
+  "name": "semba-fdtd Intel dev",
+  "dockerComposeFile": [
+    "../../docker-compose.yml"
+  ],
+  "service": "intel-dev",
+  "workspaceFolder": "/home/developer/workspaces/fdtd",
+  "remoteUser": "developer",
+  "containerUser": "developer",
+  "overrideCommand": false,
+  "features": {
+    "ghcr.io/msclock/features/vcpkg:2": {},
+    "ghcr.io/devcontainers/features/python:1": {}
+  },
+  "remoteEnv": {
+    "HOME": "/home/developer",
+    "XDG_CONFIG_HOME": "/home/developer/.config",
+    "XDG_DATA_HOME": "/home/developer/.local/share",
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}"
+  },
+  "postCreateCommand": ".devcontainer/setup-python.sh",
+  "postStartCommand": "bash scripts/devcontainer-post-start.sh",
+  "customizations": {
+    "codespaces": {
+      "repositories": {
+        "lmdiazangulo/json-fortran": { "permissions": "read-all" },
+        "opensemba/fhash": { "permissions": "read-all" },
+        "reference-lapack/lapack": { "permissions": "read-all" },
+        "opensemba/ngtest": { "permissions": "read-all" },
+        "google/googletest": { "permissions": "read-all" }
+      }
+    },
+    "vscode": {
+      "extensions": [
+        "fortran-lang.linter-gfortran",
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools",
+        "ms-python.python",
+        "mhutchie.git-graph",
+        "matepek.vscode-catch2-test-adapter"
+      ],
+      "settings": {
+        "cmake.buildDirectory": "${workspaceFolder}/build-intel-dbg",
+        "cmake.configurePreset": "intel-dbg",
+        "cmake.buildPreset": "intel-dbg",
+        "cmake.useCMakePresets": "always",
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "fortran.fortls.path": "/usr/local/bin/fortls",
+        "fortran.fortls.notifyInit": true,
+        "fortran.fortls.disableAutoupdate": true,
+        "fortran.provide.hover": "Both",
+        "fortran.formatting.formatter": "fprettify"
+      }
+    }
+  }
+}

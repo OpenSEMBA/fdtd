@@ -62,7 +62,7 @@ for data in j2['datasetColl'][0]['data']:
     jt2 = np.append(jt2, float(data['value'][0]))    
     ji2 = np.append(ji2, float(data['value'][1]))    
 
-probe_names = solver.getSolvedProbeFilenames("mid_point_bundle")
+probe_names = solver.getSolvedProbeFolders("mid_point_bundle")
 mid_I = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
 

@@ -1,0 +1,71 @@
+{
+  "format": "FDTD Input file",
+  "general": {
+    "timeStep": 1e-11,
+    "numberOfSteps": 16
+  },
+  "boundary": {
+    "all": {
+      "type": "mur"
+    }
+  },
+  "mesh": {
+    "grid": {
+      "numberOfCells": [10, 10, 10],
+      "steps": {
+        "x": [0.1],
+        "y": [0.1],
+        "z": [0.1]
+      }
+    },
+    "coordinates": [
+      {
+        "id": 1,
+        "relativePosition": [4, 4, 4]
+      },
+      {
+        "id": 2,
+        "relativePosition": [5, 4, 4]
+      },
+      {
+        "id": 3,
+        "relativePosition": [6, 4, 4]
+      }
+    ],
+    "elements": [
+      {
+        "id": 1,
+        "type": "node",
+        "coordinateIds": [2]
+      },
+      {
+        "id": 10,
+        "type": "cell",
+        "intervals": [
+          [[1, 1, 1], [9, 9, 9]]
+        ]
+      },
+      {
+        "id": 2,
+        "type": "polyline",
+        "coordinateIds": [1, 2, 3]
+      }
+    ]
+  },
+  "sources": [
+    {
+      "type": "planewave",
+      "magnitudeFile": "gauss.exc",
+      "elementIds": [10],
+      "direction": {
+        "theta": 0.0,
+        "phi": 0.0
+      },
+      "polarization": {
+        "theta": 1.5708,
+        "phi": 0.0
+      }
+    }
+  ],
+  "probes": []
+}

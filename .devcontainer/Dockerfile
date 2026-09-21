@@ -1,1 +1,0 @@
-FROM intel/oneapi-hpckit

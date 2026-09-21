@@ -1,6 +1,6 @@
 {
     "format": "FDTD Input file",
-    "__comments": "Planewave passing through an empty box.",
+    "__comments": "Planewave pulse slowed by a dielectric box for movie output.",
 
     "general": {
         "timeStep": 0.05e-9,
@@ -13,14 +13,28 @@
 
     "mesh": {
         "grid": {
-            "numberOfCells": [6, 6, 6],
+            "numberOfCells": [30, 30, 10],
             "steps": { "x": [0.01], "y": [0.01], "z": [0.01] }
         },
         "elements": [
-            {"id": 1, "type": "cell", "name": "pw-box", "intervals": [ [ [2, 2, 2], [4, 4, 4] ] ]},
-            {"id": 2, "type": "cell", "name": "movie-box", "intervals": [ [ [0, 0, 0], [6, 6, 6] ] ]}
+            {"id": 1, "type": "cell", "name": "pw-box", "intervals": [ [ [-1, -1, -1], [2, 31, 11] ] ]},
+            {"id": 2, "type": "cell", "name": "movie-box", "intervals": [ [ [0, 0, 0], [30, 30, 10] ] ]},
+            {"id": 3, "type": "cell", "name": "slow-medium", "intervals": [ [ [2, 0, 0], [30, 30, 10] ] ]}
         ]
     },
+
+    "materials": [
+        {
+            "id": 1,
+            "name": "slow-medium",
+            "type": "isotropic",
+            "relativePermittivity": 169
+        }
+    ],
+
+    "materialAssociations": [
+        {"materialId": 1, "elementIds": [3]}
+    ],
 
     "sources": [
         {
@@ -28,12 +42,12 @@
             "magnitudeFile": "gauss_1GHz.exc",
             "elementIds": [1],
             "direction": {
-                "theta": 0.0,
+                "theta": 1.5708,
                 "phi": 0.0
             },
             "polarization": {
                 "theta": 1.5708,
-                "phi": 0.0
+                "phi": 1.5708
             }
         }
     ],

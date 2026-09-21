@@ -19,9 +19,9 @@ solver.run()
 
 # %%
 resistanceBulkProbe = pW.Probe( \
-    solver.getSolvedProbeFilenames("Bulk probe Resistance")[0])
+    solver.getSolvedProbeFolders("Bulk probe Resistance")[0])
 nodalBulkProbe = pW.Probe( \
-    solver.getSolvedProbeFilenames("Bulk probe Nodal Source")[0])
+    solver.getSolvedProbeFolders("Bulk probe Nodal Source")[0])
 excitation = pW.ExcitationFile( \
     excitation_filename=solver.getExcitationFile("predefinedExcitation")[0])
 

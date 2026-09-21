@@ -2,22 +2,34 @@ module probes_m
 
     use mtln_types_m, only: PROBE_TYPE_CURRENT, PROBE_TYPE_VOLTAGE
 #ifdef CompileWithMPI
-    use FDETYPES_m, only: SUBCOMM_MPI, RKIND
+    use FDETYPES_m, only: SUBCOMM_MPI, RKIND, BUFSIZE
 #else
-    use FDETYPES_m, only: RKIND
+    use FDETYPES_m, only: RKIND, BUFSIZE
 #endif
     use FDETYPES_m, only: RKIND, RKIND_TIEMPO
 
     implicit none
+
+    integer, parameter, public :: MTLN_PROBE_OUTPUT_UNDECLARED = -1
+    integer, parameter, public :: MTLN_PROBE_OUTPUT_DECLARED = 0
+    integer, parameter, public :: MTLN_PROBE_OUTPUT_ACTIVE = 1
+    integer, parameter, public :: MTLN_PROBE_OUTPUT_COMPLETE = 2
+    integer, parameter, public :: MTLN_PROBE_OUTPUT_FAILED = 3
 
     type, public :: probe_t
         integer :: type
         real(kind=RKIND), allocatable, dimension(:) :: t
         real(kind=RKIND), allocatable, dimension(:,:) :: val
         real(kind=RKIND_TIEMPO) :: dt
-        integer :: index, current_frame, unit
+        integer :: index, current_frame, unit = 0
         character(len=:), allocatable :: name
         logical :: in_layer = .true.
+        character(len=BUFSIZE) :: output_path = ''
+        character(len=BUFSIZE) :: output_diagnostic = ''
+        integer :: output_state = MTLN_PROBE_OUTPUT_UNDECLARED
+        integer :: output_writer_rank = -1
+        logical :: output_is_open = .false.
+        logical :: output_writer = .false.
 
     contains
         procedure :: resizeFrames

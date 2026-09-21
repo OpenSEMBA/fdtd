@@ -59,12 +59,12 @@ solver.cleanUp()
 solver.run()
 
 #%%
-outside = Probe(solver.getSolvedProbeFilenames("outside")[0]) 
+outside = Probe(solver.getSolvedProbeFolders("outside")[0])
 plt.plot(outside["time"].to_numpy(),  outside["field"].to_numpy(), label='outside')
 plt.xlim(0, 5e-8)
 plt.legend()
 #%%
-inside = Probe(solver.getSolvedProbeFilenames("inside")[0])   
+inside = Probe(solver.getSolvedProbeFolders("inside")[0])
 plt.plot(inside["time"].to_numpy(), inside["field"].to_numpy(), label='inside')
 plt.xlim(0, 5e-8)
 plt.legend()

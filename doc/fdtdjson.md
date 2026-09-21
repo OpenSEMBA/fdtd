@@ -5,6 +5,26 @@ Being in JSON, it can be easily navigated with most text editors, such as Visual
 There are also multiple tools to read and write them.
 This document assumes that you are familiar with the basic JSON notation, a brief explanation on this notation can be found [here](https://www.w3schools.com/js/js_json_syntax.asp).
 
+## Contents
+
+- [Examples](#examples)
+- [FDTD-JSON objects description](#fdtd-json-objects-description)
+  - [`general`, `background`, and `boundary`](#general)
+  - [`mesh`](#mesh)
+  - [`materials`](#materials)
+  - [`materialAssociations`](#materialassociations)
+  - [`probes`](#probes)
+  - [`sources`](#sources)
+- [Material types](#bulk-materials)
+  - [`lumped` models](#lumped)
+  - [Wire and multiwire materials](#wire)
+  - [Terminals and connectors](#terminal)
+- [Probe types](#probe-types)
+- [Probe domains](#domain)
+- [Source types](#planewave)
+
+## Examples
+
 The following are examples of valid inputs:
 
  1. An empty space illuminated by a plane wave: [planewave.fdtd.json](testData/input_examples/planewave.fdtd.json). The field at a point close to the center is recorded.

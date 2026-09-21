@@ -452,7 +452,8 @@ module NFDETypes_m
    ! of ThinSlots in ORIGINAL
    !--------------------------------------------------------------------------
    type, public :: ThinSlot_t
-      type(ThinSlotComp_t), dimension(:), pointer :: tgc => NULL ()
+      !always allocated contiguously; declared contiguous to avoid copy-in/copy-out temporaries when passed to addThinSlotComp
+      type(ThinSlotComp_t), dimension(:), pointer, contiguous :: tgc => NULL ()
       real(kind=RK) :: width = 0
       integer(kind=4) :: n_tgc = 0
       integer(kind=4) :: n_tgc_max = 0
@@ -461,7 +462,8 @@ module NFDETypes_m
    ! List of the different thin Slots that were found in the file
    !--------------------------------------------------------------------------
    type, public :: ThinSlots_t
-      type(ThinSlot_t), dimension(:), pointer :: tg => NULL ()
+      !always allocated contiguously; declared contiguous to avoid copy-in/copy-out temporaries when passed to addThinSlot
+      type(ThinSlot_t), dimension(:), pointer, contiguous :: tg => NULL ()
       integer(kind=4) :: n_tg = 0
       integer(kind=4) :: n_tg_max = 0
    end type ThinSlots_t

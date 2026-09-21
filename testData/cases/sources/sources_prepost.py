@@ -93,16 +93,16 @@ solver["mesh"]["elements"][5]["coordinateIds"] = [4]
 solver.cleanUp()
 solver.run()
 #%%
-probe_names = solver.getSolvedProbeFilenames("probe_end")
+probe_names = solver.getSolvedProbeFolders("probe_end")
 # p7I = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 pendI = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 pendV = Probe(list(filter(lambda x: '_V_' in x, probe_names))[0])
 
-probe_names = solver.getSolvedProbeFilenames("probe_c8")
+probe_names = solver.getSolvedProbeFolders("probe_c8")
 p8I = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 p8V = Probe(list(filter(lambda x: '_V_' in x, probe_names))[0])
 
-# probe_names = solver.getSolvedProbeFilenames("probe_c7")
+# probe_names = solver.getSolvedProbeFolders("probe_c7")
 # p7I = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
 

@@ -52,9 +52,9 @@ den = [L, R]
 system = signal.TransferFunction(num, den)
 tout, I_out, _ = signal.lsim(system, U=V_in, T=time)
 
-InitialBulk_probe = Probe(solver.getSolvedProbeFilenames("Bulk Initial probe")[0])
-TopBulk_probe = Probe(solver.getSolvedProbeFilenames("Bulk Top probe")[0])
-BottomBulk_probe = Probe(solver.getSolvedProbeFilenames("Bulk Bottom probe")[0])
+InitialBulk_probe = Probe(solver.getSolvedProbeFolders("Bulk Initial probe")[0])
+TopBulk_probe = Probe(solver.getSolvedProbeFolders("Bulk Top probe")[0])
+BottomBulk_probe = Probe(solver.getSolvedProbeFolders("Bulk Bottom probe")[0])
 
 plt.figure()
 plt.plot(InitialBulk_probe['time'].to_numpy(), InitialBulk_probe['current'].to_numpy(), label='Initial current on bulk', color='blue')

@@ -1114,7 +1114,6 @@ contains
             fichsnap=trim(adjustl(nEntradaRoot))//'_snap_'//trim(adjustl(chinstant))//'_'// &
             trim(adjustl(whoamishort))
 
-#ifdef CompileWithHDF
             ficherito=trim(adjustl(fichsnap))//'.h5' 
             call openclosedelete(ficherito)
             
@@ -1122,7 +1121,6 @@ contains
             ini_jbox + b%Ex%YI , ini_jbox + dimysnap + b%Ex%YI , &
             ini_kbox + b%Ex%ZI , ini_kbox + dimzsnap + b%Ex%ZI , snap)
             
-#endif
             !             open (35,file=trim(adjustl(fichsnap))//'.bin')
             !             write (35,*) '!END'
             !             close (35,status='delete')
@@ -1133,13 +1131,11 @@ contains
             !             write (35) (Punto%PhysCoor(iHx)%x(i+b%Hx%XI),i = ini_iboxsin, fin_iboxsin)
             !             write (35) (Punto%PhysCoor(iHy)%y(j+b%Hy%YI),j = ini_jboxsin, fin_jboxsin)
             !             write (35) (Punto%PhysCoor(iHz)%z(k+b%Hz%ZI),k = ini_kboxsin, fin_kboxsin)
-            !#ifndef CompileWithHDF
             !             do k = ini_kbox, fin_kbox
             !                do j = ini_jbox, fin_jbox
             !                       write (35) (snap(i,j,k,1),i = ini_ibox, fin_ibox)
             !                end do
             !             end do
-            !#endif
             !             close (35)
 
             write(dubuf,*)     trim(adjustl(whoami))//' Written Snap file at n= ',n,' max field over ',maxval(snap),'>',snapLevel

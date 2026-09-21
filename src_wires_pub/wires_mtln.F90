@@ -18,7 +18,8 @@ module Wire_bundles_mtln_m
    real(kind=RKIND_wires) :: eps0,mu0
    private   
 
-   public InitWires_mtln, AdvanceWiresE_mtln, GetSolverPtr, solveMTLNProblem, reportSimulationEnd
+   public InitWires_mtln, AdvanceWiresE_mtln, GetSolverPtr, initializeMTLNProblem, runMTLNProblem, reportSimulationEnd
+   public InitMTLNObservation, UpdateMTLNObservation, CloseMTLNObservation
    type(mtln_solver_t), target :: mtln_solver
    integer, dimension(:,:), allocatable :: indexMap
 
@@ -197,12 +198,29 @@ contains
       return
    end function
 
-   subroutine solveMTLNProblem(mtln_parsed, nEntradaRoot)
+   subroutine InitMTLNObservation(nEntradaRoot)
+      character(len=*), intent(in) :: nEntradaRoot
+      call mtln_solver%initObservation(nEntradaRoot)
+   end subroutine
+
+   subroutine UpdateMTLNObservation(step)
+      integer, intent(in) :: step
+      call mtln_solver%updateObservation(step)
+   end subroutine
+
+   subroutine CloseMTLNObservation()
+      call mtln_solver%closeObservation()
+   end subroutine
+
+   subroutine initializeMTLNProblem(mtln_parsed, nEntradaRoot)
       type(mtln_t) :: mtln_parsed
       character(len=*), intent(in) :: nEntradaRoot
       mtln_solver = mtlnCtor(mtln_parsed)
       call mtln_solver%updatePULTerms()
       call mtln_solver%initObservation(nEntradaRoot)
+   end subroutine
+
+   subroutine runMTLNProblem()
       call mtln_solver%run()
       call mtln_solver%closeObservation()
    end subroutine

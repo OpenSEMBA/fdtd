@@ -52,7 +52,7 @@ solver.cleanUp()
 solver.run()
 
 # %% Postprocess
-back = Probe(solver.getSolvedProbeFilenames("back")[0])
+back = Probe(solver.getSolvedProbeFolders("back")[0])
 # plt.plot(back['time'], back['incident'], label='incident')    
 # plt.plot(back['time'],  back['field'], label='back')
 # plt.legend()

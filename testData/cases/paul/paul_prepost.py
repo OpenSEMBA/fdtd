@@ -4,12 +4,19 @@ from numpy.fft import *
 import matplotlib.pyplot as plt
 import scipy.constants
 
-import sys, os
+import sys, os, shutil, tempfile
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../../', 'src_pyWrapper'))
 SEMBA_EXE = '../../../build/bin/semba-fdtd'
 OUTPUTS_FOLDER = '../../outputs/'
 CASES_FOLDER = '../../cases/'
 from pyWrapper import *
+
+
+def probe_from_fixture(filename):
+    folder = os.path.join(tempfile.mkdtemp(), os.path.splitext(os.path.basename(filename))[0])
+    os.mkdir(folder)
+    shutil.copy2(filename, folder)
+    return Probe(folder)
 #%%
 fn = CASES_FOLDER + 'paul/paul_8_6_triangle.fdtd.json'
 
@@ -17,11 +24,11 @@ solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE)
 solver.run()
 
 #%%
-p_expected = Probe(
-    OUTPUTS_FOLDER+'paul_8_6_triangle.fdtd_start_voltage_wire_V_5_5_1.dat')
+p_expected = probe_from_fixture(
+    OUTPUTS_FOLDER + 'paul_8_6_triangle.fdtd_start_voltage_wire_V_5_5_1.dat')
 
-probe_voltage = solver.getSolvedProbeFilenames("start_voltage")[0]
-probe_current = solver.getSolvedProbeFilenames("end_current")[0]
+probe_voltage = solver.getSolvedProbeFolders("start_voltage")[0]
+probe_current = solver.getSolvedProbeFolders("end_current")[0]
 probe_files = [probe_voltage, probe_current]
 p_solved = Probe(probe_files[0])
 

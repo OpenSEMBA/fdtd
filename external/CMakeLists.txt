@@ -26,3 +26,5 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 	endif()
 	# set(NGSPICE_LIB ngspice)
 endif()
+
+add_subdirectory("xdmf-hdf5/")

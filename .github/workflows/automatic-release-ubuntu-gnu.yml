@@ -3,54 +3,41 @@ name: automatic-release-ubuntu-gnu
 on:
   push:
     branches:
-      - main 
+      - main
 
 jobs:
-  
-  builds-and-test:
+  build-release:
     runs-on: ubuntu-latest
     strategy:
-      matrix: 
+      matrix:
         build-type: ["Release"]
-        mpi: ["OFF"]
         mtln: ["ON"]
-        hdf: ["ON"]
+        include:
+          - mpi: "OFF"
+            suffix: ""
+            title-suffix: ""
+          - mpi: "ON"
+            suffix: "-mpi"
+            title-suffix: " MPI"
 
-    steps:       
+    steps:
     - name: Checkout
       uses: actions/checkout@v4
       with:
         submodules: 'recursive'
-      
+
     - name: Install required packages
       run: |
         sudo apt update
         sudo apt install libhdf5-dev libopenmpi-dev
-        
+
     - name: CMake build
       run: |
         cmake -S . -B build \
-          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
-          -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
-          -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
-          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
+          -DSEMBA_FDTD_ENABLE_MPI=${{ matrix.mpi }} \
+          -DSEMBA_FDTD_ENABLE_MTLN=${{ matrix.mtln }}
         cmake --build build -j
-      
-    - name: Run fdtd unit tests 
-      run: |
-        build/bin/fdtd_tests
-
-    - name: Install python wrapper requirements
-      run: |
-        python -m pip install -r requirements.txt
-
-    - name: Run wrapper tests
-      env:
-        SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
-        SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
-        SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
-      run: |
-        python -m pytest test
 
     - name: Get current date
       id: date
@@ -58,14 +45,14 @@ jobs:
 
     - name: Creating archive
       run: |
-        tar -czvf semba-fdtd-ubuntu-gnu.tar.gz build/bin/* LICENSE
+        tar -czvf semba-fdtd-ubuntu-gnu${{ matrix.suffix }}.tar.gz build/bin/* LICENSE
 
     - name: Generating release
       uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "${{ steps.date.outputs.date }}-ubuntu-gnu"
+        automatic_release_tag: "${{ steps.date.outputs.date }}-ubuntu-gnu${{ matrix.suffix }}"
         prerelease: false
-        title: "${{ steps.date.outputs.date }} Ubuntu GNU  dev. build"
+        title: "${{ steps.date.outputs.date }} Ubuntu GNU${{ matrix.title-suffix }} dev. build"
         files: |
-          semba-fdtd-ubuntu-gnu.tar.gz
+          semba-fdtd-ubuntu-gnu${{ matrix.suffix }}.tar.gz

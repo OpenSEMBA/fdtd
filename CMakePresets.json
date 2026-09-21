@@ -6,7 +6,8 @@
       "generator": "Ninja",
       "binaryDir": "build-rls/",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "SEMBA_FDTD_ENABLE_MPI": "OFF"
       }
     },
     {
@@ -15,6 +16,22 @@
       "binaryDir": "build-dbg/",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "rls-mpi",
+      "inherits": "rls",
+      "binaryDir": "build-rls-mpi/",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_MPI": "ON"
+      }
+    },
+    {
+      "name": "dbg-mpi",
+      "inherits": "dbg",
+      "binaryDir": "build-dbg-mpi/",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_MPI": "ON"
       }
     },
     {
@@ -57,6 +74,52 @@
       "cacheVariables": {
         "SEMBA_FDTD_ENABLE_MTLN": "OFF"
       }
+    },
+    {
+      "name": "intel-dbg",
+      "inherits": "intel-rls",
+      "binaryDir": "build-intel-dbg/",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "rls",
+      "configurePreset": "rls"
+    },
+    {
+      "name": "dbg",
+      "configurePreset": "dbg"
+    },
+    {
+      "name": "rls-mpi",
+      "configurePreset": "rls-mpi"
+    },
+    {
+      "name": "dbg-mpi",
+      "configurePreset": "dbg-mpi"
+    },
+    {
+      "name": "rls-nomtln",
+      "configurePreset": "rls-nomtln"
+    },
+    {
+      "name": "dbg-nomtln",
+      "configurePreset": "dbg-nomtln"
+    },
+    {
+      "name": "intel-rls",
+      "configurePreset": "intel-rls"
+    },
+    {
+      "name": "intel-rls-nomtln",
+      "configurePreset": "intel-rls-nomtln"
+    },
+    {
+      "name": "intel-dbg",
+      "configurePreset": "intel-dbg"
     }
   ]
 }
