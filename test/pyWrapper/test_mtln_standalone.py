@@ -9,6 +9,7 @@ from test.utils.utils import *
 @pytest.mark.wires
 @pytest.mark.multiwire
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_paul_8_6_square(tmp_path):
     fn = CASES_FOLDER + "paul/paul_8_6_square.fdtd.json"
     setNgspice(tmp_path)
@@ -40,6 +41,7 @@ def test_paul_8_6_square(tmp_path):
 @pytest.mark.wires
 @pytest.mark.multiwire
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_paul_8_6_triangle(tmp_path):
     fn = CASES_FOLDER + "paul/paul_8_6_triangle.fdtd.json"
     setNgspice(tmp_path)
@@ -69,6 +71,7 @@ def test_paul_8_6_triangle(tmp_path):
 @pytest.mark.wires
 @pytest.mark.multiwire
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_paul_9_6(tmp_path):
     fn = CASES_FOLDER + "paul/paul_9_6.fdtd.json"
     setNgspice(tmp_path)
@@ -108,6 +111,7 @@ def test_paul_9_6(tmp_path):
 @pytest.mark.wires
 @pytest.mark.multiwire
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_spice_multilines_opamp(tmp_path):
     fn = CASES_FOLDER + "multilines_opamp/multilines_opamp.fdtd.json"
     setNgspice(tmp_path)
@@ -136,6 +140,7 @@ def test_spice_multilines_opamp(tmp_path):
 @pytest.mark.spice
 @pytest.mark.wires
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_spice_connectors_diode(tmp_path):
     fn = CASES_FOLDER + "spice_connectors/spice_connectors.fdtd.json"
     setNgspice(tmp_path)
@@ -168,6 +173,7 @@ def test_spice_connectors_diode(tmp_path):
 @pytest.mark.wires
 @pytest.mark.multiwire
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_line_multiline_junction(tmp_path):
     fn = CASES_FOLDER + "line_multiline_junction/line_multiline_junction.fdtd.json"
     setNgspice(tmp_path)
@@ -226,6 +232,7 @@ def test_spice_opamp_saturation(tmp_path):
 @pytest.mark.spice
 @pytest.mark.wires
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_spice_zener(tmp_path):
     fn = CASES_FOLDER + "zener/zener.fdtd.json"
     setNgspice(tmp_path)

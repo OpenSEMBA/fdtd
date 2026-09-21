@@ -12,22 +12,24 @@ module mtl_m
     implicit none
 #ifdef CompileWithMPI
 
-    integer, parameter :: COMM_SEND = 1
-    integer, parameter :: COMM_RECV = -1
-    integer, parameter :: COMM_NONE = 0
-    integer, parameter :: COMM_FIELD = 1
-    integer, parameter :: COMM_V = 2
-    integer, parameter :: COMM_BOTH = 3
+    integer(kind=4), parameter :: COMM_SEND = 1
+    integer(kind=4), parameter :: COMM_RECV = -1
+    integer(kind=4), parameter :: COMM_NONE = 0
+    integer(kind=4), parameter :: COMM_FIELD = 1
+    integer(kind=4), parameter :: COMM_V = 2
+    integer(kind=4), parameter :: COMM_BOTH = 3
+
+    integer(kind=4), parameter :: SEGMENT_GAP_ORIENTATION = -99
 
     type, public :: communicator_t
-        integer :: field_index = -1, v_index = -1
-        integer :: comm_task = COMM_NONE
-        integer :: comm_type = COMM_NONE
-        integer :: delta_rank = 0
+        integer(kind=4) :: field_index = -1, v_index = -1
+        integer(kind=4) :: comm_task = COMM_NONE
+        integer(kind=4) :: comm_type = COMM_NONE
+        integer(kind=4) :: delta_rank = 0
     end type
     type, public :: comm_t
         type(communicator_t), dimension(:), allocatable :: comms
-        integer :: rank
+        integer(kind=4) :: rank
     end type
 #endif
 
@@ -41,7 +43,7 @@ module mtl_m
         real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 0.0
 
         character(len=:), allocatable :: parent_name
-        integer :: conductor_in_parent
+        integer(kind=4) :: conductor_in_parent
         type(transfer_impedance_per_meter_t) :: transfer_impedance
         type(transfer_impedance_per_meter_t), dimension(:), allocatable :: initial_connector_transfer_impedances, end_connector_transfer_impedances
         type(segment_t), dimension(:), allocatable :: segments
@@ -95,7 +97,7 @@ contains
     subroutine initLC(this, lpul, cpul)
         class(mtl_t) :: this
         real(kind=rkind), intent(in), dimension(:,:) :: lpul, cpul
-        integer :: i
+        integer(kind=4) :: i
         do i = 1, size(this%lpul, 1)
             this%lpul(i,:,:) = lpul(:,:)
         end do
@@ -115,7 +117,7 @@ contains
         type(segment_t), dimension(:), allocatable, intent(in) :: segments
         real(kind=RKIND_TIEMPO), intent(in) :: dt
         character(len=*), intent(in) :: parent_name
-        integer, intent(in) :: conductor_in_parent
+        integer(kind=4), intent(in) :: conductor_in_parent
         type(transfer_impedance_per_meter_t), intent(in) :: transfer_impedance
 
         integer(kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
@@ -250,7 +252,7 @@ contains
 
     subroutine allocatePULMatrices(this)
         class(mtl_t) :: this
-        integer :: n
+        integer(kind=4) :: n
         n = this%number_of_conductors
         allocate(this%lpul(size(this%step_size, 1),     n, n), source = 0.0_rkind)
         allocate(this%cpul(size(this%step_size, 1) + 1, n, n), source = 0.0_rkind)
@@ -261,7 +263,7 @@ contains
     subroutine computeLCParameters(this, multipolar_expansion)
         class(mtl_t) :: this
         type(multipolar_expansion_t), intent(in) :: multipolar_expansion
-        integer :: i, j, k, n
+        integer(kind=4) :: i, j, k, n
         real(kind=rkind), dimension(:,:), allocatable :: ppul
         allocate(ppul(size(this%cpul,2),size(this%cpul,3)))
         do i = 1, size(this%segments)
@@ -277,7 +279,7 @@ contains
         class(mtl_t) :: this
         real(kind=rkind), intent(in) :: rad
         real(kind=RKIND_wires) :: invMu
-        integer :: i
+        integer(kind=4) :: i
         real(kind=rkind) :: d1, d2
         invMu = 1.0/mu_vacuum
         do i = 1, size(this%segments)
@@ -305,7 +307,7 @@ contains
 
     subroutine initDirections(this)
         class(mtl_t) :: this
-        integer :: j
+        integer(kind=4) :: j
 
         this%du = reshape(source = [(this%step_size(j)*eye(this%number_of_conductors) , j = 1, size(this%step_size))], &
                               shape = [size(this%step_size), this%number_of_conductors, this%number_of_conductors], &
@@ -335,7 +337,7 @@ contains
         class(mtl_t) :: this
         real(kind=rkind), dimension(size(this%step_size,1), this%number_of_conductors) :: res
         real(kind=rkind), dimension(2*this%number_of_conductors) :: ev
-        integer :: k
+        integer(kind=4) :: k
 
         do k = 1, size(this%step_size, 1)
             ev = getEigenValues(dble(matmul(this%lpul(k,:,:), this%cpul(k+1,:,:))))
@@ -353,7 +355,7 @@ contains
     subroutine initRG(this, rpul, gpul)
         class(mtl_t) :: this
         real(kind=rkind), intent(in), dimension(:,:) :: rpul, gpul
-        integer :: i
+        integer(kind=4) :: i
         do i = 1, size(this%rpul, 1)
             this%rpul(i,:,:) = rpul(:,:)
         end do
@@ -365,7 +367,7 @@ contains
 
     subroutine setTimeStep(this, numberOfSteps, finalTime)
         class(mtl_t) :: this
-        integer, intent(in) :: numberOfSteps
+        integer(kind=4), intent(in) :: numberOfSteps
         real(kind=rkind), intent(in) ::finalTime
         this%dt = finalTime/numberOfSteps
     end subroutine
@@ -378,7 +380,7 @@ contains
         real(kind=rkind), intent(in), dimension(:) :: step_size
         type(segment_t), intent(in), dimension(:) :: segments
         integer(kind=4), allocatable, dimension(:,:), intent(in) :: layer_indices
-        integer :: n, j
+        integer(kind=4) :: n, j
         n =  0
         do j = 1, size(layer_indices, 1)
             n = n + layer_indices(j,2) - layer_indices(j,1) + 1
@@ -396,7 +398,7 @@ contains
             if (j /= size(layer_indices,1)) then
                 this%step_size(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%step_size(n + layer_indices(j,2) - layer_indices(j,1))
                 this%segments(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%segments(n + layer_indices(j,2) - layer_indices(j,1))
-                this%segments(n + layer_indices(j,2) - layer_indices(j,1) + 1)%orientation = -1
+                this%segments(n + layer_indices(j,2) - layer_indices(j,1) + 1)%orientation = SEGMENT_GAP_ORIENTATION
                 n = n + 1
             end if
             n = n + layer_indices(j,2) - layer_indices(j,1) + 1
@@ -408,8 +410,8 @@ contains
     subroutine initCommunicators(this, alloc_z)
         class(mtl_t) :: this
         integer(kind =4), dimension(2) :: alloc_z
-        integer :: j, n, z
-        integer :: rank, ierr
+        integer(kind=4) :: j, n, z
+        integer(kind=4) :: rank, ierr
         integer(kind =4) :: z_init, z_end
         type(communicator_t), dimension(:), allocatable :: aux_comm
 
@@ -421,7 +423,7 @@ contains
         z_end = alloc_z(2)
 
         do j = 1, size(this%segments)
-            if (this%segments(j)%orientation == -1) cycle
+            if (this%segments(j)%orientation == SEGMENT_GAP_ORIENTATION) cycle
             
             z = this%segments(j)%z
             if (.not. isSegmentZOriented(j) .and. ((z == z_end) .or. (z == z_init + 1))) then 
@@ -506,58 +508,58 @@ contains
     contains    
 
     logical function isSegmentZOriented(j)
-        integer, intent(in) :: j
+        integer(kind=4), intent(in) :: j
         isSegmentZOriented = (abs(this%segments(j)%orientation) == 3)
     end function
 
     logical function isSegmentZPositive(j)
-        integer, intent(in) :: j
+        integer(kind=4), intent(in) :: j
         isSegmentZPositive = (this%segments(j)%orientation == 3)
     end function
 
     logical function isSegmentZNegative(j)
-        integer, intent(in) :: j
+        integer(kind=4), intent(in) :: j
         isSegmentZNegative = (this%segments(j)%orientation == -3)
     end function
 
     logical function isSegmentBeforeLayerEnd(j, z_end)
-        integer, intent(in) :: j, z_end
-        integer :: z
+        integer(kind=4), intent(in) :: j, z_end
+        integer(kind=4) :: z
         z = this%segments(j)%z
         isSegmentBeforeLayerEnd = (z==z_end-1)
     end function
 
     logical function isSegmentAfterLayerEnd(j, z_end)
-        integer, intent(in) :: j, z_end
-        integer :: z
+        integer(kind=4), intent(in) :: j, z_end
+        integer(kind=4) :: z
         z = this%segments(j)%z
         isSegmentAfterLayerEnd = (z==z_end)
     end function
     
     logical function isSegmentBeforeLayerInit(j, z_init)
-        integer, intent(in) :: j, z_init
-        integer :: z
+        integer(kind=4), intent(in) :: j, z_init
+        integer(kind=4) :: z
         z = this%segments(j)%z
         isSegmentBeforeLayerInit = (z==z_init)
     end function
     
     logical function isSegmentAfterLayerInit(j, z_init)
-        integer, intent(in) :: j, z_init
-        integer :: z
+        integer(kind=4), intent(in) :: j, z_init
+        integer(kind=4) :: z
         z = this%segments(j)%z
         isSegmentAfterLayerInit = (z==z_init+1)
     end function
 
     logical function isSegmentNextToLayerEnd(j, z_end)
-        integer, intent(in) :: j, z_end
-        integer :: z
+        integer(kind=4), intent(in) :: j, z_end
+        integer(kind=4) :: z
         z = this%segments(j)%z
         isSegmentNextToLayerEnd = (z==z_end) .or. (z==z_end-1)
     end function
 
     logical function isSegmentNextToLayerInit(j, z_init)
-        integer, intent(in) :: j, z_init
-        integer :: z
+        integer(kind=4), intent(in) :: j, z_init
+        integer(kind=4) :: z
         z = this%segments(j)%z
         isSegmentNextToLayerInit = (z==z_init) .or. (z==z_init+1)
     end function
