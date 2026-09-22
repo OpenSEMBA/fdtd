@@ -831,7 +831,7 @@ contains
         character(len=256) :: buff
         allocate(res(0))
         if (termination%source%path_to_excitation /= "") then
-            call addResistance(res, node%name, node%name, node%name//"_S", 1e-10)
+            call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10,rkind))
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
                 call addVSource(res,node%name//"_S", node%name//"_S", node%name//"_genR", termination%source%path_to_excitation)
                 call addResistance(res,node%name//"_S", node%name//"_genR",end_node, termination%source%resistance)
@@ -841,7 +841,7 @@ contains
                 call addResistance(res,node%name//"_S", end_node, node%name//"_S",termination%source%resistance)
             end if
         else
-            call addResistance(res,node%name, node%name, end_node,1e-10)
+            call addResistance(res,node%name, node%name, end_node, real(1e-10,rkind))
         end if
         
         call addTransmissionLineEquivalent(res, node)
@@ -849,9 +849,8 @@ contains
     end function
 
 
-    function writeOpenNode(node, termination, end_node) result(res)
+    function writeOpenNode(node, end_node) result(res)
         type(nw_node_t), intent(in) :: node
-        type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
 
@@ -867,33 +866,35 @@ contains
         type(termination_t), intent(in) :: termination
         character(len=256), allocatable :: res(:)
         character(len=*), intent(in) :: end_node
-        if (termination%termination_type == TERMINATION_SERIES) then 
+
+        select case (termination%termination_type)
+        case(TERMINATION_SERIES)
             res = writeSeriesNode(node, termination, end_node)
-        else if (termination%termination_type == TERMINATION_PARALLEL) then 
+        case(TERMINATION_PARALLEL)
             res = writeParallelRLCNode(node, termination, end_node)
-        else if (termination%termination_type == TERMINATION_RsLCp) then 
+        case(TERMINATION_RsLCp)
             res = writeXsYZpNode(node, termination, end_node, XYZ = "RLC")
-        else if (termination%termination_type == TERMINATION_LsRCp) then 
+        case(TERMINATION_LsRCp)
             res = writeXsYZpNode(node, termination, end_node, XYZ = "LRC")
-        else if (termination%termination_type == TERMINATION_CsLRp) then 
+        case(TERMINATION_CsLRp)
             res = writeXsYZpNode(node, termination, end_node, XYZ = "CLR")
-        else if (termination%termination_type == TERMINATION_RLsCp) then 
+        case(TERMINATION_RLsCp)
             res = writeXYsZpNode(node, termination, end_node, XYZ = "RLC")
-        else if (termination%termination_type == TERMINATION_RCsLp) then 
+        case(TERMINATION_RCsLp)
             res = writeXYsZpNode(node, termination, end_node, XYZ = "RCL")
-        else if (termination%termination_type == TERMINATION_LCsRp) then 
+        case(TERMINATION_LCsRp)
             res = writeXYsZpNode(node, termination, end_node, XYZ = "LCR")
-        else if (termination%termination_type == TERMINATION_SHORT) then 
+        case(TERMINATION_SHORT)
             res = writeShortNode(node, termination , end_node)
-        else if (termination%termination_type == TERMINATION_OPEN) then 
-            res = writeOpenNode(node, termination , end_node)
-        else if (termination%termination_type == TERMINATION_CIRCUIT) then 
+        case(TERMINATION_OPEN)
+            res = writeOpenNode(node, end_node)
+        case(TERMINATION_CIRCUIT)
             res = writeModelNode(node, termination , end_node)
-        else if (termination%termination_type == TERMINATION_NETWORK) then 
+        case(TERMINATION_NETWORK)
             res = writeNetwork_circuitNode(node, termination , end_node)
-        else if (termination%termination_type == TERMINATION_UNDEFINED) then
+        case(TERMINATION_UNDEFINED)
             call WarnErrReport('writeNodeDescription: undefined termination at '// node%name, .true.) 
-        end if
+        end select
 
     end function    
 
