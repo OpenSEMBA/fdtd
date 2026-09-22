@@ -687,7 +687,9 @@ contains
             ! call appendToStringArray(res, buff)
 
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                call addVSource(res, node%name//"_S", node%name//"_S",node%name//"_genR",termination%source%path_to_excitation)
+                call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, &
+                                           termination%source%path_to_excitation, &
+                                           termination%source%resistance)
 
                 ! buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 ! call appendToStringArray(res, buff) 
@@ -695,12 +697,14 @@ contains
                 ! call appendToStringArray(res, buff) 
                 ! call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
 
-                call addResistance(res, node%name//"_S", node%name//"_genR", end_node, termination%source%resistance)
+                ! call addResistance(res, node%name//"_S", node%name//"_genR", end_node, termination%source%resistance)
                 ! buff = trim("R" // node%name // "_S " // node%name // "_genR " // " " // trim(end_node) //" "// trim(generator_r))
                 ! call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
 
-                call addISource(res, node%name//"_S", end_node, node%name//"_S", termination%source%path_to_excitation)
+                call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", &
+                                             termination%source%path_to_excitation, &
+                                             termination%source%resistance)
 
                 ! buff=trim("A" // node%name) // "_S %id(["//trim(end_node) // " " // trim(node%name) //"_S]) filesrc"
                 ! call appendToStringArray(res, buff) 
@@ -708,7 +712,7 @@ contains
                 ! call appendToStringArray(res, buff) 
                 ! call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
 
-                call addResistance(res, node%name//"_S", end_node, node%name//"_S",termination%source%resistance)
+                ! call addResistance(res, node%name//"_S", end_node, node%name//"_S",termination%source%resistance)
                 ! buff = trim("R" // node%name // "_S " // end_node // " " //node%name // "_S " // trim(generator_r))
                 ! call appendToStringArray(res, buff) 
             end if
