@@ -192,6 +192,7 @@ def test_line_multiline_junction(tmp_path):
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["voltage_0"].to_numpy(),
         )
+        check_values_are_comparable(solved)
         assert np.corrcoef(solved, p_expected[i]["voltage_0"])[0, 1] > 0.998
 
 
