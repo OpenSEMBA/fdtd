@@ -639,13 +639,13 @@ contains
         allocate(res(0))
         call addResistance(res, start, start, start//"_R", termination%resistance)
         call addInductance(res, start, start//"_R", start//"_L", termination%inductance)
-        if (termination%source%path_to_excitation /= "") then
+        if (hasSource(termination)) then
             call addCapacitance(res, start, start//"_L", start//"_S", termination%capacitance)
-            if (isVSource(termination%source%source_type)) then 
-                call addVSourceWithSeriesR(res, start//"_S", start//"_S", start//"_genR", & 
+            if (isVSource(termination)) then 
+                call addVSourceWithSeriesR(res, start//"_S", start//"_S", end, & 
                                            termination%source%path_to_excitation, &
                                            termination%source%resistance)
-            else if (isISource(termination%source%source_type)) then 
+            else if (isISource(termination)) then 
                 call addISourceWithParallelR(res,start//"_S", end, start//"_S", &
                                              termination%source%path_to_excitation, &
                                              termination%source%resistance)
@@ -657,14 +657,19 @@ contains
         call addConductance(res, node)
     end function
 
-    logical function isVSource(source_type)
-        integer(kind=4), intent(in) :: source_type
-        isVSource = (source_type == SOURCE_TYPE_VOLTAGE)
+    logical function hasSource(t)
+        type(termination_t), intent(in) :: t
+        hasSource = (t%source%path_to_excitation /= "")
     end function
 
-    logical function isISource(source_type)
-        integer(kind=4), intent(in) :: source_type
-        isISource = (source_type == SOURCE_TYPE_CURRENT)
+    logical function isVSource(t)
+        type(termination_t), intent(in) :: t
+        isVSource = (t%source%source_type == SOURCE_TYPE_VOLTAGE)
+    end function
+
+    logical function isISource(t)
+        type(termination_t), intent(in) :: t
+        isISource = (t%source%source_type == SOURCE_TYPE_CURRENT)
     end function
 
 
@@ -674,52 +679,23 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        ! character(30) :: line_c, short_r, generator_r
-        ! write(short_r, *) 1e-10
-        ! write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
 
-        if (termination%source%path_to_excitation /= "") then
-            ! write(generator_r, *) termination%source%resistance
-
-            call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10, rkind))
+        if (hasSource(termination)) then
+            ! call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10, rkind))
             ! buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
             ! call appendToStringArray(res, buff)
-
-            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, &
+            if (isVSource(termination)) then 
+                call addVSourceWithSeriesR(res, node%name//"_S", node%name, end_node, &
                                            termination%source%path_to_excitation, &
                                            termination%source%resistance)
-
-                ! buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
-                ! call appendToStringArray(res, buff) 
-                ! buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
-                ! call appendToStringArray(res, buff) 
-                ! call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
-
-                ! call addResistance(res, node%name//"_S", node%name//"_genR", end_node, termination%source%resistance)
-                ! buff = trim("R" // node%name // "_S " // node%name // "_genR " // " " // trim(end_node) //" "// trim(generator_r))
-                ! call appendToStringArray(res, buff) 
-            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-
-                call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", &
+            else if (isISource(termination)) then 
+                call addISourceWithParallelR(res, node%name//"_S", end_node, node%name, &
                                              termination%source%path_to_excitation, &
                                              termination%source%resistance)
-
-                ! buff=trim("A" // node%name) // "_S %id(["//trim(end_node) // " " // trim(node%name) //"_S]) filesrc"
-                ! call appendToStringArray(res, buff) 
-                ! buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
-                ! call appendToStringArray(res, buff) 
-                ! call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
-
-                ! call addResistance(res, node%name//"_S", end_node, node%name//"_S",termination%source%resistance)
-                ! buff = trim("R" // node%name // "_S " // end_node // " " //node%name // "_S " // trim(generator_r))
-                ! call appendToStringArray(res, buff) 
             end if
         else
             call addResistance(res, node%name, node%name, end_node, real(1e-10, rkind))
-            ! buff = trim("R" // node%name // " " // node%name // " " // trim(end_node))//" "//trim(short_R)
-            ! call appendToStringArray(res, buff)
         end if
         call addTransmissionLineEquivalent(res, node)
         call addConductance(res, node)
@@ -733,59 +709,24 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        ! character(len=:), allocatable :: model_name, model_file
-        ! character(30) :: line_c, generator_r
-        ! write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
-
-        ! model_name = trim(termination%model%name)
-
         call includeModelFile(res, termination%model%file)
-        
-        if (termination%source%path_to_excitation /= "") then
-            ! write(generator_r, *) termination%source%resistance
-            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-
-                call addVSource(res, node%name//"_S", node%name//"_S", node%name//"_genR",termination%source%path_to_excitation)
-
-                ! buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
-                ! call appendToStringArray(res, buff) 
-                ! buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
-                ! call appendToStringArray(res, buff) 
-                ! call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
-
-                call addResistance(res, node%name//"_S", node%name//"_genR", node%name//"_S",termination%source%resistance)
-                ! buff = trim("R" // node%name // "_S " // node%name // "_genR " // node%name //"_S " //trim(generator_r))
-                ! call appendToStringArray(res, buff) 
-
-            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-
-                call addISource(res, node%name//"_S", end_node, node%name//"_S", termination%source%path_to_excitation)
-
-                ! buff=trim("A" // node%name) // "_S %id(["//trim(end_node) // " " // trim(node%name) //"_S]) filesrc"
-                ! call appendToStringArray(res, buff) 
-                ! buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
-                ! call appendToStringArray(res, buff) 
-                ! call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
-
-                call addResistance(res,node%name//"_S", end_node, node%name//"_S",termination%source%resistance)
-                ! buff = trim("R" // node%name // "_S " // end_node // " " //node%name // "_S " // trim(generator_r))
-                ! call appendToStringArray(res, buff) 
+        if (hasSource(termination)) then
+            if (isVSource(termination)) then 
+                call addVSourceWithSeriesR(res, node%name//"_S", node%name, node%name//"_S",  &
+                                           termination%source%path_to_excitation, &
+                                           termination%source%resistance)
+            else if (isISource(termination)) then 
+                call addISourceWithParallelR(res, node%name//"_S", node%name//"_S", node%name, &
+                                             termination%source%path_to_excitation,&
+                                             termination%source%resistance)
             end if
             call addXComponent(res, node%name, node%name//"_S", end_node, termination%model%name)
-            ! buff = trim("x" // node%name // " " // node%name // "_S " // end_node //" ")//" "//trim(model_name)
-            ! call appendToStringArray(res, buff)
         else
             call addXComponent(res, node%name, node%name, end_node, termination%model%name)
-            ! buff = trim("x" // node%name // " " // node%name // " " // end_node //" ")//" "//trim(model_name)
-            ! call appendToStringArray(res, buff)
         end if
-
-
         call addTransmissionLineEquivalent(res, node)
         call addConductance(res, node)
-
-
     end function
 
     function writeSeriesRLnode(node, termination, end_node) result(res)
@@ -796,14 +737,16 @@ contains
         character(len=256) :: buff
         allocate(res(0))
         call addResistance(res, node%name, node%name//"_R", node%name, termination%resistance)
-        if (termination%source%path_to_excitation /= "") then
+        if (hasSource(termination)) then
             call addInductance(res, node%name, node%name//"_R",node%name//"_S", termination%inductance)
-            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                call addVSource(res, node%name//"_S", node%name//"_S", node%name//"_genR", termination%source%path_to_excitation)
-                call addResistance(res, node%name//"_S",node%name//"_genR", end_node, termination%source%resistance)
-            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-                call addISource(res,node%name//"_S", end_node, trim(node%name) //"_S", termination%source%path_to_excitation)
-                call addResistance(res, node%name//"_S", end_node//"_genR", node%name//"_S ", termination%source%resistance)
+            if (isVSource(termination)) then 
+                call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, &
+                                           termination%source%path_to_excitation, &
+                                           termination%source%resistance)
+            else if (isISource(termination)) then 
+                call addISourceWithParallelR(res,node%name//"_S", end_node, trim(node%name) //"_S", &
+                                             termination%source%path_to_excitation, &
+                                             termination%source%resistance)
             end if
         else
             call addInductance(res, node%name, node%name//"_R",end_node, termination%inductance)
@@ -819,13 +762,11 @@ contains
         type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
-
         if (termination%capacitance >= 1e22) then 
             res = writeSeriesRLnode(node, termination, end_node)
         else
             res = writeSeriesRLCnode(node, termination, end_node)
         end if
-
     end function
 
     subroutine appendToStringArray(arr, str)
@@ -850,15 +791,16 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         allocate(res(0))
-        if (termination%source%path_to_excitation /= "") then
+        if (hasSource(termination)) then
             call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10,rkind))
-            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                call addVSource(res,node%name//"_S", node%name//"_S", node%name//"_genR", termination%source%path_to_excitation)
-                call addResistance(res,node%name//"_S", node%name//"_genR",end_node, termination%source%resistance)
-
-            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-                call addISource(res,node%name//"_S", end_node, node%name//"_S", termination%source%path_to_excitation)
-                call addResistance(res,node%name//"_S", end_node, node%name//"_S",termination%source%resistance)
+            if (isVSource(termination)) then 
+                call addVSourceWithSeriesR(res,node%name//"_S", node%name//"_S", end_node,  &
+                                           termination%source%path_to_excitation, &
+                                           termination%source%resistance)
+            else if (isISource(termination)) then 
+                call addISourceWithParallelR(res,node%name//"_S", end_node, node%name//"_S", &
+                                             termination%source%path_to_excitation, &
+                                             termination%source%resistance)
             end if
         else
             call addResistance(res,node%name, node%name, end_node, real(1e-10,rkind))
@@ -873,12 +815,10 @@ contains
         type(nw_node_t), intent(in) :: node
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
-
         allocate(res(0))
         call addResistance(res,node%name, node%name, end_node, real(1e22, rkind))
         call addTransmissionLineEquivalent(res, node)
         call addConductance(res, node)
-
     end function
     
     function writeNodeDescription(node, termination, end_node) result(res)
@@ -946,13 +886,13 @@ contains
         allocate(res(0))
         buff = trim(XYZ(1:1) // node%name // " " // node%name // " "   // node%name //"_X " // termination_x)
         call appendToStringArray(res, buff)
-        if (termination%source%path_to_excitation /= "") then
+        if (hasSource(termination)) then
             write(generator_r, *) termination%source%resistance
             buff = trim(XYZ(2:2) // node%name // " " // node%name // "_X " // node%name //"_S " // termination_y)
             call appendToStringArray(res, buff)
             buff = trim(XYZ(3:3) // node%name // " " // node%name // " " // node%name //"_S " // termination_z)
             call appendToStringArray(res, buff)
-            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+            if (isVSource(termination)) then 
                 buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
@@ -960,7 +900,7 @@ contains
                 call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
                 call appendToStringArray(res, buff) 
-            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+            else if (isISource(termination)) then 
                 buff=trim("A" // node%name) // "_S %id(["//trim(end_node) // " " // trim(node%name) //"_S]) filesrc"
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
@@ -1006,14 +946,14 @@ contains
 
         allocate(res(0))
         res = [trim(XYZ(1:1) // node%name // " " // node%name // " "   // node%name //"_p " // termination_x)]
-        if (termination%source%path_to_excitation /= "") then
+        if (hasSource(termination)) then
             write(generator_r,*) termination%source%resistance
             buff = trim(XYZ(2:2) // node%name // " " // node%name // "_p " // node%name //"_S "// termination_y)
             call appendToStringArray(res, buff)
             buff = trim(XYZ(3:3) // node%name // " " // node%name // "_p " // node%name //"_S "// termination_z)
             call appendToStringArray(res, buff)
 
-            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+            if (isVSource(termination)) then 
                 buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
@@ -1021,7 +961,7 @@ contains
                 call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
                 buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
                 call appendToStringArray(res, buff) 
-            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+            else if (isISource(termination)) then 
                 buff=trim("A" // node%name) // "_S %id(["//trim(end_node) // " " // trim(node%name) //"_S]) filesrc"
                 call appendToStringArray(res, buff) 
                 buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
@@ -1064,8 +1004,6 @@ contains
         call create_symlink(trim(source), trim(lowercase_string(trim(source))))
 
         call addResistance(arr, start_name//"_S", trim(start_name)//"_genR",end_name, R)
-
-
     end subroutine
 
     subroutine addISourceWithParallelR(arr, a_name, start_name, end_name, source, R)
