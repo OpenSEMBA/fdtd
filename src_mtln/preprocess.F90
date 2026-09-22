@@ -984,7 +984,7 @@ contains
         character(*), intent(in) :: start_name, end_name
         type(node_source_t) :: source
         character(len=256) :: buff
-        buff=trim("A"//start_name//"_S ")//" %vd(["//trim(start_name)//" "//trim(start_name)//"_genR]) filesrc"
+        buff=trim("A"//start_name//"_S ")//" %vd(["//trim(start_name)//"_S "//trim(start_name)//"_genR]) filesrc"
         call appendToStringArray(arr, buff) 
         buff=trim(".model filesrc filesource(file=""" // trim(source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
         call appendToStringArray(arr, buff) 
@@ -998,7 +998,7 @@ contains
         character(*), intent(in) :: start_name, end_name
         type(node_source_t) :: source
         character(len=256) :: buff
-        buff=trim("A"//start_name//"_S ")//" %id(["//trim(end_name)//" "//trim(start_name)//"]) filesrc"
+        buff=trim("A"//start_name//"_S ")//" %id(["//trim(end_name)//" "//trim(start_name)//"_S]) filesrc"
         call appendToStringArray(arr, buff) 
         buff=trim(".model filesrc filesource(file=""" // trim(source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
         call appendToStringArray(arr, buff) 
