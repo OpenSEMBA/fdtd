@@ -735,6 +735,12 @@ contains
 
     end function
 
+    !     |--I--|      |--Z--| 
+    ! 0---|     ¡---X--|     |--[A]--!
+    !     |--C--|      |--Y--|
+    !
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R
     function writeXsYZpnode(node, termination, end_node, XYZ)  result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
@@ -950,12 +956,6 @@ contains
         isISource = (t%source%source_type == SOURCE_TYPE_CURRENT)
     end function
 
-    !     |--I--|      |--Z--| 
-    ! 0---|     ¡---X--|     |--[A]--!
-    !     |--C--|      |--Y--|
-    !
-    ! ¡: start !: end
-    ! [A] : V source w/series R OR I source w/parallel R
 
 
     subroutine addTransmissionLineEquivalent(arr, node)
