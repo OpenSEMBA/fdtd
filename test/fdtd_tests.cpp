@@ -19,6 +19,9 @@
 #include "unit/preprocess/preprocess_tests.h"
 #include "healer/healer_tests.h"
 #include "sgbc/sgbc_tests.h"
+#ifdef CompileWithCUDA
+#include "cuda/cuda_tests.h"
+#endif
 
 int main(int argc, char **argv) {
 #ifdef CompileWithMPI

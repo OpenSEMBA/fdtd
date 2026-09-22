@@ -43,6 +43,11 @@ set(HEALER_TESTS_LIBRARY healer_tests)
 add_subdirectory(sgbc)
 set(SGBC_TESTS_LIBRARY sgbc_tests)
 
+if(SEMBA_FDTD_ENABLE_CUDA)
+    add_subdirectory(cuda)
+    set(CUDA_TESTS_LIBRARY cuda_tests)
+endif()
+
 add_executable(fdtd_tests 
     "fdtd_tests.cpp"
 )
@@ -60,6 +65,7 @@ target_link_libraries(fdtd_tests
     ${OBSERVATION_TESTS_LIBRARY}
     ${HEALER_TESTS_LIBRARY}
     ${SGBC_TESTS_LIBRARY}
+    ${CUDA_TESTS_LIBRARY}
     GTest::gtest_main
 )
 

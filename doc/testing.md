@@ -106,6 +106,18 @@ Wildcards can be used in a GoogleTest filter:
 ./build/bin/fdtd_tests --gtest_filter='*Conformal*'
 ```
 
+### CUDA native tests
+
+The `cuda` GoogleTest suite (field sync/box, layout, Yee, CPML contracts)
+is compiled and linked **only** when `SEMBA_FDTD_ENABLE_CUDA=ON`. It is not
+part of basic CPU or MPI CPU builds. Run it from a CUDA build tree:
+
+```shell
+./build-rls-cuda/bin/fdtd_tests --gtest_filter='cuda.*'
+```
+
+Case-level CPU-vs-CUDA probe goldens remain in `test/pyWrapper/test_cuda.py`.
+
 ## Python Tests
 
 Create a virtual environment and install the test dependencies:
