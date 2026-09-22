@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 from sys import platform
 from scipy import signal
+from scipy.constants import c, epsilon_0, mu_0
 import matplotlib.pyplot as plt
 
 
@@ -192,6 +193,7 @@ def test_shieldedPair(tmp_path):
 @pytest.mark.wires
 @pytest.mark.dielectric
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_coated_antenna(tmp_path):
     """Test for a coated antenna with MTLN wires reproducing Fig. 2 in:
     A. Rubio Bretones, R. Gomez Martin, A. Salinas and I. Sanchez,
@@ -331,6 +333,8 @@ def test_unshielded_multiwires(tmp_path):
 
 @pytest.mark.wires
 @pytest.mark.probes
+@pytest.mark.codemodel
+@pytest.mark.codemodel
 def test_towelHanger(tmp_path):
     """Verify towel-hanger wire currents match the stored reference probes."""
     setNgspice(tmp_path)
@@ -363,6 +367,7 @@ def test_towelHanger(tmp_path):
 @pytest.mark.wires
 @pytest.mark.termination
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_towel_rack_with_and_without_shorting_plane(tmp_path):
     """Verify a shorting plane leaves low-frequency input impedance unchanged."""
     def generate_debug_data():
@@ -381,7 +386,6 @@ def test_towel_rack_with_and_without_shorting_plane(tmp_path):
         CASES_FOLDER
         + "towel_rack_with_shorting_plane/towel_rack_with_shorting_plane.fdtd.json"
     )
-    # setNgspice(tmp_path)
 
     # --- excitation ---
     dt = 1e-12
@@ -893,6 +897,7 @@ def test_current_orientation(tmp_path):
 @pytest.mark.sgbc
 @pytest.mark.wires
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_sgbc_structured_resistance_single_wire(tmp_path):
     """Verify structured SGBC resistance produces the expected wire current."""
     fn = CASES_FOLDER + "sgbcResistance/sgbcResistance.fdtd.json"
@@ -911,6 +916,7 @@ def test_sgbc_structured_resistance_single_wire(tmp_path):
 # compiled with mtln, wire is treated as an unshielded multiwire
 @pytest.mark.sgbc
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_pec_overlapping_sgbcs(tmp_path):
     """Test that PEC surfaces overlapping SGBC surfaces prioritize PEC."""
     def generate_debug_data():
@@ -950,6 +956,7 @@ def test_pec_overlapping_sgbcs(tmp_path):
 # compiled with mtln, wire is treated as an unshielded multiwire
 @pytest.mark.sgbc
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_sgbc_overlapping_sgbc(tmp_path):
     """Test that SGBC surfaces overlapping SGBC surfaces prioritize first in MatAss."""
     def generate_debug_data():
@@ -1921,6 +1928,7 @@ def test_bulk_current_four_probes_Z_oriented(tmp_path):
 @pytest.mark.conformal
 @pytest.mark.wires
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_conformal_impedance_cylinder_unshielded(tmp_path):
     """Verify conformal-cylinder impedance matches the reference spectrum."""
     setNgspice(tmp_path)
@@ -2003,6 +2011,7 @@ def test_conformal_sphere_rcs(tmp_path):
 
 @pytest.mark.conformal
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_conformal_delay(tmp_path):
     """Verify conformal geometry produces the expected propagation delay."""
     setNgspice(tmp_path)
@@ -2078,6 +2087,7 @@ def test_current_generators_with_resistance(tmp_path):
 @pytest.mark.wires
 @pytest.mark.nodal_source
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_current_generators_without_resistance(tmp_path):
     """Verify ideal-wire current-source sign and magnitude at each position."""
     # Checks current probes at the extremes of a wire
@@ -2257,3 +2267,146 @@ def test_conductors_forming_y_on_panel_holland_vs_mtln(tmp_path):
     assert corr_yminus > 0.999
     assert corr_j1 > 0.999
     assert corr_j2 > 0.999
+
+
+@pytest.mark.probes
+@pytest.mark.thinSlot
+def test_slotted_box_shielding_effectiveness(tmp_path):
+    """Verify normal-incidence thin-slot SE agrees with Robinson's model."""
+    fn = CASES_FOLDER + "slotted_box/slotted_box.fdtd.json"
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver["general"]["numberOfSteps"] = 70000
+    solver["sources"][0]["polarization"]["theta"] = 0.0
+    solver.run()
+
+    probes = {}
+    for path in solver.getSolvedProbeFolders("Point probe"):
+        probe = Probe(path)
+        if probe.field == "E":
+            probes[probe.direction] = probe
+
+    assert set(probes) == {"x", "y", "z"}
+    assert all("incident" in probe.data for probe in probes.values())
+
+    time = probes["x"]["time"].to_numpy()
+    for direction in ("y", "z"):
+        assert np.array_equal(time, probes[direction]["time"].to_numpy())
+
+    frequencies = np.array([300e6, 350e6, 400e6, 650e6, 800e6])
+    total_spectrum = np.vstack([
+        dtft(probes[direction]["field"].to_numpy(), time, frequencies)
+        for direction in ("x", "y", "z")
+    ])
+    incident_spectrum = np.vstack([
+        dtft(probes[direction]["incident"].to_numpy(), time, frequencies)
+        for direction in ("x", "y", "z")
+    ])
+    shielding_effectiveness = 20.0 * np.log10(
+        np.linalg.norm(incident_spectrum, axis=0)
+        / np.linalg.norm(total_spectrum, axis=0)
+    )
+
+    assert np.all(np.isfinite(shielding_effectiveness))
+
+    a, b, d = 0.300, 0.120, 0.300
+    slot_length, slot_width, probe_depth = 0.100, 0.005, 0.150
+    eta_0 = np.sqrt(mu_0 / epsilon_0)
+    k_0 = 2.0 * np.pi * frequencies / c
+    wavelength = c / frequencies
+    fourth_root = np.power(1.0 - (slot_width / b) ** 2, 0.25)
+    slot_impedance = 120.0 * np.pi**2 / np.log(
+        2.0 * (1.0 + fourth_root) / (1.0 - fourth_root)
+    )
+    cutoff_factor = np.sqrt(1.0 - (wavelength / (2.0 * a)) ** 2 + 0.0j)
+    guide_impedance = eta_0 / cutoff_factor
+    guide_wavenumber = k_0 * cutoff_factor
+    aperture_impedance = 0.5j * (slot_length / a) * slot_impedance * np.tan(
+        k_0 * slot_length / 2.0
+    )
+    v_1 = aperture_impedance / (eta_0 + aperture_impedance)
+    z_1 = eta_0 * aperture_impedance / (eta_0 + aperture_impedance)
+    propagation = np.cos(guide_wavenumber * probe_depth) + 1j * (
+        z_1 / guide_impedance
+    ) * np.sin(guide_wavenumber * probe_depth)
+    v_2 = v_1 / propagation
+    z_2 = (z_1 + 1j * guide_impedance * np.tan(
+        guide_wavenumber * probe_depth
+    )) / (1.0 + 1j * (z_1 / guide_impedance) * np.tan(
+        guide_wavenumber * probe_depth
+    ))
+    z_3 = 1j * guide_impedance * np.tan(guide_wavenumber * (d - probe_depth))
+    robinson_se = -20.0 * np.log10(np.abs(2.0 * v_2 * z_3 / (z_2 + z_3)))
+
+    if is_debugging():
+        debug_frequencies = np.geomspace(300e6, 1e9, 101)
+        debug_total_spectrum = np.vstack([
+            dtft(probes[direction]["field"].to_numpy(), time, debug_frequencies)
+            for direction in ("x", "y", "z")
+        ])
+        debug_incident_spectrum = np.vstack([
+            dtft(
+                probes[direction]["incident"].to_numpy(), time, debug_frequencies
+            )
+            for direction in ("x", "y", "z")
+        ])
+        debug_fdtd_se = 20.0 * np.log10(
+            np.linalg.norm(debug_incident_spectrum, axis=0)
+            / np.linalg.norm(debug_total_spectrum, axis=0)
+        )
+        debug_k_0 = 2.0 * np.pi * debug_frequencies / c
+        debug_wavelength = c / debug_frequencies
+        debug_cutoff_factor = np.sqrt(
+            1.0 - (debug_wavelength / (2.0 * a)) ** 2 + 0.0j
+        )
+        debug_guide_impedance = eta_0 / debug_cutoff_factor
+        debug_guide_wavenumber = debug_k_0 * debug_cutoff_factor
+        debug_aperture_impedance = (
+            0.5j
+            * (slot_length / a)
+            * slot_impedance
+            * np.tan(debug_k_0 * slot_length / 2.0)
+        )
+        debug_v_1 = debug_aperture_impedance / (eta_0 + debug_aperture_impedance)
+        debug_z_1 = (
+            eta_0
+            * debug_aperture_impedance
+            / (eta_0 + debug_aperture_impedance)
+        )
+        debug_propagation = np.cos(debug_guide_wavenumber * probe_depth) + 1j * (
+            debug_z_1 / debug_guide_impedance
+        ) * np.sin(debug_guide_wavenumber * probe_depth)
+        debug_v_2 = debug_v_1 / debug_propagation
+        debug_z_2 = (
+            debug_z_1
+            + 1j
+            * debug_guide_impedance
+            * np.tan(debug_guide_wavenumber * probe_depth)
+        ) / (
+            1.0
+            + 1j
+            * (debug_z_1 / debug_guide_impedance)
+            * np.tan(debug_guide_wavenumber * probe_depth)
+        )
+        debug_z_3 = 1j * debug_guide_impedance * np.tan(
+            debug_guide_wavenumber * (d - probe_depth)
+        )
+        debug_robinson_se = -20.0 * np.log10(
+            np.abs(2.0 * debug_v_2 * debug_z_3 / (debug_z_2 + debug_z_3))
+        )
+
+        plt.figure()
+        plt.semilogx(debug_frequencies, debug_robinson_se, label="Robinson")
+        plt.semilogx(debug_frequencies, debug_fdtd_se, ".-", label="FDTD")
+        plt.xlabel("Frequency (Hz)")
+        plt.ylabel("Shielding effectiveness (dB)")
+        plt.grid(which="both")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(tmp_path / "slotted_box_shielding_effectiveness.png")
+        plt.close()
+
+    assert np.all(np.isfinite(robinson_se))
+    robinson_tolerance_db = 6.0
+    assert np.allclose(
+        shielding_effectiveness, robinson_se, atol=robinson_tolerance_db, rtol=0.0
+    )

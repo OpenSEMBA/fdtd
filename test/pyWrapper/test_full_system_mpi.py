@@ -163,6 +163,8 @@ def test_holland_mtln_mpi(tmp_path):
 @pytest.mark.mpi
 @pytest.mark.wires
 @pytest.mark.probes
+@pytest.mark.codemodel
+@pytest.mark.codemodel
 def test_towelHanger_mpi(tmp_path):
     fn = CASES_FOLDER + "towelHanger/towelHanger_mpi.fdtd.json"
     setNgspice(tmp_path)

@@ -42,3 +42,5 @@ add_library(vtkAPI
 target_link_libraries(vtkAPI
  fdtd-utils
 )
+
+add_dependencies(fdtd-output vtkAPI)
