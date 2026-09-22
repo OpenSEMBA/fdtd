@@ -606,19 +606,36 @@ contains
 
     end function
 
+    !     |--I--|   |--R--|
+    ! 0---|     ¡---|--L--|--[A]--!
+    !     |--C--|   |--C--|
+    !
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R
     function writeParallelRLCnode(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(30) :: termination_r, termination_l, termination_c, line_c
 
-        write(termination_c, *) termination%capacitance
-        write(termination_r, *) termination%resistance
-        write(termination_l, *) termination%inductance
-        write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
+        if (hasSource(termination)) then
+            call addResistance(res,  node%name, node%name, node%name//"_S", termination%resistance)
+            call addInductance(res,  node%name, node%name, node%name//"_S", termination%inductance)
+            call addCapacitance(res, node%name, node%name, node%name//"_S", termination%capacitance)
+            if (isVSource(termination)) then 
+                call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
+            else if (isISource(termination)) then 
+                call addISourceWithParallelR(res,node%name//"_S", end_node, trim(node%name) //"_S", termination%source)
+            end if
+        else
+            call addResistance(res,  node%name, node%name, end_node, termination%resistance)
+            call addInductance(res,  node%name, node%name, end_node, termination%inductance)
+            call addCapacitance(res, node%name, node%name, end_node, termination%capacitance)
+        end if
+        call addTransmissionLineEquivalent(res, node)
+        call addConductance(res, node)
 
     end function
 
@@ -642,13 +659,9 @@ contains
         if (hasSource(termination)) then
             call addCapacitance(res, start, start//"_L", start//"_S", termination%capacitance)
             if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res, start//"_S", start//"_S", end, & 
-                                           termination%source%path_to_excitation, &
-                                           termination%source%resistance)
+                call addVSourceWithSeriesR(res, start//"_S", start//"_S", end, termination%source)
             else if (isISource(termination)) then 
-                call addISourceWithParallelR(res,start//"_S", end, start//"_S", &
-                                             termination%source%path_to_excitation, &
-                                             termination%source%resistance)
+                call addISourceWithParallelR(res,start//"_S", end, start//"_S", termination%source)
             end if
         else
             call addCapacitance(res, start, start//"_L", end, termination%capacitance)
@@ -672,7 +685,14 @@ contains
         isISource = (t%source%source_type == SOURCE_TYPE_CURRENT)
     end function
 
-
+    !                     ____!!____                
+    !     |--I--|        |          |
+    ! 0---|     ¡--[A]---!          !!
+    !     |--C--|        |____!!____| 
+    !                   
+    ! ¡: start !: end
+    ! !! other TLs connection to a multiterminal circuit
+    ! [A] : V source w/series R OR I source w/parallel R
     function writeNetwork_circuitNode(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
@@ -686,13 +706,9 @@ contains
             ! buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
             ! call appendToStringArray(res, buff)
             if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res, node%name//"_S", node%name, end_node, &
-                                           termination%source%path_to_excitation, &
-                                           termination%source%resistance)
+                call addVSourceWithSeriesR(res, node%name//"_S", node%name, end_node, termination%source)
             else if (isISource(termination)) then 
-                call addISourceWithParallelR(res, node%name//"_S", end_node, node%name, &
-                                             termination%source%path_to_excitation, &
-                                             termination%source%resistance)
+                call addISourceWithParallelR(res, node%name//"_S", end_node, node%name, termination%source)
             end if
         else
             call addResistance(res, node%name, node%name, end_node, real(1e-10, rkind))
@@ -703,6 +719,12 @@ contains
     end function
 
 
+    !     |--I--|   
+    ! 0---|     ¡--[A]--(MODEL)--!
+    !     |--C--|
+    !
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R [optional]
     function writeModelNode(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
@@ -713,13 +735,9 @@ contains
         call includeModelFile(res, termination%model%file)
         if (hasSource(termination)) then
             if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res, node%name//"_S", node%name, node%name//"_S",  &
-                                           termination%source%path_to_excitation, &
-                                           termination%source%resistance)
+                call addVSourceWithSeriesR(res, node%name//"_S", node%name, node%name//"_S",  termination%source)
             else if (isISource(termination)) then 
-                call addISourceWithParallelR(res, node%name//"_S", node%name//"_S", node%name, &
-                                             termination%source%path_to_excitation,&
-                                             termination%source%resistance)
+                call addISourceWithParallelR(res, node%name//"_S", node%name//"_S", node%name, termination%source)
             end if
             call addXComponent(res, node%name, node%name//"_S", end_node, termination%model%name)
         else
@@ -729,6 +747,12 @@ contains
         call addConductance(res, node)
     end function
 
+    !     |--I--|   
+    ! 0---|     ¡--R--L--!
+    !     |--C--|
+    !
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R [optional]
     function writeSeriesRLnode(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
@@ -740,13 +764,9 @@ contains
         if (hasSource(termination)) then
             call addInductance(res, node%name, node%name//"_R",node%name//"_S", termination%inductance)
             if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, &
-                                           termination%source%path_to_excitation, &
-                                           termination%source%resistance)
+                call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
             else if (isISource(termination)) then 
-                call addISourceWithParallelR(res,node%name//"_S", end_node, trim(node%name) //"_S", &
-                                             termination%source%path_to_excitation, &
-                                             termination%source%resistance)
+                call addISourceWithParallelR(res,node%name//"_S", end_node, trim(node%name) //"_S", termination%source)
             end if
         else
             call addInductance(res, node%name, node%name//"_R",end_node, termination%inductance)
@@ -784,6 +804,12 @@ contains
         arr(size(old_arr)+1) = str
     end subroutine
 
+    !     |--I--|   
+    ! 0---|     ¡----!
+    !     |--C--|
+    !
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R [optional]
     function writeShortNode(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
@@ -794,13 +820,9 @@ contains
         if (hasSource(termination)) then
             call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10,rkind))
             if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res,node%name//"_S", node%name//"_S", end_node,  &
-                                           termination%source%path_to_excitation, &
-                                           termination%source%resistance)
+                call addVSourceWithSeriesR(res,node%name//"_S", node%name//"_S", end_node,  termination%source)
             else if (isISource(termination)) then 
-                call addISourceWithParallelR(res,node%name//"_S", end_node, node%name//"_S", &
-                                             termination%source%path_to_excitation, &
-                                             termination%source%resistance)
+                call addISourceWithParallelR(res,node%name//"_S", end_node, node%name//"_S", termination%source)
             end if
         else
             call addResistance(res,node%name, node%name, end_node, real(1e-10,rkind))
@@ -811,6 +833,13 @@ contains
     end function
 
 
+    !     |--I--|   
+    ! 0---|     ¡--RRR---!
+    !     |--C--|
+    !
+    ! RRR = 1e22
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R [optional]
     function writeOpenNode(node, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         character(len=*), intent(in) :: end_node
@@ -858,123 +887,106 @@ contains
 
     end function    
 
+    !     |--I--|  |---Z---| 
+    ! 0---|     ¡--|-X---Y-|--[A]--!
+    !     |--C--|
+    !
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R
     function writeXYsZpnode(node, termination, end_node, XYZ) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=3), intent(in) :: XYZ
+        character(len=1) :: X,Y,Z
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: node_name
-        character(30) :: termination_x, termination_y, termination_z, generator_r
-        
-        if (XYZ == "RLC" .or. XYZ == "LRC") then 
-            write(termination_x, *) termination%resistance
-            write(termination_y, *) termination%inductance
-            write(termination_z, *) termination%capacitance
-        else if (XYZ == "LCR" .or. XYZ == "CLR") then 
-            write(termination_x, *) termination%inductance
-            write(termination_y, *) termination%capacitance
-            write(termination_z, *) termination%resistance
-        else if (XYZ == "CRL" .or. XYZ == "RCL") then 
-            write(termination_x, *) termination%capacitance
-            write(termination_y, *) termination%resistance
-            write(termination_z, *) termination%inductance
-        end if
+        real(kind=rkind) :: termination_x, termination_y, termination_z
+        ! character(30) :: termination_x, termination_y, termination_z, generator_r
 
+        if (XYZ == "RLC" .or. XYZ == "LRC") then 
+            termination_x = termination%resistance
+            termination_y = termination%inductance
+            termination_z = termination%capacitance
+        else if (XYZ == "LCR" .or. XYZ == "CLR") then 
+            termination_x = termination%inductance
+            termination_y = termination%capacitance
+            termination_z = termination%resistance
+        else if (XYZ == "CRL" .or. XYZ == "RCL") then 
+            termination_x = termination%capacitance
+            termination_y = termination%resistance
+            termination_z = termination%inductance
+        end if
+        X = XYZ(1:1)
+        Y = XYZ(2:2)
+        Z = XYZ(3:3)
 
         allocate(res(0))
-        buff = trim(XYZ(1:1) // node%name // " " // node%name // " "   // node%name //"_X " // termination_x)
-        call appendToStringArray(res, buff)
+        call addComponent(res, X//node%name, node%name, node%name//"_X", termination_x)
         if (hasSource(termination)) then
-            write(generator_r, *) termination%source%resistance
-            buff = trim(XYZ(2:2) // node%name // " " // node%name // "_X " // node%name //"_S " // termination_y)
-            call appendToStringArray(res, buff)
-            buff = trim(XYZ(3:3) // node%name // " " // node%name // " " // node%name //"_S " // termination_z)
-            call appendToStringArray(res, buff)
+            call addComponent(res, Y//node%name, node%name//"_X", node%name//"_S", termination_y)
+            call addComponent(res, Z//node%name, node%name, node%name//"_S", termination_z)
             if (isVSource(termination)) then 
-                buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
-                call appendToStringArray(res, buff) 
-                buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
-                call appendToStringArray(res, buff) 
-                call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
-                buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
-                call appendToStringArray(res, buff) 
+                call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
             else if (isISource(termination)) then 
-                buff=trim("A" // node%name) // "_S %id(["//trim(end_node) // " " // trim(node%name) //"_S]) filesrc"
-                call appendToStringArray(res, buff) 
-                buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
-                call appendToStringArray(res, buff) 
-                call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
-                buff = trim("R" // node%name // "_S " // end_node // " " //node%name // "_S " // trim(generator_r))
-                call appendToStringArray(res, buff) 
+                call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", termination%source)
             end if
         else 
-            buff = trim(XYZ(2:2) // node%name // " " // node%name // "_X " // end_node //" "// termination_y)
-            call appendToStringArray(res, buff)
-            buff = trim(XYZ(3:3) // node%name // " " // node%name // " " // end_node //" "// termination_z)
-            call appendToStringArray(res, buff)
+            call addComponent(res, Y//node%name, node%name//"_X", end_node, termination_y)
+            call addComponent(res, Z//node%name, node%name, end_node, termination_z)
         end if
         call addTransmissionLineEquivalent(res, node)
         call addConductance(res, node)
 
     end function
 
+    !     |--I--|      |--Z--| 
+    ! 0---|     ¡---X--|     |--[A]--!
+    !     |--C--|      |--Y--|
+    !
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R
+
     function writeXsYZpnode(node, termination, end_node, XYZ)  result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
-        character(len=*), intent(in) :: XYZ
+        character(len=3), intent(in) :: XYZ
+        character(len=1) :: X,Y,Z
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: node_name
-        character(30) :: termination_x, termination_y, termination_z, generator_r
+        real(kind=rkind) :: termination_x, termination_y, termination_z
         
         if (XYZ == "RLC" .or. XYZ == "RCL") then 
-            write(termination_x, *) termination%resistance
-            write(termination_y, *) termination%inductance
-            write(termination_z, *) termination%capacitance
+            termination_x = termination%resistance
+            termination_y = termination%inductance
+            termination_z = termination%capacitance
         else if (XYZ == "LRC" .or. XYZ == "LCR") then 
-            write(termination_x, *) termination%inductance
-            write(termination_y, *) termination%resistance
-            write(termination_z, *) termination%capacitance
+            termination_x = termination%inductance
+            termination_y = termination%resistance
+            termination_z = termination%capacitance
         else if (XYZ == "CLR" .or. XYZ == "CRL") then 
-            write(termination_x, *) termination%capacitance
-            write(termination_y, *) termination%resistance
-            write(termination_z, *) termination%inductance
+            termination_x =  termination%capacitance
+            termination_y =  termination%resistance
+            termination_z =  termination%inductance
         end if
+        X = XYZ(1:1);Y = XYZ(2:2);Z = XYZ(3:3)
 
         allocate(res(0))
-        res = [trim(XYZ(1:1) // node%name // " " // node%name // " "   // node%name //"_p " // termination_x)]
+        call addComponent(res,X//node%name, node%name, node%name//"_p", termination_x)
         if (hasSource(termination)) then
-            write(generator_r,*) termination%source%resistance
-            buff = trim(XYZ(2:2) // node%name // " " // node%name // "_p " // node%name //"_S "// termination_y)
-            call appendToStringArray(res, buff)
-            buff = trim(XYZ(3:3) // node%name // " " // node%name // "_p " // node%name //"_S "// termination_z)
-            call appendToStringArray(res, buff)
-
+            call addComponent(res,Y//node%name, node%name//"_p", node%name//"_S", termination_y)
+            call addComponent(res,Z//node%name, node%name//"_p", node%name//"_S", termination_z)
             if (isVSource(termination)) then 
-                buff=trim("A" // node%name) // "_S %vd(["//trim(node%name) // "_S " // trim(node%name) //"_genR]) filesrc"
-                call appendToStringArray(res, buff) 
-                buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
-                call appendToStringArray(res, buff) 
-                call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
-                buff = trim("R" // node%name // "_S " // node%name // "_genR " // end_node //" " // trim(generator_r))
-                call appendToStringArray(res, buff) 
+                call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
             else if (isISource(termination)) then 
-                buff=trim("A" // node%name) // "_S %id(["//trim(end_node) // " " // trim(node%name) //"_S]) filesrc"
-                call appendToStringArray(res, buff) 
-                buff=trim(".model filesrc filesource(file=""" // trim(termination%source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
-                call appendToStringArray(res, buff) 
-                call create_symlink(trim(termination%source%path_to_excitation), trim(lowercase_string(trim(termination%source%path_to_excitation))))
-                buff = trim("R" // node%name // "_S " // end_node // " " //node%name // "_S " // trim(generator_r))
-                call appendToStringArray(res, buff) 
+                call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", termination%source)
             end if
         else
-            buff =  trim(XYZ(2:2) // node%name // " " // node%name // "_p " // end_node //" "// termination_y)
-            call appendToStringArray(res, buff)
-            buff =  trim(XYZ(3:3) // node%name // " " // node%name // "_p " // end_node //" "// termination_z)
-            call appendToStringArray(res, buff)
+            call addComponent(res,Y//node%name, node%name//"_p", end_node, termination_y)
+            call addComponent(res,Z//node%name, node%name//"_p", end_node, termination_z)
         end if
         call addTransmissionLineEquivalent(res, node)
         call addConductance(res, node)
@@ -986,39 +998,38 @@ contains
         type(nw_node_t), intent(in) :: node
         character(len=256) :: buff
         character(30) :: line_c
-
         write(line_c, *) node%line_c_per_meter * node%step/2
         call addTLISource(arr, node%name, node%name, "0")
         call addCapacitance(arr, "L"//node%name, node%name, "0", node%line_c_per_meter * node%step/2)
     end subroutine
 
-    subroutine addVSourceWithSeriesR(arr, a_name, start_name, end_name, source, R)
+    subroutine addVSourceWithSeriesR(arr, a_name, start_name, end_name, source)
         character(len=256), allocatable, intent(inout) :: arr(:)
-        character(*), intent(in) :: a_name, start_name, end_name, source
-        real(kind=rkind), intent(in) :: R
+        character(*), intent(in) :: a_name, start_name, end_name
+        type(node_source_t) :: source
         character(len=256) :: buff
         buff=trim("A"//a_name)//" %vd(["//trim(start_name)//" "//trim(start_name)//"_genR]) filesrc"
         call appendToStringArray(arr, buff) 
-        buff=trim(".model filesrc filesource(file=""" // trim(source) //""""//" amploffset=[0.0] amplscale=[1.0])")
+        buff=trim(".model filesrc filesource(file=""" // trim(source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
         call appendToStringArray(arr, buff) 
-        call create_symlink(trim(source), trim(lowercase_string(trim(source))))
+        call create_symlink(trim(source%path_to_excitation), trim(lowercase_string(trim(source%path_to_excitation))))
 
-        call addResistance(arr, start_name//"_S", trim(start_name)//"_genR",end_name, R)
+        call addResistance(arr, start_name//"_S", trim(start_name)//"_genR",end_name, source%resistance)
     end subroutine
 
-    subroutine addISourceWithParallelR(arr, a_name, start_name, end_name, source, R)
+    subroutine addISourceWithParallelR(arr, a_name, start_name, end_name, source)
         character(len=256), allocatable, intent(inout) :: arr(:)
-        character(*), intent(in) :: a_name, start_name, end_name, source
-        real(kind=rkind), intent(in) :: R
+        character(*), intent(in) :: a_name, start_name, end_name
+        type(node_source_t) :: source
         character(len=256) :: buff
 
         buff=trim("A"//a_name)//" %id(["//trim(start_name)//" "//trim(end_name)//"]) filesrc"
         call appendToStringArray(arr, buff) 
-        buff=trim(".model filesrc filesource(file=""" // trim(source) //""""//" amploffset=[0.0] amplscale=[1.0])")
+        buff=trim(".model filesrc filesource(file=""" // trim(source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
         call appendToStringArray(arr, buff) 
-        call create_symlink(trim(source), trim(lowercase_string(trim(source))))
+        call create_symlink(trim(source%path_to_excitation), trim(lowercase_string(trim(source%path_to_excitation))))
 
-        call addResistance(arr, start_name//"_S", end_name, start_name//"_S", R)
+        call addResistance(arr, start_name//"_S", end_name, start_name//"_S", source%resistance)
 
     end subroutine
 
