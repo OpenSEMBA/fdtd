@@ -854,15 +854,9 @@ contains
         type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
-        character(len=256) :: buff
-        character(30) :: line_c
-
-        write(line_c, *) node%line_c_per_meter*node%step/2
 
         allocate(res(0))
-        buff = trim("R" // node%name // " " // node%name // " " // end_node//" 1e22")
-        call appendToStringArray(res, buff)
-
+        call addResistance(res,node%name, node%name, end_node, 1e22)
         call addTransmissionLineEquivalent(res, node)
         call addConductance(res, node)
 
