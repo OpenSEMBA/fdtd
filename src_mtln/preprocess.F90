@@ -624,11 +624,13 @@ contains
             call addResistance(res,  node%name, node%name, node%name//"_S", termination%resistance)
             call addInductance(res,  node%name, node%name, node%name//"_S", termination%inductance)
             call addCapacitance(res, node%name, node%name, node%name//"_S", termination%capacitance)
-            if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
-            else if (isISource(termination)) then 
-                call addISourceWithParallelR(res,node%name//"_S", end_node, trim(node%name) //"_S", termination%source)
-            end if
+            call addSource(res, node%name, end_node, termination)
+            ! if (isVSource(termination)) then 
+            !     call addVSourceWithSeriesR(res, node%name, end_node, termination%source)
+            !     ! call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
+            ! else if (isISource(termination)) then 
+            !     call addISourceWithParallelR(res,node%name//"_S", end_node, trim(node%name) //"_S", termination%source)
+            ! end if
         else
             call addResistance(res,  node%name, node%name, end_node, termination%resistance)
             call addInductance(res,  node%name, node%name, end_node, termination%inductance)
@@ -657,12 +659,13 @@ contains
         call addResistance(res, start, start, start//"_R", termination%resistance)
         call addInductance(res, start, start//"_R", start//"_L", termination%inductance)
         if (hasSource(termination)) then
-            call addCapacitance(res, start, start//"_L", start//"_S", termination%capacitance)
-            if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res, start//"_S", start//"_S", end, termination%source)
-            else if (isISource(termination)) then 
-                call addISourceWithParallelR(res,start//"_S", end, start//"_S", termination%source)
-            end if
+            call addSource(res, node%name, end_node, termination)
+            ! call addCapacitance(res, start, start//"_L", start//"_S", termination%capacitance)
+            ! if (isVSource(termination)) then 
+            !     call addVSourceWithSeriesR(res, start//"_S", start//"_S", end, termination%source)
+            ! else if (isISource(termination)) then 
+            !     call addISourceWithParallelR(res,start//"_S", end, start//"_S", termination%source)
+            ! end if
         else
             call addCapacitance(res, start, start//"_L", end, termination%capacitance)
         end if
@@ -702,14 +705,13 @@ contains
         allocate(res(0))
 
         if (hasSource(termination)) then
-            ! call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10, rkind))
-            ! buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
-            ! call appendToStringArray(res, buff)
-            if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res, node%name//"_S", node%name, end_node, termination%source)
-            else if (isISource(termination)) then 
-                call addISourceWithParallelR(res, node%name//"_S", end_node, node%name, termination%source)
-            end if
+            call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10, rkind))
+            call addSource(res, node%name, end_node, termination)
+            ! if (isVSource(termination)) then 
+            !     call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
+            ! else if (isISource(termination)) then 
+            !     call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", termination%source)
+            ! end if
         else
             call addResistance(res, node%name, node%name, end_node, real(1e-10, rkind))
         end if
@@ -734,12 +736,13 @@ contains
         allocate(res(0))
         call includeModelFile(res, termination%model%file)
         if (hasSource(termination)) then
-            if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res, node%name//"_S", node%name, node%name//"_S",  termination%source)
-            else if (isISource(termination)) then 
-                call addISourceWithParallelR(res, node%name//"_S", node%name//"_S", node%name, termination%source)
-            end if
-            call addXComponent(res, node%name, node%name//"_S", end_node, termination%model%name)
+            call addXComponent(res, node%name, node%name, node%name//"_S", termination%model%name)
+            call addSource(res, node%name, end_node, termination)
+            ! if (isVSource(termination)) then 
+            !     call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node,  termination%source)
+            ! else if (isISource(termination)) then 
+            !     call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", termination%source)
+            ! end if
         else
             call addXComponent(res, node%name, node%name, end_node, termination%model%name)
         end if
@@ -748,7 +751,7 @@ contains
     end function
 
     !     |--I--|   
-    ! 0---|     ¡--R--L--!
+    ! 0---|     ¡--R--L--[A]--!
     !     |--C--|
     !
     ! ¡: start !: end
@@ -763,11 +766,12 @@ contains
         call addResistance(res, node%name, node%name//"_R", node%name, termination%resistance)
         if (hasSource(termination)) then
             call addInductance(res, node%name, node%name//"_R",node%name//"_S", termination%inductance)
-            if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
-            else if (isISource(termination)) then 
-                call addISourceWithParallelR(res,node%name//"_S", end_node, trim(node%name) //"_S", termination%source)
-            end if
+            call addSource(res, node%name, end_node, termination)
+            ! if (isVSource(termination)) then 
+            !     call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
+            ! else if (isISource(termination)) then 
+            !     call addISourceWithParallelR(res,node%name//"_S", end_node, trim(node%name) //"_S", termination%source)
+            ! end if
         else
             call addInductance(res, node%name, node%name//"_R",end_node, termination%inductance)
         end if
@@ -819,11 +823,12 @@ contains
         allocate(res(0))
         if (hasSource(termination)) then
             call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10,rkind))
-            if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res,node%name//"_S", node%name//"_S", end_node,  termination%source)
-            else if (isISource(termination)) then 
-                call addISourceWithParallelR(res,node%name//"_S", end_node, node%name//"_S", termination%source)
-            end if
+            call addSource(res, node%name, end_node, termination)
+            ! if (isVSource(termination)) then 
+            !     call addVSourceWithSeriesR(res,node%name//"_S", node%name//"_S", end_node,  termination%source)
+            ! else if (isISource(termination)) then 
+            !     call addISourceWithParallelR(res,node%name//"_S", end_node, node%name//"_S", termination%source)
+            ! end if
         else
             call addResistance(res,node%name, node%name, end_node, real(1e-10,rkind))
         end if
@@ -927,11 +932,12 @@ contains
         if (hasSource(termination)) then
             call addComponent(res, Y//node%name, node%name//"_X", node%name//"_S", termination_y)
             call addComponent(res, Z//node%name, node%name, node%name//"_S", termination_z)
-            if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
-            else if (isISource(termination)) then 
-                call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", termination%source)
-            end if
+            call addSource(res, node%name, end_node, termination)
+            ! if (isVSource(termination)) then 
+            !     call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
+            ! else if (isISource(termination)) then 
+            !     call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", termination%source)
+            ! end if
         else 
             call addComponent(res, Y//node%name, node%name//"_X", end_node, termination_y)
             call addComponent(res, Z//node%name, node%name, end_node, termination_z)
@@ -979,11 +985,12 @@ contains
         if (hasSource(termination)) then
             call addComponent(res,Y//node%name, node%name//"_p", node%name//"_S", termination_y)
             call addComponent(res,Z//node%name, node%name//"_p", node%name//"_S", termination_z)
-            if (isVSource(termination)) then 
-                call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
-            else if (isISource(termination)) then 
-                call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", termination%source)
-            end if
+            call addSource(res, node%name, end_node, termination)
+            ! if (isVSource(termination)) then 
+            !     call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
+            ! else if (isISource(termination)) then 
+            !     call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", termination%source)
+            ! end if
         else
             call addComponent(res,Y//node%name, node%name//"_p", end_node, termination_y)
             call addComponent(res,Z//node%name, node%name//"_p", end_node, termination_z)
@@ -1003,12 +1010,24 @@ contains
         call addCapacitance(arr, "L"//node%name, node%name, "0", node%line_c_per_meter * node%step/2)
     end subroutine
 
-    subroutine addVSourceWithSeriesR(arr, a_name, start_name, end_name, source)
+    subroutine addSource(arr, start_name, end_name, termination)
         character(len=256), allocatable, intent(inout) :: arr(:)
-        character(*), intent(in) :: a_name, start_name, end_name
+        character(*), intent(in) :: start_name, end_name
+        type(termination_t) :: termination
+        if (isVSource(termination)) then 
+            call addVSourceWithSeriesR(res, start_name, end_node, termination%source)
+        else if (isISource(termination)) then 
+            call addISourceWithParallelR(res,start_name, end_node, termination%source)
+        end if
+    end subroutine
+
+
+    subroutine addVSourceWithSeriesR(arr, start_name, end_name, source)
+        character(len=256), allocatable, intent(inout) :: arr(:)
+        character(*), intent(in) :: start_name, end_name
         type(node_source_t) :: source
         character(len=256) :: buff
-        buff=trim("A"//a_name)//" %vd(["//trim(start_name)//" "//trim(start_name)//"_genR]) filesrc"
+        buff=trim("A"//start_name//"_S ")//" %vd(["//trim(start_name)//" "//trim(start_name)//"_genR]) filesrc"
         call appendToStringArray(arr, buff) 
         buff=trim(".model filesrc filesource(file=""" // trim(source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
         call appendToStringArray(arr, buff) 
@@ -1017,19 +1036,18 @@ contains
         call addResistance(arr, start_name//"_S", trim(start_name)//"_genR",end_name, source%resistance)
     end subroutine
 
-    subroutine addISourceWithParallelR(arr, a_name, start_name, end_name, source)
+    subroutine addISourceWithParallelR(arr, start_name, end_name, source)
         character(len=256), allocatable, intent(inout) :: arr(:)
-        character(*), intent(in) :: a_name, start_name, end_name
+        character(*), intent(in) :: start_name, end_name
         type(node_source_t) :: source
         character(len=256) :: buff
-
-        buff=trim("A"//a_name)//" %id(["//trim(start_name)//" "//trim(end_name)//"]) filesrc"
+        buff=trim("A"//start_name//"_S ")//" %id(["//trim(end_name)//" "//trim(start_name)//"]) filesrc"
         call appendToStringArray(arr, buff) 
         buff=trim(".model filesrc filesource(file=""" // trim(source%path_to_excitation) //""""//" amploffset=[0.0] amplscale=[1.0])")
         call appendToStringArray(arr, buff) 
         call create_symlink(trim(source%path_to_excitation), trim(lowercase_string(trim(source%path_to_excitation))))
 
-        call addResistance(arr, start_name//"_S", end_name, start_name//"_S", source%resistance)
+        call addResistance(arr, start_name//"_S", start_name//"_S", end_name, source%resistance)
 
     end subroutine
 
