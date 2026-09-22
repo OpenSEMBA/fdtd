@@ -27,6 +27,21 @@
       }
     },
     {
+      "name": "rls-cuda",
+      "inherits": "rls",
+      "binaryDir": "build-rls-cuda/",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_CUDA": "ON",
+        "SEMBA_FDTD_ENABLE_MPI": "OFF",
+        "SEMBA_FDTD_ENABLE_MTLN": "OFF",
+        "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "OFF"
+      },
+      "environment": {
+        "PATH": "/usr/bin:/bin:$penv{PATH}",
+        "LD_LIBRARY_PATH": "/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu:/usr/local/cuda-13.3/lib64"
+      }
+    },
+    {
       "name": "dbg-mpi",
       "inherits": "dbg",
       "binaryDir": "build-dbg-mpi/",
@@ -96,6 +111,10 @@
     {
       "name": "rls-mpi",
       "configurePreset": "rls-mpi"
+    },
+    {
+      "name": "rls-cuda",
+      "configurePreset": "rls-cuda"
     },
     {
       "name": "dbg-mpi",

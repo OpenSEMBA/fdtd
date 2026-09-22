@@ -12,6 +12,7 @@ function(semba_print_configuration_summary)
 	message(STATUS "  MPI: ${SEMBA_FDTD_ENABLE_MPI}")
 	message(STATUS "  MTLN: ${SEMBA_FDTD_ENABLE_MTLN}")
 	message(STATUS "  SMBJSON: ${SEMBA_FDTD_ENABLE_SMBJSON}")
+	message(STATUS "  CUDA: ${SEMBA_FDTD_ENABLE_CUDA}")
 	message(STATUS "  Tests: ${SEMBA_FDTD_ENABLE_TEST}")
 
 	if(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION)

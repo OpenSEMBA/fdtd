@@ -14,6 +14,20 @@ option(SEMBA_FDTD_ENABLE_MPI "Use MPI" OFF)
 option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
 option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
+option(SEMBA_FDTD_ENABLE_CUDA "Device-resident Yee+CPML (single GPU; no MPI/MTLN)" OFF)
+
+if(SEMBA_FDTD_ENABLE_CUDA)
+	if(SEMBA_FDTD_ENABLE_MPI)
+		message(FATAL_ERROR "SEMBA_FDTD_ENABLE_CUDA requires SEMBA_FDTD_ENABLE_MPI=OFF (first slice)")
+	endif()
+	if(SEMBA_FDTD_ENABLE_MTLN)
+		message(FATAL_ERROR "SEMBA_FDTD_ENABLE_CUDA requires SEMBA_FDTD_ENABLE_MTLN=OFF (first slice)")
+	endif()
+	if(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION)
+		message(FATAL_ERROR "SEMBA_FDTD_ENABLE_CUDA requires single precision (CompileWithReal4)")
+	endif()
+	add_definitions(-DCompileWithCUDA)
+endif()
 
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 option(SEMBA_FDTD_OUTPUTS_LIB "Build standalone outputs library" ON)
@@ -234,6 +248,12 @@ set(VTK_API_LIBRARIES vtkAPI)
 add_subdirectory(src_conformal)
 set(CONFORMAL_LIBRARIES conformal)
 
+set(CUDA_LIBRARIES "")
+if(SEMBA_FDTD_ENABLE_CUDA)
+	add_subdirectory(src_cuda)
+	set(CUDA_LIBRARIES fdtd-cuda)
+endif()
+
 if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(external/googletest/)
 	add_subdirectory(test)
@@ -258,7 +278,7 @@ add_library(semba-components
 	"src_wires_pub/wires.F90"
 	"src_wires_pub/wires_mtln.F90"
 )
-target_link_libraries(semba-components semba-types semba-reports ${MTLN_LIBRARIES})
+target_link_libraries(semba-components semba-types semba-reports ${MTLN_LIBRARIES} ${CUDA_LIBRARIES})
 
 if(SEMBA_FDTD_OUTPUTS_LIB)
 	add_library(semba-outputs
@@ -300,7 +320,8 @@ add_library(semba-main
 		${OUTPUT_LIBRARIES}
 		${VTK_API_LIBRARIES}
 		${SMBJSON_LIBRARIES}
-		${MTLN_LIBRARIES})
+		${MTLN_LIBRARIES}
+		${CUDA_LIBRARIES})
 endif()
 
 if(SEMBA_FDTD_EXECUTABLE)
@@ -309,6 +330,10 @@ if(SEMBA_FDTD_EXECUTABLE)
 	)
 	target_link_libraries(semba-fdtd semba-main semba-reports)
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
+	if(SEMBA_FDTD_ENABLE_CUDA)
+		# CUDA device objects pull in C++ runtime symbols
+		target_link_libraries(semba-fdtd stdc++)
+	endif()
 endif()
 
 
