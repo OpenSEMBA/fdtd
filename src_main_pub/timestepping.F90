@@ -28,6 +28,9 @@ module Solver_m
    use nodalsources_m
    use Lumped_m
    use PMLbodies_m
+#ifdef CompileWithCUDA
+   use fdtd_cuda_m
+#endif
    use interpreta_switches_m, only: entrada_t
 #ifdef CompileWithMPI
    use MPIcomm_m
@@ -115,6 +118,28 @@ module Solver_m
       type(mtln_t) :: mtln_parsed
 #endif
 
+      ! Coarse phase timers (SEMBA_PHASE_TIMERS=1). Buckets for CUDA feasibility profiling.
+      logical :: phase_timers_on = .false.
+      integer(kind=8) :: phase_clock_rate = 0_8
+      integer(kind=8) :: phase_t0 = 0_8
+      real(kind=8) :: phase_t_yee = 0.0d0
+      real(kind=8) :: phase_t_cpml = 0.0d0
+      real(kind=8) :: phase_t_wires = 0.0d0
+      real(kind=8) :: phase_t_other = 0.0d0
+      real(kind=8) :: phase_t_mpi = 0.0d0
+      real(kind=8) :: phase_t_outputs = 0.0d0
+
+#ifdef CompileWithCUDA
+      ! Device residency: host arrays are a cache of device Ex..Hz.
+      logical :: cuda_host_current = .true.
+      logical :: cuda_device_current = .true.
+      logical :: cuda_device_stale_box = .false.
+      logical :: cuda_pw_box_valid = .false.
+      integer(kind=4) :: cuda_pw_xi = 0, cuda_pw_xe = 0
+      integer(kind=4) :: cuda_pw_yi = 0, cuda_pw_ye = 0
+      integer(kind=4) :: cuda_pw_zi = 0, cuda_pw_ze = 0
+#endif
+
    contains
       procedure :: init => solver_init
       procedure :: run => solver_run
@@ -148,6 +173,24 @@ module Solver_m
       procedure :: CloneMagneticPeriodic => solver_CloneMagneticPeriodic
       procedure :: advanceMagneticMUR => solver_advanceMagneticMUR
       procedure :: destroy_and_deallocate
+#ifdef CompileWithCUDA
+      procedure :: init_cuda_device => solver_init_cuda_device
+      procedure :: cuda_upload_fields => solver_cuda_upload_fields
+      procedure :: cuda_download_fields => solver_cuda_download_fields
+      procedure, private :: cuda_ensure_device => solver_cuda_ensure_device
+      procedure, private :: cuda_ensure_host => solver_cuda_ensure_host
+      procedure, private :: cuda_ensure_host_pw_box => solver_cuda_ensure_host_pw_box
+      procedure, private :: cuda_mark_host_stale => solver_cuda_mark_host_stale
+      procedure, private :: cuda_mark_device_stale => solver_cuda_mark_device_stale
+      procedure, private :: cuda_upload_pw_box => solver_cuda_upload_pw_box
+      procedure, private :: cuda_download_pw_box => solver_cuda_download_pw_box
+      procedure, private :: cuda_capture_pw_box => solver_cuda_capture_pw_box
+      procedure, private :: cuda_abs_to_ibox => solver_cuda_abs_to_ibox
+#endif
+      procedure, private :: phase_timer_init
+      procedure, private :: phase_tic
+      procedure, private :: phase_toc
+      procedure, private :: phase_timer_report
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
 #endif
@@ -237,6 +280,23 @@ module Solver_m
       this%control%createh5bin =  input%createh5bin
       this%control%wirecrank =  input%wirecrank
       this%control%fatalerror =  input%fatalerror
+      this%control%use_cuda = .false.
+#ifdef CompileWithCUDA
+      block
+         character(len=64) :: devenv
+         integer :: istat
+         call get_environment_variable('SEMBA_FDTD_DEVICE', devenv, status=istat)
+         if (istat == 0) then
+            if (trim(adjustl(devenv)) == 'cuda' .or. trim(adjustl(devenv)) == 'CUDA') then
+               this%control%use_cuda = .true.
+            end if
+         end if
+         if (index(input%opcionestotales, '-device cuda') > 0 .or. &
+             index(input%opcionestotales, '-device=cuda') > 0) then
+            this%control%use_cuda = .true.
+         end if
+      end block
+#endif
 
       this%control%cfl = input%cfl
       this%control%attfactorc = input%attfactorc
@@ -432,6 +492,7 @@ module Solver_m
       this%control%fatalerror=.false.
 
       this%parar=.false.
+      call this%phase_timer_init()
       call this%perform%reset()
       call this%d_perform%reset()
       call this%thereAre%reset()
@@ -596,6 +657,12 @@ module Solver_m
 
       call fillMtag(this%sgg, this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMtag, this%bounds, this%tag_numbers)
       call initializeObservation()
+
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda) then
+         call this%init_cuda_device()
+      end if
+#endif
 
       !!!!voy a jugar con fuego !!!210815 sincronizo las matrices de medios porque a veces se precisan. Reutilizo rutinas viejas mias NO CRAY. Solo se usan aqui
       !MPI initialization
@@ -1856,6 +1923,8 @@ contains
          this%n=this%n+1 !sube de iteracion
       end do ciclo_temporal ! End of the time-stepping loop
 
+      call this%phase_timer_report()
+
 
 contains
 
@@ -1907,12 +1976,17 @@ contains
 
       subroutine updateAndFlush()
          integer(kind=4) :: mindum
+         call this%phase_tic()
          if (this%thereAre%Observation) then
+#ifdef CompileWithCUDA
+            if (this%control%use_cuda) call this%cuda_ensure_host()
+#endif
             if (this%n > 0 .and. mod(this%n, OUTPUT_TIME_BUFFER_SIZE) == 0) then
                call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .FALSE.)
             end if
             call update_outputs(this%control, this%sgg%tiempo(this%n), this%n, fieldReference, this%sgg)
          end if
+         call this%phase_toc(6) ! outputs
       end subroutine
 
       subroutine singleUnpack()
@@ -1953,54 +2027,182 @@ contains
       integer(kind=4) :: ierr
 #endif
 
+      call this%phase_tic()
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       call this%AdvanceAnisotropicE()
-      call this%advanceE()
+      call this%phase_toc(4) ! other
 
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda) call this%cuda_ensure_device()
+#endif
+      call this%phase_tic()
+      call this%advanceE()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda) call this%cuda_mark_host_stale()
+#endif
+      call this%phase_toc(1) ! yee
+
+      call this%phase_tic()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. this%thereAre%Wires) then
+         call this%cuda_ensure_host()
+      end if
+#endif
       call this%advanceWiresE()
 #ifdef CompileWithMTLN
        if (this%mtlnObservationInitialized) call UpdateMTLNObservation(this%n)
 #endif
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. this%thereAre%Wires) then
+         call this%cuda_mark_device_stale(.false.)
+         call this%cuda_ensure_device()
+      end if
+#endif
+      call this%phase_toc(3) ! wires
+
+#ifdef CompileWithCUDA
+      ! Host CPML only when device CPML is not ready.
+      if (this%control%use_cuda .and. .not. cuda_cpml_is_ready()) call this%cuda_ensure_host()
+#endif
+      call this%phase_tic()
       call this%advancePMLE()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. .not. cuda_cpml_is_ready()) then
+         call this%cuda_mark_device_stale(.false.)
+      else if (this%control%use_cuda) then
+         call this%cuda_mark_host_stale()
+      end if
+#endif
+      call this%phase_toc(2) ! cpml
+
+      call this%phase_tic()
 #ifdef CompileWithNIBC
-      if (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(this%sgg%alloc, this%Ex, this%Ey, this%Ez)
+      if (this%thereAre%Multiports.and.(this%control%mibc)) then
+#ifdef CompileWithCUDA
+         if (this%control%use_cuda) call this%cuda_ensure_host()
+#endif
+         call AdvanceMultiportE(this%sgg%alloc, this%Ex, this%Ey, this%Ez)
+#ifdef CompileWithCUDA
+         if (this%control%use_cuda) call this%cuda_mark_device_stale(.false.)
+#endif
+      end if
 #endif
       call this%AdvancesgbcE()
       call this%advanceLumpedE()
       call this%advanceEDispersiveE()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. this%thereAre%PlaneWaveBoxes .and. this%still_planewave_time) then
+         call this%cuda_ensure_host_pw_box()
+      end if
+#endif
       call this%advancePlaneWaveE()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. this%thereAre%PlaneWaveBoxes .and. this%still_planewave_time) then
+         call this%cuda_mark_device_stale(.true.)
+      end if
+#endif
       call this%advanceNodalE()
+      call this%phase_toc(4) ! other
 
 #ifdef CompileWithMPI
+      call this%phase_tic()
       if (this%control%num_procs>1) then
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          call FlushMPI_E_Cray
       end if
+      call this%phase_toc(5) ! mpi
 #endif
 
+      call this%phase_tic()
       call this%advanceAnisotropicH()
+      call this%phase_toc(4) ! other
+
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda) call this%cuda_ensure_device()
+#endif
+      call this%phase_tic()
       call this%advanceH()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda) call this%cuda_mark_host_stale()
+#endif
+      call this%phase_toc(1) ! yee
+
+      call this%phase_tic()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. .not. cuda_cpml_is_ready()) call this%cuda_ensure_host()
+#endif
       call this%advancePMLbodyH()
       call this%AdvanceMagneticCPML()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. .not. cuda_cpml_is_ready()) then
+         call this%cuda_mark_device_stale(.false.)
+      else if (this%control%use_cuda) then
+         call this%cuda_mark_host_stale()
+      end if
+#endif
+      call this%phase_toc(2) ! cpml
+
+      call this%phase_tic()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. (this%thereAre%PMCBorders .or. this%thereAre%PeriodicBorders)) then
+         call this%cuda_ensure_host()
+      end if
+#endif
       call this%MinusCloneMagneticPMC()
       call this%CloneMagneticPeriodic()
       call this%AdvancesgbcH()
       call this%AdvanceMDispersiveH()
 #ifdef CompileWithNIBC
-      if (this%thereAre%Multiports .and.(this%control%mibc))  &
+      if (this%thereAre%Multiports .and.(this%control%mibc))  then
+#ifdef CompileWithCUDA
+         if (this%control%use_cuda) call this%cuda_ensure_host()
+#endif
          call AdvanceMultiportH (this%sgg%alloc,this%Hx,this%Hy,this%Hz, & 
                                  this%Ex,this%Ey,this%Ez,& 
                                  this%Idxe,this%Idye,this%Idze, & 
                                  this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
                                  this%g%gm2,this%sgg%nummedia,this%control%conformalskin)
+#ifdef CompileWithCUDA
+         if (this%control%use_cuda) call this%cuda_mark_device_stale(.false.)
+#endif
+      end if
+#endif
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. this%thereAre%PlaneWaveBoxes .and. this%still_planewave_time) then
+         call this%cuda_ensure_host_pw_box()
+      end if
 #endif
       call this%advancePlaneWaveH()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. this%thereAre%PlaneWaveBoxes .and. this%still_planewave_time) then
+         call this%cuda_mark_device_stale(.true.)
+      end if
+#endif
       call this%advanceNodalH()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. (this%thereAre%PMCBorders .or. this%thereAre%PeriodicBorders)) then
+         call this%cuda_mark_device_stale(.false.)
+      end if
+#endif
+      call this%phase_toc(4) ! other
+
+      call this%phase_tic()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. this%thereAre%Wires) call this%cuda_ensure_host()
+#endif
       call this%advanceWiresH()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. this%thereAre%Wires) call this%cuda_mark_device_stale(.false.)
+#endif
+      call this%phase_toc(3) ! wires
+
+      call this%phase_tic()
       call this%MinusCloneMagneticPMC()
       call this%CloneMagneticPeriodic()
+      call this%phase_toc(4) ! other
 
 #ifdef CompileWithMPI
+      call this%phase_tic()
       !!Flush all the MPI (esto estaba justo al principo del bucle temporal diciendo que era necesario para correcto resuming)
       !lo he movido aqui a 16/10/2012 porque el farfield necesita tener los campos magneticos correctos
       !e intuyo que el Bloque current tambien a tenor del comentario siguiente
@@ -2034,8 +2236,17 @@ contains
 #ifdef CompileWithStochastic
          if (this%control%stochastic) call syncstoch_mpi_lumped(this%control%simu_devia,this%control%layoutnumber,this%control%num_procs)
 #endif    
+      call this%phase_toc(5) ! mpi
 #endif 
+      call this%phase_tic()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. this%thereAre%MURBorders) call this%cuda_ensure_host()
+#endif
       call this%advanceMagneticMUR()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. this%thereAre%MURBorders) call this%cuda_mark_device_stale(.false.)
+#endif
+      call this%phase_toc(4) ! other (mur / simple BC)
 contains
 
    subroutine flushPlanewaveOff(pw_switched_off, pw_still_time, pw_thereAre)
@@ -2126,6 +2337,16 @@ contains
       real(kind=rkind) :: Idzhk, Idyhj
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
+#ifdef CompileWithCUDA
+      type(fdtd_ibox_c) :: sweep
+      if (this%control%use_cuda .and. fdtd_cuda_ok_f()) then
+         sweep = fdtd_ibox_c(1, this%bounds%sweepEx%NX, 1, this%bounds%sweepEx%NY, 1, this%bounds%sweepEx%NZ)
+         if (fdtd_cuda_advance_ex_f(sweep) == 0) then
+            call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA advanceEx failed')
+         end if
+         return
+      end if
+#endif
 
       Ex(0:this%bounds%Ex%NX-1,0:this%bounds%Ex%NY-1,0:this%bounds%Ex%NZ-1) => this%Ex
       Hy(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1) => this%Hy
@@ -2169,6 +2390,16 @@ contains
       real(kind=rkind) :: Idzhk
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
+#ifdef CompileWithCUDA
+      type(fdtd_ibox_c) :: sweep
+      if (this%control%use_cuda .and. fdtd_cuda_ok_f()) then
+         sweep = fdtd_ibox_c(1, this%bounds%sweepEy%NX, 1, this%bounds%sweepEy%NY, 1, this%bounds%sweepEy%NZ)
+         if (fdtd_cuda_advance_ey_f(sweep) == 0) then
+            call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA advanceEy failed')
+         end if
+         return
+      end if
+#endif
 
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
       Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
@@ -2214,7 +2445,16 @@ contains
       real(kind = RKIND) :: Idyhj
       integer(kind = 4) :: i, j, k
       integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
-
+#ifdef CompileWithCUDA
+      type(fdtd_ibox_c) :: sweep
+      if (this%control%use_cuda .and. fdtd_cuda_ok_f()) then
+         sweep = fdtd_ibox_c(1, this%bounds%sweepEz%NX, 1, this%bounds%sweepEz%NY, 1, this%bounds%sweepEz%NZ)
+         if (fdtd_cuda_advance_ez_f(sweep) == 0) then
+            call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA advanceEz failed')
+         end if
+         return
+      end if
+#endif
 
       Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
       Hx(0:this%bounds%HX%NX-1,0:this%bounds%HX%NY-1,0:this%bounds%HX%NZ-1) => this%Hx
@@ -2277,6 +2517,16 @@ contains
       real(kind=rkind) :: Idzek, Idyej
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
+#ifdef CompileWithCUDA
+      type(fdtd_ibox_c) :: sweep
+      if (this%control%use_cuda .and. fdtd_cuda_ok_f()) then
+         sweep = fdtd_ibox_c(1, this%bounds%sweepHx%NX, 1, this%bounds%sweepHx%NY, 1, this%bounds%sweepHx%NZ)
+         if (fdtd_cuda_advance_hx_f(sweep) == 0) then
+            call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA advanceHx failed')
+         end if
+         return
+      end if
+#endif
 
       Hx(0:this%bounds%Hx%NX-1,0:this%bounds%Hx%NY-1,0:this%bounds%Hx%NZ-1) => this%Hx
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
@@ -2320,6 +2570,16 @@ contains
       real(kind=rkind) :: Idzek
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
+#ifdef CompileWithCUDA
+      type(fdtd_ibox_c) :: sweep
+      if (this%control%use_cuda .and. fdtd_cuda_ok_f()) then
+         sweep = fdtd_ibox_c(1, this%bounds%sweepHy%NX, 1, this%bounds%sweepHy%NY, 1, this%bounds%sweepHy%NZ)
+         if (fdtd_cuda_advance_hy_f(sweep) == 0) then
+            call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA advanceHy failed')
+         end if
+         return
+      end if
+#endif
 
       Hy(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1) => this%Hy
       Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
@@ -2361,6 +2621,16 @@ contains
       real(kind = RKIND) :: Idyej
       integer(kind = 4) :: i, j, k
       integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
+#ifdef CompileWithCUDA
+      type(fdtd_ibox_c) :: sweep
+      if (this%control%use_cuda .and. fdtd_cuda_ok_f()) then
+         sweep = fdtd_ibox_c(1, this%bounds%sweepHz%NX, 1, this%bounds%sweepHz%NY, 1, this%bounds%sweepHz%NZ)
+         if (fdtd_cuda_advance_hz_f(sweep) == 0) then
+            call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA advanceHz failed')
+         end if
+         return
+      end if
+#endif
       Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
       Ex(0:this%bounds%EX%NX-1,0:this%bounds%EX%NY-1,0:this%bounds%EX%NZ-1) => this%Ex
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
@@ -2767,6 +3037,9 @@ contains
       call DestroyPMLbodies(this%sgg)
       call DestroyMURBorders
       !Destroy the remaining
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda) call fdtd_cuda_destroy_f()
+#endif
       deallocate(this%sgg%Med,this%sgg%LineX,this%sgg%LineY,this%sgg%LineZ,this%sgg%DX,this%sgg%DY,this%sgg%DZ,this%sgg%tiempo)
       call this%g%destroy()
       deallocate(this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
@@ -2774,7 +3047,313 @@ contains
       return
    end subroutine destroy_and_deallocate
 
-   
-   
+#ifdef CompileWithCUDA
+   subroutine solver_init_cuda_device(this)
+      class(solver_t) :: this
+      type(fdtd_dims3_c) :: dex, dey, dez, dhx, dhy, dhz
+      type(fdtd_dims3_c) :: mex, mey, mez, mhx, mhy, mhz
+      logical :: ok
+      integer :: irc
+      character(len=bufsize) :: dubuf
+
+      call fdtd_cuda_create_f(ok)
+      if (.not. ok) then
+         call stoponerror(this%control%layoutnumber, this%control%num_procs, &
+            'CUDA device init failed (SEMBA_FDTD_DEVICE=cuda)')
+         return
+      end if
+
+      dex = fdtd_dims3_c(this%bounds%Ex%NX, this%bounds%Ex%NY, this%bounds%Ex%NZ)
+      dey = fdtd_dims3_c(this%bounds%Ey%NX, this%bounds%Ey%NY, this%bounds%Ey%NZ)
+      dez = fdtd_dims3_c(this%bounds%Ez%NX, this%bounds%Ez%NY, this%bounds%Ez%NZ)
+      dhx = fdtd_dims3_c(this%bounds%Hx%NX, this%bounds%Hx%NY, this%bounds%Hx%NZ)
+      dhy = fdtd_dims3_c(this%bounds%Hy%NX, this%bounds%Hy%NY, this%bounds%Hy%NZ)
+      dhz = fdtd_dims3_c(this%bounds%Hz%NX, this%bounds%Hz%NY, this%bounds%Hz%NZ)
+      mex = fdtd_dims3_c(this%bounds%sggMiEx%NX, this%bounds%sggMiEx%NY, this%bounds%sggMiEx%NZ)
+      mey = fdtd_dims3_c(this%bounds%sggMiEy%NX, this%bounds%sggMiEy%NY, this%bounds%sggMiEy%NZ)
+      mez = fdtd_dims3_c(this%bounds%sggMiEz%NX, this%bounds%sggMiEz%NY, this%bounds%sggMiEz%NZ)
+      mhx = fdtd_dims3_c(this%bounds%sggMiHx%NX, this%bounds%sggMiHx%NY, this%bounds%sggMiHx%NZ)
+      mhy = fdtd_dims3_c(this%bounds%sggMiHy%NX, this%bounds%sggMiHy%NY, this%bounds%sggMiHy%NZ)
+      mhz = fdtd_dims3_c(this%bounds%sggMiHz%NX, this%bounds%sggMiHz%NY, this%bounds%sggMiHz%NZ)
+
+      irc = fdtd_cuda_alloc_fields_f(dex, dey, dez, dhx, dhy, dhz)
+      if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA alloc fields failed')
+      irc = fdtd_cuda_alloc_media_f(mex, mey, mez, mhx, mhy, mhz)
+      if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA alloc media failed')
+      irc = fdtd_cuda_alloc_coeffs_f(this%sgg%NumMedia)
+      if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA alloc coeffs failed')
+      irc = fdtd_cuda_alloc_metrics_f(size(this%Idxh), size(this%Idyh), size(this%Idzh), &
+                                     size(this%Idxe), size(this%Idye), size(this%Idze))
+      if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA alloc metrics failed')
+
+      irc = fdtd_cuda_upload_media_f(this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, &
+                                     this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz)
+      if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA upload media failed')
+      irc = fdtd_cuda_upload_coeffs_f(this%g%g1, this%g%g2, this%g%gm1, this%g%gm2, this%sgg%NumMedia)
+      if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA upload coeffs failed')
+      irc = fdtd_cuda_upload_metrics_f(this%Idxh, this%Idyh, this%Idzh, this%Idxe, this%Idye, this%Idze)
+      if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA upload metrics failed')
+      call this%cuda_upload_fields()
+      this%cuda_host_current = .true.
+      this%cuda_device_current = .true.
+      this%cuda_device_stale_box = .false.
+      call this%cuda_capture_pw_box()
+
+      if (this%thereAre%PMLBorders) call InitCPMLBorders_cuda()
+
+      write(dubuf,*) 'CUDA: device-resident Yee(+CPML) enabled (field residency)'
+      call print11(this%control%layoutnumber, dubuf)
+   end subroutine solver_init_cuda_device
+
+   subroutine solver_cuda_capture_pw_box(this)
+      class(solver_t) :: this
+      integer(kind=4) :: pad, jjj
+      this%cuda_pw_box_valid = .false.
+      if (.not. this%thereAre%PlaneWaveBoxes) return
+      if (this%sgg%NumPlaneWaves < 1) return
+      pad = 2
+      this%cuda_pw_xi = huge(1_4)
+      this%cuda_pw_yi = huge(1_4)
+      this%cuda_pw_zi = huge(1_4)
+      this%cuda_pw_xe = -huge(1_4)
+      this%cuda_pw_ye = -huge(1_4)
+      this%cuda_pw_ze = -huge(1_4)
+      do jjj = 1, this%sgg%NumPlaneWaves
+         this%cuda_pw_xi = min(this%cuda_pw_xi, this%sgg%PlaneWave(jjj)%esqx1 - pad)
+         this%cuda_pw_yi = min(this%cuda_pw_yi, this%sgg%PlaneWave(jjj)%esqy1 - pad)
+         this%cuda_pw_zi = min(this%cuda_pw_zi, this%sgg%PlaneWave(jjj)%esqz1 - pad)
+         this%cuda_pw_xe = max(this%cuda_pw_xe, this%sgg%PlaneWave(jjj)%esqx2 + pad)
+         this%cuda_pw_ye = max(this%cuda_pw_ye, this%sgg%PlaneWave(jjj)%esqy2 + pad)
+         this%cuda_pw_ze = max(this%cuda_pw_ze, this%sgg%PlaneWave(jjj)%esqz2 + pad)
+      end do
+      this%cuda_pw_box_valid = .true.
+      if (this%control%layoutnumber == 0) then
+         write(*,'(a,6i6,a,3i6)') 'CUDA PW abs box ', &
+            this%cuda_pw_xi, this%cuda_pw_xe, this%cuda_pw_yi, this%cuda_pw_ye, &
+            this%cuda_pw_zi, this%cuda_pw_ze, ' Ex XI,YI,ZI ', &
+            this%bounds%Ex%XI, this%bounds%Ex%YI, this%bounds%Ex%ZI
+      end if
+   end subroutine solver_cuda_capture_pw_box
+
+   subroutine solver_cuda_abs_to_ibox(this, XI, YI, ZI, NX, NY, NZ, box)
+      class(solver_t) :: this
+      integer(kind=4), intent(in) :: XI, YI, ZI, NX, NY, NZ
+      type(fdtd_ibox_c), intent(out) :: box
+      box%is = max(0, this%cuda_pw_xi - XI)
+      box%ie = min(NX - 1, this%cuda_pw_xe - XI)
+      box%js = max(0, this%cuda_pw_yi - YI)
+      box%je = min(NY - 1, this%cuda_pw_ye - YI)
+      box%ks = max(0, this%cuda_pw_zi - ZI)
+      box%ke = min(NZ - 1, this%cuda_pw_ze - ZI)
+   end subroutine solver_cuda_abs_to_ibox
+
+   subroutine solver_cuda_upload_fields(this)
+      class(solver_t) :: this
+      integer :: irc
+      if (.not. this%control%use_cuda) return
+      irc = fdtd_cuda_upload_fields_f(this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
+      if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA upload fields failed')
+      this%cuda_host_current = .true.
+      this%cuda_device_current = .true.
+      this%cuda_device_stale_box = .false.
+   end subroutine
+
+   subroutine solver_cuda_download_fields(this)
+      class(solver_t) :: this
+      integer :: irc
+      if (.not. this%control%use_cuda) return
+      irc = fdtd_cuda_download_fields_f(this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
+      if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA download fields failed')
+      this%cuda_host_current = .true.
+   end subroutine
+
+   subroutine solver_cuda_upload_pw_box(this)
+      class(solver_t) :: this
+      type(fdtd_ibox_c) :: bex, bey, bez, bhx, bhy, bhz
+      integer :: irc
+      if (.not. this%control%use_cuda) return
+      if (.not. this%cuda_pw_box_valid) then
+         call this%cuda_upload_fields()
+         return
+      end if
+      call this%cuda_abs_to_ibox(this%bounds%Ex%XI, this%bounds%Ex%YI, this%bounds%Ex%ZI, &
+                                 this%bounds%Ex%NX, this%bounds%Ex%NY, this%bounds%Ex%NZ, bex)
+      call this%cuda_abs_to_ibox(this%bounds%Ey%XI, this%bounds%Ey%YI, this%bounds%Ey%ZI, &
+                                 this%bounds%Ey%NX, this%bounds%Ey%NY, this%bounds%Ey%NZ, bey)
+      call this%cuda_abs_to_ibox(this%bounds%Ez%XI, this%bounds%Ez%YI, this%bounds%Ez%ZI, &
+                                 this%bounds%Ez%NX, this%bounds%Ez%NY, this%bounds%Ez%NZ, bez)
+      call this%cuda_abs_to_ibox(this%bounds%Hx%XI, this%bounds%Hx%YI, this%bounds%Hx%ZI, &
+                                 this%bounds%Hx%NX, this%bounds%Hx%NY, this%bounds%Hx%NZ, bhx)
+      call this%cuda_abs_to_ibox(this%bounds%Hy%XI, this%bounds%Hy%YI, this%bounds%Hy%ZI, &
+                                 this%bounds%Hy%NX, this%bounds%Hy%NY, this%bounds%Hy%NZ, bhy)
+      call this%cuda_abs_to_ibox(this%bounds%Hz%XI, this%bounds%Hz%YI, this%bounds%Hz%ZI, &
+                                 this%bounds%Hz%NX, this%bounds%Hz%NY, this%bounds%Hz%NZ, bhz)
+      irc = fdtd_cuda_upload_fields_box_f(this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz, &
+                                          bex, bey, bez, bhx, bhy, bhz)
+      if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, &
+         'CUDA upload fields box failed')
+      this%cuda_device_current = .true.
+      this%cuda_device_stale_box = .false.
+   end subroutine
+
+   subroutine solver_cuda_download_pw_box(this)
+      class(solver_t) :: this
+      type(fdtd_ibox_c) :: bex, bey, bez, bhx, bhy, bhz
+      integer :: irc
+      if (.not. this%control%use_cuda) return
+      if (.not. this%cuda_pw_box_valid) then
+         call this%cuda_download_fields()
+         return
+      end if
+      call this%cuda_abs_to_ibox(this%bounds%Ex%XI, this%bounds%Ex%YI, this%bounds%Ex%ZI, &
+                                 this%bounds%Ex%NX, this%bounds%Ex%NY, this%bounds%Ex%NZ, bex)
+      call this%cuda_abs_to_ibox(this%bounds%Ey%XI, this%bounds%Ey%YI, this%bounds%Ey%ZI, &
+                                 this%bounds%Ey%NX, this%bounds%Ey%NY, this%bounds%Ey%NZ, bey)
+      call this%cuda_abs_to_ibox(this%bounds%Ez%XI, this%bounds%Ez%YI, this%bounds%Ez%ZI, &
+                                 this%bounds%Ez%NX, this%bounds%Ez%NY, this%bounds%Ez%NZ, bez)
+      call this%cuda_abs_to_ibox(this%bounds%Hx%XI, this%bounds%Hx%YI, this%bounds%Hx%ZI, &
+                                 this%bounds%Hx%NX, this%bounds%Hx%NY, this%bounds%Hx%NZ, bhx)
+      call this%cuda_abs_to_ibox(this%bounds%Hy%XI, this%bounds%Hy%YI, this%bounds%Hy%ZI, &
+                                 this%bounds%Hy%NX, this%bounds%Hy%NY, this%bounds%Hy%NZ, bhy)
+      call this%cuda_abs_to_ibox(this%bounds%Hz%XI, this%bounds%Hz%YI, this%bounds%Hz%ZI, &
+                                 this%bounds%Hz%NX, this%bounds%Hz%NY, this%bounds%Hz%NZ, bhz)
+      irc = fdtd_cuda_download_fields_box_f(this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz, &
+                                             bex, bey, bez, bhx, bhy, bhz)
+      if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, &
+         'CUDA download fields box failed')
+      ! Host outside the box remains stale — do not set cuda_host_current.
+   end subroutine
+
+   subroutine solver_cuda_ensure_device(this)
+      class(solver_t) :: this
+      if (.not. this%control%use_cuda) return
+      if (this%cuda_device_current) return
+      if (this%cuda_device_stale_box .and. this%cuda_pw_box_valid) then
+         call this%cuda_upload_pw_box()
+      else
+         call this%cuda_upload_fields()
+      end if
+   end subroutine
+
+   subroutine solver_cuda_ensure_host(this)
+      class(solver_t) :: this
+      if (.not. this%control%use_cuda) return
+      if (this%cuda_host_current) return
+      ! Flush host→device first when PW (or other) host writes left the device stale;
+      ! otherwise a full D2H would wipe those updates.
+      if (.not. this%cuda_device_current) call this%cuda_ensure_device()
+      call this%cuda_download_fields()
+   end subroutine
+
+   subroutine solver_cuda_ensure_host_pw_box(this)
+      class(solver_t) :: this
+      if (.not. this%control%use_cuda) return
+      if (this%cuda_host_current) return
+      ! If device is stale, host already holds the freshest PW-region data
+      ! (e.g. prior AdvancePlaneWave); do not D2H over it.
+      if (.not. this%cuda_device_current) return
+      call this%cuda_download_pw_box()
+   end subroutine
+
+   subroutine solver_cuda_mark_host_stale(this)
+      class(solver_t) :: this
+      if (.not. this%control%use_cuda) return
+      this%cuda_host_current = .false.
+   end subroutine
+
+   subroutine solver_cuda_mark_device_stale(this, box_only)
+      class(solver_t) :: this
+      logical, intent(in) :: box_only
+      if (.not. this%control%use_cuda) return
+      this%cuda_device_current = .false.
+      this%cuda_device_stale_box = box_only .and. this%cuda_pw_box_valid
+   end subroutine
+#endif
+
+   !---- Coarse phase timers for CUDA feasibility (SEMBA_PHASE_TIMERS=1) ----
+   ! bucket: 1=yee, 2=cpml, 3=wires, 4=other, 5=mpi, 6=outputs
+   subroutine phase_timer_init(this)
+      class(solver_t) :: this
+      character(len=32) :: env
+      integer :: length, status
+      this%phase_timers_on = .false.
+      this%phase_t_yee = 0.0d0
+      this%phase_t_cpml = 0.0d0
+      this%phase_t_wires = 0.0d0
+      this%phase_t_other = 0.0d0
+      this%phase_t_mpi = 0.0d0
+      this%phase_t_outputs = 0.0d0
+      this%phase_t0 = 0_8
+      call system_clock(count_rate=this%phase_clock_rate)
+      call get_environment_variable('SEMBA_PHASE_TIMERS', env, length, status)
+      if (status == 0 .and. length > 0) then
+         if (trim(adjustl(env)) == '1' .or. trim(adjustl(env)) == 'yes' .or. &
+             trim(adjustl(env)) == 'YES' .or. trim(adjustl(env)) == 'on' .or. &
+             trim(adjustl(env)) == 'ON') then
+            this%phase_timers_on = .true.
+            if (this%control%layoutnumber == 0) then
+               write(*,'(a)') 'SEMBA_PHASE_TIMERS: enabled (yee/cpml/wires/other/mpi/outputs)'
+            end if
+         end if
+      end if
+   end subroutine phase_timer_init
+
+   subroutine phase_tic(this)
+      class(solver_t) :: this
+      if (.not. this%phase_timers_on) return
+      call system_clock(this%phase_t0)
+   end subroutine phase_tic
+
+   subroutine phase_toc(this, bucket)
+      class(solver_t) :: this
+      integer, intent(in) :: bucket
+      integer(kind=8) :: t1
+      real(kind=8) :: dt
+      if (.not. this%phase_timers_on) return
+      if (this%phase_clock_rate <= 0_8) return
+      call system_clock(t1)
+      dt = real(t1 - this%phase_t0, kind=8) / real(this%phase_clock_rate, kind=8)
+      select case (bucket)
+      case (1)
+         this%phase_t_yee = this%phase_t_yee + dt
+      case (2)
+         this%phase_t_cpml = this%phase_t_cpml + dt
+      case (3)
+         this%phase_t_wires = this%phase_t_wires + dt
+      case (4)
+         this%phase_t_other = this%phase_t_other + dt
+      case (5)
+         this%phase_t_mpi = this%phase_t_mpi + dt
+      case (6)
+         this%phase_t_outputs = this%phase_t_outputs + dt
+      end select
+   end subroutine phase_toc
+
+   subroutine phase_timer_report(this)
+      class(solver_t) :: this
+      real(kind=8) :: total, f_yee, f_cpml, f_wires, f_other, f_mpi, f_out, f_gpu
+      if (.not. this%phase_timers_on) return
+      if (this%control%layoutnumber /= 0) return
+      total = this%phase_t_yee + this%phase_t_cpml + this%phase_t_wires + &
+              this%phase_t_other + this%phase_t_mpi + this%phase_t_outputs
+      if (total <= 0.0d0) total = 1.0d0
+      f_yee = 100.0d0 * this%phase_t_yee / total
+      f_cpml = 100.0d0 * this%phase_t_cpml / total
+      f_wires = 100.0d0 * this%phase_t_wires / total
+      f_other = 100.0d0 * this%phase_t_other / total
+      f_mpi = 100.0d0 * this%phase_t_mpi / total
+      f_out = 100.0d0 * this%phase_t_outputs / total
+      f_gpu = 100.0d0 * (this%phase_t_yee + this%phase_t_cpml) / total
+      write(*,'(a)') '========== SEMBA_PHASE_TIMERS summary =========='
+      write(*,'(a,es12.4,a,f6.1,a)') '  yee     : ', this%phase_t_yee, ' s  (', f_yee, ' %)'
+      write(*,'(a,es12.4,a,f6.1,a)') '  cpml    : ', this%phase_t_cpml, ' s  (', f_cpml, ' %)'
+      write(*,'(a,es12.4,a,f6.1,a)') '  wires   : ', this%phase_t_wires, ' s  (', f_wires, ' %)'
+      write(*,'(a,es12.4,a,f6.1,a)') '  other   : ', this%phase_t_other, ' s  (', f_other, ' %)'
+      write(*,'(a,es12.4,a,f6.1,a)') '  mpi     : ', this%phase_t_mpi, ' s  (', f_mpi, ' %)'
+      write(*,'(a,es12.4,a,f6.1,a)') '  outputs : ', this%phase_t_outputs, ' s  (', f_out, ' %)'
+      write(*,'(a,es12.4,a)') '  TOTAL   : ', total, ' s'
+      write(*,'(a,f6.1,a)') '  GPU-able (yee+cpml) fraction f = ', f_gpu, ' %'
+      write(*,'(a)') '================================================'
+   end subroutine phase_timer_report
 
 end module

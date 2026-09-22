@@ -700,7 +700,8 @@ module  FDETYPES_m
                  fieldtotl,finishedwithsuccess, &
                  permitscaling,mtlnberenger,niapapostprocess, &
                  stochastic, verbose, dontwritevtk, &
-                 resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
+                 resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror, &
+                 use_cuda
       real(kind=8) :: time_desdelanzamiento
       real(kind=RKIND) :: cfl, attfactorc,attfactorw, alphamaxpar, &
                            alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol, maxSourceValue

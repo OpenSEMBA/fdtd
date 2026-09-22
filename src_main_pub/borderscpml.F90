@@ -7,6 +7,9 @@
 module BORDERS_CPML_m
    use FDETYPES_m
    use Report_m
+#ifdef CompileWithCUDA
+   use fdtd_cuda_m
+#endif
    implicit none
    private
    !
@@ -59,6 +62,12 @@ module BORDERS_CPML_m
    !
    public  :: InitCPMLBorders, AdvanceelectricCPML,AdvanceMagneticCPML,StoreFieldsCPMLBorders,DestroyCPMLBorders,AdvanceelectricCPML_freespace,AdvanceMagneticCPML_freespace
    public  :: calc_cpmlconstants
+#ifdef CompileWithCUDA
+   public  :: InitCPMLBorders_cuda, cuda_cpml_is_ready
+   logical, save :: cuda_cpml_ready = .false.
+   integer, save :: cuda_psi_origin(0:23, 3) = 0
+   integer, save :: cuda_psi_shape(0:23, 3) = 0
+#endif
    !!!public  :: FreeSpace_AdvanceMagneticCPML,calc_cpmlconstants
 contains
 
@@ -544,6 +553,12 @@ contains
       !---------------------------> variables locales <-----------------------------------------------
       integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceelectricCPML <-------------------------------------
+#ifdef CompileWithCUDA
+      if (cuda_cpml_ready) then
+         call AdvanceelectricCPML_cuda(NumMedia, b)
+         return
+      end if
+#endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -841,6 +856,12 @@ contains
       !---------------------------> variables locales <-----------------------------------------------
       integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceMagneTicCPML <-------------------------------------
+#ifdef CompileWithCUDA
+      if (cuda_cpml_ready) then
+         call AdvanceMagneticCPML_cuda(NumMedia, b)
+         return
+      end if
+#endif
       !Hetic Fields PML Zone
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2272,6 +2293,9 @@ end subroutine calc_cpmlconstants
       return
    endsubroutine AdvanceMagneTicCPML_freespace
 
+
+
+#include "borderscpml_cuda_adv.inc.F90"
 
 end Module BORDERS_CPML_m
 

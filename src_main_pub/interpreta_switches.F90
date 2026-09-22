@@ -876,6 +876,22 @@ contains
                l%createh5bin = .true.
             CASE ('') !100615 para evitar el crlf del .sh
                continue
+#ifdef CompileWithCUDA
+            ! Device selection (also SEMBA_FDTD_DEVICE=cuda). Value is kept in
+            ! opcionestotales for timestepping; no separate flag needed here.
+            case ('-device')
+               i = i + 1
+               call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
+               select case (trim(adjustl(f)))
+               case ('cuda', 'CUDA', 'cpu', 'CPU')
+                  continue
+               case default
+                  call stoponerror(l%layoutnumber, l%num_procs, &
+                     'Invalid -device (use cuda or cpu)', .true.); statuse = -1
+               end select
+            case ('-device=cuda', '-device=CUDA', '-device=cpu', '-device=CPU')
+               continue
+#endif
             CASE DEFAULT
                call stoponerror(l%layoutnumber, l%num_procs, 'Wrong switch '//trim(adjustl(l%chain)), .true.); statuse = -1; !goto 668
             end select
