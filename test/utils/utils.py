@@ -29,6 +29,11 @@ no_mpi_skip = pytest.mark.skipif(
     reason="MPI is not available",
 )
 
+no_cuda_skip = pytest.mark.skipif(
+    not build_feature_enabled("SEMBA_FDTD_ENABLE_CUDA"),
+    reason="CUDA is not available",
+)
+
 def _default_semba_exe(project_root=None):
     return str(solver_executable(project_root))
 

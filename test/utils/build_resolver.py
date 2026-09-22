@@ -11,6 +11,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BUILD_DIRECTORIES = (
     "build-rls",
     "build-dbg",
+    "build-rls-cuda",
+    "build-dbg-cuda",
     "build-rls-mpi",
     "build-dbg-mpi",
     "build-rls-nomtln",
@@ -23,6 +25,7 @@ BUILD_DIRECTORIES = (
 BUILD_FEATURES = (
     "SEMBA_FDTD_ENABLE_MPI",
     "SEMBA_FDTD_ENABLE_MTLN",
+    "SEMBA_FDTD_ENABLE_CUDA",
 )
 
 

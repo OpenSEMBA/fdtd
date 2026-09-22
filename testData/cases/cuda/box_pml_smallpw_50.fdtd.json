@@ -1,0 +1,133 @@
+{
+  "format": "FDTD Input file",
+  "__comments": "Planewave passing through an empty box.",
+  "general": {
+    "timeStep": 1e-11,
+    "numberOfSteps": 300
+  },
+  "boundary": {
+    "all": {
+      "type": "pml",
+      "layers": 8,
+      "order": 2.0,
+      "reflection": 0.001
+    }
+  },
+  "mesh": {
+    "grid": {
+      "numberOfCells": [
+        50,
+        50,
+        50
+      ],
+      "steps": {
+        "x": [
+          0.1
+        ],
+        "y": [
+          0.1
+        ],
+        "z": [
+          0.1
+        ]
+      }
+    },
+    "coordinates": [
+      {
+        "id": 1,
+        "relativePosition": [
+          25,
+          25,
+          25
+        ]
+      },
+      {
+        "id": 2,
+        "relativePosition": [
+          26,
+          26,
+          26
+        ]
+      }
+    ],
+    "elements": [
+      {
+        "id": 1,
+        "type": "node",
+        "coordinateIds": [
+          1
+        ]
+      },
+      {
+        "id": 2,
+        "type": "node",
+        "coordinateIds": [
+          2
+        ]
+      },
+      {
+        "id": 10,
+        "type": "cell",
+        "intervals": [
+          [
+            [
+              20,
+              20,
+              20
+            ],
+            [
+              30,
+              30,
+              30
+            ]
+          ]
+        ]
+      }
+    ]
+  },
+  "sources": [
+    {
+      "type": "planewave",
+      "magnitudeFile": "gauss.exc",
+      "elementIds": [
+        10
+      ],
+      "direction": {
+        "theta": 0.0,
+        "phi": 0.0
+      },
+      "polarization": {
+        "theta": 1.5708,
+        "phi": 0.0
+      }
+    }
+  ],
+  "probes": [
+    {
+      "name": "electric_field_point_probe",
+      "type": "point",
+      "elementIds": [
+        1
+      ],
+      "directions": [
+        "x",
+        "y",
+        "z"
+      ],
+      "domain": {
+        "type": "time"
+      }
+    },
+    {
+      "name": "magnetic_field_point_probe",
+      "type": "point",
+      "field": "magnetic",
+      "elementIds": [
+        2
+      ],
+      "directions": [
+        "x"
+      ]
+    }
+  ]
+}
