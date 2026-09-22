@@ -87,6 +87,10 @@ contains
          do m = 1, mtln_solver%number_of_bundles
             if (mtln_solver%bundles(m)%bundle_in_layer) then 
                do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
+                  ! Synthetic layer-junction "gap" segments carry an out-of-range
+                  ! direction (see SEGMENT_GAP_ORIENTATION in mtl_m) and do not
+                  ! correspond to a real field point; they must be skipped here.
+                  if (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction) > 3) cycle
                   call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))
                   select case (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction))
                      case(DIRECTION_X_POS)
@@ -136,6 +140,9 @@ contains
       do m = 1, mtln_solver%number_of_bundles
          if (mtln_solver%bundles(m)%bundle_in_layer) then 
             do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
+               ! Skip synthetic layer-junction "gap" segments: their field
+               ! pointer is never associated (see pointSegmentsToFields above).
+               if (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction) > 3) cycle
                punt => mtln_solver%bundles(m)%external_field_segments(n)%field
                punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
             end do

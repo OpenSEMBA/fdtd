@@ -259,6 +259,9 @@ add_library(semba-components
 	"src_wires_pub/wires_mtln.F90"
 )
 target_link_libraries(semba-components semba-types semba-reports ${MTLN_LIBRARIES})
+if (SEMBA_FDTD_ENABLE_MTLN)
+	add_dependencies(semba-components mtlnsolver)
+endif()
 
 if(SEMBA_FDTD_OUTPUTS_LIB)
 	add_library(semba-outputs

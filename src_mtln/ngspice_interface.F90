@@ -39,5 +39,6 @@ module ngspice_interface_m
         integer(c_int) function has_error() bind (C, name="has_error")
             use iso_c_binding, only: c_int
         end function
+       
     end interface
 end module

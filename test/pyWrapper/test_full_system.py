@@ -102,6 +102,9 @@ def test_lineIntegralProbe(tmp_path):
     if is_debugging():
         generate_debug_data()
 
+    check_values_are_comparable(solved_value)
+    check_values_are_comparable(expected_value)
+
     assert np.allclose(
         solved_value,
         expected_value,
@@ -145,18 +148,21 @@ def test_shieldedPair(tmp_path):
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["voltage_0"].to_numpy(),
         )
+        check_values_are_comparable(solved)
         assert np.corrcoef(solved, p_expected[i]["voltage_0"])[0, 1] > 0.999
         solved = np.interp(
             p_expected[i]["time"].to_numpy(),
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["voltage_1"].to_numpy(),
         )
+        check_values_are_comparable(solved)
         assert np.corrcoef(solved, p_expected[i]["voltage_1"])[0, 1] > 0.999
         solved = np.interp(
             p_expected[i]["time"].to_numpy(),
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["voltage_2"].to_numpy(),
         )
+        check_values_are_comparable(solved)
         assert np.corrcoef(solved, p_expected[i]["voltage_2"])[0, 1] > 0.999
     for i in [1, 2]:
         solved = np.interp(
@@ -164,18 +170,21 @@ def test_shieldedPair(tmp_path):
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["current_0"].to_numpy(),
         )
+        check_values_are_comparable(solved)
         assert np.corrcoef(solved, p_expected[i]["current_0"])[0, 1] > 0.999
         solved = np.interp(
             p_expected[i]["time"].to_numpy(),
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["current_1"].to_numpy(),
         )
+        check_values_are_comparable(solved)
         assert np.corrcoef(solved, p_expected[i]["current_1"])[0, 1] > 0.999
         solved = np.interp(
             p_expected[i]["time"].to_numpy(),
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["current_2"].to_numpy(),
         )
+        check_values_are_comparable(solved)
         assert np.corrcoef(solved, p_expected[i]["current_2"])[0, 1] > 0.999
 
 
@@ -184,6 +193,7 @@ def test_shieldedPair(tmp_path):
 @pytest.mark.wires
 @pytest.mark.dielectric
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_coated_antenna(tmp_path):
     """Test for a coated antenna with MTLN wires reproducing Fig. 2 in:
     A. Rubio Bretones, R. Gomez Martin, A. Salinas and I. Sanchez,
@@ -192,7 +202,7 @@ def test_coated_antenna(tmp_path):
     Antalya, Turkey, 1994, pp. 1174-1176 vol.3, doi: 10.1109/MELCON.1994.380859.
     """
     fn = CASES_FOLDER + "coated_antenna/coated_antenna.fdtd.json"
-
+    setNgspice(tmp_path)
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
@@ -219,6 +229,7 @@ def test_coated_antenna(tmp_path):
         p_solved["time"].to_numpy(),
         p_solved["current_0"].to_numpy(),
     )
+    check_values_are_comparable(solved)
     assert np.corrcoef(solved, p_expected["current_0"])[0, 1] > 0.999
 
 
@@ -242,6 +253,7 @@ def test_holland(tmp_path):
         expected_i = np.append(expected_i, float(data["value"][1]))
 
     expected_i_interp = np.interp(p["time"] - 3.05 * 1e-9, expected_t, expected_i)
+    check_values_are_comparable(expected_i_interp)
     assert np.allclose(expected_i_interp, p["current"], rtol=1e-4, atol=5e-5)
 
 
@@ -274,6 +286,9 @@ def test_holland_short_terminals_match_open_terminals(tmp_path):
 
     probe_short = Probe(_get_solved_probe_folder(solver_short, "mid_point"))
 
+    check_values_are_comparable(probe_open["current"].to_numpy())
+    check_values_are_comparable(probe_short["current"].to_numpy())
+    
     assert np.allclose(
         probe_open["time"].to_numpy(),
         probe_short["time"].to_numpy(),
@@ -312,13 +327,17 @@ def test_unshielded_multiwires(tmp_path):
             p_solved["time"].to_numpy(),
             p_solved[current].to_numpy(),
         )
+        check_values_are_comparable(solved)
         assert np.corrcoef(solved, p_expected[current])[0, 1] > 0.999
 
 
 @pytest.mark.wires
 @pytest.mark.probes
+@pytest.mark.codemodel
+@pytest.mark.codemodel
 def test_towelHanger(tmp_path):
     """Verify towel-hanger wire currents match the stored reference probes."""
+    setNgspice(tmp_path)
     fn = CASES_FOLDER + "towelHanger/towelHanger.fdtd.json"
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
@@ -341,12 +360,14 @@ def test_towelHanger(tmp_path):
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["current_0"].to_numpy(),
         )
+        check_values_are_comparable(solved)
         assert np.corrcoef(solved, p_expected[i]["current_0"])[0, 1] > 0.999
 
 
 @pytest.mark.wires
 @pytest.mark.termination
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_towel_rack_with_and_without_shorting_plane(tmp_path):
     """Verify a shorting plane leaves low-frequency input impedance unchanged."""
     def generate_debug_data():
@@ -380,6 +401,7 @@ def test_towel_rack_with_and_without_shorting_plane(tmp_path):
     # --- with shorting plane ---
     folder_with = os.path.join(tmp_path, "with_shorting_plane")
     os.makedirs(folder_with)
+    setNgspice(folder_with)
     solver_w = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=folder_with)
     solver_w.run()
 
@@ -392,6 +414,7 @@ def test_towel_rack_with_and_without_shorting_plane(tmp_path):
     # --- without shorting plane ---
     folder_without = os.path.join(tmp_path, "without_shorting_plane")
     os.makedirs(folder_without)
+    setNgspice(folder_without)
     solver_wo = FDTD(
         input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=folder_without
     )
@@ -407,6 +430,9 @@ def test_towel_rack_with_and_without_shorting_plane(tmp_path):
     if is_debugging():
         generate_debug_data()
 
+    check_values_are_comparable(Z_in_w[freqs < 1e6])
+    check_values_are_comparable(Z_in_wo[freqs < 1e6])
+    
     # Expect the shorting plane not changing the impedance at low frequencies.
     assert np.allclose(
         np.abs(Z_in_w[freqs < 1e6]), np.abs(Z_in_wo[freqs < 1e6]), rtol=0.1
@@ -871,9 +897,11 @@ def test_current_orientation(tmp_path):
 @pytest.mark.sgbc
 @pytest.mark.wires
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_sgbc_structured_resistance_single_wire(tmp_path):
     """Verify structured SGBC resistance produces the expected wire current."""
     fn = CASES_FOLDER + "sgbcResistance/sgbcResistance.fdtd.json"
+    setNgspice(tmp_path)
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver["materials"][2] = createWire(id=3, r=1e-4)
@@ -888,6 +916,7 @@ def test_sgbc_structured_resistance_single_wire(tmp_path):
 # compiled with mtln, wire is treated as an unshielded multiwire
 @pytest.mark.sgbc
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_pec_overlapping_sgbcs(tmp_path):
     """Test that PEC surfaces overlapping SGBC surfaces prioritize PEC."""
     def generate_debug_data():
@@ -900,6 +929,7 @@ def test_pec_overlapping_sgbcs(tmp_path):
         plt.close()
 
     fn = CASES_FOLDER + "sgbcOverlapping/sgbcOverlapping.fdtd.json"
+    setNgspice(tmp_path)    
     # Runs case without overlap.
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
@@ -926,6 +956,7 @@ def test_pec_overlapping_sgbcs(tmp_path):
 # compiled with mtln, wire is treated as an unshielded multiwire
 @pytest.mark.sgbc
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_sgbc_overlapping_sgbc(tmp_path):
     """Test that SGBC surfaces overlapping SGBC surfaces prioritize first in MatAss."""
     def generate_debug_data():
@@ -938,7 +969,7 @@ def test_sgbc_overlapping_sgbc(tmp_path):
         plt.close()
 
     fn = CASES_FOLDER + "sgbcOverlapping/sgbcOverlapping.fdtd.json"
-
+    setNgspice(tmp_path)
     # Runs case without overlap.
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     # Changes materialId in first SGBC in MatAss to material with larger conductivity.
@@ -1897,8 +1928,10 @@ def test_bulk_current_four_probes_Z_oriented(tmp_path):
 @pytest.mark.conformal
 @pytest.mark.wires
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_conformal_impedance_cylinder_unshielded(tmp_path):
     """Verify conformal-cylinder impedance matches the reference spectrum."""
+    setNgspice(tmp_path)
     case_name = "conformal_impedance_cylinder_conformal"
     solver = FDTD(
         input_filename=TEST_DATA_FOLDER
@@ -1978,8 +2011,10 @@ def test_conformal_sphere_rcs(tmp_path):
 
 @pytest.mark.conformal
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_conformal_delay(tmp_path):
     """Verify conformal geometry produces the expected propagation delay."""
+    setNgspice(tmp_path)
     fn = CASES_FOLDER + "conformal/conformal.fdtd.json"
     solver = FDTD(
         input_filename=fn,
@@ -2052,10 +2087,12 @@ def test_current_generators_with_resistance(tmp_path):
 @pytest.mark.wires
 @pytest.mark.nodal_source
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_current_generators_without_resistance(tmp_path):
     """Verify ideal-wire current-source sign and magnitude at each position."""
     # Checks current probes at the extremes of a wire
     # with a current generator in the middle of the wire and on the extremes of the wire
+    setNgspice(tmp_path)
 
     fn = CASES_FOLDER + "sources/sources_current_no_resistance.fdtd.json"
     solver = FDTD(
