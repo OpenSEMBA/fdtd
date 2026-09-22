@@ -603,259 +603,9 @@ contains
                 end do
             end do
         end do
-
     end function
 
-    !     |--I--|   |--R--|
-    ! 0---|     ¡---|--L--|--[A]--!
-    !     |--C--|   |--C--|
-    !
-    ! ¡: start !: end
-    ! [A] : V source w/series R OR I source w/parallel R
-    function writeParallelRLCnode(node, termination, end_node) result(res)
-        type(nw_node_t), intent(in) :: node
-        type(termination_t), intent(in) :: termination
-        character(len=*), intent(in) :: end_node
-        character(len=256), allocatable :: res(:)
-        character(len=256) :: buff
-
-        allocate(res(0))
-        if (hasSource(termination)) then
-            call addResistance(res,  node%name, node%name, node%name//"_S", termination%resistance)
-            call addInductance(res,  node%name, node%name, node%name//"_S", termination%inductance)
-            call addCapacitance(res, node%name, node%name, node%name//"_S", termination%capacitance)
-            call addSource(res, node%name, end_node, termination)
-            ! if (isVSource(termination)) then 
-            !     call addVSourceWithSeriesR(res, node%name, end_node, termination%source)
-            !     ! call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
-            ! else if (isISource(termination)) then 
-            !     call addISourceWithParallelR(res,node%name//"_S", end_node, trim(node%name) //"_S", termination%source)
-            ! end if
-        else
-            call addResistance(res,  node%name, node%name, end_node, termination%resistance)
-            call addInductance(res,  node%name, node%name, end_node, termination%inductance)
-            call addCapacitance(res, node%name, node%name, end_node, termination%capacitance)
-        end if
-        call addTransmissionLineEquivalent(res, node)
-        call addConductance(res, node)
-
-    end function
-
-    !     |--I--|   
-    ! 0---|     ¡--R--L--C--[A]--!
-    !     |--C--|
-    !
-    ! ¡: start !: end
-    ! [A] : V source w/series R OR I source w/parallel R
-    function writeSeriesRLCnode(node, termination, end) result(res)
-        type(nw_node_t), intent(in) :: node
-        type(termination_t), intent(in) :: termination
-        character(len=*), intent(in) :: end
-        character(len=:), allocatable :: start
-        character(len=256), allocatable :: res(:)
-        character(len=256) :: buff
-        start = trim(node%name)
-        allocate(res(0))
-        call addResistance(res, start, start, start//"_R", termination%resistance)
-        call addInductance(res, start, start//"_R", start//"_L", termination%inductance)
-        if (hasSource(termination)) then
-            call addSource(res, node%name, end_node, termination)
-            ! call addCapacitance(res, start, start//"_L", start//"_S", termination%capacitance)
-            ! if (isVSource(termination)) then 
-            !     call addVSourceWithSeriesR(res, start//"_S", start//"_S", end, termination%source)
-            ! else if (isISource(termination)) then 
-            !     call addISourceWithParallelR(res,start//"_S", end, start//"_S", termination%source)
-            ! end if
-        else
-            call addCapacitance(res, start, start//"_L", end, termination%capacitance)
-        end if
-        call addTransmissionLineEquivalent(res, node)
-        call addConductance(res, node)
-    end function
-
-    logical function hasSource(t)
-        type(termination_t), intent(in) :: t
-        hasSource = (t%source%path_to_excitation /= "")
-    end function
-
-    logical function isVSource(t)
-        type(termination_t), intent(in) :: t
-        isVSource = (t%source%source_type == SOURCE_TYPE_VOLTAGE)
-    end function
-
-    logical function isISource(t)
-        type(termination_t), intent(in) :: t
-        isISource = (t%source%source_type == SOURCE_TYPE_CURRENT)
-    end function
-
-    !                     ____!!____                
-    !     |--I--|        |          |
-    ! 0---|     ¡--[A]---!          !!
-    !     |--C--|        |____!!____| 
-    !                   
-    ! ¡: start !: end
-    ! !! other TLs connection to a multiterminal circuit
-    ! [A] : V source w/series R OR I source w/parallel R
-    function writeNetwork_circuitNode(node, termination, end_node) result(res)
-        type(nw_node_t), intent(in) :: node
-        type(termination_t), intent(in) :: termination
-        character(len=*), intent(in) :: end_node
-        character(len=256), allocatable :: res(:)
-        character(len=256) :: buff
-        allocate(res(0))
-
-        if (hasSource(termination)) then
-            call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10, rkind))
-            call addSource(res, node%name, end_node, termination)
-            ! if (isVSource(termination)) then 
-            !     call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
-            ! else if (isISource(termination)) then 
-            !     call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", termination%source)
-            ! end if
-        else
-            call addResistance(res, node%name, node%name, end_node, real(1e-10, rkind))
-        end if
-        call addTransmissionLineEquivalent(res, node)
-        call addConductance(res, node)
-
-    end function
-
-
-    !     |--I--|   
-    ! 0---|     ¡--[A]--(MODEL)--!
-    !     |--C--|
-    !
-    ! ¡: start !: end
-    ! [A] : V source w/series R OR I source w/parallel R [optional]
-    function writeModelNode(node, termination, end_node) result(res)
-        type(nw_node_t), intent(in) :: node
-        type(termination_t), intent(in) :: termination
-        character(len=*), intent(in) :: end_node
-        character(len=256), allocatable :: res(:)
-        character(len=256) :: buff
-        allocate(res(0))
-        call includeModelFile(res, termination%model%file)
-        if (hasSource(termination)) then
-            call addXComponent(res, node%name, node%name, node%name//"_S", termination%model%name)
-            call addSource(res, node%name, end_node, termination)
-            ! if (isVSource(termination)) then 
-            !     call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node,  termination%source)
-            ! else if (isISource(termination)) then 
-            !     call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", termination%source)
-            ! end if
-        else
-            call addXComponent(res, node%name, node%name, end_node, termination%model%name)
-        end if
-        call addTransmissionLineEquivalent(res, node)
-        call addConductance(res, node)
-    end function
-
-    !     |--I--|   
-    ! 0---|     ¡--R--L--[A]--!
-    !     |--C--|
-    !
-    ! ¡: start !: end
-    ! [A] : V source w/series R OR I source w/parallel R [optional]
-    function writeSeriesRLnode(node, termination, end_node) result(res)
-        type(nw_node_t), intent(in) :: node
-        type(termination_t), intent(in) :: termination
-        character(len=*), intent(in) :: end_node
-        character(len=256), allocatable :: res(:)
-        character(len=256) :: buff
-        allocate(res(0))
-        call addResistance(res, node%name, node%name//"_R", node%name, termination%resistance)
-        if (hasSource(termination)) then
-            call addInductance(res, node%name, node%name//"_R",node%name//"_S", termination%inductance)
-            call addSource(res, node%name, end_node, termination)
-            ! if (isVSource(termination)) then 
-            !     call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
-            ! else if (isISource(termination)) then 
-            !     call addISourceWithParallelR(res,node%name//"_S", end_node, trim(node%name) //"_S", termination%source)
-            ! end if
-        else
-            call addInductance(res, node%name, node%name//"_R",end_node, termination%inductance)
-        end if
-        call addTransmissionLineEquivalent(res, node)
-        call addConductance(res, node)
-
-    end function
-
-
-    function writeSeriesNode(node, termination, end_node) result(res)
-        type(nw_node_t), intent(in) :: node
-        type(termination_t), intent(in) :: termination
-        character(len=*), intent(in) :: end_node
-        character(len=256), allocatable :: res(:)
-        if (termination%capacitance >= 1e22) then 
-            res = writeSeriesRLnode(node, termination, end_node)
-        else
-            res = writeSeriesRLCnode(node, termination, end_node)
-        end if
-    end function
-
-    subroutine appendToStringArray(arr, str)
-        ! This has been implemented because there seems to be a bug in gfortran: 
-        ! https://fortran-lang.discourse.group/t/read-data-and-append-it-to-array-best-practice/1915
-        ! and arr = [ arr, str ] can't be used.
-        character(len=256), allocatable, intent(inout) :: arr(:)
-        character(len=256), intent(in) :: str
-        character(len=256), allocatable :: old_arr(:)
-        
-        old_arr = arr
-        deallocate(arr)
-        allocate(arr(size(old_arr)+1))
-        arr(1:size(old_arr)) = old_arr 
-        arr(size(old_arr)+1) = str
-    end subroutine
-
-    !     |--I--|   
-    ! 0---|     ¡----!
-    !     |--C--|
-    !
-    ! ¡: start !: end
-    ! [A] : V source w/series R OR I source w/parallel R [optional]
-    function writeShortNode(node, termination, end_node) result(res)
-        type(nw_node_t), intent(in) :: node
-        type(termination_t), intent(in) :: termination
-        character(len=*), intent(in) :: end_node
-        character(len=256), allocatable :: res(:)
-        character(len=256) :: buff
-        allocate(res(0))
-        if (hasSource(termination)) then
-            call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10,rkind))
-            call addSource(res, node%name, end_node, termination)
-            ! if (isVSource(termination)) then 
-            !     call addVSourceWithSeriesR(res,node%name//"_S", node%name//"_S", end_node,  termination%source)
-            ! else if (isISource(termination)) then 
-            !     call addISourceWithParallelR(res,node%name//"_S", end_node, node%name//"_S", termination%source)
-            ! end if
-        else
-            call addResistance(res,node%name, node%name, end_node, real(1e-10,rkind))
-        end if
-        
-        call addTransmissionLineEquivalent(res, node)
-        call addConductance(res, node)
-    end function
-
-
-    !     |--I--|   
-    ! 0---|     ¡--RRR---!
-    !     |--C--|
-    !
-    ! RRR = 1e22
-    ! ¡: start !: end
-    ! [A] : V source w/series R OR I source w/parallel R [optional]
-    function writeOpenNode(node, end_node) result(res)
-        type(nw_node_t), intent(in) :: node
-        character(len=*), intent(in) :: end_node
-        character(len=256), allocatable :: res(:)
-        allocate(res(0))
-        call addResistance(res,node%name, node%name, end_node, real(1e22, rkind))
-        call addTransmissionLineEquivalent(res, node)
-        call addConductance(res, node)
-    end function
-    
-    function writeNodeDescription(node, termination, end_node) result(res)
+        function writeNodeDescription(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
         character(len=256), allocatable :: res(:)
@@ -892,6 +642,149 @@ contains
 
     end function    
 
+    function writeSeriesNode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        if (termination%capacitance >= 1e22) then 
+            res = writeSeriesRLnode(node, termination, end_node)
+        else
+            res = writeSeriesRLCnode(node, termination, end_node)
+        end if
+    end function
+
+    !     |--I--|   
+    ! 0---|     ¡--R--L--[A]--!
+    !     |--C--|
+    !
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R [optional]
+    function writeSeriesRLnode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        allocate(res(0))
+        call addResistance(res, node%name, node%name//"_R", node%name, termination%resistance)
+        if (hasSource(termination)) then
+            call addInductance(res, node%name, node%name//"_R",node%name//"_S", termination%inductance)
+            call addSource(res, node%name, end_node, termination)
+        else
+            call addInductance(res, node%name, node%name//"_R",end_node, termination%inductance)
+        end if
+        call addTransmissionLineEquivalent(res, node)
+        call addConductance(res, node)
+
+    end function
+
+    !     |--I--|   
+    ! 0---|     ¡--R--L--C--[A]--!
+    !     |--C--|
+    !
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R
+    function writeSeriesRLCnode(node, termination, end) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end
+        character(len=:), allocatable :: start
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        start = trim(node%name)
+        allocate(res(0))
+        call addResistance(res, start, start, start//"_R", termination%resistance)
+        call addInductance(res, start, start//"_R", start//"_L", termination%inductance)
+        if (hasSource(termination)) then
+            call addSource(res, node%name, end, termination)
+        else
+            call addCapacitance(res, start, start//"_L", end, termination%capacitance)
+        end if
+        call addTransmissionLineEquivalent(res, node)
+        call addConductance(res, node)
+    end function
+
+
+    !     |--I--|   |--R--|
+    ! 0---|     ¡---|--L--|--[A]--!
+    !     |--C--|   |--C--|
+    !
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R
+    function writeParallelRLCnode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+
+        allocate(res(0))
+        if (hasSource(termination)) then
+            call addResistance(res,  node%name, node%name, node%name//"_S", termination%resistance)
+            call addInductance(res,  node%name, node%name, node%name//"_S", termination%inductance)
+            call addCapacitance(res, node%name, node%name, node%name//"_S", termination%capacitance)
+            call addSource(res, node%name, end_node, termination)
+        else
+            call addResistance(res,  node%name, node%name, end_node, termination%resistance)
+            call addInductance(res,  node%name, node%name, end_node, termination%inductance)
+            call addCapacitance(res, node%name, node%name, end_node, termination%capacitance)
+        end if
+        call addTransmissionLineEquivalent(res, node)
+        call addConductance(res, node)
+
+    end function
+
+    function writeXsYZpnode(node, termination, end_node, XYZ)  result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=3), intent(in) :: XYZ
+        character(len=1) :: N(3)
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        character(len=:), allocatable :: node_name
+        real(kind=rkind), dimension(3) :: comp_values
+
+        call assignRLCtoXYZ(comp_values, N, termination, XYZ)
+        allocate(res(0))
+        call addComponent(res,N(1)//node%name, node%name, node%name//"_p", comp_values(1))
+        if (hasSource(termination)) then
+            call addComponent(res,N(2)//node%name, node%name//"_p", node%name//"_S", comp_values(2))
+            call addComponent(res,N(3)//node%name, node%name//"_p", node%name//"_S", comp_values(3))
+            call addSource(res, node%name, end_node, termination)
+        else
+            call addComponent(res,N(2)//node%name, node%name//"_p", end_node, comp_values(2))
+            call addComponent(res,N(3)//node%name, node%name//"_p", end_node, comp_values(3))
+        end if
+        call addTransmissionLineEquivalent(res, node)
+        call addConductance(res, node)
+
+        contains
+            subroutine assignRLCtoXYZ(vs, C, t, XYZ)
+                real(kind=rkind), intent(inout), dimension(3) :: vs
+                character(len=1), intent(inout) :: C(3)
+                type(termination_t), intent(in) :: t
+                character(len=3), intent(in) :: XYZ
+                if (XYZ == "RLC" .or. XYZ == "RCL") then 
+                    vs(1) = t%resistance
+                    vs(2) = t%inductance
+                    vs(3) = t%capacitance
+                else if (XYZ == "LRC" .or. XYZ == "LCR") then 
+                    vs(1) = t%inductance
+                    vs(2) = t%resistance
+                    vs(3) = t%capacitance
+                else if (XYZ == "CLR" .or. XYZ == "CRL") then 
+                    vs(1) =  t%capacitance
+                    vs(2) =  t%resistance
+                    vs(3) =  t%inductance
+                end if
+                C(1) = XYZ(1:1)
+                C(2) = XYZ(2:2)
+                C(3) = XYZ(3:3)
+            end subroutine
+    end function
+
     !     |--I--|  |---Z---| 
     ! 0---|     ¡--|-X---Y-|--[A]--!
     !     |--C--|
@@ -903,48 +796,158 @@ contains
         type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=3), intent(in) :: XYZ
-        character(len=1) :: X,Y,Z
+        character(len=1) :: N(3)
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: node_name
-        real(kind=rkind) :: termination_x, termination_y, termination_z
-        ! character(30) :: termination_x, termination_y, termination_z, generator_r
+        real(kind=rkind), dimension(3) :: comp_values
 
-        if (XYZ == "RLC" .or. XYZ == "LRC") then 
-            termination_x = termination%resistance
-            termination_y = termination%inductance
-            termination_z = termination%capacitance
-        else if (XYZ == "LCR" .or. XYZ == "CLR") then 
-            termination_x = termination%inductance
-            termination_y = termination%capacitance
-            termination_z = termination%resistance
-        else if (XYZ == "CRL" .or. XYZ == "RCL") then 
-            termination_x = termination%capacitance
-            termination_y = termination%resistance
-            termination_z = termination%inductance
-        end if
-        X = XYZ(1:1)
-        Y = XYZ(2:2)
-        Z = XYZ(3:3)
-
+        call assignRLCtoXYZ(comp_values, N, termination, XYZ)
         allocate(res(0))
-        call addComponent(res, X//node%name, node%name, node%name//"_X", termination_x)
+        call addComponent(res, N(1)//node%name, node%name, node%name//"_X", comp_values(1))
         if (hasSource(termination)) then
-            call addComponent(res, Y//node%name, node%name//"_X", node%name//"_S", termination_y)
-            call addComponent(res, Z//node%name, node%name, node%name//"_S", termination_z)
+            call addComponent(res, N(2)//node%name, node%name//"_X", node%name//"_S", comp_values(2))
+            call addComponent(res, N(3)//node%name, node%name, node%name//"_S", comp_values(3))
             call addSource(res, node%name, end_node, termination)
-            ! if (isVSource(termination)) then 
-            !     call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
-            ! else if (isISource(termination)) then 
-            !     call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", termination%source)
-            ! end if
         else 
-            call addComponent(res, Y//node%name, node%name//"_X", end_node, termination_y)
-            call addComponent(res, Z//node%name, node%name, end_node, termination_z)
+            call addComponent(res, N(2)//node%name, node%name//"_X", end_node, comp_values(2))
+            call addComponent(res, N(3)//node%name, node%name, end_node, comp_values(3))
         end if
         call addTransmissionLineEquivalent(res, node)
         call addConductance(res, node)
 
+        contains
+            subroutine assignRLCtoXYZ(vs, C, t, XYZ)
+                real(kind=rkind), intent(inout), dimension(3) :: vs
+                character(len=1), intent(inout) :: C(3)
+                type(termination_t), intent(in) :: t
+                character(len=3), intent(in) :: XYZ
+                if (XYZ == "RLC" .or. XYZ == "LRC") then 
+                    vs(1) = t%resistance
+                    vs(2) = t%inductance
+                    vs(3) = t%capacitance
+                else if (XYZ == "LCR" .or. XYZ == "CLR") then 
+                    vs(1) = t%inductance
+                    vs(2) = t%capacitance
+                    vs(3) = t%resistance
+                else if (XYZ == "CRL" .or. XYZ == "RCL") then 
+                    vs(1) = t%capacitance
+                    vs(2) = t%resistance
+                    vs(3) = t%inductance
+                end if
+                C(1) = XYZ(1:1)
+                C(2) = XYZ(2:2)
+                C(3) = XYZ(3:3)
+
+            end subroutine
+    end function
+
+    !     |--I--|   
+    ! 0---|     ¡----!
+    !     |--C--|
+    !
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R [optional]
+    function writeShortNode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        allocate(res(0))
+        if (hasSource(termination)) then
+            call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10,rkind))
+            call addSource(res, node%name, end_node, termination)
+        else
+            call addResistance(res,node%name, node%name, end_node, real(1e-10,rkind))
+        end if
+        
+        call addTransmissionLineEquivalent(res, node)
+        call addConductance(res, node)
+    end function
+
+    !     |--I--|   
+    ! 0---|     ¡--RRR---!
+    !     |--C--|
+    !
+    ! RRR = 1e22
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R [optional]
+    function writeOpenNode(node, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        allocate(res(0))
+        call addResistance(res,node%name, node%name, end_node, real(1e22, rkind))
+        call addTransmissionLineEquivalent(res, node)
+        call addConductance(res, node)
+    end function
+
+    !     |--I--|   
+    ! 0---|     ¡--[A]--(MODEL)--!
+    !     |--C--|
+    !
+    ! ¡: start !: end
+    ! [A] : V source w/series R OR I source w/parallel R [optional]
+    function writeModelNode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        allocate(res(0))
+        call includeModelFile(res, termination%model%file)
+        if (hasSource(termination)) then
+            call addXComponent(res, node%name, node%name, node%name//"_S", termination%model%name)
+            call addSource(res, node%name, end_node, termination)
+        else
+            call addXComponent(res, node%name, node%name, end_node, termination%model%name)
+        end if
+        call addTransmissionLineEquivalent(res, node)
+        call addConductance(res, node)
+    end function
+
+    !                     ____!!____                
+    !     |--I--|        |          |
+    ! 0---|     ¡--[A]---!          !!
+    !     |--C--|        |____!!____| 
+    !                   
+    ! ¡: start !: end
+    ! !! other TLs connection to a multiterminal circuit
+    ! [A] : V source w/series R OR I source w/parallel R
+    function writeNetwork_circuitNode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        allocate(res(0))
+
+        if (hasSource(termination)) then
+            call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10, rkind))
+            call addSource(res, node%name, end_node, termination)
+
+        else
+            call addResistance(res, node%name, node%name, end_node, real(1e-10, rkind))
+        end if
+        call addTransmissionLineEquivalent(res, node)
+        call addConductance(res, node)
+
+    end function
+
+    logical function hasSource(t)
+        type(termination_t), intent(in) :: t
+        hasSource = (t%source%path_to_excitation /= "")
+    end function
+
+    logical function isVSource(t)
+        type(termination_t), intent(in) :: t
+        isVSource = (t%source%source_type == SOURCE_TYPE_VOLTAGE)
+    end function
+
+    logical function isISource(t)
+        type(termination_t), intent(in) :: t
+        isISource = (t%source%source_type == SOURCE_TYPE_CURRENT)
     end function
 
     !     |--I--|      |--Z--| 
@@ -954,51 +957,6 @@ contains
     ! ¡: start !: end
     ! [A] : V source w/series R OR I source w/parallel R
 
-    function writeXsYZpnode(node, termination, end_node, XYZ)  result(res)
-        type(nw_node_t), intent(in) :: node
-        type(termination_t), intent(in) :: termination
-        character(len=*), intent(in) :: end_node
-        character(len=3), intent(in) :: XYZ
-        character(len=1) :: X,Y,Z
-        character(len=256), allocatable :: res(:)
-        character(len=256) :: buff
-        character(len=:), allocatable :: node_name
-        real(kind=rkind) :: termination_x, termination_y, termination_z
-        
-        if (XYZ == "RLC" .or. XYZ == "RCL") then 
-            termination_x = termination%resistance
-            termination_y = termination%inductance
-            termination_z = termination%capacitance
-        else if (XYZ == "LRC" .or. XYZ == "LCR") then 
-            termination_x = termination%inductance
-            termination_y = termination%resistance
-            termination_z = termination%capacitance
-        else if (XYZ == "CLR" .or. XYZ == "CRL") then 
-            termination_x =  termination%capacitance
-            termination_y =  termination%resistance
-            termination_z =  termination%inductance
-        end if
-        X = XYZ(1:1);Y = XYZ(2:2);Z = XYZ(3:3)
-
-        allocate(res(0))
-        call addComponent(res,X//node%name, node%name, node%name//"_p", termination_x)
-        if (hasSource(termination)) then
-            call addComponent(res,Y//node%name, node%name//"_p", node%name//"_S", termination_y)
-            call addComponent(res,Z//node%name, node%name//"_p", node%name//"_S", termination_z)
-            call addSource(res, node%name, end_node, termination)
-            ! if (isVSource(termination)) then 
-            !     call addVSourceWithSeriesR(res, node%name//"_S", node%name//"_S", end_node, termination%source)
-            ! else if (isISource(termination)) then 
-            !     call addISourceWithParallelR(res, node%name//"_S", end_node, node%name//"_S", termination%source)
-            ! end if
-        else
-            call addComponent(res,Y//node%name, node%name//"_p", end_node, termination_y)
-            call addComponent(res,Z//node%name, node%name//"_p", end_node, termination_z)
-        end if
-        call addTransmissionLineEquivalent(res, node)
-        call addConductance(res, node)
-
-    end function
 
     subroutine addTransmissionLineEquivalent(arr, node)
         character(len=256), allocatable, intent(inout) :: arr(:)
@@ -1015,12 +973,11 @@ contains
         character(*), intent(in) :: start_name, end_name
         type(termination_t) :: termination
         if (isVSource(termination)) then 
-            call addVSourceWithSeriesR(res, start_name, end_node, termination%source)
+            call addVSourceWithSeriesR(arr, start_name, end_name, termination%source)
         else if (isISource(termination)) then 
-            call addISourceWithParallelR(res,start_name, end_node, termination%source)
+            call addISourceWithParallelR(arr,start_name, end_name, termination%source)
         end if
     end subroutine
-
 
     subroutine addVSourceWithSeriesR(arr, start_name, end_name, source)
         character(len=256), allocatable, intent(inout) :: arr(:)
@@ -1048,7 +1005,6 @@ contains
         call create_symlink(trim(source%path_to_excitation), trim(lowercase_string(trim(source%path_to_excitation))))
 
         call addResistance(arr, start_name//"_S", start_name//"_S", end_name, source%resistance)
-
     end subroutine
 
     subroutine addXComponent(arr, name, start_name, end_name, model)
@@ -1099,7 +1055,6 @@ contains
         call appendToStringArray(arr, buff) 
     end subroutine
 
-
     subroutine addConductance(arr, node)
         character(len=256), allocatable, intent(inout) :: arr(:)
         type(nw_node_t), intent(in) :: node
@@ -1112,6 +1067,21 @@ contains
         end if    
     end subroutine
 
+    subroutine appendToStringArray(arr, str)
+        ! This has been implemented because there seems to be a bug in gfortran: 
+        ! https://fortran-lang.discourse.group/t/read-data-and-append-it-to-array-best-practice/1915
+        ! and arr = [ arr, str ] can't be used.
+        character(len=256), allocatable, intent(inout) :: arr(:)
+        character(len=256), intent(in) :: str
+        character(len=256), allocatable :: old_arr(:)
+        
+        old_arr = arr
+        deallocate(arr)
+        allocate(arr(size(old_arr)+1))
+        arr(1:size(old_arr)) = old_arr 
+        arr(size(old_arr)+1) = str
+    end subroutine
+
     subroutine includeModelFile(arr, model_file)
         character(len=256), allocatable, intent(inout) :: arr(:)
         character(len=*) :: model_file
@@ -1119,8 +1089,6 @@ contains
         buff = trim(".include "//trim(model_file))
         call appendToStringArray(arr, buff)
     end subroutine
-
-
 
     function addNodeWithId(this, node) result(res)
         class(preprocess_t) :: this
