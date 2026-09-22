@@ -685,19 +685,21 @@ contains
     !
     ! ¡: start !: end
     ! [A] : V source w/series R OR I source w/parallel R
-    function writeSeriesRLCnode(node, termination, end_node) result(res)
+    function writeSeriesRLCnode(node, termination, end) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
-        character(len=*), intent(in) :: end_node
+        character(len=*), intent(in) :: end
+        character(len=:), allocatable :: start
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
+        start = trim(node%name)
         allocate(res(0))
-        call addResistance(res, node%name, node%name, node%name//"_R", termination%resistance)
-        call addInductance(res, node%name, node%name//"_R", node%name//"_L", termination%inductance)
+        call addResistance(res, start, start, start//"_R", termination%resistance)
+        call addInductance(res, start, start//"_R", start//"_L", termination%inductance)
         if (hasSource(termination)) then
-            call addSource(res, node%name, end_node, termination)
+            call addSource(res, node%name, end, termination)
         else
-            call addCapacitance(res, node%name, node%name//"_L", end_node, termination%capacitance)
+            call addCapacitance(res, start, start//"_L", end, termination%capacitance)
         end if
         call addTransmissionLineEquivalent(res, node)
         call addConductance(res, node)
@@ -859,6 +861,7 @@ contains
         else
             call addResistance(res,node%name, node%name, end_node, real(1e-10,rkind))
         end if
+        
         call addTransmissionLineEquivalent(res, node)
         call addConductance(res, node)
     end function
@@ -919,9 +922,11 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         allocate(res(0))
+
         if (hasSource(termination)) then
             call addResistance(res, node%name, node%name, node%name//"_S", real(1e-10, rkind))
             call addSource(res, node%name, end_node, termination)
+
         else
             call addResistance(res, node%name, node%name, end_node, real(1e-10, rkind))
         end if
@@ -1084,6 +1089,8 @@ contains
         buff = trim(".include "//trim(model_file))
         call appendToStringArray(arr, buff)
     end subroutine
+
+
 
     function addNodeWithId(this, node) result(res)
         class(preprocess_t) :: this
