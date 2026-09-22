@@ -855,7 +855,7 @@ contains
         character(len=256), allocatable :: res(:)
 
         allocate(res(0))
-        call addResistance(res,node%name, node%name, end_node, 1e22)
+        call addResistance(res,node%name, node%name, end_node, real(1e22, rkind))
         call addTransmissionLineEquivalent(res, node)
         call addConductance(res, node)
 
@@ -906,7 +906,7 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: node_name
-        character(30) :: termination_x, termination_y, termination_z, line_c, generator_r
+        character(30) :: termination_x, termination_y, termination_z, generator_r
         
         if (XYZ == "RLC" .or. XYZ == "LRC") then 
             write(termination_x, *) termination%resistance
@@ -922,7 +922,6 @@ contains
             write(termination_z, *) termination%inductance
         end if
 
-        write(line_c, *) node%line_c_per_meter * node%step/2
 
         allocate(res(0))
         buff = trim(XYZ(1:1) // node%name // " " // node%name // " "   // node%name //"_X " // termination_x)
@@ -969,7 +968,7 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: node_name
-        character(30) :: termination_x, termination_y, termination_z, line_c, generator_r
+        character(30) :: termination_x, termination_y, termination_z, generator_r
         
         if (XYZ == "RLC" .or. XYZ == "RCL") then 
             write(termination_x, *) termination%resistance
@@ -984,8 +983,6 @@ contains
             write(termination_y, *) termination%resistance
             write(termination_z, *) termination%inductance
         end if
-
-        write(line_c, *) node%line_c_per_meter * node%step/2
 
         allocate(res(0))
         res = [trim(XYZ(1:1) // node%name // " " // node%name // " "   // node%name //"_p " // termination_x)]
@@ -1033,10 +1030,6 @@ contains
         write(line_c, *) node%line_c_per_meter * node%step/2
         call addTLISource(arr, node%name, node%name, "0")
         call addCapacitance(arr, "L"//node%name, node%name, "0", node%line_c_per_meter * node%step/2)
-        ! buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
-        ! call appendToStringArray(arr, buff)
-        ! buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
-        ! call appendToStringArray(arr, buff)
     end subroutine
 
     subroutine addVSource(arr, a_name, start_name, end_name, source)
