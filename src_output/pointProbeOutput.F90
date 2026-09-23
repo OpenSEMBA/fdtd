@@ -6,6 +6,7 @@ module pointProbeOutput_m
    use domain_m
    use outputUtils_m
    use ilumina_m, only: Incid
+   use Report_m, only: StopOnError
 
    implicit none
 
@@ -48,6 +49,7 @@ contains
          this%quadratureDt = timeInterval
          allocate (this%frequencySlice(this%domain%fnum))
          call alloc_and_init(this%valueForFreq, this%domain%fnum, (0.0_CKIND, 0.0_CKIND))
+         if (this%hasIncident) call alloc_and_init(this%incidentForFreq, this%domain%fnum, (0.0_CKIND, 0.0_CKIND))
          call init_frequency_slice(this%frequencySlice, this%domain)
          this%valueForFreq = (0.0_RKIND, 0.0_RKIND)
 
@@ -57,6 +59,7 @@ contains
             this%auxExp_E(i) = mcpi2*this%frequencySlice(i)
             this%auxExp_H(i) = this%auxExp_E(i)
          end do
+         if (this%domain%transfer) call initialise_normalization_spectrum(this)
       end if
 
       if (this%domain%domainType == BOTH_DOMAIN) then
@@ -69,7 +72,7 @@ contains
          this%filePathFreq = this%artifacts(2)%relative_path
          call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, time_header())
          call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension, &
-                               'frequency real imaginary')
+                               frequency_header(this))
       else if (this%domain%domainType == TIME_DOMAIN) then
          allocate (this%artifacts(1))
          artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
@@ -84,7 +87,7 @@ contains
          call declare_probe_artifacts(this%artifacts, artifact_paths(:1), artifact_kinds(:1))
          this%filePathFreq = this%artifacts(1)%relative_path
          call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension, &
-                               'frequency real imaginary')
+                               frequency_header(this))
       end if
 
    contains
@@ -110,6 +113,43 @@ contains
 
    end subroutine init_point_probe_output
 
+   function frequency_header(this) result(header)
+      type(point_probe_output_t), intent(in) :: this
+      character(len=80) :: header
+      if (this%hasIncident) then
+         header = 'frequency magnitude phase incident_magnitude incident_phase'
+      else
+         header = 'frequency magnitude phase'
+      end if
+   end function frequency_header
+
+   subroutine initialise_normalization_spectrum(this)
+      type(point_probe_output_t), intent(inout) :: this
+      integer :: unit, ioStatus, i
+      real(kind=RKIND_tiempo) :: t0, t1, t, dt
+      real(kind=RKIND) :: value
+
+      open(newunit=unit, file=trim(this%domain%normalizationFile), status='old', action='read', iostat=ioStatus)
+      if (ioStatus /= 0) call StopOnError(0, 0, 'Unable to read point-probe normalization file')
+      read(unit, *, iostat=ioStatus) t0, value
+      read(unit, *, iostat=ioStatus) t1, value
+      if (ioStatus /= 0) call StopOnError(0, 0, 'Normalization file needs at least two samples')
+      dt = abs(t1 - t0)
+      if (dt <= tiny(1.0_RKIND_tiempo)) call StopOnError(0, 0, 'Normalization file has a zero sampling interval')
+      rewind(unit)
+      call alloc_and_init(this%normalizationForFreq, this%nFreq, (0.0_CKIND, 0.0_CKIND))
+      do
+         read(unit, *, iostat=ioStatus) t, value
+         if (ioStatus < 0) exit
+         if (ioStatus /= 0) call StopOnError(0, 0, 'Invalid normalization sample')
+         do i = 1, this%nFreq
+            this%normalizationForFreq(i) = this%normalizationForFreq(i) + dt*value*exp(mcpi2*this%frequencySlice(i)*t)
+         end do
+      end do
+      close(unit)
+      if (any(abs(this%normalizationForFreq) <= tiny(1.0_RKIND))) call StopOnError(0, 0, 'Zero normalization spectrum')
+   end subroutine initialise_normalization_spectrum
+
    subroutine update_point_probe_output(this, step, field, sgg, saveTimeSample)
       type(point_probe_output_t), intent(inout) :: this
       real(kind=RKIND), pointer, dimension(:, :, :), intent(in) :: field
@@ -119,6 +159,7 @@ contains
 
       integer(kind=SINGLE) :: iter
       logical :: recordTimeSample, still_planewave_time
+      real(kind=RKIND) :: incidentValue
 
       recordTimeSample = .true.
       if (present(saveTimeSample)) recordTimeSample = saveTimeSample
@@ -136,18 +177,28 @@ contains
       end if
 
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
+         incidentValue = 0.0_RKIND
+         if (this%hasIncident .and. present(sgg)) then
+            still_planewave_time = .false.
+            incidentValue = Incid(sgg, 1, this%component, real(step + sgg%dt, RKIND), &
+                                  this%mainCoords%x, this%mainCoords%y, this%mainCoords%z, still_planewave_time, .true.)
+         end if
          select case (this%component)
          case (iEx, iEy, iEz)
             do iter = 1, this%nFreq
                this%valueForFreq(iter) = &
                   this%valueForFreq(iter) + field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)* &
                   this%quadratureDt*exp(this%auxExp_E(iter)*step)
+               if (this%hasIncident .and. present(sgg)) this%incidentForFreq(iter) = this%incidentForFreq(iter) + &
+                  incidentValue*this%quadratureDt*exp(this%auxExp_E(iter)*step)
             end do
          case (iHx, iHy, iHz)
             do iter = 1, this%nFreq
                this%valueForFreq(iter) = &
                   this%valueForFreq(iter) + field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)* &
                   this%quadratureDt*exp(this%auxExp_H(iter)*(step + 0.5_RKIND_tiempo*this%quadratureDt))
+               if (this%hasIncident .and. present(sgg)) this%incidentForFreq(iter) = this%incidentForFreq(iter) + &
+                  incidentValue*this%quadratureDt*exp(this%auxExp_H(iter)*(step + 0.5_RKIND_tiempo*this%quadratureDt))
             end do
          end select
 
@@ -193,6 +244,7 @@ contains
          type(point_probe_output_t), intent(in) :: this
          integer :: i
          integer :: unit
+         complex(kind=CKIND) :: spectrum
 
          if (.not. allocated(this%frequencySlice) .or. .not. allocated(this%valueForFreq)) then
             print *, "Error: arrays not allocated."
@@ -206,10 +258,17 @@ contains
              return
          end if
          open (newunit=unit, file=this%filePathFreq, status="replace", action="write")
-         write (unit, '(A)') 'frequency real imaginary'
+         write (unit, '(A)') frequency_header(this)
 
          do i = 1, this%nFreq
-            write (unit, fmt) this%frequencySlice(i), real(this%valueForFreq(i)), aimag(this%valueForFreq(i))
+            spectrum = this%valueForFreq(i)
+            if (this%domain%transfer) spectrum = spectrum/this%normalizationForFreq(i)
+            if (this%hasIncident) then
+               write (unit, fmt) this%frequencySlice(i), abs(spectrum), atan2(aimag(spectrum), real(spectrum)), &
+                                  abs(this%incidentForFreq(i)), atan2(aimag(this%incidentForFreq(i)), real(this%incidentForFreq(i)))
+            else
+               write (unit, fmt) this%frequencySlice(i), abs(spectrum), atan2(aimag(spectrum), real(spectrum))
+            end if
          end do
 
          close (unit)

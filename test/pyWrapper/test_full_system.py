@@ -750,14 +750,15 @@ def test_central_dipole_frequency_slice(tmp_path):
 @pytest.mark.planewave
 @pytest.mark.probes
 def test_planewave_in_box(tmp_path):
-    """Verify a plane wave is incident only within the simulation box."""
+    """Verify plane-wave confinement and point-probe time/frequency equivalence."""
     fn = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver.run()
 
     before = Probe(_get_solved_probe_folder(solver, "before"))
-    inbox = Probe(_get_solved_probe_folder(solver, "inbox"))
+    inbox = Probe(_get_solved_probe_folder(solver, "inbox", contains="_tm"))
+    inbox_frequency = Probe(_get_solved_probe_folder(solver, "inbox", contains="_fq"))
     after = Probe(_get_solved_probe_folder(solver, "after"))
 
     assert (
@@ -766,6 +767,38 @@ def test_planewave_in_box(tmp_path):
         ]
         > 0.999
     )
+
+    frequency = inbox_frequency.data["frequency"].to_numpy()
+    time = inbox.data["time"].to_numpy()
+    dt = time[1] - time[0]
+    np.testing.assert_allclose(np.diff(time), dt, rtol=1e-8, atol=0.0)
+
+    def discrete_transform(samples):
+        return dt * np.sum(
+            samples[np.newaxis, :]
+            * np.exp(-2j * np.pi * frequency[:, np.newaxis] * time[np.newaxis, :]),
+            axis=1,
+        )
+
+    reported_field = inbox_frequency.data["magnitude"].to_numpy() * np.exp(
+        1j * inbox_frequency.data["phase"].to_numpy()
+    )
+    reported_incident = inbox_frequency.data["incident_magnitude"].to_numpy() * np.exp(
+        1j * inbox_frequency.data["incident_phase"].to_numpy()
+    )
+    np.testing.assert_allclose(
+        reported_field,
+        discrete_transform(inbox.data["field"].to_numpy()),
+        rtol=1e-5,
+        atol=1e-12,
+    )
+    np.testing.assert_allclose(
+        reported_incident,
+        discrete_transform(inbox.data["incident"].to_numpy()),
+        rtol=1e-5,
+        atol=1e-12,
+    )
+
     zeros = np.zeros_like(before.data["field"])
     assert np.allclose(before.data["field"].to_numpy(), zeros, atol=5e-4)
     assert np.allclose(after.data["field"].to_numpy(), zeros, atol=5e-4)
