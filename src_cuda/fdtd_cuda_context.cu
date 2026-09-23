@@ -1,28 +1,9 @@
-#include "fdtd_cuda.h"
+#include "fdtd_cuda_internal.h"
 
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define FDTD_CUDA_PSI_SLOTS 64
-#define FDTD_CUDA_CPML1D    24
-
-struct fdtd_cuda_ctx {
-   int ok;
-   fdtd_dims3 dex, dey, dez, dhx, dhy, dhz;
-   fdtd_dims3 mex, mey, mez, mhx, mhy, mhz;
-   fdtd_real *d_Ex, *d_Ey, *d_Ez, *d_Hx, *d_Hy, *d_Hz;
-   fdtd_media *d_mEx, *d_mEy, *d_mEz, *d_mHx, *d_mHy, *d_mHz;
-   fdtd_real *d_g1, *d_g2, *d_gm1, *d_gm2;
-   int num_media;
-   fdtd_real *d_Idxh, *d_Idyh, *d_Idzh, *d_Idxe, *d_Idye, *d_Idze;
-   int n_idxh, n_idyh, n_idzh, n_idxe, n_idye, n_idze;
-   fdtd_real *d_psi[FDTD_CUDA_PSI_SLOTS];
-   int psi_n[FDTD_CUDA_PSI_SLOTS];
-   fdtd_real *d_cpml1d[FDTD_CUDA_CPML1D];
-   int cpml1d_n[FDTD_CUDA_CPML1D];
-};
 
 static int check(cudaError_t e, const char *what)
 {
@@ -65,7 +46,10 @@ void fdtd_cuda_destroy(fdtd_cuda_ctx *ctx)
    FREE(ctx->d_Idxe); FREE(ctx->d_Idye); FREE(ctx->d_Idze);
    for (int i = 0; i < FDTD_CUDA_PSI_SLOTS; ++i) FREE(ctx->d_psi[i]);
    for (int i = 0; i < FDTD_CUDA_CPML1D; ++i) FREE(ctx->d_cpml1d[i]);
+   FREE(ctx->d_probe_comp); FREE(ctx->d_probe_i); FREE(ctx->d_probe_j); FREE(ctx->d_probe_k);
+   FREE(ctx->d_probe_out);
 #undef FREE
+   fdtd_cuda_free_planewave(ctx);
    free(ctx);
 }
 

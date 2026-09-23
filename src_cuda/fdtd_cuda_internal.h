@@ -1,6 +1,52 @@
 #pragma once
 #include "fdtd_cuda.h"
 
+#define FDTD_CUDA_PSI_SLOTS 64
+#define FDTD_CUDA_CPML1D    24
+
+struct fdtd_cuda_ctx {
+   int ok;
+   fdtd_dims3 dex, dey, dez, dhx, dhy, dhz;
+   fdtd_dims3 mex, mey, mez, mhx, mhy, mhz;
+   fdtd_real *d_Ex, *d_Ey, *d_Ez, *d_Hx, *d_Hy, *d_Hz;
+   fdtd_media *d_mEx, *d_mEy, *d_mEz, *d_mHx, *d_mHy, *d_mHz;
+   fdtd_real *d_g1, *d_g2, *d_gm1, *d_gm2;
+   int num_media;
+   fdtd_real *d_Idxh, *d_Idyh, *d_Idzh, *d_Idxe, *d_Idye, *d_Idze;
+   int n_idxh, n_idyh, n_idzh, n_idxe, n_idye, n_idze;
+   fdtd_real *d_psi[FDTD_CUDA_PSI_SLOTS];
+   int psi_n[FDTD_CUDA_PSI_SLOTS];
+   fdtd_real *d_cpml1d[FDTD_CUDA_CPML1D];
+   int cpml1d_n[FDTD_CUDA_CPML1D];
+   /* Sparse point-probe gather (device SoA + output scratch). */
+   int n_probes;
+   int *d_probe_comp;
+   int *d_probe_i;
+   int *d_probe_j;
+   int *d_probe_k;
+   fdtd_real *d_probe_out;
+
+   /* Device Huygens planewave (face kernels + Incid tables). */
+   int pw_ready;
+   int pw_n_waves, pw_max_modes, pw_max_numus;
+   int pw_n_faces_e, pw_n_faces_h;
+   fdtd_real pw_cluz;
+   fdtd_real *d_pw_evol;
+   fdtd_real *d_pw_deltaevol;
+   int *d_pw_numus;
+   int *d_pw_num_modes;
+   fdtd_real *d_pw_px, *d_pw_py, *d_pw_pz, *d_pw_d0;
+   fdtd_real *d_pw_fpw;
+   fdtd_pw_face *d_pw_faces_e, *d_pw_faces_h;
+   fdtd_pw_face *h_pw_faces_e, *h_pw_faces_h; /* host copies for launch */
+   int *d_pw_still;
+   fdtd_real *d_pw_phys_x[6], *d_pw_phys_y[6], *d_pw_phys_z[6];
+   int pw_phys_x0[6], pw_phys_y0[6], pw_phys_z0[6];
+   int pw_phys_nx[6], pw_phys_ny[6], pw_phys_nz[6];
+};
+
+void fdtd_cuda_free_planewave(fdtd_cuda_ctx *ctx);
+
 #ifdef __cplusplus
 extern "C" {
 #endif

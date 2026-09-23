@@ -123,6 +123,48 @@ typedef struct {
 
 int fdtd_cuda_cpml_apply(fdtd_cuda_ctx *ctx, const fdtd_cpml_job *job);
 
+/*
+ * Sparse point-probe gather: register remapped (comp,i,j,k) once, then each
+ * step download only those N floats (avoids full-field D2H for point probes).
+ * comp: 0=Ex .. 5=Hz. n==0 is a no-op success.
+ */
+int fdtd_cuda_set_point_probes(fdtd_cuda_ctx *ctx, int n,
+                               const int *comp, const int *i, const int *j, const int *k);
+int fdtd_cuda_gather_point_probes(fdtd_cuda_ctx *ctx, fdtd_real *out);
+
+/*
+ * Device Huygens planewave: upload tables/faces once, advance E/H faces each step.
+ * field_comp 0=Ex..5=Hz; incid_nfield 1..6 (Fortran iEx..iHz); free_mode 0=fixed i,
+ * 1=fixed j, 2=fixed k; a/b loop the two free absolute indices; id_axis 0=x,1=y,2=z;
+ * use_e_metric 0=Idxh.., 1=Idxe..
+ */
+typedef struct {
+   int field_comp;
+   int incid_nfield;
+   int wave;
+   int free_mode;
+   int fixed_abs;
+   int a0, a1, b0, b1;
+   int incid_di, incid_dj, incid_dk;
+   int field_xi, field_yi, field_zi;
+   int id_axis;
+   int use_e_metric;
+   int sign;
+} fdtd_pw_face;
+
+int fdtd_cuda_upload_planewave_phys(fdtd_cuda_ctx *ctx, int field, int axis, int base_abs, int n,
+                                    const fdtd_real *host);
+int fdtd_cuda_upload_planewave(fdtd_cuda_ctx *ctx, int n_waves, int max_modes, int max_numus,
+                               fdtd_real cluz, const int *num_modes, const int *numus,
+                               const fdtd_real *deltaevol, const fdtd_real *evol,
+                               const fdtd_real *px, const fdtd_real *py, const fdtd_real *pz,
+                               const fdtd_real *d0, const fdtd_real *fpw,
+                               const fdtd_pw_face *faces_e, int n_faces_e,
+                               const fdtd_pw_face *faces_h, int n_faces_h);
+int fdtd_cuda_planewave_ready(const fdtd_cuda_ctx *ctx);
+int fdtd_cuda_advance_planewave_e(fdtd_cuda_ctx *ctx, fdtd_real time, int *still_out);
+int fdtd_cuda_advance_planewave_h(fdtd_cuda_ctx *ctx, fdtd_real time, int *still_out);
+
 #ifdef __cplusplus
 }
 #endif

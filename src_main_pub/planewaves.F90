@@ -1,6 +1,10 @@
 module ilumina_m
    use FDETYPES_m
    use Report_m
+#ifdef CompileWithCUDA
+   use, intrinsic :: iso_c_binding, only: c_int
+   use fdtd_cuda_m
+#endif
 
    implicit none
    private
@@ -31,6 +35,10 @@ module ilumina_m
    type(ijk_t), allocatable, dimension(:)       , SAVE  :: TrFr,IzDe,AbAr
    logical  , allocatable, dimension(:)        , save  :: IluminaTr,IluminaFr,IluminaIz,IluminaDe,IluminaAr,IluminaAb
    public Incid,AdvancePlaneWaveE,AdvancePlaneWaveH,InitPlaneWave,DestroyIlumina,storeplanewaves,calc_planewaveconstants,corrigeondaplanaH
+#ifdef CompileWithCUDA
+   public UploadPlaneWaveCuda, cuda_planewave_is_ready
+   logical, save :: cuda_pw_uploaded = .false.
+#endif
 
 
 
@@ -1714,6 +1722,223 @@ contains
       
     return
     end subroutine corrigeondaplanaH
-    
+
+#ifdef CompileWithCUDA
+   logical function cuda_planewave_is_ready()
+      cuda_planewave_is_ready = cuda_pw_uploaded .and. fdtd_cuda_planewave_ready_f()
+   end function
+
+   subroutine UploadPlaneWaveCuda(sgg, b, ok)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      type(bounds_t), intent(in) :: b
+      logical, intent(out) :: ok
+      integer :: jjj, field, axis, n, lo, hi, irc, maxmodes, maxnumus, nw, ne, nh
+      integer :: kkk, nf
+      integer(c_int), allocatable :: num_modes(:), numus_c(:)
+      real(kind=RKIND), allocatable :: delta_c(:), evol_c(:), px_c(:), py_c(:), pz_c(:), d0_c(:), fpw_c(:)
+      type(fdtd_pw_face_c), allocatable :: faces_e(:), faces_h(:)
+      real(kind=RKIND), allocatable :: phys(:)
+
+      ok = .false.
+      cuda_pw_uploaded = .false.
+      if (sgg%NumPlaneWaves < 1) then
+         allocate(num_modes(1), numus_c(1), delta_c(1), evol_c(1))
+         allocate(px_c(1), py_c(1), pz_c(1), d0_c(1), fpw_c(1))
+         allocate(faces_e(1), faces_h(1))
+         num_modes = 0; numus_c = 0; delta_c = 0; evol_c = 0
+         px_c = 0; py_c = 0; pz_c = 0; d0_c = 0; fpw_c = 0
+         irc = fdtd_cuda_upload_planewave_f(0, 0, 0, cluz, &
+            num_modes, numus_c, delta_c, evol_c, px_c, py_c, pz_c, d0_c, fpw_c, &
+            faces_e, 0, faces_h, 0)
+         ok = (irc /= 0)
+         cuda_pw_uploaded = ok
+         deallocate(num_modes, numus_c, delta_c, evol_c, px_c, py_c, pz_c, d0_c, fpw_c, faces_e, faces_h)
+         return
+      end if
+
+      ! PhysCoor for Incid (fields 1..6 → CUDA 0..5)
+      do field = iEx, iHz
+         nf = field - 1
+         do axis = 0, 2
+            if (axis == 0) then
+               lo = lbound(Punto%PhysCoor(field)%x, 1)
+               hi = ubound(Punto%PhysCoor(field)%x, 1)
+               n = hi - lo + 1
+               allocate(phys(n))
+               phys(1:n) = Punto%PhysCoor(field)%x(lo:hi)
+            else if (axis == 1) then
+               lo = lbound(Punto%PhysCoor(field)%y, 1)
+               hi = ubound(Punto%PhysCoor(field)%y, 1)
+               n = hi - lo + 1
+               allocate(phys(n))
+               phys(1:n) = Punto%PhysCoor(field)%y(lo:hi)
+            else
+               lo = lbound(Punto%PhysCoor(field)%z, 1)
+               hi = ubound(Punto%PhysCoor(field)%z, 1)
+               n = hi - lo + 1
+               allocate(phys(n))
+               phys(1:n) = Punto%PhysCoor(field)%z(lo:hi)
+            end if
+            irc = fdtd_cuda_upload_planewave_phys_f(nf, axis, lo, n, phys)
+            deallocate(phys)
+            if (irc == 0) return
+         end do
+      end do
+
+      nw = sgg%NumPlaneWaves
+      maxmodes = maxval(sgg%PlaneWave(1:nw)%nummodes)
+      maxnumus = maxval(numus(1:nw))
+      allocate(num_modes(nw), numus_c(nw), delta_c(nw))
+      allocate(evol_c(nw * (maxnumus + 1)))
+      allocate(px_c(nw * maxmodes), py_c(nw * maxmodes), pz_c(nw * maxmodes), d0_c(nw * maxmodes))
+      allocate(fpw_c(nw * 6 * maxmodes))
+      evol_c = 0.0_RKIND
+      px_c = 0.0_RKIND; py_c = 0.0_RKIND; pz_c = 0.0_RKIND; d0_c = 0.0_RKIND; fpw_c = 0.0_RKIND
+      do jjj = 1, nw
+         num_modes(jjj) = int(sgg%PlaneWave(jjj)%nummodes, c_int)
+         numus_c(jjj) = int(numus(jjj), c_int)
+         delta_c(jjj) = deltaevol(jjj)
+         do kkk = 0, numus(jjj)
+            evol_c((jjj - 1) * (maxnumus + 1) + kkk + 1) = evol(jjj, kkk)
+         end do
+         do kkk = 1, sgg%PlaneWave(jjj)%nummodes
+            px_c((jjj - 1) * maxmodes + kkk) = pxpw(jjj, kkk)
+            py_c((jjj - 1) * maxmodes + kkk) = pypw(jjj, kkk)
+            pz_c((jjj - 1) * maxmodes + kkk) = pzpw(jjj, kkk)
+            d0_c((jjj - 1) * maxmodes + kkk) = distanciaInicial(jjj, kkk)
+            do nf = 1, 6
+               fpw_c((jjj - 1) * 6 * maxmodes + (nf - 1) * maxmodes + kkk) = fpw(jjj, nf, kkk)
+            end do
+         end do
+      end do
+
+      allocate(faces_e(nw * 12), faces_h(nw * 12))
+      ne = 0
+      nh = 0
+      do jjj = 1, nw
+         if (IluminaTr(jjj)) then
+            call pw_push(faces_e, ne, 2, iHy, jjj-1, 0, TrFr(jjj)%I%tra%Ez, &
+               TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez, TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez, &
+               -1, 0, 0, b%Ez%XI, b%Ez%YI, b%Ez%ZI, 0, 0, -1)
+            call pw_push(faces_e, ne, 1, iHz, jjj-1, 0, TrFr(jjj)%I%tra%Ey, &
+               TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey, TrFr(jjj)%K%com%Ey, TrFr(jjj)%K%fin%Ey, &
+               -1, 0, 0, b%Ey%XI, b%Ey%YI, b%Ey%ZI, 0, 0, +1)
+            call pw_push(faces_h, nh, 5, iEy, jjj-1, 0, TrFr(jjj)%I%tra%Hz, &
+               TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz, TrFr(jjj)%K%com%Hz, TrFr(jjj)%K%fin%Hz, &
+               +1, 0, 0, b%Hz%XI, b%Hz%YI, b%Hz%ZI, 0, 1, +1)
+            call pw_push(faces_h, nh, 4, iEz, jjj-1, 0, TrFr(jjj)%I%tra%Hy, &
+               TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy, TrFr(jjj)%K%com%Hy, TrFr(jjj)%K%fin%Hy, &
+               +1, 0, 0, b%Hy%XI, b%Hy%YI, b%Hy%ZI, 0, 1, -1)
+         end if
+         if (IluminaFr(jjj)) then
+            call pw_push(faces_e, ne, 2, iHy, jjj-1, 0, TrFr(jjj)%I%fro%Ez, &
+               TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez, TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez, &
+               0, 0, 0, b%Ez%XI, b%Ez%YI, b%Ez%ZI, 0, 0, +1)
+            call pw_push(faces_e, ne, 1, iHz, jjj-1, 0, TrFr(jjj)%I%fro%Ey, &
+               TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey, TrFr(jjj)%K%com%Ey, TrFr(jjj)%K%fin%Ey, &
+               0, 0, 0, b%Ey%XI, b%Ey%YI, b%Ey%ZI, 0, 0, -1)
+            call pw_push(faces_h, nh, 5, iEy, jjj-1, 0, TrFr(jjj)%I%fro%Hz, &
+               TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz, TrFr(jjj)%K%com%Hz, TrFr(jjj)%K%fin%Hz, &
+               0, 0, 0, b%Hz%XI, b%Hz%YI, b%Hz%ZI, 0, 1, -1)
+            call pw_push(faces_h, nh, 4, iEz, jjj-1, 0, TrFr(jjj)%I%fro%Hy, &
+               TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy, TrFr(jjj)%K%com%Hy, TrFr(jjj)%K%fin%Hy, &
+               0, 0, 0, b%Hy%XI, b%Hy%YI, b%Hy%ZI, 0, 1, +1)
+         end if
+         if (IluminaIz(jjj)) then
+            call pw_push(faces_e, ne, 0, iHz, jjj-1, 1, IzDe(jjj)%J%izq%Ex, &
+               IzDe(jjj)%I%com%Ex, IzDe(jjj)%I%fin%Ex, IzDe(jjj)%K%com%Ex, IzDe(jjj)%K%fin%Ex, &
+               0, -1, 0, b%Ex%XI, b%Ex%YI, b%Ex%ZI, 1, 0, -1)
+            call pw_push(faces_e, ne, 2, iHx, jjj-1, 1, IzDe(jjj)%J%izq%Ez, &
+               IzDe(jjj)%I%com%Ez, IzDe(jjj)%I%fin%Ez, IzDe(jjj)%K%com%Ez, IzDe(jjj)%K%fin%Ez, &
+               0, -1, 0, b%Ez%XI, b%Ez%YI, b%Ez%ZI, 1, 0, +1)
+            call pw_push(faces_h, nh, 3, iEz, jjj-1, 1, IzDe(jjj)%J%izq%Hx, &
+               IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx, IzDe(jjj)%K%com%Hx, IzDe(jjj)%K%fin%Hx, &
+               0, +1, 0, b%Hx%XI, b%Hx%YI, b%Hx%ZI, 1, 1, +1)
+            call pw_push(faces_h, nh, 5, iEx, jjj-1, 1, IzDe(jjj)%J%izq%Hz, &
+               IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz, IzDe(jjj)%K%com%Hz, IzDe(jjj)%K%fin%Hz, &
+               0, +1, 0, b%Hz%XI, b%Hz%YI, b%Hz%ZI, 1, 1, -1)
+         end if
+         if (IluminaDe(jjj)) then
+            call pw_push(faces_e, ne, 2, iHx, jjj-1, 1, IzDe(jjj)%J%der%Ez, &
+               IzDe(jjj)%I%com%Ez, IzDe(jjj)%I%fin%Ez, IzDe(jjj)%K%com%Ez, IzDe(jjj)%K%fin%Ez, &
+               0, 0, 0, b%Ez%XI, b%Ez%YI, b%Ez%ZI, 1, 0, -1)
+            call pw_push(faces_e, ne, 0, iHz, jjj-1, 1, IzDe(jjj)%J%der%Ex, &
+               IzDe(jjj)%I%com%Ex, IzDe(jjj)%I%fin%Ex, IzDe(jjj)%K%com%Ex, IzDe(jjj)%K%fin%Ex, &
+               0, 0, 0, b%Ex%XI, b%Ex%YI, b%Ex%ZI, 1, 0, +1)
+            call pw_push(faces_h, nh, 3, iEz, jjj-1, 1, IzDe(jjj)%J%der%Hx, &
+               IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx, IzDe(jjj)%K%com%Hx, IzDe(jjj)%K%fin%Hx, &
+               0, 0, 0, b%Hx%XI, b%Hx%YI, b%Hx%ZI, 1, 1, -1)
+            call pw_push(faces_h, nh, 5, iEx, jjj-1, 1, IzDe(jjj)%J%der%Hz, &
+               IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz, IzDe(jjj)%K%com%Hz, IzDe(jjj)%K%fin%Hz, &
+               0, 0, 0, b%Hz%XI, b%Hz%YI, b%Hz%ZI, 1, 1, +1)
+         end if
+         if (IluminaAb(jjj)) then
+            call pw_push(faces_e, ne, 0, iHy, jjj-1, 2, AbAr(jjj)%K%aba%Ex, &
+               AbAr(jjj)%I%com%Ex, AbAr(jjj)%I%fin%Ex, AbAr(jjj)%J%com%Ex, AbAr(jjj)%J%fin%Ex, &
+               0, 0, -1, b%Ex%XI, b%Ex%YI, b%Ex%ZI, 2, 0, +1)
+            call pw_push(faces_e, ne, 1, iHx, jjj-1, 2, AbAr(jjj)%K%aba%Ey, &
+               AbAr(jjj)%I%com%Ey, AbAr(jjj)%I%fin%Ey, AbAr(jjj)%J%com%Ey, AbAr(jjj)%J%fin%Ey, &
+               0, 0, -1, b%Ey%XI, b%Ey%YI, b%Ey%ZI, 2, 0, -1)
+            call pw_push(faces_h, nh, 3, iEy, jjj-1, 2, AbAr(jjj)%K%aba%Hx, &
+               AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx, AbAr(jjj)%J%com%Hx, AbAr(jjj)%J%fin%Hx, &
+               0, 0, +1, b%Hx%XI, b%Hx%YI, b%Hx%ZI, 2, 1, -1)
+            call pw_push(faces_h, nh, 4, iEx, jjj-1, 2, AbAr(jjj)%K%aba%Hy, &
+               AbAr(jjj)%I%com%Hy, AbAr(jjj)%I%fin%Hy, AbAr(jjj)%J%com%Hy, AbAr(jjj)%J%fin%Hy, &
+               0, 0, +1, b%Hy%XI, b%Hy%YI, b%Hy%ZI, 2, 1, +1)
+         end if
+         if (IluminaAr(jjj)) then
+            call pw_push(faces_e, ne, 0, iHy, jjj-1, 2, AbAr(jjj)%K%arr%Ex, &
+               AbAr(jjj)%I%com%Ex, AbAr(jjj)%I%fin%Ex, AbAr(jjj)%J%com%Ex, AbAr(jjj)%J%fin%Ex, &
+               0, 0, 0, b%Ex%XI, b%Ex%YI, b%Ex%ZI, 2, 0, -1)
+            call pw_push(faces_e, ne, 1, iHx, jjj-1, 2, AbAr(jjj)%K%arr%Ey, &
+               AbAr(jjj)%I%com%Ey, AbAr(jjj)%I%fin%Ey, AbAr(jjj)%J%com%Ey, AbAr(jjj)%J%fin%Ey, &
+               0, 0, 0, b%Ey%XI, b%Ey%YI, b%Ey%ZI, 2, 0, +1)
+            call pw_push(faces_h, nh, 3, iEy, jjj-1, 2, AbAr(jjj)%K%arr%Hx, &
+               AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx, AbAr(jjj)%J%com%Hx, AbAr(jjj)%J%fin%Hx, &
+               0, 0, 0, b%Hx%XI, b%Hx%YI, b%Hx%ZI, 2, 1, +1)
+            call pw_push(faces_h, nh, 4, iEx, jjj-1, 2, AbAr(jjj)%K%arr%Hy, &
+               AbAr(jjj)%I%com%Hy, AbAr(jjj)%I%fin%Hy, AbAr(jjj)%J%com%Hy, AbAr(jjj)%J%fin%Hy, &
+               0, 0, 0, b%Hy%XI, b%Hy%YI, b%Hy%ZI, 2, 1, -1)
+         end if
+      end do
+
+      irc = fdtd_cuda_upload_planewave_f(nw, maxmodes, maxnumus, cluz, &
+         num_modes, numus_c, delta_c, evol_c, px_c, py_c, pz_c, d0_c, fpw_c, &
+         faces_e, ne, faces_h, nh)
+      ok = (irc /= 0)
+      cuda_pw_uploaded = ok
+
+      deallocate(num_modes, numus_c, delta_c, evol_c, px_c, py_c, pz_c, d0_c, fpw_c)
+      deallocate(faces_e, faces_h)
+
+   contains
+      subroutine pw_push(faces, n, field_comp, incid_nf, wave, free_mode, fixed_abs, &
+         a0, a1, b0, b1, di, dj, dk, fxi, fyi, fzi, id_axis, use_e, sgn)
+         type(fdtd_pw_face_c), intent(inout) :: faces(:)
+         integer, intent(inout) :: n
+         integer, intent(in) :: field_comp, incid_nf, wave, free_mode, fixed_abs
+         integer, intent(in) :: a0, a1, b0, b1, di, dj, dk, fxi, fyi, fzi, id_axis, use_e, sgn
+         n = n + 1
+         faces(n)%field_comp = int(field_comp, c_int)
+         faces(n)%incid_nfield = int(incid_nf, c_int)
+         faces(n)%wave = int(wave, c_int)
+         faces(n)%free_mode = int(free_mode, c_int)
+         faces(n)%fixed_abs = int(fixed_abs, c_int)
+         faces(n)%a0 = int(a0, c_int)
+         faces(n)%a1 = int(a1, c_int)
+         faces(n)%b0 = int(b0, c_int)
+         faces(n)%b1 = int(b1, c_int)
+         faces(n)%incid_di = int(di, c_int)
+         faces(n)%incid_dj = int(dj, c_int)
+         faces(n)%incid_dk = int(dk, c_int)
+         faces(n)%field_xi = int(fxi, c_int)
+         faces(n)%field_yi = int(fyi, c_int)
+         faces(n)%field_zi = int(fzi, c_int)
+         faces(n)%id_axis = int(id_axis, c_int)
+         faces(n)%use_e_metric = int(use_e, c_int)
+         faces(n)%sign = int(sgn, c_int)
+      end subroutine
+   end subroutine UploadPlaneWaveCuda
+#endif
 
 end module ilumina_m

@@ -30,6 +30,7 @@ module Solver_m
    use PMLbodies_m
 #ifdef CompileWithCUDA
    use fdtd_cuda_m
+   use, intrinsic :: iso_c_binding, only: c_int
 #endif
    use interpreta_switches_m, only: entrada_t
 #ifdef CompileWithMPI
@@ -138,6 +139,14 @@ module Solver_m
       integer(kind=4) :: cuda_pw_xi = 0, cuda_pw_xe = 0
       integer(kind=4) :: cuda_pw_yi = 0, cuda_pw_ye = 0
       integer(kind=4) :: cuda_pw_zi = 0, cuda_pw_ze = 0
+      logical :: cuda_pw_ok = .false.
+      ! Sparse point-probe gather (expand CUDA path; CPU path unchanged).
+      logical :: cuda_sparse_probes_ok = .false.
+      integer(kind=4) :: cuda_n_probes = 0
+      integer(kind=4), allocatable :: cuda_probe_comp(:)
+      integer(kind=4), allocatable :: cuda_probe_i(:), cuda_probe_j(:), cuda_probe_k(:)
+      integer(kind=4), allocatable :: cuda_probe_ai(:), cuda_probe_aj(:), cuda_probe_ak(:)
+      real(kind=RKIND), allocatable :: cuda_probe_vals(:)
 #endif
 
    contains
@@ -180,11 +189,13 @@ module Solver_m
       procedure, private :: cuda_ensure_device => solver_cuda_ensure_device
       procedure, private :: cuda_ensure_host => solver_cuda_ensure_host
       procedure, private :: cuda_ensure_host_pw_box => solver_cuda_ensure_host_pw_box
+      procedure, private :: cuda_ensure_host_point_probes => solver_cuda_ensure_host_point_probes
       procedure, private :: cuda_mark_host_stale => solver_cuda_mark_host_stale
       procedure, private :: cuda_mark_device_stale => solver_cuda_mark_device_stale
       procedure, private :: cuda_upload_pw_box => solver_cuda_upload_pw_box
       procedure, private :: cuda_download_pw_box => solver_cuda_download_pw_box
       procedure, private :: cuda_capture_pw_box => solver_cuda_capture_pw_box
+      procedure, private :: cuda_capture_point_probes => solver_cuda_capture_point_probes
       procedure, private :: cuda_abs_to_ibox => solver_cuda_abs_to_ibox
 #endif
       procedure, private :: phase_timer_init
@@ -1979,7 +1990,15 @@ contains
          call this%phase_tic()
          if (this%thereAre%Observation) then
 #ifdef CompileWithCUDA
-            if (this%control%use_cuda) call this%cuda_ensure_host()
+            ! Expand CUDA: sparse gather for point probes only; CPU and
+            ! non-point observations still use full ensure_host.
+            if (this%control%use_cuda) then
+               if (this%cuda_sparse_probes_ok) then
+                  call this%cuda_ensure_host_point_probes()
+               else
+                  call this%cuda_ensure_host()
+               end if
+            end if
 #endif
             if (this%n > 0 .and. mod(this%n, OUTPUT_TIME_BUFFER_SIZE) == 0) then
                call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .FALSE.)
@@ -2091,14 +2110,19 @@ contains
       call this%advanceLumpedE()
       call this%advanceEDispersiveE()
 #ifdef CompileWithCUDA
-      if (this%control%use_cuda .and. this%thereAre%PlaneWaveBoxes .and. this%still_planewave_time) then
+      if (this%control%use_cuda .and. this%thereAre%PlaneWaveBoxes .and. this%still_planewave_time &
+          .and. .not. this%cuda_pw_ok) then
          call this%cuda_ensure_host_pw_box()
       end if
 #endif
       call this%advancePlaneWaveE()
 #ifdef CompileWithCUDA
       if (this%control%use_cuda .and. this%thereAre%PlaneWaveBoxes .and. this%still_planewave_time) then
-         call this%cuda_mark_device_stale(.true.)
+         if (this%cuda_pw_ok) then
+            call this%cuda_mark_host_stale()
+         else
+            call this%cuda_mark_device_stale(.true.)
+         end if
       end if
 #endif
       call this%advanceNodalE()
@@ -2168,14 +2192,19 @@ contains
       end if
 #endif
 #ifdef CompileWithCUDA
-      if (this%control%use_cuda .and. this%thereAre%PlaneWaveBoxes .and. this%still_planewave_time) then
+      if (this%control%use_cuda .and. this%thereAre%PlaneWaveBoxes .and. this%still_planewave_time &
+          .and. .not. this%cuda_pw_ok) then
          call this%cuda_ensure_host_pw_box()
       end if
 #endif
       call this%advancePlaneWaveH()
 #ifdef CompileWithCUDA
       if (this%control%use_cuda .and. this%thereAre%PlaneWaveBoxes .and. this%still_planewave_time) then
-         call this%cuda_mark_device_stale(.true.)
+         if (this%cuda_pw_ok) then
+            call this%cuda_mark_host_stale()
+         else
+            call this%cuda_mark_device_stale(.true.)
+         end if
       end if
 #endif
       call this%advanceNodalH()
@@ -2677,21 +2706,53 @@ contains
 
    subroutine solver_advancePlaneWaveE(this)
       class(solver_t) :: this
+      integer :: irc
+      real(kind=RKIND) :: timei
+      logical :: still
       If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time) then 
-         if(.not.this%control%simu_devia) call AdvancePlaneWaveE(this%sgg,this%n, this%bounds,this%g%G2, &
+         if(.not.this%control%simu_devia) then
+#ifdef CompileWithCUDA
+            if (this%control%use_cuda .and. this%cuda_pw_ok) then
+               timei = this%sgg%tiempo(this%n)
+               still = .false.
+               irc = fdtd_cuda_advance_planewave_e_f(timei, still)
+               if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, &
+                  'CUDA AdvancePlaneWaveE failed')
+               this%still_planewave_time = still
+               return
+            end if
+#endif
+            call AdvancePlaneWaveE(this%sgg,this%n, this%bounds,this%g%G2, &
                                                                  this%Idxh,this%Idyh,this%Idzh, & 
                                                                  this%Ex,this%Ey,this%Ez, & 
                                                                  this%still_planewave_time)
+         end if
       end if
    end subroutine
 
    subroutine solver_advancePlaneWaveH(this)
       class(solver_t) :: this
+      integer :: irc
+      real(kind=RKIND) :: timei
+      logical :: still
       If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time)  then
-         if (.not.this%control%simu_devia) call AdvancePlaneWaveH(this%sgg,this%n, this%bounds, this%g%GM2, & 
+         if (.not.this%control%simu_devia) then
+#ifdef CompileWithCUDA
+            if (this%control%use_cuda .and. this%cuda_pw_ok) then
+               timei = this%sgg%tiempo(this%n) + 0.5_RKIND * this%sgg%dt
+               still = .false.
+               irc = fdtd_cuda_advance_planewave_h_f(timei, still)
+               if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, &
+                  'CUDA AdvancePlaneWaveH failed')
+               this%still_planewave_time = still
+               return
+            end if
+#endif
+            call AdvancePlaneWaveH(this%sgg,this%n, this%bounds, this%g%GM2, & 
                                                                   this%Idxe, this%Idye, this%Idze, & 
                                                                   this%Hx, this%Hy, this%Hz, & 
                                                                   this%still_planewave_time)
+         end if
       end if
    end subroutine
 
@@ -3098,11 +3159,30 @@ contains
       this%cuda_device_current = .true.
       this%cuda_device_stale_box = .false.
       call this%cuda_capture_pw_box()
+      call this%cuda_capture_point_probes()
+
+      this%cuda_pw_ok = .false.
+      if (this%thereAre%PlaneWaveBoxes) then
+         call UploadPlaneWaveCuda(this%sgg, this%bounds, this%cuda_pw_ok)
+         if (.not. this%cuda_pw_ok) then
+            call stoponerror(this%control%layoutnumber, this%control%num_procs, &
+               'CUDA planewave upload failed')
+            return
+         end if
+      end if
 
       if (this%thereAre%PMLBorders) call InitCPMLBorders_cuda()
 
       write(dubuf,*) 'CUDA: device-resident Yee(+CPML) enabled (field residency)'
       call print11(this%control%layoutnumber, dubuf)
+      if (this%cuda_pw_ok) then
+         write(dubuf,*) 'CUDA: device Huygens planewave enabled (no mid-step PW box sync)'
+         call print11(this%control%layoutnumber, dubuf)
+      end if
+      if (this%cuda_sparse_probes_ok) then
+         write(dubuf,*) 'CUDA: sparse point-probe gather enabled, n=', this%cuda_n_probes
+         call print11(this%control%layoutnumber, dubuf)
+      end if
    end subroutine solver_init_cuda_device
 
    subroutine solver_cuda_capture_pw_box(this)
@@ -3253,6 +3333,141 @@ contains
       ! (e.g. prior AdvancePlaneWave); do not D2H over it.
       if (.not. this%cuda_device_current) return
       call this%cuda_download_pw_box()
+   end subroutine
+
+   subroutine solver_cuda_capture_point_probes(this)
+      class(solver_t) :: this
+      type(solver_output_t), pointer :: outs(:)
+      integer :: nout, i, n, ai, aj, ak, ri, rj, rk, comp_f, comp_c, irc
+      integer(c_int), allocatable :: c_comp(:), c_i(:), c_j(:), c_k(:)
+      type(limit_t) :: lim
+      character(len=bufsize) :: dubuf
+
+      this%cuda_sparse_probes_ok = .false.
+      this%cuda_n_probes = 0
+      if (allocated(this%cuda_probe_comp)) deallocate(this%cuda_probe_comp)
+      if (allocated(this%cuda_probe_i)) deallocate(this%cuda_probe_i)
+      if (allocated(this%cuda_probe_j)) deallocate(this%cuda_probe_j)
+      if (allocated(this%cuda_probe_k)) deallocate(this%cuda_probe_k)
+      if (allocated(this%cuda_probe_ai)) deallocate(this%cuda_probe_ai)
+      if (allocated(this%cuda_probe_aj)) deallocate(this%cuda_probe_aj)
+      if (allocated(this%cuda_probe_ak)) deallocate(this%cuda_probe_ak)
+      if (allocated(this%cuda_probe_vals)) deallocate(this%cuda_probe_vals)
+
+      outs => GetOutputs()
+      if (.not. associated(outs)) then
+         block
+            integer(c_int) :: dummy(1)
+            dummy = 0_c_int
+            irc = fdtd_cuda_set_point_probes_f(0, dummy, dummy, dummy, dummy)
+         end block
+         return
+      end if
+      nout = size(outs)
+      ! Sparse path only when every registered output is a point probe.
+      ! Other types (movie, bulk, …) keep the existing full ensure_host path.
+      do i = 1, nout
+         if (outs(i)%outputID /= POINT_PROBE_ID) then
+            write(dubuf,*) 'CUDA: non-point observation present; full host sync for outputs'
+            call print11(this%control%layoutnumber, dubuf)
+            return
+         end if
+      end do
+
+      n = 0
+      do i = 1, nout
+         if (outs(i)%outputID == POINT_PROBE_ID) n = n + 1
+      end do
+      if (n < 1) return
+
+      allocate(this%cuda_probe_comp(n), this%cuda_probe_i(n), this%cuda_probe_j(n), this%cuda_probe_k(n))
+      allocate(this%cuda_probe_ai(n), this%cuda_probe_aj(n), this%cuda_probe_ak(n))
+      allocate(this%cuda_probe_vals(n))
+      allocate(c_comp(n), c_i(n), c_j(n), c_k(n))
+
+      n = 0
+      do i = 1, nout
+         if (outs(i)%outputID /= POINT_PROBE_ID) cycle
+         if (.not. allocated(outs(i)%pointProbe)) cycle
+         n = n + 1
+         comp_f = outs(i)%pointProbe%component
+         ! Fortran iEx..iHz are 1..6; CUDA comps are 0..5.
+         comp_c = comp_f - 1
+         ai = outs(i)%pointProbe%mainCoords%x
+         aj = outs(i)%pointProbe%mainCoords%y
+         ak = outs(i)%pointProbe%mainCoords%z
+         select case (comp_f)
+         case (iEx); lim = this%bounds%Ex
+         case (iEy); lim = this%bounds%Ey
+         case (iEz); lim = this%bounds%Ez
+         case (iHx); lim = this%bounds%Hx
+         case (iHy); lim = this%bounds%Hy
+         case (iHz); lim = this%bounds%Hz
+         case default
+            write(dubuf,*) 'CUDA: unsupported point-probe component ', comp_f
+            call print11(this%control%layoutnumber, dubuf)
+            return
+         end select
+         ri = ai - lim%XI
+         rj = aj - lim%YI
+         rk = ak - lim%ZI
+         if (ri < 0 .or. ri >= lim%NX .or. rj < 0 .or. rj >= lim%NY .or. rk < 0 .or. rk >= lim%NZ) then
+            write(dubuf,*) 'CUDA: point probe remapped OOB ', ai, aj, ak
+            call print11(this%control%layoutnumber, dubuf)
+            return
+         end if
+         this%cuda_probe_comp(n) = comp_c
+         this%cuda_probe_i(n) = ri
+         this%cuda_probe_j(n) = rj
+         this%cuda_probe_k(n) = rk
+         this%cuda_probe_ai(n) = ai
+         this%cuda_probe_aj(n) = aj
+         this%cuda_probe_ak(n) = ak
+         c_comp(n) = int(comp_c, c_int)
+         c_i(n) = int(ri, c_int)
+         c_j(n) = int(rj, c_int)
+         c_k(n) = int(rk, c_int)
+      end do
+
+      irc = fdtd_cuda_set_point_probes_f(n, c_comp, c_i, c_j, c_k)
+      if (irc == 0) then
+         call stoponerror(this%control%layoutnumber, this%control%num_procs, &
+            'CUDA set point probes failed')
+         return
+      end if
+      this%cuda_n_probes = n
+      this%cuda_sparse_probes_ok = .true.
+   end subroutine
+
+   subroutine solver_cuda_ensure_host_point_probes(this)
+      class(solver_t) :: this
+      integer :: t, irc, ai, aj, ak, comp
+      if (.not. this%control%use_cuda) return
+      if (.not. this%cuda_sparse_probes_ok) then
+         call this%cuda_ensure_host()
+         return
+      end if
+      if (this%cuda_n_probes < 1) return
+      ! Device must hold latest fields (flush PW box writes if needed).
+      if (.not. this%cuda_device_current) call this%cuda_ensure_device()
+      irc = fdtd_cuda_gather_point_probes_f(this%cuda_probe_vals)
+      if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, &
+         'CUDA gather point probes failed')
+      do t = 1, this%cuda_n_probes
+         ai = this%cuda_probe_ai(t)
+         aj = this%cuda_probe_aj(t)
+         ak = this%cuda_probe_ak(t)
+         comp = this%cuda_probe_comp(t)
+         select case (comp)
+         case (0); this%Ex(ai, aj, ak) = this%cuda_probe_vals(t)
+         case (1); this%Ey(ai, aj, ak) = this%cuda_probe_vals(t)
+         case (2); this%Ez(ai, aj, ak) = this%cuda_probe_vals(t)
+         case (3); this%Hx(ai, aj, ak) = this%cuda_probe_vals(t)
+         case (4); this%Hy(ai, aj, ak) = this%cuda_probe_vals(t)
+         case (5); this%Hz(ai, aj, ak) = this%cuda_probe_vals(t)
+         end select
+      end do
+      ! Host outside probe cells remains stale.
    end subroutine
 
    subroutine solver_cuda_mark_host_stale(this)

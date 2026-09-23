@@ -17,7 +17,11 @@ module fdtd_cuda_m
    public :: fdtd_cuda_advance_hx_f, fdtd_cuda_advance_hy_f, fdtd_cuda_advance_hz_f
    public :: fdtd_cuda_alloc_psi_f, fdtd_cuda_upload_psi_f, fdtd_cuda_download_psi_f
    public :: fdtd_cuda_alloc_cpml_1d_f, fdtd_cuda_cpml_apply_f
-   public :: fdtd_dims3_c, fdtd_ibox_c, fdtd_cpml_job_c
+   public :: fdtd_cuda_set_point_probes_f, fdtd_cuda_gather_point_probes_f
+   public :: fdtd_cuda_upload_planewave_phys_f, fdtd_cuda_upload_planewave_f
+   public :: fdtd_cuda_planewave_ready_f
+   public :: fdtd_cuda_advance_planewave_e_f, fdtd_cuda_advance_planewave_h_f
+   public :: fdtd_dims3_c, fdtd_ibox_c, fdtd_cpml_job_c, fdtd_pw_face_c
 
    logical, save :: fdtd_cuda_enabled = .false.
    type(c_ptr), save :: fdtd_cuda_ctx_c = c_null_ptr
@@ -39,6 +43,20 @@ module fdtd_cuda_m
       integer(c_int) :: psi_xi, psi_yi, psi_zi
       integer(c_int) :: nx_psi, ny_psi, nz_psi
       integer(c_int) :: h_sign, use_fixed_medio, medio_fixed
+   end type
+
+   type, bind(C) :: fdtd_pw_face_c
+      integer(c_int) :: field_comp
+      integer(c_int) :: incid_nfield
+      integer(c_int) :: wave
+      integer(c_int) :: free_mode
+      integer(c_int) :: fixed_abs
+      integer(c_int) :: a0, a1, b0, b1
+      integer(c_int) :: incid_di, incid_dj, incid_dk
+      integer(c_int) :: field_xi, field_yi, field_zi
+      integer(c_int) :: id_axis
+      integer(c_int) :: use_e_metric
+      integer(c_int) :: sign
    end type
 
    interface
@@ -205,6 +223,61 @@ module fdtd_cuda_m
          type(fdtd_cpml_job_c), intent(in) :: job
          integer(c_int) :: fdtd_cuda_cpml_apply
       end function
+      function fdtd_cuda_set_point_probes(ctx, n, comp, i, j, k) &
+         bind(C, name="fdtd_cuda_set_point_probes")
+         import :: c_ptr, c_int
+         type(c_ptr), value :: ctx
+         integer(c_int), value :: n
+         integer(c_int), intent(in) :: comp(*), i(*), j(*), k(*)
+         integer(c_int) :: fdtd_cuda_set_point_probes
+      end function
+      function fdtd_cuda_gather_point_probes(ctx, out) bind(C, name="fdtd_cuda_gather_point_probes")
+         import :: c_ptr, c_int, c_float
+         type(c_ptr), value :: ctx
+         real(c_float), intent(out) :: out(*)
+         integer(c_int) :: fdtd_cuda_gather_point_probes
+      end function
+      function fdtd_cuda_upload_planewave_phys(ctx, field, axis, base_abs, n, host) &
+         bind(C, name="fdtd_cuda_upload_planewave_phys")
+         import :: c_ptr, c_int, c_float
+         type(c_ptr), value :: ctx
+         integer(c_int), value :: field, axis, base_abs, n
+         real(c_float), intent(in) :: host(*)
+         integer(c_int) :: fdtd_cuda_upload_planewave_phys
+      end function
+      function fdtd_cuda_upload_planewave(ctx, n_waves, max_modes, max_numus, cluz, &
+         num_modes, numus, deltaevol, evol, px, py, pz, d0, fpw, &
+         faces_e, n_faces_e, faces_h, n_faces_h) bind(C, name="fdtd_cuda_upload_planewave")
+         import :: c_ptr, c_int, c_float, fdtd_pw_face_c
+         type(c_ptr), value :: ctx
+         integer(c_int), value :: n_waves, max_modes, max_numus, n_faces_e, n_faces_h
+         real(c_float), value :: cluz
+         integer(c_int), intent(in) :: num_modes(*), numus(*)
+         real(c_float), intent(in) :: deltaevol(*), evol(*), px(*), py(*), pz(*), d0(*), fpw(*)
+         type(fdtd_pw_face_c), intent(in) :: faces_e(*), faces_h(*)
+         integer(c_int) :: fdtd_cuda_upload_planewave
+      end function
+      function fdtd_cuda_planewave_ready(ctx) bind(C, name="fdtd_cuda_planewave_ready")
+         import :: c_ptr, c_int
+         type(c_ptr), value :: ctx
+         integer(c_int) :: fdtd_cuda_planewave_ready
+      end function
+      function fdtd_cuda_advance_planewave_e(ctx, time, still_out) &
+         bind(C, name="fdtd_cuda_advance_planewave_e")
+         import :: c_ptr, c_int, c_float
+         type(c_ptr), value :: ctx
+         real(c_float), value :: time
+         integer(c_int), intent(out) :: still_out
+         integer(c_int) :: fdtd_cuda_advance_planewave_e
+      end function
+      function fdtd_cuda_advance_planewave_h(ctx, time, still_out) &
+         bind(C, name="fdtd_cuda_advance_planewave_h")
+         import :: c_ptr, c_int, c_float
+         type(c_ptr), value :: ctx
+         real(c_float), value :: time
+         integer(c_int), intent(out) :: still_out
+         integer(c_int) :: fdtd_cuda_advance_planewave_h
+      end function
    end interface
 
 contains
@@ -337,6 +410,60 @@ contains
    integer function fdtd_cuda_cpml_apply_f(job)
       type(fdtd_cpml_job_c), intent(in) :: job
       fdtd_cuda_cpml_apply_f = fdtd_cuda_cpml_apply(fdtd_cuda_ctx_c, job)
+   end function
+
+   integer function fdtd_cuda_set_point_probes_f(n, comp, i, j, k)
+      integer, intent(in) :: n
+      integer(c_int), intent(in), target :: comp(*), i(*), j(*), k(*)
+      fdtd_cuda_set_point_probes_f = fdtd_cuda_set_point_probes(fdtd_cuda_ctx_c, int(n, c_int), &
+         comp, i, j, k)
+   end function
+
+   integer function fdtd_cuda_gather_point_probes_f(out)
+      real(kind=RKIND), intent(out), target :: out(*)
+      fdtd_cuda_gather_point_probes_f = fdtd_cuda_gather_point_probes(fdtd_cuda_ctx_c, out)
+   end function
+
+   integer function fdtd_cuda_upload_planewave_phys_f(field, axis, base_abs, n, host)
+      integer, intent(in) :: field, axis, base_abs, n
+      real(kind=RKIND), intent(in), target :: host(*)
+      fdtd_cuda_upload_planewave_phys_f = fdtd_cuda_upload_planewave_phys(fdtd_cuda_ctx_c, &
+         int(field, c_int), int(axis, c_int), int(base_abs, c_int), int(n, c_int), host)
+   end function
+
+   integer function fdtd_cuda_upload_planewave_f(n_waves, max_modes, max_numus, cluz, &
+      num_modes, numus, deltaevol, evol, px, py, pz, d0, fpw, faces_e, n_faces_e, faces_h, n_faces_h)
+      integer, intent(in) :: n_waves, max_modes, max_numus, n_faces_e, n_faces_h
+      real(kind=RKIND), intent(in) :: cluz
+      integer(c_int), intent(in), target :: num_modes(*), numus(*)
+      real(kind=RKIND), intent(in), target :: deltaevol(*), evol(*), px(*), py(*), pz(*), d0(*), fpw(*)
+      type(fdtd_pw_face_c), intent(in), target :: faces_e(*), faces_h(*)
+      fdtd_cuda_upload_planewave_f = fdtd_cuda_upload_planewave(fdtd_cuda_ctx_c, &
+         int(n_waves, c_int), int(max_modes, c_int), int(max_numus, c_int), real(cluz, c_float), &
+         num_modes, numus, deltaevol, evol, px, py, pz, d0, fpw, &
+         faces_e, int(n_faces_e, c_int), faces_h, int(n_faces_h, c_int))
+   end function
+
+   logical function fdtd_cuda_planewave_ready_f()
+      fdtd_cuda_planewave_ready_f = fdtd_cuda_enabled .and. (fdtd_cuda_planewave_ready(fdtd_cuda_ctx_c) /= 0)
+   end function
+
+   integer function fdtd_cuda_advance_planewave_e_f(time, still_out)
+      real(kind=RKIND), intent(in) :: time
+      logical, intent(out) :: still_out
+      integer(c_int) :: still_c
+      fdtd_cuda_advance_planewave_e_f = fdtd_cuda_advance_planewave_e(fdtd_cuda_ctx_c, &
+         real(time, c_float), still_c)
+      still_out = (still_c /= 0)
+   end function
+
+   integer function fdtd_cuda_advance_planewave_h_f(time, still_out)
+      real(kind=RKIND), intent(in) :: time
+      logical, intent(out) :: still_out
+      integer(c_int) :: still_c
+      fdtd_cuda_advance_planewave_h_f = fdtd_cuda_advance_planewave_h(fdtd_cuda_ctx_c, &
+         real(time, c_float), still_c)
+      still_out = (still_c /= 0)
    end function
 
 end module fdtd_cuda_m
