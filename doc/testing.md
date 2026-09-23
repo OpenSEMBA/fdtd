@@ -108,15 +108,18 @@ Wildcards can be used in a GoogleTest filter:
 
 ### CUDA native tests
 
-The `cuda` GoogleTest suite (field sync/box, layout, Yee, CPML contracts)
-is compiled and linked **only** when `SEMBA_FDTD_ENABLE_CUDA=ON`. It is not
-part of basic CPU or MPI CPU builds. Run it from a CUDA build tree:
+The `cuda` GoogleTest suite (field sync/box, layout, Yee, CPML, sparse
+point-probe gather contracts) is compiled and linked **only** when
+`SEMBA_FDTD_ENABLE_CUDA=ON`. It is not part of basic CPU or MPI CPU builds.
+Run it from a CUDA build tree:
 
 ```shell
 ./build-rls-cuda/bin/fdtd_tests --gtest_filter='cuda.*'
 ```
 
 Case-level CPU-vs-CUDA probe goldens remain in `test/pyWrapper/test_cuda.py`.
+CPU-only builds are unchanged: sparse probe gather is an expansion of the
+CUDA path only.
 
 ## Python Tests
 
