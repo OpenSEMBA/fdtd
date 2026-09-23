@@ -25,128 +25,87 @@ if not SEMBA_EXE.is_file():
 RUN_DIR = CASE_DIR / 'run'
 RUN_DIR.mkdir(exist_ok=True)
 
-CASES = (
-    ('Conformal capacitor', CASE_DIR / 'capacitor.fdtd.json', 'Wire probe'),
-)
+EPSILON_0 = 8.8541878128e-12
+INPUT_FILENAME = CASE_DIR / 'capacitor_charge.fdtd.json'
+PROBE_NAME = 'Point probe'
 
 
 # %% Helpers
-def dtft(signal, time, frequencies):
-    """Approximate the continuous Fourier transform by trapezoidal integration."""
-    signal = np.asarray(signal)
-    time = np.asarray(time)
-    transform = np.empty_like(frequencies, dtype=complex)
-    trapezoid = getattr(np, 'trapezoid', np.trapz)
-    for index, frequency in enumerate(frequencies):
-        transform[index] = trapezoid(
-            signal * np.exp(-2j * np.pi * frequency * time), time
-        )
-    return transform
+def plate_geometry(solver):
+    """Derive plate area and gap from the two constant-z 'cell' surfaces in the mesh."""
+    steps = solver['mesh']['grid']['steps']
+    dx, dy, dz = steps['x'][0], steps['y'][0], steps['z'][0]
+
+    plate_z_indices = []
+    area = None
+    for element in solver['mesh']['elements']:
+        if element.get('type') != 'cell':
+            continue
+        for (ax, ay, az), (bx, by, bz) in element['intervals']:
+            if az != bz:
+                continue
+            plate_z_indices.append(az)
+            area = abs(bx - ax) * dx * abs(by - ay) * dy
+
+    gap = abs(plate_z_indices[0] - plate_z_indices[1]) * dz
+    return area, gap
 
 
-def input_impedance(time, current, voltage_time, voltage):
-    voltage_at_current_time = np.interp(time, voltage_time, voltage)
-    return dtft(voltage_at_current_time, time, FREQUENCIES) / dtft(
-        current, time, FREQUENCIES
-    )
-
-
-# %% Run all cases in one output folder
-measurements = {}
-for label, input_filename, probe_name in CASES:
-    solver = FDTD(
-        input_filename=input_filename,
-        path_to_exe=SEMBA_EXE,
-        run_in_folder=RUN_DIR,
-    )
-    solver.cleanUp()
-    solver.run()
-
-    probe = Probe(solver.getSolvedProbeFolders(probe_name)[0])
-    measurements[label] = {
-        'time': probe['time'].to_numpy(),
-        # The bulk-current probe normal is opposite to source-current direction.
-        'current': -probe['current'].to_numpy(),
-    }
-
-
-# %% Time-domain comparison
-excitation = ExcitationFile(CASE_DIR / 'gauss_1ghz.exc')
-voltage_time = excitation['time'].to_numpy()
-voltage = excitation['value'].to_numpy()
-
-figure, (voltage_axis, current_axis) = plt.subplots(2, 1, sharex=True, figsize=(9, 7))
-voltage_axis.plot(voltage_time * 1e9, voltage, color='black', label='Generator voltage')
-voltage_axis.set_ylabel('Voltage [V]')
-voltage_axis.grid()
-voltage_axis.legend()
-voltage_axis.set_xlim(0, 4)
-voltage_axis.plot(voltage_time * 1e9, voltage, color='black', label='Generator voltage')
-
-for label, measurement in measurements.items():
-    current_axis.plot(measurement['time'] * 1e9, measurement['current'], label=label)
-current_axis.set_xlabel('Time [ns]')
-current_axis.set_ylabel('Current [A]')
-current_axis.grid()
-current_axis.legend()
-figure.tight_layout()
-
-
-# %% Frequency-domain input impedance and R/C estimates
-FREQUENCIES = np.geomspace(1e6, 1e9, 201)
-CUTOFF_FREQUENCY = 100e6
-RESISTANCE_BAND = (300e6, 1e9)  # resistor-dominated plateau, Re(Z) ~ R
-CAPACITANCE_BAND = (1e6, 10e6)  # capacitor-dominated region, Im(Z) ~ -1/(2*pi*f*C)
-
-
-def in_frequency_band(frequencies, band):
-    return (frequencies >= band[0]) & (frequencies <= band[1])
-
-
-figure, (magnitude_axis, phase_axis) = plt.subplots(2, 1, sharex=True, figsize=(9, 7))
-estimates = {}
-for label, measurement in measurements.items():
-    impedance = input_impedance(
-        measurement['time'], measurement['current'], voltage_time, voltage
-    )
-    resistance_mask = in_frequency_band(FREQUENCIES, RESISTANCE_BAND)
-    capacitance_mask = in_frequency_band(FREQUENCIES, CAPACITANCE_BAND)
-    resistance = np.mean(np.real(impedance[resistance_mask]))
-    angular_frequency = 2 * np.pi * FREQUENCIES[capacitance_mask]
-    # Least-squares fit of Im(Z) = -1/(omega*C) against omega.
-    capacitance = -np.dot(angular_frequency, angular_frequency) / np.dot(
-        angular_frequency, np.imag(impedance[capacitance_mask])
-    )
-    cutoff = 1 / (2 * np.pi * resistance * capacitance)
-    estimates[label] = (resistance, capacitance, cutoff)
-
-    magnitude_axis.loglog(FREQUENCIES * 1e-6, np.abs(impedance), label=label)
-    phase_axis.semilogx(
-        FREQUENCIES * 1e-6, np.degrees(np.angle(impedance)), label=label
-    )
-
-magnitude_axis.axhline(
-    estimates[list(estimates)[0]][0], color='gray', linestyle='--', label='Fitted R'
+# %% Run the case
+solver = FDTD(
+    input_filename=CASE_DIR / 'capacitor_charge.fdtd.json',
+    path_to_exe=SEMBA_EXE,
+    run_in_folder=RUN_DIR,
 )
-for axis in (magnitude_axis, phase_axis):
-    axis.axvline(
-        CUTOFF_FREQUENCY * 1e-6, color='gray', linestyle=':', label='100 MHz cutoff'
-    )
-    axis.grid(which='both')
-    axis.legend()
+solver.cleanUp()
+solver.run()
 
-magnitude_axis.set_ylabel('|Z_in| [ohm]')
-phase_axis.set_xlabel('Frequency [MHz]')
-phase_axis.set_ylabel('phase(Z_in) [deg]')
+ez_probe = next(
+    probe
+    for probe in map(Probe, solver.getSolvedProbeFolders(PROBE_NAME))
+    if probe.field == 'E' and probe.direction == 'z'
+)
+time = ez_probe['time'].to_numpy()
+ez = ez_probe['field'].to_numpy()
+
+
+# %% Injected charge from the source's magnitude file
+excitation = ExcitationFile(CASE_DIR / 'gauss_1ghz.exc')
+current_time = excitation['time'].to_numpy()
+current_value = excitation['value'].to_numpy()
+current_at_probe_time = np.interp(time, current_time, current_value)
+trapezoid = getattr(np, 'trapezoid', np.trapz)
+charge = trapezoid(current_at_probe_time, time)
+
+
+# %% Compare measured and theoretical capacitance
+area, gap = plate_geometry(solver)
+ez_final = ez[-1]
+voltage = ez_final * gap
+measured_capacitance = charge / voltage
+theoretical_capacitance = EPSILON_0 * area / gap
+relative_error = abs(measured_capacitance - theoretical_capacitance) / theoretical_capacitance
+
+print(
+    f'Measured C    = {measured_capacitance * 1e12:.6g} pF\n'
+    f'Theoretical C = {theoretical_capacitance * 1e12:.6g} pF '
+    f'(eps0 * {area * 1e6:.6g} mm^2 / {gap * 1e3:.6g} mm)\n'
+    f'Relative error = {relative_error * 100:.3g} %'
+)
+
+
+# %% Time-domain diagnostics
+figure, (current_axis, field_axis) = plt.subplots(2, 1, sharex=True, figsize=(9, 7))
+current_axis.plot(current_time * 1e9, current_value, color='black')
+current_axis.set_ylabel('Injected current [A]')
+current_axis.grid()
+
+field_axis.plot(time * 1e9, ez)
+field_axis.plot(time[-1] * 1e9, ez_final, 'o', color='red', label='Steady-state sample')
+field_axis.set_xlabel('Time [ns]')
+field_axis.set_ylabel('Ez [V/m]')
+field_axis.grid()
+field_axis.legend()
 figure.tight_layout()
-
-for label, (resistance, capacitance, cutoff) in estimates.items():
-    print(
-        f'{label}: R = {resistance:.6g} ohm '
-        f'({RESISTANCE_BAND[0] * 1e-6:g}-{RESISTANCE_BAND[1] * 1e-6:g} MHz), '
-        f'C = {capacitance * 1e12:.6g} pF '
-        f'({CAPACITANCE_BAND[0] * 1e-6:g}-{CAPACITANCE_BAND[1] * 1e-6:g} MHz), '
-        f'cutoff = {cutoff * 1e-6:.6g} MHz'
-    )
 
 # %%
