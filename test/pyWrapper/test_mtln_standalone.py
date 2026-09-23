@@ -27,12 +27,13 @@ def test_paul_8_6_square(tmp_path):
     p_solved = Probe(probe_files[0])
 
 
-
     solved = np.interp(
         p_expected["time"].to_numpy(),
         p_solved["time"].to_numpy(),
         p_solved["voltage_0"].to_numpy(),
     )
+    check_values_are_comparable(solved)
+    check_values_are_comparable(p_expected["voltage_0"])
     assert np.corrcoef(solved, p_expected["voltage_0"])[0, 1] > 0.998
 
 
@@ -63,6 +64,8 @@ def test_paul_8_6_triangle(tmp_path):
         p_solved["time"].to_numpy(),
         p_solved["voltage_0"].to_numpy(),
     )
+    check_values_are_comparable(solved)
+    check_values_are_comparable(p_expected["voltage_0"])
     assert np.corrcoef(solved, p_expected["voltage_0"])[0, 1] > 0.998
 
 
@@ -95,6 +98,9 @@ def test_paul_9_6(tmp_path):
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["voltage_0"].to_numpy(),
         )
+        check_values_are_comparable(solved)
+        check_values_are_comparable(p_expected[i]["voltage_0"])
+        check_values_are_comparable(p_expected[i]["voltage_1"])
         assert np.corrcoef(solved, p_expected[i]["voltage_0"])[0, 1] > 0.995
 
         solved = np.interp(
@@ -102,6 +108,9 @@ def test_paul_9_6(tmp_path):
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["voltage_1"].to_numpy(),
         )
+        check_values_are_comparable(solved)
+        check_values_are_comparable(p_expected[i]["voltage_0"])
+        check_values_are_comparable(p_expected[i]["voltage_1"])
         assert np.corrcoef(solved, p_expected[i]["voltage_1"])[0, 1] > 0.995
 
 
@@ -132,6 +141,8 @@ def test_spice_multilines_opamp(tmp_path):
         p_solved[0]["time"].to_numpy(),
         p_solved[0]["voltage_0"].to_numpy(),
     )
+    check_values_are_comparable(solved)
+    check_values_are_comparable(p_expected[0]["voltage_0"])
     assert np.corrcoef(solved, p_expected[0]["voltage_0"])[0, 1] > 0.999
 
 
@@ -165,6 +176,9 @@ def test_spice_connectors_diode(tmp_path):
         v_exp = p_expected[i].data["voltage_0"].to_numpy()[:-1]
         v_sol = p_solved[i].data["voltage_0"].to_numpy()[:-1]
         v_sol_interp = np.interp(t_exp, t_sol, v_sol)
+        
+        check_values_are_comparable(v_exp)
+        check_values_are_comparable(v_sol_interp)
         assert np.corrcoef(v_exp, v_sol_interp)[0, 1] > 0.99999
 
 
@@ -198,6 +212,8 @@ def test_line_multiline_junction(tmp_path):
             p_solved[i]["time"].to_numpy(),
             p_solved[i]["voltage_0"].to_numpy(),
         )
+        check_values_are_comparable(solved)
+        check_values_are_comparable(p_expected[i]["voltage_0"])
         assert np.corrcoef(solved, p_expected[i]["voltage_0"])[0, 1] > 0.998
 
 
@@ -224,6 +240,8 @@ def test_spice_opamp_saturation(tmp_path):
     v_exp = p_expected.data["voltage_0"].to_numpy()[:-1]
     v_sol = p_solved.data["voltage_0"].to_numpy()[:-1]
     v_sol_interp = np.interp(t_exp, t_sol, v_sol)
+    check_values_are_comparable(v_exp)
+    check_values_are_comparable(v_sol_interp)
     assert np.corrcoef(v_exp, v_sol_interp)[0, 1] > 0.999
 
 
@@ -249,4 +267,6 @@ def test_spice_zener(tmp_path):
     v_sol = p_solved.data["voltage_0"].to_numpy()[:-1]
 
     v_exp_interp = np.interp(t_sol, t_exp, v_exp)
+    check_values_are_comparable(v_sol)
+    check_values_are_comparable(v_exp_interp)
     assert np.corrcoef(v_sol, v_exp_interp)[0, 1] > 0.999
