@@ -99,12 +99,13 @@ def test_fdtd_clean_up_after_run(tmp_path):
 
     solver.run()
 
-    solved_probe_folders = solver.getSolvedProbeFolders("inbox")
-    assert os.path.isfile(solved_probe_folders[0])
+    solved_probe_files = solver.getSolvedProbeFolders("inbox")
+    assert len(solved_probe_files) == 2
+    assert all(os.path.isfile(path) for path in solved_probe_files)
 
     solver.cleanUp()
 
-    assert not os.path.exists(solved_probe_folders[0])
+    assert all(not os.path.exists(path) for path in solved_probe_files)
 
 
 @pytest.mark.planewave
@@ -116,10 +117,11 @@ def test_fdtd_scalar_probe_discovery_returns_only_dat_output(tmp_path):
 
     probe_folders = solver.getSolvedProbeFolders("inbox")
 
-    assert len(probe_folders) == 1
-    probe = Probe(probe_folders[0])
-    assert probe.getDatFile() is not None
-    assert probe.getBinFile() is None
+    assert len(probe_folders) == 2
+    probes = [Probe(path) for path in probe_folders]
+    assert {probe.domainType for probe in probes} == {"time", "frequency"}
+    assert all(probe.getDatFile() is not None for probe in probes)
+    assert all(probe.getBinFile() is None for probe in probes)
 
 
 @pytest.mark.planewave
