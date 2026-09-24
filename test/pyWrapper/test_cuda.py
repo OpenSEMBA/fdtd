@@ -119,41 +119,18 @@ def _run_cpu_vs_cuda_golden(tmp_path, monkeypatch, case_name: str):
 @pytest.mark.parametrize(
     "case_name",
     [
-        "box_mur_smallpw_100",
-    ],
-)
-def test_cuda_case_no_crash(tmp_path, case_name, monkeypatch):
-    """Smoke for paths without a dedicated golden (e.g. Mur host BCs)."""
-    monkeypatch.setenv("SEMBA_FDTD_DEVICE", "cuda")
-    monkeypatch.setenv("OMP_NUM_THREADS", "1")
-
-    input_filename = str(CUDA_CASES / f"{case_name}.fdtd.json")
-    solver = FDTD(
-        input_filename,
-        path_to_exe=SEMBA_EXE,
-        run_in_folder=tmp_path,
-    )
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
-    assert list(Path(tmp_path).glob("*_tm.dat")), "expected at least one time-domain probe"
-
-
-@no_cuda_skip
-@pytest.mark.cuda
-@pytest.mark.planewave
-@pytest.mark.parametrize(
-    "case_name",
-    [
         "box_pml_smallpw_50",
         "box_pml_smallpw_100",
         "box_pml_smallpw_256",
         "box_pml_smallpw_300",
+        "box_mur_smallpw_100",
     ],
 )
 def test_cuda_matches_cpu_golden_pml(tmp_path, case_name, monkeypatch):
     """Correctness gate: OMP=1 CPU golden vs CUDA probes.
 
-    rtol 1e-3 on dominant probes (device Yee+CPML+PW). Includes 256^3 / 300^3
+    rtol 1e-3 on dominant probes (device Yee+CPML/Mur+PW). Includes 256^3 / 300^3
     so large-case speed claims are backed by matching non-trivial probe signals.
+    Mur uses the same device-resident first-order ABC as the host path.
     """
     _run_cpu_vs_cuda_golden(tmp_path, monkeypatch, case_name)

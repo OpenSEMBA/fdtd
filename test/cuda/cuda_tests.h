@@ -19,6 +19,7 @@
 #include "cuda_cpml_tests.h"
 #include "cuda_probe_tests.h"
 #include "cuda_pw_tests.h"
+#include "cuda_mur_tests.h"
 
 TEST(cuda, context_create_destroy)
 {
