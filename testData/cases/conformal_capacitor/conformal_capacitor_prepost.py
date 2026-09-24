@@ -55,6 +55,7 @@ def plate_geometry(solver):
 solver = FDTD(
     input_filename=CASE_DIR / 'capacitor_charge.fdtd.json',
     path_to_exe=SEMBA_EXE,
+    flags='-mapvtk -ignoresamplingerrors',
     run_in_folder=RUN_DIR,
 )
 solver.cleanUp()
@@ -70,7 +71,7 @@ ez = ez_probe['field'].to_numpy()
 
 
 # %% Injected charge from the source's magnitude file
-excitation = ExcitationFile(CASE_DIR / 'gauss_1ghz.exc')
+excitation = ExcitationFile(CASE_DIR / 'predefinedExcitation.1.exc')
 current_time = excitation['time'].to_numpy()
 current_value = excitation['value'].to_numpy()
 current_at_probe_time = np.interp(time, current_time, current_value)
@@ -82,7 +83,7 @@ charge = trapezoid(current_at_probe_time, time)
 area, gap = plate_geometry(solver)
 ez_final = ez[-1]
 voltage = ez_final * gap
-measured_capacitance = charge / voltage
+measured_capacitance = charge / np.abs(voltage)
 theoretical_capacitance = EPSILON_0 * area / gap
 relative_error = abs(measured_capacitance - theoretical_capacitance) / theoretical_capacitance
 
@@ -101,7 +102,6 @@ current_axis.set_ylabel('Injected current [A]')
 current_axis.grid()
 
 field_axis.plot(time * 1e9, ez)
-field_axis.plot(time[-1] * 1e9, ez_final, 'o', color='red', label='Steady-state sample')
 field_axis.set_xlabel('Time [ns]')
 field_axis.set_ylabel('Ez [V/m]')
 field_axis.grid()

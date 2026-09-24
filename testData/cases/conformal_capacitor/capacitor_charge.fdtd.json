@@ -1,8 +1,8 @@
 {
   "_format": "FDTD Input file",
   "general": {
-    "timeStep": 1.5406665612371765e-12,
-    "numberOfSteps": 3000,
+    "timeStep": 1.5406665612371766e-10,
+    "numberOfSteps": 1298,
     "additionalArguments": ""
   },
   "boundary": {
@@ -24,7 +24,7 @@
     { "name": "nodalSource",
       "type": "nodalSource",
       "hardness": "soft",
-      "magnitudeFile": "gauss_1ghz.exc",
+      "magnitudeFile": "predefinedExcitation.1.exc",
       "elementIds": [4],
       "field": "current"
     }
@@ -42,38 +42,34 @@
   ],
   "mesh": {
     "grid": {
-      "numberOfCells": [85, 70, 21],
+      "numberOfCells": [110, 110, 23],
       "steps": {
-        "x": [0.001],
-        "y": [0.001],
-        "z": [0.001]
+        "x": [0.1],
+        "y": [0.1],
+        "z": [0.1]
       },
-      "origin": [-0.025, -0.01, -0.01]
+      "origin": [-3.0, -3.0, -1.0]
     },
     "coordinates": [
-      { "id": 1, "relativePosition": [25, 10, 10] },
-      { "id": 2, "relativePosition": [75, 60, 10] },
-      { "id": 3, "relativePosition": [25, 10, 11] },
-      { "id": 4, "relativePosition": [75, 60, 11] },
-      { "id": 5, "relativePosition": [50, 35, 10] },
-      { "id": 6, "relativePosition": [25, 35, 11] },
-      { "id": 7, "relativePosition": [25, 35, 10] },
-      { "id": 8, "relativePosition": [25, 35, 10] },
-      { "id": 9, "relativePosition": [20, 35, 11] },
-      { "id": 10, "relativePosition": [20, 35, 11] },
-      { "id": 11, "relativePosition": [20, 35, 10] }
+      { "id": 1, "relativePosition": [30, 30, 10] },
+      { "id": 2, "relativePosition": [80, 80, 10] },
+      { "id": 3, "relativePosition": [30, 30, 11] },
+      { "id": 4, "relativePosition": [80, 80, 11] },
+      { "id": 5, "relativePosition": [55, 55, 10] },
+      { "id": 6, "relativePosition": [55, 55, 10] },
+      { "id": 7, "relativePosition": [55, 55, 11] }
     ],
     "elements": [
       { "id": 1, "name": "Plane",
         "type": "cell",
         "intervals": [
-          [[25, 10, 10], [75, 60, 10]]
+          [[30, 30, 10], [80, 80, 10]]
         ]
       },
       { "id": 2, "name": "Plane001",
         "type": "cell",
         "intervals": [
-          [[25, 10, 11], [75, 60, 11]]
+          [[30, 30, 11], [80, 80, 11]]
         ]
       },
       { "id": 3, "name": "Point_probe",
@@ -83,9 +79,7 @@
       { "id": 4, "name": "nodalSource",
         "type": "cell",
         "intervals": [
-          [[25, 35, 11], [20, 35, 11] ],
-          [[20, 35, 11], [20, 35, 10]],
-          [[20, 35, 10], [25, 35, 10]]
+          [[55, 55, 10], [55, 55, 11]]
         ]
       }
     ]
