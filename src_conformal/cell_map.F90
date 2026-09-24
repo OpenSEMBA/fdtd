@@ -5,6 +5,10 @@ module cell_map_m
     use NFDETypes_m, only: rkind, ConformalPECElements_t
     implicit none
 
+    integer(kind=4), parameter :: BODY_TYPE_UNDEFINED  = -1
+    integer(kind=4), parameter :: BODY_TYPE_SURFACE  = 1
+    integer(kind=4), parameter :: BODY_TYPE_VOLUME  = 2
+
 
     type :: element_set_t
         type(triangle_t), dimension(:), allocatable :: triangles ! triangles on faces
@@ -32,6 +36,7 @@ module cell_map_m
 
     type, extends(fhash_tbl_t) :: cell_map_t
         type(cell_t), dimension(:), allocatable :: keys
+        integer(kind=4) :: body_type = BODY_TYPE_UNDEFINED
     contains
         procedure :: hasKey => cell_hasKey
         procedure :: getTrianglesInCell
@@ -150,9 +155,10 @@ contains
         res%keys = keys
     end subroutine
 
-    subroutine buildCellMap(res, volume)
+    subroutine buildCellMap(res, volume, body_type)
         type(cell_map_t), intent(inout) :: res
         type(ConformalPECElements_t), intent(in) :: volume
+        integer(kind=4), optional :: body_type
         type(triangle_map_t) :: tri_map
         type(interval_map_t) :: interval_map
         type(side_map_t) :: side_map, side_map_on
@@ -174,6 +180,7 @@ contains
             call res%set(key(keys(i)%cell), value=elems)
         end do
         res%keys = keys
+        if (present(body_type)) res%body_type = body_type
     end subroutine
 
     function mergeKeys(tri_keys, side_keys) result(res)

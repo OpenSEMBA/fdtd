@@ -40,12 +40,12 @@ contains
       type(ConformalMedia_t), allocatable, dimension(:), intent(inout) :: volumes, surfaces
       type(ConformalMedia_t), allocatable, dimension(:), optional, intent(inout) :: sgbc_surfaces
       if (associated(conformalRegs%volumes)) then
-         volumes = buildMedia(conformalRegs%volumes)
+         volumes = buildMedia(conformalRegs%volumes, BODY_TYPE_VOLUME)
       else
          allocate(volumes(0))
       end if
       if (associated(conformalRegs%surfaces)) then
-         surfaces = buildSurfaceMedia(conformalRegs%surfaces)
+         surfaces = buildSurfaceMedia(conformalRegs%surfaces, BODY_TYPE_SURFACE)
       else
          allocate(surfaces(0))
       end if
@@ -58,16 +58,17 @@ contains
       end if
    end subroutine
 
-   function buildSurfaceMedia(elements) result(res)
+   function buildSurfaceMedia(elements, body_type) result(res)
       type(ConformalPECElements_t), dimension(:), pointer, intent(in) :: elements
+      integer(kind=4), optional :: body_type
       type(ConformalPECElements_t) :: canonical_element
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i
-
+      if (.not. present(body_type)) body_type = BODY_TYPE_UNDEFINED
       allocate(res(size(elements)))
       do i = 1, size(elements)
          canonical_element = canonicalClosedSurfaceOrientation(elements(i))
-         res(i) = buildMediaFromElement(canonical_element)
+         res(i) = buildMediaFromElement(canonical_element, body_type)
       end do
    end function buildSurfaceMedia
 
@@ -834,20 +835,23 @@ contains
       triangle%vertices(3) = swapped_vertex
    end subroutine reverseTriangle
 
-   function buildMedia(elements) result(res)
+   function buildMedia(elements, body_type) result(res)
       type(ConformalPECElements_t), dimension(:), pointer :: elements
+      integer(kind=4), optional :: body_type
       type(ConformalPECElements_t) :: canonical_element
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i
+      if (.not. present(body_type)) body_type = BODY_TYPE_UNDEFINED
       allocate(res(size(elements)))
       do i = 1, size(elements)
          canonical_element = canonicalClosedSurfaceOrientation(elements(i))
-         res(i) = buildMediaFromElement(canonical_element)
+         res(i) = buildMediaFromElement(canonical_element, body_type)
       end do
    end function
 
-   function buildMediaFromElement(element) result(res)
+   function buildMediaFromElement(element, body_type) result(res)
       type(ConformalPECElements_t), intent(in) :: element
+      integer(kind=4), optional :: body_type
       type(ConformalMedia_t) :: res
 
       type(cell_map_t) :: cell_map
@@ -855,7 +859,9 @@ contains
       type(edge_t), dimension(:), allocatable :: edges
       type(face_t), dimension(:), allocatable :: faces
 
-      call buildCellMap(cell_map, element)
+      if (.not. present(body_type)) body_type = BODY_TYPE_UNDEFINED
+
+      call buildCellMap(cell_map, element, body_type)
       call fillElements(cell_map, faces, edges)
       call addNewRatios(edges, faces, edge_ratios, face_ratios)
       res%edge_media => addEdgeMedia(edges, edge_ratios)
@@ -994,7 +1000,7 @@ contains
             sides_on_face = getSidesOnFace(sides, face)
             if (size(sides_on_face) /= 0) then
                contour = findLargestContour(sides_on_face)
-               call fillFaceFromContour(contour, faces)
+               call fillFaceFromContour(contour, faces, cell_map%body_type)
                call fillEdgesFromContour(contour, edges)
             end if
             tris_on_face = getTrianglesOnFace(tris, face)
@@ -1018,7 +1024,7 @@ contains
             call fillEdges(sides_on_edge, edges)
          end do
       end do
-      call initializeFaceSplits(faces, edges)
+      if (cell_map%body_type == BODY_TYPE_SURFACE) call initializeFaceSplits(faces, edges)
    end subroutine
 
    function buildSidesFromCellInterval(interval) result(res)
@@ -1168,9 +1174,10 @@ contains
       call addFace(faces, aux%getCell(), aux%getFace(), ratio, .false.)
    end subroutine
 
-   subroutine fillFaceFromContour(contour, faces)
+   subroutine fillFaceFromContour(contour, faces, body_type)
       type(side_t), dimension(:), allocatable, intent(in) :: contour
       type(face_t), dimension(:), allocatable :: faces
+      integer(kind=4), intent(in) :: body_type
       real(kind=rkind) :: area
       integer :: face
       integer, dimension(3) :: cell
@@ -1178,7 +1185,7 @@ contains
       face = findContourFace(contour)
       if (size(contour) /= 0) then
          area = 1.0 - contourArea(contour)
-         call addFace(faces, cell, face, area, .true.)
+         call addFace(faces, cell, face, area, body_type == BODY_TYPE_SURFACE)
       end if
    end subroutine
 
