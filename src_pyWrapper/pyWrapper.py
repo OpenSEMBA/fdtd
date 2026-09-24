@@ -42,7 +42,7 @@ _EXPECTED_DAT_COLUMNS = {
     (_ProbeType.BULK_MAGNETIC, _ProbeDomain.TIME): ("t", "circulation"),
     (_ProbeType.LINE_INTEGRAL, _ProbeDomain.TIME): ("t", "lineIntegral"),
     (_ProbeType.POINT, _ProbeDomain.TIME): ("t", "field"),
-    (_ProbeType.POINT, _ProbeDomain.FREQUENCY): ("frequency", "real", "imaginary"),
+    (_ProbeType.POINT, _ProbeDomain.FREQUENCY): ("frequency", "magnitude", "phase"),
     (_ProbeType.FAR_FIELD, _ProbeDomain.FREQUENCY): (
         "frequency",
         "Theta",
