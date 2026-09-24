@@ -50,6 +50,7 @@ void fdtd_cuda_destroy(fdtd_cuda_ctx *ctx)
    FREE(ctx->d_probe_out);
 #undef FREE
    fdtd_cuda_free_planewave(ctx);
+   fdtd_cuda_free_mur(ctx);
    free(ctx);
 }
 

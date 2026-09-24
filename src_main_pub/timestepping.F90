@@ -2080,13 +2080,15 @@ contains
       call this%phase_toc(3) ! wires
 
 #ifdef CompileWithCUDA
-      ! Host CPML only when device CPML is not ready.
-      if (this%control%use_cuda .and. .not. cuda_cpml_is_ready()) call this%cuda_ensure_host()
+      ! Host CPML only when PML exists and the device path is not ready.
+      if (this%control%use_cuda .and. this%thereAre%PMLBorders .and. .not. cuda_cpml_is_ready()) then
+         call this%cuda_ensure_host()
+      end if
 #endif
       call this%phase_tic()
       call this%advancePMLE()
 #ifdef CompileWithCUDA
-      if (this%control%use_cuda .and. .not. cuda_cpml_is_ready()) then
+      if (this%control%use_cuda .and. this%thereAre%PMLBorders .and. .not. cuda_cpml_is_ready()) then
          call this%cuda_mark_device_stale(.false.)
       else if (this%control%use_cuda) then
          call this%cuda_mark_host_stale()
@@ -2153,12 +2155,14 @@ contains
 
       call this%phase_tic()
 #ifdef CompileWithCUDA
-      if (this%control%use_cuda .and. .not. cuda_cpml_is_ready()) call this%cuda_ensure_host()
+      if (this%control%use_cuda .and. this%thereAre%PMLBorders .and. .not. cuda_cpml_is_ready()) then
+         call this%cuda_ensure_host()
+      end if
 #endif
       call this%advancePMLbodyH()
       call this%AdvanceMagneticCPML()
 #ifdef CompileWithCUDA
-      if (this%control%use_cuda .and. .not. cuda_cpml_is_ready()) then
+      if (this%control%use_cuda .and. this%thereAre%PMLBorders .and. .not. cuda_cpml_is_ready()) then
          call this%cuda_mark_device_stale(.false.)
       else if (this%control%use_cuda) then
          call this%cuda_mark_host_stale()
@@ -2269,11 +2273,19 @@ contains
 #endif 
       call this%phase_tic()
 #ifdef CompileWithCUDA
-      if (this%control%use_cuda .and. this%thereAre%MURBorders) call this%cuda_ensure_host()
+      if (this%control%use_cuda .and. this%thereAre%MURBorders .and. .not. cuda_mur_is_ready()) then
+         call this%cuda_ensure_host()
+      end if
 #endif
       call this%advanceMagneticMUR()
 #ifdef CompileWithCUDA
-      if (this%control%use_cuda .and. this%thereAre%MURBorders) call this%cuda_mark_device_stale(.false.)
+      if (this%control%use_cuda .and. this%thereAre%MURBorders) then
+         if (cuda_mur_is_ready()) then
+            call this%cuda_mark_host_stale()
+         else
+            call this%cuda_mark_device_stale(.false.)
+         end if
+      end if
 #endif
       call this%phase_toc(4) ! other (mur / simple BC)
 contains
@@ -2899,10 +2911,18 @@ contains
       integer(kind=4) :: ierr
 #endif
       If (this%thereAre%MURBorders) then
-         call AdvanceMagneticMUR(this%bounds, this%sgg, & 
-                                 this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
-                                 this%Hx, this%Hy, this%Hz, & 
-                                 this%control%mur_second)
+#ifdef CompileWithCUDA
+         if (this%control%use_cuda .and. cuda_mur_is_ready()) then
+            call AdvanceMagneticMUR_cuda()
+         else
+#endif
+            call AdvanceMagneticMUR(this%bounds, this%sgg, &
+                                    this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
+                                    this%Hx, this%Hy, this%Hz, &
+                                    this%control%mur_second)
+#ifdef CompileWithCUDA
+         end if
+#endif
 #ifdef CompileWithMPI
          if (this%control%mur_second) then
             if (this%control%num_procs>1) then
@@ -3172,11 +3192,21 @@ contains
       end if
 
       if (this%thereAre%PMLBorders) call InitCPMLBorders_cuda()
+      if (this%thereAre%MURBorders .and. .not. this%control%mur_second) then
+         call InitMURBorders_cuda(this%bounds)
+      end if
 
       write(dubuf,*) 'CUDA: device-resident Yee(+CPML) enabled (field residency)'
       call print11(this%control%layoutnumber, dubuf)
       if (this%cuda_pw_ok) then
          write(dubuf,*) 'CUDA: device Huygens planewave enabled (no mid-step PW box sync)'
+         call print11(this%control%layoutnumber, dubuf)
+      end if
+      if (this%thereAre%MURBorders .and. cuda_mur_is_ready()) then
+         write(dubuf,*) 'CUDA: device first-order Mur ABC enabled (no mid-step Mur host sync)'
+         call print11(this%control%layoutnumber, dubuf)
+      else if (this%thereAre%MURBorders) then
+         write(dubuf,*) 'CUDA: Mur ABC remains on host (device Mur not ready)'
          call print11(this%control%layoutnumber, dubuf)
       end if
       if (this%cuda_sparse_probes_ok) then

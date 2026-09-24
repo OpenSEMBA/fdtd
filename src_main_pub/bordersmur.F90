@@ -7,6 +7,9 @@
 module BORDERS_MUR_m
    use FDETYPES_m
    use Report_m
+#ifdef CompileWithCUDA
+   use fdtd_cuda_m
+#endif
    implicit none
    private
    !
@@ -47,6 +50,10 @@ module BORDERS_MUR_m
 !!!
    !
    public  :: InitMURBorders, AdvanceMagneticMUR,StoreFieldsMURBorders,DestroyMURBorders,calc_murconstants
+#ifdef CompileWithCUDA
+   public  :: InitMURBorders_cuda, AdvanceMagneticMUR_cuda, cuda_mur_is_ready
+   logical, save :: cuda_mur_ready = .false.
+#endif
 
 
 contains
@@ -437,6 +444,9 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine DestroyMURBorders
       integer(kind=4) :: region
+#ifdef CompileWithCUDA
+      cuda_mur_ready = .false.
+#endif
 
       do REGION =left,right
          if (associated(regLR(region)%Past_Hx)) deallocate(regLR(region)%Past_Hx,regLR(region)%Past_Hz)
@@ -1630,6 +1640,7 @@ contains
       return
    endsubroutine AdvanceMagneTicMUR
 
+#include "bordersmur_cuda.inc.F90"
 
 end Module BORDERS_MUR_m
 

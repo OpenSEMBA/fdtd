@@ -165,6 +165,36 @@ int fdtd_cuda_planewave_ready(const fdtd_cuda_ctx *ctx);
 int fdtd_cuda_advance_planewave_e(fdtd_cuda_ctx *ctx, fdtd_real time, int *still_out);
 int fdtd_cuda_advance_planewave_h(fdtd_cuda_ctx *ctx, fdtd_real time, int *still_out);
 
+/*
+ * Device first-order Mur ABC on magnetic faces (host AdvanceMagneticMUR).
+ * Each job is one (face, H-component): update ghost plane, then copy the
+ * 2-cell Past slab from current H. cab_which indexes CAB1[medio] tables
+ * (0=left .. 5=front). wall_axis 0=x,1=y,2=z; neigh_sign +1 (min face) or -1.
+ */
+#define FDTD_CUDA_MUR_JOBS 12
+#define FDTD_CUDA_MUR_CAB  6
+
+typedef struct {
+   int field_comp;     /* 3=Hx .. 5=Hz */
+   int media_comp;
+   int cab_which;      /* 0=left,1=right,2=down,3=up,4=back,5=front */
+   int wall_axis;      /* 0=x, 1=y, 2=z */
+   int neigh_sign;     /* +1 inward from min face, -1 from max face */
+   int plane_abs;      /* absolute ghost index along wall_axis */
+   int a0, a1, b0, b1; /* inclusive free axes (see wall_axis) */
+   int e_xi, e_yi, e_zi;
+   int p_xi, p_yi, p_zi;
+   int nx_p, ny_p, nz_p;
+   int store_xi, store_xe, store_yi, store_ye, store_zi, store_ze;
+} fdtd_mur_job;
+
+int fdtd_cuda_upload_mur_cab(fdtd_cuda_ctx *ctx, int which, int n, const fdtd_real *host);
+int fdtd_cuda_set_mur_jobs(fdtd_cuda_ctx *ctx, const fdtd_mur_job *jobs, int n_jobs);
+int fdtd_cuda_upload_mur_past(fdtd_cuda_ctx *ctx, int slot, const fdtd_real *host, int n_elem);
+int fdtd_cuda_download_mur_past(fdtd_cuda_ctx *ctx, int slot, fdtd_real *host, int n_elem);
+int fdtd_cuda_mur_ready(const fdtd_cuda_ctx *ctx);
+int fdtd_cuda_advance_mur(fdtd_cuda_ctx *ctx);
+
 #ifdef __cplusplus
 }
 #endif

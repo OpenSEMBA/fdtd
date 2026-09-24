@@ -43,9 +43,19 @@ struct fdtd_cuda_ctx {
    fdtd_real *d_pw_phys_x[6], *d_pw_phys_y[6], *d_pw_phys_z[6];
    int pw_phys_x0[6], pw_phys_y0[6], pw_phys_z0[6];
    int pw_phys_nx[6], pw_phys_ny[6], pw_phys_nz[6];
+
+   /* Device first-order magnetic Mur ABC. */
+   int mur_ready;
+   int mur_n_jobs;
+   int mur_cab_n[FDTD_CUDA_MUR_CAB];
+   fdtd_real *d_mur_cab[FDTD_CUDA_MUR_CAB];
+   fdtd_mur_job h_mur_jobs[FDTD_CUDA_MUR_JOBS];
+   fdtd_real *d_mur_past[FDTD_CUDA_MUR_JOBS];
+   int mur_past_n[FDTD_CUDA_MUR_JOBS];
 };
 
 void fdtd_cuda_free_planewave(fdtd_cuda_ctx *ctx);
+void fdtd_cuda_free_mur(fdtd_cuda_ctx *ctx);
 
 #ifdef __cplusplus
 extern "C" {

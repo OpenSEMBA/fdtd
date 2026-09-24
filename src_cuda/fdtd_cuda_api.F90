@@ -21,7 +21,10 @@ module fdtd_cuda_m
    public :: fdtd_cuda_upload_planewave_phys_f, fdtd_cuda_upload_planewave_f
    public :: fdtd_cuda_planewave_ready_f
    public :: fdtd_cuda_advance_planewave_e_f, fdtd_cuda_advance_planewave_h_f
-   public :: fdtd_dims3_c, fdtd_ibox_c, fdtd_cpml_job_c, fdtd_pw_face_c
+   public :: fdtd_cuda_upload_mur_cab_f, fdtd_cuda_set_mur_jobs_f
+   public :: fdtd_cuda_upload_mur_past_f, fdtd_cuda_mur_ready_f
+   public :: fdtd_cuda_advance_mur_f
+   public :: fdtd_dims3_c, fdtd_ibox_c, fdtd_cpml_job_c, fdtd_pw_face_c, fdtd_mur_job_c
 
    logical, save :: fdtd_cuda_enabled = .false.
    type(c_ptr), save :: fdtd_cuda_ctx_c = c_null_ptr
@@ -57,6 +60,20 @@ module fdtd_cuda_m
       integer(c_int) :: id_axis
       integer(c_int) :: use_e_metric
       integer(c_int) :: sign
+   end type
+
+   type, bind(C) :: fdtd_mur_job_c
+      integer(c_int) :: field_comp
+      integer(c_int) :: media_comp
+      integer(c_int) :: cab_which
+      integer(c_int) :: wall_axis
+      integer(c_int) :: neigh_sign
+      integer(c_int) :: plane_abs
+      integer(c_int) :: a0, a1, b0, b1
+      integer(c_int) :: e_xi, e_yi, e_zi
+      integer(c_int) :: p_xi, p_yi, p_zi
+      integer(c_int) :: nx_p, ny_p, nz_p
+      integer(c_int) :: store_xi, store_xe, store_yi, store_ye, store_zi, store_ze
    end type
 
    interface
@@ -278,6 +295,38 @@ module fdtd_cuda_m
          integer(c_int), intent(out) :: still_out
          integer(c_int) :: fdtd_cuda_advance_planewave_h
       end function
+      function fdtd_cuda_upload_mur_cab(ctx, which, n, host) bind(C, name="fdtd_cuda_upload_mur_cab")
+         import :: c_ptr, c_int, c_float
+         type(c_ptr), value :: ctx
+         integer(c_int), value :: which, n
+         real(c_float), intent(in) :: host(*)
+         integer(c_int) :: fdtd_cuda_upload_mur_cab
+      end function
+      function fdtd_cuda_set_mur_jobs(ctx, jobs, n_jobs) bind(C, name="fdtd_cuda_set_mur_jobs")
+         import :: c_ptr, c_int, fdtd_mur_job_c
+         type(c_ptr), value :: ctx
+         type(fdtd_mur_job_c), intent(in) :: jobs(*)
+         integer(c_int), value :: n_jobs
+         integer(c_int) :: fdtd_cuda_set_mur_jobs
+      end function
+      function fdtd_cuda_upload_mur_past(ctx, slot, host, n_elem) &
+         bind(C, name="fdtd_cuda_upload_mur_past")
+         import :: c_ptr, c_int, c_float
+         type(c_ptr), value :: ctx
+         integer(c_int), value :: slot, n_elem
+         real(c_float), intent(in) :: host(*)
+         integer(c_int) :: fdtd_cuda_upload_mur_past
+      end function
+      function fdtd_cuda_mur_ready(ctx) bind(C, name="fdtd_cuda_mur_ready")
+         import :: c_ptr, c_int
+         type(c_ptr), value :: ctx
+         integer(c_int) :: fdtd_cuda_mur_ready
+      end function
+      function fdtd_cuda_advance_mur(ctx) bind(C, name="fdtd_cuda_advance_mur")
+         import :: c_ptr, c_int
+         type(c_ptr), value :: ctx
+         integer(c_int) :: fdtd_cuda_advance_mur
+      end function
    end interface
 
 contains
@@ -464,6 +513,34 @@ contains
       fdtd_cuda_advance_planewave_h_f = fdtd_cuda_advance_planewave_h(fdtd_cuda_ctx_c, &
          real(time, c_float), still_c)
       still_out = (still_c /= 0)
+   end function
+
+   integer function fdtd_cuda_upload_mur_cab_f(which, n, host)
+      integer, intent(in) :: which, n
+      real(kind=RKIND), intent(in), target :: host(*)
+      fdtd_cuda_upload_mur_cab_f = fdtd_cuda_upload_mur_cab(fdtd_cuda_ctx_c, &
+         int(which, c_int), int(n, c_int), host)
+   end function
+
+   integer function fdtd_cuda_set_mur_jobs_f(jobs, n_jobs)
+      type(fdtd_mur_job_c), intent(in), target :: jobs(*)
+      integer, intent(in) :: n_jobs
+      fdtd_cuda_set_mur_jobs_f = fdtd_cuda_set_mur_jobs(fdtd_cuda_ctx_c, jobs, int(n_jobs, c_int))
+   end function
+
+   integer function fdtd_cuda_upload_mur_past_f(slot, host, n_elem)
+      integer, intent(in) :: slot, n_elem
+      real(kind=RKIND), intent(in), target :: host(*)
+      fdtd_cuda_upload_mur_past_f = fdtd_cuda_upload_mur_past(fdtd_cuda_ctx_c, &
+         int(slot, c_int), host, int(n_elem, c_int))
+   end function
+
+   logical function fdtd_cuda_mur_ready_f()
+      fdtd_cuda_mur_ready_f = fdtd_cuda_enabled .and. (fdtd_cuda_mur_ready(fdtd_cuda_ctx_c) /= 0)
+   end function
+
+   integer function fdtd_cuda_advance_mur_f()
+      fdtd_cuda_advance_mur_f = fdtd_cuda_advance_mur(fdtd_cuda_ctx_c)
    end function
 
 end module fdtd_cuda_m
