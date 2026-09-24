@@ -30,6 +30,7 @@ cmake --build --preset rls -j
 - `-DSEMBA_FDTD_ENABLE_SMBJSON=ON` — JSON input parser (ON by default)
 - `-DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=ON` — 8-byte reals (OFF by default)
 - `-DSEMBA_FDTD_ENABLE_TEST=ON` — compile unit tests (ON by default)
+- `-DSEMBA_FDTD_ENABLE_CUDA=ON` — single-GPU Yee+CPML (requires MPI off, MTLN off, CMake 3.18+). Preset `rls-cuda` locates the CUDA toolkit and GPU architecture automatically.
 
 **Binary output:** `./build-rls/bin/semba-fdtd` for the `rls` preset.
 
@@ -67,7 +68,7 @@ Python tests are under `test/e2e/` and `test/pyWrapper/`.
 - Primary language: Fortran (free-form, ~49K+ lines)
 - C/C++ used only for unit tests (GoogleTest)
 - Python used for integration tests and the `pyWrapper/` interface
-- Build system: CMake 3.15+
+- Build system: CMake 3.15+ (3.18+ when `SEMBA_FDTD_ENABLE_CUDA=ON`)
 
 ### Library Dependency Chain
 
@@ -119,10 +120,12 @@ semba-fdtd        executable entry point
 
 ### Optional Features and Conditional Compilation
 
-The smbjson parser, MTLN solver, and MPI support are conditionally compiled.
+The smbjson parser, MTLN solver, MPI support, and optional CUDA Yee+CPML path
+are conditionally compiled.
 HDF5/XDMF output is required.
 MPI communication is implemented in `src_main_pub/mpicomm.F90` and activated
-with `SEMBA_FDTD_ENABLE_MPI`.
+with `SEMBA_FDTD_ENABLE_MPI`. CUDA is activated with `SEMBA_FDTD_ENABLE_CUDA`
+(preset `rls-cuda`); CMake finds the toolkit and GPU architecture automatically.
 
 ## Platform Notes
 

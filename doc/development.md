@@ -8,6 +8,7 @@
   - [HDF5 libraries](#hdf5-libraries)
   - [MTLN and ngspice](#mtln-and-ngspice)
   - [MPI](#mpi)
+  - [CUDA](#cuda)
 - [Windows (intelLLVM) compilation](#windows-intelllvm-compilation)
   - [Prerequisites](#prerequisites)
   - [Compilation process](#compilation-process)
@@ -136,6 +137,31 @@ If you use intel oneapi, make sure to load the mpi environment variables:
 ```shell
   source /opt/intel/oneapi/mpi/latest/env/vars.sh
 ```
+
+#### CUDA
+
+The `rls-cuda` preset turns on the single-GPU Yee+CPML path (`SEMBA_FDTD_ENABLE_CUDA=ON`, MPI and MTLN off). CMake 3.18 or newer is required.
+
+Configure does **not** hardcode a toolkit path, nvcc version, host gcc, or `sm_XX`. It locates CUDA in this order:
+
+1. `CMAKE_CUDA_COMPILER`, `CUDAToolkit_ROOT`, `CUDA_HOME`, or `CUDA_PATH` if you set them
+2. `nvcc` on `PATH`
+3. `/usr/local/cuda`
+4. the newest `/usr/local/cuda-*` (or Windows `CUDA/v*`) install
+
+GPU code is compiled for the cards present at configure time (`nvidia-smi`
+compute capability). If no GPU is visible, CMake falls back to `all-major` for
+the found toolkit. Override with `-DCMAKE_CUDA_ARCHITECTURES=89` or DGTD-style
+`-DCUDA_ARCH=sm_89`. If the default `g++` is newer than the toolkit allows,
+CMake searches `g++-14` … `g++-9`. Pin a host compiler with
+`-DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12` when needed.
+
+```shell
+cmake --fresh --preset rls-cuda
+cmake --build --preset rls-cuda -j
+```
+
+The CUDA binary is `./build-rls-cuda/bin/semba-fdtd`. Re-run `--fresh` after moving between machines so a previous toolkit or architecture is not reused from the cache.
 
 ## Windows (intelLLVM) Compilation
 
