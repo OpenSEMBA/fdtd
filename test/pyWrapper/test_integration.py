@@ -266,8 +266,8 @@ def test_simple_cabin_initialization_with_mpi(tmp_path):
                   mpi_command='mpirun -np 2')
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
 
 @pytest.mark.probes
@@ -391,10 +391,10 @@ def test_fill_mixed_conformal_volume_and_surfaces(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
-    assert createPropertyDictionary(vtkmapfile, celltype=3, property='mediatype')
-    assert createPropertyDictionary(vtkmapfile, celltype=9, property='mediatype')
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
+    assert createPropertyDictionary(vtk_map_filename, celltype=3, property='mediatype')
+    assert createPropertyDictionary(vtk_map_filename, celltype=9, property='mediatype')
 
 
 @pytest.mark.conformal
@@ -523,7 +523,7 @@ def test_fill_conformal_vtk_corner(tmp_path):
     assert os.path.isfile(vtk_map_filename)
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property='mediatype')
+        vtk_map_filename, celltype=9, property='mediatype')
 
     assert face_media_dict
     assert(0 not in face_media_dict.keys())
@@ -531,7 +531,7 @@ def test_fill_conformal_vtk_corner(tmp_path):
     assert face_media_dict[1006] == 2  # Conformal PEC surface #2
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property='mediatype')
+        vtk_map_filename, celltype=3, property='mediatype')
     assert line_media_dict
     assert line_media_dict[0.5] == 1     # PEC line
     assert line_media_dict[2004] == 4    # Conformal lines
@@ -589,32 +589,32 @@ def test_three_surfaces(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert face_tag_dict[64] == 4
     assert face_tag_dict[128] == 4
     assert face_tag_dict[192] == 4
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 8
     assert line_tag_dict[128] == 6
     assert line_tag_dict[192] == 4
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert face_media_dict[0] == 4  # PEC surface
     assert face_media_dict[304] == 4  # SGBC surface
     assert face_media_dict[305] == 4  # SGBC surface
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 8  # PEC line
     assert line_media_dict[3.5] == 10  # SGBC line
@@ -710,26 +710,26 @@ def test_1_volume(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert face_tag_dict[64] == 36
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert len(line_tag_dict) == 0
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert face_media_dict[0] == 36  # PEC surface
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert len(line_media_dict) == 0
 
@@ -746,27 +746,27 @@ def test_2_volumes(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert face_tag_dict[64] == 36
     assert face_tag_dict[128] == 36
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert len(line_tag_dict) == 0
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert face_media_dict[0] == 72  # PEC surface
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert len(line_media_dict) == 0
 
@@ -783,26 +783,26 @@ def test_1_line(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
 
@@ -819,32 +819,32 @@ def test_volume_and_surfaces(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert face_tag_dict[64] == 6
     assert face_tag_dict[128] == 1
     assert face_tag_dict[192] == 1
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 1
     assert line_tag_dict[128] == 4
     assert line_tag_dict[192] == 3
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert face_media_dict[16] == 1  # PMC surface
     assert face_media_dict[0] == 6  # PEC surface
     assert face_media_dict[305] == 1  # SGBC surface
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[16.5] == 4  # PMC line
     assert line_media_dict[0.5] == 1  # PEC line
@@ -890,28 +890,28 @@ def test_wires(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 4
     assert line_tag_dict[128] == 6
     assert line_tag_dict[192] == 4
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property='mediatype')
+        vtk_map_filename, celltype=3, property='mediatype')
     assert line_media_dict[7] == 7
     assert line_media_dict[10] == 6
     assert line_media_dict[21] == 1
@@ -946,16 +946,16 @@ def test_wires_collision(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2
     assert line_tag_dict[128] == 4
@@ -963,12 +963,12 @@ def test_wires_collision(tmp_path):
     assert line_tag_dict[256] == 4
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[7] == 6
     assert line_media_dict[8] == 1
@@ -990,27 +990,27 @@ def test_wire_x_collision_y(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 4  # Wire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[7] == 1  # Wire w/o collision
@@ -1045,27 +1045,27 @@ def test_wire_x_collision_z(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 4  # Wire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[7] == 1  # Wire w/o collision
@@ -1086,27 +1086,27 @@ def test_wire_x_long_collision_z(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 8  # Wire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[7] == 3  # Wire w/o collision
@@ -1128,27 +1128,27 @@ def test_wire_y_collision_x(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 4  # Wire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[7] == 1  # Wire w/o collision
@@ -1169,27 +1169,27 @@ def test_wire_y_collision_z(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 4  # Wire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[7] == 1  # Wire w/o collision
@@ -1210,27 +1210,27 @@ def test_wire_z_collision_x(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 4  # Wire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[7] == 1  # Wire w/o collision
@@ -1251,27 +1251,27 @@ def test_wire_z_collision_y(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 4  # Wire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[7] == 1  # Wire w/o collision
@@ -1292,31 +1292,31 @@ def test_multiwire_z_collision_y(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 4  # Multiwire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[12] == 1  # MultiWire w/o collision
@@ -1337,31 +1337,31 @@ def test_multiwire_z_collision_x(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 4  # Multiwire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[12] == 1  # MultiWire w/o collision
@@ -1382,31 +1382,31 @@ def test_multiwire_y_collision_x(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 4  # Multiwire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[12] == 1  # MultiWire w/o collision
@@ -1427,31 +1427,31 @@ def test_multiwire_y_collision_z(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 4  # Multiwire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[12] == 1  # MultiWire w/o collision
@@ -1472,31 +1472,31 @@ def test_multiwire_x_collision_y(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 4  # Multiwire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[12] == 1  # MultiWire w/o collision
@@ -1517,31 +1517,31 @@ def test_multiwire_x_collision_z(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 4  # Multiwire
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[12] == 1  # MultiWire w/o collision
@@ -1562,20 +1562,20 @@ def test_multiwire_x_long_collision_z(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
 
     face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="tagnumber"
+        vtk_map_filename, celltype=9, property="tagnumber"
     )
     assert len(face_tag_dict) == 0
 
     line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="tagnumber"
+        vtk_map_filename, celltype=3, property="tagnumber"
     )
     assert line_tag_dict[64] == 2  # PEC
     assert line_tag_dict[128] == 8  # Multiwire:
@@ -1583,12 +1583,12 @@ def test_multiwire_x_long_collision_z(tmp_path):
     # 1 segment adjacent something not multiwire, 2 extremes,
 
     face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property="mediatype"
+        vtk_map_filename, celltype=9, property="mediatype"
     )
     assert len(face_media_dict) == 0
 
     line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property="mediatype"
+        vtk_map_filename, celltype=3, property="mediatype"
     )
     assert line_media_dict[0.5] == 2  # PEC line
     assert line_media_dict[12] == 3  # MultiWire w/o collision
@@ -1676,7 +1676,7 @@ def test_wires_vtk(tmp_path):
     solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
-    reader = pv.get_reader(vtkmapfile)
+    vtk_map_filename = solver.getVTKMap()
+    reader = pv.get_reader(vtk_map_filename)
     mesh = reader.read()
     assert mesh.n_cells != 0
