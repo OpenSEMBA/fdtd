@@ -23,6 +23,7 @@ extern "C" int test_cell_map_coords();
 extern "C" int test_cell_map_array();
 extern "C" int test_cell_map_add_triangle();
 extern "C" int test_cell_map_cellmap_set_get();
+extern "C" int test_conformal_detect_split_face();
 extern "C" int test_conformal_filling_off_face_triangle_x();
 extern "C" int test_conformal_filling_off_face_triangle_y();
 extern "C" int test_conformal_filling_off_face_triangle_z();
@@ -65,6 +66,8 @@ TEST(conformal, cell_map_array)               { EXPECT_EQ(0, test_cell_map_array
 TEST(conformal, cell_map_add_triangle)        { EXPECT_EQ(0, test_cell_map_add_triangle()); }
 TEST(conformal, cell_map_cellmap_set_get)     { EXPECT_EQ(0, test_cell_map_cellmap_set_get()); }
 
+
+TEST(conformal, conformal_detect_split_face)               { EXPECT_EQ(0, test_conformal_detect_split_face()); }
 TEST(conformal, conformal_filling_off_face_triangle_x)     { EXPECT_EQ(0, test_conformal_filling_off_face_triangle_x()); }
 TEST(conformal, conformal_filling_off_face_triangle_y)     { EXPECT_EQ(0, test_conformal_filling_off_face_triangle_y()); }
 TEST(conformal, conformal_filling_off_face_triangle_z)     { EXPECT_EQ(0, test_conformal_filling_off_face_triangle_z()); }

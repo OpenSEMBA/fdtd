@@ -1,3 +1,53 @@
+integer function test_conformal_detect_split_face() bind(C) result(err)
+
+!         /|
+!       /  |
+!     /    |
+!   /_____2|==________
+!   |    \\|__\\===3_|____
+!   |     /\\     // |   /
+!   |    /  \\    || |  /
+!   |  /      \\ //  | /
+!   |/__________1____|/
+
+    use conformal_m
+    implicit none
+
+    type(triangle_t) :: t
+    type(triangle_t), dimension(:), allocatable :: tris
+
+    type(coord_t) :: c1, c2, c3
+    type(ConformalPECRegions_t) :: cR
+    type(ConformalMedia_t), dimension(:), allocatable :: cMs
+    type(ConformalMedia_t) :: cM
+    type(coord_t), dimension(3) :: vertices
+    integer :: face_index, face_media
+    err = 0
+    c1 = coord_t(position = [0.75,0.0,0.0],  id = 1)
+    c2 = coord_t(position = [0.25,0.0,1.0],  id=  2)
+    c3 = coord_t(position = [0.65,1.0,0.0],  id=  3)
+
+    ! inside in +x
+    allocate(tris(1))
+    vertices = [c1,c2,c3]
+    tris(1) = triangle_t(vertices)
+
+    allocate(cR%volumes(1))
+    allocate(cR%volumes(1)%triangles(1))
+    allocate(cR%volumes(1)%intervals(0))
+    cR%volumes(1)%triangles(1) = tris(1)
+
+    cMs = buildMedia(cR%volumes)
+    cM = cMs(1)
+
+    do face_media = 1, size(cM%face_media) 
+        do face_index = 1, size(cM%face_media(face_media)%faces)
+            if (.not. cM%face_media(face_media)%faces(face_index)%is_two_sided) err = err + 1
+        end do
+    end do
+
+end function
+
 integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err)
 
 !         /|
