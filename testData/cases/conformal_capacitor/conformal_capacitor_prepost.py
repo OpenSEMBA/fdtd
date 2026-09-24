@@ -1,5 +1,6 @@
 # %% Setup
 from pathlib import Path
+import json
 import os
 import sys
 
@@ -27,7 +28,9 @@ RUN_DIR.mkdir(exist_ok=True)
 
 EPSILON_0 = 8.8541878128e-12
 INPUT_FILENAME = CASE_DIR / 'capacitor_charge.fdtd.json'
-PROBE_NAME = 'Point probe'
+PROBE_NAMES = ('Point probe', 'Point probe quarter1', 'Point probe quarter2')
+PEAK_TIME = 75e-9
+PULSE_WIDTH = 19e-9
 
 
 # %% Helpers
@@ -51,9 +54,20 @@ def plate_geometry(solver):
     return area, gap
 
 
-# %% Run the case
+def generate_gauss_excitation(time_step, number_of_steps):
+    time = np.arange(number_of_steps) * time_step
+    value = np.exp(-((time - PEAK_TIME) / PULSE_WIDTH) ** 2)
+    np.savetxt(CASE_DIR / 'predefinedExcitation.1.exc', np.column_stack([time, value]))
+
+
+# %% Generate excitation and run the case
+input_data = json.loads(INPUT_FILENAME.read_text())
+generate_gauss_excitation(
+    input_data['general']['timeStep'], input_data['general']['numberOfSteps']
+)
+
 solver = FDTD(
-    input_filename=CASE_DIR / 'capacitor_charge.fdtd.json',
+    input_filename=INPUT_FILENAME,
     path_to_exe=SEMBA_EXE,
     flags='-mapvtk -ignoresamplingerrors',
     run_in_folder=RUN_DIR,
@@ -61,13 +75,16 @@ solver = FDTD(
 solver.cleanUp()
 solver.run()
 
-ez_probe = next(
-    probe
-    for probe in map(Probe, solver.getSolvedProbeFolders(PROBE_NAME))
-    if probe.field == 'E' and probe.direction == 'z'
-)
-time = ez_probe['time'].to_numpy()
-ez = ez_probe['field'].to_numpy()
+ez_probes = {}
+for probe_name in PROBE_NAMES:
+    ez_probes[probe_name] = next(
+        probe
+        for probe in map(Probe, solver.getSolvedProbeFolders(probe_name))
+        if probe.field == 'E' and probe.direction == 'z'
+    )
+
+time = ez_probes[PROBE_NAMES[0]]['time'].to_numpy()
+ez = ez_probes[PROBE_NAMES[0]]['field'].to_numpy()
 
 
 # %% Injected charge from the source's magnitude file
@@ -101,7 +118,10 @@ current_axis.plot(current_time * 1e9, current_value, color='black')
 current_axis.set_ylabel('Injected current [A]')
 current_axis.grid()
 
-field_axis.plot(time * 1e9, ez)
+for probe_name, probe in ez_probes.items():
+    field_axis.plot(
+        probe['time'].to_numpy() * 1e9, probe['field'].to_numpy(), label=probe_name
+    )
 field_axis.set_xlabel('Time [ns]')
 field_axis.set_ylabel('Ez [V/m]')
 field_axis.grid()
@@ -109,3 +129,4 @@ field_axis.legend()
 figure.tight_layout()
 
 # %%
+

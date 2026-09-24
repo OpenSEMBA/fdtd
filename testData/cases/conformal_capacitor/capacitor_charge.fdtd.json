@@ -2,7 +2,7 @@
   "_format": "FDTD Input file",
   "general": {
     "timeStep": 1.5406665612371766e-10,
-    "numberOfSteps": 1298,
+    "numberOfSteps": 1040,
     "additionalArguments": ""
   },
   "boundary": {
@@ -24,7 +24,7 @@
     { "name": "nodalSource",
       "type": "nodalSource",
       "hardness": "soft",
-      "magnitudeFile": "predefinedExcitation.1.exc",
+      "magnitudeFile": "gauss_d75ns_w19ns.exc",
       "elementIds": [4],
       "field": "current"
     }
@@ -35,6 +35,24 @@
       "field": "electric",
       "elementIds": [3],
       "directions": ["x", "y", "z"],
+      "domain": {
+        "type": "time"
+      }
+    },
+    { "name": "Point probe quarter1",
+      "type": "point",
+      "field": "electric",
+      "elementIds": [5],
+      "directions": ["z"],
+      "domain": {
+        "type": "time"
+      }
+    },
+    { "name": "Point probe quarter2",
+      "type": "point",
+      "field": "electric",
+      "elementIds": [6],
+      "directions": ["z"],
       "domain": {
         "type": "time"
       }
@@ -57,7 +75,9 @@
       { "id": 4, "relativePosition": [80, 80, 11] },
       { "id": 5, "relativePosition": [55, 55, 10] },
       { "id": 6, "relativePosition": [55, 55, 10] },
-      { "id": 7, "relativePosition": [55, 55, 11] }
+      { "id": 7, "relativePosition": [55, 55, 11] },
+      { "id": 8, "relativePosition": [40, 40, 10] },
+      { "id": 9, "relativePosition": [70, 70, 10] }
     ],
     "elements": [
       { "id": 1, "name": "Plane",
@@ -81,6 +101,14 @@
         "intervals": [
           [[55, 55, 10], [55, 55, 11]]
         ]
+      },
+      { "id": 5, "name": "Point_probe_quarter1",
+        "type": "node",
+        "coordinateIds": [8]
+      },
+      { "id": 6, "name": "Point_probe_quarter2",
+        "type": "node",
+        "coordinateIds": [9]
       }
     ]
   }
