@@ -17,6 +17,10 @@ module HollandWires_m
 #ifdef CompileWithThickWires  
     use Thick_m
 #endif    
+#ifdef CompileWithCUDA
+   use fdtd_cuda_m
+   use, intrinsic :: iso_c_binding, only: c_float, c_int
+#endif
    !
    implicit none
    
@@ -25,6 +29,9 @@ module HollandWires_m
    !local variables
 
    logical                                         , save :: thereAreVsources,thereAreIsources,thereAreMurConditions
+#ifdef CompileWithCUDA
+   logical, save :: cuda_wires_ready = .false.
+#endif
    type(Thinwires_t)     , target                  ,save  :: HWires
    real(kind=RKIND_wires)     , pointer, dimension( : ),save  :: InvEps  ,InvMu, OldInvEps  ,OldInvMu
    
@@ -34,6 +41,9 @@ module HollandWires_m
    private
 
    public InitWires,AdvanceWiresE,AdvanceWiresH,AdvanceWiresEcrank,StoreFieldsWires,DestroyWires,DestroyWireMedia, GetHwires,ReportWireJunctions,calc_wirehollandconstants,evolucion
+#ifdef CompileWithCUDA
+   public :: cuda_wires_is_ready, InitWires_cuda, AdvanceWiresE_cuda
+#endif
 
 
 
@@ -6997,4 +7007,7 @@ subroutine resume_casuistics
     end subroutine wiresconstantes
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#ifdef CompileWithCUDA
+#include "wires_cuda.inc.F90"
+#endif
 end module HollandWires_m

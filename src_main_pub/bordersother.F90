@@ -6,10 +6,18 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 module BORDERS_other_m
    use FDETYPES_m
+#ifdef CompileWithCUDA
+   use fdtd_cuda_m
+   use Report_m
+#endif
    implicit none
    private
    !
    public  :: InitOtherBorders, MinusCloneMagneticPMC,CloneMagneticPeriodic
+#ifdef CompileWithCUDA
+   logical, save :: cuda_clone_ready = .false.
+   public :: cuda_clone_is_ready, InitMagneticClone_cuda, AdvanceMagneticClone_cuda
+#endif
 
 contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -169,5 +177,9 @@ contains
       end if
       return
    end subroutine CloneMagneticPeriodic
+
+#ifdef CompileWithCUDA
+#include "borders_clone_cuda.inc.F90"
+#endif
 
 end module

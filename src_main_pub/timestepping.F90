@@ -2063,7 +2063,7 @@ contains
 
       call this%phase_tic()
 #ifdef CompileWithCUDA
-      if (this%control%use_cuda .and. this%thereAre%Wires) then
+      if (this%control%use_cuda .and. this%thereAre%Wires .and. .not. cuda_wires_is_ready()) then
          call this%cuda_ensure_host()
       end if
 #endif
@@ -2073,8 +2073,12 @@ contains
 #endif
 #ifdef CompileWithCUDA
       if (this%control%use_cuda .and. this%thereAre%Wires) then
-         call this%cuda_mark_device_stale(.false.)
-         call this%cuda_ensure_device()
+         if (cuda_wires_is_ready()) then
+            call this%cuda_mark_host_stale()
+         else
+            call this%cuda_mark_device_stale(.false.)
+            call this%cuda_ensure_device()
+         end if
       end if
 #endif
       call this%phase_toc(3) ! wires
@@ -2173,11 +2177,21 @@ contains
       call this%phase_tic()
 #ifdef CompileWithCUDA
       if (this%control%use_cuda .and. (this%thereAre%PMCBorders .or. this%thereAre%PeriodicBorders)) then
-         call this%cuda_ensure_host()
-      end if
+         if (cuda_clone_is_ready()) then
+            call AdvanceMagneticClone_cuda()
+            call this%cuda_mark_host_stale()
+         else
+            call this%cuda_ensure_host()
+            call this%MinusCloneMagneticPMC()
+            call this%CloneMagneticPeriodic()
+         end if
+      else
 #endif
       call this%MinusCloneMagneticPMC()
       call this%CloneMagneticPeriodic()
+#ifdef CompileWithCUDA
+      end if
+#endif
       call this%AdvancesgbcH()
       call this%AdvanceMDispersiveH()
 #ifdef CompileWithNIBC
@@ -2213,7 +2227,8 @@ contains
 #endif
       call this%advanceNodalH()
 #ifdef CompileWithCUDA
-      if (this%control%use_cuda .and. (this%thereAre%PMCBorders .or. this%thereAre%PeriodicBorders)) then
+      if (this%control%use_cuda .and. (this%thereAre%PMCBorders .or. this%thereAre%PeriodicBorders) &
+          .and. .not. cuda_clone_is_ready()) then
          call this%cuda_mark_device_stale(.false.)
       end if
 #endif
@@ -2221,17 +2236,29 @@ contains
 
       call this%phase_tic()
 #ifdef CompileWithCUDA
-      if (this%control%use_cuda .and. this%thereAre%Wires) call this%cuda_ensure_host()
+      if (this%control%use_cuda .and. this%thereAre%Wires .and. .not. cuda_wires_is_ready()) &
+         call this%cuda_ensure_host()
 #endif
       call this%advanceWiresH()
 #ifdef CompileWithCUDA
-      if (this%control%use_cuda .and. this%thereAre%Wires) call this%cuda_mark_device_stale(.false.)
+      if (this%control%use_cuda .and. this%thereAre%Wires .and. .not. cuda_wires_is_ready()) &
+         call this%cuda_mark_device_stale(.false.)
 #endif
       call this%phase_toc(3) ! wires
 
       call this%phase_tic()
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. (this%thereAre%PMCBorders .or. this%thereAre%PeriodicBorders) &
+          .and. cuda_clone_is_ready()) then
+         call AdvanceMagneticClone_cuda()
+         call this%cuda_mark_host_stale()
+      else
+#endif
       call this%MinusCloneMagneticPMC()
       call this%CloneMagneticPeriodic()
+#ifdef CompileWithCUDA
+      end if
+#endif
       call this%phase_toc(4) ! other
 
 #ifdef CompileWithMPI
@@ -2912,6 +2939,12 @@ contains
       class(solver_t) :: this
       character(len=bufsize) :: buff
 
+#ifdef CompileWithCUDA
+      if (this%control%use_cuda .and. cuda_wires_is_ready()) then
+         call AdvanceWiresE_cuda(this%sgg, this%n)
+         return
+      end if
+#endif
 #ifdef CompileWithMTLN
       call AdvanceWiresE_mtln(this%sgg,this%Idxh,this%Idyh,this%Idzh,this%eps0,this%mu0)
 #else 
@@ -3252,6 +3285,9 @@ contains
             'CUDA nodal sources do not support simu_devia; run with SEMBA_FDTD_DEVICE=cpu')
          return
       end if
+      if (this%thereAre%Wires) call InitWires_cuda(this%control, this%bounds)
+      if (this%thereAre%PMCBorders .or. this%thereAre%PeriodicBorders) &
+         call InitMagneticClone_cuda(this%sgg, this%bounds)
       if (this%thereAre%NodalE .or. this%thereAre%NodalH) then
          call InitNodalSources_cuda(this%sgg, this%bounds)
          if (.not. cuda_nodal_is_ready()) then
@@ -3276,6 +3312,17 @@ contains
       end if
       if ((this%thereAre%NodalE .or. this%thereAre%NodalH) .and. cuda_nodal_is_ready()) then
          write(dubuf,*) 'CUDA: device nodal sources enabled (no mid-step nodal host sync)'
+         call print11(this%control%layoutnumber, dubuf)
+      end if
+      if (this%thereAre%Wires .and. cuda_wires_is_ready()) then
+         write(dubuf,*) 'CUDA: device Holland wires enabled (no mid-step wire host sync)'
+         call print11(this%control%layoutnumber, dubuf)
+      else if (this%thereAre%Wires) then
+         write(dubuf,*) 'CUDA: Holland wires remain on host (device wires not ready)'
+         call print11(this%control%layoutnumber, dubuf)
+      end if
+      if ((this%thereAre%PMCBorders .or. this%thereAre%PeriodicBorders) .and. cuda_clone_is_ready()) then
+         write(dubuf,*) 'CUDA: device PMC/periodic magnetic clones enabled'
          call print11(this%control%layoutnumber, dubuf)
       end if
       if (this%cuda_sparse_probes_ok) then

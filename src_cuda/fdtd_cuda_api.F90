@@ -27,7 +27,11 @@ module fdtd_cuda_m
    public :: fdtd_cuda_advance_mur_f
    public :: fdtd_cuda_upload_nodal_f, fdtd_cuda_nodal_ready_f
    public :: fdtd_cuda_advance_nodal_e_f, fdtd_cuda_advance_nodal_h_f
+   public :: fdtd_cuda_upload_wires_f, fdtd_cuda_wires_ready_f
+   public :: fdtd_cuda_advance_wires_e_f, fdtd_cuda_download_wires_f
+   public :: fdtd_cuda_set_clone_jobs_f, fdtd_cuda_clone_ready_f, fdtd_cuda_advance_clones_f
    public :: fdtd_dims3_c, fdtd_ibox_c, fdtd_cpml_job_c, fdtd_pw_face_c, fdtd_mur_job_c, fdtd_nodal_job_c
+   public :: fdtd_wire_seg_c, fdtd_wire_node_c, fdtd_clone_job_c
 
    logical, save :: fdtd_cuda_enabled = .false.
    type(c_ptr), save :: fdtd_cuda_ctx_c = c_null_ptr
@@ -89,6 +93,25 @@ module fdtd_cuda_m
       integer(c_int) :: numus
       real(c_float) :: amplitude
       real(c_float) :: deltaevol
+   end type
+
+   type, bind(C) :: fdtd_wire_seg_c
+      integer(c_int) :: coupled, field_comp, i, j, k, is_pmc
+      integer(c_int) :: charge_plus, charge_minus, has_v, evol_off, numus
+      real(c_float) :: deltaevol, cte1, cte2, cte3, cte5
+      real(c_float) :: fraction_plus, fraction_minus, vscale
+   end type
+
+   type, bind(C) :: fdtd_wire_node_c
+      integer(c_int) :: exists, is_mur, is_periodic, n_plus, n_minus
+      integer(c_int) :: plus_seg(9), minus_seg(9)
+      integer(c_int) :: node_inside, has_i, evol_off, numus
+      real(c_float) :: deltaevol, cte_prop, cte_plain, cte_mur
+   end type
+
+   type, bind(C) :: fdtd_clone_job_c
+      integer(c_int) :: field_comp, wall_axis, ghost, source, sign
+      integer(c_int) :: a0, a1, b0, b1, e_xi, e_yi, e_zi
    end type
 
    interface
@@ -390,6 +413,53 @@ module fdtd_cuda_m
          integer(c_int), value :: step
          integer(c_int) :: fdtd_cuda_advance_nodal_h
       end function
+      function fdtd_cuda_upload_wires(ctx, segs, nseg, nodes, nnode, samples, n_samples, &
+         current, charge, charge_past, ex_xi, ex_yi, ex_zi, ey_xi, ey_yi, ey_zi, ez_xi, ez_yi, ez_zi) &
+         bind(C, name="fdtd_cuda_upload_wires")
+         import :: c_ptr, c_int, c_float, fdtd_wire_seg_c, fdtd_wire_node_c
+         type(c_ptr), value :: ctx
+         type(fdtd_wire_seg_c), intent(in) :: segs(*)
+         type(fdtd_wire_node_c), intent(in) :: nodes(*)
+         integer(c_int), value :: nseg, nnode, n_samples
+         real(c_float), intent(in) :: samples(*), current(*), charge(*), charge_past(*)
+         integer(c_int), value :: ex_xi, ex_yi, ex_zi, ey_xi, ey_yi, ey_zi, ez_xi, ez_yi, ez_zi
+         integer(c_int) :: fdtd_cuda_upload_wires
+      end function
+      function fdtd_cuda_wires_ready(ctx) bind(C, name="fdtd_cuda_wires_ready")
+         import :: c_ptr, c_int
+         type(c_ptr), value :: ctx
+         integer(c_int) :: fdtd_cuda_wires_ready
+      end function
+      function fdtd_cuda_advance_wires_e(ctx, time_i, time_q) bind(C, name="fdtd_cuda_advance_wires_e")
+         import :: c_ptr, c_int, c_float
+         type(c_ptr), value :: ctx
+         real(c_float), value :: time_i, time_q
+         integer(c_int) :: fdtd_cuda_advance_wires_e
+      end function
+      function fdtd_cuda_download_wires(ctx, current, current_past, charge, charge_past) &
+         bind(C, name="fdtd_cuda_download_wires")
+         import :: c_ptr, c_int, c_float
+         type(c_ptr), value :: ctx
+         real(c_float), intent(out) :: current(*), current_past(*), charge(*), charge_past(*)
+         integer(c_int) :: fdtd_cuda_download_wires
+      end function
+      function fdtd_cuda_set_clone_jobs(ctx, jobs, n) bind(C, name="fdtd_cuda_set_clone_jobs")
+         import :: c_ptr, c_int, fdtd_clone_job_c
+         type(c_ptr), value :: ctx
+         type(fdtd_clone_job_c), intent(in) :: jobs(*)
+         integer(c_int), value :: n
+         integer(c_int) :: fdtd_cuda_set_clone_jobs
+      end function
+      function fdtd_cuda_clone_ready(ctx) bind(C, name="fdtd_cuda_clone_ready")
+         import :: c_ptr, c_int
+         type(c_ptr), value :: ctx
+         integer(c_int) :: fdtd_cuda_clone_ready
+      end function
+      function fdtd_cuda_advance_clones(ctx) bind(C, name="fdtd_cuda_advance_clones")
+         import :: c_ptr, c_int
+         type(c_ptr), value :: ctx
+         integer(c_int) :: fdtd_cuda_advance_clones
+      end function
    end interface
 
 contains
@@ -644,6 +714,50 @@ contains
       integer, intent(in) :: step
       fdtd_cuda_advance_nodal_h_f = fdtd_cuda_advance_nodal_h(fdtd_cuda_ctx_c, &
          real(time, c_float), int(step, c_int))
+   end function
+
+   integer function fdtd_cuda_upload_wires_f(segs, nseg, nodes, nnode, samples, n_samples, &
+      current, charge, charge_past, ex_xi, ex_yi, ex_zi, ey_xi, ey_yi, ey_zi, ez_xi, ez_yi, ez_zi)
+      type(fdtd_wire_seg_c), intent(in), target :: segs(*)
+      type(fdtd_wire_node_c), intent(in), target :: nodes(*)
+      integer, intent(in) :: nseg, nnode, n_samples
+      real(c_float), intent(in), target :: samples(*), current(*), charge(*), charge_past(*)
+      integer, intent(in) :: ex_xi, ex_yi, ex_zi, ey_xi, ey_yi, ey_zi, ez_xi, ez_yi, ez_zi
+      fdtd_cuda_upload_wires_f = fdtd_cuda_upload_wires(fdtd_cuda_ctx_c, segs, int(nseg, c_int), &
+         nodes, int(nnode, c_int), samples, int(n_samples, c_int), current, charge, charge_past, &
+         int(ex_xi, c_int), int(ex_yi, c_int), int(ex_zi, c_int), &
+         int(ey_xi, c_int), int(ey_yi, c_int), int(ey_zi, c_int), &
+         int(ez_xi, c_int), int(ez_yi, c_int), int(ez_zi, c_int))
+   end function
+
+   logical function fdtd_cuda_wires_ready_f()
+      fdtd_cuda_wires_ready_f = fdtd_cuda_enabled .and. (fdtd_cuda_wires_ready(fdtd_cuda_ctx_c) /= 0)
+   end function
+
+   integer function fdtd_cuda_advance_wires_e_f(time_i, time_q)
+      real(kind=RKIND), intent(in) :: time_i, time_q
+      fdtd_cuda_advance_wires_e_f = fdtd_cuda_advance_wires_e(fdtd_cuda_ctx_c, &
+         real(time_i, c_float), real(time_q, c_float))
+   end function
+
+   integer function fdtd_cuda_download_wires_f(current, current_past, charge, charge_past)
+      real(c_float), intent(out), target :: current(*), current_past(*), charge(*), charge_past(*)
+      fdtd_cuda_download_wires_f = fdtd_cuda_download_wires(fdtd_cuda_ctx_c, &
+         current, current_past, charge, charge_past)
+   end function
+
+   integer function fdtd_cuda_set_clone_jobs_f(jobs, n)
+      type(fdtd_clone_job_c), intent(in), target :: jobs(*)
+      integer, intent(in) :: n
+      fdtd_cuda_set_clone_jobs_f = fdtd_cuda_set_clone_jobs(fdtd_cuda_ctx_c, jobs, int(n, c_int))
+   end function
+
+   logical function fdtd_cuda_clone_ready_f()
+      fdtd_cuda_clone_ready_f = fdtd_cuda_enabled .and. (fdtd_cuda_clone_ready(fdtd_cuda_ctx_c) /= 0)
+   end function
+
+   integer function fdtd_cuda_advance_clones_f()
+      fdtd_cuda_advance_clones_f = fdtd_cuda_advance_clones(fdtd_cuda_ctx_c)
    end function
 
 end module fdtd_cuda_m

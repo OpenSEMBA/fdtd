@@ -61,11 +61,30 @@ struct fdtd_cuda_ctx {
    fdtd_real *d_nodal_samples;
    int *d_nodal_skip_e;
    int *d_nodal_skip_h;
+
+   /* Holland thin wires (thickness 1). */
+   int wires_ready;
+   int wires_nseg, wires_nnode;
+   fdtd_wire_seg *d_wire_segs;
+   fdtd_wire_node *d_wire_nodes;
+   fdtd_real *d_wire_samples;
+   fdtd_real *d_wire_current;
+   fdtd_real *d_wire_current_past;
+   fdtd_real *d_wire_charge;
+   fdtd_real *d_wire_charge_past;
+   int wire_ex[3], wire_ey[3], wire_ez[3];
+
+   /* PMC / periodic magnetic ghost clones. */
+   int clone_ready;
+   int clone_n;
+   fdtd_clone_job *h_clone_jobs;
 };
 
 void fdtd_cuda_free_planewave(fdtd_cuda_ctx *ctx);
 void fdtd_cuda_free_mur(fdtd_cuda_ctx *ctx);
 void fdtd_cuda_free_nodal(fdtd_cuda_ctx *ctx);
+void fdtd_cuda_free_wires(fdtd_cuda_ctx *ctx);
+void fdtd_cuda_free_clones(fdtd_cuda_ctx *ctx);
 
 #ifdef __cplusplus
 extern "C" {

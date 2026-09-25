@@ -228,6 +228,82 @@ int fdtd_cuda_nodal_ready(const fdtd_cuda_ctx *ctx);
 int fdtd_cuda_advance_nodal_e(fdtd_cuda_ctx *ctx, fdtd_real time, int step);
 int fdtd_cuda_advance_nodal_h(fdtd_cuda_ctx *ctx, fdtd_real time, int step);
 
+/*
+ * Holland thin-wire E step (host AdvanceWiresE, thickness 1).
+ * Segments and nodes are flattened; neighbour slots are 0-based or -1.
+ * field_comp 0=Ex..2=Ez. coupled=0 skips the 3D field (shielded or null_field).
+ * is_pmc zeros the current after the E injection of the previous current.
+ * Samples are concatenated evol(0:numus). time_q is the charge-source time
+ * (host time - dt/2); time_i is the voltage-source time.
+ */
+#define FDTD_WIRE_NEIGH 9
+
+typedef struct {
+   int coupled;
+   int field_comp;
+   int i, j, k;
+   int is_pmc;
+   int charge_plus;
+   int charge_minus;
+   int has_v;
+   int evol_off;
+   int numus;
+   fdtd_real deltaevol;
+   fdtd_real cte1, cte2, cte3, cte5;
+   fdtd_real fraction_plus, fraction_minus;
+   fdtd_real vscale;
+} fdtd_wire_seg;
+
+typedef struct {
+   int exists;
+   int is_mur;
+   int is_periodic;
+   int n_plus, n_minus;
+   int plus_seg[FDTD_WIRE_NEIGH];
+   int minus_seg[FDTD_WIRE_NEIGH];
+   int node_inside;
+   int has_i;
+   int evol_off;
+   int numus;
+   fdtd_real deltaevol;
+   fdtd_real cte_prop, cte_plain, cte_mur;
+} fdtd_wire_node;
+
+int fdtd_cuda_upload_wires(fdtd_cuda_ctx *ctx,
+                           const fdtd_wire_seg *segs, int nseg,
+                           const fdtd_wire_node *nodes, int nnode,
+                           const fdtd_real *samples, int n_samples,
+                           const fdtd_real *current, const fdtd_real *charge,
+                           const fdtd_real *charge_past,
+                           int ex_xi, int ex_yi, int ex_zi,
+                           int ey_xi, int ey_yi, int ey_zi,
+                           int ez_xi, int ez_yi, int ez_zi);
+int fdtd_cuda_wires_ready(const fdtd_cuda_ctx *ctx);
+int fdtd_cuda_advance_wires_e(fdtd_cuda_ctx *ctx, fdtd_real time_i, fdtd_real time_q);
+int fdtd_cuda_download_wires(fdtd_cuda_ctx *ctx,
+                             fdtd_real *current, fdtd_real *current_past,
+                             fdtd_real *charge, fdtd_real *charge_past);
+
+/*
+ * Magnetic ghost clones (host MinusCloneMagneticPMC then CloneMagneticPeriodic).
+ * field_comp 3=Hx..5=Hz. wall_axis 0=x,1=y,2=z.
+ * ghost/source and a0..b1 are absolute Fortran indices. sign is -1 (PMC) or +1 (periodic).
+ * Jobs are applied in order, then one synchronize.
+ */
+typedef struct {
+   int field_comp;
+   int wall_axis;
+   int ghost;
+   int source;
+   int sign;
+   int a0, a1, b0, b1;
+   int e_xi, e_yi, e_zi;
+} fdtd_clone_job;
+
+int fdtd_cuda_set_clone_jobs(fdtd_cuda_ctx *ctx, const fdtd_clone_job *jobs, int n);
+int fdtd_cuda_clone_ready(const fdtd_cuda_ctx *ctx);
+int fdtd_cuda_advance_clones(fdtd_cuda_ctx *ctx);
+
 #ifdef __cplusplus
 }
 #endif

@@ -9,6 +9,8 @@ add_library(fdtd-cuda
 	fdtd_cuda_planewave.cu
 	fdtd_cuda_mur.cu
 	fdtd_cuda_nodal.cu
+	fdtd_cuda_wires.cu
+	fdtd_cuda_pmc.cu
 	fdtd_cuda_api.F90
 )
 target_include_directories(fdtd-cuda PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
