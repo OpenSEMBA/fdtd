@@ -307,7 +307,7 @@ def test_map_vtk_includes_thin_slot_geometry(tmp_path):
         vtk_map_filename, celltype=9, property="mediatype"
     )
 
-    # 10-cell slot → exactly 10 ThinSlot edges and 10 faces
+    # Embedded straight slots retain one thin-slot edge and face per cell.
     assert line_media_dict.get(4.5, 0) == 10
     n_slot_faces = sum(count for mt, count in face_media_dict.items() if mt >= 400.0)
     assert n_slot_faces == 10
@@ -316,11 +316,7 @@ def test_map_vtk_includes_thin_slot_geometry(tmp_path):
 @pytest.mark.thinSlot
 @pytest.mark.vtk
 def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
-    """Discontinuous Ex/Ez rectangle: one ThinSlot edge and face per cell.
-
-    CreateSurfaceSlotMM stamps the cell-start E-edge and the same-cell H-face
-    (no puntoPlus1 dual extremes, no off±1 face expansion).
-    """
+    """Discontinuous Ex/Ez rectangle remains inside the designed footprint."""
     import pyvista as pv
 
     input_filename = CASES_FOLDER + "thin_slot_rectangle/thin_slot_rectangle.fdtd.json"
@@ -344,11 +340,11 @@ def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
     face_media_dict = createPropertyDictionary(
         vtk_map_filename, celltype=9, property="mediatype"
     )
-    # Four sides × 12 cells = 48 edges. Bottom and left share one Hy face at
-    # the min corner → 47 unique ThinSlot faces.
-    assert line_media_dict.get(4.5, 0) == 48
+    # Only the +x/+z terminal turn receives two continuity edges and its
+    # outward dual face.
+    assert line_media_dict.get(4.5, 0) == 50
     n_slot_faces = sum(count for mt, count in face_media_dict.items() if mt >= 400.0)
-    assert n_slot_faces == 47
+    assert n_slot_faces == 48
 
     # Designed rectangle polyline on y=10: x,z in [14,26] (cell indices)
     origin = np.array(solver["mesh"]["grid"]["origin"], dtype=float)
@@ -362,7 +358,7 @@ def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
     ugrid = pv.UnstructuredGrid(vtk_map_filename)
     mt = ugrid.cell_data["mediatype"]
     slot_line_idx = np.where((ugrid.celltypes == 3) & np.isclose(mt, 4.5))[0]
-    assert len(slot_line_idx) == 48
+    assert len(slot_line_idx) == 50
 
     pts = np.vstack([ugrid.get_cell(int(ci)).points for ci in slot_line_idx])
     assert pts[:, 0].min() >= designed_min[0] - f32_tol
@@ -371,14 +367,84 @@ def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
     assert pts[:, 2].max() <= designed_max[2] + yee_tol
     assert np.allclose(pts[:, 1], designed_min[1], atol=1e-6)
 
+    top_corner = designed_max
+    n_corner_edges = sum(
+        np.any(np.linalg.norm(ugrid.get_cell(int(ci)).points - top_corner, axis=1) <= yee_tol)
+        for ci in slot_line_idx
+    )
+    # Two original terminal edges and the two added transverse continuity edges
+    # meet at the terminal corner.
+    assert n_corner_edges == 4
+
     slot_face_idx = np.where((ugrid.celltypes == 9) & (mt >= 400.0))[0]
-    assert len(slot_face_idx) == 47
+    assert len(slot_face_idx) == 48
     face_pts = np.vstack([ugrid.get_cell(int(ci)).points for ci in slot_face_idx])
     assert face_pts[:, 0].min() >= designed_min[0] - f32_tol
     assert face_pts[:, 0].max() <= designed_max[0] + yee_tol
     assert face_pts[:, 2].min() >= designed_min[2] - f32_tol
     assert face_pts[:, 2].max() <= designed_max[2] + yee_tol
     assert np.allclose(face_pts[:, 1], designed_min[1], atol=1e-6)
+    assert any(
+        np.allclose(ugrid.get_cell(int(ci)).points[:, 0].min(), designed_max[0], atol=f32_tol)
+        and np.allclose(ugrid.get_cell(int(ci)).points[:, 0].max(), designed_max[0] + dx, atol=f32_tol)
+        and np.allclose(ugrid.get_cell(int(ci)).points[:, 2].min(), designed_max[2], atol=f32_tol)
+        and np.allclose(ugrid.get_cell(int(ci)).points[:, 2].max(), designed_max[2] + dx, atol=f32_tol)
+        for ci in slot_face_idx
+    )
+
+
+@pytest.mark.thinSlot
+def test_thin_slot_without_pec_is_rejected(tmp_path):
+    input_filename = CASES_FOLDER + "thin_slot_no_pec/thin_slot_no_pec.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, flags=["-dmma"])
+
+    with pytest.raises(AssertionError):
+        solver.run()
+
+    assert b"Thin Slot must be defined over a PEC surface" in solver.output.stdout
+
+
+@pytest.mark.thinSlot
+@pytest.mark.vtk
+def test_thin_slot_terminal_on_pec_perimeter_adds_edge(tmp_path):
+    import pyvista as pv
+
+    input_filename = CASES_FOLDER + "thin_slot_perimeter_terminal/thin_slot_perimeter_terminal.fdtd.json"
+    solver = FDTD(
+        input_filename=input_filename,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+        flags=["-dmma", "-mapvtk"],
+    )
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    line_media_dict = createPropertyDictionary(
+        solver.getVTKMap(), celltype=3, property="mediatype"
+    )
+    # The 16 embedded linels retain their 16 edges; the endpoint on the PEC
+    # perimeter adds only its one transverse continuity edge.
+    assert line_media_dict.get(4.5, 0) == 17
+
+    ugrid = pv.UnstructuredGrid(solver.getVTKMap())
+    mt = ugrid.cell_data["mediatype"]
+    slot_line_idx = np.where((ugrid.celltypes == 3) & np.isclose(mt, 4.5))[0]
+    terminal = np.array([0.30, 0.10, 0.20])
+    assert sum(
+        np.any(np.linalg.norm(ugrid.get_cell(int(ci)).points - terminal, axis=1) <= 1e-5)
+        for ci in slot_line_idx
+    ) == 1
+
+
+@pytest.mark.thinSlot
+def test_thin_slot_along_pec_perimeter_is_rejected(tmp_path):
+    input_filename = CASES_FOLDER + "thin_slot_along_pec_perimeter/thin_slot_along_pec_perimeter.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, flags=["-dmma"])
+
+    with pytest.raises(AssertionError):
+        solver.run()
+
+    assert b"Thin Slot cannot run along the perimeter of its PEC sheet" in solver.output.stdout
 
 
 @pytest.mark.conformal

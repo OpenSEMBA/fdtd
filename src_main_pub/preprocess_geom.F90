@@ -2729,7 +2729,7 @@ contains
                      orientacion = iEz
                      i1 = i1-1
                   ELSE
-                     write(buff,*) 'Cannot determine ortientation of the PEC plane with the Slot',i1, j1, k1, direccion
+                     write(buff,*) 'Thin Slot must be defined over a PEC surface',i1, j1, k1, direccion
                      call stoponerror (layoutnumber,num_procs,buff)
                      !ojo con el nfde no se puede hacer Slots en escalera porque no se puede determinar la orientacion de los planos
                      !en los tramos comunes. Por tanto No he podido testear los shared electricos anisotropos. solo los magneticos
@@ -2865,6 +2865,7 @@ contains
             end do
             !thin Slots
          end do
+         call completeThinSlotTopology()
          !
       end if !del run_with_dmma
 
@@ -4815,6 +4816,323 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      ! The normal per-cell stamping represents an embedded straight linel with
+      ! one E edge and one H face.  Only terminal-to-terminal turns and a
+      ! terminal that reaches the perimeter of its supporting PEC sheet need
+      ! additional material to break the otherwise continuous PEC edge.
+      subroutine completeThinSlotTopology()
+         integer(kind=4) :: slot
+
+         do slot = 1, this%tSlots%n_tg
+            call rejectThinSlotOnPECSurfacePerimeter(slot)
+            call completeThinSlotTerminalCorners(slot)
+            call completeThinSlotPerimeterTerminals(slot)
+         end do
+      end subroutine
+
+      subroutine rejectThinSlotOnPECSurfacePerimeter(slot)
+         integer(kind=4), intent(in) :: slot
+         integer(kind=4) :: a, surface
+
+         do a = 1, this%tSlots%Tg(slot)%n_tgc
+            do surface = 1, this%pecregs%nSurfs
+               if (componentOnPECSurface(this%tSlots%Tg(slot)%TgC(a), this%pecregs%Surfs(surface)) .and. &
+                  componentRunsAlongSurfacePerimeter(this%tSlots%Tg(slot)%TgC(a), this%pecregs%Surfs(surface))) then
+                  call StopOnError(layoutnumber, num_procs, 'Thin Slot cannot run along the perimeter of its PEC sheet')
+               end if
+            end do
+         end do
+      end subroutine
+
+      subroutine completeThinSlotTerminalCorners(slot)
+         integer(kind=4), intent(in) :: slot
+         integer(kind=4) :: a, b, ax, ay, az, bx, by, bz
+         integer(kind=4) :: sourceMedium
+         integer(kind=IKINDMTAG) :: sourceTag
+         type(ThinSlotComp_t) :: first, second
+
+         do a = 1, this%tSlots%Tg(slot)%n_tgc - 1
+            first = this%tSlots%Tg(slot)%TgC(a)
+            call componentTerminal(first, ax, ay, az)
+            do b = a + 1, this%tSlots%Tg(slot)%n_tgc
+               second = this%tSlots%Tg(slot)%TgC(b)
+               if (abs(first%or) /= abs(second%or) .or. first%dir == second%dir) cycle
+               call componentTerminal(second, bx, by, bz)
+               if (ax /= bx .or. ay /= by .or. az /= bz) cycle
+               if (.not. perpendicularSurfaceDirections(first%or, first%dir, second%dir)) cycle
+               call getThinSlotMedium(first, sourceMedium, sourceTag)
+               if (sourceMedium < 0) cycle
+
+               select case (abs(first%or))
+               case (iEx)
+                  call stampEy(ax, ay, az, sourceMedium, sourceTag)
+                  call stampEz(ax, ay, az, sourceMedium, sourceTag)
+                  call stampHx(ax, ay, az, sourceMedium, sourceTag)
+               case (iEy)
+                  call stampEx(ax, ay, az, sourceMedium, sourceTag)
+                  call stampEz(ax, ay, az, sourceMedium, sourceTag)
+                  call stampHy(ax, ay, az, sourceMedium, sourceTag)
+               case (iEz)
+                  call stampEx(ax, ay, az, sourceMedium, sourceTag)
+                  call stampEy(ax, ay, az, sourceMedium, sourceTag)
+                  call stampHz(ax, ay, az, sourceMedium, sourceTag)
+               end select
+            end do
+         end do
+      end subroutine
+
+      subroutine completeThinSlotPerimeterTerminals(slot)
+         integer(kind=4), intent(in) :: slot
+         integer(kind=4) :: a, surface, vx, vy, vz, sourceMedium
+         integer(kind=IKINDMTAG) :: sourceTag
+         type(ThinSlotComp_t) :: component
+
+         do a = 1, this%tSlots%Tg(slot)%n_tgc
+            component = this%tSlots%Tg(slot)%TgC(a)
+            call componentTerminal(component, vx, vy, vz)
+            if (thinSlotVertexDegree(slot, vx, vy, vz, component%or) /= 1) cycle
+            do surface = 1, this%pecregs%nSurfs
+               if (.not. vertexOnPECSurfacePerimeter(component, vx, vy, vz, this%pecregs%Surfs(surface))) cycle
+               call getThinSlotMedium(component, sourceMedium, sourceTag)
+               if (sourceMedium < 0) cycle
+               select case (abs(component%or))
+               case (iEx)
+                  if (component%dir == iEy) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
+                  if (component%dir == iEz) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
+               case (iEy)
+                  if (component%dir == iEx) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
+                  if (component%dir == iEz) call stampEx(vx, vy, vz, sourceMedium, sourceTag)
+               case (iEz)
+                  if (component%dir == iEx) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
+                  if (component%dir == iEy) call stampEx(vx, vy, vz, sourceMedium, sourceTag)
+               end select
+               exit
+            end do
+         end do
+      end subroutine
+
+      subroutine componentTerminal(component, vx, vy, vz)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(out) :: vx, vy, vz
+
+         vx = component%i; vy = component%j; vz = component%k
+         select case (component%dir)
+         case (iEx)
+            vx = vx + 1
+         case (iEy)
+            vy = vy + 1
+         case (iEz)
+            vz = vz + 1
+         end select
+      end subroutine
+
+      logical function perpendicularSurfaceDirections(normal, firstDirection, secondDirection)
+         integer(kind=4), intent(in) :: normal, firstDirection, secondDirection
+
+         perpendicularSurfaceDirections = firstDirection /= secondDirection .and. &
+            firstDirection /= abs(normal) .and. secondDirection /= abs(normal)
+      end function
+
+      integer(kind=4) function thinSlotVertexDegree(slot, vx, vy, vz, normal)
+         integer(kind=4), intent(in) :: slot, vx, vy, vz, normal
+         integer(kind=4) :: a, ex, ey, ez
+
+         thinSlotVertexDegree = 0
+         do a = 1, this%tSlots%Tg(slot)%n_tgc
+            if (abs(this%tSlots%Tg(slot)%TgC(a)%or) /= abs(normal)) cycle
+            if (this%tSlots%Tg(slot)%TgC(a)%i == vx .and. this%tSlots%Tg(slot)%TgC(a)%j == vy .and. &
+               this%tSlots%Tg(slot)%TgC(a)%k == vz) thinSlotVertexDegree = thinSlotVertexDegree + 1
+            call componentTerminal(this%tSlots%Tg(slot)%TgC(a), ex, ey, ez)
+            if (ex == vx .and. ey == vy .and. ez == vz) thinSlotVertexDegree = thinSlotVertexDegree + 1
+         end do
+      end function
+
+      logical function componentOnPECSurface(component, surface)
+         type(ThinSlotComp_t), intent(in) :: component
+         type(coords_t), intent(in) :: surface
+         integer(kind=4) :: vx, vy, vz
+
+         call componentTerminal(component, vx, vy, vz)
+         componentOnPECSurface = .false.
+         if (abs(component%or) /= abs(surface%or)) return
+         select case (abs(component%or))
+         case (iEx)
+            componentOnPECSurface = component%i == min(surface%xi, surface%xe) .and. &
+               vx == min(surface%xi, surface%xe) .and. component%j >= min(surface%yi, surface%ye) .and. &
+               vy <= max(surface%yi, surface%ye) + 1 .and. component%k >= min(surface%zi, surface%ze) .and. &
+               vz <= max(surface%zi, surface%ze) + 1
+         case (iEy)
+            componentOnPECSurface = component%j == min(surface%yi, surface%ye) .and. &
+               vy == min(surface%yi, surface%ye) .and. component%i >= min(surface%xi, surface%xe) .and. &
+               vx <= max(surface%xi, surface%xe) + 1 .and. component%k >= min(surface%zi, surface%ze) .and. &
+               vz <= max(surface%zi, surface%ze) + 1
+         case (iEz)
+            componentOnPECSurface = component%k == min(surface%zi, surface%ze) .and. &
+               vz == min(surface%zi, surface%ze) .and. component%i >= min(surface%xi, surface%xe) .and. &
+               vx <= max(surface%xi, surface%xe) + 1 .and. component%j >= min(surface%yi, surface%ye) .and. &
+               vy <= max(surface%yi, surface%ye) + 1
+         end select
+      end function
+
+      logical function componentRunsAlongSurfacePerimeter(component, surface)
+         type(ThinSlotComp_t), intent(in) :: component
+         type(coords_t), intent(in) :: surface
+
+         componentRunsAlongSurfacePerimeter = .false.
+         select case (abs(component%or))
+         case (iEx)
+            if (component%dir == iEy) componentRunsAlongSurfacePerimeter = component%k == min(surface%zi, surface%ze) .or. &
+               component%k == max(surface%zi, surface%ze) + 1
+            if (component%dir == iEz) componentRunsAlongSurfacePerimeter = component%j == min(surface%yi, surface%ye) .or. &
+               component%j == max(surface%yi, surface%ye) + 1
+         case (iEy)
+            if (component%dir == iEx) componentRunsAlongSurfacePerimeter = component%k == min(surface%zi, surface%ze) .or. &
+               component%k == max(surface%zi, surface%ze) + 1
+            if (component%dir == iEz) componentRunsAlongSurfacePerimeter = component%i == min(surface%xi, surface%xe) .or. &
+               component%i == max(surface%xi, surface%xe) + 1
+         case (iEz)
+            if (component%dir == iEx) componentRunsAlongSurfacePerimeter = component%j == min(surface%yi, surface%ye) .or. &
+               component%j == max(surface%yi, surface%ye) + 1
+            if (component%dir == iEy) componentRunsAlongSurfacePerimeter = component%i == min(surface%xi, surface%xe) .or. &
+               component%i == max(surface%xi, surface%xe) + 1
+         end select
+      end function
+
+      logical function vertexOnPECSurfacePerimeter(component, vx, vy, vz, surface)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(in) :: vx, vy, vz
+         type(coords_t), intent(in) :: surface
+
+         vertexOnPECSurfacePerimeter = .false.
+         if (abs(component%or) /= abs(surface%or)) return
+         select case (abs(component%or))
+         case (iEx)
+            vertexOnPECSurfacePerimeter = vx == min(surface%xi, surface%xe) .and. &
+               vy >= min(surface%yi, surface%ye) .and. vy <= max(surface%yi, surface%ye) + 1 .and. &
+               vz >= min(surface%zi, surface%ze) .and. vz <= max(surface%zi, surface%ze) + 1 .and. &
+               (vy == min(surface%yi, surface%ye) .or. vy == max(surface%yi, surface%ye) + 1 .or. &
+                vz == min(surface%zi, surface%ze) .or. vz == max(surface%zi, surface%ze) + 1)
+         case (iEy)
+            vertexOnPECSurfacePerimeter = vy == min(surface%yi, surface%ye) .and. &
+               vx >= min(surface%xi, surface%xe) .and. vx <= max(surface%xi, surface%xe) + 1 .and. &
+               vz >= min(surface%zi, surface%ze) .and. vz <= max(surface%zi, surface%ze) + 1 .and. &
+               (vx == min(surface%xi, surface%xe) .or. vx == max(surface%xi, surface%xe) + 1 .or. &
+                vz == min(surface%zi, surface%ze) .or. vz == max(surface%zi, surface%ze) + 1)
+         case (iEz)
+            vertexOnPECSurfacePerimeter = vz == min(surface%zi, surface%ze) .and. &
+               vx >= min(surface%xi, surface%xe) .and. vx <= max(surface%xi, surface%xe) + 1 .and. &
+               vy >= min(surface%yi, surface%ye) .and. vy <= max(surface%yi, surface%ye) + 1 .and. &
+               (vx == min(surface%xi, surface%xe) .or. vx == max(surface%xi, surface%xe) + 1 .or. &
+                vy == min(surface%yi, surface%ye) .or. vy == max(surface%yi, surface%ye) + 1)
+         end select
+      end function
+
+      subroutine getThinSlotMedium(component, sourceMedium, sourceTag)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(out) :: sourceMedium
+         integer(kind=IKINDMTAG), intent(out) :: sourceTag
+
+         sourceMedium = -1
+         sourceTag = 0
+         select case (abs(component%or))
+         case (iEx)
+            if (component%dir == iEy) sourceMedium = media%sggMiEz(component%i, component%j, component%k)
+            if (component%dir == iEz) sourceMedium = media%sggMiEy(component%i, component%j, component%k)
+         case (iEy)
+            if (component%dir == iEx) sourceMedium = media%sggMiEz(component%i, component%j, component%k)
+            if (component%dir == iEz) sourceMedium = media%sggMiEx(component%i, component%j, component%k)
+         case (iEz)
+            if (component%dir == iEx) sourceMedium = media%sggMiEy(component%i, component%j, component%k)
+            if (component%dir == iEy) sourceMedium = media%sggMiEx(component%i, component%j, component%k)
+         end select
+         if (sourceMedium >= 0 .and. sourceMedium <= sgg%NumMedia) then
+            if (sgg%Med(sourceMedium)%Is%ThinSlot) sourceTag = media%sggMtag(component%i, component%j, component%k)
+            if (.not. sgg%Med(sourceMedium)%Is%ThinSlot) sourceMedium = -1
+         else
+            sourceMedium = -1
+         end if
+      end subroutine
+
+      subroutine stampEx(ii,jj,kk,imed,itag)
+         integer(kind=4), intent(in) :: ii,jj,kk,imed
+         integer(kind=IKINDMTAG), intent(in) :: itag
+         if (.not. inExBounds(ii,jj,kk)) return
+         if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiEx(ii,jj,kk))%Priority) then
+            media%sggMiEx(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%edge%x(ii,jj,kk) = itag
+         end if
+      end subroutine
+      subroutine stampEy(ii,jj,kk,imed,itag)
+         integer(kind=4), intent(in) :: ii,jj,kk,imed
+         integer(kind=IKINDMTAG), intent(in) :: itag
+         if (.not. inEyBounds(ii,jj,kk)) return
+         if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiEy(ii,jj,kk))%Priority) then
+            media%sggMiEy(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%edge%y(ii,jj,kk) = itag
+         end if
+      end subroutine
+      subroutine stampEz(ii,jj,kk,imed,itag)
+         integer(kind=4), intent(in) :: ii,jj,kk,imed
+         integer(kind=IKINDMTAG), intent(in) :: itag
+         if (.not. inEzBounds(ii,jj,kk)) return
+         if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiEz(ii,jj,kk))%Priority) then
+            media%sggMiEz(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%edge%z(ii,jj,kk) = itag
+         end if
+      end subroutine
+      subroutine stampHx(ii,jj,kk,imed,itag)
+         integer(kind=4), intent(in) :: ii,jj,kk,imed
+         integer(kind=IKINDMTAG), intent(in) :: itag
+         if (.not. inHxBounds(ii,jj,kk)) return
+         if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiHx(ii,jj,kk))%Priority) then
+            media%sggMiHx(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%face%x(ii,jj,kk) = itag
+         end if
+      end subroutine
+      subroutine stampHy(ii,jj,kk,imed,itag)
+         integer(kind=4), intent(in) :: ii,jj,kk,imed
+         integer(kind=IKINDMTAG), intent(in) :: itag
+         if (.not. inHyBounds(ii,jj,kk)) return
+         if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiHy(ii,jj,kk))%Priority) then
+            media%sggMiHy(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%face%y(ii,jj,kk) = itag
+         end if
+      end subroutine
+      subroutine stampHz(ii,jj,kk,imed,itag)
+         integer(kind=4), intent(in) :: ii,jj,kk,imed
+         integer(kind=IKINDMTAG), intent(in) :: itag
+         if (.not. inHzBounds(ii,jj,kk)) return
+         if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiHz(ii,jj,kk))%Priority) then
+            media%sggMiHz(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%face%z(ii,jj,kk) = itag
+         end if
+      end subroutine
+
+      logical function inExBounds(ii,jj,kk)
+         integer(kind=4), intent(in) :: ii,jj,kk
+         inExBounds = ii >= Alloc_iEx_XI .and. ii <= Alloc_iEx_XE .and. jj >= Alloc_iEx_YI .and. jj <= Alloc_iEx_YE .and. &
+            kk >= Alloc_iEx_ZI .and. kk <= Alloc_iEx_ZE
+      end function
+      logical function inEyBounds(ii,jj,kk)
+         integer(kind=4), intent(in) :: ii,jj,kk
+         inEyBounds = ii >= Alloc_iEy_XI .and. ii <= Alloc_iEy_XE .and. jj >= Alloc_iEy_YI .and. jj <= Alloc_iEy_YE .and. &
+            kk >= Alloc_iEy_ZI .and. kk <= Alloc_iEy_ZE
+      end function
+      logical function inEzBounds(ii,jj,kk)
+         integer(kind=4), intent(in) :: ii,jj,kk
+         inEzBounds = ii >= Alloc_iEz_XI .and. ii <= Alloc_iEz_XE .and. jj >= Alloc_iEz_YI .and. jj <= Alloc_iEz_YE .and. &
+            kk >= Alloc_iEz_ZI .and. kk <= Alloc_iEz_ZE
+      end function
+      logical function inHxBounds(ii,jj,kk)
+         integer(kind=4), intent(in) :: ii,jj,kk
+         inHxBounds = ii >= Alloc_iHx_XI .and. ii <= Alloc_iHx_XE .and. jj >= Alloc_iHx_YI .and. jj <= Alloc_iHx_YE .and. &
+            kk >= Alloc_iHx_ZI .and. kk <= Alloc_iHx_ZE
+      end function
+      logical function inHyBounds(ii,jj,kk)
+         integer(kind=4), intent(in) :: ii,jj,kk
+         inHyBounds = ii >= Alloc_iHy_XI .and. ii <= Alloc_iHy_XE .and. jj >= Alloc_iHy_YI .and. jj <= Alloc_iHy_YE .and. &
+            kk >= Alloc_iHy_ZI .and. kk <= Alloc_iHy_ZE
+      end function
+      logical function inHzBounds(ii,jj,kk)
+         integer(kind=4), intent(in) :: ii,jj,kk
+         inHzBounds = ii >= Alloc_iHz_XI .and. ii <= Alloc_iHz_XE .and. jj >= Alloc_iHz_YI .and. jj <= Alloc_iHz_YE .and. &
+            kk >= Alloc_iHz_ZI .and. kk <= Alloc_iHz_ZE
+      end function
 
       subroutine initConformalBoundingBox(sgg, bbox)
          type(SGGFDTDINFO_t), intent(in) :: sgg
