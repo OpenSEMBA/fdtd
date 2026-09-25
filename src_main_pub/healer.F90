@@ -30,7 +30,7 @@ module CreateMatrices_m
    !
    public CreatePMLmatrix, Readjust, SortInitEndWithIncreasingOrder
    public CreateVolumeMM, CreateSurfaceMM, CreateLineMM
-   public CreateSurfaceSlotMM, FinalizeThinSlotSurfacesMM, CreateMagneticSurface
+   public CreateSurfaceSlotMM, CreateMagneticSurface
    public CreateConformalPECVolume
    !
     contains
@@ -1059,8 +1059,7 @@ module CreateMatrices_m
    end subroutine
    !Slot=special case of surface.
    !!!   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Routine :  CreateSurfaceSlotMM : stamps ThinSlot on the dual E-edges of a slot linel (both extremes via puntoPlus1).
-   !            H-faces are stamped later by FinalizeThinSlotSurfacesMM (two-sided E rule + corner completion).
+   ! Routine :  CreateSurfaceSlotMM : one ThinSlot E-edge and one H-face per slot cell (no puntoPlus1 / off±1).
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine CreateSurfaceSlotMM (layoutnumber, Mtag, tags, numertag, MMiEx, MMiEy, MMiEz, MMiHx, &
    & MMiHy, MMiHz,  Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, &
@@ -1074,7 +1073,7 @@ module CreateMatrices_m
       integer(kind=4) :: NumMedia
       type(MediaData_t), dimension(0:NumMedia) :: med
       !
-      type(XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
+      type(XYZlimit_t) :: punto, puntoBboxplus1
       type(XYZlimit_t), intent(inout) :: point
       type(XYZlimit_t), intent(in) :: BoundingBox
       !
@@ -1113,18 +1112,14 @@ module CreateMatrices_m
       puntoBboxplus1%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE))
       puntoBboxplus1%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE))
       !
-      puntoPlus1%XE = Min (point%XE+1, Max(BoundingBox%XI, BoundingBox%XE))
-      puntoPlus1%YE = Min (point%YE+1, Max(BoundingBox%YI, BoundingBox%YE))
-      puntoPlus1%ZE = Min (point%ZE+1, Max(BoundingBox%ZI, BoundingBox%ZE))
-      !
-      ! E-edges only (both linel extremes). Faces finalized in FinalizeThinSlotSurfacesMM.
+      ! One E-edge (cell start index) and one H-face (same cell) per slot linel.
       SELECT CASE (Abs(orientacion))
        CASE (iEx)
          do i = punto%XI, puntoBboxplus1%XE
             SELECT CASE (direccion)
              CASE (iEz)
                do j = punto%YI, punto%YE
-                  do k = punto%ZI, puntoPlus1%ZE
+                  do k = punto%ZI, punto%ZE
                      medio = MMiEy (i, j, k)
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
                         MMiEy (i, j, k) = indicemedio
@@ -1134,7 +1129,7 @@ module CreateMatrices_m
                   end do
                end do
              CASE (iEy)
-               do j = punto%YI, puntoPlus1%YE
+               do j = punto%YI, punto%YE
                   do k = punto%ZI, punto%ZE
                      medio = MMiEz (i, j, k)
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
@@ -1145,12 +1140,22 @@ module CreateMatrices_m
                   end do
                end do
             end select
+            do j = punto%YI, punto%YE
+               do k = punto%ZI, punto%ZE
+                  medio = MMiHx (i, j, k)
+                  if (med(indicemedio)%Priority > med(medio)%Priority) then
+                     MMiHx (i, j, k) = indicemedio
+                     Mtag(i,j,k)=64*numertag
+                     tags%face%x(i,j,k) = 64*numertag
+                  end if
+               end do
+            end do
          end do
        CASE (iEy)
          do j = punto%YI, puntoBboxplus1%YE
             SELECT CASE (direccion)
              CASE (iEx)
-               do i = punto%XI, puntoPlus1%XE
+               do i = punto%XI, punto%XE
                   do k = punto%ZI, punto%ZE
                      medio = MMiEz (i, j, k)
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
@@ -1162,7 +1167,7 @@ module CreateMatrices_m
                end do
              CASE (iEz)
                do i = punto%XI, punto%XE
-                  do k = punto%ZI, puntoPlus1%ZE
+                  do k = punto%ZI, punto%ZE
                      medio = MMiEx (i, j, k)
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
                         MMiEx (i, j, k) = indicemedio
@@ -1172,13 +1177,23 @@ module CreateMatrices_m
                   end do
                end do
             end select
+            do i = punto%XI, punto%XE
+               do k = punto%ZI, punto%ZE
+                  medio = MMiHy (i, j, k)
+                  if (med(indicemedio)%Priority > med(medio)%Priority) then
+                     MMiHy (i, j, k) = indicemedio
+                     Mtag(i,j,k)=64*numertag
+                     tags%face%y(i,j,k) = 64*numertag
+                  end if
+               end do
+            end do
          end do
        CASE (iEz)
          do k = punto%ZI, puntoBboxplus1%ZE
             SELECT CASE (direccion)
              CASE (iEy)
                do i = punto%XI, punto%XE
-                  do j = punto%YI, puntoPlus1%YE
+                  do j = punto%YI, punto%YE
                      medio = MMiEx (i, j, k)
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
                         MMiEx (i, j, k) = indicemedio
@@ -1188,7 +1203,7 @@ module CreateMatrices_m
                   end do
                end do
              CASE (iEx)
-               do i = punto%XI, puntoPlus1%XE
+               do i = punto%XI, punto%XE
                   do j = punto%YI, punto%YE
                      medio = MMiEy (i, j, k)
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
@@ -1199,346 +1214,22 @@ module CreateMatrices_m
                   end do
                end do
             end select
+            do i = punto%XI, punto%XE
+               do j = punto%YI, punto%YE
+                  medio = MMiHz (i, j, k)
+                  if (med(indicemedio)%Priority > med(medio)%Priority) then
+                     MMiHz (i, j, k) = indicemedio
+                     Mtag(i,j,k)=64*numertag
+                     tags%face%z(i,j,k) = 64*numertag
+                  end if
+               end do
+            end do
          end do
       end select
       !
       return
    end subroutine
 
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! After all CreateSurfaceSlotMM E stamps: complete polyline-corner dual squares, then mark H-faces only when two
-   ! ThinSlot E-edges bound the face (no off±1 overshoot).
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine FinalizeThinSlotSurfacesMM (Mtag, tags, MMiEx, MMiEy, MMiEz, MMiHx, MMiHy, MMiHz, &
-   & Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, &
-   & Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, &
-   & Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, &
-   & Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, &
-   & Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, &
-   & Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, &
-   & med, NumMedia, BoundingBox)
-      integer(kind=4) :: NumMedia
-      type(MediaData_t), dimension(0:NumMedia) :: med
-      type(XYZlimit_t), intent(in) :: BoundingBox
-      integer(kind=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
-      & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
-      & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
-      & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
-      & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
-      type(taglist_t) :: tags
-      integer(kind=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      integer(kind=4) :: i, j, k, iMax, jMax, kMax
-      integer(kind=4) :: medioRef
-      integer(kind=IKINDMTAG) :: tagRef
-      logical :: slotEx0, slotEx1, slotEy0, slotEy1, slotEz0, slotEz1
-
-      iMax = Max(BoundingBox%XI, BoundingBox%XE) - 1
-      jMax = Max(BoundingBox%YI, BoundingBox%YE) - 1
-      kMax = Max(BoundingBox%ZI, BoundingBox%ZE) - 1
-
-      ! --- Corner completion: Ex+Ez (Ey-face slots). Seed = shared vertex; fill interior dual set only.
-      do j = Min(BoundingBox%YI, BoundingBox%YE), jMax
-         do i = Min(BoundingBox%XI, BoundingBox%XE), Max(BoundingBox%XI, BoundingBox%XE)
-            do k = Min(BoundingBox%ZI, BoundingBox%ZE), Max(BoundingBox%ZI, BoundingBox%ZE)
-               if (.not. inExBounds(i, j, k) .or. .not. inEzBounds(i, j, k)) cycle
-               if (.not. med(MMiEx(i, j, k))%Is%ThinSlot) cycle
-               if (.not. med(MMiEz(i, j, k))%Is%ThinSlot) cycle
-               call pickSlotRef(MMiEx(i,j,k), MMiEx(i,j,k), MMiEz(i,j,k), MMiEz(i,j,k), &
-                                Mtag(i,j,k), medioRef, tagRef)
-               ! Interior toward +x+z (min-style): both + neighbors present
-               if ((inEzBounds(i+1, j, k) .and. med(MMiEz(i+1, j, k))%Is%ThinSlot) .and. &
-                   (inExBounds(i, j, k+1) .and. med(MMiEx(i, j, k+1))%Is%ThinSlot)) then
-                  call ensureEx(i, j, k, medioRef, tagRef)
-                  call ensureEx(i, j, k+1, medioRef, tagRef)
-                  call ensureEz(i, j, k, medioRef, tagRef)
-                  call ensureEz(i+1, j, k, medioRef, tagRef)
-               end if
-               ! Interior toward -x-z (max-style): both - neighbors present
-               if ((inEzBounds(i-1, j, k) .and. med(MMiEz(i-1, j, k))%Is%ThinSlot) .and. &
-                   (inExBounds(i, j, k-1) .and. med(MMiEx(i, j, k-1))%Is%ThinSlot)) then
-                  call ensureEx(i, j, k-1, medioRef, tagRef)
-                  call ensureEx(i, j, k, medioRef, tagRef)
-                  call ensureEz(i-1, j, k, medioRef, tagRef)
-                  call ensureEz(i, j, k, medioRef, tagRef)
-               end if
-            end do
-         end do
-      end do
-
-      ! --- Corner completion: Ey+Ez (Hx-face slots)
-      do i = Min(BoundingBox%XI, BoundingBox%XE), iMax
-         do j = Min(BoundingBox%YI, BoundingBox%YE), Max(BoundingBox%YI, BoundingBox%YE)
-            do k = Min(BoundingBox%ZI, BoundingBox%ZE), Max(BoundingBox%ZI, BoundingBox%ZE)
-               if (.not. inEyBounds(i, j, k) .or. .not. inEzBounds(i, j, k)) cycle
-               if (.not. med(MMiEy(i, j, k))%Is%ThinSlot) cycle
-               if (.not. med(MMiEz(i, j, k))%Is%ThinSlot) cycle
-               call pickSlotRef(MMiEy(i,j,k), MMiEy(i,j,k), MMiEz(i,j,k), MMiEz(i,j,k), &
-                                Mtag(i,j,k), medioRef, tagRef)
-               if ((inEzBounds(i, j+1, k) .and. med(MMiEz(i, j+1, k))%Is%ThinSlot) .and. &
-                   (inEyBounds(i, j, k+1) .and. med(MMiEy(i, j, k+1))%Is%ThinSlot)) then
-                  call ensureEy(i, j, k, medioRef, tagRef)
-                  call ensureEy(i, j, k+1, medioRef, tagRef)
-                  call ensureEz(i, j, k, medioRef, tagRef)
-                  call ensureEz(i, j+1, k, medioRef, tagRef)
-               end if
-               if ((inEzBounds(i, j-1, k) .and. med(MMiEz(i, j-1, k))%Is%ThinSlot) .and. &
-                   (inEyBounds(i, j, k-1) .and. med(MMiEy(i, j, k-1))%Is%ThinSlot)) then
-                  call ensureEy(i, j, k-1, medioRef, tagRef)
-                  call ensureEy(i, j, k, medioRef, tagRef)
-                  call ensureEz(i, j-1, k, medioRef, tagRef)
-                  call ensureEz(i, j, k, medioRef, tagRef)
-               end if
-            end do
-         end do
-      end do
-
-      ! --- Corner completion: Ex+Ey (Hz-face slots)
-      do k = Min(BoundingBox%ZI, BoundingBox%ZE), kMax
-         do i = Min(BoundingBox%XI, BoundingBox%XE), Max(BoundingBox%XI, BoundingBox%XE)
-            do j = Min(BoundingBox%YI, BoundingBox%YE), Max(BoundingBox%YI, BoundingBox%YE)
-               if (.not. inExBounds(i, j, k) .or. .not. inEyBounds(i, j, k)) cycle
-               if (.not. med(MMiEx(i, j, k))%Is%ThinSlot) cycle
-               if (.not. med(MMiEy(i, j, k))%Is%ThinSlot) cycle
-               call pickSlotRef(MMiEx(i,j,k), MMiEx(i,j,k), MMiEy(i,j,k), MMiEy(i,j,k), &
-                                Mtag(i,j,k), medioRef, tagRef)
-               if ((inEyBounds(i+1, j, k) .and. med(MMiEy(i+1, j, k))%Is%ThinSlot) .and. &
-                   (inExBounds(i, j+1, k) .and. med(MMiEx(i, j+1, k))%Is%ThinSlot)) then
-                  call ensureEx(i, j, k, medioRef, tagRef)
-                  call ensureEx(i, j+1, k, medioRef, tagRef)
-                  call ensureEy(i, j, k, medioRef, tagRef)
-                  call ensureEy(i+1, j, k, medioRef, tagRef)
-               end if
-               if ((inEyBounds(i-1, j, k) .and. med(MMiEy(i-1, j, k))%Is%ThinSlot) .and. &
-                   (inExBounds(i, j-1, k) .and. med(MMiEx(i, j-1, k))%Is%ThinSlot)) then
-                  call ensureEx(i, j-1, k, medioRef, tagRef)
-                  call ensureEx(i, j, k, medioRef, tagRef)
-                  call ensureEy(i-1, j, k, medioRef, tagRef)
-                  call ensureEy(i, j, k, medioRef, tagRef)
-               end if
-            end do
-         end do
-      end do
-
-      ! --- H-faces: only when two ThinSlot E-edges bound the face ---
-      do j = Min(BoundingBox%YI, BoundingBox%YE), jMax
-         do i = Min(BoundingBox%XI, BoundingBox%XE), iMax
-            do k = Min(BoundingBox%ZI, BoundingBox%ZE), kMax
-               if (.not. inHyBounds(i, j, k)) cycle
-               slotEz0 = inEzBounds(i, j, k) .and. med(MMiEz(i, j, k))%Is%ThinSlot
-               slotEz1 = inEzBounds(i+1, j, k) .and. med(MMiEz(i+1, j, k))%Is%ThinSlot
-               slotEx0 = inExBounds(i, j, k) .and. med(MMiEx(i, j, k))%Is%ThinSlot
-               slotEx1 = inExBounds(i, j, k+1) .and. med(MMiEx(i, j, k+1))%Is%ThinSlot
-               if ((slotEz0 .and. slotEz1) .or. (slotEx0 .and. slotEx1) .or. &
-                   ((slotEx0 .or. slotEx1) .and. (slotEz0 .or. slotEz1))) then
-                  medioRef = 1
-                  tagRef = 0
-                  if (slotEz0) then
-                     medioRef = MMiEz(i, j, k); tagRef = Mtag(i, j, k)
-                  else if (slotEz1) then
-                     medioRef = MMiEz(i+1, j, k); tagRef = Mtag(i+1, j, k)
-                  else if (slotEx0) then
-                     medioRef = MMiEx(i, j, k); tagRef = Mtag(i, j, k)
-                  else if (slotEx1) then
-                     medioRef = MMiEx(i, j, k+1); tagRef = Mtag(i, j, k+1)
-                  end if
-                  call ensureHy(i, j, k, medioRef, tagRef)
-               end if
-            end do
-         end do
-      end do
-
-      do i = Min(BoundingBox%XI, BoundingBox%XE), iMax
-         do j = Min(BoundingBox%YI, BoundingBox%YE), jMax
-            do k = Min(BoundingBox%ZI, BoundingBox%ZE), kMax
-               if (.not. inHxBounds(i, j, k)) cycle
-               slotEy0 = inEyBounds(i, j, k) .and. med(MMiEy(i, j, k))%Is%ThinSlot
-               slotEy1 = inEyBounds(i, j+1, k) .and. med(MMiEy(i, j+1, k))%Is%ThinSlot
-               slotEz0 = inEzBounds(i, j, k) .and. med(MMiEz(i, j, k))%Is%ThinSlot
-               slotEz1 = inEzBounds(i, j, k+1) .and. med(MMiEz(i, j, k+1))%Is%ThinSlot
-               if ((slotEy0 .and. slotEy1) .or. (slotEz0 .and. slotEz1) .or. &
-                   ((slotEy0 .or. slotEy1) .and. (slotEz0 .or. slotEz1))) then
-                  medioRef = 1
-                  tagRef = 0
-                  if (slotEy0) then
-                     medioRef = MMiEy(i, j, k); tagRef = Mtag(i, j, k)
-                  else if (slotEy1) then
-                     medioRef = MMiEy(i, j+1, k); tagRef = Mtag(i, j+1, k)
-                  else if (slotEz0) then
-                     medioRef = MMiEz(i, j, k); tagRef = Mtag(i, j, k)
-                  else if (slotEz1) then
-                     medioRef = MMiEz(i, j, k+1); tagRef = Mtag(i, j, k+1)
-                  end if
-                  call ensureHx(i, j, k, medioRef, tagRef)
-               end if
-            end do
-         end do
-      end do
-
-      do k = Min(BoundingBox%ZI, BoundingBox%ZE), kMax
-         do i = Min(BoundingBox%XI, BoundingBox%XE), iMax
-            do j = Min(BoundingBox%YI, BoundingBox%YE), jMax
-               if (.not. inHzBounds(i, j, k)) cycle
-               slotEx0 = inExBounds(i, j, k) .and. med(MMiEx(i, j, k))%Is%ThinSlot
-               slotEx1 = inExBounds(i, j+1, k) .and. med(MMiEx(i, j+1, k))%Is%ThinSlot
-               slotEy0 = inEyBounds(i, j, k) .and. med(MMiEy(i, j, k))%Is%ThinSlot
-               slotEy1 = inEyBounds(i+1, j, k) .and. med(MMiEy(i+1, j, k))%Is%ThinSlot
-               if ((slotEx0 .and. slotEx1) .or. (slotEy0 .and. slotEy1) .or. &
-                   ((slotEx0 .or. slotEx1) .and. (slotEy0 .or. slotEy1))) then
-                  medioRef = 1
-                  tagRef = 0
-                  if (slotEx0) then
-                     medioRef = MMiEx(i, j, k); tagRef = Mtag(i, j, k)
-                  else if (slotEx1) then
-                     medioRef = MMiEx(i, j+1, k); tagRef = Mtag(i, j+1, k)
-                  else if (slotEy0) then
-                     medioRef = MMiEy(i, j, k); tagRef = Mtag(i, j, k)
-                  else if (slotEy1) then
-                     medioRef = MMiEy(i+1, j, k); tagRef = Mtag(i+1, j, k)
-                  end if
-                  call ensureHz(i, j, k, medioRef, tagRef)
-               end if
-            end do
-         end do
-      end do
-
-   contains
-      logical function inExBounds(ii, jj, kk)
-         integer(kind=4), intent(in) :: ii, jj, kk
-         inExBounds = (ii >= Alloc_iEx_XI .and. ii <= Alloc_iEx_XE .and. &
-                       jj >= Alloc_iEx_YI .and. jj <= Alloc_iEx_YE .and. &
-                       kk >= Alloc_iEx_ZI .and. kk <= Alloc_iEx_ZE)
-      end function
-      logical function inEyBounds(ii, jj, kk)
-         integer(kind=4), intent(in) :: ii, jj, kk
-         inEyBounds = (ii >= Alloc_iEy_XI .and. ii <= Alloc_iEy_XE .and. &
-                       jj >= Alloc_iEy_YI .and. jj <= Alloc_iEy_YE .and. &
-                       kk >= Alloc_iEy_ZI .and. kk <= Alloc_iEy_ZE)
-      end function
-      logical function inEzBounds(ii, jj, kk)
-         integer(kind=4), intent(in) :: ii, jj, kk
-         inEzBounds = (ii >= Alloc_iEz_XI .and. ii <= Alloc_iEz_XE .and. &
-                       jj >= Alloc_iEz_YI .and. jj <= Alloc_iEz_YE .and. &
-                       kk >= Alloc_iEz_ZI .and. kk <= Alloc_iEz_ZE)
-      end function
-      logical function inHxBounds(ii, jj, kk)
-         integer(kind=4), intent(in) :: ii, jj, kk
-         inHxBounds = (ii >= Alloc_iHx_XI .and. ii <= Alloc_iHx_XE .and. &
-                       jj >= Alloc_iHx_YI .and. jj <= Alloc_iHx_YE .and. &
-                       kk >= Alloc_iHx_ZI .and. kk <= Alloc_iHx_ZE)
-      end function
-      logical function inHyBounds(ii, jj, kk)
-         integer(kind=4), intent(in) :: ii, jj, kk
-         inHyBounds = (ii >= Alloc_iHy_XI .and. ii <= Alloc_iHy_XE .and. &
-                       jj >= Alloc_iHy_YI .and. jj <= Alloc_iHy_YE .and. &
-                       kk >= Alloc_iHy_ZI .and. kk <= Alloc_iHy_ZE)
-      end function
-      logical function inHzBounds(ii, jj, kk)
-         integer(kind=4), intent(in) :: ii, jj, kk
-         inHzBounds = (ii >= Alloc_iHz_XI .and. ii <= Alloc_iHz_XE .and. &
-                       jj >= Alloc_iHz_YI .and. jj <= Alloc_iHz_YE .and. &
-                       kk >= Alloc_iHz_ZI .and. kk <= Alloc_iHz_ZE)
-      end function
-
-      subroutine pickSlotRef(m1, m2, m3, m4, tagHere, medioOut, tagOut)
-         integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: m1, m2, m3, m4
-         integer(kind=IKINDMTAG), intent(in) :: tagHere
-         integer(kind=4), intent(out) :: medioOut
-         integer(kind=IKINDMTAG), intent(out) :: tagOut
-         if (med(m1)%Is%ThinSlot) then
-            medioOut = m1; tagOut = tagHere; return
-         else if (med(m2)%Is%ThinSlot) then
-            medioOut = m2; tagOut = tagHere; return
-         else if (med(m3)%Is%ThinSlot) then
-            medioOut = m3; tagOut = tagHere; return
-         else if (med(m4)%Is%ThinSlot) then
-            medioOut = m4; tagOut = tagHere; return
-         end if
-         medioOut = 1
-         tagOut = 0
-      end subroutine
-
-      subroutine ensureEx(ii, jj, kk, medioIn, tagIn)
-         integer(kind=4), intent(in) :: ii, jj, kk, medioIn
-         integer(kind=IKINDMTAG), intent(in) :: tagIn
-         integer(kind=4) :: medio
-         if (medioIn <= 1 .or. .not. inExBounds(ii, jj, kk)) return
-         medio = MMiEx(ii, jj, kk)
-         if (med(medioIn)%Priority > med(medio)%Priority) then
-            MMiEx(ii, jj, kk) = medioIn
-            if (inHxBounds(ii, jj, kk)) Mtag(ii, jj, kk) = tagIn
-            tags%edge%x(ii, jj, kk) = tagIn
-         end if
-      end subroutine
-      subroutine ensureEy(ii, jj, kk, medioIn, tagIn)
-         integer(kind=4), intent(in) :: ii, jj, kk, medioIn
-         integer(kind=IKINDMTAG), intent(in) :: tagIn
-         integer(kind=4) :: medio
-         if (medioIn <= 1 .or. .not. inEyBounds(ii, jj, kk)) return
-         medio = MMiEy(ii, jj, kk)
-         if (med(medioIn)%Priority > med(medio)%Priority) then
-            MMiEy(ii, jj, kk) = medioIn
-            if (inHxBounds(ii, jj, kk)) Mtag(ii, jj, kk) = tagIn
-            tags%edge%y(ii, jj, kk) = tagIn
-         end if
-      end subroutine
-      subroutine ensureEz(ii, jj, kk, medioIn, tagIn)
-         integer(kind=4), intent(in) :: ii, jj, kk, medioIn
-         integer(kind=IKINDMTAG), intent(in) :: tagIn
-         integer(kind=4) :: medio
-         if (medioIn <= 1 .or. .not. inEzBounds(ii, jj, kk)) return
-         medio = MMiEz(ii, jj, kk)
-         if (med(medioIn)%Priority > med(medio)%Priority) then
-            MMiEz(ii, jj, kk) = medioIn
-            if (inHxBounds(ii, jj, kk)) Mtag(ii, jj, kk) = tagIn
-            tags%edge%z(ii, jj, kk) = tagIn
-         end if
-      end subroutine
-      subroutine ensureHx(ii, jj, kk, medioIn, tagIn)
-         integer(kind=4), intent(in) :: ii, jj, kk, medioIn
-         integer(kind=IKINDMTAG), intent(in) :: tagIn
-         integer(kind=4) :: medio
-         if (medioIn <= 1 .or. .not. inHxBounds(ii, jj, kk)) return
-         medio = MMiHx(ii, jj, kk)
-         if (med(medioIn)%Priority > med(medio)%Priority) then
-            MMiHx(ii, jj, kk) = medioIn
-            med(medioIn)%Is%Surface = .TRUE.
-            Mtag(ii, jj, kk) = tagIn
-            tags%face%x(ii, jj, kk) = tagIn
-         end if
-      end subroutine
-      subroutine ensureHy(ii, jj, kk, medioIn, tagIn)
-         integer(kind=4), intent(in) :: ii, jj, kk, medioIn
-         integer(kind=IKINDMTAG), intent(in) :: tagIn
-         integer(kind=4) :: medio
-         if (medioIn <= 1 .or. .not. inHyBounds(ii, jj, kk)) return
-         medio = MMiHy(ii, jj, kk)
-         if (med(medioIn)%Priority > med(medio)%Priority) then
-            MMiHy(ii, jj, kk) = medioIn
-            med(medioIn)%Is%Surface = .TRUE.
-            Mtag(ii, jj, kk) = tagIn
-            tags%face%y(ii, jj, kk) = tagIn
-         end if
-      end subroutine
-      subroutine ensureHz(ii, jj, kk, medioIn, tagIn)
-         integer(kind=4), intent(in) :: ii, jj, kk, medioIn
-         integer(kind=IKINDMTAG), intent(in) :: tagIn
-         integer(kind=4) :: medio
-         if (medioIn <= 1 .or. .not. inHzBounds(ii, jj, kk)) return
-         medio = MMiHz(ii, jj, kk)
-         if (med(medioIn)%Priority > med(medio)%Priority) then
-            MMiHz(ii, jj, kk) = medioIn
-            med(medioIn)%Is%Surface = .TRUE.
-            Mtag(ii, jj, kk) = tagIn
-            tags%face%z(ii, jj, kk) = tagIn
-         end if
-      end subroutine
-   end subroutine FinalizeThinSlotSurfacesMM
    !!!!special case of magneticsurface (for the multiport padding)
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
