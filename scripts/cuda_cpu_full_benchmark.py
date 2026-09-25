@@ -22,6 +22,15 @@ CASE_NAMES = [
     "box_mur_smallpw_100",
     "box_nodal_soft_pml_40",
     "box_nodal_hard_pml_40",
+    "box_wire_holland_mur_40",
+    "box_wire_holland_mur_100",
+    "box_wire_holland_mur_200",
+    "box_pmc_nodal_40",
+    "box_pmc_nodal_100",
+    "box_pmc_nodal_200",
+    "box_periodic_nodal_40",
+    "box_periodic_nodal_100",
+    "box_periodic_nodal_200",
 ]
 WORKDIR = Path(os.environ.get("TMPDIR", "/tmp")) / "fdtd-cuda-full-bench"
 NPROC = int(os.environ.get("OMP_FULL", str(os.cpu_count() or 1)))
