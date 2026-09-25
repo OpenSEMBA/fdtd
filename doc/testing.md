@@ -109,7 +109,8 @@ Wildcards can be used in a GoogleTest filter:
 ### CUDA native tests
 
 The `cuda` GoogleTest suite (field sync/box, layout, Yee, CPML, sparse
-point-probe gather, Mur, and nodal-source contracts) is compiled and linked
+point-probe gather, Mur, nodal-source, Holland-wire, and PMC/periodic
+clone contracts) is compiled and linked
 **only** when `SEMBA_FDTD_ENABLE_CUDA=ON`. It is not part of basic CPU or MPI
 CPU builds. Nodal tests check the device box update against the host formula:
 soft sources subtract `G2` or `Gm2` times the metric pair times the linearly
@@ -117,8 +118,13 @@ interpolated waveform, hard sources assign that waveform, PEC/PMC cells are
 skipped, and initial-value sources apply only at step 0. The H-field contract
 is `cuda.nodal_soft_h_matches_host` (Hx uses `Idye*Idze` and skips PMC). A time
 past the last sample is a zero waveform
-(`cuda.nodal_waveform_out_of_range_is_zero`), matching host `evolucion`. The CPU
-`AdvanceNodalE` / `AdvanceNodalH` path is unchanged when CUDA is off.
+(`cuda.nodal_waveform_out_of_range_is_zero`), matching host `evolucion`.
+Holland wire tests follow `AdvanceWiresE` for thickness 1: charge update with
+terminal mirroring, `E -= cte5*I`, then the current update. PMC segments zero
+the current after that injection. Shielded segments skip the 3D field.
+`cuda.pmc_negates_adjacent_plane` and `cuda.periodic_copies_opposite_plane`
+match `MinusCloneMagneticPMC` and `CloneMagneticPeriodic`. The CPU paths are
+unchanged when CUDA is off.
 Run it from a CUDA build tree:
 
 ```shell
