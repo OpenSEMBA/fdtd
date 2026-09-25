@@ -315,10 +315,11 @@ def test_map_vtk_includes_thin_slot_geometry(tmp_path):
 @pytest.mark.thinSlot
 @pytest.mark.vtk
 def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
-    """Discontinuous Ex/Ez rectangle slots must parse and stay near the designed polyline.
+    """Discontinuous Ex/Ez rectangle: Yee extremes, no face overshoot, symmetric corners.
 
-    CreateSurfaceSlotMM stamps dual E-edges with a one-cell puntoPlus1 footprint, so
-    mapVTK 4.5 lines may extend by at most one cell beyond the input intervals.
+    CreateSurfaceSlotMM stamps both transverse E extremes per linel (puntoPlus1).
+    FinalizeThinSlotSurfacesMM then completes interior dual squares at corners and
+    stamps H-faces only when two ThinSlot E-edges bound them (no off±1 overshoot).
     """
     import pyvista as pv
 
@@ -343,16 +344,20 @@ def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
     face_media_dict = createPropertyDictionary(
         vtk_map_filename, celltype=9, property="mediatype"
     )
-    assert line_media_dict.get(4.5, 0) > 0
     assert any(media_type >= 400.0 for media_type in face_media_dict)
+    # Four sides with dual extremes + corner completion; exact total may vary slightly
+    n_slot_lines = line_media_dict.get(4.5, 0)
+    assert n_slot_lines >= 48
 
     # Designed rectangle polyline on y=10: x,z in [14,26] (cell indices)
     origin = np.array(solver["mesh"]["grid"]["origin"], dtype=float)
     dx = float(solver["mesh"]["grid"]["steps"]["x"][0])
     designed_min = origin + np.array([14, 10, 14], dtype=float) * dx
     designed_max = origin + np.array([26, 10, 26], dtype=float) * dx
-    # One-cell CreateSurfaceSlotMM footprint plus single-precision VTU slack
-    tol = dx * 1.001
+    # Dual E/H elements at index N span to node N+1 (one Yee cell). Off±1 face
+    # overshoot would reach +2 cells; float32 slack is negligible vs that.
+    yee_tol = dx * 1.001
+    f32_tol = 1e-5
 
     ugrid = pv.UnstructuredGrid(vtk_map_filename)
     mt = ugrid.cell_data["mediatype"]
@@ -360,11 +365,36 @@ def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
     assert len(slot_line_idx) > 0
 
     pts = np.vstack([ugrid.get_cell(int(ci)).points for ci in slot_line_idx])
-    assert pts[:, 0].min() >= designed_min[0] - tol
-    assert pts[:, 0].max() <= designed_max[0] + tol
-    assert pts[:, 2].min() >= designed_min[2] - tol
-    assert pts[:, 2].max() <= designed_max[2] + tol
+    assert pts[:, 0].min() >= designed_min[0] - f32_tol
+    assert pts[:, 0].max() <= designed_max[0] + yee_tol
+    assert pts[:, 2].min() >= designed_min[2] - f32_tol
+    assert pts[:, 2].max() <= designed_max[2] + yee_tol
     assert np.allclose(pts[:, 1], designed_min[1], atol=1e-6)
+
+    slot_face_idx = np.where((ugrid.celltypes == 9) & (mt >= 400.0))[0]
+    assert len(slot_face_idx) > 0
+    face_pts = np.vstack([ugrid.get_cell(int(ci)).points for ci in slot_face_idx])
+    # Faces must not overshoot past the dual span of the polyline (no off±1)
+    assert face_pts[:, 0].min() >= designed_min[0] - f32_tol
+    assert face_pts[:, 0].max() <= designed_max[0] + yee_tol
+    assert face_pts[:, 2].min() >= designed_min[2] - f32_tol
+    assert face_pts[:, 2].max() <= designed_max[2] + yee_tol
+    assert np.allclose(face_pts[:, 1], designed_min[1], atol=1e-6)
+
+    def _count_lines_near(corner):
+        # Dual edges within one cell of the corner vertex
+        n = 0
+        for ci in slot_line_idx:
+            lpts = ugrid.get_cell(int(ci)).points
+            if np.any(np.linalg.norm(lpts - corner, axis=1) <= yee_tol):
+                n += 1
+        return n
+
+    n_min = _count_lines_near(designed_min)
+    n_max = _count_lines_near(designed_max)
+    assert n_min == 4, f"-x-z corner expected 4 dual edges, got {n_min}"
+    assert n_max == 4, f"+x+z corner expected 4 dual edges, got {n_max}"
+    assert n_min == n_max
 
 
 @pytest.mark.conformal
