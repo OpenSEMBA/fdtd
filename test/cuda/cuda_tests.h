@@ -21,6 +21,8 @@
 #include "cuda_pw_tests.h"
 #include "cuda_mur_tests.h"
 #include "cuda_nodal_tests.h"
+#include "cuda_wires_tests.h"
+#include "cuda_pmc_tests.h"
 
 TEST(cuda, context_create_destroy)
 {
