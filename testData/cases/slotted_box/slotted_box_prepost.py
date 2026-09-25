@@ -98,10 +98,13 @@ ETA_0 = np.sqrt(mu_0 / epsilon_0)
 
 
 # %% Simulation
-INPUT_FILE = CASE_DIR / "slotted_box_normal_incidence.fdtd.json"
+INPUT_FILE = CASE_DIR / "slotted_box.fdtd.json"
 SEMBA_EXE = REPOSITORY_DIR / "build" / "bin" / "semba-fdtd"
 
-solver = FDTD(input_filename=INPUT_FILE, path_to_exe=SEMBA_EXE)
+solver = FDTD(
+    input_filename=INPUT_FILE, 
+    path_to_exe=SEMBA_EXE,
+    flags='-mapvtk')
 solver.cleanUp()
 solver.run()
 
@@ -163,7 +166,7 @@ plt.figure()
 plt.semilogx(frequency[valid_electric], se_electric[valid_electric],
              label=r"$SE_{ee}$ Robinson reference (normal incidence)")
 plt.semilogx(frequency_fdtd, se_electric_fdtd, ".-",
-             label=r"$SE_{ee}$ DMMA FDTD (45 deg, p-polarized)")
+             label=r"$SE_{ee}$ DMMA FDTD")
 plt.xlabel("Frequency (Hz)")
 plt.ylabel("Shielding effectiveness (dB)")
 plt.title("Electric shielding effectiveness of a slotted PEC enclosure")
@@ -173,4 +176,7 @@ plt.tight_layout()
 plt.savefig(CASE_DIR /"slotted_box_seee_comparison.png", dpi=200)
 plt.show()
 
-# %%
+# # %%
+# plt.figure()
+# plt.plot(time, probes["z"]["field"].to_numpy())
+# plt.show()
