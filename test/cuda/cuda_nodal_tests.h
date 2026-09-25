@@ -133,6 +133,101 @@ TEST(cuda, nodal_hard_assigns_and_skips_pec)
     fdtd_cuda_destroy(ctx);
 }
 
+TEST(cuda, nodal_soft_h_matches_host)
+{
+    fdtd_cuda_ctx *ctx = nullptr;
+    CUDA_REQUIRE_CTX(ctx);
+    fdtd_dims3 d = kTiny;
+    std::vector<fdtd_media> mhx(nelem(d), (fdtd_media)1);
+    const int j = 3, k = 4;
+    const int i_pmc = 2, i_vac = 3;
+    mhx[idx3(i_pmc, j, k, d.nx, d.ny)] = (fdtd_media)0;
+    std::vector<fdtd_media> m1(nelem(d), (fdtd_media)1);
+    std::vector<fdtd_real> g(2, (fdtd_real)1);
+    std::vector<fdtd_real> gm2(2, (fdtd_real)0);
+    gm2[1] = (fdtd_real)0.5;
+    std::vector<fdtd_real> idye(8, (fdtd_real)0), idze(8, (fdtd_real)0), ones(8, (fdtd_real)1);
+    idye[j] = (fdtd_real)2;
+    idze[k] = (fdtd_real)4;
+    ASSERT_EQ(fdtd_cuda_alloc_fields(ctx, d, d, d, d, d, d), 1);
+    ASSERT_EQ(fdtd_cuda_alloc_media(ctx, d, d, d, d, d, d), 1);
+    ASSERT_EQ(fdtd_cuda_alloc_coeffs(ctx, 1), 1);
+    ASSERT_EQ(fdtd_cuda_alloc_metrics(ctx, 8, 8, 8, 8, 8, 8), 1);
+    ASSERT_EQ(fdtd_cuda_upload_media(ctx, m1.data(), m1.data(), m1.data(), mhx.data(), m1.data(),
+                                     m1.data()),
+              1);
+    ASSERT_EQ(fdtd_cuda_upload_coeffs(ctx, g.data(), g.data(), g.data(), gm2.data(), 1), 1);
+    ASSERT_EQ(fdtd_cuda_upload_metrics(ctx, ones.data(), ones.data(), ones.data(), ones.data(),
+                                       idye.data(), idze.data()),
+              1);
+
+    SixFields f = make_six_zero(d);
+    f.Hx[idx3(i_pmc, j, k, d.nx, d.ny)] = (fdtd_real)3;
+    f.Hx[idx3(i_vac, j, k, d.nx, d.ny)] = (fdtd_real)1;
+    ASSERT_EQ(upload_six(ctx, f), 1);
+
+    fdtd_real samples[3] = {(fdtd_real)0, (fdtd_real)2, (fdtd_real)4};
+    fdtd_nodal_job job{};
+    job.field_comp = 3;
+    job.hard = 0;
+    job.xi = i_pmc;
+    job.xe = i_vac;
+    job.yi = job.ye = j;
+    job.zi = job.ze = k;
+    job.numus = 2;
+    job.amplitude = (fdtd_real)2;
+    job.deltaevol = (fdtd_real)1;
+    std::vector<int> skip_e = {1, 0};
+    std::vector<int> skip_h = {1, 0};
+    ASSERT_EQ(fdtd_cuda_upload_nodal(ctx, &job, 1, samples, 3, skip_e.data(), skip_h.data(), 2), 1);
+
+    const fdtd_real time = (fdtd_real)0.5;
+    const fdtd_real wave = (samples[1] - samples[0]) / job.deltaevol * time + samples[0];
+    const fdtd_real expect = (fdtd_real)1 - gm2[1] * idye[j] * idze[k] * job.amplitude * wave;
+    ASSERT_EQ(fdtd_cuda_advance_nodal_h(ctx, time, 1), 1);
+    SixFields out = make_six_zero(d);
+    ASSERT_EQ(download_six(ctx, out), 1);
+    EXPECT_NEAR(out.Hx[idx3(i_pmc, j, k, d.nx, d.ny)], (fdtd_real)3, 1e-5);
+    EXPECT_NEAR(out.Hx[idx3(i_vac, j, k, d.nx, d.ny)], expect, 1e-5);
+    fdtd_cuda_destroy(ctx);
+}
+
+TEST(cuda, nodal_waveform_out_of_range_is_zero)
+{
+    fdtd_cuda_ctx *ctx = nullptr;
+    CUDA_REQUIRE_CTX(ctx);
+    fdtd_dims3 d = kTiny;
+    std::vector<fdtd_media> mez(nelem(d), (fdtd_media)1);
+    std::vector<fdtd_real> g2(2, (fdtd_real)1);
+    std::vector<fdtd_real> ones(8, (fdtd_real)1);
+    std::vector<int> skip_e = {1, 0};
+    ASSERT_EQ(upload_nodal_base(ctx, d, mez, g2, ones, ones, skip_e), 1);
+
+    const int i = 2, j = 2, k = 2;
+    SixFields f = make_six_zero(d);
+    f.Ez[idx3(i, j, k, d.nx, d.ny)] = (fdtd_real)6;
+    ASSERT_EQ(upload_six(ctx, f), 1);
+
+    fdtd_real samples[2] = {(fdtd_real)1, (fdtd_real)2};
+    fdtd_nodal_job job{};
+    job.field_comp = 2;
+    job.hard = 0;
+    job.xi = job.xe = i;
+    job.yi = job.ye = j;
+    job.zi = job.ze = k;
+    job.numus = 1;
+    job.amplitude = (fdtd_real)3;
+    job.deltaevol = (fdtd_real)1;
+    std::vector<int> skip_h = {0, 0};
+    ASSERT_EQ(fdtd_cuda_upload_nodal(ctx, &job, 1, samples, 2, skip_e.data(), skip_h.data(), 2), 1);
+
+    ASSERT_EQ(fdtd_cuda_advance_nodal_e(ctx, (fdtd_real)5, 1), 1);
+    SixFields out = make_six_zero(d);
+    ASSERT_EQ(download_six(ctx, out), 1);
+    EXPECT_NEAR(out.Ez[idx3(i, j, k, d.nx, d.ny)], (fdtd_real)6, 1e-5);
+    fdtd_cuda_destroy(ctx);
+}
+
 TEST(cuda, nodal_initial_value_only_step0)
 {
     fdtd_cuda_ctx *ctx = nullptr;

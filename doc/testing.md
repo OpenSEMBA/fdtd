@@ -114,7 +114,10 @@ point-probe gather, Mur, and nodal-source contracts) is compiled and linked
 CPU builds. Nodal tests check the device box update against the host formula:
 soft sources subtract `G2` or `Gm2` times the metric pair times the linearly
 interpolated waveform, hard sources assign that waveform, PEC/PMC cells are
-skipped, and initial-value sources apply only at step 0. The CPU
+skipped, and initial-value sources apply only at step 0. The H-field contract
+is `cuda.nodal_soft_h_matches_host` (Hx uses `Idye*Idze` and skips PMC). A time
+past the last sample is a zero waveform
+(`cuda.nodal_waveform_out_of_range_is_zero`), matching host `evolucion`. The CPU
 `AdvanceNodalE` / `AdvanceNodalH` path is unchanged when CUDA is off.
 Run it from a CUDA build tree:
 
