@@ -31,6 +31,7 @@ extern "C" int test_conformal_surface_complementary_ratios();
 extern "C" int test_conformal_partial_triangle_on_grid_face();
 extern "C" int test_conformal_filling_open();
 extern "C" int test_conformal_filling_closed();
+extern "C" int test_conformal_split_faces();
 extern "C" int test_conformal_edge_next_cell();
 extern "C" int test_conformal_pec_media_raytracing();
 extern "C" int test_conformal_filling_closed_corner();
@@ -75,6 +76,7 @@ TEST(conformal, conformal_surface_complementary_ratios)    { EXPECT_EQ(0, test_c
 TEST(conformal, conformal_partial_triangle_on_grid_face)   { EXPECT_EQ(0, test_conformal_partial_triangle_on_grid_face()); }
 TEST(conformal, conformal_filling_open)                        { EXPECT_EQ(0, test_conformal_filling_open()); }
 TEST(conformal, conformal_filling_closed)                      { EXPECT_EQ(0, test_conformal_filling_closed()); }
+TEST(conformal, conformal_split_faces)                      { EXPECT_EQ(0, test_conformal_split_faces()); }
 TEST(conformal, conformal_edge_next_cell)                      { EXPECT_EQ(0, test_conformal_edge_next_cell()); }
 TEST(conformal, conformal_filling_closed_corner)               { EXPECT_EQ(0, test_conformal_filling_closed_corner()); }
 TEST(conformal, conformal_filling_block_and_corner)            { EXPECT_EQ(0, test_conformal_filling_block_and_corner()); }

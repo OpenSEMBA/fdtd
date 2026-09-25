@@ -2381,6 +2381,17 @@ def test_conformal_solenoid_currents_agree(tmp_path):
     assert np.corrcoef(current_plain, current_conformal)[0, 1] > 0.999
 
 
+@pytest.mark.conformal
+def test_PEC_conformal_box_without_triangles(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal_interval_box.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.run()
+    Ein  = Probe(_get_solved_probe_folder(solver, "inside", contains="_Ex_"))
+    Eout = Probe(_get_solved_probe_folder(solver, "outside", contains="_Ex_"))
+    assert np.all(Ein["field"] == 0.0)
+    assert np.any(Eout["field"] != 0.0)
+
 @no_mtln_skip
 @pytest.mark.mtln
 @pytest.mark.wires

@@ -61,14 +61,15 @@ contains
    function buildSurfaceMedia(elements, body_type) result(res)
       type(ConformalPECElements_t), dimension(:), pointer, intent(in) :: elements
       integer(kind=4), optional :: body_type
+      integer(kind=4) :: b = BODY_TYPE_UNDEFINED
       type(ConformalPECElements_t) :: canonical_element
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i
-      if (.not. present(body_type)) body_type = BODY_TYPE_UNDEFINED
+      if (present(body_type)) b = body_type
       allocate(res(size(elements)))
       do i = 1, size(elements)
          canonical_element = canonicalClosedSurfaceOrientation(elements(i))
-         res(i) = buildMediaFromElement(canonical_element, body_type)
+         res(i) = buildMediaFromElement(canonical_element, b)
       end do
    end function buildSurfaceMedia
 
@@ -838,20 +839,22 @@ contains
    function buildMedia(elements, body_type) result(res)
       type(ConformalPECElements_t), dimension(:), pointer :: elements
       integer(kind=4), optional :: body_type
+      integer(kind=4) :: b = BODY_TYPE_UNDEFINED
       type(ConformalPECElements_t) :: canonical_element
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i
-      if (.not. present(body_type)) body_type = BODY_TYPE_UNDEFINED
+      if (present(body_type)) b = body_type
       allocate(res(size(elements)))
       do i = 1, size(elements)
          canonical_element = canonicalClosedSurfaceOrientation(elements(i))
-         res(i) = buildMediaFromElement(canonical_element, body_type)
+         res(i) = buildMediaFromElement(canonical_element, b)
       end do
    end function
 
    function buildMediaFromElement(element, body_type) result(res)
       type(ConformalPECElements_t), intent(in) :: element
       integer(kind=4), optional :: body_type
+      integer(kind=4) :: b = BODY_TYPE_UNDEFINED
       type(ConformalMedia_t) :: res
 
       type(cell_map_t) :: cell_map
@@ -859,9 +862,9 @@ contains
       type(edge_t), dimension(:), allocatable :: edges
       type(face_t), dimension(:), allocatable :: faces
 
-      if (.not. present(body_type)) body_type = BODY_TYPE_UNDEFINED
+      if (present(body_type)) b = body_type
 
-      call buildCellMap(cell_map, element, body_type)
+      call buildCellMap(cell_map, element, b)
       call fillElements(cell_map, faces, edges)
       call addNewRatios(edges, faces, edge_ratios, face_ratios)
       res%edge_media => addEdgeMedia(edges, edge_ratios)
@@ -998,13 +1001,16 @@ contains
          intervals = cell_map%getIntervalsInCell(cell)
          do face = FACE_X, FACE_Z
             sides_on_face = getSidesOnFace(sides, face)
-            if (size(sides_on_face) /= 0) then
-               contour = findLargestContour(sides_on_face)
-               call fillFaceFromContour(contour, faces, cell_map%body_type)
-               call fillEdgesFromContour(contour, edges)
-            end if
             tris_on_face = getTrianglesOnFace(tris, face)
-            if (size(tris_on_face) /= 0) call fillFacesFromTriangles(tris_on_face, faces, edges)
+
+            if (size(tris_on_face) == 0 .and. size(sides_on_face) /= 0) then
+               contour = findLargestContour(sides_on_face)
+               call fillFaceFromContour(contour, faces, face_is_two_sided(cell_map%body_type,size(tris_on_face) ))
+               call fillEdgesFromContour(contour, edges)
+            else if (size(tris_on_face) /= 0) then 
+               call fillFacesFromTriangles(tris_on_face, faces, edges)
+            end if
+
          end do
          call fillIntervals(intervals,edges, faces)
       end do
@@ -1024,8 +1030,15 @@ contains
             call fillEdges(sides_on_edge, edges)
          end do
       end do
-      if (cell_map%body_type == BODY_TYPE_SURFACE) call initializeFaceSplits(faces, edges)
+      ! if (cell_map%body_type == BODY_TYPE_SURFACE) call initializeFaceSplits(faces, edges)
    end subroutine
+
+   logical function face_is_two_sided(body_type, number_of_tris_on_face)
+      integer(kind=4), intent(in) :: body_type
+      integer(kind=4), intent(in) :: number_of_tris_on_face
+      face_is_two_sided = (body_type == BODY_TYPE_SURFACE .and. number_of_tris_on_face == 0)
+   end function
+
 
    function buildSidesFromCellInterval(interval) result(res)
       type(interval_t) :: interval
@@ -1174,10 +1187,10 @@ contains
       call addFace(faces, aux%getCell(), aux%getFace(), ratio, .false.)
    end subroutine
 
-   subroutine fillFaceFromContour(contour, faces, body_type)
+   subroutine fillFaceFromContour(contour, faces, is_two_sided)
       type(side_t), dimension(:), allocatable, intent(in) :: contour
       type(face_t), dimension(:), allocatable :: faces
-      integer(kind=4), intent(in) :: body_type
+      logical, intent(in) :: is_two_sided
       real(kind=rkind) :: area
       integer :: face
       integer, dimension(3) :: cell
@@ -1185,7 +1198,7 @@ contains
       face = findContourFace(contour)
       if (size(contour) /= 0) then
          area = 1.0 - contourArea(contour)
-         call addFace(faces, cell, face, area, body_type == BODY_TYPE_SURFACE)
+         call addFace(faces, cell, face, area, is_two_sided)
       end if
    end subroutine
 
@@ -1311,23 +1324,26 @@ contains
       type(face_t) :: new_face
       real(kind=rkind) :: ratio
       logical, optional, intent(in) :: is_two_sided
+      logical :: split = .false.
       integer :: i
-      logical :: split_candidate
 
-      split_candidate = .false.
-      if (present(is_two_sided)) split_candidate = is_two_sided
+      ! logical :: split_candidate
 
-      do i = 1, size(faces)
-         if (all(faces(i)%cell == cell) .and. faces(i)%direction == face) then
-            faces(i)%ratio = min(faces(i)%ratio, ratio)
-            faces(i)%is_two_sided = faces(i)%is_two_sided .and. split_candidate
-            return
-         end if
-      end do
+      ! split_candidate = .false.
+      ! if (present(is_two_sided)) split_candidate = is_two_sided
 
+      ! do i = 1, size(faces)
+      !    if (all(faces(i)%cell == cell) .and. faces(i)%direction == face) then
+      !       faces(i)%ratio = min(faces(i)%ratio, ratio)
+      !       faces(i)%is_two_sided = faces(i)%is_two_sided .and. split_candidate
+      !       return
+      !    end if
+      ! end do
+      if (present(is_two_sided)) split = is_two_sided
       allocate(aux(size(faces) + 1))
       aux(1:size(faces)) = faces
-      new_face = face_t(cell=cell, ratio=ratio, direction=face, is_two_sided=split_candidate)
+      new_face = face_t(cell=cell, ratio=ratio, direction=face, is_two_sided=split)
+      ! new_face = face_t(cell=cell, ratio=ratio, direction=face, is_two_sided=split_candidate)
       aux(size(faces) + 1) = new_face
 
       deallocate(faces)
