@@ -2086,6 +2086,345 @@ def test_conformal_delay(tmp_path):
         assert np.abs(delay - tdelta) / tdelta < 0.01
 
 
+@pytest.mark.conformal
+@pytest.mark.planewave
+@pytest.mark.probes
+@pytest.mark.parametrize("normal_axis,propagation,reverse_winding", [
+    ('x', 1, False), ('x', -1, False), ('x', 1, True), ('x', -1, True),
+    ('y', 1, False), ('y', -1, False), ('z', 1, False), ('z', -1, False)
+])
+def test_conformal_surface_midcell_reflection(tmp_path, normal_axis, propagation, reverse_winding):
+    fn = CASES_FOLDER + 'conformal_surface/conformal_surface_midcell.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    permutations = {
+        'x': (0, 1, 2),
+        'y': (1, 0, 2),
+        'z': (2, 1, 0),
+    }
+    permutation = permutations[normal_axis]
+    if normal_axis != 'x':
+        grid = solver['mesh']['grid']
+        grid['numberOfCells'] = [grid['numberOfCells'][index] for index in permutation]
+        for coordinate in solver['mesh']['coordinates']:
+            position = coordinate['relativePosition']
+            coordinate['relativePosition'] = [position[index] for index in permutation]
+        for element in solver['mesh']['elements']:
+            for interval in element.get('intervals', []):
+                interval[0] = [interval[0][index] for index in permutation]
+                interval[1] = [interval[1][index] for index in permutation]
+
+    periodic_axes = {'x', 'y', 'z'} - {normal_axis}
+    solver['boundary'].clear()
+    for axis in ('x', 'y', 'z'):
+        boundary_type = 'periodic' if axis in periodic_axes else 'mur'
+        solver['boundary'][axis+'Lower'] = {'type': boundary_type}
+        solver['boundary'][axis+'Upper'] = {'type': boundary_type}
+
+    if normal_axis == 'x':
+        solver['sources'][0]['direction'] = {'theta': propagation*np.pi/2, 'phi': 0.0}
+        probe_direction = 'z'
+    elif normal_axis == 'y':
+        solver['sources'][0]['direction'] = {'theta': np.pi/2, 'phi': propagation*np.pi/2}
+        probe_direction = 'z'
+    else:
+        solver['sources'][0]['direction'] = {'theta': 0.0 if propagation > 0 else np.pi, 'phi': 0.0}
+        solver['sources'][0]['polarization'] = {'theta': np.pi/2, 'phi': 0.0}
+        probe_direction = 'x'
+    for probe in solver['probes']:
+        probe['directions'] = [probe_direction]
+
+    if reverse_winding:
+        triangles = solver['mesh']['elements'][0]['triangles']
+        solver['mesh']['elements'][0]['triangles'] = [
+            [triangle[0], triangle[2], triangle[1]] for triangle in triangles
+        ]
+
+    solver.run()
+
+    incident_name, shadow_name = ('left', 'right') if propagation > 0 else ('right', 'left')
+    incident_probe = Probe(_get_solved_probe_folder(solver, incident_name))
+    shadow_probe = Probe(_get_solved_probe_folder(solver, shadow_name))
+
+    time = incident_probe['time'].to_numpy()
+    incident = incident_probe['incident'].to_numpy()
+    reflected = incident_probe['field'].to_numpy() - incident
+    shadow = shadow_probe['field'].to_numpy()
+    dt = time[1] - time[0]
+
+    correlation = signal.correlate(reflected, -incident, mode='full')
+    lags = signal.correlation_lags(reflected.size, incident.size, mode='full')
+    lag = lags[np.argmax(correlation)]
+    normalized_correlation = np.max(correlation) / np.sqrt(
+        np.dot(reflected, reflected)*np.dot(incident, incident)
+    )
+    reflection_amplitude = np.linalg.norm(reflected) / np.linalg.norm(incident)
+
+    surface_position = 8.5*0.01
+    probe_position = (4 if propagation > 0 else 12)*0.01
+    expected_delay = 2*abs(surface_position-probe_position)/c
+
+    assert normalized_correlation > 0.99
+    assert np.isclose(reflection_amplitude, 1.0, rtol=0.05)
+    assert abs(lag*dt-expected_delay) <= 4*dt
+    assert np.max(np.abs(shadow)) <= 0.01*np.max(np.abs(incident))
+
+
+@pytest.mark.conformal
+@pytest.mark.sgbc
+@pytest.mark.planewave
+@pytest.mark.probes
+def test_conformal_surface_midcell_sgbc_matches_analytic_and_structured(tmp_path):
+    """Validate the mid-cell SGBC against a slab and the structured solver."""
+    fn = CASES_FOLDER + 'conformal_surface/conformal_surface_midcell.fdtd.json'
+    material = {
+        'id': 1,
+        'name': 'single layer conformal SGBC',
+        'type': 'multilayeredSurface',
+        'layers': [{
+            'thickness': 0.01,
+            'relativePermittivity': 1.0,
+            'relativePermeability': 1.0,
+            'electricConductivity': 1.0,
+            'magneticConductivity': 0.0,
+        }],
+    }
+
+    conformal_folder = tmp_path/'conformal'
+    conformal_folder.mkdir()
+    conformal = FDTD(fn, path_to_exe=SEMBA_EXE,
+                     run_in_folder=conformal_folder)
+    conformal['materials'][0] = material
+    conformal.run()
+
+    left = Probe(_get_solved_probe_folder(conformal, 'left'))
+    right = Probe(_get_solved_probe_folder(conformal, 'right'))
+    incident = left['incident'].to_numpy()
+    reflected = left['field'].to_numpy()-incident
+    transmitted = right['field'].to_numpy()
+
+    assert np.all(np.isfinite(reflected))
+    assert np.all(np.isfinite(transmitted))
+
+    time = right['time'].to_numpy()
+    frequencies = np.fft.rfftfreq(time.size, time[1]-time[0])
+    incident_spectrum = np.fft.rfft(right['incident'].to_numpy())
+    fdtd_s21 = np.fft.rfft(transmitted)/incident_spectrum
+    selected = ((frequencies >= 1.0e8) & (frequencies <= 1.5e9)
+                & (np.abs(incident_spectrum)
+                   > 0.03*np.max(np.abs(incident_spectrum))))
+
+    from skrf.frequency import Frequency
+    from skrf.media import Freespace
+    import scipy.constants
+
+    frequency = Frequency.from_f(frequencies[selected], unit='Hz')
+    air = Freespace(frequency)
+    conductive_material = Freespace(
+        frequency,
+        ep_r=1+1.0/(1j*frequency.w*scipy.constants.epsilon_0),
+    )
+    slab = air.thru() ** conductive_material.line(0.01, unit='m') ** air.thru()
+    fdtd_s21_db = 20*np.log10(np.abs(fdtd_s21[selected]))
+    analytic_s21_db = 20*np.log10(np.abs(slab.s[:, 0, 1]))
+    assert np.allclose(fdtd_s21_db, analytic_s21_db, atol=0.25)
+
+    structured_folder = tmp_path/'structured'
+    structured_folder.mkdir()
+    structured = FDTD(fn, path_to_exe=SEMBA_EXE,
+                      run_in_folder=structured_folder)
+    structured['materials'][0] = material
+    structured_surface = structured['mesh']['elements'][0]
+    structured_surface.clear()
+    structured_surface.update({
+        'id': 1,
+        'name': 'structured SGBC',
+        'type': 'cell',
+        'intervals': [[[8, 0, 0], [8, 2, 2]]],
+    })
+    structured.run()
+    structured_left = Probe(_get_solved_probe_folder(structured, 'left'))
+    structured_right = Probe(_get_solved_probe_folder(structured, 'right'))
+    structured_incident = structured_left['incident'].to_numpy()
+    structured_reflected = (structured_left['field'].to_numpy()
+                            - structured_incident)
+
+    conformal_r = np.linalg.norm(reflected)/np.linalg.norm(incident)
+    conformal_t = np.linalg.norm(transmitted)/np.linalg.norm(incident)
+    structured_r = (np.linalg.norm(structured_reflected)
+                    / np.linalg.norm(structured_incident))
+    structured_t = (np.linalg.norm(structured_right['field'].to_numpy())
+                    / np.linalg.norm(structured_incident))
+    assert np.isclose(conformal_r, structured_r, rtol=0.12)
+    assert np.isclose(conformal_t, structured_t, rtol=0.12)
+
+
+@pytest.mark.conformal
+@pytest.mark.sgbc
+@pytest.mark.planewave
+@pytest.mark.probes
+@pytest.mark.parametrize("normal_axis,propagation,reverse_winding", [
+    ('x', 1, False), ('x', -1, False), ('x', 1, True),
+    ('y', 1, False), ('z', 1, False),
+])
+def test_conformal_sgbc_axes_directions_and_winding(
+        tmp_path, normal_axis, propagation, reverse_winding):
+    """Exercise SGBC coupling signs for every axis and both sheet sides."""
+    fn = CASES_FOLDER + 'conformal_surface/conformal_surface_midcell.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver['materials'][0] = {
+        'id': 1,
+        'name': 'symmetric conformal SGBC',
+        'type': 'multilayeredSurface',
+        'layers': [{
+            'thickness': 0.01,
+            'relativePermittivity': 1.0,
+            'relativePermeability': 1.0,
+            'electricConductivity': 1.0,
+            'magneticConductivity': 0.0,
+        }],
+    }
+
+    permutations = {'x': (0, 1, 2), 'y': (1, 0, 2), 'z': (2, 1, 0)}
+    permutation = permutations[normal_axis]
+    if normal_axis != 'x':
+        grid = solver['mesh']['grid']
+        grid['numberOfCells'] = [grid['numberOfCells'][i]
+                                 for i in permutation]
+        for coordinate in solver['mesh']['coordinates']:
+            position = coordinate['relativePosition']
+            coordinate['relativePosition'] = [position[i] for i in permutation]
+        for element in solver['mesh']['elements']:
+            for interval in element.get('intervals', []):
+                interval[0] = [interval[0][i] for i in permutation]
+                interval[1] = [interval[1][i] for i in permutation]
+
+    solver['boundary'].clear()
+    for axis in ('x', 'y', 'z'):
+        boundary_type = 'mur' if axis == normal_axis else 'periodic'
+        solver['boundary'][axis+'Lower'] = {'type': boundary_type}
+        solver['boundary'][axis+'Upper'] = {'type': boundary_type}
+
+    if normal_axis == 'x':
+        solver['sources'][0]['direction'] = {
+            'theta': propagation*np.pi/2, 'phi': 0.0}
+        probe_direction = 'z'
+    elif normal_axis == 'y':
+        solver['sources'][0]['direction'] = {
+            'theta': np.pi/2, 'phi': propagation*np.pi/2}
+        probe_direction = 'z'
+    else:
+        solver['sources'][0]['direction'] = {
+            'theta': 0.0 if propagation > 0 else np.pi, 'phi': 0.0}
+        solver['sources'][0]['polarization'] = {'theta': np.pi/2, 'phi': 0.0}
+        probe_direction = 'x'
+    for probe in solver['probes']:
+        probe['directions'] = [probe_direction]
+
+    if reverse_winding:
+        triangles = solver['mesh']['elements'][0]['triangles']
+        solver['mesh']['elements'][0]['triangles'] = [
+            [triangle[0], triangle[2], triangle[1]] for triangle in triangles
+        ]
+
+    solver.run()
+    incident_name, shadow_name = ('left', 'right') if propagation > 0 else ('right', 'left')
+    incident_probe = Probe(_get_solved_probe_folder(solver, incident_name))
+    shadow_probe = Probe(_get_solved_probe_folder(solver, shadow_name))
+    incident = incident_probe['incident'].to_numpy()
+    reflected = incident_probe['field'].to_numpy()-incident
+    transmitted = shadow_probe['field'].to_numpy()
+    reflection = np.linalg.norm(reflected)/np.linalg.norm(incident)
+    transmission = np.linalg.norm(transmitted)/np.linalg.norm(incident)
+    assert 0.55 < reflection < 0.75
+    assert 0.25 < transmission < 0.45
+
+
+@pytest.mark.conformal
+@pytest.mark.sgbc
+@pytest.mark.planewave
+@pytest.mark.probes
+def test_conformal_sgbc_high_conductivity_approaches_pec(tmp_path):
+    fn = CASES_FOLDER + 'conformal_surface/conformal_surface_midcell.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver['materials'][0] = {
+        'id': 1,
+        'name': 'high-conductivity conformal SGBC',
+        'type': 'multilayeredSurface',
+        'layers': [{
+            'thickness': 0.01,
+            'electricConductivity': 100.0,
+        }],
+    }
+    solver.run()
+    left = Probe(_get_solved_probe_folder(solver, 'left'))
+    right = Probe(_get_solved_probe_folder(solver, 'right'))
+    incident = left['incident'].to_numpy()
+    reflection = np.linalg.norm(left['field'].to_numpy()-incident)/np.linalg.norm(incident)
+    transmission = np.linalg.norm(right['field'].to_numpy())/np.linalg.norm(incident)
+    assert reflection > 0.98
+    assert transmission < 0.01
+
+
+@no_mtln_skip
+@pytest.mark.conformal
+@pytest.mark.wires
+@pytest.mark.probes
+def test_conformal_solenoid_currents_agree(tmp_path):
+    """Compare current waveforms over the first 3.85 ns of each solenoid case."""
+    case_definitions = [
+        (
+            'solenoid',
+            CASES_FOLDER + 'conformal_solenoid/solenoid.fdtd.json',
+            'BC',
+        ),
+        (
+            'conformal',
+            CASES_FOLDER
+            + 'conformal_solenoid/'
+            + 'solenoid_45deg_with_conformal.fdtd.json',
+            'Bulk probe',
+        ),
+    ]
+    currents = []
+
+    for _, filename, probe_name in case_definitions:
+        solver = FDTD(filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+        solver['general']['numberOfSteps'] = 25
+        solver.run()
+
+        assert solver.hasFinishedSuccessfully()
+        probe = Probe(_get_solved_probe_folder(solver, probe_name))
+        currents.append((probe['time'].to_numpy(), probe['current'].to_numpy()))
+
+    time_plain, current_plain = currents[0]
+    time_conformal, current_conformal = currents[1]
+    common_start = max(time_plain[0], time_conformal[0])
+    common_end = min(time_plain[-1], time_conformal[-1])
+    mask = (time_plain >= common_start) & (time_plain <= common_end)
+    time_common = time_plain[mask]
+    current_plain = current_plain[mask]
+    current_conformal = np.interp(time_common, time_conformal, current_conformal)
+
+    assert np.isclose(
+        np.max(np.abs(current_plain)),
+        np.max(np.abs(current_conformal)),
+        rtol=0.03,
+    )
+    assert np.corrcoef(current_plain, current_conformal)[0, 1] > 0.999
+
+
+@pytest.mark.conformal
+def test_PEC_conformal_box_without_triangles(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal_interval_box.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.run()
+    Ein  = Probe(_get_solved_probe_folder(solver, "inside", contains="_Ex_"))
+    Eout = Probe(_get_solved_probe_folder(solver, "outside", contains="_Ex_"))
+    assert np.all(Ein["field"] == 0.0)
+    assert np.any(Eout["field"] != 0.0)
+
 @no_mtln_skip
 @pytest.mark.mtln
 @pytest.mark.wires

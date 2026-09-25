@@ -6,6 +6,9 @@ module parser_tools_m
    use json_module
    use json_kinds
    use NFDETypes_m
+#ifdef CompileWithMTLN
+   use mtln_types_m, only: terminal_node_t
+#endif
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 

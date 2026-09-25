@@ -35,7 +35,7 @@
         "elements": [
             {
                 "id": 1,
-                "type": "cell",
+                "type": "conformal",
                 "subtype": "volume",
                 "intervals": [],
                 "triangles": [
@@ -271,8 +271,8 @@
                     ],
                     [
                         22,
-                        35,
-                        37
+                        37,
+                        35
                     ],
                     [
                         24,
@@ -316,8 +316,8 @@
                     ],
                     [
                         31,
-                        22,
-                        37
+                        37,
+                        22
                     ],
                     [
                         28,

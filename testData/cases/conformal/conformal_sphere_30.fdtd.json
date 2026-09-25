@@ -70,7 +70,7 @@
             },
             {
                 "id": 3,
-                "type": "cell",
+                "type": "conformal",
                 "subtype": "volume",
                 "intervals": [],
                 "triangles": [
