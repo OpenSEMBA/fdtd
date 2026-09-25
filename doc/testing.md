@@ -109,8 +109,13 @@ Wildcards can be used in a GoogleTest filter:
 ### CUDA native tests
 
 The `cuda` GoogleTest suite (field sync/box, layout, Yee, CPML, sparse
-point-probe gather contracts) is compiled and linked **only** when
-`SEMBA_FDTD_ENABLE_CUDA=ON`. It is not part of basic CPU or MPI CPU builds.
+point-probe gather, Mur, and nodal-source contracts) is compiled and linked
+**only** when `SEMBA_FDTD_ENABLE_CUDA=ON`. It is not part of basic CPU or MPI
+CPU builds. Nodal tests check the device box update against the host formula:
+soft sources subtract `G2` or `Gm2` times the metric pair times the linearly
+interpolated waveform, hard sources assign that waveform, PEC/PMC cells are
+skipped, and initial-value sources apply only at step 0. The CPU
+`AdvanceNodalE` / `AdvanceNodalH` path is unchanged when CUDA is off.
 Run it from a CUDA build tree:
 
 ```shell

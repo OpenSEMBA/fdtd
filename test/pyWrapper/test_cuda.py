@@ -42,10 +42,13 @@ def _assert_probes_close(cpu_dir: Path, gpu_dir: Path, rtol=1e-3):
     samples with tiny absolute values make atol=1e-6*scale too tight even when
     the global relative error is well under rtol.
 
-    rtol=1e-3 covers FP32 Yee/CPML/PW on device for the dominant field
-    components (see 07-cuda-validation.md). Near-null polarization components
+    rtol=1e-3 covers FP32 Yee/CPML/PW/nodal on device for the dominant field
+    components. Near-null polarization components
     (scale ≪ dominant) use an absolute floor so relative noise is not a false
     fail — still far below "garbage" on the real signal.
+    Nodal cases use the same device-resident hard/soft update as host
+    AdvanceNodalE (linear waveform, PEC skip). CPU remains the path when
+    SEMBA_FDTD_DEVICE is unset.
     """
     probes = sorted(cpu_dir.glob("*_tm.dat"))
     assert probes, f"no *_tm.dat probes under {cpu_dir}"
@@ -124,13 +127,16 @@ def _run_cpu_vs_cuda_golden(tmp_path, monkeypatch, case_name: str):
         "box_pml_smallpw_256",
         "box_pml_smallpw_300",
         "box_mur_smallpw_100",
+        "box_nodal_soft_pml_40",
+        "box_nodal_hard_pml_40",
     ],
 )
 def test_cuda_matches_cpu_golden_pml(tmp_path, case_name, monkeypatch):
     """Correctness gate: OMP=1 CPU golden vs CUDA probes.
 
-    rtol 1e-3 on dominant probes (device Yee+CPML/Mur+PW). Includes 256^3 / 300^3
+    rtol 1e-3 on dominant probes (device Yee+CPML/Mur/nodal+PW). Includes 256^3 / 300^3
     so large-case speed claims are backed by matching non-trivial probe signals.
     Mur uses the same device-resident first-order ABC as the host path.
+    Nodal cases use the same device-resident soft/hard update as AdvanceNodalE.
     """
     _run_cpu_vs_cuda_golden(tmp_path, monkeypatch, case_name)
