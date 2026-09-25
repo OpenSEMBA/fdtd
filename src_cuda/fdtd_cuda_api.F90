@@ -24,7 +24,9 @@ module fdtd_cuda_m
    public :: fdtd_cuda_upload_mur_cab_f, fdtd_cuda_set_mur_jobs_f
    public :: fdtd_cuda_upload_mur_past_f, fdtd_cuda_mur_ready_f
    public :: fdtd_cuda_advance_mur_f
-   public :: fdtd_dims3_c, fdtd_ibox_c, fdtd_cpml_job_c, fdtd_pw_face_c, fdtd_mur_job_c
+   public :: fdtd_cuda_upload_nodal_f, fdtd_cuda_nodal_ready_f
+   public :: fdtd_cuda_advance_nodal_e_f, fdtd_cuda_advance_nodal_h_f
+   public :: fdtd_dims3_c, fdtd_ibox_c, fdtd_cpml_job_c, fdtd_pw_face_c, fdtd_mur_job_c, fdtd_nodal_job_c
 
    logical, save :: fdtd_cuda_enabled = .false.
    type(c_ptr), save :: fdtd_cuda_ctx_c = c_null_ptr
@@ -74,6 +76,18 @@ module fdtd_cuda_m
       integer(c_int) :: p_xi, p_yi, p_zi
       integer(c_int) :: nx_p, ny_p, nz_p
       integer(c_int) :: store_xi, store_xe, store_yi, store_ye, store_zi, store_ze
+   end type
+
+   type, bind(C) :: fdtd_nodal_job_c
+      integer(c_int) :: field_comp
+      integer(c_int) :: hard
+      integer(c_int) :: initial_only
+      integer(c_int) :: xi, xe, yi, ye, zi, ze
+      integer(c_int) :: e_xi, e_yi, e_zi
+      integer(c_int) :: evol_off
+      integer(c_int) :: numus
+      real(c_float) :: amplitude
+      real(c_float) :: deltaevol
    end type
 
    interface
@@ -327,6 +341,35 @@ module fdtd_cuda_m
          type(c_ptr), value :: ctx
          integer(c_int) :: fdtd_cuda_advance_mur
       end function
+      function fdtd_cuda_upload_nodal(ctx, jobs, n_jobs, samples, n_samples, skip_e, skip_h, n_skip) &
+         bind(C, name="fdtd_cuda_upload_nodal")
+         import :: c_ptr, c_int, c_float, fdtd_nodal_job_c
+         type(c_ptr), value :: ctx
+         type(fdtd_nodal_job_c), intent(in) :: jobs(*)
+         integer(c_int), value :: n_jobs, n_samples, n_skip
+         real(c_float), intent(in) :: samples(*)
+         integer(c_int), intent(in) :: skip_e(*), skip_h(*)
+         integer(c_int) :: fdtd_cuda_upload_nodal
+      end function
+      function fdtd_cuda_nodal_ready(ctx) bind(C, name="fdtd_cuda_nodal_ready")
+         import :: c_ptr, c_int
+         type(c_ptr), value :: ctx
+         integer(c_int) :: fdtd_cuda_nodal_ready
+      end function
+      function fdtd_cuda_advance_nodal_e(ctx, time, step) bind(C, name="fdtd_cuda_advance_nodal_e")
+         import :: c_ptr, c_int, c_float
+         type(c_ptr), value :: ctx
+         real(c_float), value :: time
+         integer(c_int), value :: step
+         integer(c_int) :: fdtd_cuda_advance_nodal_e
+      end function
+      function fdtd_cuda_advance_nodal_h(ctx, time, step) bind(C, name="fdtd_cuda_advance_nodal_h")
+         import :: c_ptr, c_int, c_float
+         type(c_ptr), value :: ctx
+         real(c_float), value :: time
+         integer(c_int), value :: step
+         integer(c_int) :: fdtd_cuda_advance_nodal_h
+      end function
    end interface
 
 contains
@@ -541,6 +584,33 @@ contains
 
    integer function fdtd_cuda_advance_mur_f()
       fdtd_cuda_advance_mur_f = fdtd_cuda_advance_mur(fdtd_cuda_ctx_c)
+   end function
+
+   integer function fdtd_cuda_upload_nodal_f(jobs, n_jobs, samples, n_samples, skip_e, skip_h, n_skip)
+      type(fdtd_nodal_job_c), intent(in), target :: jobs(*)
+      integer, intent(in) :: n_jobs, n_samples, n_skip
+      real(kind=RKIND), intent(in), target :: samples(*)
+      integer(c_int), intent(in), target :: skip_e(*), skip_h(*)
+      fdtd_cuda_upload_nodal_f = fdtd_cuda_upload_nodal(fdtd_cuda_ctx_c, jobs, &
+         int(n_jobs, c_int), samples, int(n_samples, c_int), skip_e, skip_h, int(n_skip, c_int))
+   end function
+
+   logical function fdtd_cuda_nodal_ready_f()
+      fdtd_cuda_nodal_ready_f = fdtd_cuda_enabled .and. (fdtd_cuda_nodal_ready(fdtd_cuda_ctx_c) /= 0)
+   end function
+
+   integer function fdtd_cuda_advance_nodal_e_f(time, step)
+      real(kind=RKIND), intent(in) :: time
+      integer, intent(in) :: step
+      fdtd_cuda_advance_nodal_e_f = fdtd_cuda_advance_nodal_e(fdtd_cuda_ctx_c, &
+         real(time, c_float), int(step, c_int))
+   end function
+
+   integer function fdtd_cuda_advance_nodal_h_f(time, step)
+      real(kind=RKIND), intent(in) :: time
+      integer, intent(in) :: step
+      fdtd_cuda_advance_nodal_h_f = fdtd_cuda_advance_nodal_h(fdtd_cuda_ctx_c, &
+         real(time, c_float), int(step, c_int))
    end function
 
 end module fdtd_cuda_m

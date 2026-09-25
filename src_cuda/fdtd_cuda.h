@@ -195,6 +195,34 @@ int fdtd_cuda_download_mur_past(fdtd_cuda_ctx *ctx, int slot, fdtd_real *host, i
 int fdtd_cuda_mur_ready(const fdtd_cuda_ctx *ctx);
 int fdtd_cuda_advance_mur(fdtd_cuda_ctx *ctx);
 
+/*
+ * Device nodal sources (host AdvanceNodalE / AdvanceNodalH).
+ * One job is one hard or soft box on one field component.
+ * Samples are concatenated, 0-based, length numus+1 per job (evol(0:numus)).
+ * field_comp 0=Ex..5=Hz. hard=1 assigns amp*wave; hard=0 subtracts
+ * G2 or Gm2 * metric pair * amp * wave. initial_only applies only at step 0
+ * and uses samples[evol_off] (evol(0)). E skips PEC media, H skips PMC.
+ */
+typedef struct {
+   int field_comp;
+   int hard;
+   int initial_only;
+   int xi, xe, yi, ye, zi, ze;
+   int e_xi, e_yi, e_zi;
+   int evol_off;
+   int numus;
+   fdtd_real amplitude;
+   fdtd_real deltaevol;
+} fdtd_nodal_job;
+
+int fdtd_cuda_upload_nodal(fdtd_cuda_ctx *ctx,
+                           const fdtd_nodal_job *jobs, int n_jobs,
+                           const fdtd_real *samples, int n_samples,
+                           const int *skip_e, const int *skip_h, int n_skip);
+int fdtd_cuda_nodal_ready(const fdtd_cuda_ctx *ctx);
+int fdtd_cuda_advance_nodal_e(fdtd_cuda_ctx *ctx, fdtd_real time, int step);
+int fdtd_cuda_advance_nodal_h(fdtd_cuda_ctx *ctx, fdtd_real time, int step);
+
 #ifdef __cplusplus
 }
 #endif

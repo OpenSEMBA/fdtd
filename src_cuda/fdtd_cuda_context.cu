@@ -51,6 +51,7 @@ void fdtd_cuda_destroy(fdtd_cuda_ctx *ctx)
 #undef FREE
    fdtd_cuda_free_planewave(ctx);
    fdtd_cuda_free_mur(ctx);
+   fdtd_cuda_free_nodal(ctx);
    free(ctx);
 }
 

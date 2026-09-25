@@ -52,10 +52,20 @@ struct fdtd_cuda_ctx {
    fdtd_mur_job h_mur_jobs[FDTD_CUDA_MUR_JOBS];
    fdtd_real *d_mur_past[FDTD_CUDA_MUR_JOBS];
    int mur_past_n[FDTD_CUDA_MUR_JOBS];
+
+   /* Device nodal sources. */
+   int nodal_ready;
+   int nodal_n_jobs;
+   int nodal_n_skip;
+   fdtd_nodal_job *h_nodal_jobs;
+   fdtd_real *d_nodal_samples;
+   int *d_nodal_skip_e;
+   int *d_nodal_skip_h;
 };
 
 void fdtd_cuda_free_planewave(fdtd_cuda_ctx *ctx);
 void fdtd_cuda_free_mur(fdtd_cuda_ctx *ctx);
+void fdtd_cuda_free_nodal(fdtd_cuda_ctx *ctx);
 
 #ifdef __cplusplus
 extern "C" {

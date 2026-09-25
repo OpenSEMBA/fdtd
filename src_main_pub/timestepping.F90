@@ -2770,7 +2770,21 @@ contains
 
    subroutine solver_advanceNodalE(this)
       class(solver_t) :: this
-         if (this%thereAre%NodalE) then 
+#ifdef CompileWithCUDA
+      real(kind=RKIND) :: timei
+      integer :: irc
+#endif
+         if (this%thereAre%NodalE) then
+#ifdef CompileWithCUDA
+            if (this%control%use_cuda .and. cuda_nodal_is_ready()) then
+               timei = this%sgg%tiempo(this%n)
+               irc = fdtd_cuda_advance_nodal_e_f(timei, this%n)
+               if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, &
+                  'CUDA AdvanceNodalE failed')
+               call this%cuda_mark_host_stale()
+               return
+            end if
+#endif
             call advanceNodalE(this%sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,& 
                                this%sgg%NumMedia,this%n, this%bounds, this%g%G2,& 
                                this%Idxh,this%Idyh,this%Idzh,&
@@ -2781,7 +2795,21 @@ contains
 
    subroutine solver_advanceNodalH(this)
       class(solver_t) :: this
-      if (this%thereAre%NodalH) then 
+#ifdef CompileWithCUDA
+      real(kind=RKIND) :: timei
+      integer :: irc
+#endif
+      if (this%thereAre%NodalH) then
+#ifdef CompileWithCUDA
+         if (this%control%use_cuda .and. cuda_nodal_is_ready()) then
+            timei = this%sgg%tiempo(this%n) + 0.5_RKIND * this%sgg%dt
+            irc = fdtd_cuda_advance_nodal_h_f(timei, this%n)
+            if (irc == 0) call stoponerror(this%control%layoutnumber, this%control%num_procs, &
+               'CUDA AdvanceNodalH failed')
+            call this%cuda_mark_host_stale()
+            return
+         end if
+#endif
          call AdvanceNodalH(this%sgg,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,&
                             this%sgg%NumMedia,this%n, this%bounds,this%g%GM2, & 
                             this%Idxe,this%Idye,this%Idze, & 
@@ -3195,6 +3223,19 @@ contains
       if (this%thereAre%MURBorders .and. .not. this%control%mur_second) then
          call InitMURBorders_cuda(this%bounds)
       end if
+      if ((this%thereAre%NodalE .or. this%thereAre%NodalH) .and. this%control%simu_devia) then
+         call stoponerror(this%control%layoutnumber, this%control%num_procs, &
+            'CUDA nodal sources do not support simu_devia; run with SEMBA_FDTD_DEVICE=cpu')
+         return
+      end if
+      if (this%thereAre%NodalE .or. this%thereAre%NodalH) then
+         call InitNodalSources_cuda(this%sgg, this%bounds)
+         if (.not. cuda_nodal_is_ready()) then
+            call stoponerror(this%control%layoutnumber, this%control%num_procs, &
+               'CUDA nodal source upload failed')
+            return
+         end if
+      end if
 
       write(dubuf,*) 'CUDA: device-resident Yee(+CPML) enabled (field residency)'
       call print11(this%control%layoutnumber, dubuf)
@@ -3207,6 +3248,10 @@ contains
          call print11(this%control%layoutnumber, dubuf)
       else if (this%thereAre%MURBorders) then
          write(dubuf,*) 'CUDA: Mur ABC remains on host (device Mur not ready)'
+         call print11(this%control%layoutnumber, dubuf)
+      end if
+      if ((this%thereAre%NodalE .or. this%thereAre%NodalH) .and. cuda_nodal_is_ready()) then
+         write(dubuf,*) 'CUDA: device nodal sources enabled (no mid-step nodal host sync)'
          call print11(this%control%layoutnumber, dubuf)
       end if
       if (this%cuda_sparse_probes_ok) then

@@ -2,6 +2,10 @@ module nodalsources_m
 
    use FDETYPES_m
    use Report_m
+#ifdef CompileWithCUDA
+   use fdtd_cuda_m
+   use, intrinsic :: iso_c_binding, only: c_int, c_float
+#endif
 
    implicit none
    private
@@ -31,7 +35,14 @@ module nodalsources_m
    type(nodsou_t), save, target :: Nodal_Ex,Nodal_Ey,Nodal_Ez
    type(nodsou_t), save, target :: Nodal_Hx,Nodal_Hy,Nodal_Hz
 
+#ifdef CompileWithCUDA
+   logical, save :: cuda_nodal_ready = .false.
+#endif
+
    public :: initNodalSources,AdvanceNodalE,AdvanceNodalH,DestroyNodal,getnodal
+#ifdef CompileWithCUDA
+   public :: cuda_nodal_is_ready, InitNodalSources_cuda
+#endif
 
 
 
@@ -333,6 +344,9 @@ contains
    subroutine DestroyNodal(sgg)
       type(SGGFDTDINFO_t), intent(INOUT) :: sgg
 
+#ifdef CompileWithCUDA
+      cuda_nodal_ready = .false.
+#endif
 
       if (Nodal_Ex%NumSoft+Nodal_Ey%NumSoft+Nodal_Ez%NumSoft /= 0) then
          if (associated(Nodal_Ex%nodSoft)) deallocate(Nodal_Ex%nodSoft)
@@ -730,6 +744,8 @@ contains
 
       return
    end subroutine
+
+#include "nodalsources_cuda.inc.F90"
 
 end module nodalsources_m
  
