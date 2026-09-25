@@ -1,0 +1,117 @@
+{
+  "format": "FDTD Input file",
+  "__comments": "200^3 CUDA golden (pmc).",
+  "general": {
+    "timeStep": 1e-11,
+    "numberOfSteps": 300
+  },
+  "boundary": {
+    "all": {
+      "type": "pmc"
+    }
+  },
+  "mesh": {
+    "grid": {
+      "numberOfCells": [
+        200,
+        200,
+        200
+      ],
+      "steps": {
+        "x": [
+          0.1
+        ],
+        "y": [
+          0.1
+        ],
+        "z": [
+          0.1
+        ]
+      }
+    },
+    "coordinates": [
+      {
+        "id": 1,
+        "relativePosition": [
+          102,
+          102,
+          100
+        ]
+      },
+      {
+        "id": 2,
+        "relativePosition": [
+          100,
+          100,
+          96
+        ]
+      },
+      {
+        "id": 3,
+        "relativePosition": [
+          100,
+          100,
+          104
+        ]
+      }
+    ],
+    "elements": [
+      {
+        "id": 1,
+        "type": "node",
+        "coordinateIds": [
+          1
+        ]
+      },
+      {
+        "id": 2,
+        "type": "cell",
+        "intervals": [
+          [
+            [
+              100,
+              100,
+              96
+            ],
+            [
+              100,
+              100,
+              104
+            ]
+          ]
+        ]
+      }
+    ]
+  },
+  "materials": [],
+  "materialAssociations": [],
+  "sources": [
+    {
+      "name": "nodal_soft",
+      "type": "nodalSource",
+      "hardness": "soft",
+      "field": "current",
+      "magnitudeFile": "gauss.exc",
+      "elementIds": [
+        2
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "name": "electric_field_point_probe",
+      "type": "point",
+      "elementIds": [
+        1
+      ],
+      "directions": [
+        "x",
+        "y",
+        "z"
+      ],
+      "domain": {
+        "type": "time"
+      }
+    }
+  ]
+}

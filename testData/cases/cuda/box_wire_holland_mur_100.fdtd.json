@@ -1,0 +1,183 @@
+{
+  "format": "FDTD Input file",
+  "__comments": "100^3 CUDA golden (mur, Holland wire).",
+  "general": {
+    "timeStep": 1e-11,
+    "numberOfSteps": 300
+  },
+  "boundary": {
+    "all": {
+      "type": "mur"
+    }
+  },
+  "mesh": {
+    "grid": {
+      "numberOfCells": [
+        100,
+        100,
+        100
+      ],
+      "steps": {
+        "x": [
+          0.1
+        ],
+        "y": [
+          0.1
+        ],
+        "z": [
+          0.1
+        ]
+      }
+    },
+    "coordinates": [
+      {
+        "id": 1,
+        "relativePosition": [
+          52,
+          52,
+          50
+        ]
+      },
+      {
+        "id": 2,
+        "relativePosition": [
+          50,
+          50,
+          46
+        ]
+      },
+      {
+        "id": 3,
+        "relativePosition": [
+          50,
+          50,
+          54
+        ]
+      },
+      {
+        "id": 4,
+        "relativePosition": [
+          50,
+          50,
+          50
+        ]
+      },
+      {
+        "id": 5,
+        "relativePosition": [
+          50,
+          50,
+          52
+        ]
+      }
+    ],
+    "elements": [
+      {
+        "id": 1,
+        "type": "node",
+        "coordinateIds": [
+          1
+        ]
+      },
+      {
+        "id": 2,
+        "type": "polyline",
+        "coordinateIds": [
+          2,
+          3
+        ]
+      },
+      {
+        "id": 3,
+        "type": "node",
+        "coordinateIds": [
+          2
+        ]
+      },
+      {
+        "id": 4,
+        "type": "node",
+        "coordinateIds": [
+          3
+        ]
+      },
+      {
+        "id": 5,
+        "type": "cell",
+        "intervals": [
+          [
+            [
+              50,
+              50,
+              50
+            ],
+            [
+              50,
+              50,
+              52
+            ]
+          ]
+        ]
+      }
+    ]
+  },
+  "materials": [
+    {
+      "name": "wireMaterial",
+      "id": 1,
+      "type": "wire",
+      "radius": 0.001,
+      "resistancePerMeter": 0.0229
+    },
+    {
+      "name": "openEnd",
+      "id": 2,
+      "type": "terminal",
+      "terminations": [
+        {
+          "type": "open"
+        }
+      ]
+    }
+  ],
+  "materialAssociations": [
+    {
+      "name": "wirez",
+      "elementIds": [
+        2
+      ],
+      "materialId": 1,
+      "initialTerminalId": 2,
+      "endTerminalId": 2
+    }
+  ],
+  "sources": [
+    {
+      "name": "nodal_soft",
+      "type": "nodalSource",
+      "hardness": "soft",
+      "field": "current",
+      "magnitudeFile": "gauss.exc",
+      "elementIds": [
+        5
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "name": "electric_field_point_probe",
+      "type": "point",
+      "elementIds": [
+        1
+      ],
+      "directions": [
+        "x",
+        "y",
+        "z"
+      ],
+      "domain": {
+        "type": "time"
+      }
+    }
+  ]
+}

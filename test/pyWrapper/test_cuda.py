@@ -129,6 +129,15 @@ def _run_cpu_vs_cuda_golden(tmp_path, monkeypatch, case_name: str):
         "box_mur_smallpw_100",
         "box_nodal_soft_pml_40",
         "box_nodal_hard_pml_40",
+        "box_wire_holland_mur_40",
+        "box_wire_holland_mur_100",
+        "box_wire_holland_mur_200",
+        "box_pmc_nodal_40",
+        "box_pmc_nodal_100",
+        "box_pmc_nodal_200",
+        "box_periodic_nodal_40",
+        "box_periodic_nodal_100",
+        "box_periodic_nodal_200",
     ],
 )
 def test_cuda_matches_cpu_golden_pml(tmp_path, case_name, monkeypatch):
