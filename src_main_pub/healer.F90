@@ -30,7 +30,7 @@ module CreateMatrices_m
    !
    public CreatePMLmatrix, Readjust, SortInitEndWithIncreasingOrder
    public CreateVolumeMM, CreateSurfaceMM, CreateLineMM
-   public CreateSurfaceSlotMM,CreateMagneticSurface
+   public CreateSurfaceSlotMM, CreateMagneticSurface
    public CreateConformalPECVolume
    !
     contains
@@ -1058,15 +1058,8 @@ module CreateMatrices_m
       return
    end subroutine
    !Slot=special case of surface.
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Routine :  CreateSurfaceSlotMM :  Sets every field component of the lower/back/left surface of a voxel to the index of
-   !                                    the medium
-   ! Inputs :   M(field)%Mediamatrix(i,j,k)  : type of medium at each i,j,k, for each field
-   !          punto%XI,punto%XE,punto%YI,punto%YE,punto%ZI,punto%ZE : initial and end coordinates of the voxel
-   !          indicemedio       : index of the voxel medium
-   !          orientacion       : Plane of the surface affected by this medium (iEx,iEy,iEz)
-   ! Outputs :  M(field)%Mediamatrix(i,j,k) = type of medium indicemedio set for all the fields at each voxel centered at i,j,k
-   !                                        (usual convention)
+   !!!   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   ! Routine :  CreateSurfaceSlotMM : one ThinSlot E-edge and one H-face per slot cell (no puntoPlus1 / off±1).
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine CreateSurfaceSlotMM (layoutnumber, Mtag, tags, numertag, MMiEx, MMiEy, MMiEz, MMiHx, &
    & MMiHy, MMiHz,  Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, &
@@ -1080,13 +1073,13 @@ module CreateMatrices_m
       integer(kind=4) :: NumMedia
       type(MediaData_t), dimension(0:NumMedia) :: med
       !
-      type(XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
+      type(XYZlimit_t) :: punto, puntoBboxplus1
       type(XYZlimit_t), intent(inout) :: point
       type(XYZlimit_t), intent(in) :: BoundingBox
       !
       integer(kind=4) :: indicemedio, orientacion, direccion
       !
-      integer(kind=4) :: layoutnumber, i, j, k, offx, offy, offz
+      integer(kind=4) :: layoutnumber, i, j, k
       integer(kind=4) :: medio
       !
       integer(kind=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
@@ -1108,7 +1101,6 @@ module CreateMatrices_m
       !
       call SortInitEndWithIncreasingOrder(point)
       !
-      !
       punto%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
       punto%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
       punto%ZI = Max (point%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
@@ -1116,70 +1108,45 @@ module CreateMatrices_m
       punto%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE)-1)
       punto%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE)-1)
       punto%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
-      !sgg jun'12 para bug en deteccion medios anisotropos en MPI en flushextrainfo
       puntoBboxplus1%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE))
       puntoBboxplus1%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE))
       puntoBboxplus1%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE))
       !
-      puntoPlus1%XE = Min (point%XE+1, Max(BoundingBox%XI, BoundingBox%XE))
-      puntoPlus1%YE = Min (point%YE+1, Max(BoundingBox%YI, BoundingBox%YE))
-      puntoPlus1%ZE = Min (point%ZE+1, Max(BoundingBox%ZI, BoundingBox%ZE))
-      !
-      offx = 0
-      offy = 0
-      offz = 0
+      ! One E-edge (cell start index) and one H-face (same cell) per slot linel.
       SELECT CASE (Abs(orientacion))
        CASE (iEx)
          do i = punto%XI, puntoBboxplus1%XE
             SELECT CASE (direccion)
              CASE (iEz)
-               offx = 0
-               offy = 0
-               offz = 1
                do j = punto%YI, punto%YE
-                  do k = punto%ZI, puntoPlus1%ZE
+                  do k = punto%ZI, punto%ZE
                      medio = MMiEy (i, j, k)
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
                         MMiEy (i, j, k) = indicemedio
                         Mtag(i,j,k)=64*numertag
                         tags%edge%y(i,j,k) = 64*numertag
-                        ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
-                     ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        !call AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                      end if
                   end do
                end do
              CASE (iEy)
-               offx = 0
-               offy = 1
-               offz = 0
-               do j = punto%YI, puntoPlus1%YE
+               do j = punto%YI, punto%YE
                   do k = punto%ZI, punto%ZE
                      medio = MMiEz (i, j, k)
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
                         MMiEz (i, j, k) = indicemedio
                         Mtag(i,j,k)=64*numertag
                         tags%edge%z(i,j,k) = 64*numertag
-                        ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
-                     ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        !call AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                      end if
                   end do
                end do
             end select
-            do j = Max (punto%YI - offy, Min(BoundingBox%YI, BoundingBox%YE)), &
-            &       Min (punto%YE + offy, Max(BoundingBox%YI, BoundingBox%YE)-1)
-               do k = Max (punto%ZI - offz, Min(BoundingBox%ZI, BoundingBox%ZE)),  &
-               &       Min (punto%ZE + offz, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
+            do j = punto%YI, punto%YE
+               do k = punto%ZI, punto%ZE
                   medio = MMiHx (i, j, k)
                   if (med(indicemedio)%Priority > med(medio)%Priority) then
                      MMiHx (i, j, k) = indicemedio
                      Mtag(i,j,k)=64*numertag
                      tags%face%x(i,j,k) = 64*numertag
-                     ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,3);
-                  ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                     !call AddToShared (iHx, i, j, k, indicemedio, medio, Hshared)
-
                   end if
                end do
             end do
@@ -1188,52 +1155,35 @@ module CreateMatrices_m
          do j = punto%YI, puntoBboxplus1%YE
             SELECT CASE (direccion)
              CASE (iEx)
-               offx = 1
-               offy = 0
-               offz = 0
-               do i = punto%XI, puntoPlus1%XE
+               do i = punto%XI, punto%XE
                   do k = punto%ZI, punto%ZE
                      medio = MMiEz (i, j, k)
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
                         MMiEz (i, j, k) = indicemedio
                         Mtag(i,j,k)=64*numertag
                         tags%edge%z(i,j,k) = 64*numertag
-                        ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
-                     ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        !call AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                      end if
                   end do
                end do
              CASE (iEz)
-               offx = 0
-               offy = 0
-               offz = 1
                do i = punto%XI, punto%XE
-                  do k = punto%ZI, puntoPlus1%ZE
+                  do k = punto%ZI, punto%ZE
                      medio = MMiEx (i, j, k)
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
                         MMiEx (i, j, k) = indicemedio
                         Mtag(i,j,k)=64*numertag
                         tags%edge%x(i,j,k) = 64*numertag
-                        ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
-                     ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        !call AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                      end if
                   end do
                end do
             end select
-            do i = Max (punto%XI - offx, Min(BoundingBox%XI, BoundingBox%XE)),  &
-            &       Min (punto%XE + offx, Max(BoundingBox%XI, BoundingBox%XE)-1)
-               do k = Max (punto%ZI - offz, Min(BoundingBox%ZI, BoundingBox%ZE)),  &
-               &       Min (punto%ZE + offz, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
+            do i = punto%XI, punto%XE
+               do k = punto%ZI, punto%ZE
                   medio = MMiHy (i, j, k)
                   if (med(indicemedio)%Priority > med(medio)%Priority) then
                      MMiHy (i, j, k) = indicemedio
                      Mtag(i,j,k)=64*numertag
                      tags%face%y(i,j,k) = 64*numertag
-                     ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,4);
-                  ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                     !call AddToShared (iHy, i, j, k, indicemedio, medio, Hshared)
                   end if
                end do
             end do
@@ -1242,52 +1192,35 @@ module CreateMatrices_m
          do k = punto%ZI, puntoBboxplus1%ZE
             SELECT CASE (direccion)
              CASE (iEy)
-               offx = 0
-               offy = 1
-               offz = 0
                do i = punto%XI, punto%XE
-                  do j = punto%YI, puntoPlus1%YE
+                  do j = punto%YI, punto%YE
                      medio = MMiEx (i, j, k)
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
                         MMiEx (i, j, k) = indicemedio
                         Mtag(i,j,k)=64*numertag
                         tags%edge%x(i,j,k) = 64*numertag
-                        ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
-                     ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        !call AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                      end if
                   end do
                end do
              CASE (iEx)
-               offx = 1
-               offy = 0
-               offz = 0
-               do i = punto%XI, puntoPlus1%XE
+               do i = punto%XI, punto%XE
                   do j = punto%YI, punto%YE
                      medio = MMiEy (i, j, k)
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
                         MMiEy (i, j, k) = indicemedio
                         Mtag(i,j,k)=64*numertag
                         tags%edge%y(i,j,k) = 64*numertag
-                        ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
-                     ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        !call AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                      end if
                   end do
                end do
             end select
-            do i = Max (punto%XI - offx, Min(BoundingBox%XI, BoundingBox%XE)),  &
-            &       Min (punto%XE + offx, Max(BoundingBox%XI, BoundingBox%XE)-1)
-               do j = Max (punto%YI - offy, Min(BoundingBox%YI, BoundingBox%YE)),  &
-               &       Min (punto%YE + offy, Max(BoundingBox%YI, BoundingBox%YE)-1)
+            do i = punto%XI, punto%XE
+               do j = punto%YI, punto%YE
                   medio = MMiHz (i, j, k)
                   if (med(indicemedio)%Priority > med(medio)%Priority) then
                      MMiHz (i, j, k) = indicemedio
                      Mtag(i,j,k)=64*numertag
                      tags%face%z(i,j,k) = 64*numertag
-                     ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
-                  ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                     !call AddToShared (iHz, i, j, k, indicemedio, medio, Hshared)
                   end if
                end do
             end do
@@ -1296,6 +1229,7 @@ module CreateMatrices_m
       !
       return
    end subroutine
+
    !!!!special case of magneticsurface (for the multiport padding)
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

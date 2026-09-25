@@ -6913,29 +6913,9 @@ contains
 
          tama = this%tSlots%n_tg
          do i = 1, tama
-            numertag = numertag + 1
-            tama2 = this%tSlots%Tg(i)%N_tgc
-            if (tama2/=0) then
-               if ((i>1)) then
-                  if ((this%tSlots%Tg(i)%TgC(1)%tag == this%tSlots%Tg(i-1)%TgC(1)%tag)) then !do not increase
-                     numertag=numertag-1
-                  end if
-               end if
-            end if
-            if (precounting==1) then
-               if (tama2/=0) then
-                  tagtype%tag(numertag) =  this%tSlots%Tg(i)%TgC(1)%tag
-               else
-                  print *,'bug in tags. '
-                  stop
-               end if
-               do j = 1, tama2
-                  if (trim(adjustl(this%tSlots%Tg(i)%TgC(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                     print *,'bug in tags. '
-                     stop
-                  end if
-               end do
-            end if
+            call checkThinSlotTags(this%tSlots%Tg(i), &
+                                   this%tSlots%Tg(1:i-1), &
+                                   i-1, numertag, tagtype, precounting)
          end do
 
          if (associated(this%conformalRegs%volumes)) then 
@@ -7234,6 +7214,75 @@ contains
           tagtype%tag(numertag) = tagToCheck
        end if
     end subroutine
+
+   subroutine checkThinSlotTags(component, prev_components, n_prev, numertag, tagtype, precounting)
+      type(ThinSlot_t), intent(in) :: component
+      type(ThinSlot_t), intent(in) :: prev_components(:)
+      integer, intent(in) :: n_prev
+      integer, intent(inout) :: numertag
+      type(tagtype_t), intent(inout) :: tagtype
+      integer, intent(in) :: precounting
+
+      integer :: j
+
+      if (component%N_tgc == 0) then
+         print *, 'Bug in ThinSlot Tags. Missing coordinates'
+         stop
+      end if
+
+      check_tags: do j = 1, component%N_tgc
+         numertag = numertag + 1
+         call checkThinSlotTagForDuplicate(component, prev_components, n_prev, j, numertag, tagtype, precounting)
+      end do check_tags
+   end subroutine
+
+   subroutine checkThinSlotTagForDuplicate(component, prev_components, n_prev, idx, numertag, tagtype, precounting)
+      type(ThinSlot_t), intent(in) :: component
+      type(ThinSlot_t), intent(in) :: prev_components(:)
+      integer, intent(in) :: n_prev
+      integer, intent(in) :: idx
+      integer, intent(inout) :: numertag
+      type(tagtype_t), intent(inout) :: tagtype
+      integer, intent(in) :: precounting
+
+      logical :: foundDuplicate
+      character(len=BUFSIZE) :: tagToCheck
+      integer :: k, m
+
+      tagToCheck = trim(adjustl(component%TgC(idx)%tag))
+      if (len_trim(tagToCheck) == 0) then
+         print *, 'Bug in ThinSlot Tags. Empty tag on component', idx
+         stop
+      end if
+      foundDuplicate = .false.
+
+      if (idx > 1) then
+         check_current: do k = 1, idx-1
+            if (tagToCheck == trim(adjustl(component%TgC(k)%tag))) then
+               foundDuplicate = .true.
+               exit check_current
+            end if
+         end do check_current
+      end if
+
+      if ((.not. foundDuplicate) .and. (n_prev > 0)) then
+         check_previous: do m = 1, n_prev
+            if (prev_components(m)%N_tgc > 0) then
+               do k = 1, prev_components(m)%N_tgc
+                  if (tagToCheck == trim(adjustl(prev_components(m)%TgC(k)%tag))) then
+                     foundDuplicate = .true.
+                  end if
+               end do
+            end if
+         end do check_previous
+      end if
+
+      if (foundDuplicate) then
+         numertag = numertag - 1
+      else if (precounting == 1) then
+         tagtype%tag(numertag) = tagToCheck
+      end if
+   end subroutine
 
 
    function searchtag(tagtype,tag) result(numertag)

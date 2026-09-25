@@ -307,9 +307,78 @@ def test_map_vtk_includes_thin_slot_geometry(tmp_path):
         vtk_map_filename, celltype=9, property="mediatype"
     )
 
-    assert line_media_dict.get(4.5, 0) > 0
-    assert any(media_type >= 400.0 for media_type in face_media_dict)
-    assert sum(face_media_dict.values()) > 0
+    # 10-cell slot → exactly 10 ThinSlot edges and 10 faces
+    assert line_media_dict.get(4.5, 0) == 10
+    n_slot_faces = sum(count for mt, count in face_media_dict.items() if mt >= 400.0)
+    assert n_slot_faces == 10
+
+
+@pytest.mark.thinSlot
+@pytest.mark.vtk
+def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
+    """Discontinuous Ex/Ez rectangle: one ThinSlot edge and face per cell.
+
+    CreateSurfaceSlotMM stamps the cell-start E-edge and the same-cell H-face
+    (no puntoPlus1 dual extremes, no off±1 face expansion).
+    """
+    import pyvista as pv
+
+    input_filename = CASES_FOLDER + "thin_slot_rectangle/thin_slot_rectangle.fdtd.json"
+    solver = FDTD(
+        input_filename=input_filename,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+        flags=["-dmma", "-mapvtk"],
+    )
+    solver["general"]["numberOfSteps"] = 1
+
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
+
+    line_media_dict = createPropertyDictionary(
+        vtk_map_filename, celltype=3, property="mediatype"
+    )
+    face_media_dict = createPropertyDictionary(
+        vtk_map_filename, celltype=9, property="mediatype"
+    )
+    # Four sides × 12 cells = 48 edges. Bottom and left share one Hy face at
+    # the min corner → 47 unique ThinSlot faces.
+    assert line_media_dict.get(4.5, 0) == 48
+    n_slot_faces = sum(count for mt, count in face_media_dict.items() if mt >= 400.0)
+    assert n_slot_faces == 47
+
+    # Designed rectangle polyline on y=10: x,z in [14,26] (cell indices)
+    origin = np.array(solver["mesh"]["grid"]["origin"], dtype=float)
+    dx = float(solver["mesh"]["grid"]["steps"]["x"][0])
+    designed_min = origin + np.array([14, 10, 14], dtype=float) * dx
+    designed_max = origin + np.array([26, 10, 26], dtype=float) * dx
+    # Element at index N spans to node N+1; last cell starts at 25 for a [14,26] side
+    yee_tol = dx * 1.001
+    f32_tol = 1e-5
+
+    ugrid = pv.UnstructuredGrid(vtk_map_filename)
+    mt = ugrid.cell_data["mediatype"]
+    slot_line_idx = np.where((ugrid.celltypes == 3) & np.isclose(mt, 4.5))[0]
+    assert len(slot_line_idx) == 48
+
+    pts = np.vstack([ugrid.get_cell(int(ci)).points for ci in slot_line_idx])
+    assert pts[:, 0].min() >= designed_min[0] - f32_tol
+    assert pts[:, 0].max() <= designed_max[0] + yee_tol
+    assert pts[:, 2].min() >= designed_min[2] - f32_tol
+    assert pts[:, 2].max() <= designed_max[2] + yee_tol
+    assert np.allclose(pts[:, 1], designed_min[1], atol=1e-6)
+
+    slot_face_idx = np.where((ugrid.celltypes == 9) & (mt >= 400.0))[0]
+    assert len(slot_face_idx) == 47
+    face_pts = np.vstack([ugrid.get_cell(int(ci)).points for ci in slot_face_idx])
+    assert face_pts[:, 0].min() >= designed_min[0] - f32_tol
+    assert face_pts[:, 0].max() <= designed_max[0] + yee_tol
+    assert face_pts[:, 2].min() >= designed_min[2] - f32_tol
+    assert face_pts[:, 2].max() <= designed_max[2] + yee_tol
+    assert np.allclose(face_pts[:, 1], designed_min[1], atol=1e-6)
 
 
 @pytest.mark.conformal
