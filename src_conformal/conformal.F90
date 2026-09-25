@@ -998,7 +998,7 @@ contains
          cell = cell_map%keys(i)%cell
          sides = cell_map%getSidesInCell(cell)
          tris =  cell_map%getTrianglesInCell(cell)
-         intervals = cell_map%getIntervalsInCell(cell)
+         ! intervals = cell_map%getIntervalsInCell(cell)
          do face = FACE_X, FACE_Z
             sides_on_face = getSidesOnFace(sides, face)
             tris_on_face = getTrianglesOnFace(tris, face)
@@ -1012,7 +1012,7 @@ contains
             end if
 
          end do
-         call fillIntervals(intervals,edges, faces)
+         ! call fillIntervals(intervals,edges, faces)
       end do
 
       do i = 1, size(cell_map%keys)
@@ -1074,17 +1074,17 @@ contains
       res(4)%end  = cs(1)
    end function
 
-   subroutine fillIntervals(intervals, edges, faces)
-      type(interval_t), dimension(:), allocatable :: intervals
-      type(edge_t), dimension(:), allocatable, intent(inout) :: edges
-      type(face_t), dimension(:), allocatable, intent(inout) :: faces
-      integer :: i
-      type(side_t), dimension(:), allocatable :: contour
-      do i = 1, size(intervals)
-         call fillEdgesFromInterval(edges, intervals(i))
-         call fillFaceFromInterval(faces, intervals(i))
-      end do
-   end subroutine
+   ! subroutine fillIntervals(intervals, edges, faces)
+   !    type(interval_t), dimension(:), allocatable :: intervals
+   !    type(edge_t), dimension(:), allocatable, intent(inout) :: edges
+   !    type(face_t), dimension(:), allocatable, intent(inout) :: faces
+   !    integer :: i
+   !    type(side_t), dimension(:), allocatable :: contour
+   !    do i = 1, size(intervals)
+   !       call fillEdgesFromInterval(edges, intervals(i))
+   !       call fillFaceFromInterval(faces, intervals(i))
+   !    end do
+   ! end subroutine
 
    subroutine fillFacesFromTriangles(tris_on_face, faces, edges)
       type(triangle_t), dimension(:), allocatable, intent(in) :: tris_on_face
