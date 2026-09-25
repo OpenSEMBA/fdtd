@@ -495,7 +495,15 @@ def test_fill_slanted_vtk_large_sphere(tmp_path):
     assert face_media_dict
     assert -1 not in face_media_dict.keys()
 
-
+@pytest.mark.conformal
+def test_check_open_volume_fails(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal_open_volume.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver['general']['numberOfSteps'] = 1
+    with pytest.raises(Exception) as e_info:    
+        solver.run()
+   
 
 @pytest.mark.conformal
 @pytest.mark.vtk
