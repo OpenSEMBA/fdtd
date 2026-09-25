@@ -1831,7 +1831,7 @@ contains
       res%n_tg = size(mAs)
       allocate(res%tg(res%n_tg))
       do i = 1, size(mAs)
-         res%tg = readThinSlot(mAs(i))
+         res%tg(i) = readThinSlot(mAs(i))
       end do
    contains
       function readThinSlot(mA) result(res)
@@ -1858,7 +1858,6 @@ contains
          type(ThinSlotComp_t), dimension(:), pointer :: tc
          integer :: i, j, k
          integer :: nTgc, nXYZ
-         integer :: dir
          ! Precount
          nTgc = 0
          do i = 1, size(cs)
@@ -1868,7 +1867,7 @@ contains
             nTgc = nTgc + nXYZ
          end do
 
-         ! Fill
+         ! Fill along the linel orientation axis
          j = 1
          allocate(tc(nTgc))
          do i = 1, size(cs)
@@ -1880,13 +1879,13 @@ contains
                   j = j + 1
                end do
             case (iEy)
-               do k = 1, (cs(i)%xe - cs(i)%xi + 1)
+               do k = 1, (cs(i)%ye - cs(i)%yi + 1)
                   tc(j) = buildBaseThinSlotComponent(cs(i))
                   tc(j)%j = cs(i)%yi + k - 1
                   j = j + 1
                end do
             case (iEz)
-               do k = 1, (cs(i)%xe - cs(i)%xi + 1)
+               do k = 1, (cs(i)%ze - cs(i)%zi + 1)
                   tc(j) = buildBaseThinSlotComponent(cs(i))
                   tc(j)%k = cs(i)%zi + k - 1
                   j = j + 1
