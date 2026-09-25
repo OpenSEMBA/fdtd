@@ -796,8 +796,7 @@ contains
                tagName = this%buildTagName(mAs(i)%materialId, mAs(i)%elementIds(j))
                if (cR%type == REGION_TYPE_VOLUME) then
                   call appendRegion(res%volumes, cR, tagName)
-               end if
-               if (cR%type == REGION_TYPE_SURFACE) then
+               else if (cR%type == REGION_TYPE_SURFACE) then
                   if (isClosedRegion(cR)) then
                      ! A closed PEC shell has the same electromagnetic semantics as a
                      ! conformal volume; use the established volume filling path.
@@ -948,6 +947,7 @@ contains
 
       subroutine appendRegion(regions, region, tagName)
          type(ConformalPECElements_t), dimension(:), pointer :: regions
+         type(ConformalPECElements_t) :: validation_region
          type(conformal_region_t), intent(in) :: region
          character(len=:), allocatable, intent(in) :: tagName
 
@@ -956,29 +956,46 @@ contains
          logical :: is_valid
          character(len=256) :: validation_message
          if (.not. associated(regions)) then
-            allocate(regions(1))
-            regions(1)%triangles = region%triangles
-            allocate(regions(1)%intervals(0))
-            regions(1)%tag = tagName
-            call validateRegion(regions(1), region%type, tagName, is_valid, validation_message)
+            validation_region%triangles = region%triangles
+            validation_region%intervals = cell_intervals_to_intervals(region%intervals)
+            call validateRegion(validation_region, region%type, tagName, is_valid, validation_message)
+            if (is_valid) then 
+               allocate(regions(1))
+               regions(1)%triangles = region%triangles
+               allocate(regions(1)%intervals(0))
+               regions(1)%tag = tagName
+            end if
          else
-            allocate(aux(size(regions) + 1))
-            do i = 1, size(regions)
-               aux(i) = regions(i)
-            end do
-            aux(size(regions) + 1)%triangles = region%triangles
-            allocate(aux(size(regions) + 1)%intervals(0))
-            aux(size(regions) + 1)%tag  = tagName
-            deallocate(regions)
+            validation_region%triangles = region%triangles
+            validation_region%intervals = cell_intervals_to_intervals(region%intervals)
+            if (is_valid) then 
+               allocate(aux(size(regions) + 1))
+               do i = 1, size(regions)
+                  aux(i) = regions(i)
+               end do
+               aux(size(regions) + 1)%triangles = region%triangles
+               allocate(aux(size(regions) + 1)%intervals(0))
+               aux(size(regions) + 1)%tag  = tagName
+               deallocate(regions)
 
-            allocate(regions(size(aux)))
-            do i = 1, size(aux)
-               regions(i) = aux(i)
-            end do
-            call validateRegion(regions(size(regions)), region%type, tagName, is_valid, validation_message)
-
+               allocate(regions(size(aux)))
+               do i = 1, size(aux)
+                  regions(i) = aux(i)
+               end do
+            end if
          end if
       end subroutine
+
+      function cell_intervals_to_intervals(cell_intervals) result(res)
+         type(cell_interval_t), intent(in), dimension(:), allocatable :: cell_intervals
+         type(interval_t), dimension(:), allocatable :: res
+         integer :: i
+         allocate(res(size(cell_intervals)))
+         do i = 1, size(cell_intervals)
+            res(i)%ini%cell(:) = cell_intervals(i)%ini%cell(:)
+            res(i)%end%cell(:) = cell_intervals(i)%end%cell(:)
+         end do
+      end function
 
       subroutine validateRegion(element, region_type, tag_name, is_valid, validation_message)
          type(ConformalPECElements_t), intent(in) :: element
