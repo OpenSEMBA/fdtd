@@ -173,8 +173,7 @@ static int launch_job(fdtd_cuda_ctx *ctx, const fdtd_nodal_job &job, fdtd_real t
       F, Mi, coeff, skip, ctx->nodal_n_skip, ctx->d_nodal_samples,
       ax, ay, n_ax, n_ay, ax_i, ax_j, ay_i, ay_j,
       job, fd.nx, fd.ny, fd.nz, md.nx, md.ny, time);
-   return check_nodal(cudaGetLastError(), "nodal launch") &&
-          check_nodal(cudaDeviceSynchronize(), "nodal sync");
+   return check_nodal(cudaGetLastError(), "nodal launch");
 }
 
 int fdtd_cuda_upload_nodal(fdtd_cuda_ctx *ctx,
@@ -220,13 +219,17 @@ int fdtd_cuda_nodal_ready(const fdtd_cuda_ctx *ctx)
 static int advance_phase(fdtd_cuda_ctx *ctx, fdtd_real time, int step, int electric)
 {
    if (!ctx || !ctx->nodal_ready) return 0;
+   int queued = 0;
    for (int s = 0; s < ctx->nodal_n_jobs; ++s) {
       const fdtd_nodal_job &job = ctx->h_nodal_jobs[s];
       int is_e = job.field_comp < 3;
       if (is_e != electric) continue;
+      if (job.initial_only && step != 0) continue;
       if (!launch_job(ctx, job, time, step)) return 0;
+      queued = 1;
    }
-   return 1;
+   if (!queued) return 1;
+   return check_nodal(cudaDeviceSynchronize(), "nodal sync");
 }
 
 int fdtd_cuda_advance_nodal_e(fdtd_cuda_ctx *ctx, fdtd_real time, int step)

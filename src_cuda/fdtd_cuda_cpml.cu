@@ -60,9 +60,8 @@ static __global__ void k_cpml(
    Field[id_f] = Field[id_f] + (fdtd_real)h_sign * G[medio] * Psi[id_p];
 }
 
-int fdtd_cuda_cpml_apply(fdtd_cuda_ctx *ctx, const fdtd_cpml_job *job)
+static int launch_cpml(fdtd_cuda_ctx *ctx, const fdtd_cpml_job *job)
 {
-   if (!ctx || !job) return 0;
    fdtd_real *Field = fdtd_cuda_field_ptr(ctx, job->field_comp);
    fdtd_real *Ha = fdtd_cuda_field_ptr(ctx, job->h_comp_a);
    /* h_comp_b selects which field buffer; neighbour offset is via axis */
@@ -97,5 +96,22 @@ int fdtd_cuda_cpml_apply(fdtd_cuda_ctx *ctx, const fdtd_cpml_job *job)
       job->h_diff_axis, job->free_axis, job->p_base,
       job->h_sign, job->use_fixed_medio, job->medio_fixed);
 
-   return cudaPeekAtLastError() == cudaSuccess && cudaDeviceSynchronize() == cudaSuccess;
+   return cudaPeekAtLastError() == cudaSuccess;
+}
+
+int fdtd_cuda_cpml_apply(fdtd_cuda_ctx *ctx, const fdtd_cpml_job *job)
+{
+   if (!ctx || !job || !launch_cpml(ctx, job)) return 0;
+   return cudaDeviceSynchronize() == cudaSuccess;
+}
+
+int fdtd_cuda_cpml_apply_n(fdtd_cuda_ctx *ctx, const fdtd_cpml_job *jobs, int n)
+{
+   if (!ctx || n < 0) return 0;
+   if (n == 0) return 1;
+   if (!jobs) return 0;
+   for (int i = 0; i < n; ++i) {
+      if (!launch_cpml(ctx, &jobs[i])) return 0;
+   }
+   return cudaDeviceSynchronize() == cudaSuccess;
 }

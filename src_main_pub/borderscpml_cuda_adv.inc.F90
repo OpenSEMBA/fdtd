@@ -100,102 +100,108 @@ subroutine AdvanceelectricCPML_cuda(NumMedia, b)
    use fdtd_cuda_m
    integer, intent(in) :: NumMedia
    type(bounds_t), intent(in) :: b
-   type(fdtd_cpml_job_c) :: job
-   integer :: region, slot, irc
+   type(fdtd_cpml_job_c) :: jobs(12)
+   integer :: region, slot, n, irc
    integer :: pby, pcy, pbz, pcz, pbx, pcx
    if (NumMedia < 0) return
    pby = lbound(P_be_y, 1); pcy = lbound(P_ce_y, 1)
    pbz = lbound(P_be_z, 1); pcz = lbound(P_ce_z, 1)
    pbx = lbound(P_be_x, 1); pcx = lbound(P_ce_x, 1)
+   n = 0
 
    do region = left, right
       slot = 0 + (region - left) * 4
       ! Ex += G2 * Psi_Exy ; dH = Hz - Hz(j-1) ; free axis y
-      call fill_cpml_job(job, 0, slot+0, 0, 5, 1, 1, 7, pby, 1, &
+      n = n + 1
+      call fill_cpml_job(jobs(n), 0, slot+0, 0, 5, 1, 1, 7, pby, 1, &
          PMLc(iEx)%XI(region), PMLc(iEx)%XE(region), PMLc(iEx)%YI(region), PMLc(iEx)%YE(region), &
          PMLc(iEx)%ZI(region), PMLc(iEx)%ZE(region), b%Ex%XI, b%Ex%YI, b%Ex%ZI, +1)
-      irc = fdtd_cuda_cpml_apply_f(job)
       ! Ez -= G2 * Psi_Ezy ; dH = Hx - Hx(j-1)
-      call fill_cpml_job(job, 2, slot+1, 2, 3, 1, 1, 7, pby, 1, &
+      n = n + 1
+      call fill_cpml_job(jobs(n), 2, slot+1, 2, 3, 1, 1, 7, pby, 1, &
          PMLc(iEz)%XI(region), PMLc(iEz)%XE(region), PMLc(iEz)%YI(region), PMLc(iEz)%YE(region), &
          PMLc(iEz)%ZI(region), PMLc(iEz)%ZE(region), b%Ez%XI, b%Ez%YI, b%Ez%ZI, -1)
-      irc = fdtd_cuda_cpml_apply_f(job)
    end do
 
    do region = down, up
       slot = 8 + (region - down) * 4
       ! Ey += ; dH = Hx-Hx(k-1) free z
-      call fill_cpml_job(job, 1, slot+0, 1, 3, 2, 2, 8, pbz, 2, &
+      n = n + 1
+      call fill_cpml_job(jobs(n), 1, slot+0, 1, 3, 2, 2, 8, pbz, 2, &
          PMLc(iEy)%XI(region), PMLc(iEy)%XE(region), PMLc(iEy)%YI(region), PMLc(iEy)%YE(region), &
          PMLc(iEy)%ZI(region), PMLc(iEy)%ZE(region), b%Ey%XI, b%Ey%YI, b%Ey%ZI, +1)
-      irc = fdtd_cuda_cpml_apply_f(job)
       ! Ex -= ; dH = Hy-Hy(k-1)
-      call fill_cpml_job(job, 0, slot+1, 0, 4, 2, 2, 8, pbz, 2, &
+      n = n + 1
+      call fill_cpml_job(jobs(n), 0, slot+1, 0, 4, 2, 2, 8, pbz, 2, &
          PMLc(iEx)%XI(region), PMLc(iEx)%XE(region), PMLc(iEx)%YI(region), PMLc(iEx)%YE(region), &
          PMLc(iEx)%ZI(region), PMLc(iEx)%ZE(region), b%Ex%XI, b%Ex%YI, b%Ex%ZI, -1)
-      irc = fdtd_cuda_cpml_apply_f(job)
    end do
 
    do region = back, front
       slot = 16 + (region - back) * 4
       ! Ez += ; dH = Hy-Hy(i-1) free x
-      call fill_cpml_job(job, 2, slot+0, 2, 4, 0, 0, 6, pbx, 0, &
+      n = n + 1
+      call fill_cpml_job(jobs(n), 2, slot+0, 2, 4, 0, 0, 6, pbx, 0, &
          PMLc(iEz)%XI(region), PMLc(iEz)%XE(region), PMLc(iEz)%YI(region), PMLc(iEz)%YE(region), &
          PMLc(iEz)%ZI(region), PMLc(iEz)%ZE(region), b%Ez%XI, b%Ez%YI, b%Ez%ZI, +1)
-      irc = fdtd_cuda_cpml_apply_f(job)
       ! Ey -= ; dH = Hz-Hz(i-1)
-      call fill_cpml_job(job, 1, slot+1, 1, 5, 0, 0, 6, pbx, 0, &
+      n = n + 1
+      call fill_cpml_job(jobs(n), 1, slot+1, 1, 5, 0, 0, 6, pbx, 0, &
          PMLc(iEy)%XI(region), PMLc(iEy)%XE(region), PMLc(iEy)%YI(region), PMLc(iEy)%YE(region), &
          PMLc(iEy)%ZI(region), PMLc(iEy)%ZE(region), b%Ey%XI, b%Ey%YI, b%Ey%ZI, -1)
-      irc = fdtd_cuda_cpml_apply_f(job)
    end do
+   irc = fdtd_cuda_cpml_apply_n_f(jobs, n)
+   if (irc == 0) call stoponerror(0, 0, 'CUDA electric CPML advance failed')
 end subroutine AdvanceelectricCPML_cuda
 
 subroutine AdvanceMagneticCPML_cuda(NumMedia, b)
    use fdtd_cuda_m
    integer, intent(in) :: NumMedia
    type(bounds_t), intent(in) :: b
-   type(fdtd_cpml_job_c) :: job
-   integer :: region, slot, irc
+   type(fdtd_cpml_job_c) :: jobs(12)
+   integer :: region, slot, n, irc
    integer :: pby, pcy, pbz, pcz, pbx, pcx
    if (NumMedia < 0) return
    pby = lbound(P_bm_y, 1); pcy = lbound(P_cm_y, 1)
    pbz = lbound(P_bm_z, 1); pcz = lbound(P_cm_z, 1)
    pbx = lbound(P_bm_x, 1); pcx = lbound(P_cm_x, 1)
+   n = 0
 
    do region = left, right
       slot = 0 + (region - left) * 4
       ! Hx += Gm2*Psi_Hxy ; dE = Ez - Ez(j-1) — match host signs from AdvanceMagneticCPML
-      call fill_cpml_job(job, 3, slot+2, 3, 2, 1, 13, 19, pby, 1, &
+      n = n + 1
+      call fill_cpml_job(jobs(n), 3, slot+2, 3, 2, 1, 13, 19, pby, 1, &
          PMLc(iHx)%XI(region), PMLc(iHx)%XE(region), PMLc(iHx)%YI(region), PMLc(iHx)%YE(region), &
          PMLc(iHx)%ZI(region), PMLc(iHx)%ZE(region), b%Hx%XI, b%Hx%YI, b%Hx%ZI, +1)
-      irc = fdtd_cuda_cpml_apply_f(job)
-      call fill_cpml_job(job, 5, slot+3, 5, 0, 1, 13, 19, pby, 1, &
+      n = n + 1
+      call fill_cpml_job(jobs(n), 5, slot+3, 5, 0, 1, 13, 19, pby, 1, &
          PMLc(iHz)%XI(region), PMLc(iHz)%XE(region), PMLc(iHz)%YI(region), PMLc(iHz)%YE(region), &
          PMLc(iHz)%ZI(region), PMLc(iHz)%ZE(region), b%Hz%XI, b%Hz%YI, b%Hz%ZI, -1)
-      irc = fdtd_cuda_cpml_apply_f(job)
    end do
    do region = down, up
       slot = 8 + (region - down) * 4
-      call fill_cpml_job(job, 4, slot+2, 4, 0, 2, 14, 20, pbz, 2, &
+      n = n + 1
+      call fill_cpml_job(jobs(n), 4, slot+2, 4, 0, 2, 14, 20, pbz, 2, &
          PMLc(iHy)%XI(region), PMLc(iHy)%XE(region), PMLc(iHy)%YI(region), PMLc(iHy)%YE(region), &
          PMLc(iHy)%ZI(region), PMLc(iHy)%ZE(region), b%Hy%XI, b%Hy%YI, b%Hy%ZI, +1)
-      irc = fdtd_cuda_cpml_apply_f(job)
-      call fill_cpml_job(job, 3, slot+3, 3, 1, 2, 14, 20, pbz, 2, &
+      n = n + 1
+      call fill_cpml_job(jobs(n), 3, slot+3, 3, 1, 2, 14, 20, pbz, 2, &
          PMLc(iHx)%XI(region), PMLc(iHx)%XE(region), PMLc(iHx)%YI(region), PMLc(iHx)%YE(region), &
          PMLc(iHx)%ZI(region), PMLc(iHx)%ZE(region), b%Hx%XI, b%Hx%YI, b%Hx%ZI, -1)
-      irc = fdtd_cuda_cpml_apply_f(job)
    end do
    do region = back, front
       slot = 16 + (region - back) * 4
-      call fill_cpml_job(job, 5, slot+2, 5, 1, 0, 12, 18, pbx, 0, &
+      n = n + 1
+      call fill_cpml_job(jobs(n), 5, slot+2, 5, 1, 0, 12, 18, pbx, 0, &
          PMLc(iHz)%XI(region), PMLc(iHz)%XE(region), PMLc(iHz)%YI(region), PMLc(iHz)%YE(region), &
          PMLc(iHz)%ZI(region), PMLc(iHz)%ZE(region), b%Hz%XI, b%Hz%YI, b%Hz%ZI, +1)
-      irc = fdtd_cuda_cpml_apply_f(job)
-      call fill_cpml_job(job, 4, slot+3, 4, 2, 0, 12, 18, pbx, 0, &
+      n = n + 1
+      call fill_cpml_job(jobs(n), 4, slot+3, 4, 2, 0, 12, 18, pbx, 0, &
          PMLc(iHy)%XI(region), PMLc(iHy)%XE(region), PMLc(iHy)%YI(region), PMLc(iHy)%YE(region), &
          PMLc(iHy)%ZI(region), PMLc(iHy)%ZE(region), b%Hy%XI, b%Hy%YI, b%Hy%ZI, -1)
-      irc = fdtd_cuda_cpml_apply_f(job)
    end do
+   irc = fdtd_cuda_cpml_apply_n_f(jobs, n)
+   if (irc == 0) call stoponerror(0, 0, 'CUDA magnetic CPML advance failed')
 end subroutine AdvanceMagneticCPML_cuda
 #endif

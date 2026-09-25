@@ -2343,6 +2343,18 @@ contains
 
    subroutine advanceE(this)
       class(solver_t) :: this
+#ifdef CompileWithCUDA
+      type(fdtd_ibox_c) :: sx, sy, sz
+      if (this%control%use_cuda .and. fdtd_cuda_ok_f()) then
+         sx = fdtd_ibox_c(1, this%bounds%sweepEx%NX, 1, this%bounds%sweepEx%NY, 1, this%bounds%sweepEx%NZ)
+         sy = fdtd_ibox_c(1, this%bounds%sweepEy%NX, 1, this%bounds%sweepEy%NY, 1, this%bounds%sweepEy%NZ)
+         sz = fdtd_ibox_c(1, this%bounds%sweepEz%NX, 1, this%bounds%sweepEz%NY, 1, this%bounds%sweepEz%NZ)
+         if (fdtd_cuda_advance_e_f(sx, sy, sz) == 0) then
+            call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA advanceE failed')
+         end if
+         return
+      end if
+#endif
 #ifdef CompileWithProfiling
       call nvtxStartRange("Antes del bucle EX")
 #endif
@@ -2527,6 +2539,18 @@ contains
 
    subroutine advanceH(this)
       class(solver_t) :: this
+#ifdef CompileWithCUDA
+      type(fdtd_ibox_c) :: sx, sy, sz
+      if (this%control%use_cuda .and. fdtd_cuda_ok_f()) then
+         sx = fdtd_ibox_c(1, this%bounds%sweepHx%NX, 1, this%bounds%sweepHx%NY, 1, this%bounds%sweepHx%NZ)
+         sy = fdtd_ibox_c(1, this%bounds%sweepHy%NX, 1, this%bounds%sweepHy%NY, 1, this%bounds%sweepHy%NZ)
+         sz = fdtd_ibox_c(1, this%bounds%sweepHz%NX, 1, this%bounds%sweepHz%NY, 1, this%bounds%sweepHz%NZ)
+         if (fdtd_cuda_advance_h_f(sx, sy, sz) == 0) then
+            call stoponerror(this%control%layoutnumber, this%control%num_procs, 'CUDA advanceH failed')
+         end if
+         return
+      end if
+#endif
 #ifdef CompileWithProfiling    
       call nvtxStartRange("Antes del bucle HX")
 #endif

@@ -157,14 +157,13 @@ static dim3 grid_for(fdtd_ibox s, dim3 block)
                (nz + block.z - 1) / block.z);
 }
 
-static int launch_ok(void)
+static int sync_ok(void)
 {
    return cudaPeekAtLastError() == cudaSuccess && cudaDeviceSynchronize() == cudaSuccess;
 }
 
-int fdtd_cuda_advance_ex(fdtd_cuda_ctx *ctx, fdtd_ibox s)
+static int launch_ex(fdtd_cuda_ctx *ctx, fdtd_ibox s)
 {
-   if (!ctx) return 0;
    fdtd_dims3 ex = fdtd_cuda_dim_Ex(ctx), hy = fdtd_cuda_dim_Hy(ctx), hz = fdtd_cuda_dim_Hz(ctx);
    dim3 block(8, 8, 4);
    k_advance_ex2<<<grid_for(s, block), block>>>(
@@ -173,12 +172,17 @@ int fdtd_cuda_advance_ex(fdtd_cuda_ctx *ctx, fdtd_ibox s)
       fdtd_cuda_ptr_Idyh(ctx), fdtd_cuda_ptr_Idzh(ctx),
       ex.nx, ex.ny, hy.nx, hy.ny, hz.nx, hz.ny,
       s.is, s.ie, s.js, s.je, s.ks, s.ke);
-   return launch_ok();
+   return cudaPeekAtLastError() == cudaSuccess;
 }
 
-int fdtd_cuda_advance_ey(fdtd_cuda_ctx *ctx, fdtd_ibox s)
+int fdtd_cuda_advance_ex(fdtd_cuda_ctx *ctx, fdtd_ibox s)
 {
-   if (!ctx) return 0;
+   if (!ctx || !launch_ex(ctx, s)) return 0;
+   return sync_ok();
+}
+
+static int launch_ey(fdtd_cuda_ctx *ctx, fdtd_ibox s)
+{
    fdtd_dims3 ey = fdtd_cuda_dim_Ey(ctx), hz = fdtd_cuda_dim_Hz(ctx), hx = fdtd_cuda_dim_Hx(ctx);
    dim3 block(8, 8, 4);
    k_advance_ey2<<<grid_for(s, block), block>>>(
@@ -187,12 +191,17 @@ int fdtd_cuda_advance_ey(fdtd_cuda_ctx *ctx, fdtd_ibox s)
       fdtd_cuda_ptr_Idzh(ctx), fdtd_cuda_ptr_Idxh(ctx),
       ey.nx, ey.ny, hz.nx, hz.ny, hx.nx, hx.ny,
       s.is, s.ie, s.js, s.je, s.ks, s.ke);
-   return launch_ok();
+   return cudaPeekAtLastError() == cudaSuccess;
 }
 
-int fdtd_cuda_advance_ez(fdtd_cuda_ctx *ctx, fdtd_ibox s)
+int fdtd_cuda_advance_ey(fdtd_cuda_ctx *ctx, fdtd_ibox s)
 {
-   if (!ctx) return 0;
+   if (!ctx || !launch_ey(ctx, s)) return 0;
+   return sync_ok();
+}
+
+static int launch_ez(fdtd_cuda_ctx *ctx, fdtd_ibox s)
+{
    fdtd_dims3 ez = fdtd_cuda_dim_Ez(ctx), hx = fdtd_cuda_dim_Hx(ctx), hy = fdtd_cuda_dim_Hy(ctx);
    dim3 block(8, 8, 4);
    k_advance_ez2<<<grid_for(s, block), block>>>(
@@ -201,12 +210,23 @@ int fdtd_cuda_advance_ez(fdtd_cuda_ctx *ctx, fdtd_ibox s)
       fdtd_cuda_ptr_Idyh(ctx), fdtd_cuda_ptr_Idxh(ctx),
       ez.nx, ez.ny, hx.nx, hx.ny, hy.nx, hy.ny,
       s.is, s.ie, s.js, s.je, s.ks, s.ke);
-   return launch_ok();
+   return cudaPeekAtLastError() == cudaSuccess;
 }
 
-int fdtd_cuda_advance_hx(fdtd_cuda_ctx *ctx, fdtd_ibox s)
+int fdtd_cuda_advance_ez(fdtd_cuda_ctx *ctx, fdtd_ibox s)
 {
-   if (!ctx) return 0;
+   if (!ctx || !launch_ez(ctx, s)) return 0;
+   return sync_ok();
+}
+
+int fdtd_cuda_advance_e(fdtd_cuda_ctx *ctx, fdtd_ibox ex, fdtd_ibox ey, fdtd_ibox ez)
+{
+   if (!ctx || !launch_ex(ctx, ex) || !launch_ey(ctx, ey) || !launch_ez(ctx, ez)) return 0;
+   return sync_ok();
+}
+
+static int launch_hx(fdtd_cuda_ctx *ctx, fdtd_ibox s)
+{
    fdtd_dims3 hx = fdtd_cuda_dim_Hx(ctx), ey = fdtd_cuda_dim_Ey(ctx), ez = fdtd_cuda_dim_Ez(ctx);
    dim3 block(8, 8, 4);
    k_advance_hx2<<<grid_for(s, block), block>>>(
@@ -215,12 +235,17 @@ int fdtd_cuda_advance_hx(fdtd_cuda_ctx *ctx, fdtd_ibox s)
       fdtd_cuda_ptr_Idze(ctx), fdtd_cuda_ptr_Idye(ctx),
       hx.nx, hx.ny, ey.nx, ey.ny, ez.nx, ez.ny,
       s.is, s.ie, s.js, s.je, s.ks, s.ke);
-   return launch_ok();
+   return cudaPeekAtLastError() == cudaSuccess;
 }
 
-int fdtd_cuda_advance_hy(fdtd_cuda_ctx *ctx, fdtd_ibox s)
+int fdtd_cuda_advance_hx(fdtd_cuda_ctx *ctx, fdtd_ibox s)
 {
-   if (!ctx) return 0;
+   if (!ctx || !launch_hx(ctx, s)) return 0;
+   return sync_ok();
+}
+
+static int launch_hy(fdtd_cuda_ctx *ctx, fdtd_ibox s)
+{
    fdtd_dims3 hy = fdtd_cuda_dim_Hy(ctx), ez = fdtd_cuda_dim_Ez(ctx), ex = fdtd_cuda_dim_Ex(ctx);
    dim3 block(8, 8, 4);
    k_advance_hy2<<<grid_for(s, block), block>>>(
@@ -229,12 +254,17 @@ int fdtd_cuda_advance_hy(fdtd_cuda_ctx *ctx, fdtd_ibox s)
       fdtd_cuda_ptr_Idxe(ctx), fdtd_cuda_ptr_Idze(ctx),
       hy.nx, hy.ny, ez.nx, ez.ny, ex.nx, ex.ny,
       s.is, s.ie, s.js, s.je, s.ks, s.ke);
-   return launch_ok();
+   return cudaPeekAtLastError() == cudaSuccess;
 }
 
-int fdtd_cuda_advance_hz(fdtd_cuda_ctx *ctx, fdtd_ibox s)
+int fdtd_cuda_advance_hy(fdtd_cuda_ctx *ctx, fdtd_ibox s)
 {
-   if (!ctx) return 0;
+   if (!ctx || !launch_hy(ctx, s)) return 0;
+   return sync_ok();
+}
+
+static int launch_hz(fdtd_cuda_ctx *ctx, fdtd_ibox s)
+{
    fdtd_dims3 hz = fdtd_cuda_dim_Hz(ctx), ex = fdtd_cuda_dim_Ex(ctx), ey = fdtd_cuda_dim_Ey(ctx);
    dim3 block(8, 8, 4);
    k_advance_hz2<<<grid_for(s, block), block>>>(
@@ -243,5 +273,17 @@ int fdtd_cuda_advance_hz(fdtd_cuda_ctx *ctx, fdtd_ibox s)
       fdtd_cuda_ptr_Idye(ctx), fdtd_cuda_ptr_Idxe(ctx),
       hz.nx, hz.ny, ex.nx, ex.ny, ey.nx, ey.ny,
       s.is, s.ie, s.js, s.je, s.ks, s.ke);
-   return launch_ok();
+   return cudaPeekAtLastError() == cudaSuccess;
+}
+
+int fdtd_cuda_advance_hz(fdtd_cuda_ctx *ctx, fdtd_ibox s)
+{
+   if (!ctx || !launch_hz(ctx, s)) return 0;
+   return sync_ok();
+}
+
+int fdtd_cuda_advance_h(fdtd_cuda_ctx *ctx, fdtd_ibox hx, fdtd_ibox hy, fdtd_ibox hz)
+{
+   if (!ctx || !launch_hx(ctx, hx) || !launch_hy(ctx, hy) || !launch_hz(ctx, hz)) return 0;
+   return sync_ok();
 }

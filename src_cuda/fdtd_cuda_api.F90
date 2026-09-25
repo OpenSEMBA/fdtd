@@ -15,8 +15,9 @@ module fdtd_cuda_m
    public :: fdtd_cuda_upload_metrics_f
    public :: fdtd_cuda_advance_ex_f, fdtd_cuda_advance_ey_f, fdtd_cuda_advance_ez_f
    public :: fdtd_cuda_advance_hx_f, fdtd_cuda_advance_hy_f, fdtd_cuda_advance_hz_f
+   public :: fdtd_cuda_advance_e_f, fdtd_cuda_advance_h_f
    public :: fdtd_cuda_alloc_psi_f, fdtd_cuda_upload_psi_f, fdtd_cuda_download_psi_f
-   public :: fdtd_cuda_alloc_cpml_1d_f, fdtd_cuda_cpml_apply_f
+   public :: fdtd_cuda_alloc_cpml_1d_f, fdtd_cuda_cpml_apply_f, fdtd_cuda_cpml_apply_n_f
    public :: fdtd_cuda_set_point_probes_f, fdtd_cuda_gather_point_probes_f
    public :: fdtd_cuda_upload_planewave_phys_f, fdtd_cuda_upload_planewave_f
    public :: fdtd_cuda_planewave_ready_f
@@ -221,6 +222,18 @@ module fdtd_cuda_m
          type(fdtd_ibox_c), value :: sweep
          integer(c_int) :: fdtd_cuda_advance_hz
       end function
+      function fdtd_cuda_advance_e(ctx, ex, ey, ez) bind(C, name="fdtd_cuda_advance_e")
+         import :: c_ptr, c_int, fdtd_ibox_c
+         type(c_ptr), value :: ctx
+         type(fdtd_ibox_c), value :: ex, ey, ez
+         integer(c_int) :: fdtd_cuda_advance_e
+      end function
+      function fdtd_cuda_advance_h(ctx, hx, hy, hz) bind(C, name="fdtd_cuda_advance_h")
+         import :: c_ptr, c_int, fdtd_ibox_c
+         type(c_ptr), value :: ctx
+         type(fdtd_ibox_c), value :: hx, hy, hz
+         integer(c_int) :: fdtd_cuda_advance_h
+      end function
       function fdtd_cuda_alloc_psi(ctx, slot, n_elem) bind(C, name="fdtd_cuda_alloc_psi")
          import :: c_ptr, c_int
          type(c_ptr), value :: ctx
@@ -253,6 +266,13 @@ module fdtd_cuda_m
          type(c_ptr), value :: ctx
          type(fdtd_cpml_job_c), intent(in) :: job
          integer(c_int) :: fdtd_cuda_cpml_apply
+      end function
+      function fdtd_cuda_cpml_apply_n(ctx, jobs, n) bind(C, name="fdtd_cuda_cpml_apply_n")
+         import :: c_ptr, c_int, fdtd_cpml_job_c
+         type(c_ptr), value :: ctx
+         type(fdtd_cpml_job_c), intent(in) :: jobs(*)
+         integer(c_int), value :: n
+         integer(c_int) :: fdtd_cuda_cpml_apply_n
       end function
       function fdtd_cuda_set_point_probes(ctx, n, comp, i, j, k) &
          bind(C, name="fdtd_cuda_set_point_probes")
@@ -479,6 +499,14 @@ contains
       type(fdtd_ibox_c), intent(in) :: sweep
       fdtd_cuda_advance_hz_f = fdtd_cuda_advance_hz(fdtd_cuda_ctx_c, sweep)
    end function
+   integer function fdtd_cuda_advance_e_f(ex, ey, ez)
+      type(fdtd_ibox_c), intent(in) :: ex, ey, ez
+      fdtd_cuda_advance_e_f = fdtd_cuda_advance_e(fdtd_cuda_ctx_c, ex, ey, ez)
+   end function
+   integer function fdtd_cuda_advance_h_f(hx, hy, hz)
+      type(fdtd_ibox_c), intent(in) :: hx, hy, hz
+      fdtd_cuda_advance_h_f = fdtd_cuda_advance_h(fdtd_cuda_ctx_c, hx, hy, hz)
+   end function
 
    integer function fdtd_cuda_alloc_psi_f(slot, n_elem)
       integer, intent(in) :: slot, n_elem
@@ -502,6 +530,11 @@ contains
    integer function fdtd_cuda_cpml_apply_f(job)
       type(fdtd_cpml_job_c), intent(in) :: job
       fdtd_cuda_cpml_apply_f = fdtd_cuda_cpml_apply(fdtd_cuda_ctx_c, job)
+   end function
+   integer function fdtd_cuda_cpml_apply_n_f(jobs, n)
+      type(fdtd_cpml_job_c), intent(in), target :: jobs(*)
+      integer, intent(in) :: n
+      fdtd_cuda_cpml_apply_n_f = fdtd_cuda_cpml_apply_n(fdtd_cuda_ctx_c, jobs, int(n, c_int))
    end function
 
    integer function fdtd_cuda_set_point_probes_f(n, comp, i, j, k)

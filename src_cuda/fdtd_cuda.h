@@ -76,6 +76,9 @@ int fdtd_cuda_advance_ez(fdtd_cuda_ctx *ctx, fdtd_ibox sweep);
 int fdtd_cuda_advance_hx(fdtd_cuda_ctx *ctx, fdtd_ibox sweep);
 int fdtd_cuda_advance_hy(fdtd_cuda_ctx *ctx, fdtd_ibox sweep);
 int fdtd_cuda_advance_hz(fdtd_cuda_ctx *ctx, fdtd_ibox sweep);
+/* Queue Ex/Ey/Ez (or Hx/Hy/Hz) then synchronize once. Components are independent. */
+int fdtd_cuda_advance_e(fdtd_cuda_ctx *ctx, fdtd_ibox ex, fdtd_ibox ey, fdtd_ibox ez);
+int fdtd_cuda_advance_h(fdtd_cuda_ctx *ctx, fdtd_ibox hx, fdtd_ibox hy, fdtd_ibox hz);
 
 /*
  * P1: one CPML face contribution on a field component.
@@ -122,6 +125,8 @@ typedef struct {
 } fdtd_cpml_job;
 
 int fdtd_cuda_cpml_apply(fdtd_cuda_ctx *ctx, const fdtd_cpml_job *job);
+/* Queue n face jobs, then synchronize once. n==0 is a no-op success. */
+int fdtd_cuda_cpml_apply_n(fdtd_cuda_ctx *ctx, const fdtd_cpml_job *jobs, int n);
 
 /*
  * Sparse point-probe gather: register remapped (comp,i,j,k) once, then each
