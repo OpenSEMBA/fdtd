@@ -340,9 +340,9 @@ def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
     face_media_dict = createPropertyDictionary(
         vtk_map_filename, celltype=9, property="mediatype"
     )
-    # Only the +x/+z terminal turn receives two continuity edges and its
-    # outward dual face.
-    assert line_media_dict.get(4.5, 0) == 50
+    # In the corner neighbourhoods, thin E edges are exactly the boundaries
+    # shared by two thin H faces.
+    assert line_media_dict.get(4.5, 0) == 48
     n_slot_faces = sum(count for mt, count in face_media_dict.items() if mt >= 400.0)
     assert n_slot_faces == 48
 
@@ -358,7 +358,7 @@ def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
     ugrid = pv.UnstructuredGrid(vtk_map_filename)
     mt = ugrid.cell_data["mediatype"]
     slot_line_idx = np.where((ugrid.celltypes == 3) & np.isclose(mt, 4.5))[0]
-    assert len(slot_line_idx) == 50
+    assert len(slot_line_idx) == 48
 
     pts = np.vstack([ugrid.get_cell(int(ci)).points for ci in slot_line_idx])
     assert pts[:, 0].min() >= designed_min[0] - f32_tol
@@ -367,31 +367,82 @@ def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
     assert pts[:, 2].max() <= designed_max[2] + yee_tol
     assert np.allclose(pts[:, 1], designed_min[1], atol=1e-6)
 
-    top_corner = designed_max
-    n_corner_edges = sum(
-        np.any(np.linalg.norm(ugrid.get_cell(int(ci)).points - top_corner, axis=1) <= yee_tol)
-        for ci in slot_line_idx
-    )
-    # Two original terminal edges and the two added transverse continuity edges
-    # meet at the terminal corner.
-    assert n_corner_edges == 4
-
     slot_face_idx = np.where((ugrid.celltypes == 9) & (mt >= 400.0))[0]
     assert len(slot_face_idx) == 48
+
+    def point(i, k):
+        return origin + np.array([i, 10, k], dtype=float) * dx
+
+    def node_index(node):
+        return (
+            int(np.rint((node[0] - origin[0]) / dx)),
+            int(np.rint((node[2] - origin[2]) / dx)),
+        )
+
+    def edge_key(start, end):
+        return tuple(sorted((start, end)))
+
+    face_cells = {
+        node_index(ugrid.get_cell(int(ci)).points.min(axis=0))
+        for ci in slot_face_idx
+    }
+    shared_face_edges = set()
+    for i, k in face_cells:
+        if (i + 1, k) in face_cells:
+            shared_face_edges.add(edge_key((i + 1, k), (i + 1, k + 1)))
+        if (i, k + 1) in face_cells:
+            shared_face_edges.add(edge_key((i, k + 1), (i + 1, k + 1)))
+
+    thin_edge_cells = {
+        edge_key(*(node_index(node) for node in ugrid.get_cell(int(ci)).points))
+        for ci in slot_line_idx
+    }
+    assert thin_edge_cells == shared_face_edges
+
+    def edge_media_type(start, end):
+        expected = np.array([point(*start), point(*end)])
+        matches = []
+        for ci in np.where(ugrid.celltypes == 3)[0]:
+            cell_points = ugrid.get_cell(int(ci)).points
+            if all(any(np.allclose(actual, desired, atol=f32_tol) for actual in cell_points) for desired in expected):
+                matches.append(ci)
+        assert len(matches) == 1
+        return mt[matches[0]]
+
+    # Exposed local boundaries are PEC. The two +x/+z edges which meet the
+    # corner face are intentionally absent: both are shared H-face edges.
+    exterior_edges = [
+        ((14, 14), (15, 14)),
+        ((14, 14), (14, 15)),
+        ((14, 26), (14, 27)),
+        ((26, 14), (27, 14)),
+        ((27, 26), (27, 27)),
+        ((26, 27), (27, 27)),
+    ]
+    for start, end in exterior_edges:
+        assert np.isclose(edge_media_type(start, end), 0.5)
+
     face_pts = np.vstack([ugrid.get_cell(int(ci)).points for ci in slot_face_idx])
     assert face_pts[:, 0].min() >= designed_min[0] - f32_tol
     assert face_pts[:, 0].max() <= designed_max[0] + yee_tol
     assert face_pts[:, 2].min() >= designed_min[2] - f32_tol
     assert face_pts[:, 2].max() <= designed_max[2] + yee_tol
     assert np.allclose(face_pts[:, 1], designed_min[1], atol=1e-6)
-    assert any(
-        np.allclose(ugrid.get_cell(int(ci)).points[:, 0].min(), designed_max[0], atol=f32_tol)
-        and np.allclose(ugrid.get_cell(int(ci)).points[:, 0].max(), designed_max[0] + dx, atol=f32_tol)
-        and np.allclose(ugrid.get_cell(int(ci)).points[:, 2].min(), designed_max[2], atol=f32_tol)
-        and np.allclose(ugrid.get_cell(int(ci)).points[:, 2].max(), designed_max[2] + dx, atol=f32_tol)
-        for ci in slot_face_idx
-    )
 
+    def face_media_type(i, k):
+        expected = np.array([point(i, k), point(i + 1, k), point(i + 1, k + 1), point(i, k + 1)])
+        matches = []
+        for ci in np.where(ugrid.celltypes == 9)[0]:
+            cell_points = ugrid.get_cell(int(ci)).points
+            if all(any(np.allclose(actual, desired, atol=f32_tol) for actual in cell_points) for desired in expected):
+                matches.append(ci)
+        assert len(matches) == 1
+        return mt[matches[0]]
+
+    # The established corner completion is the outer +x/+z H face, not the
+    # inner diagonal face introduced by the directed-turn regression.
+    assert face_media_type(26, 26) >= 400.0
+    assert np.isclose(face_media_type(25, 25), 0.0)
 
 @pytest.mark.thinSlot
 def test_thin_slot_without_pec_is_rejected(tmp_path):

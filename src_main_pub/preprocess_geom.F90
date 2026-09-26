@@ -4818,15 +4818,16 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! The normal per-cell stamping represents an embedded straight linel with
-      ! one E edge and one H face.  Only terminal-to-terminal turns and a
-      ! terminal that reaches the perimeter of its supporting PEC sheet need
-      ! additional material to break the otherwise continuous PEC edge.
+      ! one E edge and one H face. A terminal-to-terminal corner needs its
+      ! outer H face. At every directed turn, the E edges around the local
+      ! H-face L are derived from face-to-face adjacency.
       subroutine completeThinSlotTopology()
          integer(kind=4) :: slot
 
          do slot = 1, this%tSlots%n_tg
             call rejectThinSlotOnPECSurfacePerimeter(slot)
-            call completeThinSlotTerminalCorners(slot)
+            call completeThinSlotTerminalFaces(slot)
+            call completeThinSlotTurns(slot)
             call completeThinSlotPerimeterTerminals(slot)
          end do
       end subroutine
@@ -4845,7 +4846,30 @@ contains
          end do
       end subroutine
 
-      subroutine completeThinSlotTerminalCorners(slot)
+      subroutine completeThinSlotTurns(slot)
+         integer(kind=4), intent(in) :: slot
+         integer(kind=4) :: incomingIndex, outgoingIndex, vx, vy, vz
+         integer(kind=4) :: sx, sy, sz, incomingCount, outgoingCount
+         type(ThinSlotComp_t) :: incoming, outgoing
+
+         do incomingIndex = 1, this%tSlots%Tg(slot)%n_tgc
+            incoming = this%tSlots%Tg(slot)%TgC(incomingIndex)
+            call componentTraversalEnd(incoming, vx, vy, vz)
+            do outgoingIndex = 1, this%tSlots%Tg(slot)%n_tgc
+               if (incomingIndex == outgoingIndex) cycle
+               outgoing = this%tSlots%Tg(slot)%TgC(outgoingIndex)
+               if (abs(incoming%or) /= abs(outgoing%or)) cycle
+               if (incoming%dir == outgoing%dir) cycle
+               call componentTraversalStart(outgoing, sx, sy, sz)
+               if (vx /= sx .or. vy /= sy .or. vz /= sz) cycle
+               call directedVertexDegree(slot, vx, vy, vz, incoming%or, incomingCount, outgoingCount)
+               if (incomingCount /= 1 .or. outgoingCount /= 1) cycle
+               call reconcileThinSlotTurnFaces(slot, incoming%or, vx, vy, vz)
+            end do
+         end do
+      end subroutine
+
+      subroutine completeThinSlotTerminalFaces(slot)
          integer(kind=4), intent(in) :: slot
          integer(kind=4) :: a, b, ax, ay, az, bx, by, bz
          integer(kind=4) :: sourceMedium
@@ -4866,21 +4890,218 @@ contains
 
                select case (abs(first%or))
                case (iEx)
-                  call stampEy(ax, ay, az, sourceMedium, sourceTag)
-                  call stampEz(ax, ay, az, sourceMedium, sourceTag)
                   call stampHx(ax, ay, az, sourceMedium, sourceTag)
                case (iEy)
-                  call stampEx(ax, ay, az, sourceMedium, sourceTag)
-                  call stampEz(ax, ay, az, sourceMedium, sourceTag)
                   call stampHy(ax, ay, az, sourceMedium, sourceTag)
                case (iEz)
-                  call stampEx(ax, ay, az, sourceMedium, sourceTag)
-                  call stampEy(ax, ay, az, sourceMedium, sourceTag)
                   call stampHz(ax, ay, az, sourceMedium, sourceTag)
                end select
             end do
          end do
       end subroutine
+
+      subroutine componentTraversalStart(component, vx, vy, vz)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(out) :: vx, vy, vz
+
+         if (component%sense > 0) then
+            vx = component%i; vy = component%j; vz = component%k
+         else
+            call componentTerminal(component, vx, vy, vz)
+         end if
+      end subroutine
+
+      subroutine componentTraversalEnd(component, vx, vy, vz)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(out) :: vx, vy, vz
+
+         if (component%sense > 0) then
+            call componentTerminal(component, vx, vy, vz)
+         else
+            vx = component%i; vy = component%j; vz = component%k
+         end if
+      end subroutine
+
+      subroutine directedVertexDegree(slot, vx, vy, vz, normal, incomingCount, outgoingCount)
+         integer(kind=4), intent(in) :: slot, vx, vy, vz, normal
+         integer(kind=4), intent(out) :: incomingCount, outgoingCount
+         integer(kind=4) :: a, sx, sy, sz, ex, ey, ez
+
+         incomingCount = 0
+         outgoingCount = 0
+         do a = 1, this%tSlots%Tg(slot)%n_tgc
+            if (abs(this%tSlots%Tg(slot)%TgC(a)%or) /= abs(normal)) cycle
+            call componentTraversalStart(this%tSlots%Tg(slot)%TgC(a), sx, sy, sz)
+            call componentTraversalEnd(this%tSlots%Tg(slot)%TgC(a), ex, ey, ez)
+            if (sx == vx .and. sy == vy .and. sz == vz) outgoingCount = outgoingCount + 1
+            if (ex == vx .and. ey == vy .and. ez == vz) incomingCount = incomingCount + 1
+         end do
+      end subroutine
+
+      subroutine reconcileThinSlotTurnFaces(slot, normal, vx, vy, vz)
+         integer(kind=4), intent(in) :: slot, normal, vx, vy, vz
+         integer(kind=4) :: ii, jj, kk
+
+         select case (abs(normal))
+         case (iEx)
+            do kk = vz - 1, vz + 1
+               do jj = vy - 1, vy + 1
+                  if (faceCellDistance(jj, vy) + faceCellDistance(kk, vz) > 1) cycle
+                  call reconcileHxFaceEdges(slot, vx, jj, kk)
+               end do
+            end do
+         case (iEy)
+            do kk = vz - 1, vz + 1
+               do ii = vx - 1, vx + 1
+                  if (faceCellDistance(ii, vx) + faceCellDistance(kk, vz) > 1) cycle
+                  call reconcileHyFaceEdges(slot, ii, vy, kk)
+               end do
+            end do
+         case (iEz)
+            do jj = vy - 1, vy + 1
+               do ii = vx - 1, vx + 1
+                  if (faceCellDistance(ii, vx) + faceCellDistance(jj, vy) > 1) cycle
+                  call reconcileHzFaceEdges(slot, ii, jj, vz)
+               end do
+            end do
+         end select
+      end subroutine
+
+      integer(kind=4) function faceCellDistance(cellIndex, vertexIndex)
+         integer(kind=4), intent(in) :: cellIndex, vertexIndex
+
+         faceCellDistance = 0
+         if (cellIndex > vertexIndex) faceCellDistance = cellIndex - vertexIndex
+         if (cellIndex + 1 < vertexIndex) faceCellDistance = vertexIndex - cellIndex - 1
+      end function
+
+      subroutine reconcileHxFaceEdges(slot, ii, jj, kk)
+         integer(kind=4), intent(in) :: slot, ii, jj, kk
+         integer(kind=4) :: sourceMedium
+         integer(kind=IKINDMTAG) :: sourceTag
+
+         if (.not. isThinSlotFaceOfSlot(slot, iEx, ii, jj, kk)) return
+         sourceMedium = media%sggMiHx(ii,jj,kk); sourceTag = tag_numbers%face%x(ii,jj,kk)
+         if (isThinSlotFaceOfSlot(slot, iEx, ii, jj, kk - 1)) then
+            call stampEy(ii, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearEyThinSlot(ii, jj, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEx, ii, jj, kk + 1)) then
+            call stampEy(ii, jj, kk + 1, sourceMedium, sourceTag)
+         else
+            call clearEyThinSlot(ii, jj, kk + 1, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEx, ii, jj - 1, kk)) then
+            call stampEz(ii, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearEzThinSlot(ii, jj, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEx, ii, jj + 1, kk)) then
+            call stampEz(ii, jj + 1, kk, sourceMedium, sourceTag)
+         else
+            call clearEzThinSlot(ii, jj + 1, kk, slot)
+         end if
+      end subroutine
+
+      subroutine reconcileHyFaceEdges(slot, ii, jj, kk)
+         integer(kind=4), intent(in) :: slot, ii, jj, kk
+         integer(kind=4) :: sourceMedium
+         integer(kind=IKINDMTAG) :: sourceTag
+
+         if (.not. isThinSlotFaceOfSlot(slot, iEy, ii, jj, kk)) return
+         sourceMedium = media%sggMiHy(ii,jj,kk); sourceTag = tag_numbers%face%y(ii,jj,kk)
+         if (isThinSlotFaceOfSlot(slot, iEy, ii, jj, kk - 1)) then
+            call stampEx(ii, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearExThinSlot(ii, jj, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEy, ii, jj, kk + 1)) then
+            call stampEx(ii, jj, kk + 1, sourceMedium, sourceTag)
+         else
+            call clearExThinSlot(ii, jj, kk + 1, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEy, ii - 1, jj, kk)) then
+            call stampEz(ii, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearEzThinSlot(ii, jj, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEy, ii + 1, jj, kk)) then
+            call stampEz(ii + 1, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearEzThinSlot(ii + 1, jj, kk, slot)
+         end if
+      end subroutine
+
+      subroutine reconcileHzFaceEdges(slot, ii, jj, kk)
+         integer(kind=4), intent(in) :: slot, ii, jj, kk
+         integer(kind=4) :: sourceMedium
+         integer(kind=IKINDMTAG) :: sourceTag
+
+         if (.not. isThinSlotFaceOfSlot(slot, iEz, ii, jj, kk)) return
+         sourceMedium = media%sggMiHz(ii,jj,kk); sourceTag = tag_numbers%face%z(ii,jj,kk)
+         if (isThinSlotFaceOfSlot(slot, iEz, ii, jj - 1, kk)) then
+            call stampEx(ii, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearExThinSlot(ii, jj, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEz, ii, jj + 1, kk)) then
+            call stampEx(ii, jj + 1, kk, sourceMedium, sourceTag)
+         else
+            call clearExThinSlot(ii, jj + 1, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEz, ii - 1, jj, kk)) then
+            call stampEy(ii, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearEyThinSlot(ii, jj, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEz, ii + 1, jj, kk)) then
+            call stampEy(ii + 1, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearEyThinSlot(ii + 1, jj, kk, slot)
+         end if
+      end subroutine
+
+      logical function perpendicularSurfaceDirections(normal, firstDirection, secondDirection)
+         integer(kind=4), intent(in) :: normal, firstDirection, secondDirection
+
+         perpendicularSurfaceDirections = firstDirection /= secondDirection .and. &
+            firstDirection /= abs(normal) .and. secondDirection /= abs(normal)
+      end function
+
+      logical function isThinSlotEdgeOfSlot(slot, medium, edgeTag)
+         integer(kind=4), intent(in) :: slot
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: medium
+         integer(kind=IKINDMTAG), intent(in) :: edgeTag
+         integer(kind=4) :: a
+
+         isThinSlotEdgeOfSlot = .false.
+         if (medium < 0 .or. medium > sgg%NumMedia) return
+         if (.not. sgg%Med(medium)%Is%ThinSlot) return
+         do a = 1, this%tSlots%Tg(slot)%n_tgc
+            if (edgeTag == 64 * searchtag(tagtype, this%tSlots%Tg(slot)%TgC(a)%tag)) then
+               isThinSlotEdgeOfSlot = .true.
+               return
+            end if
+         end do
+      end function
+
+      logical function isThinSlotFaceOfSlot(slot, normal, ii, jj, kk)
+         integer(kind=4), intent(in) :: slot, normal, ii, jj, kk
+
+         isThinSlotFaceOfSlot = .false.
+         select case (abs(normal))
+         case (iEx)
+            if (.not. inHxBounds(ii,jj,kk)) return
+            isThinSlotFaceOfSlot = isThinSlotEdgeOfSlot(slot, media%sggMiHx(ii,jj,kk), tag_numbers%face%x(ii,jj,kk))
+         case (iEy)
+            if (.not. inHyBounds(ii,jj,kk)) return
+            isThinSlotFaceOfSlot = isThinSlotEdgeOfSlot(slot, media%sggMiHy(ii,jj,kk), tag_numbers%face%y(ii,jj,kk))
+         case (iEz)
+            if (.not. inHzBounds(ii,jj,kk)) return
+            isThinSlotFaceOfSlot = isThinSlotEdgeOfSlot(slot, media%sggMiHz(ii,jj,kk), tag_numbers%face%z(ii,jj,kk))
+         end select
+      end function
 
       subroutine completeThinSlotPerimeterTerminals(slot)
          integer(kind=4), intent(in) :: slot
@@ -4926,13 +5147,6 @@ contains
             vz = vz + 1
          end select
       end subroutine
-
-      logical function perpendicularSurfaceDirections(normal, firstDirection, secondDirection)
-         integer(kind=4), intent(in) :: normal, firstDirection, secondDirection
-
-         perpendicularSurfaceDirections = firstDirection /= secondDirection .and. &
-            firstDirection /= abs(normal) .and. secondDirection /= abs(normal)
-      end function
 
       integer(kind=4) function thinSlotVertexDegree(slot, vx, vy, vz, normal)
          integer(kind=4), intent(in) :: slot, vx, vy, vz, normal
@@ -5062,6 +5276,13 @@ contains
             media%sggMiEx(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%edge%x(ii,jj,kk) = itag
          end if
       end subroutine
+      subroutine clearExThinSlot(ii,jj,kk,slot)
+         integer(kind=4), intent(in) :: ii,jj,kk,slot
+         if (.not. inExBounds(ii,jj,kk)) return
+         if (isThinSlotEdgeOfSlot(slot, media%sggMiEx(ii,jj,kk), tag_numbers%edge%x(ii,jj,kk))) then
+            media%sggMiEx(ii,jj,kk) = 0; tag_numbers%edge%x(ii,jj,kk) = 0
+         end if
+      end subroutine
       subroutine stampEy(ii,jj,kk,imed,itag)
          integer(kind=4), intent(in) :: ii,jj,kk,imed
          integer(kind=IKINDMTAG), intent(in) :: itag
@@ -5070,12 +5291,26 @@ contains
             media%sggMiEy(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%edge%y(ii,jj,kk) = itag
          end if
       end subroutine
+      subroutine clearEyThinSlot(ii,jj,kk,slot)
+         integer(kind=4), intent(in) :: ii,jj,kk,slot
+         if (.not. inEyBounds(ii,jj,kk)) return
+         if (isThinSlotEdgeOfSlot(slot, media%sggMiEy(ii,jj,kk), tag_numbers%edge%y(ii,jj,kk))) then
+            media%sggMiEy(ii,jj,kk) = 0; tag_numbers%edge%y(ii,jj,kk) = 0
+         end if
+      end subroutine
       subroutine stampEz(ii,jj,kk,imed,itag)
          integer(kind=4), intent(in) :: ii,jj,kk,imed
          integer(kind=IKINDMTAG), intent(in) :: itag
          if (.not. inEzBounds(ii,jj,kk)) return
          if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiEz(ii,jj,kk))%Priority) then
             media%sggMiEz(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%edge%z(ii,jj,kk) = itag
+         end if
+      end subroutine
+      subroutine clearEzThinSlot(ii,jj,kk,slot)
+         integer(kind=4), intent(in) :: ii,jj,kk,slot
+         if (.not. inEzBounds(ii,jj,kk)) return
+         if (isThinSlotEdgeOfSlot(slot, media%sggMiEz(ii,jj,kk), tag_numbers%edge%z(ii,jj,kk))) then
+            media%sggMiEz(ii,jj,kk) = 0; tag_numbers%edge%z(ii,jj,kk) = 0
          end if
       end subroutine
       subroutine stampHx(ii,jj,kk,imed,itag)

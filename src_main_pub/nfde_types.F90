@@ -473,6 +473,9 @@ module NFDETypes_m
       integer(kind=4) :: K = 0
       integer(kind=4) :: node = 0
       integer(kind=4) :: dir = - 1
+      ! Signed traversal of the source linel. dir remains the positive axis
+      ! used by the Yee-material routines.
+      integer(kind=4) :: sense = 1
       integer(kind=4) :: Or = - 1
       character(len=BUFSIZE) :: tag
    end type ThinSlotComp_t

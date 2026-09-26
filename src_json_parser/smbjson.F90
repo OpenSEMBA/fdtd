@@ -1901,6 +1901,7 @@ contains
          res%j = cs%yi
          res%k = cs%zi
          res%dir = abs(cs%Or)
+         res%sense = merge(1, -1, cs%Or >= 0)
          res%tag = cs%tag
       end function
    end function
