@@ -12,6 +12,7 @@ add_library (smbjson_test_fortran
     "test_read_sgbc.F90"
     "test_read_currentInjection.F90"
     "test_read_nodal_source_resistance.F90"
+    "test_read_nodal_source_intervals.F90"
     "test_read_sphere.F90"
     "test_read_airplane.F90"
     "test_read_lumped_fixture.F90"

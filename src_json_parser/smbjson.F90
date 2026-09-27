@@ -1137,7 +1137,24 @@ contains
          nodalSourceName = this%getStrAt(jns, J_NAME, default=' ')
 
          elementIds = this%getIntsAt(jns, J_ELEMENTIDS)
-         call cellRegionsToScaledCoords(allCoords, this%mesh%getCellRegions(elementIds))
+         block
+            type(cell_region_t), dimension(:), allocatable :: cRs
+            integer :: k
+            cRs = this%mesh%getCellRegions(elementIds)
+            do j = 1, size(cRs)
+               do k = 1, size(cRs(j)%intervals)
+                  if (cRs(j)%intervals(k)%getSize() == 0) then
+                     call WarnErrReport('Nodal source "'//trim(adjustl(nodalSourceName))// &
+                        '" is defined over an interval with zero length. Nodal sources must be '// &
+                        'defined over oriented lines.', .true.)
+                  else if (cRs(j)%intervals(k)%getType() /= CELL_TYPE_LINEL) then
+                     call WarnErrReport('Nodal source "'//trim(adjustl(nodalSourceName))// &
+                        '" must be defined over intervals describing oriented lines only.', .true.)
+                  end if
+               end do
+            end do
+            call cellRegionsToScaledCoords(allCoords, cRs)
+         end block
 
          cnt_c1p = 0
          cnt_c2p = 0
