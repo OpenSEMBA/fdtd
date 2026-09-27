@@ -444,6 +444,47 @@ def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
     assert face_media_type(26, 26) >= 400.0
     assert np.isclose(face_media_type(25, 25), 0.0)
 
+@pytest.mark.lumped
+@pytest.mark.vtk
+def test_map_vtk_lumped_elements_get_distinct_media_type(tmp_path):
+    """A single lumped association yields one lumped element per elementId."""
+    input_filename = (
+        CASES_FOLDER
+        + "thin_slot_rectangle_lumped/thin_slot_rectangle_lumped.fdtd.json"
+    )
+    solver = FDTD(
+        input_filename=input_filename,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+        flags=["-dmma", "-mapvtk"],
+    )
+    solver["general"]["numberOfSteps"] = 1
+
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
+
+    line_media_dict = createPropertyDictionary(
+        vtk_map_filename, celltype=3, property="mediatype"
+    )
+    # Six elements listed in one association produce six lumped line cells.
+    assert line_media_dict.get(4.25, 0) == 6
+    # No lumped edge may be misclassified as a plain dielectric.
+    assert line_media_dict.get(2.5, 0) == 0
+
+    line_tag_dict = createPropertyDictionary(
+        vtk_map_filename, celltype=3, property="tagnumber"
+    )
+    # Each element contributes one lumped and one PEC line (12 cells over the
+    # six contiguous 64-wide tag blocks dedicated to the lumped elements).
+    lumped_tag_cells = sum(
+        count for tag, count in line_tag_dict.items() if 128.0 <= tag <= 511.0
+    )
+    assert lumped_tag_cells == 12
+
+
 @pytest.mark.thinSlot
 def test_thin_slot_without_pec_is_rejected(tmp_path):
     input_filename = CASES_FOLDER + "thin_slot_no_pec/thin_slot_no_pec.fdtd.json"

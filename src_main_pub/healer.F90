@@ -952,7 +952,7 @@ module CreateMatrices_m
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
                         numeroasignaciones=numeroasignaciones+1
                         if (med(indicemedio)%is%lumped) then
-                            if (numeroasignaciones==1) then !solo le echa el lumped a 1 segmento !esto es una peticion externa !ojo es agresivo. !solo se pone 1 segmento con la resistencia especificada. me doy cuenta en 040123
+                            if (numeroasignaciones==1) then !first cell of this lumped element is lumped, the rest become PEC
                                 MMiEx (i, j, k) = indicemedio
                                 Mtag(i,j,k)=64*numertag 
                                 tags%edge%x(i,j,k) = 64*numertag
@@ -989,7 +989,7 @@ module CreateMatrices_m
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
                         numeroasignaciones=numeroasignaciones+1
                         if (med(indicemedio)%is%lumped) then
-                            if (numeroasignaciones==1) then !solo le echa el lumped a 1 segmento
+                            if (numeroasignaciones==1) then !first cell of this lumped element is lumped, the rest become PEC
                                 MMiEy (i, j, k) = indicemedio
                                 Mtag(i,j,k)=64*numertag 
                                 tags%edge%y(i,j,k) = 64*numertag
@@ -1027,7 +1027,7 @@ module CreateMatrices_m
                      if (med(indicemedio)%Priority > med(medio)%Priority) then
                         numeroasignaciones=numeroasignaciones+1
                         if (med(indicemedio)%is%lumped) then
-                            if (numeroasignaciones==1) then !solo le echa el lumped a 1 segmento
+                            if (numeroasignaciones==1) then !first cell of this lumped element is lumped, the rest become PEC
                                 MMiEz (i, j, k) = indicemedio
                                 Mtag(i,j,k)=64*numertag
                                 tags%edge%z(i,j,k) = 64*numertag

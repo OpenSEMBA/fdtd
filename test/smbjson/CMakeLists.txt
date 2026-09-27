@@ -16,6 +16,7 @@ add_library (smbjson_test_fortran
     "test_read_sphere.F90"
     "test_read_airplane.F90"
     "test_read_lumped_fixture.F90"
+    "test_read_lumped_multi_element.F90"
     "test_read_background.F90"
 )
 if(SEMBA_FDTD_ENABLE_MTLN)

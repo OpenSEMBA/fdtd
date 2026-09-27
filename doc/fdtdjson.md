@@ -286,7 +286,7 @@ A `material` with `type` `isotropic` represents an isotropic material with const
 
 ### `lumped`
 
-A `material` with `type` `lumped` represents a lumped circuit `model`, e.g a resistor. Lumped materials can only be assigned to `cell` `elements` with `intervals` describing oriented lines. If multiple cells are assigned to a lumped element, only the first one of them will be treated as a lumped by the solver, the other cells will be treated as a PEC material.
+A `material` with `type` `lumped` represents a lumped circuit `model`, e.g a resistor. Lumped materials can only be assigned to `cell` `elements` with `intervals` describing oriented lines. A single material association generates one lumped element per `elementId` in its list. Within each of those elements, only the first assigned cell is treated as a lumped by the solver, the other cells will be treated as a PEC material.
 The specific behavior is described using the `<model>` keyword, described below. `resistor`, `inductor` and `capacitor` are based, with some additions, on the following reference
 
 ```

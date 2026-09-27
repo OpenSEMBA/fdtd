@@ -715,7 +715,7 @@ contains
          type(materialAssociation_t) :: mA
          type(cell_region_t) :: cR
 
-         integer :: i, j
+         integer :: i, j, e
          integer :: nCs, nDielectrics
          
          mAs = this%getMaterialAssociations( &
@@ -725,12 +725,21 @@ contains
             return
          end if
 
-         ! Precounts
+         ! Precounts. Lumped associations contribute one component per element.
          nDielectrics = 0
-         do i = 1, size(mAs)           
+         mAs = this%getMaterialAssociations([J_MAT_TYPE_ISOTROPIC])
+         do i = 1, size(mAs)
             if (containsCellRegionsWithType(mAs(i), cellType)) then
                nDielectrics = nDielectrics + 1
-            end if 
+            end if
+         end do
+         mAs = this%getMaterialAssociations([J_MAT_TYPE_LUMPED])
+         do i = 1, size(mAs)
+            do e = 1, size(mAs(i)%elementIds)
+               if (any(mAs(i)%elementIds(1:e - 1) == mAs(i)%elementIds(e))) cycle
+               cR = this%mesh%getCellRegion(mAs(i)%elementIds(e))
+               if (size(cellRegionToCoords(cR, cellType)) /= 0) nDielectrics = nDielectrics + 1
+            end do
          end do
 
          ! Fills
@@ -740,17 +749,23 @@ contains
 
          j = 0
          mAs = this%getMaterialAssociations([J_MAT_TYPE_ISOTROPIC])
-         do i = 1, size(mAs)       
+         do i = 1, size(mAs)
             if (.not. containsCellRegionsWithType(mAs(i), cellType)) cycle
             j = j + 1
             res(j) = readDielectric(mAs(i), cellType)
          end do
 
+         ! One lumped element per element listed in the association.
          mAs = this%getMaterialAssociations([J_MAT_TYPE_LUMPED])
          do i = 1, size(mAs)
-            if (.not. containsCellRegionsWithType(mAs(i), cellType)) cycle
-            j = j + 1
-            res(j) = readLumped(mAs(i), cellType)
+            do e = 1, size(mAs(i)%elementIds)
+               if (any(mAs(i)%elementIds(1:e - 1) == mAs(i)%elementIds(e))) cycle
+               mA = mAs(i)
+               mA%elementIds = [mAs(i)%elementIds(e)]
+               if (.not. containsCellRegionsWithType(mA, cellType)) cycle
+               j = j + 1
+               res(j) = readLumped(mA, cellType)
+            end do
          end do
       end subroutine
 

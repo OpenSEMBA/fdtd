@@ -819,7 +819,7 @@ contains
       !LINs
       tama = (this%DielRegs%nLINS)
       do i = 1, tama
-         numeroasignaciones=0 !solo lo usa lumped para echarselo al primer y el resto ponerlo a PEC
+         numeroasignaciones=0 !lumped: first cell of this element gets the lumped medium, the rest go to PEC
          contamedia = contamedia + 1
          sgg%Med(contamedia)%Is%Dielectric = .TRUE.
          sgg%Med(contamedia)%Priority = prior_IL
