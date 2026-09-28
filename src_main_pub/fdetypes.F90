@@ -56,8 +56,8 @@ module  FDETYPES_m
 
    integer(kind=4) :: quienmpi,tamaniompi
    integer(kind=4) :: SUBCOMM_MPI
-!240424 para que funcionen las sondas slice de conformal lo pongo como general. niapaa. algun dia hay que reahacer el conformal 
-   !y esto debe desaparecer
+!240424 so that the conformal slice probes work I set it as general. niapaa. some day the conformal must be redone 
+   !and this must disappear
    integer(kind=4) :: SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
 !!!
    integer(kind=8),  parameter  :: MAXMPIBYTES = 2**27
@@ -70,7 +70,7 @@ module  FDETYPES_m
    !size of character strings 
    integer, parameter :: BUFSIZE=1024
    integer, parameter :: BUFSIZE_LONG=16384
-   !!!integer :: maxmessages=20000 !numero maximo mensajes para alocatear en MPI overrideable con -maxmessages y quitado como parameter fijo !deprecated 07/03/15
+   !!!integer :: maxmessages=20000 !maximum number of messages to allocate in MPI overrideable with -maxmessages and removed as fixed parameter !deprecated 07/03/15
    !dxf output stuff
    !!!integer, parameter :: maxdxf= 20000,dxflinesize=14
    !!!character(len=dxflinesize) :: dxfbuff
@@ -102,7 +102,7 @@ module  FDETYPES_m
    integer(kind=4), parameter  :: INTEGERSIZE=MPI_INTEGER4
 #endif
 #endif
-   integer(kind=4), parameter  :: IKINDMTAG=4 !PARA SGGMTAG 151020 !dejarlo en 4 bytes. No tocar
+   integer(kind=4), parameter  :: IKINDMTAG=4 !FOR SGGMTAG 151020 !leave it at 4 bytes. Do not touch
 
    integer(kind=2), parameter  :: SINGLE=4
    integer(kind=2), parameter  :: DOUBLE_KIND=8
@@ -121,10 +121,10 @@ module  FDETYPES_m
 #else
    !default
    integer(kind=2), parameter  :: RKIND=SINGLE
-   integer(kind=2), parameter  :: RKIND_WIRES=DOUBLE_KIND !020719 a peticion 
+   integer(kind=2), parameter  :: RKIND_WIRES=DOUBLE_KIND !020719 by request 
    integer(kind=2), parameter  :: RKIND_TIME=DOUBLE_KIND
    !! integer(kind=2), parameter  :: CKIND=SINGLE
-   integer(kind=2), parameter  :: CKIND=DOUBLE_KIND  !LOS COMPLEJOS LOS VOY A MANEJAR SIEMPRE EN DOBLE PRECISION como minimo
+   integer(kind=2), parameter  :: CKIND=DOUBLE_KIND  !COMPLEX NUMBERS WILL ALWAYS BE HANDLED IN DOUBLE PRECISION at minimum
 #endif
 #endif
 
@@ -150,7 +150,7 @@ module  FDETYPES_m
    integer(kind=4), parameter  :: REALSIZE_TIME=MPI_DOUBLE_PRECISION
 
 !!!   integer(kind=4), parameter  :: COMPLEXSIZE=MPI_COMPLEX
-   integer(kind=4), parameter  :: COMPLEXSIZE=MPI_DOUBLE_COMPLEX  !LOS COMPLEJOS LOS VOY A MANEJAR SIEMPRE EN DOBLE PRECISION como minimo !esto debe ir ligado a la definicion de ckind
+   integer(kind=4), parameter  :: COMPLEXSIZE=MPI_DOUBLE_COMPLEX  !COMPLEX NUMBERS WILL ALWAYS BE HANDLED IN DOUBLE PRECISION at minimum !this must be linked to the definition of ckind
 #endif
 #endif
 #endif
@@ -166,11 +166,11 @@ module  FDETYPES_m
    !
    integer(kind=4),  parameter  :: IMEC=51 !modulus, TANGENTIAL, NORMAL fields in cuts for Volumic probes
    integer(kind=4),  parameter  :: IMHC=52
-   integer(kind=4),  parameter  :: ICUR=53 !Bloque currents along edges in thin wires, PEC and surface edges
-   integer(kind=4),  parameter  :: ICURX=54 !Bloque currents along edges in surface with normal X
-   integer(kind=4),  parameter  :: ICURY=55 !Bloque currents along edges in surface with normal Y
-   integer(kind=4),  parameter  :: ICURZ=56 !Bloque currents along edges in surface with normal Z
-   integer(kind=4),  parameter  :: MAPVTK=57 !Bloque currents along edges in surface with normal Z
+   integer(kind=4),  parameter  :: ICUR=53 !Block currents along edges in thin wires, PEC and surface edges
+   integer(kind=4),  parameter  :: ICURX=54 !Block currents along edges in surface with normal X
+   integer(kind=4),  parameter  :: ICURY=55 !Block currents along edges in surface with normal Y
+   integer(kind=4),  parameter  :: ICURZ=56 !Block currents along edges in surface with normal Z
+   integer(kind=4),  parameter  :: MAPVTK=57 !Block currents along edges in surface with normal Z
    integer(kind=4),  parameter  :: IEXC=61 !components in cuts for Volumic probes
    integer(kind=4),  parameter  :: IEYC=62
    integer(kind=4),  parameter  :: IEZC=63
@@ -206,7 +206,7 @@ module  FDETYPES_m
    1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
    real(kind=rkind), parameter :: C_VACUUM = 1.0_RKIND/sqrt(EPSILON_VACUUM*MU_VACUUM)
    
-   real(kind=RKIND_TIME) :: dt0 !aqui para OLDrlo accesible en resume pscale
+   real(kind=RKIND_TIME) :: dt0 !here so it is accessible in resume pscale
    
    integer(kind=4), parameter :: FACE_X = 1
    integer(kind=4), parameter :: FACE_Y = 2
@@ -236,7 +236,7 @@ module  FDETYPES_m
 #endif
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !solo tipos
+   !types only
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     type tagtype_t
         character(len=BUFSIZE), allocatable, dimension(:) :: tag
@@ -375,9 +375,9 @@ module  FDETYPES_m
 
    type  :: oriented_point_t
       integer(kind=4) :: ori
-      integer(kind=4) :: i,j,k,origIndex,ilibre,jlibre,klibre,multiraboDE !si es multirabo de que indice lo es
+      integer(kind=4) :: i,j,k,origIndex,ilibre,jlibre,klibre,multiraboDE !if it is multi-branch, which index it is
       logical :: Is_LeftEnd,Is_RightEnd,IsEnd_norLeft_norRight
-      logical :: repetido,multirabo !marca segmentos que aparecen repetidos en un mismo thin wire!los bundles deberan estar thin-wires distintos
+      logical :: repetido,multirabo !marks segments that appear repeated in the same thin wire!bundles must be different thin-wires
       logical :: reversedOrientation
    end type oriented_point_t
 
@@ -411,7 +411,7 @@ module  FDETYPES_m
       real(kind=RKIND_WIRES) :: Parallel_C_RightEnd_devia ,Parallel_C_LeftEnd_devia
       real(kind=RKIND_WIRES) :: Series_C_RightEnd_devia ,  Series_C_LeftEnd_devia
       type(WireDispersiveParams_t), allocatable, dimension(:) :: disp_LeftEnd, disp_RightEnd
-      ! integer(kind=4) :: LextremoI,LextremoJ,LextremoK,RextremoI,RextremoJ,RextremoK !no ncesario: yo luego calculo bien los extremos
+      ! integer(kind=4) :: LextremoI,LextremoJ,LextremoK,RextremoI,RextremoJ,RextremoK !not necessary: I later compute the ends correctly
       integer(kind=4) :: LeftEnd,RightEnd
    end type Wires_t
    
@@ -449,7 +449,7 @@ module  FDETYPES_m
 !!!
    !end wires
    type  :: PMLbody_t
-      integer(kind=4) :: orient = 0 !orientation +iEx, -iEx,+iEy.......el signo aqui es intranscendente
+      integer(kind=4) :: orient = 0 !orientation +iEx, -iEx,+iEy.......the sign here is irrelevant
    end type PMLbody_t
 !!!
    type  :: Multiport_t
@@ -459,7 +459,7 @@ module  FDETYPES_m
                   !_for_devia 090519
       real(kind=rkind), dimension(:), pointer :: epr_devia,mur_devia,sigma_devia,sigmam_devia,width_devia
                   !!!
-!!old pre 17/08/115: no es valido para mallados NO uniformes. Hay que hacerlo punto a punto
+!!old pre 17/08/115: it is not valid for NON-uniform meshes. It must be done point by point
 !!!                     real(kind=rkind) :: transversalSpaceDelta
       integer(kind=4) :: numLayers
    end type Multiport_t
@@ -523,7 +523,7 @@ module  FDETYPES_m
    end type
 
    type  :: observable_t
-      integer(kind=4) :: XI,YI,ZI,XE,YE,ZE,What,Node  !los valores finales XE,YE,ZE solo se precisan para las CurrentProbes
+      integer(kind=4) :: XI,YI,ZI,XE,YE,ZE,What,Node  !the final values XE,YE,ZE are only needed for the CurrentProbes
       integer(kind=4) :: Xtrancos,Ytrancos,Ztrancos
       type(direction_t), dimension(:), allocatable :: line
       
@@ -607,7 +607,7 @@ module  FDETYPES_m
    type  :: MediaData_t
       integer(kind=SINGLE) :: Id
       real(kind=RKIND) :: Priority,Epr,Sigma,Mur,SigmaM
-      logical :: sigmareasignado !solo afecta a un chequeo de errores en lumped 120123
+      logical :: sigmareasignado !only affects an error check in lumped 120123
       type(exists_t)            :: Is
       type(Wires_t)           , dimension(:), pointer  :: Wire
       type(SlantedWires_t)    , dimension(:), pointer  :: SlantedWire
@@ -627,7 +627,7 @@ module  FDETYPES_m
    ! This is the  class which stores all the simulation data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    type  :: SGGFDTDINFO_t
-      real(kind=RKIND_TIME)     , pointer, dimension(:) :: time !para permit scaling
+      real(kind=RKIND_TIME)     , pointer, dimension(:) :: time !for permit scaling
       real(kind=RKIND_TIME) :: dt
       character(len=BUFSIZE) :: extraSwitches
       !!
@@ -717,7 +717,7 @@ module  FDETYPES_m
 
    end type sim_control_t
 
-   !!!!!!!!VARIABLES GLOBALES
+   !!!!!!!!GLOBAL VARIABLES
    integer(kind=4), save, public :: prior_BV     , &
    prior_IB     , &
    prior_pmlbody, &
@@ -803,7 +803,7 @@ contains
 
    subroutine set_priorities(prioritizeCOMPOoverPEC,prioritizeISOTROPICBODYoverall,prioritizeTHINWIRE)
       logical :: prioritizeCOMPOoverPEC,prioritizeISOTROPICBODYoverall,prioritizeTHINWIRE
-      !!movido aqui el sistema de prioridades para poder controlarlos con switches. util para siva 070815 (bug de PEC con prioridad sobre compo del siva
+      !!priority system moved here to be able to control them with switches. useful for siva 070815 (bug of PEC with priority over the compo of siva
       prior_BV      =10 !background volume
       prior_AB      =30 !anisotropic body
       prior_FDB     =40 !Frequency dependent body
@@ -819,14 +819,14 @@ contains
       prior_PEC     =150  !Perfectly electric conducting body, surface, line, or point
       prior_PMC     =160  !Perfectly magnetic conducting body, surface, line, or point
       prior_TG      =155       !thin Slot has more priority than PEC
-      !!!!!se aniade la opcion -prioritizeCOMPOoverPEC para subir su prioridad y poder simular SIVA (sgg 070815)
+      !!!!!the -prioritizeCOMPOoverPEC option is added to raise its priority and be able to simulate SIVA (sgg 070815)
       if (prioritizeTHINWIRE) then
-        prior_TW   = 1500   !cambiado a 231024 y puesto con maxima prioridad. es solo experimental y por visualizacion    
-      else !opcion correcta. lo anterior es solo experimental y por visualizacion      
-        prior_TW   = 15   !prioridad del thin-wire por debajo de todos (excepto del background)  
+        prior_TW   = 1500   !changed to 231024 and set with maximum priority. it is only experimental and for visualization    
+      else !correct option. the above is only experimental and for visualization      
+        prior_TW   = 15   !thin-wire priority below everyone (except the background)  
       end if  
-!      prior_pmlbody = prior_TW-1 !el hilo tiene prioridad sobre el pmlbody (prueba HOLD coax sgg 251019)
-      prior_pmlbody = prior_BV+1 !el pml body puede ser penetrado por todo 311019 sgg
+!      prior_pmlbody = prior_TW-1 !the wire has priority over the pmlbody (HOLD coax test sgg 251019)
+      prior_pmlbody = prior_BV+1 !the pml body can be penetrated by everything 311019 sgg
       !!!!
       if (prioritizeCOMPOoverPEC) then  !Composite surface
          prior_CS=prior_PEC+2
@@ -834,9 +834,9 @@ contains
          prior_CS=prior_PEC-2       !composites has lower than PEC to properly handle junctions PEC-composite !(ss's 210312 mail)
       end if
       if (prioritizeISOTROPICBODYoverall) then  ! Isotropic body
-         prior_IB      = 200   !SOLO PARA EL CASO DEL SIVA SACAR BOCADOS DE vacio 
+         prior_IB      = 200   !ONLY FOR THE SIVA CASE CARVE OUT CHUNKS OF vacuum 
       else
-         prior_IB      =   20 !EL SUSUAL
+         prior_IB      =   20 !THE USUAL
       end if 
       return
       
@@ -894,7 +894,7 @@ end module FDETYPES_m
 !       px,py,pz                              : components of the incidence vector
 !       ex,ey,ez                              : amplitudes of the electric field (must be perpendicular to de incident vector)
 !       esqx1,esqy1,esqz1,esqx2,esqy2,esqz2   : discretization lines bounding the Huygens surface
-!       fichero                               : name of the field with the time profile of the transinet excitation
+!       file                                  : name of the field with the time profile of the transinet excitation
 !                                                     (must be well sampled).
 ! Border                        : Limits of the compuational domain info
 !       IsBackPEC,IsFrontPEC,IsLeftPEC,IsRightPEC,IsUpPEC,IsDownPEC     : Whether each limit is PEC, PMC or PML
@@ -917,12 +917,12 @@ end module FDETYPES_m
 !      IsPML( : )                      : If the medium is a PML (needed to calculate the especific PML updating coefficients)
 !      Wire( : )                       : If the medium is a wire, this type contains its parameters
 !
-!           TipoWire     : Info on the wire parameters
+!           WireType     : Info on the wire parameters
 !                      radius,R,L       : radius, resistance per unit length, inductance per unit length
 !                      Vsource,Isource  : Info with the voltage/current source on the wire
 !                              Exists          : Wheter this wire is a source (a single wire, with a single segment)
 !                                                is needed for the source
-!                              Fichero         : name of the field with the time profile of the transinet excitation
+!                              File            : name of the field with the time profile of the transinet excitation
 !                                                (must be well sampled).
 !      Multiport( : )                          : If the medium is a Multiport, this type contains its parameters
 !           multiportFileZ11,multiportFileZ22,multiportFileZ12 : Files with the pole/residues info

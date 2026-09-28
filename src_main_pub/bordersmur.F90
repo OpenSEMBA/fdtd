@@ -41,7 +41,7 @@ module BORDERS_MUR_m
    right_CAB1,right_CAB3,right_cab4, &
    down_CAB1, down_CAB3, down_cab4, &
    up_CAB1,   up_CAB3,   up_cab4
-!!!variables globales del modulo
+!!!module global variables
    real(kind=RKIND), save           :: cluz
    real(kind=RKIND), save           :: eps0,mu0
 !!!
@@ -71,7 +71,7 @@ contains
       !character(len=BUFSIZE) :: donde
       !integer(kind=4) :: layoutnumber
 !
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
       cluz=1.0_RKIND/sqrt(eps0*mu0)
 !
 
@@ -285,7 +285,7 @@ contains
          end if
       end do
 
-!!incializa constantes
+!!initializes constants
       call calc_murconstants(sgg,Idxh,Idyh,Idzh,eps0,mu0)
  
       return
@@ -301,12 +301,12 @@ contains
         Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
         Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE)
 !
-        eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+        eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
         cluz=1.0_RKIND/sqrt(eps0*mu0)
 !
 
         do i1=0,sgg%NumMedia
-            !SE CREAN MAS DE LA CUENTA PERO LUEGO SE UTILIZAN SOLO LAS QUE SE NECESITEN
+            !MORE THAN NEEDED ARE CREATED BUT LATER ONLY THE NECESSARY ONES ARE USED
             cnum=(1.0_RKIND/Idxh(sgg%ALLOC(iEx)%XI))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
             back_CAB1(i1) = (1.0_RKIND-CNUM)/(1.0_RKIND+CNUM)
             back_CAB3(i1) = 1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))
@@ -491,12 +491,12 @@ contains
       real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hx
       real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
-      !---------------------------> empieza AdvanceMagneTicMUR <-------------------------------------
+      !---------------------------> starts AdvanceMagneTicMUR <-------------------------------------
 
       !Hetic Fields MUR Zone
-      !primero hay que updatear los edges porque las caras los utilizan
+      !first the edges must be updated because the faces use them
 
 
 
@@ -609,7 +609,7 @@ contains
                   medium = sggMiHy(i_m    , j_m    , k_m + 1)
                   Hy(i_m, j_m, k_m) =                                             + regDU(REGION)%Past_Hy(i    ,j    ,k + 1)      &
                   + down_CAB1(medium)*(                   Hy(i_m  ,j_m,k_m + 1) - regDU(REGION)%Past_Hy(i    ,j    ,k))
-               end do !bucle i
+               end do !loop i
             end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -627,7 +627,7 @@ contains
                   medium = sggMiHx(i_m    , j_m    , k_m + 1)
                   Hx(i_m, j_m, k_m) =                                             + regDU(REGION)%Past_Hx(i    ,j    ,k + 1)      &
                   + down_CAB1(medium)*(                   Hx(i_m  ,j_m,k_m + 1) - regDU(REGION)%Past_Hx(i    ,j    ,k))
-               end do !bucle i
+               end do !loop i
             end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -652,7 +652,7 @@ contains
                   medium = sggMiHy(i_m    , j_m    , k_m - 1)
                   Hy(i_m, j_m, k_m) =                                            + regDU(REGION)%Past_Hy(i    ,j    ,k - 1)      &
                   + up_CAB1(medium)*(                     Hy(i_m  ,j_m    ,k_m - 1) - regDU(REGION)%Past_Hy(i    ,j    ,k))
-               end do !bucle i
+               end do !loop i
             end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -670,7 +670,7 @@ contains
                   medium = sggMiHx(i_m    , j_m    , k_m - 1)
                   Hx(i_m, j_m, k_m) =                                               + regDU(REGION)%Past_Hx(i    ,j    ,k - 1)      &
                   + up_CAB1(medium)*(                   Hx(i_m  ,j_m  ,k_m - 1)   - regDU(REGION)%Past_Hx(i    ,j    ,k))
-               end do !bucle i
+               end do !loop i
             end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -901,7 +901,7 @@ contains
                   +                    regDU(REGION)%Past_Hy(i + 1,j    ,k + 1) +     regDU(REGION)%Past_Hy(i - 1,j    ,k + 1)      &
                   +                    regDU(REGION)%Past_Hy(i    ,j +1 ,k) +     regDU(REGION)%Past_Hy(i    ,j - 1,k)      &
                   +                    regDU(REGION)%Past_Hy(i    ,j +1 ,k + 1) +     regDU(REGION)%Past_Hy(i    ,j - 1,k + 1))
-               end do !bucle i
+               end do !loop i
             end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -924,7 +924,7 @@ contains
                   +                    regDU(REGION)%Past_Hx(i + 1,j    ,k + 1) +     regDU(REGION)%Past_Hx(i - 1,j    ,k + 1)      &
                   +                    regDU(REGION)%Past_Hx(i    ,j +1 ,k) +     regDU(REGION)%Past_Hx(i    ,j - 1,k)      &
                   +                    regDU(REGION)%Past_Hx(i    ,j +1 ,k + 1) +     regDU(REGION)%Past_Hx(i    ,j - 1,k + 1))
-               end do !bucle i
+               end do !loop i
             end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -954,7 +954,7 @@ contains
                   +                  regDU(REGION)%Past_Hy(i + 1,j     ,k - 1) +     regDU(REGION)%Past_Hy(i - 1,j    ,k - 1)      &
                   +                  regDU(REGION)%Past_Hy(i    ,j +1  ,k) +     regDU(REGION)%Past_Hy(i    ,j - 1,k)      &
                   +                  regDU(REGION)%Past_Hy(i    ,j +1  ,k - 1) +     regDU(REGION)%Past_Hy(i    ,j - 1,k - 1))
-               end do !bucle i
+               end do !loop i
             end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -977,7 +977,7 @@ contains
                   +                  regDU(REGION)%Past_Hx(i + 1,j    ,k - 1)   +     regDU(REGION)%Past_Hx(i - 1,j    ,k - 1)      &
                   +                  regDU(REGION)%Past_Hx(i    ,j +1 ,k)   +     regDU(REGION)%Past_Hx(i    ,j - 1,k)      &
                   +                  regDU(REGION)%Past_Hx(i    ,j +1 ,k - 1)   +     regDU(REGION)%Past_Hx(i    ,j - 1,k - 1))
-               end do !bucle i
+               end do !loop i
             end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -1206,7 +1206,7 @@ contains
                   medium = sggMiHy(i_m    , j_m    , k_m + 1)
                   Hy(i_m, j_m, k_m) =                                             + regDU(REGION)%Past_Hy(i    ,j    ,k + 1)      &
                   + down_CAB1(medium)*(                   Hy(i_m  ,j_m,k_m + 1) - regDU(REGION)%Past_Hy(i    ,j    ,k))
-               end do !bucle i
+               end do !loop i
             end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -1224,7 +1224,7 @@ contains
                   medium = sggMiHx(i_m    , j_m    , k_m + 1)
                   Hx(i_m, j_m, k_m) =                                             + regDU(REGION)%Past_Hx(i    ,j    ,k + 1)      &
                   + down_CAB1(medium)*(                   Hx(i_m  ,j_m,k_m + 1) - regDU(REGION)%Past_Hx(i    ,j    ,k))
-               end do !bucle i
+               end do !loop i
             end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -1249,7 +1249,7 @@ contains
                   medium = sggMiHy(i_m    , j_m    , k_m - 1)
                   Hy(i_m, j_m, k_m) =                                            + regDU(REGION)%Past_Hy(i    ,j    ,k - 1)      &
                   + up_CAB1(medium)*(                     Hy(i_m  ,j_m    ,k_m - 1) - regDU(REGION)%Past_Hy(i    ,j    ,k))
-               end do !bucle i
+               end do !loop i
             end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -1267,7 +1267,7 @@ contains
                   medium = sggMiHx(i_m    , j_m    , k_m - 1)
                   Hx(i_m, j_m, k_m) =                                               + regDU(REGION)%Past_Hx(i    ,j    ,k - 1)      &
                   + up_CAB1(medium)*(                   Hx(i_m  ,j_m  ,k_m - 1)   - regDU(REGION)%Past_Hx(i    ,j    ,k))
-               end do !bucle i
+               end do !loop i
             end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -1360,13 +1360,13 @@ contains
 #endif
          end if
          !
-      end if !del if mur_second_order
+      end if !of the if mur_second_order
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !guardar los past y pastpast
+      !save the past and pastpast
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!Total!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1471,7 +1471,7 @@ contains
                   !--->
                   regDU(REGION)%PastPast_Hy(i,j,k) = regDU(REGION)%Past_Hy(i  ,j   ,k)
                   regDU(REGION)%Past_Hy    (i,j,k) =                     Hy(i_m, j_m, k_m)
-               end do !bucle i
+               end do !loop i
             end do
          end do
 #ifdef CompileWithOpenMP
@@ -1489,7 +1489,7 @@ contains
                   !--->
                   regDU(REGION)%PastPast_Hx(i,j,k) = regDU(REGION)%Past_Hx(i  ,j   ,k)
                   regDU(REGION)%Past_Hx    (i,j,k) =                     Hx(i_m, j_m, k_m)
-               end do !bucle i
+               end do !loop i
             end do
          end do
 #ifdef CompileWithOpenMP
@@ -1514,7 +1514,7 @@ contains
                   !--->
                   regDU(REGION)%PastPast_Hy(i,j,k) = regDU(REGION)%Past_Hy(i  ,j   ,k)
                   regDU(REGION)%Past_Hy    (i,j,k) =                     Hy(i_m, j_m, k_m)
-               end do !bucle i
+               end do !loop i
             end do
          end do
 #ifdef CompileWithOpenMP
@@ -1532,7 +1532,7 @@ contains
                   !--->
                   regDU(REGION)%PastPast_Hx(i,j,k) = regDU(REGION)%Past_Hx(i  ,j   ,k)
                   regDU(REGION)%Past_Hx    (i,j,k) =                     Hx(i_m, j_m, k_m)
-               end do !bucle i
+               end do !loop i
             end do
          end do
 #ifdef CompileWithOpenMP
@@ -1626,7 +1626,7 @@ contains
 #endif
       end if
 
-      !---------------------------> acaba AdvanceMagneTicMUR <---------------------------------------
+      !---------------------------> ends AdvanceMagneTicMUR <---------------------------------------
       return
    end subroutine AdvanceMagneTicMUR
 

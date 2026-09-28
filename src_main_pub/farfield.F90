@@ -65,7 +65,7 @@ module farfield_m
       integer(kind=4) :: MPISubComm,MPIRoot
 #endif
    end type
-!!!variables globales del modulo
+!!!module global variables
    real(kind=RKIND), save           :: cluz,zvac
    real(kind=RKIND), save           :: eps0,mu0
 !!!
@@ -121,7 +121,7 @@ contains
       logical :: errnofile,error
 
 !
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to convert the step variables into globals
       cluz=1.0_RKIND/sqrt(eps0*mu0)
       zvac=sqrt(mu0/eps0)
 !
@@ -156,9 +156,9 @@ contains
       FF%MPISubComm  =  MPISubComm
       FF%MPIRoot  =  MPIRoot
 #endif
-      !!!decimacion 30/01/15
+      !!!decimation 30/01/15
       if (NF2FFDecim) then
-         FF%NDecim = max(int((0.5_RKIND/FinalFreq)/sgg%dt) - 1,1) ! el -1 es para curarme en salud
+         FF%NDecim = max(int((0.5_RKIND/FinalFreq)/sgg%dt) - 1,1) ! the -1 is to be safe
       else
          FF%NDecim = 1
       end if
@@ -253,7 +253,7 @@ contains
       FF%farfieldDe=.false.
       FF%farfieldAr=.false.
       FF%farfieldAb=.false.
-      !MPI NO DUPLICAR CALCULOS !revisar cuando se haga lo de las geometrias
+      !DO NOT DUPLICATE MPI COMPUTATIONS !review when the geometries thing is done
       if ((FF%esqx1 > sgg%SINPMLSweep(IHX)%XI).and.(FF%esqx1 <= sgg%SINPMLSweep(IHX)%XE)) &
       FF%farfieldTr=.true.
       if ((FF%esqx2 < sgg%SINPMLSweep(IHX)%XE).and.(FF%esqx2 >= sgg%SINPMLSweep(IHX)%XI)) &
@@ -278,7 +278,7 @@ contains
       FF%YOffsetPlus= 2*( FF%gridPoint%PhysCoor(IHY)%y(FF%esqy2))
       FF%ZOffsetPlus= 2*( FF%gridPoint%PhysCoor(IHZ)%z(FF%esqz2))
 
-      !manejo de simetrias PEC y PMC
+      !handling of PEC and PMC symmetries
       if (FF%esqx1 <= SINPML_fullsize(IHX)%XI) then
          FF%esqx1  = SINPML_fullsize(IHX)%XI
          if (FF%farfieldTr) then
@@ -470,7 +470,7 @@ contains
          buff='NF2FF STILL UNSUPPORTED'
          call stoponerror(layoutnumber,num_procs,Buff)
       end if
-      !!!fin casuistica de clonados periodicos
+      !!!end of periodic cloning cases
 
 
 
@@ -487,7 +487,7 @@ contains
       FF%TrFr%J%com%Ey=Max(sgg%SINPMLSweep(iEy)%YI,       FF%esqy1)
       FF%TrFr%J%fin%Ey=Min(sgg%SINPMLSweep(iEy)%YE,       FF%esqy2-1)
       FF%TrFr%K%com%Ey=Max(sgg%SINPMLSweep(iEy)%ZI,       FF%esqz1)
-      FF%TrFr%K%fin%Ey=MIn(sgg%SINPMLSweep(iEy)%ZE-01,    FF%esqz2) !MPI NO DUPLICAR CALCULOS
+      FF%TrFr%K%fin%Ey=MIn(sgg%SINPMLSweep(iEy)%ZE-01,    FF%esqz2) !DO NOT DUPLICATE MPI COMPUTATIONS
       !
       FF%TrFr%I%backDir%Hy= FF%TrFr%I%backDir%Ez - 1
       FF%TrFr%I%frontDir%Hy= FF%TrFr%I%frontDir%Ez
@@ -509,7 +509,7 @@ contains
       FF%IzDe%I%com%Ex=Max(sgg%SINPMLSweep(iEx)%xI,       FF%esqx1)
       FF%IzDe%I%fin%Ex=Min(sgg%SINPMLSweep(iEx)%xE,       FF%esqx2-1)
       FF%IzDe%K%com%Ex=Max(sgg%SINPMLSweep(iEx)%ZI,       FF%esqz1)
-      FF%IzDe%K%fin%Ex=MIn(sgg%SINPMLSweep(iEx)%ZE-01,    FF%esqz2) !MPI NO DUPLICAR CALCULOS
+      FF%IzDe%K%fin%Ex=MIn(sgg%SINPMLSweep(iEx)%ZE-01,    FF%esqz2) !DO NOT DUPLICATE MPI COMPUTATIONS
       !
       FF%IzDe%J%leftDir%Ez=Max(sgg%SINPMLSweep(IEZ)%yI,    FF%esqy1)
       FF%IzDe%J%rightDir%Ez=Min(sgg%SINPMLSweep(IEZ)%yE,    FF%esqy2)
@@ -908,7 +908,7 @@ contains
          end do
       end if
 
-      !allocatea espacio
+      !allocate space
 
       if (FF%FreqStep/=0) then
          FF%NumFreqs=int(abs(FF%InitialFreq-FF%FinalFreq)/FF%FreqStep)+1
@@ -990,7 +990,7 @@ contains
       read (15,*) time1, field1
       read (15,*) time2, field2
       close (15)
-      dtevol = time2 - time1 !!!ojo tocar para permit scaling pq. no estan sampleadas uniformemente 06118
+      dtevol = time2 - time1 !!!careful, touch it for permit scaling because they are not uniformly sampled 06118
       FF%dftInput=0.0_RKIND
 
 
@@ -1007,17 +1007,17 @@ contains
       end if
 
       if (pozi == 0) then
-         !vector con exponenciales con el sgg%dt del fichero de entrada
+         !vector with exponentials using the sgg%dt of the input file
          do ii=1,FF%NumFreqs
             FF%expIwdt(ii)=     Exp(MCPI2*(FF%InitialFreq + (ii-1) *FF%FreqStep) *dtevol)
-            !iniciales
-            FF%auxExp_E(ii)=   dtevol * (1.0E0_RKIND, 0.0E0_RKIND)   !hay que multiplicar por sgg%dt !bug
+            !initial values
+            FF%auxExp_E(ii)=   dtevol * (1.0E0_RKIND, 0.0E0_RKIND)   !must be multiplied by sgg%dt !bug
          end do
-      else !logaritmico
+      else !logarithmic
          do ii=1,FF%NumFreqs
             FF%expIwdt(ii)=     Exp(MCPI2*(10.0_RKIND **(FF%InitialFreq + (ii-1) *FF%FreqStep)) *dtevol)
-            !iniciales
-            FF%auxExp_E(ii)=   dtevol * (1.0E0_RKIND, 0.0E0_RKIND)   !hay que multiplicar por sgg%dt !bug 
+            !initial values
+            FF%auxExp_E(ii)=   dtevol * (1.0E0_RKIND, 0.0E0_RKIND)   !must be multiplied by sgg%dt !bug 
          end do
       end if
 
@@ -1032,8 +1032,8 @@ contains
          do ii=1,FF%NumFreqs
             FF%dftInput(ii) = FF%dftInput(ii) + field1 * FF%auxExp_E(ii)
          end do
-         !solo los samples despues de 1 actualizan el valor
-         !ver rutina dtft en postprocesws
+         !only samples after 1 update the value
+         !see dtft routine in postprocesws
          do ii=1,FF%NumFreqs
             FF%auxExp_E(ii)=FF%auxExp_E(ii) * FF%expIwdt(ii)
          end do
@@ -1042,28 +1042,28 @@ contains
       close (15)
 
       !!
-      !machaca con el vector con exponenciales para el sgg%dt de la simulacion
+      !overwrites with the vector of exponentials for the sgg%dt of the simulation
       if (pozi == 0) then
          do ii=1,FF%NumFreqs
-            FF%expIwdt(ii)= Exp(-(0.0_RKIND,1.0_RKIND)*2.0_RKIND * pi*(FF%InitialFreq + (ii-1) *FF%FreqStep) *FF%dtDecim) !en vez uso el dtdecimado 30/01/15
+            FF%expIwdt(ii)= Exp(-(0.0_RKIND,1.0_RKIND)*2.0_RKIND * pi*(FF%InitialFreq + (ii-1) *FF%FreqStep) *FF%dtDecim) !instead I use the decimated dt 30/01/15
          end do
-      else !logaritmico
+      else !logarithmic
          do ii=1,FF%NumFreqs
-            FF%expIwdt(ii)= Exp(-(0.0_RKIND,1.0_RKIND)*2.0_RKIND * pi*(10.0_RKIND **(FF%InitialFreq + (ii-1) *FF%FreqStep)) *FF%dtDecim) !en vez uso el decimado 30/01/15
+            FF%expIwdt(ii)= Exp(-(0.0_RKIND,1.0_RKIND)*2.0_RKIND * pi*(10.0_RKIND **(FF%InitialFreq + (ii-1) *FF%FreqStep)) *FF%dtDecim) !instead I use the decimated one 30/01/15
          end do
       end if
 
       !!
-      !machaca con el vector con exponenciales para el sgg%dt de la simulacion
+      !overwrites with the vector of exponentials for the sgg%dt of the simulation
       if (pozi == 0) then
          do ii=1,FF%NumFreqs
-            FF%auxExp_E(ii)=   FF%dtDecim   * (1.0E0_RKIND, 0.0E0_RKIND)   !hay que multiplicar por FF%dtDecim   
+            FF%auxExp_E(ii)=   FF%dtDecim   * (1.0E0_RKIND, 0.0E0_RKIND)   !must be multiplied by FF%dtDecim   
             FF%auxExp_H(ii)=   FF%dtDecim   * (1.0E0_RKIND, 0.0E0_RKIND) * &
             Exp(-(0.0_RKIND,1.0_RKIND)*2.0_RKIND * pi*(FF%InitialFreq + (ii-1) *FF%FreqStep) *(sgg%dt * 0.5_RKIND))
          end do
-      else !logaritmico
+      else !logarithmic
          do ii=1,FF%NumFreqs
-            FF%auxExp_E(ii)=   FF%dtDecim   * (1.0E0_RKIND, 0.0E0_RKIND)   !hay que multiplicar por FF%dtDecim 
+            FF%auxExp_E(ii)=   FF%dtDecim   * (1.0E0_RKIND, 0.0E0_RKIND)   !must be multiplied by FF%dtDecim 
             FF%auxExp_H(ii)=   FF%dtDecim   * (1.0E0_RKIND, 0.0E0_RKIND) * &
             Exp(-(0.0_RKIND,1.0_RKIND)*2.0_RKIND * pi*(10.0_RKIND **(FF%InitialFreq + (ii-1) *FF%FreqStep)) *(sgg%dt * 0.5_RKIND))
          end do
@@ -1140,17 +1140,17 @@ contains
       real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(in) :: Hx
       real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(in) :: Hy
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(in) :: Hz
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       integer  :: i, j, k, i_m, j_m, k_m,ii, ntime
-      !---------------------------> empieza UpdateFarField <---------------------------------------
+      !---------------------------> begins UpdateFarField <---------------------------------------
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (mod(ntime-1,FF%Ndecim) /=0) return !decimacion 30/01%15
+      if (mod(ntime-1,FF%Ndecim) /=0) return !decimation 30/01%15
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!
-      !electricos
+      !electric
       !!!!!!!!!!!!!!!!!!!!
       if(FF%farfieldTr) then
          !Ez Back
@@ -1399,7 +1399,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
       end if
-      !---------------------------> acaba UpdateFarFieldE <-----------------------------------------
+      !---------------------------> ends UpdateFarFieldE <-----------------------------------------
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!
       !magnetic field
@@ -1690,14 +1690,14 @@ contains
       end if
 
 
-      !solo los samples despues de 1 actualizan el valor
-      !ver rutina dtft en postprocesws
+      !only samples after 1 update the value
+      !see dtft routine in postprocesws
       do ii=1,FF%NumFreqs
          FF%auxExp_E(ii)=FF%auxExp_E(ii) * FF%expIwdt(ii)
          FF%auxExp_H(ii)=FF%auxExp_H(ii) * FF%expIwdt(ii)
       end do
 
-      !---------------------------> acaba UpdateFarFieldH <-----------------------------------------
+      !---------------------------> ends UpdateFarFieldH <-----------------------------------------
       return
 
    end subroutine UpdateFarField
@@ -1709,7 +1709,7 @@ contains
 
       integer(kind=4) :: i, j, k, i_m, j_m, k_m,ii
 
-      !---------------------------> empieza  <---------------------------------------
+      !---------------------------> begins  <---------------------------------------
       do ii=1,FF%NumFreqs
          write (14,err=634) FF%auxExp_E(ii)
          write (14,err=634) FF%auxExp_H(ii)
@@ -1853,7 +1853,7 @@ contains
          end do
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !magneticos
+      !magnetic
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !--->
       if(FF%farfieldTr) then
@@ -2022,7 +2022,7 @@ contains
 
       integer :: i, j, k, i_m, j_m, k_m,ii
 
-      !---------------------------> empieza  <---------------------------------------
+      !---------------------------> begins  <---------------------------------------
       do ii=1,FF%NumFreqs
          read (14) FF%auxExp_E(ii)
          read (14) FF%auxExp_H(ii)
@@ -2165,7 +2165,7 @@ contains
          end do
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !magneticos
+      !magnetic
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !--->
       if(FF%farfieldTr) then
@@ -2336,7 +2336,7 @@ contains
    !!!!return
    !!!!!
    !!!!end subroutine PuntoPhys
-   !embebido en el codigo para evitar errores con OMP 29/01/15
+   !embedded in the code to avoid errors with OMP 29/01/15
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!  Free-up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2373,7 +2373,7 @@ contains
    end subroutine Destroyfarfield
 
 
-   !!!!!!!!!!!!!!!!!!!!!!!calculo del far field propiamente dicho y volcado en fichero
+   !!!!!!!!!!!!!!!!!!!!!!!calculation of the far field proper and dumping to file
 
    subroutine FlushFarfield(layoutnumber,num_procs, b, dxe, dye, dze, dxh, dyh, dzh,facesNF2FF,rinstant)
       type(co_t) :: co,new_co
@@ -2401,7 +2401,7 @@ contains
       character(len=BUFSIZE) :: dubuf
       logical :: GOahead
       complex(kind = CKIND), dimension(:,:,:), pointer :: EcampoX,EcampoY,EcampoZ,HcampoX,HcampoY,HcampoZ,Hcampo2X,Hcampo2Y,Hcampo2Z
-      !---------------------------> empieza  <---------------------------------------
+      !---------------------------> begins  <---------------------------------------
       integer(kind=4) :: number,mt,mf,contaje,m,n
       real(kind = RKIND), allocatable :: Phimatrix(:,:),sizephi(:),Thetavector(:)
       real(kind = RKIND) :: thetaini,thetafin,phiini,phifin,solid,ddd,aaa,dfi,dth
@@ -2422,18 +2422,18 @@ contains
       
       my_iostat=0
 9138  if(my_iostat /= 0) write(*,FMT='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',9138,'.',layoutnumber,trim(adjustl(FF%filefarfield))
-      open (FF%unitfarfield,file=trim(adjustl(FF%filefarfield)),form='formatted',position='append',err=9138,iostat=my_iostat,status='new',action='write') !lista de todos los .h5bin   
+      open (FF%unitfarfield,file=trim(adjustl(FF%filefarfield)),form='formatted',position='append',err=9138,iostat=my_iostat,status='new',action='write') !list of all .h5bin   
       write(FF%unitfarfield,'(a)') ' f_at_'//trim(adjustl(chninstant))//'   Theta    Phi    Etheta_mod    Etheta_phase    Ephi_mod    Ephi_phase    RCS(ARIT) RCS(GEOM)'
 
 #ifdef CompileWithMPI
    end if
 #endif
-      !calculo y escritura
+      !calculation and writing
       ntheta=int(abs(FF%ThetaStop-FF%ThetaStart)/FF%ThetaStep)+1
       nphi=  int(abs(FF%PhiStop-FF%PhiStart)/FF%PhiStep)+1
 
 !
-!!!!algoritmo de reparto por angulo solido de puntos 080317 !basado en el script matlab esfera.m
+!!!!point distribution algorithm by solid angle 080317 !based on the matlab script esfera.m
       number=ntheta*nphi;
       thetaini=FF%ThetaStart
       thetafin=FF%ThetaStop;
@@ -2451,7 +2451,7 @@ contains
       allocate (Thetavector(1:mt+1))
       allocate (sizephi(1:mt+1))
       do contaje=0,1
-         if (contaje==1) allocate (Phimatrix(1:mt+1,1:int(maxval(sizephi)))) !tiro espacio pero no hay otro remedio
+         if (contaje==1) allocate (Phimatrix(1:mt+1,1:int(maxval(sizephi)))) !I waste space but there is no other way
          do m=1,mt+1
               Thetavector(m)=thetaini+(thetafin-thetaini)*((m-1))/mt;
               mf=nint((phifin-phiini)*sin(Thetavector(m))/dfi);
@@ -2468,14 +2468,14 @@ contains
               end if
          end do
      end do
-!!!!! fin cambios 080317
+!!!!! end of changes 080317
 
       pozi=index(FF%filefarfield,'_log_')
 
 
       do ii=1,FF%NumFreqs
          freq=FF%InitialFreq + (ii-1)*FF%FreqStep
-         if (pozi /=0) then !logaritmico
+         if (pozi /=0) then !logarithmic
             freq=10.0_RKIND **freq
          end if
 !
@@ -2483,7 +2483,7 @@ contains
          call print11(layoutnumber,dubuf,.TRUE.)
 !
          comun=(0.0_RKIND,1.0_RKIND)*2.0_RKIND * pi*freq/cluz
-!el barrido isoesferico no me funciona bien todavia 080317
+!the isospherical sweep still does not work well for me 080317
 !!!         do ithe=1,mt
 !!!          theta=Thetavector(ithe)
 !!!          do iphi=1,sizephi(ithe)
@@ -2499,7 +2499,7 @@ contains
              do while (phi<FF%phiStop)
                phi=min(phi+FF%PhiStep,FF%PhiStop)
 !
-               do pasadas=2,1,-1 !PRIMERO aritmetica (LOS CAMPOS SON ARITMETICOS) Y OTRA GEOMETRICA (LAS RCS SON AMBAS)
+               do pasadas=2,1,-1 !FIRST arithmetic (THE FIELDS ARE ARITHMETIC) AND THE OTHER GEOMETRIC (THE RCS ARE BOTH)
                   !
                   sintheta_sinphi= Sin(theta)*sin(phi)
                   sintheta_cosphi= Sin(theta)*cos(phi)
@@ -2510,7 +2510,7 @@ contains
                   sintheta=   Sin(theta)
                   sinphi  =   Sin(phi)
                   !
-                  !para curarme en salud de los problemas de reduccion 29/01/15
+                  !to be safe from reduction problems 29/01/15
                   L_theta_final=0.0_RKIND
                   L_phi_final=0.0_RKIND
                   N_theta_final=0.0_RKIND
@@ -2529,7 +2529,7 @@ contains
                      co%x_Jy=0;co%y_Jy=0;co%z_Jy=0;
                      co%x_Jz=0;co%y_Jz=0;co%z_Jz=0;
                      if (position==1) then
-                        i = FF%TrFr%I%backDir%Ez !Back !el del Ey coincide. Lo hago asi para no picar tanto codigo!!!
+                        i = FF%TrFr%I%backDir%Ez !Back !the one for Ey matches. I do it this way to avoid typing so much code!!!
                         normal=-1.0_RKIND
                         GOahead = ( FF%farfieldTr .and. facesNF2FF%Tr)
                         EcampoZ =>  FF%EzTr
@@ -2539,7 +2539,7 @@ contains
                         Hcampo2Z => FF%HzTr2
                         Hcampo2Y => FF%HyTr2
                      else
-                        i = FF%TrFr%I%frontDir%Ez !Front !el del Ey coincide. Lo hago asi para no picar tanto codigo!!!
+                        i = FF%TrFr%I%frontDir%Ez !Front !the one for Ey matches. I do it this way to avoid typing so much code!!!
                         GOahead = ( FF%farfieldFr .and. facesNF2FF%Fr)
                         normal=+1.0_RKIND
                         EcampoZ  => FF%EzFr
@@ -2555,8 +2555,8 @@ contains
                            do j = FF%TrFr%J%com%Ez, FF%TrFr%J%fin%Ez
                               j_m = j - b%Ez%YI
                               Mx=0.0_RKIND; My=0.0_RKIND; Mz=0.0_RKIND; Jx=0.0_RKIND; Jy=0.0_RKIND; Jz=0.0_RKIND
-                              if (k.le.FF%TrFr%K%fin%Ez) My = - EcampoZ(j_m, k_m,ii) *dyh(j_m)*dze(k_m)*NORMAL !los finales si varian
-                              if (j.le.FF%TrFr%J%fin%Ey) Mz = + EcampoY(j_m, k_m,ii) *dye(j_m)*dzh(k_m)*NORMAL !los finales si varian
+                              if (k.le.FF%TrFr%K%fin%Ez) My = - EcampoZ(j_m, k_m,ii) *dyh(j_m)*dze(k_m)*NORMAL !the final ones do vary
+                              if (j.le.FF%TrFr%J%fin%Ey) Mz = + EcampoY(j_m, k_m,ii) *dye(j_m)*dzh(k_m)*NORMAL !the final ones do vary
                               if (k.le.FF%TrFr%K%fin%Hz) Jy = + (Average(pasadas, HcampoZ(j_m, k_m,ii) , Hcampo2Z(j_m, k_m,ii))) *dye(j_m)*dzh(k_m)*NORMAL
                               if (j.le.FF%TrFr%J%fin%Hy) Jz = - (Average(pasadas, HcampoY(j_m, k_m,ii) , Hcampo2Y(j_m, k_m,ii))) *dyh(j_m)*dze(k_m)*NORMAL
                               co%x_My=FF%gridPoint%PhysCoor(IEZ)%x(i); co%y_My=FF%gridPoint%PhysCoor(IEZ)%y(j); co%z_My=FF%gridPoint%PhysCoor(IEZ)%z(k)
@@ -2564,8 +2564,8 @@ contains
                               co%x_Jy=co%x_Mz;                     co%y_Jy=co%y_Mz;                     co%z_Jy=co%z_Mz;
                               co%x_Jz=co%x_My;                     co%y_Jz=co%y_My;                     co%z_Jz=co%z_My;
                               call update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)
-                              !! simetrias
-                              !!!la trfr hay que llamarla para cada caso
+                              !! symmetries
+                              !!!trfr must be called for each case
                               new_My = My
                               new_Mz = Mz
                               new_Jy = Jy
@@ -2674,7 +2674,7 @@ contains
                                  call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
 
-                              !!!!!!!!!CASOS MIXTOS esquinas
+                              !!!!!!!!!MIXED CASES corners
                               if ((( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)).or. &
                               (( FF%farfieldTr_ClonePMC_DOWN.or.FF%farfieldFr_ClonePMC_DOWN).and.( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT)).or. &
                               (( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT)).or. &
@@ -2766,14 +2766,14 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
-                              !!! fin simetrias
+                              !!! end of symmetries
                            end do
                         end do
                         L_theta_final = L_theta_final + L_theta ; L_phi_final   = L_phi_final   + L_phi
                         N_theta_final = N_theta_final + N_theta ; N_phi_final   = N_phi_final   + N_phi
                         L_theta=0.0_RKIND ; L_phi=0.0_RKIND ; N_theta=0.0_RKIND ; N_phi=0.0_RKIND ;
-                     end if !del goAhead
-                  end do !del donde
+                     end if !of goAhead
+                  end do !of the where
                   !--->
                   !--->
                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2822,8 +2822,8 @@ contains
                               co%x_Jz=co%x_Mx;                     co%y_Jz=co%y_Mx;                     co%z_Jz=co%z_Mx;
                               co%x_Jx=co%x_Mz;                     co%y_Jx=co%y_Mz;                     co%z_Jx=co%z_Mz;
                               call update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)
-                              !! simetrias
-                              !!!la IzDe hay que llamarla para cada caso
+                              !! symmetries
+                              !!!IzDe must be called for each case
                               new_Mx = Mx
                               new_Mz = Mz
                               new_Jx = Jx
@@ -2931,7 +2931,7 @@ contains
                                  call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
 
-                              !!!!!!!!!CASOS MIXTOS esquinas
+                              !!!!!!!!!MIXED CASES corners
                               if ((( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN).and.( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK)).or. &
                               (( FF%farfieldIz_ClonePMC_DOWN.or.FF%farfieldDe_ClonePMC_DOWN).and.( FF%farfieldIz_ClonePMC_BACK.or.FF%farfieldDe_ClonePMC_BACK)).or. &
                               (( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN).and.( FF%farfieldIz_ClonePMC_BACK.or.FF%farfieldDe_ClonePMC_BACK)).or. &
@@ -3023,14 +3023,14 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
-                              !!! fin simetrias
+                              !!! end of symmetries
                            end do
                         end do
                         L_theta_final = L_theta_final + L_theta ; L_phi_final   = L_phi_final   + L_phi
                         N_theta_final = N_theta_final + N_theta ; N_phi_final   = N_phi_final   + N_phi
                         L_theta=0.0_RKIND ; L_phi=0.0_RKIND ; N_theta=0.0_RKIND ; N_phi=0.0_RKIND ;
-                     end if !del goAhead
-                  end do !del donde
+                     end if !of goAhead
+                  end do !of the where
 
                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                   !--->
@@ -3078,9 +3078,9 @@ contains
                               co%x_My=FF%gridPoint%PhysCoor(iEx)%x(i); co%y_My=FF%gridPoint%PhysCoor(iEx)%y(j); co%z_My=FF%gridPoint%PhysCoor(iEx)%z(k)
                               co%x_Jx=co%x_My;                     co%y_Jx=co%y_My;                     co%z_Jx=co%z_My;
                               co%x_Jy=co%x_Mx;                     co%y_Jy=co%y_Mx;                     co%z_Jy=co%z_Mx;
-                              call update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)!! simetrias
-                              !!!!!!simetrias
-                              !!!la AbAr hay que llamarla para cada caso
+                              call update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)!! symmetries
+                              !!!!!!symmetries
+                              !!!AbAr must be called for each case
                               new_Mx = Mx
                               new_My = My
                               new_Jx = Jx
@@ -3189,7 +3189,7 @@ contains
                                  call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
 
-                              !!!!!!!!!CASOS MIXTOS esquinas
+                              !!!!!!!!!MIXED CASES corners
                               if ((( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT).and.( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK)).or. &
                               (( FF%farfieldAb_ClonePMC_LEFT.or.FF%farfieldAr_ClonePMC_LEFT).and.( FF%farfieldAb_ClonePMC_BACK.or.FF%farfieldAr_ClonePMC_BACK)).or. &
                               (( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT).and.( FF%farfieldAb_ClonePMC_BACK.or.FF%farfieldAr_ClonePMC_BACK)).or. &
@@ -3281,14 +3281,14 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
-                              !!! fin simetrias
+                              !!! end of symmetries
                            end do
                         end do
                         L_theta_final = L_theta_final + L_theta ; L_phi_final   = L_phi_final   + L_phi
                         N_theta_final = N_theta_final + N_theta ; N_phi_final   = N_phi_final   + N_phi
                         L_theta=0.0_RKIND ; L_phi=0.0_RKIND ; N_theta=0.0_RKIND ; N_phi=0.0_RKIND ;
-                     end if !del goAhead
-                  end do !del donde
+                     end if !of goAhead
+                  end do !of the where
 
 
                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3335,8 +3335,8 @@ contains
                       call MPI_Barrier(FF%MPISubComm,ierr)
                    end if
 #endif
-                  Etheta(pasadas) = -(0,1.0_RKIND)*freq/(2.0_RKIND * cluz)*(L_phi_final + zvac * N_theta_final) !/FF%dftEntrada(ii) !no normalizar para calcular bien potencia
-                  Ephi(pasadas)   =  (0,1.0_RKIND)*freq/(2.0_RKIND * cluz)*(L_theta_final - zvac * N_phi_final) !/FF%dftEntrada(ii) !no normalizar para calcular bien potencia
+                  Etheta(pasadas) = -(0,1.0_RKIND)*freq/(2.0_RKIND * cluz)*(L_phi_final + zvac * N_theta_final) !/FF%dftEntrada(ii) !do not normalize to compute power correctly
+                  Ephi(pasadas)   =  (0,1.0_RKIND)*freq/(2.0_RKIND * cluz)*(L_theta_final - zvac * N_phi_final) !/FF%dftEntrada(ii) !do not normalize to compute power correctly
                   RCS(pasadas)    =  (2.0_RKIND * pi*freq/cluz)**2.0_RKIND  / (4.0_RKIND * pi*Abs(FF%dftInput(ii))**2.0_RKIND ) * &
                   (abs(L_phi_final + zvac * N_theta_final)**2.0_RKIND + abs(L_theta_final - zvac * N_phi_final)**2.0_RKIND )
 
@@ -3345,21 +3345,21 @@ contains
                   if (FF%MPIRoot == layoutnumber)  then
 #endif
                   if (pasadas==1) write(FF%unitfarfield,FMT) freq,theta,phi,&
-                  abs(Etheta(2)),ATAN2(AIMAG(Etheta(2)) , real(Etheta(2))), & !!! PASADAS=2=GEOMETRICA,, PASADAS=1=ARITMETICA
+                  abs(Etheta(2)),ATAN2(AIMAG(Etheta(2)) , real(Etheta(2))), & !!! PASSES=2=GEOMETRIC,, PASSES=1=ARITHMETIC
                   abs(Ephi(2)) , ATAN2(AIMAG(Ephi(2)) , real(Ephi(2))), RCS(1),RCS(2)
 
 #ifdef CompileWithMPI
                end if
 #endif
-               end do !de pasadas
-            end do ! del bucle en phi
-         end do !del bucle en theta
+               end do !of the passes
+            end do ! of the loop in phi
+         end do !of the loop in theta
 !
          write(dubuf,'(a,e19.9e3)')  ' NF2FF: End processing freq= ',freq
          ! call print11(layoutnumber,dubuf,.TRUE.)
 !
-      end do !del de frecuencias
-      !fin calculo
+      end do !of the frequency loop
+      !end of calculation
       if (allocated(Thetavector)) deallocate(Thetavector)
       if (allocated(sizephi)) deallocate(sizephi)
       if (allocated(Phimatrix)) deallocate(Phimatrix)
@@ -3379,7 +3379,7 @@ contains
       complex(kind=CKIND) :: L_theta,L_phi,Mx,My,Mz,comunMx,comunMy,comunMz,comunJx,comunJy,comunJz,comun
       complex(kind=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
       real(kind=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi
-      !!puede que me falte un signo en la exponencial aunque no afecta a nada (creo que es -exp[-j k r] taflove 3rd 372 nf2ff) 02/03/15
+      !!I may be missing a sign in the exponential although it does not affect anything (I think it is -exp[-j k r] taflove 3rd 372 nf2ff) 02/03/15
       comunMx=exp(comun*(co%x_Mx*sintheta_cosphi + co%y_Mx*sintheta_sinphi + co%z_Mx*costheta))
       comunMy=exp(comun*(co%x_My*sintheta_cosphi + co%y_My*sintheta_sinphi + co%z_My*costheta))
       comunMz=exp(comun*(co%x_Mz*sintheta_cosphi + co%y_Mz*sintheta_sinphi + co%z_Mz*costheta))
@@ -3405,11 +3405,11 @@ contains
 
       new_co=co; new_Mx=Mx; new_My=My; new_Mz=Mz; new_Jx=Jx; new_Jy=Jy; new_Jz=Jz;
       if(FF%farfieldTr_ClonePEC_Front.or.FF%farfieldFr_ClonePEC_Back) then
-         new_My = + My  !solo en este caso cambian las normales
+         new_My = + My  !only in this case the normals change
          new_Mz = + Mz
          new_Jy = - Jy
          new_Jz = - Jz
-         new_co%x_My=     co%x_My + FF%XDoubleWidth*NORMAL !cambio de signo resto o sumo distancia
+         new_co%x_My=     co%x_My + FF%XDoubleWidth*NORMAL !sign change, otherwise I add the distance
          new_co%x_Mz=     co%x_Mz + FF%XDoubleWidth*NORMAL
          new_co%x_Jy= new_co%x_Mz
          new_co%x_Jz= new_co%x_My
@@ -3420,7 +3420,7 @@ contains
          new_Mz = - Mz
          new_Jy = + Jy
          new_Jz = + Jz
-         new_co%x_My=     co%x_My + FF%XDoubleWidth*NORMAL !cambio de signo resto o sumo distancia
+         new_co%x_My=     co%x_My + FF%XDoubleWidth*NORMAL !sign change, otherwise I add the distance
          new_co%x_Mz=     co%x_Mz + FF%XDoubleWidth*NORMAL
          new_co%x_Jy= new_co%x_Mz
          new_co%x_Jz= new_co%x_My
@@ -3440,22 +3440,22 @@ contains
 
       new_co=co; new_Mx=Mx; new_My=My; new_Mz=Mz; new_Jx=Jx; new_Jy=Jy; new_Jz=Jz;
       if(FF%farfieldIz_ClonePEC_Right.or.FF%farfieldDe_ClonePEC_Left) then
-         new_Mx = + Mx !solo en este caso cambian las normales
+         new_Mx = + Mx !only in this case the normals change
          new_Mz = + Mz
          new_Jx = - Jx
          new_Jz = - Jz
-         new_co%y_Mx=     co%y_Mx + FF%YDoubleWidth*NORMAL !cambio de signo resto o sumo distancia
+         new_co%y_Mx=     co%y_Mx + FF%YDoubleWidth*NORMAL !sign change, otherwise I add the distance
          new_co%y_Mz=     co%y_Mz + FF%YDoubleWidth*NORMAL
          new_co%y_Jx= new_co%y_Mz
          new_co%y_Jz= new_co%y_Mx
          call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
       end if
       if (FF%farfieldIz_ClonePMC_Right.or.FF%farfieldDe_ClonePMC_Left) then
-         new_Mx = - Mx !solo en este caso cambian las normales
+         new_Mx = - Mx !only in this case the normals change
          new_Mz = - Mz
          new_Jx = + Jx
          new_Jz = + Jz
-         new_co%y_Mx=     co%y_Mx + FF%YDoubleWidth*NORMAL !cambio de signo resto o sumo distancia
+         new_co%y_Mx=     co%y_Mx + FF%YDoubleWidth*NORMAL !sign change, otherwise I add the distance
          new_co%y_Mz=     co%y_Mz + FF%YDoubleWidth*NORMAL
          new_co%y_Jx= new_co%y_Mz
          new_co%y_Jz= new_co%y_Mx
@@ -3474,22 +3474,22 @@ contains
 
       new_co=co; new_Mx=Mx; new_My=My; new_Mz=Mz; new_Jx=Jx; new_Jy=Jy; new_Jz=Jz;
       if(FF%farfieldAb_ClonePEC_UP.or.FF%farfieldAr_ClonePEC_DOWN) then
-         new_Mx = + Mx !solo en este caso cambian las normales
+         new_Mx = + Mx !only in this case the normals change
          new_My = + My
          new_Jx = - Jx
          new_Jy = - Jy
-         new_co%Z_Mx=     co%Z_Mx + FF%ZDoubleWidth*NORMAL !cambio de signo resto o sumo distancia
+         new_co%Z_Mx=     co%Z_Mx + FF%ZDoubleWidth*NORMAL !sign change, otherwise I add the distance
          new_co%Z_My=     co%Z_My + FF%ZDoubleWidth*NORMAL
          new_co%Z_Jx= new_co%Z_My
          new_co%Z_Jy= new_co%Z_Mx
          call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
       end if
       if (FF%farfieldAb_ClonePMC_UP.or.FF%farfieldAr_ClonePMC_DOWN) then
-         new_Mx = - Mx !solo en este caso cambian las normales
+         new_Mx = - Mx !only in this case the normals change
          new_My = - My
          new_Jx = + Jx
          new_Jy = + Jy
-         new_co%Z_Mx=     co%Z_Mx + FF%ZDoubleWidth*NORMAL !cambio de signo resto o sumo distancia
+         new_co%Z_Mx=     co%Z_Mx + FF%ZDoubleWidth*NORMAL !sign change, otherwise I add the distance
          new_co%Z_My=     co%Z_My + FF%ZDoubleWidth*NORMAL
          new_co%Z_Jx= new_co%Z_My
          new_co%Z_Jy= new_co%Z_Mx
@@ -3505,19 +3505,19 @@ contains
       real(kind=RKIND) :: phi1,phi2,nphi1,nphi2
       integer(4) :: pasadas
       Z=(0.0_RKIND,0.0_RKIND)
-      if (pasadas ==2) then !geometrica
+      if (pasadas ==2) then !geometric
          phi1=ATAN2(AIMAG(Z1),real(Z1))
          phi2=ATAN2(AIMAG(Z2),real(Z2))
 
 
-         !TRAMPA CHINA PARA EVITAR LOS BRANCH CUT EN 0 Y PI
+         !TRICK TO AVOID THE BRANCH CUT AT 0 AND PI
          nphi1 =phi1
          nphi2 =phi2
          if ((phi1 < -pi/2.0_RKIND).AND.(PHI2 > PI/2.0_RKIND)) nphi1 =phi1 -2.0_RKIND * pi
          if ((phi2 < -pi/2.0_RKIND).AND.(PHI1 > PI/2.0_RKIND)) nphi2 =phi2 -2.0_RKIND * pi
 
          Z=SQRT(ABS(Z1*Z2)) * EXP((0.0_RKIND,1.0_RKIND)*(nPHI1+nPHI2)/2.0_RKIND)
-      else if (pasadas==1) then !aritmetica
+      else if (pasadas==1) then !arithmetic
          Z=(z1+z2)/2.0_RKIND
       end if
 

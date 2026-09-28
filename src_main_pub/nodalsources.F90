@@ -26,7 +26,7 @@ module nodalsources_m
       type(NodalLocal_t), pointer, dimension(:) :: nodHard,nodSoft
    end type
 
-   !!!!!variables locales
+   !!!!!local variables
 
    type(nodsou_t), save, target :: Nodal_Ex,Nodal_Ey,Nodal_Ez
    type(nodsou_t), save, target :: Nodal_Hx,Nodal_Hy,Nodal_Hz
@@ -186,7 +186,7 @@ contains
                   call CreateNodal(layoutnumber,Nodal_Ez,sggNodalSource(J),sggSweep(IEZ),i,amplit)
                end if
             end do
-         else !es magnetico
+         else !it is magnetic
             do i=1,sggNodalSource(j)%numPoints
                amplit = sggNodalSource(J)%gridPoint(i)%xc
                if (amplit /= 0.0_RKIND) then
@@ -308,14 +308,14 @@ contains
 
       nprev=int(t/deltaevol)
       !first order interpolation
-      if ((nprev+1 > numus).OR.(NPREV+1 <= 0)) then !SI NPREV<0 ES PORQUE SE HA DESBORADO EL ENTERO !BUG MIGEL 130614
-         evolucion=0.0_RKIND !se asume que el fichero de entrada contiene una excitacion que se anula despues
+      if ((nprev+1 > numus).OR.(NPREV+1 <= 0)) then !IF NPREV<0 IT IS BECAUSE THE INTEGER HAS OVERFLOWED !BUG MIGEL 130614
+         evolucion=0.0_RKIND !it is assumed that the input file contains an excitation that vanishes afterwards
       else
-         evolucion=(evol(nprev+1)-evol(nprev))/deltaevol*((t)-nprev*deltaevol)+evol(nprev) !interpolacion lineal
+         evolucion=(evol(nprev+1)-evol(nprev))/deltaevol*((t)-nprev*deltaevol)+evol(nprev) !linear interpolation
       end if
       !second order !no advantages over first order
       !  if (nprev+2 > numus) then
-      !      evolucion=0.0_RKIND !se asume que el fichero de entrada contiene una excitacion que se anula despues
+      !      evolucion=0.0_RKIND !it is assumed that the input file contains an excitation that vanishes afterwards
       !  else
       !      evolucion=evol(nprev+2) * ( ((t)-nprev    *deltaevol) * ((t)-(nprev+1)*deltaevol) ) /(2.0_RKIND * deltaevol**2.0_RKIND ) - &
       !                evol(nprev+1) * ( ((t)-nprev    *deltaevol) * ((t)-(nprev+2)*deltaevol) ) /(   deltaevol**2.0_RKIND ) + &
@@ -384,13 +384,13 @@ contains
       real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(inout) :: Ey
       real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(inout) :: Ez
 
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       real(kind = RKIND) :: timei,amp
       integer  :: i, j, k, i_m, j_m, k_m,ii,medium
-      !---------------------------> empieza AdvancenodalE <---------------------------------------
+      !---------------------------> starts AdvancenodalE <---------------------------------------
 
       !!!
-      !!!! deprecado en pscale y el+3 de la sincronia con ORIGINAL se jode para siempre 110219 
+      !!!! deprecated in pscale and the +3 of the synchronization with ORIGINAL is broken forever 110219 
       !!!timei = (timeinstant +3) * sgg%dt !ORIGINAL sync
       timei = sgg%time(timeinstant) 
 
@@ -553,7 +553,7 @@ contains
    subroutine AdvancenodalH(sgg,sggMiHx, sggMiHy, sggMiHz,NumMedia,timeinstant, b,gm2,Idxe,Idye,Idze,Hx,Hy,Hz,simu_devia)
       !---------------------------> inputs <----------------------------------------------------------
       type(SGGFDTDINFO_t), intent(in)     , target  :: sgg
-      logical , intent(in) :: simu_devia !ojo untested con simu_devia este tipo de fuentes
+      logical , intent(in) :: simu_devia !note untested with simu_devia this type of sources
       integer, intent(in) :: NumMedia, timeinstant
       !!!
       type(bounds_t), intent(in) :: b
@@ -572,7 +572,7 @@ contains
       real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hx
       real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       real(kind = RKIND) :: timei,amp
       integer(kind=4) :: i, j, k, i_m, j_m, k_m,ii,medium
       real(kind = RKIND) :: GM2_1
@@ -582,10 +582,10 @@ contains
           stop
       end if
       GM2_1=GM2(1)
-      !---------------------------> empieza AdvancenodalH <---------------------------------------
+      !---------------------------> starts AdvancenodalH <---------------------------------------
       
       timei = sgg%time(timeinstant) + 0.5_RKIND  * sgg%dt
-      !!!! deprecado en pscale y el+3 de la sincronia con ORIGINAL se jode para siempre 110219 
+      !!!! deprecated in pscale and the +3 of the synchronization with ORIGINAL is broken forever 110219 
       !!! timei = ( timeinstant + 0.5_RKIND  +3.0_RKIND) * sgg%dt  !ORIGINAL sync
 
 

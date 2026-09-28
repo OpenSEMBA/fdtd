@@ -1,7 +1,7 @@
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Module EDispersives !ojo los polos conjugados DEBEN APARECER explicitamente
+! Module EDispersives !note the conjugate poles MUST APPEAR explicitly
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Beware in Dutton's model BOTH pair OF complex conjugate poles/residues
 ! in input from .nfde MUST APPEAR (this is why the factor /2 in the algorithm part
@@ -25,7 +25,7 @@ module EDispersives_m
       integer(kind=4) :: i,j,k
       integer(kind=4) :: WhatField
 
-      real(kind=RKIND), pointer                 :: FieldPresent !apunta al campo del background
+      real(kind=RKIND), pointer                 :: FieldPresent !points to the background field
       real(kind=RKIND)                          :: FieldPrevious
       complex(kind=CKIND), pointer, dimension(:) :: Current
    end type
@@ -61,7 +61,7 @@ contains
       Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
       Ez(sgg%Alloc(IEZ)%XI : sgg%Alloc(IEZ)%XE,sgg%Alloc(IEZ)%YI : sgg%Alloc(IEZ)%YE,sgg%Alloc(IEZ)%ZI : sgg%Alloc(IEZ)%ZE)
 
-      !habria que ir deprecando lo de pasar el EDispersive, etc.. porque hay acceso directo a sgg%Med%Dispersiv
+      !passing the EDispersive should be gradually deprecated, etc.. because there is direct access to sgg%Med%Dispersiv
       logical, intent(out) :: ThereAreEDispersives
       logical, intent(in) :: resume
       integer(kind=4) :: jmed,j1,conta,k1,i1,tempindex
@@ -83,7 +83,7 @@ contains
       do jmed=1,sgg%NumMedia
          if ((sgg%Med(jmed)%Is%EDispersive).and.(.not.sgg%Med(jmed)%Is%EDispersiveAnis)) then
             conta=conta+1
-            Dutton%Medium(conta)%indexmed=jmed !correspondencia con el medio principal
+            Dutton%Medium(conta)%indexmed=jmed !correspondence with the main medium
             Dutton%Medium(conta)%numpolres11=sgg%Med(jmed)%EDispersive(1)%numpolres11
             allocate (Dutton%Medium(conta)%Beta (1 : sgg%Med(jmed)%EDispersive(1)%numpolres11),&
             Dutton%Medium(conta)%Kappa(1 : sgg%Med(jmed)%EDispersive(1)%numpolres11), &
@@ -295,8 +295,8 @@ contains
                Dutton%Medium(jmed)%Beta(k1)*(tempnode%fieldPresent-tempnode%fieldPrevious) /sgg%dt
             end do
             tempnode%fieldPrevious=tempnode%fieldPresent
-            !stores previous field (cuidado no es un apuntamiento sino una igualdad de valores)
-            !antes de que re-empieze a calcularlo el algoritmo del background
+            !stores previous field (careful, it is not a pointer but a value assignment)
+            !before the background algorithm starts recomputing it
          end do
          !Ey,Jy
          do i1=1,Dutton%Medium(jmed)%NumNodesEy

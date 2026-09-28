@@ -85,16 +85,16 @@ contains
 
       call print11(layoutnumber,trim(adjustl(whoami))//' ERROR: '//trim(adjustl(message)),.true.)
 
-      !19/12/14 bug OLD1812. Un stoponerror creado por un nodal source embebido llega aqui en MPI. El closewarn... hace un barrier e impide morir al proceso.
+      !19/12/14 bug OLD1812. A stoponerror created by an embedded nodal source arrives here in MPI. The closewarn... does a barrier and prevents the process from dying.
 
-      !hay que revisar los stoponerror y hacerlos mas elegantes. De momento aborto a lo bestia comentanod sin cerrar ni warning ni dxf (To do)
+      !the stoponerror calls must be reviewed and made more elegant. For now I abort crudely, commenting out without closing either warning or dxf (To do)
 
       !call CLOSEWARNINGFILE(layoutnumber,num_procs)
       !!!!call CLOSEdxfFILE(layoutnumber,num_procs)
 
 
 
-      !!!!lo de volver es solo para el cluster
+      !!!!the return is only for the cluster
 #ifdef keeppause
       if (present(calledfrommain)) then
          if (calledfrommain) then
@@ -105,7 +105,7 @@ contains
             end if
             call print11(layoutnumber,'Trying to relaunch. Correct error, create launch, and remove pause/warning '// &
                                       'file (or kill the process)',.true.)
-!!!            call CloseReportingFiles !sgg 240817 no se deben cerrar los reporting files
+!!!            call CloseReportingFiles !sgg 240817 the reporting files must not be closed
             return
          end if
       else
@@ -177,7 +177,7 @@ contains
 #endif
 
       !
-      gridPoint=createPoints(sgg) !crea coordenadas fisicas
+      gridPoint=createPoints(sgg) !creates physical coordinates
 
       !
 
@@ -525,12 +525,12 @@ contains
          time_out = diasen(month-1) * 86400 + (day-1) * 86400 + 3600.0 * h + 60.0 * m + s - t_0  + (year-2000.) * 365 * 86400.
       end if
       time_out2%segundos=time_out !seconds from year 2000
-      time_out2%hora=caux !hora
-      time_out2%fecha=caux2 !fecha
+      time_out2%hora=caux !hour
+      time_out2%fecha=caux2 !date
 
 
       !!if ((month >=4 ).and.(month <= 10)) then
-      !!   h=h+1 !dst aproximado
+      !!   h=h+1 !dst approximate
       !!   write( time_out2%hora( 1: 2), '(i2)') h
       !!end if
       return
@@ -621,7 +621,7 @@ contains
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
       write(whoamishort,'(i5)') layoutnumber+1
 
-      !---------------------------> empieza Timing <--------------------------------------------------
+      !---------------------------> begins Timing <--------------------------------------------------
 #ifdef CompileWithMPI
       call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
@@ -631,7 +631,7 @@ contains
       l_aux = (time_end - time_begin  >  REPORTINGSECONDS) .or. forcetiming
 #ifdef CompileWithMPI
       !print *,'layoutnumber+1,l_aux, hay_timing pre',layoutnumber+1,l_aux, hay_timing
-      call MPI_AllReduce(l_aux, hay_timing, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr) !TODOS STOCH Y NO STOCH 050619
+      call MPI_AllReduce(l_aux, hay_timing, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr) !ALL STOCH AND NON-STOCH 050619
       !print *,'layoutnumber+1,l_aux, hay_timing post',layoutnumber+1,l_aux, hay_timing
 #else
       hay_timing = l_aux
@@ -815,7 +815,7 @@ contains
          !
          l_aux=mustflushdata
          call MPI_AllReduce(l_aux, mustflushdata, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-         call MPI_Barrier(MPI_COMM_WORLD,ierr) !050619 cambiado subcomm a mpi_comm_world
+         call MPI_Barrier(MPI_COMM_WORLD,ierr) !050619 changed subcomm to mpi_comm_world
 #endif
          mustflushfields = pararflushing .or. mustflushfields
          parar = pararNOflushing .or. pararflushing
@@ -885,7 +885,7 @@ contains
          end do
          !
          !--->
-         energy = value !!! quitado 241018 para evitar pasar el eps0----> 0.5_RKIND * Eps0 * valor
+         energy = value !!! removed 241018 to avoid passing eps0----> 0.5_RKIND * Eps0 * valor
          !--->
          energytotal = energy
 #ifdef CompileWithMPI
@@ -1024,7 +1024,7 @@ contains
 #endif
 
          !!!!!!!!!!!!!!!!!!!!!!!
-         !escritura del fichero snap a voluntad o cuando se pase un umbral, cada minuto
+         !writing of the snap file on demand or when a threshold is exceeded, every minute
          if (layoutnumber == 0) then 
             inquire(FILE = 'snap', EXIST = mustSnap)
             if (mustsnap) then
@@ -1148,7 +1148,7 @@ contains
          end if
 
 #ifdef CompileWithMPI
-         call MPI_Barrier(MPI_COMM_WORLD,ierr) !TODOS STOCH O NO 060619
+         call MPI_Barrier(MPI_COMM_WORLD,ierr) !ALL STOCH OR NOT 060619
 #endif
          !!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1234,7 +1234,7 @@ contains
                write(dubuf,'(a,i5,e15.4e3,a,e15.4e3,a,3i5,a)')  'Max field slice: ',i,NEWlmaxval(i),'/',maxSourceValue, &
                ' at (',newlmaxval_i(i),newlmaxval_j(i),newlmaxval_k(i),')=('// &
             ' '//trim(adjustl(dondex))//','//' '//trim(adjustl(dondey))//','//' '//trim(adjustl(dondez))//')'
-               ! call print11(layoutnumber,dubuf) !comentado para que la salida sea menos verbose
+               ! call print11(layoutnumber,dubuf) !commented out so that the output is less verbose
             end do
             !
 
@@ -1318,7 +1318,7 @@ contains
 !!      if (IsNaNd(energy)) then
 !!#endif
 !!!#else
-     !! if (IsNaN (energy)) then !quitado a mano para que PGI no se queje a 150623 !fm
+     !! if (IsNaN (energy)) then !removed by hand so that PGI does not complain on 150623 !fm
 !!!#endif
 !!!#endif
          !
@@ -1427,7 +1427,7 @@ contains
              call erasesignalingfiles(simu_devia)
          end if
       end if
-      !---------------------------> acaba Timing <----------------------------------------------------
+      !---------------------------> ends Timing <----------------------------------------------------
       return
    end subroutine Timing
 
@@ -1468,7 +1468,7 @@ contains
       !!!    call MPI_FILE_open (SUBCOMM_MPI, trim(adjustl(nEntradaRoot))//'_tmpWarnings.txt', &
       !!!                           MPI_MODE_WRONLY + MPI_MODE_CREATE, &
       !!!                           MPI_INFO_NULL, thefile, ierr)
-      !!!    disp = (layoutnumber+1) * BUFSIZE * maxmessages !no creo que se den mas de 2000 mensajes por layout
+      !!!    disp = (layoutnumber+1) * BUFSIZE * maxmessages !I do not think more than 2000 messages per layout will occur
       !!!
       !!!    call MPI_FILE_SET_VIEW(thefile, disp, MPI_CHARACTER, &
       !!!                               MPI_CHARACTER, 'native', &
@@ -1565,7 +1565,7 @@ contains
       call MPI_Barrier (SUBCOMM_MPI, ierr)
 #endif
 
-      !arregla los NUL
+      !fixes the NULs
       if ((layoutnumber==0).or.((layoutnumber == num_procs/2).and.stoch_undivided)) then
          open (88,file=trim(adjustl(WarningFile))//'_Warnings.txt',form='formatted')
          posic=0
@@ -1669,14 +1669,14 @@ contains
       if (present(forceprint2)) forceprint=forceprint2
 
       soyImpresor=((layoutnumber == 0).or.forceprint).and.printea
-      if (message(1:1)=='&') then !respeta los espacios, el & es un espacio en realidad
+      if (message(1:1)=='&') then !respects spaces, the & is actually a space
 #ifndef NoVerbose
         ! if (soyImpresor) write (*,'(a)') ' '//trim(message(2:))
          if (soyImpresor) write (*,'(a)') trim(message(2:))
 #endif
         ! if (layoutnumber == 0)   write (11,'(a)',err=111) ' '//trim(message(2:))
          if (layoutnumber == 0)   write (11,'(a)',err=111) trim(message(2:))
-      else !ajusta a izquierda sin respetar espacios
+      else !left-adjusts without respecting spaces
 #ifndef NoVerbose
          if (soyImpresor) write (*,'(a)') trim(adjustl(message))
 #endif
@@ -1688,8 +1688,8 @@ contains
       end if
       goto 112
 111   continue 
-      !fort.11 a veces lo intentan escribir 2 a la vez de los que dan fallos en writing restarting fields. 
-      !asi que ignora y continua
+      !sometimes 2 of those that fail in writing restarting fields try to write fort.11 at once. 
+      !so it ignores it and continues
 112   return
 
    end subroutine
@@ -1722,7 +1722,7 @@ contains
    !!!!!!call MPI_FILE_open (SUBCOMM_MPI, trim(adjustl(mynEntradaRoot))//'.tmpdxf', &
    !!!!!!                       MPI_MODE_WRONLY + MPI_MODE_CREATE, &
    !!!!!!                       MPI_INFO_NULL, thefile2, ierr)
-   !!!!!!disp = (layoutnumber+1) * dxflinesize * maxdxf !no creo que se den mas de 2000 mensajes por layout
+   !!!!!!disp = (layoutnumber+1) * dxflinesize * maxdxf !I do not think more than 2000 messages per layout will occur
    !!!!!!
    !!!!!!call MPI_FILE_SET_VIEW(thefile2, disp, MPI_CHARACTER, &
    !!!!!!                           MPI_CHARACTER, 'native', &
@@ -1824,7 +1824,7 @@ contains
    !!!        call MPI_Barrier(SUBCOMM_MPI,ierr)
    !!!#endif
    !!!
-   !!!!arregla los NUL
+   !!!!fixes the NULs
    !!!if (layoutnumber == 0) then
    !!!    open (988,file=trim(adjustl(mynEntradaRoot))//'.dxf',form='formatted')
    !!!    posic=0
@@ -2193,7 +2193,7 @@ end function openfile_mpi
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
 
-      !arregla los NUL
+      !fixes the NULs
       if (layoutnumber == 0) then
          open (newunit=thefile8,file=trim(adjustl(nombrefich)),form='formatted')
          do i=0,num_procs-1
@@ -2228,7 +2228,7 @@ end function openfile_mpi
       return
    end subroutine closefile_mpi
 
-   function createPoints(sgg)  result(gridPoint) !crea coordenadas fisicas
+   function createPoints(sgg)  result(gridPoint) !creates physical coordinates
       !
       type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(coorsxyzP_t) :: gridPoint

@@ -339,7 +339,7 @@ contains
          case ('Y', 'y'); fieldo2 = IHY
          case ('Z', 'z'); fieldo2 = IHZ
          end select
-      case (ICUR, ICURX, ICURY, ICURZ, MAPVTK)  !los pongo en efield para evitar problemas con el MPI
+      case (ICUR, ICURX, ICURY, ICURZ, MAPVTK)  !I set them in efield to avoid problems with MPI
          select case (dir)
          case ('X', 'x'); fieldo2 = iEx
          case ('Y', 'y'); fieldo2 = iEY

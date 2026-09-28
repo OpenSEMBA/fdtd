@@ -197,7 +197,7 @@ contains
          this%despl%desZ => poxi
 
       end if
-      !!!!!!!!! fin rotacion
+      !!!!!!!!! end rotation
       deallocate(old_despl,old_matriz)
       return
    end subroutine rotate_generateSpaceSteps
@@ -461,9 +461,9 @@ contains
          this%front%propiedadesPML(5)%numLayers = OPML_XL%numLayers
          this%front%propiedadesPML(6)%numLayers = OPML_XU%numLayers
       end if
-      !!!!!!!!! fin rotacion
+      !!!!!!!!! end rotation
 
-      !END ROTATE FRONTERAS
+      !END ROTATE BORDERS
       return
    end subroutine rotate_generateFronteras
    
@@ -524,14 +524,14 @@ contains
             call ROTATEMPI(mpidir,this%DielRegs%vols(i)%C1P(ii)) 
          end do
          if (tama2 > 0) then
-            this%DielRegs%vols(i)%diodeOrientation = this%DielRegs%vols(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
+            this%DielRegs%vols(i)%diodeOrientation = this%DielRegs%vols(i)%c1P(tama2)%Or    !UPDATE diodes IN CASE THERE IS ROTATION note it is a hack only valid for 1p or 2p diodes
          end if
          tama3 = (this%DielRegs%vols(i)%n_c2P)  
          do ii = 1, tama3
             call ROTATEMPI(mpidir,this%DielRegs%vols(i)%C2P(ii)) 
          end do
          if (tama3 > 0) then 
-            this%DielRegs%vols(i)%diodeOrientation = this%DielRegs%vols(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
+            this%DielRegs%vols(i)%diodeOrientation = this%DielRegs%vols(i)%c2P(tama3)%Or   !UPDATE diodes IN CASE THERE IS ROTATION. note it is a hack only valid for 1p or 2p diodes
          end if
       end do
       !surfaces
@@ -542,14 +542,14 @@ contains
             call ROTATEMPI(mpidir,this%DielRegs%surfs(i)%C1P(ii)) 
          end do
          if (tama2 > 0) then      
-            this%DielRegs%surfs(i)%diodeOrientation = this%DielRegs%surfs(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
+            this%DielRegs%surfs(i)%diodeOrientation = this%DielRegs%surfs(i)%c1P(tama2)%Or    !UPDATE diodes IN CASE THERE IS ROTATION note it is a hack only valid for 1p or 2p diodes
          end if
          tama3 = (this%DielRegs%surfs(i)%n_c2P)  
          do ii = 1, tama3
             call ROTATEMPI(mpidir,this%DielRegs%surfs(i)%C2P(ii)) 
          end do
          if (tama3 > 0) then    
-            this%DielRegs%surfs(i)%diodeOrientation = this%DielRegs%surfs(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
+            this%DielRegs%surfs(i)%diodeOrientation = this%DielRegs%surfs(i)%c2P(tama3)%Or   !UPDATE diodes IN CASE THERE IS ROTATION. note it is a hack only valid for 1p or 2p diodes
          end if
       end do
       !lines
@@ -560,7 +560,7 @@ contains
             call ROTATEMPI(mpidir,this%DielRegs%lins(i)%C1P(ii)) 
          end do
          if (tama2 > 0) then       
-            this%DielRegs%lins(i)%diodeOrientation = this%DielRegs%lins(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
+            this%DielRegs%lins(i)%diodeOrientation = this%DielRegs%lins(i)%c1P(tama2)%Or    !UPDATE diodes IN CASE THERE IS ROTATION note it is a hack only valid for 1p or 2p diodes
          end if
 
          tama3 = (this%DielRegs%lins(i)%n_c2P)  
@@ -568,7 +568,7 @@ contains
             call ROTATEMPI(mpidir,this%DielRegs%lins(i)%C2P(ii)) 
          end do
          if (tama3 > 0) then        
-            this%DielRegs%lins(i)%diodeOrientation = this%DielRegs%lins(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
+            this%DielRegs%lins(i)%diodeOrientation = this%DielRegs%lins(i)%c2P(tama3)%Or   !UPDATE diodes IN CASE THERE IS ROTATION. note it is a hack only valid for 1p or 2p diodes
          end if
       end do
       return
@@ -582,7 +582,7 @@ contains
            stop
            return
       end if
-   !si algun dia lo hubiera es un cut and paste de rotate_generateNONMetals y a la que hay que aniadir la rotacion de la matriz de medios 
+   !if there ever were one it is a cut and paste of rotate_generateNONMetals and to which the rotation of the media matrix must be added 
    return
    end subroutine rotate_generateANISOTROPICs
    
@@ -630,7 +630,7 @@ contains
                       this%twires%tw(i)%tWc(ii)%d = iEy
                    end select
              end if
-      !!!FIN  
+      !!!END  
          end do
       end do
      
@@ -668,7 +668,7 @@ contains
                       this%swires%sw(i)%swc(ii)%z = oldx
              end if
          end do
-         !!!FIN
+         !!!END
       end do   
       allocate(old_swires)
 
@@ -791,7 +791,7 @@ contains
       integer :: iox, ioy, ioz
       
       tama = this%oldSONDA%n_probes        
-      ! tres posibilidades FarField, Electric,Magnetic
+      ! three possibilities FarField, Electric,Magnetic
       do i = 1, tama      
          tama2 = (this%oldSONDA%probes(i)%n_FarField)  
          do ii = 1, tama2                                 
@@ -800,7 +800,7 @@ contains
             thetastop =old_FarField%probe%thetastop   
             phistart  =old_FarField%probe%phistart
             phistop   =old_FarField%probe%phistop
-            !!!mpirotate angulos farfield .... las coordenadas se rotan luego
+            !!!mpirotate farfield angles .... the coordinates are rotated later
             if (MPIDIR==2) then
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart = atan2(Sqrt(Cos(thetastart)**2.0_RKIND+ Cos(phistart)**2*Sin(thetastart)**2),Sin(phistart)*Sin(thetastart))
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistart = atan2(Cos(phistart)*Sin(thetastart),Cos(thetastart))      
@@ -906,7 +906,7 @@ contains
       type(coords_t), pointer :: old_MasSonda => NULL ()
       
       tama = this%Sonda%length       
-      ! tres posibilidades FarField, Electric,Magnetic
+      ! three possibilities FarField, Electric,Magnetic
       do i = 1, tama      
          tama2 = (this%Sonda%collection(i)%len_cor)    
          do ii = 1, tama2                                               
@@ -923,7 +923,7 @@ contains
               TZI=old_MasSonda%Ztrancos
               if ((OOR/=NP_COR_EX).AND.(OOR/=NP_COR_EY).AND.(OOR/=NP_COR_EZ).AND. &
               (OOR/=NP_COR_HX).AND.(OOR/=NP_COR_HY).AND.(OOR/=NP_COR_HZ)) return
-              !!LAS IW Y LAS VG NO SE ROTAN
+              !!THE IW AND THE VG ARE NOT ROTATED
               if (MPIDIR==2) then
                  this%Sonda%collection(i)%cordinates(ii)%XI=OZI   
                  this%Sonda%collection(i)%cordinates(ii)%XE=OZE
@@ -981,7 +981,7 @@ contains
       tama = this%BloquePRB%N_BP   
       do i = 1, tama      
           allocate(old_BloqueProbe,source=this%BloquePRB%BP(i))
-          !MPI  ROTATE Bloque CURRENT
+          !MPI  ROTATE Block CURRENT
           if (MPIDIR==2) then
              OXI=  old_BloqueProbe%i1
              OXE=  old_BloqueProbe%i2
@@ -1033,7 +1033,7 @@ contains
       end do
       
           
-      !!!!FIN ROTATE
+      !!!!END ROTATE
       return
    end subroutine rotate_generateBloqueProbes
 !!   
@@ -1045,7 +1045,7 @@ contains
       type(coords_t), pointer :: old_Coordinates => NULL ()
       
       tama = this%VolPrb%length
-      ! tres posibilidades FarField, Electric,Magnetic
+      ! three possibilities FarField, Electric,Magnetic
       do i = 1, tama      
          tama2 = (this%VolPrb%collection(i)%len_cor)    
          do ii = 1, tama2                                               
@@ -1077,8 +1077,8 @@ contains
               (OOR/=IHXC).AND.(OOR/=IHYC).AND.(OOR/=IHZC).AND. &
               (OOR/=ICURX).AND.(OOR/=ICURY).AND.(OOR/=ICURZ).AND. &
                (OOR/=IMEC).AND.(OOR/=IMHC).AND.(OOR/=ICUR)) return
-              !!LAS IW Y LAS VG NO SE ROTAN.
-        !!las imec, imhc e icur no le afecta el oor
+              !!THE IW AND THE VG ARE NOT ROTATED.
+        !!the imec, imhc and icur are not affected by oor
               if (MPIDIR==2) then
                  this%VolPrb%collection(i)%cordinates(ii)%XI=OZI
                  this%VolPrb%collection(i)%cordinates(ii)%XE=OZE

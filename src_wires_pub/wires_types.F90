@@ -80,7 +80,7 @@ module wiresHolland_constants_m
 #ifdef CompileWithThickWires      
       type(thick_t) :: thick
 #endif
-!      real(kind=RKIND_wires)                           :: Efield_wire2main_past  !no sirve para nada 171216
+!      real(kind=RKIND_wires)                           :: Efield_wire2main_past  !useless 171216
       integer(kind=4) :: i,j,k,indexmed,ILIBRE,JLIBRE,KLIBRE
       !dama
       integer(kind=4) :: ie,je,ke
@@ -90,8 +90,8 @@ module wiresHolland_constants_m
       real(kind=RKIND_WIRES)                            :: cI
       real(kind=RKIND_WIRES)                            :: bI
       real(kind=RKIND_WIRES)                            :: Lintrinsic
-      !fin dama
-      integer(kind=4) :: fieldKind !iEx,iEy o iEz
+      !end dama
+      integer(kind=4) :: fieldKind !iEx,iEy or iEz
       logical :: reversedOrientation
       type(source_t), pointer                  :: Vsource
 #ifdef CompileWithMPI
@@ -102,7 +102,7 @@ module wiresHolland_constants_m
       !!!crank-nicolson coefficients
       real(kind=RKIND_WIRES) :: upperdiag, diag, lowerdiag, rightCHminus, rightCHplus,rightCU,rightCUminus,rightCUplus
       !!!!!!!!!!end crank-nicolson
-!!!se aniade siempre aunque solo lo use stochastic
+!!!always added even though only stochastic uses it
       real(kind=RKIND_WIRES) :: qplus_qminus_for_devia,current_for_devia,Efield_main2wire_for_devia ,Lind_devia
       real(kind=RKIND_WIRES)                           :: cte1_for_devia ,cte2_for_devia ,cte3_for_devia  
    end type CurrentSegments_t
@@ -119,14 +119,14 @@ module wiresHolland_constants_m
       real(kind=RKIND_WIRES) , pointer, dimension(:,:) :: R, L, C
       real(kind=RKIND_WIRES) , pointer, dimension(:,:) :: b1I, b2I, b3I
    end type            TMultiline_t
-   !!!!!!!!!!!!fin dama
+   !!!!!!!!!!!!end dama
 
    type, public   :: ThinWires_t
       integer(kind=4)                                :: NumMultilines !dama
       type(TMultiline_t) , pointer, dimension(:) :: Multilines    !dama
       integer(kind=4) :: NumDifferentWires,NumCurrentSegments,NumChargeNodes
       integer(kind=4), pointer, dimension(:) :: wireMediumType
-      type(CurrentSegments_t) :: NullSegment !contiene informacion nula precisada por segmentos voided pero observados en la rutina de observacion 12/09/13
+      type(CurrentSegments_t) :: NullSegment !contains null information required by voided segments but observed in the observation routine 12/09/13
       type(ChargeNodes_t) :: NullNode
       type(CurrentSegments_t), pointer, dimension(:) :: CurrentSegment
       type(ChargeNodes_t), pointer, dimension(:) :: ChargeNode
@@ -139,9 +139,9 @@ module wiresHolland_constants_m
       type(CurrentSegments_t), pointer, dimension(:) :: MPIUpSharedCurrentSegment,MPIDownSharedCurrentSegment
       integer(kind=4)                                 :: NumSharedCurrentUpMPI,NumSharedCurrentDownMPI
 #endif
-      real(kind=RKIND)                   :: null_field !en los segmentos embeddeds y en los paralelos no hay acople entre thin-wire y medio
-      real(kind=RKIND_WIRES)                   :: olddt !para permit scaling 141118
-      ! apunto  a null_field el pointer field anterior en vez de al campo fdtd y lo obligo a ser cero
+      real(kind=RKIND)                   :: null_field !in embedded segments and in parallel ones there is no coupling between thin-wire and medium
+      real(kind=RKIND_WIRES)                   :: olddt !to allow scaling 141118
+      ! I point the previous field pointer to null_field instead of the fdtd field and force it to be zero
    end type ThinWires_t
    !
    type, public:: adyacc_t

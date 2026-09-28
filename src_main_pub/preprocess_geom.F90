@@ -19,7 +19,7 @@ module Preprocess_m
    use directoryUtils_m, only: file_has_samples
    use conformal_m, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
    implicit none
-!!!variables globales del modulo
+!!!module global variables
    real(kind=RKIND), save           :: cluz,zvac
    real(kind=RKIND), save           :: eps0,mu0
 !!!
@@ -104,18 +104,18 @@ contains
       type(ConformalMedia_t), dimension(:), allocatable :: conformal_media
       real(kind=rkind), dimension(:), allocatable :: edge_ratios, face_ratios
       type(side_tris_map_t), dimension(:), allocatable :: side_to_triangles_maps
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
       cluz=1.0_RKIND/sqrt(eps0*mu0)
       zvac=sqrt(mu0/eps0)
 !
       call cuentatags(this,tagtype,layoutnumber,fichin)
 !
-      delta=-1 !para que no se queje gfortran de variables sin inicializar
+      delta=-1 !so that gfortran does not complain about uninitialized variables
 
-      sgg%thereAreMagneticMedia=.true.  !caso mas general
-      sgg%thereArePMLMagneticMedia=.true. !caso mas general
-      !antes de hacer nada preprocesa si es preciso y no allocatear nada
-      !09/07/13 !los SGBCs con skindepth se deben preprocesar
+      sgg%thereAreMagneticMedia=.true.  !most general case
+      sgg%thereArePMLMagneticMedia=.true. !most general case
+      !before doing anything, preprocess if needed and do not allocate anything
+      !09/07/13 !SGBCs with skindepth must be preprocessed
       if (skindepthpre) then
          if (layoutnumber == 0) then
             call print11(layoutnumber,'Preprocessing SGBC materials to include skin-depth effects....')
@@ -164,17 +164,17 @@ contains
       end block
 
 
-      ! Cuenta los medios
-      !!!!!calcula tamanios
-      !reserva espacio
-      !el medio 0 se reserva para PEC
-      !regiones PEC
-      !el medio 1 se reserva para sustrato  y saltamos
+      ! Count the media
+      !!!!!compute sizes
+      !reserve space
+      !medium 0 is reserved for PEC
+      !PEC regions
+      !medium 1 is reserved for substrate and we skip it
       contamedia = 1
       if ((this%pmcregs%nvols)+(this%pmcregs%nsurfs)+(this%pmcregs%nLINS) /= 0) then
-         !los PMC empiezan en 2
+         !PMCs start at 2
          contamedia = 2
-         !fin regions PMC
+         !end PMC regions
       end if
       !materialList
       !NonMetalREgions   and frequencydependent media
@@ -186,10 +186,10 @@ contains
       !worst case 6 orientations per surface plus the the lossy padding
       contamedia = contamedia + this%LossyThinSurfs%length * 7
       !wires
-      !nueva formulacion que almacena also the lenghts
+      !new formulation that also stores the lengths
       contamedia = contamedia + this%twires%n_tw
       contamedia = contamedia + this%swires%n_sw
-      !echo por demas, habria que precontar pero es complicado porque depende del procesamiento
+      !thrown in for good measure; it should be pre-counted but that is complicated because it depends on the processing
       !thin Slots
 
       if (run_with_dmma) then
@@ -199,16 +199,16 @@ contains
       end if
 
       !end thin Slots
-      !PARA LA CAPA EXTRA 2013
+      !FOR THE EXTRA LAYER 2013
       if (extraMedium%exists) then
          CONTAMEDIA = CONTAMEDIA+1
          extraMedium%elementIndex=CONTAMEDIA
       end if
-      !para modulos que necesiten senialar con already_YEEadvanced_byconformal y split_and_useless (eg. conformal)
-      !se crea siempre por defecto
-      contamedia = contamedia+2 !para acomodar los no_use no_use_notouch
+      !for modules that need to flag with already_YEEadvanced_byconformal and split_and_useless (e.g. conformal)
+      !always created by default
+      contamedia = contamedia+2 !to accommodate the no_use no_use_notouch
       !!!!!!!!!!!!!
-      contamedia = contamedia +1 !para acomodar los nodal sources como caso especial de linea vacia
+      contamedia = contamedia +1 !to accommodate nodal sources as a special case of empty line
 
       ! contamedia = contamedia + this%conformalRegs%nEdges + this%conformalRegs%nFaces
       
@@ -224,9 +224,9 @@ contains
 
       sgg%NumMedia = contamedia
       sgg%AllocMed = contamedia
-      !reserva espacio
+      !reserve space
      allocate(sgg%Med(0:sgg%NumMedia))
-      !comienzo barrido resto :  medios y observaciones
+      !start of the remaining sweep: media and observations
       BoundingBox%XI = sgg%Alloc(IHX)%XI
       BoundingBox%XE = sgg%Alloc(IHX)%XE
       BoundingBox%YI = sgg%Alloc(IHY)%YI
@@ -285,7 +285,7 @@ contains
      allocate(tag_numbers%face%y(Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE))
      allocate(tag_numbers%face%z(Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
 
-      !!!nodos materiales: se precisan para el conformal !sgg310715
+      !!!material nodes: needed for the conformal !sgg310715
      allocate(media%sggMiEx(Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE))
      allocate(media%sggMiEy(Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE))
      allocate(media%sggMiEz(Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE))
@@ -294,15 +294,15 @@ contains
      allocate(media%sggMiHz(Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
 
 
-      !el tag esta voided porque luego el numero va con el del tag
-      media%sggMtag (:, :, :) = 0 !LO VOIDEO A 0 EN VEZ DE A -1 PORQUE EL TAG 0 NO VA A EXISTIR NUNCA 141020
+      !the tag is voided because later the number goes with the tag's
+      media%sggMtag (:, :, :) = 0 !I VOID IT TO 0 INSTEAD OF -1 BECAUSE TAG 0 WILL NEVER EXIST 141020
       tag_numbers%edge%x(:,:,:) = 0
       tag_numbers%edge%y(:,:,:) = 0
       tag_numbers%edge%z(:,:,:) = 0
       tag_numbers%face%x(:,:,:) = 0
       tag_numbers%face%y(:,:,:) = 0
       tag_numbers%face%z(:,:,:) = 0
-      !todo sustrato por defecto
+      !all substrate by default
       media%sggMiNo (:, :, :) = 1
       media%sggMiEx (:, :, :) = 1
       media%sggMiEy (:, :, :) = 1
@@ -317,7 +317,7 @@ contains
       tama = (this%plnSrc%nc)
 !!!      write(buff,*) 'More than 1 Huygens box unsupported'
 !!!      if (tama > 1) call STOPONERROR(layoutnumber,num_procs,buff)
-      !LO PONGO A MANO ojo
+      !I SET IT BY HAND, careful
       amplitud = 1.0_RKIND
       sgg%NumPlaneWaves = tama
      allocate(sgg%PlaneWave(1:sgg%NumPlaneWaves))
@@ -416,7 +416,7 @@ contains
             pz = Cos (this%plnSrc%collection(i)%theta)
             py = Sin (this%plnSrc%collection(i)%theta) * Sin (this%plnSrc%collection(i)%phi)
             px = Sin (this%plnSrc%collection(i)%theta) * Cos (this%plnSrc%collection(i)%phi)
-            !ojo con estos redondeos.
+            !be careful with these roundings.
             !!!if (Abs(ex/amplitud) < 1e-4) ex = 0.0_RKIND
             !!!if (Abs(ey/amplitud) < 1e-4) ey = 0.0_RKIND
             !!!if (Abs(ez/amplitud) < 1e-4) ez = 0.0_RKIND
@@ -451,7 +451,7 @@ contains
       sgg%Med%Priority = prior_BV
       sgg%Med%Epr = 1.0
       sgg%Med%Sigma = 0.0
-      sgg%Med%Sigmareasignado = .false. !solo afecta a un chequeo de errores en lumped 120123
+      sgg%Med%Sigmareasignado = .false. !only affects an error check in lumped 120123
       sgg%Med%Mur = 1.0
       sgg%Med%SigmaM = 0.0
       sgg%Med%Is%Interfase = .FALSE.
@@ -483,18 +483,18 @@ contains
       sgg%Med%Is%Line = .FALSE.
       sgg%Med%Is%already_YEEadvanced_byconformal = .FALSE.
       sgg%Med%Is%split_and_useless = .FALSE.
-      !ojo tocar tambien en el readjust de healing si se crean nuevos flags
+      !be careful to also touch the readjust of healing if new flags are created
       !
-      !medio PEC y PML es intrascendente si es surface o volume
-      !son los de prioridad mas alta y siempre contienen a sus campos tangenciales electricos
+      !for PEC and PML medium it is irrelevant whether it is surface or volume
+      !they have the highest priority and always contain their tangential electric fields
       !Background    only differences from default are needed
       sgg%Med(1)%Priority = prior_BV
       sgg%Med(1)%Epr = this%mats%mats(1)%eps / Eps0
       sgg%Med(1)%Sigma = this%mats%mats(1)%Sigma
       sgg%Med(1)%Mur = this%mats%mats(1)%mu / Mu0
       sgg%Med(1)%SigmaM = this%mats%mats(1)%SigmaM
-      sgg%Med(1)%Is%DIELECTRIC = .false. !considero el vacio como NO dielectrico '251114
-      sgg%Med(1)%Is%Volume = .false.  !considero el vacio como no volumic false '251114
+      sgg%Med(1)%Is%DIELECTRIC = .false. !I consider vacuum as NOT dielectric '251114
+      sgg%Med(1)%Is%Volume = .false.  !I consider vacuum as non-volumic false '251114
       !
       sgg%Med(0)%Is%PEC = .TRUE.
       sgg%Med(0)%Is%Needed = .TRUE.
@@ -503,7 +503,7 @@ contains
       sgg%Med(0)%Sigma = 1.0e29_RKIND
       sgg%Med(0)%Mur = this%mats%mats(1)%mu / Mu0
       sgg%Med(0)%SigmaM = 0.0_RKIND
-      !CAPA EXTRA
+      !EXTRA LAYER
       !Background    only differences from default are needed
 
       if (extraMedium%exists) then
@@ -524,10 +524,10 @@ contains
                      sig_max = max(sig_max , 0.8*(sgg%PML%orden(o,p)+1)/(zvac*del))
                   else
                      if (sgg%PML%CoeffReflPML(o,p)==1.0_RKIND) then
-                        !realmente en el borderscpml
+                        !actually in borderscpml
                         !sig_max(sig_max,-((log( 0.99999d0                 )*(sgg%PML%orden(o,p)+1))/ &
                         !    (2.0_RKIND *sqrt(Mu0/eps0)*sgg%PML%NumLayers(o,p)*del)))
-                        !trampa para que entonces tome la conductividad autentica que se especifique y poder anular las PML y solo dejar capa fisica !!?!?
+                        !trick so that it then takes the actual conductivity specified and can cancel the PMLs leaving only the physical layer !!?!?
                         sig_max = 1.0_RKIND
                      else
                         sig_max = max(sig_max,-((log(sgg%PML%CoeffReflPML(o,p))*(sgg%PML%orden(o,p)+1))/ &
@@ -537,29 +537,29 @@ contains
                end if
             end do
          end do
-         extraMedium%sigma = extraMedium%sigma * sig_max !la especificacion se da en terminos de tanto por uno en la linea de comandos
+         extraMedium%sigma = extraMedium%sigma * sig_max !the specification is given as a fraction in the command line
          !
-         sgg%Med(extraMedium%elementIndex)%Epr = this%mats%mats(1)%eps / Eps0 !luego se machaca este valor
-         sgg%Med(extraMedium%elementIndex)%Sigma = extraMedium%sigma !luego se machaca este valor
-         sgg%Med(extraMedium%elementIndex)%Mur = this%mats%mats(1)%mu / Mu0 !luego se machaca este valor
-         sgg%Med(extraMedium%elementIndex)%SigmaM = 0.0_RKIND !solo lo creo para las tangenciales electricas
+         sgg%Med(extraMedium%elementIndex)%Epr = this%mats%mats(1)%eps / Eps0 !later this value is overwritten
+         sgg%Med(extraMedium%elementIndex)%Sigma = extraMedium%sigma !later this value is overwritten
+         sgg%Med(extraMedium%elementIndex)%Mur = this%mats%mats(1)%mu / Mu0 !later this value is overwritten
+         sgg%Med(extraMedium%elementIndex)%SigmaM = 0.0_RKIND !I only create it for the tangential electric ones
          sgg%Med(extraMedium%elementIndex)%Priority = prior_PEC
          sgg%Med(extraMedium%elementIndex)%Is%DIELECTRIC = .TRUE.
          sgg%Med(extraMedium%elementIndex)%Is%Volume = .TRUE.
          sgg%Med(extraMedium%elementIndex)%Is%PML = .TRUE.
       end if
       !
-      !barre los medios
-      !Primero todos los pec
+      !sweep the media
+      !First all the PECs
       !PECRegions
-      !volumenes
-      !el medio 0 se reserva para PEC
-      !regiones PEC
+      !volumes
+      !medium 0 is reserved for PEC
+      !PEC regions
       !
       if ((this%pecregs%nvols)+(this%pecregs%nsurfs)+(this%pecregs%nLINS) /= 0) then
          pecMedium = 0
          tama = (this%pecregs%nvols)
-         !BODYes
+         !BODIES
          do i = 1, tama
             gridPoint%XI = this%pecregs%vols(i)%XI
             gridPoint%XE = this%pecregs%vols(i)%XE
@@ -618,33 +618,33 @@ contains
             & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & pecMedium, isathinwire, verbose,numberOfAssignments)
          end do
-         !regiones PEC
+         !PEC regions
       end if
 
-      !el medio 1 se reserva para sustrato  y saltamos
+      !medium 1 is reserved for substrate and we skip it
       contamedia = 1
 
-      !para el conformal !debe ser tipicamente contamedia =1+1=2 pq el 0 es pec y el 1 es vacio. Ojo cambiado de sitio el PMC porque podia hacer que fuesen 3 y 4. 130220!!! y puede haber error pq por ahi se comprueba el 2 y el 3
+      !for the conformal !it should typically be contamedia =1+1=2 because 0 is PEC and 1 is vacuum. Careful, the PMC was moved because it could make them 3 and 4. 130220!!! and there may be an error because 2 and 3 are checked somewhere
       contamedia = contamedia + 1
       sgg%Med(contamedia)%Is%already_YEEadvanced_byconformal = .TRUE.
-      !debe ser contamedia =2+1=3
+      !should be contamedia =2+1=3
       contamedia = contamedia + 1
       sgg%Med(contamedia)%Is%split_and_useless = .TRUE.
 
-!!!!cambiado aqui 130220
+!!!!changed here 130220
 
       !materialList
-      !regiones PMC
+      !PMC regions
       if ((this%pmcregs%nvols)+(this%pmcregs%nsurfs)+(this%pmcregs%nLINS) /= 0) then
-         !los PMC de existir tienen todos indice 2
-         contamedia =contamedia+1      !!!!contamedia = 2 !!!ufff. cambiado a 130220 por posible bug con conformal si algun dia habia regiones PMC
+         !if they exist, all PMCs have index 2
+         contamedia =contamedia+1      !!!!contamedia = 2 !!!ugh. changed to 130220 due to a possible bug with conformal if there ever were PMC regions
          sgg%Med(contamedia)%Epr = sgg%Med(1)%Epr
          sgg%Med(contamedia)%Mur = sgg%Med(1)%Mur
          sgg%Med(contamedia)%Sigma = 0.0_RKIND
          sgg%Med(contamedia)%SigmaM = 1.0e29_RKIND
          sgg%Med(contamedia)%Priority = prior_PMC
          sgg%Med(contamedia)%Is%PMC = .TRUE.
-         !BODYes
+         !BODIES
          tama = (this%pmcregs%nvols)
          do i = 1, tama
             gridPoint%XI = this%pmcregs%vols(i)%XI
@@ -706,12 +706,12 @@ contains
             & contamedia, isathinwire,verbose,numberOfAssignments)
             !
          end do
-         !fin regions PMC
+         !end PMC regions
       end if
-!!!!fin cambiado 130220
+!!!!end changed 130220
 
       !NonMetalREgions
-      !BODYes
+      !BODIES
       tama = (this%DielRegs%nvols)
       do i = 1, tama
          contamedia = contamedia + 1
@@ -723,7 +723,7 @@ contains
          sgg%Med(contamedia)%SigmaM = this%DielRegs%vols(i)%SigmaM
 !!!!pmlbody
          if (this%DielRegs%vols(i)%PMLbody) then
-            sgg%Med(contamedia)%Priority = prior_pmlbody !machaca con una prioridad superior a la de thin wires y backgroud !prueba HOLD 251019 coax
+            sgg%Med(contamedia)%Priority = prior_pmlbody !overwrites with a priority higher than that of thin wires and background !HOLD test 251019 coax
             sgg%Med(contamedia)%Is%PMLbody = .true.
            allocate(sgg%Med(contamedia)%PMLbody(1))
             sgg%Med(contamedia)%PMLbody(1)%orient    = this%DielRegs%vols(i)%orient
@@ -731,7 +731,7 @@ contains
 !!!!!
          tama2 = (this%DielRegs%vols(i)%n_c2P)
          do j = 1, tama2
-            if ((J==1).and.(this%DielRegs%vols(i)%PMLbody)) sgg%Med(contamedia)%PMLbody(1)%orient = this%DielRegs%vols(i)%c2P(j)%OR !ES IGUAL PARA TODOS
+            if ((J==1).and.(this%DielRegs%vols(i)%PMLbody)) sgg%Med(contamedia)%PMLbody(1)%orient = this%DielRegs%vols(i)%c2P(j)%OR !IT IS THE SAME FOR ALL
             gridPoint%XI = this%DielRegs%vols(i)%c2P(j)%XI
             gridPoint%XE = this%DielRegs%vols(i)%c2P(j)%XE
             gridPoint%YI = this%DielRegs%vols(i)%c2P(j)%YI
@@ -749,7 +749,7 @@ contains
          end do
          tama3 = (this%DielRegs%vols(i)%n_c1P)
          do j = 1, tama3
-            if ((J==1).and.(this%DielRegs%vols(i)%PMLbody)) sgg%Med(contamedia)%PMLbody(1)%orient = this%DielRegs%vols(i)%c1P(j)%OR !ES IGUAL PARA TODOS
+            if ((J==1).and.(this%DielRegs%vols(i)%PMLbody)) sgg%Med(contamedia)%PMLbody(1)%orient = this%DielRegs%vols(i)%c1P(j)%OR !IT IS THE SAME FOR ALL
             gridPoint%XI = this%DielRegs%vols(i)%c1P(j)%XI
             gridPoint%XE = this%DielRegs%vols(i)%c1P(j)%XI
             gridPoint%YI = this%DielRegs%vols(i)%c1P(j)%YI
@@ -820,7 +820,7 @@ contains
       !LINs
       tama = (this%DielRegs%nLINS)
       do i = 1, tama
-         numberOfAssignments=0 !solo lo usa lumped para echarselo al primer y el resto ponerlo a PEC
+         numberOfAssignments=0 !only lumped uses it, to throw it at the first one and set the rest to PEC
          contamedia = contamedia + 1
          sgg%Med(contamedia)%Is%DIELECTRIC = .TRUE.
          sgg%Med(contamedia)%Priority = prior_IL
@@ -831,7 +831,7 @@ contains
 !!!!lumped
          if (this%DielRegs%lins(i)%resistor) then
             sgg%Med(contamedia)%Is%Lumped = .true.
-            sgg%Med(contamedia)%Is%lossy = .true. !importante que si es lumped esto se ponga a lossy para que thin-wires haga bien el bonding !bug agb 120123 test_GGGbugresis_wire_stoch_foragasconbug
+            sgg%Med(contamedia)%Is%lossy = .true. !important that if it is lumped this is set to lossy so that thin-wires does the bonding correctly !bug agb 120123 test_GGGbugresis_wire_stoch_foragasconbug
            allocate(sgg%Med(contamedia)%lumped(1))
             sgg%Med(contamedia)%lumped(1)%resistor =.true.
             sgg%Med(contamedia)%lumped(1)%inductor =.false.
@@ -850,7 +850,7 @@ contains
             sgg%Med(contamedia)%lumped(1)%orient = this%DielRegs%lins(i)%diodeOrientation
          else if (this%DielRegs%lins(i)%inductor) then
             sgg%Med(contamedia)%Is%Lumped = .true.
-            sgg%Med(contamedia)%Is%lossy = .true. !importante que si es lumped esto se ponga a lossy para que thin-wires haga bien el bonding !bug agb 120123 test_GGGbugresis_wire_stoch_foragasconbug
+            sgg%Med(contamedia)%Is%lossy = .true. !important that if it is lumped this is set to lossy so that thin-wires does the bonding correctly !bug agb 120123 test_GGGbugresis_wire_stoch_foragasconbug
            allocate(sgg%Med(contamedia)%lumped(1))
             sgg%Med(contamedia)%lumped(1)%resistor =.false.
             sgg%Med(contamedia)%lumped(1)%inductor =.true.
@@ -869,7 +869,7 @@ contains
             sgg%Med(contamedia)%lumped(1)%orient = this%DielRegs%lins(i)%diodeOrientation
          else if (this%DielRegs%lins(i)%capacitor) then
             sgg%Med(contamedia)%Is%Lumped = .true.
-            sgg%Med(contamedia)%Is%lossy = .true. !importante que si es lumped esto se ponga a lossy para que thin-wires haga bien el bonding !bug agb 120123 test_GGGbugresis_wire_stoch_foragasconbug
+            sgg%Med(contamedia)%Is%lossy = .true. !important that if it is lumped this is set to lossy so that thin-wires does the bonding correctly !bug agb 120123 test_GGGbugresis_wire_stoch_foragasconbug
            allocate(sgg%Med(contamedia)%lumped(1))
             sgg%Med(contamedia)%lumped(1)%resistor =.false.
             sgg%Med(contamedia)%lumped(1)%inductor =.false.
@@ -887,12 +887,12 @@ contains
             sgg%Med(contamedia)%lumped(1)%DiodIsat = 0.0_RKIND
             sgg%Med(contamedia)%lumped(1)%orient = this%DielRegs%lins(i)%diodeOrientation
          else if (this%DielRegs%lins(i)%diode) then
-!!!27/08/15 diodos aun no soportados
+!!!27/08/15 diodes not yet supported
             write(buff, '(a)')    'Lumped Diodes currently unsupported. .'
             call STOPONERROR(layoutnumber,num_procs,buff)
 !!!
             sgg%Med(contamedia)%Is%Lumped = .true.
-            sgg%Med(contamedia)%Is%lossy = .true. !importante que si es lumped esto se ponga a lossy para que thin-wires haga bien el bonding !bug agb 120123 test_GGGbugresis_wire_stoch_foragasconbug
+            sgg%Med(contamedia)%Is%lossy = .true. !important that if it is lumped this is set to lossy so that thin-wires does the bonding correctly !bug agb 120123 test_GGGbugresis_wire_stoch_foragasconbug
            allocate(sgg%Med(contamedia)%lumped(1))
             sgg%Med(contamedia)%lumped(1)%resistor =.false.
             sgg%Med(contamedia)%lumped(1)%inductor =.false.
@@ -913,7 +913,7 @@ contains
                call STOPONERROR(layoutnumber,num_procs,buff)
             end if
          end if
-!!!fin lumped
+!!!end lumped
          tama2 = (this%DielRegs%lins(i)%n_c2P)
          do j = 1, tama2
             gridPoint%XI = this%DielRegs%lins(i)%c2P(j)%XI
@@ -959,7 +959,7 @@ contains
 
       !Anisotropic materials
       !materialList
-      !BODYes
+      !BODIES
       tama = (this%ANIMATS%nvols)
       do i = 1, tama
          contamedia = contamedia + 1
@@ -1206,7 +1206,7 @@ contains
       maxcontamedia = contamedia
       tama = this%LossyThinSurfs%length
       do j = 1, tama
-         !carbon Multiports a guevo
+         !carbon Multiports definitely
          if (this%LossyThinSurfs%cs(j)%numLayers==0) then
             this%LossyThinSurfs%cs(j)%numLayers=1
             allocate(this%LossyThinSurfs%cs(j)%SigmaM(1))
@@ -1223,7 +1223,7 @@ contains
             allocate(this%LossyThinSurfs%cs(j)%thk_devia(1))
             !!!
 
-            this%LossyThinSurfs%cs(J)%SigmaM(1)=0.0_RKIND !TRUCO PARA QUE CUANDO NO TENGA CAPAS (LECTURA DESDE FICHERO DE POLOS /RESIDUOS) NO PETE
+            this%LossyThinSurfs%cs(J)%SigmaM(1)=0.0_RKIND !TRICK SO THAT WHEN IT HAS NO LAYERS (READING FROM POLES/RESIDUES FILE) IT DOES NOT CRASH
             this%LossyThinSurfs%cs(J)%Sigma(1)=0.0_RKIND
             this%LossyThinSurfs%cs(J)%EPS(1)=EPS0
             this%LossyThinSurfs%cs(J)%MU(1)=MU0
@@ -1236,13 +1236,13 @@ contains
             this%LossyThinSurfs%cs(J)%MU_devia(1)=0.0_RKIND
             this%LossyThinSurfs%cs(J)%thk_devia(1)=0.0_RKIND
             !!!
-            !!!comentado el 120219 pq no se lleva bien con Semba !no entiendo ahora el comentario de malonyedispersive!!!120219
+            !!!commented out on 120219 because it does not get along well with Semba !I do not understand the malonyedispersive comment now!!!120219
             !!!     write(buff, '(a)')    'pre1_Error:  SGBC materials must have at least one layyer even in dummy for malonyedispersive'
             !!!     call WarnErrReport (buff,.true.)
          end if
 
 
-         if (abs(this%LossyThinSurfs%cs(j)%SigmaM(1)) <= 1.0e-2_RKIND) then  !!!ojoooo a 210319 manda guevos que tengamos que estar con el flag de la conductidad magnetica para llamar a SGBC todavia en 2015!!!
+         if (abs(this%LossyThinSurfs%cs(j)%SigmaM(1)) <= 1.0e-2_RKIND) then  !!!careful 210319 it is nonsense that we still have to use the magnetic conductivity flag to call SGBC in 2015!!!
             this%LossyThinSurfs%cs(j)%SigmaM = 0.0_RKIND
             if (.not.mibc) then
                !if (this%LossyThinSurfs%cs(j)%numcapas >1) then
@@ -1250,12 +1250,12 @@ contains
                !   ' Use preferably -mibc instead.'
                !   call WarnErrReport (buff)
                !end if
-               SGBC=.true. !si la conductividad es 0.0_RKIND (o casi) utiliza directamente SGBC
+               SGBC=.true. !if the conductivity is 0.0_RKIND (or nearly) use SGBC directly
                mibc=.false.
             end if
          end if
          if (this%LossyThinSurfs%cs(j)%SigmaM(1) >= 0.0_RKIND) then
-            !SURFs (siempre son surfs)
+            !SURFs (they are always surfs)
             !
             tama2 = this%LossyThinSurfs%cs(j)%nc
             mincontamedia = maxcontamedia + 1
@@ -1305,7 +1305,7 @@ contains
                   pointYI = Max (gridPoint%YI, Min(BoundingBox%YI, BoundingBox%YE))
                   pointZI = Max (gridPoint%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
 
-                  !!!!!!!!estaba antes  maaaal. bug 140815verano
+                  !!!!!!!!it was wrong before. bug summer 140815
                   if(.not.((pointXI>=sgg%allocDxI).and.(pointXI<=sgg%allocDxE))) then
                      pointXI= sgg%allocDxI
                      write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',pointXI,pointYI,pointZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
@@ -1342,13 +1342,13 @@ contains
                      call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
                   sgg%Med(contamedia)%Multiport(1)%numLayers = this%LossyThinSurfs%cs(j)%numLayers
-                  !el especificado
+                  !the specified one
                   sgg%Med(contamedia)%Multiport(1)%Multiportdir = this%LossyThinSurfs%cs(j)%C(i)%or
                   do I_=1,sgg%Med(contamedia)%Multiport(1)%numLayers
                      if (sgg%Med(contamedia)%Multiport(1)%Multiportdir>0) then
                         j_=i_
                      else
-                        j_=sgg%Med(contamedia)%Multiport(1)%numLayers-i_+1 !dale la vuelta (medios no simetricos) !0121
+                        j_=sgg%Med(contamedia)%Multiport(1)%numLayers-i_+1 !flip it (non-symmetric media) !0121
                      end if
                      sgg%Med(contamedia)%Multiport(1)%epr         (j_) =  this%LossyThinSurfs%cs(j)%eps               (i_)    / Eps0
                      sgg%Med(contamedia)%Multiport(1)%mur         (j_) =  this%LossyThinSurfs%cs(j)%mu                (i_)    / mu0
@@ -1403,7 +1403,7 @@ contains
                   & (adjustl(this%LossyThinSurfs%cs(j)%files)) // '_z12.txt'
                   !
 !!
-                  if (mibc) then     !se trataran con MIBC !!!151161
+                  if (mibc) then     !they will be handled with MIBC !!!151161
                      sgg%Med(contamedia)%Is%SGBC = .false.
                      sgg%Med(contamedia)%Is%SGBCDispersive = .false.
                      sgg%Med(contamedia)%Is%Lossy = .true.
@@ -1457,9 +1457,9 @@ contains
       maxcontamedia = contamedia
       tama = this%LossyThinSurfs%length
       do j = 1, tama
-         !carbon Multiports a guevo
+         !carbon Multiports definitely
          if (this%LossyThinSurfs%cs(j)%SigmaM(1) < 0.0_RKIND) then
-            !SURFs (siempre son surfs)
+            !SURFs (they are always surfs)
             tama2 = this%LossyThinSurfs%cs(j)%nc
             mincontamedia = maxcontamedia + 1
             MultiportFile =  trim (adjustl(this%LossyThinSurfs%cs(j)%files)) // '_z11.txt'
@@ -1492,12 +1492,12 @@ contains
                      write(buff, '(a)')    'pre1_ERROR:  Anisotropic multiport materials unsupported for multilayered structures.'
                      call WarnErrReport (buff,.TRUE.)
                   end if
-                  pointXI = Max (gridPoint%XI, Min(BoundingBox%XI, BoundingBox%XE)) !copiado de healer
+                  pointXI = Max (gridPoint%XI, Min(BoundingBox%XI, BoundingBox%XE)) !copied from healer
                   pointYI = Max (gridPoint%YI, Min(BoundingBox%YI, BoundingBox%YE))
                   pointZI = Max (gridPoint%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
 
 
-                  !!!!!!!!estaba antes  maaaal. bug 140815verano
+                  !!!!!!!!it was wrong before. bug summer 140815
                   if(.not.((pointXI>=sgg%allocDxI).and.(pointXI<=sgg%allocDxE))) pointXI= sgg%allocDxI
                   if(.not.((pointYI>=sgg%allocDyI).and.(pointYI<=sgg%allocDyE))) pointYI= sgg%allocDyI
                   if(.not.((pointZI>=sgg%allocDzI).and.(pointZI<=sgg%allocDzE))) pointZI= sgg%allocDzI
@@ -1589,7 +1589,7 @@ contains
             contamedia = contamedia + 1
             do i = 1, tama2
                orientationIndex = this%LossyThinSurfs%cs(j)%C(i)%or
-               !ES UN free-space multiportpadding CON LA PRIORIDAD DE UN MULTIPORT con conductividad magnetica que luego se desanulara
+               !IT IS A free-space multiportpadding WITH THE PRIORITY OF A MULTIPORT with magnetic conductivity that will later be unset
                sgg%Med(contamedia)%Priority = prior_CS
                sgg%Med(contamedia)%Is%multiport = .FALSE.
                sgg%Med(contamedia)%Is%ANISmultiport = .FALSE.
@@ -1600,7 +1600,7 @@ contains
                sgg%Med(contamedia)%Sigma = 0.0_RKIND !abs(this%LossyThinSurfs%cs(j)%Sigma) !may be negative
                sgg%Med(contamedia)%Mur = 1.0_RKIND !this%LossyThinSurfs%cs(j)%mu / Mu0
                sgg%Med(contamedia)%Is%DIELECTRIC = .TRUE.
-               !provisionalmente (luego se retocara con el sigmam correcto)
+               !provisionally (it will later be adjusted with the correct sigmam)
                sgg%Med(contamedia)%SigmaM = 0.0_RKIND !abs(this%LossyThinSurfs%cs(j)%Sigma) !may be negative
 
                gridPoint%XI = this%LossyThinSurfs%cs(j)%C(i)%XI
@@ -1785,8 +1785,8 @@ contains
          sgg%Med(contamedia)%wire(1)%Series_L_LeftEnd = 0.0_RKIND
          sgg%Med(contamedia)%wire(1)%Parallel_C_RightEnd = 0.0_RKIND
          sgg%Med(contamedia)%wire(1)%Parallel_C_LeftEnd = 0.0_RKIND
-         sgg%Med(contamedia)%wire(1)%Series_C_RightEnd = 2.0e7_RKIND !en corto 14/2/14
-         sgg%Med(contamedia)%wire(1)%Series_C_LeftEnd = 2.0e7_RKIND !en corto 14/2/14
+         sgg%Med(contamedia)%wire(1)%Series_C_RightEnd = 2.0e7_RKIND !shorted 14/2/14
+         sgg%Med(contamedia)%wire(1)%Series_C_LeftEnd = 2.0e7_RKIND !shorted 14/2/14
 !stoch
          sgg%Med(contamedia)%wire(1)%R_devia = this%twires%TW(j)%RES_devia
          sgg%Med(contamedia)%wire(1)%l_devia = this%twires%TW(j)%IND_devia
@@ -1804,7 +1804,7 @@ contains
          sgg%Med(contamedia)%wire(1)%Series_L_LeftEnd_devia = 0.0_RKIND
          sgg%Med(contamedia)%wire(1)%Series_C_RightEnd_devia = 0.0_RKIND
          sgg%Med(contamedia)%wire(1)%Series_C_LeftEnd_devia = 0.0_RKIND
-!fin stoch
+!end stoch
          !
          if     (this%twires%TW(j)%TL ==MATERIAL_ABSORBING) then
             sgg%Med(contamedia)%wire(1)%HasAbsorbing_LeftEnd = .TRUE.
@@ -1877,17 +1877,17 @@ contains
             write(buff, '(a)')    'Non null deviations found in L, C or radius in wires stoch. Still unsupported.'
             call STOPONERROR(layoutnumber,num_procs,buff)
          end if
-!fin stoch
+!end stoch
          !
-         !esto se soportaba desde versiones antiguas (hilos de un solo segmento. Por error se descomento en la R2417 cuando se trabajo en lo del strictnfde tras vuelta de madrid
-         !vuelvo a comentarlo porque si que tenemos la capacidad de hilos de un solo segmento
+         !this was supported since old versions (single-segment wires). It was accidentally uncommented in R2417 when working on strictnfde after returning from Madrid
+         !I comment it out again because we do have the capability for single-segment wires
          !
          !        tama2 = this%twires%TW(j)%N_TWC
          !        if (tama2 == 1) then
          !           call stoponerror(layoutnumber,num_procs,'A WIRE must have at least two segments')
          !        end if
          !
-         !esto no es ya necesario porque lo calculo yo luego en el wires
+         !this is no longer necessary because I compute it later in wires
          !!record the LeftEnd and RightEnd coordinates (first and last points)
          !!
          !        sgg%Med(contamedia)%wire(1)%LextremoI = this%twires%TW(j)%TWC(1)%i
@@ -1901,7 +1901,7 @@ contains
          !        !
          !!correct each ending
          !        numminus=0
-         !        do i = 2, tama2-1 !bug OLD 12/09/13  Model_unidos.nfde segmentos finales duplicados internamente
+         !        do i = 2, tama2-1 !bug OLD 12/09/13 Model_unidos.nfde final segments duplicated internally
          !            punto%XI = this%twires%TW(j)%TWC(i)%i
          !            punto%YI = this%twires%TW(j)%TWC(i)%j
          !            punto%ZI = this%twires%TW(j)%TWC(i)%k
@@ -1910,7 +1910,7 @@ contains
          !            case (iEx)
          !                if (                                      (punto%YI   == sgg%Med(contamedia)%wire(1)%LextremoJ).and.  &
          !                                                          (punto%ZI   == sgg%Med(contamedia)%wire(1)%LextremoK)) then
-         !                    if ((orientacion /= orientacionL).and.(punto%XI   == sgg%Med(contamedia)%wire(1)%LextremoI)) numminus=numminus +1 !bug OLD 12/09/13  Model_unidos.nfde segmentos finales duplicados internamente
+         !                    if ((orientacion /= orientacionL).and.(punto%XI   == sgg%Med(contamedia)%wire(1)%LextremoI)) numminus=numminus +1 !bug OLD 12/09/13 Model_unidos.nfde final segments duplicated internally
          !                    if                                    (punto%XI+1 == sgg%Med(contamedia)%wire(1)%LextremoI) numminus =numminus  +1
          !                end if
          !            case (iEy)
@@ -1928,9 +1928,9 @@ contains
          !            end select
          !
          !        end do
-         !        if (numminus >= 1) then !bug OLD 12/09/13  Model_unidos.nfde segmentos finales duplicados internamente
+         !        if (numminus >= 1) then !bug OLD 12/09/13 Model_unidos.nfde final segments duplicated internally
          !              select case (this%twires%TW(j)%TWC(1)%D)
-         !              case (iEx) !si son iguales a 2 es cerrado
+         !              case (iEx) !if they are equal to 2 it is closed
          !                  sgg%Med(contamedia)%wire(1)%LextremoI = sgg%Med(contamedia)%wire(1)%LextremoI + 1
          !              case (iEy)
          !                  sgg%Med(contamedia)%wire(1)%LextremoJ = sgg%Med(contamedia)%wire(1)%LextremoJ + 1
@@ -1941,7 +1941,7 @@ contains
          !        !
          !!correct each ending
          !        numminus=0
-         !        do i = 2, tama2-1 !bug OLD 12/09/13  Model_unidos.nfde segmentos finales duplicados internamente
+         !        do i = 2, tama2-1 !bug OLD 12/09/13 Model_unidos.nfde final segments duplicated internally
          !            punto%XI = this%twires%TW(j)%TWC(i)%i
          !            punto%YI = this%twires%TW(j)%TWC(i)%j
          !            punto%ZI = this%twires%TW(j)%TWC(i)%k
@@ -1967,22 +1967,22 @@ contains
          !                end if
          !            end select
          !        end do
-         !        if ((numminus >= 1).or.(tama2 == 1)) then  !bug ca295 !bug OLD 12/09/13  Model_unidos.nfde segmentos finales duplicados internamente
+         !        if ((numminus >= 1).or.(tama2 == 1)) then  !bug ca295 !bug OLD 12/09/13 Model_unidos.nfde final segments duplicated internally
          !              select case (this%twires%TW(j)%TWC(tama2)%D)
          !              case (iEx)
          !                  sgg%Med(contamedia)%wire(1)%RextremoI = sgg%Med(contamedia)%wire(1)%RextremoI  + 1
-         !!si son iguales a 2 es cerrado
+         !!if they are equal to 2 it is closed
          !              case (iEy)
          !                  sgg%Med(contamedia)%wire(1)%RextremoJ = sgg%Med(contamedia)%wire(1)%RextremoJ  + 1
          !              case (iEz)
          !                  sgg%Med(contamedia)%wire(1)%RextremoK = sgg%Med(contamedia)%wire(1)%RextremoK  + 1
          !              end select
          !        end if
-      end do !del tama
+      end do !of the loop over tama
 
 
 
-      !preanalisis de hilos embeddeds en materiales  antes de asignarlos
+      !pre-analysis of wires embedded in materials before assigning them
       tama = this%twires%n_tw
       paraerrhilo=.false.
       do j1=1, tama
@@ -2035,7 +2035,7 @@ contains
                      ((media%sggMiEy(i  ,jmenos1,k) ==0).or.(sgg%med(media%sggMiEy(i  ,jmenos1,k))%is%PEC)).or. &
                      ((media%sggMiEz(i  ,j,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i  ,j,kmenos1))%is%PEC))).and. &
                   &     ((media%sggMiEx(i  ,j,k) /=0).and.(.not.(sgg%med(media%sggMiEx(i  ,j,k))%is%PEC)))) then
-                     if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
+                     if ((i1 /= 1) .and. (i1 /= tama2)) then !only LeftEnd and RightEnd may touch
                         paraerrhilo=.true.
                         write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of x-WIRE at  ',OrigIndex, i, j, k, &
                            ' touching PEC'
@@ -2050,7 +2050,7 @@ contains
                      ((media%sggMiEy(i+1,jmenos1,k) ==0).or.(sgg%med(media%sggMiEy(i+1,jmenos1,k))%is%PEC)).or. &
                      ((media%sggMiEz(i+1,j,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i+1,j,kmenos1))%is%PEC))).and. &
                   &         ((media%sggMiEx(i  ,j,k) /=0).and.(.not.(sgg%med(media%sggMiEx(i  ,j,k))%is%PEC)))) then
-                     if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
+                     if ((i1 /= 1) .and. (i1 /= tama2)) then !only LeftEnd and RightEnd may touch
                         paraerrhilo=.true.
                         write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of x-WIRE at  ',OrigIndex, i+1, j, k, &
                            ' touching PEC'
@@ -2103,7 +2103,7 @@ contains
                      ((media%sggMiEx(imenos1,j  ,k) ==0).or.(sgg%med(media%sggMiEx(imenos1,j  ,k))%is%PEC)).or. &
                      ((media%sggMiEz(i,j,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i,j,kmenos1))%is%PEC))).and. &
                   &     ((media%sggMiEy(i,j  ,k) /=0).and.(.not.(sgg%med(media%sggMiEy(i,j  ,k))%is%PEC)))) then
-                     if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
+                     if ((i1 /= 1) .and. (i1 /= tama2)) then !only LeftEnd and RightEnd may touch
                         paraerrhilo=.true.
                         write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of y-WIRE at ',OrigIndex, i, j, k, &
                            ' touching PEC'
@@ -2118,7 +2118,7 @@ contains
                      ((media%sggMiEx(imenos1,j+1,k) ==0).or.(sgg%med(media%sggMiEx(imenos1,j+1,k))%is%PEC)).or. &
                      ((media%sggMiEz(i,j+1,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i,j+1,kmenos1))%is%PEC))).and. &
                   &         ((media%sggMiEy(i,j  ,k) /=0).and.(.not.(sgg%med(media%sggMiEy(i,j  ,k))%is%PEC)))) then
-                     if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
+                     if ((i1 /= 1) .and. (i1 /= tama2)) then !only LeftEnd and RightEnd may touch
                         paraerrhilo=.true.
                         write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of y-WIRE at ',OrigIndex, i, j+1, k, &
                            ' touching PEC'
@@ -2172,7 +2172,7 @@ contains
                      ((media%sggMiEx(imenos1,j,k) ==0).or.(sgg%med(media%sggMiEx(imenos1,j,k))%is%PEC)).or. &
                      ((media%sggMiEy(i,jmenos1,k) ==0).or.(sgg%med(media%sggMiEy(i,jmenos1,k))%is%PEC))).and. &
                   &     ((media%sggMiEz(i,j,k) /=0).and.(.not.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)))) then
-                     if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
+                     if ((i1 /= 1) .and. (i1 /= tama2)) then !only LeftEnd and RightEnd may touch
                         paraerrhilo=.true.
                         write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of z-WIRE at ',OrigIndex, i, j, k, &
                            ' touching PEC'
@@ -2187,7 +2187,7 @@ contains
                   &         ((media%sggMiEx(imenos1,j,k+1) ==0).or.(sgg%med(media%sggMiEx(imenos1,j,k+1))%is%PEC)).or. &
                      ((media%sggMiEy(i,jmenos1,k+1) ==0).or.(sgg%med(media%sggMiEy(i,jmenos1,k+1))%is%PEC))).and. &
                   &         (((media%sggMiEz(i,j,k) /=0).and.(.not.(sgg%med(media%sggMiEz(i,j,k))%is%PEC))).or.(.not.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)))) then
-                     if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
+                     if ((i1 /= 1) .and. (i1 /= tama2)) then !only LeftEnd and RightEnd may touch
                         paraerrhilo=.true.
                         write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of z-WIRE at ',OrigIndex, i, j, k+1, &
                            ' touching PEC'
@@ -2222,12 +2222,12 @@ contains
             end if
          end do
       end do
-      !lo dejo que siga !luego el wires parara
+      !I let it continue !later wires will stop
       !if (paraerrhilo.and.(.not.groundwires)) then
       !    buff='Revise WIRE intersections!'
       !    call STOPONERROR(layoutnumber,num_procs,buff)
       !end if
-      !end preanalisis
+      !end pre-analysis
       !perform the assignments
       bboxwirxi=  2**20
       bboxwirxe=-(2**20)
@@ -2248,7 +2248,7 @@ contains
             gridPoint%YE = this%twires%TW(j)%TWC(i)%j
             gridPoint%ZI = this%twires%TW(j)%TWC(i)%k
             gridPoint%ZE = this%twires%TW(j)%TWC(i)%k
-            !!!!!!!!!los clipeo agresivamente si lo lanzo con -CLIPREGION para que no me den problema 06/07/15 (solo sirve para debugeo y con el -wiresflavor holland (old))
+            !!!!!!!!!I clip them aggressively if launched with -CLIPREGION so they do not cause problems 06/07/15 (only useful for debugging and with -wiresflavor holland (old))
             if (((gridPoint%XI-2 >  SINPML_fullsize(IHX)%XI).and.(gridPoint%XI+2 < SINPML_fullsize(IHX)%XE).and. &
                (gridPoint%YI-2 >  SINPML_fullsize(IHY)%YI).and.(gridPoint%YI+2 < SINPML_fullsize(IHY)%YE).and. &
                (gridPoint%ZI-2 >  SINPML_fullsize(IHZ)%ZI).and.(gridPoint%zI+2 < SINPML_fullsize(IHZ)%ZE).and. &
@@ -2274,7 +2274,7 @@ contains
             gridPoint%ZE = this%twires%TW(j)%TWC(i)%k
 !!!sgg250418
 !!!bug 2018
-!!bug que aparece cuando en hilos de dos segmentos con ambos identicos. Lo que hago es clipearlo directamente.
+!!bug that appears in two-segment wires with both identical. What I do is clip it directly.
             if ((i==2).and.(tama2==2)) then
                if  (((this%twires%TW(j)%TWC(i)%i).eq.(this%twires%TW(j)%TWC(i-1)%i)).and. &
                   ((this%twires%TW(j)%TWC(i)%j).eq.(this%twires%TW(j)%TWC(i-1)%j)).and. &
@@ -2286,9 +2286,9 @@ contains
                   exit hilosbarre
                end if
             end if
-!!!fin 250418
+!!!end 250418
 
-            !!!!!!!!!los clipeo agresivamente si lo lanzo con -CLIPREGION para que no me den problema 06/07/15 (solo sirve para debugeo y con el -wiresflavor holland (old))
+            !!!!!!!!!I clip them aggressively if launched with -CLIPREGION so they do not cause problems 06/07/15 (only useful for debugging and with -wiresflavor holland (old))
             if (.not. &
                (((gridPoint%XI-2 >  SINPML_fullsize(IHX)%XI).and.(gridPoint%XI+2 < SINPML_fullsize(IHX)%XE).and. &
                (gridPoint%YI-2 >  SINPML_fullsize(IHY)%YI).and.(gridPoint%YI+2 < SINPML_fullsize(IHY)%YE).and. &
@@ -2306,7 +2306,7 @@ contains
             sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%j = gridPoint%YI
             sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%k = gridPoint%ZI
 
-            !!!2014 para informacion bbox hilos
+            !!!2014 for wire bbox information
             if (gridPoint%XI < bboxwirxi) bboxwirXI=gridPoint%XI
             if (gridPoint%XE > bboxwirxE) bboxwirXE=gridPoint%XE
             if (gridPoint%YI < bboxwirYi) bboxwirYI=gridPoint%YI
@@ -2319,7 +2319,7 @@ contains
             sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%origindex = origindex
             sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%Is_LeftEnd = .false.
             sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%Is_RightEnd = .false.
-            sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%repetido = .false. !luego el preprocesador del wires cambia esto
+            sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%repetido = .false. !later the wires preprocessor changes this
             if (i==1) sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%Is_LeftEnd = .true.
             if (i==tama2) sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%Is_RightEnd = .true.
             !
@@ -2369,7 +2369,7 @@ contains
          !wires
       end do
 
-!!!ahora slanted
+!!!now slanted
 
       if (this%swires%n_sw /=0) then
          hay_slanted_wires=.true.
@@ -2419,11 +2419,11 @@ contains
          sgg%Med(contamedia)%SlantedWire(1)%HasSeries_LeftEnd = .FALSE.
          sgg%Med(contamedia)%SlantedWire(1)%Series_R_LeftEnd = 0.0_RKIND
          sgg%Med(contamedia)%SlantedWire(1)%Series_L_LeftEnd = 0.0_RKIND
-         sgg%Med(contamedia)%SlantedWire(1)%Series_C_LeftEnd = 2.0e7_RKIND !en corto 14/2/14
+         sgg%Med(contamedia)%SlantedWire(1)%Series_C_LeftEnd = 2.0e7_RKIND !shorted 14/2/14
          sgg%Med(contamedia)%SlantedWire(1)%HasSeries_RightEnd = .FALSE.
          sgg%Med(contamedia)%SlantedWire(1)%Series_R_RightEnd = 0.0_RKIND
          sgg%Med(contamedia)%SlantedWire(1)%Series_L_RightEnd = 0.0_RKIND
-         sgg%Med(contamedia)%SlantedWire(1)%Series_C_RightEnd = 2.0e7_RKIND !en corto 14/2/14
+         sgg%Med(contamedia)%SlantedWire(1)%Series_C_RightEnd = 2.0e7_RKIND !shorted 14/2/14
 
          if (this%swires%sw(j)%TL == PARALLEL_CONS) then
             sgg%Med(contamedia)%SlantedWire(1)%HasParallel_LeftEnd = .TRUE.
@@ -2465,7 +2465,7 @@ contains
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource)
 
 
-            !!!2019 clipeo 2 celdas antes
+            !!!2019 clip 2 cells earlier
             if (CLIPREGION) then
                if ((this%swires%SW(j)%swc(i)%x >= SINPML_Fullsize(IHX)%XE-2)) this%swires%SW(j)%swc(i)%x=SINPML_Fullsize(IHX)%XE-2
                if ((this%swires%SW(j)%swc(i)%x <= SINPML_Fullsize(IHX)%XI+2)) this%swires%SW(j)%swc(i)%x=SINPML_Fullsize(IHX)%XI+2
@@ -2475,7 +2475,7 @@ contains
                if ((this%swires%SW(j)%swc(i)%z <= SINPML_Fullsize(IHZ)%ZI+2)) this%swires%SW(j)%swc(i)%z=SINPML_Fullsize(IHZ)%ZI+2
             end if
 
-            !fin clipeo
+            !end clipping
 
 
             sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%elementIndex = this%swires%SW(j)%swc(i)%nd
@@ -2485,8 +2485,8 @@ contains
             numertag = searchtag(tagtype,this%swires%SW(j)%swc(i)%tag)
 
 
-            !!!2019 para informacion bbox hilos
-            !!!!!!2020 retocado
+            !!!2019 for wire bbox information
+            !!!!!!2020 adjusted
             if (int(this%swires%SW(j)%swc(i)%x)    < bboxwirxi) bboxwirXI=int(this%swires%SW(j)%swc(i)%x)
             if (int(this%swires%SW(j)%swc(i)%x)+1  > bboxwirxE) bboxwirXE=int(this%swires%SW(j)%swc(i)%x)+1
             if (int(this%swires%SW(j)%swc(i)%y)    < bboxwirYi) bboxwirYI=int(this%swires%SW(j)%swc(i)%y)
@@ -2499,7 +2499,7 @@ contains
             if (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) == F_SOURCE_VOLTAGE) then
                allocate (sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Vsource)
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VsourceExists = .TRUE.
-               ! sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%SOFT=.TRUE.  !fuentes duras sgg 230323. default blandas
+               ! sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%SOFT=.TRUE.  !hard sources sgg 230323. default soft
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%Multiplier = this%swires%SW(j)%swc(i)%m
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%Resistance = 0.0_RKIND
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%VSource%sourceFile%name = trim (adjustl(this%swires%SW(j)%swc(i)%SRCFILE))
@@ -2576,7 +2576,7 @@ contains
          end do
       end block
 #endif
-      !reporta el bounding box
+      !reports the bounding box
 
 #ifdef CompileWithMPI
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
@@ -2598,7 +2598,7 @@ contains
       if (((bboxwirXI<2**20).or.(bboxwirYI<2**20).or.(bboxwirZI<2**20).or.(bboxwirXE>-(2**20)).or.(bboxwirYE>-(2**20)).or.(bboxwirZE>-(2**20))).or.(VERBOSE)) then
          call WarnErrReport (buff)
       end if
-      !FIN WIRES
+      !END WIRES
 
       if (run_with_dmma) then
          !always at the end since the orientation is found from the PEC one
@@ -2611,7 +2611,7 @@ contains
             !
             tama2 = this%tSlots%Tg(j)%N_tgc
             do i = 1, tama2
-               !del Slot
+               !of the Slot
                direccion = this%tSlots%Tg(j)%TgC(i)%dir
                i1 = this%tSlots%Tg(j)%TgC(i)%i
                j1 = this%tSlots%Tg(j)%TgC(i)%j
@@ -2624,7 +2624,7 @@ contains
                if ((i1 >= BoundingBox%XI) .AND. (i1 < BoundingBox%XE) .AND. &
                &    (j1 >= BoundingBox%YI) .AND. (j1 < BoundingBox%YE) .AND. &
                &    (k1 >= BoundingBox%ZI) .AND. (k1 < BoundingBox%ZE)) then
-                  !encuentra la orientacion del plano PEC que contiene al Slot
+                  !find the orientation of the PEC plane containing the Slot
                   oriX = (direccion == iEy)  .AND.   &
                   &       (((media%sggMiHx(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHx(i1, j1, k1))%is%PEC)) .OR. &
                   &       (sgg%Med(media%sggMiHx(i1, j1, k1))%Is%ThinSlot))          !&
@@ -2661,7 +2661,7 @@ contains
                   !& .AND.  (((              sggmiHx(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHx(i1, j1, k1) )%is%pec))) .AND.      &
                   !&         ( .NOT. sgg%Med(sggmiHx(i1, j1, k1))%Is%ThinSlot))
 
-                  !encuentra la orientacion del plano PEC que contiene al Slot (considera los vecinos)
+                  !find the orientation of the PEC plane containing the Slot (it considers the neighbors)
                   !bounds must be checked with nested if/else: Fortran .AND. does not short-circuit,
                   !so k1-1/j1-1/i1-1 could still be evaluated out-of-bounds otherwise (bug fix 2026)
                   if (k1 > BoundingBox%ZI) then
@@ -2709,7 +2709,7 @@ contains
                      orientationIndex = iEy
                   else if (oriZ.or.oriZ4) then
                      orientationIndex = IEZ
-                     !vecinos
+                     !neighbors
                   else if (oriX2) then
                      orientationIndex = iEx
                      k1 = k1-1
@@ -2719,7 +2719,7 @@ contains
                   else if (oriZ2) then
                      orientationIndex = IEZ
                      j1 = j1-1
-                     !vecinos
+                     !neighbors
                   else if (oriX3) then
                      orientationIndex = iEx
                      j1 = j1-1
@@ -2732,8 +2732,8 @@ contains
                   else
                      write(buff,*) 'Cannot determine ortientation of the PEC plane with the Slot',i1, j1, k1, direccion
                      call stoponerror (layoutnumber,num_procs,buff)
-                     !ojo con el nfde no se puede hacer Slots en escalera porque no se puede determinar la orientacion de los planos
-                     !en los tramos comunes. Por tanto No he podido testear los shared electricos anisotropos. solo los magneticos
+                     !careful, with nfde you cannot make staircase Slots because the orientation of the planes cannot be determined
+                     !in the common sections. Therefore I could not test the anisotropic electric shared ones, only the magnetic ones
                   end if
 
                   this%tSlots%Tg(j)%TgC(i)%or = orientationIndex
@@ -2741,23 +2741,23 @@ contains
                   medium1=-1
                   select case (Abs(orientationIndex))
                    case (iEx)
-                     medium1 = media%sggMiHx(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix !puede que me haya cargado los thin-slots en materialescon esto 03/07/15
+                     medium1 = media%sggMiHx(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tinkered 03/07/15 to remove the media matrix stuff !I may have broken thin-slots in materials with this 03/07/15
                      if (i1 > BoundingBox%XI) then
-                        medium2 = media%sggMiHx(i1-1,j1,k1)  !!!sggmcen (i1-1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
+                        medium2 = media%sggMiHx(i1-1,j1,k1)  !!!sggmcen (i1-1, j1, k1) !tinkered 03/07/15 to remove the media matrix stuff
                      else
                         medium2=medium1
                      end if
                    case (iEy)
-                     medium1 = media%sggMiHy(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
+                     medium1 = media%sggMiHy(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tinkered 03/07/15 to remove the media matrix stuff
                      if (j1 > BoundingBox%YI) then
-                        medium2 = media%sggMiHy(i1,j1-1,k1) !!!sggmcen (i1, j1-1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
+                        medium2 = media%sggMiHy(i1,j1-1,k1) !!!sggmcen (i1, j1-1, k1) !tinkered 03/07/15 to remove the media matrix stuff
                      else
                         medium2=medium1
                      end if
                    case (IEZ)
-                     medium1 = media%sggMiHz(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
+                     medium1 = media%sggMiHz(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tinkered 03/07/15 to remove the media matrix stuff
                      if (k1 > BoundingBox%ZI) then
-                        medium2 = media%sggMiHz(i1,j1,k1-1) !!! sggmcen (i1, j1, k1-1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
+                        medium2 = media%sggMiHz(i1,j1,k1-1) !!! sggmcen (i1, j1, k1-1) !tinkered 03/07/15 to remove the media matrix stuff
                      else
                         medium2=medium1
                      end if
@@ -2775,7 +2775,7 @@ contains
                   end if
                   width = this%tSlots%Tg(j)%width
                   if (sgg%NumPlaneWaves == 1) then
-                     !ojo no me gusta pq no es general
+                     !careful, I do not like it because it is not general
                      !assume the incident plane wave if there are planewaves
                      !
                      dir (1) = px
@@ -2801,8 +2801,8 @@ contains
                   end if
                   call dmma_thin_Slot (sgg%dx(i1), sgg%dy(j1), sgg%dz(k1), dir,   &
                   &        orientationIndex, direccion, width, epr1, mur1, EprSlot, MurSlot,eps0,mu0)
-                  ! y tocar el precounting if so
-                  !chequear que son distintos para incrementar contamedia
+                  ! and touch the precounting if so
+                  !check that they are distinct to increment contamedia
                   !
                   mediumIndex = contamedia + 1
                   buscaiguales: do ii = 1, contamedia
@@ -2861,15 +2861,15 @@ contains
                      Alloc_iHz_YI,&
                      Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, sgg%HShared, BoundingBox, &
                      gridPoint, orientationIndex, direccion, mediumIndex)
-                  !del if esta dentro del bounding box
+                  !of the if it is inside the bounding box
                end if
             end do
             !thin Slots
          end do
          !
-      end if !del run_with_dmma
+      end if !of run_with_dmma
 
-      !debe ir al final para respetar el tipo de medio que haya SI SE TRATASE COMO A UN MEDIO
+      !must go at the end to respect the medium type present IF IT WERE TREATED AS A MEDIUM
       !nodalsource
       !precounting
       tama = this%nodsrc%n_nodSrc
@@ -2937,7 +2937,7 @@ contains
             end do
          end if
       end do
-      !asignacion
+      !assignment
       conta1 = 0
       do i = 1, tama
          conta2 = 0
@@ -2976,7 +2976,7 @@ contains
                do j1 = pointArray%YI, pointArray%YE
                   do i1 = pointArray%XI, pointArray%XE
                      if (pointArray%xc /= 0) then
-                        !bug OLD 181214 sl_4_20mm_gli.nfde. Fuente nodal electrica embebida en pec y nodal magnetica en pmc se ignoraran sean hard or soft
+                        !bug OLD 181214 sl_4_20mm_gli.nfde. Electric nodal source embedded in PEC and magnetic nodal in PMC will be ignored whether hard or soft
                         medium = media%sggMiEx (i1, j1, k1)
                         isValid=.true.
                         !if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
@@ -2991,7 +2991,7 @@ contains
                         write (buff,*) 'WARNING: Ex Nodal source on PEC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  WarnErrReport (buff)
                         !
-                        ! COMENTADO 250816 PQ DA UN ERROR JUISTO CUANDO CAE LA FUENTE EN UN CORTE MPI. HABRIA QU TOCA LA CASUISTICA DE punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE  )) PERO NO LO HE QUERIDO HACER
+                        ! COMMENTED OUT 250816 BECAUSE IT GIVES AN ERROR JUST WHEN THE SOURCE FALLS ON AN MPI CUT. THE CASE OF punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE  )) WOULD HAVE TO BE HANDLED BUT I DID NOT WANT TO DO IT
                         !!!MEDIO = sggmiHx (i1, j1, k1)
                         !!!valido=.true.
                         !!!!if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
@@ -3087,7 +3087,7 @@ contains
                sgg%NodalSource(conta1)%gridPoint(conta2)%YE = pointArray%YE
                sgg%NodalSource(conta1)%gridPoint(conta2)%ZI = pointArray%ZI
                sgg%NodalSource(conta1)%gridPoint(conta2)%ZE = pointArray%ZE
-               !PARA ACOMODAR LAS NODAL SOURCE COMO MEDIOS LINE Y PODER VISUALIZAR SONDAS 010824
+               !TO ACCOMMODATE NODAL SOURCE AS LINE MEDIA AND BE ABLE TO VISUALIZE PROBES 010824
                sgg%Med(contamedia)%Is%DIELECTRIC = .TRUE.
                sgg%Med(contamedia)%Is%LINE = .TRUE.
                sgg%Med(contamedia)%Priority = prior_IL
@@ -3262,7 +3262,7 @@ contains
                sgg%NodalSource(conta1)%gridPoint(conta2)%YE = pointArray%YE
                sgg%NodalSource(conta1)%gridPoint(conta2)%ZI = pointArray%ZI
                sgg%NodalSource(conta1)%gridPoint(conta2)%ZE = pointArray%ZE
-               !PARA ACOMODAR LAS NODAL SOURCE COMO MEDIOS LINE Y PODER VISUALIZAR SONDAS 010824
+               !TO ACCOMMODATE NODAL SOURCE AS LINE MEDIA AND BE ABLE TO VISUALIZE PROBES 010824
                sgg%Med(contamedia)%Is%DIELECTRIC = .TRUE.
                sgg%Med(contamedia)%Is%LINE = .TRUE.
                sgg%Med(contamedia)%Priority = prior_IL
@@ -3306,19 +3306,19 @@ contains
       !!!!!!!!!!!!!!!!!!!!!PROBES
       !!!!!!!!!!!!!!!!!!!!!PROBES
       !!!!!!!!!!!!!!!!!!!!!PROBES
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!PRIMERO LAS CUENTO
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!FIRST I COUNT THEM
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!MasSondas     fields
       !
       tamaScrPrb = this%VolPrb%length
       if (createmapvtk) tamaScrPrb=tamaScrPrb+1
-      tamaScrPrb = (tamaScrPrb)*3 !!!210618 allocateo el triple por si las volumicas son de tipo tifr mezcladas
+      tamaScrPrb = (tamaScrPrb)*3 !!!210618 I allocate triple in case the volumic ones are mixed tifr type
       tamaSonda = this%Sonda%length
       tamaoldSONDA = this%oldSONDA%n_probes
       tamaBloquePrb = this%BloquePRB%N_BP
-      !probes totales
+      !total probes
       sgg%NumberRequest = (tamaSonda) + (tamaoldSONDA) + (tamaBloquePrb) + (tamaScrPrb)
      allocate(sgg%observation(1:sgg%NumberRequest))
-      !inicializacion
+      !initialization
       sgg%observation(1:sgg%NumberRequest)%nP            =-1
       sgg%observation(1:sgg%NumberRequest)%InitialTime   =-1
       sgg%observation(1:sgg%NumberRequest)%FinalTime     =-1
@@ -3335,7 +3335,7 @@ contains
       sgg%observation(1:sgg%NumberRequest)%Volumic       =.false.
 
       !
-      !ahora las cuento por bloques
+      !now I count them by blocks
       !
       do i = 1, tamaSonda
          ii = i
@@ -3355,7 +3355,7 @@ contains
                trappedNode=.false.
                loop_busqueda1: do j1 = 1, this%twires%n_tw
                   do i1 = 1, this%twires%TW(j1)%N_TWC
-                     !nodo cazado
+                     !node caught
                      if (this%twires%TW(j1)%TWC(i1)%nd == this%Sonda%collection(i)%cordinates(j)%XI) then
                         gridPoint%XI = this%twires%TW(j1)%TWC(i1)%i
                         gridPoint%YI = this%twires%TW(j1)%TWC(i1)%j
@@ -3374,11 +3374,11 @@ contains
                      end if
                   end do
                end do loop_busqueda1
-               !si no lo ha cazado... probamos SLANTED
+               !if it has not been caught... we try SLANTED
                if (.not.trappedNode) then
                   loop_busqueda2: do j1 = 1, this%swires%n_sw
                      do i1 = 1, this%swires%SW(j1)%N_SWC
-                        !nodo cazado
+                        !node caught
                         if (this%swires%SW(j1)%SWC(i1)%nd == this%Sonda%collection(i)%cordinates(j)%XI) then
                            gridPoint%XI = floor(this%swires%SW(j1)%SWC(i1)%x)
                            gridPoint%YI = floor(this%swires%SW(j1)%SWC(i1)%y)
@@ -3395,7 +3395,7 @@ contains
                      end do
                   end do loop_busqueda2
                end if
-               !si no lo ha cazado
+               !if it has not been caught
                if (.not.trappedNode) then
                   write(buff,'(a,i9)') 'Current probe not found in WIRE segment ',this%Sonda%collection(i)%cordinates(j)%XI
                   call StopOnError(layoutnumber,num_procs,buff)
@@ -3405,7 +3405,7 @@ contains
                   trappedNode=.false.
                   do_loop_busquedatg1: do j1 = 1, this%tSlots%n_tg
                      do i1 = 1, this%tSlots%Tg(j1)%N_tgc
-                        !nodo cazado
+                        !node caught
                         if (this%tSlots%Tg(j1)%TgC(i1)%node == this%Sonda%collection(i)%cordinates(j)%XI) then
                            gridPoint%XI = this%tSlots%Tg(j1)%TgC(i1)%i
                            gridPoint%YI = this%tSlots%Tg(j1)%TgC(i1)%j
@@ -3419,7 +3419,7 @@ contains
                         end if
                      end do
                   end do do_loop_busquedatg1
-                  !si no lo ha cazado
+                  !if it has not been caught
                   if (.not.trappedNode) then
                      write(buff,'(a,i9)') 'Voltage probe not found ',this%Sonda%collection(i)%cordinates(j)%XI
                      call StopOnError(layoutnumber,num_procs,buff)
@@ -3427,25 +3427,25 @@ contains
                else
                   write(buff,'(a,i9)') 'ERROR: Voltage probe in gaps only available under -dmma flag '
                   call StopOnError(layoutnumber,num_procs,buff)
-               end if !del run_with_dmma
+               end if !of run_with_dmma
             else if (abs(tempType) == NP_COR_LINE) then
                sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
             end if
          end do
       end do
 
-      !Sondas
+      !Probes
       !
       do i = 1, tamaoldSONDA
-         !acumulador
+         !accumulator
          ii = i + tamaSonda
-         !far fields (no es time domain pero una forma especial de ellos)
+         !far fields (it is not time domain but a special form of it)
          tama2 = (this%oldSONDA%probes(i)%n_FarField)
          if (tama2 > 1) then
             buff='Only one Far Field probe allowed'
             call STOPONERROR(layoutnumber,num_procs,buff)
          end if
-         if (tama2 > 0) sgg%observation(ii)%nP = 1 !un punto para todo el farfield (es simbolico)
+         if (tama2 > 0) sgg%observation(ii)%nP = 1 !one point for the whole farfield (it is symbolic)
          !electric FIELDS
          tama2 = (this%oldSONDA%probes(i)%n_Electric)
          do j = 1, tama2
@@ -3487,7 +3487,7 @@ contains
             end do
          end do
       end do
-      !Bloque Current Probes
+      !Block Current Probes
       !
       do i = 1, tamaBloquePrb
          ii = i + tamaSonda + tamaoldSONDA
@@ -3517,20 +3517,20 @@ contains
                end do
             end select
          end if
-         !DEL TAMA DEL Bloque CURRENT PROBES
+         !SIZE OF THE Bloque CURRENT PROBES
       end do
 
-      !Volumic probes (similar to MasSondas PERO CON PUNTOS FINALES COMO LAS Bloque PROBES)
-      !ahora las cuento por bloques
-      do i = 1, tamaScrPrb/3  !!!210618 En realidad hay un tercio
+      !Volumic probes (similar to MasSondas BUT WITH FINAL POINTS LIKE THE Bloque PROBES)
+      !now I count them by blocks
+      do i = 1, tamaScrPrb/3  !!!210618 actually there is a third
          ii = i + tamaSonda + tamaoldSONDA + tamaBloquePrb
          sgg%observation(ii)%nP = 0
-         ! crea una sonda vtk vacion con el instante incial 0 a efectos de mapa
-         if (createmapvtk.and.(i==tamaScrPrb/3)) then !!!210618 En realidad hay un tercio
+         ! create an empty vtk probe with initial time 0 for map purposes
+         if (createmapvtk.and.(i==tamaScrPrb/3)) then !!!210618 actually there is a third
             tama2=1
             do j = 1, tama2
                tempType = MAPVTK
-               gridPoint%XI = SINPML_fullsize(IHX)%XI !!! +1   !ojo si se cambia aqui tambien mas abajo !le quito 1 para que con condiciones PEC no las pinte !habria que manejar el dibujo de las condiciones aparte
+               gridPoint%XI = SINPML_fullsize(IHX)%XI !!! +1   !beware, if this is changed here also change it below !I subtract 1 so that with PEC conditions it does not draw them !the drawing of the conditions should be handled separately
                gridPoint%YI = SINPML_fullsize(IHY)%YI !!! +1
                gridPoint%ZI = SINPML_fullsize(IHZ)%ZI !!! +1
                gridPoint%XE = SINPML_fullsize(IHX)%XE !!! -1
@@ -3568,9 +3568,9 @@ contains
             end do
          end if
       end do
-      ! si se lanza con -mapvtk se crea una slice probe para ver la estructura
+      ! if launched with -mapvtk a slice probe is created to see the structure
 
-      !Ahora creo los puntos de observacion
+      !Now I create the observation points
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       sondas = 0
       do ii = 1, sgg%NumberRequest
@@ -3589,7 +3589,7 @@ contains
          call WarnErrReport(buff)
       end if
 
-      !luego chequeo las memoria de las sondas si se van de memoria en observation.f90
+      !later I check the probe memory in case they run out in observation.f90
       !      if (sondas*BuffObse*4 > MaxMemoryProbes) then
       !        write(buff,*) 'Too much memory for the probes= ', sondas * BuffObse * 4, 'Probes= ', sondas,   &
       !         &     'Either reduce the number o&
@@ -3598,22 +3598,22 @@ contains
       !      end if
       !
       if (sgg%NumberRequest /= 0) then
-         !alocateo
+         !allocate
          do ii = 1, sgg%NumberRequest
            allocate(sgg%observation(ii)%P(1:sgg%observation(ii)%nP))
-            sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING !bug peligroso 2012
+            sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING !dangerous bug 2012
             sgg%observation(ii)%TimeDomain = .false.
             sgg%observation(ii)%FreqDomain = .FALSE.
             sgg%observation(ii)%transferFlag = .FALSE.
             sgg%observation(ii)%Volumic = .FALSE.
             sgg%observation(ii)%FileNormalize=' '
-            !trancos
+            !strides
             sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Xtrancos = 1 !default
             sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Ytrancos = 1 !default
             sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Ztrancos = 1 !default
-            !fin trancos
-            !al final debe quedar igual
-            !lo reseteo porque lo reutilizo de contador
+            !end strides
+            !at the end it must remain the same
+            !I reset it because I reuse it as a counter
             sgg%observation(ii)%nP=0 !reset it
             !
          end do
@@ -3754,7 +3754,7 @@ contains
                   trappedNode=.false.
                   do_loop_busqueda: do j1 = 1, this%twires%n_tw
                      do i1 = 1, this%twires%TW(j1)%N_TWC
-                        !nodo cazado
+                        !node caught
                         if (this%twires%TW(j1)%TWC(i1)%nd == this%Sonda%collection(i)%cordinates(j)%XI) then
                            trappedNode=.true.
                            gridPoint%XI = this%twires%TW(j1)%TWC(i1)%i
@@ -3776,7 +3776,7 @@ contains
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IQX
                                  end if
 
-                                 !se nota con un indice distinto
+                                 !it is noted with a different index
                                  !
                                case (iEy)
                                  sgg%observation(i)%nP = sgg%observation(i)%nP + 1
@@ -3836,7 +3836,7 @@ contains
                else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_DDP) then
                   do_loop_busquedatg: do j1 = 1, this%tSlots%n_tg
                      do i1 = 1, this%tSlots%Tg(j1)%N_tgc
-                        !nodo cazado
+                        !node caught
                         if (this%tSlots%Tg(j1)%TgC(i1)%node == this%Sonda%collection(i)%cordinates(j)%XI) then
                            gridPoint%XI = this%tSlots%Tg(j1)%TgC(i1)%i
                            gridPoint%YI = this%tSlots%Tg(j1)%TgC(i1)%j
@@ -3907,14 +3907,14 @@ contains
             end do
          end do
          !
-         !Sondas propiamente dichas
+         !Probes themselves
          !
          do i = 1, tamaoldSONDA
             ii = i + tamaSonda
             sgg%observation(ii)%TimeDomain = .FALSE.
             sgg%observation(ii)%FreqDomain = .TRUE.
             sgg%observation(ii)%transferFlag = .FALSE.
-            !farfields (no es time domain pero una forma especial de ellos)
+            !farfields (it is not time domain but a special form of it)
             tama2 = (this%oldSONDA%probes(i)%n_FarField)
             write(buff,*) 'More than 1 Far Field box unsupported'
             if (tama2 > 1) call STOPONERROR(layoutnumber,num_procs,buff)
@@ -3940,7 +3940,7 @@ contains
                sgg%observation(ii)%P(1)%ZE = gridPoint%ZE
                sgg%observation(ii)%P(1)%what = farfield
                !
-               !no se clipea porque se manejan como ondas planas
+               !it is not clipped because they are handled as plane waves
                !
                sgg%observation(ii)%InitialFreq   =this%oldSONDA%probes(i)%FarField(j)%probe%fstart
                sgg%observation(ii)%FinalFreq     =this%oldSONDA%probes(i)%FarField(j)%probe%fstop
@@ -4055,10 +4055,10 @@ contains
                   end if
                end do
             end do
-            !ojo faltan por implementar
+            !careful, still to be implemented
             !traditional probes
          end do
-         !Bloque current probes
+         !Block current probes
          !
          do i = 1, tamaBloquePrb
             ii = i + tamaSonda + tamaoldSONDA
@@ -4073,7 +4073,7 @@ contains
             &     ((gridPoint%XE >= BoundingBox%XI) .OR. (gridPoint%XE <= BoundingBox%XE)) .AND. ((gridPoint%YE >= BoundingBox%YI) .OR.   &
             &     (gridPoint%YE <= BoundingBox%YE)) .AND. ((gridPoint%ZE >= BoundingBox%ZI) .OR. (gridPoint%ZE <= BoundingBox%ZE))) then
                !
-               !!!ANIADIDO 15/07/15 PARA COMPATIBILIDD NEW PROBE EN FRECUENCIA
+               !!!ADDED 15/07/15 FOR COMPATIBILITY WITH NEW PROBE IN FREQUENCY
                select case (this%BloquePRB%BP(i)%type2)
                 case (NP_T2_time)
                   sgg%observation(ii)%TimeDomain = .TRUE.
@@ -4138,7 +4138,7 @@ contains
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                   if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
                end if
-               !FIN COMPATIBILIDAD 15/07/15
+               !END COMPATIBILITY 15/07/15
                select case (this%BloquePRB%BP(i)%NML)
                 case (iEx)
                   do k = this%BloquePRB%BP(i)%i1, this%BloquePRB%BP(i)%I2, this%BloquePRB%BP(i)%skip
@@ -4193,18 +4193,18 @@ contains
                   end do
                end select
             end if
-            !DEL TAMA DEL Bloque CURRENT PROBES
+            !SIZE OF THE Bloque CURRENT PROBES
          end do
 
-         !Volumic probes (similar to MasSondas PERO CON PUNTOS FINALES COMO LAS Bloque PROBES)
-         !ahora las cuento por bloques
+         !Volumic probes (similar to MasSondas BUT WITH FINAL POINTS LIKE THE Bloque PROBES)
+         !now I count them by blocks
          !
          memo=0
 !!!210618
-         do i = 1, tamaScrPrb/3 !!!210618 En realidad hay un tercio
+         do i = 1, tamaScrPrb/3 !!!210618 actually there is a third
             ii = i + tamaSonda + tamaoldSONDA + tamaBloquePrb
-            !crea sonda vtk al final de mapeo
-            if (createmapvtk.and.(i==tamaScrPrb/3)) then !!!210618 En realidad hay un tercio
+            !create vtk probe at the end of mapping
+            if (createmapvtk.and.(i==tamaScrPrb/3)) then !!!210618 actually there is a third
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .FALSE.
                sgg%observation(ii)%transferFlag = .FALSE.
@@ -4213,7 +4213,7 @@ contains
                sgg%observation(ii)%Volumic = .true.
                sgg%observation(ii)%InitialTime =     sgg%dt
                sgg%observation(ii)%FinalTime =        sgg%dt+sgg%dt/300.0_RKIND
-               sgg%observation(ii)%TimeStep =         sgg%dt !SACA SOLO UNO
+               sgg%observation(ii)%TimeStep =         sgg%dt !OUTPUTS ONLY ONE
                sgg%observation(ii)%outputrequest = ' '
                sgg%observation(ii)%InitialFreq = 0.0_RKIND
                sgg%observation(ii)%FinalFreq =  0.0_RKIND
@@ -4225,7 +4225,7 @@ contains
                   call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                do j = 1, tama2
-                  !I clip these probes to allow out-of-the box snapshot probes !ojo si se cambia aqui tambien mas arriba
+                  !I clip these probes to allow out-of-the box snapshot probes !beware, if this is changed here also change it above
                   tempType = MAPVTK
                   gridPoint%XI = SINPML_fullsize(IHX)%XI   !!! +1
                   gridPoint%YI = SINPML_fullsize(IHY)%YI   !!! +1
@@ -4258,14 +4258,14 @@ contains
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%what = tempType
                   end if
                end do
-!!!!210618 tambien se crrean extras dummy para los vtk
+!!!!210618 dummy extras are also created for the vtk
                sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .false.
                sgg%observation(tamaScrPrb/3+ii)%transferFlag =   .false.
                if (associated(this%VolPrb%collection).and.(tamaScrPrb/=0).and.(i<=this%VolPrb%length)) then !280618 & 220319
                   sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
                else
-                  sgg%observation(tamaScrPrb/3+ii)%outputrequest=' ' !es un dummy mapvtk sin nombre 280618
+                  sgg%observation(tamaScrPrb/3+ii)%outputrequest=' ' !it is an unnamed mapvtk dummy 280618
                end if
                sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
               allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
@@ -4277,13 +4277,13 @@ contains
                if (associated(this%VolPrb%collection).and.(tamaScrPrb/=0).and.(i<=this%VolPrb%length)) then !280618 & 220319
                   sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
                else
-                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=' ' !es un dummy mapvtk sin nombre 280618
+                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=' ' !it is an unnamed mapvtk dummy 280618
                end if
                sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
               allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%what = NOTHING
 
-!!!210618 triplica info sondas de frequencia
+!!!210618 triples frequency probe info
                sgg%observation(tamaScrPrb/3+ii)%Volumic                                            =  sgg%observation(ii)%Volumic
                sgg%observation(tamaScrPrb/3+ii)%InitialTime                                        =  sgg%observation(ii)%InitialTime
                sgg%observation(tamaScrPrb/3+ii)%FinalTime                                          =  sgg%observation(ii)%FinalTime
@@ -4299,11 +4299,11 @@ contains
                sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%YE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%YE
                sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%ZE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%ZE
                !
-               !trancos
+               !strides
                sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%Xtrancos = 1 !default
                sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%Ytrancos = 1 !default
                sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%Ztrancos = 1 !default
-               !fin trancos
+               !end strides
 
                !!!!!!!!!!!!!!!!!!
                sgg%observation(2*tamaScrPrb/3+ii)%Volumic                                          =  sgg%observation(ii)%Volumic
@@ -4321,13 +4321,13 @@ contains
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%YE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%YE
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%ZE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%ZE
                !
-               !trancos
+               !strides
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%Xtrancos = 1 !default
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%Ytrancos = 1 !default
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%Ztrancos = 1 !default
-               !fin trancos
+               !end strides
 
-            else !del mapvtk
+            else !of the mapvtk
 !!!210618
                sgg%observation(ii)%Volumic = .true.
                sgg%observation(ii)%InitialTime =      this%VolPrb%collection(i)%tstart
@@ -4374,11 +4374,11 @@ contains
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%XE = gridPoint%XE
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = gridPoint%YE
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = gridPoint%ZE
-                     !trancos
+                     !strides
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%Xtrancos = this%VolPrb%collection(i)%cordinates(sgg%observation(ii)%nP)%Xtrancos
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%Ytrancos = this%VolPrb%collection(i)%cordinates(sgg%observation(ii)%nP)%Ytrancos
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%Ztrancos = this%VolPrb%collection(i)%cordinates(sgg%observation(ii)%nP)%Ztrancos
-                     !fin trancos
+                     !end strides
 
                   end if
                end do
@@ -4412,7 +4412,7 @@ contains
                   sgg%observation(ii)%TimeDomain = .false.
                   sgg%observation(ii)%FreqDomain = .false.
                   sgg%observation(ii)%transferFlag = .false.
-                  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING  !el nothing debe predominar
+                  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING  !nothing must prevail
 !
                   sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .TRUE.
@@ -4435,7 +4435,7 @@ contains
                   sgg%observation(ii)%TimeDomain = .false.
                   sgg%observation(ii)%FreqDomain = .false.
                   sgg%observation(ii)%transferFlag = .false.
-                  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING   !el nothing predomina sobre los true anteriores
+                  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING   !nothing prevails over the previous true ones
 !
                   sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .false.
@@ -4456,7 +4456,7 @@ contains
                   sgg%observation(ii)%TimeDomain = .true.
                   sgg%observation(ii)%FreqDomain = .false.
                   sgg%observation(ii)%transferFlag = .false.
-                  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=tempType   !el nothing predomina sobre los true anteriores
+                  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=tempType   !nothing prevails over the previous true ones
 !
                   sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .TRUE.
@@ -4477,7 +4477,7 @@ contains
                   sgg%observation(ii)%TimeDomain = .true.
                   sgg%observation(ii)%FreqDomain = .false.
                   sgg%observation(ii)%transferFlag = .false.
-                  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=tempType   !el nothing predomina sobre los true anteriores
+                  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=tempType   !nothing prevails over the previous true ones
 !
                   sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .false.
@@ -4539,7 +4539,7 @@ contains
                   sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%what = tempType
 !
                end select
-!!!210618 triplica info sondas de frequencia
+!!!210618 triples frequency probe info
                sgg%observation(tamaScrPrb/3+ii)%Volumic                                            =  sgg%observation(ii)%Volumic
                sgg%observation(tamaScrPrb/3+ii)%InitialTime                                        =  sgg%observation(ii)%InitialTime
                sgg%observation(tamaScrPrb/3+ii)%FinalTime                                          =  sgg%observation(ii)%FinalTime
@@ -4554,11 +4554,11 @@ contains
                sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%XE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%XE
                sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%YE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%YE
                sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%ZE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%ZE
-               !trancos
+               !strides
                sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%Xtrancos =sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Xtrancos
                sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%Ytrancos =sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Ytrancos
                sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%Ztrancos =sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Ztrancos
-               !fin trancos
+               !end strides
                !!!!!!!!!!!!!!!!!!
                sgg%observation(2*tamaScrPrb/3+ii)%Volumic                                          =  sgg%observation(ii)%Volumic
                sgg%observation(2*tamaScrPrb/3+ii)%InitialTime                                      =  sgg%observation(ii)%InitialTime
@@ -4574,48 +4574,48 @@ contains
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%XE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%XE
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%YE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%YE
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%ZE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%ZE
-               !trancos
+               !strides
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%Xtrancos =sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Xtrancos
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%Ytrancos =sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Ytrancos
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%Ztrancos =sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Ztrancos
-               !fin trancos
+               !end strides
 
 !!!210618
 !!!find 210618
             end if
-            !DE LAS VolumicPROBLES
+            !OF THE VolumicPROBLES
          end do
 !!!210618
          do i = tamaScrPrb/3+1,tamaScrPrb
             ii = i + tamaSonda + tamaoldSONDA + tamaBloquePrb !Bug 040718
             if (sgg%observation(ii)%nP /=1) then
-!para 040718
+!for 040718
                write(buff,*) '----> Volumic probe ii. np=',sgg%observation(ii)%nP
                call print11 (layoutnumber, buff)
                write(buff,*) '----> Volumic probe ii. outputrequest=',trim(adjustl(sgg%observation(ii)%outputrequest))
                call print11 (layoutnumber, buff)
-!fin para debugear
+!end for debugging
                write(buff,*) 'Buggy error in Volumic probes. np/=1. , np=',sgg%observation(ii)%nP
                call STOPONERROR(layoutnumber,num_procs,buff)
             end if
          end do
 !!!find 210618
 
-         !luego chequeo las sondas  si se van de memoria en observation.f90
+         !later I check the probes in case they run out of memory in observation.f90
          !        if ((memo+sondas)*BuffObse*4 > MaxMemoryProbes) then
          !          write(buff,*) 'Too much memory for the probes= ', (memo+sondas)*BuffObse*4, 'Probes= ', (memo+sondas), &
          !         & 'Either reduce the number of probes or recompile decreasing BuffObse ', BuffObse, 'or increasing ', MaxMemoryProbes
          !          call STOPONERROR(layoutnumber,num_procs,buff)
          !        end if
 
-         !del if sgg%numberrequest
+         !of the if sgg%numberrequest
       end if
-      !las lineas goto 8 que sigue la comento a 27/10/14 porque "creo" que la informacion de shared es necesaria actualizarse
-      !este bug aparece en bug_OLD221014_a400m_skindepth en Modelo.nfde
+      !the following goto 8 lines I comment out on 27/10/14 because I "think" the shared information needs updating
+      !this bug appears in bug_OLD221014_a400m_skindepth in Modelo.nfde
       !!!goto 8 !!!!?
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !Update the number of the shared fields
-      if (updateshared) then !!aqui se pierde mucho tiempo aniadido flag -noshared para evitarlo 040717
+      if (updateshared) then !!a lot of time is lost here; added -noshared flag to avoid it 040717
          write(buff,*) 'INIT UPDATING SHARED INFO. This process may take time!'
          call print11 (layoutnumber, buff)
          write(buff,*) 'Launch with -noshared to skip this process (just relevant for structured NIBC CFCs and Anisot.)'
@@ -4660,9 +4660,9 @@ contains
 8        continue
          write(buff,*) '[OK] END UPDATING SHARED INFO'
          call print11 (layoutnumber, buff)
-      end if !del updateshared
+      end if !of updateshared
 
-      !PARA LA CAPA EXTRA 2013
+      !FOR THE EXTRA LAYER 2013
       if (extraMedium%exists) then
          CONTAMEDIA = CONTAMEDIA+1
          if  (extraMedium%elementIndex /= contamedia) then !should be already done earlier
@@ -4672,10 +4672,10 @@ contains
       end if
       !!!!!!!!!!!!!
       sgg%NumMedia = contamedia
-      !el medio 0 no precisa compresion
+      !medium 0 does not need compression
 
 
-      if ((CLIPREGION)) then !ALLOW four cells OF AIR CELLS TO CLIP LARGE PROBLES WITH NO PROBLEMS WITH BOUNDARIES solo sin MPI
+      if ((CLIPREGION)) then !ALLOW four AIR CELLS TO CLIP LARGE PROBLEMS WITH NO PROBLEMS WITH BOUNDARIES only without MPI
          do field=1,6
             do K= sgg%Alloc(field)%ZI   , sgg%Alloc(field)%ZE
                do J= sgg%Alloc(field)%YI   , sgg%Alloc(field)%YE
@@ -4704,11 +4704,11 @@ contains
                   end do
                end do
             end do
-         end do !del field
-      end if !del CLIPREGION
+         end do !of field
+      end if !of CLIPREGION
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!fin clipeado
+      !!!!!!end clipping
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!
       call CreatePMLmatrix (layoutnumber, num_procs,sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz, SINPML_fullsize, fullsize, BoundingBox, sgg%Med, sgg%NumMedia, sgg%Border,extraMedium)
       sgg%EndPMLMedia = sgg%NumMedia
@@ -4757,9 +4757,9 @@ contains
          end if
          !
       end do
-!!!!ajusta el flag lossy de los medios (261115) !aunque ya esta hecho por ahi arriba, lo rehago aqui
-!!!!Ojo con que el usuario siempre ponga conductividad en !!compo para que esto no reviente
-!!!mamma mia. comentado lo siguiente a 120123 para que las puestas a lossy thin wire conectado con resistor sean correctas. bug test_GGGbugresis_wire_stoch_foragasconbug
+!!!!adjust the lossy flag of the media (261115) !although it is already done above, I redo it here
+!!!!beware that the user always sets conductivity in !!compo so that this does not blow up
+!!!mamma mia. commented out the following on 120123 so that setting a lossy thin wire connected with a resistor is correct. bug test_GGGbugresis_wire_stoch_foragasconbug
       !!!do i = 1, sgg%NumMedia
       !!!      if ( (.not.(sgg%med(i)%is%PEC)).and.(sgg%med(i)%sigma >= 1e-4) ) then
       !!!         sgg%med(i)%is%lossy = .true.
@@ -4767,10 +4767,10 @@ contains
       !!!         sgg%med(i)%is%lossy = .false.
       !!!      end if
       !!!end do
-      !!!fin 120123
+      !!!end 120123
 !!!!!!
       !!!!!!!!!!do a final check if magnetic media are present
-      !sgg jun'12 dejarlo siempre a .true. pq es lo mas seguro
+      !sgg jun'12 leave it always .true. because it is the safest
       !sgg%thereAreMagneticMedia=.false.
       !sgg%thereArePMLMagneticMedia=.false.
       !medioespecial = .false.
@@ -5185,7 +5185,7 @@ contains
          logical :: simu_devia
          real(kind=RKIND) :: deviafactor_Multiplier,unillo,timePrev
          if (simu_devia) then
-            deviafactor_Multiplier=1.0_RKIND !correccion de 160619. gestiono la iluminacion o no con la variable simu_devia, para que postprocese bien los ficheros devia_ !deprecar deviafactor_Multiplier algun dia
+            deviafactor_Multiplier=1.0_RKIND !fix of 160619. I handle illumination or not with the simu_devia variable, so that the devia_ files are post-processed correctly !deprecate deviafactor_Multiplier someday
          else
             deviafactor_Multiplier=1.0_RKIND
          end if
@@ -5211,7 +5211,7 @@ contains
                      read (15,*) time2, field2
                      sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%deltaSamples = time2 - time1
                      nsurfs = 3
-                     !problemas con multivac
+                     !problems with multivac
                      ! while (.not.eof(15))
                      do
                         read (15,*, end=77) time1, field1
@@ -5230,11 +5230,11 @@ contains
                         sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%Samples(k) = sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%Samples(k) * &
                         & sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%Multiplier * &
                            deviafactor_Multiplier
-                        !!evitar sampleos no uniformes
+                        !!avoid non-uniform sampling
                         if ((k>1).and.(k<numus-1)) then
                            unillo=(time1-timePrev)/sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%deltaSamples
                            if ((unillo<0.9).or.(unillo>1.0_RKIND/0.9)) then
-                              if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
+                              if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !at very high times I ignore the rounding
                                  buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     close(15)
@@ -5267,11 +5267,11 @@ contains
                      read (15,*) time2, field2
                      sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%deltaSamples = time2 - time1
                      nsurfs = 3
-                     !problemas con multivac
+                     !problems with multivac
                      ! while (.not.eof(15))
                      do
                         read (15,*, end=79) time1, field1
-                        if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !!? repensar
+                        if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !I have no feeling here, but these sources are not used !!? rethink
                         nsurfs = nsurfs + 1
                      end do
 79                   continue
@@ -5286,11 +5286,11 @@ contains
                         sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%Samples(k) = sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%Samples(k) * &
                         & sgg%Med(i)%wire(1)%ISource(CONTACURR)%Multiplier * &
                            deviafactor_Multiplier
-                        !!evitar sampleos no uniformes
+                        !!avoid non-uniform sampling
                         if ((k>1).and.(k<numus-1)) then
                            unillo=(time1-timePrev)/sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%deltaSamples
                            if ((unillo<0.9).or.(unillo>1.0_RKIND/0.9)) then
-                              if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
+                              if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !at very high times I ignore the rounding
                                  buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     close(15)
@@ -5325,7 +5325,7 @@ contains
                      read (15,*) time2, field2
                      sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%deltaSamples = time2 - time1
                      nsurfs = 3
-                     !problemas con multivac
+                     !problems with multivac
                      ! while (.not.eof(15))
                      do
                         read (15,*, end=179) time1, field1
@@ -5344,11 +5344,11 @@ contains
                         sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%Samples(k) = sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%Samples(k) * &
                            sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%Multiplier * &
                            deviafactor_Multiplier
-                        !!evitar sampleos no uniformes
+                        !!avoid non-uniform sampling
                         if ((k>1).and.(k<numus-1)) then
                            unillo=(time1-timePrev)/sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%deltaSamples
                            if ((unillo<0.9).or.(unillo>1.0_RKIND/0.9)) then
-                              if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
+                              if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !at very high times I ignore the rounding
                                  buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     close(15)
@@ -5378,11 +5378,11 @@ contains
                      read (15,*) time2, field2
                      sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%deltaSamples = time2 - time1
                      nsurfs = 3
-                     !problemas con multivac
+                     !problems with multivac
                      ! while (.not.eof(15))
                      do
                         read (15,*, end=279) time1, field1
-                        if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !!? repensar
+                        if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !I have no feeling here, but these sources are not used !!? rethink
                         nsurfs = nsurfs + 1
                      end do
 279                  continue
@@ -5397,11 +5397,11 @@ contains
                         sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%Samples(k) = sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%Samples(k) * &
                            sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%Multiplier * &
                            deviafactor_Multiplier
-                        !!evitar sampleos no uniformes
+                        !!avoid non-uniform sampling
                         if ((k>1).and.(k<numus-1)) then
                            unillo=(time1-timePrev)/sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%deltaSamples
                            if ((unillo<0.9).or.(unillo>1.0_RKIND/0.9)) then
-                              if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
+                              if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !at very high times I ignore the rounding
                                  buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     close(15)
@@ -5456,11 +5456,11 @@ contains
                   timePrev=time1
                   read (15,*) time1, sgg%NodalSource(j)%sourceFile%Samples(k)
                   sgg%NodalSource(j)%sourceFile%Samples(k) = sgg%NodalSource(j)%sourceFile%Samples(k) * deviafactor_Multiplier
-                  !!evitar sampleos no uniformes
+                  !!avoid non-uniform sampling
                   if ((k>1).and.(k<numus-1)) then
                      unillo=(time1-timePrev)/sgg%NodalSource(j)%sourceFile%deltaSamples
                      if ((unillo<0.9).or.(unillo>1.0_RKIND/0.9)) then
-                        if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
+                        if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !at very high times I ignore the rounding
                            buff=trim(adjustl(sgg%NodalSource(j)%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                            if (.not.ignoresamplingerrors) then
                               close(15)
@@ -5473,7 +5473,7 @@ contains
                end do
                close (15)
                sgg%NodalSource(j)%sourceFile%NumSamples = numus
-            else !es un initialvalue que no precisa fichero. incializar trivialmente
+            else !it is an initialvalue that does not need a file. initialize trivially
                numus = 0
                sgg%NodalSource(j)%sourceFile%deltaSamples = 1.0_RKIND !must be non-null
               allocate(sgg%NodalSource(j)%sourceFile%Samples(0:numus))
@@ -5516,11 +5516,11 @@ contains
                timePrev=time1
                read (15,*) time1, sgg%PlaneWave(j)%sourceFile%Samples(k)
                sgg%PlaneWave(j)%sourceFile%Samples(k) = sgg%PlaneWave(j)%sourceFile%Samples(k) * deviafactor_Multiplier
-               !!evitar sampleos no uniformes
+               !!avoid non-uniform sampling
                if ((k>1).and.(k<numus-1)) then
                   unillo=(time1-timePrev)/sgg%PlaneWave(j)%sourceFile%deltaSamples
                   if ((unillo<0.9).or.(unillo>1.0_RKIND/0.9)) then
-                     if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
+                     if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !at very high times I ignore the rounding
                         buff=trim(adjustl(sgg%PlaneWave(j)%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                         if (.not.ignoresamplingerrors) then
                            close(15)
@@ -5642,7 +5642,7 @@ contains
          sgg%Med(contamedia)%MDISPERSIVE(1)%SIGMAM23=  sgg%Med(contamedia)%EDispersive(1)%SIGMAM23
          sgg%Med(contamedia)%MDISPERSIVE(1)%SIGMAM33=  sgg%Med(contamedia)%EDispersive(1)%SIGMAM33
          !
-         !los de primer orden solo. Los de segundo no juegan
+         !only the first-order ones. The second-order ones do not come into play
          sgg%Med(contamedia)%EDispersive(1)%NumPolRes11 = fdgeom%k11  !+ fdgeom%l
          sgg%Med(contamedia)%EDispersive(1)%NumPolRes12 = fdgeom%k12
          sgg%Med(contamedia)%EDispersive(1)%NumPolRes13 = fdgeom%k13
@@ -5713,7 +5713,7 @@ contains
          !
          do k1 = 1,    (fdgeom%k11)
             sgg%Med(contamedia)%EDispersive(1)%C11(k1) =  (fdgeom%a11(k1))
-            sgg%Med(contamedia)%EDispersive(1)%a11(k1) = (-fdgeom%b11(k1)) !el polo de ORIGINAL esta cambiado de signo
+            sgg%Med(contamedia)%EDispersive(1)%a11(k1) = (-fdgeom%b11(k1)) !the pole from ORIGINAL has its sign changed
          end do
          do k1 = 1,    (fdgeom%k12)
             sgg%Med(contamedia)%EDispersive(1)%C12(k1) =  (fdgeom%a12(k1))
@@ -5912,7 +5912,7 @@ contains
       sgg%dt = this%general%dt
       
       !border
-      !this%BORDER%PROPIEDADESPML(I)%ORDEN no lo considero porque en el interior de mi programa lo pongo (esta a 2 normalmente)
+      !I do not consider this%BORDER%PROPIEDADESPML(I)%ORDEN because inside my program I set it (it is normally 2)
       sgg%Border%IsBackPEC = .FALSE.
       sgg%Border%IsFrontPEC = .FALSE.
       sgg%Border%IsLeftPEC = .FALSE.
@@ -6118,7 +6118,7 @@ contains
       sgg%Border%IsDownMUR  = (sgg%Border%IsDownMUR  ).or.(sgg%Border%IsDownPML   .and. MurAfterPML)
 
 
-      !readjust space steps accordingly 140815 para que esten bien allocateados los dx
+      !readjust space steps accordingly 140815 so that the dx are correctly allocated
       ! Discretization Lines Matrix Resizing to accomodate PML regions
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      allocate(DummyD(SINPML_fullsize(IHX)%XI:SINPML_fullsize(IHX)%XE-1))
@@ -6257,7 +6257,7 @@ contains
 
 
 
-   !!!!!!!!!!!!!!!!PREPROCESADOR PARA SKIN-DEPTH 09/07/13
+   !!!!!!!!!!!!!!!!PREPROCESSOR FOR SKIN-DEPTH 09/07/13
    subroutine prepro_skindepth(this,fichin)
       integer pozi,tama,j,k
       character(len=BUFSIZE) :: multiportFile
@@ -6274,12 +6274,12 @@ contains
 
       tama = this%LossyThinSurfs%length
       do j = 1, tama
-         if (abs(this%LossyThinSurfs%cs(j)%SigmaM(1)) <= 1.0e-2_RKIND) then !SGBCs que hay que sustituir
+         if (abs(this%LossyThinSurfs%cs(j)%SigmaM(1)) <= 1.0e-2_RKIND) then !SGBCs that must be replaced
             multiportFile =  trim(adjustl(this%LossyThinSurfs%cs(j)%files)) // '_z11.txt'
             !
-            !09/07/13 !los SGBCs con skindepth se deben preprocesar
+            !09/07/13 !SGBCs with skindepth must be preprocessed
 
-            !crea el fichero de entrada para usar con el compilado de Matlab
+            !create the input file to use with the compiled Matlab
             pozi=index(multiportFile,'_z11.txt')
             write(7533,'(a)') trim(adjustl(multiportFile(1:pozi-1)))
             write(7533,*)     'layers    ',this%LossyThinSurfs%cs(j)%numLayers
@@ -6343,14 +6343,14 @@ contains
                else
                   islossy = .false.
                end if
-               !  CREAR NUEVO MEDIO y asignarle sus propiedades de acuerdo a sus adyacencias
+               !  CREATE A NEW MEDIUM and assign it its properties according to its adjacencies
                if (.not.(sgg%med(med(0))%is%PML.OR.sgg%med(med(1))%is%PML.OR.sgg%med(med(2))%is%PML.OR.sgg%med(med(3))%is%PML.OR.sgg%med(med(4))%is%PML.OR.sgg%med(med(5))%is%PML)) then
                   if ((MED(0)/=MED(1)).OR.(MED(1)/=MED(2)).OR.(MED(2)/=MED(3)).OR.(MED(3)/=MED(4)).OR.(MED(4)/=MED(5)).OR.(MED(5)/=MED(0))) then
                      nodallyEqual=.FALSE.
                      busqueda: do I1=0,SGG%NUMMEDIA
-!cambios 230817 bug milano borja en rutina iguales
+!changes 230817 bug milano borja in routine iguales
                         iguaSGM=isEqual(SGG%MED(I1)%SIGMAM,SIGMAM)
-                        iguaSIG=isEqual(SGG%MED(I1)%SIGMA,SIGMA) !sgg230817 al poner sigma 1e29 y pec ademas, la rutina de iguales fallaba
+                        iguaSIG=isEqual(SGG%MED(I1)%SIGMA,SIGMA) !sgg230817 when setting sigma 1e29 and PEC as well, the iguales routine failed
                         iguaEPR=isEqual(SGG%MED(I1)%EPR,EPR)
                         iguaMUR=isEqual(SGG%MED(I1)%MUR,MUR)
                         iguaPEC=(SGG%MED(I1)%iS%PEC.eqv.ISPEC)
@@ -6361,7 +6361,7 @@ contains
                      end do busqueda
                      if (.NOT.nodallyEqual) then
                         if (SGG%NUMMEDIA+1 > SGG%ALLOCmed) then
-                           call READJUST(SGG%ALLOCmed,sgg%med,2*SGG%ALLOCmed) !LO HAgo REallocatando al doble. gENERO NUEVO PARAMETRO sgg%ALLOCmed. Pero esto es un guirigay.... 261115
+                           call READJUST(SGG%ALLOCmed,sgg%med,2*SGG%ALLOCmed) !I do it by reallocating to double. I CREATE NEW PARAMETER sgg%ALLOCmed. But this is a mess.... 261115
                         end if
                         SGG%NUMMEDIA=SGG%NUMMEDIA+1
                         media%sggMiNo(i,j,k)=SGG%NUMMEDIA
@@ -6370,20 +6370,20 @@ contains
                         sgg%med(r)%sigmam=sigmam
                         sgg%med(r)%epr   =epr
                         sgg%med(r)%mur   =mur
-                        sgg%med(r)%is%PEC = ISPEC !ojo con estos medios que el sistema de prioridades ya no les afecta porque esta rutina va despues del preprocess 03116
+                        sgg%med(r)%is%PEC = ISPEC !beware with these media; the priority system no longer affects them because this routine runs after preprocess 03116
                         sgg%med(r)%is%LOSSY = ISLOSSY
-                        sgg%med(r)%is%needed = .true.  !sgg 220817 por defecto lo he puesto en readjust a false
+                        sgg%med(r)%is%needed = .true.  !sgg 220817 by default I have set it to false in readjust
 !write(113,*) '.NOT.NODALMENTEIGUALES--> ',i,j,k,' - ',med(0),med(1),med(2),med(3),med(4),med(5),' - ',SGG%NUMMEDIA
                      else
-                        media%sggMiNo(i,j,k)=i1  !PUEDE QUE NO SEAN IGUALES PERO NODALMENTE LO SON (SOLO A EFECTOS DE SIGMA,EPR,SIGMAM,MUR,ISLOSSY,ISPEC
-                        !bug 060417 debo ponerlo al medio que ha encontrado igual (i1) y estaba a med(0)!!!!
+                        media%sggMiNo(i,j,k)=i1  !THEY MAY NOT BE EQUAL BUT NODALLY THEY ARE (ONLY FOR SIGMA,EPR,SIGMAM,MUR,ISLOSSY,ISPEC
+                        !bug 060417 I must set it to the medium found equal (i1) and it was set to med(0)!!!!
 !write(114,*) '.YES.NODALMENTEIGUALES--> ',i,j,k,' - ',med(0),med(1),med(2),med(3),med(4),med(5),' - ',SGG%NUMMEDIA
                      end if
                   else
-                     media%sggMiNo(i,j,k)=MED(0)  !todos iguales
+                     media%sggMiNo(i,j,k)=MED(0)  !all equal
                   end if
-               end if !del no es pml
-               !!!!aqui habra luego que ir creando y almacenando lo nuevos tipos de medio nodales en funcion de los sigt y epst para que wires use directamente esa info
+               end if !of the not pml
+               !!!!here the new nodal medium types will later have to be created and stored based on sigt and epst so that wires uses that info directly
             end do
          end do
       end do
@@ -6396,10 +6396,10 @@ contains
       areEqual=.false.
       if (abs(A+B)>1e-20) then
          ERR=2.0_RKIND*ABS((A-B)/(A+B))
-         if (err <1e-2_RKIND) areEqual=.true. !en tanto por ciento me apanio con un 1 por ciento
+         if (err <1e-2_RKIND) areEqual=.true. !as a percentage I make do with 1 percent
       else
          ERR=ABS(A-B)
-         if (err <1e-20_RKIND) areEqual=.true. !en valor absoluto para valores casi nulos le pido que el error sea casi nulo
+         if (err <1e-20_RKIND) areEqual=.true. !in absolute value, for nearly null values I require the error to be nearly null
       end if
       return
    end function isEqual
@@ -6425,7 +6425,7 @@ contains
 
       amplitud=1.0
       do kkk=1,PlaneWave%numModes
-1        continue !punto de retorno si hay algun error de redondeo !vivan los gotos !!!!
+1        continue !return point if there is any rounding error !long live gotos !!!!
          primeravez=.true.
          theta=0.; phi=0.;
          do while(((2.0_RKIND *pi*sin(theta) < phi)).or.primeravez) !moglie
@@ -6436,10 +6436,10 @@ contains
             phi=2.0_RKIND *pi*phi
          end do !moglie
          phi=phi/sin(theta) !moglie
-!ahora la polarizacion
-!!!! si los hago asi hay apegotonamiento en los polos 281115 pero con los beta tampoco me sale. Seguir pensando y hacerlo con poincare algun dia 281115
-!generado con ortogonalidad_teM_parafuentesRC.nb
-!ojo que el atan de fortran y de mathematica estan invertidos!!!!
+!now the polarization
+!!!! if I do them this way there is clumping at the poles 281115 but with the betas it does not work either. Keep thinking and do it with Poincare someday 281115
+!generated with ortogonalidad_teM_parafuentesRC.nb
+!beware that Fortran's and Mathematica's atan are swapped!!!!
 2        continue
          call RANDOM_NUMBER(beta)
          beta=2.0_RKIND *pi*beta
@@ -6460,7 +6460,7 @@ contains
          !!!      -2.0*Cos(phi)*1.0/Tan(alpha)*1.0/Tan(theta) + Sqrt(2.0)*1.0/Sin(alpha)**2.0*1.0/Sin(theta)**2.0*Sqrt(-((Cos(2.0*alpha) + Cos(2.0*theta))*Sin(alpha)**2.0*Sin(phi)**2.0*Sin(theta)**2.0)))
 
 
-!!!ahora la incertumbre en la posicion
+!!!now the uncertainty in position
          call RANDOM_NUMBER(factor)
          planewave%INCERT(kkk)=planewave%incertMax*factor
 !!!
@@ -6471,7 +6471,7 @@ contains
          planewave%ex(kkk) = amplitud * Sin (alpha) * Cos (beta)
          planewave%ey(kkk) = amplitud * Sin (alpha) * Sin (beta)
          planewave%ez(kkk) = amplitud * Cos (alpha)
-         !ojo con estos redondeos.
+         !be careful with these roundings.
          !!!if (Abs(planewave%ex(KKK)/amplitud) < 1e-4) planewave%ex(KKK) = 0.0_RKIND
          !!!if (Abs(planewave%ey(KKK)/amplitud) < 1e-4) planewave%ey(KKK) = 0.0_RKIND
          !!!if (Abs(planewave%ez(KKK)/amplitud) < 1e-4) planewave%ez(KKK) = 0.0_RKIND
@@ -6501,7 +6501,7 @@ contains
 888   continue
       close(888)
 
-      if (.not.simu_devia) then !solo lo escribe el principal
+      if (.not.simu_devia) then !only the main one writes it
          open(888,file='rc_EP.dat', FORM='formatted')
          do kkk=1,PlaneWave%numModes
             write (888,'(i5,12e19.9e3)') kkk, planewave%px(kkk),planewave%py(kkk),planewave%pz(kkk), &
@@ -6575,8 +6575,8 @@ contains
       character(len=BUFSIZE) :: tagToCheck
       type(tagtype_t) :: tagtype
 
-      !!!ojoo
-!!!!return !ojooo
+      !!!caution
+!!!!return !caution
 
       do precounting=0,1
          numertag=0
@@ -6976,9 +6976,9 @@ contains
          !!!!!!!!!!!!!!!!!!!!!
          if (precounting==0) then
             tagtype%numertags = numertag
-            allocate(tagtype%tag(1:numertag+1)) !uno mas para luego jugar
+            allocate(tagtype%tag(1:numertag+1)) !one more to play with later
             tagtype%tag=''
-         else !elimina repetidos
+         else !removes duplicates
             do i=1,numertag
                do j=i+1,numertag
                   if ((trim(adjustl(tagtype%tag(i)))==trim(adjustl(tagtype%tag(j))))) then
@@ -6999,7 +6999,7 @@ contains
             numertag=i-1
             tagtype%numertags = numertag
          end if
-      end do !del precounting
+      end do !of the precounting
 
 
       return

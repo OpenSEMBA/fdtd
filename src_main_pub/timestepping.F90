@@ -4,7 +4,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !__________________________________________________________________________________________________
-!******************************** REVISAR PARA PGI (CRAY) *****************************************
+!******************************** CHECK FOR PGI (CRAY) *****************************************
 !---> AdvanceMultiportE
 !---> AdvanceAnisMultiportE
 !---> AdvanceMultiportH
@@ -475,13 +475,13 @@ module Solver_m
 
       call this%init_distances()
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
-!!!lo cambio aqui permit scaling a 211118 por problemas con resuming: debe leer el eps0, mu0, antes de hacer numeros
+!!!changed here to allow scaling on 211118 due to resuming problems: must read eps0, mu0 before doing numbers
       
       allocate (this%g%g1(0 : this%sgg%NumMedia),this%g%g2(0 : this%sgg%NumMedia),this%g%gm1(0 : this%sgg%NumMedia),this%g%gm2(0 : this%sgg%NumMedia))
      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! Field matrices creation (an extra cell is padded at each limit and direction to deal with PMC imaging with no index errors)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !ojo las dimesniones deben ser giuales a las utlizadas en reallocate para las matrices sggmiEx, etc
+      !careful, the dimensions must match those used in reallocate for the sggmiEx matrices, etc
 
       call this%init_fields()
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
@@ -490,7 +490,7 @@ module Solver_m
       !!! Init the local variables and observation stuff needed by each module, taking into account resume status
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      dt0=this%sgg%dt !guardalo aqui para entrada pscale correcta si resume
+      dt0=this%sgg%dt !store it here for correct pscale input when resuming
       if (.not.this%control%resume) then
          Ex=0.0_RKIND; Ey=0.0_RKIND; Ez=0.0_RKIND; Hx=0.0_RKIND; Hy=0.0_RKIND; Hz=0.0_RKIND
          this%initialtimestep=0 
@@ -505,8 +505,8 @@ module Solver_m
             open (14,file=trim(adjustl(this%control%nresumeable2)),form='unformatted')
          end if
          call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,Ex,Ey,Ez,Hx,Hy,Hz)
-         this%sgg%dt=ultimodt !para permit scaling
-      !!!!!!!!!!!!No es preciso re-sincronizar pero lo hago !!!!!!!!!!!!!!!!!!!!!!!!!!
+         this%sgg%dt=ultimodt !to allow scaling
+      !!!!!!!!!!!!No need to re-synchronize but I do it !!!!!!!!!!!!!!!!!!!!!!!!!!
 #ifdef CompileWithMPI
          rdummy=this%sgg%dt
          call MPIupdateMin(real(this%sgg%dt,RKIND),rdummy)
@@ -523,7 +523,7 @@ module Solver_m
             if (this%control%resume_fromold) then
                close (14)
                write(dubuf,*) 'Incoherence between MPI saved steps for resuming.', dummyMin,dummyMax,this%lastexecutedtimesteP
-               call stoponerror (this%control%layoutnumber,this%control%num_procs,BUFF,.true.) !para que retorne
+               call stoponerror (this%control%layoutnumber,this%control%num_procs,BUFF,.true.) !so that it returns
                call this%destroy_and_deallocate()
                return
             else
@@ -533,12 +533,12 @@ module Solver_m
                close (14)
                open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted')
                call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,Ex,Ey,Ez,Hx,Hy,Hz)
-               this%sgg%dt=ultimodt !para permit scaling
+               this%sgg%dt=ultimodt !to allow scaling
                call MPI_AllReduce(this%lastexecutedtimestep, dummyMin, 1_4, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, ierr)
                call MPI_AllReduce(this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
                if ((dummyMax /= this%lastexecutedtimestep).or.(dummyMin /= this%lastexecutedtimestep)) then
                   write(DUbuf,*) 'NO success. fields.old MPI are also incoherent for resuming.', dummyMin,dummyMax,this%lastexecutedtimestep
-                  call stoponerror (this%control%layoutnumber,this%control%num_procs,DUBUF,.true.) !para que retorne
+                  call stoponerror (this%control%layoutnumber,this%control%num_procs,DUBUF,.true.) !so that it returns
                   call this%destroy_and_deallocate()
                   return
                else
@@ -550,7 +550,7 @@ module Solver_m
             close (14)
 
             write(dubuf,*) 'Incoherence between MPI saved steps for resuming.',dummyMin,dummyMax,this%lastexecutedtimestep
-            call stoponerror (this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !para que retorne
+            call stoponerror (this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !so that it returns
             call this%destroy_and_deallocate()
             return
 #endif
@@ -562,15 +562,15 @@ module Solver_m
       end if
 
       if (this%initialtimestep>this%control%finaltimestep) then
-          call stoponerror (this%control%layoutnumber,this%control%num_procs,'Initial time step greater than final one',.true.) !para que retorne
+          call stoponerror (this%control%layoutnumber,this%control%num_procs,'Initial time step greater than final one',.true.) !so that it returns
           call this%destroy_and_deallocate()
           return
       end if
-!!!incializa el vector de tiempos para permit scaling 191118
+!!!initializes the time vector to allow scaling 191118
       call crea_timevector(this%sgg,this%lastexecutedtimestep,this%control%finaltimestep,this%lastexecutedtime)
 !!!!!!!!!!!!!!!!!!!!!
 
-! !fin lo cambio aqui
+! !end of my change here
 
       call updateSigmaM(attinformado)
       call updateThinWiresSigma(attinformado)
@@ -589,7 +589,7 @@ module Solver_m
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
-      !!!OJO SI SE CAMBIA EL ORDEN DE ESTAS INICIALIZACIONES HAY QUE CAMBIAR EL ORDEN DE STOREADO EN EL RESUMING
+      !!!CAREFUL: IF THE ORDER OF THESE INITIALIZATIONS IS CHANGED, THE STORAGE ORDER IN RESUMING MUST BE CHANGED
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -615,7 +615,7 @@ module Solver_m
       call fillMtag(this%sgg, this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMtag, this%bounds, this%tag_numbers)
       call initializeObservation()
 
-      !!!!voy a jugar con fuego !!!210815 sincronizo las matrices de medios porque a veces se precisan. Reutilizo rutinas viejas mias NO CRAY. Solo se usan aqui
+      !!!!playing with fire !!!210815 I synchronize the media matrices because they are sometimes needed. I reuse old non-CRAY routines of mine. They are only used here
       !MPI initialization
 #ifdef CompileWithMPI
       call initializeMPI()
@@ -635,11 +635,11 @@ module Solver_m
       call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue)
 
 
-      call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%num_procs,this%control%fatalerror,.false.,this%control%simu_devia) !aqui ya esta dividido el stochastic y hay dos this%control%layoutnumber=0
+      call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%num_procs,this%control%fatalerror,.false.,this%control%simu_devia) !here the stochastic is already split and there are two this%control%layoutnumber=0
 
       if (this%control%fatalerror) then
          dubuf='FATAL ERRORS. Revise *Warnings.txt file. ABORTING...'
-         call stoponerror(this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !para que retorne
+         call stoponerror(this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !so that it returns
          call this%destroy_and_deallocate()
          return
       end if
@@ -647,7 +647,7 @@ module Solver_m
       call flushMPIdata()
 #endif
 
-!!!no se si el orden wires - sgbcs del sync importa 150519
+!!!I do not know if the wires - sgbcs sync order matters 150519
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
       if (this%control%stochastic)  then
@@ -666,7 +666,7 @@ contains
          type(bounds_t), intent(out) :: b
          !
 
-         !No tocar. Dejar como estan alocateados
+         !Do not touch. Leave as they are allocated
          b%dxe%XI=this%sgg%alloc(IHX)%XI
          b%dxe%XE=this%sgg%alloc(IHX)%XE
          b%dye%YI=this%sgg%alloc(IHY)%YI
@@ -682,7 +682,7 @@ contains
          b%dzh%ZE=this%sgg%alloc(IEZ)%ZE
 
          !
-         !No tocar. Dejar como estan alocateados
+         !Do not touch. Leave as they are allocated
          b%Ex%XI=this%sgg%Alloc(iEx)%XI
          b%Ex%XE=this%sgg%Alloc(iEx)%XE
          b%Ey%XI=this%sgg%Alloc(iEy)%XI
@@ -728,7 +728,7 @@ contains
          !
          !
 
-         !matrix indexes. Nothing to change. Asi estan alocateados
+         !matrix indexes. Nothing to change. This is how they are allocated
          b%sggMiEx%XI=this%sgg%Alloc(iEx)%XI
          b%sggMiEx%XE=this%sgg%Alloc(iEx)%XE
          b%sggMiEy%XI=this%sgg%Alloc(iEy)%XI
@@ -936,7 +936,7 @@ contains
          b%sggMiHz%NZ=b%sggMiHz%ZE-b%sggMiHz%ZI+1
          !
          !
-         !estas longitudes son relativas al layout !ojo
+         !these lengths are relative to the layout !careful
          b%dxe%NX=b%dxe%XE-b%dxe%XI+1
          b%dye%NY=b%dye%YE-b%dye%YI+1
          b%dze%NZ=b%dze%ZE-b%dze%ZI+1
@@ -1018,7 +1018,7 @@ contains
          if (abs(this%control%attfactorw-1.0_RKIND) > 1.0e-12_RKIND) then
             do i=1,this%sgg%nummedia
                if (this%sgg%Med(i)%Is%ThinWire) then
-                  this%sgg%Med(i)%Sigma = 0.0_RKIND !revert!!! !necesario para no lo tome como un lossy luego en wires !solo se toca el g1,g2
+                  this%sgg%Med(i)%Sigma = 0.0_RKIND !revert!!! !necessary so it is not taken as a lossy one later in wires !only g1,g2 are touched
                end if
             end do
          end if
@@ -1135,7 +1135,7 @@ contains
          integer(kind=4) :: ierr
 #endif
 
-         !init lumped debe ir antes de wires porque toca la conductividad del material !mmmm ojoooo 120123
+         !init lumped must go before wires because it touches the material conductivity !mmmm careful 120123
          write(dubuf,*) 'Init Lumped Elements...';  call print11(this%control%layoutnumber,dubuf)
          call InitLumped(this%sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control,this%thereAre%Lumpeds,this%eps0,this%mu0)
          l_auxinput=this%thereAre%Lumpeds
@@ -1258,7 +1258,7 @@ contains
 #endif
 #endif
 #ifdef CompileWithMPI
-         !!!sincroniza el dtcritico
+         !!!synchronizes the critical dt
          newdtcritico = 0.0_RKIND_TIME
          call MPI_AllReduce(dtcritico, newdtcritico, 1_4, REALSIZE_TIME, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
@@ -1267,7 +1267,7 @@ contains
             write(buff,'(a,e10.2e3)')  'WIR_INFO: deltat for stability OK: ',dtcritico
             if ((this%control%layoutnumber==0).and.this%control%verbose) call WarnErrReport(buff)
          else
-            if (.not.(this%control%resume.and.this%control%permitscaling)) then !no abortasr solo advertir si permittivity scaling
+            if (.not.(this%control%resume.and.this%control%permitscaling)) then !do not abort, only warn if permittivity scaling
 #ifdef CompileWithMTLN
                write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, make dt < ',dtcritico
 #else
@@ -1517,7 +1517,7 @@ contains
             write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
          end if
 
-!!!!!!!!!!!!!!!!!!!!!fin juego con fuego 210815
+!!!!!!!!!!!!!!!!!!!!!end of playing with fire 210815
 
       !MPI initialization
          if (this%control%num_procs>1) then
@@ -1529,7 +1529,7 @@ contains
             write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
 
          !this modifies the initwires stuff and must be called after initwires (typically at the end)
-         !llamalo siempre aunque no HAYA WIRES!!! para que no se quede colgado en hilos terminales
+         !always call it even if there are NO WIRES!!! so it does not hang on terminal threads
             if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
                (trim(adjustl(this%control%wiresflavor))=='transition')) then 
                write(dubuf,*) 'Init MPI Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
@@ -1546,7 +1546,7 @@ contains
                write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
             end if
 #endif
-         !llamalo siempre para forzar los flush extra en caso de materiales anisotropos o multiport
+         !always call it to force the extra flushes in case of anisotropic or multiport materials
             write(dubuf,*) 'Init Extra Flush MPI...';  call print11(this%control%layoutnumber,dubuf)
             call InitExtraFlushMPI_Cray(this%control%layoutnumber,this%sgg%sweep,this%sgg%alloc,this%sgg%Med,this%sgg%NumMedia,this%media%sggMiez,this%media%sggMiHz, &
             Ex,Ey,Ez,Hx,Hy,Hz,this%thereAre%MURBorders)
@@ -1564,7 +1564,7 @@ contains
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
                call ReportWireJunctionsBerenger(this%control%layoutnumber,this%control%num_procs,this%thereAre%wires,this%sgg%Sweep(IHZ)%ZI, this%sgg%Sweep(IHZ)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
-                  !dama no tenia el equivalente 050416
+                  !dama did not have the equivalent 050416
       end if
 #endif
 #ifdef CompileWithSlantedWires
@@ -1649,7 +1649,7 @@ contains
          integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1)  , intent(in) :: sggMiEy
          integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1)  , intent(in) :: sggMiEz
          type(taglist_t) :: tag_numbers
-         !------------------------> Variables locales
+         !------------------------> Local variables
          integer(kind = 4) :: i, j, k
          integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medium1,medium2,medium3,medium4,medium5
          logical  :: mediois1,mediois2,mediois3,mediois4
@@ -1672,11 +1672,11 @@ contains
                   medium5 =sggMiHx(i,j,k)
                   mediois1= (medium5==1).and.(medium1/=1).and.(medium2/=1).and.(medium3==1).and.(medium4==1)
                   mediois2= (medium5==1).and.(medium3/=1).and.(medium4/=1).and.(medium1==1).and.(medium2==1)
-                  mediois3= .true. !.not.((medio5==1).and.(((sggMiHx(i-1,j,k)/=1).or.(sggMiHx(i+1,j,k)/=1)))) !esta condicion en realidad no detecta alabeos de una celda que siendo slots son acoples de un agujerito solo en el peor de los casos
+                  mediois3= .true. !.not.((medio5==1).and.(((sggMiHx(i-1,j,k)/=1).or.(sggMiHx(i+1,j,k)/=1)))) !this condition does not really detect one-cell slants that, being slots, are couplings of a small hole only in the worst case
                   if ((mediois1.or.mediois2).and.(mediois3))  then
-                      !solo lo hace con celdas de vacio porque en particular el mismo medio sgbc con diferentes orientaciones tiene distintos indices de medio y lo activaria erroneamente si lo hago para todos los medios
+                      !it only does it with vacuum cells because in particular the same sgbc medium with different orientations has different medium indices and it would activate it wrongly if I did it for all media
                       tag_numbers%face%x(i+lbx(1)-1,j+lbx(2)-1,k+lbx(3)-1)=-ibset(iabs(tag_numbers%face%x(i+lbx(1)-1,j+lbx(2)-1,k+lbx(3)-1)),3) 
-                      !ojo no cambiar: interacciona con observation tags 141020 !151020 a efectos de mapvtk el signo importa
+                      !careful, do not change: it interacts with observation tags 141020 !151020 for mapvtk purposes the sign matters
                   end if
                end do
             end do
@@ -1736,7 +1736,7 @@ contains
          allocate (sgg%time(lastexecutedtimestep:finaltimestep+2))
          sgg%time(lastexecutedtimestep)=lastexecutedtime
          do i=lastexecutedtimestep+1,finaltimestep+2
-               sgg%time(i)=sgg%time(i-1)+sgg%dt !equiespaciados por defecto !luego los modifica prescale
+               sgg%time(i)=sgg%time(i-1)+sgg%dt !equally spaced by default !later prescale modifies them
          end do
          return
       end subroutine
@@ -1762,9 +1762,9 @@ contains
       call nvtxStartRange("Antes del bucle N")
 #endif
 
-      this%still_planewave_time=.true. !inicializacion de la variable 
+      this%still_planewave_time=.true. !initialization of the variable
       flushFF = .false.
-      pscale_alpha=1.0 !se le entra con 1.0
+      pscale_alpha=1.0 !entered with 1.0
 
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez
       Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
@@ -1804,7 +1804,7 @@ contains
 #ifdef CompileWithMPI
          l_aux=call_timing
          call MPI_AllReduce(l_aux, call_timing, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-         call MPI_Barrier(MPI_COMM_WORLD,ierr) !050619 incluido problemas stochastic stopflusing
+         call MPI_Barrier(MPI_COMM_WORLD,ierr) !050619 included to address stochastic stopflushing problems
 #endif
          
          if (call_timing) then
@@ -1812,7 +1812,7 @@ contains
             this%control%finaltimestep,this%perform,this%parar,.FALSE., &
             Ex,Ey,Ez,this%everflushed,this%control%nInputRoot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
 
-            if (.not.this%parar) then !!! si es por parada se gestiona al final
+            if (.not.this%parar) then !!! if it is due to a stop it is handled at the end
                if (this%perform%flushFIELDS) then
                   call performFlushField()
                end if
@@ -1827,15 +1827,15 @@ contains
                       end if
                       call printMessageWithSeparator(this%control%layoutnumber,dubuf)
                       if (this%thereAre%Observation) call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, flushFF)
-                 end if !del if (this%performflushDATA.or....
+                 end if !of the if (this%performflushDATA.or....
                   if (this%control%singlefilewrite.and.this%perform%unpackFlag) call singleUnpack()
                   if ((this%control%singlefilewrite.and.this%perform%unpackFlag).or.this%perform%isFlush()) then
                      write(dubuf,'(a,i9)')  ' Continuing simulation at n= ',this%n
                      call printMessageWithSeparator(this%control%layoutnumber,dubuf)
                   end if
 
-                end if !!!del if (.not.this%parar)
-             end if !!!del if(n >= n_info
+                end if !!!of the if (.not.this%parar)
+             end if !!!of the if(n >= n_info
 !          !!!!!!!!all the previous must be together
               
          this%control%fatalerror=.false.
@@ -1870,7 +1870,7 @@ contains
          !!!  Increase time step
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! write(*write(*,*) 'timestepping: ', n
-         this%n=this%n+1 !sube de iteracion
+         this%n=this%n+1 !increase iteration
       end do ciclo_temporal ! End of the time-stepping loop
 
 
@@ -2006,10 +2006,10 @@ contains
       call this%CloneMagneticPeriodic()
 
 #ifdef CompileWithMPI
-      !!Flush all the MPI (esto estaba justo al principo del bucle temporal diciendo que era necesario para correcto resuming)
-      !lo he movido aqui a 16/10/2012 porque el farfield necesita tener los campos magneticos correctos
-      !e intuyo que el Bloque current tambien a tenor del comentario siguiente
-      !Incluyo un flush inicial antes de entrar al bucle para que el resuming sea correcto
+      !!Flush all the MPI (this was right at the beginning of the time loop saying it was needed for correct resuming)
+      !I moved it here on 16/10/2012 because the farfield needs to have the correct magnetic fields
+      !and I suspect the current Block too, going by the following comment
+      !I include an initial flush before entering the loop so that resuming is correct
       if (this%control%num_procs>1) then
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          call FlushMPI_H_Cray
@@ -2028,7 +2028,7 @@ contains
 #endif
 #endif
 
-!!!no se si el orden wires - sgbcs del sync importa 150519
+!!!I do not know if the wires - sgbcs sync order matters 150519
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
          if (this%control%stochastic) call syncstoch_mpi_sgbcs(this%control%simu_devia,this%control%layoutnumber,this%control%num_procs)
@@ -2077,8 +2077,8 @@ contains
    subroutine init_MPIConformalProbes(this)
       class(solver_t) :: this
       integer(kind=4) :: group_conformalprobes_dummy, ierr
-!!!!sgg250424 niapa para que funcionen sondas conformal mpi
-!todos deben crear el subcomunicador mpi una sola vez   
+!!!!sgg250424 niapa so that conformal mpi probes work
+!all must create the mpi subcommunicator only once
       if (input_conformal_flag) then
          SUBCOMM_MPI_conformal_probes=1   
          MPI_conformal_probes_root=this%control%layoutnumber
@@ -2090,7 +2090,7 @@ contains
                            MPI_conformal_probes_root,group_conformalprobes_dummy)
       ! print *,'-----creating--->',this%control%layoutnumber,SIZE,SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
       call MPI_BARRIER(SUBCOMM_MPI, ierr)
-      !!!no lo hago pero al salir deberia luego destruir el grupo call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)                   
+      !!!I do not do it but on exit I should later destroy the group call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)
    end subroutine init_MPIConformalProbes
 #endif
 
@@ -2215,7 +2215,7 @@ contains
       real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hy
       real(kind=rkind), dimension(:), pointer :: Idyh
       real(kind=rkind), dimension(:), pointer :: Idxh
-      !------------------------> Variables locales
+      !------------------------> Local variables
       real(kind = RKIND) :: Idyhj
       integer(kind = 4) :: i, j, k
       integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medium
@@ -2634,7 +2634,7 @@ contains
       if (this%n>this%control%finaltimestep) this%n = this%control%finaltimestep !readjust n since after finishing it is increased
       this%control%finaltimestep = this%n
       this%lastexecutedtime=this%sgg%time(this%control%finaltimestep)
-      !se llama con dummylog para no perder los flags de parada
+      !it is called with dummylog so as not to lose the stop flags
       call Timing(this%sgg,this%bounds,this%n,ndummy,this%control%layoutnumber, this%control%num_procs, & 
                   this%control%maxCPUtime,this%control%flushsecondsFields, this%control%flushsecondsData, &
                   this%initialtimestep, this%control%finaltimestep,this%d_perform,dummylog,.FALSE., &
@@ -2696,7 +2696,7 @@ contains
 
    end subroutine
 
-   !las sggmixx se desctruyen el en main pq se alocatean alli
+   !the sggmixx are destroyed in main because they are allocated there
    subroutine Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,wiresflavor)
       character(len=*) , intent(in) :: wiresflavor
       type(logic_control_t), intent(in) :: thereare
@@ -2710,7 +2710,7 @@ contains
       call DestroyMultiports(sgg)
 #endif
 
-      call destroysgbcs(sgg) !!todos deben destruir pq alocatean en funcion de sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era if ((this%thereAre%sgbcs).and.(sgbc))
+      call destroysgbcs(sgg) !!all must destroy because they allocate based on sgg, not on whether they contain these materials which is controlled by therearesgbcs. What was there was if ((this%thereAre%sgbcs).and.(sgbc))
       call destroyLumped(sgg)
       call DestroyEDispersives(sgg)
       call DestroyMDispersives(sgg)
@@ -2749,7 +2749,7 @@ contains
       call DestroyMultiports(this%sgg)
 #endif
 
-      call destroysgbcs(this%sgg) !!todos deben destruir pq alocatean en funcion de this%sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era if ((this%thereAre%sgbcs).and.(sgbc))
+      call destroysgbcs(this%sgg) !!all must destroy because they allocate based on this%sgg, not on whether they contain these materials which is controlled by therearesgbcs. What was there was if ((this%thereAre%sgbcs).and.(sgbc))
       call destroyLumped(this%sgg)
       call DestroyEDispersives(this%sgg)
       call DestroyMDispersives(this%sgg)

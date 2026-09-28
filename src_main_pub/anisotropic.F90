@@ -51,7 +51,7 @@ module Anisotropic_m
    end type
    type(AnisotropicMed_t),save, target :: AniMed
 
-!!!variables globales del modulo
+!!!module global variables
    real(kind=RKIND), save           :: eps0,mu0,cluz,zvac
 !!!
    public AdvanceAnisotropicE,AdvanceAnisotropich,InitAnisotropic,DestroyAnisotropic,calc_anisotropicconstants
@@ -93,7 +93,7 @@ contains
       do jmed=1,sgg%NumMedia
          if (sgg%Med(jmed)%Is%Anisotropic) then
             conta=conta+1
-            AniMed%info(conta)%indexmed=jmed !correspondencia con el medio principal
+            AniMed%info(conta)%indexmed=jmed !correspondence with the main medium
             if (sgg%Med(jmed)%Is%ThinSlot) then
                AniMed%info(conta)%IsOnlyThinSlot=.true.
             else
@@ -207,7 +207,7 @@ contains
                end do
             end do
          end do
-         !magneticos
+         !magnetics
          !!!Hx
          conta=0
          do k1=sgg%SINPMLSweep(IHX)%ZI,sgg%SINPMLSweep(IHX)%ZE
@@ -307,10 +307,10 @@ contains
       end do
 
 
-      !actualiza el numero de shared
+      !update the number of shared
 
       do j1=1,sgg%Eshared%conta
-         BuscaEx: do jmed=1,AniMed%NumMed !uno que encuentra ya contiene toda la informacion de times
+         BuscaEx: do jmed=1,AniMed%NumMed !the one found already contains all the times information
             do i1=1,AniMed%info(jmed)%NumNodesEx
                if ((sgg%Eshared%elem(j1)%i == AniMed%info(jmed)%Ex_i(i1)).and. &
                (sgg%Eshared%elem(j1)%j == AniMed%info(jmed)%Ex_j(i1)).and. &
@@ -500,11 +500,11 @@ contains
          end do
       end do
 
-      !crea las matrices
+      !create the matrices
 
 
 
-      do jmed=1,AniMed%NumMed !barrelos ahora todos
+      do jmed=1,AniMed%NumMed !sweep them all now
          dummyAnisProp => sgg%med(AniMed%Info(jmed)%indexmed)%Anisotropic(1)
          do i1=1,AniMed%info(jmed)%NumNodesEx
             conta=AniMed%info(jmed)%Ex_Shared(i1)%times
@@ -980,7 +980,7 @@ contains
    end subroutine
 
 
-   !funcion para publicar el valor de Med
+   !function to publish the value of Med
 
    function GetMed() result(r)
       type(AnisotropicMed_t), pointer  :: r
@@ -996,7 +996,7 @@ contains
         real(kind=RKIND) , intent(inout) :: Eps00, Mu00
         real(kind=RKIND),  dimension(3,3) :: sigma,epr,mur,sigmaM
         integer(kind=4) :: jmed
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
       zvac=sqrt(mu0/eps0)
       cluz=1.0_RKIND/sqrt(eps0*mu0)
 

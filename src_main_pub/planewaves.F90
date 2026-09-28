@@ -46,9 +46,9 @@ contains
       logical  :: abortar, resume
       character(len=BUFSIZE) :: buff
       real(kind=RKIND), intent(in) :: eps00,mu00
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
-      cluz=1.0_RKIND/sqrt(eps0*mu0) !lo necesitara incid
-      zvac=sqrt(mu0/eps0) !lo necesitan las variables de mas abajo
+      eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
+      cluz=1.0_RKIND/sqrt(eps0*mu0) !incid will need it
+      zvac=sqrt(mu0/eps0) !the variables below need it
 
       do field=iEx,IHZ
          allocate (gridPoint%PhysCoor(field)%x(sgg%Sweep(field)%XI-1 : sgg%Sweep(field)%XE+1), &
@@ -125,7 +125,7 @@ contains
           return
       end if
       if (ThereArePlaneWaveBoxes) then
-         thereareplanewaveboxes=.false. !resetealo porque puede que el slice MPI no tenga
+         thereareplanewaveboxes=.false. !reset it because the MPI slice may not have any
          allocate (TrFr(1:sgg%numplanewaves), &
                    IzDe(1:sgg%numplanewaves), &
                    AbAr(1:sgg%numplanewaves), &
@@ -139,7 +139,7 @@ contains
                    deltaevol(1:sgg%numplanewaves))
          do jjj=1,sgg%NumPlaneWaves
              numus(jjj)=sgg%PlaneWave(jjj)%sourceFile%NumSamples
-             !a peticion de OLD aborto si no hay nada que iluminar
+             !by OLD's request I abort if there is nothing to illuminate
              abortar= &
              (sgg%PlaneWave(jjj)%esqx1 <=  SINPML_fullsize(IHX)%XI).and. &
              (sgg%PlaneWave(jjj)%esqx2 >=  SINPML_fullsize(IHX)%XE).and. &
@@ -261,7 +261,7 @@ contains
              thereareplanewaveboxes=thereareplanewaveboxes.or.IluminaTr(jjj).or.IluminaFr(jjj).or.IluminaIz(jjj).or. &
              IluminaDe(jjj).or.IluminaAr(jjj).or.IluminaAb(jjj)
 
-         end do !barrido j planewaves
+         end do !sweep j planewaves
       end if  !ThereArePlaneWaveBoxes
 
        maxnumus=maxval(numus)
@@ -303,7 +303,7 @@ contains
              else
                  if (sgg%PlaneWave(jjj)%isRC) then
                      read(14) pxpw(jjj,kkk),pypw(jjj,kkk),pzpw(jjj,kkk),fpw(jjj,1,kkk),fpw(jjj,2,kkk),fpw(jjj,3,kkk),INCERT(jjj,kkk)
-                 else !inicializalo como siempre
+                 else !initialize it as usual
                      pxpw(jjj,kkk)=sgg%PlaneWave(jjj)%px(kkk)
                      pypw(jjj,kkk)=sgg%PlaneWave(jjj)%py(kkk)
                      pzpw(jjj,kkk)=sgg%PlaneWave(jjj)%pz(kkk)
@@ -323,7 +323,7 @@ contains
        do jjj=1,sgg%numplanewaves
          !Find the angles and amplitudes
          do kkk=1,sgg%PlaneWave(jjj)%nummodes
-!!!! movido a donde se precisa para permit scaling 081118
+!!!! moved to where it is needed for permit scaling 081118
 !!             fpw(jjj,4,kkk)=(pypw(jjj,kkk)*fpw(jjj,3,kkk)-pzpw(jjj,kkk)*fpw(jjj,2,kkk))/zvac
 !!             fpw(jjj,5,kkk)=(pzpw(jjj,kkk)*fpw(jjj,1,kkk)-pxpw(jjj,kkk)*fpw(jjj,3,kkk))/zvac
 !!             fpw(jjj,6,kkk)=(pxpw(jjj,kkk)*fpw(jjj,2,kkk)-pypw(jjj,kkk)*fpw(jjj,1,kkk))/zvac
@@ -367,12 +367,12 @@ contains
              diagonalcaja=sqrt( (sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(IHX)%XI)) - sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(IHX)%XE)))**2.0_RKIND  + &
                                 (sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(IHY)%YI)) - sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(IHY)%YE)))**2.0_RKIND  + &
                                 (sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(IHZ)%ZI)) - sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(IHZ)%ZE)))**2.0_RKIND  ) 
-             distanciaInicial(jjj,kkk)=((XD0*pxpw(jjj,kkk)+YD0*pypw(jjj,kkk)+ZD0*pzpw(jjj,kkk)))-INCERT(jjj,kkk)*diagonalcaja !CREO QUE LA TENGO QUE RESTAR PARA QUE LA INCERTIDUMBRE SOLO AGRANDE LA CAJA (RETRASE LA SEniAL)
-                                                                           !!!! corroboro a 150419 que hay que restar la incertidumbre, despues de dudar sobre el signo, pq luego t-d/c, d=n.r-(n.r0-incert)>0 sii incert>0, ya que n.r-n.r0>0 siempre
+             distanciaInicial(jjj,kkk)=((XD0*pxpw(jjj,kkk)+YD0*pypw(jjj,kkk)+ZD0*pzpw(jjj,kkk)))-INCERT(jjj,kkk)*diagonalcaja !I THINK I HAVE TO SUBTRACT IT SO THAT THE UNCERTAINTY ONLY ENLARGES THE BOX (IT DELAYS THE SIGNAL)
+                                                                           !!!! I confirm on 150419 that the uncertainty must be subtracted, after doubting about the sign, because then t-d/c, d=n.r-(n.r0-incert)>0 iff incert>0, since n.r-n.r0>0 always
 
              
-         end do !del kkk
-      end do !del maxmodes
+         end do !of kkk
+      end do !of maxmodes
 
       !check if materials are crossed by the box
       do jjj=1, sgg%numplanewaves
@@ -720,7 +720,7 @@ contains
                 end do
              end do
           end if
-      end do !del j numplanewaves
+      end do !of j numplanewaves
 
 !!!!
       call calc_planewaveconstants(sgg,eps0,mu0)
@@ -750,7 +750,7 @@ contains
 #ifdef CompileWithOpenMP
 !$xMP   PARALLEL do DEFAULT(SHARED) private (d,kkk,jjj) REDUCTION(+:EhI)
 #endif
-            do jdum=1, sgg%numplanewaves !150419 observation debe sumar las planewaves se ha movido aqui desde la llamada
+            do jdum=1, sgg%numplanewaves !150419 observation must sum the planewaves; it has been moved here from the call
               do kkk=1,sgg%PlaneWave(jdum)%nummodes
                  d=(xf*pxpw(jdum,kkk)+yf*pypw(jdum,kkk)+zf*pzpw(jdum,kkk))-distanciaInicial(jdum,kkk)
                  EhI=EhI + fpw(jdum,nfield,kkk)*evolucion(jdum,time,d,still_planewave_time)
@@ -760,7 +760,7 @@ contains
 #ifdef CompileWithOpenMP
 !$xMP   END PARALLEL DO
 #endif
-      else !si no lo llama observation el jjj ya viene especificado
+      else !if observation does not call it, jjj is already specified
 #ifdef CompileWithOpenMP
 !$xMP   PARALLEL do DEFAULT(SHARED) private (d,kkk,) REDUCTION(+:EhI)
 #endif
@@ -786,19 +786,19 @@ contains
          integer(kind=4) :: jjj
          logical  :: still_planewave_time
 !         if (d<=0.0_RKIND) then
-!             print *,layr,' buggy error in d planewaves.evolucion. ' !ojo porque ralentiza. quitar cuando estemos seguros de RC
+!             print *,layr,' buggy error in d planewaves.evolucion. ' !beware because it slows things down. remove when we are sure about RC
 !         end if
 
          evolucion=0.0_RKIND
          nprev=int((t-d/cluz)/deltaevol(jjj))
          if ((nprev+1 <= numus(jjj))) then 
-           still_planewave_time=.true. !todavia puede haber actividad
+           still_planewave_time=.true. !there may still be activity
            if (nprev > 0) then
             !first order interpolation
-               evolucion=(evol(jjj,nprev+1)-evol(jjj,nprev))/deltaevol(jjj)*((t-d/cluz)-nprev*deltaevol(jjj))+evol(jjj,nprev) !interpolacion lineal
+               evolucion=(evol(jjj,nprev+1)-evol(jjj,nprev))/deltaevol(jjj)*((t-d/cluz)-nprev*deltaevol(jjj))+evol(jjj,nprev) !linear interpolation
             !second order !no advantages over first order
             !  if (nprev+2 > numus(jjj)) then
-            !      evolucion=0.0_RKIND !se asume que el fichero de entrada contiene una excitacion que se anula despues
+            !      evolucion=0.0_RKIND !it is assumed that the input file contains an excitation that vanishes afterwards
             !  else
             !      evolucion=evol(jjj,nprev+2) * ( ((t-d/cluz)-nprev    *deltaevol(jjj)) * ((t-d/cluz)-(nprev+1)*deltaevol(jjj)) ) /(2.0_RKIND * deltaevol(jjj)**2.0_RKIND ) - &
             !                evol(jjj,nprev+1) * ( ((t-d/cluz)-nprev    *deltaevol(jjj)) * ((t-d/cluz)-(nprev+2)*deltaevol(jjj)) ) /(   deltaevol(jjj)**2.0_RKIND ) + &
@@ -852,19 +852,19 @@ contains
       real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(inout) :: Ex
       real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(inout) :: Ey
       real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(inout) :: Ez
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       real(kind = RKIND) :: timei, G2_1, Id,incidente
       integer  :: i, j, k, i_m, j_m, k_m,jjj
       character(len=BUFSIZE) :: dubuf
-      !---------------------------> empieza AdvancePlaneWaveE <---------------------------------------
+      !---------------------------> begins AdvancePlaneWaveE <---------------------------------------
 !!!!
 
       !!!
-      still_planewave_time=.false. !por defecto no va a haber mas actividad de onda plana, a menos que pase por algun incid no trivial
+      still_planewave_time=.false. !by default there will be no more plane wave activity, unless it goes through some non-trivial incid
       called_fromobservation=.false. !210419 
       
       timei = sgg%time(timeinstant)
-      !!!! deprecado en pscale y el+3 de la sincronia con ORIGINAL se jode para siempre 110219 
+      !!!! deprecated in pscale and the +3 of the sync with ORIGINAL is broken forever 110219 
       !!! timei = (timeinstant +3) * sgg%dt !ORIGINAL sync
       
       G2_1 = G2(1)
@@ -1128,7 +1128,7 @@ contains
 #endif
           end if
       end do
-      !---------------------------> acaba AdvancePlaneWaveE <-----------------------------------------
+      !---------------------------> ends AdvancePlaneWaveE <-----------------------------------------
       return
    end subroutine AdvancePlaneWaveE
    !**************************************************************************************************
@@ -1155,18 +1155,18 @@ contains
       real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hx
       real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       real(kind = RKIND) :: timei, Gm2_1, Id,incidente
       integer(kind=4) :: i, j, k, i_m, j_m, k_m,jjj
       character(len=BUFSIZE) :: dubuf
-      !---------------------------> empieza AdvancePlaneWaveH <---------------------------------------
-      still_planewave_time=.false. !por defecto no va a haber mas actividad de onda plana, a menos que pase por algun incid no trivial
+      !---------------------------> begins AdvancePlaneWaveH <---------------------------------------
+      still_planewave_time=.false. !by default there will be no more plane wave activity, unless it goes through some non-trivial incid
       called_fromobservation=.false. !210419 
       !!!
       !!!
       
       timei = sgg%time(timeinstant) + 0.5_RKIND  * sgg%dt
-      !!!! deprecado en pscale y el+3 de la sincronia con ORIGINAL se jode para siempre 110219 
+      !!!! deprecated in pscale and the +3 of the sync with ORIGINAL is broken forever 110219 
       !!! timei = ( timeinstant + 0.5_RKIND  +3.0_RKIND) * sgg%dt  !ORIGINAL sync
       Gm2_1 = Gm2(1)
       !--->
@@ -1429,7 +1429,7 @@ contains
 #endif
               end if
       end do 
-      !---------------------------> acaba AdvancePlaneWaveH <-----------------------------------------
+      !---------------------------> ends AdvancePlaneWaveH <-----------------------------------------
       return
    end subroutine AdvancePlaneWaveH
 
@@ -1454,9 +1454,9 @@ contains
       type(SGGFDTDINFO_t), intent(in) :: sgg
       real(kind = RKIND), intent(in) :: eps00,mu00
       integer :: jjj,kkk
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
-      cluz=1.0_RKIND/sqrt(eps0*mu0) !lo necesitara incid
-      zvac=sqrt(mu0/eps0) !lo necesitan las variables de mas abajo
+      eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
+      cluz=1.0_RKIND/sqrt(eps0*mu0) !incid will need it
+      zvac=sqrt(mu0/eps0) !the variables below need it
 !!!!
 
       do jjj=1, sgg%numplanewaves
@@ -1477,12 +1477,12 @@ contains
       real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hx
       real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       !---------------------------> inputs/outputs <--------------------------------------------------
       real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hxvac
       real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hyvac
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hzvac
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       integer(kind=4) :: i, j, k, i_m, j_m, k_m,jjj
 
       do jjj=1, sgg%numplanewaves

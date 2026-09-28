@@ -4,13 +4,13 @@
 ! Module SGBCs
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!17/08/15 update!!!!!!!!!!!
-!!!Elimino el tratamiento de los campos magneticos de SGBC para programar un multiSGBC 
-!!!solo teniendo en cuenta los parametros efectivos y sin actualizar los magneticos.
-!!!Mantengo en el fichero SGBC_pre170815_noupdateababienH.F90 la version antigua
+!!!Removed the treatment of the SGBC magnetic fields to program a multiSGBC 
+!!!only taking into account the effective parameters and without updating the magnetics.
+!!!I keep the old version in the file SGBC_pre170815_noupdateababienH.F90
 !!!
-!!! 211115 NO ESTA HECHO EL PROMEDIADO DE filo_placaS QUE SE HACE EN COMPOSITES. 
-!!!!       LOS SGBCS SE ASIGNAN EN UN FIRST-COME-FIRST-SERVE BASIS. 
-!!!!       EL TRATAMIENTO DE filo_placaS DETECTA ARISTAS Y HACE ALGO SIMILAR A LO DEL SHARED
+!!! 211115 THE AVERAGING OF filo_placaS THAT IS DONE IN COMPOSITES IS NOT DONE. 
+!!!!       SGBCS ARE ASSIGNED ON A FIRST-COME-FIRST-SERVE BASIS. 
+!!!!       THE filo_placaS TREATMENT DETECTS EDGES AND DOES SOMETHING SIMILAR TO THE SHARED ONE
 !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -28,7 +28,7 @@ end type
 
 
 type :: MDfield_t
-   real(kind=RKIND), pointer                 :: FieldPresent !apunta al campo del background
+   real(kind=RKIND), pointer                 :: FieldPresent !points to the background field
    real(kind=RKIND)                          :: FieldPrevious
    complex(kind=CKIND), pointer, dimension(:) :: Current
 end type
@@ -39,7 +39,7 @@ type  :: SGBCSurface_t
    real(kind=RKIND), pointer :: Efield,Ha_Plus,Ha_Minu,Hb_Plus,Hb_Minu
    real(kind=RKIND), allocatable, dimension(:) :: delta_entreEinterno
    real(kind=RKIND), dimension(0:1) :: g1,g2a,g2b
-!!!SGBC dispersivos 12/05/16
+!!!SGBC dispersive 12/05/16
    type(MDfield_t), allocatable, dimension(:) :: EDis
    integer(kind=4) :: numpolres
    type(val_t) :: Beta,Kappa,G3
@@ -49,12 +49,12 @@ type  :: SGBCSurface_t
    integer(kind=4) :: depth,jmed
    integer(kind=4), allocatable, dimension(:) ::layerIndex !!!0121
    real(kind=RKIND) , allocatable, dimension(:) :: G2_interno,GM2_interno,G1_interno,GM1_interno   
-   real(kind=RKIND) :: GM2_externo   !no se precisa gm1_externo porque fuera no hay conductividad magnetica y es trivialmente 1. El gm2_externo tiene sentido almecnarlo porque aun no habiendo conductividad, no es la unidad
+   real(kind=RKIND) :: GM2_externo   !gm1_externo is not needed because outside there is no magnetic conductivity and it is trivially 1. Storing gm2_externo makes sense because, even without conductivity, it is not unity
    real(kind=RKIND) :: Hyee__left, Hyee_right      
 !!!!! Crank-Nicolson 311015
    real(kind=RKIND) , allocatable, dimension(:) :: a,b,c,rb,rh,rhm1
    real(kind=RKIND)                                :: a1,b1,c1,rb1,rh1,an,bn,cn,rbn,rhn 
-   real(kind=RKIND) , allocatable, dimension(:) :: D !termino independiente CRANK-NICOLSON
+   real(kind=RKIND) , allocatable, dimension(:) :: D !independent term CRANK-NICOLSON
    logical :: SGBCCrank
 
    real(kind=RKIND) :: transversalDeltaE,transversalDeltaH,alignedlDeltaH
@@ -77,7 +77,7 @@ end type Malon_t
 
 
 
-!!!variables globales del modulo  
+!!!module global variables  
 type(Malon_t), save, target   :: malon
 !
 real(kind=RKIND), save           :: eps0,mu0,zvac,cluz
@@ -85,7 +85,7 @@ logical, save  :: SGBCcrank,SGBCDispersive
 real(kind=RKIND), save  :: SGBCFreq,SGBCresol
 integer(kind=4), save:: SGBCdepth
 !!!
-public Malon_t,SGBCSurface_t !el tipo es publico
+public Malon_t,SGBCSurface_t !the type is public
 public AdvanceSGBCE,AdvanceSGBCH,InitSGBCs,DestroySGBCs,StoreFieldsSGBCs,calc_SGBCconstants,GetSGBCs
 public solve_tridiag_iguales
 
@@ -103,7 +103,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    real(kind=RKIND) :: eps00,mu00
    logical :: temp_SGBCcrank,temp_SGBCDispersive
    type(constants_t), intent(inout) :: g
-   type(SGGFDTDINFO_t), intent(inout) :: sgg !ojo pq se machacan los epr, mur, sigma, sigmam en caso de materiales dispersivos
+   type(SGGFDTDINFO_t), intent(inout) :: sgg !careful because epr, mur, sigma, sigmam are overwritten for dispersive materials
    real(kind=RKIND)   , intent(in) , target     :: &
    Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
    Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
@@ -134,7 +134,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    complex(kind=ckind) :: value1, value2
    character(len=BUFSIZE)                            :: filePoles
 
-   eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+   eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
    SGBCcrank        = temp_SGBCcrank     
    SGBCDispersive   = temp_SGBCDispersive
    SGBCFreq         = temp_SGBCFreq      
@@ -156,7 +156,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
       end if
    end do
 
-!pre-cuenta los medios
+!pre-count the media
    conta=0
    do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
       do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
@@ -190,20 +190,20 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    end if
    malon%NumNodes=conta
    allocate (malon%Nodes(1 : malon%NumNodes))
-   !!!!DISPERSIVOS
+   !!!!DISPERSIVE
    allocate (malon%dispersiveMedia(1:sgg%NumMedia))
    malon%dispersiveMedia(:)%numpolres=0
    !
-   !!!!!!!! dispersivos SGBC sgg 12/05/15   
+   !!!!!!!! dispersive SGBC sgg 12/05/15   
 !070717
-!!!primero chequeo si existe el fichero de polos. si existe es que SGBCDispersive paro e informo
-!!!!ojo lo del sgbc de momento es global (070717). Si el switch esta todos son sgbc dispersive. pero esta semipreparado para que sea medio a medio. cambiar algun dia....
-!!!!0121 quito esto porque mira el fichero polos que genera ugrmat_multilayer y activaba dispersive por defecto sin mas
+!!!first I check whether the poles file exists. If it exists, it means SGBCDispersive stopped and reported
+!!!!note that for now the sgbc thing is global (070717). If the switch is on all are dispersive sgbc. but it is half-prepared to be medium by medium. change someday....
+!!!!0121 I remove this because it looks at the poles file generated by ugrmat_multilayer and enabled dispersive by default just like that
    !! do jmed=1,sgg%NumMedia
    !!      if ((.not.SGG%Med(jmed)%Is%SGBCDispersive).and.(SGG%Med(jmed)%Is%SGBC).and.(.not.(SGG%Med(jmed)%Is%PML))) then    
-   !!          ficheropolos=SGG%Med(jmed)%multiport(1)%multiportFileZ11 !aunque le llamo Z tiene la sintaxis de un Edispersive ISOTROPO CON EL NUEVO STANDARD (VER LINEAS 6749 DE NFDEPARSER). 
-   !!          ! SOLO LEO LOS PRIMEROS POLOS. eL RESTO DE DATOS LOS TIRO (INFORMACION DE POLOS DE SEGUNDO ORDEN, POLOS MAGNETICOS, ANISOTROPIAS...)
-   !!          !nuevo estio del ficheros sin el _z11
+   !!          ficheropolos=SGG%Med(jmed)%multiport(1)%multiportFileZ11 !although I call it Z it has the syntax of an Edispersive ISOTROPIC WITH THE NEW STANDARD (SEE LINES 6749 OF NFDEPARSER). 
+   !!          ! I ONLY READ THE FIRST POLES. THE REST OF THE DATA I DISCARD (SECOND-ORDER POLE INFORMATION, MAGNETIC POLES, ANISOTROPIES...)
+   !!          !new file style without the _z11
    !!          i1=index(ficheropolos,'_z11.txt')
    !!          ficheropolos=trim(adjustl(ficheropolos(1:i1-1)))
    !!  !
@@ -214,22 +214,22 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    !!               call WarnErrReport (buff,.false.)
    !!               stop
    !!               SGG%Med(jmed)%Is%SGBCDispersive=.true.
-   !!               SGBCdispersive=.true. !en caso de ignoreerrors puede seguir simplemente con sgbcdispersive a true
+   !!               SGBCdispersive=.true. !in case of ignoreerrors it can just continue with sgbcdispersive set to true
    !!          end if
    !!      end if
    !!end do 
    if (SGBCDispersive) then
        do jmed=1,sgg%NumMedia
           if ((SGG%Med(jmed)%Is%SGBCDispersive).and.(.not.(SGG%Med(jmed)%Is%PML))) then    
-!!!solo una capa de dispersivo
+!!!only one dispersive layer
               if (sgg%Med(jmed)%multiport(1)%numLayers>1) then
                  buff='No more than 1 layer of dispersive SGBC currently supported'
                  call StopOnError(layoutnumber,num_procs,buff)
               end if
 !!!!!!!!
-              filePoles=SGG%Med(jmed)%multiport(1)%multiportFileZ11 !aunque le llamo Z tiene la sintaxis de un Edispersive ISOTROPO CON EL NUEVO STANDARD (VER LINEAS 6749 DE NFDEPARSER). 
-              ! SOLO LEO LOS PRIMEROS POLOS. eL RESTO DE DATOS LOS TIRO (INFORMACION DE POLOS DE SEGUNDO ORDEN, POLOS MAGNETICOS, ANISOTROPIAS...)
-              !nuevo estio del ficheros sin el _z11
+              filePoles=SGG%Med(jmed)%multiport(1)%multiportFileZ11 !although I call it Z it has the syntax of an Edispersive ISOTROPIC WITH THE NEW STANDARD (SEE LINES 6749 OF NFDEPARSER). 
+              ! I ONLY READ THE FIRST POLES. THE REST OF THE DATA I DISCARD (SECOND-ORDER POLE INFORMATION, MAGNETIC POLES, ANISOTROPIES...)
+              !new file style without the _z11
               i1=index(filePoles,'_z11.txt')
               filePoles=trim(adjustl(filePoles(1:i1-1)))
       !
@@ -241,7 +241,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
               end if
               open (7345,file=trim(adjustl(filePoles)),form='formatted')
               read (7345,*) rra,rrb,rrc,rrd 
-              rrb= rrb/eps0 ;  rrc = rrc/mu0 !no les afecta el permit scaling creo 071118 pq son relativos a la entrada del programa que DEBE ENTRAR CON los eps0 y mu0 autenticos
+              rrb= rrb/eps0 ;  rrc = rrc/mu0 !permit scaling does not affect them I think 071118 because they are relative to the program input which MUST COME WITH the genuine eps0 and mu0
               SGG%Med(jmed)%multiport(1)%sigma(1)=rra; 
               SGG%Med(jmed)%multiport(1)%epr(1)=rrb; 
               SGG%Med(jmed)%multiport(1)%mur(1)=rrc; 
@@ -258,11 +258,11 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
               do i = 1, numpolres
                 read(7345,*) value1, value2
                 malon%dispersiveMedia(jmed)%c11 (i) = (value1) 
-                malon%dispersiveMedia(jmed)%a11 (i) = - (value2) !el polo de EM esta cambiado de signo !ver tambien preprocess
+                malon%dispersiveMedia(jmed)%a11 (i) = - (value2) !the EM pole has its sign flipped !see also preprocess
               end do          
               close (7345)
-!!!movido 071118 al calculo de constantes para permit scaling
-!!!!!!!!070717  recalculo y machaco los G1,G2,GM1, y GM2 con los que aparecen en el fichero de dispersivos aunque creo que no se usa para nada
+!!!moved 071118 to the calculation of constants for permit scaling
+!!!!!!!!070717  I recalculate and overwrite G1,G2,GM1, and GM2 with those appearing in the dispersive file although I think it is not used at all
 !!!!!                  Sigmam  =      SGG%Med(jmed)%multiport(1)%sigmam(1)
 !!!!!                  Epsilon = Eps0*SGG%Med(jmed)%multiport(1)%epr(1)
 !!!!!                  Mu      = Mu0* SGG%Med(jmed)%multiport(1)%mur(1)
@@ -279,13 +279,13 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
 !!!!!                     gm1(jmed)=exp(- Sigmam * sgg%dt / (Mu ))
 !!!!!                     gm2(jmed)=(1.0_RKIND-gm1(jmed))/ Sigmam
 !!!!!                  end if
-!!!!!!!!!fin 070717
+!!!!!!!!!end 070717
          end if
       end do
    end if
-   !!!!!!!! del SGBCdispersive
+   !!!!!!!! end of SGBCdispersive
    conta=0
-!asigna los signos del rotacional de H y los transversaldelta.0->filo_placaizquierdo, 1->filo_placaderecho y las variable es_unfilo_placa para los filos de la lamina SGBC      
+!assigns the H curl signs and the transversal deltas. 0->left plate edge, 1->right plate edge and the variable es_unfilo_placa for the edges of the SGBC sheet      
 do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
     do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
          do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
@@ -313,7 +313,7 @@ do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                   compo%alignedlDeltaH     =    1.0_RKIND/Idzh(k1)
                   compo%med(1) =                     media%sggMiHz(i1,j1  ,k1)
                   compo%med(0) =                     media%sggMiHz(i1,j1-1,k1)
-                  compo%Correct_Ha=.true. !son ciclicos a,b -> x,y,z
+                  compo%Correct_Ha=.true. !they are cyclic a,b -> x,y,z
                   compo%Correct_Hb=.false.
                 case (IEZ)
                   compo%transversalDeltaE    = 1.0_RKIND/IDze(k1)
@@ -349,12 +349,12 @@ do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                end if
                allocate (compo%E         (-compo%depth:compo%depth))
                if (compo%depth>0) allocate (compo%H         (-compo%depth:compo%depth-1)) 
-               allocate(compo%E_past(-compo%depth:compo%depth)) !no se precisa en yee pero se comunica en mpi_stochastic. movido fuera del if sigugiente 170519
+               allocate(compo%E_past(-compo%depth:compo%depth)) !not needed in yee but communicated in mpi_stochastic. moved outside the following if 170519
                if (compo%SGBCCrank)  then
                     allocate(compo%d     (-compo%depth:compo%depth)) 
                end if
 
-               compo%numpolres=malon%dispersiveMedia(compo%jmed)%numpolres !duplico esta info
+               compo%numpolres=malon%dispersiveMedia(compo%jmed)%numpolres !I duplicate this info
                if (SGBCDispersive) then 
                  allocate (compo%a11(1:compo%numpolres)) 
                  allocate (compo%c11(1:compo%numpolres)) 
@@ -443,7 +443,7 @@ do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                     allocate(compo%d     (-compo%depth:compo%depth)) 
                end if
 
-               compo%numpolres=malon%dispersiveMedia(compo%jmed)%numpolres !duplico esta info
+               compo%numpolres=malon%dispersiveMedia(compo%jmed)%numpolres !I duplicate this info
                if (SGBCDispersive) then 
                  allocate (compo%a11(1:compo%numpolres)) 
                  allocate (compo%c11(1:compo%numpolres)) 
@@ -533,7 +533,7 @@ do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                end if
 
                compo%numpolres=malon%dispersiveMedia(compo%jmed)%numpolres
-               if (SGBCDispersive) then  !duplico esta info
+               if (SGBCDispersive) then  !I duplicate this info
                  allocate (compo%a11(1:compo%numpolres)) 
                  allocate (compo%c11(1:compo%numpolres)) 
                  compo%a11 = malon%dispersiveMedia(compo%jmed)%a11
@@ -555,7 +555,7 @@ do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
 
    call calc_SGBCconstants(sgg,g,eps0,mu0,stochastic)
 
-!!!reporting de depth
+!!!depth reporting
     i=-100
     do conta=1,malon%numnodes
       compo => malon%Nodes(conta)
@@ -570,7 +570,7 @@ do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
 
 
 
-!!! no lo uso. no es un criterio riguroso de estabilidad 311015
+!!! I don't use it. it is not a rigorous stability criterion 311015
 !!!      call test_stab(G2,GM2)
 
    !!!!!!!!!resuming
@@ -626,22 +626,22 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
    logical :: stochastic
 !
    g1 => g%g1; g2 => g%g2; gm1 => g%gm1; gm2 => g%gm2; 
-   eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+   eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
    zvac=sqrt(mu0/eps0)
    cluz=1.0_RKIND/sqrt(mu0*eps0)
-!!!allocateo todas las matrices de constantes
+!!!I allocate all the constant matrices
  do conta=1,malon%numnodes
      compo => malon%Nodes(conta)  
-     !!!rellamo a depth para que recalcule bien el deltaentreEinterno !110523 necesario para stochastic
+     !!!I call depth again so it recalculates deltaentreEinterno correctly !110523 needed for stochastic
      jmed=compo%jmed
      call depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
                
-     if (.not.allocated(compo%GM1_interno)) then !!!sobran extremos de g y gm pero lo dejo asi para no toquetear mas 0121
-         allocate(compo%GM1_interno (-compo%depth  :compo%depth-1) ,&   !se ajustan bien los extremos        
+     if (.not.allocated(compo%GM1_interno)) then !!!there are spare extremes of g and gm but I leave it like this to avoid tinkering more 0121
+         allocate(compo%GM1_interno (-compo%depth  :compo%depth-1) ,&   !the extremes are adjusted correctly        
                   compo%GM2_interno (-compo%depth  :compo%depth-1) ,&
                   compo%G1_interno  (-compo%depth+1:compo%depth-1) ,&
                   compo%G2_interno  (-compo%depth+1:compo%depth-1) ,&            
-                  compo%a           (-compo%depth  :compo%depth) ,& !se echan 1 mas al ppio y al final pero no lo toco 0121
+                  compo%a           (-compo%depth  :compo%depth) ,& !one more is added at the beginning and end but I don't touch it 0121
                   compo%b           (-compo%depth  :compo%depth) ,&
                   compo%c           (-compo%depth  :compo%depth) ,&
                   compo%rb          (-compo%depth  :compo%depth) ,&
@@ -651,7 +651,7 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
 
  end do
  
- !default absurdos
+ !absurd defaults
  compo%GM1_interno = -1e23 
  compo%G1_interno  = +2e24
  compo%GM2_interno = -1e26 
@@ -663,13 +663,13 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
  compo%rh =+4.3e24     
  compo%rhm1 =+2.7e25 
  
-!!!!CALCULO DE LOS COEFICIENTES YEE-FDTD (y semilla de los CN-FDTD)
+!!!!CALCULATION OF THE YEE-FDTD COEFFICIENTS (and seed of the CN-FDTD)
 
    if (SGBCDispersive) then
        do jmed=1,sgg%NumMedia
           if ((SGG%Med(jmed)%Is%SGBCDispersive).and.(.not.(SGG%Med(jmed)%Is%PML))) then   
-!!!071118 para permit scaling
-!!!070717  recalculo y machaco los G1,G2,GM1, y GM2 con los que aparecen en el fichero de dispersivos aunque creo que no se usa para nada
+!!!071118 for permit scaling
+!!!070717  I recalculate and overwrite G1,G2,GM1, and GM2 with those appearing in the dispersive file although I think it is not used at all
                Sigmam  =      SGG%Med(jmed)%multiport(1)%sigmam(1)
                epsilonValue = Eps0*SGG%Med(jmed)%multiport(1)%epr(1)
                Mu      = Mu0* SGG%Med(jmed)%multiport(1)%mur(1)
@@ -686,7 +686,7 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
                   gm1(jmed)=exp(- Sigmam * sgg%dt / (Mu ))
                   gm2(jmed)=(1.0_RKIND-gm1(jmed))/ Sigmam
                end if
-!!!!fin 070717
+!!!!end 070717
           end if
       end do
    end if    
@@ -697,8 +697,8 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
  do conta=1,malon%numnodes
      compo => malon%Nodes(conta)
      call calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
-!cte de actualizacion de los H externos a la multicapa!!! 0121
-     compo%Gm2_externo=Gm2(compo%jmed) / compo%transversalDeltaE !ojo habia compo%transversalDeltaE antes sgg 130516 ! pero yo creo que es  compo%transversalDeltaH! 0121 No. es deltaE pq se usa para actualizar H externo
+!update constant for the H external to the multilayer!!! 0121
+     compo%Gm2_externo=Gm2(compo%jmed) / compo%transversalDeltaE !note there was compo%transversalDeltaE before sgg 130516 ! but I think it is  compo%transversalDeltaH! 0121 No. it is deltaE because it is used to update the external H
  end do
 
 #ifdef CompileWithOpenMP
@@ -712,7 +712,7 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
 #endif
     do conta=1,malon%numnodes
       compo => malon%Nodes(conta) 
-      if (compo%depth>0) then !uno de los del rotacional
+      if (compo%depth>0) then !one of those in the curl
           if (compo%Correct_Ha) then
              signo=+1.0_RKIND
              g1eff_0=   compo%G1(0)  
@@ -736,40 +736,40 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
               compo%G2_interno  (i) = signo * compo%G2_interno (i) 
           end do
 !!!Crank               
-          do i=-compo%depth+1 , compo%depth-1 !los primeros y ultimos no se usan, pero los dejo para no alterar el algoritmo pre 0121
+          do i=-compo%depth+1 , compo%depth-1 !the first and last are not used, but I leave them to not alter the algorithm pre 0121
 !                 compo%a  (i)        =                      - compo%G2_interno (i  ) * compo%GM2_interno (i  ) /4.0_RKIND
-               compo%a  (i)        =                      - compo%G2_interno (i) * compo%GM2_interno (i-1) /4.0_RKIND   !!!!el menos 1
+               compo%a  (i)        =                      - compo%G2_interno (i) * compo%GM2_interno (i-1) /4.0_RKIND   !!!!the minus 1
                
 !                 compo%b  (i)        = 1.0_RKIND            + compo%G2_interno (i  ) * compo%GM2_interno (i  ) /2.0_RKIND   
                compo%b  (i)        = 1.0_RKIND            + compo%G2_interno (i) * compo%GM2_interno (i-1) /4.0_RKIND  + compo%G2_interno (i) * compo%GM2_interno (i) /4.0_RKIND   
                
 !                 compo%c  (i)        =                      - compo%G2_interno (i  ) * compo%GM2_interno (i  ) /4.0_RKIND     
-               compo%c  (i)        =                      - compo%G2_interno (i) * compo%GM2_interno (i) /4.0_RKIND   !igual porque el +1 esta indexado en i
+               compo%c  (i)        =                      - compo%G2_interno (i) * compo%GM2_interno (i) /4.0_RKIND   !same because the +1 is indexed in i
                
 !                 compo%rb (i)        = compo%G1_interno (i) - compo%G2_interno (i  ) * compo%GM2_interno (i  ) /2.0_RKIND
-               compo%rb (i)        = compo%G1_interno (i) - compo%G2_interno (i) * compo%GM2_interno (i-1) /4.0_RKIND  - compo%G2_interno (i) * compo%GM2_interno (i) /4.0_RKIND   !!el menos 1
+               compo%rb (i)        = compo%G1_interno (i) - compo%G2_interno (i) * compo%GM2_interno (i-1) /4.0_RKIND  - compo%G2_interno (i) * compo%GM2_interno (i) /4.0_RKIND   !!the minus 1
                
 !                 compo%rh  (i)        =(compo%G2_interno (i  ) * compo%GM1_interno(i  ) + compo%G2_interno  (i  ))/2.0_RKIND
-               compo%rh  (i)        =(compo%G2_interno (i) * compo%GM1_interno(i) + compo%G2_interno  (i))/2.0_RKIND  !hay que desglosarlo
+               compo%rh  (i)        =(compo%G2_interno (i) * compo%GM1_interno(i) + compo%G2_interno  (i))/2.0_RKIND  !it must be broken down
                compo%rhm1(i)        =(compo%G2_interno (i) * compo%GM1_interno(i-1) + compo%G2_interno  (i))/2.0_RKIND
 !!!        
           end do
           i=-compo%depth
           compo%a1          =  0.0
-          compo%c1          =                 - g2eff_0 * compo%GM2_interno (i) /4.0_RKIND !el que esta a su derecha interno junto con el yee
+          compo%c1          =                 - g2eff_0 * compo%GM2_interno (i) /4.0_RKIND !the one to its right, internal, together with the yee
           compo%b1           = 1.0_RKIND      + g2eff_0 * compo%GM2_interno (i) /4.0_RKIND
           compo%rb1          = g1eff_0 - g2eff_0        * compo%GM2_interno (i) /4.0_RKIND
           compo%rh1          =  (g2eff_0                * compo%GM1_interno (i)+ g2eff_0)/2.0_RKIND
           i=compo%depth
           compo%cn          =  0.0
-          compo%an          =                 - g2eff_1 * compo%GM2_interno (i-1) /4.0_RKIND !el que esta a su izquierda interno junto con el yee
+          compo%an          =                 - g2eff_1 * compo%GM2_interno (i-1) /4.0_RKIND !the one to its left, internal, together with the yee
           compo%bn           = 1.0_RKIND      + g2eff_1 * compo%GM2_interno (i-1) /4.0_RKIND
           compo%rbn          = g1eff_1 - g2eff_1        * compo%GM2_interno (i-1) /4.0_RKIND
           compo%rhn          =  (g2eff_1                * compo%GM1_interno (i-1) + g2eff_1)/2.0_RKIND
-!!!!fin nueva formulacion
+!!!!end of new formulation
 !!pre-jav 310116
 !!!                 compo%a1=0.0; compo%c1=0.0; compo%b1=1.0; compo%an=0.0; compo%cn=0.0; compo%bn=1.0; compo%rb1=0.0; compo%rbn=0.0; compo%rh1=0.0; compo%rhn=0.0    
-!!!!post-jav nueva formulacion jav 310116       
+!!!!post-jav new formulation jav 310116       
       end if
     end do 
 #ifdef CompileWithOpenMP
@@ -795,8 +795,8 @@ end subroutine calc_SGBCconstants
                                   Beta%val(k1)*(tempnode%fieldPresent-tempnode%fieldPrevious) /dt
          end do
          tempnode%fieldPrevious=tempnode%fieldPresent
-         !stores previous field (cuidado no es un apuntamiento sino una igualdad de valores)
-         !antes de que re-empieze a calcularlo el algoritmo del background
+         !stores previous field (careful, it is not a pointer but a value assignment)
+         !before the background algorithm starts calculating it again
 
  end subroutine YeeAdvanceSGBCDispersive
  
@@ -827,8 +827,8 @@ end subroutine calc_SGBCconstants
                                   Beta%val(k1)*(tempnode%fieldPresent-tempnode%fieldPrevious) /dt
          end do
          tempnode%fieldPrevious=tempnode%fieldPresent
-         !stores previous field (cuidado no es un apuntamiento sino una igualdad de valores)
-         !antes de que re-empieze a calcularlo el algoritmo del background
+         !stores previous field (careful, it is not a pointer but a value assignment)
+         !before the background algorithm starts calculating it again
 
  end subroutine segundo_CNAdvanceSGBCDispersive
                         
@@ -854,7 +854,7 @@ end do
 #endif
 
 contains
-   !subroutine AdvanceSGBCE_single_node(compo,dt,SGBCDispersive) !esta tb seria valida
+   !subroutine AdvanceSGBCE_single_node(compo,dt,SGBCDispersive) !this one would also be valid
       !type(SGBCSurface_t),target   :: compo
    subroutine AdvanceSGBCE_single_node(conta,dt,SGBCDispersive)
       !non argument arguments
@@ -872,13 +872,13 @@ contains
       !do conta=1,malon%numnodes
       compo => malon%Nodes(conta)
 
-!!!los extremos de los E internos
+!!!the extremes of the internal E fields
          if (compo%depth>0) then
-!esto solo hace algo en el caso de yee.
+!this only does something in the yee case.
             if (.not.compo%SGBCcrank)  then !yee
                if (compo%Correct_Ha) then
-!!!!lOS EXTREMOS
-!!!!ojo NO SE CORRIGEN LOS filo_placaS CON FDTD EN DISPERSIVOS. ASI QUE CABE ESPERAR QUE SEA INESTABLE CON DISPERSIVOS SGBCYEEE
+!!!!THE EXTREMES
+!!!!note THE filo_placaS ARE NOT CORRECTED WITH FDTD IN DISPERSIVE CASES. SO IT IS TO BE EXPECTED THAT IT IS UNSTABLE WITH DISPERSIVE SGBCYEEE
                   compo%E(compo%depth) = compo%G1(1) *compo%E(compo%depth) +  &
                                        (compo%G2a(1) *(compo%Ha_Plus   - compo%Hyee_Right) - compo%G2b(1) *(compo%Hb_Plus   - compo%Hb_Minu  ) )
                   !
@@ -892,22 +892,22 @@ contains
                                           (compo%G2a(0) *(compo%Ha_Plus   - compo%Ha_Minu  ) - compo%G2b(0) *(compo%Hyee__Left - compo%Hb_Minu ) )
                      
                end if
-            end if !DEL MALONECRANK
-         else !si tiene depth=0
+            end if !OF MALONECRANK
+         else !if it has depth=0
             compo%E(compo%depth) = compo%G1(0) *compo%E(compo%depth) +  (compo%G2a(0) *(compo%Ha_Plus   - compo%Ha_Minu    ) - compo%G2b(0) *(compo%Hb_Plus     - compo%Hb_Minu  ) )
-         end if !DEL COMODEPTH
-!!!los E internos FDTD1D
-         if (compo%SGBCcrank)  then !por debajo de 2 no tiene ningun sentido
+         end if !OF COMODEPTH
+!!!the FDTD1D internal E fields
+         if (compo%SGBCcrank)  then !below 2 it makes no sense
             do i=-compo%depth , compo%depth
                compo%E_past (i) = compo%E(i)
             end do
-!esto no es necesario. ya se pasa por MPI
-!!!pre-jav 310116 (solo estas lineas
+!this is not necessary. it is already passed via MPI
+!!!pre-jav 310116 (only these lines
             !compo%d( compo%depth  )      = compo%E( compo%depth  )
             !compo%d(-compo%depth  )      = compo%E(-compo%depth  )
 !!post-jav 310116 boundaries 
-!!!!ojo estos coeficientes no irian bien con materiales magneticos porque no tengo en cuenta los gm1 (en crank-nicolson de jav) 
-            if (compo%Correct_Ha) then !!!compo%G2a(0) es igual a compo%rh1 !!!compo%G2a(1) es igual a compo%rhn
+!!!!note these coefficients would not work well with magnetic materials because I do not take into account the gm1 (in jav's crank-nicolson) 
+            if (compo%Correct_Ha) then !!!compo%G2a(0) is equal to compo%rh1 !!!compo%G2a(1) is equal to compo%rhn
                i=compo%depth
                compo%d(i) =    - compo%an * (compo%E_past(i-1)) + compo%rbn * compo%E_past(i) + &
                                           (compo%G2a(1) *(compo%Ha_Plus   - compo%Hyee_Right) - compo%G2b(1) *(compo%Hb_Plus   - compo%Hb_Minu  ) )
@@ -918,7 +918,7 @@ contains
                                           (compo%G2a(0) *(compo%Hyee__Left - compo%Ha_Minu  ) - compo%G2b(0) *(compo%Hb_Plus   - compo%Hb_Minu  ) )
                !
                !
-            else if (compo%Correct_Hb) then !!!-compo%G2b(0) es igual a compo%rh1 !!!-compo%G2b(1) es igual a compo%rhn
+            else if (compo%Correct_Hb) then !!!-compo%G2b(0) is equal to compo%rh1 !!!-compo%G2b(1) is equal to compo%rhn
                i=compo%depth
                compo%d(i) =   - compo%an * (compo%E_past(i-1)) + compo%rbn * compo%E_past(i) + &
                                           (compo%G2a(1) *(compo%Ha_Plus   - compo%Ha_Minu  ) - compo%G2b(1) *(compo%Hb_Plus   - compo%Hyee_Right ) )
@@ -926,20 +926,20 @@ contains
                compo%d(i) =    - compo%c1 * (compo%E_past(i+1)) + compo%rb1 * compo%E_past(i) + &
                     (compo%G2a(0) *(compo%Ha_Plus   - compo%Ha_Minu  ) - compo%G2b(0) *(compo%Hyee__Left - compo%Hb_Minu ) )
             end if
-!fin nuevas boundaries jav 310116 (debe coincidir comentando lo anterior y dejando el pre-jav
+!end of new boundaries jav 310116 (must match by commenting the previous and leaving the pre-jav
             do i=-compo%depth+1 , compo%depth-1
-!!!                  compo%d(i) = - compo%a(i) * (compo%E_past(i-1)+compo%E_past(i+1)) &!!!+ compo%rb(i) * compo%E_past(i ) + compo%rh(i) * (compo%H(i)-compo%H(i-1)) !! compo%a es igual a compo%c
-!!!!   mmmmmmm esto no es cierto que a = c para multicapa porque es asimetrico 0121: corrijo lo anteiror a lo bruto
+!!!                  compo%d(i) = - compo%a(i) * (compo%E_past(i-1)+compo%E_past(i+1)) &!!!+ compo%rb(i) * compo%E_past(i ) + compo%rh(i) * (compo%H(i)-compo%H(i-1)) !! compo%a is equal to compo%c
+!!!!   mmmmmmm it is not true that a = c for multilayer because it is asymmetric 0121: I fix the above roughly
                 compo%d(i)=-compo%a(i)*compo%E_past(i-1) &
                            -compo%c(i)*compo%E_past(i+1) &
                            +compo%rb(i)*compo%E_past(i)  &
-                           +compo%rh  (i)*compo%H(i)   & !!alobruto!!!0121
-                           -compo%rhm1(i)*compo%H(i-1)    !!alobruto!!!0121
+                           +compo%rh  (i)*compo%H(i)   & !!roughly!!!0121
+                           -compo%rhm1(i)*compo%H(i-1)    !!roughly!!!0121
             end do
             
             !
             if (SGBCDispersive) then 
-               do i=-compo%depth + 1 , compo%depth -1 !sin los putos filo_placas
+               do i=-compo%depth + 1 , compo%depth -1 !without the damn filo_placas
                EDIS=>compo%EDis(i)
                dDIS=>compo%d(i)
                call primero_CNAdvanceSGBCDispersive (EDIS,dDIS,compo%numpolres,compo%G3,Compo%kappa,compo%beta,dt)
@@ -950,7 +950,7 @@ contains
                                        compo%an,compo%bn,compo%cn, &
                                        compo%d,compo%E,2*compo%depth+1)
             if (SGBCDispersive) then 
-               do i=-compo%depth + 1 , compo%depth -1 !sin los putos filo_placas
+               do i=-compo%depth + 1 , compo%depth -1 !without the damn filo_placas
                EDIS=>compo%EDis(i)
                call segundo_CNAdvanceSGBCDispersive (compo%E(i),EDIS,compo%numpolres,compo%G3,Compo%kappa,compo%beta,dt)
                end do
@@ -958,7 +958,7 @@ contains
          else !YEE
             do i=-compo%depth+1 , compo%depth-1
                compo%E(i) = compo%G1_interno (i)  *compo%E(i) + compo%G2_interno (i)  *( compo%H(i) - compo%H(i-1) )               
-               ! NO SE CORRIGIERON LOS PUTOS filo_placaS ANTES. AQUI SOLO SE CORRIGE EL INTERIOR
+               ! THE DAMN filo_placaS WERE NOT CORRECTED BEFORE. HERE ONLY THE INTERIOR IS CORRECTED
                if (SGBCDispersive) then 
                   EDIS=>compo%EDis(i)
                   call YeeAdvanceSGBCDispersive (EDIS,compo%numpolres,compo%G3,Compo%kappa,compo%beta,dt)
@@ -966,31 +966,31 @@ contains
             end do
                                     
          end if
-!!!los H internos 1D 
+!!!the 1D internal H fields 
          if (compo%SGBCcrank)  then
             do i=-compo%depth , compo%depth-1
                compo%H(i) = compo%GM1_interno(i) *compo%H(i) + compo%GM2_interno(i)   /2.0_RKIND *( compo%E(i+1)      - compo%E(i)      + &
                                                                                                compo%E_past(i+1) - compo%E_past(i) )
             end do                 
-!for crank-nicolson a half-step advance is necessary for the H field since E and H are synchronous. Coexisten por tanto dos campos H en (-compo%depth) y (compo%depth-1): uno en n y otro en n+1/2
-!!solo pre-jav 310116 (solo estas lineas
-!!!!esta correccion es analiticamente correcta pero fuente de posibles intestabilidades pues es un Yee. Lo comento 02115 y dejo una aprox backwards que es mas que suficiente para metales donde la velocidad es muy baja comparada con el vacio
+!for crank-nicolson a half-step advance is necessary for the H field since E and H are synchronous. Therefore two H fields coexist at (-compo%depth) and (compo%depth-1): one at n and another at n+1/2
+!!pre-jav only 310116 (only these lines
+!!!!this correction is analytically correct but a source of possible instabilities since it is a Yee. I comment it out 02115 and leave a backwards approx which is more than enough for metals where the speed is very low compared to vacuum
 !            compo%Hyee__Left = compo%GM1_interno *compo%Hyee__Left + compo%GM2_interno *( compo%E(-compo%depth+1) - compo%E(-compo%depth  ) )
 !            compo%Hyee_Right = compo%GM1_interno *compo%Hyee_Right + compo%GM2_interno *( compo%E(   compo%depth) - compo%E( compo%depth-1) )
-!!!!post-jav 310116 boundaries solo lo que sigue es correcto. Ya no es una aproximacion TB sino el resultado del nuevo CN_jav
+!!!!post-jav 310116 boundaries only what follows is correct. It is no longer a TB approximation but the result of the new CN_jav
             compo%Hyee__Left = compo%H(-compo%depth) 
             compo%Hyee_Right = compo%H(compo%depth-1)              
             
          else !yee
             if (compo%depth/=0) then
                do i=-compo%depth , compo%depth-1
-                  compo%H(i) = compo%GM1_interno(i) *compo%H(i) +  compo%GM2_interno(i) *( compo%E(i+1) - compo%E(i) )  !E y H se usan reciprocamente siempre con el mismo signo
+                  compo%H(i) = compo%GM1_interno(i) *compo%H(i) +  compo%GM2_interno(i) *( compo%E(i+1) - compo%E(i) )  !E and H are always used reciprocally with the same sign
                end do
                compo%Hyee__Left = compo%H(-compo%depth)
                compo%Hyee_Right = compo%H(compo%depth-1)
             end if
          end if
-!!!!copio en su Efield el promedio a efectos de peticion de sondas y calculo en los bordoes (luego al avanzar el H el principal de ambos lados, utilizara este Efield, pero el advanceSGBCH lo recorregira por el correcto
+!!!!I copy the average into its Efield for probe request purposes and calculation at the borders (then when advancing H the main one on both sides will use this Efield, but advanceSGBCH will correct it with the correct one
          compo%Efield =(compo%E(-compo%depth)+compo%E(compo%depth))/2. 
       !end do
    end subroutine AdvanceSGBCE_single_node
@@ -1000,14 +1000,14 @@ subroutine AdvanceSGBCH
    integer(kind=4) :: conta
    type(SGBCSurface_t), pointer :: compo
    character(len=BUFSIZE) :: buFF
-   !NOTE: Esto no se puede optimizar 
-   !      porque los dos o mas compo%H{a,b} pueden apuntar
-   !      al mismo campo se puede produce un conflicto de acceso
+   !NOTE: This cannot be optimized 
+   !      because two or more compo%H{a,b} can point
+   !      to the same field an access conflict can occur
    do conta=1,malon%numnodes
       compo => malon%Nodes(conta)
-!!!!ojo: es una correccion a lo que hace el principal utilizando el campo electrico correcto
+!!!!note: it is a correction to what the main one does using the correct electric field
       if (compo%Correct_Ha) then
-         compo%Ha_Plus = compo%Ha_Plus +  compo%gm2_externo* (compo%Efield - compo%E(compo%depth)) !insisto: es una correccion: el principal ha aniadido/quitado Efield y debe quitar/aniadir E del extremo correspondiente
+         compo%Ha_Plus = compo%Ha_Plus +  compo%gm2_externo* (compo%Efield - compo%E(compo%depth)) !I insist: it is a correction: the main one has added/removed Efield and must remove/add E of the corresponding extreme
          compo%Ha_Minu = compo%Ha_Minu -  compo%gm2_externo* (compo%Efield - compo%E(-compo%depth))
       else if (compo%Correct_Hb) then                                                       
          compo%Hb_Plus = compo%Hb_Plus -  compo%gm2_externo* (compo%Efield - compo%E(compo%depth))
@@ -1027,26 +1027,26 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
    type(SGGFDTDINFO_t), intent(in) :: sgg
    type(SGBCSurface_t), pointer, intent(inout) :: compo
    character(len=BUFSIZE) :: buff
-!!!variables locales
+!!!local variables
  real(kind=RKIND) :: width,sigmatemp,eprtemp,sigmamtemp,murtemp,epsilonValue,sigma,mu,sigmam,g1,g2,gm1,gm2,delta_entreEinterno_temp,epr_adyacentei,sig_adyacentei
  real(kind=RKIND), dimension(0:1) :: epr_adyacente,sig_adyacente
  integer(kind=4) :: i,ib,ib_ady
  logical :: SGBCDispersive
- eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+ eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
    
 
 
    if (compo%depth==0) then
-         !!!!!!! compo%delta_entreeinterno=0.0 !!no se usa nunca !ojoooo revisar caso 0121 
-         !!!!!!!averagefactor  = width / compo%transversaldeltah /factor !!! sgg promediados buenos filo_placas 201115
+         !!!!!!! compo%delta_entreeinterno=0.0 !!never used !note check case 0121 
+         !!!!!!!averagefactor  = width / compo%transversaldeltah /factor !!! sgg well-averaged filo_placas 201115
          !!!!!!!epsilon = (1.0_rkind - averagefactor ) * (epr_adyacente(0)+epr_adyacente(1))/2.0_rkind  * eps0 + &
          !!!!!!!                       averagefactor   * eprtemp           * eps0
          !!!!!!!sigma =   (1.0_rkind - averagefactor ) * (sig_adyacente(0)+sig_adyacente(1))/2.0_rkind  + &
          !!!!!!!                       averagefactor   * sigmatemp
-         compo%delta_entreEinterno=0.0 !!no se usa nunca
+         compo%delta_entreEinterno=0.0 !!never used
          do i=0,1
- !0121 Voy a tomar vacio PORQUE EN LAS ESQUINAS ENTRE sgbc DETECTA MAL EL MEDIO ADYACENTE. sE HACIA ANTES DE 0121 ASI TAMBIEN
- !050421 lo devuelvo a vacio porque no acabo de ver el caso de las esquinas entre SGBC
+ !0121 I am going to take vacuum BECAUSE AT THE CORNERS BETWEEN sgbc IT DETECTS THE ADJACENT MEDIUM WRONG. IT WAS DONE BEFORE 0121 LIKE THIS TOO
+ !050421 I return it to vacuum because I cannot quite see the case of the corners between SGBC
            !  epr_adyacente(i) = Sgg%Med(compo%med(i))%epr   
            !  sig_adyacente(i) = Sgg%Med(compo%med(i))%sigma 
            !  if (((epr_adyacente(i)-1.0_RKIND>1E-3).OR.(sig_adyacente(i)>1E-3)).AND.(.NOT.(SGG%Med(compo%med(i))%Is%SGBC)) )  then 
@@ -1059,8 +1059,8 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
          width=sgg%med(compo%jmed)%Multiport(1)%width(1)
          sigmatemp=sgg%Med(compo%jmed)%multiport(1)%sigma(1)
          eprtemp= sgg%Med(compo%jmed)%multiport(1)%epr(1)   
-       !prescindo de los filo_placa 0121 poque en las pec de boundaries las detecta incorrectamente !de todos modos esto nunca me ha gustado 0121
-         !no puedo prescindir de los filo_placas a 040523 SinSTOCH_antiguou_th0.0001
+       !I do without the filo_placa 0121 because at the PEC boundaries it detects them incorrectly !anyway I have never liked this 0121
+         !I cannot do without the filo_placas as of 040523 SinSTOCH_antiguou_th0.0001
          if (compo%es_unfilo_placa) then
              epsilonValue = ((epr_adyacente(0)+epr_adyacente(1))/2.0_rkind  * eps0 *(compo%transversaldeltah - width/2.0_rkind)   + &
                          eprtemp                                       * eps0 * width /2.0_rkind) / &
@@ -1076,13 +1076,13 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
                      sigmatemp                                            *width             ) / &
                         (compo%transversaldeltah)
          end if
-!!!!!ajusta primero los g1 y g2 de los bordes del espesor de la capa !ojo en sgbcdispersive no se utilizan las constantes kappa, beta, g3 en lo putos filo_placas. solo en el interior
+!!!!!first adjusts the g1 and g2 of the layer thickness edges !note in sgbcdispersive the constants kappa, beta, g3 are not used in the damn filo_placas. only in the interior
          call g1g2(sgg%dt,epsilonValue,sigma,g1,g2)
          compo%g1   (0)=g1 
          if (compo%correct_ha) then
              compo%g2a(0)= g2 / compo%transversaldeltah 
              compo%g2b(0)= g2 / compo%alignedldeltah
- !!!!los indices (1) no se utilizan para el caso particular depth=0
+ !!!!the indices (1) are not used for the particular case depth=0
              compo%g2a(1)= compo%g2a(0)
              compo%g2b(1)= compo%g2b(0)
          else if (compo%correct_hb) then
@@ -1091,7 +1091,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
              compo%g2a(1)= compo%g2a(0)
              compo%g2b(1)= compo%g2b(0)
          end if
-!!!!!!!!!!!!ahora el interior  
+!!!!!!!!!!!!now the interior  
         epsilonValue =  eprtemp * eps0
         sigma =    sigmatemp 
         if (sgbcdispersive) then
@@ -1111,11 +1111,11 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
          call gm1gm2(sgg%dt,mu,sigmam,gm1,gm2)
          compo%gm1_interno(0)=gm1
          compo%gm2_interno(0)=gm2
- else !DEL MALONYEDEPTH
-!PRIMERO las constantes en las fronteras en la dimension del espesor
+ else !OF MALONYEDEPTH
+!FIRST the constants at the boundaries in the thickness dimension
      do i=0,1
- !0121 Voy a tomar vacio PORQUE EN LAS ESQUINAS ENTRE sgbc DETECTA MAL EL MEDIO ADYACENTE. sE HACIA ANTES DE 0121 ASI TAMBIEN
- !050421 lo devuelvo a vacio porque no acabo de ver el caso de las esquinas entre SGBC
+ !0121 I am going to take vacuum BECAUSE AT THE CORNERS BETWEEN sgbc IT DETECTS THE ADJACENT MEDIUM WRONG. IT WAS DONE BEFORE 0121 LIKE THIS TOO
+ !050421 I return it to vacuum because I cannot quite see the case of the corners between SGBC
          ! epr_adyacente(i) = Sgg%Med(compo%med(i))%epr   
          ! sig_adyacente(i) = Sgg%Med(compo%med(i))%sigma 
          ! if (((epr_adyacente(i)-1.0_RKIND>1E-3).OR.(sig_adyacente(i)>1E-3)).AND.(.NOT.(SGG%Med(compo%med(i))%Is%SGBC)) )  then 
@@ -1125,17 +1125,17 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
          !         call WarnErrReport (buff,.false.)
          ! end if
          if (i==0) then 
-             ib=1 !primera capa
+             ib=1 !first layer
              delta_entreEinterno_temp=compo%delta_entreEinterno(-compo%depth)
          else
-             ib=sgg%Med(compo%jmed)%multiport(1)%numLayers !ultima capa
+             ib=sgg%Med(compo%jmed)%multiport(1)%numLayers !last layer
              delta_entreEinterno_temp=compo%delta_entreEinterno(compo%depth-1)     
          end if
          width=sgg%med(compo%jmed)%Multiport(1)%width(ib)
          sigmatemp= sgg%Med(compo%jmed)%multiport(1)%sigma(ib)
          eprtemp=   sgg%Med(compo%jmed)%multiport(1)%epr(ib)  
-       !prescindo de los filo_placa 0121 poque en las pec de boundaries las detecta incorrectamente !de todos modos esto nunca me ha gustado 0121
-                     !no puedo prescindir de los filo_placas a 040523 SinSTOCH_antiguou_th0.0001
+       !I do without the filo_placa 0121 because at the PEC boundaries it detects them incorrectly !anyway I have never liked this 0121
+                     !I cannot do without the filo_placas as of 040523 SinSTOCH_antiguou_th0.0001
          if (compo%es_unfilo_placa) then
              epsilonValue = (epr_adyacente(i)* eps0 *(compo%transversalDeltaH + delta_entreEinterno_temp /2.0_RKIND)   + &
                                 eprtemp         * eps0 *               (delta_entreEinterno_temp /2.0_RKIND)) / &
@@ -1156,7 +1156,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
        
          
          
- !ajusta primero los g1 Y G2      !no preciso gm1 ni gm2 en los filo_placas
+ !first adjusts the g1 AND G2      !I do not need gm1 or gm2 in the filo_placas
          call g1g2(sgg%dt,epsilonValue,sigma,g1,g2)
          compo%g1(i)=g1 
          if (compo%Correct_Ha) then
@@ -1166,10 +1166,10 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
              compo%G2a(i)= G2 / compo%alignedlDeltaH
              compo%G2b(i)= G2 / (0.5_RKIND * compo%transversalDeltaH + 0.5_RKIND*delta_entreEinterno_temp)
          end if
-     end do !DEL BARRIDO i=0,1 De las dos fronteras de la lamina en la dimension del espesor
+     end do !OF THE SWEEP i=0,1 OF the two sheet boundaries in the thickness dimension
      
- !ahora el interior !El primero y ultimo G no se usa 0121
-     compo%G2_interno =2e31 !valores default absurdos para detectar errores
+ !now the interior !The first and last G are not used 0121
+     compo%G2_interno =2e31 !absurd default values to detect errors
      compo%G1_interno =-2e21 
      barridoporcapas: do i=-compo%depth+1,compo%depth-1   !0121
          ib=compo%layerIndex(i)         
@@ -1183,7 +1183,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
          sigmatemp=  sgg%Med(compo%jmed)%multiport(1)%sigma(ib)
          epr_adyacentei = sgg%Med(compo%jmed)%multiport(1)%epr(ib_ady)
          sig_adyacentei = sgg%Med(compo%jmed)%multiport(1)%sigma(ib_ady)
-         !!! Promedio interpolatoriamente bien 0121
+         !!! Interpolatory average done well 0121
          eprtemp = (epr_adyacentei     * compo%delta_entreEinterno(i-1)   + &
                     eprtemp            * compo%delta_entreEinterno(i) ) / &
                                         (compo%delta_entreEinterno(i-1) + compo%delta_entreEinterno(i))
@@ -1195,12 +1195,12 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
          Sigma =    sigmatemp 
          call g1g2(sgg%dt,epsilonValue,sigma,g1,g2)
          compo%g1_interno(i)=g1
-         compo%g2_interno(i)=g2 /((compo%delta_entreEinterno (i)+compo%delta_entreEinterno (i-1))/2.0_RKIND) !semisuma diff  no centrada entre capas
+         compo%g2_interno(i)=g2 /((compo%delta_entreEinterno (i)+compo%delta_entreEinterno (i-1))/2.0_RKIND) !half-sum diff  not centered between layers
      end do barridoporcapas
      
-     compo%GM2_interno=-1e30 !valores default absurdos para detectar errores
+     compo%GM2_interno=-1e30 !absurd default values to detect errors
      compo%GM1_interno=3e22 
- !ahora el interior !el ultimo GM que no se usa 0121
+ !now the interior !the last GM which is not used 0121
      barridoporcapasH: do i=-compo%depth,compo%depth-1   !0121
          ib=compo%layerIndex(i)         
          if ((ib<1).or.(ib>sgg%Med(compo%jmed)%multiport(1)%numLayers)) then
@@ -1214,11 +1214,11 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
          Sigmam = sigmamtemp
          call gm1gm2(sgg%dt,mu,sigmam,gm1,gm2)
          compo%gm1_interno(i)=gm1
-         compo%gm2_interno(i)=gm2  /compo%delta_entreEinterno (i) !hay que no hay que semisumar porque es interno
+         compo%gm2_interno(i)=gm2  /compo%delta_entreEinterno (i) !there is no need to half-sum because it is internal
      end do barridoporcapasH
      
      
- end if !del compodepth
+ end if !of compodepth
 
    return
 end subroutine calc_g1g2gm1gm2_compo
@@ -1263,7 +1263,7 @@ subroutine gm1gm2(dt,mu,sigmam,Gm1,Gm2)
    return
 end subroutine gm1gm2
 
-!!!!!!! medios dispersivos sgg 12/05/16 
+!!!!!!! dispersive media sgg 12/05/16 
 subroutine g1g2_Dispersive(dt,epsilonValue,sigma,G1,G2,Beta,Kappa,G3,numpolres,a11,c11)
    real(kind=RKIND), intent(in) :: epsilonValue,sigma
    real(kind=RKIND_TIME), intent(in) :: dt
@@ -1271,7 +1271,7 @@ subroutine g1g2_Dispersive(dt,epsilonValue,sigma,G1,G2,Beta,Kappa,G3,numpolres,a
    complex(kind=ckind), intent(in), allocatable, dimension(:) :: a11, c11
    integer(kind=4) :: numpolres, i1
    real(kind=RKIND) :: tempo
-!!!SGBC dispersivos 12/05/16
+!!!SGBC dispersive 12/05/16
    complex(kind=CKIND), pointer, dimension(:) :: Beta,Kappa,G3
 
      do i1=1,numpolres
@@ -1284,10 +1284,10 @@ subroutine g1g2_Dispersive(dt,epsilonValue,sigma,G1,G2,Beta,Kappa,G3,numpolres,a
      do i1=1,NumPolRes
          tempo=tempo+real(Beta(i1))
      end do
-     G1=                        (2.0_RKIND * epsilonValue + tempo - sigma*dt) / & !ojo No estes tentado de cambiar este signo. Cuadra con han dutton 130516 y con edispersives 
+     G1=                        (2.0_RKIND * epsilonValue + tempo - sigma*dt) / & !note Do not be tempted to change this sign. It matches han dutton 130516 and edispersives 
                                 (2.0_RKIND * epsilonValue + tempo + sigma*dt)
      G2=         2.0_RKIND *dt/ (2.0_RKIND * epsilonValue + tempo + sigma*dt)
-!!!! aqui no cabe exponential time stepping
+!!!! here exponential time stepping does not fit
      do i1=1,NumPolRes
          G3(i1)=G2/2.0_RKIND * (1.0_RKIND+Kappa(i1))
      end do
@@ -1342,11 +1342,11 @@ subroutine DestroySGBCs(sgg)
    if (allocated(malon%dispersiveMedia)) deallocate(malon%dispersiveMedia)
    !
    do conta=1,malon%numnodes
-      if (allocated(malon%Nodes(conta)%d))  deallocate(malon%Nodes(conta)%d) !AUXILIAR DE CRANK-NICOLSON
-      if (allocated(malon%Nodes(conta)%beta%val))  deallocate(malon%Nodes(conta)%beta%val) !AUXILIAR DE CRANK-NICOLSON dispersivo
-      if (allocated(malon%Nodes(conta)%kappa%val))  deallocate(malon%Nodes(conta)%kappa%val) !AUXILIAR DE CRANK-NICOLSON dispersivo
-      if (allocated(malon%Nodes(conta)%G3%val))  deallocate(malon%Nodes(conta)%G3%val) !AUXILIAR DE CRANK-NICOLSON dispersivo
-      if (allocated(malon%Nodes(conta)%Edis))  deallocate(malon%Nodes(conta)%Edis) !AUXILIAR DE CRANK-NICOLSON dispersivo
+      if (allocated(malon%Nodes(conta)%d))  deallocate(malon%Nodes(conta)%d) !CRANK-NICOLSON AUXILIARY
+      if (allocated(malon%Nodes(conta)%beta%val))  deallocate(malon%Nodes(conta)%beta%val) !CRANK-NICOLSON dispersive AUXILIARY
+      if (allocated(malon%Nodes(conta)%kappa%val))  deallocate(malon%Nodes(conta)%kappa%val) !CRANK-NICOLSON dispersive AUXILIARY
+      if (allocated(malon%Nodes(conta)%G3%val))  deallocate(malon%Nodes(conta)%G3%val) !CRANK-NICOLSON dispersive AUXILIARY
+      if (allocated(malon%Nodes(conta)%Edis))  deallocate(malon%Nodes(conta)%Edis) !CRANK-NICOLSON dispersive AUXILIARY
      deallocate(malon%Nodes(conta)%GM1_interno ,&           
                 malon%Nodes(conta)%GM2_interno ,&
                 malon%Nodes(conta)%G1_interno  ,&
@@ -1376,7 +1376,7 @@ subroutine test_stab(G2,GM2)
    unstable = .false.
    do conta=1,malon%numnodes
       compo => malon%Nodes(conta)
-!!!los extremos de los E internos
+!!!the extremes of the internal E fields
       unstable= unstable.or. &
              (G2(compo%jmed) * Gm2(compo%jmed)  > heur) .or. &
              (compo%G2a(1)   * Gm2(compo%jmed)  > heur) .or. &
@@ -1404,19 +1404,19 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
     
  type(SGBCSurface_t), pointer :: compo
 
-!!!0121 multicapas
+!!!0121 multilayers
  numLayers = sgg%Med(jmed)%multiport(1)%numLayers
  compo%depth=0
  do precuenta=0,1
      if (precuenta==1) then
          if (mod(compo%depth,2)/=0) then
-             compo%depth=compo%depth+1 !redondea el numero de capas total a un numero par
-!rellena el sobrante con la ultima capa
+             compo%depth=compo%depth+1 !rounds the total number of layers to an even number
+!fills the remainder with the last layer
              ultimacapamas1=.true.
          else 
              ultimacapamas1=.false.
          end if
-         compo%depth=int(compo%depth/2.0_RKIND) !divide por 2 porque arranca en -compo%depth y llega a +compo%depth 
+         compo%depth=int(compo%depth/2.0_RKIND) !divides by 2 because it starts at -compo%depth and reaches +compo%depth 
          if (compo%depth>0) then
              if (.not.allocated(compo%layerIndex))                allocate (compo%layerIndex(-compo%depth:compo%depth-1))
              if (.not.allocated(compo%delta_entreEinterno)) allocate (compo%delta_entreEinterno(-compo%depth:compo%depth-1))
@@ -1436,20 +1436,20 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
          widthtotal=widthtotal +     sgg%Med(compo%jmed)%multiport(1)%width(i) 
          skin_depth=1.0_RKIND / (Sqrt(2.0_RKIND)*SGBCFreq*Pi*(Mu0**2*(4*epsilonValue**2.0_RKIND + Sigma**2/(SGBCFreq**2*Pi**2.0_RKIND )))**0.25_RKIND * &
                                  Sin(atan2(2*Pi*epsilonValue*Mu0, -(Mu0*Sigma)/SGBCFreq)/2.0_RKIND))
-         if (SGBCdepth==0) then !numcapas debe ser necesariamente 1
+         if (SGBCdepth==0) then !numlayers must necessarily be 1
              if (numLayers > 1) then
                 write(buff, *)   'SGBCDepth=0 and numcapas>1 not compatible. Please, relaunch'
                 call StopOnError (0,0,buff)
              else
-                 layerWidth=1 !numcapas es necesariamente 1 si continua
+                 layerWidth=1 !numlayers is necessarily 1 if it continues
              end if
          else if (SGBCdepth>0) then
              layerWidth=SGBCdepth
-         else !si es negativo se calcula con la resol
+         else !if it is negative it is calculated with the resol
              layerWidth=1+int(SGBCresol*width/skin_depth)
          end if
-         if (layerWidth<2) layerWidth=2 !es razonable no dejarlo nunca en 1
-         !fin niapas
+         if (layerWidth<2) layerWidth=2 !it is reasonable to never leave it at 1
+         !end layers
          if (precuenta==0) then 
              if (SGBCDepth==0) then 
                  compo%depth=0
@@ -1457,7 +1457,7 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
                  compo%depth=compo%depth+layerWidth
              end if
          else if (precuenta==1) then
-             if (SGBCDepth==0) then      !!!bug corregido a 040523
+             if (SGBCDepth==0) then      !!!bug fixed on 040523
                      celdainicial=0
                      celdafinal=0
                      layerWidth=1
@@ -1468,7 +1468,7 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
              celdainicial=celdafinal+1
              celdafinal=celdainicial+layerWidth-1
              if ((i==numLayers).and.ultimacapamas1) then
-!rellena el sobrante con la ultima capa si no es una division cabal
+!fills the remainder with the last layer if it is not an exact division
                      layerWidth=layerWidth+1
                      celdafinal=celdafinal+1
              end if

@@ -1,7 +1,7 @@
 
     
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Module Mdispersives !ojo los polos conjugados DEBEN APARECER Hxplicitamente 20JUNE'12
+! Module Mdispersives !note the conjugate poles MUST APPEAR explicitly 20JUNE'12
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Beware in MDutton's model BOTH pair OF Complex conjugate poles/residues
 ! in input from .nfde MUST APPEAR (this is why the factor /2 in the algorithm part
@@ -11,7 +11,7 @@
 
 module Mdispersives_m
 
-   !mismo switch electrico y magnetico
+   !same electric and magnetic switch
 
    use FDETYPES_m
    use Report_m
@@ -25,7 +25,7 @@ module Mdispersives_m
    type field_t
       integer(kind=4) :: i,j,k
       integer(kind=4) :: WhatField
-      real(kind=RKIND), pointer                 :: FieldPresent !apunta al campo del background
+      real(kind=RKIND), pointer                 :: FieldPresent !points to the background field
       real(kind=RKIND)                          :: FieldPrevious
       complex(kind=CKIND), pointer, dimension(:) :: Current
    end type
@@ -63,7 +63,7 @@ contains
       Hy(sgg%Alloc(IHY)%XI : sgg%Alloc(IHY)%XE,sgg%Alloc(IHY)%YI : sgg%Alloc(IHY)%YE,sgg%Alloc(IHY)%ZI : sgg%Alloc(IHY)%ZE),&
       Hz(sgg%Alloc(IHZ)%XI : sgg%Alloc(IHZ)%XE,sgg%Alloc(IHZ)%YI : sgg%Alloc(IHZ)%YE,sgg%Alloc(IHZ)%ZI : sgg%Alloc(IHZ)%ZE)
 
-      !habria que ir deprecando lo de pasar el Mdispersive, etc.. porque hay acceso directo a sgg%Med%Dispersiv
+      !passing Mdispersive, etc. should be deprecated because there is direct access to sgg%Med%Dispersiv
       logical, intent(out) :: ThereAreMdispersives
       logical, intent(in) :: resume
       integer(kind=4) :: jmed,j1,conta,k1,i1,tempindex
@@ -86,7 +86,7 @@ contains
       do jmed=1,sgg%NumMedia
          if ((sgg%Med(jmed)%Is%Mdispersive).and.(.not.sgg%Med(jmed)%Is%MdispersiveANIS)) then
             conta=conta+1
-            MDutton%Medium(conta)%indexmed=jmed !correspondencia con el medio principal
+            MDutton%Medium(conta)%indexmed=jmed !correspondence with the main medium
             MDutton%Medium(conta)%numpolres11=sgg%Med(jmed)%Mdispersive(1)%numpolres11
             allocate (MDutton%Medium(conta)%Beta (1 : sgg%Med(jmed)%Mdispersive(1)%numpolres11),&
             MDutton%Medium(conta)%Kappa(1 : sgg%Med(jmed)%Mdispersive(1)%numpolres11), &
@@ -297,8 +297,8 @@ contains
                MDutton%Medium(jmed)%Beta(k1)/sgg%dt*(tempnode%fieldPresent-tempnode%fieldPrevious)
             end do
             tempnode%fieldPrevious=tempnode%fieldPresent
-            !stores previous field (cuidado no es un apuntamiento sino una igualdad de valores)
-            !antes de que re-empiHze a calcularlo el algoritmo del background
+            !stores previous field (careful, it is not a pointer but an assignment of values)
+            !before the background algorithm starts computing it again
          end do
          !Hy,Jy
          do i1=1,MDutton%Medium(jmed)%NumNodesHy

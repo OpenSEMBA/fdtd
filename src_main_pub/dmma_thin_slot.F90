@@ -21,8 +21,8 @@ contains
       !   incy        -> Cell size in y direction (meters)
       !   incz        -> Cell size in z direction (meters)
       !   dir         -> Coordinates of the direction of incidence of the plane wave (meters)
-      !   orientacion       -> orientacion ('XY','XZ','YZ') that contains the Slot line
-      !   direccion   -> direccion ('X','Y','Z') of the Slot line
+      !   orientation       -> orientation ('XY','XZ','YZ') that contains the Slot line
+      !   direction   -> direction ('X','Y','Z') of the Slot line
       !   thickness   -> Lower size of the Slot (meters)
       !   efm         -> Relative epsilon of the filling media
       !   ufm         -> Relative mu of the filling media
@@ -71,8 +71,8 @@ contains
       mue (2, 2) = ufm
       mue (3, 3) = ufm
       !
-      cfm = 1.0_RKIND /  Sqrt (eabs*uabs) !si lo tomo relativo a la direccion de incidencia puede ser cfm=0.0_RKIND y se jode el logaritmo.
-      !asi que lo tomo fijo !2012 bug articulo1_tgap_sgg_stair
+      cfm = 1.0_RKIND /  Sqrt (eabs*uabs) !if I take it relative to the incidence direction cfm could be 0.0_RKIND and the logarithm breaks.
+      !so I take it as fixed !2012 bug article1_tgap_sgg_stair
       if (orientationIndex == IEZ) then
          !        cfm = Abs (dir(3)) / Sqrt (eabs*uabs)
          maxfreq = cfm / (incz*10.0)

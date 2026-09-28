@@ -28,7 +28,7 @@ module HollandWires_m
    type(Thinwires_t)     , target                  ,save  :: HWires
    real(kind=RKIND_WIRES)     , pointer, dimension(:),save  :: InvEps  ,InvMu, OldInvEps  ,OldInvMu
    
-!!!variables globales del modulo
+!!!module global variables
    real(kind=RKIND_WIRES), save           :: eps0,mu0
 !!!
    private
@@ -45,7 +45,7 @@ contains
    subroutine InitWires(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,ThereAreWires,&
    Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, g2,SINPML_fullsize,fullsize, dtcritico, eps00,mu00, control)     
       real(kind=RKIND), intent(in) :: eps00,mu00
-      real(kind=RKIND) :: eps000,mu000  !son dummies
+      real(kind=RKIND) :: eps000,mu000  !they are dummies
       type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
       type(SGGFDTDINFO_t), intent(inout) , target    :: sgg
       real(kind=RKIND) , pointer, dimension(:), intent(in) :: G2
@@ -109,7 +109,7 @@ contains
       real(kind=RKIND_WIRES)							:: dl, dx1, dx2,Ceq
       real(kind=RKIND_WIRES)							:: dist, phi
       real(kind=RKIND_WIRES), pointer, dimension(:,:) :: Den
-      !dama fin
+      !dama end
       logical :: esPML
       integer(kind=4) :: int1, int2,ierr,mediumX,mediumY,mediumZ,ZI,ZE,offset,offi,offj,offk,NUMESEG,dummy1,dummy2,dummy3,multirabos,dummyfin,medium1,medium2,medium3,medio1m,medio2m,medio3m
       character(len=BUFSIZE) :: buff
@@ -120,8 +120,8 @@ contains
       
       !!!
 !
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
-!!!guarda el dt original (para permit scaling)
+      eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
+!!!save the original dt (to allow scaling)
       Hwires%olddt=sgg%dt
 !
 
@@ -129,7 +129,7 @@ contains
       HWires%CurrentSegment  => null()
       HWires%ChargeNode      => null()
             !!!!!!!!!!!
-      dtcritico=sgg%dt !es un parametro de vuelta
+      dtcritico=sgg%dt !it is a return parameter
 
       ZI=sgg%Sweep(IHZ)%ZI
       ZE=sgg%Sweep(IHZ)%ZE
@@ -162,10 +162,10 @@ contains
       Hwires%NumNeededCurrentUpMPI=0
       Hwires%NumNeededCurrentDownMPI=0
 #endif
-!!inicializaciones triviales
+!!trivial initializations
 
          !initialization
-         !el trivial
+         !the trivial one
          !
          HWires%NullNode%indexnode           =-1
          HWires%NullNode%ChargePresent       =0.0_RKIND_WIRES
@@ -277,7 +277,7 @@ contains
          end if
       end do
 
-!!!chequeo previo 210323 para que no haya conectores dispersivos
+!!!prior check 210323 so there are no dispersive connectors
          
       do iwi=1,HWires%NumDifferentWires
             if ((allocated(sgg%Med(HWires%wireMediumType(iwi))%wire(1)%disp)).or. &
@@ -304,7 +304,7 @@ contains
       ! it directly reads the segments specified in the .nfde file
 
          !detects endings and set ending=.true.
-         !esto implica que podra haber LeftEnd y RightEnd declarados y ademas ending 
+         !this implies there may be LeftEnd and RightEnd declared and also ending
 
 
          do iwi=1,HWires%NumDifferentWires
@@ -314,13 +314,13 @@ contains
                   sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ilibre = -1
                   sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%jlibre = -1
                   sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%klibre = -1
-                  !(en formatos antiguas esta info solo viene bien si hay cargas (md me las pone al final y al principio) pero en general puede estar mal y hay que resetearla
+                  !(in old formats this info is only fine if there are charges (md puts them at the end and at the beginning) but in general it may be wrong and must be reset
                   if (control%connectendings) then
                      !
                      if (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos == 1) then
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_LeftEnd = .true.
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_RightEnd = .true.
-                        !ojooo esto esta bien? parecen los TL y TR intercambiados sgg 251019 pero no lo toco
+                        !careful, is this right? the TL and TR look swapped sgg 251019 but I will not touch it
                         if (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%HasAbsorbing_RightEnd) sgg%Med(HWires%wireMediumType(iwi))%wire(1)%HasAbsorbing_LeftEnd=.true.
                         if (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%HasAbsorbing_LeftEnd) sgg%Med(HWires%wireMediumType(iwi))%wire(1)%HasAbsorbing_RightEnd=.true.
                         if (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%HasParallel_RightEnd) sgg%Med(HWires%wireMediumType(iwi))%wire(1)%HasParallel_LeftEnd=.true.
@@ -338,7 +338,7 @@ contains
                   end if
                   sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight= .not. &
                   (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_LeftEnd.or.sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_RightEnd)
-                  !fin reajuste
+                  !end of readjustment
                   i1=       sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%i
                   j1=       sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%j
                   k1=       sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%k
@@ -437,8 +437,8 @@ contains
                   (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight) .and. &
                   (.not.conectado).and.(conectado1.or.conectado2) .and. &
                   (.not.(sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_LeftEnd.or. &
-                  sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_RightEnd)) !si hay mas de uno este se pone a .true.
-                  !detecta cual es el extremo libre
+                  sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_RightEnd)) !if there is more than one, this is set to .true.
+                  !detect which is the free end
                   if ((.not.conectado).and.conectado1) then
                      select case (whatfield)
                       case (iEx)
@@ -460,7 +460,7 @@ contains
                      sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%klibre = k1
                   end if
 
-                  !caso especial
+                  !special case
                   if (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos == 1) then
                      sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight   = .false.
                      sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_LeftEnd              = .true.
@@ -506,12 +506,12 @@ contains
                      end if
                   end if
                   !
-               else !del strictOLD
+               else !of strictOLD
 
                   sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ilibre = -1
                   sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%jlibre = -1
                   sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%klibre = -1
-                  sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight=.false. !irrelevante en strictOLD
+                  sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight=.false. !irrelevant in strictOLD
                   i1=       sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%i
                   j1=       sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%j
                   k1=       sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%k
@@ -528,13 +528,13 @@ contains
                   if (((sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_LeftEnd).or.(sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_RightEnd))) then
                      if (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos/=1) then
                         dummy2=-1
-                        buscakk2: do iwjjj=iwj+dummy1,dummyfin,dummy1 !atras o adelante
+                        buscakk2: do iwjjj=iwj+dummy1,dummyfin,dummy1 !backwards or forwards
                            i2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%i
                            j2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%j
                            k2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%k
                            whatfield2=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%ori
                            if ((i1==i2).and.(j1==j2).and.(k1==k2).and.(whatfield==whatfield2)) then
-                              dummy2=-dummy2 !detecta numero de rabitos para o impar aunque yo luego en las uniones solo trato 2 rabitos como mucho
+                              dummy2=-dummy2 !detect the number of small branches, even or odd, although later at junctions I only handle at most 2 branches
                            else
                               continue
                               exit buscakk2
@@ -584,7 +584,7 @@ contains
                               if (k2 == k1) sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%klibre = k1+1
                            end select
                         end if
-                     else !DEL NUMERO SEGMENTOS '2014 NO PORTADO A !CHECK
+                     else !OF THE NUMBER OF SEGMENTS '2014 NOT PORTED TO !CHECK
                         select case (whatfield)
                          case (iEx)
                            sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ilibre = i1+1
@@ -599,16 +599,16 @@ contains
                            sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%jlibre = j1
                            sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%klibre = k1+1
                         end select
-                     end if !DEL NUMERO SEGMENTOS '2014 NO PORTADO A !CHECK
-                  end if !Del Left_End Right_End
+                     end if !OF THE NUMBER OF SEGMENTS '2014 NOT PORTED TO !CHECK
+                  end if !Of Left_End Right_End
                   !!!!!!!!!!!!!!!!!!!
-               end if !del strictOLD
+               end if !of strictOLD
 
             end do
          end do
 
 
-         !preprocesa para eliminar multirabos luego se utiliza en repetido
+         !preprocess to remove branches, later used for duplicates
 
          if (control%strictOLD) then
             do iwi=1,HWires%NumDifferentWires
@@ -620,8 +620,8 @@ contains
                      k1=       sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%k
                      whatfield=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ori
                      ORIGINDEX=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%origindex
-                     !precontaje
-                     buscarabos: do iwjjj=iwj+1,sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos !el Right_End aunque no se tape si debe detectarse a efectos par/impar
+                     !pre-counting
+                     buscarabos: do iwjjj=iwj+1,sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos !the Right_End, even if not covered, must be detected for even/odd purposes
                         i2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%i
                         j2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%j
                         k2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%k
@@ -635,10 +635,10 @@ contains
                            exit buscarabos
                         end if
                      end do buscarabos
-                     !machaca rabos
+                     !overwrite branches
                      if (multirabos/=1) then
                         !
-                        taparabos: do iwjjj=iwj+(2-mod(multirabos,2)),sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos-1 !el Right_End no debe taparse ya se tapa el de dentro en el otro bucle
+                        taparabos: do iwjjj=iwj+(2-mod(multirabos,2)),sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos-1 !the Right_End must not be covered, the inner one is already covered in the other loop
                            i2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%i
                            j2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%j
                            k2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%k
@@ -654,11 +654,11 @@ contains
                               exit taparabos
                            end if
                         end do taparabos
-                     end if !del multirabos no nulo
+                     end if !of the non-null branches
                   end if
                end do
             end do
-            !ahora la vuelta
+            !now the return pass
             do iwi=1,HWires%NumDifferentWires
                do iwj=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos,1,-1
                   if (.NOT.sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%multirabo) then
@@ -668,7 +668,7 @@ contains
                      k1=       sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%k
                      whatfield=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ori
                      ORIGINDEX=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%origindex
-                     buscarabos2: do iwjjj=iwj-1,1,-1 !el Left_End aunque no se tape si debe detectarse a efectos par/impar
+                     buscarabos2: do iwjjj=iwj-1,1,-1 !the Left_End, even if not covered, must be detected for even/odd purposes
                         i2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%i
                         j2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%j
                         k2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%k
@@ -683,17 +683,17 @@ contains
                         end if
                      end do buscarabos2
 
-                     !machaca rabos
+                     !overwrite branches
                      if (multirabos/=1) then
                         !
-                        taparabos2: do iwjjj=iwj-(2-mod(multirabos,2)),2,-1 !el Left_End no debe taparse
+                        taparabos2: do iwjjj=iwj-(2-mod(multirabos,2)),2,-1 !the Left_End must not be covered
                            i2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%i
                            j2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%j
                            k2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%k
                            whatfield2=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%ori
                            ORIGINDEX2=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%origindex
                            if ((i1==i2).and.(j1==j2).and.(k1==k2).and.(whatfield==whatfield2)) then
-                              !faltaria eliminar sondas en multirabos 7/2/14
+                              !probes in branches would still need to be removed 7/2/14
                               write (buff,'(a,i7,3I7,a,a,i7)')  'wir0_WARNING: strictOLD Redundannt zig-zag rabito, will be eliminated to Mod(2)', origIndex2,i2,j2,k2,dir(whatfield2), &
                               'by segment ',primernorabo
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
@@ -703,14 +703,14 @@ contains
                               exit taparabos2
                            end if
                         end do taparabos2
-                     end if !del multirabos no nulo
+                     end if !of the non-null branches
                   end if
                end do
             end do
 
 
             !!!!!!!!!!!!!!!!
-            !segunda pasada para procesar TAPARRABOS
+            !second pass to process TAPARRABOS
             !!!!!!!!!!!!!!!!!!
             !!!!!!!!!!!
 
@@ -724,8 +724,8 @@ contains
                         k1=       sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%k
                         whatfield=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ori
                         ORIGINDEX=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%origindex
-                        !precontaje
-                        buscarabos6: do iwjjj=iwj+1,sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos !el Right_End aunque no se tape si debe detectarse a efectos par/impar
+                        !pre-counting
+                        buscarabos6: do iwjjj=iwj+1,sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos !the Right_End, even if not covered, must be detected for even/odd purposes
                            i2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%i
                            j2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%j
                            k2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%k
@@ -739,16 +739,16 @@ contains
                               exit buscarabos6
                            end if
                         end do buscarabos6
-                        !machaca rabos
-                        if ((mod(multirabos,2)/=1).and.(Jprimernorabo /= sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos)) then !no al RightEnd
+                        !overwrite branches
+                        if ((mod(multirabos,2)/=1).and.(Jprimernorabo /= sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos)) then !not to the RightEnd
                            if (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_LeftEnd) then
                               sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_LeftEnd=.false.
-                              sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%Is_LeftEnd=.true. !pasa caracter Left_End al primernorabo
-                              !!!tocado esto por el problema de gra_powerline_simple.nfde 190916 el rabito se quedaba con el libre mal computado. Los ilibre,jlbre,klibre para Left_End son el primer punto directamente
+                              sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%Is_LeftEnd=.true. !passes the Left_End flag to the first non-branch
+                              !!!changed this because of the gra_powerline_simple.nfde issue 190916; the small branch was left with the free index badly computed. The ilibre,jlibre,klibre for Left_End are the first point directly
                               sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%ilibre=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%i  !!!!sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre
                               sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%jlibre=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%j  !!!!sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre
                               sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%klibre=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%k  !!!!sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre
-!!!y retocado 200117 por el problema del ntc1 de la demo de getafe que tambien calculaba mal el libre (no tiene que ser por guevos el primer punto, habra que ver como se conecta con el siguiente!!!)
+!!!and revised 200117 because of the ntc1 issue of the getafe demo which also computed the free index wrong (it does not have to be the first point by force, we will have to see how it connects with the next one!!!)
                                  if ((sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%i)==(sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo+1)%i).and. &
                                      (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%j)==(sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo+1)%j).and. &
                                      (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%k)==(sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo+1)%k)) then
@@ -770,7 +770,7 @@ contains
                               whatfield2=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ori
                               ORIGINDEX2=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%origindex
                               sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%multirabo=.true.
-                              sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%multiraboDE=primernorabo !el ultimo cazado es el primer NOrabo
+                              sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%multiraboDE=primernorabo !the last one caught is the first NON-branch
                               write (buff,'(a,i7,3I7,a,a,i7)')  'wir0_WARNING: strictOLD and taparrabos redundannt zig-zag rabito, will be ALSO eliminated ', origIndex2,i2,j2,k2,dir(whatfield2), &
                               'by segment ',primernorabo
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
@@ -783,16 +783,16 @@ contains
                               whatfield2=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj+1)%ori
                               ORIGINDEX2=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj+1)%origindex
                               sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj+1)%multirabo=.true.
-                              sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj+1)%multiraboDE=primernorabo !el ultimo cazado es el primer NOrabo
+                              sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj+1)%multiraboDE=primernorabo !the last one caught is the first NON-branch
                               write (buff,'(a,i7,3I7,a,a,i7)')  'wir0_WARNING: strictOLD and taparrabos redundannt zig-zag rabito, will be ALSO eliminated ', origIndex2,i2,j2,k2,dir(whatfield2), &
                               'by segment ',primernorabo
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
                            end if
-                        end if !del multirabos no nulo
+                        end if !of the non-null branches
                      end if
                   end do
                end do
-               !ahora la vuelta
+               !now the return pass
                do iwi=1,HWires%NumDifferentWires
                   do iwj=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos,1,-1
                      if (.NOT.sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%multirabo) then
@@ -802,7 +802,7 @@ contains
                         k1=       sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%k
                         whatfield=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ori
                         ORIGINDEX=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%origindex
-                        buscarabos7: do iwjjj=iwj-1,1,-1 !el Left_End aunque no se tape si debe detectarse a efectos par/impar
+                        buscarabos7: do iwjjj=iwj-1,1,-1 !the Left_End, even if not covered, must be detected for even/odd purposes
                            i2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%i
                            j2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%j
                            k2=        sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwjjj)%k
@@ -817,16 +817,16 @@ contains
                            end if
                         end do buscarabos7
 
-                        !machaca rabos
-                        if ((mod(multirabos,2)/=1).and.(Jprimernorabo /= 1)) then   !no el Left_End
+                        !overwrite branches
+                        if ((mod(multirabos,2)/=1).and.(Jprimernorabo /= 1)) then   !not the Left_End
                            if (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_RightEnd) then
                               sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_RightEnd=.false.
-                              sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%Is_RightEnd=.true. !pasa caracter RightEnd al primernorabo
-                              !!!tocado esto por el problema de gra_powerline_simple.nfde 190916 el rabito se quedaba con el libre mal computado. Los ilibre,jlbre,klibre para Left_End son el primer punto directamente
+                              sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%Is_RightEnd=.true. !passes the RightEnd flag to the first non-branch
+                              !!!changed this because of the gra_powerline_simple.nfde issue 190916; the small branch was left with the free index badly computed. The ilibre,jlibre,klibre for Left_End are the first point directly
                               sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%ilibre=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%i  !!!!sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre
                               sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%jlibre=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%j  !!!!sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre
                               sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%klibre=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%k  !!!!sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre
-!!!y retocado 200117 por el problema del ntc1 de la demo de getafe que tambien calculaba mal el libre (no tiene que ser por guevos el primer punto, habra que ver como se conecta con el siguiente!!!)
+!!!and revised 200117 because of the ntc1 issue of the getafe demo which also computed the free index wrong (it does not have to be the first point by force, we will have to see how it connects with the next one!!!)
                                  if ((sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%i)==(sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo-1)%i).and. &
                                      (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%j)==(sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo-1)%j).and. &
                                      (sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo)%k)==(sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(Jprimernorabo-1)%k)) then
@@ -849,7 +849,7 @@ contains
                               whatfield2=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ori
                               ORIGINDEX2=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%origindex
                               sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%multirabo=.true.
-                              sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%multiraboDE=primernorabo !el ultimo cazado es el primer NOrabo
+                              sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%multiraboDE=primernorabo !the last one caught is the first NON-branch
                               write (buff,'(a,i7,3I7,a,a,i7)')  'wir0_WARNING: strictOLD and taparrabos redundannt zig-zag rabito, will be ALSO eliminated ', origIndex2,i2,j2,k2,dir(whatfield2), &
                               'by segment ',primernorabo
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
@@ -862,20 +862,20 @@ contains
                               whatfield2=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj-1)%ori
                               ORIGINDEX2=sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj-1)%origindex
                               sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj-1)%multirabo=.true.
-                              sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj-1)%multiraboDE=primernorabo !el ultimo cazado es el primer NOrabo
+                              sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj-1)%multiraboDE=primernorabo !the last one caught is the first NON-branch
                               write (buff,'(a,i7,3I7,a,a,i7)')  'wir0_WARNING: strictOLD and taparrabos redundannt zig-zag rabito, will be ALSO eliminated ', origIndex2,i2,j2,k2,dir(whatfield2), &
                               'by segment ',primernorabo
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
                            end if
-                        end if !del multirabos no nulo
+                        end if !of the non-null branches
                      end if
                   end do
                end do
-            end if !del TAPARRABOS
+            end if !of TAPARRABOS
             !
-         end if !del if strictOLD
+         end if !of the strictOLD if
 
-         !chequeo de errores buggy multirabo
+         !check for buggy branch errors
          do iwi=1,HWires%NumDifferentWires
             do iwj=1,sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos
                if ((sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%multirabo).and. &
@@ -939,7 +939,7 @@ contains
             end do
          end do
 
-         !Segment pre-counting incluyendo deteccion de repetidos
+         !Segment pre-counting including detection of duplicates
 
          do iwi=1,HWires%NumDifferentWires
             do iwj=1,sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos
@@ -974,7 +974,7 @@ contains
                            sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%repetido=repetido.or. &
                            sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%repetido
                         else
-                           !aviso pero tomo una decision. md 260213 a veces lo duplica en principio y final!!!!!!
+                           !warning but I make a decision. md 260213 sometimes it duplicates it at the beginning and end!!!!!!
 
                            if ( ((abs(sgg%Med(HWires%wireMediumType(iwi))%wire(1)%Parallel_R_RightEnd) < 1.0e-12_RKIND_WIRES).and. &
                            (abs(sgg%Med(HWires%wireMediumType(iwi))%wire(1)%Series_R_RightEnd) < 1.0e-12_RKIND_WIRES).and. &
@@ -1148,7 +1148,7 @@ contains
          end do
 
          HWires%NumCurrentSegments=conta
-         !inicializa ctes segmentos
+         !initialize segment constants
          allocate (HWires%CurrentSegment(1 : HWires%NumCurrentSegments))
          do i1=1,HWires%NumCurrentSegments
             nullify (HWires%CurrentSegment(i1)%ChargePlus,HWires%CurrentSegment(i1)%ChargeMinus,  &
@@ -1272,44 +1272,44 @@ contains
                         ! default
                         HWires%CurrentSegment(conta)%Efield_wire2main => Ex(i1,j1,k1) 
                         HWires%CurrentSegment(conta)%Efield_main2wire => Ex(i1,j1,k1) 
-!!al final se reapuntan los del thickness
-                        HWires%CurrentSegment(conta)%delta=1.0_RKIND_WIRES / Idxe(i1)    !ojo esto de los delta habra que corregirlo  para uniones
+!!at the end the thickness ones are repointed
+                        HWires%CurrentSegment(conta)%delta=1.0_RKIND_WIRES / Idxe(i1)    !note this delta thing will have to be corrected for junctions
                         HWires%CurrentSegment(conta)%deltaTransv1=1.0_RKIND_WIRES / Idyh(j1)
-                        if (k1 <= sgg%ALLOC(IEZ)%ZE) then !esta corriente en el limite de los alloc nunca se precisa
-                           !updateo por exceso para que haya una celda de solapamiento y la union topologica de
-                           !hilos no se pierda por culpa de la puta particion MPI
+                        if (k1 <= sgg%ALLOC(IEZ)%ZE) then !this current at the alloc limit is never needed
+                           !over-update so that there is an overlap cell and the topological union of
+                           !wires is not lost because of the damn MPI partition
                            HWires%CurrentSegment(conta)%deltaTransv2=1.0_RKIND_WIRES / Idzh(k1)
-                        else !no se comete error alguno
-                           !es solo para que el indice no reviente 2012
+                        else !no error is made
+                           !it is only so that the index does not blow up 2012
                            HWires%CurrentSegment(conta)%deltaTransv2=1.0_RKIND_WIRES / Idzh(k1-1)
                         end if
                         !dama
                         HWires%CurrentSegment(conta)%ie     = i1+1
                         HWires%CurrentSegment(conta)%x      = j1+0.25_RKIND_WIRES
                         HWires%CurrentSegment(conta)%y      = k1+0.25_RKIND_WIRES 
-                        sggmiE = sggmiEx(i1,j1,k1); call deembed_peclossyconformal_segments(sggmiE); sggmiEx(i1,j1,k1)= sggmiE !por si se ha modificado !ojo agresivo 180220 !ojo cambiado aqui 170323 de sitio pq no se habian puesto los deltatrans y salia division por cero
-                        !fin dama
+                        sggmiE = sggmiEx(i1,j1,k1); call deembed_peclossyconformal_segments(sggmiE); sggmiEx(i1,j1,k1)= sggmiE !in case it has been modified !aggressive note 180220 !note moved here 170323 from its place because the deltatrans had not been set and a division by zero occurred
+                        !end dama
                       case (iEy)    
                         ! default
                         HWires%CurrentSegment(conta)%Efield_wire2main => Ey(i1,j1,k1) 
                         HWires%CurrentSegment(conta)%Efield_main2wire => Ey(i1,j1,k1)      
                         !
                         HWires%CurrentSegment(conta)%delta=1.0_RKIND_WIRES / Idye(j1)
-                        if (k1 <= sgg%ALLOC(IEZ)%ZE) then !esta corriente en el limite de los alloc nunca se precisa
-                           !updateo por exceso para que haya una celda de solapamiento y la union topologica de
-                           !hilos no se pierda por culpa de la puta particion MPI
+                        if (k1 <= sgg%ALLOC(IEZ)%ZE) then !this current at the alloc limit is never needed
+                           !over-update so that there is an overlap cell and the topological union of
+                           !wires is not lost because of the damn MPI partition
                            HWires%CurrentSegment(conta)%deltaTransv1=1.0_RKIND_WIRES / Idzh(k1)
                         else
-                           HWires%CurrentSegment(conta)%deltaTransv1=1.0_RKIND_WIRES / Idzh(k1-1) !no se comete error alguno
-                           !es solo para que el indice no reviente 2012
+                           HWires%CurrentSegment(conta)%deltaTransv1=1.0_RKIND_WIRES / Idzh(k1-1) !no error is made
+                           !it is only so that the index does not blow up 2012
                         end if
                         HWires%CurrentSegment(conta)%deltaTransv2=1.0_RKIND_WIRES / Idxh(i1)
                         !dama
                         HWires%CurrentSegment(conta)%je     = j1+1
                         HWires%CurrentSegment(conta)%x      = k1+0.25_RKIND_WIRES
                         HWires%CurrentSegment(conta)%y      = i1+0.25_RKIND_WIRES
-                        sggmiE = sggmiEy(i1,j1,k1); call deembed_peclossyconformal_segments(sggmiE); sggmiEy(i1,j1,k1)= sggmiE !por si se ha modificado !ojo agresivo 180220 !ojo cambiado aqui 170323 de sitio pq no se habian puesto los deltatrans y salia division por cero
-                        !fin dama
+                        sggmiE = sggmiEy(i1,j1,k1); call deembed_peclossyconformal_segments(sggmiE); sggmiEy(i1,j1,k1)= sggmiE !in case it has been modified !aggressive note 180220 !note moved here 170323 from its place because the deltatrans had not been set and a division by zero occurred
+                        !end dama
                       case (IEZ)  
                         ! default
                         HWires%CurrentSegment(conta)%Efield_wire2main => Ez(i1,j1,k1) 
@@ -1322,20 +1322,20 @@ contains
                         HWires%CurrentSegment(conta)%ke     = k1+1
                         HWires%CurrentSegment(conta)%x      = i1+0.25_RKIND_WIRES
                         HWires%CurrentSegment(conta)%y      = j1+0.25_RKIND_WIRES
-                        sggmiE = sggmiEz(i1,j1,k1); call deembed_peclossyconformal_segments(sggmiE); sggmiEz(i1,j1,k1)= sggmiE !por si se ha modificado !ojo agresivo 180220 !ojo cambiado aqui 170323 de sitio pq no se habian puesto los deltatrans y salia division por cero
-                        !fin dama
+                        sggmiE = sggmiEz(i1,j1,k1); call deembed_peclossyconformal_segments(sggmiE); sggmiEz(i1,j1,k1)= sggmiE !in case it has been modified !aggressive note 180220 !note moved here 170323 from its place because the deltatrans had not been set and a division by zero occurred
+                        !end dama
                      end select
                   end if
-               end if !del repetido
+               end if !of the duplicate
             end do
          end do
  
-!!fin niapa 171216
+!!end patch 171216
       !
       HWires%NumCurrentSegments=conta
       !
 
-      !hacer agujeros
+      !make holes
 
       do i1=1,HWires%NumCurrentSegments
          segmento=>HWires%CurrentSegment(i1)
@@ -1575,18 +1575,18 @@ contains
          end if
       end do
 
-!!!calculo y gestion autoinduccion
+!!!calculation and handling of self-inductance
       do i1=1,HWires%NumCurrentSegments
          jmed=HWires%CurrentSegment(i1)%indexmed
          desp=HWires%CurrentSegment(i1)%delta
          despT1=HWires%CurrentSegment(i1)%deltaTransv1
          despT2=HWires%CurrentSegment(i1)%deltaTransv2
-         ! Esto no debe ser preciso. la hipotesis es que vuelve promediando a una celda
-         if (control%wirethickness>1) then        !solo tiene impacto en la %cte2 de acople y en la fuente de carga para que sea de voltaje
+         ! This should not be needed. the hypothesis is that it returns averaging to one cell
+         if (control%wirethickness>1) then        !it only has an impact on the coupling %cte2 and on the charge source so that it is a voltage one
            despT1=control%wirethickness*despT1
            despT2=control%wirethickness*despT2
          end if
-         r0=HWires%CurrentSegment(i1)%wireType%Radius   ! CON SU RADIO
+         r0=HWires%CurrentSegment(i1)%wireType%Radius   ! WITH ITS RADIUS
          
           if (r0 < 1e-30) then 
               write (buff,*)  'wir0_ERROR: ire radius cannot be null'
@@ -1606,7 +1606,7 @@ contains
             !---------------------------------------------------------------------------------
             !!Slanted=Berenger
             !The second best one for the edelvik PEC box (Boutayeb's PPT is the best one for this case)
-            !menos ruidoso que el de Boutayeb en uniones de hilos paralelos
+            !less noisy than Boutayeb's one at junctions of parallel wires
             HWires%CurrentSegment(i1)%Lind = &
             (1.0_RKIND_WIRES / (4.0_RKIND_WIRES * pi*InvMu(jmed)))*(log((despT1**2.0_RKIND_WIRES +despT2**2.0_RKIND_WIRES )/(4*r0**2.0_RKIND_WIRES ))  + &
             despT1/despT2*atan(despT2/despT1)     + &
@@ -1625,7 +1625,7 @@ contains
             !---------------------------------------------------------------------------------
             !Ledfelt thesis square symbols
             !The best for the antenna dipole, but it is not the best for edelvik's cavity
-            !Dec'11 me ha dado muy bien al revisar el TC2_OF-SWAB-A2-B
+            !Dec'11 worked very well for me when reviewing TC2_OF-SWAB-A2-B
             !warning: there is a mistake in formula 8.15 parenthesis
             HWires%CurrentSegment(i1)%Lind = &
             (1.0_RKIND_WIRES / (4.0_RKIND_WIRES * pi*InvMu(jmed)))*(log((despT1**2.0_RKIND_WIRES +despT2**2.0_RKIND_WIRES )/(  r0**2.0_RKIND_WIRES ))+ &
@@ -1672,7 +1672,7 @@ contains
          end if
          !!!!for junctions after holland
          !!!    HWires%CurrentSegment(i1)%logRoverR0=log(((desp*despT1*despT2)**(1.0_RKIND_wires/3.0_RKIND_wires))/r0)  !HWires%CurrentSegment(i1)%Lind ! !holland pp90 (17)(18)
-         !!!!22/07/15 el cambio de radio es equivalente a un cambio de delta.... uso algo mejor
+         !!!!22/07/15 the radius change is equivalent to a delta change.... I use something better
          !!!  HWires%CurrentSegment(i1)%logRoverR0=HWires%CurrentSegment(i1)%Lind * InvMu(jmed) * InvEPS(jmed)
          !!!!
 
@@ -1709,7 +1709,7 @@ contains
       deallocate(LindProb)
 
 
-      !!!!solo para pruebas
+      !!!!only for testing
       !!!open (629,file='param.txt',form='formatted')
       !!!    read (629,*) deltadummy
       !!!close (629)
@@ -1719,7 +1719,7 @@ contains
       !!!end do
       !!!!!!!!
       !!!!!!!!!!!!!!!!!\E7\E7\E7\E7\E7\E7\E7\E7\E7\E7
-      !!!!!!!! hago 120715 mi criterior
+      !!!!!!!! I do my criterion 120715
       dtcritico=sgg%dt
       do i1=1,HWires%NumCurrentSegments
          dummy => HWires%CurrentSegment(i1)
@@ -1732,8 +1732,8 @@ contains
               write (buff,*)  'wir0_ERROR: wire radius cannot be null'
               if ((k1 >= ZI).and.(k1 <= ZE))  call WarnErrReport(buff,.true.)
          end if   
-         !!!!!!!!!!!!correccion bruta 13/07/15
-         deltadummy=dummy%inv_Lind_acum * dummy%HEUR_safety/0.9_RKIND_WIRES  !EL 0.9 ES POR MI TRANQUILIDAD
+         !!!!!!!!!!!!crude correction 13/07/15
+         deltadummy=dummy%inv_Lind_acum * dummy%HEUR_safety/0.9_RKIND_WIRES  !THE 0.9 IS FOR MY PEACE OF MIND
          if (deltadummy > 1.0_RKIND_WIRES) then
             if (control%stableradholland) then
                if (trim(adjustl(control%inductance_model))=='boutayeb') then
@@ -1758,7 +1758,7 @@ contains
                   ' ',dummy%NumParallel, ' wires at ',dummy%i,dummy%j,dummy%k,' to L/mu0=',dummy%Lind*deltadummy/mu0
                end if
                if ((dummy%k > ZI).and.(dummy%k <= ZE)) call WarnErrReport(buff)
-               dummy%Lind = dummy%Lind* deltadummy !bajo repartiendo proporcialmente
+               dummy%Lind = dummy%Lind* deltadummy !I go down distributing proportionally
             else
                write (buff,'(a,e10.2e3,a,i9,a,3i9,a,e10.2e3)')  'wir0_SEVEREWARNING: L/mu0=', dummy%Lind/mu0, &
                ' in ',dummy%NumParallel, ' wires at ',dummy%i,dummy%j,dummy%k,' smaller (posibly unstable) than L/mu0=',dummy%Lind*deltadummy/mu0
@@ -1773,7 +1773,7 @@ contains
       !!            call WarnErrReport(buff,.true.)
       !!end if
 
-      !!!!!!!!!!!fin !mi criterio 13/07/15
+      !!!!!!!!!!!end !my criterion 13/07/15
 
 
       !Grounding R_RightEnd and R_LeftEnd resistances info
@@ -1840,7 +1840,7 @@ contains
       !Junctions do no affect to these constants (later taken into account by means of the fractionplus and
       !fractionminus constants)
       do i1=1,HWires%NumCurrentSegments
-         !constantes de actualizacion
+         !update constants
          dummy=> HWires%CurrentSegment(i1)
          resist=0.0_RKIND_WIRES
 
@@ -1874,10 +1874,10 @@ contains
                 kmenos1= k-1
                 kmas1  = k+1
                 !
-                !esta informacion solo se utiliza si realmente luego hay un nodo terminal y se suma la resistencia. En cualquier otro caso no sirver para nada
-                !de todos modos hay un bug en la deteccion. sgg 110815
-                ! se usal la informacion nodal (lo que sigue algun d\EDa se mover\E1 a la rutina de generacion nodal que se creo en preprocess y se podra dejar solo lo que sigue 110815
-                !!!bug 270224 gg Cuando se sobrepasa el MPI  kmenos1=k o kmas1=k da un buggy error. Pero no se toma decision alguna. se puede ignorar con -ignoreerrors
+                !this information is only used if there is actually a terminal node later and the resistance is added. In any other case it is useless
+                !anyway there is a bug in the detection. sgg 110815
+                ! the nodal information is used (what follows will someday be moved to the nodal generation routine created in preprocess and only what follows may be left 110815
+                !!!bug 270224 gg When the MPI boundary is exceeded kmenos1=k or kmas1=k gives a buggy error. But no decision is taken. it can be ignored with -ignoreerrors
                 select case (whatfield)
                  case (iEx)
                    med(0)  = sggMiEx(i + 1  , j     , k)
@@ -1908,8 +1908,8 @@ contains
                    med(10) = sggMiEx(i - 1  , j     , k)
                    med(11) = sggMiNo(i      , j     , k)
                  case (IEZ)
-!!!ojooooo 270224 esta logica esta mal porque machaco las variables kmas1 y kmenos1.... corregir.... no tiene impacto pq el bucle es informativo y no se toman decisiones. en todo caso solo afectaria a MPI!
-                     !!!pero esta no es la razon 27024 por la que sucede el error gg   (    8/   40) wir1_BUGGYERROR:  Lossy, pec,  2.           329         180         160   15000.0000000000      F F
+!!!careful 270224 this logic is wrong because I overwrite the variables kmas1 and kmenos1.... fix.... it has no impact because the loop is informative and no decisions are taken. in any case it would only affect MPI!
+                     !!!but this is not the reason 27024 why the gg error occurs   (    8/   40) wir1_BUGGYERROR:  Lossy, pec,  2.           329         180         160   15000.0000000000      F F
                    if (kmas1   >  sgg%alloc(IEZ)%ZE) kmas1=k  ; med(0)  = sggMiEz(i     , j     , kmas1)
                    if (kmas1   >  sgg%alloc(iEx)%ZE) kmas1=k  ; med(1)  = sggMiEx(i     , j     , kmas1)
                    if (kmas1   >  sgg%alloc(iEx)%ZE) kmas1=k  ; med(2)  = sggMiEx(i - 1 , j     , kmas1)
@@ -1924,7 +1924,7 @@ contains
                    med(10) = sggMiEy(i     , j - 1 , k)
                    med(11) = sggMiNo(i     , j     , k)
                 end select
-                !hay que tratar cada extremo por separado
+                !each end must be treated separately
                 do nm=0,5
                    IsLossyPlus             = IsLossyPlus             .or. sgg%Med(med(nm))%Is%Lossy
                    IsPECPlus                   = IsPECPlus           .or. sgg%med(med(nm))%is%PEC .or. (med(nm)==0)
@@ -1939,49 +1939,49 @@ contains
                       sigtMinu                    = max(sigtMinu,                    sgg%Med(med(nm))%sigma)
                    end if
                 end do
-!!!telaranias quitadas 060215
-                if (IsPECPlus) then !domina el pec en un nodo con multiples medios
+!!!dead code removed 060215
+                if (IsPECPlus) then !PEC dominates at a node with multiple media
                    IsLossyPlus=.false.
                 end if
-                if (IsPECMinu) then !domina el pec en un nodo con multiples medios
+                if (IsPECMinu) then !PEC dominates at a node with multiple media
                    IsLossyMinu=.false.
                 end if
-                sigt                  = max(sigtplus,sigtMinu) !con que uno de los dos extremos sea Lossy hay que corregir la resistencia de contacto
-                IsLossy               = IsLossyPlus               .or. IsLossyMinu !con que uno de los dos extremos sea Lossy hay que corregir la resistencia de contacto
-                IsPEC                 = IsPECPlus                 .and.  IsPECMinu  !!!importante para ser PEC tienen que serlo los dos (es un caso trivial de un segemento unido a pec por los dos sitios. pero se da en el siva)
-                !!!checking de coherencia
-                if (isPEC.and.IsLossy) then !es decir: los dos extremos PEC y alguno lossy es que hay un error
+                sigt                  = max(sigtplus,sigtMinu) !if either of the two ends is Lossy the contact resistance must be corrected
+                IsLossy               = IsLossyPlus               .or. IsLossyMinu !if either of the two ends is Lossy the contact resistance must be corrected
+                IsPEC                 = IsPECPlus                 .and.  IsPECMinu  !!!important: to be PEC both must be so (it is a trivial case of a segment joined to PEC at both places. but it happens in the siva)
+                !!!consistency checking
+                if (isPEC.and.IsLossy) then !that is: both ends PEC and one lossy means there is an error
                       write (buff,*)  'wir1_BUGGYERROR:  Lossy, pec, 1.  ', i,j,k,sigt,ispec,isLossy
                       call WarnErrReport(buff,.true.)
                 end if
                 !!!
-                if ((.not.ispec).and.(.not.isLossy)) then  !algun extremo no pec y ambos extremos no lossy debe haber error si la conductividad no es nula
+                if ((.not.ispec).and.(.not.isLossy)) then  !some end not PEC and both ends not lossy means there must be an error if the conductivity is not zero
                    if (abs(sigt) > 1.0e-19_RKIND_WIRES) then
-                       !270224 creo que el bug gg 270224 es simplemente que conviven pec y lossy en plus o minus siendo el otro minus/plus vacio. Se voidea
-                       !270224 el islosyplus/minus a false por ser pec. el ispec es false porque uno es vacio y el islossy tambien es vacio
-                       !270224 pero se ha almacenado alguna sigt no nula. El arreglo es simplemente convertir esto en un warning de casuistica de conexionado en vez de un buggyerror
-                      !!comentado a 010324 por los motivos anteriores    write (buff,*)  'wir1_BUGGYERROR:  Lossy, pec,  2.  ', i,j,k,sigt,ispec,isLossy
-                      !!comentado a 010324 por los motivos anteriores    call WarnErrReport(buff,.true.)
+                       !270224 I think the gg bug 270224 is simply that PEC and lossy coexist in plus or minus while the other minus/plus is empty. It is voided
+                       !270224 the islossyplus/minus goes to false because it is PEC. the ispec is false because one is empty and the islossy is also empty
+                       !270224 but some non-null sigt has been stored. The fix is simply to turn this into a connection-case warning instead of a buggyerror
+                      !!commented out on 010324 for the above reasons    write (buff,*)  'wir1_BUGGYERROR:  Lossy, pec,  2.  ', i,j,k,sigt,ispec,isLossy
+                      !!commented out on 010324 for the above reasons    call WarnErrReport(buff,.true.)
                    end if
                    write (buff,*)  'wir1_WARNING:  Lossy, pec,  2.: A wire is connected at some ending both to a lossy and to a PEC edge. Assuming it PEC  ', i,j,k,sigt,ispec,isLossy,IsPECPlus,IsPECMinu
                    call WarnErrReport(buff)
                 end if
-                if (isLossy) then !alguno extremo lossy con conductividad desconocida (multiports de ss)
+                if (isLossy) then !some lossy end with unknown conductivity (ss multiports)
                    if (abs(sigt) < 1.0e-19_RKIND_WIRES) then
-                      sigt=1e4 ! asignale una resistencia de contacto por defecto si es nula !tipico de los composites de ss !habra algun dia que afinar esto
+                      sigt=1e4 ! assign it a default contact resistance if null !typical of ss composites !some day this will have to be refined
                       write (buff,*)  'wir1_WARNING:  A Lossy segment with unknown conductivity. Assuming a STANDARD value of 1e4 S/m ', i,j,k,sigt,ispec,isLossy,IsLossyPlus,IsLossyMinu
                       call WarnErrReport(buff)
                    end if
                 end if
 
-                !!!!!!!!!!!!!!!!!!!!hasta aqui casuistica. Aniade ahora la resistencia si procede con la formula de tercero de fisicas
+                !!!!!!!!!!!!!!!!!!!!up to here the case analysis. Now add the resistance if applicable with the third-year physics formula
                 if (isLossy) then
-                   !rlossy=rlossy + 1.0_RKIND_wires/(2.0_RKIND_wires * pi*dummy%TipoWire%radius*sigt)/dummy%delta   !p.u.l.     !pruebas distintas 0223
-                    !rlossy=rlossy + 1.0_RKIND_wires/(2.0_RKIND_wires * pi*dummy%DELTA          *sigt)/dummy%delta   !p.u.l.     !pruebas distintas 0223
-                    rlossy=rlossy ! + 1.0_RKIND_wires/(2.0_RKIND_wires * pi * (control%factordelta*dummy%DELTA +control%factorradius*dummy%TipoWire%radius) *sigt)/dummy%delta   !p.u.l. !comentado a 290323 porque no me fio de esto hasta que no se valide bien agb
+                   !rlossy=rlossy + 1.0_RKIND_wires/(2.0_RKIND_wires * pi*dummy%TipoWire%radius*sigt)/dummy%delta   !p.u.l.     !different tests 0223
+                    !rlossy=rlossy + 1.0_RKIND_wires/(2.0_RKIND_wires * pi*dummy%DELTA          *sigt)/dummy%delta   !p.u.l.     !different tests 0223
+                    rlossy=rlossy ! + 1.0_RKIND_wires/(2.0_RKIND_wires * pi * (control%factordelta*dummy%DELTA +control%factorradius*dummy%TipoWire%radius) *sigt)/dummy%delta   !p.u.l. !commented out on 290323 because I do not trust this until it is well validated agb
                 end if
              end if
-         end if !del esPML
+         end if !of esPML
          !
          resist=dummy%wireType%R
          givenautoin = HWires%CurrentSegment(i1)%wireType%L
@@ -1993,10 +1993,10 @@ contains
          dummy%givenautoin_devia =                          givenautoin_devia
               dummy%resist_devia =                               resist_devia
 
-         !!bug'inest OLD 020413 !\E7 ahora solo se tratan resistencias y se aniaden a los segementos finales
+         !!bug/inest OLD 020413 !\E7 now only resistances are handled and they are added to the final segments
 
          if ((dummy%Is_LeftEnd).and.(isLossy.or.isLossy)) then
-            !no tengo en cuenta el caso particularisimo de un solo segmento conectado a lossy por los dos extremos !habria que sumarle la resistencia dos veces pero la casuistica se enfollona !\E7
+            !I do not take into account the very particular case of a single segment connected to lossy at both ends !the resistance would have to be added twice but the case analysis gets messy !\E7
             if ((.not.dummy%HasParallel_LeftEnd).and.(.not.dummy%HasSeries_LeftEnd).and.(.not.dummy%HasAbsorbing_LeftEnd)) then
                resist=resist+rlossy
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Lossy material resistence to LeftEnd segment in contact with lossy without a terminal RLC ', &
@@ -2010,7 +2010,7 @@ contains
             if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%fieldKind == IEZ).and.control%verbose) call WarnErrReport(buff)
          end if
          if ((dummy%Is_RightEnd).and.(isLossy.or.isLossy)) then
-            !no tengo en cuenta el caso particularisimo de un solo segmento conectado a lossy por los dos extremos !habria que sumarle la resistencia dos veces pero la casuistica se enfollona !\E7
+            !I do not take into account the very particular case of a single segment connected to lossy at both ends !the resistance would have to be added twice but the case analysis gets messy !\E7
             if ((.not.dummy%HasParallel_RightEnd).and.(.not.dummy%HasSeries_RightEnd).and.(.not.dummy%HasAbsorbing_RightEnd)) then
                resist=resist+rlossy
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Lossy material resistence to RightEnd segment in contact with lossy without a terminal RLC  ', &
@@ -2023,12 +2023,12 @@ contains
             if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%fieldKind /= IEZ).and.control%verbose) call WarnErrReport(buff)
             if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%fieldKind == IEZ).and.control%verbose) call WarnErrReport(buff)
          end if
-         !!! lOS QUE NO TENGAN RESITENCIAS Y ESTEN EN ABIERTO NO LOS CONECTO A LOSSY. sI SE QUIEREN HACER CONEXIONES A LOSSY
-         !!! HAY QUE ESPECIFICAR UNA RESISTENCIA LUMPED
-         !!! lUEGO SI SE CONECTARAN A pec DIRECTAMENTE SI LA TOPOLOGIA LO MANDA
+         !!! THOSE WITHOUT RESISTANCES THAT ARE OPEN I DO NOT CONNECT THEM TO LOSSY. IF LOSSY CONNECTIONS ARE WANTED
+         !!! A LUMPED RESISTANCE MUST BE SPECIFIED
+         !!! THEN THEY WILL BE CONNECTED TO pec DIRECTLY IF THE TOPOLOGY SAYS SO
          !!!
          if ((dummy%IsEnd_norLeft_norRight).and.(isLossy.or.isLossy)) then
-            !no tengo en cuenta el caso particularisimo de un solo segmento conectado a lossy por los dos extremos !habria que sumarle la resistencia dos veces pero la casuistica se enfollona !\E7
+            !I do not take into account the very particular case of a single segment connected to lossy at both ends !the resistance would have to be added twice but the case analysis gets messy !\E7
             if ((.not.dummy%HasParallel_LeftEnd).and.(.not.dummy%HasSeries_LeftEnd).AND.(.not.dummy%HasParallel_RightEnd).and.(.not.dummy%HasSeries_RightEnd).and. &
                                                                                                               (.not.dummy%HasAbsorbing_RightEnd)) then
                resist=resist+rlossy
@@ -2046,16 +2046,16 @@ contains
          end if
 
          if (dummy%HasParallel_RightEnd) then
-            givenautoin=givenautoin + dummy%wireType%Parallel_L_RightEnd/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
+            givenautoin=givenautoin + dummy%wireType%Parallel_L_RightEnd/dummy%delta !the self-inductance is added to it !2011 \E7 untested
             dummy%givenautoin=givenautoin
 !stoch
-                  givenautoin_devia=givenautoin_devia + dummy%wireType%Parallel_L_RightEnd_devia/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
+                  givenautoin_devia=givenautoin_devia + dummy%wireType%Parallel_L_RightEnd_devia/dummy%delta !the self-inductance is added to it !2011 \E7 untested
             dummy%givenautoin_devia=givenautoin_devia
 
-            !!bug'inest OLD 020413 !\E7 ahora solo se tratan resistencias y se aniaden a los segmentos finales
+            !!bug/inest OLD 020413 !\E7 now only resistances are handled and they are added to the final segments
 
-            resist=resist +                dummy%wireType%Parallel_R_RightEnd/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
-            resist_devia=resist_devia +    dummy%wireType%Parallel_R_RightEnd_devia/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
+            resist=resist +                dummy%wireType%Parallel_R_RightEnd/dummy%delta !the self-inductance is added to it !2011 \E7 untested
+            resist_devia=resist_devia +    dummy%wireType%Parallel_R_RightEnd_devia/dummy%delta !the self-inductance is added to it !2011 \E7 untested
             if (dummy%wireType%Parallel_R_RightEnd /= 0.0_RKIND_WIRES) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Parallel RightEnd Resistance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%fieldKind)
@@ -2068,14 +2068,14 @@ contains
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%fieldKind == IEZ).and.control%verbose) call WarnErrReport(buff)
             end if
 
-            !(ojo que es per unit length la intrinsea)
+            !(note that the intrinsic one is per unit length)
             if (dummy%wireType%Parallel_L_RightEnd /= 0.0_RKIND_WIRES) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Parallel RightEnd Inductance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%fieldKind)
                if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%fieldKind /= IEZ).and.control%verbose) call WarnErrReport(buff)
                if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%fieldKind == IEZ).and.control%verbose) call WarnErrReport(buff)
             end if
-            !aniado tambien al ultimo segmento la resistencia y peto si hay capacitancias
+            !I also add the resistance to the last segment and check if there are capacitances
             if (dummy%wireType%Parallel_C_RightEnd >= 1.0e-12_RKIND_WIRES) then
                write (buff,'(a,4i7,a)')  'wir1_ERROR: (Currently unsupported)  Capacitances in Parallel RightEnd at segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%fieldKind)
@@ -2086,15 +2086,15 @@ contains
             end if
          end if
          if (dummy%HasParallel_LeftEnd) then
-            givenautoin=givenautoin + dummy%wireType%Parallel_L_LeftEnd/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
+            givenautoin=givenautoin + dummy%wireType%Parallel_L_LeftEnd/dummy%delta !the self-inductance is added to it !2011 \E7 untested
             dummy%givenautoin=givenautoin
 !
-                  givenautoin_devia=givenautoin_devia + dummy%wireType%Parallel_L_LeftEnd_devia/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
+                  givenautoin_devia=givenautoin_devia + dummy%wireType%Parallel_L_LeftEnd_devia/dummy%delta !the self-inductance is added to it !2011 \E7 untested
             dummy%givenautoin_devia=givenautoin_devia
-            !!bug'inest OLD 020413 !\E7 ahora solo se tratan resistencias y se aniaden a los segementos finales
+            !!bug/inest OLD 020413 !\E7 now only resistances are handled and they are added to the final segments
 
-            resist=resist +                  dummy%wireType%Parallel_R_LeftEnd      /dummy%delta !se le suma la autoinduccion !2011 \E7 untested
-            resist_devia=resist_devia +      dummy%wireType%Parallel_R_LeftEnd_devia/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
+            resist=resist +                  dummy%wireType%Parallel_R_LeftEnd      /dummy%delta !the self-inductance is added to it !2011 \E7 untested
+            resist_devia=resist_devia +      dummy%wireType%Parallel_R_LeftEnd_devia/dummy%delta !the self-inductance is added to it !2011 \E7 untested
             if (dummy%wireType%Parallel_R_LeftEnd /= 0.0_RKIND_WIRES) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Parallel LeftEnd Resistance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%fieldKind)
@@ -2124,16 +2124,16 @@ contains
          end if
          !
          if (dummy%HasSeries_RightEnd) then
-            givenautoin=givenautoin + dummy%wireType%Series_L_RightEnd/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
+            givenautoin=givenautoin + dummy%wireType%Series_L_RightEnd/dummy%delta !the self-inductance is added to it !2011 \E7 untested
             resist=resist +           dummy%wireType%Series_R_RightEnd/dummy%delta 
             dummy%givenautoin=givenautoin
             dummy%resist=resist
 !
-                  givenautoin_devia=givenautoin_devia + dummy%wireType%Series_L_RightEnd_devia/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
+                  givenautoin_devia=givenautoin_devia + dummy%wireType%Series_L_RightEnd_devia/dummy%delta !the self-inductance is added to it !2011 \E7 untested
                        resist_devia=     resist_devia + dummy%wireType%Series_R_RightEnd_devia/dummy%delta 
             dummy%givenautoin_devia=givenautoin_devia
                  dummy%resist_devia=     resist_devia
-            !(ojo que es per unit length la intrinsea)
+            !(note that the intrinsic one is per unit length)
             if (dummy%wireType%Series_L_RightEnd /= 0.0_RKIND_WIRES) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Series RightEnd Inductance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%fieldKind)
@@ -2157,13 +2157,13 @@ contains
 
          end if
          if (dummy%HasSeries_LeftEnd) then
-            givenautoin=givenautoin + dummy%wireType%Series_L_LeftEnd/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
-            resist=resist +           dummy%wireType%Series_R_LeftEnd/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
+            givenautoin=givenautoin + dummy%wireType%Series_L_LeftEnd/dummy%delta !the self-inductance is added to it !2011 \E7 untested
+            resist=resist +           dummy%wireType%Series_R_LeftEnd/dummy%delta !the self-inductance is added to it !2011 \E7 untested
             dummy%givenautoin=givenautoin
             dummy%resist=resist
 !
-                   givenautoin_devia = givenautoin_devia + dummy%wireType%Series_L_LeftEnd_devia/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
-                        resist_devia =      resist_devia + dummy%wireType%Series_R_LeftEnd_devia/dummy%delta !se le suma la autoinduccion !2011 \E7 untested
+                   givenautoin_devia = givenautoin_devia + dummy%wireType%Series_L_LeftEnd_devia/dummy%delta !the self-inductance is added to it !2011 \E7 untested
+                        resist_devia =      resist_devia + dummy%wireType%Series_R_LeftEnd_devia/dummy%delta !the self-inductance is added to it !2011 \E7 untested
              dummy%givenautoin_devia = givenautoin_devia
                   dummy%resist_devia =      resist_devia
             if (dummy%wireType%Series_L_LeftEnd /= 0.0_RKIND_WIRES) then
@@ -2198,7 +2198,7 @@ contains
          dummy%L_devia = givenautoin_devia
          dummy%givenautoin_devia =givenautoin_devia
               dummy%resist_devia =     resist_devia
-!!!ojooooo  acumulo en %lind toda la autoinduccion para que los calculos de capacidad la tengan en cuenta completa    
+!!!careful  I accumulate in %lind all the self-inductance so that the capacitance calculations take it fully into account
          if (.not.control%fieldtotl) then
              dummy%Lind=dummy%Lind+givenautoin
 !
@@ -2209,7 +2209,7 @@ contains
              dummy%Lind=givenautoin
 !
              dummy%Lind_devia= givenautoin_devia
-         end if !para el fieldtotl no tento en cuenta mas que la autoin y no devuelvo nada !100517
+         end if !for fieldtotl I only take the self-inductance into account and do not return anything !100517
 
          call wiresconstantes(control%fieldtotl,dummy,G2,sgg)
 
@@ -2217,10 +2217,10 @@ contains
       end do
 
       !!!!
-      !!!copiado 23/04/2014
+      !!!copied 23/04/2014
       !
       if (trim(adjustl(control%wiresflavor))=='transition') then
-         !contar multilines
+         !count multilines
          NumMultilines = 0
          do is1 = 1,HWires%NumCurrentSegments
             if(.not.(HWires%CurrentSegment(is1)%proc)) then
@@ -2246,7 +2246,7 @@ contains
          write (buff,*)  'wir1_INFO: Numero de multilineas ', NumMultilines
          if (control%verbose) call WarnErrReport(buff)
          allocate(HWires%Multilines(1:NumMultilines))
-         !contar paralelos
+         !count parallel ones
          contmtln = 0
          do is1 = 1,HWires%NumCurrentSegments
             if(.not.(HWires%CurrentSegment(is1)%proc)) then
@@ -2276,7 +2276,7 @@ contains
             HWires%CurrentSegment(is1)%proc = .false.
          end do
 
-         !asignar multilines
+         !assign multilines
          contmtln = 0
          do is1 = 1,HWires%NumCurrentSegments
             if(.not.(HWires%CurrentSegment(is1)%proc)) then
@@ -2306,7 +2306,7 @@ contains
             end if
          end do
 
-         !asignamos posiciones en celda
+         !we assign positions in the cell
          do iw1 = 1,NumMultilines
             N = HWires%Multilines(iw1)%NumParallel
             do i1 = 2,N
@@ -2315,8 +2315,8 @@ contains
             end do
          end do
 
-         !asignar autoinducciones
-         !asignar constantes de evolucion
+         !assign self-inductances
+         !assign evolution constants
 
          do iw1 = 1,NumMultilines
             NumParallel = HWires%Multilines(iw1)%NumParallel
@@ -2382,9 +2382,9 @@ contains
 
             HWires%Multilines(iw1)%b1I = MatMul(Den, HWires%Multilines(iw1)%L(1:NumParallel,1:NumParallel)  - &
             HWires%Multilines(iw1)%R(1:NumParallel,1:NumParallel)*sgg%dt/2.0_RKIND_WIRES)
-            !yo lo hago con cargas y no hay que multiplicar por C
-            dl  =  HWires%Multilines(iw1)%Segments(1)%ptr%delta !tomo el de 1 !dama no lo tenia
-            imed 	= HWires%Multilines(iw1)%Segments(1)%ptr%indexmed !lo aniado yo pq no estaba definido sgg 141118  !tomo el de 1 !dama no lo tenia
+            !I do it with charges and there is no need to multiply by C
+            dl  =  HWires%Multilines(iw1)%Segments(1)%ptr%delta !I take the one from 1 !dama did not have it
+            imed 	= HWires%Multilines(iw1)%Segments(1)%ptr%indexmed !I add it because it was not defined sgg 141118  !I take the one from 1 !dama did not have it
             HWires%Multilines(iw1)%b2I = -sgg%dt/dl*InvMu(imed)*InvEps(imed)*MatMul(Den,HWires%Multilines(iw1)%L)
             !   HWires%Multilines(iw1)%b2I = -sgg%dt/dl*InvMu(imed)*InvEps(imed)*MatMul(MatMul(Den,HWires%Multilines(iw1)%L),HWires%Multilines(iw1)%C)
             HWires%Multilines(iw1)%b3I = sgg%dt*Den
@@ -2395,8 +2395,8 @@ contains
                HWires%Multilines(iw1)%Segments(is1)%ptr%bI = HWires%Multilines(iw1)%b2I(is1,is1)
             end do
          end do
-      end if !DEL FLAVOR transition
-      !!!!!!!!!!fin dama
+      end if !OF THE transition FLAVOR
+      !!!!!!!!!!end dama
       !!!
 
 
@@ -2498,7 +2498,7 @@ contains
          HWires%ChargeNode(i1)%oRIGctePlain            =0.0_RKIND_WIRES
          HWires%ChargeNode(i1)%ctePlain            =0.0_RKIND_WIRES
          do j1=1,2*MAXNUMCURRENTMINUSPLUS
-            HWires%ChargeNode(i1)%YESsegment(j1)      =-j1 !default !servira luego para contar nodos repetidos
+            HWires%ChargeNode(i1)%YESsegment(j1)      =-j1 !default !will later be used to count duplicate nodes
          end do
       end do
 
@@ -2508,7 +2508,7 @@ contains
       !Detect nodes which are Between two segments (posible duplicities are removed)
       conta=0
       NUMESEG=HWires%NumCurrentSegments
-      !runtina de adjacencias
+      !adjacency routine
       do i1=1,HWires%NumCurrentSegments
          org=>HWires%CurrentSegment(i1)
          orgmenos1 => null()
@@ -2610,7 +2610,7 @@ contains
                   end if
                end if
 
-               if (Adj%Is .and. ADj%BothEndingsConnected) then !busca el otro extremo y crealo tambien !SOLO NECESARIO EN WIRES DE UN SOLO SEGMENTO
+               if (Adj%Is .and. ADj%BothEndingsConnected) then !look for the other end and create it too !ONLY NEEDED IN SINGLE-SEGMENT WIRES
                   NodeExists=.false.
                   if     ((adj%i /= org%i)) then
                      adj%i  = org%i
@@ -2705,7 +2705,7 @@ contains
                      HWires%ChargeNode(conta)%k=adj%k
                   end if
                end if
-            end if !del i1/=ji1
+            end if !of the i1/=ji1
             !
          end do
       end do
@@ -2932,7 +2932,7 @@ contains
             end if
          end if
       end do
-      HWires%NumChargeNodes=conta !reactualize POR ULTIMA VEZ the number of charge nodes
+      HWires%NumChargeNodes=conta !reactualize FOR THE LAST TIME the number of charge nodes
       !!!!!!!!!!!
 
 
@@ -2967,12 +2967,12 @@ contains
                asignado=.true.
             end if
          end if
-         !caso particular hilos de 1  segmento
+         !particular case of 1-segment wires
          if (segmento%Is_LeftEnd.and.segmento%Is_RightEnd) then
             segmento%chargeplus%Is_LeftEnd =.true.
             segmento%chargeMinus%Is_RightEnd =.true.
             asignado=.true.
-            !bug OLD 060313 hilos de un solo segmento con RLC. Correcion en caso de formatos antiguos solo
+            !bug OLD 060313 single-segment wires with RLC. Correction only for old formats
             if (control%connectendings) then
                segmento%chargeplus%Is_LeftEnd  =.true.
                segmento%chargeplus%Is_RightEnd  =.true.
@@ -3102,7 +3102,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !find nodes at the boundaries
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !ojo que lo del shielding siguiente no es valido si hay branching. habria que shieldear canda segmento del junction !\E7\E7
+      !note that the following shielding is not valid if there is branching. each segment of the junction would have to be shielded !\E7\E7
       do i1=1,HWires%NumChargeNodes
          wireNode=>HWires%Chargenode(i1)
          if (wireNode%i==SINPML_FULLSIZE(IHX)%XI) then
@@ -3292,7 +3292,7 @@ contains
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! Constantes de actualizacion de nodos
+      ! Node update constants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       do i1=1,HWires%NumChargeNodes
@@ -3355,11 +3355,11 @@ contains
          if (wireNode%NumCurrentPlus + wireNode%NumCurrentMinus == 1) then
             wireNode%CtePlain = sgg%dt/(2.0_RKIND_WIRES * deltadummy) !correct the ending in case of open terminal
          end if
-         wireNode%oRIGctePlain =wireNode%CtePlain !lo salvo para que al ungroundear retome esta constante
+         wireNode%oRIGctePlain =wireNode%CtePlain !I save it so that on ungrounding it takes this constant back
       end do
 
       !!!!!!!!!!
-      !corrige cteplain para PEC lossy nodes
+      !corrects cteplain for PEC lossy nodes
       do i1=1,HWires%NumChargeNodes
         wireNode => HWires%ChargeNode(i1)
         if (wireNode%IsLossy.or.wireNode%isPEC) then
@@ -3375,9 +3375,9 @@ contains
          if ((wireNode%k >= sgg%Sweep(IHZ)%ZI).and. &
          (wireNode%k <= sgg%Sweep(IHZ)%ZE)) then !check that the node is inside the layout (just for MPI)
             if (wireNode%IsPec.or.wireNode%IsLossy) then
-               if ((wireNode%Is_LeftEnd).or.(wireNode%Is_RightEnd).or.(wireNode%NumCurrentPlus + wireNode%NumCurrentMinus < 2)) then !es un nodo terminal
+               if ((wireNode%Is_LeftEnd).or.(wireNode%Is_RightEnd).or.(wireNode%NumCurrentPlus + wireNode%NumCurrentMinus < 2)) then !it is a terminal node
                     continue
-               else !no es un nodo terminal LeftEnd o RightEnd o abierto pero Si es un nodo material
+               else !it is not a terminal LeftEnd or RightEnd or open node but it IS a material node
                      if (.not.control%groundwires) then
                          if (wireNode%IsPec) write (buff,'(a,i7,3i7,a,2i3,a,a)')  'wir1_BUGGYERROR: NON-terminal node lying on PEC ()', &
                         wireNode%indexnode, wireNode%i,wireNode%j,wireNode%k, &
@@ -3388,11 +3388,11 @@ contains
                         if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff,.true.)
                         !!if (nodo%isPEC)   nodo%isPEC = .false.
                         !!if (nodo%isLossy) nodo%isLossy = .false.
-                        !!!restaura las constantes
+                        !!!restore the constants
                         !!nodo%CteProp = 1.0_RKIND_wires
                         !!nodo%Cteplain = nodo%OrigCteplain
                      else
-                        !lo deja como esta
+                        !leaves it as it is
                         if (wireNode%IsPec) write (buff,'(a,i7,3i7,a,2i3,a,a)')  'wir1_INFO: Leaving grounded a  NON-Terminal node lying on PEC (LAUNCHED WITH -groundwires) ', &
                         wireNode%indexnode, wireNode%i,wireNode%j,wireNode%k, &
                         ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,')'
@@ -3408,7 +3408,7 @@ contains
 
    
       
-      !gestion condiciones mur en nodos frontera
+      !handle mur conditions at boundary nodes
 
       do i1=1,HWires%NumChargeNodes
          wireNode => HWires%ChargeNode(i1)
@@ -3492,7 +3492,7 @@ contains
                      (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt + dummy%delta)
             end if
             !!!
-         end do !del barrido de nodos !movido aqui 07/02/14 bug esn.nfde solo en reporte
+         end do !of the node sweep !moved here 07/02/14 bug esn.nfde only in reporting
       end do
 
 
@@ -3502,7 +3502,7 @@ contains
       do i1=1,HWires%NumCurrentSegments
          segmento=>HWires%CurrentSegment(i1)
          wireNode=>segmento%ChargeMinus
-         segmento%FractionMinus=-1.0e30_RKIND_wires !valor absurdo tiene que entrar siempre en algun case
+         segmento%FractionMinus=-1.0e30_RKIND_wires !absurd value, it must always enter some case
          !Junctions and plain nodes require this correction in case of two distinct radius segments meet
          DenominatorFractionMinusDummy=0.0_RKIND_WIRES
          deltadummy1=0.0_RKIND_WIRES
@@ -3555,10 +3555,10 @@ contains
             deltadummy1=deltadummy1 + dummy%delta
             DenominatorFractionMinusDummy=DenominatorFractionMinusDummy+dummy%delta/(dummy%Lind * InvMu(dummy%indexmed) * InvEPS(dummy%indexmed))
          end do
-         segmento%FractionMinus=(deltadummy1/(segmento%Lind * InvMu(segmento%indexmed) * InvEPS(segmento%indexmed)))/(DenominatorFractionMinusDummy)  !Hollond paper on wires'81 (page 91) <--- esta mal. lo de berenger en -wiresflavor new es lo correcto.. yo lo hago ahora 22/07/15
+         segmento%FractionMinus=(deltadummy1/(segmento%Lind * InvMu(segmento%indexmed) * InvEPS(segmento%indexmed)))/(DenominatorFractionMinusDummy)  !Hollond paper on wires'81 (page 91) <--- this is wrong. berenger's in -wiresflavor new is the correct one.. I do it now 22/07/15
          !
          wireNode=>segmento%ChargePlus
-         segmento%FractionPlus=-1.0e30_RKIND_wires !valor absurdo tiene que entrar siempre en algun case
+         segmento%FractionPlus=-1.0e30_RKIND_wires !absurd value, it must always enter some case
          DenominatorFractionPlusDummy=0.0_RKIND_WIRES
          deltadummy2=0.0_RKIND_WIRES
          if (wireNode%NumCurrentMinus<=0)  call StopOnError(0,0,'Bug fractionplus. ')
@@ -3618,31 +3618,31 @@ contains
       !End of the adjusting of constants and sort of nodes
 
 
-      !detect inverse oriented segments bug OLD segmentos al reves 11/03/15
+      !detect inverse oriented segments bug OLD reversed segments 11/03/15
 
       do conta=1,HWires%NumCurrentSegments
          !!only for the observation sign to match (not used in this routine)
          if (associated(HWires%CurrentSegment(conta)%chargeplus%currentplus_1)) then
             if       ((HWires%CurrentSegment(conta)%chargeplus%currentplus_1%origindex < HWires%CurrentSegment(conta)%origindex).and.&
-            (HWires%CurrentSegment(conta)%chargeplus%currentplus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !tienen que estar en el mismo hilo
+            (HWires%CurrentSegment(conta)%chargeplus%currentplus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !they must be on the same wire
                HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
          if (associated(HWires%CurrentSegment(conta)%chargeplus%currentplus_2)) then
             if       ((HWires%CurrentSegment(conta)%chargeplus%currentplus_2%origindex < HWires%CurrentSegment(conta)%origindex).and.&
-            (HWires%CurrentSegment(conta)%chargeplus%currentplus_2%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !tienen que estar en el mismo hilo
+            (HWires%CurrentSegment(conta)%chargeplus%currentplus_2%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !they must be on the same wire
                HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
-         if (associated(HWires%CurrentSegment(conta)%chargeplus%currentminus_1)) then !puede que sea yo mismo, por eso miro tambien el currentminus2
+         if (associated(HWires%CurrentSegment(conta)%chargeplus%currentminus_1)) then !it may be myself, that is why I also check currentminus2
             if       ((HWires%CurrentSegment(conta)%chargeplus%currentminus_1%origindex < HWires%CurrentSegment(conta)%origindex).and.&
-            (HWires%CurrentSegment(conta)%chargeplus%currentminus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !tienen que estar en el mismo hilo
+            (HWires%CurrentSegment(conta)%chargeplus%currentminus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !they must be on the same wire
                HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
          if (associated(HWires%CurrentSegment(conta)%chargeplus%currentminus_2)) then
             if       ((HWires%CurrentSegment(conta)%chargeplus%currentminus_2%origindex < HWires%CurrentSegment(conta)%origindex).and.&
-            (HWires%CurrentSegment(conta)%chargeplus%currentminus_2%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !tienen que estar en el mismo hilo
+            (HWires%CurrentSegment(conta)%chargeplus%currentminus_2%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !they must be on the same wire
                HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
@@ -3659,7 +3659,7 @@ contains
                HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
-         if (associated(HWires%CurrentSegment(conta)%chargeminus%currentplus_1)) then  !puede que sea yo mismo, por eso miro tambien el currentplus2
+         if (associated(HWires%CurrentSegment(conta)%chargeminus%currentplus_1)) then  !it may be myself, that is why I also check currentplus2
             if       ((HWires%CurrentSegment(conta)%chargeminus%currentplus_1%origindex > HWires%CurrentSegment(conta)%origindex).and. &
             (HWires%CurrentSegment(conta)%chargeminus%currentplus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then
                HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
@@ -3725,13 +3725,13 @@ contains
       end if
 
 
-!!!!Se arregla lo del resuming permit scaling 221118 pero realmente no se por que. deberia ser lo mismo. Es redundante, pero....
-       eps000=eps0;mu000=mu0; !niapa para evitar lo del rkind 020719
+!!!!The resuming permit scaling thing is fixed 221118 but I really do not know why. It should be the same. It is redundant, but....
+       eps000=eps0;mu000=mu0; !patch to avoid the rkind thing 020719
        call calc_wirehollandconstants(sgg,G2,control%fieldtotl,control%wiresflavor,mu000,eps000,control%simu_devia)
        
 #ifdef CompileWithThickWires
-!!!init extra thick stuff !hay que hacerlo aqui al final con toda la info
-!!!ojo si permittivity scaling y si mpi.... habra que rehacer
+!!!init extra thick stuff !it must be done here at the end with all the info
+!!!note if permittivity scaling and if mpi.... it will have to be redone
       do conta=1,HWires%NumCurrentSegments
             if (control%wirethickness>1) &
                 call init_thick(sgg,eps000,mu000,Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh,HWires%CurrentSegment(conta),control%wirethickness)
@@ -3749,23 +3749,23 @@ contains
     
        integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: sggMiE
       
-   !primero los conformal 130220 %Is%split_and_useless
+   !first the conformal ones 130220 %Is%split_and_useless
        if ((sgg%Med(sggmiE)%Is%split_and_useless).and. &
-                .not.(IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then   !NO NO NO ES UN TERMINAL
+                .not.(IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then   !NO NO NO IT IS NOT A TERMINAL
                    call deembed_segment 
                    write (buff,'(a,6i9)') 'wir0_WARNING: YES de-embedding a NON-TERMINAL conformal split_and_useless WIRE segment: ', sggmiE, &
                             HWires%CurrentSegment(conta)%origIndex,HWires%CurrentSegment(conta)%i, &
                             HWires%CurrentSegment(conta)%j,HWires%CurrentSegment(conta)%k,HWires%CurrentSegment(conta)%fieldKind
                    if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
         else if ((sgg%Med(sggmiE)%Is%split_and_useless).and. &
-                (IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then   !SI SI SI ES UN TERMINAL
+                (IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then   !YES YES YES IT IS A TERMINAL
                    call deembed_segment 
                    write (buff,'(a,6i9)') 'wir0_ERROR: YES-TERMINAL WIRE SEGMENT IN A CONFORMAL split_and_useless SURFACE (): ', sggmiE, &
                            HWires%CurrentSegment(conta)%origIndex,HWires%CurrentSegment(conta)%i, &
                           HWires%CurrentSegment(conta)%j,HWires%CurrentSegment(conta)%k,HWires%CurrentSegment(conta)%fieldKind
                    if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff,.true.)
         else if ((sgg%Med(sggmiE)%Is%already_YEEadvanced_byconformal).and. &  !!!!!!!!!!!!already_YEEadvanced_byconformal
-                .not.(IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then   !NO NO NO ES UN TERMINAL                    
+                .not.(IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then   !NO NO NO IT IS NOT A TERMINAL
                 if (.not.control%fieldtotl) then
                          HWires%CurrentSegment(conta)%cte5 = sgg%dt /eps0 /(HWires%CurrentSegment(conta)%deltaTransv1*HWires%CurrentSegment(conta)%deltaTransv2)
                         !  HWires%CurrentSegment(conta)%cte5 = HWires%CurrentSegment(conta)%cte5/3.5
@@ -3777,7 +3777,7 @@ contains
                                      HWires%CurrentSegment(conta)%j,HWires%CurrentSegment(conta)%k,HWires%CurrentSegment(conta)%fieldKind
                    if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
         else if ((sgg%Med(sggmiE)%Is%already_YEEadvanced_byconformal).and. &
-                (IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then  !SI SI SI ES UN TERMINAL                    
+                (IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then  !YES YES YES IT IS A TERMINAL
                 if (.not.control%fieldtotl) then
                          HWires%CurrentSegment(conta)%cte5 = sgg%dt /eps0 /(HWires%CurrentSegment(conta)%deltaTransv1*HWires%CurrentSegment(conta)%deltaTransv2)
                         !  HWires%CurrentSegment(conta)%cte5 = HWires%CurrentSegment(conta)%cte5/3.5
@@ -3793,7 +3793,7 @@ contains
             sgg%Med(sggmiE)%Is%Lossy ) then
                   call deembed_segment
             !
-                  if (.not.(IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then !NO NO NO ES UN TERMINAL
+                  if (.not.(IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then !NO NO NO IT IS NOT A TERMINAL
                    if ((sggmiE == 0).or.(sgg%med(sggmiE)%is%PEC)) then
                        write (buff,'(a,6i9)')        'wir0_WARNING: YES De-embedding a NON-TERMINAL struct segment from PEC ', sggmiE, &
                                   HWires%CurrentSegment(conta)%origIndex,HWires%CurrentSegment(conta)%i, &
@@ -3804,9 +3804,9 @@ contains
                                   HWires%CurrentSegment(conta)%j,HWires%CurrentSegment(conta)%k,HWires%CurrentSegment(conta)%fieldKind
                    end if
                    
-                  else  !SI SI SI ES UN TERMINAL
+                  else  !YES YES YES IT IS A TERMINAL
                    if ((sggmiE == 0).or.(sgg%med(sggmiE)%is%PEC)) then
-                       call deembed_segment !ojoo esto no estaba a 290323 y lo he aniadido porque parece que tiene sentido deembed si lo dice
+                       call deembed_segment !note this was not there at 290323 and I added it because it seems deembed makes sense if it says so
                        write (buff,'(a,6i9)')  'wir0_SEVEREWARNING: YES de-embedding a YES-TERMINAL struct SEGMENT from PEC  ', sggmiE, &
                                   HWires%CurrentSegment(conta)%origIndex,HWires%CurrentSegment(conta)%i, &
                                   HWires%CurrentSegment(conta)%j,HWires%CurrentSegment(conta)%k,HWires%CurrentSegment(conta)%fieldKind
@@ -3817,7 +3817,7 @@ contains
                      end if
                   end if  
                   if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
-!!!!  luego normales
+!!!!  then normal ones
           else
             if ((sggmiE /= 1).and.(.not.sgg%Med(sggmiE)%Is%ThinWire)) then
                 write (buff,'(a,6i9)')'wir0_WARNING: NO de-embedding a terminal/non-terminal segment in Lossless medium ', sggmiE, &
@@ -3835,7 +3835,7 @@ contains
    
    subroutine deembed_segment
    
-                !AJUSTAR LA CONSTANTE !no se precisa realmente porque luego se iran su campos a cero (ver nota antes) 180220
+                !ADJUST THE CONSTANT !it is not really needed because later its fields will go to zero (see note above) 180220
                     
                 if (.not.control%fieldtotl) then
                          HWires%CurrentSegment(conta)%cte5=sgg%dt /eps0 /(HWires%CurrentSegment(conta)%deltaTransv1*HWires%CurrentSegment(conta)%deltaTransv2)
@@ -3890,8 +3890,8 @@ end subroutine deembed_segment
                                    sgg%Med(sggMiEz(i  ,j  ,kmenos1))%sigma) )
                wireNode%islossy = wireNode%islossy .or. (abs(sigt) > 1.0e-19_RKIND_WIRES)
                
-              !091024 para poner bien uniones hilo-lossy sgbc conformal !ojooo es bruto  !bug  FU50_50mm_conf    
-               !fallaria en un hipotetico conformal dielectrico con hilos unidos... habria que distinguir bien ojooooo  y propagar este cambio al resto de sabores de hilos
+              !091024 to correctly set wire-lossy sgbc conformal junctions !careful, it is crude  !bug  FU50_50mm_conf
+               !it would fail in a hypothetical dielectric conformal with joined wires... it would be necessary to distinguish well, careful, and propagate this change to the other wire flavors
              !!!!!
              !!!!! if( sgg%Med(sggMino(i  ,j,k         ))%Is%already_YEEadvanced_byconformal .or. &
              !!!!!     sgg%Med(sggMiEx(i  ,j,k         ))%Is%already_YEEadvanced_byconformal .or. &
@@ -3909,7 +3909,7 @@ end subroutine deembed_segment
              !!!!!     sgg%Med(sggMiEz(i,j,kmenos1     ))%Is%split_and_useless) then
              !!!!!     nodo%ispec=.true.
              !!!!! end if
-               !tampoco es esto lo del bug  FU50_50mm_conf   pero no esta de mas tenerlo en cuenta
+               !this is not the bug FU50_50mm_conf either but it is worth keeping it in mind
             
                wireNode%ispec = &
                ( sggMiNo(i  ,j,k) ==0).or.(sgg%med(sggMiNo(i  ,j,k))%is%PEC) .or. &
@@ -3932,8 +3932,8 @@ end subroutine deembed_segment
                end if
                
                
-!pedazo de niapa para poner los nodos conformal a voltage nulo y sus segmentos conformal tambien si son already_YEEadvanced_byconformal (old notouch o no_touch) y que Dios reparta suerte 140220
-               if ((wireNode%Is_RightEnd.or.wireNode%Is_LeftEnd)) then !!!los busy_nodes se han puesto a pec cuando en realidad estan unidos a already_YEEadvanced_byconformal .and.(.not.(nodo%ispec.or.nodo%islossy))) then   !solo si es un extremo y no estaba ya puesto a pec            
+!big patch to set the conformal nodes to zero voltage and their conformal segments too if they are already_YEEadvanced_byconformal (old notouch or no_touch) and may God grant us luck 140220
+               if ((wireNode%Is_RightEnd.or.wireNode%Is_LeftEnd)) then !!!the busy_nodes have been set to pec when they are actually joined to already_YEEadvanced_byconformal .and.(.not.(nodo%ispec.or.nodo%islossy))) then   !only if it is an end and was not already set to pec
                       medium1  =sggMiEx(i  ,j  ,k)    
                       medio1m =sggMiEx(i-1,j  ,k)
                       medium2  =sggMiEy(i  ,j  ,k)
@@ -3950,14 +3950,14 @@ end subroutine deembed_segment
                      !
                       if (sgg%med(medium1)%is%already_YEEadvanced_byconformal .or. sgg%med(medium2)%is%already_YEEadvanced_byconformal .or. sgg%med(medium3)%is%already_YEEadvanced_byconformal.or. &
                           sgg%med(medio1m)%is%already_YEEadvanced_byconformal .or. sgg%med(medio2m)%is%already_YEEadvanced_byconformal .or. sgg%med(medio3m)%is%already_YEEadvanced_byconformal) then
-			               wireNode%ispec=.true. !luego se pondra nodo%cteplain = 0 para todos los pec
+			               wireNode%ispec=.true. !later nodo%cteplain = 0 will be set for all pec
                            write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal node changed to PEC grounded node at ', i,j,k
                            if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
-                           !ademas anotar y poner a cero el efield correspondiente already_YEEadvanced_byconformal overrideando el conformal_advance_E() que ya se ha hecho antes a partir de esta version   
+                           !also note and set to zero the corresponding efield already_YEEadvanced_byconformal overriding the conformal_advance_E() that has already been done before from this version
                            if (sgg%med(medium1)%is%already_YEEadvanced_byconformal) then
                                call check_embed(embed,iEx,i,j,k)
                                if (.not.embed) then
-                                  ! sggmiEx(i,j,k)=0;!ojoo quitar luego solo para visualiz
+                                  ! sggmiEx(i,j,k)=0;!careful, remove later, only for visualization
                                    wireNode%already_YEEadvanced_byconformal_changedtoPECfield1 => Ex(i,j,k)
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, also changed to PEC line at Ex ', i,j,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
@@ -3969,7 +3969,7 @@ end subroutine deembed_segment
                            if (sgg%med(medio1m)%is%already_YEEadvanced_byconformal) then
                                call check_embed(embed,iEx,i-1,j,k)
                                if (.not.embed) then
-                               !    sggmiEx(i-1,j,k)=0;!ojoo quitar luego solo para visualiz
+                               !    sggmiEx(i-1,j,k)=0;!careful, remove later, only for visualization
                                    wireNode%already_YEEadvanced_byconformal_changedtoPECfield2 => Ex(i-1,j,k)
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, also changed to PEC line at mEx ', i-1,j,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
@@ -3981,7 +3981,7 @@ end subroutine deembed_segment
                            if (sgg%med(medium2)%is%already_YEEadvanced_byconformal) then
                                call check_embed(embed,iEy,i,j,k)
                                if (.not.embed) then
-                            !       sggmiEy(i,j,k)=0;!ojoo quitar luego solo para visualiz
+                            !       sggmiEy(i,j,k)=0;!careful, remove later, only for visualization
                                    wireNode%already_YEEadvanced_byconformal_changedtoPECfield3 => Ey(i,j,k)
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, also changed to PEC line at Ey ', i,j,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
@@ -3993,7 +3993,7 @@ end subroutine deembed_segment
                            if (sgg%med(medio2m)%is%already_YEEadvanced_byconformal) then
                                call check_embed(embed,iEy,i,j-1,k)
                                if (.not.embed) then
-                          !         sggmiEy(i,j-1,k)=0;!ojoo quitar luego solo para visualiz
+                          !         sggmiEy(i,j-1,k)=0;!careful, remove later, only for visualization
                                    wireNode%already_YEEadvanced_byconformal_changedtoPECfield4 => Ey(i,j-1,k)
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, also changed to PEC line at mEy ', i,j-1,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
@@ -4005,7 +4005,7 @@ end subroutine deembed_segment
                            if (sgg%med(medium3)%is%already_YEEadvanced_byconformal) then
                                call check_embed(embed,IEZ,i,j,k)
                                if (.not.embed) then
-                          !         sggmiEz(i,j,k)=0;!ojoo quitar luego solo para visualiz
+                          !         sggmiEz(i,j,k)=0;!careful, remove later, only for visualization
                                    wireNode%already_YEEadvanced_byconformal_changedtoPECfield5 => Ez(i,j,k)
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, also changed to PEC line at Ez ', i,j,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
@@ -4017,7 +4017,7 @@ end subroutine deembed_segment
                            if (sgg%med(medio3m)%is%already_YEEadvanced_byconformal) then
                                call check_embed(embed,IEZ,i,j,kmenos1)
                                if (.not.embed) then
-                          !         sggmiEz(i,j,kmenos1)=0;!ojoo quitar luego solo para visualiz
+                          !         sggmiEz(i,j,kmenos1)=0;!careful, remove later, only for visualization
                                    wireNode%already_YEEadvanced_byconformal_changedtoPECfield6 => Ez(i,j,kmenos1)
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, also changed to PEC line at mEz ', i,j,kmenos1
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
@@ -4031,10 +4031,10 @@ end subroutine deembed_segment
                               sgg%med(medio1m)%is%split_and_useless .and. sgg%med(medio2m)%is%split_and_useless .and. sgg%med(medio3m)%is%split_and_useless) then
                            write (buff,*)  'wir1_ERROR: Conformal split_and_useless node NOT changed (IMPOSIBLE) to PEC grounded node at ', i,j,k
                            if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff,.true.)
-                           !ojo no tendria arreglo porque aunque se updatee a 0, este campo luego esta partido en dos en conformal y es split_and_useless        
+                           !note it would have no fix because even if it is updated to 0, this field is later split in two in conformal and is split_and_useless
                       end if
-                      !esta a PEC/lossy o al punietero aire
-                              !!!lo he sacado del if. solo para reporte y que coincida con lo que da estructurado  280323
+                      !it is at PEC/lossy or at the damn air
+                              !!!I have taken it out of the if. only for reporting and to match what the structured one gives  280323
                       if (wireNode%ispec)  then
                           write (buff,*)  'wir1_INFO: (SHOULD BE REDUNDANT) Terminal Node grounded to PEC ', i,j,k  
                           if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
@@ -4050,10 +4050,10 @@ end subroutine deembed_segment
                       end if
                       if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                  end if
-!!!!fin pedazo de niapa           
+!!!!end of big patch
                
 
-!!!!! ojo cambio AGRESIVO: sgg 08092016 a peticion OLD. si un nodo es heterogeneousjunction automaticamente no es ni pec ni lossy !esto es delicado !validado con gra_simple_conectado179_162_173.nfde
+!!!!! note AGGRESSIVE change: sgg 08092016 at OLD request. if a node is heterogeneousjunction it automatically is neither pec nor lossy !this is delicate !validated with gra_simple_conectado179_162_173.nfde
                if (wireNode%isPEC.and.(wireNode%IsHeterogeneousJunction)) then
                     wireNode%isPEC   = .false.
 			        write (buff,*)  'wir1_ERROR: (Deprecated 170220-010324: no longer an error, though I stop. If sure relaunch with -ignoreerrors) ENL/ENR PEC grounded node detached from ground-material for being a wire junction', i,j,k,wireNode%ispec,wireNode%islossy
@@ -4064,15 +4064,15 @@ end subroutine deembed_segment
                     write (buff,*) 'wir1_ERROR: (Deprecated 170220-010324: no longer an error, though I stop. If sure relaunch with -ignoreerrors)  ENL/ENR Lossy grounded node detached from ground-material for being a wire junction', i,j,k,wireNode%ispec,wireNode%islossy
                     if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff,.true.)
                end if
-!!!!!!!!! fin cambio sgg 080912016               
+!!!!!!!!! end of change sgg 080912016
                
                
                if (wireNode%isPec) then
-                    wireNode%isLossy=.false. !tocado 030615 para evitar conflictos en nodos frontera entre Lossy y pec
+                    wireNode%isLossy=.false. !touched 030615 to avoid conflicts at boundary nodes between Lossy and pec
                end if
                !
             end if
-         end if !del fullsize
+         end if !of fullsize
       end do
 
    end subroutine detect_peclossyconformal_nodes
@@ -4082,7 +4082,7 @@ end subroutine deembed_segment
    integer :: ib,jb,kb,tipofieldb
    integer :: io,jo,ko,fieldKindOld
    type(CurrentSegments_t), pointer  :: dummy
-  !!!!!!!!!!!!!!!!! embed=.true.; return !!!!ojoooo sgg tocado a mano para ver bug conformal 220323 
+  !!!!!!!!!!!!!!!!! embed=.true.; return !!!!careful sgg hand-touched to see conformal bug 220323
    
     embed=.false.
     if (associated(wireNode%CurrentMinus_1))  then
@@ -4218,7 +4218,7 @@ subroutine resume_casuistics
          do i1=1,Hwires%NumNeededCurrentDownMPI
             read (14) HWires%MPIDownNeededCurrentSegment(i1)%Current
          end do
-         !for new wires MPI march'12 sgg bug en multiwires mpi
+         !for new wires MPI march'12 sgg bug in multiwires mpi
 
 #endif
       end if
@@ -4235,7 +4235,7 @@ subroutine resume_casuistics
             Segmento => HWires%CurrentSegment(n)
             jmed   = Segmento%indexmed
             Resist = Segmento%wireType%R
-            Autoin =  Segmento%Lind !!!+ Segmento%TipoWire%L !he comentado esto a 110517 porque con lo del fieldtotl ya he metido en %lind tambien la tipowire%L 
+            Autoin =  Segmento%Lind !!!+ Segmento%TipoWire%L !I commented this out on 110517 because with the fieldtotl thing I have already put tipowire%L into %lind too
             Capaci = 1.0_RKIND_WIRES / (InvMu(jmed)*InvEps(jmed)* Autoin)
             deltax = Segmento%delta
             !!!!
@@ -4244,26 +4244,26 @@ subroutine resume_casuistics
             segmento%rightCUminus = (sgg%dt)/(4.0_RKIND_WIRES*deltax**2*Capaci)
             segmento%rightCUplus  =  segmento%rightCUminus
             !!!!!!
-            segmento%upperdiag = -sgg%dt/(4.0_RKIND_WIRES*deltax**2*Capaci) !comun a todos
-            segmento%lowerdiag = segmento%upperdiag                !comun a todos
+            segmento%upperdiag = -sgg%dt/(4.0_RKIND_WIRES*deltax**2*Capaci) !common to all
+            segmento%lowerdiag = segmento%upperdiag                !common to all
             !!!
             if ((Segmento%ChargeMinus%NumCurrentMinus == 1).and. &
             (Segmento%ChargeMinus%NumCurrentPlus  == 1).and. &
             (Segmento%ChargePlus%NumCurrentMinus  == 1).and. &
-            (Segmento%ChargePlus%NumCurrentPlus   == 1) ) then !es un intermedio
+            (Segmento%ChargePlus%NumCurrentPlus   == 1) ) then !it is an intermediate one
                segmento%diag         =  (sgg%dt/(deltax**2_RKIND_WIRES*Capaci) + (2_RKIND_WIRES*Autoin)/sgg%dt + resist)/2.0_RKIND_WIRES
                segmento%rightCU      = (-sgg%dt/(2.0_RKIND_WIRES*deltax**2_RKIND_WIRES*Capaci) + Autoin/sgg%dt - resist/2.0_RKIND_WIRES)
             else
-               segmento%diag    =   ((3_RKIND_WIRES*sgg%dt)/(2.0_RKIND_WIRES*deltax**2*Capaci) + (2_RKIND_WIRES*Autoin)/sgg%dt + resist)/2.0_RKIND_WIRES  !comun a todos
+               segmento%diag    =   ((3_RKIND_WIRES*sgg%dt)/(2.0_RKIND_WIRES*deltax**2*Capaci) + (2_RKIND_WIRES*Autoin)/sgg%dt + resist)/2.0_RKIND_WIRES  !common to all
                segmento%rightCU =  ((-3_RKIND_WIRES*sgg%dt)/(4.0_RKIND_WIRES*deltax**2*Capaci) + Autoin/sgg%dt - resist/2.0_RKIND_WIRES)
                if ((Segmento%ChargeMinus%NumCurrentMinus+Segmento%ChargeMinus%NumCurrentPlus == 1).and. &
                (Segmento%ChargePlus%NumCurrentMinus                                      == 1).and. &
                (Segmento%ChargePlus%NumCurrentPlus                                       == 1)) then
-                  segmento%lowerdiag = -1e30 !lo voideo pq no debe tener efecto
+                  segmento%lowerdiag = -1e30 !I void it because it must have no effect
                else if ((Segmento%ChargeMinus%NumCurrentMinus                                     == 1).and. &
                (Segmento%ChargeMinus%NumCurrentPlus                                      == 1).and. &
                (Segmento%ChargePlus%NumCurrentMinus+Segmento%ChargePlus%NumCurrentPlus   == 1)) then
-                  segmento%upperdiag = -1e30_RKIND_wires !lo voideo pq no debe tener efecto
+                  segmento%upperdiag = -1e30_RKIND_wires !I void it because it must have no effect
                else
                   buff='Unsupported crank'
                   call WarnErrReport(buff,.true.)
@@ -4300,7 +4300,7 @@ subroutine resume_casuistics
       type(TMultiline_t), pointer                      :: Multiline
    
 
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
 
       OldInvEps(0 : sgg%NumMedia)=InvEps(0 : sgg%NumMedia)
       OldInvMu(0 : sgg%NumMedia)=InvMu(0 : sgg%NumMedia)
@@ -4308,14 +4308,14 @@ subroutine resume_casuistics
       InvMu(0 : sgg%NumMedia)=1.0_RKIND_WIRES/(Mu0*sgg%Med(0 : sgg%NumMedia)%Mur) 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Constantes nodales
+! Nodal constants
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       do i1=1,HWires%NumChargeNodes
          wireNode => HWires%ChargeNode(i1)
          wireNode%CtePlain = wireNode%CtePlain/Hwires%olddt*sgg%dt 
       end do
 
-!ctes Mur
+!Mur constants
       do i1=1,HWires%NumChargeNodes
          wireNode=>HWires%Chargenode(i1)
          if (wireNode%IsBackDownLeftMur) then
@@ -4330,23 +4330,23 @@ subroutine resume_casuistics
       end do
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Constantes de segmentos
+! Segment constants
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       do i1=1,HWires%NumCurrentSegments
-         !constantes de actualizacion
+         !update constants
          dummy=> HWires%CurrentSegment(i1)
          jmed=dummy%indexmed
-         dummy%Lind=dummy%Lind * OldInvMu(jmed)/InvMu(jmed) !escalo la autoinduccion por invmu (aunque el mu no se escala nunca)  
-         dummy%Lind_devia=dummy%Lind_devia * OldInvMu(jmed)/InvMu(jmed) !escalo la autoinduccion por invmu (aunque el mu no se escala nunca)       
+         dummy%Lind=dummy%Lind * OldInvMu(jmed)/InvMu(jmed) !I scale the self-inductance by invmu (although mu is never scaled)
+         dummy%Lind_devia=dummy%Lind_devia * OldInvMu(jmed)/InvMu(jmed) !I scale the self-inductance by invmu (although mu is never scaled)
          call wiresconstantes(fieldtotl,dummy,G2,sgg)
       end do
 !!!!!!!!!!!!!!!!!!!!
 !Junctions segmento%FractionMinus & segmento%FractionPlus not affected by permittivity scaling
 
-!Solapes con conformal (niapa 171216) no modificados en %cte5
+!Overlaps with conformal (patch 171216) not modified in %cte5
 
 !!!!!!!!!!!!!!! Berenger transition !untested
-      !!!copiado 23/04/2014
+      !!!copied 23/04/2014
     if (trim(adjustl(wiresflavor))=='transition') then
          do iw1 = 1,HWires%NumMultilines
             NumParallel = HWires%Multilines(iw1)%NumParallel
@@ -4366,8 +4366,8 @@ subroutine resume_casuistics
 
             HWires%Multilines(iw1)%b1I = MatMul(Den, HWires%Multilines(iw1)%L(1:NumParallel,1:NumParallel)  - &
                                                      HWires%Multilines(iw1)%R(1:NumParallel,1:NumParallel)*sgg%dt/2.0_RKIND_WIRES)
-            dl  =  HWires%Multilines(iw1)%Segments(1)%ptr%delta !tomo el de 1 !dama no lo tenia
-            imed 	= HWires%Multilines(iw1)%Segments(1)%ptr%indexmed !lo aniado yo pq no estaba definido sgg 141118  !tomo el de 1 !dama no lo tenia
+            dl  =  HWires%Multilines(iw1)%Segments(1)%ptr%delta !I take the one from 1 !dama did not have it
+            imed 	= HWires%Multilines(iw1)%Segments(1)%ptr%indexmed !I add it because it was not defined sgg 141118  !I take the one from 1 !dama did not have it
             HWires%Multilines(iw1)%b2I = -sgg%dt/dl*InvMu(imed)*InvEps(imed)*MatMul(Den,HWires%Multilines(iw1)%L)
             HWires%Multilines(iw1)%b3I = sgg%dt*Den
 
@@ -4380,7 +4380,7 @@ subroutine resume_casuistics
 
       end if 
 
-!!!guarda el dt anterior
+!!!save the previous dt
 
          Hwires%olddt=sgg%dt
 
@@ -4565,7 +4565,7 @@ subroutine resume_casuistics
       !RightConnected adyacency  foreseen in the .nfde file      !added to solve  aNTh-THW_PW bug
 
 
-      !aniadido 6/2/14 para tratar bien ESN.nfde (solo sirve para dar warnings a OLD con sus rabillos)
+      !added 6/2/14 to handle ESN.nfde well (it only serves to give warnings to OLD with its little tails)
       if ((first%Is_LeftEnd).and.(second%Is_LeftEnd)) then
          RequestedConnection = (.not.connectendings).and.(first%indexmed /= second%indexmed).and. &
          ((first%wireType%LeftEnd == second%wireType%LeftEnd))
@@ -4583,15 +4583,15 @@ subroutine resume_casuistics
          ((first%wireType%RightEnd == second%wireType%LeftEnd))
       end if
 
-      !esto lo he quitado el 6/2/14 pq en ESN.nfde ambos extremos estaban adjancentes pero solo se pedia conexion en uno y por lo tanto hay que discernir con la condicional
-      !de mas arriba
+      !I removed this on 6/2/14 because in ESN.nfde both ends were adjacent but connection was requested in only one and therefore one has to discern with the condition
+      !from above
       !!!!     RequestedConnection = (.not.connectendings).and.(first%indexmed /= second%indexmed).and. &
       !!!!                                    ((first%tipowire%LeftEnd == second%tipowire%LeftEnd).or. &
       !!!!                                     (first%tipowire%LeftEnd == second%tipowire%RightEnd).or. &
       !!!!                                     (first%tipowire%RightEnd == second%tipowire%LeftEnd).or. &
-      !!!!                                     (first%tipowire%RightEnd == second%tipowire%RightEnd))  !solo para reporte bug OLD 12/09/13 Model_unidos en .nfde
+      !!!!                                     (first%tipowire%RightEnd == second%tipowire%RightEnd))  !only for reporting bug OLD 12/09/13 Model_unidos in .nfde
 
-      !quito cualquier referencia a LextremoI,j,k porque yo calculo bien los extremos libres tanto si es strictOLD como si no
+      !I remove any reference to LextremoI,j,k because I compute the free ends well whether it is strictOLD or not
 
       LLConnected =  ( first%indexmed /= second%indexmed ).and. &
       ((second%Is_LeftEnd .and. first%Is_LeftEnd).or. &
@@ -4673,7 +4673,7 @@ subroutine resume_casuistics
 
 
       EndingsConnected =(LLConnected.or.LRConnected.or.RLConnected.or.RRConnected)
-      !casos especiales con un hilo de un segmento
+      !special cases with a single-segment wire
 
       if (adj%is .and. connectendings) then
          void=0
@@ -4705,7 +4705,7 @@ subroutine resume_casuistics
             end if
          end if
       end if
-      !los cuatro conectados (puede pasar en amelet o en nfde)
+      !the four connected (can happen in amelet or in nfde)
       if ((first%Is_LeftEnd .and. first%Is_RightEnd).and.(second%Is_LeftEnd .and. second%Is_RightEnd)) then
          if (connectendings) then
             if ( &
@@ -4738,13 +4738,13 @@ subroutine resume_casuistics
             !
             adj%BothEndingsConnected =adj%Parallel
          else
-            EndingsConnected =(LLConnected.or.LRConnected.or.RLConnected.or.RRConnected) !redundante ya hecho antes
+            EndingsConnected =(LLConnected.or.LRConnected.or.RLConnected.or.RRConnected) !redundant, already done before
             adj%BothEndingsConnected = ((RRConnected.and.LLConnected).or.(RLConnected.and.LRConnected))
          end if
       end if
 
 
-      !fin casos especiales
+      !end of special cases
       if (adj%is) then
             if  (first%indexmed /= second%indexmed) then
                if  (.not.EndingsConnected) then
@@ -4815,14 +4815,14 @@ subroutine resume_casuistics
                   adj%YESsegment(1) = numfirst
                   adj%YESsegment(2) = numsecond
                   if (LLConnected.or.LRConnected.or.RLConnected.or.RRConnected) then
-!!!!esto daba problemas con edel_wuking2.nfde y en general con el ultimo cable si solo tiene un solo segmento no unido, poniendo nodo%heterogeneousjunction=.true. al nodo libre en la vuelta (numfirst>numsecond)
-!!!!comentado, pues, el 141218 y aniadido codigo 
+!!!!this caused problems with edel_wuking2.nfde and in general with the last cable if it has only one unjoined segment, setting nodo%heterogeneousjunction=.true. to the free node on the return pass (numfirst>numsecond)
+!!!!commented out, then, on 141218 and added code
                          !!adj%i = first%ilibre
                          !!adj%j=  first%jlibre
                          !!adj%k=  first%klibre
                     entro1=.false.; entro2=.false.; entro3=.false.
-!!!lo de antes descomentado no daba problemas OLD. En correo 150219 entro el primer buggy de abajo. Por tanto aniado mas
-!!!casuistica. Ahora puede que falle el edel_wuking2.nfde por este cambio, pero prefiero no descomentar lo anterior. Arreglar cuando pase !!
+!!!the above uncommented did not give problems in OLD. In mail 150219 the first buggy below appeared. Therefore I add more
+!!!case analysis. Now edel_wuking2.nfde may fail because of this change, but I prefer not to uncomment the above. Fix when it happens !!
                     if ( &
                     ((first%i      == second%ilibre).and.(first%j      == second%jlibre).and.(first%k      == second%klibre))) then
                         adj%i = second%ilibre
@@ -4837,7 +4837,7 @@ subroutine resume_casuistics
                      adj%k=  first%klibre
                         entro2=.true.
                     end if
-!!!esta es la casuistica que aniado 150219                   
+!!!this is the case analysis I add 150219
                     if ( &
                     ((first%ilibre     == second%ilibre).and.(first%jlibre      == second%jlibre).and.(first%klibre      == second%klibre))) then
                         adj%i = second%ilibre
@@ -4845,7 +4845,7 @@ subroutine resume_casuistics
                         adj%k=  second%klibre
                         entro3=.true.
                     end if
-!!!fin casuistica que anidado 150219
+!!!end of case analysis added 150219
                     if ((.not.entro1).and.(.not.entro2).and.(.not.entro3)) then
                             write (buff,*)  'wir2_BUGGYERROR: bug in adjacencies entro. ',first%ilibre,first%jlibre,first%klibre,second%ilibre,second%jlibre,second%klibre
                             call WarnErrReport(buff,.true.)
@@ -4856,22 +4856,22 @@ subroutine resume_casuistics
                             call WarnErrReport(buff,.true.)
                         end if
                     end if
-!!!!fina aniadido 141218
+!!!!end added 141218
                   end if
                end if
             else if (First%indexmed == second%indexmed) then
-               if (adj%Parallel) then !paralelos del mismo hilo
+               if (adj%Parallel) then !parallel ones of the same wire
                   if (.not.strictOLD) then
                      adj%is=.false.
-                     !NUNCA DEBERIA ENTRAR AQUI porque los paralelos se han colapaso en la version no estricta
+                     !IT SHOULD NEVER ENTER HERE because the parallel ones have been collapsed in the non-strict version
                      write (buff,'(a)')  'wir2_BUGGYERROR: DISCONNECTING Parallel segments from the same WIRE:'
                      call WarnErrReport(buff,.true.)
                      write (buff,'(i7,3i7,a,i7,3i7,a)') first%origindex,first%i,first%j,first%k,' '//dir(first%fieldKind),&
                      second%origindex,second%i,second%j,second%k,' '//dir(second%fieldKind)
                      call WarnErrReport(buff,.true.)
                   else
-                     !!!!!!!!!!aqui es donde viene el meollo porque NO he quitado segmentos repetidos
-                     !voy a suponer que forman una cadena ordenada
+                     !!!!!!!!!!here is the crux because I have NOT removed duplicate segments
+                     !I am going to assume they form an ordered chain
 
                      if  (abs(numfirst - numsecond)>1) then
                         adj%is=.false.
@@ -5063,8 +5063,8 @@ subroutine resume_casuistics
                         end if
                         !
                      end if
-                  end if !DEL NO STRICTO
-               else !no son paralelos pero si estan en el mismo hilko
+                  end if !OF THE NON-STRICT ONE
+               else !they are not parallel but they are on the same wire
                   if (.not.strictOLD) then
                      adj%IsHeterogeneousJunction=.false.
                      ADJ%IS=.TRUE.
@@ -5083,11 +5083,11 @@ subroutine resume_casuistics
                      write (buff,'(a,3i7)')  '           AT :',adj%i,adj%j,adj%k
                      call WarnErrReport(buff)
                   else
-                     if (abs(numfirst - numsecond)>1) then !solo si estan leidos contiguamente se toman como adyacentes
+                     if (abs(numfirst - numsecond)>1) then !only if they are read contiguously are they taken as adjacent
                         adj%IsHeterogeneousJunction=.false.
                         ADJ%IS=.false.
                         write (buff,'(a)')  'wir2_INFO: DISCONNECTING NON-CORRELATIVE Non-Parallel segments from the same WIRE:'
-                        if (verbose) call WarnErrReport(buff)  !demasiado verbose
+                        if (verbose) call WarnErrReport(buff)  !too verbose
                         write (buff,'(i7,3i7,a,i7,3i7,a)') first%origindex,first%i,first%j,first%k,' '//dir(first%fieldKind),&
                         second%origindex,second%i,second%j,second%k,' '//dir(second%fieldKind)
                         if (verbose) call WarnErrReport(buff)
@@ -5097,7 +5097,7 @@ subroutine resume_casuistics
                         adj%YESsegment(1) = numfirst
                         adj%YESsegment(2) = numsecond
                         write (buff,'(a)')  'wir2_INFO: CONNECTING CORRELATIVE Non-Parallel segments from the same WIRE:'
-                        if (verbose) call WarnErrReport(buff) !demasiado verbose
+                        if (verbose) call WarnErrReport(buff) !too verbose
                         write (buff,'(i7,3i7,a,i7,3i7,a)') first%origindex,first%i,first%j,first%k,' '//dir(first%fieldKind),&
                         second%origindex,second%i,second%j,second%k,' '//dir(second%fieldKind)
                         if (verbose) call WarnErrReport(buff)
@@ -5160,14 +5160,14 @@ subroutine resume_casuistics
       !the MPI exchange call will overwrite them with the correct ones coming from the adjacent layers
       !WARNING: MPI does not handle correctly PERIODIC MIRRORING !\E7 20sept11 in currents !to dooooooooo
 
-!!!!!!!!!!!!!!!051223 no pongo a cero los already_YEEadvanced_byconformal_changedtoPECfield !No son cero, sino lo que se updatee mas lo que se inyecte
+!!!!!!!!!!!!!!!051223 I do not set the already_YEEadvanced_byconformal_changedtoPECfield to zero !They are not zero, but what is updated plus what is injected
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP PARALLEL do DEFAULT(SHARED)  private(Nodo)
 !!!#endif
 !!!      do n=1,HWires%NumChargeNodes
 !!!         Nodo => HWires%ChargeNode(n)
-!!!!!!!140220 pon a PEC los viejos notouch=already_YEEadvanced_byconformal_changedtoPECfield que tenga conectado un nodo
-!!!         !debe ser lo primero que se hace para overridear el call conformal_advance_E
+!!!!!!!140220 set to PEC the old notouch=already_YEEadvanced_byconformal_changedtoPECfield that has a node connected
+!!!         !it must be the first thing done to override the conformal_advance_E call
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield1)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield1=0.0_RKIND
 !!!         end if
@@ -5237,7 +5237,7 @@ subroutine resume_casuistics
                     IMinus = -Iplus
                 end if
             end if
-            !Algoritmo comun a toda la casuistica !feb 13
+            !Algorithm common to the whole case analysis !feb 13
             if (.not.wireNode%IsMur)   then
                wireNode%ChargePresent =  wireNode%CteProp*wireNode%ChargePast   - wireNode%CtePlain*(Iplus-IMinus)
             else
@@ -5245,10 +5245,10 @@ subroutine resume_casuistics
             end if
             !        if (nodo%IsAttachedtoVoltage) Nodo%ChargePresent =  0.0_RKIND_wires
 
-         end if !del nodo%exists !voideo algunos cuando spliteo
+         end if !of nodo%exists !I void some when I split
       end do
-!!!no toco lo que esta comentado a 230323 para fuentes duras/blandas
-      !!!las convierto en duras mas abajo. correos jag rayos junio'15
+!!!I do not touch what is commented at 230323 for hard/soft sources
+      !!!I turn them into hard ones below. jag lightning emails june'15
       !!!Transparent current source feeding in the charge nodes if necessary
       !!!if (.not.simu_devia) then              
       !!!if (thereAreIsources) then
@@ -5259,7 +5259,7 @@ subroutine resume_casuistics
       !!            Iincid=evolucion(timei-unmedio*sgg%dt,Nodo%Isource%Fichero%Samples, &
       !!                              Nodo%Isource%Fichero%DeltaSamples,Nodo%Isource%Fichero%NumSamples)
       !!            Nodo%ChargePresent                         =Nodo%ChargePresent                          +  Nodo%CtePlain                          * Iincid
-      !!!!!!!!no funciona esta idea previa de fuente de corriente  quizas porque violo kirchhoff
+      !!!!!!!!this previous current source idea does not work  maybe because it violates kirchhoff
       !!            Nodo%CurrentPlus_1%Chargeplus%ChargePresent=Nodo%CurrentPlus_1%Chargeplus%ChargePresent -  Nodo%CurrentPlus_1%Chargeplus%CtePlain * Iincid
       !!        end if
       !!        end if
@@ -5267,7 +5267,7 @@ subroutine resume_casuistics
       !!!end if
       !!!end if
       
-!aniado eso a 230323 para fuentes de corrientes duras blandas. Me inspiro en lo que esta comentado antes   
+!I add that on 230323 for hard/soft current sources. I take inspiration from what is commented above
       if (.not.simu_devia) then              
           if (thereAreIsources) then
               do n=1,HWires%NumChargeNodes
@@ -5306,7 +5306,7 @@ subroutine resume_casuistics
       !Inject the current at n+1 into the electring FDTD field previously calculated at n+1
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      !actualizo bien el campo con los globales (hilos paralelos)
+      !I correctly update the field with the global ones (parallel wires)
       !I sum up all the currents (in case of unshielded segment)
       !this is the correct approach for Parallel wires (later to be corrected for BerengerMTLN)
       !
@@ -5341,7 +5341,7 @@ subroutine resume_casuistics
       !
 
       if (trim(adjustl(wiresflavor))=='transition') then
-         !recuerdo intensidades
+         !I recall currents
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED)   private(Segmento)
 #endif
@@ -5370,7 +5370,7 @@ subroutine resume_casuistics
                   Multiline%b1I(is1,is2)* Segmento2%CurrentPast            + &
                   Multiline%b2I(is1,is2)*(Segmento2%fractionPlus*Qplus-Segmento2%fractionMinus*QMinus)
                   if(.not.(Segmento%IsShielded.and.Segmento2%IsShielded)) then
-                      !!!lo he descomentado a 300523 porque creo que estaba mal. ojo si algun dia se usa el flavor transition. pongo un stop para avisar
+                      !!!I uncommented it on 300523 because I think it was wrong. note if the transition flavor is ever used. I put a stop to warn
                      Segmento%Current = Segmento%Current + Multiline%b3I(is1,is2)*real(Segmento2%Efield_main2wire,kind=RKIND_WIRES)
                      stop
                   end if
@@ -5425,7 +5425,7 @@ subroutine resume_casuistics
       else
          call WarnErrReport('wir0_BUGGYERROR: this flavor not permitted in sgg routine',.true.)
       end if !wiresflavor
-      !igual en ambos
+      !the same in both
       if (.not.simu_devia) then             
           if (thereAreVsources) then
              !Feed the transparent voltage sources as appropriate charges in the current segments (Like in Edelvik's model)
@@ -5443,8 +5443,8 @@ subroutine resume_casuistics
                    !!!        print *,'error en experimentalVideal 200621'
                    !!!    end if
                    !!!else
-                  !lo de siempre. aniado lo anterior para ver lo de las fuentes duras !C=Q/V-> C=c^-2/L-> Q=V*C=V/(L c^2)
-                  !fuentes de voltaje. para que sean de carga hay que comentar el Lind
+                  !the usual. I add the above to see the hard sources thing !C=Q/V-> C=c^-2/L-> Q=V*C=V/(L c^2)
+                  !voltage sources. for them to be charge sources the Lind must be commented out
                   Segmento%Current = Segmento%Current + &
                      Segmento%cte3 * Vincid  / (Segmento%Lind * InvMu(Segmento%indexmed)*InvEps(Segmento%indexmed))
                   !I use the capacitance to find the incident charge
@@ -5455,8 +5455,8 @@ subroutine resume_casuistics
           end if
       end if
       
-!!!230323 comento lo que sigue porque ya manejo fuentes duras y blandas antes, pero esto funciono con jag rayos junio'15
-      !!!!!!080615  uso una fuente dura de corriente correos jag simulacion rayos Junio'15
+!!!230323 I comment out what follows because I already handle hard and soft sources before, but this worked with jag lightning june'15
+      !!!!!!080615  I use a hard current source jag emails lightning simulation June'15
       !!!if (.not.simu_devia) then             
       !!!    if (thereAreIsources) then
       !!!       do n=1,HWires%NumChargeNodes
@@ -5479,19 +5479,19 @@ subroutine resume_casuistics
       !!!
 !stochastic
 #ifdef CompileWithStochastic
-      if (stochastic.and.simu_devia) call inject_deviasources(layoutnumber,Hwires) !solo son los segmentos los afectados
+      if (stochastic.and.simu_devia) call inject_deviasources(layoutnumber,Hwires) !only the segments are affected
 #endif
  
-!!!!!!!!!!!!!!!051223 no pongo a cero los already_YEEadvanced_byconformal_changedtoPECfield !No son cero, sino lo que se updatee mas lo que se inyecte
-!!!machaca el campo que haya metido el wires
+!!!!!!!!!!!!!!!051223 I do not set the already_YEEadvanced_byconformal_changedtoPECfield to zero !They are not zero, but what is updated plus what is injected
+!!!overwrites whatever field the wires has injected
 
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP PARALLEL do DEFAULT(SHARED)  private(Nodo)
 !!!#endif
 !!!      do n=1,HWires%NumChargeNodes
 !!!         Nodo => HWires%ChargeNode(n)
-!!!!!!!140220 pon a PEC los viejos notouch=already_YEEadvanced_byconformal_changedtoPECfield que tenga conectado un nodo
-!!!         !debe ser lo primero que se hace para overridear el call conformal_advance_E 
+!!!!!!!140220 set to PEC the old notouch=already_YEEadvanced_byconformal_changedtoPECfield that has a node connected
+!!!         !it must be the first thing done to override the conformal_advance_E call
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield1)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield1=0.0_RKIND
 !!!         end if
@@ -5593,17 +5593,17 @@ subroutine resume_casuistics
       !!!
       iplus=-1.0; iminus=-1.0;
       
-      !!!! deprecado en pscale  110219 
+      !!!! deprecated in pscale  110219
 
       
-!!!mal a 0624 !comentado en todos los sabores de wires
+!!!bad as of 0624 !commented out in all wire flavors
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP PARALLEL do DEFAULT(SHARED)  private(Nodo)
 !!!#endif
 !!!      do n=1,HWires%NumChargeNodes
 !!!         Nodo => HWires%ChargeNode(n)
-!!!!!!!140220 pon a PEC los viejos notouch=already_YEEadvanced_byconformal_changedtoPECfield que tenga conectado un nodo
-!!!         !debe ser lo primero que se hace para overridear el call conformal_advance_E 
+!!!!!!!140220 set to PEC the old notouch=already_YEEadvanced_byconformal_changedtoPECfield that has a node connected
+!!!         !it must be the first thing done to override the conformal_advance_E call
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield1)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield1=0.0_RKIND
 !!!         end if
@@ -5723,14 +5723,14 @@ subroutine resume_casuistics
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       
-!!!mal a 1024 !comentado en todos los sabores de wires
+!!!bad as of 1024 !commented out in all wire flavors
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP PARALLEL do DEFAULT(SHARED)  private(Nodo)
 !!!#endif
 !!!      do n=1,HWires%NumChargeNodes
 !!!         Nodo => HWires%ChargeNode(n)
-!!!!!!!140220 pon a PEC los viejos notouch=already_YEEadvanced_byconformal_changedtoPECfield que tenga conectado un nodo
-!!!         !debe ser lo primero que se hace para overridear el call conformal_advance_E 
+!!!!!!!140220 set to PEC the old notouch=already_YEEadvanced_byconformal_changedtoPECfield that has a node connected
+!!!         !it must be the first thing done to override the conformal_advance_E call
 !!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield1)) then
 !!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield1=0.0_RKIND
 !!!         end if
@@ -5774,7 +5774,7 @@ subroutine resume_casuistics
       real(kind=RKIND_WIRES) :: deltaevol, t
       !
       nprev=int((t)/deltaevol)
-      if ((nprev+1 > numus).OR.(NPREV+1 <= 0)) then !SI NPREV<0 ES PORQUE SE HA DESBORADO EL ENTERO !BUG MIGEL 130614
+      if ((nprev+1 > numus).OR.(NPREV+1 <= 0)) then !IF NPREV<0 IT IS BECAUSE THE INTEGER HAS OVERFLOWED !BUG MIGEL 130614
          evolucion=0.0_RKIND_WIRES !if running out of samples, assume they are null
       else
          evolucion=(evol(nprev+1)-evol(nprev))/deltaevol*((t)-nprev*deltaevol)+evol(nprev) !linear interpolation
@@ -5829,7 +5829,7 @@ subroutine resume_casuistics
       type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=4) :: i
 
-      !free up memory !ojo no se como hacerlo
+      !free up memory !note I do not know how to do it
       do i=1,sgg%NumMedia
          call DestroyWireMedia(sgg%Med(i))
       end do
@@ -6084,7 +6084,7 @@ subroutine resume_casuistics
                if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,.true.)
             end if
 
-         end if !del if exist
+         end if !of the if exist
       end do
 
 
@@ -6138,7 +6138,7 @@ subroutine resume_casuistics
                wireNode%i,wireNode%j,wireNode%k, &
                ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,')'
                if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
-               Terminal = .false. !7/2/14 esti estaba mal
+               Terminal = .false. !7/2/14 this was wrong
                if (wireNode%NumCurrentMinus >=1) then
                   Terminal = Terminal .or. &
                   (wireNode%CurrentMinus_1%Is_LeftEnd.or.wireNode%CurrentMinus_1%Is_RightEnd.or.wireNode%CurrentMinus_1%IsEnd_norLeft_norRight)
@@ -6371,7 +6371,7 @@ subroutine resume_casuistics
          wireNode => Hwires%ChargeNode(i1)
          if (wireNode%exists) then
             if ((.not.wireNode%IsHeterogeneousJunction).and. &
-            (wireNode%NumCurrentMinus + wireNode%NumCurrentPlus >= 3)) then !homogeneo y verdadera union
+            (wireNode%NumCurrentMinus + wireNode%NumCurrentPlus >= 3)) then !homogeneous and true junction
                if (.not.strictOLD) then
                   write (buff,'(a)')  'wir3_INFO: Intra-WIRE Junction made between: '
                   paraerr=.false.
@@ -6745,7 +6745,7 @@ subroutine resume_casuistics
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Functions to get the values of the
-   !!! non diagonal elementos of the autoinduction
+   !!! non diagonal elements of the autoinduction
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    real(kind=RKIND_WIRES) function F(A, B, a1, a2, d, phi)
       integer(kind=4) :: i, j
@@ -6809,7 +6809,7 @@ subroutine resume_casuistics
       return
    end function
 
-   !Rutina de inversionde matrices
+   !Matrix inversion routine
    subroutine MatInv(N, M)
       !soubroutine parameters
       integer(kind=4), intent(in)                :: N
@@ -6908,13 +6908,13 @@ subroutine resume_casuistics
       eps=abs(x/100000.0)
       if (z<-1.0_RKIND_WIRES/3.0_RKIND_WIRES) then
          X=-1
-         return !no va a converger nunca
+         return !it will never converge
       end if
       n=1
       loop:do while ((abs(x*Exp(x)-z)>eps).and.(n<maxn))
          expx = exp(x)
          !!!newton        newx = x - (x * expx - z) / (expx * x + expx)
-         !!!otro mejor
+         !!!another better one
          newx = x - (x * expx - z)/(expx * (x + 1.0_RKIND_WIRES) - (x + 2.0_RKIND_WIRES)*(x* expx - z)/(2.0_RKIND_WIRES * x + 2.0_RKIND_WIRES))
          x=newx
          n=n+1
@@ -6969,16 +6969,16 @@ subroutine resume_casuistics
           
           logical, intent(in) :: fieldtotl
           type(CurrentSegments_t), pointer  :: dummy
-!!!ojooooo 110517 acumulo en %lind toda la autoinduccion para que los calculos de capacidad la tengan en cuenta completa    
+!!!careful 110517 I accumulate in %lind all the self-inductance so that the capacitance calculations take it fully into account    
          if (.not.fieldtotl) then
              dummy%cte5 = G2(dummy%indexmed)/(dummy%deltaTransv1*dummy%deltaTransv2)
             !  dummy%cte5 = dummy%cte5/3.5
          else
-             dummy%cte5 = 0.0_RKIND_WIRES !esta es la cte de acoplo wire2main 
-         end if !para el fieldtotl no tento en cuenta mas que la autoin y no devuelvo nada !100517
+             dummy%cte5 = 0.0_RKIND_WIRES !this is the wire2main coupling constant
+         end if !for fieldtotl I only take the self-inductance into account and do not return anything !100517
 !!!!
 !
-!Lind ya contiene el givenautoin y a los autoin LeftEnd y RightEnd, que entiendo que de escalarse el mu tambien afectaria a todos ellos !ojo
+!Lind already contains the givenautoin and the LeftEnd and RightEnd autoin, which I understand that if mu were scaled would also affect all of them !note
          dummy%cte1= ((dummy%Lind )/sgg%dt-dummy%Resist/2.0_RKIND_WIRES) &
                     /((dummy%Lind )/sgg%dt+dummy%Resist/2.0_RKIND_WIRES)
          dummy%cte3= InvMu(dummy%indexmed) * InvEps(dummy%indexmed) / (dummy%delta) * (dummy%Lind) &

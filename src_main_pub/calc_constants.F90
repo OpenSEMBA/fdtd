@@ -46,7 +46,7 @@ module CALC_CONSTANTS_m
                !Trivially PEC updating Ca, Cbfficients are set to 0.0_RKIND
                g%g1(r)=0.0_RKIND ;  g%g2(r)=0.0_RKIND;  g%gm1(r)=0.0_RKIND;  g%gm2(r)=0.0_RKIND ;
             else if (sgg%Med(R)%Is%lumped) then
-               !Trivially PEC NOT updating coefficients para el avance en E. They are set to 1.0_RKIND. La rutina propia ya se encargara
+               !Trivially PEC NOT updating coefficients for the E update. They are set to 1.0_RKIND. The routine itself will take care
                g%g1(r)=1.0_RKIND ;  g%g2(r)=0.0_RKIND; 
                g%gm1(r)=(1- SigmaM*sgg%dt/(2.0_RKIND *  Mu )) /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
                g%gm2(r)=sgg%dt/ Mu                   /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
@@ -55,13 +55,13 @@ module CALC_CONSTANTS_m
                    g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
                end if
             else if (sgg%Med(R)%Is%SGBC) then
-!!!!! 090519 He quitado todo este calculo que luego hara InitSGBCs para no duplicar codigo propenso a errores. Uso valores absurdos por lo que truene.
-!!!!! ojo que los parametros stochastic tambien se obtendran en InitSGBCs, por eso lo he quitado esto de aqui
+!!!!! 090519 I removed all this calculation that InitSGBCs will do later to avoid duplicating error-prone code. I use absurd values so that it crashes.
+!!!!! beware that the stochastic parameters will also be obtained in InitSGBCs, that is why I removed this from here
                       g%g1(r)=0.0; g%g2(r)=0.0;
-                       !!! g%g1(r)=1.0e31; g%g2(r)=-1.0e23 !quitado este sinsentido por si diese lugar a errores de redondeo 170519
+                       !!! g%g1(r)=1.0e31; g%g2(r)=-1.0e23 !removed this nonsense in case it gave rise to rounding errors 170519
 !!!!!                       
-!!!!!                       !quitado soporte multicapas en SGBC a 260419
-!!!!!               !!!!!los intrinsecos suyos promediados si es una multicapa!!. La rutina de avance machaca los campos pero le paso estos coefs a initSGBCs para que los aproveche
+!!!!!                       !multi-layer support in SGBC removed on 260419
+!!!!!               !!!!!its own intrinsics averaged if it is a multilayer!!. The advance routine overwrites the fields but I pass these coefs to initSGBCs so that it uses them
 !!!!!                       width=0.; sigma=0.; epr=0.;
 !!!!!                       do i=1,sgg%Med(r)%multiport(1)%numcapas
 !!!!!                          width=width         + sgg%Med(r)%multiport(1)%width(i) 
@@ -77,7 +77,7 @@ module CALC_CONSTANTS_m
 !!!!!                        g%g1(r)=exp(- Sigma * sgg%dt / (Epsilon ))
 !!!!!                        g%g2(r)=(1.0_RKIND-g%g1(r))/ Sigma
 !!!!!                     end if
-!!!!! hasta aqui lo comentado a 090519. Los calculos de g%gm1 y g%gm2 no los hace InitSGBCs y sus incertidumbres son nulas. asi que los hago aqui                       
+!!!!! up to here what was commented on 090519. The calculations of g%gm1 and g%gm2 are not done by InitSGBCs and their uncertainties are null. so I do them here                       
                           g%gm1(r)=(1- SigmaM*sgg%dt/(2.0_RKIND *  Mu )) /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
                           g%gm2(r)=sgg%dt/ Mu                   /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
                           if (g%gm1(r) < 0.0_RKIND) then !exponential time stepping
@@ -85,12 +85,12 @@ module CALC_CONSTANTS_m
                              g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
                           end if
             else if (sgg%Med(R)%Is%Anisotropic) then
-               g%g1(r)=1.0_RKIND !para que no haga nada en el bucle principal evitando los ifs
+               g%g1(r)=1.0_RKIND !so that it does nothing in the main loop avoiding the ifs
                g%g2(r)=0.0_RKIND
-               g%gm1(r)=1.0_RKIND !para que no haga nada en el bucle principal evitando los ifs
+               g%gm1(r)=1.0_RKIND !so that it does nothing in the main loop avoiding the ifs
                g%gm2(r)=0.0_RKIND
             else if  ((sgg%Med(R)%Is%EDispersive).and.(.not.sgg%Med(R)%Is%MDispersive).and.(.not.sgg%Med(r)%Is%EdispersiveANIS)) then
-               !solo cierto para ISOTROPOS
+               !only true for ISOTROPIC
                g%g1(r)=0.0_RKIND !will be overwritten by own values created by InitEDispersives
                g%g2(r)=0.0_RKIND !will be overwritten by own values created by InitEDispersives
                g%gm1(r)=(1.0_RKIND- SigmaM*sgg%dt/(2.0_RKIND *  Mu )) / (1+ SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
@@ -100,7 +100,7 @@ module CALC_CONSTANTS_m
                   g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
                end if
             else if  ((sgg%Med(R)%Is%MDispersive).and.(.not.sgg%Med(R)%Is%EDispersive).and.(.not.sgg%Med(r)%Is%MdispersiveANIS)) then
-               !solo cierto para ISOTROPOS
+               !only true for ISOTROPIC
                g%g1(r)=(1.0_RKIND- Sigma*sgg%dt/(2.0_RKIND * epsilonValue)) / (1.0_RKIND + Sigma*sgg%dt/(2.0_RKIND * epsilonValue))
                g%g2(r)=sgg%dt / epsilonValue                / (1.0_RKIND + Sigma*sgg%dt/(2.0_RKIND * epsilonValue))
                if (g%g1(r) < 0.0_RKIND) then !exponential time stepping
@@ -111,7 +111,7 @@ module CALC_CONSTANTS_m
                g%gm2(r)=0.0_RKIND !will be overwritten by own values created by InitMDispersives
             else if  ((sgg%Med(r)%Is%MdispersiveANIS).OR.(sgg%Med(r)%Is%EdispersiveANIS)) then
                BUFF='ERROR: ANISOTROPIC DISPERSIVE CURRENTLY UNSUPPORTED IN THE ENGINE'
-               call StopOnError (0,0,buff)  !lo deberia reportar y parar antes SEMBA_FDTD.F90 !quitar algun dia para que no ralentice 170719
+               call StopOnError (0,0,buff)  !it should report and stop earlier in SEMBA_FDTD.F90 !remove some day so that it does not slow things down 170719
             else
                g%g1(r)=(1 -  Sigma * sgg%dt / (2.0_RKIND * epsilonValue ) ) / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * epsilonValue ))
                g%g2(r)=sgg%dt /epsilonValue                        / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * epsilonValue ))
@@ -132,7 +132,7 @@ module CALC_CONSTANTS_m
 
 end module CALC_CONSTANTS_m
 
-!!!!!!INNECESARIO!      call InitOtherBorders    ()
+!!!!!!UNNECESSARY!      call InitOtherBorders    ()
 !!!!!!DONE       !      call InitCPMLBorders     ()
 !!!!!!DONE       !      call InitPMLbodies()
 !!!!!!DONE       !      call InitMURBorders      ()
@@ -160,7 +160,7 @@ end module CALC_CONSTANTS_m
 !!call Advance_Ex          (Ex, Hy, Hz, Idyh, Idzh, sggMiEx, b,g%g1,g%g2)
 !!call Advance_Ey          (Ey, Hz, Hx, Idzh, Idxh, sggMiEy, b,g%g1,g%g2)
 !!call Advance_Ez          (Ez, Hx, Hy, Idxh, Idyh, sggMiEz, b,g%g1,g%g2)
-!!! no se ganada nada de tiempo        Call Advance_ExEyEz(Ex,Ey,Ez,Hx,Hy,Hz,Idxh,Idyh,Idzh,sggMiEx,sggMiEy,sggMiEz,b,g%g1,g%g2)
+!!! no time is gained        Call Advance_ExEyEz(Ex,Ey,Ez,Hx,Hy,Hz,Idxh,Idyh,Idzh,sggMiEx,sggMiEy,sggMiEz,b,g%g1,g%g2)
 !!call conformal_advance_E()
 !!call AdvanceWiresEcrank(sgg,n, layoutnumber,wiresflavor)
 !!call AdvanceWiresE(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic)
@@ -183,12 +183,12 @@ end module CALC_CONSTANTS_m
 !!call FreeSpace_Advance_Hx(Hx, Ey, Ez, Idye, Idze,           b,g%gm1,g%gm2)
 !!call FreeSpace_Advance_Hy(Hy, Ez, Ex, Idze, Idxe,           b,g%gm1,g%gm2)
 !!call FreeSpace_Advance_Hz(Hz, Ex, Ey, Idxe, Idye,           b,g%gm1,g%gm2)
-!!! no se ganada nada de tiempo                 Call Advance_HxHyHz(Hx,Hy,Hz,Ex,Ey,Ez,IdxE,IdyE,IdzE,sggMiHx,sggMiHy,sggMiHz,b,g%gm1,g%gm2)
+!!! no time is gained                 Call Advance_HxHyHz(Hx,Hy,Hz,Ex,Ey,Ez,IdxE,IdyE,IdzE,sggMiHx,sggMiHy,sggMiHz,b,g%gm1,g%gm2)
 !!call AdvancePMLbodyH
 !!call AdvanceMagneticCPML          ( sgg%NumMedia, b, sggMiHx, sggMiHy, sggMiHz, g%gm2, Hx, Hy, Hz, Ex, Ey, Ez)
 !!call FreeSpace_AdvanceMagneticCPML( sgg%NumMedia, b,                            g%gm2, Hx, Hy, Hz, Ex, Ey, Ez)
-!!!!INNECESARIO!call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,num_procs)
-!!!!INNECESARIO!call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,num_procs)
+!!!!UNNECESSARY!call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,num_procs)
+!!!!UNNECESSARY!call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,num_procs)
 !!call AdvanceSGBCH
 !!call AdvanceMDispersiveH(sgg)
 !!call AdvanceMultiportH    (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,sggMiHx,sggMiHy,sggMiHz,g%gm2,sgg%nummedia,conformalskin)
@@ -200,7 +200,7 @@ end module CALC_CONSTANTS_m
 !!call conformal_advance_H()
 !!call AdvanceMagneticMUR              (b, sgg,sggMiHx, sggMiHy, sggMiHz, Hx, Hy, Hz,mur_second)
 !!call UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, n,ini_save, b, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_FULLSIZE,wirecrank)
-!!call FlushObservationFiles(sgg,ini_save,mindum,layoutnumber,num_procs, dxe, dye, dze, dxh, dyh, dzh,b,singlefilewrite,facesNF2FF,.FALSE.) !no se flushean los farfields ahora
+!!call FlushObservationFiles(sgg,ini_save,mindum,layoutnumber,num_procs, dxe, dye, dze, dxh, dyh, dzh,b,singlefilewrite,facesNF2FF,.FALSE.) !the farfields are not flushed now
 !!call flush_and_save_resume(sgg, b, layoutnumber, num_procs, nEntradaroot, nresumeable2, thereare, n,eps0,mu0, everflushed,Ex, Ey, Ez, Hx, Hy, Hz,wiresflavor,simu_devia,stochastic)
 !!call PostProcessOnthefly(layoutnumber,num_procs,sgg,nEntradaRoot,at,somethingdone,permitscaling)
 !!call createvtkOnTheFly(layoutnumber,num_procs,sgg,vtkindex,somethingdone)

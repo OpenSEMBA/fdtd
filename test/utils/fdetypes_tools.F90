@@ -677,8 +677,8 @@ contains
       wire%Series_L_LeftEnd = 0.0_RKIND_WIRES
       wire%Parallel_C_RightEnd = 0.0_RKIND_WIRES
       wire%Parallel_C_LeftEnd = 0.0_RKIND_WIRES
-      wire%Series_C_RightEnd = 2.0e7_RKIND ! Valor por defecto de corto
-      wire%Series_C_LeftEnd = 2.0e7_RKIND ! Valor por defecto de corto
+      wire%Series_C_RightEnd = 2.0e7_RKIND ! Default value for short circuit
+      wire%Series_C_LeftEnd = 2.0e7_RKIND ! Default value for short circuit
 
       wire%Parallel_R_RightEnd_devia = 0.0_RKIND_WIRES
       wire%Parallel_R_LeftEnd_devia = 0.0_RKIND_WIRES

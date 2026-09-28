@@ -53,7 +53,7 @@ module resuming_m
    private
 
    
-!!!variables globales del modulo
+!!!module global variables
    real(kind=RKIND), save           :: zvac,cluz
    real(kind=RKIND), save           :: eps0,mu0
 !!!   
@@ -81,7 +81,7 @@ contains
       real(kind=RKIND) :: eps00,mu00
       integer(kind=4) :: lastexecutedtimestep,i,j,k,i_block,n_block,ini,fin
 
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
       zvac=sqrt(mu0/eps0)
       cluz=1.0_RKIND/sqrt(mu0*eps0)
 
@@ -191,14 +191,14 @@ contains
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(in) :: Hz
       !---------------------------> output <----------------------------------------------------------
       logical, intent(out) :: everflushed
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: dubuf
       real(kind = RKIND) :: eps00,mu00
-      !---------------------------> empieza flush_and_save_resume <-----------------------------------
+      !---------------------------> starts flush_and_save_resume <-----------------------------------
       integer :: my_iostat
       
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
       zvac=sqrt(mu0/eps0)
       cluz=1.0_RKIND/sqrt(mu0*eps0)
       
@@ -349,10 +349,10 @@ contains
       real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(in) :: Hx
       real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(in) :: Hy
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(in) :: Hz
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       integer(kind = 4) :: i, j, k, i_block, n_block, ini, fin
       real(kind = RKIND) :: eps0,mu0,cluz,zvac
-      !---------------------------> empieza StoreFields <---------------------------------------------
+      !---------------------------> starts StoreFields <---------------------------------------------
       write(14,err=634) finaltimestep,sgg%time(finaltimestep),sgg%dt,eps0,mu0
       !--->
       do k = 0, b%Ex%NZ-1

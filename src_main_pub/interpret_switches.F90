@@ -178,7 +178,7 @@ contains
       integer(kind=4) :: iostatus = 0
 
 !!!
-      l%input_conformal_flag = input_conformal_flag !ojooo 051223 es un flag global
+      l%input_conformal_flag = input_conformal_flag !careful 051223 it is a global flag
 
       mpidirset = .false.
       existiarunningigual = .false.
@@ -203,7 +203,7 @@ contains
       call print11(l%layoutnumber, 'Switches '//trim(adjustl(l%opcionestotales)))
 
       if (n > 0) then
-         i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
+         i = 2  ! it starts at 2 because the first argument is always the executable name
          do while (i <= n)
             call getcommandargument(l%chaininput, i, l%chain, l%length, statuse, binaryPath)
             if (statuse /= 0) then
@@ -214,11 +214,11 @@ contains
             case ('-i')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               continue !ya interpretado
+               continue !already interpreted
             case ('-a')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               continue !ya interpretado
+               continue !already interpreted
             case ('-mpidir')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
@@ -296,7 +296,7 @@ contains
                   statuse = -1
                end select
                continue
-               !COMO LA RCS SE CALCULA SOLO AL FINAL NO OBLIGO A RESUMEAR CON IGUAL -NONFF2FF PARA PODER CALCULAR CON Y SIN ESTA OPCION resumeando
+               !SINCE THE RCS IS ONLY COMPUTED AT THE END, I DO NOT FORCE RESUMING WITH THE SAME -NONFF2FF TO BE ABLE TO COMPUTE WITH AND WITHOUT THIS OPTION when resuming
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
             case ('-force')
                l%forcing = .TRUE.
@@ -422,7 +422,7 @@ contains
                l%MurAfterPML = .true.
                !l%mur_second=.true.
                l%mur_first = .true.
-               !arreglar cuando resuelva el bug en mur segundo orden
+               !fix when I resolve the second-order Mur bug
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
             case ('-mur1')
                l%MurAfterPML = .true.
@@ -557,19 +557,19 @@ contains
                l%mibc = .false.
                l%sgbccrank = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            case ('-sgbccrank') !es el default. Lo mantengo por compatibilidad con lanzamientos previos
+            case ('-sgbccrank') !it is the default. I keep it for compatibility with previous launches
                l%sgbccrank = .true.
                l%mibc = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            case ('-nosgbc') !opcion generica que aglutina varios switches que estan den default (l%sgbcresol, l%sgbccrank, l%sgbcfreq)
+            case ('-nosgbc') !generic option that groups several switches that are default (l%sgbcresol, l%sgbccrank, l%sgbcfreq)
                l%sgbc = .false.
                l%mibc = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            case ('-sgbc') !opcion generica que aglutina varios switches que estan den default (l%sgbcresol, l%sgbccrank, l%sgbcfreq)
+            case ('-sgbc') !generic option that groups several switches that are default (l%sgbcresol, l%sgbccrank, l%sgbcfreq)
                l%sgbc = .true.
                l%mibc = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            case ('-sgbcDispersive') !opcion generica que aglutina varios switches que estan den default (l%sgbcresol, l%sgbccrank, l%sgbcfreq)
+            case ('-sgbcDispersive') !generic option that groups several switches that are default (l%sgbcresol, l%sgbccrank, l%sgbcfreq)
                l%sgbc = .true.
                l%mibc = .false.
                l%sgbcDispersive = .true.
@@ -641,7 +641,7 @@ contains
           !!    l%experimentalVideal=.true.
           !!    l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
 
-            case ('-forceresampled') !a menos que se pida explicitamente, no se resamplea 120123
+            case ('-forceresampled') !unless explicitly requested, it is not resampled 120123
                l%forceresampled = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
 
@@ -740,7 +740,7 @@ contains
             case ('-groundwires')
                l%groundwires = .TRUE.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            case ('-noSlantedcrecepelo ') !opcion niapa excperimental 131219
+            case ('-noSlantedcrecepelo ') !niapa experimental option 131219
                l%noSlantedcrecepelo = .TRUE.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
             case ('-inductance')
@@ -775,7 +775,7 @@ contains
 3762           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid Courant Number', .true.); statuse = -1; !goto 668
 3862           if (l%cfltemp <= 0.0) then
                   call print11(l%layoutnumber, '------> Ignoring negative or null l%cfl Courant Number')
-!!!!!!!!!               call stoponerror (l%layoutnumber, l%num_procs, 'Invalid negative or null l%cfl Courant Number',.true.); statuse=-1; !goto 668 !!!sgg 151216 para evitar el error l%cfl 0 del problem-type sigue como si no estuviera
+!!!!!!!!!               call stoponerror (l%layoutnumber, l%num_procs, 'Invalid negative or null l%cfl Courant Number',.true.); statuse=-1; !goto 668 !!!sgg 151216 to avoid the l%cfl 0 error from problem-type it continues as if it were not there
                   l%forcecfl = .false.
                else
                   l%cfl = l%cfltemp
@@ -790,7 +790,7 @@ contains
 !!!!210918 permit scaling
             case ('-pscale')
                l%permitscaling = .true.
-               l%saveall = .true. !lo salvo todo en permit scaling para evitar errores
+               l%saveall = .true. !I save everything in permit scaling to avoid errors
                i = i + 1
                buff = ""
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
@@ -874,7 +874,7 @@ contains
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
             case ('-forcecreateh5bin')
                l%createh5bin = .true.
-            case ('') !100615 para evitar el crlf del .sh
+            case ('') !100615 to avoid the crlf of the .sh
                continue
             case DEFAULT
                call stoponerror(l%layoutnumber, l%num_procs, 'Wrong switch '//trim(adjustl(l%chain)), .true.); statuse = -1; !goto 668
@@ -925,12 +925,12 @@ contains
       if (l%stochastic .and. l%wirecrank) then
          call stoponerror(l%layoutnumber, l%num_procs, 'Wires Crank Nicolson is unsupported with l%stochastic', .true.); statuse = -1; !goto 668
       end if
-   !!!si esta soportado 170719
+   !!!it is supported 170719
    !! if (l%permitscaling.and.l%resume) then
    !!   call stoponerror (l%layoutnumber, l%num_procs, 'Resuming with Permittivity scaling unsupported',.true.); statuse=-1; !goto 668
    !!end if
       if (l%permitscaling .and. (l%kappamaxpar .gt. 1.000001_rkind)) then
-   !!!061118 no lo permito porque cpml toca los idxe, idye, idze en funcion del kappa y permittivity scaling conflicta
+   !!!061118 I do not allow it because cpml touches idxe, idye, idze depending on kappa and permittivity scaling conflicts
             call stoponerror (l%layoutnumber, l%num_procs, 'Unsupported CPML kappa factor since 061118 because conflicts with Idxe...in permittivity scaling',.true.)
       end if
       if (l%stochastic) then
@@ -966,7 +966,7 @@ contains
          end do
       end do
       if (l%prefix(1:1) == '_') then
-     !!!acortado 120219  l%nEntradaRoot = trim (adjustl(l%fichin)) // trim (adjustl(prefix))// trim (adjustl(l%prefixopci))
+     !!!shortened 120219  l%nEntradaRoot = trim (adjustl(l%fichin)) // trim (adjustl(prefix))// trim (adjustl(l%prefixopci))
          l%nInputRoot = trim(adjustl(l%fichin))//'_'//trim(adjustl(l%prefixopci))
       else
          l%nInputRoot = trim(adjustl(l%fichin))
@@ -974,7 +974,7 @@ contains
 !!!l%stochastic
 #ifdef CompileWithStochastic
       if (l%stochastic) then
-         if (l%layoutnumber <= l%num_procs/2 - 1) then !aun no se ha dividido el l%num_procs
+         if (l%layoutnumber <= l%num_procs/2 - 1) then !l%num_procs has not been divided yet
             l%nInputRoot = trim(adjustl(l%nInputRoot))
          else
             l%nInputRoot = trim(adjustl('devia_'//trim(adjustl(l%nInputRoot))))
@@ -984,7 +984,7 @@ contains
       call MPI_Barrier(SUBCOMM_MPI, l%ierr)
 #endif
 #endif
-!!!fin l%stochastic
+!!!end of l%stochastic
 !!!   sgg%nEntradaRoot=trim (adjustl(l%nEntradaRoot))
       !
       write(chari, '(i5)') l%layoutnumber + 1
@@ -994,8 +994,8 @@ contains
       l%geomfile = trim(adjustl(l%nInputRoot))//'_'//trim(adjustl(chari))
       !warning file management
       if (statuse /= -1) then
-         call CLOSEWARNINGFILE(l%layoutnumber, l%num_procs, l%fatalerror, .false., .false.) !!cierra el temporal !todavia no se ha dividido el l%num_procs
-       !!!borra el tmp si no hay l%fatalerror y reabre el de verdad
+         call CLOSEWARNINGFILE(l%layoutnumber, l%num_procs, l%fatalerror, .false., .false.) !!closes the temporary !l%num_procs has not been divided yet
+       !!!deletes the tmp if there is no l%fatalerror and reopens the real one
          if ((.not. l%fatalerror) .and. (l%layoutnumber == 0)) then
             open (unit=1320, file=trim(adjustl(l%fichin))//'_tmpWarnings.txt_Warnings.txt')
             close (unit=1320, status='delete')
@@ -1033,25 +1033,25 @@ contains
 !
 !
       if (((l%wiresflavor == 'slanted') .or. (l%wiresflavor == 'semistructured')) .AND. (l%mpidir /= 3)) then
-         continue !arreglado l%mpidir slanted 2019
+         continue !fixed l%mpidir slanted 2019
          !         call stoponerror (l%layoutnumber, l%num_procs, 'slanted wires unsupported with -l%mpidir {x,y}',.true.); statuse=-1; !goto 668
       end if
       if (l%input_conformal_flag .AND. (l%mpidir /= 3)) then
-         continue !arreglado l%mpidir conformal 2019
+         continue !fixed l%mpidir conformal 2019
          !TODO: under test
-         !26-sep-2018: lo comento
+         !26-sep-2018: I comment it out
          !call stoponerror (l%layoutnumber, l%num_procs, 'CONFORMAL -conf  unsupported with -l%mpidir {x,y}',.true.); statuse=-1; !goto 668
       end if
       if (l%run_with_abrezanjas .AND. (l%mpidir /= 3)) then
-         continue !arreglado l%mpidir conformal 2019
+         continue !fixed l%mpidir conformal 2019
          !under test
-         !26-sep-2018: lo comento
+         !26-sep-2018: I comment it out
          !call stoponerror (l%layoutnumber, l%num_procs, 'New abrezanjas thin gaps unsupported with -l%mpidir {x,y}',.true.); statuse=-1; !goto 668
       end if
       if (l%run_with_abrezanjas .AND. l%flag_conf_sgg) then
-         !pass Mayo-2018
+         !pass May-2018
          !call stoponerror (l%layoutnumber, l%num_procs, 'CONFORMAL -conf currently unsupported with new abrezanjas thin gaps (unsupported 2 simultaneous conformal meshes at this moment',.true.); statuse=-1; !goto 668
-         !se hace en otro sitio
+         !it is done elsewhere
       end if
 
       !
@@ -1070,7 +1070,7 @@ contains
                l%file11isopen = .false.
                open(11, file=trim(adjustl(l%nInputRoot))//'_Report.txt', FORM='formatted', POSITION='append')
                l%file11isopen = .true.
- !!!           if (l%layoutnumber==0) call insertalogtmp !ojo lo quito aqui porque borra el _log con la info de credits
+ !!!           if (l%layoutnumber==0) call insertalogtmp !careful, I remove it here because it erases the _log with the credits info
                if (l%resume_fromold) then
                   call print11(l%layoutnumber, 'Resuming from .fields.old files')
                else
@@ -1098,7 +1098,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if ((l%run)) then
 #ifdef keeppause
-          !!!solo para el cluster
+          !!!only for the cluster
          inquire(file='running', EXIST=hayinput)
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI, l%ierr)
@@ -1199,26 +1199,26 @@ contains
 #endif
          write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, *) 'Launched on              ', l%time_out2%fecha(7:8), '/', l%time_out2%fecha(5:6), '/', &
          &                l%time_out2%fecha(1:4), ' ', l%time_out2%hora(1:2), ':', l%time_out2%hora(3:4)
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, '(a)') 'Launched with total options '
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, *) trim(adjustl(l%opcionestotales))
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, '(a)') 'If later resuming use compulsory options '
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, *) trim(adjustl(l%opcionespararesumeo))
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
          call print11(l%layoutnumber, dubuf)
       end if
@@ -1237,26 +1237,26 @@ contains
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI, l%ierr)
 #endif
-      if (existiarunningigual) then !lo pongo aqui pq si no no se escribe en el report
+      if (existiarunningigual) then !I put it here because otherwise it is not written to the report
          call stoponerror(l%layoutnumber, l%num_procs, 'Running flag file with same options than requested exist. ', .true.); statuse = -1; 
       end if
 
 668   continue
 
-      input_conformal_flag = l%input_conformal_flag  !es un flag global!!!!ojooo 051223 !devolverlo correctamente
-      return !el unico return que he dejado !240817
+      input_conformal_flag = l%input_conformal_flag  !it is a global flag!!!!careful 051223 !return it properly
+      return !the only return I have left !240817
 
    end subroutine interpreta
 
-   subroutine insertalogtmp(l) !para 100920
+   subroutine insertalogtmp(l) !for 100920
       type(input_t), intent(inout) :: l
       character(len=BUFSIZE) :: dubuf
       integer(kind=4) :: MYUNIT11
-      call OffPrint !no reimprimas, esto ya estaba por pantalla
+      call OffPrint !do not reprint, this was already on screen
       open(newunit=myunit11, file='SEMBA_FDTD_temp.log')
       do
          read (myunit11, '(1024a)', end=7211) dubuf
-         dubuf = '&'//dubuf !para respetar los espacios
+         dubuf = '&'//dubuf !to preserve the spaces
          call print11(l%layoutnumber, dubuf)
       end do
 7211  close (myunit11, status='delete')
@@ -1663,7 +1663,7 @@ contains
          end do
          if (num_nfdes > 1) then
             temp_numnfdes = 0
-            i = 2 ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
+            i = 2 ! it starts at 2 because the first argument is always the executable name
             do while (i <= n)
                call getcommandargument(l%chain2, i, l%chain, l%length, statuse, binaryPath)
                if (statuse /= 0) then
@@ -1700,7 +1700,7 @@ contains
                      goto 667
                   end if
 !
-                  if (temp_numnfdes == 1) then !solo el primero
+                  if (temp_numnfdes == 1) then !only the first one
                      if (l%layoutnumber == 0) open (194, file='multi_'//trim(adjustl(l%fichin))//NFDEEXTENSION, form='formatted')
                   end if
                   if (l%layoutnumber == 0) then
@@ -1716,7 +1716,7 @@ contains
                      end do
 197                  close (196)
                   end if
-                  if (temp_numnfdes == num_nfdes) then !solo el primero
+                  if (temp_numnfdes == num_nfdes) then !only the first one
                      if (l%layoutnumber == 0) then
                         write (194, '(a)') '!END'
                         close (194)
@@ -1733,7 +1733,7 @@ contains
       
       temp_numnfdes = 0
       if (n > 0) then
-         i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
+         i = 2  ! it starts at 2 because the first argument is always the executable name
          do while (i <= n)
             call getcommandargument(l%chain2, i, l%chain, l%length, statuse, binaryPath)
             if (statuse /= 0) then
@@ -1812,24 +1812,24 @@ contains
       l%statuse = 0
       l%time_begin = 0
 !
-      l%precision = 0 !redondeo del semiestructurado
+      l%precision = 0 !rounding for the semistructured
       l%stochastic = .false.
-      l%chosenyesornostochastic = .false. !es un flag informativo que debe inicializarse a .false. a pesar de qu el sentido comun diga lo contrario
+      l%chosenyesornostochastic = .false. !it is an informative flag that must be initialized to .false. even though common sense says otherwise
       l%simu_devia = .false.
 
       l%createh5bin = .false.
       l%permitscaling = .false.
       l%niapapostprocess = .false.
-      l%prioritizeCOMPOoverPEC = .false.  !pec has default more priority than compo (para siva hay que cambiarlo)
-      l%prioritizeTHINWIRE = .false. !solo para visualizacion y experimentacion 231024
-      l%prioritizeISOTROPICBODYoverall = .FALSE. !PARA EL SIVA SE CAMBIA POR LINEA DE COMANDO
+      l%prioritizeCOMPOoverPEC = .false.  !pec has more priority than compo by default (for siva it must be changed)
+      l%prioritizeTHINWIRE = .false. !only for visualization and experimentation 231024
+      l%prioritizeISOTROPICBODYoverall = .FALSE. !FOR SIVA IT IS CHANGED FROM THE COMMAND LINE
       l%mpidir = 3 !DEFAULT do NOT ROTATE GEOMETRY !JUST TO TAKE PROFIT OF MPI
       l%maxwireradius = -1.0_RKIND
       l%boundwireradius = .false.
       l%wirecrank = .FALSE.
       l%ignoreerrors = .false.
       l%ignoresamplingerrors = .false.
-      l%vtkindex = .FALSE. !SOLO AFECTA A LOS VTK (SACA INDICES EN VEZ DE POSICION FISICA)
+      l%vtkindex = .FALSE. !ONLY AFFECTS THE VTK (OUTPUTS INDICES INSTEAD OF PHYSICAL POSITION)
       l%CLIPREGION = .false.
       l%NF2FFDecim = .FALSE.
       l%facesNF2FF%tr = .true.
@@ -1848,13 +1848,13 @@ contains
 
       l%finaltimestep = 0
       l%cfltemp = 1.0 !dummy
-      l%cfl = 1.0 !default courant number !no tocarlo 310715 solo afecta si se usa -l%cfl
+      l%cfl = 1.0 !default courant number !do not touch it 310715, only affects if -l%cfl is used
       l%forcecfl = .false.
       !PML default
       !cpml stretching maximum parameters !!l%alphamaxpar=StaticFrequency*2*pi*Eps0
-      l%alphamaxpar = 0.0_RKIND !0.24  !expresion 7.78 taflove 3 edic)
+      l%alphamaxpar = 0.0_RKIND !0.24  !expression 7.78 taflove 3rd ed)
       l%alphaOrden = 1.0_RKIND
-      l%kappamaxpar = 1.0_RKIND !15.0_RKIND !061118 mantener a 1 por conflictos cpml and permittivity scaling
+      l%kappamaxpar = 1.0_RKIND !15.0_RKIND !061118 keep at 1 due to cpml and permittivity scaling conflicts
       !and final layer electric sigma
       l%extraMedium%exists = .false.
       l%extraMedium%elementIndex = -7 !void
@@ -1866,7 +1866,7 @@ contains
       l%mur_first = .false.
       l%mur_exist = .false.
       !!!!!!!!!!!!
-      l%takeintcripte = .false. !a peticion de OLD, redondear los nodos de cripte a la baja
+      l%takeintcripte = .false. !at OLD's request, round the crypt nodes down
       l%attfactorc = 1.0_RKIND !default dissipation factor for composites
       l%attfactorw = 1.0_RKIND!default dissipation factor for wires
 
@@ -1876,17 +1876,17 @@ contains
       l%sgbc = .true. !default is false unless required
       l%sgbcDispersive = .false. !default is false unless required
       l%skindepthpre = .false.
-      l%sgbcdepth = -1  ! se calcula automaticamente a menos que se use el switch
-      l%sgbcfreq = 1e9 !default es cazar el skin depth hasta 1e9
-      l%sgbcresol = 1.0 !numero de celdas por skin depth (caida a exp(-1))
-      l%sgbccrank = .true. !default es l%sgbccrank
+      l%sgbcdepth = -1  ! it is computed automatically unless the switch is used
+      l%sgbcfreq = 1e9 !default is to capture the skin depth up to 1e9
+      l%sgbcresol = 1.0 !number of cells per skin depth (decay to exp(-1))
+      l%sgbccrank = .true. !default is l%sgbccrank
 
       l%fatalerror = .false.
       l%fatalerrornfde2sgg = .false.
 
       l%dontwritevtk = .false.
 
-      l%NOcompomur = .false. !DEFAULT mi formulacion
+      l%NOcompomur = .false. !DEFAULT my formulation
 
       !default no join the wires which are adjacent (ORIGINAL election)
       !do not connect endings unless specified in ORIGINAL
@@ -1894,18 +1894,18 @@ contains
       l%connectendings = .false.
       l%isolategroupgroups = .false.
       l%strictOLD = .true. !default is strict ORIGINAL overriden manually
-      l%TAPARRABOS = .true. !default since 101116 !cortar los multizigzag rabitos
-      l%mtlnberenger = .true. !solo actua si se invoca con l%wiresflavor berenger esto va a ser siempre true a menos que tambien se invoque con -nomtlnberenger (solo para debugeo y que coincida con Holland) 020719
-      l%stableradholland = .false. !solo actua si se invoca con l%wiresflavor holland
+      l%TAPARRABOS = .true. !default since 101116 !cut the multizigzag tails
+      l%mtlnberenger = .true. !only acts if invoked with l%wiresflavor berenger, this will always be true unless also invoked with -nomtlnberenger (only for debugging and to match Holland) 020719
+      l%stableradholland = .false. !only acts if invoked with l%wiresflavor holland
       l%fieldtotl = .false.
       l%experimentalVideal = .false.
       l%thereare_stoch = .false.
       l%forceresampled = .false.
-      l%factorradius = 1.0e+30 !para evitar division por cero 120123
-      l%factordelta = 1.0e+30 !para evitar division por cero 120123
+      l%factorradius = 1.0e+30 !to avoid division by zero 120123
+      l%factordelta = 1.0e+30 !to avoid division by zero 120123
       !default
       l%groundwires = .false.
-      l%noSlantedcrecepelo = .false. !131219 experimental niapa ojoooo
+      l%noSlantedcrecepelo = .false. !131219 experimental niapa careful
       l%inductance_model = 'boutayeb'
       l%inductance_order = 8
       l%wiresflavor = 'holland'
@@ -1921,7 +1921,7 @@ contains
       l%forcesteps = .FALSE.
       l%resume = .FALSE.
       l%freshstart = .FALSE.
-      l%run = .FALSE.  !si hay .fields restartea y si no comienza
+      l%run = .FALSE.  !if .fields exists it restarts, otherwise it starts
       l%deleteintermediates = .FALSE.
       !
       l%existeNFDE = .FALSE.
@@ -1930,7 +1930,7 @@ contains
       !default is NO flush fields
       l%flushminutesFields = 0
       !default is to flush data when the buffer is filled up
-      !si se pone cada tantos minutos y se guardan las sondas en trancos!puede haber errores de redondeo porque el buffer se limpia tras cada flusheo
+      !if it is set every so many minutes and probes are saved in blocks!there may be rounding errors because the buffer is cleared after each flush
       l%flushminutesData = TOPCPUTIME
       !
       !maximum runtime

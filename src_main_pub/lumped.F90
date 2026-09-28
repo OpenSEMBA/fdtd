@@ -1,8 +1,8 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Module Lumped
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!Elimino el tratamiento de los campos magneticos de Lumped para programar un multiLumped 
-!!!solo teniendo en cuenta los parametros efectivos y sin actualizar los magneticos.
+!!!I remove the treatment of the magnetic fields of Lumped to program a multiLumped 
+!!!only taking into account the effective parameters and without updating the magnetics.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module Lumped_m
@@ -60,7 +60,7 @@ contains
       type(Nodes_t), pointer :: lumped_
       logical :: unstable
 !
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to convert the step variables into globals
 !
 !!!
       write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%num_procs,') '
@@ -69,7 +69,7 @@ contains
 !
       ThereAreLumped=.FALSE.
 
-      !precontaje
+      !precount
 
       conta=0
       do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
@@ -236,7 +236,7 @@ contains
              A= lumped_%diodepreA * exp(lumped_%diodeB * lumped_%Efield) 
              Enplus1 = newton_raphson(A,lumped_%diodeB,fieldC)
              lumped_%Efield = Enplus1
-         else !debe entrar aqui si es un resistor, inductor o capacitor
+         else !must enter here if it is a resistor, inductor or capacitor
             if (sgg%med(lumped_%jmed)%lumped(1)%resistor) then
                 if ((timestep*sgg%dt >= sgg%Med(lumped_%jmed)%Lumped(1)%Rtime_on).and.(timestep*sgg%dt <= sgg%Med(lumped_%jmed)%Lumped(1)%Rtime_off)) then
                    lumped_%Efield = lumped_%G1 * lumped_%Efield +  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) - &
@@ -245,14 +245,14 @@ contains
                    lumped_%Efield = lumped_%G1_usual * lumped_%Efield +(lumped_%G2a_usual *(lumped_%Ha_Plus - lumped_%Ha_Minu) - &
                                                                         lumped_%G2b_usual *(lumped_%Hb_Plus - lumped_%Hb_Minu))
                 end if
-            else !inductor o capacitor
+            else !inductor or capacitor
                 lumped_%Efield = lumped_%G1 * lumped_%Efield +  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) - &
                                  lumped_%GJ * lumped_%Jcur
             end if
          end if                     
 #ifdef CompileWithStochastic
          call inject_devialumped(sgg,timestep,simu_devia,stochastic,lumped_)
-!inyecta las devia como sources
+!injects the devia as sources
 #endif
 !!!
       end do
@@ -265,7 +265,7 @@ contains
       type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4) :: conta
       type(Nodes_t), pointer :: lumped_
-!!!variables locales
+!!!local variables
       integer(kind=4) :: jmed
       integer(kind=4) :: orient
       real(kind=RKIND) :: epsilonValue,sigma,g1,g2,Resist,Induct,Capaci,sigmaeff,epsiloneff,DiodB,DiodIsat
@@ -275,7 +275,7 @@ contains
       
       character(len=BUFSIZE) :: buff
 !
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to convert the step variables into globals
       zvac=sqrt(mu0/eps0)
       cluz=1.0_RKIND/sqrt(eps0*mu0)
 !
@@ -319,13 +319,13 @@ contains
                 epsiloneff= epsilonValue 
             end if 
             if (.not.sgg%Med(jmed)%sigmareasignado) then
-                sgg%Med(jmed)%sigma = sigmaeff !devuelve al principal el efectivo para hacer bien las conexiones lossy con thin wires 120123
+                sgg%Med(jmed)%sigma = sigmaeff !returns the effective one to the main one to correctly make lossy connections with thin wires 120123
                 sgg%Med(jmed)%sigmareasignado=.true.
             else
                 print *,'error buggy: reasignando sigma en un lumped'
                 stop
             end if
-!ORIGINALES COMENTADOS 151222 por otros equivalentes para simplificar implem stoch            
+!ORIGINALS COMMENTED OUT 151222 by others equivalent to simplify the stoch implementation            
 !           G1=(1.0_RKIND  - SigmaEff * sgg%dt / (2.0_RKIND * epsilonEff) ) / &
 !              (1.0_RKIND  + SigmaEff * sgg%dt / (2.0_RKIND * epsilonEff) ) 
 !           G2=  sgg%dt / epsilonEff                        / &
@@ -337,7 +337,7 @@ contains
                (epsilonEff/sgg%dt   + SigmaEff/2.0_RKIND  ) 
             
             
-            !!!lo he comentado a 050122 por consistencia con stochastic
+            !!!I have commented it out on 050122 for consistency with stochastic
             !!if (g1 < 0.0_RKIND) then !exponential time stepping
             !!    g1=exp(- SigmaEff * sgg%dt / (epsilonEff ))
             !!    g2=(1.0_RKIND-g1)/ SigmaEff
@@ -351,7 +351,7 @@ contains
             lumped_%sigmaEffResistInduct = sigmaEffResistInduct
             lumped_%currentCoeff = currentCoeff
   
-            !!!!usual para resistencia que se encienden/apagan 200319
+            !!!!usual for resistors that turn on/off 200319
             G1_usual=(1.0_RKIND  - Sigma * sgg%dt / (2.0_RKIND * epsilonValue) ) / &
                 (1.0_RKIND  + Sigma * sgg%dt / (2.0_RKIND * epsilonValue) ) 
             G2_usual=  sgg%dt / epsilonValue                        / &
@@ -368,7 +368,7 @@ contains
            !!!only for diodes 
             if (orient>0.0) then
                 lumped_%diodeB    = lumped_%diodeB * alignedDeltaE / 2.0_RKIND
-                lumped_%diodepreA = DiodIsat * G2 / ( transversalDeltaHa * transversalDeltaHb)  !DiodIsat es la corriente de saturacions
+                lumped_%diodepreA = DiodIsat * G2 / ( transversalDeltaHa * transversalDeltaHb)  !DiodIsat is the saturation current
             else if (orient<0.0) then
                 lumped_%diodeB    = -lumped_%diodeB * alignedDeltaE / 2.0_RKIND
                 lumped_%diodepreA = -DiodIsat * G2 / ( transversalDeltaHa * transversalDeltaHb) 
@@ -392,13 +392,13 @@ contains
          type(Nodes_t), pointer :: lumped_
          do conta=1,LumpElem%numnodes
             lumped_ => LumpElem%Nodes(conta)
-            write(14,err=634) lumped_%EfieldPrevPrev,lumped_%EfieldPrev,lumped_%Jcur !olvide almacenar jcur 071118
+            write(14,err=634) lumped_%EfieldPrevPrev,lumped_%EfieldPrev,lumped_%Jcur !I forgot to store jcur 071118
          end do
 #ifdef CompileWithStochastic
          if (stochastic) then
              do conta=1,LumpElem%numnodes
                 lumped_ => LumpElem%Nodes(conta)
-                write(14,err=634) lumped_%EfieldPrevPrev_for_devia,lumped_%EfieldPrev_for_devia,lumped_%Jcur_for_devia !olvide almacenar jcur 071118
+                write(14,err=634) lumped_%EfieldPrevPrev_for_devia,lumped_%EfieldPrev_for_devia,lumped_%Jcur_for_devia !I forgot to store jcur 071118
              end do
          end if
 #endif
@@ -431,9 +431,9 @@ contains
    real(kind=RKIND), intent(in) :: A,B,C
    real(kind=RKIND) :: x
    real(kind=RKIND) :: x0, xx0, fxx0, dfxx0
-   real(kind=RKIND) :: tol ! Tolerancia error relativo
-   integer, parameter :: NMAX=1024  !limite de iteraciones/iteraciones realizadas
-   integer :: clave,i,n      ! Clave de exito
+   real(kind=RKIND) :: tol ! Relative error tolerance
+   integer, parameter :: NMAX=1024  !iteration limit/iterations performed
+   integer :: clave,i,n      ! Success flag
 
     clave = 1
     xx0 = x0

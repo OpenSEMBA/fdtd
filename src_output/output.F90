@@ -626,7 +626,7 @@ contains
          select case (outputs(i)%outputID)
          case (POINT_PROBE_ID)
             timeSampleDue = is_time_sample_due(outputs(i)%pointProbe%domain, timeIndx, discreteTime)
-            fieldComponent => get_field_component(outputs(i)%pointProbe%component, fieldsReference) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
+            fieldComponent => get_field_component(outputs(i)%pointProbe%component, fieldsReference) !Each component requires different values but I don't know how to obtain them
             if (present(sgg)) then
                call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent, sgg, timeSampleDue)
             else

@@ -44,7 +44,7 @@ module BORDERS_CPML_m
    real(kind=RKIND) , pointer, dimension(:), save  :: ce_x ,ce_y ,ce_z ,cm_x ,cm_y ,cm_z , &
    Ice_x ,Ice_y ,Ice_z ,Icm_x ,Icm_y ,Icm_z
 
-!!!variables globales del modulo
+!!!module global variables
    real(kind=RKIND), save           :: zvac
    real(kind=RKIND), save           :: eps0,mu0
 !!!
@@ -90,7 +90,7 @@ contains
       integer(kind=4) :: i,j,k,region,field
 !      character(len=BUFSIZE) :: buff
 !
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to convert the step variables into globals
       zvac=sqrt(mu0/eps0)
       SINPML_fullsize =  temp_SINPML_fullsize
       alphamaxpar = control%alphamaxpar
@@ -219,7 +219,7 @@ contains
          if (i <= SINPML_Fullsize(IHX)%XI-1 .and. sgg%PML%NumLayers(1,1) /= 0) then
             cm_x(i)=                         1.0_RKIND * (SINPML_Fullsize(IHX)%XI-(i+0.5_RKIND )) /(sgg%PML%NumLayers(1,1))
             Icm_x(i)=1.0_RKIND * (sgg%PML%NumLayers(1,1)-(SINPML_Fullsize(IHX)%XI-(i+0.5_RKIND )))/(sgg%PML%NumLayers(1,1))
-         else if (i >= SINPML_Fullsize(IHX)%XE .and. sgg%PML%NumLayers(1,2) /= 0) then  !!cuidado pues los h empiezan antes
+         else if (i >= SINPML_Fullsize(IHX)%XE .and. sgg%PML%NumLayers(1,2) /= 0) then  !!careful because the h start earlier
             cm_x(i)=                         1.0_RKIND * (i-SINPML_Fullsize(IHX)%XE+0.5_RKIND ) /(sgg%PML%NumLayers(1,2))
             Icm_x(i)=1.0_RKIND * (sgg%PML%NumLayers(1,2)-(i-SINPML_Fullsize(IHX)%XE+0.5_RKIND ))/(sgg%PML%NumLayers(1,2))
          else
@@ -541,9 +541,9 @@ contains
       real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(inout) :: Ex
       real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(inout) :: Ey
       real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(inout) :: Ez
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
-      !---------------------------> empieza AdvanceelectricCPML <-------------------------------------
+      !---------------------------> starts AdvanceelectricCPML <-------------------------------------
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -813,7 +813,7 @@ contains
 #endif
 
 
-      !---------------------------> acaba AdvanceelectricCPML <---------------------------------------
+      !---------------------------> ends AdvanceelectricCPML <---------------------------------------
       return
    end subroutine AdvanceelectricCPML
    !**************************************************************************************************
@@ -838,9 +838,9 @@ contains
       real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hx
       real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
-      !---------------------------> empieza AdvanceMagneTicCPML <-------------------------------------
+      !---------------------------> starts AdvanceMagneTicCPML <-------------------------------------
       !Hetic Fields PML Zone
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -951,7 +951,7 @@ contains
                (Ex(i_m, j_m, k_m+1) - Ex(i_m, j_m, k_m)) * P_cm_z(k)
                medium = sggMiHy(i_m , j_m , k_m)
                Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - GM2(medium) * regDU(REGION)%Psi_Hyz(i, j, k)
-            end do !bucle i
+            end do !loop i
          end do
       end do
 #ifdef CompileWithOpenMP
@@ -971,7 +971,7 @@ contains
                (Ey(i_m, j_m, k_m+1) - Ey(i_m, j_m, k_m)) * P_cm_z(k)
                medium = sggMiHx(i_m , j_m , k_m)
                Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + GM2(medium) * regDU(REGION)%Psi_Hxz(i, j, k)
-            end do !bucle i
+            end do !loop i
          end do
       end do
 #ifdef CompileWithOpenMP
@@ -996,7 +996,7 @@ contains
                (Ex(i_m, j_m, k_m+1) - Ex(i_m, j_m, k_m)) * P_cm_z(k)
                medium = sggMiHy(i_m , j_m , k_m)
                Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - GM2(medium) * regDU(REGION)%Psi_Hyz(i, j, k)
-            end do !bucle i
+            end do !loop i
          end do
       end do
 #ifdef CompileWithOpenMP
@@ -1016,7 +1016,7 @@ contains
                (Ey(i_m, j_m, k_m+1) - Ey(i_m, j_m, k_m)) * P_cm_z(k)
                medium = sggMiHx(i_m , j_m , k_m)
                Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + GM2(medium) * regDU(REGION)%Psi_Hxz(i, j, k)
-            end do !bucle i
+            end do !loop i
          end do
       end do
 #ifdef CompileWithOpenMP
@@ -1113,7 +1113,7 @@ contains
 #endif
 
 
-      !---------------------------> acaba AdvanceMagneTicCPML <---------------------------------------
+      !---------------------------> ends AdvanceMagneTicCPML <---------------------------------------
       return
    end subroutine AdvanceMagneTicCPML
 !!!
@@ -1134,11 +1134,11 @@ contains
 !!!      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hx
 !!!      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT) :: Hy
 !!!      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT) :: Hz
-!!!      !---------------------------> variables locales <-----------------------------------------------
+!!!      !---------------------------> local variables <-----------------------------------------------
 !!!      integer(kind=4) :: REGION, i, j, k, i_m, j_m, k_m
 !!!      real(kind = RKIND) :: GM2_1
 !!!      GM2_1=GM2(1)
-!!!      !---------------------------> empieza AdvanceMagneTicCPML <-------------------------------------
+!!!      !---------------------------> starts AdvanceMagneTicCPML <-------------------------------------
 !!!      !Hetic Fields PML Zone
 !!!      !
 !!!      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1244,7 +1244,7 @@ contains
 !!!               regDU( REGION)%Psi_Hyz( i, j, k) = P_bm_z( k) * regDU( REGION)%Psi_Hyz( i, j, k) +  &
 !!!               (Ex( i_m, j_m, k_m+1) - Ex( i_m, j_m, k_m)) * P_cm_z( k)
 !!!               Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - GM2_1 * regDU( REGION)%Psi_Hyz( i, j, k)
-!!!            end do !bucle i
+!!!            end do !loop i
 !!!         end do
 !!!      end do
 !!!#ifdef CompileWithOpenMP
@@ -1263,7 +1263,7 @@ contains
 !!!               regDU( REGION)%Psi_Hxz( i, j, k) = P_bm_z( k) * regDU( REGION)%Psi_Hxz( i, j, k) +  &
 !!!               (Ey( i_m, j_m, k_m+1) - Ey( i_m, j_m, k_m)) * P_cm_z( k)
 !!!               Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) + GM2_1 * regDU( REGION)%Psi_Hxz( i, j, k)
-!!!            end do !bucle i
+!!!            end do !loop i
 !!!         end do
 !!!      end do
 !!!#ifdef CompileWithOpenMP
@@ -1287,7 +1287,7 @@ contains
 !!!               regDU( REGION)%Psi_Hyz( i, j, k) = P_bm_z( k) * regDU( REGION)%Psi_Hyz( i, j, k) +  &
 !!!               (Ex( i_m, j_m, k_m+1) - Ex( i_m, j_m, k_m)) * P_cm_z( k)
 !!!               Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - GM2_1 * regDU( REGION)%Psi_Hyz( i, j, k)
-!!!            end do !bucle i
+!!!            end do !loop i
 !!!         end do
 !!!      end do
 !!!#ifdef CompileWithOpenMP
@@ -1306,7 +1306,7 @@ contains
 !!!               regDU( REGION)%Psi_Hxz( i, j, k) = P_bm_z( k) * regDU( REGION)%Psi_Hxz( i, j, k) +  &
 !!!               (Ey( i_m, j_m, k_m+1) - Ey( i_m, j_m, k_m)) * P_cm_z( k)
 !!!               Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) + GM2_1 * regDU( REGION)%Psi_Hxz( i, j, k)
-!!!            end do !bucle i
+!!!            end do !loop i
 !!!         end do
 !!!      end do
 !!!#ifdef CompileWithOpenMP
@@ -1399,7 +1399,7 @@ contains
 !!!#endif
 !!!
 !!!
-!!!      !---------------------------> acaba AdvanceMagneTicCPML <---------------------------------------
+!!!      !---------------------------> ends AdvanceMagneTicCPML <---------------------------------------
 !!!      return
 !!!   endsubroutine FreeSpace_AdvanceMagneTicCPML
 
@@ -1417,11 +1417,11 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
       integer :: i,j,k,o,p
       real(kind=RKIND) :: del,sigmae,kpare,apare,sigmam,kparm,aparm
       character(len=BUFSIZE) :: buff
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to convert the step variables into globals
       zvac=sqrt(mu0/eps0)
 
-      del=1.0 !!!una simple inicializacion para que gfortran no se queje
-      !Find the maximum conductivity for each direcion o=1,2,3 and for the starting and ending layer p=1,2
+      del=1.0 !!!a simple initialization so that gfortran does not complain
+      !Find the maximum conductivity for each direction o=1,2,3 and for the starting and ending layer p=1,2
 
       sig_max=0.0_RKIND; aPar_max=0.0_RKIND; kPar_max=0.0_RKIND;
       do o=1,3
@@ -1434,15 +1434,15 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             if ((o == 3).and.(p == 2)) del=dze(sgg%ALLOC(IEZ)%ZE)
             if (sgg%PML%NumLayers(o,p) /= 0) then
                if ((sgg%PML%NumLayers(o,p) == 10).or.(sgg%PML%NumLayers(o,p) == 5)) then
-                  !gedney sigma optimo no tiene en cuenta el refle (taflove 3 ed, pag 294)
-                  !para 5 celdas es exp(-8) y para 16 celdas es exp(-16)
-                  sig_max(o,p)=0.8*(sgg%PML%orden(o,p)+1)/(sqrt(Mu0/eps0)*del) !cambio tonto no afecta a nada 260919
+                  !gedney optimum sigma does not take into account the reflection (taflove 3 ed, p 294)
+                  !for 5 cells it is exp(-8) and for 16 cells it is exp(-16)
+                  sig_max(o,p)=0.8*(sgg%PML%orden(o,p)+1)/(sqrt(Mu0/eps0)*del) !silly change does not affect anything 260919
                else
                   sig_max(o,p)=-((log(sgg%PML%CoeffReflPML(o,p))*(sgg%PML%orden(o,p)+1))/ &
                   (2*sqrt(Mu0/eps0)*sgg%PML%NumLayers(o,p)*del))
-                  !ojo LO SIGUIENTE  estaba maaaaallllllllll porque NO ES MATERIAL INDEPENDENT
+                  !note THE FOLLOWING  was very wroooong because IT IS NOT MATERIAL INDEPENDENT
                   !                          (2*sqrt(Mu0/eps0)*sqrt(sgg%Med(jmed)%Epr*sgg%Med(jmed)%Mur)*sgg%PML%NumLayers(o,p)*del))
-                  !los multilayer petan- !!! !Viene de Gedney, pero esta maaaalllll!! !corregido 20marzo 2011
+                  !the multilayers crash- !!! !It comes from Gedney, but it is wroooong!! !fixed 20march 2011
                end if
             else
                sig_max(o,p)=1.0e29_RKIND
@@ -1473,7 +1473,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
 
       P_ce_x=0.0_RKIND; P_ce_y=0.0_RKIND; P_ce_z=0.0_RKIND; P_cm_x=0.0_RKIND; P_cm_y=0.0_RKIND; P_cm_z=0.0_RKIND;
       P_be_x=1.0_RKIND; P_be_y=1.0_RKIND; P_be_z=1.0_RKIND; P_bm_x=1.0_RKIND; P_bm_y=1.0_RKIND; P_bm_z=1.0_RKIND;
-      !Calculate the coefficients (in CPML they are the same for every possible medium OJOOOOOOOOOOOOOOOOO)
+      !Calculate the coefficients (in CPML they are the same for every possible medium WATCH OUT)
 
       !Default !2011 already done in main
       !Idxh        ( : )=    1.0_RKIND / dxh( : )
@@ -1492,7 +1492,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                Sigmae=    Sig_max(1,1)   * ce_x(i)**sgg%PML%orden(1,1)
                kPare=1.0_RKIND+(kPar_max(1,1)-1)* ce_x(i)**sgg%PML%orden(1,1)
             end if
-            aPare=    aPar_max(1,1)*Ice_x(i)**alphaOrden !!  **sgg%PML%orden(1,1) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente !gedney lo escala linealmente
+            aPare=    aPar_max(1,1)*Ice_x(i)**alphaOrden !!  **sgg%PML%orden(1,1) !!**1.0_RKIND !linear profile originally proposed by Gedney !gedney scales it linearly
             P_be_x(i)=exp(-(sigmae/kPare+aPare)*sgg%dt/Eps0)
             P_ce_x(i)=(sigmae*(P_be_x(i)-1.0_RKIND)/(sigmae+kPare*aPare)/kpare)/dxh(i)
             Idxh(i)=1.0_RKIND / (kPare*dxh(i))
@@ -1504,7 +1504,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                Sigmae=    Sig_max(1,2)   * ce_x(i)**sgg%PML%orden(1,2)
                kPare=1.0_RKIND+(kPar_max(1,2)-1)* ce_x(i)**sgg%PML%orden(1,2)
             end if
-            aPare=    aPar_max(1,2)*Ice_x(i)**alphaOrden !!  **sgg%PML%orden(1,2) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
+            aPare=    aPar_max(1,2)*Ice_x(i)**alphaOrden !!  **sgg%PML%orden(1,2) !!**1.0_RKIND !linear profile originally proposed by Gedney
             P_be_x(i)=exp(-(sigmae/kPare+aPare)*sgg%dt/Eps0)
             P_ce_x(i)=(sigmae*(P_be_x(i)-1.0_RKIND)/(sigmae+kPare*aPare)/kpare)/dxh(i)
             Idxh(i)=1.0_RKIND / (kPare*dxh(i))
@@ -1519,7 +1519,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                Sigmae=    Sig_max(2,1)   * ce_y(j)**sgg%PML%orden(2,1)
                kPare=1.0_RKIND+(kPar_max(2,1)-1)* ce_y(j)**sgg%PML%orden(2,1)
             end if
-            aPare=    aPar_max(2,1)*Ice_y(j)**alphaOrden !!  **sgg%PML%orden(2,1) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
+            aPare=    aPar_max(2,1)*Ice_y(j)**alphaOrden !!  **sgg%PML%orden(2,1) !!**1.0_RKIND !linear profile originally proposed by Gedney
             P_be_y     (j)=exp(-(sigmae/kPare+aPare)*sgg%dt/Eps0)
             P_ce_y     (j)=(sigmae*(P_be_y(j)-1.0_RKIND)/(sigmae+kPare*aPare)/kpare)/dyh(j)
             IdYh(j) =1.0_RKIND / (kPare*dyh(j))
@@ -1531,7 +1531,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                Sigmae=    Sig_max(2,2)   * ce_y(j)**sgg%PML%orden(2,2)
                kPare=1.0_RKIND+(kPar_max(2,2)-1)* ce_y(j)**sgg%PML%orden(2,2)
             end if
-            aPare=    aPar_max(2,2)*Ice_y(j)**alphaOrden !!  **sgg%PML%orden(2,2) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
+            aPare=    aPar_max(2,2)*Ice_y(j)**alphaOrden !!  **sgg%PML%orden(2,2) !!**1.0_RKIND !linear profile originally proposed by Gedney
             P_be_y     (j)=exp(-(sigmae/kPare+aPare)*sgg%dt/Eps0)
             P_ce_y     (j)=(sigmae*(P_be_y(j)-1.0_RKIND)/(sigmae+kPare*aPare)/kpare)/dyh(j)
             IdYh(j) =1.0_RKIND / (kPare*dyh(j))
@@ -1546,7 +1546,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                sigmae=    Sig_max(3,1)   * ce_z(k)**sgg%PML%orden(3,1)
                kPare=1.0_RKIND+(kPar_max(3,1)-1)* ce_z(k)**sgg%PML%orden(3,1)
             end if
-            aPare=    aPar_max(3,1)*Ice_z(k)**alphaOrden !!  **sgg%PML%orden(3,1) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
+            aPare=    aPar_max(3,1)*Ice_z(k)**alphaOrden !!  **sgg%PML%orden(3,1) !!**1.0_RKIND !linear profile originally proposed by Gedney
             P_be_z     (k)=exp(-(sigmae/kPare+aPare)*sgg%dt/Eps0)
             P_ce_z     (k)=(sigmae*(P_be_z(k)-1.0_RKIND)/(sigmae+kPare*aPare)/kpare)/dzh(k)
             Idzh(k)=1.0_RKIND / (kPare*dzh(k))
@@ -1558,7 +1558,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                sigmae=    Sig_max(3,2)   * ce_z(k)**sgg%PML%orden(3,2)
                kPare=1.0_RKIND+(kPar_max(3,2)-1)* ce_z(k)**sgg%PML%orden(3,2)
             end if
-            aPare=    aPar_max(3,2)*Ice_z(k)**alphaOrden !!  **sgg%PML%orden(3,2) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
+            aPare=    aPar_max(3,2)*Ice_z(k)**alphaOrden !!  **sgg%PML%orden(3,2) !!**1.0_RKIND !linear profile originally proposed by Gedney
             P_be_z     (k)=exp(-(sigmae/kPare+aPare)*sgg%dt/Eps0)
             P_ce_z     (k)=(sigmae*(P_be_z(k)-1.0_RKIND)/(sigmae+kPare*aPare)/kpare)/dzh(k)
             Idzh(k)=1.0_RKIND / (kPare*dzh(k))
@@ -1574,7 +1574,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                Sigmam=    Sig_max(1,1)   * cm_x(i)**sgg%PML%orden(1,1)
                kParm=1.0_RKIND+(kPar_max(1,1)-1)* cm_x(i)**sgg%PML%orden(1,1)
             end if
-            aParm=    aPar_max(1,1)*Icm_x(i)**alphaOrden !!  **sgg%PML%orden(1,1) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
+            aParm=    aPar_max(1,1)*Icm_x(i)**alphaOrden !!  **sgg%PML%orden(1,1) !!**1.0_RKIND !linear profile originally proposed by Gedney
             P_bm_x(i)=exp(-(sigmam/kParm+aParm)*sgg%dt/Eps0)
             P_cm_x(i)=(sigmam*(P_bm_x(i)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dxe(i)
             Idxe(i)=1.0_RKIND / (kParm*dxe(i))
@@ -1590,7 +1590,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                Sigmam=    Sig_max(1,2)   * cm_x(i)**sgg%PML%orden(1,2)
                kParm=1.0_RKIND+(kPar_max(1,2)-1)* cm_x(i)**sgg%PML%orden(1,2)
             end if
-            aParm=    aPar_max(1,2)*Icm_x(i)**alphaOrden !!  **sgg%PML%orden(1,2) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
+            aParm=    aPar_max(1,2)*Icm_x(i)**alphaOrden !!  **sgg%PML%orden(1,2) !!**1.0_RKIND !linear profile originally proposed by Gedney
             P_bm_x(i)=exp(-(sigmam/kParm+aParm)*sgg%dt/Eps0)
             P_cm_x(i)=(sigmam*(P_bm_x(i)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dxe(i)
             Idxe(i)=1.0_RKIND / (kParm*dxe(i))
@@ -1609,7 +1609,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                Sigmam=    Sig_max(2,1)   * cm_y(j)**sgg%PML%orden(2,1)
                kParm=1.0_RKIND+(kPar_max(2,1)-1)* cm_y(j)**sgg%PML%orden(2,1)
             end if
-            aParm=    aPar_max(2,1)*Icm_y(j)**alphaOrden !!  **sgg%PML%orden(2,1) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
+            aParm=    aPar_max(2,1)*Icm_y(j)**alphaOrden !!  **sgg%PML%orden(2,1) !!**1.0_RKIND !linear profile originally proposed by Gedney
             P_bm_y(j)=exp(-(sigmam/kParm+aParm)*sgg%dt/Eps0)
             P_cm_y     (j)=(sigmam*(P_bm_y(j)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dye(j)
             Idye(j)=1.0_RKIND / (kParm*dye(j))
@@ -1625,7 +1625,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                Sigmam=    Sig_max(2,2)   * cm_y(j)**sgg%PML%orden(2,2)
                kParm=1.0_RKIND+(kPar_max(2,2)-1)* cm_y(j)**sgg%PML%orden(2,2)
             end if
-            aParm=    aPar_max(2,2)*Icm_y(j)**alphaOrden !!  **sgg%PML%orden(2,2) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
+            aParm=    aPar_max(2,2)*Icm_y(j)**alphaOrden !!  **sgg%PML%orden(2,2) !!**1.0_RKIND !linear profile originally proposed by Gedney
             P_bm_y(j)=exp(-(sigmam/kParm+aParm)*sgg%dt/Eps0)
             P_cm_y     (j)=(sigmam*(P_bm_y(j)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dye(j)
             Idye(j)=1.0_RKIND / (kParm*dye(j))
@@ -1644,7 +1644,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                Sigmam=    Sig_max(3,1)   * cm_z(k)**sgg%PML%orden(3,1)
                kParm=1.0_RKIND+(kPar_max(3,1)-1)* cm_z(k)**sgg%PML%orden(3,1)
             end if
-            aParm=    aPar_max(3,1)*Icm_z(k)**alphaOrden !!  **sgg%PML%orden(3,1) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
+            aParm=    aPar_max(3,1)*Icm_z(k)**alphaOrden !!  **sgg%PML%orden(3,1) !!**1.0_RKIND !linear profile originally proposed by Gedney
             P_bm_z(k)=exp(-(sigmam/kParm+aParm)*sgg%dt/Eps0)
             P_cm_z     (k)=(sigmam*(P_bm_z(k)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dze(k)
             Idze(k)=1.0_RKIND / (kParm*dze(k))
@@ -1660,7 +1660,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
                Sigmam=    Sig_max(3,2)   * cm_z(k)**sgg%PML%orden(3,2)
                kParm=1.0_RKIND+(kPar_max(3,2)-1)* cm_z(k)**sgg%PML%orden(3,2)
             end if
-            aParm=    aPar_max(3,2)*Icm_z(k)**alphaOrden !!  **sgg%PML%orden(3,2) !!**1.0_RKIND !perfil lineal propuesto por Gedney originalmente
+            aParm=    aPar_max(3,2)*Icm_z(k)**alphaOrden !!  **sgg%PML%orden(3,2) !!**1.0_RKIND !linear profile originally proposed by Gedney
             P_bm_z(k)=exp(-(sigmam/kParm+aParm)*sgg%dt/Eps0)
             P_cm_z     (k)=(sigmam*(P_bm_z(k)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dze(k)
             Idze(k)=1.0_RKIND / (kParm*dze(k))
@@ -1696,9 +1696,9 @@ end subroutine calc_cpmlconstants
       real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(inout) :: Ex
       real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(inout) :: Ey
       real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(inout) :: Ez
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
-      !---------------------------> empieza AdvanceelectricCPML <-------------------------------------
+      !---------------------------> starts AdvanceelectricCPML <-------------------------------------
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1968,7 +1968,7 @@ end subroutine calc_cpmlconstants
 #endif
 
 
-      !---------------------------> acaba AdvanceelectricCPML <---------------------------------------
+      !---------------------------> ends AdvanceelectricCPML <---------------------------------------
       return
    end subroutine AdvanceelectricCPML_freespace
    !**************************************************************************************************
@@ -1993,9 +1993,9 @@ end subroutine calc_cpmlconstants
       real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hx
       real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
-      !---------------------------> empieza AdvanceMagneTicCPML <-------------------------------------
+      !---------------------------> starts AdvanceMagneTicCPML <-------------------------------------
       !Hetic Fields PML Zone
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2106,7 +2106,7 @@ end subroutine calc_cpmlconstants
                (Ex(i_m, j_m, k_m+1) - Ex(i_m, j_m, k_m)) * P_cm_z(k)
                medium = 1
                Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - GM2(medium) * regDU(REGION)%Psi_Hyzvac(i, j, k)
-            end do !bucle i
+            end do !loop i
          end do
       end do
 #ifdef CompileWithOpenMP
@@ -2126,7 +2126,7 @@ end subroutine calc_cpmlconstants
                (Ey(i_m, j_m, k_m+1) - Ey(i_m, j_m, k_m)) * P_cm_z(k)
                medium = 1
                Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + GM2(medium) * regDU(REGION)%Psi_Hxzvac(i, j, k)
-            end do !bucle i
+            end do !loop i
          end do
       end do
 #ifdef CompileWithOpenMP
@@ -2151,7 +2151,7 @@ end subroutine calc_cpmlconstants
                (Ex(i_m, j_m, k_m+1) - Ex(i_m, j_m, k_m)) * P_cm_z(k)
                medium = 1
                Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - GM2(medium) * regDU(REGION)%Psi_Hyzvac(i, j, k)
-            end do !bucle i
+            end do !loop i
          end do
       end do
 #ifdef CompileWithOpenMP
@@ -2171,7 +2171,7 @@ end subroutine calc_cpmlconstants
                (Ey(i_m, j_m, k_m+1) - Ey(i_m, j_m, k_m)) * P_cm_z(k)
                medium = 1
                Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + GM2(medium) * regDU(REGION)%Psi_Hxzvac(i, j, k)
-            end do !bucle i
+            end do !loop i
          end do
       end do
 #ifdef CompileWithOpenMP
@@ -2268,7 +2268,7 @@ end subroutine calc_cpmlconstants
 #endif
 
 
-      !---------------------------> acaba AdvanceMagneTicCPML <---------------------------------------
+      !---------------------------> ends AdvanceMagneTicCPML <---------------------------------------
       return
    end subroutine AdvanceMagneTicCPML_freespace
 

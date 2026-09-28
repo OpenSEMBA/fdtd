@@ -4,9 +4,9 @@
 ! Module PMLbodies
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!17/08/15 update!!!!!!!!!!!
-!!!Elimino el tratamiento de los campos magneticos de PMLbody para programar un multiPMLbody 
-!!!solo teniendo en cuenta los parametros efectivos y sin actualizar los magneticos.
-!!!Mangento en el fichero PMLbody_pre170815_noupdateababienH.F90 la version antigua
+!!!I remove the treatment of the magnetic fields of PMLbody to program a multiPMLbody 
+!!!only taking into account the effective parameters and without updating the magnetics.
+!!!I keep the old version in the file PMLbody_pre170815_noupdateababienH.F90
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module PMLbodies_m
@@ -32,13 +32,13 @@ module PMLbodies_m
       type(BerPML__t), allocatable, dimension(:) :: nodes
    end type berpml_t
 
-   !!!!!valiables locales
+   !!!!!local variables
    type(berpml_t), save, target   :: berpmlE,berpmlH
 
    integer(kind=4), parameter :: PMLORDEN = 2
    real(kind=RKIND), parameter :: COEFFREFLPML=1e-4
 
-!!!variables globales del modulo
+!!!module global variables
    real(kind=RKIND), save           :: eps0,mu0
 !!!
    public AdvancePMLbodyE,AdvancePMLbodyH,InitPMLbodies,DestroyPMLbodies,StorefieldsPMLbodies,calc_pmlbodypar
@@ -77,7 +77,7 @@ contains
       type(BerPML__t), pointer :: PML_
       logical :: unstable
 !
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
 !         
 !!!
       write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%num_procs,') '
@@ -85,7 +85,7 @@ contains
 !
       ThereArePMLbodies=.FALSE.
 
-      !precontaje
+      !precount
 
 
       minx=2**20 ; miny=minx; minz=minx; maxx=-minx; maxy=-miny; maxz=-minz;
@@ -333,7 +333,7 @@ contains
          end do
       end do
 
-!magneticos
+!magnetics
 
 
       !!!!!!!!
@@ -460,7 +460,7 @@ contains
             end do
          end do
       end do
-!!!inicializa las constantes
+!!!initializes the constants
       call calc_pmlbodypar(sgg,eps00,mu00)
 !!!
 
@@ -493,7 +493,7 @@ contains
         integer(kind=4) :: nn
         real(kind=RKIND) :: sigmamax,sigma
 !
-        eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+        eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
 !         
         do conta=1,berpmlE%numnodes
                 PML_ => berpmlE%Nodes(conta) 

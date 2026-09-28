@@ -42,7 +42,7 @@ module MPIcomm_m
    public InitExtraFlushMPI
 
 
-   !jag bug Antares mas de 65295 steps
+   !jag bug Antares more than 65295 steps
    type, public :: t_databuf_t
       integer :: ip_target
       integer :: sizex, sizey, sizez
@@ -69,7 +69,7 @@ contains
 
 
    subroutine InitGeneralMPI(layoutnumber,num_procs)
-      integer(kind=4) :: layoutnumber,num_procs  !ojo he quitado el , intent(in) pq ambas son de salida 031218
+      integer(kind=4) :: layoutnumber,num_procs  !careful I have removed the , intent(in) because both are output 031218
       character(len=MPI_MAX_PROCESSOR_NAME) :: name
       integer(kind=4) namelen, ierr
       call MPI_INIT (ierr)
@@ -103,8 +103,8 @@ contains
       integer(kind=4), dimension(1:2) :: sggPMLNumLayers_original
       
       
-      sggPMLNumLayers_original(:)=sgg%PML%NumLayers(3,:) !bug 310124 slices justo en PML
-      originalPML_up_or_down=sgg%Border%IsUpPML.or.sgg%Border%IsDownPML !bug 310124 slices justo en PML
+      sggPMLNumLayers_original(:)=sgg%PML%NumLayers(3,:) !bug 310124 slices right on the PML
+      originalPML_up_or_down=sgg%Border%IsUpPML.or.sgg%Border%IsDownPML !bug 310124 slices right on the PML
       
       write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', num_procs, ') '
       cZE => null(); cZI=> null(); trancos=> null(); mpizcom=> null(); mpizfin=> null();
@@ -203,7 +203,7 @@ contains
       padding=1
       if (padding >= minval(trancos)) then
          buff='Number of cells per processor less than 2. Decrease the number of MPI processors'
-!intento recuperarme de este error
+!I try to recover from this error
          call stoponerror(layoutnumber,num_procs,buff,.true.); 
          if (associated(cZe)) deallocate(cZe,cZi)
          if (associated(mpizcom)) deallocate(mpizcom,mpizfin)
@@ -248,13 +248,13 @@ contains
          sgg%Border%IsUpPEC=.false.
          sgg%Border%IsDownPMC=.false.
          sgg%Border%IsDownPEC=.false.   
-         !ojoo  en un futuro con este < a secas  cuando la PML esta justo en la division mpi 1310124
+         !careful  in the future with this bare <  when the PML is right at the mpi division 1310124
          if ((sgg%Sweep(iEx)%ZI<SINPML_fullsize(iEx)%ZI)) then
             sgg%Border%IsDownPML=.true.
          else
             sgg%Border%IsDownPML=.false. !no PML layers DOWN
          end if
-         !ojoo  en un futuro con este > a secas  cuando la PML esta justo en la division mpi 1310124
+         !careful  in the future with this bare >  when the PML is right at the mpi division 1310124
          if ((sgg%Sweep(iEx)%ZE>SINPML_fullsize(iEx)%ZE))   then 
             sgg%Border%IsUpPML=.true.
          else
@@ -290,8 +290,8 @@ contains
       end if
       !end writing
 
-      !bug 310124 cuando PML coincide con la primera celda de la ultima particion
-      !no me complico y fuerzo menos MPI num_procs
+      !bug 310124 when the PML coincides with the first cell of the last partition
+      !I do not complicate myself and force fewer MPI num_procs
       if ((originalPML_up_or_down).and. &
              (mpiZfin(layoutnumber)-mpiZcom(layoutnumber)<=minval(sggPMLNumLayers_original))) then
            write(buff,'(a,i3,i3)') trim(adjustl(whoami))//' Minimum slice sizes along MPI should be larger that PML number of layers ', &
@@ -394,7 +394,7 @@ contains
       !print *,'---layoutnumber, subcomm',layoutnumber,subcomm
       if (Subcomm == 1) allranks(layoutnumber)=.true.
       call MPI_AllReduce(allranks, newallranks, num_procs, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-      !choose the maximum layer to be root !ojo no poner el minimo pq es -1 (voided de entrada)
+      !choose the maximum layer to be root !careful do not put the minimum because it is -1 (voided from the start)
       call MPI_AllReduce(Root, newRoot, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
       Root=newRoot
       countValue=-1
@@ -433,8 +433,8 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine FlushMPI_H(sggalloc,layoutnumber,num_procs, Hx,Hy,Hz)
       type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
-!!!! reutilizo esta subroutina para sincronizar matrices de medios. Las de campo las hacen los _Cray 210815
-!!!! ojo hay que cambiar tambien si algun dia se vuelve a esta rutina para comunicar reales INTEGERSIZE por REALSIZE
+!!!! I reuse this subroutine to synchronize media matrices. The field ones are done by the _Cray ones 210815
+!!!! careful it must also be changed if this routine is ever used again to communicate reals INTEGERSIZE by REALSIZE
 !!!!      real(kind=RKIND)   , intent(inout) :: &
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) , intent(inout) :: &
       Hx(sggalloc(IHX)%XI : sggalloc(IHX)%XE,sggalloc(IHX)%YI : sggalloc(IHX)%YE,sggalloc(IHX)%ZI : sggalloc(IHX)%ZE), &
@@ -518,8 +518,8 @@ contains
 
    subroutine FlushMPI_E(sggalloc,layoutnumber,num_procs, Ex,Ey,Ez)
       type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
-!!!! reutilizo esta subroutina para sincronizar matrices de medios. Las de campo las hacen los _Cray 210815
-!!!! ojo hay que cambiar tambien si algun dia se vuelve a esta rutina para comunicar reales INTEGERSIZE por REALSIZE
+!!!! I reuse this subroutine to synchronize media matrices. The field ones are done by the _Cray ones 210815
+!!!! careful it must also be changed if this routine is ever used again to communicate reals INTEGERSIZE by REALSIZE
 !!!!      real(kind=RKIND)   , intent(inout) :: &
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) , intent(inout) :: &
       Ex(sggalloc(iEx)%XI : sggalloc(iEx)%XE,sggalloc(iEx)%YI : sggalloc(iEx)%YE,sggalloc(iEx)%ZI : sggalloc(iEx)%ZE),&
@@ -624,7 +624,7 @@ contains
          HwiresMPI%NumNeededCurrentDownMPI=0
       end if
 
-      !chequea los segmentos que estan en el padding de 1 celda
+      !checks the segments that are in the 1-cell padding
 
       NeedscontaMPIdown=0
       NeedscontaMPIup=0
@@ -663,7 +663,7 @@ contains
 
       allocate (HwiresMPI%MPIUpSharedCurrentSegment(1 : SharescontaMPIup))
       allocate (HwiresMPI%MPIDownSharedCurrentSegment(1 : SharescontaMPIdown))
-      HwiresMPI%NumSharedCurrentUpMPI   = SharescontaMPIup !solo lo defino para info mia
+      HwiresMPI%NumSharedCurrentUpMPI   = SharescontaMPIup !I only define it for my own info
       HwiresMPI%NumSharedCurrentDownMPI = SharescontaMPIdown
 
       !create space for the new ghost MPI segments (only their actual current is needed)
@@ -846,7 +846,7 @@ contains
 
       !
       !call MPI_Barrier(SUBCOMM_MPI,ierr12)
-      !ojo que aqui no entran todos y por tanto la barrera crea un deadlock
+      !careful, not everyone enters here and therefore the barrier creates a deadlock
       !
       if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
@@ -914,7 +914,7 @@ contains
       end do
       !
       !call MPI_Barrier(SUBCOMM_MPI,ierr12)
-      !ojo que aqui no entran todos y por tanto la barrera crea un deadlock
+      !careful, not everyone enters here and therefore the barrier creates a deadlock
       !
       if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
@@ -984,7 +984,7 @@ contains
       end do
       !
       !call MPI_Barrier(SUBCOMM_MPI,ierr12)
-      !ojo que aqui no entran todos y por tanto la barrera crea un deadlock
+      !careful, not everyone enters here and therefore the barrier creates a deadlock
       !
       if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
@@ -1065,7 +1065,7 @@ contains
    !!!end do
    !!!!
    !!!!call MPI_Barrier(SUBCOMM_MPI,ierr12)
-   !!!!ojo que aqui no entran todos y por tanto la barrera crea un deadlock
+   !!!!careful, not everyone enters here and therefore the barrier creates a deadlock
    !!!!
    !!!if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) &
    !!!      call StopOnError(layoutnumber,num_procs,'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4)
@@ -1087,7 +1087,7 @@ contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! FLUSH WIRE DATA
-   !! no se usa. detectado y comentado 260815 bug gra_simple.nfde en sync mpi de hilos que se doblan sobre si mismos y comparten tramos coincidentes
+   !! it is not used. detected and commented 260815 bug gra_simple.nfde in the mpi sync of wires that fold over themselves and share coincident stretches
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!subroutine newFlushWiresMPIindexmedInfo(layoutnumber,num_procs)
    !!!   integer(kind=4) :: ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0
@@ -1124,7 +1124,7 @@ contains
    !!!
    !!!   !
    !!!   !call MPI_Barrier(SUBCOMM_MPI,ierr12)
-   !!!   !ojo que aqui no entran todos y por tanto la barrera crea un deadlock
+   !!!   !careful, not everyone enters here and therefore the barrier creates a deadlock
    !!!   !
    !!!   if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
    !!!      write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
@@ -1154,8 +1154,8 @@ contains
 
       !thanks to overlapping of media matrix to detect media
       !an anistropic boundary will be detected both by the upper and the lower layouts
-      !regardless of what happened with the wires (creo que esta formulacion no pasaria tampoco con
-      !los wires, pero no lo he tocado)
+      !regardless of what happened with the wires (I think this formulation would not pass either with
+      !the wires, but I have not touched it)
       FlushExtraInfoDown=.false.
       FlushExtraInfoUp  =.false.
 
@@ -1208,8 +1208,8 @@ contains
                   if ((sggMiHz(i1,j1, 1+finZ)) == jmed) then
                        FlushExtraInfoUp    = .true.
                   end if
-                  !creo que esto no es necesario para multiports de ss pero no creo que cargue mucho y no se si Ian lo necesita
-                  !lo dejo por precaucion
+                  !I think this is not necessary for ss multiports but I do not think it loads much and I do not know if Ian needs it
+                  !I leave it as a precaution
                   if ((sggMiHz(i1,j1, 1+comZ)) == jmed) then
                        FlushExtraInfoDown  = .true.
                   end if
@@ -1249,9 +1249,9 @@ contains
       Ez(sggalloc(IEZ)%XI: sggalloc(IEZ)%XE, sggalloc(IEZ)%YI: sggalloc(IEZ)%YE, sggalloc(IEZ)%ZI: sggalloc(IEZ)%ZE)
       integer(kind = 4), intent(in) :: layoutnumber, num_procs
       logical, intent(in) :: PBCDown, PBCUp
-      !---------------- variables locales ------------------------------------------------------------
+      !---------------- local variables ------------------------------------------------------------
       type(t_databuf_t), pointer :: databufH, databufE
-      !---------------- empieza InitMPI_Cray ---------------------------------------------------------
+      !---------------- starts InitMPI_Cray ---------------------------------------------------------
       !not necessary at this moment since nothing is read at this mmoment
       ExXI=sggalloc(iEx)%XI
       ExXE=sggalloc(iEx)%XE
@@ -1292,7 +1292,7 @@ contains
       ComZ=sggsweep(IHX)%ZI !both Hx and Hy coincide in this
       FinZ=sggsweep(IHX)%ZE
       !--->
-      !jag: bug Antares mas de 65295 steps
+      !jag: bug Antares more than 65295 steps
       databuf_SetH%syncUp = layoutnumber /= (num_procs-1)
       databuf_SetH%pbcUp = (layoutnumber == (num_procs-1)) .and. PBCUp
       databufH => databuf_SetH%databuf_Up
@@ -1418,19 +1418,19 @@ contains
          databufE%buf_y_rx => null()
          databufE%buf_y_tx => null()
       end if
-      !---------------- acaba InitMPI_Cray -----------------------------------------------------------
+      !---------------- ends InitMPI_Cray -----------------------------------------------------------
       return
    end subroutine InitMPI_Cray
    !**************************************************************************************************
    subroutine FlushMPI_H_Cray
-      !---------------- variables locales ------------------------------------------------------------
+      !---------------- local variables ------------------------------------------------------------
       type(t_databuf_t), pointer :: databuf_Up, databuf_Down
       integer :: ierr
       integer, dimension(4) :: req1, req2
       integer, dimension(2) :: req1b, req2b
       integer, dimension(MPI_STATUS_SIZE, 4) :: status1, status2
       integer, dimension(MPI_STATUS_SIZE, 2) :: status1b, status2b
-      !---------------- empieza FlushMPI_H -----------------------------------------------------------
+      !---------------- starts FlushMPI_H -----------------------------------------------------------
       databuf_Up => databuf_SetH%databuf_Up
       databuf_Down => databuf_SetH%databuf_Down
       !------------------------------------------->
@@ -1445,8 +1445,8 @@ contains
       if(databuf_SetH%syncDown .OR. databuf_SetH%pbcDown) then
          call MPI_VAMOS_ALLA_Hdown(databuf_Down, req2, req2b)
       end if
-      ! jag: yo compruebo que ha habido Rx de todos mis recepciones con MPI_TEST
-      ! si asi continuo. no creo que haya mucha diferencia
+      ! jag: I check that there has been Rx of all my receptions with MPI_TEST
+      ! if so I continue. I do not think there is much difference
       if(databuf_SetH%syncDown .OR. databuf_SetH%pbcDown) then
          call MPI_WAITALL(4_4, req2, status2, ierr)
          if(databuf_Down%FlushExtraInfo) then
@@ -1470,7 +1470,7 @@ contains
          integer, dimension(4), intent(out) :: req
          integer, dimension(2), intent(out) :: reqb
          integer :: ierr
-         !---------------- empieza MPI_VAMOS_ALLA_Hup ------------------------------------------------
+         !---------------- starts MPI_VAMOS_ALLA_Hup ------------------------------------------------
          call MPI_IRECV(databufH%buf_x_rx, databufH%sizex, REALSIZE, databufH%ip_target, 1_4, SUBCOMM_MPI, req(1), ierr)
          call MPI_ISEND(databufH%buf_x_tx, databufH%sizex, REALSIZE, databufH%ip_target, 2_4, SUBCOMM_MPI, req(2), ierr)
          call MPI_IRECV(databufH%buf_y_rx, databufH%sizey, REALSIZE, databufH%ip_target, 3_4, SUBCOMM_MPI, req(3), ierr)
@@ -1480,7 +1480,7 @@ contains
             call MPI_IRECV(databufH%buf_z_rx, databufH%sizez, REALSIZE, databufH%ip_target, 5_4, SUBCOMM_MPI, reqb(1), ierr)
             call MPI_ISEND(databufH%buf_z_tx, databufH%sizez, REALSIZE, databufH%ip_target, 6_4, SUBCOMM_MPI, reqb(2), ierr)
          end if
-         !---------------- acaba MPI_VAMOS_ALLA_Hup --------------------------------------------------
+         !---------------- ends MPI_VAMOS_ALLA_Hup --------------------------------------------------
          return
       end subroutine MPI_VAMOS_ALLA_Hup
       !***********************************************************************************************
@@ -1491,7 +1491,7 @@ contains
          integer, dimension(4), intent(out) :: req
          integer, dimension(2), intent(out) :: reqb
          integer :: ierr
-         !---------------- empieza MPI_VAMOS_ALLA_Hdown ----------------------------------------------
+         !---------------- starts MPI_VAMOS_ALLA_Hdown ----------------------------------------------
          call MPI_ISEND(databufH%buf_x_tx, databufH%sizex, REALSIZE, databufH%ip_target, 1_4, SUBCOMM_MPI, req(1), ierr)
          call MPI_IRECV(databufH%buf_x_rx, databufH%sizex, REALSIZE, databufH%ip_target, 2_4, SUBCOMM_MPI, req(2), ierr)
          call MPI_ISEND(databufH%buf_y_tx, databufH%sizey, REALSIZE, databufH%ip_target, 3_4, SUBCOMM_MPI, req(3), ierr)
@@ -1501,21 +1501,21 @@ contains
             call MPI_ISEND(databufH%buf_z_tx, databufH%sizez, REALSIZE, databufH%ip_target, 5_4, SUBCOMM_MPI, reqb(1), ierr)
             call MPI_IRECV(databufH%buf_z_rx, databufH%sizez, REALSIZE, databufH%ip_target, 6_4, SUBCOMM_MPI, reqb(2), ierr)
          end if
-         !---------------- acaba MPI_VAMOS_ALLA_Hdown ------------------------------------------------
+         !---------------- ends MPI_VAMOS_ALLA_Hdown ------------------------------------------------
          return
       end subroutine MPI_VAMOS_ALLA_Hdown
-      !---------------- acaba FlushMPI_H -------------------------------------------------------------
+      !---------------- ends FlushMPI_H -------------------------------------------------------------
    end subroutine FlushMPI_H_Cray
    !**************************************************************************************************
    subroutine FlushMPI_E_Cray
-      !---------------- variables locales ------------------------------------------------------------
+      !---------------- local variables ------------------------------------------------------------
       type(t_databuf_t), pointer :: databuf_Up, databuf_Down
       integer :: ierr
       integer, dimension(2) :: req1, req2
       integer, dimension(4) :: req1b, req2b
       integer, dimension(MPI_STATUS_SIZE, 2) :: status1, status2
       integer, dimension(MPI_STATUS_SIZE, 4) :: status1b, status2b
-      !---------------- empieza FlushMPI_E -----------------------------------------------------------
+      !---------------- starts FlushMPI_E -----------------------------------------------------------
       databuf_Up => databuf_SetE%databuf_Up
       databuf_Down => databuf_SetE%databuf_Down
       !------------------------------------------->
@@ -1553,7 +1553,7 @@ contains
          integer, dimension(2), intent(out) :: req
          integer, dimension(4), intent(out) :: reqb
          integer :: ierr
-         !---------------- empieza MPI_VAMOS_ALLA_Eup ------------------------------------------------
+         !---------------- starts MPI_VAMOS_ALLA_Eup ------------------------------------------------
          if(databufE%FlushExtraInfo) then
             !print *,'---fluEextraup>'
             call MPI_IRECV(databufE%buf_z_rx, databufE%sizez, REALSIZE, databufE%ip_target, 1_4, SUBCOMM_MPI, req(1), ierr)
@@ -1564,7 +1564,7 @@ contains
             call MPI_IRECV(databufE%buf_y_rx, databufE%sizey, REALSIZE, databufE%ip_target, 5_4, SUBCOMM_MPI, reqb(3), ierr)
             call MPI_ISEND(databufE%buf_y_tx, databufE%sizey, REALSIZE, databufE%ip_target, 6_4, SUBCOMM_MPI, reqb(4), ierr)
          end if
-         !---------------- acaba MPI_VAMOS_ALLA_Eup --------------------------------------------------
+         !---------------- ends MPI_VAMOS_ALLA_Eup --------------------------------------------------
          return
       end subroutine MPI_VAMOS_ALLA_Eup
       !***********************************************************************************************
@@ -1575,7 +1575,7 @@ contains
          integer, dimension(2), intent(out) :: req
          integer, dimension(4), intent(out) :: reqb
          integer :: ierr
-         !---------------- empieza MPI_VAMOS_ALLA_Edown ----------------------------------------------
+         !---------------- starts MPI_VAMOS_ALLA_Edown ----------------------------------------------
          if(databufE%FlushExtraInfo) then
             !print *,'---fluEextradown>'
             call MPI_ISEND(databufE%buf_z_tx, databufE%sizez, REALSIZE, databufE%ip_target, 1_4, SUBCOMM_MPI, req(1), ierr)
@@ -1586,10 +1586,10 @@ contains
             call MPI_ISEND(databufE%buf_y_tx, databufE%sizey, REALSIZE, databufE%ip_target, 5_4, SUBCOMM_MPI, reqb(3), ierr)
             call MPI_IRECV(databufE%buf_y_rx, databufE%sizey, REALSIZE, databufE%ip_target, 6_4, SUBCOMM_MPI, reqb(4), ierr)
          end if
-         !---------------- acaba MPI_VAMOS_ALLA_Edown ------------------------------------------------
+         !---------------- ends MPI_VAMOS_ALLA_Edown ------------------------------------------------
          return
       end subroutine MPI_VAMOS_ALLA_Edown
-      !---------------- acaba FlushMPI_E -------------------------------------------------------------
+      !---------------- ends FlushMPI_E -------------------------------------------------------------
    end subroutine FlushMPI_E_Cray
    !**************************************************************************************************
    !--->
@@ -1612,14 +1612,14 @@ contains
       Ez(sggalloc(IEZ)%XI: sggalloc(IEZ)%XE, sggalloc(IEZ)%YI: sggalloc(IEZ)%YE, sggalloc(IEZ)%ZI: sggalloc(IEZ)%ZE)
       integer(kind = 4), intent(in) :: nummed
       type(MediaData_t), dimension(0: NumMed), intent(in) :: med
-      !---------------- variables locales ------------------------------------------------------------
+      !---------------- local variables ------------------------------------------------------------
       integer(kind = 4) :: j1, i1, jmed
       type(t_databuf_t), pointer :: databufH, databufE
-      !---------------- empieza InitExtraFlushMPI_Cray ----------------------------------------------
+      !---------------- starts InitExtraFlushMPI_Cray ----------------------------------------------
       !thanks to overlapping of media matrix to detect media
       !an anistropic boundary will be detected both by the upper and the lower layouts
-      !regardless of what happened with the wires (creo que esta formulacion no pasaria tampoco con
-      !los wires, pero no lo he tocado)
+      !regardless of what happened with the wires (I think this formulation would not pass either with
+      !the wires, but I have not touched it)
       FlushExtraInfoDown = .false.
       FlushExtraInfoUp = .false.
       !
@@ -1675,8 +1675,8 @@ contains
                   if ((sggMiHz(i1,j1, 1+finZ)) == jmed) then
                        FlushExtraInfoUp    = .true.
                   end if
-                  !creo que esto no es necesario para multiports de ss pero no creo que cargue mucho y no se si Ian lo necesita
-                  !lo dejo por precaucion
+                  !I think this is not necessary for ss multiports but I do not think it loads much and I do not know if Ian needs it
+                  !I leave it as a precaution
                   if ((sggMiHz(i1,j1, 1+comZ)) == jmed) then
                        FlushExtraInfoDown  = .true.
                   end if
@@ -1687,7 +1687,7 @@ contains
             end do
          end if
       end do
-      !jag bug Antares mas de 65295 steps
+      !jag bug Antares more than 65295 steps
       !print *,'------',FlushExtraInfoDown,FlushExtraInfoUp,comZ,finZ,sggMiHz(4,4,21)
       databufH => databuf_SetH%databuf_Up
       databufE => databuf_SetE%databuf_Up
@@ -1730,13 +1730,13 @@ contains
             databufE%buf_y_rx => Ey(EyXI: EyXE, EyYI: EyYI, comZ-1)
          end if
       end if
-      !---------------- acaba InitExtraFlushMPI_Cray ------------------------------------------------
+      !---------------- ends InitExtraFlushMPI_Cray ------------------------------------------------
       return
    end subroutine InitExtraFlushMPI_Cray
   
     
 #endif
-   !del compilewithmpi
+   !of compilewithmpi
 
 end module
  
@@ -1767,14 +1767,14 @@ contains
 
     !----------------------------------------
 
-    !EL PRIMERO ES integer
+    !THE FIRST ONE IS integer
     typelist(1) = MPI_INTEGER4
     block_lengths(1) = 1
     displacements(1) = 0
-    !EL SEGUNDO ES character
+    !THE SECOND ONE IS character
     typelist(2) =  MPI_CHARACTER
     block_lengths(2) = BUFSIZE
-    displacements(2) = 4 !el segundo se desplaza 4 porque el primero tiene 4 bytes
+    displacements(2) = 4 !the second one is shifted by 4 because the first one has 4 bytes
 
     ! build the derived data type
     call MPI_Type_create_struct(number,block_lengths,displacements,&
