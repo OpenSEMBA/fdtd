@@ -9,8 +9,8 @@ integer function test_vtkAPI_points_allocation() bind(C) result(error_cnt)
    ! Verifies structured-grid points are allocated with the expected shape.
    use vtkAPI_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: points(:, :)
    integer :: nx, ny, nz
 
@@ -35,8 +35,8 @@ integer function test_vtkAPI_point_scalar() bind(C) result(error_cnt)
    ! Verifies scalar point data is stored in a structured grid.
    use vtkAPI_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: scalars(:)
    integer :: nx=2, ny=2, nz=2, i
 
@@ -61,8 +61,8 @@ integer function test_vtkAPI_point_vector() bind(C) result(error_cnt)
    ! Verifies vector point data is stored in a structured grid.
    use vtkAPI_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: vec(:)
    integer :: nx=2, ny=2, nz=2, i
 
@@ -89,8 +89,8 @@ integer function test_vtkAPI_cell_scalar() bind(C) result(error_cnt)
    ! Verifies scalar cell data is stored in a structured grid.
    use vtkAPI_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: cell_data(:)
    integer :: nx=2, ny=2, nz=2, n
 
@@ -115,8 +115,8 @@ integer function test_vtkAPI_cell_vector() bind(C) result(error_cnt)
    ! Verifies vector cell data is stored in a structured grid.
    use vtkAPI_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: vec(:)
    integer :: nx=2, ny=2, nz=2, n
 
@@ -144,8 +144,8 @@ integer function test_vtkAPI_vts_file_creation() bind(C) result(error_cnt)
    use vtkAPI_m
    use directoryUtils_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: points(:, :), scalars(:)
    integer :: nx=2, ny=2, nz=2
    integer :: ierr
@@ -183,8 +183,8 @@ integer function test_vtkAPI_vtu_file_creation() bind(C) result(error_cnt)
    use vtkAPI_m
    use directoryUtils_m
    implicit none
-   type(vtk_unstructured_grid), target :: ugrid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_unstructured_grid_t), target :: ugrid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: points(:, :), scalars(:)
    integer, allocatable :: conn(:), offsets(:), types(:)
    integer :: ierr
@@ -233,8 +233,8 @@ integer function test_vtkAPI_vtu_cell_data() bind(C) result(error_cnt)
    ! Verifies scalar and vector data is stored for unstructured-grid cells.
    use vtkAPI_m
    implicit none
-   type(vtk_unstructured_grid), target :: ugrid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_unstructured_grid_t), target :: ugrid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: cell_scalars(:), cell_vectors(:)
    integer, allocatable :: conn(:), offsets(:), types(:)
 
@@ -267,8 +267,8 @@ integer function test_vtkAPI_vts_content() bind(C) result(error_cnt)
    use vtkAPI_m
    use directoryUtils_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: points(:, :), scalars(:), vectors(:)
    integer :: nx=2, ny=2, nz=2
    integer :: ierr, i
@@ -337,8 +337,8 @@ integer function test_vtkAPI_vtu_content() bind(C) result(error_cnt)
    use vtkAPI_m
    use directoryUtils_m
    implicit none
-   type(vtk_unstructured_grid), target :: ugrid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_unstructured_grid_t), target :: ugrid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: points(:, :), scalars(:), cell_scalars(:)
    integer, allocatable :: conn(:), offsets(:), types(:)
    integer :: ierr

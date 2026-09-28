@@ -279,7 +279,7 @@ contains
       type(problem_info_t), target, intent(in) :: problemInfo
 
       !type(vtk_file) :: vtkOutput
-      type(vtk_unstructured_grid), target :: ugrid
+      type(vtk_unstructured_grid_t), target :: ugrid
 
       integer :: ierr, i
       character(len=BUFSIZE) :: vtuPath
