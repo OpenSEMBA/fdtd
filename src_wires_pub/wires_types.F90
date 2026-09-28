@@ -91,7 +91,7 @@ module wiresHolland_constants_m
       real(kind=RKIND_WIRES)                            :: bI
       real(kind=RKIND_WIRES)                            :: Lintrinsic
       !fin dama
-      integer(kind=4) :: tipofield !iEx,iEy o iEz
+      integer(kind=4) :: fieldKind !iEx,iEy o iEz
       logical :: orientadoalreves
       type(source_t), pointer                  :: Vsource
 #ifdef CompileWithMPI

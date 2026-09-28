@@ -51,7 +51,7 @@ contains
       expected%despl%mz2 = 20
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(:) = F_MUR
+      expected%front%boundaryType(:) = F_MUR
 
       ! Expected material regions.
       expected%pecRegs%nVols = 0

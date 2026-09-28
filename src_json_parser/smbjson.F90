@@ -457,8 +457,8 @@ contains
       block
          bdrType = this%getStrAt(bdrs, J_BND_ALL//'.'//J_TYPE, found)
          if (found) then
-            res%tipoFrontera(:) = labelToBoundaryType(bdrType)
-            if (all(res%tipoFrontera == F_PML)) then
+            res%boundaryType(:) = labelToBoundaryType(bdrType)
+            if (all(res%boundaryType == F_PML)) then
                res%propiedadesPML(:) = readPMLProperties(J_BOUNDARY//"."//J_BND_ALL)
             end if
             return
@@ -475,8 +475,8 @@ contains
                call WarnErrReport(ERRORMSGINIT // PLACELABELS(i) // " or " // J_BND_ALL // " not found.", .true.)
             end if
             j = labelToBoundaryPlace(PLACELABELS(i))
-            res%tipoFrontera(j) = labelToBoundaryType(bdrType)
-            if (res%tipoFrontera(j) == F_PML) then
+            res%boundaryType(j) = labelToBoundaryType(bdrType)
+            if (res%boundaryType(j) == F_PML) then
                res%propiedadesPML(j) = readPMLProperties(J_BOUNDARY//"."//PLACELABELS(i))
             end if
          end do
@@ -808,7 +808,7 @@ contains
          ! Not really needed for resistor, inductor, or capacitor. 
          ! But avoids error in lumped initialization.
          res%orient = 1
-         res%DiodOri = 1
+         res%diodeOrientation = 1
 
          res%eps = EPSILON_VACUUM
          res%mu = MU_VACUUM
@@ -1045,7 +1045,7 @@ contains
          character(len=:), allocatable :: label
          logical :: found
 
-         res%nombre_fichero = trim(adjustl(this%getStrAt(pw,J_SRC_MAGNITUDE_FILE)))
+         res%sourceFileName = trim(adjustl(this%getStrAt(pw,J_SRC_MAGNITUDE_FILE)))
 
          res%atributo = "LOCKED"
 

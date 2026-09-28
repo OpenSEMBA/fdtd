@@ -178,7 +178,7 @@ contains
              wires%CurrentSegment(segment_index)%k < this%mainCoords%z .or. &
              wires%CurrentSegment(segment_index)%k > this%auxCoords%z) cycle
 
-         field = wires%CurrentSegment(segment_index)%tipofield
+         field = wires%CurrentSegment(segment_index)%fieldKind
          counter = counter + 1
          this%coords(:, counter) = [wires%CurrentSegment(segment_index)%i, &
                                     wires%CurrentSegment(segment_index)%j, &
@@ -578,8 +578,8 @@ contains
       end function magnetic_field
    end subroutine build_cell_properties
 
-   logical function isEdge(campo, iii, jjj, kkk, problemInfo)
-      integer(4), intent(in) :: campo, iii, jjj, kkk
+   logical function isEdge(fieldIndex, iii, jjj, kkk, problemInfo)
+      integer(4), intent(in) :: fieldIndex, iii, jjj, kkk
       type(problem_info_t), pointer, intent(in) :: problemInfo
 
       type(MediaData_t), pointer, dimension(:) :: mData
@@ -592,7 +592,7 @@ contains
       isEdge = .false.
       contaborde = 0
 
-      call get_media_from_coord_and_h_neighbours(campo, iii, jjj, kkk,  problemInfo%geometryToMaterialData, imed, imed1, imed2, imed3, imed4)
+      call get_media_from_coord_and_h_neighbours(fieldIndex, iii, jjj, kkk,  problemInfo%geometryToMaterialData, imed, imed1, imed2, imed3, imed4)
 
       if (imed /= 1) then
 
@@ -702,11 +702,11 @@ contains
 
          if (mData(imed)%is%ThinSlot) isEdge = .true.
 
-         if ((iii > problemDimension(campo)%XE) .or. (jjj > problemDimension(campo)%YE) .or. &
-             (kkk > problemDimension(campo)%ZE)) isEdge = .false.
+         if ((iii > problemDimension(fieldIndex)%XE) .or. (jjj > problemDimension(fieldIndex)%YE) .or. &
+             (kkk > problemDimension(fieldIndex)%ZE)) isEdge = .false.
 
-         if ((iii < problemDimension(campo)%XI) .or. (jjj < problemDimension(campo)%YI) .or. &
-             (kkk < problemDimension(campo)%ZI)) isEdge = .false.
+         if ((iii < problemDimension(fieldIndex)%XI) .or. (jjj < problemDimension(fieldIndex)%YI) .or. &
+             (kkk < problemDimension(fieldIndex)%ZI)) isEdge = .false.
 
       else
          isEdge = .false.

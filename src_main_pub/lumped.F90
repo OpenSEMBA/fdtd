@@ -231,7 +231,7 @@ contains
          else
              lumped_%Jcur=0.0_RKIND
          end if
-         if (sgg%med(lumped_%jmed)%lumped(1)%diodo) then
+         if (sgg%med(lumped_%jmed)%lumped(1)%diode) then
              fieldC= - lumped_%G1 * lumped_%Efield -  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) - lumped_%diodepreA
              A= lumped_%diodepreA * exp(lumped_%diodeB * lumped_%Efield) 
              Enplus1 = newton_raphson(A,lumped_%diodeB,fieldC)
@@ -314,7 +314,7 @@ contains
             else if (sgg%med(jmed)%lumped(1)%capacitor) then
                 sigmaeff= sigma     + sigmaEffResistCapac                    
                 epsiloneff= epsilonValue + epsilonEffCapac
-            else if (sgg%med(jmed)%lumped(1)%diodo) then
+            else if (sgg%med(jmed)%lumped(1)%diode) then
                 sigmaeff= sigma     + sigmaEffResistDiode                    
                 epsiloneff= epsilonValue 
             end if 

@@ -352,14 +352,14 @@ module  FDETYPES_m
       real(kind=RKIND_WIRES), dimension(:), pointer  :: Samples
    end type
    type  :: source_t
-      type(fichevol_wires_t) :: Fichero
+      type(fichevol_wires_t) :: sourceFile
       real(kind=RKIND_WIRES) :: Resistance
       real(kind=RKIND_WIRES) :: Multiplier
       integer(kind=4) :: i,j,k
    end type
 
    type  :: NodalSource_t
-      type(fichevol_t) :: Fichero
+      type(fichevol_t) :: sourceFile
       type(xyzlimit_scaled_t), pointer, dimension(:) :: punto
       integer(kind=4) :: numpuntos
       logical :: IsInitialValue
@@ -443,7 +443,7 @@ module  FDETYPES_m
       integer(kind=4) :: Orient = 0 !orientation +iEx, -iEx,+iEy.......
 !deprecado 201222      real(kind=RKIND_wires) :: epr,mur,sigma,sigmam
       real(kind=RKIND_WIRES) :: R,L,C,DiodB,DiodIsat,Rtime_on,Rtime_off
-      logical :: resistor , inductor , capacitor , diodo 
+      logical :: resistor , inductor , capacitor , diode 
       real(kind=RKIND_WIRES) ::R_devia,L_devia,C_devia
    end type Lumped_t
 !!!
@@ -475,7 +475,7 @@ module  FDETYPES_m
       real(kind=RKIND) :: INCERTMAX
       real(kind=RKIND), allocatable, dimension(:) :: px,py,pz,ex,ey,ez,incert
       integer(kind=4) :: esqx1,esqy1,esqz1,esqx2,esqy2,esqz2
-      type(fichevol_t) :: Fichero
+      type(fichevol_t) :: sourceFile
       integer(kind=4) :: nummodes
       logical :: isRC 
    end type planeonde_t
@@ -629,7 +629,7 @@ module  FDETYPES_m
    type  :: SGGFDTDINFO_t
       real(kind=RKIND_TIEMPO)     , pointer, dimension(:) :: tiempo !para permit scaling
       real(kind=RKIND_TIEMPO) :: dt
-      character(len=BUFSIZE) :: extraswitches
+      character(len=BUFSIZE) :: extraSwitches
       !!
       integer(kind=4) :: NumMedia,AllocMed
       integer(kind=4) :: IniPMLMedia,EndPMLMedia

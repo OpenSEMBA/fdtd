@@ -49,7 +49,7 @@ contains
       expected%despl%mz2 = 150
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(:) = F_PML
+      expected%front%boundaryType(:) = F_PML
       expected%front%propiedadesPML(:)%numCapas = 6
       expected%front%propiedadesPML(:)%orden = 2.0_RKIND
       expected%front%propiedadesPML(:)%refl = 0.0001_RKIND
@@ -76,7 +76,7 @@ contains
    
       ! Expected sources.
       allocate(expected%plnSrc%collection(1))
-      expected%plnSrc%collection(1)%nombre_fichero = "shielded_pair.exc"
+      expected%plnSrc%collection(1)%sourceFileName = "shielded_pair.exc"
       expected%plnSrc%collection(1)%atributo = "LOCKED"
       expected%plnSrc%collection(1)%coor1 = [10, 10, 10]
       expected%plnSrc%collection(1)%coor2 = [139, 139, 139]

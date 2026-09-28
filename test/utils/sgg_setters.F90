@@ -59,7 +59,7 @@ module sggMethods_m
    public :: sgg_add_observation
 contains
    subroutine sgg_init(obj, &
-      tiempo, dt, extraswitches, &
+      tiempo, dt, extraSwitches, &
       NumMedia, AllocMed, &
       IniPMLMedia, EndPMLMedia, &
       NumPlaneWaves, TimeSteps, InitialTimeStep, &
@@ -74,7 +74,7 @@ contains
       ! ===== Optional arguments =====
       real(kind=RKIND_TIEMPO), pointer, optional :: tiempo(:)
       real(kind=RKIND_TIEMPO), optional          :: dt
-      character(len=*), optional          :: extraswitches
+      character(len=*), optional          :: extraSwitches
 
       integer(kind=SINGLE), optional :: NumMedia, AllocMed
       integer(kind=SINGLE), optional :: IniPMLMedia, EndPMLMedia
@@ -90,7 +90,7 @@ contains
 
       nullify (obj%tiempo)
       obj%dt = 0.0_RKIND_TIEMPO
-      obj%extraswitches = ""
+      obj%extraSwitches = ""
 
       obj%NumMedia = 0_SINGLE
       obj%AllocMed = 0_SINGLE
@@ -130,7 +130,7 @@ contains
 
       if (present(tiempo)) obj%tiempo => tiempo
       if (present(dt)) obj%dt = dt
-      if (present(extraswitches)) obj%extraswitches = extraswitches
+      if (present(extraSwitches)) obj%extraSwitches = extraSwitches
 
       if (present(NumMedia)) obj%NumMedia = NumMedia
       if (present(AllocMed)) obj%AllocMed = AllocMed
@@ -164,10 +164,10 @@ contains
       sgg%dt = dt
    end subroutine
 
-   subroutine sgg_set_extraswitches(sgg, extraswitches)
+   subroutine sgg_set_extraswitches(sgg, extraSwitches)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      character(len=*), intent(in) :: extraswitches
-      sgg%extraswitches = extraswitches
+      character(len=*), intent(in) :: extraSwitches
+      sgg%extraSwitches = extraSwitches
    end subroutine
 
    subroutine sgg_set_NumMedia(sgg, newValue)

@@ -61,7 +61,7 @@ module NFDETypes_m
    integer(kind=4), parameter :: INDUCTOR = 20
    integer(kind=4), parameter :: CAPACITOR = 21
    integer(kind=4), parameter :: RESISTOR = 22
-   integer(kind=4), parameter :: DIODO = 23
+   integer(kind=4), parameter :: diode = 23
    integer(kind=4), parameter :: DIELECTRIC = 24
    integer(kind=4), parameter :: PMLBODY = 25
 
@@ -206,11 +206,11 @@ module NFDETypes_m
       !
       real(kind=RK) :: DiodB = 0.0_RKIND
       real(kind=RK) :: DiodIsat = 0.0_RKIND
-      integer(kind=4) :: DiodOri = 0
+      integer(kind=4) :: diodeOrientation = 0
       !!! Berenger's waveports
       integer(kind=4) :: orient = 0
 !!!!!!!!!
-      logical :: resistor=.false. , inductor=.false. , capacitor=.false. , diodo=.false. , plain=.false. , PMLbody=.false.
+      logical :: resistor=.false. , inductor=.false. , capacitor=.false. , diode=.false. , plain=.false. , PMLbody=.false.
    end type Dielectric_t
    !------------------------------------------------------------------------------
    ! Locates all the different Non Metal Media found
@@ -509,7 +509,7 @@ module NFDETypes_m
    ! Tipo de la frontera
    !------------------------------------------------------------------------------
    type, public :: Frontera_t
-      integer(kind=4), dimension(6) :: tipoFrontera
+      integer(kind=4), dimension(6) :: boundaryType
       type(FronteraPML_t), dimension(6) :: propiedadesPML
    end type Frontera_t
    !-----------------> Probe Types
@@ -691,7 +691,7 @@ module NFDETypes_m
    !------------------------------------------------------------------------------
    !------------------------------------------------------------------------------
    type, public :: Box_t
-      character(len=BUFSIZE) :: nombre_fichero
+      character(len=BUFSIZE) :: sourceFileName
       integer(kind=4), dimension(3) :: coor1, coor2
    end type Box_t
    !------------------------------------------------------------------------------
@@ -704,7 +704,7 @@ module NFDETypes_m
    !------------------------------------------------------------------------------
    !------------------------------------------------------------------------------
    type, public :: PlaneWave_t
-      character(len=BUFSIZE) :: nombre_fichero
+      character(len=BUFSIZE) :: sourceFileName
       character(len=BUFSIZE) :: atributo
       integer(kind=4), dimension(3) :: coor1, coor2
       real(kind=RK) :: theta, phi, alpha, beta
@@ -819,16 +819,16 @@ module NFDETypes_m
    end type Parseador_t
    
    !---> definicion de tipos
-   type, public :: t_linea_t
+   type, public :: t_line_t
       integer(kind=4) :: lengthValue
       character(len=BUFSIZE) :: dato
-   end type t_linea_t
+   end type t_line_t
    !--->
    type, public :: t_NFDE_FILE_t
       integer(kind=8) :: targ
       !--->
-      integer(kind=8) :: numero
-      type(t_linea_t), dimension(:), pointer :: lineas
+      integer(kind=8) :: numberValue
+      type(t_line_t), dimension(:), pointer :: lineas
       logical :: thereare_stoch
    end type t_NFDE_FILE_t
 !--->

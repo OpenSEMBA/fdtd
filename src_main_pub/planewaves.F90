@@ -138,7 +138,7 @@ contains
                    numus(1:sgg%numplanewaves), &
                    deltaevol(1:sgg%numplanewaves))
          do jjj=1,sgg%NumPlaneWaves
-             numus(jjj)=sgg%PlaneWave(jjj)%Fichero%NumSamples
+             numus(jjj)=sgg%PlaneWave(jjj)%sourceFile%NumSamples
              !a peticion de OLD aborto si no hay nada que iluminar
              abortar= &
              (sgg%PlaneWave(jjj)%esqx1 <=  SINPML_fullsize(IHX)%XI).and. &
@@ -268,11 +268,11 @@ contains
        allocate (evol(1:sgg%numplanewaves,0 : maxnumus))
        do jjj=1,sgg%numplanewaves
            do k=0,numus(jjj)
-              evol(jjj,k)=sgg%PlaneWave(jjj)%fichero%Samples(k)
+              evol(jjj,k)=sgg%PlaneWave(jjj)%sourceFile%Samples(k)
            end do
-           deltaevol(jjj)=sgg%PlaneWave(jjj)%fichero%deltaSamples
+           deltaevol(jjj)=sgg%PlaneWave(jjj)%sourceFile%deltaSamples
            if (deltaevol(jjj) > sgg%dt) then
-              write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sgg%PlaneWave(jjj)%Fichero%Name))// &
+              write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sgg%PlaneWave(jjj)%sourceFile%Name))// &
               ' undersampled by a factor ',deltaevol(jjj)/sgg%dt
               call WarnErrReport(buff)
            end if

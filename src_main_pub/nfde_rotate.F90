@@ -346,19 +346,19 @@ contains
       
       !!! MPI ROTATE
       if (MPIDIR==2) then
-         OXL=this%front%tipofrontera(1)
-         OXU=this%front%tipofrontera(2)
-         OYL=this%front%tipofrontera(3)
-         OYU=this%front%tipofrontera(4)
-         OZL=this%front%tipofrontera(5)
-         OZU=this%front%tipofrontera(6)
+         OXL=this%front%boundaryType(1)
+         OXU=this%front%boundaryType(2)
+         OYL=this%front%boundaryType(3)
+         OYU=this%front%boundaryType(4)
+         OZL=this%front%boundaryType(5)
+         OZU=this%front%boundaryType(6)
          !
-         this%front%tipofrontera(1) = OZL
-         this%front%tipofrontera(2) = OZU
-         this%front%tipofrontera(3) = OXL
-         this%front%tipofrontera(4) = OXU
-         this%front%tipofrontera(5) = OYL
-         this%front%tipofrontera(6) = OYU
+         this%front%boundaryType(1) = OZL
+         this%front%boundaryType(2) = OZU
+         this%front%boundaryType(3) = OXL
+         this%front%boundaryType(4) = OXU
+         this%front%boundaryType(5) = OYL
+         this%front%boundaryType(6) = OYU
          !
          OPML_XL%orden=this%front%propiedadesPML(1)%orden
          OPML_XU%orden=this%front%propiedadesPML(2)%orden
@@ -405,19 +405,19 @@ contains
          this%front%propiedadesPML(6)%numCapas = OPML_YU%numCapas
 
       else if (MPIDIR==1) then
-         OXL=this%front%tipofrontera(1)
-         OXU=this%front%tipofrontera(2)
-         OYL=this%front%tipofrontera(3)
-         OYU=this%front%tipofrontera(4)
-         OZL=this%front%tipofrontera(5)
-         OZU=this%front%tipofrontera(6)
+         OXL=this%front%boundaryType(1)
+         OXU=this%front%boundaryType(2)
+         OYL=this%front%boundaryType(3)
+         OYU=this%front%boundaryType(4)
+         OZL=this%front%boundaryType(5)
+         OZU=this%front%boundaryType(6)
          !
-         this%front%tipofrontera(1) = OYL
-         this%front%tipofrontera(2) = OYU
-         this%front%tipofrontera(3) = OZL
-         this%front%tipofrontera(4) = OZU
-         this%front%tipofrontera(5) = OXL
-         this%front%tipofrontera(6) = OXU
+         this%front%boundaryType(1) = OYL
+         this%front%boundaryType(2) = OYU
+         this%front%boundaryType(3) = OZL
+         this%front%boundaryType(4) = OZU
+         this%front%boundaryType(5) = OXL
+         this%front%boundaryType(6) = OXU
          !
          OPML_XL%orden=this%front%propiedadesPML(1)%orden
          OPML_XU%orden=this%front%propiedadesPML(2)%orden
@@ -524,14 +524,14 @@ contains
             call ROTATEMPI(mpidir,this%DielRegs%vols(i)%C1P(ii)) 
          end do
          if (tama2 > 0) then
-            this%DielRegs%vols(i)%DiodOrI = this%DielRegs%vols(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
+            this%DielRegs%vols(i)%diodeOrientation = this%DielRegs%vols(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
          end if
          tama3 = (this%DielRegs%vols(i)%n_c2P)  
          do ii = 1, tama3
             call ROTATEMPI(mpidir,this%DielRegs%vols(i)%C2P(ii)) 
          end do
          if (tama3 > 0) then 
-            this%DielRegs%vols(i)%DiodOrI = this%DielRegs%vols(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
+            this%DielRegs%vols(i)%diodeOrientation = this%DielRegs%vols(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
          end if
       end do
       !surfaces
@@ -542,14 +542,14 @@ contains
             call ROTATEMPI(mpidir,this%DielRegs%surfs(i)%C1P(ii)) 
          end do
          if (tama2 > 0) then      
-            this%DielRegs%surfs(i)%DiodOrI = this%DielRegs%surfs(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
+            this%DielRegs%surfs(i)%diodeOrientation = this%DielRegs%surfs(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
          end if
          tama3 = (this%DielRegs%surfs(i)%n_c2P)  
          do ii = 1, tama3
             call ROTATEMPI(mpidir,this%DielRegs%surfs(i)%C2P(ii)) 
          end do
          if (tama3 > 0) then    
-            this%DielRegs%surfs(i)%DiodOrI = this%DielRegs%surfs(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
+            this%DielRegs%surfs(i)%diodeOrientation = this%DielRegs%surfs(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
          end if
       end do
       !lines
@@ -560,7 +560,7 @@ contains
             call ROTATEMPI(mpidir,this%DielRegs%lins(i)%C1P(ii)) 
          end do
          if (tama2 > 0) then       
-            this%DielRegs%lins(i)%DiodOrI = this%DielRegs%lins(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
+            this%DielRegs%lins(i)%diodeOrientation = this%DielRegs%lins(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
          end if
 
          tama3 = (this%DielRegs%lins(i)%n_c2P)  
@@ -568,7 +568,7 @@ contains
             call ROTATEMPI(mpidir,this%DielRegs%lins(i)%C2P(ii)) 
          end do
          if (tama3 > 0) then        
-            this%DielRegs%lins(i)%DiodOrI = this%DielRegs%lins(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
+            this%DielRegs%lins(i)%diodeOrientation = this%DielRegs%lins(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
          end if
       end do
       return

@@ -50,7 +50,7 @@ contains
       expected%despl%mz2 = 2
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(:) = F_MUR
+      expected%front%boundaryType(:) = F_MUR
 
       ! Expected sources.
       allocate(expected%nodSrc%NodalSource(1))

@@ -11,12 +11,12 @@ integer function test_rotate_generate_fronteras() bind(C) result(err)
     allocate(this%front)
     
     
-    this%front%tipofrontera(1) = 1  
-    this%front%tipofrontera(2) = 2  
-    this%front%tipofrontera(3) = 3  
-    this%front%tipofrontera(4) = 4  
-    this%front%tipofrontera(5) = 5  
-    this%front%tipofrontera(6) = 6  
+    this%front%boundaryType(1) = 1  
+    this%front%boundaryType(2) = 2  
+    this%front%boundaryType(3) = 3  
+    this%front%boundaryType(4) = 4  
+    this%front%boundaryType(5) = 5  
+    this%front%boundaryType(6) = 6  
     
     
     this%front%propiedadesPML(1)%orden = 1.0_RKIND    
@@ -44,12 +44,12 @@ integer function test_rotate_generate_fronteras() bind(C) result(err)
     call rotate_generateFronteras(this, mpidir)
     
     
-    call expect_eq_int(test_err, this%front%tipofrontera(1), 5, "rotate_generateFronteras: XL should be 5")
-    call expect_eq_int(test_err, this%front%tipofrontera(2), 6, "rotate_generateFronteras: XU should be 6")
-    call expect_eq_int(test_err, this%front%tipofrontera(3), 1, "rotate_generateFronteras: YL should be 1")
-    call expect_eq_int(test_err, this%front%tipofrontera(4), 2, "rotate_generateFronteras: YU should be 2")
-    call expect_eq_int(test_err, this%front%tipofrontera(5), 3, "rotate_generateFronteras: ZL should be 3")
-    call expect_eq_int(test_err, this%front%tipofrontera(6), 4, "rotate_generateFronteras: ZU should be 4")
+    call expect_eq_int(test_err, this%front%boundaryType(1), 5, "rotate_generateFronteras: XL should be 5")
+    call expect_eq_int(test_err, this%front%boundaryType(2), 6, "rotate_generateFronteras: XU should be 6")
+    call expect_eq_int(test_err, this%front%boundaryType(3), 1, "rotate_generateFronteras: YL should be 1")
+    call expect_eq_int(test_err, this%front%boundaryType(4), 2, "rotate_generateFronteras: YU should be 2")
+    call expect_eq_int(test_err, this%front%boundaryType(5), 3, "rotate_generateFronteras: ZL should be 3")
+    call expect_eq_int(test_err, this%front%boundaryType(6), 4, "rotate_generateFronteras: ZU should be 4")
     
     
     call expect_eq_real(test_err, this%front%propiedadesPML(1)%orden, 5.0_RKIND, "rotate_generateFronteras: XL orden should be 5")
@@ -80,12 +80,12 @@ integer function test_rotate_generate_fronteras() bind(C) result(err)
     allocate(this%front)
     
     
-    this%front%tipofrontera(1) = 1  
-    this%front%tipofrontera(2) = 2  
-    this%front%tipofrontera(3) = 3  
-    this%front%tipofrontera(4) = 4  
-    this%front%tipofrontera(5) = 5  
-    this%front%tipofrontera(6) = 6  
+    this%front%boundaryType(1) = 1  
+    this%front%boundaryType(2) = 2  
+    this%front%boundaryType(3) = 3  
+    this%front%boundaryType(4) = 4  
+    this%front%boundaryType(5) = 5  
+    this%front%boundaryType(6) = 6  
     
     this%front%propiedadesPML(1)%orden = 1.0_RKIND    
     this%front%propiedadesPML(2)%orden = 2.0_RKIND    
@@ -112,12 +112,12 @@ integer function test_rotate_generate_fronteras() bind(C) result(err)
     call rotate_generateFronteras(this, mpidir)
     
     
-    call expect_eq_int(test_err, this%front%tipofrontera(1), 3, "rotate_generateFronteras: XL should be 3")
-    call expect_eq_int(test_err, this%front%tipofrontera(2), 4, "rotate_generateFronteras: XU should be 4")
-    call expect_eq_int(test_err, this%front%tipofrontera(3), 5, "rotate_generateFronteras: YL should be 5")
-    call expect_eq_int(test_err, this%front%tipofrontera(4), 6, "rotate_generateFronteras: YU should be 6")
-    call expect_eq_int(test_err, this%front%tipofrontera(5), 1, "rotate_generateFronteras: ZL should be 1")
-    call expect_eq_int(test_err, this%front%tipofrontera(6), 2, "rotate_generateFronteras: ZU should be 2")
+    call expect_eq_int(test_err, this%front%boundaryType(1), 3, "rotate_generateFronteras: XL should be 3")
+    call expect_eq_int(test_err, this%front%boundaryType(2), 4, "rotate_generateFronteras: XU should be 4")
+    call expect_eq_int(test_err, this%front%boundaryType(3), 5, "rotate_generateFronteras: YL should be 5")
+    call expect_eq_int(test_err, this%front%boundaryType(4), 6, "rotate_generateFronteras: YU should be 6")
+    call expect_eq_int(test_err, this%front%boundaryType(5), 1, "rotate_generateFronteras: ZL should be 1")
+    call expect_eq_int(test_err, this%front%boundaryType(6), 2, "rotate_generateFronteras: ZU should be 2")
     
     
     call expect_eq_real(test_err, this%front%propiedadesPML(1)%orden, 3.0_RKIND, "rotate_generateFronteras: XL orden should be 3")

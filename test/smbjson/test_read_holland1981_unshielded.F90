@@ -50,14 +50,14 @@ contains
       ex%despl%mz2 = 22
 
       ! Expected boundaries.
-      ex%front%tipoFrontera(:) = F_PML
+      ex%front%boundaryType(:) = F_PML
       ex%front%propiedadesPML(:)%numCapas = 6
       ex%front%propiedadesPML(:)%orden = 2.0_RKIND
       ex%front%propiedadesPML(:)%refl = 0.001_RKIND
 
       ! Expected sources.
       allocate(ex%plnSrc%collection(1))
-      ex%plnSrc%collection(1)%nombre_fichero = "holland.exc"
+      ex%plnSrc%collection(1)%sourceFileName = "holland.exc"
       ex%plnSrc%collection(1)%atributo = "LOCKED"
       ex%plnSrc%collection(1)%coor1 = [1, 1, 1]
       ex%plnSrc%collection(1)%coor2 = [18, 18, 20]

@@ -280,12 +280,12 @@ contains
       if (a%C_devia  /= b%C_devia) return
       if (a%DiodB    /= b%DiodB) return
       if (a%DiodIsat /= b%DiodIsat) return
-      if (a%DiodOri  /= b%DiodOri) return
+      if (a%diodeOrientation  /= b%diodeOrientation) return
       if (a%orient   /= b%orient) return
       if (a%resistor  .neqv. b%resistor) return
       if (a%inductor  .neqv. b%inductor) return
       if (a%capacitor .neqv. b%capacitor) return
-      if (a%diodo     .neqv. b%diodo) return
+      if (a%diode     .neqv. b%diode) return
       if (a%plain     .neqv. b%plain) return
       if (a%PMLbody   .neqv. b%PMLbody) return
       if (.not. associated(a%C1P)) return
@@ -672,7 +672,7 @@ contains
    elemental logical function box_eq(a, b) result(res)
       type(Box_t), intent(in) :: a, b
       res = .false.
-      if (a%nombre_fichero /= b%nombre_fichero) return
+      if (a%sourceFileName /= b%sourceFileName) return
       if (.not. all(a%coor1 == b%coor1)) return
       if (.not. all(a%coor2 == b%coor2)) return
       res = .true.
@@ -690,7 +690,7 @@ contains
    elemental logical function planewave_eq(a,b) result(res)
       type(PlaneWave_t), intent(in) :: a, b
       res = .false.
-      if (a%nombre_fichero /= b%nombre_fichero) return
+      if (a%sourceFileName /= b%sourceFileName) return
       if (a%atributo /= b%atributo) return
       if (any(a%coor1 /= b%coor1)) return
       if (any(a%coor2 /= b%coor2)) return
@@ -779,7 +779,7 @@ contains
       type(Frontera_t), intent(in) :: a, b
       integer :: i
       res = .false.
-      if (any(a%tipoFrontera /= b%tipoFrontera)) return
+      if (any(a%boundaryType /= b%boundaryType)) return
       if (any(.not. a%propiedadesPML == b%propiedadesPML)) return
       res = .true.
    end function

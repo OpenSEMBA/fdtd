@@ -808,7 +808,7 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
    wires%CurrentSegment(1)%i = 3
    wires%CurrentSegment(1)%j = 3
    wires%CurrentSegment(1)%k = 3
-   wires%CurrentSegment(1)%tipofield = iEx
+   wires%CurrentSegment(1)%fieldKind = iEx
    wires%CurrentSegment(1)%indexmed = 0
    wires%CurrentSegment(1)%orientadoalreves = .false.
    wires%CurrentSegment(1)%delta = 1.0_RKIND_WIRES

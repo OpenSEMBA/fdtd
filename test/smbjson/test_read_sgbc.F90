@@ -49,7 +49,7 @@ contains
       expected%despl%mz2 = 10
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(:) = F_MUR
+      expected%front%boundaryType(:) = F_MUR
 
       ! Expected materials
       !! PECs

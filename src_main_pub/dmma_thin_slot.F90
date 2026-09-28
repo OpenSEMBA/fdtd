@@ -10,7 +10,7 @@ contains
    !subroutine dmma_thin_Slot (incx,incy,incz,dir,orientacion,direccion,&
    !                           thickness,efm,ufm,epr,mur,epse,mue)
    !
-   subroutine dmma_thin_Slot (incx, incy, incz, dir, orientacion, direccion, thickness, efm, ufm, epse, mue,eps0,mu0)
+   subroutine dmma_thin_Slot (incx, incy, incz, dir, orientationIndex, direccion, thickness, efm, ufm, epse, mue,eps0,mu0)
       !
       !
       !----------------------------------------------------------------------------------------------------
@@ -37,7 +37,7 @@ contains
       !
       real(kind=RKIND) :: eps0,mu0
       real(kind=RKIND), intent(in) :: incx, incy, incz
-      integer(kind=4), intent(in) :: orientacion, direccion
+      integer(kind=4), intent(in) :: orientationIndex, direccion
       real(kind=RKIND), intent(in) :: thickness
       real(kind=RKIND), intent(in) :: efm, ufm
       real(kind=RKIND), intent(in), dimension(3) :: dir
@@ -73,7 +73,7 @@ contains
       !
       cfm = 1.0_RKIND /  Sqrt (eabs*uabs) !si lo tomo relativo a la direccion de incidencia puede ser cfm=0.0_RKIND y se jode el logaritmo.
       !asi que lo tomo fijo !2012 bug articulo1_tgap_sgg_stair
-      if (orientacion == IEZ) then
+      if (orientationIndex == IEZ) then
          !        cfm = Abs (dir(3)) / Sqrt (eabs*uabs)
          maxfreq = cfm / (incz*10.0)
          omega = 2.0_RKIND * pi * maxfreq
@@ -91,7 +91,7 @@ contains
          end if
       end if
       !
-      if (orientacion == iEy) then
+      if (orientationIndex == iEy) then
          !        cfm = Abs (dir(2)) / Sqrt (eabs*uabs)
          maxfreq = cfm / (incy*10.0)
          omega = 2.0_RKIND * pi * maxfreq
@@ -109,7 +109,7 @@ contains
          end if
       end if
       !
-      if (orientacion == iEx) then
+      if (orientationIndex == iEx) then
          !        cfm = Abs (dir(1)) / Sqrt (eabs*uabs)
          maxfreq = cfm / (incx*10.0)
          omega = 2.0_RKIND * pi * maxfreq

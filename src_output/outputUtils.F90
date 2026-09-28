@@ -270,11 +270,11 @@ contains
       return
    end function get_rotated_prefix
 
-   function prefix(campo) result(ext)
-      integer(kind=SINGLE), intent(in)  ::  campo
+   function prefix(fieldIndex) result(ext)
+      integer(kind=SINGLE), intent(in)  ::  fieldIndex
       character(len=BUFSIZE)  ::  ext
 
-      select case (campo)
+      select case (fieldIndex)
       case (iEx); ext = 'Ex'
       case (iEy); ext = 'Ey'
       case (IEZ); ext = 'Ez'

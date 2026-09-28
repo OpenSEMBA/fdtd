@@ -1651,7 +1651,7 @@ contains
          type(taglist_t) :: tag_numbers
          !------------------------> Variables locales
          integer(kind = 4) :: i, j, k
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio1,medio2,medio3,medio4,medio5
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medium1,medium2,medium3,medium4,medium5
          logical  :: mediois1,mediois2,mediois3,mediois4
          integer, dimension(3) :: lbx, lby, lbz
          lbx = lbound(tag_numbers%face%x)
@@ -1660,18 +1660,18 @@ contains
 
          mediois3=.true.; mediois4=.true.
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
+!$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medium1,medium2,medium3,medium4,medium5,mediois1,mediois2,mediois3,mediois4)
 #endif
          do k=1,b%sweepHx%NZ
             do j=1,b%sweepHx%NY
                do i=1,b%sweepHx%NX
-                  medio1 =sggMiEy(i,j,k)
-                  medio2 =sggMiEy(i,j,k+1)
-                  medio3 =sggMiEz(i,j,k)
-                  medio4 =sggMiEz(i,j+1,k)
-                  medio5 =sggMiHx(i,j,k)
-                  mediois1= (medio5==1).and.(medio1/=1).and.(medio2/=1).and.(medio3==1).and.(medio4==1)
-                  mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
+                  medium1 =sggMiEy(i,j,k)
+                  medium2 =sggMiEy(i,j,k+1)
+                  medium3 =sggMiEz(i,j,k)
+                  medium4 =sggMiEz(i,j+1,k)
+                  medium5 =sggMiHx(i,j,k)
+                  mediois1= (medium5==1).and.(medium1/=1).and.(medium2/=1).and.(medium3==1).and.(medium4==1)
+                  mediois2= (medium5==1).and.(medium3/=1).and.(medium4/=1).and.(medium1==1).and.(medium2==1)
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHx(i-1,j,k)/=1).or.(sggMiHx(i+1,j,k)/=1)))) !esta condicion en realidad no detecta alabeos de una celda que siendo slots son acoples de un agujerito solo en el peor de los casos
                   if ((mediois1.or.mediois2).and.(mediois3))  then
                       !solo lo hace con celdas de vacio porque en particular el mismo medio sgbc con diferentes orientaciones tiene distintos indices de medio y lo activaria erroneamente si lo hago para todos los medios
@@ -1683,18 +1683,18 @@ contains
          end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
-!$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
+!$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medium1,medium2,medium3,medium4,medium5,mediois1,mediois2,mediois3,mediois4)
 #endif
          do k=1,b%sweepHy%NZ
             do j=1,b%sweepHy%NY
                do i=1,b%sweepHy%NX
-                  medio1 =sggMiEz(i,j,k)
-                  medio2 =sggMiEz(i+1,j,k)
-                  medio3 =sggMiEx(i,j,k)
-                  medio4 =sggMiEx(i,j,k+1)
-                  medio5 =sggMiHy(i,j,k)
-                  mediois1= (medio5==1).and.(medio1/=1).and.(medio2/=1).and.(medio3==1).and.(medio4==1)
-                  mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
+                  medium1 =sggMiEz(i,j,k)
+                  medium2 =sggMiEz(i+1,j,k)
+                  medium3 =sggMiEx(i,j,k)
+                  medium4 =sggMiEx(i,j,k+1)
+                  medium5 =sggMiHy(i,j,k)
+                  mediois1= (medium5==1).and.(medium1/=1).and.(medium2/=1).and.(medium3==1).and.(medium4==1)
+                  mediois2= (medium5==1).and.(medium3/=1).and.(medium4/=1).and.(medium1==1).and.(medium2==1)
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHy(i,j-1,k)/=1).or.(sggMiHy(i,j+1,k)/=1))))
                   if ((mediois1.or.mediois2).and.(mediois3))  then
                      tag_numbers%face%y(i+lby(1)-1,j+lby(2)-1,k+lby(3)-1)=-ibset(iabs(tag_numbers%face%y(i+lby(1)-1,j+lby(2)-1,k+lby(3)-1)),4) 
@@ -1704,18 +1704,18 @@ contains
          end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
-!$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
+!$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medium1,medium2,medium3,medium4,medium5,mediois1,mediois2,mediois3,mediois4)
 #endif
          do k=1,b%sweepHz%NZ
             do j=1,b%sweepHz%NY
                do i=1,b%sweepHz%NX
-                  medio1 =sggMiEx(i,j,k)
-                  medio2 =sggMiEx(i,j+1,k)
-                  medio3 =sggMiEy(i,j,k)
-                  medio4 =sggMiEy(i+1,j,k)
-                  medio5 =sggMiHz(i,j,k)
-                  mediois1= (medio5==1).and.(medio1/=1).and.(medio2/=1).and.(medio3==1).and.(medio4==1)
-                  mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
+                  medium1 =sggMiEx(i,j,k)
+                  medium2 =sggMiEx(i,j+1,k)
+                  medium3 =sggMiEy(i,j,k)
+                  medium4 =sggMiEy(i+1,j,k)
+                  medium5 =sggMiHz(i,j,k)
+                  mediois1= (medium5==1).and.(medium1/=1).and.(medium2/=1).and.(medium3==1).and.(medium4==1)
+                  mediois2= (medium5==1).and.(medium3/=1).and.(medium4/=1).and.(medium1==1).and.(medium2==1)
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHz(i,j,k-1)/=1).or.(sggMiHz(i,j,k+1)/=1))))
                   if ((mediois1.or.mediois2).and.(mediois3))  then
                      tag_numbers%face%z(i+lbz(1)-1,j+lbz(2)-1,k+lbz(3)-1)=-ibset(iabs(tag_numbers%face%z(i+lbz(1)-1,j+lbz(2)-1,k+lbz(3)-1)),5) 

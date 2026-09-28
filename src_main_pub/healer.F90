@@ -698,7 +698,7 @@ module CreateMatrices_m
    & Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, &
    & Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, &
    & Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, &
-   & med, NumMedia, Eshared, BoundingBox, point, orientacion, mediumIndex)
+   & med, NumMedia, Eshared, BoundingBox, point, orientationIndex, mediumIndex)
       character(len=BUFSIZE) :: buff
       integer(kind=4) :: NumMedia
       type(Shared_t) :: Eshared
@@ -708,7 +708,7 @@ module CreateMatrices_m
       type(XYZlimit_t), intent(inout) :: point
       type(XYZlimit_t), intent(in) :: BoundingBox
       !
-      integer(kind=4) :: mediumIndex, orientacion
+      integer(kind=4) :: mediumIndex, orientationIndex
       integer(kind=4) :: layoutnumber, i, j, k
       integer(kind=4) :: medio
       !
@@ -747,7 +747,7 @@ module CreateMatrices_m
       puntoPlus1%YE = Min (point%YE+1, Max(BoundingBox%YI, BoundingBox%YE))
       puntoPlus1%ZE = Min (point%ZE+1, Max(BoundingBox%ZI, BoundingBox%ZE))
       !
-      select case (Abs(orientacion))
+      select case (Abs(orientationIndex))
        case (iEx)
          !    i=punto%XI
          !    if ((i <= max(BoundingBox%XI,BoundingBox%XE)).and.(i >= min(BoundingBox%XI,BoundingBox%XE))) then
@@ -893,7 +893,7 @@ module CreateMatrices_m
    & Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, &
    & Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, &
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
-   & NumMedia, Eshared, BoundingBox, point, orientacion, mediumIndex, isathinwire, verbose,numeroasignaciones)
+   & NumMedia, Eshared, BoundingBox, point, orientationIndex, mediumIndex, isathinwire, verbose,numberOfAssignments)
       
       type(Shared_t) :: Eshared
       integer(kind=4) :: NumMedia
@@ -903,7 +903,7 @@ module CreateMatrices_m
       type(XYZlimit_t), intent(inout) :: point
       type(XYZlimit_t), intent(in) :: BoundingBox
       
-      integer(kind=4) :: mediumIndex, orientacion,numeroasignaciones
+      integer(kind=4) :: mediumIndex, orientationIndex,numberOfAssignments
       logical, intent(in) :: isathinwire, verbose
       integer(kind=4) :: i, j, k, layoutnumber
       integer(kind=4) :: medio
@@ -938,7 +938,7 @@ module CreateMatrices_m
       punto%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE)-1)
       punto%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
       !
-      select case (Abs(orientacion))
+      select case (Abs(orientationIndex))
        case (iEx)
          !    j=punto%YI
          !    k=punto%ZI
@@ -950,9 +950,9 @@ module CreateMatrices_m
                   medio = MMiEx (i, j, k)
 !                  if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      if (med(mediumIndex)%Priority > med(medio)%Priority) then
-                        numeroasignaciones=numeroasignaciones+1
+                        numberOfAssignments=numberOfAssignments+1
                         if (med(mediumIndex)%is%lumped) then
-                            if (numeroasignaciones==1) then !solo le echa el lumped a 1 segmento !esto es una peticion externa !ojo es agresivo. !solo se pone 1 segmento con la resistencia especificada. me doy cuenta en 040123
+                            if (numberOfAssignments==1) then !solo le echa el lumped a 1 segmento !esto es una peticion externa !ojo es agresivo. !solo se pone 1 segmento con la resistencia especificada. me doy cuenta en 040123
                                 MMiEx (i, j, k) = mediumIndex
                                 Mtag(i,j,k)=64*numertag 
                                 tags%edge%x(i,j,k) = 64*numertag
@@ -987,9 +987,9 @@ module CreateMatrices_m
                   medio = MMiEy (i, j, k)
 !                  if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      if (med(mediumIndex)%Priority > med(medio)%Priority) then
-                        numeroasignaciones=numeroasignaciones+1
+                        numberOfAssignments=numberOfAssignments+1
                         if (med(mediumIndex)%is%lumped) then
-                            if (numeroasignaciones==1) then !solo le echa el lumped a 1 segmento
+                            if (numberOfAssignments==1) then !solo le echa el lumped a 1 segmento
                                 MMiEy (i, j, k) = mediumIndex
                                 Mtag(i,j,k)=64*numertag 
                                 tags%edge%y(i,j,k) = 64*numertag
@@ -1025,9 +1025,9 @@ module CreateMatrices_m
                   medio = MMiEz (i, j, k)
 !                  if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      if (med(mediumIndex)%Priority > med(medio)%Priority) then
-                        numeroasignaciones=numeroasignaciones+1
+                        numberOfAssignments=numberOfAssignments+1
                         if (med(mediumIndex)%is%lumped) then
-                            if (numeroasignaciones==1) then !solo le echa el lumped a 1 segmento
+                            if (numberOfAssignments==1) then !solo le echa el lumped a 1 segmento
                                 MMiEz (i, j, k) = mediumIndex
                                 Mtag(i,j,k)=64*numertag
                                 tags%edge%z(i,j,k) = 64*numertag
@@ -1074,7 +1074,7 @@ module CreateMatrices_m
    & Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, &
    & Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, &
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
-   & NumMedia, Eshared, Hshared, BoundingBox, point, orientacion, direccion, mediumIndex)
+   & NumMedia, Eshared, Hshared, BoundingBox, point, orientationIndex, direccion, mediumIndex)
       character(len=BUFSIZE) :: buff
       type(Shared_t) :: Eshared, Hshared
       integer(kind=4) :: NumMedia
@@ -1084,7 +1084,7 @@ module CreateMatrices_m
       type(XYZlimit_t), intent(inout) :: point
       type(XYZlimit_t), intent(in) :: BoundingBox
       !
-      integer(kind=4) :: mediumIndex, orientacion, direccion
+      integer(kind=4) :: mediumIndex, orientationIndex, direccion
       !
       integer(kind=4) :: layoutnumber, i, j, k, offx, offy, offz
       integer(kind=4) :: medio
@@ -1128,7 +1128,7 @@ module CreateMatrices_m
       offx = 0
       offy = 0
       offz = 0
-      select case (Abs(orientacion))
+      select case (Abs(orientationIndex))
        case (iEx)
          do i = punto%XI, puntoBboxplus1%XE
             select case (direccion)
@@ -1313,7 +1313,7 @@ module CreateMatrices_m
    & Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, &
    & Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, &
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
-   & NumMedia, Eshared, BoundingBox, point, orientacion, mediumIndex)
+   & NumMedia, Eshared, BoundingBox, point, orientationIndex, mediumIndex)
       character(len=BUFSIZE) :: buff
       integer(kind=4) :: NumMedia
       type(Shared_t) :: Eshared
@@ -1323,7 +1323,7 @@ module CreateMatrices_m
       type(XYZlimit_t), intent(inout) :: point
       type(XYZlimit_t), intent(in) :: BoundingBox
       !
-      integer(kind=4) :: mediumIndex, orientacion
+      integer(kind=4) :: mediumIndex, orientationIndex
       integer(kind=4) :: layoutnumber, i, j, k
       integer(kind=4) :: medio
       !
@@ -1364,7 +1364,7 @@ module CreateMatrices_m
       puntoPlus1%YE = Min (point%YE+1, Max(BoundingBox%YI, BoundingBox%YE))
       puntoPlus1%ZE = Min (point%ZE+1, Max(BoundingBox%ZI, BoundingBox%ZE))
       !
-      select case (Abs(orientacion))
+      select case (Abs(orientationIndex))
        case (iEx)
          do i = punto%XI, punto%XE
             do j = punto%YI, puntoPlus1%YE
@@ -1515,7 +1515,7 @@ module CreateMatrices_m
       ! Local stuff
       integer(kind=4), pointer, dimension(:) :: tempo
       type(MediaData_t), pointer, dimension(:) :: NewMed
-      integer(kind=4) :: layoutnumber, num_procs, field, medium, i, j, k, NuevoNumeroMediosConPML
+      integer(kind=4) :: layoutnumber, num_procs, field, medium, i, j, k, newNumberOfMediaWithPML
       integer(kind=4) :: oldNumMedia,oldmed
       integer(kind=4), dimension(1:6) :: XIPML, XEPML, YIPML, YEPML, ZIPML, ZEPML
       real(kind=RKIND) :: oldepr,oldmur,oldsigma,oldsigmam,newepr,newmur,newsigma,newsigmam
@@ -1813,7 +1813,7 @@ module CreateMatrices_m
          end do
       end do
       !compact the info of PML media
-      NuevoNumeroMediosConPML = NumMedia
+      newNumberOfMediaWithPML = NumMedia
      allocate(tempo(0:NumMedia))
       tempo = 0 !temporarily stores the index of the PML medium matching each original media
       field = iEx
@@ -1823,8 +1823,8 @@ module CreateMatrices_m
                medium = sggmiEx (i, j, k)
                if (medium < 0) then
                   if (tempo(Abs(medium)) == 0) then
-                     NuevoNumeroMediosConPML = NuevoNumeroMediosConPML + 1
-                     tempo (Abs(medium)) = NuevoNumeroMediosConPML
+                     newNumberOfMediaWithPML = newNumberOfMediaWithPML + 1
+                     tempo (Abs(medium)) = newNumberOfMediaWithPML
                   end if
                end if
             end do
@@ -1837,8 +1837,8 @@ module CreateMatrices_m
                medium = sggmiEy (i, j, k)
                if (medium < 0) then
                   if (tempo(Abs(medium)) == 0) then
-                     NuevoNumeroMediosConPML = NuevoNumeroMediosConPML + 1
-                     tempo (Abs(medium)) = NuevoNumeroMediosConPML
+                     newNumberOfMediaWithPML = newNumberOfMediaWithPML + 1
+                     tempo (Abs(medium)) = newNumberOfMediaWithPML
                   end if
                end if
             end do
@@ -1851,8 +1851,8 @@ module CreateMatrices_m
                medium = sggmiEz (i, j, k)
                if (medium < 0) then
                   if (tempo(Abs(medium)) == 0) then
-                     NuevoNumeroMediosConPML = NuevoNumeroMediosConPML + 1
-                     tempo (Abs(medium)) = NuevoNumeroMediosConPML
+                     newNumberOfMediaWithPML = newNumberOfMediaWithPML + 1
+                     tempo (Abs(medium)) = newNumberOfMediaWithPML
                   end if
                end if
             end do
@@ -1865,8 +1865,8 @@ module CreateMatrices_m
                medium = sggmiHx (i, j, k)
                if (medium < 0) then
                   if (tempo(Abs(medium)) == 0) then
-                     NuevoNumeroMediosConPML = NuevoNumeroMediosConPML + 1
-                     tempo (Abs(medium)) = NuevoNumeroMediosConPML
+                     newNumberOfMediaWithPML = newNumberOfMediaWithPML + 1
+                     tempo (Abs(medium)) = newNumberOfMediaWithPML
                   end if
                end if
             end do
@@ -1879,8 +1879,8 @@ module CreateMatrices_m
                medium = sggmiHy (i, j, k)
                if (medium < 0) then
                   if (tempo(Abs(medium)) == 0) then
-                     NuevoNumeroMediosConPML = NuevoNumeroMediosConPML + 1
-                     tempo (Abs(medium)) = NuevoNumeroMediosConPML
+                     newNumberOfMediaWithPML = newNumberOfMediaWithPML + 1
+                     tempo (Abs(medium)) = newNumberOfMediaWithPML
                   end if
                end if
             end do
@@ -1893,15 +1893,15 @@ module CreateMatrices_m
                medium = sggmiHz (i, j, k)
                if (medium < 0) then
                   if (tempo(Abs(medium)) == 0) then
-                     NuevoNumeroMediosConPML = NuevoNumeroMediosConPML + 1
-                     tempo (Abs(medium)) = NuevoNumeroMediosConPML
+                     newNumberOfMediaWithPML = newNumberOfMediaWithPML + 1
+                     tempo (Abs(medium)) = newNumberOfMediaWithPML
                   end if
                end if
             end do
          end do
       end do
       !
-     allocate(NewMed(NumMedia+1:NuevoNumeroMediosConPML))
+     allocate(NewMed(NumMedia+1:newNumberOfMediaWithPML))
       !Reassing the PML media info with the compact indexes
       field = iEx
       do k = ZIPML (field), ZEPML (field)
@@ -2158,14 +2158,14 @@ module CreateMatrices_m
       !
       !adjust constitutive parameters, matrices
       oldNumMedia = NumMedia !save it since the next subroutine overwrites it
-      call Readjust (NumMedia, med, NuevoNumeroMediosConPML)
+      call Readjust (NumMedia, med, newNumberOfMediaWithPML)
       sgg%AllocMed=NumMedia
       !copy the new media
-      med (1+oldNumMedia:NuevoNumeroMediosConPML) = NewMed (1+oldNumMedia:NuevoNumeroMediosConPML)
-      med(1+oldNumMedia:NuevoNumeroMediosConPML)%Is%PML = .TRUE. !all these are PML
-      med(1+oldNumMedia:NuevoNumeroMediosConPML)%Is%ThinWire = .FALSE. !put any wire touching the PML to non-wire though treat it with mur
-      med(1+oldNumMedia:NuevoNumeroMediosConPML)%Is%SlantedWire = .FALSE. !put any wire touching the PML to non-wire though treat it with mur
-      med(1+oldNumMedia:NuevoNumeroMediosConPML)%Is%Needed=.true. !sgg 220817 por defecto lo he puesto en readjust a false
+      med (1+oldNumMedia:newNumberOfMediaWithPML) = NewMed (1+oldNumMedia:newNumberOfMediaWithPML)
+      med(1+oldNumMedia:newNumberOfMediaWithPML)%Is%PML = .TRUE. !all these are PML
+      med(1+oldNumMedia:newNumberOfMediaWithPML)%Is%ThinWire = .FALSE. !put any wire touching the PML to non-wire though treat it with mur
+      med(1+oldNumMedia:newNumberOfMediaWithPML)%Is%SlantedWire = .FALSE. !put any wire touching the PML to non-wire though treat it with mur
+      med(1+oldNumMedia:newNumberOfMediaWithPML)%Is%Needed=.true. !sgg 220817 por defecto lo he puesto en readjust a false
       !
       deallocate(NewMed, tempo)
 
@@ -3128,10 +3128,10 @@ module CreateMatrices_m
       !
    end subroutine
 
-   subroutine AddToShared (campo, i1, j1, k1, Sharedmed, ProPmed,  Shared)
+   subroutine AddToShared (fieldIndex, i1, j1, k1, Sharedmed, ProPmed,  Shared)
       type(SharedElement_t), pointer, dimension(:) :: temp
       type(Shared_t), intent(inout) :: Shared
-      integer(kind=4), intent(in) :: campo, i1, j1, k1, Sharedmed, ProPmed
+      integer(kind=4), intent(in) :: fieldIndex, i1, j1, k1, Sharedmed, ProPmed
       integer(kind=4) :: conta, n
       !
       Shared%conta = Shared%conta + 1
@@ -3167,7 +3167,7 @@ module CreateMatrices_m
       if (conta == 1) allocate (Shared%elem(1:Shared%MaxConta))
       Shared%elem(conta)%Sharedmed = Sharedmed
       Shared%elem(conta)%ProPmed = ProPmed
-      Shared%elem(conta)%field = campo
+      Shared%elem(conta)%field = fieldIndex
       Shared%elem(conta)%i = i1
       Shared%elem(conta)%j = j1
       Shared%elem(conta)%k = k1

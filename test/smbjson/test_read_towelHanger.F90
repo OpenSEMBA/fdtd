@@ -51,7 +51,7 @@ contains
       expected%despl%mz2 = 60
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(:) = F_PML
+      expected%front%boundaryType(:) = F_PML
       expected%front%propiedadesPML(:)%numCapas = 6
       expected%front%propiedadesPML(:)%orden = 2.0_RKIND
       expected%front%propiedadesPML(:)%refl = 0.001_RKIND

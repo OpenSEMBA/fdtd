@@ -55,7 +55,7 @@ contains
       ex%despl%mz2 = 30
 
       ! Expected boundaries.
-      ex%front%tipoFrontera(:) = F_PML
+      ex%front%boundaryType(:) = F_PML
       ex%front%propiedadesPML(:)%numCapas = 8
       ex%front%propiedadesPML(:)%orden = 2
       ex%front%propiedadesPML(:)%refl = 0.001_RKIND
@@ -68,7 +68,7 @@ contains
 
       ! ex sources.
       allocate(ex%plnSrc%collection(1))
-      ex%plnSrc%collection(1)%nombre_fichero = "unshielded_50ns.exc"
+      ex%plnSrc%collection(1)%sourceFileName = "unshielded_50ns.exc"
       ex%plnSrc%collection(1)%atributo = "LOCKED"
       ex%plnSrc%collection(1)%coor1 = [1, 1, 1]
       ex%plnSrc%collection(1)%coor2 = [28, 28, 28]

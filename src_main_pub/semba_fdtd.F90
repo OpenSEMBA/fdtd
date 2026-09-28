@@ -310,14 +310,14 @@ contains
 
    call data_loader(this%l%filefde, parser)
 
-   this%sgg%extraswitches=parser%switches
+   this%sgg%extraSwitches=parser%switches
 !!!da preferencia a los switches por linea de comando
    call getcommandargument (this%l%chain2, 1, chaindummy, this%l%length, statuse, getBinaryPath())
 
    this%l%chain2=trim(adjustl(this%l%chain2))
    chaindummy=trim(adjustl(chaindummy))
    this%l%length=len(trim(adjustl(chaindummy)))
-   this%l%chain2=trim(adjustl(chaindummy))//' '//trim(adjustl(this%sgg%extraswitches))//' '//trim(adjustl(this%l%chain2(this%l%length+1:)))               
+   this%l%chain2=trim(adjustl(chaindummy))//' '//trim(adjustl(this%sgg%extraSwitches))//' '//trim(adjustl(this%l%chain2(this%l%length+1:)))               
    this%l%chaininput=trim(adjustl(this%l%chain2))
 !!!!
    call interpreta(this%l,status)      
@@ -838,8 +838,8 @@ contains
 #ifdef CompileWithMPI
    subroutine initialize_MPI_process(filename, extension)
       character(len=BUFSIZE), intent(in) :: filename, extension
-      integer(kind=4) :: mpi_t_linea_t,longitud4
-      integer(kind=8) :: rawInfoBuffer, numeroLineasFichero, i8, longitud8
+      integer(kind=4) :: mpi_t_line_t,longitud4
+      integer(kind=8) :: rawInfoBuffer, numberOfLinesInFile, i8, longitud8
       type(t_NFDE_FILE_t), pointer :: rawFileInfo
 
       write (dubuf,*) 'INIT Reading file '//trim (adjustl(this%whoami))//' ', trim (adjustl(filename))
@@ -872,21 +872,21 @@ contains
       !
       call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
       !
-      numeroLineasFichero=NFDE_FILE%numero
-      call MPI_BCAST(numeroLineasFichero, 1_4, MPI_INTEGER8, 0_4, SUBCOMM_MPI, this%l%ierr)      
+      numberOfLinesInFile=NFDE_FILE%numberValue
+      call MPI_BCAST(numberOfLinesInFile, 1_4, MPI_INTEGER8, 0_4, SUBCOMM_MPI, this%l%ierr)      
       if (this%l%layoutnumber/=0) then
          NFDE_FILE%targ = 1
-         NFDE_FILE%numero=numeroLineasFichero
-        allocate(NFDE_FILE%lineas(NFDE_FILE%numero))
+         NFDE_FILE%numberValue=numberOfLinesInFile
+        allocate(NFDE_FILE%lineas(NFDE_FILE%numberValue))
       end if
       call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 
-      call build_derived_t_linea(mpi_t_linea_t)
+      call build_derived_t_linea(mpi_t_line_t)
 
       rawInfoBuffer=ceiling(MAXMPIBYTES*1.0_8/(BUFSIZE*1.0_8+8.0_8),8)
 
-      do i8=1, numeroLineasFichero, rawInfoBuffer
-                  longitud8=min(rawInfoBuffer, numeroLineasFichero - i8 + 1)
+      do i8=1, numberOfLinesInFile, rawInfoBuffer
+                  longitud8=min(rawInfoBuffer, numberOfLinesInFile - i8 + 1)
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
             if ((longitud8>huge(1_4)).or.(longitud8>MAXMPIBYTES)) then
                print *,'Stop. Buggy error: MPI longitud greater that greatest integer*4'
@@ -894,7 +894,7 @@ contains
             else
                longitud4=int(longitud8,4)
             end if
-            call MPI_BCAST(NFDE_FILE%lineas(i8),longitud4,mpi_t_linea_t,0_4,SUBCOMM_MPI,this%l%ierr)    
+            call MPI_BCAST(NFDE_FILE%lineas(i8),longitud4,mpi_t_line_t,0_4,SUBCOMM_MPI,this%l%ierr)    
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
       end do
    end subroutine initialize_MPI_process
@@ -960,12 +960,12 @@ contains
       character(len=*), intent(in) :: filename
       integer(kind=4), intent(in) :: unit
 
-      type(t_linea_t), pointer :: linea
+      type(t_line_t), pointer :: linea
       character(len=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
 
-     allocate(rInfo%lineas(rInfo%numero))
-      rInfo%numero = 0
+     allocate(rInfo%lineas(rInfo%numberValue))
+      rInfo%numberValue = 0
       open(UNIT=unit, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
       do
          read (unit, '(A)', end=2010) l_aux
@@ -973,8 +973,8 @@ contains
             write(buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
             call warnerrreport(buffer,.TRUE.) !ABORTA
          end if
-         rInfo%numero = rInfo%numero + 1
-         linea => rInfo%lineas (rInfo%numero)
+         rInfo%numberValue = rInfo%numberValue + 1
+         linea => rInfo%lineas (rInfo%numberValue)
          linea%dato = adjustl(l_aux)
          linea%lengthValue=len_trim (linea%dato)
       end do
@@ -988,18 +988,18 @@ contains
       integer(kind=4), intent(in) :: unit
 
       integer(kind=4) :: io, size_read, pos, d
-      type(t_linea_t), pointer :: linea
+      type(t_line_t), pointer :: linea
       character(len=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
 
-     allocate(rInfo%lineas(rInfo%numero))
-      rInfo%numero = 0
+     allocate(rInfo%lineas(rInfo%numberValue))
+      rInfo%numberValue = 0
       open(UNIT=unit, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
       do
          read (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
          if (size_read == 0) exit
-         rInfo%numero = rInfo%numero + 1
-         linea => rInfo%lineas (rInfo%numero)
+         rInfo%numberValue = rInfo%numberValue + 1
+         linea => rInfo%lineas (rInfo%numberValue)
          linea%dato = adjustl(l_aux)
          linea%lengthValue=len_trim (linea%dato)
       end do
@@ -1011,17 +1011,17 @@ contains
       character(len=*), intent(in) :: filename, extension
       type(t_NFDE_FILE_t), pointer :: rawFileInfo
       
-      type(t_linea_t), pointer :: linea
+      type(t_line_t), pointer :: linea
       logical :: ok
       character(len=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
       integer(kind=4) :: i,tamanio,i0,ascii,offset,ascii_menos1,j,k
-      character(Len=:), allocatable :: fichero
+      character(Len=:), allocatable :: sourceFile
       integer(kind=4), parameter :: UNIT_EF = 10
 
       integer(kind=4) :: prelines = 0, io
      allocate(rawFileInfo)
-      rawFileInfo%numero = 0
+      rawFileInfo%numberValue = 0
       rawFileInfo%targ = 1
 
       !precount
@@ -1034,14 +1034,14 @@ contains
       close (UNIT_EF)
 
       if (prelines == 1 .and. trim(adjustl(extension))=='.json') then
-         rawFileInfo%numero = countLinesInJSONOneLiner(filename, UNIT_EF)      
+         rawFileInfo%numberValue = countLinesInJSONOneLiner(filename, UNIT_EF)      
          call readLinesFromJSONOneLiner(rawFileInfo, filename, UNIT_EF)
       else 
-         rawFileInfo%numero = prelines
+         rawFileInfo%numberValue = prelines
          call readLines(rawFileInfo, filename, UNIT_EF)
       end if
 
-      do k=1,rawFileInfo%numero
+      do k=1,rawFileInfo%numberValue
           linea => rawFileInfo%lineas (k)
           do j=1,linea%lengthValue
               i=j

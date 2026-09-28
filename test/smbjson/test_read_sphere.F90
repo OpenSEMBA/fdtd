@@ -52,7 +52,7 @@ contains
       ex%despl%mz2 = 80
 
       ! Expected boundaries.
-      ex%front%tipoFrontera(:) = F_PML
+      ex%front%boundaryType(:) = F_PML
       ex%front%propiedadesPML(:)%numCapas = 10
       ex%front%propiedadesPML(:)%orden = 2
       ex%front%propiedadesPML(:)%refl = 0.001_RKIND
@@ -65,7 +65,7 @@ contains
 
       ! Expected sources.
       allocate(ex%plnSrc%collection(1))
-      ex%plnSrc%collection(1)%nombre_fichero = "gauss.exc"
+      ex%plnSrc%collection(1)%sourceFileName = "gauss.exc"
       ex%plnSrc%collection(1)%atributo = "LOCKED"
       ex%plnSrc%collection(1)%coor1 = [0, 0, 0]
       ex%plnSrc%collection(1)%coor2 = [79, 79, 79]

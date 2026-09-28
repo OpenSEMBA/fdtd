@@ -215,7 +215,7 @@ contains
             seg => Hwireslocal%CurrentSegment(n)
             if (seg%origindex == node .and. &
                 seg%i == probe_i .and. seg%j == probe_j .and. seg%k == probe_k .and. &
-                seg%tipofield*10 == field) then
+                seg%fieldKind*10 == field) then
                found = .true.
                this%segment => seg
                if (seg%orientadoalreves) this%signValue = -1
@@ -307,7 +307,7 @@ contains
          seg => Hwireslocal%CurrentSegment(n)
          if (seg%origindex == node .and. &
              seg%i == probe_i .and. seg%j == probe_j .and. seg%k == probe_k .and. &
-             seg%tipofield*10000 == field) then
+             seg%fieldKind*10000 == field) then
             found = .true.
             this%segment => seg
             if (seg%orientadoalreves) this%signValue = -1

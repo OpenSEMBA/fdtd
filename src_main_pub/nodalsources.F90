@@ -236,14 +236,14 @@ contains
             !
             dummy%nodHard(dummy%numHard)%punto%amplitude = amplit
             !Read the time evolution
-            dummy%nodHard(dummy%numHard)%deltaevol=sggdummy%fichero%deltaSamples
+            dummy%nodHard(dummy%numHard)%deltaevol=sggdummy%sourceFile%deltaSamples
             if (dummy%nodHard(dummy%numHard)%deltaevol > sgg%dt) then
-               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%Fichero%Name))// &
+               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%sourceFile%Name))// &
                ' undersampled by a factor ',dummy%nodHard(dummy%numHard)%deltaevol/sgg%dt
                call WarnErrReport(buff)
             end if
-            dummy%nodHard(dummy%numHard)%numus =  sggdummy%Fichero%NumSamples
-            dummy%nodHard(dummy%numHard)%evol  => sggdummy%fichero%Samples
+            dummy%nodHard(dummy%numHard)%numus =  sggdummy%sourceFile%NumSamples
+            dummy%nodHard(dummy%numHard)%evol  => sggdummy%sourceFile%Samples
          else
             dummy%numSoft=dummy%numSoft+1
             !
@@ -257,14 +257,14 @@ contains
             !
             dummy%nodSoft(dummy%numSoft)%punto%amplitude = amplit
             !Read the time evolution
-            dummy%nodSoft(dummy%numSoft)%deltaevol=sggdummy%fichero%deltaSamples
+            dummy%nodSoft(dummy%numSoft)%deltaevol=sggdummy%sourceFile%deltaSamples
             if (dummy%nodSoft(dummy%numSoft)%deltaevol > sgg%dt) then
-               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%Fichero%Name))// &
+               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%sourceFile%Name))// &
                ' undersampled by a factor ',dummy%nodSoft(dummy%numSoft)%deltaevol/sgg%dt
                call WarnErrReport(buff)
             end if
-            dummy%nodSoft(dummy%numSoft)%numus =  sggdummy%Fichero%NumSamples
-            dummy%nodSoft(dummy%numSoft)%evol  => sggdummy%fichero%Samples
+            dummy%nodSoft(dummy%numSoft)%numus =  sggdummy%sourceFile%NumSamples
+            dummy%nodSoft(dummy%numSoft)%evol  => sggdummy%sourceFile%Samples
          end if
 
          return

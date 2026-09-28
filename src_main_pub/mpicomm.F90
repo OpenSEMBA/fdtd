@@ -632,14 +632,14 @@ contains
       if (layoutnumber/=num_procs-1) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(IEZ)%ZE+1).and.(segmento%tipofield==IEZ)) NeedscontaMPIup = NeedscontaMPIup + 1
+            if ((segmento%k==C(IEZ)%ZE+1).and.(segmento%fieldKind==IEZ)) NeedscontaMPIup = NeedscontaMPIup + 1
          end do
       end if
       !
       if (layoutnumber/=0) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(IEZ)%ZI-1).and.(segmento%tipofield==IEZ)) NeedscontaMPIdown = NeedscontaMPIdown + 1
+            if ((segmento%k==C(IEZ)%ZI-1).and.(segmento%fieldKind==IEZ)) NeedscontaMPIdown = NeedscontaMPIdown + 1
          end do
       end if
 
@@ -649,14 +649,14 @@ contains
       if (layoutnumber/=num_procs-1) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(IEZ)%ZE).and.(segmento%tipofield==IEZ)) SharescontaMPIup = SharescontaMPIup + 1
+            if ((segmento%k==C(IEZ)%ZE).and.(segmento%fieldKind==IEZ)) SharescontaMPIup = SharescontaMPIup + 1
          end do
       end if
       !
       if (layoutnumber/=0) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(IEZ)%ZI).and.(segmento%tipofield==IEZ)) SharescontaMPIdown = SharescontaMPIdown + 1
+            if ((segmento%k==C(IEZ)%ZI).and.(segmento%fieldKind==IEZ)) SharescontaMPIdown = SharescontaMPIdown + 1
          end do
       end if
 
@@ -689,7 +689,7 @@ contains
       if (layoutnumber/=num_procs-1) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(IEZ)%ZE+1).and.(segmento%tipofield==IEZ)) then
+            if ((segmento%k==C(IEZ)%ZE+1).and.(segmento%fieldKind==IEZ)) then
                NeedscontaMPIup = NeedscontaMPIup + 1
                HwiresMPI%MPIUpNeededCurrentSegment (NeedscontaMPIup)%equivalentIndex = i1
             end if
@@ -699,7 +699,7 @@ contains
       if (layoutnumber/=0) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(IEZ)%ZI-1).and.(segmento%tipofield==IEZ)) then
+            if ((segmento%k==C(IEZ)%ZI-1).and.(segmento%fieldKind==IEZ)) then
                NeedscontaMPIdown = NeedscontaMPIdown + 1
                HwiresMPI%MPIDownNeededCurrentSegment (NeedscontaMPIdown)%equivalentIndex = i1
             end if
@@ -711,7 +711,7 @@ contains
       if (layoutnumber/=num_procs-1) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(IEZ)%ZE).and.(segmento%tipofield==IEZ)) then
+            if ((segmento%k==C(IEZ)%ZE).and.(segmento%fieldKind==IEZ)) then
                SharescontaMPIup = SharescontaMPIup + 1
                HwiresMPI%MPIUpSharedCurrentSegment(SharescontaMPIup)%equivalentIndex = i1
             end if
@@ -721,7 +721,7 @@ contains
       if (layoutnumber/=0) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(IEZ)%ZI).and.(segmento%tipofield==IEZ)) then
+            if ((segmento%k==C(IEZ)%ZI).and.(segmento%fieldKind==IEZ)) then
                SharescontaMPIdown = SharescontaMPIdown + 1
                HwiresMPI%MPIDownSharedCurrentSegment(SharescontaMPIdown)%equivalentIndex = i1
             end if
@@ -1749,7 +1749,7 @@ module build_t_linea_mpi_m
 contains
 
 
-    subroutine build_derived_t_linea(mesg_mpi_t_linea)
+    subroutine build_derived_t_linea(mesg_mpi_t_line)
 
 
     implicit none
@@ -1763,7 +1763,7 @@ contains
     integer(kind=4)                        :: typelist(1:number)
 
     !output
-    integer(kind=4),intent(out) :: mesg_mpi_t_linea
+    integer(kind=4),intent(out) :: mesg_mpi_t_line
 
     !----------------------------------------
 
@@ -1778,7 +1778,7 @@ contains
 
     ! build the derived data type
     call MPI_Type_create_struct(number,block_lengths,displacements,&
-                    typelist,mesg_mpi_t_linea,ierr)
+                    typelist,mesg_mpi_t_line,ierr)
     if (ierr /= 0) then
         print *, 'got an error in type create: ', ierr
         call MPI_Abort(SUBCOMM_MPI, ierr, ierr)
@@ -1786,7 +1786,7 @@ contains
 
     ! commit it to the system, so it knows we ll use it
     ! for communication
-    call MPI_TYPE_COMMIT(mesg_mpi_t_linea,ierr)
+    call MPI_TYPE_COMMIT(mesg_mpi_t_line,ierr)
     if (ierr /= 0) then
         print *, 'got an error in type commit: ', ierr
         call MPI_Abort(SUBCOMM_MPI, ierr, ierr)

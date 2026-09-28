@@ -132,7 +132,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    type(SGBCSurface_t), pointer :: compo,compo_temp
    logical :: unstable, errnofile,es_unfilo_placa
    complex(kind=ckind) :: value1, value2
-   character(len=BUFSIZE)                            :: ficheropolos
+   character(len=BUFSIZE)                            :: filePoles
 
    eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
    SGBCcrank        = temp_SGBCcrank     
@@ -227,19 +227,19 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
                  call StopOnError(layoutnumber,num_procs,buff)
               end if
 !!!!!!!!
-              ficheropolos=SGG%Med(jmed)%multiport(1)%multiportFileZ11 !aunque le llamo Z tiene la sintaxis de un Edispersive ISOTROPO CON EL NUEVO STANDARD (VER LINEAS 6749 DE NFDEPARSER). 
+              filePoles=SGG%Med(jmed)%multiport(1)%multiportFileZ11 !aunque le llamo Z tiene la sintaxis de un Edispersive ISOTROPO CON EL NUEVO STANDARD (VER LINEAS 6749 DE NFDEPARSER). 
               ! SOLO LEO LOS PRIMEROS POLOS. eL RESTO DE DATOS LOS TIRO (INFORMACION DE POLOS DE SEGUNDO ORDEN, POLOS MAGNETICOS, ANISOTROPIAS...)
               !nuevo estio del ficheros sin el _z11
-              i1=index(ficheropolos,'_z11.txt')
-              ficheropolos=trim(adjustl(ficheropolos(1:i1-1)))
+              i1=index(filePoles,'_z11.txt')
+              filePoles=trim(adjustl(filePoles(1:i1-1)))
       !
               errnofile=.false.
-              inquire(FILE=trim(adjustl(ficheropolos)), EXIST=errnofile)
+              inquire(FILE=trim(adjustl(filePoles)), EXIST=errnofile)
               if (.not.errnofile) then
-                 buff='FILE '//trim(adjustl(ficheropolos))//' DOES NOT EXIST'
+                 buff='FILE '//trim(adjustl(filePoles))//' DOES NOT EXIST'
                  call StopOnError(layoutnumber,num_procs,buff)
               end if
-              open (7345,file=trim(adjustl(ficheropolos)),form='formatted')
+              open (7345,file=trim(adjustl(filePoles)),form='formatted')
               read (7345,*) rra,rrb,rrc,rrd 
               rrb= rrb/eps0 ;  rrc = rrc/mu0 !no les afecta el permit scaling creo 071118 pq son relativos a la entrada del programa que DEBE ENTRAR CON los eps0 y mu0 autenticos
               SGG%Med(jmed)%multiport(1)%sigma(1)=rra; 

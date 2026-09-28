@@ -51,7 +51,7 @@ contains
       expected%despl%mz2 = 9
 
       ! Expected boundaries
-      expected%front%tipoFrontera(:) = F_MUR
+      expected%front%boundaryType(:) = F_MUR
 
       ! Expected material regions
       expected%pecRegs%nVols = 0
@@ -160,7 +160,7 @@ contains
 
       expected%dielRegs%Lins(1)%resistor = .true.
       expected%dielRegs%Lins(1)%orient = 1
-      expected%dielRegs%Lins(1)%DiodOri = 1
+      expected%dielRegs%Lins(1)%diodeOrientation = 1
 
       
       ! Expected sources
