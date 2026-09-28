@@ -61,7 +61,7 @@ module NFDETypes_m
    integer(kind=4), parameter :: INDUCTOR = 20
    integer(kind=4), parameter :: CAPACITOR = 21
    integer(kind=4), parameter :: RESISTOR = 22
-   integer(kind=4), parameter :: diode = 23
+   integer(kind=4), parameter :: DIODE = 23
    integer(kind=4), parameter :: DIELECTRIC = 24
    integer(kind=4), parameter :: PMLBODY = 25
 

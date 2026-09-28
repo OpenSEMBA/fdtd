@@ -5,7 +5,7 @@ integer function test_atomic_file_replacement() bind(c) result(err)
    use assertionTools_m, only: assert_integer_equal, assert_true, assert_string_equal
    implicit none
 
-   character(len=*), parameter :: targetValue = 'testing atomic replacement/result.json'
+   character(len=*), parameter :: TARGETVALUE = 'testing atomic replacement/result.json'
    character(len=*), parameter :: TEMPORARY = 'testing atomic replacement/result.json.tmp'
    character(len=32) :: line
    integer :: ios, unit
