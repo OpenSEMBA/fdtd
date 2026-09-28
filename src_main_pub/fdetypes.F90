@@ -251,7 +251,7 @@ module  FDETYPES_m
       type(coorsxyz_t), dimension(1:6) :: PhysCoor
    end type coorsxyzP_t
 
-   type MedioExtra_t
+   type ExtraMedium_t
       integer(kind=4) :: pml_size,elementIndex
       real(kind=rkind) :: sigma,sigmam
       logical :: exists
@@ -712,7 +712,7 @@ module  FDETYPES_m
       integer(kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 
                           mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, num_procs
       
-      type(MedioExtra_t) :: MEDIOEXTRA
+      type(ExtraMedium_t) :: extraMedium
       type(nf2ff_T) :: facesNF2FF
 
    end type sim_control_t

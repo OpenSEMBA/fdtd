@@ -127,7 +127,7 @@ module interpreta_switches_m
          factordelta
 
       type(nf2ff_T) :: facesNF2FF
-      type(MedioExtra_t) :: MEDIOEXTRA
+      type(ExtraMedium_t) :: extraMedium
       type(EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
       type(tiempo_t) :: time_out2
 
@@ -474,31 +474,31 @@ contains
                end if
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
             case ('-pmlcorr')
-               l%MEDIOEXTRA%exists = .true.
+               l%extraMedium%exists = .true.
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               read (f, *, ERR=7672) l%MEDIOEXTRA%sigma
+               read (f, *, ERR=7672) l%extraMedium%sigma
                go TO 8672
 7672           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid pmlcorr sigma factor', .true.)
                statuse = -1
                !goto 668
-8672           if (l%MEDIOEXTRA%sigma < 0.0_RKIND) then
+8672           if (l%extraMedium%sigma < 0.0_RKIND) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid pmlcorr sigma factor', .true.)
                   statuse = -1
                   !goto 668
                end if
-               l%MEDIOEXTRA%sigmam = -1.0_RKIND!voids it. later overriden
+               l%extraMedium%sigmam = -1.0_RKIND!voids it. later overriden
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               read (f, *, ERR=7662) l%MEDIOEXTRA%pml_size
+               read (f, *, ERR=7662) l%extraMedium%pml_size
                go TO 8662
 7662           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid pmlcorr depth factor', .true.)
                statuse = -1
                !goto 668
-8662           if (l%MEDIOEXTRA%pml_size < 0) then
+8662           if (l%extraMedium%pml_size < 0) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid pmlcorr depth factor', .true.); statuse = -1; !goto 668
                end if
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
@@ -1856,10 +1856,10 @@ contains
       l%alphaOrden = 1.0_RKIND
       l%kappamaxpar = 1.0_RKIND !15.0_RKIND !061118 mantener a 1 por conflictos cpml and permittivity scaling
       !and final layer electric sigma
-      l%MEDIOEXTRA%exists = .false.
-      l%MEDIOEXTRA%elementIndex = -7 !void
-      l%MEDIOEXTRA%pml_size = -1  !void
-      l%MEDIOEXTRA%sigma = -1e20 !void
+      l%extraMedium%exists = .false.
+      l%extraMedium%elementIndex = -7 !void
+      l%extraMedium%pml_size = -1  !void
+      l%extraMedium%sigma = -1e20 !void
       !
       l%MurAfterPML = .false.
       l%mur_second = .false.

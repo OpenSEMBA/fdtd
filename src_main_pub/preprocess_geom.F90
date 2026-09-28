@@ -31,13 +31,13 @@ module Preprocess_m
 contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine read_geomData (sgg,media,tag_numbers, fichin, layoutnumber, num_procs, SINPML_fullsize, fullsize, this, &
-      groundwires,attfactor,mibc,SGBC,SGBCDispersive,MEDIOEXTRA,maxSourceValue,skindepthpre,createmapvtk,input_conformal_flag,CLIPREGION,boundwireradius,maxwireradius,updateshared,run_with_dmma, &
+      groundwires,attfactor,mibc,SGBC,SGBCDispersive,extraMedium,maxSourceValue,skindepthpre,createmapvtk,input_conformal_flag,CLIPREGION,boundwireradius,maxwireradius,updateshared,run_with_dmma, &
       eps00,mu00,simu_devia,hay_slanted_wires,verbose,ignoresamplingerrors,tagtype,wiresflavor)
       type(media_matrices_t), intent(inout) :: media
       logical :: simu_devia,verbose,hay_slanted_wires
       real(kind=RKIND) :: eps00,mu00
 
-      type(MedioExtra_t), intent (inout) :: MEDIOEXTRA
+      type(ExtraMedium_t), intent (inout) :: extraMedium
       !
       character(len=BUFSIZE), intent(in) :: wiresflavor
       logical, intent(in) :: updateshared,run_with_dmma,ignoresamplingerrors
@@ -61,7 +61,7 @@ contains
       type(XYZlimit_t) :: punto, BoundingBox, conf_bounding_box
       type(xyzlimit_scaled_t) :: punto_s
       integer(kind=4) :: orientacion,orientacionL,orientacionR, direccion, contamedia,oldcontamedia, maxcontamedia, mincontamedia, inicontamedia, &
-         i1, j1, field, k1, pecmedio, ii, medio1, medio2, sondas,CONTACURR,CONTAVOLT,I_,J_
+         i1, j1, field, k1, pecMedium, ii, medio1, medio2, sondas,CONTACURR,CONTAVOLT,I_,J_
       !
       logical :: isathinwire, VALIDO, existia,medioespecial,input_conformal_flag,nodo_cazado
       logical :: errnofile,errnofile1,errnofile2,errnofile3,errnofile4
@@ -87,7 +87,7 @@ contains
       logical :: oriX, oriY, oriZ, oriX2, oriY2, oriZ2, oriX3, oriY3, oriZ3, iguales
       logical :: oriX4, oriY4, oriZ4
       real(kind=RKIND), dimension(3, 3) :: EprSlot, MurSlot
-      integer(kind=4) :: indicemedio
+      integer(kind=4) :: mediumIndex
       integer(kind=4) :: i11, j11
       !
       type(tagtype_t) :: tagtype
@@ -200,9 +200,9 @@ contains
 
       !end thin Slots
       !PARA LA CAPA EXTRA 2013
-      if (medioextra%exists) then
+      if (extraMedium%exists) then
          CONTAMEDIA = CONTAMEDIA+1
-         MEDIOEXTRA%elementIndex=CONTAMEDIA
+         extraMedium%elementIndex=CONTAMEDIA
       end if
       !para modulos que necesiten senialar con already_YEEadvanced_byconformal y split_and_useless (eg. conformal)
       !se crea siempre por defecto
@@ -506,7 +506,7 @@ contains
       !CAPA EXTRA
       !Background    only differences from default are needed
 
-      if (medioextra%exists) then
+      if (extraMedium%exists) then
          !!!!estimate in terms of percentage of the maximum PML conductivity the conductivity of the extra medium
          !!!This info is available from read_limits_nogeom
          !the calculus is taken from borderscpml.F90
@@ -537,16 +537,16 @@ contains
                end if
             end do
          end do
-         MEDIOEXTRA%sigma = MEDIOEXTRA%sigma * sig_max !la especificacion se da en terminos de tanto por uno en la linea de comandos
+         extraMedium%sigma = extraMedium%sigma * sig_max !la especificacion se da en terminos de tanto por uno en la linea de comandos
          !
-         sgg%Med(MEDIOEXTRA%elementIndex)%Epr = this%mats%mats(1)%eps / Eps0 !luego se machaca este valor
-         sgg%Med(MEDIOEXTRA%elementIndex)%Sigma = MEDIOEXTRA%sigma !luego se machaca este valor
-         sgg%Med(MEDIOEXTRA%elementIndex)%Mur = this%mats%mats(1)%mu / Mu0 !luego se machaca este valor
-         sgg%Med(MEDIOEXTRA%elementIndex)%SigmaM = 0.0_RKIND !solo lo creo para las tangenciales electricas
-         sgg%Med(MEDIOEXTRA%elementIndex)%Priority = prior_PEC
-         sgg%Med(MEDIOEXTRA%elementIndex)%Is%DIELECTRIC = .TRUE.
-         sgg%Med(MEDIOEXTRA%elementIndex)%Is%Volume = .TRUE.
-         sgg%Med(MEDIOEXTRA%elementIndex)%Is%PML = .TRUE.
+         sgg%Med(extraMedium%elementIndex)%Epr = this%mats%mats(1)%eps / Eps0 !luego se machaca este valor
+         sgg%Med(extraMedium%elementIndex)%Sigma = extraMedium%sigma !luego se machaca este valor
+         sgg%Med(extraMedium%elementIndex)%Mur = this%mats%mats(1)%mu / Mu0 !luego se machaca este valor
+         sgg%Med(extraMedium%elementIndex)%SigmaM = 0.0_RKIND !solo lo creo para las tangenciales electricas
+         sgg%Med(extraMedium%elementIndex)%Priority = prior_PEC
+         sgg%Med(extraMedium%elementIndex)%Is%DIELECTRIC = .TRUE.
+         sgg%Med(extraMedium%elementIndex)%Is%Volume = .TRUE.
+         sgg%Med(extraMedium%elementIndex)%Is%PML = .TRUE.
       end if
       !
       !barre los medios
@@ -557,7 +557,7 @@ contains
       !regiones PEC
       !
       if ((this%pecregs%nvols)+(this%pecregs%nsurfs)+(this%pecregs%nLINS) /= 0) then
-         pecmedio = 0
+         pecMedium = 0
          tama = (this%pecregs%nvols)
          !BODYes
          do i = 1, tama
@@ -574,7 +574,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, pecmedio)
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, pecMedium)
          end do
          !SURFs
          tama = (this%pecregs%nsurfs)
@@ -595,7 +595,7 @@ contains
             & Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, &
             & Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, &
             & Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, &
-            & sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientacion, pecmedio)
+            & sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientacion, pecMedium)
          end do
          !LINs
          tama = (this%pecregs%nLINS)
@@ -616,7 +616,7 @@ contains
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
             & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientacion, &
-            & pecmedio, isathinwire, verbose,numeroasignaciones)
+            & pecMedium, isathinwire, verbose,numeroasignaciones)
          end do
          !regiones PEC
       end if
@@ -2804,7 +2804,7 @@ contains
                   ! y tocar el precounting if so
                   !chequear que son distintos para incrementar contamedia
                   !
-                  indicemedio = contamedia + 1
+                  mediumIndex = contamedia + 1
                   buscaiguales: do ii = 1, contamedia
                      if (sgg%Med(ii)%Is%ThinSlot) then
                         iguales = .TRUE.
@@ -2815,13 +2815,13 @@ contains
                            end do
                         end do
                         if (iguales) then
-                           indicemedio = ii
+                           mediumIndex = ii
                            exit buscaiguales
                         end if
                      end if
                   end do buscaiguales
-                  if (indicemedio == contamedia+1) then
-                     contamedia = indicemedio
+                  if (mediumIndex == contamedia+1) then
+                     contamedia = mediumIndex
                     allocate(sgg%Med(contamedia)%Anisotropic(1))
                      sgg%Med(contamedia)%Anisotropic(1)%Epr = EprSlot
                      sgg%Med(contamedia)%Anisotropic(1)%Mur = MurSlot
@@ -2860,7 +2860,7 @@ contains
                      Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, &
                      Alloc_iHz_YI,&
                      Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, sgg%HShared, BoundingBox, &
-                     punto, orientacion, direccion, indicemedio)
+                     punto, orientacion, direccion, mediumIndex)
                   !del if esta dentro del bounding box
                end if
             end do
@@ -4663,12 +4663,12 @@ contains
       end if !del updateshared
 
       !PARA LA CAPA EXTRA 2013
-      if (medioextra%exists) then
+      if (extraMedium%exists) then
          CONTAMEDIA = CONTAMEDIA+1
-         if  (MEDIOEXTRA%elementIndex /= contamedia) then !should be already done earlier
+         if  (extraMedium%elementIndex /= contamedia) then !should be already done earlier
             call STOPONERROR(layoutnumber,num_procs,'Bug in media count. ')
          end if
-         MEDIOEXTRA%elementIndex=CONTAMEDIA
+         extraMedium%elementIndex=CONTAMEDIA
       end if
       !!!!!!!!!!!!!
       sgg%NumMedia = contamedia
@@ -4710,7 +4710,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!fin clipeado
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      call CreatePMLmatrix (layoutnumber, num_procs,sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz, SINPML_fullsize, fullsize, BoundingBox, sgg%Med, sgg%NumMedia, sgg%Border,MEDIOEXTRA)
+      call CreatePMLmatrix (layoutnumber, num_procs,sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz, SINPML_fullsize, fullsize, BoundingBox, sgg%Med, sgg%NumMedia, sgg%Border,extraMedium)
       sgg%EndPMLMedia = sgg%NumMedia
 
       !

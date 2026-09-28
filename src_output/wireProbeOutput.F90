@@ -252,11 +252,11 @@ contains
       ! --- multirabo fallback (Holland only)
       if (.not. found .and. trim(adjustl(wiresflavor)) /= 'berenger') then
          buscarabono: do iwi = 1, Hwireslocal%NumDifferentWires
-            do iwj = 1, media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%numsegmentos
-               if (node == media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex .and. &
-                   media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multirabo) then
+            do iwj = 1, media(Hwireslocal%wireMediumType(iwi))%wire(1)%numsegmentos
+               if (node == media(Hwireslocal%wireMediumType(iwi))%wire(1)%segm(iwj)%origindex .and. &
+                   media(Hwireslocal%wireMediumType(iwi))%wire(1)%segm(iwj)%multirabo) then
 
-                  node2 = media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multiraboDE
+                  node2 = media(Hwireslocal%wireMediumType(iwi))%wire(1)%segm(iwj)%multiraboDE
                   do n = 1, Hwireslocal%NumCurrentSegments
                      seg => Hwireslocal%CurrentSegment(n)
                      if (seg%origindex == node2) then

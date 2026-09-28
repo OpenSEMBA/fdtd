@@ -63,7 +63,7 @@ module wiresHolland_constants_m
 #endif       
    type, public  :: CurrentSegments_t
       integer(kind=4)                        :: IndexSegment,NumParallel,OrigIndex
-      type(wires_t), pointer              :: TipoWire
+      type(wires_t), pointer              :: wireType
       real(kind=RKIND_WIRES)                    :: Lind,inv_Lind_acum,HEUR_safety,Lind_acum
       real(kind=RKIND_WIRES)                    :: delta,deltaTransv1,deltaTransv2
       real(kind=RKIND_WIRES)                    :: givenautoin, resist
@@ -125,7 +125,7 @@ module wiresHolland_constants_m
       integer(kind=4)                                :: NumMultilines !dama
       type(TMultiline_t) , pointer, dimension(:) :: Multilines    !dama
       integer(kind=4) :: NumDifferentWires,NumCurrentSegments,NumChargeNodes
-      integer(kind=4), pointer, dimension(:) :: WireTipoMedio
+      integer(kind=4), pointer, dimension(:) :: wireMediumType
       type(CurrentSegments_t) :: NullSegment !contiene informacion nula precisada por segmentos voided pero observados en la rutina de observacion 12/09/13
       type(ChargeNodes_t) :: NullNode
       type(CurrentSegments_t), pointer, dimension(:) :: CurrentSegment

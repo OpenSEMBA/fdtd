@@ -72,7 +72,7 @@ type  :: Malon_t
     logical :: SGBCdispersive
    integer(kind=4) :: NumNodes
    type(SGBCSurface_t), allocatable, dimension(:) :: nodes
-   type(MalDisp_t), allocatable, dimension(:) :: mediosDis
+   type(MalDisp_t), allocatable, dimension(:) :: dispersiveMedia
 end type Malon_t
 
 
@@ -191,8 +191,8 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    malon%NumNodes=conta
    allocate (malon%Nodes(1 : malon%NumNodes))
    !!!!DISPERSIVOS
-   allocate (malon%mediosDis(1:sgg%NumMedia))
-   malon%mediosDis(:)%numpolres=0
+   allocate (malon%dispersiveMedia(1:sgg%NumMedia))
+   malon%dispersiveMedia(:)%numpolres=0
    !
    !!!!!!!! dispersivos SGBC sgg 12/05/15   
 !070717
@@ -252,13 +252,13 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
               SGG%Med(jmed)%sigmam=rrd;
               !
               read (7345,*) numpolres, IDUMMY, IDUMMY, IDUMMY
-              malon%mediosDis(jmed)%numpolres = numpolres
-              allocate (malon%mediosDis(jmed)%a11(1:numpolres)) 
-              allocate (malon%mediosDis(jmed)%c11(1:numpolres)) 
+              malon%dispersiveMedia(jmed)%numpolres = numpolres
+              allocate (malon%dispersiveMedia(jmed)%a11(1:numpolres)) 
+              allocate (malon%dispersiveMedia(jmed)%c11(1:numpolres)) 
               do i = 1, numpolres
                 read(7345,*) value1, value2
-                malon%mediosDis(jmed)%c11 (i) = (value1) 
-                malon%mediosDis(jmed)%a11 (i) = - (value2) !el polo de EM esta cambiado de signo !ver tambien preprocess
+                malon%dispersiveMedia(jmed)%c11 (i) = (value1) 
+                malon%dispersiveMedia(jmed)%a11 (i) = - (value2) !el polo de EM esta cambiado de signo !ver tambien preprocess
               end do          
               close (7345)
 !!!movido 071118 al calculo de constantes para permit scaling
@@ -354,19 +354,19 @@ do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                     allocate(compo%d     (-compo%depth:compo%depth)) 
                end if
 
-               compo%numpolres=malon%MediosDis(compo%jmed)%numpolres !duplico esta info
+               compo%numpolres=malon%dispersiveMedia(compo%jmed)%numpolres !duplico esta info
                if (SGBCDispersive) then 
                  allocate (compo%a11(1:compo%numpolres)) 
                  allocate (compo%c11(1:compo%numpolres)) 
-                 compo%a11 = malon%MediosDis(compo%jmed)%a11
-                 compo%c11 = malon%MediosDis(compo%jmed)%c11
+                 compo%a11 = malon%dispersiveMedia(compo%jmed)%a11
+                 compo%c11 = malon%dispersiveMedia(compo%jmed)%c11
                  allocate (compo%beta%val(1:compo%numpolres))
                  allocate (compo%kappa%val(1:compo%numpolres))
                  allocate (compo%G3%val(1:compo%numpolres))
              !!  call calc_g1g2(sgg,GM2,compo)   ! permit scal 071118 
                  allocate (compo%EDis   (-compo%depth:compo%depth))
                  do ient=-compo%depth , compo%depth
-                     allocate (compo%EDis(ient)%Current(1 : malon%MediosDis(jmed)%numpolres))
+                     allocate (compo%EDis(ient)%Current(1 : malon%dispersiveMedia(jmed)%numpolres))
                      compo%EDis(ient)%FieldPresent => compo%E(ient)
                  end do
                end if
@@ -443,19 +443,19 @@ do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                     allocate(compo%d     (-compo%depth:compo%depth)) 
                end if
 
-               compo%numpolres=malon%MediosDis(compo%jmed)%numpolres !duplico esta info
+               compo%numpolres=malon%dispersiveMedia(compo%jmed)%numpolres !duplico esta info
                if (SGBCDispersive) then 
                  allocate (compo%a11(1:compo%numpolres)) 
                  allocate (compo%c11(1:compo%numpolres)) 
-                 compo%a11 = malon%MediosDis(compo%jmed)%a11
-                 compo%c11 = malon%MediosDis(compo%jmed)%c11
+                 compo%a11 = malon%dispersiveMedia(compo%jmed)%a11
+                 compo%c11 = malon%dispersiveMedia(compo%jmed)%c11
                  allocate (compo%beta%val(1:compo%numpolres))
                  allocate (compo%kappa%val(1:compo%numpolres))
                  allocate (compo%G3%val(1:compo%numpolres))
                  !! call calc_g1g2(sgg,GM2,compo)     ! permit scal 071118
                  allocate (compo%EDis   (-compo%depth:compo%depth))
                  do ient=-compo%depth , compo%depth
-                     allocate (compo%EDis(ient)%Current(1 : malon%MediosDis(jmed)%numpolres))
+                     allocate (compo%EDis(ient)%Current(1 : malon%dispersiveMedia(jmed)%numpolres))
                      compo%EDis(ient)%FieldPresent => compo%E(ient)
                  end do
                end if
@@ -532,19 +532,19 @@ do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                     allocate(compo%d     (-compo%depth:compo%depth)) 
                end if
 
-               compo%numpolres=malon%MediosDis(compo%jmed)%numpolres
+               compo%numpolres=malon%dispersiveMedia(compo%jmed)%numpolres
                if (SGBCDispersive) then  !duplico esta info
                  allocate (compo%a11(1:compo%numpolres)) 
                  allocate (compo%c11(1:compo%numpolres)) 
-                 compo%a11 = malon%MediosDis(compo%jmed)%a11
-                 compo%c11 = malon%MediosDis(compo%jmed)%c11
+                 compo%a11 = malon%dispersiveMedia(compo%jmed)%a11
+                 compo%c11 = malon%dispersiveMedia(compo%jmed)%c11
                  allocate (compo%beta%val(1:compo%numpolres))
                  allocate (compo%kappa%val(1:compo%numpolres))
                  allocate (compo%G3%val(1:compo%numpolres))
                  !! call calc_g1g2(sgg,GM2,compo)     ! permit scal 071118
                  allocate (compo%EDis   (-compo%depth:compo%depth))
                  do ient=-compo%depth , compo%depth
-                     allocate (compo%EDis(ient)%Current(1 : malon%MediosDis(jmed)%numpolres))
+                     allocate (compo%EDis(ient)%Current(1 : malon%dispersiveMedia(jmed)%numpolres))
                      compo%EDis(ient)%FieldPresent => compo%E(ient)
                  end do
                end if
@@ -1333,13 +1333,13 @@ subroutine DestroySGBCs(sgg)
 
    !free up memory
    do i=1,sgg%NumMedia
-      if (allocated(malon%mediosDis)) then
-          if (allocated(malon%mediosDis(i)%a11)) deallocate(malon%mediosDis(i)%a11)
-          if (allocated(malon%mediosDis(i)%c11)) deallocate(malon%mediosDis(i)%c11)
+      if (allocated(malon%dispersiveMedia)) then
+          if (allocated(malon%dispersiveMedia(i)%a11)) deallocate(malon%dispersiveMedia(i)%a11)
+          if (allocated(malon%dispersiveMedia(i)%c11)) deallocate(malon%dispersiveMedia(i)%c11)
       end if
       if ((sgg%Med(i)%Is%SGBC).and.(.not.sgg%Med(i)%Is%PML))  deallocate(sgg%Med(i)%Multiport)      
    end do
-   if (allocated(malon%mediosDis)) deallocate(malon%mediosDis)
+   if (allocated(malon%dispersiveMedia)) deallocate(malon%dispersiveMedia)
    !
    do conta=1,malon%numnodes
       if (allocated(malon%Nodes(conta)%d))  deallocate(malon%Nodes(conta)%d) !AUXILIAR DE CRANK-NICOLSON

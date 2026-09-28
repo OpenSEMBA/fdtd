@@ -268,7 +268,7 @@ module Solver_m
       this%control%SGBCDepth = input%SGBCDepth
       this%control%precision = input%precision
       this%control%num_procs = input%num_procs
-      this%control%MEDIOEXTRA = input%MEDIOEXTRA
+      this%control%extraMedium = input%extraMedium
       this%control%facesNF2FF = input%facesNF2FF
       this%EpsMuTimeScale_input_parameters = input%EpsMuTimeScale_input_parameters
 
@@ -1029,9 +1029,9 @@ contains
          if ((this%control%layoutnumber == 0).and.this%control%verbose) then
             write(buff,'(a,3e9.2e2)') 'CPML  alpha, alphaorder, kappa factors= ', this%control%alphamaxpar,this%control%alphaOrden,this%control%kappamaxpar
             call WarnErrReport(buff)
-            if (this%control%medioextra%exists) then
+            if (this%control%extraMedium%exists) then
                write(buff,'(a,i5,e9.2e2)') 'CPML correction size,factor to scale sigmamax = ', &
-               this%control%medioextra%pml_size,this%control%medioextra%sigma
+               this%control%extraMedium%pml_size,this%control%extraMedium%sigma
                call WarnErrReport(buff)
             end if
             write(buff,*) 'saveall=',this%control%saveall,', flushsecondsFields=',this%control%flushsecondsFields,', flushsecondsData=',this%control%flushsecondsData,', maxCPUtime=',this%control%maxCPUtime,', singlefilewrite=',this%control%singlefilewrite

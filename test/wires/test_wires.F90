@@ -33,7 +33,7 @@ integer function test_destroyWires_deallocates_wires_data() bind(C, name="test_d
     allocate(sgg%Med(1)%wire(1)%Isource(1))
 
     p => GetHwires()
-    allocate(p%WireTipoMedio(1))
+    allocate(p%wireMediumType(1))
     allocate(p%CurrentSegment(1))
     allocate(p%ChargeNode(1))
 
@@ -43,7 +43,7 @@ integer function test_destroyWires_deallocates_wires_data() bind(C, name="test_d
         print *, "test_destroyWires_deallocates_wires_data FAILED: media wire pointer still associated"
         status = 1
     end if
-    if (associated(p%WireTipoMedio)) then
+    if (associated(p%wireMediumType)) then
         print *, "test_destroyWires_deallocates_wires_data FAILED: HWires%WireTipoMedio still associated"
         status = 1
     end if
