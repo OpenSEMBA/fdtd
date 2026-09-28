@@ -576,7 +576,7 @@ contains
       ! logical, intent( OUT) :: performflushFIELDS, performflushDATA,performUnpack,performpostprocess,&
                                  ! performflushXdmf,performflushVTK
       !---------------------------> variables locales <-----------------------------------------------
-      real(kind=rKIND) :: value,maxSourceValue,LA,LV,LB
+      real(kind=rKIND) :: valueField,maxSourceValue,LA,LV,LB
       logical  :: hay_timing, l_aux, hay_flushFIELDS, hay_flushDATA, mustflushFIELDS, mustflushDATA,mustUnpack, &
                    mustPostprocess,mustflushXdmf , mustflushVTK ,   &
       pararflushing, pararNOflushing, stoponNaN , stoponNaN_aux,mustSnap,stop_only,stopflushing_only,flush_only,flushdata_only
@@ -839,7 +839,7 @@ contains
          lminval_z(1:num_procs) =  1e+20
          !
 
-         value = 0.0_RKIND
+         valueField = 0.0_RKIND
          !--->
          ini_i = b%sweepSINPMLEx%XI - b%Ex%XI
          fin_i = b%sweepSINPMLEx%XE - b%Ex%XI
@@ -851,7 +851,7 @@ contains
          do k = ini_k, fin_k
             do j = ini_j, fin_j
                do i = ini_i, fin_i
-                  value = value + Ex(i, j, k) * Ex(i, j, k)
+                  valueField = valueField + Ex(i, j, k) * Ex(i, j, k)
                end do
             end do
          end do
@@ -865,7 +865,7 @@ contains
          do k = ini_k, fin_k
             do j = ini_j, fin_j
                do i = ini_i, fin_i
-                  value = value + Ey(i, j, k) * Ey(i, j, k)
+                  valueField = valueField + Ey(i, j, k) * Ey(i, j, k)
                end do
             end do
          end do
@@ -879,13 +879,13 @@ contains
          do k = ini_k, fin_k
             do j = ini_j, fin_j
                do i = ini_i, fin_i
-                  value = value + Ez(i, j, k) * Ez(i, j, k)
+                  valueField = valueField + Ez(i, j, k) * Ez(i, j, k)
                end do
             end do
          end do
          !
          !--->
-         energy = value !!! removed 241018 to avoid passing eps0----> 0.5_RKIND * Eps0 * valor
+         energy = valueField !!! removed 241018 to avoid passing eps0----> 0.5_RKIND * Eps0 * valor
          !--->
          energytotal = energy
 #ifdef CompileWithMPI
@@ -911,9 +911,9 @@ contains
          do k = ini_kbox, fin_kbox
             do j = ini_jbox, fin_jbox
                do i = ini_ibox, fin_ibox
-                  value = sqrt(Ex(i, j, k) * Ex(i, j, k) + Ey(i, j, k) * Ey(i, j, k)+Ez(i, j, k) * Ez(i, j, k))
-                  if (lmaxval  (layoutnumber+1)< value) then
-                     lmaxval  (layoutnumber+1)= value
+                  valueField = sqrt(Ex(i, j, k) * Ex(i, j, k) + Ey(i, j, k) * Ey(i, j, k)+Ez(i, j, k) * Ez(i, j, k))
+                  if (lmaxval  (layoutnumber+1)< valueField) then
+                     lmaxval  (layoutnumber+1)= valueField
                      lmaxval_i(layoutnumber+1)=i+b%Hx%XI
                      lmaxval_j(layoutnumber+1)=j+b%Hy%YI
                      lmaxval_k(layoutnumber+1)=k+b%Hz%ZI
@@ -921,8 +921,8 @@ contains
                      lmaxval_y(layoutnumber+1)=gridPoint%PhysCoor(IHY)%y(lmaxval_j(layoutnumber+1))
                      lmaxval_z(layoutnumber+1)=gridPoint%PhysCoor(IHZ)%z(lmaxval_k(layoutnumber+1))
                   end if
-                  if (lminval  (layoutnumber+1)> value) then
-                     lminval  (layoutnumber+1)= value
+                  if (lminval  (layoutnumber+1)> valueField) then
+                     lminval  (layoutnumber+1)= valueField
                      lminval_i(layoutnumber+1)=i+b%Hx%XI
                      lminval_j(layoutnumber+1)=j+b%Hy%YI
                      lminval_k(layoutnumber+1)=k+b%Hz%ZI
@@ -1089,12 +1089,12 @@ contains
                do  j = ini_jbox, fin_jbox , snapStep
                   do i = ini_ibox, fin_ibox , snapStep
                      veces=0
-                     value=0.0_RKIND
+                     valueField=0.0_RKIND
                      do k1=0,snapstep-1
                         do j1=0,snapstep-1
                            do i1=0,snapstep-1
                               if ((i+i1 <= fin_ibox).and.(j+j1 <= fin_jbox).and.(k+k1 <= fin_kbox)) then
-                                 value = value+sqrt(Ex(i+i1, j+j1, k+k1) * Ex(i+i1, j+j1, k+k1) + &
+                                 valueField = valueField+sqrt(Ex(i+i1, j+j1, k+k1) * Ex(i+i1, j+j1, k+k1) + &
                                                     Ey(i+i1, j+j1, k+k1) * Ey(i+i1, j+j1, k+k1)+ &
                                  Ez(i+i1, j+j1, k+k1) * Ez(i+i1, j+j1, k+k1))
                                  veces=veces+1
@@ -1103,7 +1103,7 @@ contains
                         end do
                      end do
                      snap(ini_ibox+int((i-ini_ibox)/snapstep),ini_jbox+int((j-ini_jbox)/snapstep), &
-                          ini_kbox+int((k-ini_kbox)/snapstep),1) = value/veces
+                          ini_kbox+int((k-ini_kbox)/snapstep),1) = valueField/veces
                   end do
                end do
             end do
