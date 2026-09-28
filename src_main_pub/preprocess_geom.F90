@@ -7284,13 +7284,13 @@ contains
 
             ! Check c1P coordinates
             call checkDielectricComponentTags(this%DielRegs%lins(i), this%DielRegs%lins(1:i-1), i-1, &
-               'c2P', numertag, tagtype, precounting, &
-               'Bug in Dielectric Surface Tags')
+               'c1P', numertag, tagtype, precounting, &
+               'Bug in Dielectric Line Tags')
 
             ! Check c2P coordinates
             call checkDielectricComponentTags(this%DielRegs%lins(i), this%DielRegs%lins(1:i-1), i-1, &
                'c2P', numertag, tagtype, precounting, &
-               'Bug in Dielectric Surface Tags')
+               'Bug in Dielectric Line Tags')
          end do
 !
          tama = (this%animats%nvols)
