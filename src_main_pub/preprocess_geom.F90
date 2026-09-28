@@ -27,6 +27,14 @@ module Preprocess_m
    public read_geomData, read_limits_nogeom,AssigLossyOrPECtoNodes,searchtag
   public checkDielectricTagForDuplicate, checkAnimatedTagForDuplicate, checkLossyTagForDuplicate
    !
+   ! Information about a thin slot component that is only known after the PEC
+   ! has been stamped into the media matrices: the normal of the PEC plane
+   ! that contains it. It is kept outside ThinSlotComp_t so that the parsed
+   ! component preserves the signed direction coming from the input.
+   type :: thinSlotPreprocessed_t
+      integer(kind=4), allocatable :: normal(:)
+   end type
+   !
 contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine read_geomData (sgg,media,tag_numbers, fichin, layoutnumber, num_procs, SINPML_fullsize, fullsize, this, &
@@ -90,6 +98,7 @@ contains
       integer(kind=4) :: i11, j11
       !
       type(tagtype_t) :: tagtype
+      type(thinSlotPreprocessed_t), allocatable :: thinSlotData(:)
       type(FreqDepenMaterial_t), pointer :: fdgeom
       !
       integer(kind=4) :: numertag
@@ -2599,6 +2608,15 @@ contains
       end if
       !FIN WIRES
 
+      ! Information derived during preprocessing for each thin-slot component
+      ! (the PEC plane normal). Initialised to an invalid value; only the
+      ! components processed below, within the PEC bounding box, get a normal.
+      allocate (thinSlotData(this%tSlots%n_tg))
+      do j = 1, this%tSlots%n_tg
+         allocate (thinSlotData(j)%normal(this%tSlots%Tg(j)%N_tgc))
+         thinSlotData(j)%normal = -1
+      end do
+
       if (run_with_dmma) then
          !always at the end since the orientation is found from the PEC one
          !thin Slots
@@ -2735,7 +2753,7 @@ contains
                      !en los tramos comunes. Por tanto No he podido testear los shared electricos anisotropos. solo los magneticos
                   end if
 
-                  this%tSlots%Tg(j)%TgC(i)%or = orientacion
+                  thinSlotData(j)%normal(i) = orientacion
                   medio2=-1
                   medio1=-1
                   SELECT CASE (Abs(orientacion))
@@ -3850,7 +3868,7 @@ contains
                               sgg%observation(i)%P(sgg%observation(i)%nP)%YI = punto%YI
                               sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = punto%ZI
                               direccion = this%tSlots%Tg(j1)%TgC(i1)%dir
-                              SELECT CASE (this%tSlots%Tg(j1)%TgC(i1)%or)
+                              SELECT CASE (thinSlotData(j1)%normal(i1))
                                CASE (iEx)
                                  SELECT CASE (direccion)
                                   CASE (iEz)
@@ -4846,6 +4864,7 @@ contains
 
          do a = 1, this%tSlots%Tg(slot)%n_tgc
             if (.not. getThinSlotParallelLines(this%tSlots%Tg(slot)%TgC(a), &
+                                               thinSlotData(slot)%normal(a), &
                                                ownMedium, minusMedium, plusMedium)) cycle
             if (.not. isPECOrThinSlotMedium(ownMedium)) cycle
             if (isPECOrThinSlotMedium(minusMedium) .neqv. isPECOrThinSlotMedium(plusMedium)) then
@@ -4854,8 +4873,9 @@ contains
          end do
       end subroutine
 
-      logical function getThinSlotParallelLines(component, ownMedium, minusMedium, plusMedium)
+      logical function getThinSlotParallelLines(component, normal, ownMedium, minusMedium, plusMedium)
          type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(in) :: normal
          integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(out) :: ownMedium, minusMedium, plusMedium
          integer(kind=4) :: i, j, k
 
@@ -4866,7 +4886,7 @@ contains
          minusMedium = -1
          plusMedium = -1
          getThinSlotParallelLines = .true.
-         select case (abs(component%or))
+         select case (abs(normal))
          case (iEx)
             select case (component%dir)
             case (iEy)
@@ -4938,13 +4958,15 @@ contains
             do outgoingIndex = 1, this%tSlots%Tg(slot)%n_tgc
                if (incomingIndex == outgoingIndex) cycle
                outgoing = this%tSlots%Tg(slot)%TgC(outgoingIndex)
-               if (abs(incoming%or) /= abs(outgoing%or)) cycle
+               if (abs(thinSlotData(slot)%normal(incomingIndex)) /= &
+                   abs(thinSlotData(slot)%normal(outgoingIndex))) cycle
                if (incoming%dir == outgoing%dir) cycle
                call componentTraversalStart(outgoing, sx, sy, sz)
                if (vx /= sx .or. vy /= sy .or. vz /= sz) cycle
-               call directedVertexDegree(slot, vx, vy, vz, incoming%or, incomingCount, outgoingCount)
+               call directedVertexDegree(slot, vx, vy, vz, thinSlotData(slot)%normal(incomingIndex), &
+                                         incomingCount, outgoingCount)
                if (incomingCount /= 1 .or. outgoingCount /= 1) cycle
-               call reconcileThinSlotTurnFaces(slot, incoming%or, vx, vy, vz)
+               call reconcileThinSlotTurnFaces(slot, thinSlotData(slot)%normal(incomingIndex), vx, vy, vz)
             end do
          end do
       end subroutine
@@ -4961,14 +4983,15 @@ contains
             call componentTerminal(first, ax, ay, az)
             do b = a + 1, this%tSlots%Tg(slot)%n_tgc
                second = this%tSlots%Tg(slot)%TgC(b)
-               if (abs(first%or) /= abs(second%or) .or. first%dir == second%dir) cycle
+               if (abs(thinSlotData(slot)%normal(a)) /= abs(thinSlotData(slot)%normal(b)) .or. &
+                   first%dir == second%dir) cycle
                call componentTerminal(second, bx, by, bz)
                if (ax /= bx .or. ay /= by .or. az /= bz) cycle
-               if (.not. perpendicularSurfaceDirections(first%or, first%dir, second%dir)) cycle
-               call getThinSlotMedium(first, sourceMedium, sourceTag)
+               if (.not. perpendicularSurfaceDirections(thinSlotData(slot)%normal(a), first%dir, second%dir)) cycle
+               call getThinSlotMedium(first, thinSlotData(slot)%normal(a), sourceMedium, sourceTag)
                if (sourceMedium < 0) cycle
 
-               select case (abs(first%or))
+               select case (abs(thinSlotData(slot)%normal(a)))
                case (iEx)
                   call stampHx(ax, ay, az, sourceMedium, sourceTag)
                case (iEy)
@@ -4984,7 +5007,7 @@ contains
          type(ThinSlotComp_t), intent(in) :: component
          integer(kind=4), intent(out) :: vx, vy, vz
 
-         if (component%sense > 0) then
+         if (component%or > 0) then
             vx = component%i; vy = component%j; vz = component%k
          else
             call componentTerminal(component, vx, vy, vz)
@@ -4995,7 +5018,7 @@ contains
          type(ThinSlotComp_t), intent(in) :: component
          integer(kind=4), intent(out) :: vx, vy, vz
 
-         if (component%sense > 0) then
+         if (component%or > 0) then
             call componentTerminal(component, vx, vy, vz)
          else
             vx = component%i; vy = component%j; vz = component%k
@@ -5010,7 +5033,7 @@ contains
          incomingCount = 0
          outgoingCount = 0
          do a = 1, this%tSlots%Tg(slot)%n_tgc
-            if (abs(this%tSlots%Tg(slot)%TgC(a)%or) /= abs(normal)) cycle
+            if (abs(thinSlotData(slot)%normal(a)) /= abs(normal)) cycle
             call componentTraversalStart(this%tSlots%Tg(slot)%TgC(a), sx, sy, sz)
             call componentTraversalEnd(this%tSlots%Tg(slot)%TgC(a), ex, ey, ez)
             if (sx == vx .and. sy == vy .and. sz == vz) outgoingCount = outgoingCount + 1
@@ -5192,12 +5215,13 @@ contains
          do a = 1, this%tSlots%Tg(slot)%n_tgc
             component = this%tSlots%Tg(slot)%TgC(a)
             call componentTerminal(component, vx, vy, vz)
-            if (thinSlotVertexDegree(slot, vx, vy, vz, component%or) /= 1) cycle
+            if (thinSlotVertexDegree(slot, vx, vy, vz, thinSlotData(slot)%normal(a)) /= 1) cycle
             do surface = 1, this%pecregs%nSurfs
-               if (.not. vertexOnPECSurfacePerimeter(component, vx, vy, vz, this%pecregs%Surfs(surface))) cycle
-               call getThinSlotMedium(component, sourceMedium, sourceTag)
+               if (.not. vertexOnPECSurfacePerimeter(component, thinSlotData(slot)%normal(a), vx, vy, vz, &
+                                                      this%pecregs%Surfs(surface))) cycle
+               call getThinSlotMedium(component, thinSlotData(slot)%normal(a), sourceMedium, sourceTag)
                if (sourceMedium < 0) cycle
-               select case (abs(component%or))
+               select case (abs(thinSlotData(slot)%normal(a)))
                case (iEx)
                   if (component%dir == iEy) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
                   if (component%dir == iEz) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
@@ -5234,7 +5258,7 @@ contains
 
          thinSlotVertexDegree = 0
          do a = 1, this%tSlots%Tg(slot)%n_tgc
-            if (abs(this%tSlots%Tg(slot)%TgC(a)%or) /= abs(normal)) cycle
+            if (abs(thinSlotData(slot)%normal(a)) /= abs(normal)) cycle
             if (this%tSlots%Tg(slot)%TgC(a)%i == vx .and. this%tSlots%Tg(slot)%TgC(a)%j == vy .and. &
                this%tSlots%Tg(slot)%TgC(a)%k == vz) thinSlotVertexDegree = thinSlotVertexDegree + 1
             call componentTerminal(this%tSlots%Tg(slot)%TgC(a), ex, ey, ez)
@@ -5242,14 +5266,14 @@ contains
          end do
       end function
 
-      logical function vertexOnPECSurfacePerimeter(component, vx, vy, vz, surface)
+      logical function vertexOnPECSurfacePerimeter(component, normal, vx, vy, vz, surface)
          type(ThinSlotComp_t), intent(in) :: component
-         integer(kind=4), intent(in) :: vx, vy, vz
+         integer(kind=4), intent(in) :: normal, vx, vy, vz
          type(coords_t), intent(in) :: surface
 
          vertexOnPECSurfacePerimeter = .false.
-         if (abs(component%or) /= abs(surface%or)) return
-         select case (abs(component%or))
+         if (abs(normal) /= abs(surface%or)) return
+         select case (abs(normal))
          case (iEx)
             vertexOnPECSurfacePerimeter = vx == min(surface%xi, surface%xe) .and. &
                vy >= min(surface%yi, surface%ye) .and. vy <= max(surface%yi, surface%ye) + 1 .and. &
@@ -5271,14 +5295,15 @@ contains
          end select
       end function
 
-      subroutine getThinSlotMedium(component, sourceMedium, sourceTag)
+      subroutine getThinSlotMedium(component, normal, sourceMedium, sourceTag)
          type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(in) :: normal
          integer(kind=4), intent(out) :: sourceMedium
          integer(kind=IKINDMTAG), intent(out) :: sourceTag
 
          sourceMedium = -1
          sourceTag = 0
-         select case (abs(component%or))
+         select case (abs(normal))
          case (iEx)
             if (component%dir == iEy) sourceMedium = media%sggMiEz(component%i, component%j, component%k)
             if (component%dir == iEz) sourceMedium = media%sggMiEy(component%i, component%j, component%k)
