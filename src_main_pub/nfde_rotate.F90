@@ -390,19 +390,19 @@ contains
          this%front%propiedadesPML(6)%refl = OPML_YU%refl
          !
          !
-         OPML_XL%numCapas=this%front%propiedadesPML(1)%numCapas
-         OPML_XU%numCapas=this%front%propiedadesPML(2)%numCapas
-         OPML_YL%numCapas=this%front%propiedadesPML(3)%numCapas
-         OPML_YU%numCapas=this%front%propiedadesPML(4)%numCapas
-         OPML_ZL%numCapas=this%front%propiedadesPML(5)%numCapas
-         OPML_ZU%numCapas=this%front%propiedadesPML(6)%numCapas
+         OPML_XL%numLayers=this%front%propiedadesPML(1)%numLayers
+         OPML_XU%numLayers=this%front%propiedadesPML(2)%numLayers
+         OPML_YL%numLayers=this%front%propiedadesPML(3)%numLayers
+         OPML_YU%numLayers=this%front%propiedadesPML(4)%numLayers
+         OPML_ZL%numLayers=this%front%propiedadesPML(5)%numLayers
+         OPML_ZU%numLayers=this%front%propiedadesPML(6)%numLayers
          !
-         this%front%propiedadesPML(1)%numCapas = OPML_ZL%numCapas
-         this%front%propiedadesPML(2)%numCapas = OPML_ZU%numCapas
-         this%front%propiedadesPML(3)%numCapas = OPML_XL%numCapas
-         this%front%propiedadesPML(4)%numCapas = OPML_XU%numCapas
-         this%front%propiedadesPML(5)%numCapas = OPML_YL%numCapas
-         this%front%propiedadesPML(6)%numCapas = OPML_YU%numCapas
+         this%front%propiedadesPML(1)%numLayers = OPML_ZL%numLayers
+         this%front%propiedadesPML(2)%numLayers = OPML_ZU%numLayers
+         this%front%propiedadesPML(3)%numLayers = OPML_XL%numLayers
+         this%front%propiedadesPML(4)%numLayers = OPML_XU%numLayers
+         this%front%propiedadesPML(5)%numLayers = OPML_YL%numLayers
+         this%front%propiedadesPML(6)%numLayers = OPML_YU%numLayers
 
       else if (MPIDIR==1) then
          OXL=this%front%boundaryType(1)
@@ -447,19 +447,19 @@ contains
          this%front%propiedadesPML(5)%refl = OPML_XL%refl
          this%front%propiedadesPML(6)%refl = OPML_XU%refl
          !
-         OPML_XL%numCapas=this%front%propiedadesPML(1)%numCapas
-         OPML_XU%numCapas=this%front%propiedadesPML(2)%numCapas
-         OPML_YL%numCapas=this%front%propiedadesPML(3)%numCapas
-         OPML_YU%numCapas=this%front%propiedadesPML(4)%numCapas
-         OPML_ZL%numCapas=this%front%propiedadesPML(5)%numCapas
-         OPML_ZU%numCapas=this%front%propiedadesPML(6)%numCapas
+         OPML_XL%numLayers=this%front%propiedadesPML(1)%numLayers
+         OPML_XU%numLayers=this%front%propiedadesPML(2)%numLayers
+         OPML_YL%numLayers=this%front%propiedadesPML(3)%numLayers
+         OPML_YU%numLayers=this%front%propiedadesPML(4)%numLayers
+         OPML_ZL%numLayers=this%front%propiedadesPML(5)%numLayers
+         OPML_ZU%numLayers=this%front%propiedadesPML(6)%numLayers
          !
-         this%front%propiedadesPML(1)%numCapas = OPML_YL%numCapas
-         this%front%propiedadesPML(2)%numCapas = OPML_YU%numCapas
-         this%front%propiedadesPML(3)%numCapas = OPML_ZL%numCapas
-         this%front%propiedadesPML(4)%numCapas = OPML_ZU%numCapas
-         this%front%propiedadesPML(5)%numCapas = OPML_XL%numCapas
-         this%front%propiedadesPML(6)%numCapas = OPML_XU%numCapas
+         this%front%propiedadesPML(1)%numLayers = OPML_YL%numLayers
+         this%front%propiedadesPML(2)%numLayers = OPML_YU%numLayers
+         this%front%propiedadesPML(3)%numLayers = OPML_ZL%numLayers
+         this%front%propiedadesPML(4)%numLayers = OPML_ZU%numLayers
+         this%front%propiedadesPML(5)%numLayers = OPML_XL%numLayers
+         this%front%propiedadesPML(6)%numLayers = OPML_XU%numLayers
       end if
       !!!!!!!!! fin rotacion
 

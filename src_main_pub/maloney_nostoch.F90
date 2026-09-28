@@ -47,7 +47,7 @@ type  :: SGBCSurface_t
    logical :: correct_ha, correct_hb, es_unfilo_placa
    
    integer(kind=4) :: depth,jmed
-   integer(kind=4), allocatable, dimension(:) ::capa !!!0121
+   integer(kind=4), allocatable, dimension(:) ::layerIndex !!!0121
    real(kind=RKIND) , allocatable, dimension(:) :: G2_interno,GM2_interno,G1_interno,GM1_interno   
    real(kind=RKIND) :: GM2_externo   !no se precisa gm1_externo porque fuera no hay conductividad magnetica y es trivialmente 1. El gm2_externo tiene sentido almecnarlo porque aun no habiendo conductividad, no es la unidad
    real(kind=RKIND) :: Hyee__left, Hyee_right      
@@ -222,7 +222,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
        do jmed=1,sgg%NumMedia
           if ((SGG%Med(jmed)%Is%SGBCDispersive).and.(.not.(SGG%Med(jmed)%Is%PML))) then    
 !!!solo una capa de dispersivo
-              if (sgg%Med(jmed)%multiport(1)%numcapas>1) then
+              if (sgg%Med(jmed)%multiport(1)%numLayers>1) then
                  buff='No more than 1 layer of dispersive SGBC currently supported'
                  call StopOnError(layoutnumber,num_procs,buff)
               end if
@@ -1128,7 +1128,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
              ib=1 !primera capa
              delta_entreEinterno_temp=compo%delta_entreEinterno(-compo%depth)
          else
-             ib=sgg%Med(compo%jmed)%multiport(1)%numcapas !ultima capa
+             ib=sgg%Med(compo%jmed)%multiport(1)%numLayers !ultima capa
              delta_entreEinterno_temp=compo%delta_entreEinterno(compo%depth-1)     
          end if
          width=sgg%med(compo%jmed)%Multiport(1)%width(ib)
@@ -1172,9 +1172,9 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
      compo%G2_interno =2e31 !valores default absurdos para detectar errores
      compo%G1_interno =-2e21 
      barridoporcapas: do i=-compo%depth+1,compo%depth-1   !0121
-         ib=compo%capa(i)         
-         ib_ady=compo%capa(i-1)         
-         if ((ib<1).or.(ib>sgg%Med(compo%jmed)%multiport(1)%numcapas)) then
+         ib=compo%layerIndex(i)         
+         ib_ady=compo%layerIndex(i-1)         
+         if ((ib<1).or.(ib>sgg%Med(compo%jmed)%multiport(1)%numLayers)) then
              write(buff, *)   'Buggy error in ib fuera de rango en compo numcapas. Contact '
              call StopOnError (0,0,buff)
              stop
@@ -1202,8 +1202,8 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
      compo%GM1_interno=3e22 
  !ahora el interior !el ultimo GM que no se usa 0121
      barridoporcapasH: do i=-compo%depth,compo%depth-1   !0121
-         ib=compo%capa(i)         
-         if ((ib<1).or.(ib>sgg%Med(compo%jmed)%multiport(1)%numcapas)) then
+         ib=compo%layerIndex(i)         
+         if ((ib<1).or.(ib>sgg%Med(compo%jmed)%multiport(1)%numLayers)) then
              write(buff, *)   'Buggy error in ib fuera de rango en compo numcapas. '
              call StopOnError (0,0,buff)
              stop
@@ -1397,15 +1397,15 @@ end subroutine test_stab
 subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth) 
  type(SGGFDTDINFO_t), intent(in) :: sgg
  real(kind=rkind) :: SGBCFreq,SGBCresol,sigma, epr,epsilonValue,skin_depth,width,widthtotal
- integer(kind=4) :: jmed,i,SGBCdepth,numcapas,precuenta,celdafinal,celdainicial,layerWidth
- integer(kind=4) , pointer, dimension(:) :: capa
+ integer(kind=4) :: jmed,i,SGBCdepth,numLayers,precuenta,celdafinal,celdainicial,layerWidth
+ integer(kind=4) , pointer, dimension(:) :: layerIndex
  logical :: ultimacapamas1
  character(len=BUFSIZE) :: buff
     
  type(SGBCSurface_t), pointer :: compo
 
 !!!0121 multicapas
- numcapas = sgg%Med(jmed)%multiport(1)%numcapas
+ numLayers = sgg%Med(jmed)%multiport(1)%numLayers
  compo%depth=0
  do precuenta=0,1
      if (precuenta==1) then
@@ -1418,17 +1418,17 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
          end if
          compo%depth=int(compo%depth/2.0_RKIND) !divide por 2 porque arranca en -compo%depth y llega a +compo%depth 
          if (compo%depth>0) then
-             if (.not.allocated(compo%capa))                allocate (compo%capa(-compo%depth:compo%depth-1))
+             if (.not.allocated(compo%layerIndex))                allocate (compo%layerIndex(-compo%depth:compo%depth-1))
              if (.not.allocated(compo%delta_entreEinterno)) allocate (compo%delta_entreEinterno(-compo%depth:compo%depth-1))
          else
-             if (.not.allocated(compo%capa))                allocate (compo%capa(0:0))
+             if (.not.allocated(compo%layerIndex))                allocate (compo%layerIndex(0:0))
              if (.not.allocated(compo%delta_entreEinterno)) allocate (compo%delta_entreEinterno(0:0))
          end if
          
          celdafinal=-compo%depth-1
      end if
      widthtotal=0.; width=0.; sigma=0.; epr=0.; 
-     do i=1,numcapas
+     do i=1,numLayers
          width=      sgg%Med(jmed)%multiport(1)%width(i) 
          sigma=      sgg%Med(jmed)%multiport(1)%sigma(i) 
          epr=        sgg%Med(jmed)%multiport(1)%epr(i)  
@@ -1437,7 +1437,7 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
          skin_depth=1.0_RKIND / (Sqrt(2.0_RKIND)*SGBCFreq*Pi*(Mu0**2*(4*epsilonValue**2.0_RKIND + Sigma**2/(SGBCFreq**2*Pi**2.0_RKIND )))**0.25_RKIND * &
                                  Sin(atan2(2*Pi*epsilonValue*Mu0, -(Mu0*Sigma)/SGBCFreq)/2.0_RKIND))
          if (SGBCdepth==0) then !numcapas debe ser necesariamente 1
-             if (numcapas > 1) then
+             if (numLayers > 1) then
                 write(buff, *)   'SGBCDepth=0 and numcapas>1 not compatible. Please, relaunch'
                 call StopOnError (0,0,buff)
              else
@@ -1461,18 +1461,18 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
                      celdainicial=0
                      celdafinal=0
                      layerWidth=1
-                     compo%capa(celdainicial:celdafinal) = i
+                     compo%layerIndex(celdainicial:celdafinal) = i
                      compo%delta_entreEinterno(celdainicial:celdafinal)=width/layerWidth
                      continue
              else  
              celdainicial=celdafinal+1
              celdafinal=celdainicial+layerWidth-1
-             if ((i==numcapas).and.ultimacapamas1) then
+             if ((i==numLayers).and.ultimacapamas1) then
 !rellena el sobrante con la ultima capa si no es una division cabal
                      layerWidth=layerWidth+1
                      celdafinal=celdafinal+1
              end if
-             compo%capa(celdainicial:celdafinal) = i
+             compo%layerIndex(celdainicial:celdafinal) = i
              compo%delta_entreEinterno(celdainicial:celdafinal)=width/layerWidth
              continue
          end if

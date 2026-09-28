@@ -486,7 +486,7 @@ contains
       function readPMLProperties(p) result(res)
          type(FronteraPML_t) :: res
          character(len=*), intent(in) :: p
-         res%numCapas = this%getIntAt(this%root, p//'.'//J_BND_PML_LAYERS, default=8)
+         res%numLayers = this%getIntAt(this%root, p//'.'//J_BND_PML_LAYERS, default=8)
          res%orden = this%getRealAt(this%root, p//'.'//J_BND_PML_ORDER, default=2.0_RKIND)
          res%refl = this%getRealAt(this%root, p//'.'//J_BND_PML_REFLECTION, default=0.001_RKIND)
       end function
@@ -967,18 +967,18 @@ contains
          res%files = trim(adjustl(this%getStrAt(mat%p, J_NAME, default=' ')))
          call this%core%get(mat%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers)
 
-         res%numcapas = this%core%count(layers)
-         allocate(res%sigma(res%numcapas))
-         allocate(res%eps(res%numcapas))
-         allocate(res%mu(res%numcapas))
-         allocate(res%sigmam(res%numcapas))
-         allocate(res%thk(res%numcapas))
-         allocate(res%sigma_devia(res%numcapas))
-         allocate(res%eps_devia(res%numcapas))
-         allocate(res%mu_devia(res%numcapas))
-         allocate(res%sigmam_devia(res%numcapas))
-         allocate(res%thk_devia(res%numcapas))
-         do i = 1, res%numcapas
+         res%numLayers = this%core%count(layers)
+         allocate(res%sigma(res%numLayers))
+         allocate(res%eps(res%numLayers))
+         allocate(res%mu(res%numLayers))
+         allocate(res%sigmam(res%numLayers))
+         allocate(res%thk(res%numLayers))
+         allocate(res%sigma_devia(res%numLayers))
+         allocate(res%eps_devia(res%numLayers))
+         allocate(res%mu_devia(res%numLayers))
+         allocate(res%sigmam_devia(res%numLayers))
+         allocate(res%thk_devia(res%numLayers))
+         do i = 1, res%numLayers
             call this%core%get_child(layers, i, layer)
             res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
             res%sigmam(i) = this%getRealAt(layer, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0_RKIND)

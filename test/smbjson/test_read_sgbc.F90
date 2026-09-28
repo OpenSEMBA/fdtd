@@ -89,7 +89,7 @@ contains
       expected%lossyThinSurfs%cs(1)%c(1)%Ye = 3
       expected%lossyThinSurfs%cs(1)%c(1)%Zi = 3
       expected%lossyThinSurfs%cs(1)%c(1)%Ze = 4
-      expected%lossyThinSurfs%cs(1)%numcapas = 2
+      expected%lossyThinSurfs%cs(1)%numLayers = 2
       allocate(expected%lossyThinSurfs%cs(1)%thk(2))
       allocate(expected%lossyThinSurfs%cs(1)%sigma(2))
       allocate(expected%lossyThinSurfs%cs(1)%eps(2))
@@ -123,7 +123,7 @@ contains
       expected%lossyThinSurfs%cs(2)%c(1)%Ye = 4
       expected%lossyThinSurfs%cs(2)%c(1)%Zi = 3
       expected%lossyThinSurfs%cs(2)%c(1)%Ze = 4
-      expected%lossyThinSurfs%cs(2)%numcapas = 3
+      expected%lossyThinSurfs%cs(2)%numLayers = 3
       allocate(expected%lossyThinSurfs%cs(2)%thk(3))
       allocate(expected%lossyThinSurfs%cs(2)%sigma(3))
       allocate(expected%lossyThinSurfs%cs(2)%eps(3))

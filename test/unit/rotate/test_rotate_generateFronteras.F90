@@ -33,12 +33,12 @@ integer function test_rotate_generate_fronteras() bind(C) result(err)
     this%front%propiedadesPML(5)%refl = 0.5_RKIND  
     this%front%propiedadesPML(6)%refl = 0.6_RKIND  
     
-    this%front%propiedadesPML(1)%numCapas = 10  
-    this%front%propiedadesPML(2)%numCapas = 20  
-    this%front%propiedadesPML(3)%numCapas = 30  
-    this%front%propiedadesPML(4)%numCapas = 40  
-    this%front%propiedadesPML(5)%numCapas = 50  
-    this%front%propiedadesPML(6)%numCapas = 60  
+    this%front%propiedadesPML(1)%numLayers = 10  
+    this%front%propiedadesPML(2)%numLayers = 20  
+    this%front%propiedadesPML(3)%numLayers = 30  
+    this%front%propiedadesPML(4)%numLayers = 40  
+    this%front%propiedadesPML(5)%numLayers = 50  
+    this%front%propiedadesPML(6)%numLayers = 60  
     
     
     call rotate_generateFronteras(this, mpidir)
@@ -66,12 +66,12 @@ integer function test_rotate_generate_fronteras() bind(C) result(err)
     call expect_eq_real(test_err, this%front%propiedadesPML(5)%refl, 0.3_RKIND, "rotate_generateFronteras: ZL refl should be 0.3")
     call expect_eq_real(test_err, this%front%propiedadesPML(6)%refl, 0.4_RKIND, "rotate_generateFronteras: ZU refl should be 0.4")
     
-    call expect_eq_int(test_err, this%front%propiedadesPML(1)%numCapas, 50, "rotate_generateFronteras: XL numCapas should be 50")
-    call expect_eq_int(test_err, this%front%propiedadesPML(2)%numCapas, 60, "rotate_generateFronteras: XU numCapas should be 60")
-    call expect_eq_int(test_err, this%front%propiedadesPML(3)%numCapas, 10, "rotate_generateFronteras: YL numCapas should be 10")
-    call expect_eq_int(test_err, this%front%propiedadesPML(4)%numCapas, 20, "rotate_generateFronteras: YU numCapas should be 20")
-    call expect_eq_int(test_err, this%front%propiedadesPML(5)%numCapas, 30, "rotate_generateFronteras: ZL numCapas should be 30")
-    call expect_eq_int(test_err, this%front%propiedadesPML(6)%numCapas, 40, "rotate_generateFronteras: ZU numCapas should be 40")
+    call expect_eq_int(test_err, this%front%propiedadesPML(1)%numLayers, 50, "rotate_generateFronteras: XL numCapas should be 50")
+    call expect_eq_int(test_err, this%front%propiedadesPML(2)%numLayers, 60, "rotate_generateFronteras: XU numCapas should be 60")
+    call expect_eq_int(test_err, this%front%propiedadesPML(3)%numLayers, 10, "rotate_generateFronteras: YL numCapas should be 10")
+    call expect_eq_int(test_err, this%front%propiedadesPML(4)%numLayers, 20, "rotate_generateFronteras: YU numCapas should be 20")
+    call expect_eq_int(test_err, this%front%propiedadesPML(5)%numLayers, 30, "rotate_generateFronteras: ZL numCapas should be 30")
+    call expect_eq_int(test_err, this%front%propiedadesPML(6)%numLayers, 40, "rotate_generateFronteras: ZU numCapas should be 40")
     
     deallocate(this%front)
     
@@ -101,12 +101,12 @@ integer function test_rotate_generate_fronteras() bind(C) result(err)
     this%front%propiedadesPML(5)%refl = 0.5_RKIND  
     this%front%propiedadesPML(6)%refl = 0.6_RKIND  
     
-    this%front%propiedadesPML(1)%numCapas = 10  
-    this%front%propiedadesPML(2)%numCapas = 20  
-    this%front%propiedadesPML(3)%numCapas = 30  
-    this%front%propiedadesPML(4)%numCapas = 40  
-    this%front%propiedadesPML(5)%numCapas = 50  
-    this%front%propiedadesPML(6)%numCapas = 60  
+    this%front%propiedadesPML(1)%numLayers = 10  
+    this%front%propiedadesPML(2)%numLayers = 20  
+    this%front%propiedadesPML(3)%numLayers = 30  
+    this%front%propiedadesPML(4)%numLayers = 40  
+    this%front%propiedadesPML(5)%numLayers = 50  
+    this%front%propiedadesPML(6)%numLayers = 60  
     
     
     call rotate_generateFronteras(this, mpidir)
@@ -134,12 +134,12 @@ integer function test_rotate_generate_fronteras() bind(C) result(err)
     call expect_eq_real(test_err, this%front%propiedadesPML(5)%refl, 0.1_RKIND, "rotate_generateFronteras: ZL refl should be 0.1")
     call expect_eq_real(test_err, this%front%propiedadesPML(6)%refl, 0.2_RKIND, "rotate_generateFronteras: ZU refl should be 0.2")
     
-    call expect_eq_int(test_err, this%front%propiedadesPML(1)%numCapas, 30, "rotate_generateFronteras: XL numCapas should be 30")
-    call expect_eq_int(test_err, this%front%propiedadesPML(2)%numCapas, 40, "rotate_generateFronteras: XU numCapas should be 40")
-    call expect_eq_int(test_err, this%front%propiedadesPML(3)%numCapas, 50, "rotate_generateFronteras: YL numCapas should be 50")
-    call expect_eq_int(test_err, this%front%propiedadesPML(4)%numCapas, 60, "rotate_generateFronteras: YU numCapas should be 60")
-    call expect_eq_int(test_err, this%front%propiedadesPML(5)%numCapas, 10, "rotate_generateFronteras: ZL numCapas should be 10")
-    call expect_eq_int(test_err, this%front%propiedadesPML(6)%numCapas, 20, "rotate_generateFronteras: ZU numCapas should be 20")
+    call expect_eq_int(test_err, this%front%propiedadesPML(1)%numLayers, 30, "rotate_generateFronteras: XL numCapas should be 30")
+    call expect_eq_int(test_err, this%front%propiedadesPML(2)%numLayers, 40, "rotate_generateFronteras: XU numCapas should be 40")
+    call expect_eq_int(test_err, this%front%propiedadesPML(3)%numLayers, 50, "rotate_generateFronteras: YL numCapas should be 50")
+    call expect_eq_int(test_err, this%front%propiedadesPML(4)%numLayers, 60, "rotate_generateFronteras: YU numCapas should be 60")
+    call expect_eq_int(test_err, this%front%propiedadesPML(5)%numLayers, 10, "rotate_generateFronteras: ZL numCapas should be 10")
+    call expect_eq_int(test_err, this%front%propiedadesPML(6)%numLayers, 20, "rotate_generateFronteras: ZU numCapas should be 20")
     
     deallocate(this%front)
     

@@ -461,7 +461,7 @@ module  FDETYPES_m
                   !!!
 !!old pre 17/08/115: no es valido para mallados NO uniformes. Hay que hacerlo punto a punto
 !!!                     real(kind=rkind) :: transversalSpaceDelta
-      integer(kind=4) :: numcapas
+      integer(kind=4) :: numLayers
    end type Multiport_t
    !
    type  :: AnisMultiport_t

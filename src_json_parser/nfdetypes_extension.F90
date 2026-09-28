@@ -467,7 +467,7 @@ contains
       res = .false.
       if (a%nc       /= b%nc)       return
       if (a%files    /= b%files)    return
-      if (a%numcapas /= b%numcapas) return
+      if (a%numLayers /= b%numLayers) return
       if (.not. all(a%c            == b%c))            return
       if (.not. all(a%sigma        == b%sigma))        return
       if (.not. all(a%eps          == b%eps))          return
@@ -771,7 +771,7 @@ contains
       res = .false.
       if (a%orden    /= b%orden) return
       if (a%refl     /= b%refl) return
-      if (a%numCapas /= b%numCapas) return
+      if (a%numLayers /= b%numLayers) return
       res = .true.
    end function
 

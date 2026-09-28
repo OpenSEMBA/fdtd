@@ -1207,8 +1207,8 @@ contains
       tama = this%LossyThinSurfs%length
       do j = 1, tama
          !carbon Multiports a guevo
-         if (this%LossyThinSurfs%cs(j)%numcapas==0) then
-            this%LossyThinSurfs%cs(j)%numcapas=1
+         if (this%LossyThinSurfs%cs(j)%numLayers==0) then
+            this%LossyThinSurfs%cs(j)%numLayers=1
             allocate(this%LossyThinSurfs%cs(j)%SigmaM(1))
             allocate(this%LossyThinSurfs%cs(j)%Sigma(1))
             allocate(this%LossyThinSurfs%cs(j)%EPS(1))
@@ -1284,22 +1284,22 @@ contains
                   contamedia = maxcontamedia
                  allocate(sgg%Med(contamedia)%multiport(1))
                   !
-                  if ((this%LossyThinSurfs%cs(j)%numcapas >1).and.SGBCDispersive) then
+                  if ((this%LossyThinSurfs%cs(j)%numLayers >1).and.SGBCDispersive) then
                      write(buff, *)    'ERROR in SGBCs Number of layers >1 still unsupported for SGBCDispersive. '
                      call StopOnError (0,0,buff)
                   end if
                   !
-                  allocate(sgg%Med(contamedia)%Multiport(1)%epr(1:this%LossyThinSurfs%cs(j)%numcapas), &
-                     sgg%Med(contamedia)%Multiport(1)%mur(1:this%LossyThinSurfs%cs(j)%numcapas), &
-                     sgg%Med(contamedia)%Multiport(1)%sigma(1:this%LossyThinSurfs%cs(j)%numcapas), &
-                     sgg%Med(contamedia)%Multiport(1)%sigmam(1:this%LossyThinSurfs%cs(j)%numcapas), &
-                     sgg%Med(contamedia)%Multiport(1)%width(1:this%LossyThinSurfs%cs(j)%numcapas))
+                  allocate(sgg%Med(contamedia)%Multiport(1)%epr(1:this%LossyThinSurfs%cs(j)%numLayers), &
+                     sgg%Med(contamedia)%Multiport(1)%mur(1:this%LossyThinSurfs%cs(j)%numLayers), &
+                     sgg%Med(contamedia)%Multiport(1)%sigma(1:this%LossyThinSurfs%cs(j)%numLayers), &
+                     sgg%Med(contamedia)%Multiport(1)%sigmam(1:this%LossyThinSurfs%cs(j)%numLayers), &
+                     sgg%Med(contamedia)%Multiport(1)%width(1:this%LossyThinSurfs%cs(j)%numLayers))
                   !_for_devia 090519
-                  allocate(sgg%Med(contamedia)%Multiport(1)%epr_devia(1:this%LossyThinSurfs%cs(j)%numcapas), &
-                     sgg%Med(contamedia)%Multiport(1)%mur_devia(1:this%LossyThinSurfs%cs(j)%numcapas), &
-                     sgg%Med(contamedia)%Multiport(1)%sigma_devia(1:this%LossyThinSurfs%cs(j)%numcapas), &
-                     sgg%Med(contamedia)%Multiport(1)%sigmaM_devia(1:this%LossyThinSurfs%cs(j)%numcapas), &
-                     sgg%Med(contamedia)%Multiport(1)%width_devia(1:this%LossyThinSurfs%cs(j)%numcapas))
+                  allocate(sgg%Med(contamedia)%Multiport(1)%epr_devia(1:this%LossyThinSurfs%cs(j)%numLayers), &
+                     sgg%Med(contamedia)%Multiport(1)%mur_devia(1:this%LossyThinSurfs%cs(j)%numLayers), &
+                     sgg%Med(contamedia)%Multiport(1)%sigma_devia(1:this%LossyThinSurfs%cs(j)%numLayers), &
+                     sgg%Med(contamedia)%Multiport(1)%sigmaM_devia(1:this%LossyThinSurfs%cs(j)%numLayers), &
+                     sgg%Med(contamedia)%Multiport(1)%width_devia(1:this%LossyThinSurfs%cs(j)%numLayers))
                   !!!
                   pointXI = Max (gridPoint%XI, Min(BoundingBox%XI, BoundingBox%XE))
                   pointYI = Max (gridPoint%YI, Min(BoundingBox%YI, BoundingBox%YE))
@@ -1341,14 +1341,14 @@ contains
                      write(buff, '(a)')    'Buggy error 2 in preprocess composites. .'
                      call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
-                  sgg%Med(contamedia)%Multiport(1)%numcapas = this%LossyThinSurfs%cs(j)%numcapas
+                  sgg%Med(contamedia)%Multiport(1)%numLayers = this%LossyThinSurfs%cs(j)%numLayers
                   !el especificado
                   sgg%Med(contamedia)%Multiport(1)%Multiportdir = this%LossyThinSurfs%cs(j)%C(i)%or
-                  do I_=1,sgg%Med(contamedia)%Multiport(1)%numcapas
+                  do I_=1,sgg%Med(contamedia)%Multiport(1)%numLayers
                      if (sgg%Med(contamedia)%Multiport(1)%Multiportdir>0) then
                         j_=i_
                      else
-                        j_=sgg%Med(contamedia)%Multiport(1)%numcapas-i_+1 !dale la vuelta (medios no simetricos) !0121
+                        j_=sgg%Med(contamedia)%Multiport(1)%numLayers-i_+1 !dale la vuelta (medios no simetricos) !0121
                      end if
                      sgg%Med(contamedia)%Multiport(1)%epr         (j_) =  this%LossyThinSurfs%cs(j)%eps               (i_)    / Eps0
                      sgg%Med(contamedia)%Multiport(1)%mur         (j_) =  this%LossyThinSurfs%cs(j)%mu                (i_)    / mu0
@@ -1488,7 +1488,7 @@ contains
                   !
                   !
 
-                  if (this%LossyThinSurfs%cs(j)%numcapas >1) then
+                  if (this%LossyThinSurfs%cs(j)%numLayers >1) then
                      write(buff, '(a)')    'pre1_ERROR:  Anisotropic multiport materials unsupported for multilayered structures.'
                      call WarnErrReport (buff,.TRUE.)
                   end if
@@ -5950,42 +5950,42 @@ contains
                !xmin
              case (1)
                sgg%Border%IsBackPML = .TRUE.
-               sgg%PML%NumLayers (ICOORD, COMI) = this%front%PROPIEDADESPML(i)%NUMCAPAS
+               sgg%PML%NumLayers (ICOORD, COMI) = this%front%PROPIEDADESPML(i)%numLayers
                sgg%PML%CoeffReflPML (ICOORD, COMI) = this%front%PROPIEDADESPML(i)%REFL
                if (sgg%PML%CoeffReflPML (ICOORD, COMI)>=1.0_RKIND) sgg%PML%CoeffReflPML(ICOORD, COMI)=0.99999d0
                sgg%PML%orden (ICOORD, COMI) = this%front%PROPIEDADESPML(i)%orden
                !xmax
              case (2)
                sgg%Border%IsFrontPML = .TRUE.
-               sgg%PML%NumLayers (ICOORD, FINE) = this%front%PROPIEDADESPML(i)%NUMCAPAS
+               sgg%PML%NumLayers (ICOORD, FINE) = this%front%PROPIEDADESPML(i)%numLayers
                sgg%PML%CoeffReflPML (ICOORD, FINE) = this%front%PROPIEDADESPML(i)%REFL
                if (sgg%PML%CoeffReflPML (ICOORD, FINE)>=1.0_RKIND) sgg%PML%CoeffReflPML(ICOORD, FINE)=0.99999d0
                sgg%PML%orden (ICOORD, FINE) = this%front%PROPIEDADESPML(i)%orden
                !ymin
              case (3)
                sgg%Border%IsLeftPML = .TRUE.
-               sgg%PML%NumLayers (JCOORD, COMI) = this%front%PROPIEDADESPML(i)%NUMCAPAS
+               sgg%PML%NumLayers (JCOORD, COMI) = this%front%PROPIEDADESPML(i)%numLayers
                sgg%PML%CoeffReflPML (JCOORD, COMI) = this%front%PROPIEDADESPML(i)%REFL
                if (sgg%PML%CoeffReflPML (JCOORD, COMI)>=1.0_RKIND) sgg%PML%CoeffReflPML(JCOORD, COMI)=0.99999d0
                sgg%PML%orden (JCOORD, COMI) = this%front%PROPIEDADESPML(i)%orden
                !ymax
              case (4)
                sgg%Border%IsRightPML = .TRUE.
-               sgg%PML%NumLayers (JCOORD, FINE) = this%front%PROPIEDADESPML(i)%NUMCAPAS
+               sgg%PML%NumLayers (JCOORD, FINE) = this%front%PROPIEDADESPML(i)%numLayers
                sgg%PML%CoeffReflPML (JCOORD, FINE) = this%front%PROPIEDADESPML(i)%REFL
                if (sgg%PML%CoeffReflPML (JCOORD, FINE)>=1.0_RKIND) sgg%PML%CoeffReflPML(JCOORD, FINE)=0.99999d0
                sgg%PML%orden (JCOORD, FINE) = this%front%PROPIEDADESPML(i)%orden
                !zmin
              case (5)
                sgg%Border%IsDownPML = .TRUE.
-               sgg%PML%NumLayers (KCOORD, COMI) = this%front%PROPIEDADESPML(i)%NUMCAPAS
+               sgg%PML%NumLayers (KCOORD, COMI) = this%front%PROPIEDADESPML(i)%numLayers
                sgg%PML%CoeffReflPML (KCOORD, COMI) = this%front%PROPIEDADESPML(i)%REFL
                if (sgg%PML%CoeffReflPML (KCOORD, COMI)>=1.0_RKIND) sgg%PML%CoeffReflPML(KCOORD, COMI)=0.99999d0
                sgg%PML%orden (KCOORD, COMI) = this%front%PROPIEDADESPML(i)%orden
                !zmax
              case (6)
                sgg%Border%IsUpPML = .TRUE.
-               sgg%PML%NumLayers (KCOORD, FINE) = this%front%PROPIEDADESPML(i)%NUMCAPAS
+               sgg%PML%NumLayers (KCOORD, FINE) = this%front%PROPIEDADESPML(i)%numLayers
                sgg%PML%CoeffReflPML (KCOORD, FINE) = this%front%PROPIEDADESPML(i)%REFL
                if (sgg%PML%CoeffReflPML (KCOORD, FINE)>=1.0_RKIND) sgg%PML%CoeffReflPML(KCOORD, FINE)=0.99999d0
                sgg%PML%orden (KCOORD, FINE) = this%front%PROPIEDADESPML(i)%orden
@@ -6282,8 +6282,8 @@ contains
             !crea el fichero de entrada para usar con el compilado de Matlab
             pozi=index(multiportFile,'_z11.txt')
             write(7533,'(a)') trim(adjustl(multiportFile(1:pozi-1)))
-            write(7533,*)     'layers    ',this%LossyThinSurfs%cs(j)%numcapas
-            do k=1,this%LossyThinSurfs%cs(j)%numcapas
+            write(7533,*)     'layers    ',this%LossyThinSurfs%cs(j)%numLayers
+            do k=1,this%LossyThinSurfs%cs(j)%numLayers
                write(7533,*) 'eps       ',k,this%LossyThinSurfs%cs(j)%eps(k)
                write(7533,*) 'mu        ',k,this%LossyThinSurfs%cs(j)%mu(k)
                write(7533,*) 'sigma     ',k,this%LossyThinSurfs%cs(j)%sigma(k)

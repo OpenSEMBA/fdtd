@@ -347,7 +347,7 @@ module NFDETypes_m
       !
       integer(kind=4) :: nc = 0
       character(len=BUFSIZE) :: files = ' ' 
-      integer(kind=4) :: numcapas  
+      integer(kind=4) :: numLayers  
    end type LossyThinSurface_t
    !------------------------------------------------------------------------------
    ! Locates all the different Comp media found
@@ -503,7 +503,7 @@ module NFDETypes_m
    type, public :: FronteraPML_t
       real(kind=RK) :: orden = 2.0_RK
       real(kind=RK) :: refl = 1e-3_RK
-      integer(kind=4) :: numCapas = 8
+      integer(kind=4) :: numLayers = 8
    end type FronteraPML_t
    !------------------------------------------------------------------------------
    ! Tipo de la frontera

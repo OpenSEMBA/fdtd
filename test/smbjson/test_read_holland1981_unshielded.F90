@@ -51,7 +51,7 @@ contains
 
       ! Expected boundaries.
       ex%front%boundaryType(:) = F_PML
-      ex%front%propiedadesPML(:)%numCapas = 6
+      ex%front%propiedadesPML(:)%numLayers = 6
       ex%front%propiedadesPML(:)%orden = 2.0_RKIND
       ex%front%propiedadesPML(:)%refl = 0.001_RKIND
 
