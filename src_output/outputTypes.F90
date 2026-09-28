@@ -151,9 +151,9 @@ module outputTypes_m
    end type probe_metadata_t
 
    type :: domain_t
-      real(kind=RKIND_TIEMPO) :: tstart = 0.0_RKIND_TIEMPO
-      real(kind=RKIND_TIEMPO) :: tstop = 0.0_RKIND_TIEMPO
-      real(kind=RKIND_TIEMPO) :: tstep = 0.0_RKIND_TIEMPO
+      real(kind=RKIND_TIME) :: tstart = 0.0_RKIND_TIME
+      real(kind=RKIND_TIME) :: tstop = 0.0_RKIND_TIME
+      real(kind=RKIND_TIME) :: tstep = 0.0_RKIND_TIME
       integer(kind=SINGLE)    :: tstride = 1_SINGLE
       real(kind=RKIND)        :: fstart = 0.0_RKIND
       real(kind=RKIND)        :: fstop = 0.0_RKIND
@@ -212,13 +212,13 @@ module outputTypes_m
       character(len=BUFSIZE) :: filePathTime
       integer(kind=SINGLE) :: nTime = 0_SINGLE
       integer(kind=SINGLE) :: nTimesFlushed = 0_SINGLE !times alredy writen in disk
-      real(kind=RKIND_TIEMPO), allocatable :: timeStep(:)
+      real(kind=RKIND_TIME), allocatable :: timeStep(:)
    end type abstract_time_probe_t
 
    type, extends(abstract_probe_t) :: abstract_frequency_probe_t
       character(len=BUFSIZE) :: filePathFreq
       integer(kind=SINGLE) :: nFreq = 0_SINGLE
-      real(kind=RKIND_TIEMPO) :: quadratureDt = 0.0_RKIND_TIEMPO
+      real(kind=RKIND_TIME) :: quadratureDt = 0.0_RKIND_TIME
       real(kind=RKIND), allocatable    :: frequencySlice(:)
       complex(kind=CKIND), allocatable :: auxExp_E(:), auxExp_H(:)
    end type abstract_frequency_probe_t
@@ -226,8 +226,8 @@ module outputTypes_m
    type, extends(abstract_probe_t) :: abstract_time_frequency_probe_t
       character(len=BUFSIZE) :: filePathTime, filePathFreq
       integer(kind=SINGLE) :: nTime = 0_SINGLE, nFreq = 0_SINGLE
-      real(kind=RKIND_TIEMPO) :: quadratureDt = 0.0_RKIND_TIEMPO
-      real(kind=RKIND_TIEMPO), allocatable :: timeStep(:)
+      real(kind=RKIND_TIME) :: quadratureDt = 0.0_RKIND_TIME
+      real(kind=RKIND_TIME), allocatable :: timeStep(:)
       real(kind=RKIND), allocatable        :: frequencySlice(:)
       complex(kind=CKIND), allocatable     :: auxExp_E(:), auxExp_H(:)
    end type abstract_time_frequency_probe_t

@@ -65,15 +65,15 @@ contains
       NumPlaneWaves, TimeSteps, InitialTimeStep, &
       NumNodalSources, NumberRequest, &
       thereAreMagneticMedia, thereArePMLMagneticMedia, &
-      nEntradaRoot)
+      nInputRoot)
 
       implicit none
 
       type(SGGFDTDINFO_t), intent(inout) :: obj
 
       ! ===== Optional arguments =====
-      real(kind=RKIND_TIEMPO), pointer, optional :: time(:)
-      real(kind=RKIND_TIEMPO), optional          :: dt
+      real(kind=RKIND_TIME), pointer, optional :: time(:)
+      real(kind=RKIND_TIME), optional          :: dt
       character(len=*), optional          :: extraSwitches
 
       integer(kind=SINGLE), optional :: NumMedia, AllocMed
@@ -84,12 +84,12 @@ contains
       logical, optional :: thereAreMagneticMedia
       logical, optional :: thereArePMLMagneticMedia
 
-      character(len=*), optional :: nEntradaRoot
+      character(len=*), optional :: nInputRoot
 
       ! ===== Defaults =====
 
       nullify (obj%time)
-      obj%dt = 0.0_RKIND_TIEMPO
+      obj%dt = 0.0_RKIND_TIME
       obj%extraSwitches = ""
 
       obj%NumMedia = 0_SINGLE
@@ -120,7 +120,7 @@ contains
       obj%thereAreMagneticMedia = .false.
       obj%thereArePMLMagneticMedia = .false.
 
-      obj%nEntradaRoot = ""
+      obj%nInputRoot = ""
 
       ! NOTE:
       ! Derived-type components (Border, PML, Shared_t, XYZlimit_t, Punto)
@@ -148,19 +148,19 @@ contains
       if (present(thereArePMLMagneticMedia)) &
          obj%thereArePMLMagneticMedia = thereArePMLMagneticMedia
 
-      if (present(nEntradaRoot)) obj%nEntradaRoot = nEntradaRoot
+      if (present(nInputRoot)) obj%nInputRoot = nInputRoot
 
    end subroutine sgg_init
 
    subroutine sgg_set_tiempo(sgg, time)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      real(kind=RKIND_TIEMPO), pointer :: time(:)
+      real(kind=RKIND_TIME), pointer :: time(:)
       sgg%time => time
    end subroutine
 
    subroutine sgg_set_dt(sgg, dt)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      real(kind=RKIND_TIEMPO), intent(in) :: dt
+      real(kind=RKIND_TIME), intent(in) :: dt
       sgg%dt = dt
    end subroutine
 
@@ -377,13 +377,13 @@ contains
    subroutine sgg_set_nEntradaRoot(sgg, scalarValue)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
       character(len=*), intent(in) :: scalarValue
-      sgg%nEntradaRoot = scalarValue
+      sgg%nInputRoot = scalarValue
    end subroutine
 
    subroutine sgg_set_Punto(sgg, scalarValue)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(coorsxyzP_t), intent(in) :: scalarValue
-      sgg%Punto = scalarValue
+      sgg%gridPoint = scalarValue
    end subroutine
 
    subroutine sgg_add_observation(sgg, new_observation)

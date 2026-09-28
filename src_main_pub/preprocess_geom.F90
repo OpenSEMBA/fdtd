@@ -58,14 +58,14 @@ contains
 
       character(len=BUFSIZE) :: tag
 
-      type(XYZlimit_t) :: punto, BoundingBox, conf_bounding_box
+      type(XYZlimit_t) :: gridPoint, BoundingBox, conf_bounding_box
       type(xyzlimit_scaled_t) :: punto_s
       integer(kind=4) :: orientationIndex,orientacionL,orientacionR, direccion, contamedia,oldcontamedia, maxcontamedia, mincontamedia, inicontamedia, &
          i1, j1, field, k1, pecMedium, ii, medium1, medium2, sondas,CONTACURR,CONTAVOLT,I_,J_
       !
       logical :: isathinwire, isValid, existia,medioespecial,input_conformal_flag,trappedNode
       logical :: errnofile,errnofile1,errnofile2,errnofile3,errnofile4
-      real(kind=RKIND) :: tiempo1, tiempo2, field1, field2,rdummy
+      real(kind=RKIND) :: time1, tiempo2, field1, field2,rdummy
       integer(kind=4) :: nsurfs, numus, layoutnumber, num_procs,OrigIndex,numminus
       real(kind=RKIND) :: delta,del,sig_max
       integer(kind=4), dimension(:), allocatable :: contapuntos
@@ -322,31 +322,31 @@ contains
       sgg%NumPlaneWaves = tama
      allocate(sgg%PlaneWave(1:sgg%NumPlaneWaves))
       do i = 1, sgg%NumPlaneWaves
-         punto%XI = Min (this%plnSrc%collection(i)%coor1(1), this%plnSrc%collection(i)%coor2(1))
-         punto%XE = Max (this%plnSrc%collection(i)%coor1(1), this%plnSrc%collection(i)%coor2(1))
-         punto%YI = Min (this%plnSrc%collection(i)%coor1(2), this%plnSrc%collection(i)%coor2(2))
-         punto%YE = Max (this%plnSrc%collection(i)%coor1(2), this%plnSrc%collection(i)%coor2(2))
-         punto%ZI = Min (this%plnSrc%collection(i)%coor1(3), this%plnSrc%collection(i)%coor2(3))
-         punto%ZE = Max (this%plnSrc%collection(i)%coor1(3), this%plnSrc%collection(i)%coor2(3))
+         gridPoint%XI = Min (this%plnSrc%collection(i)%coor1(1), this%plnSrc%collection(i)%coor2(1))
+         gridPoint%XE = Max (this%plnSrc%collection(i)%coor1(1), this%plnSrc%collection(i)%coor2(1))
+         gridPoint%YI = Min (this%plnSrc%collection(i)%coor1(2), this%plnSrc%collection(i)%coor2(2))
+         gridPoint%YE = Max (this%plnSrc%collection(i)%coor1(2), this%plnSrc%collection(i)%coor2(2))
+         gridPoint%ZI = Min (this%plnSrc%collection(i)%coor1(3), this%plnSrc%collection(i)%coor2(3))
+         gridPoint%ZE = Max (this%plnSrc%collection(i)%coor1(3), this%plnSrc%collection(i)%coor2(3))
          !just for the sake of peace of my mind
          !readjust Huygens surface CLEARLY in/out in case of coincidente
-         if ((punto%XI == SINPML_fullsize(IHX)%XI)) then
-            punto%XI = SINPML_fullsize(IHX)%XI - 5
+         if ((gridPoint%XI == SINPML_fullsize(IHX)%XI)) then
+            gridPoint%XI = SINPML_fullsize(IHX)%XI - 5
          end if
-         if ((punto%XE == SINPML_fullsize(IHX)%XE)) then
-            punto%XE = SINPML_fullsize(IHX)%XE + 5
+         if ((gridPoint%XE == SINPML_fullsize(IHX)%XE)) then
+            gridPoint%XE = SINPML_fullsize(IHX)%XE + 5
          end if
-         if ((punto%YI == SINPML_fullsize(IHY)%YI)) then
-            punto%YI = SINPML_fullsize(IHY)%YI - 5
+         if ((gridPoint%YI == SINPML_fullsize(IHY)%YI)) then
+            gridPoint%YI = SINPML_fullsize(IHY)%YI - 5
          end if
-         if ((punto%YE == SINPML_fullsize(IHY)%YE)) then
-            punto%YE = SINPML_fullsize(IHY)%YE + 5
+         if ((gridPoint%YE == SINPML_fullsize(IHY)%YE)) then
+            gridPoint%YE = SINPML_fullsize(IHY)%YE + 5
          end if
-         if ((punto%ZI == SINPML_fullsize(IHZ)%ZI)) then
-            punto%ZI = SINPML_fullsize(IHZ)%ZI - 5
+         if ((gridPoint%ZI == SINPML_fullsize(IHZ)%ZI)) then
+            gridPoint%ZI = SINPML_fullsize(IHZ)%ZI - 5
          end if
-         if ((punto%ZE == SINPML_fullsize(IHZ)%ZE)) then
-            punto%ZE = SINPML_fullsize(IHZ)%ZE + 5
+         if ((gridPoint%ZE == SINPML_fullsize(IHZ)%ZE)) then
+            gridPoint%ZE = SINPML_fullsize(IHZ)%ZE + 5
          end if
          !
          sgg%PlaneWave(i)%isRC    = this%plnSrc%collection(i)%isRC
@@ -438,12 +438,12 @@ contains
             sgg%PlaneWave(i)%INCERT(1)=0.0_RKIND
          end if
          sgg%PlaneWave(i)%sourceFile%name = trim (adjustl(this%plnSrc%collection(i)%sourceFileName))
-         sgg%PlaneWave(i)%esqx1 = Min (punto%XI, punto%XE)
-         sgg%PlaneWave(i)%esqy1 = Min (punto%YI, punto%YE)
-         sgg%PlaneWave(i)%esqz1 = Min (punto%ZI, punto%ZE)
-         sgg%PlaneWave(i)%esqx2 = Max (punto%XI, punto%XE)
-         sgg%PlaneWave(i)%esqy2 = Max (punto%YI, punto%YE)
-         sgg%PlaneWave(i)%esqz2 = Max (punto%ZI, punto%ZE)
+         sgg%PlaneWave(i)%esqx1 = Min (gridPoint%XI, gridPoint%XE)
+         sgg%PlaneWave(i)%esqy1 = Min (gridPoint%YI, gridPoint%YE)
+         sgg%PlaneWave(i)%esqz1 = Min (gridPoint%ZI, gridPoint%ZE)
+         sgg%PlaneWave(i)%esqx2 = Max (gridPoint%XI, gridPoint%XE)
+         sgg%PlaneWave(i)%esqy2 = Max (gridPoint%YI, gridPoint%YE)
+         sgg%PlaneWave(i)%esqz2 = Max (gridPoint%ZI, gridPoint%ZE)
       end do
       !Media parsing
       !Default
@@ -561,12 +561,12 @@ contains
          tama = (this%pecregs%nvols)
          !BODYes
          do i = 1, tama
-            punto%XI = this%pecregs%vols(i)%XI
-            punto%XE = this%pecregs%vols(i)%XE
-            punto%YI = this%pecregs%vols(i)%YI
-            punto%YE = this%pecregs%vols(i)%YE
-            punto%ZI = this%pecregs%vols(i)%ZI
-            punto%ZE = this%pecregs%vols(i)%ZE
+            gridPoint%XI = this%pecregs%vols(i)%XI
+            gridPoint%XE = this%pecregs%vols(i)%XE
+            gridPoint%YI = this%pecregs%vols(i)%YI
+            gridPoint%YE = this%pecregs%vols(i)%YE
+            gridPoint%ZI = this%pecregs%vols(i)%ZI
+            gridPoint%ZE = this%pecregs%vols(i)%ZE
             numertag = searchtag(tagtype,this%pecregs%vols(i)%tag)
             call CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
             & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
@@ -574,17 +574,17 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, pecMedium)
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, pecMedium)
          end do
          !SURFs
          tama = (this%pecregs%nsurfs)
          do i = 1, tama
-            punto%XI = this%pecregs%surfs(i)%XI
-            punto%XE = this%pecregs%surfs(i)%XE
-            punto%YI = this%pecregs%surfs(i)%YI
-            punto%YE = this%pecregs%surfs(i)%YE
-            punto%ZI = this%pecregs%surfs(i)%ZI
-            punto%ZE = this%pecregs%surfs(i)%ZE
+            gridPoint%XI = this%pecregs%surfs(i)%XI
+            gridPoint%XE = this%pecregs%surfs(i)%XE
+            gridPoint%YI = this%pecregs%surfs(i)%YI
+            gridPoint%YE = this%pecregs%surfs(i)%YE
+            gridPoint%ZI = this%pecregs%surfs(i)%ZI
+            gridPoint%ZE = this%pecregs%surfs(i)%ZE
             orientationIndex = this%pecregs%surfs(i)%or
             numertag = searchtag(tagtype,this%pecregs%surfs(i)%tag)
             call CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
@@ -595,17 +595,17 @@ contains
             & Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, &
             & Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, &
             & Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, &
-            & sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, pecMedium)
+            & sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, pecMedium)
          end do
          !LINs
          tama = (this%pecregs%nLINS)
          do i = 1, tama
-            punto%XI = this%pecregs%lins(i)%XI
-            punto%XE = this%pecregs%lins(i)%XE
-            punto%YI = this%pecregs%lins(i)%YI
-            punto%YE = this%pecregs%lins(i)%YE
-            punto%ZI = this%pecregs%lins(i)%ZI
-            punto%ZE = this%pecregs%lins(i)%ZE
+            gridPoint%XI = this%pecregs%lins(i)%XI
+            gridPoint%XE = this%pecregs%lins(i)%XE
+            gridPoint%YI = this%pecregs%lins(i)%YI
+            gridPoint%YE = this%pecregs%lins(i)%YE
+            gridPoint%ZI = this%pecregs%lins(i)%ZI
+            gridPoint%ZE = this%pecregs%lins(i)%ZE
             orientationIndex = this%pecregs%lins(i)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%pecregs%lins(i)%tag)
@@ -615,7 +615,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & pecMedium, isathinwire, verbose,numberOfAssignments)
          end do
          !regiones PEC
@@ -647,12 +647,12 @@ contains
          !BODYes
          tama = (this%pmcregs%nvols)
          do i = 1, tama
-            punto%XI = this%pmcregs%vols(i)%XI
-            punto%XE = this%pmcregs%vols(i)%XE
-            punto%YI = this%pmcregs%vols(i)%YI
-            punto%YE = this%pmcregs%vols(i)%YE
-            punto%ZI = this%pmcregs%vols(i)%ZI
-            punto%ZE = this%pmcregs%vols(i)%ZE
+            gridPoint%XI = this%pmcregs%vols(i)%XI
+            gridPoint%XE = this%pmcregs%vols(i)%XE
+            gridPoint%YI = this%pmcregs%vols(i)%YI
+            gridPoint%YE = this%pmcregs%vols(i)%YE
+            gridPoint%ZI = this%pmcregs%vols(i)%ZI
+            gridPoint%ZE = this%pmcregs%vols(i)%ZE
             !
             !
             numertag = searchtag(tagtype,this%pmcregs%vols(i)%tag)
@@ -662,17 +662,17 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, contamedia)
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, contamedia)
          end do
          !SURFs
          tama = (this%pmcregs%nsurfs)
          do i = 1, tama
-            punto%XI = this%pmcregs%surfs(i)%XI
-            punto%XE = this%pmcregs%surfs(i)%XE
-            punto%YI = this%pmcregs%surfs(i)%YI
-            punto%YE = this%pmcregs%surfs(i)%YE
-            punto%ZI = this%pmcregs%surfs(i)%ZI
-            punto%ZE = this%pmcregs%surfs(i)%ZE
+            gridPoint%XI = this%pmcregs%surfs(i)%XI
+            gridPoint%XE = this%pmcregs%surfs(i)%XE
+            gridPoint%YI = this%pmcregs%surfs(i)%YI
+            gridPoint%YE = this%pmcregs%surfs(i)%YE
+            gridPoint%ZI = this%pmcregs%surfs(i)%ZI
+            gridPoint%ZE = this%pmcregs%surfs(i)%ZE
             orientationIndex = this%pmcregs%surfs(i)%or
             numertag = searchtag(tagtype,this%pmcregs%surfs(i)%tag)
             call CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
@@ -681,18 +681,18 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia)
          end do
          !LINs
          tama = (this%pmcregs%nLINS)
          do i = 1, tama
-            punto%XI = this%pmcregs%lins(i)%XI
-            punto%XE = this%pmcregs%lins(i)%XE
-            punto%YI = this%pmcregs%lins(i)%YI
-            punto%YE = this%pmcregs%lins(i)%YE
-            punto%ZI = this%pmcregs%lins(i)%ZI
-            punto%ZE = this%pmcregs%lins(i)%ZE
+            gridPoint%XI = this%pmcregs%lins(i)%XI
+            gridPoint%XE = this%pmcregs%lins(i)%XE
+            gridPoint%YI = this%pmcregs%lins(i)%YI
+            gridPoint%YE = this%pmcregs%lins(i)%YE
+            gridPoint%ZI = this%pmcregs%lins(i)%ZI
+            gridPoint%ZE = this%pmcregs%lins(i)%ZE
             orientationIndex = this%pmcregs%lins(i)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%pmcregs%lins(i)%tag)
@@ -702,7 +702,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia, isathinwire,verbose,numberOfAssignments)
             !
          end do
@@ -732,12 +732,12 @@ contains
          tama2 = (this%DielRegs%vols(i)%n_c2P)
          do j = 1, tama2
             if ((J==1).and.(this%DielRegs%vols(i)%PMLbody)) sgg%Med(contamedia)%PMLbody(1)%orient = this%DielRegs%vols(i)%c2P(j)%OR !ES IGUAL PARA TODOS
-            punto%XI = this%DielRegs%vols(i)%c2P(j)%XI
-            punto%XE = this%DielRegs%vols(i)%c2P(j)%XE
-            punto%YI = this%DielRegs%vols(i)%c2P(j)%YI
-            punto%YE = this%DielRegs%vols(i)%c2P(j)%YE
-            punto%ZI = this%DielRegs%vols(i)%c2P(j)%ZI
-            punto%ZE = this%DielRegs%vols(i)%c2P(j)%ZE
+            gridPoint%XI = this%DielRegs%vols(i)%c2P(j)%XI
+            gridPoint%XE = this%DielRegs%vols(i)%c2P(j)%XE
+            gridPoint%YI = this%DielRegs%vols(i)%c2P(j)%YI
+            gridPoint%YE = this%DielRegs%vols(i)%c2P(j)%YE
+            gridPoint%ZI = this%DielRegs%vols(i)%c2P(j)%ZI
+            gridPoint%ZE = this%DielRegs%vols(i)%c2P(j)%ZE
             numertag = searchtag(tagtype,this%DielRegs%vols(i)%c2P(j)%tag)
             call CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
             & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
@@ -745,17 +745,17 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, contamedia)
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, contamedia)
          end do
          tama3 = (this%DielRegs%vols(i)%n_c1P)
          do j = 1, tama3
             if ((J==1).and.(this%DielRegs%vols(i)%PMLbody)) sgg%Med(contamedia)%PMLbody(1)%orient = this%DielRegs%vols(i)%c1P(j)%OR !ES IGUAL PARA TODOS
-            punto%XI = this%DielRegs%vols(i)%c1P(j)%XI
-            punto%XE = this%DielRegs%vols(i)%c1P(j)%XI
-            punto%YI = this%DielRegs%vols(i)%c1P(j)%YI
-            punto%YE = this%DielRegs%vols(i)%c1P(j)%YI
-            punto%ZI = this%DielRegs%vols(i)%c1P(j)%ZI
-            punto%ZE = this%DielRegs%vols(i)%c1P(j)%ZI
+            gridPoint%XI = this%DielRegs%vols(i)%c1P(j)%XI
+            gridPoint%XE = this%DielRegs%vols(i)%c1P(j)%XI
+            gridPoint%YI = this%DielRegs%vols(i)%c1P(j)%YI
+            gridPoint%YE = this%DielRegs%vols(i)%c1P(j)%YI
+            gridPoint%ZI = this%DielRegs%vols(i)%c1P(j)%ZI
+            gridPoint%ZE = this%DielRegs%vols(i)%c1P(j)%ZI
             !
             numertag = searchtag(tagtype,this%DielRegs%vols(i)%c1P(j)%tag)
             call CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
@@ -764,7 +764,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, contamedia)
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, contamedia)
          end do
       end do
       !SURFs
@@ -779,12 +779,12 @@ contains
          sgg%Med(contamedia)%SigmaM = this%DielRegs%surfs(i)%SigmaM
          tama2 = (this%DielRegs%surfs(i)%n_c2P)
          do j = 1, tama2
-            punto%XI = this%DielRegs%surfs(i)%c2P(j)%XI
-            punto%XE = this%DielRegs%surfs(i)%c2P(j)%XE
-            punto%YI = this%DielRegs%surfs(i)%c2P(j)%YI
-            punto%YE = this%DielRegs%surfs(i)%c2P(j)%YE
-            punto%ZI = this%DielRegs%surfs(i)%c2P(j)%ZI
-            punto%ZE = this%DielRegs%surfs(i)%c2P(j)%ZE
+            gridPoint%XI = this%DielRegs%surfs(i)%c2P(j)%XI
+            gridPoint%XE = this%DielRegs%surfs(i)%c2P(j)%XE
+            gridPoint%YI = this%DielRegs%surfs(i)%c2P(j)%YI
+            gridPoint%YE = this%DielRegs%surfs(i)%c2P(j)%YE
+            gridPoint%ZI = this%DielRegs%surfs(i)%c2P(j)%ZI
+            gridPoint%ZE = this%DielRegs%surfs(i)%c2P(j)%ZE
             orientationIndex = this%DielRegs%surfs(i)%c2P(j)%or
             numertag = searchtag(tagtype,this%DielRegs%surfs(i)%c2P(j)%tag)
             call CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
@@ -793,18 +793,18 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia)
          end do
          tama3 = (this%DielRegs%surfs(i)%n_c1P)
 
          do j = 1, tama3
-            punto%XI = this%DielRegs%surfs(i)%c1P(j)%XI
-            punto%XE = this%DielRegs%surfs(i)%c1P(j)%XI
-            punto%YI = this%DielRegs%surfs(i)%c1P(j)%YI
-            punto%YE = this%DielRegs%surfs(i)%c1P(j)%YI
-            punto%ZI = this%DielRegs%surfs(i)%c1P(j)%ZI
-            punto%ZE = this%DielRegs%surfs(i)%c1P(j)%ZI
+            gridPoint%XI = this%DielRegs%surfs(i)%c1P(j)%XI
+            gridPoint%XE = this%DielRegs%surfs(i)%c1P(j)%XI
+            gridPoint%YI = this%DielRegs%surfs(i)%c1P(j)%YI
+            gridPoint%YE = this%DielRegs%surfs(i)%c1P(j)%YI
+            gridPoint%ZI = this%DielRegs%surfs(i)%c1P(j)%ZI
+            gridPoint%ZE = this%DielRegs%surfs(i)%c1P(j)%ZI
             orientationIndex = this%DielRegs%surfs(i)%c1P(j)%or
             numertag = searchtag(tagtype,this%DielRegs%surfs(i)%c1P(j)%tag)
             call CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
@@ -813,7 +813,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia)
          end do
       end do
@@ -916,12 +916,12 @@ contains
 !!!fin lumped
          tama2 = (this%DielRegs%lins(i)%n_c2P)
          do j = 1, tama2
-            punto%XI = this%DielRegs%lins(i)%c2P(j)%XI
-            punto%XE = this%DielRegs%lins(i)%c2P(j)%XE
-            punto%YI = this%DielRegs%lins(i)%c2P(j)%YI
-            punto%YE = this%DielRegs%lins(i)%c2P(j)%YE
-            punto%ZI = this%DielRegs%lins(i)%c2P(j)%ZI
-            punto%ZE = this%DielRegs%lins(i)%c2P(j)%ZE
+            gridPoint%XI = this%DielRegs%lins(i)%c2P(j)%XI
+            gridPoint%XE = this%DielRegs%lins(i)%c2P(j)%XE
+            gridPoint%YI = this%DielRegs%lins(i)%c2P(j)%YI
+            gridPoint%YE = this%DielRegs%lins(i)%c2P(j)%YE
+            gridPoint%ZI = this%DielRegs%lins(i)%c2P(j)%ZI
+            gridPoint%ZE = this%DielRegs%lins(i)%c2P(j)%ZE
             orientationIndex = this%DielRegs%lins(i)%c2P(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%DielRegs%lins(i)%c2P(j)%tag)
@@ -931,17 +931,17 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia, isathinwire,verbose,numberOfAssignments)
          end do
          tama3 = (this%DielRegs%lins(i)%n_c1P)
          do j = 1, tama3
-            punto%XI = this%DielRegs%lins(i)%c1P(j)%XI
-            punto%XE = this%DielRegs%lins(i)%c1P(j)%XI
-            punto%YI = this%DielRegs%lins(i)%c1P(j)%YI
-            punto%YE = this%DielRegs%lins(i)%c1P(j)%YI
-            punto%ZI = this%DielRegs%lins(i)%c1P(j)%ZI
-            punto%ZE = this%DielRegs%lins(i)%c1P(j)%ZI
+            gridPoint%XI = this%DielRegs%lins(i)%c1P(j)%XI
+            gridPoint%XE = this%DielRegs%lins(i)%c1P(j)%XI
+            gridPoint%YI = this%DielRegs%lins(i)%c1P(j)%YI
+            gridPoint%YE = this%DielRegs%lins(i)%c1P(j)%YI
+            gridPoint%ZI = this%DielRegs%lins(i)%c1P(j)%ZI
+            gridPoint%ZE = this%DielRegs%lins(i)%c1P(j)%ZI
             orientationIndex = this%DielRegs%lins(i)%c1P(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%DielRegs%lins(i)%c1P(j)%tag)
@@ -951,7 +951,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia, isathinwire,verbose,numberOfAssignments)
          end do
       end do
@@ -972,12 +972,12 @@ contains
          sgg%Med(contamedia)%Anisotropic(1)%SigmaM = this%ANIMATS%vols(i)%SigmaM
          tama2 = (this%ANIMATS%vols(i)%n_c2P)
          do j = 1, tama2
-            punto%XI = this%ANIMATS%vols(i)%c2P(j)%XI
-            punto%XE = this%ANIMATS%vols(i)%c2P(j)%XE
-            punto%YI = this%ANIMATS%vols(i)%c2P(j)%YI
-            punto%YE = this%ANIMATS%vols(i)%c2P(j)%YE
-            punto%ZI = this%ANIMATS%vols(i)%c2P(j)%ZI
-            punto%ZE = this%ANIMATS%vols(i)%c2P(j)%ZE
+            gridPoint%XI = this%ANIMATS%vols(i)%c2P(j)%XI
+            gridPoint%XE = this%ANIMATS%vols(i)%c2P(j)%XE
+            gridPoint%YI = this%ANIMATS%vols(i)%c2P(j)%YI
+            gridPoint%YE = this%ANIMATS%vols(i)%c2P(j)%YE
+            gridPoint%ZI = this%ANIMATS%vols(i)%c2P(j)%ZI
+            gridPoint%ZE = this%ANIMATS%vols(i)%c2P(j)%ZE
             numertag = searchtag(tagtype,this%ANIMATS%vols(i)%c2P(j)%tag)
             call CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
             & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
@@ -985,16 +985,16 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, contamedia)
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, contamedia)
          end do
          tama3 = (this%ANIMATS%vols(i)%n_c1P)
          do j = 1, tama3
-            punto%XI = this%ANIMATS%vols(i)%c1P(j)%XI
-            punto%XE = this%ANIMATS%vols(i)%c1P(j)%XI
-            punto%YI = this%ANIMATS%vols(i)%c1P(j)%YI
-            punto%YE = this%ANIMATS%vols(i)%c1P(j)%YI
-            punto%ZI = this%ANIMATS%vols(i)%c1P(j)%ZI
-            punto%ZE = this%ANIMATS%vols(i)%c1P(j)%ZI
+            gridPoint%XI = this%ANIMATS%vols(i)%c1P(j)%XI
+            gridPoint%XE = this%ANIMATS%vols(i)%c1P(j)%XI
+            gridPoint%YI = this%ANIMATS%vols(i)%c1P(j)%YI
+            gridPoint%YE = this%ANIMATS%vols(i)%c1P(j)%YI
+            gridPoint%ZI = this%ANIMATS%vols(i)%c1P(j)%ZI
+            gridPoint%ZE = this%ANIMATS%vols(i)%c1P(j)%ZI
             !
             numertag = searchtag(tagtype,this%ANIMATS%vols(i)%c1P(j)%tag)
             call CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
@@ -1003,7 +1003,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, contamedia)
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, contamedia)
          end do
       end do
       !SURFs
@@ -1019,12 +1019,12 @@ contains
          sgg%Med(contamedia)%Anisotropic(1)%SigmaM = this%ANIMATS%surfs(i)%SigmaM
          tama2 = (this%ANIMATS%surfs(i)%n_c2P)
          do j = 1, tama2
-            punto%XI = this%ANIMATS%surfs(i)%c2P(j)%XI
-            punto%XE = this%ANIMATS%surfs(i)%c2P(j)%XE
-            punto%YI = this%ANIMATS%surfs(i)%c2P(j)%YI
-            punto%YE = this%ANIMATS%surfs(i)%c2P(j)%YE
-            punto%ZI = this%ANIMATS%surfs(i)%c2P(j)%ZI
-            punto%ZE = this%ANIMATS%surfs(i)%c2P(j)%ZE
+            gridPoint%XI = this%ANIMATS%surfs(i)%c2P(j)%XI
+            gridPoint%XE = this%ANIMATS%surfs(i)%c2P(j)%XE
+            gridPoint%YI = this%ANIMATS%surfs(i)%c2P(j)%YI
+            gridPoint%YE = this%ANIMATS%surfs(i)%c2P(j)%YE
+            gridPoint%ZI = this%ANIMATS%surfs(i)%c2P(j)%ZI
+            gridPoint%ZE = this%ANIMATS%surfs(i)%c2P(j)%ZE
             orientationIndex = this%ANIMATS%surfs(i)%c2P(j)%or
             numertag = searchtag(tagtype,this%ANIMATS%surfs(i)%c2P(j)%tag)
             call CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
@@ -1033,17 +1033,17 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia)
          end do
          tama3 = (this%ANIMATS%surfs(i)%n_c1P)
          do j = 1, tama3
-            punto%XI = this%ANIMATS%surfs(i)%c1P(j)%XI
-            punto%XE = this%ANIMATS%surfs(i)%c1P(j)%XI
-            punto%YI = this%ANIMATS%surfs(i)%c1P(j)%YI
-            punto%YE = this%ANIMATS%surfs(i)%c1P(j)%YI
-            punto%ZI = this%ANIMATS%surfs(i)%c1P(j)%ZI
-            punto%ZE = this%ANIMATS%surfs(i)%c1P(j)%ZI
+            gridPoint%XI = this%ANIMATS%surfs(i)%c1P(j)%XI
+            gridPoint%XE = this%ANIMATS%surfs(i)%c1P(j)%XI
+            gridPoint%YI = this%ANIMATS%surfs(i)%c1P(j)%YI
+            gridPoint%YE = this%ANIMATS%surfs(i)%c1P(j)%YI
+            gridPoint%ZI = this%ANIMATS%surfs(i)%c1P(j)%ZI
+            gridPoint%ZE = this%ANIMATS%surfs(i)%c1P(j)%ZI
             orientationIndex = this%ANIMATS%surfs(i)%c1P(j)%or
             numertag = searchtag(tagtype,this%ANIMATS%surfs(i)%c1P(j)%tag)
             call CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
@@ -1052,7 +1052,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia)
          end do
       end do
@@ -1069,12 +1069,12 @@ contains
          sgg%Med(contamedia)%Anisotropic(1)%SigmaM = this%ANIMATS%lins(i)%SigmaM
          tama2 = (this%ANIMATS%lins(i)%n_c2P)
          do j = 1, tama2
-            punto%XI = this%ANIMATS%lins(i)%c2P(j)%XI
-            punto%XE = this%ANIMATS%lins(i)%c2P(j)%XE
-            punto%YI = this%ANIMATS%lins(i)%c2P(j)%YI
-            punto%YE = this%ANIMATS%lins(i)%c2P(j)%YE
-            punto%ZI = this%ANIMATS%lins(i)%c2P(j)%ZI
-            punto%ZE = this%ANIMATS%lins(i)%c2P(j)%ZE
+            gridPoint%XI = this%ANIMATS%lins(i)%c2P(j)%XI
+            gridPoint%XE = this%ANIMATS%lins(i)%c2P(j)%XE
+            gridPoint%YI = this%ANIMATS%lins(i)%c2P(j)%YI
+            gridPoint%YE = this%ANIMATS%lins(i)%c2P(j)%YE
+            gridPoint%ZI = this%ANIMATS%lins(i)%c2P(j)%ZI
+            gridPoint%ZE = this%ANIMATS%lins(i)%c2P(j)%ZE
             orientationIndex = this%ANIMATS%lins(i)%c2P(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%ANIMATS%lins(i)%c2P(j)%tag)
@@ -1084,17 +1084,17 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia, isathinwire,verbose,numberOfAssignments)
          end do
          tama3 = (this%ANIMATS%lins(i)%n_c1P)
          do j = 1, tama3
-            punto%XI = this%ANIMATS%lins(i)%c1P(j)%XI
-            punto%XE = this%ANIMATS%lins(i)%c1P(j)%XI
-            punto%YI = this%ANIMATS%lins(i)%c1P(j)%YI
-            punto%YE = this%ANIMATS%lins(i)%c1P(j)%YI
-            punto%ZI = this%ANIMATS%lins(i)%c1P(j)%ZI
-            punto%ZE = this%ANIMATS%lins(i)%c1P(j)%ZI
+            gridPoint%XI = this%ANIMATS%lins(i)%c1P(j)%XI
+            gridPoint%XE = this%ANIMATS%lins(i)%c1P(j)%XI
+            gridPoint%YI = this%ANIMATS%lins(i)%c1P(j)%YI
+            gridPoint%YE = this%ANIMATS%lins(i)%c1P(j)%YI
+            gridPoint%ZI = this%ANIMATS%lins(i)%c1P(j)%ZI
+            gridPoint%ZE = this%ANIMATS%lins(i)%c1P(j)%ZI
             orientationIndex = this%ANIMATS%lins(i)%c1P(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%ANIMATS%lins(i)%c1P(j)%tag)
@@ -1104,7 +1104,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia, isathinwire,verbose,numberOfAssignments)
          end do
       end do
@@ -1122,12 +1122,12 @@ contains
 
          tama2 = this%FRQDEPMATS%vols(i)%n_C
          do j = 1, tama2
-            punto%XI = this%FRQDEPMATS%vols(i)%C(j)%XI
-            punto%XE = this%FRQDEPMATS%vols(i)%C(j)%XE
-            punto%YI = this%FRQDEPMATS%vols(i)%C(j)%YI
-            punto%YE = this%FRQDEPMATS%vols(i)%C(j)%YE
-            punto%ZI = this%FRQDEPMATS%vols(i)%C(j)%ZI
-            punto%ZE = this%FRQDEPMATS%vols(i)%C(j)%ZE
+            gridPoint%XI = this%FRQDEPMATS%vols(i)%C(j)%XI
+            gridPoint%XE = this%FRQDEPMATS%vols(i)%C(j)%XE
+            gridPoint%YI = this%FRQDEPMATS%vols(i)%C(j)%YI
+            gridPoint%YE = this%FRQDEPMATS%vols(i)%C(j)%YE
+            gridPoint%ZI = this%FRQDEPMATS%vols(i)%C(j)%ZI
+            gridPoint%ZE = this%FRQDEPMATS%vols(i)%C(j)%ZE
             numertag = searchtag(tagtype,this%FRQDEPMATS%vols(i)%C(j)%tag)
             call CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
             & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
@@ -1135,7 +1135,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, contamedia)
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, contamedia)
          end do
       end do
 
@@ -1150,12 +1150,12 @@ contains
 
          tama2 = this%FRQDEPMATS%surfs(i)%n_C
          do j = 1, tama2
-            punto%XI = this%FRQDEPMATS%surfs(i)%C(j)%XI
-            punto%XE = this%FRQDEPMATS%surfs(i)%C(j)%XE
-            punto%YI = this%FRQDEPMATS%surfs(i)%C(j)%YI
-            punto%YE = this%FRQDEPMATS%surfs(i)%C(j)%YE
-            punto%ZI = this%FRQDEPMATS%surfs(i)%C(j)%ZI
-            punto%ZE = this%FRQDEPMATS%surfs(i)%C(j)%ZE
+            gridPoint%XI = this%FRQDEPMATS%surfs(i)%C(j)%XI
+            gridPoint%XE = this%FRQDEPMATS%surfs(i)%C(j)%XE
+            gridPoint%YI = this%FRQDEPMATS%surfs(i)%C(j)%YI
+            gridPoint%YE = this%FRQDEPMATS%surfs(i)%C(j)%YE
+            gridPoint%ZI = this%FRQDEPMATS%surfs(i)%C(j)%ZI
+            gridPoint%ZE = this%FRQDEPMATS%surfs(i)%C(j)%ZE
             orientationIndex = this%FRQDEPMATS%surfs(i)%C(j)%or
             numertag = searchtag(tagtype,this%FRQDEPMATS%surfs(i)%C(j)%tag)
             call CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
@@ -1164,7 +1164,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia)
          end do
       end do
@@ -1178,12 +1178,12 @@ contains
 
          tama2 = this%FRQDEPMATS%lins(i)%n_C
          do j = 1, tama2
-            punto%XI = this%FRQDEPMATS%lins(i)%C(j)%XI
-            punto%XE = this%FRQDEPMATS%lins(i)%C(j)%XE
-            punto%YI = this%FRQDEPMATS%lins(i)%C(j)%YI
-            punto%YE = this%FRQDEPMATS%lins(i)%C(j)%YE
-            punto%ZI = this%FRQDEPMATS%lins(i)%C(j)%ZI
-            punto%ZE = this%FRQDEPMATS%lins(i)%C(j)%ZE
+            gridPoint%XI = this%FRQDEPMATS%lins(i)%C(j)%XI
+            gridPoint%XE = this%FRQDEPMATS%lins(i)%C(j)%XE
+            gridPoint%YI = this%FRQDEPMATS%lins(i)%C(j)%YI
+            gridPoint%YE = this%FRQDEPMATS%lins(i)%C(j)%YE
+            gridPoint%ZI = this%FRQDEPMATS%lins(i)%C(j)%ZI
+            gridPoint%ZE = this%FRQDEPMATS%lins(i)%C(j)%ZE
             orientationIndex = this%FRQDEPMATS%lins(i)%C(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%FRQDEPMATS%lins(i)%C(j)%tag)
@@ -1193,7 +1193,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia, isathinwire,verbose,numberOfAssignments)
          end do
       end do
@@ -1262,12 +1262,12 @@ contains
             MultiportFile = trim (adjustl(this%LossyThinSurfs%cs(j)%files)) // '_z11.txt'
             do i = 1, tama2
                orientationIndex = this%LossyThinSurfs%cs(j)%C(i)%or
-               punto%XI = this%LossyThinSurfs%cs(j)%C(i)%XI
-               punto%XE = this%LossyThinSurfs%cs(j)%C(i)%XE
-               punto%YI = this%LossyThinSurfs%cs(j)%C(i)%YI
-               punto%YE = this%LossyThinSurfs%cs(j)%C(i)%YE
-               punto%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI
-               punto%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZE
+               gridPoint%XI = this%LossyThinSurfs%cs(j)%C(i)%XI
+               gridPoint%XE = this%LossyThinSurfs%cs(j)%C(i)%XE
+               gridPoint%YI = this%LossyThinSurfs%cs(j)%C(i)%YI
+               gridPoint%YE = this%LossyThinSurfs%cs(j)%C(i)%YE
+               gridPoint%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI
+               gridPoint%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZE
                existia = .FALSE.
                doexis: do k = inicontamedia, maxcontamedia
                   if (trim(adjustl(sgg%Med(k)%multiport(1)%multiportFileZ11)) == trim(adjustl(MultiportFile))) then
@@ -1301,9 +1301,9 @@ contains
                      sgg%Med(contamedia)%Multiport(1)%sigmaM_devia(1:this%LossyThinSurfs%cs(j)%numcapas), &
                      sgg%Med(contamedia)%Multiport(1)%width_devia(1:this%LossyThinSurfs%cs(j)%numcapas))
                   !!!
-                  puntoXI = Max (punto%XI, Min(BoundingBox%XI, BoundingBox%XE))
-                  puntoYI = Max (punto%YI, Min(BoundingBox%YI, BoundingBox%YE))
-                  puntoZI = Max (punto%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
+                  puntoXI = Max (gridPoint%XI, Min(BoundingBox%XI, BoundingBox%XE))
+                  puntoYI = Max (gridPoint%YI, Min(BoundingBox%YI, BoundingBox%YE))
+                  puntoZI = Max (gridPoint%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
 
                   !!!!!!!!estaba antes  maaaal. bug 140815verano
                   if(.not.((puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE))) then
@@ -1438,7 +1438,7 @@ contains
                & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
                & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
                & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-               & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+               & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
                & contamedia)
             end do
          end if
@@ -1465,12 +1465,12 @@ contains
             MultiportFile =  trim (adjustl(this%LossyThinSurfs%cs(j)%files)) // '_z11.txt'
             do i = 1, tama2
                orientationIndex = this%LossyThinSurfs%cs(j)%C(i)%or
-               punto%XI = this%LossyThinSurfs%cs(j)%C(i)%XI
-               punto%XE = this%LossyThinSurfs%cs(j)%C(i)%XE
-               punto%YI = this%LossyThinSurfs%cs(j)%C(i)%YI
-               punto%YE = this%LossyThinSurfs%cs(j)%C(i)%YE
-               punto%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI
-               punto%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZE
+               gridPoint%XI = this%LossyThinSurfs%cs(j)%C(i)%XI
+               gridPoint%XE = this%LossyThinSurfs%cs(j)%C(i)%XE
+               gridPoint%YI = this%LossyThinSurfs%cs(j)%C(i)%YI
+               gridPoint%YE = this%LossyThinSurfs%cs(j)%C(i)%YE
+               gridPoint%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI
+               gridPoint%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZE
                existia = .FALSE.
                doexis2: do k = inicontamedia, maxcontamedia
                   if (trim(adjustl(sgg%Med(k)%AnisMultiport(1)%multiportFileZ11)) == trim(adjustl(MultiportFile))) then
@@ -1492,9 +1492,9 @@ contains
                      write(buff, '(a)')    'pre1_ERROR:  Anisotropic multiport materials unsupported for multilayered structures.'
                      call WarnErrReport (buff,.TRUE.)
                   end if
-                  puntoXI = Max (punto%XI, Min(BoundingBox%XI, BoundingBox%XE)) !copiado de healer
-                  puntoYI = Max (punto%YI, Min(BoundingBox%YI, BoundingBox%YE))
-                  puntoZI = Max (punto%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
+                  puntoXI = Max (gridPoint%XI, Min(BoundingBox%XI, BoundingBox%XE)) !copiado de healer
+                  puntoYI = Max (gridPoint%YI, Min(BoundingBox%YI, BoundingBox%YE))
+                  puntoZI = Max (gridPoint%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
 
 
                   !!!!!!!!estaba antes  maaaal. bug 140815verano
@@ -1567,7 +1567,7 @@ contains
                & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
                & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
                & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-               & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+               & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
                & contamedia)
             end do
          end if
@@ -1603,18 +1603,18 @@ contains
                !provisionalmente (luego se retocara con el sigmam correcto)
                sgg%Med(contamedia)%SigmaM = 0.0_RKIND !abs(this%LossyThinSurfs%cs(j)%Sigma) !may be negative
 
-               punto%XI = this%LossyThinSurfs%cs(j)%C(i)%XI
-               punto%XE = this%LossyThinSurfs%cs(j)%C(i)%XE
-               punto%YI = this%LossyThinSurfs%cs(j)%C(i)%YI
-               punto%YE = this%LossyThinSurfs%cs(j)%C(i)%YE
-               punto%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI
-               punto%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZE
+               gridPoint%XI = this%LossyThinSurfs%cs(j)%C(i)%XI
+               gridPoint%XE = this%LossyThinSurfs%cs(j)%C(i)%XE
+               gridPoint%YI = this%LossyThinSurfs%cs(j)%C(i)%YI
+               gridPoint%YE = this%LossyThinSurfs%cs(j)%C(i)%YE
+               gridPoint%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI
+               gridPoint%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZE
                !!
 
                select case (Abs(orientationIndex))
                 case (iEx)
-                  punto%XI = this%LossyThinSurfs%cs(j)%C(i)%XI
-                  punto%XE = this%LossyThinSurfs%cs(j)%C(i)%XI
+                  gridPoint%XI = this%LossyThinSurfs%cs(j)%C(i)%XI
+                  gridPoint%XE = this%LossyThinSurfs%cs(j)%C(i)%XI
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
                   call CreateMagneticSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy,   &
                      media%sggMiEz, &
@@ -1629,10 +1629,10 @@ contains
                   & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE,   &
                      Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
                   & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia,   &
-                     sgg%EShared, BoundingBox, punto, orientationIndex, &
+                     sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
                   & contamedia)
-                  punto%XI = this%LossyThinSurfs%cs(j)%C(i)%XI-1
-                  punto%XE = this%LossyThinSurfs%cs(j)%C(i)%XI-1
+                  gridPoint%XI = this%LossyThinSurfs%cs(j)%C(i)%XI-1
+                  gridPoint%XE = this%LossyThinSurfs%cs(j)%C(i)%XI-1
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
                   call CreateMagneticSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy,  &
                      media%sggMiEz, &
@@ -1647,11 +1647,11 @@ contains
                   & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI,   &
                      Alloc_iHz_XE, Alloc_iHz_YI, &
                   & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared,   &
-                     BoundingBox, punto, orientationIndex, &
+                     BoundingBox, gridPoint, orientationIndex, &
                   & contamedia)
                 case (iEy)
-                  punto%YI = this%LossyThinSurfs%cs(j)%C(i)%YI
-                  punto%YE = this%LossyThinSurfs%cs(j)%C(i)%YI
+                  gridPoint%YI = this%LossyThinSurfs%cs(j)%C(i)%YI
+                  gridPoint%YE = this%LossyThinSurfs%cs(j)%C(i)%YI
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
                   call CreateMagneticSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy,   &
                      media%sggMiEz, &
@@ -1666,10 +1666,10 @@ contains
                   & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI,   &
                      Alloc_iHz_XE, Alloc_iHz_YI, &
                   & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared,   &
-                     BoundingBox, punto, orientationIndex, &
+                     BoundingBox, gridPoint, orientationIndex, &
                   & contamedia)
-                  punto%YI = this%LossyThinSurfs%cs(j)%C(i)%YI-1
-                  punto%YE = this%LossyThinSurfs%cs(j)%C(i)%YI-1
+                  gridPoint%YI = this%LossyThinSurfs%cs(j)%C(i)%YI-1
+                  gridPoint%YE = this%LossyThinSurfs%cs(j)%C(i)%YI-1
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
                   call CreateMagneticSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy,   &
                      media%sggMiEz, &
@@ -1684,11 +1684,11 @@ contains
                   & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI,   &
                      Alloc_iHz_XE, Alloc_iHz_YI, &
                   & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared,   &
-                     BoundingBox, punto, orientationIndex, &
+                     BoundingBox, gridPoint, orientationIndex, &
                   & contamedia)
                 case (IEZ)
-                  punto%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI
-                  punto%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZI
+                  gridPoint%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI
+                  gridPoint%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZI
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
                   call CreateMagneticSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy,   &
                      media%sggMiEz, &
@@ -1703,10 +1703,10 @@ contains
                   & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI,   &
                      Alloc_iHz_XE, Alloc_iHz_YI, &
                   & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared,   &
-                     BoundingBox, punto, orientationIndex, &
+                     BoundingBox, gridPoint, orientationIndex, &
                   & contamedia)
-                  punto%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI-1
-                  punto%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZI-1
+                  gridPoint%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI-1
+                  gridPoint%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZI-1
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
                   call CreateMagneticSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy,   &
                      media%sggMiEz, &
@@ -1721,7 +1721,7 @@ contains
                   & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI,   &
                      Alloc_iHz_XE, Alloc_iHz_YI, &
                   & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared,   &
-                     BoundingBox, punto, orientationIndex, &
+                     BoundingBox, gridPoint, orientationIndex, &
                   & contamedia)
                end select
             end do
@@ -2242,19 +2242,19 @@ contains
          tama2 = this%twires%TW(j)%N_TWC
          TAMA2BIS=0
          do i = 1, tama2
-            punto%XI = this%twires%TW(j)%TWC(i)%i
-            punto%XE = this%twires%TW(j)%TWC(i)%i
-            punto%YI = this%twires%TW(j)%TWC(i)%j
-            punto%YE = this%twires%TW(j)%TWC(i)%j
-            punto%ZI = this%twires%TW(j)%TWC(i)%k
-            punto%ZE = this%twires%TW(j)%TWC(i)%k
+            gridPoint%XI = this%twires%TW(j)%TWC(i)%i
+            gridPoint%XE = this%twires%TW(j)%TWC(i)%i
+            gridPoint%YI = this%twires%TW(j)%TWC(i)%j
+            gridPoint%YE = this%twires%TW(j)%TWC(i)%j
+            gridPoint%ZI = this%twires%TW(j)%TWC(i)%k
+            gridPoint%ZE = this%twires%TW(j)%TWC(i)%k
             !!!!!!!!!los clipeo agresivamente si lo lanzo con -CLIPREGION para que no me den problema 06/07/15 (solo sirve para debugeo y con el -wiresflavor holland (old))
-            if (((punto%XI-2 >  SINPML_fullsize(IHX)%XI).and.(punto%XI+2 < SINPML_fullsize(IHX)%XE).and. &
-               (punto%YI-2 >  SINPML_fullsize(IHY)%YI).and.(punto%YI+2 < SINPML_fullsize(IHY)%YE).and. &
-               (punto%ZI-2 >  SINPML_fullsize(IHZ)%ZI).and.(punto%zI+2 < SINPML_fullsize(IHZ)%ZE).and. &
-               (punto%XE-2 >  SINPML_fullsize(IHX)%XI).and.(punto%Xe+2 < SINPML_fullsize(IHX)%XE).and. &
-               (punto%YE-2 >  SINPML_fullsize(IHY)%YI).and.(punto%Ye+2 < SINPML_fullsize(IHY)%YE).and. &
-               (punto%ZE-2 >  SINPML_fullsize(IHZ)%ZI).and.(punto%Ze+2 < SINPML_fullsize(IHZ)%ZE)).or.(.not.CLIPREGION)) TAMA2BIS=TAMA2bis+1
+            if (((gridPoint%XI-2 >  SINPML_fullsize(IHX)%XI).and.(gridPoint%XI+2 < SINPML_fullsize(IHX)%XE).and. &
+               (gridPoint%YI-2 >  SINPML_fullsize(IHY)%YI).and.(gridPoint%YI+2 < SINPML_fullsize(IHY)%YE).and. &
+               (gridPoint%ZI-2 >  SINPML_fullsize(IHZ)%ZI).and.(gridPoint%zI+2 < SINPML_fullsize(IHZ)%ZE).and. &
+               (gridPoint%XE-2 >  SINPML_fullsize(IHX)%XI).and.(gridPoint%Xe+2 < SINPML_fullsize(IHX)%XE).and. &
+               (gridPoint%YE-2 >  SINPML_fullsize(IHY)%YI).and.(gridPoint%Ye+2 < SINPML_fullsize(IHY)%YE).and. &
+               (gridPoint%ZE-2 >  SINPML_fullsize(IHZ)%ZI).and.(gridPoint%Ze+2 < SINPML_fullsize(IHZ)%ZE)).or.(.not.CLIPREGION)) TAMA2BIS=TAMA2bis+1
          end do
          !
         allocate(sgg%Med(contamedia)%wire(1)%segm(1:TAMA2BIS))
@@ -2266,12 +2266,12 @@ contains
 
          TAMA2BIS=0
          hilosbarre: do i = 1, tama2
-            punto%XI = this%twires%TW(j)%TWC(i)%i
-            punto%XE = this%twires%TW(j)%TWC(i)%i
-            punto%YI = this%twires%TW(j)%TWC(i)%j
-            punto%YE = this%twires%TW(j)%TWC(i)%j
-            punto%ZI = this%twires%TW(j)%TWC(i)%k
-            punto%ZE = this%twires%TW(j)%TWC(i)%k
+            gridPoint%XI = this%twires%TW(j)%TWC(i)%i
+            gridPoint%XE = this%twires%TW(j)%TWC(i)%i
+            gridPoint%YI = this%twires%TW(j)%TWC(i)%j
+            gridPoint%YE = this%twires%TW(j)%TWC(i)%j
+            gridPoint%ZI = this%twires%TW(j)%TWC(i)%k
+            gridPoint%ZE = this%twires%TW(j)%TWC(i)%k
 !!!sgg250418
 !!!bug 2018
 !!bug que aparece cuando en hilos de dos segmentos con ambos identicos. Lo que hago es clipearlo directamente.
@@ -2290,29 +2290,29 @@ contains
 
             !!!!!!!!!los clipeo agresivamente si lo lanzo con -CLIPREGION para que no me den problema 06/07/15 (solo sirve para debugeo y con el -wiresflavor holland (old))
             if (.not. &
-               (((punto%XI-2 >  SINPML_fullsize(IHX)%XI).and.(punto%XI+2 < SINPML_fullsize(IHX)%XE).and. &
-               (punto%YI-2 >  SINPML_fullsize(IHY)%YI).and.(punto%YI+2 < SINPML_fullsize(IHY)%YE).and. &
-               (punto%ZI-2 >  SINPML_fullsize(IHZ)%ZI).and.(punto%zI+2 < SINPML_fullsize(IHZ)%ZE).and. &
-               (punto%XE-2 >  SINPML_fullsize(IHX)%XI).and.(punto%Xe+2 < SINPML_fullsize(IHX)%XE).and. &
-               (punto%YE-2 >  SINPML_fullsize(IHY)%YI).and.(punto%Ye+2 < SINPML_fullsize(IHY)%YE).and. &
-               (punto%ZE-2 >  SINPML_fullsize(IHZ)%ZI).and.(punto%Ze+2 < SINPML_fullsize(IHZ)%ZE)).or.(.not.CLIPREGION)) ) cycle hilosbarre
+               (((gridPoint%XI-2 >  SINPML_fullsize(IHX)%XI).and.(gridPoint%XI+2 < SINPML_fullsize(IHX)%XE).and. &
+               (gridPoint%YI-2 >  SINPML_fullsize(IHY)%YI).and.(gridPoint%YI+2 < SINPML_fullsize(IHY)%YE).and. &
+               (gridPoint%ZI-2 >  SINPML_fullsize(IHZ)%ZI).and.(gridPoint%zI+2 < SINPML_fullsize(IHZ)%ZE).and. &
+               (gridPoint%XE-2 >  SINPML_fullsize(IHX)%XI).and.(gridPoint%Xe+2 < SINPML_fullsize(IHX)%XE).and. &
+               (gridPoint%YE-2 >  SINPML_fullsize(IHY)%YI).and.(gridPoint%Ye+2 < SINPML_fullsize(IHY)%YE).and. &
+               (gridPoint%ZE-2 >  SINPML_fullsize(IHZ)%ZI).and.(gridPoint%Ze+2 < SINPML_fullsize(IHZ)%ZE)).or.(.not.CLIPREGION)) ) cycle hilosbarre
 
             TAMA2BIS=TAMA2BIS+1
             orientationIndex = this%twires%TW(j)%TWC(i)%D
             origindex=    this%twires%TW(j)%TWC(i)%nd
             !
             !
-            sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%i = punto%XI
-            sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%j = punto%YI
-            sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%k = punto%ZI
+            sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%i = gridPoint%XI
+            sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%j = gridPoint%YI
+            sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%k = gridPoint%ZI
 
             !!!2014 para informacion bbox hilos
-            if (punto%XI < bboxwirxi) bboxwirXI=punto%XI
-            if (punto%XE > bboxwirxE) bboxwirXE=punto%XE
-            if (punto%YI < bboxwirYi) bboxwirYI=punto%YI
-            if (punto%YE > bboxwirYE) bboxwirYE=punto%YE
-            if (punto%ZI < bboxwirZi) bboxwirZI=punto%ZI
-            if (punto%ZE > bboxwirZE) bboxwirZE=punto%ZE
+            if (gridPoint%XI < bboxwirxi) bboxwirXI=gridPoint%XI
+            if (gridPoint%XE > bboxwirxE) bboxwirXE=gridPoint%XE
+            if (gridPoint%YI < bboxwirYi) bboxwirYI=gridPoint%YI
+            if (gridPoint%YE > bboxwirYE) bboxwirYE=gridPoint%YE
+            if (gridPoint%ZI < bboxwirZi) bboxwirZI=gridPoint%ZI
+            if (gridPoint%ZE > bboxwirZE) bboxwirZE=gridPoint%ZE
             !!!!!!
 
             sgg%Med(contamedia)%wire(1)%SEGM(TAMA2BIS)%ori = orientationIndex
@@ -2331,7 +2331,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
             & contamedia, isathinwire,verbose,numberOfAssignments)
             if ((trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE))   == F_SOURCE_VOLTAGE) .OR.   &
             &     (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == F_SOURCE_CURRENT)) then
@@ -2556,12 +2556,12 @@ contains
                isathinwire = .FALSE.
                numertag = searchtag(tagtype,this%mtln%cables(j)%ptr%tag)
                do k = 1, ptr%n_segments
-                  punto%xi = ptr%segments(k)%x
-                  punto%xe = ptr%segments(k)%x
-                  punto%yi = ptr%segments(k)%y
-                  punto%ye = ptr%segments(k)%y
-                  punto%zi = ptr%segments(k)%z
-                  punto%ze = ptr%segments(k)%z
+                  gridPoint%xi = ptr%segments(k)%x
+                  gridPoint%xe = ptr%segments(k)%x
+                  gridPoint%yi = ptr%segments(k)%y
+                  gridPoint%ye = ptr%segments(k)%y
+                  gridPoint%zi = ptr%segments(k)%z
+                  gridPoint%ze = ptr%segments(k)%z
                   orientationIndex = ptr%segments(k)%orientation
                   call CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
                   & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
@@ -2569,7 +2569,7 @@ contains
                   & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
                   & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
                   & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-                  & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+                  & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
                   & contamedia, isathinwire,verbose,numberOfAssignments)
                end do
             end select
@@ -2842,12 +2842,12 @@ contains
                   !
                   !record coordinates
                   !
-                  punto%XI = i1
-                  punto%XE = i1
-                  punto%YI = j1
-                  punto%YE = j1
-                  punto%ZI = k1
-                  punto%ZE = k1
+                  gridPoint%XI = i1
+                  gridPoint%XE = i1
+                  gridPoint%YI = j1
+                  gridPoint%YE = j1
+                  gridPoint%ZI = k1
+                  gridPoint%ZE = k1
                   numertag = searchtag(tagtype,this%tSlots%Tg(j)%TgC(i)%tag)
                   call CreateSurfaceSlotMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz,&
                      media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI,&
@@ -2860,7 +2860,7 @@ contains
                      Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, &
                      Alloc_iHz_YI,&
                      Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, sgg%HShared, BoundingBox, &
-                     punto, orientationIndex, direccion, mediumIndex)
+                     gridPoint, orientationIndex, direccion, mediumIndex)
                   !del if esta dentro del bounding box
                end if
             end do
@@ -2921,19 +2921,19 @@ contains
          if (contapuntos(i) /= 0) then
             conta1 = conta1 + 1
             sgg%NodalSource(conta1)%numpuntos = contapuntos (conta1)
-           allocate(sgg%NodalSource(conta1)%punto(contapuntos(conta1)))
+           allocate(sgg%NodalSource(conta1)%gridPoint(contapuntos(conta1)))
             !initialization
             do ii=1,contapuntos(conta1)
-               sgg%NodalSource(conta1)%punto(ii)%or = 0
-               sgg%NodalSource(conta1)%punto(ii)%xc = 0.0_RKIND
-               sgg%NodalSource(conta1)%punto(ii)%yc = 0.0_RKIND
-               sgg%NodalSource(conta1)%punto(ii)%zc = 0.0_RKIND
-               sgg%NodalSource(conta1)%punto(ii)%XI = -1
-               sgg%NodalSource(conta1)%punto(ii)%XE = -1
-               sgg%NodalSource(conta1)%punto(ii)%YI = -1
-               sgg%NodalSource(conta1)%punto(ii)%YE = -1
-               sgg%NodalSource(conta1)%punto(ii)%ZI = -1
-               sgg%NodalSource(conta1)%punto(ii)%ZE = -1
+               sgg%NodalSource(conta1)%gridPoint(ii)%or = 0
+               sgg%NodalSource(conta1)%gridPoint(ii)%xc = 0.0_RKIND
+               sgg%NodalSource(conta1)%gridPoint(ii)%yc = 0.0_RKIND
+               sgg%NodalSource(conta1)%gridPoint(ii)%zc = 0.0_RKIND
+               sgg%NodalSource(conta1)%gridPoint(ii)%XI = -1
+               sgg%NodalSource(conta1)%gridPoint(ii)%XE = -1
+               sgg%NodalSource(conta1)%gridPoint(ii)%YI = -1
+               sgg%NodalSource(conta1)%gridPoint(ii)%YE = -1
+               sgg%NodalSource(conta1)%gridPoint(ii)%ZI = -1
+               sgg%NodalSource(conta1)%gridPoint(ii)%ZE = -1
             end do
          end if
       end do
@@ -3077,16 +3077,16 @@ contains
             !
             if ((punto_s%XI <= punto_s%XE) .AND. (punto_s%YI <= punto_s%YE) .AND. (punto_s%ZI <= punto_s%ZE)) then
                conta2 = conta2 + 1
-               sgg%NodalSource(conta1)%punto(conta2)%or = punto_s%or
-               sgg%NodalSource(conta1)%punto(conta2)%xc = punto_s%xc
-               sgg%NodalSource(conta1)%punto(conta2)%yc = punto_s%yc
-               sgg%NodalSource(conta1)%punto(conta2)%zc = punto_s%zc
-               sgg%NodalSource(conta1)%punto(conta2)%XI = punto_s%XI
-               sgg%NodalSource(conta1)%punto(conta2)%XE = punto_s%XE
-               sgg%NodalSource(conta1)%punto(conta2)%YI = punto_s%YI
-               sgg%NodalSource(conta1)%punto(conta2)%YE = punto_s%YE
-               sgg%NodalSource(conta1)%punto(conta2)%ZI = punto_s%ZI
-               sgg%NodalSource(conta1)%punto(conta2)%ZE = punto_s%ZE
+               sgg%NodalSource(conta1)%gridPoint(conta2)%or = punto_s%or
+               sgg%NodalSource(conta1)%gridPoint(conta2)%xc = punto_s%xc
+               sgg%NodalSource(conta1)%gridPoint(conta2)%yc = punto_s%yc
+               sgg%NodalSource(conta1)%gridPoint(conta2)%zc = punto_s%zc
+               sgg%NodalSource(conta1)%gridPoint(conta2)%XI = punto_s%XI
+               sgg%NodalSource(conta1)%gridPoint(conta2)%XE = punto_s%XE
+               sgg%NodalSource(conta1)%gridPoint(conta2)%YI = punto_s%YI
+               sgg%NodalSource(conta1)%gridPoint(conta2)%YE = punto_s%YE
+               sgg%NodalSource(conta1)%gridPoint(conta2)%ZI = punto_s%ZI
+               sgg%NodalSource(conta1)%gridPoint(conta2)%ZE = punto_s%ZE
                !PARA ACOMODAR LAS NODAL SOURCE COMO MEDIOS LINE Y PODER VISUALIZAR SONDAS 010824
                sgg%Med(contamedia)%Is%DIELECTRIC = .TRUE.
                sgg%Med(contamedia)%Is%LINE = .TRUE.
@@ -3095,12 +3095,12 @@ contains
                sgg%Med(contamedia)%Sigma = 0.
                sgg%Med(contamedia)%Mur =  1.0
                sgg%Med(contamedia)%SigmaM = 0.
-               punto%XI = punto_s%XI
-               punto%XE = punto_s%XE
-               punto%YI = punto_s%YI
-               punto%YE = punto_s%YE
-               punto%ZI = punto_s%ZI
-               punto%ZE = punto_s%ZE
+               gridPoint%XI = punto_s%XI
+               gridPoint%XE = punto_s%XE
+               gridPoint%YI = punto_s%YI
+               gridPoint%YE = punto_s%YE
+               gridPoint%ZI = punto_s%ZI
+               gridPoint%ZE = punto_s%ZE
                orientationIndex = punto_s%or
                isathinwire = .FALSE.
                numertag = 37
@@ -3110,7 +3110,7 @@ contains
                   Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
                   Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
                   Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-                  Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+                  Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
                   contamedia, isathinwire,verbose,numberOfAssignments)
             end if
             sgg%NodalSource(conta1)%numpuntos = conta2 !update with the correct value
@@ -3252,16 +3252,16 @@ contains
             !
             if ((punto_s%XI <= punto_s%XE) .AND. (punto_s%YI <= punto_s%YE) .AND. (punto_s%ZI <= punto_s%ZE)) then
                conta2 = conta2 + 1
-               sgg%NodalSource(conta1)%punto(conta2)%or = punto_s%or
-               sgg%NodalSource(conta1)%punto(conta2)%xc = punto_s%xc
-               sgg%NodalSource(conta1)%punto(conta2)%yc = punto_s%yc
-               sgg%NodalSource(conta1)%punto(conta2)%zc = punto_s%zc
-               sgg%NodalSource(conta1)%punto(conta2)%XI = punto_s%XI
-               sgg%NodalSource(conta1)%punto(conta2)%XE = punto_s%XE
-               sgg%NodalSource(conta1)%punto(conta2)%YI = punto_s%YI
-               sgg%NodalSource(conta1)%punto(conta2)%YE = punto_s%YE
-               sgg%NodalSource(conta1)%punto(conta2)%ZI = punto_s%ZI
-               sgg%NodalSource(conta1)%punto(conta2)%ZE = punto_s%ZE
+               sgg%NodalSource(conta1)%gridPoint(conta2)%or = punto_s%or
+               sgg%NodalSource(conta1)%gridPoint(conta2)%xc = punto_s%xc
+               sgg%NodalSource(conta1)%gridPoint(conta2)%yc = punto_s%yc
+               sgg%NodalSource(conta1)%gridPoint(conta2)%zc = punto_s%zc
+               sgg%NodalSource(conta1)%gridPoint(conta2)%XI = punto_s%XI
+               sgg%NodalSource(conta1)%gridPoint(conta2)%XE = punto_s%XE
+               sgg%NodalSource(conta1)%gridPoint(conta2)%YI = punto_s%YI
+               sgg%NodalSource(conta1)%gridPoint(conta2)%YE = punto_s%YE
+               sgg%NodalSource(conta1)%gridPoint(conta2)%ZI = punto_s%ZI
+               sgg%NodalSource(conta1)%gridPoint(conta2)%ZE = punto_s%ZE
                !PARA ACOMODAR LAS NODAL SOURCE COMO MEDIOS LINE Y PODER VISUALIZAR SONDAS 010824
                sgg%Med(contamedia)%Is%DIELECTRIC = .TRUE.
                sgg%Med(contamedia)%Is%LINE = .TRUE.
@@ -3270,12 +3270,12 @@ contains
                sgg%Med(contamedia)%Sigma = 0.
                sgg%Med(contamedia)%Mur =  1.0
                sgg%Med(contamedia)%SigmaM = 0.
-               punto%XI = punto_s%XI
-               punto%XE = punto_s%XE
-               punto%YI = punto_s%YI
-               punto%YE = punto_s%YE
-               punto%ZI = punto_s%ZI
-               punto%ZE = punto_s%ZE
+               gridPoint%XI = punto_s%XI
+               gridPoint%XE = punto_s%XE
+               gridPoint%YI = punto_s%YI
+               gridPoint%YE = punto_s%YE
+               gridPoint%ZI = punto_s%ZI
+               gridPoint%ZE = punto_s%ZE
                orientationIndex = punto_s%or
                isathinwire = .FALSE.
                numertag = 37
@@ -3285,7 +3285,7 @@ contains
                   Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
                   Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
                   Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-                  Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientationIndex, &
+                  Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
                   contamedia, isathinwire,verbose,numberOfAssignments)
             end if
             sgg%NodalSource(conta1)%numpuntos = conta2 !update with the correct value
@@ -3343,11 +3343,11 @@ contains
          tama2 = (this%Sonda%collection(i)%len_cor)
          do j = 1, tama2
             tempType = this%Sonda%collection(i)%cordinates(j)%or
-            punto%XI = this%Sonda%collection(i)%cordinates(j)%XI
-            punto%YI = this%Sonda%collection(i)%cordinates(j)%YI
-            punto%ZI = this%Sonda%collection(i)%cordinates(j)%ZI
-            if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND. (punto%YI >= BoundingBox%YI) .AND.   &
-            &    (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE) .AND.   &
+            gridPoint%XI = this%Sonda%collection(i)%cordinates(j)%XI
+            gridPoint%YI = this%Sonda%collection(i)%cordinates(j)%YI
+            gridPoint%ZI = this%Sonda%collection(i)%cordinates(j)%ZI
+            if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND.   &
+            &    (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE) .AND.   &
             &   ((tempType == NP_COR_EX) .OR. (tempType == NP_COR_EY) .OR. (tempType == NP_COR_EZ) .OR.   &
             &     (tempType == NP_COR_HX) .OR. (tempType ==  NP_COR_HY) .OR. (tempType == NP_COR_HZ))) then
                sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
@@ -3357,13 +3357,13 @@ contains
                   do i1 = 1, this%twires%TW(j1)%N_TWC
                      !nodo cazado
                      if (this%twires%TW(j1)%TWC(i1)%nd == this%Sonda%collection(i)%cordinates(j)%XI) then
-                        punto%XI = this%twires%TW(j1)%TWC(i1)%i
-                        punto%YI = this%twires%TW(j1)%TWC(i1)%j
-                        punto%ZI = this%twires%TW(j1)%TWC(i1)%k
+                        gridPoint%XI = this%twires%TW(j1)%TWC(i1)%i
+                        gridPoint%YI = this%twires%TW(j1)%TWC(i1)%j
+                        gridPoint%ZI = this%twires%TW(j1)%TWC(i1)%k
                         trappedNode=.true.
                         !
-                        if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE).AND.(punto%YI >= BoundingBox%YI) .AND. &
-                        & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                        if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE).AND.(gridPoint%YI >= BoundingBox%YI) .AND. &
+                        & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                            !
                            select case (this%twires%TW(j1)%TWC(i1)%D)
                             case (iEx, iEy, IEZ)
@@ -3380,13 +3380,13 @@ contains
                      do i1 = 1, this%swires%SW(j1)%N_SWC
                         !nodo cazado
                         if (this%swires%SW(j1)%SWC(i1)%nd == this%Sonda%collection(i)%cordinates(j)%XI) then
-                           punto%XI = floor(this%swires%SW(j1)%SWC(i1)%x)
-                           punto%YI = floor(this%swires%SW(j1)%SWC(i1)%y)
-                           punto%ZI = floor(this%swires%SW(j1)%SWC(i1)%z)
+                           gridPoint%XI = floor(this%swires%SW(j1)%SWC(i1)%x)
+                           gridPoint%YI = floor(this%swires%SW(j1)%SWC(i1)%y)
+                           gridPoint%ZI = floor(this%swires%SW(j1)%SWC(i1)%z)
                            trappedNode=.true.
                            !
-                           if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE).AND.(punto%YI >= BoundingBox%YI) .AND. &
-                           & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                           if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE).AND.(gridPoint%YI >= BoundingBox%YI) .AND. &
+                           & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                               sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                               !
                               exit loop_busqueda2
@@ -3407,12 +3407,12 @@ contains
                      do i1 = 1, this%tSlots%Tg(j1)%N_tgc
                         !nodo cazado
                         if (this%tSlots%Tg(j1)%TgC(i1)%node == this%Sonda%collection(i)%cordinates(j)%XI) then
-                           punto%XI = this%tSlots%Tg(j1)%TgC(i1)%i
-                           punto%YI = this%tSlots%Tg(j1)%TgC(i1)%j
-                           punto%ZI = this%tSlots%Tg(j1)%TgC(i1)%k
+                           gridPoint%XI = this%tSlots%Tg(j1)%TgC(i1)%i
+                           gridPoint%YI = this%tSlots%Tg(j1)%TgC(i1)%j
+                           gridPoint%ZI = this%tSlots%Tg(j1)%TgC(i1)%k
                            trappedNode=.true.
-                           if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND. (punto%YI >= BoundingBox%YI) .AND. &
-                           & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                           if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
+                           & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                               sgg%observation(i)%nP = sgg%observation(i)%nP + 1
                               exit do_loop_busquedatg1
                            end if
@@ -3457,11 +3457,11 @@ contains
             if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6)) &
             &                call STOPONERROR(layoutnumber,num_procs,buff)
             do k = 1, tama3
-               punto%XI = this%oldSONDA%probes(i)%Electric(j)%probe%i(k)
-               punto%YI = this%oldSONDA%probes(i)%Electric(j)%probe%j(k)
-               punto%ZI = this%oldSONDA%probes(i)%Electric(j)%probe%k(k)
-               if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND. (punto%YI >= BoundingBox%YI) .AND. &
-               & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+               gridPoint%XI = this%oldSONDA%probes(i)%Electric(j)%probe%i(k)
+               gridPoint%YI = this%oldSONDA%probes(i)%Electric(j)%probe%j(k)
+               gridPoint%ZI = this%oldSONDA%probes(i)%Electric(j)%probe%k(k)
+               if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
+               & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                   sgg%observation(ii)%nP = sgg%observation(ii)%nP + 3
                end if
             end do
@@ -3477,11 +3477,11 @@ contains
             if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6)) &
             &           call STOPONERROR(layoutnumber,num_procs,buff)
             do k = 1, tama3
-               punto%XI = this%oldSONDA%probes(i)%Magnetic(j)%probe%i(k)
-               punto%YI = this%oldSONDA%probes(i)%Magnetic(j)%probe%j(k)
-               punto%ZI = this%oldSONDA%probes(i)%Magnetic(j)%probe%k(k)
-               if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND. (punto%YI >= BoundingBox%YI) .AND. &
-               & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+               gridPoint%XI = this%oldSONDA%probes(i)%Magnetic(j)%probe%i(k)
+               gridPoint%YI = this%oldSONDA%probes(i)%Magnetic(j)%probe%j(k)
+               gridPoint%ZI = this%oldSONDA%probes(i)%Magnetic(j)%probe%k(k)
+               if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
+               & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                   sgg%observation(ii)%nP = sgg%observation(ii)%nP + 3
                end if
             end do
@@ -3492,16 +3492,16 @@ contains
       do i = 1, tamaBloquePrb
          ii = i + tamaSonda + tamaoldSONDA
          sgg%observation(ii)%nP = 0
-         punto%XI = this%BloquePRB%BP(i)%i1
-         punto%YI = this%BloquePRB%BP(i)%j1
-         punto%ZI = this%BloquePRB%BP(i)%k1
-         punto%XE = this%BloquePRB%BP(i)%I2
-         punto%YE = this%BloquePRB%BP(i)%J2
-         punto%ZE = this%BloquePRB%BP(i)%K2
+         gridPoint%XI = this%BloquePRB%BP(i)%i1
+         gridPoint%YI = this%BloquePRB%BP(i)%j1
+         gridPoint%ZI = this%BloquePRB%BP(i)%k1
+         gridPoint%XE = this%BloquePRB%BP(i)%I2
+         gridPoint%YE = this%BloquePRB%BP(i)%J2
+         gridPoint%ZE = this%BloquePRB%BP(i)%K2
          !!!
-         if (((punto%XI >= BoundingBox%XI) .OR. (punto%XI <= BoundingBox%XE)) .AND. ((punto%YI >= BoundingBox%YI).OR. (punto%YI <= BoundingBox%YE)) .AND. &
-            ((punto%ZI >= BoundingBox%ZI) .OR. (punto%ZI <= BoundingBox%ZE)) .AND. ((punto%XE >= BoundingBox%XI).OR. (punto%XE <= BoundingBox%XE)) .AND. &
-            ((punto%YE >= BoundingBox%YI) .OR. (punto%YE <= BoundingBox%YE)) .AND. ((punto%ZE >= BoundingBox%ZI).OR. (punto%ZE <= BoundingBox%ZE))) then
+         if (((gridPoint%XI >= BoundingBox%XI) .OR. (gridPoint%XI <= BoundingBox%XE)) .AND. ((gridPoint%YI >= BoundingBox%YI).OR. (gridPoint%YI <= BoundingBox%YE)) .AND. &
+            ((gridPoint%ZI >= BoundingBox%ZI) .OR. (gridPoint%ZI <= BoundingBox%ZE)) .AND. ((gridPoint%XE >= BoundingBox%XI).OR. (gridPoint%XE <= BoundingBox%XE)) .AND. &
+            ((gridPoint%YE >= BoundingBox%YI) .OR. (gridPoint%YE <= BoundingBox%YE)) .AND. ((gridPoint%ZE >= BoundingBox%ZI).OR. (gridPoint%ZE <= BoundingBox%ZE))) then
             select case (this%BloquePRB%BP(i)%NML)
              case (iEx)
                do k = this%BloquePRB%BP(i)%i1, this%BloquePRB%BP(i)%I2, this%BloquePRB%BP(i)%skip
@@ -3530,19 +3530,19 @@ contains
             tama2=1
             do j = 1, tama2
                tempType = MAPVTK
-               punto%XI = SINPML_fullsize(IHX)%XI !!! +1   !ojo si se cambia aqui tambien mas abajo !le quito 1 para que con condiciones PEC no las pinte !habria que manejar el dibujo de las condiciones aparte
-               punto%YI = SINPML_fullsize(IHY)%YI !!! +1
-               punto%ZI = SINPML_fullsize(IHZ)%ZI !!! +1
-               punto%XE = SINPML_fullsize(IHX)%XE !!! -1
-               punto%YE = SINPML_fullsize(IHY)%YE !!! -1
-               punto%ZE = SINPML_fullsize(IHZ)%ZE !!! -1
+               gridPoint%XI = SINPML_fullsize(IHX)%XI !!! +1   !ojo si se cambia aqui tambien mas abajo !le quito 1 para que con condiciones PEC no las pinte !habria que manejar el dibujo de las condiciones aparte
+               gridPoint%YI = SINPML_fullsize(IHY)%YI !!! +1
+               gridPoint%ZI = SINPML_fullsize(IHZ)%ZI !!! +1
+               gridPoint%XE = SINPML_fullsize(IHX)%XE !!! -1
+               gridPoint%YE = SINPML_fullsize(IHY)%YE !!! -1
+               gridPoint%ZE = SINPML_fullsize(IHZ)%ZE !!! -1
 !!!               print *,layoutnumber,punto%XI,punto%YI,punto%ZI,punto%XE,punto%YE,punto%ZE
-               if (((punto%XI >= BoundingBox%XI) .OR. (punto%XI <= BoundingBox%XE)) .AND. &
-               &   ((punto%YI >= BoundingBox%YI) .OR. (punto%YI <= BoundingBox%YE)) .AND. &
-               &   ((punto%ZI >= BoundingBox%ZI) .OR. (punto%ZI <= BoundingBox%ZE)) .AND. &
-               &   ((punto%XE >= BoundingBox%XI) .OR. (punto%XE <= BoundingBox%XE)) .AND. &
-               &   ((punto%YE >= BoundingBox%YI) .OR. (punto%YE <= BoundingBox%YE)) .AND. &
-               &   ((punto%ZE >= BoundingBox%ZI) .OR. (punto%ZE <= BoundingBox%ZE))) then
+               if (((gridPoint%XI >= BoundingBox%XI) .OR. (gridPoint%XI <= BoundingBox%XE)) .AND. &
+               &   ((gridPoint%YI >= BoundingBox%YI) .OR. (gridPoint%YI <= BoundingBox%YE)) .AND. &
+               &   ((gridPoint%ZI >= BoundingBox%ZI) .OR. (gridPoint%ZI <= BoundingBox%ZE)) .AND. &
+               &   ((gridPoint%XE >= BoundingBox%XI) .OR. (gridPoint%XE <= BoundingBox%XE)) .AND. &
+               &   ((gridPoint%YE >= BoundingBox%YI) .OR. (gridPoint%YE <= BoundingBox%YE)) .AND. &
+               &   ((gridPoint%ZE >= BoundingBox%ZI) .OR. (gridPoint%ZE <= BoundingBox%ZE))) then
 !!!                   print *,'----Dentro->',layoutnumber,punto%XI,punto%YI,punto%ZI,punto%XE,punto%YE,punto%ZE
                   sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                end if
@@ -3551,17 +3551,17 @@ contains
             tama2 = (this%VolPrb%collection(i)%len_cor)
             do j = 1, tama2
                tempType = this%VolPrb%collection(i)%cordinates(j)%or
-               punto%XI = this%VolPrb%collection(i)%cordinates(j)%XI
-               punto%YI = this%VolPrb%collection(i)%cordinates(j)%YI
-               punto%ZI = this%VolPrb%collection(i)%cordinates(j)%ZI
-               punto%XE = this%VolPrb%collection(i)%cordinates(j)%XE
-               punto%YE = this%VolPrb%collection(i)%cordinates(j)%YE
-               punto%ZE = this%VolPrb%collection(i)%cordinates(j)%ZE
+               gridPoint%XI = this%VolPrb%collection(i)%cordinates(j)%XI
+               gridPoint%YI = this%VolPrb%collection(i)%cordinates(j)%YI
+               gridPoint%ZI = this%VolPrb%collection(i)%cordinates(j)%ZI
+               gridPoint%XE = this%VolPrb%collection(i)%cordinates(j)%XE
+               gridPoint%YE = this%VolPrb%collection(i)%cordinates(j)%YE
+               gridPoint%ZE = this%VolPrb%collection(i)%cordinates(j)%ZE
 
-               if (((punto%XI >= BoundingBox%XI) .OR. (punto%XI <= BoundingBox%XE)) .AND. ((punto%YI >= BoundingBox%YI) .OR.  &
-               &     (punto%YI <= BoundingBox%YE)) .AND. ((punto%ZI >= BoundingBox%ZI) .OR. (punto%ZI <= BoundingBox%ZE)) .AND.  &
-               &    ((punto%XE >= BoundingBox%XI) .OR. (punto%XE <= BoundingBox%XE)) .AND. ((punto%YE >= BoundingBox%YI) .OR.   &
-               &     (punto%YE <= BoundingBox%YE)) .AND. ((punto%ZE >= BoundingBox%ZI) .OR. (punto%ZE <= BoundingBox%ZE))) then
+               if (((gridPoint%XI >= BoundingBox%XI) .OR. (gridPoint%XI <= BoundingBox%XE)) .AND. ((gridPoint%YI >= BoundingBox%YI) .OR.  &
+               &     (gridPoint%YI <= BoundingBox%YE)) .AND. ((gridPoint%ZI >= BoundingBox%ZI) .OR. (gridPoint%ZI <= BoundingBox%ZE)) .AND.  &
+               &    ((gridPoint%XE >= BoundingBox%XI) .OR. (gridPoint%XE <= BoundingBox%XE)) .AND. ((gridPoint%YE >= BoundingBox%YI) .OR.   &
+               &     (gridPoint%YE <= BoundingBox%YE)) .AND. ((gridPoint%ZE >= BoundingBox%ZI) .OR. (gridPoint%ZE <= BoundingBox%ZE))) then
 
                   sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                end if
@@ -3692,61 +3692,61 @@ contains
             end if
             !!!
             do j = 1, tama2
-               punto%XI = this%Sonda%collection(i)%cordinates(j)%XI
-               punto%YI = this%Sonda%collection(i)%cordinates(j)%YI
-               punto%ZI = this%Sonda%collection(i)%cordinates(j)%ZI
+               gridPoint%XI = this%Sonda%collection(i)%cordinates(j)%XI
+               gridPoint%YI = this%Sonda%collection(i)%cordinates(j)%YI
+               gridPoint%ZI = this%Sonda%collection(i)%cordinates(j)%ZI
                if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_EX) then
-                  if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND. (punto%YI >= BoundingBox%YI) .AND. &
-                  & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                  if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
+                  & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iEx
                   end if
                else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_EY) then
-                  if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND. (punto%YI >= BoundingBox%YI) .AND. &
-                  & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                  if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
+                  & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iEy
                   end if
                else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_EZ) then
-                  if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND. (punto%YI >= BoundingBox%YI) .AND. &
-                  & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                  if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
+                  & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IEZ
                   end if
                else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_HX) then
-                  if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND. (punto%YI >= BoundingBox%YI) .AND. &
-                  & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                  if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
+                  & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IHX
                   end if
                else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_HY) then
-                  if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND. (punto%YI >= BoundingBox%YI) .AND. &
-                  & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                  if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
+                  & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IHY
                   end if
                else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_HZ) then
-                  if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND. (punto%YI >= BoundingBox%YI) .AND. &
-                  & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                  if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
+                  & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IHZ
                   end if
                else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT .or. &
@@ -3757,19 +3757,19 @@ contains
                         !nodo cazado
                         if (this%twires%TW(j1)%TWC(i1)%nd == this%Sonda%collection(i)%cordinates(j)%XI) then
                            trappedNode=.true.
-                           punto%XI = this%twires%TW(j1)%TWC(i1)%i
-                           punto%YI = this%twires%TW(j1)%TWC(i1)%j
-                           punto%ZI = this%twires%TW(j1)%TWC(i1)%k
-                           if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND.   &
-                           &    (punto%YI >= BoundingBox%YI) .AND. &
-                           &    (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                           gridPoint%XI = this%twires%TW(j1)%TWC(i1)%i
+                           gridPoint%YI = this%twires%TW(j1)%TWC(i1)%j
+                           gridPoint%ZI = this%twires%TW(j1)%TWC(i1)%k
+                           if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND.   &
+                           &    (gridPoint%YI >= BoundingBox%YI) .AND. &
+                           &    (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                               select case (this%twires%TW(j1)%TWC(i1)%D)
                                case (iEx)
                                  sgg%observation(i)%nP = sgg%observation(i)%nP + 1
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%node = this%twires%TW(j1)%TWC(i1)%nd
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%XI = punto%XI
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%YI = punto%YI
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = punto%ZI
+                                 sgg%observation(i)%P(sgg%observation(i)%nP)%XI = gridPoint%XI
+                                 sgg%observation(i)%P(sgg%observation(i)%nP)%YI = gridPoint%YI
+                                 sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = gridPoint%ZI
                                  if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IJX
                                  else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
@@ -3781,9 +3781,9 @@ contains
                                case (iEy)
                                  sgg%observation(i)%nP = sgg%observation(i)%nP + 1
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%node = this%twires%TW(j1)%TWC(i1)%nd
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%XI = punto%XI
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%YI = punto%YI
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = punto%ZI
+                                 sgg%observation(i)%P(sgg%observation(i)%nP)%XI = gridPoint%XI
+                                 sgg%observation(i)%P(sgg%observation(i)%nP)%YI = gridPoint%YI
+                                 sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = gridPoint%ZI
                                  if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IJY
                                  else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
@@ -3792,9 +3792,9 @@ contains
                                case (IEZ)
                                  sgg%observation(i)%nP = sgg%observation(i)%nP + 1
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%node = this%twires%TW(j1)%TWC(i1)%nd
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%XI = punto%XI
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%YI = punto%YI
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = punto%ZI
+                                 sgg%observation(i)%P(sgg%observation(i)%nP)%XI = gridPoint%XI
+                                 sgg%observation(i)%P(sgg%observation(i)%nP)%YI = gridPoint%YI
+                                 sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = gridPoint%ZI
                                  if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IJZ
                                  else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
@@ -3811,12 +3811,12 @@ contains
                         do i1 = 1, this%swires%SW(j1)%N_SWC
                            if (this%swires%SW(j1)%SWC(i1)%nd == this%Sonda%collection(i)%cordinates(j)%XI) then
                               trappedNode=.true.
-                              punto%XI = floor(this%swires%SW(j1)%SWC(i1)%x)
-                              punto%YI = floor(this%swires%SW(j1)%SWC(i1)%y)
-                              punto%ZI = floor(this%swires%SW(j1)%SWC(i1)%z)
-                              if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND.  &
-                              &    (punto%YI >= BoundingBox%YI) .AND. &
-                              &    (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                              gridPoint%XI = floor(this%swires%SW(j1)%SWC(i1)%x)
+                              gridPoint%YI = floor(this%swires%SW(j1)%SWC(i1)%y)
+                              gridPoint%ZI = floor(this%swires%SW(j1)%SWC(i1)%z)
+                              if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND.  &
+                              &    (gridPoint%YI >= BoundingBox%YI) .AND. &
+                              &    (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                                  sgg%observation(i)%nP = sgg%observation(i)%nP + 1
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%node = this%swires%SW(j1)%SWC(i1)%nd
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = floor(this%swires%SW(j1)%SWC(i1)%x)
@@ -3838,17 +3838,17 @@ contains
                      do i1 = 1, this%tSlots%Tg(j1)%N_tgc
                         !nodo cazado
                         if (this%tSlots%Tg(j1)%TgC(i1)%node == this%Sonda%collection(i)%cordinates(j)%XI) then
-                           punto%XI = this%tSlots%Tg(j1)%TgC(i1)%i
-                           punto%YI = this%tSlots%Tg(j1)%TgC(i1)%j
-                           punto%ZI = this%tSlots%Tg(j1)%TgC(i1)%k
-                           if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND.   &
-                           &     (punto%YI >= BoundingBox%YI) .AND. &
-                           & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                           gridPoint%XI = this%tSlots%Tg(j1)%TgC(i1)%i
+                           gridPoint%YI = this%tSlots%Tg(j1)%TgC(i1)%j
+                           gridPoint%ZI = this%tSlots%Tg(j1)%TgC(i1)%k
+                           if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND.   &
+                           &     (gridPoint%YI >= BoundingBox%YI) .AND. &
+                           & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                               sgg%observation(i)%nP = sgg%observation(i)%nP + 1
                               sgg%observation(i)%P(sgg%observation(i)%nP)%node = this%tSlots%Tg(j1)%TgC(i1)%node
-                              sgg%observation(i)%P(sgg%observation(i)%nP)%XI = punto%XI
-                              sgg%observation(i)%P(sgg%observation(i)%nP)%YI = punto%YI
-                              sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = punto%ZI
+                              sgg%observation(i)%P(sgg%observation(i)%nP)%XI = gridPoint%XI
+                              sgg%observation(i)%P(sgg%observation(i)%nP)%YI = gridPoint%YI
+                              sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = gridPoint%ZI
                               direccion = this%tSlots%Tg(j1)%TgC(i1)%dir
                               select case (this%tSlots%Tg(j1)%TgC(i1)%or)
                                case (iEx)
@@ -3925,19 +3925,19 @@ contains
                if (tama3 /= 2)  call STOPONERROR(layoutnumber,num_procs,buff)
                !
                sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-               punto%XI = this%oldSONDA%probes(i)%FarField(j)%probe%i(1)
-               punto%YI = this%oldSONDA%probes(i)%FarField(j)%probe%j(1)
-               punto%ZI = this%oldSONDA%probes(i)%FarField(j)%probe%k(1)
-               punto%XE = this%oldSONDA%probes(i)%FarField(j)%probe%i(2)
-               punto%YE = this%oldSONDA%probes(i)%FarField(j)%probe%j(2)
-               punto%ZE = this%oldSONDA%probes(i)%FarField(j)%probe%k(2)
+               gridPoint%XI = this%oldSONDA%probes(i)%FarField(j)%probe%i(1)
+               gridPoint%YI = this%oldSONDA%probes(i)%FarField(j)%probe%j(1)
+               gridPoint%ZI = this%oldSONDA%probes(i)%FarField(j)%probe%k(1)
+               gridPoint%XE = this%oldSONDA%probes(i)%FarField(j)%probe%i(2)
+               gridPoint%YE = this%oldSONDA%probes(i)%FarField(j)%probe%j(2)
+               gridPoint%ZE = this%oldSONDA%probes(i)%FarField(j)%probe%k(2)
                !
-               sgg%observation(ii)%P(1)%XI = punto%XI
-               sgg%observation(ii)%P(1)%YI = punto%YI
-               sgg%observation(ii)%P(1)%ZI = punto%ZI
-               sgg%observation(ii)%P(1)%XE = punto%XE
-               sgg%observation(ii)%P(1)%YE = punto%YE
-               sgg%observation(ii)%P(1)%ZE = punto%ZE
+               sgg%observation(ii)%P(1)%XI = gridPoint%XI
+               sgg%observation(ii)%P(1)%YI = gridPoint%YI
+               sgg%observation(ii)%P(1)%ZI = gridPoint%ZI
+               sgg%observation(ii)%P(1)%XE = gridPoint%XE
+               sgg%observation(ii)%P(1)%YE = gridPoint%YE
+               sgg%observation(ii)%P(1)%ZE = gridPoint%ZE
                sgg%observation(ii)%P(1)%what = farfield
                !
                !no se clipea porque se manejan como ondas planas
@@ -3978,27 +3978,27 @@ contains
                &                call STOPONERROR(layoutnumber,num_procs,buff)
                write(probenumber, '(i7)') ii
                do k = 1, tama3
-                  punto%XI = this%oldSONDA%probes(i)%Electric(j)%probe%i(k)
-                  punto%YI = this%oldSONDA%probes(i)%Electric(j)%probe%j(k)
-                  punto%ZI = this%oldSONDA%probes(i)%Electric(j)%probe%k(k)
-                  if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND. (punto%YI >= BoundingBox%YI) .AND. &
-                  & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                  gridPoint%XI = this%oldSONDA%probes(i)%Electric(j)%probe%i(k)
+                  gridPoint%YI = this%oldSONDA%probes(i)%Electric(j)%probe%j(k)
+                  gridPoint%ZI = this%oldSONDA%probes(i)%Electric(j)%probe%k(k)
+                  if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
+                  & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iEx
                      !
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iEy
                      !
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IEZ
                      !
                      !
@@ -4022,27 +4022,27 @@ contains
                if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6))  &
                &                call STOPONERROR(layoutnumber,num_procs,buff)
                do k = 1, tama3
-                  punto%XI = this%oldSONDA%probes(i)%Magnetic(j)%probe%i(k)
-                  punto%YI = this%oldSONDA%probes(i)%Magnetic(j)%probe%j(k)
-                  punto%ZI = this%oldSONDA%probes(i)%Magnetic(j)%probe%k(k)
-                  if ((punto%XI >= BoundingBox%XI) .AND. (punto%XI <= BoundingBox%XE) .AND. (punto%YI >= BoundingBox%YI) .AND. &
-                  & (punto%YI <= BoundingBox%YE) .AND. (punto%ZI >= BoundingBox%ZI) .AND. (punto%ZI <= BoundingBox%ZE)) then
+                  gridPoint%XI = this%oldSONDA%probes(i)%Magnetic(j)%probe%i(k)
+                  gridPoint%YI = this%oldSONDA%probes(i)%Magnetic(j)%probe%j(k)
+                  gridPoint%ZI = this%oldSONDA%probes(i)%Magnetic(j)%probe%k(k)
+                  if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
+                  & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IHX
                      !
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IHY
                      !
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IHZ
                      !
                      !
@@ -4062,16 +4062,16 @@ contains
          !
          do i = 1, tamaBloquePrb
             ii = i + tamaSonda + tamaoldSONDA
-            punto%XI = this%BloquePRB%BP(i)%i1
-            punto%YI = this%BloquePRB%BP(i)%j1
-            punto%ZI = this%BloquePRB%BP(i)%k1
-            punto%XE = this%BloquePRB%BP(i)%I2
-            punto%YE = this%BloquePRB%BP(i)%J2
-            punto%ZE = this%BloquePRB%BP(i)%K2
-            if (((punto%XI >= BoundingBox%XI) .OR. (punto%XI <= BoundingBox%XE)) .AND. ((punto%YI >= BoundingBox%YI) .OR.   &
-            &     (punto%YI <= BoundingBox%YE)) .AND. ((punto%ZI >= BoundingBox%ZI) .OR. (punto%ZI <= BoundingBox%ZE)) .AND.   &
-            &     ((punto%XE >= BoundingBox%XI) .OR. (punto%XE <= BoundingBox%XE)) .AND. ((punto%YE >= BoundingBox%YI) .OR.   &
-            &     (punto%YE <= BoundingBox%YE)) .AND. ((punto%ZE >= BoundingBox%ZI) .OR. (punto%ZE <= BoundingBox%ZE))) then
+            gridPoint%XI = this%BloquePRB%BP(i)%i1
+            gridPoint%YI = this%BloquePRB%BP(i)%j1
+            gridPoint%ZI = this%BloquePRB%BP(i)%k1
+            gridPoint%XE = this%BloquePRB%BP(i)%I2
+            gridPoint%YE = this%BloquePRB%BP(i)%J2
+            gridPoint%ZE = this%BloquePRB%BP(i)%K2
+            if (((gridPoint%XI >= BoundingBox%XI) .OR. (gridPoint%XI <= BoundingBox%XE)) .AND. ((gridPoint%YI >= BoundingBox%YI) .OR.   &
+            &     (gridPoint%YI <= BoundingBox%YE)) .AND. ((gridPoint%ZI >= BoundingBox%ZI) .OR. (gridPoint%ZI <= BoundingBox%ZE)) .AND.   &
+            &     ((gridPoint%XE >= BoundingBox%XI) .OR. (gridPoint%XE <= BoundingBox%XE)) .AND. ((gridPoint%YE >= BoundingBox%YI) .OR.   &
+            &     (gridPoint%YE <= BoundingBox%YE)) .AND. ((gridPoint%ZE >= BoundingBox%ZI) .OR. (gridPoint%ZE <= BoundingBox%ZE))) then
                !
                !!!ANIADIDO 15/07/15 PARA COMPATIBILIDD NEW PROBE EN FRECUENCIA
                select case (this%BloquePRB%BP(i)%type2)
@@ -4144,11 +4144,11 @@ contains
                   do k = this%BloquePRB%BP(i)%i1, this%BloquePRB%BP(i)%I2, this%BloquePRB%BP(i)%skip
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = k
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%XE = k
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = punto%YE
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = punto%ZE
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = gridPoint%YE
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = gridPoint%ZE
                      if (this%BloquePRB%BP(i)%t) then
                         !electric type
                         sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IBLOQUEJX
@@ -4160,12 +4160,12 @@ contains
                 case (iEy)
                   do k = this%BloquePRB%BP(i)%j1, this%BloquePRB%BP(i)%J2, this%BloquePRB%BP(i)%skip
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = k
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XE = punto%XE
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XE = gridPoint%XE
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = k
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = punto%ZE
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = gridPoint%ZE
                      if (this%BloquePRB%BP(i)%t) then
                         !electric type
                         sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IBLOQUEJY
@@ -4177,11 +4177,11 @@ contains
                 case (IEZ)
                   do k = this%BloquePRB%BP(i)%k1, this%BloquePRB%BP(i)%K2, this%BloquePRB%BP(i)%skip
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = k
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XE = punto%XE
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = punto%YE
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XE = gridPoint%XE
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = gridPoint%YE
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = k
                      if (this%BloquePRB%BP(i)%t) then
                         !electric type
@@ -4227,21 +4227,21 @@ contains
                do j = 1, tama2
                   !I clip these probes to allow out-of-the box snapshot probes !ojo si se cambia aqui tambien mas arriba
                   tempType = MAPVTK
-                  punto%XI = SINPML_fullsize(IHX)%XI   !!! +1
-                  punto%YI = SINPML_fullsize(IHY)%YI   !!! +1
-                  punto%ZI = SINPML_fullsize(IHZ)%ZI   !!! +1
-                  punto%XE = SINPML_fullsize(IHX)%XE   !!! -1
-                  punto%YE = SINPML_fullsize(IHY)%YE   !!! -1
-                  punto%ZE = SINPML_fullsize(IHZ)%ZE   !!! -1
+                  gridPoint%XI = SINPML_fullsize(IHX)%XI   !!! +1
+                  gridPoint%YI = SINPML_fullsize(IHY)%YI   !!! +1
+                  gridPoint%ZI = SINPML_fullsize(IHZ)%ZI   !!! +1
+                  gridPoint%XE = SINPML_fullsize(IHX)%XE   !!! -1
+                  gridPoint%YE = SINPML_fullsize(IHY)%YE   !!! -1
+                  gridPoint%ZE = SINPML_fullsize(IHZ)%ZE   !!! -1
 
-                  memo=memo+(punto%XE-punto%XI+1)*(punto%YE-punto%YI+1)*(punto%ZE-punto%ZI+1)
+                  memo=memo+(gridPoint%XE-gridPoint%XI+1)*(gridPoint%YE-gridPoint%YI+1)*(gridPoint%ZE-gridPoint%ZI+1)
 
-                  if (( (punto%XI >= BoundingBox%XI) .OR. (punto%XI <= BoundingBox%XE)) .AND. &
-                  &    ((punto%YI >= BoundingBox%YI) .OR. (punto%YI <= BoundingBox%YE)) .AND. &
-                  &    ((punto%ZI >= BoundingBox%ZI) .OR. (punto%ZI <= BoundingBox%ZE)) .AND. &
-                  &    ((punto%XE >= BoundingBox%XI) .OR. (punto%XE <= BoundingBox%XE)) .AND. &
-                  &    ((punto%YE >= BoundingBox%YI) .OR. (punto%YE <= BoundingBox%YE)) .AND. &
-                  &    ((punto%ZE >= BoundingBox%ZI) .OR. (punto%ZE <= BoundingBox%ZE))) then
+                  if (( (gridPoint%XI >= BoundingBox%XI) .OR. (gridPoint%XI <= BoundingBox%XE)) .AND. &
+                  &    ((gridPoint%YI >= BoundingBox%YI) .OR. (gridPoint%YI <= BoundingBox%YE)) .AND. &
+                  &    ((gridPoint%ZI >= BoundingBox%ZI) .OR. (gridPoint%ZI <= BoundingBox%ZE)) .AND. &
+                  &    ((gridPoint%XE >= BoundingBox%XI) .OR. (gridPoint%XE <= BoundingBox%XE)) .AND. &
+                  &    ((gridPoint%YE >= BoundingBox%YI) .OR. (gridPoint%YE <= BoundingBox%YE)) .AND. &
+                  &    ((gridPoint%ZE >= BoundingBox%ZI) .OR. (gridPoint%ZE <= BoundingBox%ZE))) then
 
                      !
                      write(probenumber, '(i7)') ii
@@ -4249,12 +4249,12 @@ contains
                      !                                              trim(adjustl(this%BloquePrb%BP(i)%outputrequest))
                      !
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XE = punto%XE
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = punto%YE
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = punto%ZE
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XE = gridPoint%XE
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = gridPoint%YE
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = gridPoint%ZE
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%what = tempType
                   end if
                end do
@@ -4347,20 +4347,20 @@ contains
                do j = 1, tama2
                   !I clip these probes to allow out-of-the box snapshot probes
                   tempType = this%VolPrb%collection(i)%cordinates(j)%or
-                  punto%XI = max(this%VolPrb%collection(i)%cordinates(j)%XI,SINPML_fullsize(iEx)%XI)
-                  punto%YI = max(this%VolPrb%collection(i)%cordinates(j)%YI,SINPML_fullsize(iEy)%YI)
-                  punto%ZI = max(this%VolPrb%collection(i)%cordinates(j)%ZI,SINPML_fullsize(IEZ)%ZI)
-                  punto%XE = min(this%VolPrb%collection(i)%cordinates(j)%XE,SINPML_fullsize(iEx)%XE)
-                  punto%YE = min(this%VolPrb%collection(i)%cordinates(j)%YE,SINPML_fullsize(iEy)%YE)
-                  punto%ZE = min(this%VolPrb%collection(i)%cordinates(j)%ZE,SINPML_fullsize(IEZ)%ZE)
-                  memo=memo+(punto%XE-punto%XI+1)*(punto%YE-punto%YI+1)*(punto%ZE-punto%ZI+1)
+                  gridPoint%XI = max(this%VolPrb%collection(i)%cordinates(j)%XI,SINPML_fullsize(iEx)%XI)
+                  gridPoint%YI = max(this%VolPrb%collection(i)%cordinates(j)%YI,SINPML_fullsize(iEy)%YI)
+                  gridPoint%ZI = max(this%VolPrb%collection(i)%cordinates(j)%ZI,SINPML_fullsize(IEZ)%ZI)
+                  gridPoint%XE = min(this%VolPrb%collection(i)%cordinates(j)%XE,SINPML_fullsize(iEx)%XE)
+                  gridPoint%YE = min(this%VolPrb%collection(i)%cordinates(j)%YE,SINPML_fullsize(iEy)%YE)
+                  gridPoint%ZE = min(this%VolPrb%collection(i)%cordinates(j)%ZE,SINPML_fullsize(IEZ)%ZE)
+                  memo=memo+(gridPoint%XE-gridPoint%XI+1)*(gridPoint%YE-gridPoint%YI+1)*(gridPoint%ZE-gridPoint%ZI+1)
 
-                  if (((punto%XI >= BoundingBox%XI) .OR. (punto%XI <= BoundingBox%XE)) .AND. &
-                  &    ((punto%YI >= BoundingBox%YI) .OR. (punto%YI <= BoundingBox%YE)) .AND. &
-                  &    ((punto%ZI >= BoundingBox%ZI) .OR. (punto%ZI <= BoundingBox%ZE)) .AND. &
-                  &    ((punto%XE >= BoundingBox%XI) .OR. (punto%XE <= BoundingBox%XE)) .AND. &
-                  &    ((punto%YE >= BoundingBox%YI) .OR. (punto%YE <= BoundingBox%YE)) .AND. &
-                  &    ((punto%ZE >= BoundingBox%ZI) .OR. (punto%ZE <= BoundingBox%ZE))) then
+                  if (((gridPoint%XI >= BoundingBox%XI) .OR. (gridPoint%XI <= BoundingBox%XE)) .AND. &
+                  &    ((gridPoint%YI >= BoundingBox%YI) .OR. (gridPoint%YI <= BoundingBox%YE)) .AND. &
+                  &    ((gridPoint%ZI >= BoundingBox%ZI) .OR. (gridPoint%ZI <= BoundingBox%ZE)) .AND. &
+                  &    ((gridPoint%XE >= BoundingBox%XI) .OR. (gridPoint%XE <= BoundingBox%XE)) .AND. &
+                  &    ((gridPoint%YE >= BoundingBox%YI) .OR. (gridPoint%YE <= BoundingBox%YE)) .AND. &
+                  &    ((gridPoint%ZE >= BoundingBox%ZI) .OR. (gridPoint%ZE <= BoundingBox%ZE))) then
 
                      !
                      write(probenumber, '(i7)') ii
@@ -4368,12 +4368,12 @@ contains
                      !                                              trim(adjustl(this%BloquePrb%BP(i)%outputrequest))
                      !
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = punto%XI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = punto%YI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XE = punto%XE
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = punto%YE
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = punto%ZE
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%XE = gridPoint%XE
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = gridPoint%YE
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = gridPoint%ZE
                      !trancos
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%Xtrancos = this%VolPrb%collection(i)%cordinates(sgg%observation(ii)%nP)%Xtrancos
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%Ytrancos = this%VolPrb%collection(i)%cordinates(sgg%observation(ii)%nP)%Ytrancos
@@ -5183,7 +5183,7 @@ contains
 
       subroutine read_TIMEFRECTRANSFsourcefiles(simu_devia)
          logical :: simu_devia
-         real(kind=RKIND) :: deviafactor_Multiplier,unillo,tiempoant
+         real(kind=RKIND) :: deviafactor_Multiplier,unillo,timePrev
          if (simu_devia) then
             deviafactor_Multiplier=1.0_RKIND !correccion de 160619. gestiono la iluminacion o no con la variable simu_devia, para que postprocese bien los ficheros devia_ !deprecar deviafactor_Multiplier algun dia
          else
@@ -5207,14 +5207,14 @@ contains
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%NAME)),action='read')
-                     read (15,*) tiempo1, field1
+                     read (15,*) time1, field1
                      read (15,*) tiempo2, field2
-                     sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%deltaSamples = tiempo2 - tiempo1
+                     sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%deltaSamples = tiempo2 - time1
                      nsurfs = 3
                      !problemas con multivac
                      ! while (.not.eof(15))
                      do
-                        read (15,*, end=77) tiempo1, field1
+                        read (15,*, end=77) time1, field1
                         if (field1/minspacestep > maxSourceValue) maxSourceValue=field1/minspacestep
                         nsurfs = nsurfs + 1
                      end do
@@ -5225,16 +5225,16 @@ contains
                     allocate(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%Samples(0:numus))
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%NAME)),action='read')
                      do k = 0, numus
-                        tiempoant=tiempo1
-                        read (15,*) tiempo1, sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%Samples(k)
+                        timePrev=time1
+                        read (15,*) time1, sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%Samples(k)
                         sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%Samples(k) = sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%Samples(k) * &
                         & sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%Multiplier * &
                            deviafactor_Multiplier
                         !!evitar sampleos no uniformes
                         if ((k>1).and.(k<numus-1)) then
-                           unillo=(tiempo1-tiempoant)/sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%deltaSamples
+                           unillo=(time1-timePrev)/sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%deltaSamples
                            if ((unillo<0.9).or.(unillo>1.0_RKIND/0.9)) then
-                              if (2.0_RKIND*(tiempo1-tiempoant)/(tiempo1+tiempoant)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
+                              if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
                                  buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     close(15)
@@ -5263,14 +5263,14 @@ contains
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%NAME)),action='read')
-                     read (15,*) tiempo1, field1
+                     read (15,*) time1, field1
                      read (15,*) tiempo2, field2
-                     sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%deltaSamples = tiempo2 - tiempo1
+                     sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%deltaSamples = tiempo2 - time1
                      nsurfs = 3
                      !problemas con multivac
                      ! while (.not.eof(15))
                      do
-                        read (15,*, end=79) tiempo1, field1
+                        read (15,*, end=79) time1, field1
                         if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !!? repensar
                         nsurfs = nsurfs + 1
                      end do
@@ -5281,16 +5281,16 @@ contains
                     allocate(sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%Samples(0:numus))
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%NAME)),action='read')
                      do k = 0, numus
-                        tiempoant=tiempo1
-                        read (15,*) tiempo1, sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%Samples(k)
+                        timePrev=time1
+                        read (15,*) time1, sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%Samples(k)
                         sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%Samples(k) = sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%Samples(k) * &
                         & sgg%Med(i)%wire(1)%ISource(CONTACURR)%Multiplier * &
                            deviafactor_Multiplier
                         !!evitar sampleos no uniformes
                         if ((k>1).and.(k<numus-1)) then
-                           unillo=(tiempo1-tiempoant)/sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%deltaSamples
+                           unillo=(time1-timePrev)/sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%deltaSamples
                            if ((unillo<0.9).or.(unillo>1.0_RKIND/0.9)) then
-                              if (2.0_RKIND*(tiempo1-tiempoant)/(tiempo1+tiempoant)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
+                              if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
                                  buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     close(15)
@@ -5321,14 +5321,14 @@ contains
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%NAME)),action='read')
-                     read (15,*) tiempo1, field1
+                     read (15,*) time1, field1
                      read (15,*) tiempo2, field2
-                     sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%deltaSamples = tiempo2 - tiempo1
+                     sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%deltaSamples = tiempo2 - time1
                      nsurfs = 3
                      !problemas con multivac
                      ! while (.not.eof(15))
                      do
-                        read (15,*, end=179) tiempo1, field1
+                        read (15,*, end=179) time1, field1
                         if (field1/minspacestep > maxSourceValue) maxSourceValue=field1/minspacestep
                         nsurfs = nsurfs + 1
                      end do
@@ -5339,16 +5339,16 @@ contains
                     allocate(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%Samples(0:numus))
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%NAME)),action='read')
                      do k = 0, numus
-                        tiempoant=tiempo1
-                        read (15,*) tiempo1, sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%Samples(k)
+                        timePrev=time1
+                        read (15,*) time1, sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%Samples(k)
                         sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%Samples(k) = sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%Samples(k) * &
                            sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%Multiplier * &
                            deviafactor_Multiplier
                         !!evitar sampleos no uniformes
                         if ((k>1).and.(k<numus-1)) then
-                           unillo=(tiempo1-tiempoant)/sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%deltaSamples
+                           unillo=(time1-timePrev)/sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%deltaSamples
                            if ((unillo<0.9).or.(unillo>1.0_RKIND/0.9)) then
-                              if (2.0_RKIND*(tiempo1-tiempoant)/(tiempo1+tiempoant)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
+                              if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
                                  buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     close(15)
@@ -5374,14 +5374,14 @@ contains
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%NAME)),action='read')
-                     read (15,*) tiempo1, field1
+                     read (15,*) time1, field1
                      read (15,*) tiempo2, field2
-                     sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%deltaSamples = tiempo2 - tiempo1
+                     sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%deltaSamples = tiempo2 - time1
                      nsurfs = 3
                      !problemas con multivac
                      ! while (.not.eof(15))
                      do
-                        read (15,*, end=279) tiempo1, field1
+                        read (15,*, end=279) time1, field1
                         if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !!? repensar
                         nsurfs = nsurfs + 1
                      end do
@@ -5392,16 +5392,16 @@ contains
                     allocate(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%Samples(0:numus))
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%NAME)),action='read')
                      do k = 0, numus
-                        tiempoant=tiempo1
-                        read (15,*) tiempo1, sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%Samples(k)
+                        timePrev=time1
+                        read (15,*) time1, sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%Samples(k)
                         sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%Samples(k) = sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%Samples(k) * &
                            sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%Multiplier * &
                            deviafactor_Multiplier
                         !!evitar sampleos no uniformes
                         if ((k>1).and.(k<numus-1)) then
-                           unillo=(tiempo1-tiempoant)/sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%deltaSamples
+                           unillo=(time1-timePrev)/sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%deltaSamples
                            if ((unillo<0.9).or.(unillo>1.0_RKIND/0.9)) then
-                              if (2.0_RKIND*(tiempo1-tiempoant)/(tiempo1+tiempoant)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
+                              if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
                                  buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     close(15)
@@ -5434,12 +5434,12 @@ contains
                   call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                open(15, file=trim(adjustl(sgg%NodalSource(j)%sourceFile%NAME)),action='read')
-               read (15,*) tiempo1, field1
+               read (15,*) time1, field1
                read (15,*) tiempo2, field2
-               sgg%NodalSource(j)%sourceFile%deltaSamples = tiempo2 - tiempo1
+               sgg%NodalSource(j)%sourceFile%deltaSamples = tiempo2 - time1
                nsurfs = 3
                do
-                  read (15,*, end=78) tiempo1, field1
+                  read (15,*, end=78) time1, field1
                   if (sgg%NodalSource(j)%isElec) then
                      if (field1 > maxSourceValue) maxSourceValue=field1
                   else
@@ -5453,14 +5453,14 @@ contains
               allocate(sgg%NodalSource(j)%sourceFile%Samples(0:numus))
                open(15, file=trim(adjustl(sgg%NodalSource(j)%sourceFile%NAME)),action='read')
                do k = 0, numus
-                  tiempoant=tiempo1
-                  read (15,*) tiempo1, sgg%NodalSource(j)%sourceFile%Samples(k)
+                  timePrev=time1
+                  read (15,*) time1, sgg%NodalSource(j)%sourceFile%Samples(k)
                   sgg%NodalSource(j)%sourceFile%Samples(k) = sgg%NodalSource(j)%sourceFile%Samples(k) * deviafactor_Multiplier
                   !!evitar sampleos no uniformes
                   if ((k>1).and.(k<numus-1)) then
-                     unillo=(tiempo1-tiempoant)/sgg%NodalSource(j)%sourceFile%deltaSamples
+                     unillo=(time1-timePrev)/sgg%NodalSource(j)%sourceFile%deltaSamples
                      if ((unillo<0.9).or.(unillo>1.0_RKIND/0.9)) then
-                        if (2.0_RKIND*(tiempo1-tiempoant)/(tiempo1+tiempoant)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
+                        if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
                            buff=trim(adjustl(sgg%NodalSource(j)%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                            if (.not.ignoresamplingerrors) then
                               close(15)
@@ -5498,12 +5498,12 @@ contains
                call STOPONERROR(layoutnumber,num_procs,buff)
             end if
             open(15, file=trim(adjustl(sgg%PlaneWave(j)%sourceFile%NAME)),action='read')
-            read (15,*) tiempo1, field1
+            read (15,*) time1, field1
             read (15,*) tiempo2, field2
-            sgg%PlaneWave(j)%sourceFile%deltaSamples = tiempo2 - tiempo1
+            sgg%PlaneWave(j)%sourceFile%deltaSamples = tiempo2 - time1
             nsurfs = 3
             do
-               read (15,*, end=98) tiempo1, field1
+               read (15,*, end=98) time1, field1
                if (field1 > maxSourceValue) maxSourceValue=field1
                nsurfs = nsurfs + 1
             end do
@@ -5513,14 +5513,14 @@ contains
            allocate(sgg%PlaneWave(j)%sourceFile%Samples(0:numus))
             open(15, file=trim(adjustl(sgg%PlaneWave(j)%sourceFile%NAME)),action='read')
             do k = 0, numus
-               tiempoant=tiempo1
-               read (15,*) tiempo1, sgg%PlaneWave(j)%sourceFile%Samples(k)
+               timePrev=time1
+               read (15,*) time1, sgg%PlaneWave(j)%sourceFile%Samples(k)
                sgg%PlaneWave(j)%sourceFile%Samples(k) = sgg%PlaneWave(j)%sourceFile%Samples(k) * deviafactor_Multiplier
                !!evitar sampleos no uniformes
                if ((k>1).and.(k<numus-1)) then
-                  unillo=(tiempo1-tiempoant)/sgg%PlaneWave(j)%sourceFile%deltaSamples
+                  unillo=(time1-timePrev)/sgg%PlaneWave(j)%sourceFile%deltaSamples
                   if ((unillo<0.9).or.(unillo>1.0_RKIND/0.9)) then
-                     if (2.0_RKIND*(tiempo1-tiempoant)/(tiempo1+tiempoant)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
+                     if (2.0_RKIND*(time1-timePrev)/(time1+timePrev)>1e-6_RKIND) then !a tiempos muy altos ignoro el redondeo
                         buff=trim(adjustl(sgg%PlaneWave(j)%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                         if (.not.ignoresamplingerrors) then
                            close(15)
@@ -6349,10 +6349,10 @@ contains
                      nodallyEqual=.FALSE.
                      busqueda: do I1=0,SGG%NUMMEDIA
 !cambios 230817 bug milano borja en rutina iguales
-                        iguaSGM=IGUALES(SGG%MED(I1)%SIGMAM,SIGMAM)
-                        iguaSIG=IGUALES(SGG%MED(I1)%SIGMA,SIGMA) !sgg230817 al poner sigma 1e29 y pec ademas, la rutina de iguales fallaba
-                        iguaEPR=IGUALES(SGG%MED(I1)%EPR,EPR)
-                        iguaMUR=IGUALES(SGG%MED(I1)%MUR,MUR)
+                        iguaSGM=isEqual(SGG%MED(I1)%SIGMAM,SIGMAM)
+                        iguaSIG=isEqual(SGG%MED(I1)%SIGMA,SIGMA) !sgg230817 al poner sigma 1e29 y pec ademas, la rutina de iguales fallaba
+                        iguaEPR=isEqual(SGG%MED(I1)%EPR,EPR)
+                        iguaMUR=isEqual(SGG%MED(I1)%MUR,MUR)
                         iguaPEC=(SGG%MED(I1)%iS%PEC.eqv.ISPEC)
                         iguaLOS=(SGG%MED(I1)%iS%LOSSY.eqv.ISLOSSY)
                         ISconformal=((SGG%MED(I1)%iS%already_YEEadvanced_byconformal).or.(SGG%MED(I1)%is%split_and_useless))
@@ -6391,18 +6391,18 @@ contains
       return
    end subroutine AssigLossyOrPECtoNodes
 
-   logical function IGUALES(A,B) result(IGUAL)
+   logical function isEqual(A,B) result(areEqual)
       real(kind=RKIND) :: A,B,ERR
-      igual=.false.
+      areEqual=.false.
       if (abs(A+B)>1e-20) then
          ERR=2.0_RKIND*ABS((A-B)/(A+B))
-         if (err <1e-2_RKIND) igual=.true. !en tanto por ciento me apanio con un 1 por ciento
+         if (err <1e-2_RKIND) areEqual=.true. !en tanto por ciento me apanio con un 1 por ciento
       else
          ERR=ABS(A-B)
-         if (err <1e-20_RKIND) igual=.true. !en valor absoluto para valores casi nulos le pido que el error sea casi nulo
+         if (err <1e-20_RKIND) areEqual=.true. !en valor absoluto para valores casi nulos le pido que el error sea casi nulo
       end if
       return
-   end function IGUALES
+   end function isEqual
 
 
    subroutine populatePlaneWaveRC(Planewave,simu_devia)

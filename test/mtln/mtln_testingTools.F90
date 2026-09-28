@@ -21,7 +21,7 @@ contains
     
         integer, intent(in) :: n
         character(len=*), intent(in) :: name
-        real(kind=RKIND_TIEMPO), intent(in), optional :: dt
+        real(kind=RKIND_TIME), intent(in), optional :: dt
         character(len=*), intent(in), optional :: parent_name
         integer, intent(in), optional :: conductor_in_parent
         character(len=*), intent(in) :: typeName
@@ -32,7 +32,7 @@ contains
         type(segment_t), allocatable, dimension(:) :: segments
         integer :: i,j
         
-        real(kind=RKIND_TIEMPO) :: time_step
+        real(kind=RKIND_TIME) :: time_step
         integer :: conductor
         character(len=:), allocatable :: parent
 
@@ -70,7 +70,7 @@ contains
             end do
         end do
         if (.not. present(dt)) then 
-            time_step = 1e-12_RKIND_TIEMPO
+            time_step = 1e-12_RKIND_TIME
         else 
             time_step = dt
         end if
@@ -152,8 +152,8 @@ contains
     end function 
 
     function checkNear_time(targetValue, number, rel_tol) result(is_near)
-        real(kind=RKIND_TIEMPO), intent(in) :: targetValue, number
-        real(kind=RKIND_TIEMPO) :: rel_tol
+        real(kind=RKIND_TIME), intent(in) :: targetValue, number
+        real(kind=RKIND_TIME) :: rel_tol
         logical :: is_near
         real :: abs_diff
 

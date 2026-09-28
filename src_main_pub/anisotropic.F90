@@ -1020,7 +1020,7 @@ contains
 
       type(coeff_t), intent(out) :: coeff
       real(kind=RKIND),  dimension(3,3), intent(in) :: sigma,epr,mur,sigmaM
-      real(kind=RKIND_TIEMPO) :: dt
+      real(kind=RKIND_TIME) :: dt
 
       coeff%eexx = ((-((2 * eps0 * epr(1,3) + dt * sigma(1,3)) *(2 * eps0 * epr(2,2) + dt * sigma(2,2))) +(2          &
       * eps0 * epr(1,2) + dt * sigma(1,2)) *(2 * eps0 * epr(2,3) + dt * sigma(2,3))) *((eps0 * epr(3,1))/dt      &

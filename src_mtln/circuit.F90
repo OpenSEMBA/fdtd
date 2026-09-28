@@ -2,7 +2,7 @@ module circuit_m
 
     use ngspice_interface_m
     use Report_m, only: WarnErrReport
-    use FDETYPES_m, only: RKIND, RKIND_TIEMPO, SINGLE
+    use FDETYPES_m, only: RKIND, RKIND_TIME, SINGLE
     implicit none
 
     type string_t
@@ -13,7 +13,7 @@ module circuit_m
     type VI_t
         real(kind=RKIND) :: voltage
         real(kind=RKIND) :: current
-        real(kind=RKIND_TIEMPO) :: time
+        real(kind=RKIND_TIME) :: time
     end type
 
     type nodes_t
@@ -23,7 +23,7 @@ module circuit_m
 
     type, public :: circuit_t
         character(len=:), allocatable :: name
-        real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 0.0
+        real(kind=RKIND_TIME) :: time = 0.0, dt = 0.0
         logical :: errorFlag = .false.
         type(nodes_t) :: nodes, saved_nodes   
 
@@ -121,7 +121,7 @@ contains
 
     subroutine setStopTimes(this, finalTime, dt)
         class(circuit_t) :: this
-        real(kind=RKIND_TIEMPO), intent(in) :: finalTime, dt
+        real(kind=RKIND_TIME), intent(in) :: finalTime, dt
         character(50) :: charTime
         real(kind=rkind) :: time
 
@@ -135,7 +135,7 @@ contains
 
     subroutine setModStopTimes(this, dt)
         class(circuit_t) :: this
-        real(kind=RKIND_TIEMPO), intent(in) :: dt
+        real(kind=RKIND_TIME), intent(in) :: dt
         character(50) :: charTime
         write(charTime, *) real(dt, SINGLE)
         call command('stop when time mod '//charTime // c_null_char)
@@ -285,7 +285,7 @@ contains
 
     function getTime(this) result(res)
         class(circuit_t) :: this
-        real(kind=RKIND_TIEMPO) :: res
+        real(kind=RKIND_TIME) :: res
         res = this%time
     end function
 

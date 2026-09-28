@@ -95,7 +95,7 @@ contains
       this%tagNumber = 0_IKINDMTAG
       this%mediaType = -1.0_RKIND
       call store_classification(this, problemInfo)
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIEMPO)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
       call alloc_and_init(this%xValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
       call alloc_and_init(this%yValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
       call alloc_and_init(this%zValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
@@ -255,7 +255,7 @@ contains
 
    subroutine update_movie_probe_output(this, step, fieldsReference, control, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_TIEMPO), intent(in)       :: step
+      real(kind=RKIND_TIME), intent(in)       :: step
       type(fields_reference_t), intent(in)      :: fieldsReference
       type(sim_control_t), intent(in)           :: control
       type(problem_info_t), intent(in)          :: problemInfo
@@ -680,7 +680,7 @@ contains
    subroutine save_current_module(this, fieldsReference, simTime, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
       type(fields_reference_t), intent(in)      :: fieldsReference
-      real(kind=RKIND_TIEMPO), intent(in)       :: simTime
+      real(kind=RKIND_TIME), intent(in)       :: simTime
       type(problem_info_t), intent(in)          :: problemInfo
 
       integer :: i, j, k, coordIdx
@@ -704,7 +704,7 @@ contains
       type(movie_probe_output_t), intent(inout) :: this
       real(kind=RKIND), intent(inout)           :: currentData(:, :)
       type(fields_reference_t), intent(in)      :: fieldsReference
-      real(kind=RKIND_TIEMPO), intent(in)       :: simTime
+      real(kind=RKIND_TIME), intent(in)       :: simTime
       type(problem_info_t), intent(in)          :: problemInfo
       integer, intent(in)                       :: fieldDir
 
@@ -734,7 +734,7 @@ contains
    subroutine save_field_module(this, field, request, simTime, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
       type(field_data_t), intent(in)            :: field
-      real(kind=RKIND_TIEMPO), intent(in)       :: simTime
+      real(kind=RKIND_TIME), intent(in)       :: simTime
       type(problem_info_t), intent(in)          :: problemInfo
       integer, intent(in)                       :: request
 
@@ -759,7 +759,7 @@ contains
       type(movie_probe_output_t), intent(inout) :: this
       real(kind=RKIND), intent(inout)           :: fieldData(:, :)
       real(kind=RKIND), intent(in)              :: fieldComponent(:, :, :)
-      real(kind=RKIND_TIEMPO), intent(in)       :: simTime
+      real(kind=RKIND_TIME), intent(in)       :: simTime
       type(problem_info_t), intent(in)          :: problemInfo
       integer, intent(in)                       :: fieldDir
 

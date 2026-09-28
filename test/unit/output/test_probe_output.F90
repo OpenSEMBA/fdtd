@@ -15,7 +15,7 @@ integer function test_init_point_probe() bind(c) result(err)
    character(len=*), parameter :: TEST_NAME = 'nested output/initPointProbeTest'
 
    ! Local variables
-   character(len=BUFSIZE) :: testPath, nEntrada
+   character(len=BUFSIZE) :: testPath, nInput
    character(len=BUFSIZE) :: expectedProbePath
    character(len=BUFSIZE) :: expectedDataPath
 
@@ -30,8 +30,8 @@ integer function test_init_point_probe() bind(c) result(err)
    type(MediaData_t), pointer     :: materialsPtr(:)
    type(taglist_t)                :: tagNumbers
 
-   real(kind=RKIND_TIEMPO), pointer :: timeArray(:)
-   real(kind=RKIND_TIEMPO)          :: dt = 0.1_RKIND_TIEMPO
+   real(kind=RKIND_TIME), pointer :: timeArray(:)
+   real(kind=RKIND_TIME)          :: dt = 0.1_RKIND_TIME
    integer(kind=SINGLE)             :: nSteps = 100_SINGLE
 
    logical :: outputRequested
@@ -41,7 +41,7 @@ integer function test_init_point_probe() bind(c) result(err)
 
    ! Setup
    testPath = join_path(get_temp_folder(), TEST_FOLDER)
-   nEntrada = join_path(testPath, TEST_NAME)
+   nInput = join_path(testPath, TEST_NAME)
 
    call sgg_init(sgg)
    call init_time_array(timeArray, nSteps, dt)
@@ -55,7 +55,7 @@ integer function test_init_point_probe() bind(c) result(err)
    probe = create_point_probe_observation(4, 4, 4)
    call sgg_add_observation(sgg, probe)
 
-   control = create_control_flags(mpidir=3, nEntradaRoot=trim(nEntrada), wiresflavor='holland')
+   control = create_control_flags(mpidir=3, nInputRoot=trim(nInput), wiresflavor='holland')
 
    ! Action
    call init_outputs(sgg, media, sinpml, tagNumbers, bounds, control, outputRequested, hasWires)
@@ -65,7 +65,7 @@ integer function test_init_point_probe() bind(c) result(err)
    test_err = test_err + assert_true(outputRequested, 'Valid probes not found')
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, POINT_PROBE_ID, 'Unexpected probe id')
 
-   expectedProbePath = trim(nEntrada)//WORDSEPARATION//'pointProbe_Ex_4_4_4'
+   expectedProbePath = trim(nInput)//WORDSEPARATION//'pointProbe_Ex_4_4_4'
    expectedDataPath = trim(expectedProbePath)//WORDSEPARATION//TIMEEXTENSION//DATFILEEXTENSION
 
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%path, expectedProbePath, 'Unexpected path')
@@ -106,7 +106,7 @@ integer function test_init_point_probe_with_incident() bind(c) result(err)
    path = join_path(get_temp_folder(), 'incidentPointProbe')
    domain%domainType = TIME_DOMAIN
    coordinates = cell_coordinate_t(1, 1, 1)
-   call init_point_probe_output(probe, coordinates, iEx, domain, path, 3, 0.1_RKIND_TIEMPO, .true.)
+   call init_point_probe_output(probe, coordinates, iEx, domain, path, 3, 0.1_RKIND_TIME, .true.)
 
    err = err + assert_true(probe%hasIncident .and. allocated(probe%incidentForTime), &
                            'Incident point probe did not allocate incident samples')
@@ -142,7 +142,7 @@ integer function test_scalar_probe_has_no_manifest() bind(c) result(err)
    type(MediaData_t), allocatable, target :: materials(:)
    type(MediaData_t), pointer :: materials_ptr(:)
    type(taglist_t) :: tag_numbers
-   real(kind=RKIND_TIEMPO), pointer :: time_array(:)
+   real(kind=RKIND_TIME), pointer :: time_array(:)
    character(len=BUFSIZE) :: path, probe_path
    logical :: observations_exist, wires_exist
 
@@ -151,15 +151,15 @@ integer function test_scalar_probe_has_no_manifest() bind(c) result(err)
    path = join_path(get_temp_folder(), 'rootManifest')
    probe_path = trim(path)//'_pointProbe_Ex_4_4_4'
    call sgg_init(sgg)
-   call init_time_array(time_array, 2_SINGLE, 0.1_RKIND_TIEMPO)
+   call init_time_array(time_array, 2_SINGLE, 0.1_RKIND_TIME)
    call sgg_set_tiempo(sgg, time_array)
-   call sgg_set_dt(sgg, 0.1_RKIND_TIEMPO)
+   call sgg_set_dt(sgg, 0.1_RKIND_TIME)
    call init_simulation_material_list(materials)
    materials_ptr => materials
    call sgg_set_Med(sgg, materials_ptr)
    probe = create_point_probe_observation(4, 4, 4)
    call sgg_add_observation(sgg, probe)
-   control = create_control_flags(nEntradaRoot=path, mpidir=3, sizeValue=1)
+   control = create_control_flags(nInputRoot=path, mpidir=3, sizeValue=1)
 
    call init_outputs(sgg, media, sinpml, tag_numbers, bounds, control, observations_exist, wires_exist)
 
@@ -227,7 +227,7 @@ end function test_line_probe_integral
 
 integer function test_line_probe_empty_path() bind(c) result(err)
    ! Verifies an empty line remains a valid zero-sample probe.
-   use FDETYPES_m, only: RKIND, RKIND_TIEMPO, direction_t
+   use FDETYPES_m, only: RKIND, RKIND_TIME, direction_t
    use outputTypes_m, only: line_probe_output_t, field_data_t, domain_t, TIME_DOMAIN
    use lineProbeOutput_m, only: init_line_probe_output, update_line_probe_output
    use assertionTools_m, only: assert_integer_equal
@@ -257,14 +257,14 @@ integer function test_line_probe_empty_path() bind(c) result(err)
    electric_field%deltaX => spacingValue
    electric_field%deltaY => spacingValue
    electric_field%deltaZ => spacingValue
-   call update_line_probe_output(probe, 0.0_RKIND_TIEMPO, electric_field)
+   call update_line_probe_output(probe, 0.0_RKIND_TIME, electric_field)
    err = err + assert_integer_equal(probe%nTime, 0, 'Empty line probe recorded a fabricated sample')
    call delete_file(trim(path)//'_tm.dat', ios)
 end function test_line_probe_empty_path
 
 integer function test_line_probe_dat_output() bind(c) result(err)
    ! Verifies line-probe flush retains every sample in one text file.
-   use FDETYPES_m, only: RKIND, RKIND_TIEMPO, direction_t, iEx
+   use FDETYPES_m, only: RKIND, RKIND_TIME, direction_t, iEx
    use outputTypes_m, only: line_probe_output_t, field_data_t, domain_t, TIME_DOMAIN
    use lineProbeOutput_m, only: init_line_probe_output, update_line_probe_output, flush_line_probe_output
    use assertionTools_m, only: assert_integer_equal, assert_true
@@ -297,8 +297,8 @@ integer function test_line_probe_dat_output() bind(c) result(err)
    electric_field%deltaX => spacingValue
    electric_field%deltaY => spacingValue
    electric_field%deltaZ => spacingValue
-   call update_line_probe_output(probe, 0.0_RKIND_TIEMPO, electric_field)
-   call update_line_probe_output(probe, 0.1_RKIND_TIEMPO, electric_field)
+   call update_line_probe_output(probe, 0.0_RKIND_TIME, electric_field)
+   call update_line_probe_output(probe, 0.1_RKIND_TIME, electric_field)
    call flush_line_probe_output(probe)
 
    text_records = 0
@@ -551,7 +551,7 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
    type(XYZlimit_t) :: sweep(6)
    type(output_partition_t) :: partition
    type(solver_output_t), pointer :: outputs(:)
-   real(kind=RKIND_TIEMPO), pointer :: time_array(:)
+   real(kind=RKIND_TIME), pointer :: time_array(:)
    real(kind=RKIND), pointer :: x_steps(:), y_steps(:), z_steps(:)
    logical :: observations_exist, wires_exist
    integer :: status, i, ios
@@ -561,9 +561,9 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
    path = join_path(get_temp_folder(), 'partitionAttachment')
    wires_exist = .false.
    call sgg_init(sgg)
-   call init_time_array(time_array, 2_SINGLE, 0.1_RKIND_TIEMPO)
+   call init_time_array(time_array, 2_SINGLE, 0.1_RKIND_TIME)
    call sgg_set_tiempo(sgg, time_array)
-   call sgg_set_dt(sgg, 0.1_RKIND_TIEMPO)
+   call sgg_set_dt(sgg, 0.1_RKIND_TIME)
    call init_simulation_material_list(materials)
    materials_ptr => materials
    call sgg_set_NumMedia(sgg, size(materials))
@@ -584,7 +584,7 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
    observation = create_movie_observation(2, 2, 2, 5, 5, 5, ICUR)
    call sgg_add_observation(sgg, observation)
-   control = create_control_flags(nEntradaRoot=path, mpidir=3, sizeValue=1)
+   control = create_control_flags(nInputRoot=path, mpidir=3, sizeValue=1)
 
    call init_outputs(sgg, media, sinpml, material_tags, bounds, control, observations_exist, wires_exist)
    call GetOutputPartition(1, partition, status)
@@ -623,7 +623,7 @@ integer function test_update_point_probe() bind(c) result(err)
 
    ! Local variables
    character(len=1) :: sep
-   character(len=BUFSIZE) :: testPath, nEntrada
+   character(len=BUFSIZE) :: testPath, nInput
 
    type(SGGFDTDINFO_t)              :: sgg
    type(sim_control_t)            :: control
@@ -639,8 +639,8 @@ integer function test_update_point_probe() bind(c) result(err)
    type(dummyFields_t), target    :: dummyFields
    type(fields_reference_t)       :: fields
 
-   real(kind=RKIND_TIEMPO), pointer :: timeArray(:)
-   real(kind=RKIND_TIEMPO)          :: dt = 0.1_RKIND_TIEMPO
+   real(kind=RKIND_TIME), pointer :: timeArray(:)
+   real(kind=RKIND_TIME)          :: dt = 0.1_RKIND_TIME
    integer(kind=SINGLE)             :: nSteps = 100_SINGLE
 
    logical :: outputRequested
@@ -651,7 +651,7 @@ integer function test_update_point_probe() bind(c) result(err)
    ! Setup
    sep = get_path_separator()
    testPath = join_path(get_temp_folder(), TEST_FOLDER)
-   nEntrada = testPath//sep//TEST_NAME
+   nInput = testPath//sep//TEST_NAME
 
    call sgg_init(sgg)
    call init_time_array(timeArray, nSteps, dt)
@@ -672,7 +672,7 @@ integer function test_update_point_probe() bind(c) result(err)
    materialsPtr => materials
    call sgg_set_Med(sgg, materialsPtr)
 
-   control = create_control_flags(mpidir=3, finaltimestep=nSteps - 2, nEntradaRoot=nEntrada, &
+   control = create_control_flags(mpidir=3, finaltimestep=nSteps - 2, nInputRoot=nInput, &
                                   wiresflavor='holland')
    call init_outputs(sgg, media, sinpml, tagNumbers, bounds, control, outputRequested, hasWires)
 
@@ -701,12 +701,12 @@ integer function test_update_point_probe() bind(c) result(err)
 
    ! Assertions
    test_err = test_err + assert_integer_equal(outputs(1)%pointProbe%nTime, 2, 'Unexpected time sample count')
-   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%timeStep(1), 0.4_RKIND_TIEMPO, &
-                                           1e-5_RKIND_TIEMPO, 'Unexpected timestep 1')
+   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%timeStep(1), 0.4_RKIND_TIME, &
+                                           1e-5_RKIND_TIME, 'Unexpected timestep 1')
    test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(1), 4.0_RKIND, &
                                            1e-5_RKIND, 'Unexpected field 1')
-   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%timeStep(2), 0.6_RKIND_TIEMPO, &
-                                           1e-5_RKIND_TIEMPO, 'Unexpected timestep 2')
+   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%timeStep(2), 0.6_RKIND_TIME, &
+                                           1e-5_RKIND_TIME, 'Unexpected timestep 2')
    test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(2), 6.0_RKIND, &
                                            1e-5_RKIND, 'Unexpected field 2')
    test_err = test_err + assert_real_equal(real(outputs(1)%pointProbe%valueForFreq(1), RKIND), 3.6_RKIND, &
@@ -752,10 +752,10 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
    type(ThinWires_t), pointer :: wires
    type(dummyFields_t), target :: dummyFields
    type(fields_reference_t) :: fields
-   real(kind=RKIND_TIEMPO), pointer :: timeArray(:)
-   real(kind=RKIND_TIEMPO), parameter :: DT = 0.1_RKIND_TIEMPO
+   real(kind=RKIND_TIME), pointer :: timeArray(:)
+   real(kind=RKIND_TIME), parameter :: DT = 0.1_RKIND_TIME
    real(kind=RKIND), target :: wireField
-   character(len=BUFSIZE) :: testPath, nEntrada
+   character(len=BUFSIZE) :: testPath, nInput
    integer(kind=SINGLE), parameter :: NSTEPS = 100_SINGLE
    integer(kind=SINGLE) :: test_err
    integer :: i, ios
@@ -763,7 +763,7 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
 
    test_err = 0
    testPath = join_path(get_temp_folder(), 'testing_folder')
-   nEntrada = join_path(testPath, TEST_NAME)
+   nInput = join_path(testPath, TEST_NAME)
 
    call sgg_init(sgg)
    call init_time_array(timeArray, nSteps, dt)
@@ -810,7 +810,7 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
    wires%CurrentSegment(1)%k = 3
    wires%CurrentSegment(1)%fieldKind = iEx
    wires%CurrentSegment(1)%indexmed = 0
-   wires%CurrentSegment(1)%orientadoalreves = .false.
+   wires%CurrentSegment(1)%reversedOrientation = .false.
    wires%CurrentSegment(1)%delta = 1.0_RKIND_WIRES
    wires%CurrentSegment(1)%Lind = 1.0_RKIND_WIRES
    wires%CurrentSegment(1)%ChargePlus => wires%ChargeNode(1)
@@ -820,7 +820,7 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
    wires%ChargeNode%ChargePresent = 0.0_RKIND_WIRES
    wires%ChargeNode%ChargePast = 0.0_RKIND_WIRES
 
-   control = create_control_flags(mpidir=3, finaltimestep=nSteps - 2, nEntradaRoot=nEntrada, &
+   control = create_control_flags(mpidir=3, finaltimestep=nSteps - 2, nInputRoot=nInput, &
                                   wiresflavor='holland')
    hasWires = .true.
    call init_outputs(sgg, media, sinpml, tagNumbers, bounds, control, outputRequested, hasWires)
@@ -867,28 +867,28 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
                                                'Line probe ignored its time range')
 
    test_err = test_err + assert_real_equal(outputs(CURRENT_OUTPUT)%wireCurrentProbe%timeStep(1), &
-                                           0.4_RKIND_TIEMPO, 1e-5_RKIND_TIEMPO, &
+                                           0.4_RKIND_TIME, 1e-5_RKIND_TIME, &
                                            'Wire-current probe stored the wrong first time')
    test_err = test_err + assert_real_equal(outputs(CURRENT_OUTPUT)%wireCurrentProbe%timeStep(2), &
-                                           0.6_RKIND_TIEMPO, 1e-5_RKIND_TIEMPO, &
+                                           0.6_RKIND_TIME, 1e-5_RKIND_TIME, &
                                            'Wire-current probe stored the wrong second time')
    test_err = test_err + assert_real_equal(outputs(CHARGE_OUTPUT)%wireChargeProbe%timeStep(1), &
-                                           0.4_RKIND_TIEMPO, 1e-5_RKIND_TIEMPO, &
+                                           0.4_RKIND_TIME, 1e-5_RKIND_TIME, &
                                            'Wire-charge probe stored the wrong first time')
    test_err = test_err + assert_real_equal(outputs(CHARGE_OUTPUT)%wireChargeProbe%timeStep(2), &
-                                           0.6_RKIND_TIEMPO, 1e-5_RKIND_TIEMPO, &
+                                           0.6_RKIND_TIME, 1e-5_RKIND_TIME, &
                                            'Wire-charge probe stored the wrong second time')
    test_err = test_err + assert_real_equal(outputs(BULK_OUTPUT)%bulkCurrentProbe%timeStep(1), &
-                                           0.4_RKIND_TIEMPO, 1e-5_RKIND_TIEMPO, &
+                                           0.4_RKIND_TIME, 1e-5_RKIND_TIME, &
                                            'Bulk probe stored the wrong first time')
    test_err = test_err + assert_real_equal(outputs(BULK_OUTPUT)%bulkCurrentProbe%timeStep(2), &
-                                           0.6_RKIND_TIEMPO, 1e-5_RKIND_TIEMPO, &
+                                           0.6_RKIND_TIME, 1e-5_RKIND_TIME, &
                                            'Bulk probe stored the wrong second time')
    test_err = test_err + assert_real_equal(outputs(LINE_OUTPUT)%lineProbe%timeStep(1), &
-                                           0.4_RKIND_TIEMPO, 1e-5_RKIND_TIEMPO, &
+                                           0.4_RKIND_TIME, 1e-5_RKIND_TIME, &
                                            'Line probe stored the wrong first time')
    test_err = test_err + assert_real_equal(outputs(LINE_OUTPUT)%lineProbe%timeStep(2), &
-                                           0.6_RKIND_TIEMPO, 1e-5_RKIND_TIEMPO, &
+                                           0.6_RKIND_TIME, 1e-5_RKIND_TIME, &
                                            'Line probe stored the wrong second time')
 
    test_err = test_err + assert_real_equal(outputs(CURRENT_OUTPUT)%wireCurrentProbe%currentValues(1)%current, &
@@ -931,7 +931,7 @@ integer function test_flush_point_probe() bind(c) result(err)
 
    ! Local variables
    character(len=1) :: sep
-   character(len=BUFSIZE) :: testPath, nEntrada
+   character(len=BUFSIZE) :: testPath, nInput
 
    type(point_probe_output_t) :: probe
    type(domain_t)             :: domain
@@ -944,17 +944,17 @@ integer function test_flush_point_probe() bind(c) result(err)
    ! Setup
    sep = get_path_separator()
    testPath = join_path(get_temp_folder(), TEST_FOLDER)
-   nEntrada = testPath//sep//TEST_NAME
+   nInput = testPath//sep//TEST_NAME
 
    domain = domain_t( &
-            0.0_RKIND_TIEMPO, 10.0_RKIND_TIEMPO, 0.1_RKIND_TIEMPO, &
+            0.0_RKIND_TIME, 10.0_RKIND_TIME, 0.1_RKIND_TIME, &
             10.0_RKIND, 100.0_RKIND, 10, .false.)
 
    coordinates%x = 2
    coordinates%y = 2
    coordinates%z = 2
 
-   call init_point_probe_output(probe, coordinates, iEx, domain, nEntrada, 3, 0.1_RKIND_TIEMPO)
+   call init_point_probe_output(probe, coordinates, iEx, domain, nInput, 3, 0.1_RKIND_TIME)
 
    test_err = test_err + assert_integer_equal(size(probe%artifacts), 2, &
                                                'Point probe did not declare both text domains')
@@ -1009,7 +1009,7 @@ integer function test_flush_point_probe() bind(c) result(err)
 end function
 
 integer function test_flush_wire_probe_dat() bind(c) result(err)
-   use FDETYPES_m, only: RKIND, RKIND_TIEMPO
+   use FDETYPES_m, only: RKIND, RKIND_TIME
    use outputTypes_m, only: wire_current_probe_output_t, wire_charge_probe_output_t, OUTPUT_ARTIFACT_TEXT
    use wireProbeOutput_m, only: flush_wire_current_probe_output, flush_wire_charge_probe_output
    use assertionTools_m, only: assert_true
@@ -1030,7 +1030,7 @@ integer function test_flush_wire_probe_dat() bind(c) result(err)
    current_probe%artifacts(1)%relative_path = current_probe%filePathTime
    allocate (current_probe%timeStep(1))
    current_probe%nTime = 1
-   current_probe%timeStep(1) = 1.0_RKIND_TIEMPO
+   current_probe%timeStep(1) = 1.0_RKIND_TIME
    current_probe%currentValues(1)%current = 2.0_RKIND
    call create_file_with_path(current_probe%filePathTime, ios)
    call flush_wire_current_probe_output(current_probe)
@@ -1044,7 +1044,7 @@ integer function test_flush_wire_probe_dat() bind(c) result(err)
    charge_probe%artifacts(1)%relative_path = charge_probe%filePathTime
    allocate (charge_probe%timeStep(1), charge_probe%chargeValue(1))
    charge_probe%nTime = 1
-   charge_probe%timeStep(1) = 1.0_RKIND_TIEMPO
+   charge_probe%timeStep(1) = 1.0_RKIND_TIME
    charge_probe%chargeValue(1) = 2.0_RKIND
    call create_file_with_path(charge_probe%filePathTime, ios)
    call flush_wire_charge_probe_output(charge_probe)
@@ -1058,7 +1058,7 @@ integer function test_flush_wire_probe_dat() bind(c) result(err)
 end function test_flush_wire_probe_dat
 
 integer function test_flush_bulk_probe_dat() bind(c) result(err)
-   use FDETYPES_m, only: RKIND, RKIND_TIEMPO
+   use FDETYPES_m, only: RKIND, RKIND_TIME
    use outputTypes_m, only: bulk_current_probe_output_t, OUTPUT_ARTIFACT_TEXT
    use bulkProbeOutput_m, only: flush_bulk_probe_output
    use assertionTools_m, only: assert_true
@@ -1078,7 +1078,7 @@ integer function test_flush_bulk_probe_dat() bind(c) result(err)
    probe%artifacts(1)%relative_path = probe%filePathTime
    allocate (probe%timeStep(1), probe%valueForTime(1))
    probe%nTime = 1
-   probe%timeStep(1) = 1.0_RKIND_TIEMPO
+   probe%timeStep(1) = 1.0_RKIND_TIME
    probe%valueForTime(1) = 2.0_RKIND
    call create_file_with_path(probe%filePathTime, ios)
    call flush_bulk_probe_output(probe)
@@ -1106,7 +1106,7 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
 
    ! Local variables
    character(len=1) :: sep
-   character(len=BUFSIZE) :: testPath, nEntrada
+   character(len=BUFSIZE) :: testPath, nInput
 
    type(point_probe_output_t) :: probe
    type(domain_t)             :: domain
@@ -1123,17 +1123,17 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    ! Setup
    sep = get_path_separator()
    testPath = join_path(get_temp_folder(), TEST_FOLDER)
-   nEntrada = testPath//sep//TEST_NAME
+   nInput = testPath//sep//TEST_NAME
 
    domain = domain_t( &
-            0.0_RKIND_TIEMPO, 10.0_RKIND_TIEMPO, 0.1_RKIND_TIEMPO, &
+            0.0_RKIND_TIME, 10.0_RKIND_TIME, 0.1_RKIND_TIME, &
             10.0_RKIND, 100.0_RKIND, 10, .false.)
 
    coordinates%x = 2
    coordinates%y = 2
    coordinates%z = 2
 
-   call init_point_probe_output(probe, coordinates, iEx, domain, nEntrada, 3, 0.1_RKIND_TIEMPO)
+   call init_point_probe_output(probe, coordinates, iEx, domain, nInput, 3, 0.1_RKIND_TIME)
 
    n = 10
    allocate (expectedTime(2*n, 2))
@@ -1229,8 +1229,8 @@ integer function test_init_movie_probe() bind(c) result(err)
    type(cell_coordinate_t)        :: lowerBoundMovieProbe
    type(cell_coordinate_t)        :: upperBoundMovieProbe
 
-   real(kind=RKIND_TIEMPO), pointer :: timeArray(:)
-   real(kind=RKIND_TIEMPO)          :: dt = 0.1_RKIND_TIEMPO
+   real(kind=RKIND_TIME), pointer :: timeArray(:)
+   real(kind=RKIND_TIME)          :: dt = 0.1_RKIND_TIME
    integer(kind=SINGLE)             :: nTimeSteps = 100_SINGLE
 
    real(kind=RKIND), dimension(:), pointer   :: x_steps, y_steps, z_steps
@@ -1245,12 +1245,12 @@ integer function test_init_movie_probe() bind(c) result(err)
    character(len=14), parameter :: TEST_FOLDER = 'testing_folder'
    character(len=9), parameter :: TEST_NAME = 'initMovie'
 
-   character(len=BUFSIZE) :: testPath, nEntrada
+   character(len=BUFSIZE) :: testPath, nInput
    character(len=BUFSIZE) :: expectedProbePath
    integer :: ios
 
    testPath = join_path(get_temp_folder(), TEST_FOLDER)
-   nEntrada = join_path(testPath, TEST_NAME)
+   nInput = join_path(testPath, TEST_NAME)
 
    err = 1
 
@@ -1299,7 +1299,7 @@ integer function test_init_movie_probe() bind(c) result(err)
       sinpml(iter) = create_limit_t(0, 8, 0, 8, 0, 8, 10, 10, 10)
    end do
 
-   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
+   dummyControl = create_control_flags(nInputRoot=nInput, mpidir=mpidir)
 
    call init_outputs(dummysgg, media, sinpml, tagNumbers, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
@@ -1317,7 +1317,7 @@ integer function test_init_movie_probe() bind(c) result(err)
    test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%xValueForTime), expectedNumMeasurments*OUTPUT_TIME_BUFFER_SIZE, 'Unexpected allocation size')
    test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%timeStep), OUTPUT_TIME_BUFFER_SIZE, 'Unexpected timestep buffer size')
 
-   expectedProbePath = trim(nEntrada)//WORDSEPARATION//'movieProbe_BC_2_2_2__5_5_5'
+   expectedProbePath = trim(nInput)//WORDSEPARATION//'movieProbe_BC_2_2_2__5_5_5'
    test_err = test_err + assert_string_equal(outputs(1)%movieProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Movie folder do not exist')
    test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'.bin'), &
@@ -1367,8 +1367,8 @@ integer function test_update_movie_probe() bind(c) result(err)
 
    type(Obses_t)                  :: movieObservable
 
-   real(kind=RKIND_TIEMPO), pointer :: timeArray(:)
-   real(kind=RKIND_TIEMPO)          :: dt = 0.1_RKIND_TIEMPO
+   real(kind=RKIND_TIME), pointer :: timeArray(:)
+   real(kind=RKIND_TIME)          :: dt = 0.1_RKIND_TIME
    integer(kind=SINGLE)             :: nTimeSteps = 100_SINGLE
 
    real(kind=RKIND), dimension(:), pointer   :: x_steps, y_steps, z_steps
@@ -1386,11 +1386,11 @@ integer function test_update_movie_probe() bind(c) result(err)
    character(len=14), parameter :: TEST_FOLDER = 'testing_folder'
    character(len=11), parameter :: TEST_NAME = 'updateMovie'
 
-   character(len=BUFSIZE) :: testPath, nEntrada
+   character(len=BUFSIZE) :: testPath, nInput
    integer :: ios
 
    testPath = join_path(get_temp_folder(), TEST_FOLDER)
-   nEntrada = join_path(testPath, TEST_NAME)
+   nInput = join_path(testPath, TEST_NAME)
 
    err = 1
 
@@ -1441,7 +1441,7 @@ integer function test_update_movie_probe() bind(c) result(err)
    end do
    sinpml_fullsizePtr => sinpml_fullsize
 
-   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir, &
+   dummyControl = create_control_flags(nInputRoot=nInput, mpidir=mpidir, &
                                        finaltimestep=nTimeSteps - 2)
 
    call init_outputs(dummysgg, media, sinpml_fullsize, tagNumbers, dummyBound, dummyControl, &
@@ -1532,8 +1532,8 @@ integer function test_flush_movie_probe() bind(c) result(err)
    type(Obses_t)                  :: movieMagneticYObservable
    type(fields_reference_t)       :: fields
 
-   real(kind=RKIND_TIEMPO), pointer :: timeArray(:)
-   real(kind=RKIND_TIEMPO)          :: dt = 0.1_RKIND_TIEMPO
+   real(kind=RKIND_TIME), pointer :: timeArray(:)
+   real(kind=RKIND_TIME)          :: dt = 0.1_RKIND_TIME
    integer(kind=SINGLE)             :: nTimeSteps = 100_SINGLE
 
    real(kind=RKIND), dimension(:), pointer   :: x_steps, y_steps, z_steps
@@ -1548,12 +1548,12 @@ integer function test_flush_movie_probe() bind(c) result(err)
    character(len=14), parameter :: TEST_FOLDER = 'testing_folder'
    character(len=10), parameter :: TEST_NAME = 'flushMovie'
    character(len=BUFSIZE) :: testPath
-   character(len=BUFSIZE) :: nEntrada
+   character(len=BUFSIZE) :: nInput
    character(len=BUFSIZE) :: expectedPath
    integer :: binaryBytes, ios
 
    testPath = join_path(get_temp_folder(), TEST_FOLDER)
-   nEntrada = join_path(testPath, TEST_NAME)
+   nInput = join_path(testPath, TEST_NAME)
 
    err = 1
 
@@ -1618,7 +1618,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    end do
    sinpml_fullsizePtr => sinpml_fullsize
 
-   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
+   dummyControl = create_control_flags(nInputRoot=nInput, mpidir=mpidir)
 
    call init_outputs(dummysgg, media, sinpml_fullsize, tagNumbers, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
@@ -1628,37 +1628,37 @@ integer function test_flush_movie_probe() bind(c) result(err)
    !--- Dummy first update ---
    !movieCurrentObservable
    outputs(1)%movieProbe%nTime = 1
-   outputs(1)%movieProbe%timeStep(1) = 0.5_RKIND_TIEMPO
+   outputs(1)%movieProbe%timeStep(1) = 0.5_RKIND_TIME
    outputs(1)%movieProbe%xValueForTime(1, :) = [0.1_RKIND, 0.2_RKIND, 0.3_RKIND, 0.4_RKIND]
    outputs(1)%movieProbe%yValueForTime(1, :) = [0.3_RKIND, 0.4_RKIND, 0.5_RKIND, 0.6_RKIND]
    outputs(1)%movieProbe%zValueForTime(1, :) = [0.7_RKIND, 0.8_RKIND, 0.9_RKIND, 1.0_RKIND]
 
    !movieElectricXObservable
    outputs(2)%movieProbe%nTime = 1
-   outputs(2)%movieProbe%timeStep(1) = 0.5_RKIND_TIEMPO
+   outputs(2)%movieProbe%timeStep(1) = 0.5_RKIND_TIME
    outputs(2)%movieProbe%xValueForTime(1, :4) = [0.1_RKIND, 0.2_RKIND, 0.3_RKIND, 0.4_RKIND]
 
    !movieMagneticYObservable
    outputs(3)%movieProbe%nTime = 1
-   outputs(3)%movieProbe%timeStep(1) = 0.5_RKIND_TIEMPO
+   outputs(3)%movieProbe%timeStep(1) = 0.5_RKIND_TIME
    outputs(3)%movieProbe%yValueForTime(1, :4) = [0.1_RKIND, 0.2_RKIND, 0.3_RKIND, 0.4_RKIND]
 
    !--- Dummy second update ---
    !movieCurrentObservable
    outputs(1)%movieProbe%nTime = 2
-   outputs(1)%movieProbe%timeStep(2) = 0.75_RKIND_TIEMPO
+   outputs(1)%movieProbe%timeStep(2) = 0.75_RKIND_TIME
    outputs(1)%movieProbe%xValueForTime(2, :) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
    outputs(1)%movieProbe%yValueForTime(2, :) = [1.3_RKIND, 1.4_RKIND, 1.5_RKIND, 1.6_RKIND]
    outputs(1)%movieProbe%zValueForTime(2, :) = [1.7_RKIND, 1.8_RKIND, 1.9_RKIND, 2.0_RKIND]
 
    !movieElectricXObservable
    outputs(2)%movieProbe%nTime = 2
-   outputs(2)%movieProbe%timeStep(2) = 0.75_RKIND_TIEMPO
+   outputs(2)%movieProbe%timeStep(2) = 0.75_RKIND_TIME
    outputs(2)%movieProbe%xValueForTime(2, :4) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
 
    !movieMagneticYObservable
    outputs(3)%movieProbe%nTime = 2
-   outputs(3)%movieProbe%timeStep(2) = 0.75_RKIND_TIEMPO
+   outputs(3)%movieProbe%timeStep(2) = 0.75_RKIND_TIME
    outputs(3)%movieProbe%yValueForTime(2, :4) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
 
    call flush_outputs(dummysgg%time, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
@@ -1700,9 +1700,9 @@ integer function test_close_movie_probe() bind(c) result(err)
    type(taglist_t) :: tagNumbers
    type(XYZlimit_t) :: sweep(6)
    type(Obses_t) :: movieObservable
-   real(kind=RKIND_TIEMPO), pointer :: timeArray(:)
+   real(kind=RKIND_TIME), pointer :: timeArray(:)
    real(kind=RKIND), pointer :: x_steps(:), y_steps(:), z_steps(:)
-   real(kind=RKIND_TIEMPO) :: dt = 0.1_RKIND_TIEMPO
+   real(kind=RKIND_TIME) :: dt = 0.1_RKIND_TIME
    integer(kind=SINGLE) :: iter, mpidir = 3_SINGLE, test_err = 0_SINGLE
    logical :: outputRequested, thereAreWires = .false.
    character(len=14), parameter :: TEST_FOLDER = 'testing_folder'
@@ -1739,7 +1739,7 @@ integer function test_close_movie_probe() bind(c) result(err)
    do iter = 1, 6
       sinpml(iter) = create_limit_t(0, 8, 0, 8, 0, 8, 10, 10, 10)
    end do
-   dummyControl = create_control_flags(nEntradaRoot=inputPath, mpidir=mpidir)
+   dummyControl = create_control_flags(nInputRoot=inputPath, mpidir=mpidir)
    call init_outputs(dummysgg, media, sinpml, tagNumbers, dummyBound, dummyControl, outputRequested, thereAreWires)
    outputs => GetOutputs()
 
@@ -1788,9 +1788,9 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 
    type(Obses_t)                  :: frequencySliceObservation
 
-   real(kind=RKIND_TIEMPO), pointer :: timeArray(:)
+   real(kind=RKIND_TIME), pointer :: timeArray(:)
    real(kind=RKIND), pointer        :: x_steps(:), y_steps(:), z_steps(:)
-   real(kind=RKIND_TIEMPO)          :: dt = 0.1_RKIND_TIEMPO
+   real(kind=RKIND_TIME)          :: dt = 0.1_RKIND_TIME
    integer(kind=SINGLE)             :: nTimeSteps = 100_SINGLE
 
    integer(kind=SINGLE)             :: expectedNumMeasurments
@@ -1804,12 +1804,12 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    character(len=14), parameter :: TEST_FOLDER = 'testing_folder'
    character(len=13), parameter :: TEST_NAME = 'initFrequency'
 
-   character(len=BUFSIZE) :: testPath, nEntrada
+   character(len=BUFSIZE) :: testPath, nInput
    character(len=BUFSIZE) :: expectedProbePath
    integer :: ios
 
    testPath = join_path(get_temp_folder(), TEST_FOLDER)
-   nEntrada = join_path(testPath, TEST_NAME)
+   nInput = join_path(testPath, TEST_NAME)
    err = 1
 
    call sgg_init(dummysgg)
@@ -1859,7 +1859,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    end do
    sinpml_fullsizePtr => sinpml_fullsize
 
-   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
+   dummyControl = create_control_flags(nInputRoot=nInput, mpidir=mpidir)
 
    call init_outputs(dummysgg, media, sinpml_fullsize, tagNumbers, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
@@ -1880,7 +1880,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
               size(outputs(1)%frequencySliceProbe%frequencySlice), &
               expectedTotalFrequnecies, 'Unexpected frequency count')
 
-   expectedProbePath = trim(nEntrada)//WORDSEPARATION//'frequencySliceProbe_BC_2_2_2__5_5_5'
+   expectedProbePath = trim(nInput)//WORDSEPARATION//'frequencySliceProbe_BC_2_2_2__5_5_5'
    test_err = test_err + assert_string_equal(outputs(1)%frequencySliceProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Frequency Slice folder do not exist')
 
@@ -1942,9 +1942,9 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 
    type(Obses_t)                  :: frequencySliceObservation
 
-   real(kind=RKIND_TIEMPO), pointer :: timeArray(:)
+   real(kind=RKIND_TIME), pointer :: timeArray(:)
    real(kind=RKIND), pointer        :: x_steps(:), y_steps(:), z_steps(:)
-   real(kind=RKIND_TIEMPO)          :: dt = 0.1_RKIND_TIEMPO
+   real(kind=RKIND_TIME)          :: dt = 0.1_RKIND_TIME
    integer(kind=SINGLE)             :: nTimeSteps = 100_SINGLE
 
    type(dummyFields_t), target     :: dummyFields
@@ -1962,11 +1962,11 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    character(len=14), parameter :: TEST_FOLDER = 'testing_folder'
    character(len=13), parameter :: TEST_NAME = 'initFrequency'
 
-   character(len=BUFSIZE) :: testPath, nEntrada
+   character(len=BUFSIZE) :: testPath, nInput
    integer :: ios
 
    testPath = join_path(get_temp_folder(), TEST_FOLDER)
-   nEntrada = join_path(testPath, TEST_NAME)
+   nInput = join_path(testPath, TEST_NAME)
 
    err = 1
 
@@ -2014,7 +2014,7 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    end do
    sinpml_fullsizePtr => sinpml_fullsize
 
-   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
+   dummyControl = create_control_flags(nInputRoot=nInput, mpidir=mpidir)
 
    call init_outputs(dummysgg, media, sinpml_fullsize, tagNumbers, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)

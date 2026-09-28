@@ -6,7 +6,7 @@ module probes_m
 #else
     use FDETYPES_m, only: RKIND, BUFSIZE
 #endif
-    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
+    use FDETYPES_m, only: RKIND, RKIND_TIME
 
     implicit none
 
@@ -20,7 +20,7 @@ module probes_m
         integer :: typeName
         real(kind=RKIND), allocatable, dimension(:) :: t
         real(kind=RKIND), allocatable, dimension(:,:) :: val
-        real(kind=RKIND_TIEMPO) :: dt
+        real(kind=RKIND_TIME) :: dt
         integer :: elementIndex, current_frame, unit = 0
         character(len=:), allocatable :: name
         logical :: in_layer = .true.
@@ -49,7 +49,7 @@ contains
         type(probe_t) :: res
         integer, intent(in) :: elementIndex
         integer, intent(in) :: probe_type
-        real(kind=RKIND_TIEMPO), intent(in) :: dt
+        real(kind=RKIND_TIME), intent(in) :: dt
         real(kind=RKIND), dimension(3) :: position
         character(len=:), allocatable :: name
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
@@ -117,7 +117,7 @@ contains
 
     subroutine update(this, t, v, i)
         class(probe_t) :: this
-        real(kind=RKIND_TIEMPO), intent(in) :: t
+        real(kind=RKIND_TIME), intent(in) :: t
         real(kind=RKIND), dimension(:,:), intent(in) :: v
         real(kind=RKIND), dimension(:,:), intent(in) :: i
         
@@ -135,7 +135,7 @@ contains
 
     subroutine saveFrame(this, time, values)
         class(probe_t) :: this
-        real(kind=RKIND_TIEMPO), intent(in) :: time
+        real(kind=RKIND_TIME), intent(in) :: time
         real(kind=RKIND), intent(in), dimension(:) :: values
         ! Always overwrite slot 1; the caller flushes to disk each step.
         this%t(1) = time

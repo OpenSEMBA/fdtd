@@ -9,7 +9,7 @@ module farfield_m
       integer(kind=4) :: Ex=-15,Ey=-15,Ez=-15,Hx=-15,Hy=-15,Hz=-15
    end type
    type tfidaa_t
-      type(ehxyz_t) :: com,fin,tra,fro,izq,der,aba,arr
+      type(ehxyz_t) :: com,fin,backDir,frontDir,leftDir,rightDir,downDir,arr
    end type
    type ijk_t
       type(tfidaa_t) :: i,j,k
@@ -51,7 +51,7 @@ module farfield_m
       complex(kind = CKIND), dimension(:,:,:), allocatable :: HxIz2,HxDe2,HxAb2,HxAr2,HyFr2,HyTr2,HyAb2,HyAr2,HzIz2,HzDe2,HzFr2,HzTr2 !to compute the scheneider geometric mean
       complex(kind = CKIND), dimension(:), allocatable  :: expIwdt,auxExp_E,auxExp_H,dftEntrada
       integer(kind=4) :: NumFreqs,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2, Ndecim
-      type(coorsxyzP_t) :: Punto
+      type(coorsxyzP_t) :: gridPoint
       real(kind=Rkind) :: InitialFreq,FinalFreq,FreqStep,dtDecim
       real(kind=RKIND) :: thetaStart,thetaStop,thetaStep
       real(kind=RKIND) :: phiStart,phiStop,phiStep
@@ -115,7 +115,7 @@ contains
       sggMiHx(sgg%alloc(IHX)%XI : sgg%alloc(IHX)%XE,sgg%alloc(IHX)%YI : sgg%alloc(IHX)%YE,sgg%alloc(IHX)%ZI : sgg%alloc(IHX)%ZE), &
       sggMiHy(sgg%alloc(IHY)%XI : sgg%alloc(IHY)%XE,sgg%alloc(IHY)%YI : sgg%alloc(IHY)%YE,sgg%alloc(IHY)%ZI : sgg%alloc(IHY)%ZE), &
       sggMiHz(sgg%alloc(IHZ)%XI : sgg%alloc(IHZ)%XE,sgg%alloc(IHZ)%YI : sgg%alloc(IHZ)%YE,sgg%alloc(IHZ)%ZI : sgg%alloc(IHZ)%ZE)
-      real(kind=RKIND) ::tiempo1,tiempo2,field1,field2,dtevol
+      real(kind=RKIND) ::time1,tiempo2,field1,field2,dtevol
       integer j,k,field,i,layoutnumber,num_procs,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
       character(len=BUFSIZE) :: buFF
       logical :: errnofile,error
@@ -127,9 +127,9 @@ contains
 !
 
       do field=iEx,IHZ
-        FF%Punto%PhysCoor(field)%x => null()
-        FF%Punto%PhysCoor(field)%y => null()
-        FF%Punto%PhysCoor(field)%z => null()
+        FF%gridPoint%PhysCoor(field)%x => null()
+        FF%gridPoint%PhysCoor(field)%y => null()
+        FF%gridPoint%PhysCoor(field)%z => null()
       end do
       !!!
       !store absolute limits to later correct edge contributions
@@ -167,70 +167,70 @@ contains
       !!!
 
       do field=iEx,IHZ
-         allocate (FF%Punto%PhysCoor(field)%x(SINPML_fullsize(field)%XI-1 : SINPML_fullsize(field)%XE+1), &
-         FF%Punto%PhysCoor(field)%y(SINPML_fullsize(field)%YI-1 : SINPML_fullsize(field)%YE+1), &
-         FF%Punto%PhysCoor(field)%z(SINPML_fullsize(field)%ZI-1 : SINPML_fullsize(field)%ZE+1))
+         allocate (FF%gridPoint%PhysCoor(field)%x(SINPML_fullsize(field)%XI-1 : SINPML_fullsize(field)%XE+1), &
+         FF%gridPoint%PhysCoor(field)%y(SINPML_fullsize(field)%YI-1 : SINPML_fullsize(field)%YE+1), &
+         FF%gridPoint%PhysCoor(field)%z(SINPML_fullsize(field)%ZI-1 : SINPML_fullsize(field)%ZE+1))
       end do
 
       field=iEx
       do i=SINPML_fullsize(field)%XI-1,SINPML_fullsize(field)%XE+1
-         FF%Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
+         FF%gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
       do j=SINPML_fullsize(field)%YI-1,SINPML_fullsize(field)%YE+1
-         FF%Punto%PhysCoor(field)%y(j)=sgg%LineY(j)
+         FF%gridPoint%PhysCoor(field)%y(j)=sgg%LineY(j)
       end do
       do k=SINPML_fullsize(field)%ZI-1,SINPML_fullsize(field)%ZE+1
-         FF%Punto%PhysCoor(field)%z(k)=sgg%LineZ(k)
+         FF%gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
       field=iEy
       do i=SINPML_fullsize(field)%XI-1,SINPML_fullsize(field)%XE+1
-         FF%Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
+         FF%gridPoint%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
       do j=SINPML_fullsize(field)%YI-1,SINPML_fullsize(field)%YE+1
-         FF%Punto%PhysCoor(field)%y(j)=(sgg%LineY(j)+sgg%LineY(j+1))*0.5_RKIND
+         FF%gridPoint%PhysCoor(field)%y(j)=(sgg%LineY(j)+sgg%LineY(j+1))*0.5_RKIND
       end do
       do k=SINPML_fullsize(field)%ZI-1,SINPML_fullsize(field)%ZE+1
-         FF%Punto%PhysCoor(field)%z(k)=sgg%LineZ(k)
+         FF%gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
       field=IEZ
       do i=SINPML_fullsize(field)%XI-1,SINPML_fullsize(field)%XE+1
-         FF%Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
+         FF%gridPoint%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
       do j=SINPML_fullsize(field)%YI-1,SINPML_fullsize(field)%YE+1
-         FF%Punto%PhysCoor(field)%y(j)=sgg%LineY(j)
+         FF%gridPoint%PhysCoor(field)%y(j)=sgg%LineY(j)
       end do
       do k=SINPML_fullsize(field)%ZI-1,SINPML_fullsize(field)%ZE+1
-         FF%Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
+         FF%gridPoint%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
       field=IHX
       do i=SINPML_fullsize(field)%XI-1,SINPML_fullsize(field)%XE+1
-         FF%Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
+         FF%gridPoint%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
       do j=SINPML_fullsize(field)%YI-1,SINPML_fullsize(field)%YE+1
-         FF%Punto%PhysCoor(field)%y(j)=(sgg%LineY(j)+sgg%LineY(j+1))*0.5_RKIND
+         FF%gridPoint%PhysCoor(field)%y(j)=(sgg%LineY(j)+sgg%LineY(j+1))*0.5_RKIND
       end do
       do k=SINPML_fullsize(field)%ZI-1,SINPML_fullsize(field)%ZE+1
-         FF%Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
+         FF%gridPoint%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
       field=IHY
       do i=SINPML_fullsize(field)%XI-1,SINPML_fullsize(field)%XE+1
-         FF%Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
+         FF%gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
       do j=SINPML_fullsize(field)%YI-1,SINPML_fullsize(field)%YE+1
-         FF%Punto%PhysCoor(field)%y(j)=sgg%LineY(j)
+         FF%gridPoint%PhysCoor(field)%y(j)=sgg%LineY(j)
       end do
       do k=SINPML_fullsize(field)%ZI-1,SINPML_fullsize(field)%ZE+1
-         FF%Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
+         FF%gridPoint%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
       field=IHZ
       do i=SINPML_fullsize(field)%XI-1,SINPML_fullsize(field)%XE+1
-         FF%Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
+         FF%gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
       do j=SINPML_fullsize(field)%YI-1,SINPML_fullsize(field)%YE+1
-         FF%Punto%PhysCoor(field)%y(j)=(sgg%LineY(j)+sgg%LineY(j+1))*0.5_RKIND
+         FF%gridPoint%PhysCoor(field)%y(j)=(sgg%LineY(j)+sgg%LineY(j+1))*0.5_RKIND
       end do
       do k=SINPML_fullsize(field)%ZI-1,SINPML_fullsize(field)%ZE+1
-         FF%Punto%PhysCoor(field)%z(k)=sgg%LineZ(k)
+         FF%gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
       !
 
@@ -268,15 +268,15 @@ contains
       FF%farfieldAr=.true.
       !
 
-      FF%XDobleAncho= 2*( FF%Punto%PhysCoor(IHX)%x(FF%esqx2)-FF%Punto%PhysCoor(IHX)%x(FF%esqx1) )
-      FF%YDobleAncho= 2*( FF%Punto%PhysCoor(IHY)%y(FF%esqy2)-FF%Punto%PhysCoor(IHY)%y(FF%esqy1) )
-      FF%ZDobleAncho= 2*( FF%Punto%PhysCoor(IHZ)%z(FF%esqz2)-FF%Punto%PhysCoor(IHZ)%z(FF%esqz1) )
-      FF%XOffsetMinus=2*( FF%Punto%PhysCoor(IHX)%x(FF%esqx1) )
-      FF%YOffsetMinus=2*( FF%Punto%PhysCoor(IHY)%y(FF%esqy1) )
-      FF%ZOffsetMinus=2*( FF%Punto%PhysCoor(IHZ)%z(FF%esqz1) )
-      FF%XOffsetPlus= 2*( FF%Punto%PhysCoor(IHX)%x(FF%esqx2))
-      FF%YOffsetPlus= 2*( FF%Punto%PhysCoor(IHY)%y(FF%esqy2))
-      FF%ZOffsetPlus= 2*( FF%Punto%PhysCoor(IHZ)%z(FF%esqz2))
+      FF%XDobleAncho= 2*( FF%gridPoint%PhysCoor(IHX)%x(FF%esqx2)-FF%gridPoint%PhysCoor(IHX)%x(FF%esqx1) )
+      FF%YDobleAncho= 2*( FF%gridPoint%PhysCoor(IHY)%y(FF%esqy2)-FF%gridPoint%PhysCoor(IHY)%y(FF%esqy1) )
+      FF%ZDobleAncho= 2*( FF%gridPoint%PhysCoor(IHZ)%z(FF%esqz2)-FF%gridPoint%PhysCoor(IHZ)%z(FF%esqz1) )
+      FF%XOffsetMinus=2*( FF%gridPoint%PhysCoor(IHX)%x(FF%esqx1) )
+      FF%YOffsetMinus=2*( FF%gridPoint%PhysCoor(IHY)%y(FF%esqy1) )
+      FF%ZOffsetMinus=2*( FF%gridPoint%PhysCoor(IHZ)%z(FF%esqz1) )
+      FF%XOffsetPlus= 2*( FF%gridPoint%PhysCoor(IHX)%x(FF%esqx2))
+      FF%YOffsetPlus= 2*( FF%gridPoint%PhysCoor(IHY)%y(FF%esqy2))
+      FF%ZOffsetPlus= 2*( FF%gridPoint%PhysCoor(IHZ)%z(FF%esqz2))
 
       !manejo de simetrias PEC y PMC
       if (FF%esqx1 <= SINPML_fullsize(IHX)%XI) then
@@ -475,86 +475,86 @@ contains
 
 
       !find the coordinate limits of the Huygens Box for each component
-      FF%TrFr%I%tra%Ez=Max(sgg%SINPMLSweep(IEZ)%XI,       FF%esqx1)
-      FF%TrFr%I%fro%Ez=Min(sgg%SINPMLSweep(IEZ)%XE,       FF%esqx2)
+      FF%TrFr%I%backDir%Ez=Max(sgg%SINPMLSweep(IEZ)%XI,       FF%esqx1)
+      FF%TrFr%I%frontDir%Ez=Min(sgg%SINPMLSweep(IEZ)%XE,       FF%esqx2)
       FF%TrFr%J%com%Ez=Max(sgg%SINPMLSweep(IEZ)%YI,       FF%esqy1)
       FF%TrFr%J%fin%Ez=Min(sgg%SINPMLSweep(IEZ)%YE,       FF%esqy2)
       FF%TrFr%K%com%Ez=Max(sgg%SINPMLSweep(IEZ)%ZI,       FF%esqz1)
       FF%TrFr%K%fin%Ez=MIn(sgg%SINPMLSweep(IEZ)%ZE,       FF%esqz2-1)
       !
-      FF%TrFr%I%tra%Ey=Max(sgg%SINPMLSweep(iEy)%XI,       FF%esqx1)
-      FF%TrFr%I%fro%Ey=Min(sgg%SINPMLSweep(iEy)%XE,       FF%esqx2)
+      FF%TrFr%I%backDir%Ey=Max(sgg%SINPMLSweep(iEy)%XI,       FF%esqx1)
+      FF%TrFr%I%frontDir%Ey=Min(sgg%SINPMLSweep(iEy)%XE,       FF%esqx2)
       FF%TrFr%J%com%Ey=Max(sgg%SINPMLSweep(iEy)%YI,       FF%esqy1)
       FF%TrFr%J%fin%Ey=Min(sgg%SINPMLSweep(iEy)%YE,       FF%esqy2-1)
       FF%TrFr%K%com%Ey=Max(sgg%SINPMLSweep(iEy)%ZI,       FF%esqz1)
       FF%TrFr%K%fin%Ey=MIn(sgg%SINPMLSweep(iEy)%ZE-01,    FF%esqz2) !MPI NO DUPLICAR CALCULOS
       !
-      FF%TrFr%I%tra%Hy= FF%TrFr%I%tra%Ez - 1
-      FF%TrFr%I%fro%Hy= FF%TrFr%I%fro%Ez
+      FF%TrFr%I%backDir%Hy= FF%TrFr%I%backDir%Ez - 1
+      FF%TrFr%I%frontDir%Hy= FF%TrFr%I%frontDir%Ez
       FF%TrFr%J%com%Hy= FF%TrFr%J%com%Ez
       FF%TrFr%J%fin%Hy= FF%TrFr%J%fin%Ez
       FF%TrFr%K%com%Hy= FF%TrFr%K%com%Ez
       FF%TrFr%K%fin%Hy= FF%TrFr%K%fin%Ez
       !
-      FF%TrFr%I%tra%Hz= FF%TrFr%I%tra%Ey -1
-      FF%TrFr%I%fro%Hz= FF%TrFr%I%fro%Ey
+      FF%TrFr%I%backDir%Hz= FF%TrFr%I%backDir%Ey -1
+      FF%TrFr%I%frontDir%Hz= FF%TrFr%I%frontDir%Ey
       FF%TrFr%J%com%Hz= FF%TrFr%J%com%Ey
       FF%TrFr%J%fin%Hz= FF%TrFr%J%fin%Ey
       FF%TrFr%K%com%Hz= FF%TrFr%K%com%Ey
       FF%TrFr%K%fin%Hz= FF%TrFr%K%fin%Ey
       !
       !
-      FF%IzDe%J%izq%Ex=Max(sgg%SINPMLSweep(iEx)%yI,       FF%esqy1)
-      FF%IzDe%J%der%Ex=Min(sgg%SINPMLSweep(iEx)%yE,       FF%esqy2)
+      FF%IzDe%J%leftDir%Ex=Max(sgg%SINPMLSweep(iEx)%yI,       FF%esqy1)
+      FF%IzDe%J%rightDir%Ex=Min(sgg%SINPMLSweep(iEx)%yE,       FF%esqy2)
       FF%IzDe%I%com%Ex=Max(sgg%SINPMLSweep(iEx)%xI,       FF%esqx1)
       FF%IzDe%I%fin%Ex=Min(sgg%SINPMLSweep(iEx)%xE,       FF%esqx2-1)
       FF%IzDe%K%com%Ex=Max(sgg%SINPMLSweep(iEx)%ZI,       FF%esqz1)
       FF%IzDe%K%fin%Ex=MIn(sgg%SINPMLSweep(iEx)%ZE-01,    FF%esqz2) !MPI NO DUPLICAR CALCULOS
       !
-      FF%IzDe%J%izq%Ez=Max(sgg%SINPMLSweep(IEZ)%yI,    FF%esqy1)
-      FF%IzDe%J%der%Ez=Min(sgg%SINPMLSweep(IEZ)%yE,    FF%esqy2)
+      FF%IzDe%J%leftDir%Ez=Max(sgg%SINPMLSweep(IEZ)%yI,    FF%esqy1)
+      FF%IzDe%J%rightDir%Ez=Min(sgg%SINPMLSweep(IEZ)%yE,    FF%esqy2)
       FF%IzDe%I%com%Ez=Max(sgg%SINPMLSweep(IEZ)%xI,    FF%esqx1)
       FF%IzDe%I%fin%Ez=Min(sgg%SINPMLSweep(IEZ)%xE,    FF%esqx2)
       FF%IzDe%K%com%Ez=Max(sgg%SINPMLSweep(IEZ)%ZI,    FF%esqz1)
       FF%IzDe%K%fin%Ez=MIn(sgg%SINPMLSweep(IEZ)%ZE,    FF%esqz2-1)
       !
-      FF%IzDe%J%izq%Hz= FF%IzDe%J%izq%Ex - 1
-      FF%IzDe%J%der%Hz= FF%IzDe%J%der%Ex
+      FF%IzDe%J%leftDir%Hz= FF%IzDe%J%leftDir%Ex - 1
+      FF%IzDe%J%rightDir%Hz= FF%IzDe%J%rightDir%Ex
       FF%IzDe%I%com%Hz= FF%IzDe%I%com%Ex
       FF%IzDe%I%fin%Hz= FF%IzDe%I%fin%Ex
       FF%IzDe%K%com%Hz= FF%IzDe%K%com%Ex
       FF%IzDe%K%fin%Hz= FF%IzDe%K%fin%Ex
       !
-      FF%IzDe%J%izq%Hx= FF%IzDe%J%izq%Ez - 1
-      FF%IzDe%J%der%Hx= FF%IzDe%J%der%Ez
+      FF%IzDe%J%leftDir%Hx= FF%IzDe%J%leftDir%Ez - 1
+      FF%IzDe%J%rightDir%Hx= FF%IzDe%J%rightDir%Ez
       FF%IzDe%I%com%Hx= FF%IzDe%I%com%Ez
       FF%IzDe%I%fin%Hx= FF%IzDe%I%fin%Ez
       FF%IzDe%K%com%Hx= FF%IzDe%K%com%Ez
       FF%IzDe%K%fin%Hx= FF%IzDe%K%fin%Ez
       !
       !
-      FF%AbAr%K%aba%Ey=Max(sgg%SINPMLSweep(iEy)%ZI,    FF%esqz1)
+      FF%AbAr%K%downDir%Ey=Max(sgg%SINPMLSweep(iEy)%ZI,    FF%esqz1)
       FF%AbAr%K%arr%Ey=Min(sgg%SINPMLSweep(iEy)%ZE,    FF%esqz2)
       FF%AbAr%I%com%Ey=Max(sgg%SINPMLSweep(iEy)%XI,    FF%esqx1)
       FF%AbAr%I%fin%Ey=Min(sgg%SINPMLSweep(iEy)%XE,    FF%esqx2)
       FF%AbAr%J%com%Ey=Max(sgg%SINPMLSweep(iEy)%YI,    FF%esqy1)
       FF%AbAr%J%fin%Ey=Min(sgg%SINPMLSweep(iEy)%YE,    FF%esqy2-1)
       !
-      FF%AbAr%K%aba%Ex=Max(sgg%SINPMLSweep(iEx)%ZI,    FF%esqz1)
+      FF%AbAr%K%downDir%Ex=Max(sgg%SINPMLSweep(iEx)%ZI,    FF%esqz1)
       FF%AbAr%K%arr%Ex=Min(sgg%SINPMLSweep(iEx)%ZE,    FF%esqz2)
       FF%AbAr%I%com%Ex=Max(sgg%SINPMLSweep(iEx)%XI,    FF%esqx1)
       FF%AbAr%I%fin%Ex=Min(sgg%SINPMLSweep(iEx)%XE,    FF%esqx2-1)
       FF%AbAr%J%com%Ex=Max(sgg%SINPMLSweep(iEx)%YI,    FF%esqy1)
       FF%AbAr%J%fin%Ex=Min(sgg%SINPMLSweep(iEx)%YE,    FF%esqy2)
       !
-      FF%AbAr%K%aba%Hx= FF%AbAr%K%aba%Ey - 1
+      FF%AbAr%K%downDir%Hx= FF%AbAr%K%downDir%Ey - 1
       FF%AbAr%K%arr%Hx= FF%AbAr%K%arr%Ey
       FF%AbAr%I%com%Hx= FF%AbAr%I%com%Ey
       FF%AbAr%I%fin%Hx= FF%AbAr%I%fin%Ey
       FF%AbAr%J%com%Hx= FF%AbAr%J%com%Ey
       FF%AbAr%J%fin%Hx= FF%AbAr%J%fin%Ey
       !
-      FF%AbAr%K%aba%Hy= FF%AbAr%K%aba%Ex - 1
+      FF%AbAr%K%downDir%Hy= FF%AbAr%K%downDir%Ex - 1
       FF%AbAr%K%arr%Hy= FF%AbAr%K%arr%Ex
       FF%AbAr%I%com%Hy= FF%AbAr%I%com%Ex
       FF%AbAr%I%fin%Hy= FF%AbAr%I%fin%Ex
@@ -565,7 +565,7 @@ contains
       !check if materials are crossed by the box
       if(FF%farfieldTr) then
          !Ez Back
-         i = FF%TrFr%I%tra%Ez !Back
+         i = FF%TrFr%I%backDir%Ez !Back
          do k = FF%TrFr%K%com%Ez, FF%TrFr%K%fin%Ez
             do j = FF%TrFr%J%com%Ez, FF%TrFr%J%fin%Ez
                if (sggMiEz(i, j, k) /=1) then
@@ -578,7 +578,7 @@ contains
             end do
          end do
          !Ey Back
-         i = FF%TrFr%I%tra%Ey
+         i = FF%TrFr%I%backDir%Ey
          do k = FF%TrFr%K%com%Ey, FF%TrFr%K%fin%Ey
             do j = FF%TrFr%J%com%Ey, FF%TrFr%J%fin%Ey
                if (sggMiEy(i,j,k) /=1) then
@@ -594,7 +594,7 @@ contains
       !--->
       if(FF%farfieldFr) then
          !Ez  Front
-         i = FF%TrFr%I%fro%Ez !Front
+         i = FF%TrFr%I%frontDir%Ez !Front
          do k = FF%TrFr%K%com%Ez, FF%TrFr%K%fin%Ez
             do j = FF%TrFr%J%com%Ez, FF%TrFr%J%fin%Ez
                if (sggMiEz(i,j,k) /=1) then
@@ -607,7 +607,7 @@ contains
             end do
          end do
          !Ey  Front
-         i = FF%TrFr%I%fro%Ey !Front
+         i = FF%TrFr%I%frontDir%Ey !Front
          do k = FF%TrFr%K%com%Ey, FF%TrFr%K%fin%Ey
             do j = FF%TrFr%J%com%Ey, FF%TrFr%J%fin%Ey
                if (sggMiEy(i,j,k) /=1) then
@@ -623,7 +623,7 @@ contains
       !--->
       if(FF%farfieldIz) then
          !Ex Left
-         j = FF%IzDe%J%izq%Ex  !Left
+         j = FF%IzDe%J%leftDir%Ex  !Left
          do k = FF%IzDe%K%com%Ex, FF%IzDe%K%fin%Ex
             do i = FF%IzDe%I%com%Ex, FF%IzDe%I%fin%Ex
                if (sggMiEx(i,j,k) /=1) then
@@ -636,7 +636,7 @@ contains
             end do
          end do
          !Ez Left
-         j = FF%IzDe%J%izq%Ez  !Left
+         j = FF%IzDe%J%leftDir%Ez  !Left
          do k = FF%IzDe%K%com%Ez, FF%IzDe%K%fin%Ez
             do i = FF%IzDe%I%com%Ez, FF%IzDe%I%fin%Ez
                if (sggMiEz(i,j,k) /=1) then
@@ -652,7 +652,7 @@ contains
       !--->
       if(FF%farfieldDe) then
          !Ez  Right
-         j = FF%IzDe%J%der%Ez !Right
+         j = FF%IzDe%J%rightDir%Ez !Right
          do k = FF%IzDe%K%com%Ez, FF%IzDe%K%fin%Ez
             do i = FF%IzDe%I%com%Ez, FF%IzDe%I%fin%Ez
                if (sggMiEz(i,j,k) /=1) then
@@ -665,7 +665,7 @@ contains
             end do
          end do
          !Ex  Right
-         j = FF%IzDe%J%der%Ex !Right
+         j = FF%IzDe%J%rightDir%Ex !Right
          do k = FF%IzDe%K%com%Ex,FF%IzDe%K%fin%Ex
             do i=FF%IzDe%I%com%Ex,FF%IzDe%I%fin%Ex
                if (sggMiEx(i,j,k) /=1) then
@@ -681,7 +681,7 @@ contains
       !--->
       if(FF%farfieldAb) then
          !Ex  Down
-         k = FF%AbAr%K%aba%Ex  !Down
+         k = FF%AbAr%K%downDir%Ex  !Down
          do j = FF%AbAr%J%com%Ex, FF%AbAr%J%fin%Ex
             do i=FF%AbAr%I%com%Ex,FF%AbAr%I%fin%Ex
                if (sggMiEx(i,j,k) /=1) then
@@ -694,7 +694,7 @@ contains
             end do
          end do
          !Ey Down
-         k = FF%AbAr%K%aba%Ey  !Down
+         k = FF%AbAr%K%downDir%Ey  !Down
          do j = FF%AbAr%J%com%Ey, FF%AbAr%J%fin%Ey
             do i = FF%AbAr%I%com%Ey, FF%AbAr%I%fin%Ey
                if (sggMiEy(i,j,k) /=1) then
@@ -739,7 +739,7 @@ contains
       !!!
       if(FF%farfieldTr) then
          !Hz Back
-         i = FF%TrFr%I%tra%Hz  !Back
+         i = FF%TrFr%I%backDir%Hz  !Back
          do k = FF%TrFr%K%com%Hz, FF%TrFr%K%fin%Hz
             do j = FF%TrFr%J%com%Hz, FF%TrFr%J%fin%Hz
                if (sggMiHz(i,j,k) /=1) then
@@ -752,7 +752,7 @@ contains
             end do
          end do
          !Hy Back
-         i = FF%TrFr%I%tra%Hy  !Back
+         i = FF%TrFr%I%backDir%Hy  !Back
          do k = FF%TrFr%K%com%Hy, FF%TrFr%K%fin%Hy
             do j = FF%TrFr%J%com%Hy, FF%TrFr%J%fin%Hy
                if (sggMiHy(i,j,k) /=1) then
@@ -767,7 +767,7 @@ contains
       end if
       if(FF%farfieldFr) then
          !Hz  Front
-         i = FF%TrFr%I%fro%Hz !Front
+         i = FF%TrFr%I%frontDir%Hz !Front
          do k = FF%TrFr%K%com%Hz, FF%TrFr%K%fin%Hz
             do j = FF%TrFr%J%com%Hz, FF%TrFr%J%fin%Hz
                if (sggMiHz(i,j,k) /=1) then
@@ -780,7 +780,7 @@ contains
             end do
          end do
          !Hy  Front
-         i = FF%TrFr%I%fro%Hy !Front
+         i = FF%TrFr%I%frontDir%Hy !Front
          do k = FF%TrFr%K%com%Hy, FF%TrFr%K%fin%Hy
             do j = FF%TrFr%J%com%Hy, FF%TrFr%J%fin%Hy
                if (sggMiHy(i,j,k) /=1) then
@@ -796,7 +796,7 @@ contains
       end if
       if(FF%farfieldIz) then
          !Hx Left
-         j = FF%IzDe%J%izq%Hx  !Left
+         j = FF%IzDe%J%leftDir%Hx  !Left
          do k = FF%IzDe%K%com%Hx, FF%IzDe%K%fin%Hx
             do i = FF%IzDe%I%com%Hx, FF%IzDe%I%fin%Hx
                if (sggMiHx(i,j,k) /=1) then
@@ -809,7 +809,7 @@ contains
             end do
          end do
          !Hz Left
-         j = FF%IzDe%J%izq%Hz  !Left
+         j = FF%IzDe%J%leftDir%Hz  !Left
          do k = FF%IzDe%K%com%Hz, FF%IzDe%K%fin%Hz
             do i = FF%IzDe%I%com%Hz, FF%IzDe%I%fin%Hz
                if (sggMiHz(i,j,k) /=1) then
@@ -824,7 +824,7 @@ contains
       end if
       if(FF%farfieldDe) then
          !Hx  Right
-         j = FF%IzDe%J%der%Hx !Right
+         j = FF%IzDe%J%rightDir%Hx !Right
          do k = FF%IzDe%K%com%Hx, FF%IzDe%K%fin%Hx
             do i = FF%IzDe%I%com%Hx, FF%IzDe%I%fin%Hx
                if (sggMiHx(i,j,k) /=1) then
@@ -837,7 +837,7 @@ contains
             end do
          end do
          !Hz  Right
-         j = FF%IzDe%J%der%Hz !Right
+         j = FF%IzDe%J%rightDir%Hz !Right
          do k = FF%IzDe%K%com%Hz, FF%IzDe%K%fin%Hz
             do i = FF%IzDe%I%com%Hz, FF%IzDe%I%fin%Hz
                if (sggMiHz(i,j,k) /=1) then
@@ -852,7 +852,7 @@ contains
       end if
       if(FF%farfieldAb) then
          !Hx  Down
-         k = FF%AbAr%K%aba%Hx  !Down
+         k = FF%AbAr%K%downDir%Hx  !Down
          do j = FF%AbAr%J%com%Hx, FF%AbAr%J%fin%Hx
             do i = FF%AbAr%I%com%Hx, FF%AbAr%I%fin%Hx
                if (sggMiHx(i,j,k) /=1) then
@@ -865,7 +865,7 @@ contains
             end do
          end do
          !Hy  Down
-         k = FF%AbAr%K%aba%Hy  !Down
+         k = FF%AbAr%K%downDir%Hy  !Down
          do j = FF%AbAr%J%com%Hy, FF%AbAr%J%fin%Hy
             do i=FF%AbAr%I%com%Hy,FF%AbAr%I%fin%Hy
                if (sggMiHy(i,j,k) /=1) then
@@ -987,10 +987,10 @@ contains
          call STOPONERROR (layoutnumber,num_procs,Buff)
       end if
       open(15, FILE=trim(adjustl(FF%FileNormalize)))
-      read (15,*) tiempo1, field1
+      read (15,*) time1, field1
       read (15,*) tiempo2, field2
       close (15)
-      dtevol = tiempo2 - tiempo1 !!!ojo tocar para permit scaling pq. no estan sampleadas uniformemente 06118
+      dtevol = tiempo2 - time1 !!!ojo tocar para permit scaling pq. no estan sampleadas uniformemente 06118
       FF%dftEntrada=0.0_RKIND
 
 
@@ -1026,9 +1026,9 @@ contains
 
 
       open(15, FILE=trim(adjustl(FF%FileNormalize)))
-      read (15,*) tiempo1, field1
+      read (15,*) time1, field1
       do
-         read (15,*, end=98) tiempo1, field1
+         read (15,*, end=98) time1, field1
          do ii=1,FF%NumFreqs
             FF%dftEntrada(ii) = FF%dftEntrada(ii) + field1 * FF%auxExp_E(ii)
          end do
@@ -1154,7 +1154,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!
       if(FF%farfieldTr) then
          !Ez Back
-         i = FF%TrFr%I%tra%Ez !Back
+         i = FF%TrFr%I%backDir%Ez !Back
          i_m = i - b%Ez%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
@@ -1173,7 +1173,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
          !Ey Back
-         i = FF%TrFr%I%tra%Ey  !Back
+         i = FF%TrFr%I%backDir%Ey  !Back
          i_m = i - b%Ey%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
@@ -1195,7 +1195,7 @@ contains
       !--->
       if(FF%farfieldFr) then
          !Ez  Front
-         i = FF%TrFr%I%fro%Ez !Front
+         i = FF%TrFr%I%frontDir%Ez !Front
          i_m = i - b%Ez%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
@@ -1214,7 +1214,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
          !Ey  Front
-         i = FF%TrFr%I%fro%Ey !Front
+         i = FF%TrFr%I%frontDir%Ey !Front
          i_m = i - b%Ey%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
@@ -1237,7 +1237,7 @@ contains
       !--->
       if(FF%farfieldIz) then
          !Ex Left
-         j = FF%IzDe%J%izq%Ex  !Left
+         j = FF%IzDe%J%leftDir%Ex  !Left
          j_m = j - b%Ex%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
@@ -1256,7 +1256,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
          !Ez Left
-         j = FF%IzDe%J%izq%Ez  !Left
+         j = FF%IzDe%J%leftDir%Ez  !Left
          j_m = j - b%Ez%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
@@ -1278,7 +1278,7 @@ contains
       !--->
       if(FF%farfieldDe) then
          !Ez  Right
-         j = FF%IzDe%J%der%Ez !Right
+         j = FF%IzDe%J%rightDir%Ez !Right
          j_m = j - b%Ez%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
@@ -1297,7 +1297,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
          !Ex  Right
-         j = FF%IzDe%J%der%Ex !Right
+         j = FF%IzDe%J%rightDir%Ex !Right
          j_m = j - b%Ex%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
@@ -1320,7 +1320,7 @@ contains
       !--->
       if(FF%farfieldAb) then
          !Ex  Down
-         k = FF%AbAr%K%aba%Ex  !Down
+         k = FF%AbAr%K%downDir%Ex  !Down
          k_m = k - b%Ex%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
@@ -1339,7 +1339,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
          !Ey Down
-         k = FF%AbAr%K%aba%Ey  !Down
+         k = FF%AbAr%K%downDir%Ey  !Down
          k_m = k - b%Ey%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
@@ -1406,7 +1406,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if(FF%farfieldTr) then
          !Hz Back
-         i = FF%TrFr%I%tra%Hz  !Back
+         i = FF%TrFr%I%backDir%Hz  !Back
          i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
@@ -1428,7 +1428,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
          !Hy Back
-         i = FF%TrFr%I%tra%Hy  !Back
+         i = FF%TrFr%I%backDir%Hy  !Back
          i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
@@ -1453,7 +1453,7 @@ contains
       !--->
       if(FF%farfieldFr) then
          !Hz  Front
-         i = FF%TrFr%I%fro%Hz !Front
+         i = FF%TrFr%I%frontDir%Hz !Front
          i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
@@ -1475,7 +1475,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
          !Hy  Front
-         i = FF%TrFr%I%fro%Hy !Front
+         i = FF%TrFr%I%frontDir%Hy !Front
          i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
@@ -1501,7 +1501,7 @@ contains
       !--->
       if(FF%farfieldIz) then
          !Hx Left
-         j = FF%IzDe%J%izq%Hx  !Left
+         j = FF%IzDe%J%leftDir%Hx  !Left
          j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
@@ -1523,7 +1523,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
          !Hz Left
-         j = FF%IzDe%J%izq%Hz  !Left
+         j = FF%IzDe%J%leftDir%Hz  !Left
          j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
@@ -1548,7 +1548,7 @@ contains
       !--->
       if(FF%farfieldDe) then
          !Hx  Right
-         j = FF%IzDe%J%der%Hx !Right
+         j = FF%IzDe%J%rightDir%Hx !Right
          j_m = j - b%Hx%YI
          !--->
 #ifdef CompileWithOpenMP
@@ -1571,7 +1571,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
          !Hz  Right
-         j = FF%IzDe%J%der%Hz !Right
+         j = FF%IzDe%J%rightDir%Hz !Right
          j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
@@ -1597,7 +1597,7 @@ contains
       !--->
       if(FF%farfieldAb) then
          !Hx  Down
-         k = FF%AbAr%K%aba%Hx  !Down
+         k = FF%AbAr%K%downDir%Hx  !Down
          k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
@@ -1619,7 +1619,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
          !Hy  Down
-         k = FF%AbAr%K%aba%Hy  !Down
+         k = FF%AbAr%K%downDir%Hy  !Down
          k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
@@ -1717,7 +1717,7 @@ contains
       !
       if(FF%farfieldTr) then
          !Ez Back
-         i = FF%TrFr%I%tra%Ez !Back
+         i = FF%TrFr%I%backDir%Ez !Back
          i_m = i - b%Ez%XI
          do k = FF%TrFr%K%com%Ez, FF%TrFr%K%fin%Ez
             k_m = k - b%Ez%ZI
@@ -1727,7 +1727,7 @@ contains
             end do
          end do
          !Ey Back
-         i = FF%TrFr%I%tra%Ey  !Back
+         i = FF%TrFr%I%backDir%Ey  !Back
          i_m = i - b%Ey%XI
          do k = FF%TrFr%K%com%Ey, FF%TrFr%K%fin%Ey
             k_m = k - b%Ey%ZI
@@ -1740,7 +1740,7 @@ contains
       !--->
       if(FF%farfieldFr) then
          !Ez  Front
-         i = FF%TrFr%I%fro%Ez !Front
+         i = FF%TrFr%I%frontDir%Ez !Front
          i_m = i - b%Ez%XI
          do k = FF%TrFr%K%com%Ez, FF%TrFr%K%fin%Ez
             k_m = k - b%Ez%ZI
@@ -1750,7 +1750,7 @@ contains
             end do
          end do
          !Ey  Front
-         i = FF%TrFr%I%fro%Ey !Front
+         i = FF%TrFr%I%frontDir%Ey !Front
          i_m = i - b%Ey%XI
          do k = FF%TrFr%K%com%Ey, FF%TrFr%K%fin%Ey
             k_m = k - b%Ey%ZI
@@ -1763,7 +1763,7 @@ contains
       !--->
       if(FF%farfieldIz) then
          !Ex Left
-         j = FF%IzDe%J%izq%Ex  !Left
+         j = FF%IzDe%J%leftDir%Ex  !Left
          j_m = j - b%Ex%YI
          do k = FF%IzDe%K%com%Ex, FF%IzDe%K%fin%Ex
             k_m = k - b%Ex%ZI
@@ -1773,7 +1773,7 @@ contains
             end do
          end do
          !Ez Left
-         j = FF%IzDe%J%izq%Ez  !Left
+         j = FF%IzDe%J%leftDir%Ez  !Left
          j_m = j - b%Ez%YI
          do k = FF%IzDe%K%com%Ez, FF%IzDe%K%fin%Ez
             k_m = k - b%Ez%ZI
@@ -1786,7 +1786,7 @@ contains
       !--->
       if(FF%farfieldDe) then
          !Ez  Right
-         j = FF%IzDe%J%der%Ez !Right
+         j = FF%IzDe%J%rightDir%Ez !Right
          j_m = j - b%Ez%YI
          do k = FF%IzDe%K%com%Ez, FF%IzDe%K%fin%Ez
             k_m = k - b%Ez%ZI
@@ -1796,7 +1796,7 @@ contains
             end do
          end do
          !Ex  Right
-         j = FF%IzDe%J%der%Ex !Right
+         j = FF%IzDe%J%rightDir%Ex !Right
          j_m = j - b%Ex%YI
          do k = FF%IzDe%K%com%Ex,FF%IzDe%K%fin%Ex
             k_m = k - b%Ex%ZI
@@ -1809,7 +1809,7 @@ contains
       !--->
       if(FF%farfieldAb) then
          !Ex  Down
-         k = FF%AbAr%K%aba%Ex  !Down
+         k = FF%AbAr%K%downDir%Ex  !Down
          k_m = k - b%Ex%ZI
          do j = FF%AbAr%J%com%Ex, FF%AbAr%J%fin%Ex
             j_m = j - b%Ex%YI
@@ -1819,7 +1819,7 @@ contains
             end do
          end do
          !Ey Down
-         k = FF%AbAr%K%aba%Ey  !Down
+         k = FF%AbAr%K%downDir%Ey  !Down
          k_m = k - b%Ey%ZI
          do j = FF%AbAr%J%com%Ey, FF%AbAr%J%fin%Ey
             j_m = j - b%Ey%YI
@@ -1858,7 +1858,7 @@ contains
       !--->
       if(FF%farfieldTr) then
          !Hz Back
-         i = FF%TrFr%I%tra%Hz  !Back
+         i = FF%TrFr%I%backDir%Hz  !Back
          i_m = i - b%Hz%XI
          do k = FF%TrFr%K%com%Hz, FF%TrFr%K%fin%Hz
             k_m = k - b%Hz%ZI
@@ -1869,7 +1869,7 @@ contains
             end do
          end do
          !Hy Back
-         i = FF%TrFr%I%tra%Hy  !Back
+         i = FF%TrFr%I%backDir%Hy  !Back
          i_m = i - b%Hy%XI
          do k = FF%TrFr%K%com%Hy, FF%TrFr%K%fin%Hy
             k_m = k - b%Hy%ZI
@@ -1883,7 +1883,7 @@ contains
       !--->
       if(FF%farfieldFr) then
          !Hz  Front
-         i = FF%TrFr%I%fro%Hz !Front
+         i = FF%TrFr%I%frontDir%Hz !Front
          i_m = i - b%Hz%XI
          do k = FF%TrFr%K%com%Hz, FF%TrFr%K%fin%Hz
             k_m = k - b%Hz%ZI
@@ -1894,7 +1894,7 @@ contains
             end do
          end do
          !Hy  Front
-         i = FF%TrFr%I%fro%Hy !Front
+         i = FF%TrFr%I%frontDir%Hy !Front
          i_m = i - b%Hy%XI
          do k = FF%TrFr%K%com%Hy, FF%TrFr%K%fin%Hy
             k_m = k - b%Hy%ZI
@@ -1908,7 +1908,7 @@ contains
       !--->
       if(FF%farfieldIz) then
          !Hx Left
-         j = FF%IzDe%J%izq%Hx  !Left
+         j = FF%IzDe%J%leftDir%Hx  !Left
          j_m = j - b%Hx%YI
          do k = FF%IzDe%K%com%Hx, FF%IzDe%K%fin%Hx
             k_m = k - b%Hx%ZI
@@ -1919,7 +1919,7 @@ contains
             end do
          end do
          !Hz Left
-         j = FF%IzDe%J%izq%Hz  !Left
+         j = FF%IzDe%J%leftDir%Hz  !Left
          j_m = j - b%Hz%YI
          do k = FF%IzDe%K%com%Hz, FF%IzDe%K%fin%Hz
             k_m = k - b%Hz%ZI
@@ -1933,7 +1933,7 @@ contains
       !--->
       if(FF%farfieldDe) then
          !Hx  Right
-         j = FF%IzDe%J%der%Hx !Right
+         j = FF%IzDe%J%rightDir%Hx !Right
          j_m = j - b%Hx%YI
          !--->
          do k = FF%IzDe%K%com%Hx, FF%IzDe%K%fin%Hx
@@ -1945,7 +1945,7 @@ contains
             end do
          end do
          !Hz  Right
-         j = FF%IzDe%J%der%Hz !Right
+         j = FF%IzDe%J%rightDir%Hz !Right
          j_m = j - b%Hz%YI
          do k = FF%IzDe%K%com%Hz, FF%IzDe%K%fin%Hz
             k_m = k - b%Hz%ZI
@@ -1959,7 +1959,7 @@ contains
       !--->
       if(FF%farfieldAb) then
          !Hx  Down
-         k = FF%AbAr%K%aba%Hx  !Down
+         k = FF%AbAr%K%downDir%Hx  !Down
          k_m = k - b%Hx%ZI
          do j = FF%AbAr%J%com%Hx, FF%AbAr%J%fin%Hx
             j_m = j - b%Hx%YI
@@ -1970,7 +1970,7 @@ contains
             end do
          end do
          !Hy  Down
-         k = FF%AbAr%K%aba%Hy  !Down
+         k = FF%AbAr%K%downDir%Hy  !Down
          k_m = k - b%Hy%ZI
          do j = FF%AbAr%J%com%Hy, FF%AbAr%J%fin%Hy
             j_m = j - b%Hy%YI
@@ -2029,7 +2029,7 @@ contains
       end do
       if(FF%farfieldTr) then
          !Ez Back
-         i = FF%TrFr%I%tra%Ez !Back
+         i = FF%TrFr%I%backDir%Ez !Back
          i_m = i - b%Ez%XI
          do k = FF%TrFr%K%com%Ez, FF%TrFr%K%fin%Ez
             k_m = k - b%Ez%ZI
@@ -2039,7 +2039,7 @@ contains
             end do
          end do
          !Ey Back
-         i = FF%TrFr%I%tra%Ey  !Back
+         i = FF%TrFr%I%backDir%Ey  !Back
          i_m = i - b%Ey%XI
          do k = FF%TrFr%K%com%Ey, FF%TrFr%K%fin%Ey
             k_m = k - b%Ey%ZI
@@ -2052,7 +2052,7 @@ contains
       !--->
       if(FF%farfieldFr) then
          !Ez  Front
-         i = FF%TrFr%I%fro%Ez !Front
+         i = FF%TrFr%I%frontDir%Ez !Front
          i_m = i - b%Ez%XI
          do k = FF%TrFr%K%com%Ez, FF%TrFr%K%fin%Ez
             k_m = k - b%Ez%ZI
@@ -2062,7 +2062,7 @@ contains
             end do
          end do
          !Ey  Front
-         i = FF%TrFr%I%fro%Ey !Front
+         i = FF%TrFr%I%frontDir%Ey !Front
          i_m = i - b%Ey%XI
          do k = FF%TrFr%K%com%Ey, FF%TrFr%K%fin%Ey
             k_m = k - b%Ey%ZI
@@ -2075,7 +2075,7 @@ contains
       !--->
       if(FF%farfieldIz) then
          !Ex Left
-         j = FF%IzDe%J%izq%Ex  !Left
+         j = FF%IzDe%J%leftDir%Ex  !Left
          j_m = j - b%Ex%YI
          do k = FF%IzDe%K%com%Ex, FF%IzDe%K%fin%Ex
             k_m = k - b%Ex%ZI
@@ -2085,7 +2085,7 @@ contains
             end do
          end do
          !Ez Left
-         j = FF%IzDe%J%izq%Ez  !Left
+         j = FF%IzDe%J%leftDir%Ez  !Left
          j_m = j - b%Ez%YI
          do k = FF%IzDe%K%com%Ez, FF%IzDe%K%fin%Ez
             k_m = k - b%Ez%ZI
@@ -2098,7 +2098,7 @@ contains
       !--->
       if(FF%farfieldDe) then
          !Ez  Right
-         j = FF%IzDe%J%der%Ez !Right
+         j = FF%IzDe%J%rightDir%Ez !Right
          j_m = j - b%Ez%YI
          do k = FF%IzDe%K%com%Ez, FF%IzDe%K%fin%Ez
             k_m = k - b%Ez%ZI
@@ -2108,7 +2108,7 @@ contains
             end do
          end do
          !Ex  Right
-         j = FF%IzDe%J%der%Ex !Right
+         j = FF%IzDe%J%rightDir%Ex !Right
          j_m = j - b%Ex%YI
          do k = FF%IzDe%K%com%Ex,FF%IzDe%K%fin%Ex
             k_m = k - b%Ex%ZI
@@ -2121,7 +2121,7 @@ contains
       !--->
       if(FF%farfieldAb) then
          !Ex  Down
-         k = FF%AbAr%K%aba%Ex  !Down
+         k = FF%AbAr%K%downDir%Ex  !Down
          k_m = k - b%Ex%ZI
          do j = FF%AbAr%J%com%Ex, FF%AbAr%J%fin%Ex
             j_m = j - b%Ex%YI
@@ -2131,7 +2131,7 @@ contains
             end do
          end do
          !Ey Down
-         k = FF%AbAr%K%aba%Ey  !Down
+         k = FF%AbAr%K%downDir%Ey  !Down
          k_m = k - b%Ey%ZI
          do j = FF%AbAr%J%com%Ey, FF%AbAr%J%fin%Ey
             j_m = j - b%Ey%YI
@@ -2170,7 +2170,7 @@ contains
       !--->
       if(FF%farfieldTr) then
          !Hz Back
-         i = FF%TrFr%I%tra%Hz  !Back
+         i = FF%TrFr%I%backDir%Hz  !Back
          i_m = i - b%Hz%XI
          do k = FF%TrFr%K%com%Hz, FF%TrFr%K%fin%Hz
             k_m = k - b%Hz%ZI
@@ -2181,7 +2181,7 @@ contains
             end do
          end do
          !Hy Back
-         i = FF%TrFr%I%tra%Hy  !Back
+         i = FF%TrFr%I%backDir%Hy  !Back
          i_m = i - b%Hy%XI
          do k = FF%TrFr%K%com%Hy, FF%TrFr%K%fin%Hy
             k_m = k - b%Hy%ZI
@@ -2195,7 +2195,7 @@ contains
       !--->
       if(FF%farfieldFr) then
          !Hz  Front
-         i = FF%TrFr%I%fro%Hz !Front
+         i = FF%TrFr%I%frontDir%Hz !Front
          i_m = i - b%Hz%XI
          do k = FF%TrFr%K%com%Hz, FF%TrFr%K%fin%Hz
             k_m = k - b%Hz%ZI
@@ -2206,7 +2206,7 @@ contains
             end do
          end do
          !Hy  Front
-         i = FF%TrFr%I%fro%Hy !Front
+         i = FF%TrFr%I%frontDir%Hy !Front
          i_m = i - b%Hy%XI
          do k = FF%TrFr%K%com%Hy, FF%TrFr%K%fin%Hy
             k_m = k - b%Hy%ZI
@@ -2220,7 +2220,7 @@ contains
       !--->
       if(FF%farfieldIz) then
          !Hx Left
-         j = FF%IzDe%J%izq%Hx  !Left
+         j = FF%IzDe%J%leftDir%Hx  !Left
          j_m = j - b%Hx%YI
          do k = FF%IzDe%K%com%Hx, FF%IzDe%K%fin%Hx
             k_m = k - b%Hx%ZI
@@ -2231,7 +2231,7 @@ contains
             end do
          end do
          !Hz Left
-         j = FF%IzDe%J%izq%Hz  !Left
+         j = FF%IzDe%J%leftDir%Hz  !Left
          j_m = j - b%Hz%YI
          do k = FF%IzDe%K%com%Hz, FF%IzDe%K%fin%Hz
             k_m = k - b%Hz%ZI
@@ -2245,7 +2245,7 @@ contains
       !--->
       if(FF%farfieldDe) then
          !Hx  Right
-         j = FF%IzDe%J%der%Hx !Right
+         j = FF%IzDe%J%rightDir%Hx !Right
          j_m = j - b%Hx%YI
          !--->
          do k = FF%IzDe%K%com%Hx, FF%IzDe%K%fin%Hx
@@ -2257,7 +2257,7 @@ contains
             end do
          end do
          !Hz  Right
-         j = FF%IzDe%J%der%Hz !Right
+         j = FF%IzDe%J%rightDir%Hz !Right
          j_m = j - b%Hz%YI
          do k = FF%IzDe%K%com%Hz, FF%IzDe%K%fin%Hz
             k_m = k - b%Hz%ZI
@@ -2271,7 +2271,7 @@ contains
       !--->
       if(FF%farfieldAb) then
          !Hx  Down
-         k = FF%AbAr%K%aba%Hx  !Down
+         k = FF%AbAr%K%downDir%Hx  !Down
          k_m = k - b%Hx%ZI
          do j = FF%AbAr%J%com%Hx, FF%AbAr%J%fin%Hx
             j_m = j - b%Hx%YI
@@ -2282,7 +2282,7 @@ contains
             end do
          end do
          !Hy  Down
-         k = FF%AbAr%K%aba%Hy  !Down
+         k = FF%AbAr%K%downDir%Hy  !Down
          k_m = k - b%Hy%ZI
          do j = FF%AbAr%J%com%Hy, FF%AbAr%J%fin%Hy
             j_m = j - b%Hy%YI
@@ -2344,9 +2344,9 @@ contains
       integer(kind=4) :: field
 
       do field=iEx,IHZ
-         if (associated(FF%Punto%PhysCoor(field)%x)) deallocate(FF%Punto%PhysCoor(field)%x)
-         if (associated(FF%Punto%PhysCoor(field)%y)) deallocate(FF%Punto%PhysCoor(field)%y)
-         if (associated(FF%Punto%PhysCoor(field)%z)) deallocate(FF%Punto%PhysCoor(field)%z)
+         if (associated(FF%gridPoint%PhysCoor(field)%x)) deallocate(FF%gridPoint%PhysCoor(field)%x)
+         if (associated(FF%gridPoint%PhysCoor(field)%y)) deallocate(FF%gridPoint%PhysCoor(field)%y)
+         if (associated(FF%gridPoint%PhysCoor(field)%z)) deallocate(FF%gridPoint%PhysCoor(field)%z)
       end do
       !
       if (allocated(FF%expIwdt)) deallocate(FF%expIwdt)
@@ -2393,7 +2393,7 @@ contains
       real(kind = RKIND) :: theta,phi,sintheta_sinphi,sintheta_cosphi, &
       costheta,cosphi,costheta_cosphi,costheta_sinphi,sintheta,sinphi,&
       freq, NORMAL, SIGNO,  dummy,newdummy1,newdummy2,RCS(1:2)
-      real(kind = RKIND_TIEMPO) :: rinstant
+      real(kind = RKIND_TIME) :: rinstant
       integer(kind=4) :: ierr,pozi,position
       complex(kind = CKIND) :: L_theta,L_phi,N_theta,N_phi,Etheta(1:2),Ephi(1:2),Mx,My,Mz,Jx,Jy,Jz,comun
       complex(kind = CKIND) :: new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz
@@ -2529,7 +2529,7 @@ contains
                      co%x_Jy=0;co%y_Jy=0;co%z_Jy=0;
                      co%x_Jz=0;co%y_Jz=0;co%z_Jz=0;
                      if (position==1) then
-                        i = FF%TrFr%I%tra%Ez !Back !el del Ey coincide. Lo hago asi para no picar tanto codigo!!!
+                        i = FF%TrFr%I%backDir%Ez !Back !el del Ey coincide. Lo hago asi para no picar tanto codigo!!!
                         normal=-1.0_RKIND
                         GOahead = ( FF%farfieldTr .and. facesNF2FF%Tr)
                         EcampoZ =>  FF%EzTr
@@ -2539,7 +2539,7 @@ contains
                         Hcampo2Z => FF%HzTr2
                         Hcampo2Y => FF%HyTr2
                      else
-                        i = FF%TrFr%I%fro%Ez !Front !el del Ey coincide. Lo hago asi para no picar tanto codigo!!!
+                        i = FF%TrFr%I%frontDir%Ez !Front !el del Ey coincide. Lo hago asi para no picar tanto codigo!!!
                         GOahead = ( FF%farfieldFr .and. facesNF2FF%Fr)
                         normal=+1.0_RKIND
                         EcampoZ  => FF%EzFr
@@ -2559,8 +2559,8 @@ contains
                               if (j.le.FF%TrFr%J%fin%Ey) Mz = + EcampoY(j_m, k_m,ii) *dye(j_m)*dzh(k_m)*NORMAL !los finales si varian
                               if (k.le.FF%TrFr%K%fin%Hz) Jy = + (Average(pasadas, HcampoZ(j_m, k_m,ii) , Hcampo2Z(j_m, k_m,ii))) *dye(j_m)*dzh(k_m)*NORMAL
                               if (j.le.FF%TrFr%J%fin%Hy) Jz = - (Average(pasadas, HcampoY(j_m, k_m,ii) , Hcampo2Y(j_m, k_m,ii))) *dyh(j_m)*dze(k_m)*NORMAL
-                              co%x_My=FF%Punto%PhysCoor(IEZ)%x(i); co%y_My=FF%Punto%PhysCoor(IEZ)%y(j); co%z_My=FF%Punto%PhysCoor(IEZ)%z(k)
-                              co%x_Mz=FF%Punto%PhysCoor(iEy)%x(i); co%y_Mz=FF%Punto%PhysCoor(iEy)%y(j); co%z_Mz=FF%Punto%PhysCoor(iEy)%z(k)
+                              co%x_My=FF%gridPoint%PhysCoor(IEZ)%x(i); co%y_My=FF%gridPoint%PhysCoor(IEZ)%y(j); co%z_My=FF%gridPoint%PhysCoor(IEZ)%z(k)
+                              co%x_Mz=FF%gridPoint%PhysCoor(iEy)%x(i); co%y_Mz=FF%gridPoint%PhysCoor(iEy)%y(j); co%z_Mz=FF%gridPoint%PhysCoor(iEy)%z(k)
                               co%x_Jy=co%x_Mz;                     co%y_Jy=co%y_Mz;                     co%z_Jy=co%z_Mz;
                               co%x_Jz=co%x_My;                     co%y_Jz=co%y_My;                     co%z_Jz=co%z_My;
                               call update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)
@@ -2787,7 +2787,7 @@ contains
                      co%x_Jy=0;co%y_Jy=0;co%z_Jy=0;
                      co%x_Jz=0;co%y_Jz=0;co%z_Jz=0;
                      if (position==1) then
-                        j = FF%IzDe%J%izq%Ex
+                        j = FF%IzDe%J%leftDir%Ex
                         normal=-1.0_RKIND
                         GOahead = ( FF%farfieldIz .and. facesNF2FF%Iz)
                         EcampoZ  => FF%EzIz
@@ -2797,7 +2797,7 @@ contains
                         Hcampo2Z => FF%HzIz2
                         Hcampo2X => FF%HxIz2
                      else
-                        j = FF%IzDe%J%der%Ex
+                        j = FF%IzDe%J%rightDir%Ex
                         normal=+1.0_RKIND
                         GOahead = ( FF%farfieldDe .and. facesNF2FF%De)
                         EcampoZ  => FF%EzDe
@@ -2817,8 +2817,8 @@ contains
                               if (i.le.FF%IzDe%I%fin%Ex)  Mz = - EcampoX(i_m, k_m,ii) *dxe(i_m)*dzh(k_m)*NORMAL
                               if (k.le.FF%IzDe%K%fin%Hz)  Jx = - (Average(pasadas, HcampoZ(i_m, k_m,ii) , Hcampo2Z(i_m, k_m,ii))) *dxe(i_m)*dzh(k_m)*NORMAL
                               if (i.le.FF%IzDe%I%fin%Hx)  Jz = + (Average(pasadas, HcampoX(i_m, k_m,ii) , Hcampo2X(i_m, k_m,ii))) *dxh(i_m)*dze(k_m)*NORMAL
-                              co%x_Mx=FF%Punto%PhysCoor(IEZ)%x(i); co%y_Mx=FF%Punto%PhysCoor(IEZ)%y(j); co%z_Mx=FF%Punto%PhysCoor(IEZ)%z(k)
-                              co%x_Mz=FF%Punto%PhysCoor(iEx)%x(i); co%y_Mz=FF%Punto%PhysCoor(iEx)%y(j); co%z_Mz=FF%Punto%PhysCoor(iEx)%z(k)
+                              co%x_Mx=FF%gridPoint%PhysCoor(IEZ)%x(i); co%y_Mx=FF%gridPoint%PhysCoor(IEZ)%y(j); co%z_Mx=FF%gridPoint%PhysCoor(IEZ)%z(k)
+                              co%x_Mz=FF%gridPoint%PhysCoor(iEx)%x(i); co%y_Mz=FF%gridPoint%PhysCoor(iEx)%y(j); co%z_Mz=FF%gridPoint%PhysCoor(iEx)%z(k)
                               co%x_Jz=co%x_Mx;                     co%y_Jz=co%y_Mx;                     co%z_Jz=co%z_Mx;
                               co%x_Jx=co%x_Mz;                     co%y_Jx=co%y_Mz;                     co%z_Jx=co%z_Mz;
                               call update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)
@@ -3044,7 +3044,7 @@ contains
                      co%x_Jy=0;co%y_Jy=0;co%z_Jy=0;
                      co%x_Jz=0;co%y_Jz=0;co%z_Jz=0;
                      if (position==1) then
-                        k = FF%AbAr%K%aba%Ey
+                        k = FF%AbAr%K%downDir%Ey
                         normal=-1.0_RKIND
                         GOahead = ( FF%farfieldAb .and. facesNF2FF%Ab)
                         EcampoY  => FF%EyAb
@@ -3074,8 +3074,8 @@ contains
                               if (i.le.FF%AbAr%I%fin%Ex)  My = + EcampoX(i_m, j_m,ii) *dxe(i_m)*dyh(j_m)*NORMAL
                               if (j.le.FF%AbAr%J%fin%Hy)  Jx = + (Average(pasadas, HcampoY(i_m, j_m,ii) , Hcampo2Y(i_m, j_m,ii))) *dxe(i_m)*dyh(j_m)*NORMAL
                               if (i.le.FF%AbAr%I%fin%Hx)  Jy = - (Average(pasadas, HcampoX(i_m, j_m,ii) , Hcampo2X(i_m, j_m,ii))) *dxh(i_m)*dye(j_m)*NORMAL
-                              co%x_Mx=FF%Punto%PhysCoor(iEy)%x(i); co%y_Mx=FF%Punto%PhysCoor(iEy)%y(j); co%z_Mx=FF%Punto%PhysCoor(iEy)%z(k)
-                              co%x_My=FF%Punto%PhysCoor(iEx)%x(i); co%y_My=FF%Punto%PhysCoor(iEx)%y(j); co%z_My=FF%Punto%PhysCoor(iEx)%z(k)
+                              co%x_Mx=FF%gridPoint%PhysCoor(iEy)%x(i); co%y_Mx=FF%gridPoint%PhysCoor(iEy)%y(j); co%z_Mx=FF%gridPoint%PhysCoor(iEy)%z(k)
+                              co%x_My=FF%gridPoint%PhysCoor(iEx)%x(i); co%y_My=FF%gridPoint%PhysCoor(iEx)%y(j); co%z_My=FF%gridPoint%PhysCoor(iEx)%z(k)
                               co%x_Jx=co%x_My;                     co%y_Jx=co%y_My;                     co%z_Jx=co%z_My;
                               co%x_Jy=co%x_Mx;                     co%y_Jy=co%y_Mx;                     co%z_Jy=co%z_Mx;
                               call update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)!! simetrias

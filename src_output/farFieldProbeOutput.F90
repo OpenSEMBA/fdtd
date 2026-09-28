@@ -95,12 +95,12 @@ contains
    subroutine flush_farField_probe_output(this, simlulationTimeArray, timeIndex, control, fieldsReference, bounds)
       type(far_field_probe_output_t), intent(inout) :: this
       integer, intent(in) :: timeIndex
-      real(kind=RKIND_TIEMPO), pointer, dimension(:), intent(in) :: simlulationTimeArray
+      real(kind=RKIND_TIME), pointer, dimension(:), intent(in) :: simlulationTimeArray
       type(sim_control_t), intent(in) :: control
       type(fields_reference_t), pointer, intent(in) :: fieldsReference
       type(bounds_t), intent(in) :: bounds
 
-      real(kind=RKIND_TIEMPO) :: flushTime
+      real(kind=RKIND_TIME) :: flushTime
 
       flushTime = simlulationTimeArray(timeIndex)
       call FlushFarfield(control%layoutnumber, control%num_procs, bounds, &

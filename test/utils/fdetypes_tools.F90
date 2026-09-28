@@ -151,14 +151,14 @@ contains
    end function create_geometry_media_from_sggAlloc
 
    function create_control_flags(layoutnumber, sizeValue, mpidir, finaltimestep, &
-                                 nEntradaRoot, wiresflavor, wirecrank, &
+                                 nInputRoot, wiresflavor, wirecrank, &
                                  resume, saveall, NF2FFDecim, simu_devia, singlefilewrite, &
                                  facesNF2FF) result(control)
 
       type(sim_control_t) :: control
 
       integer(kind=SINGLE), intent(in), optional :: layoutnumber, sizeValue, mpidir, finaltimestep
-      character(len=*), intent(in), optional :: nEntradaRoot, wiresflavor
+      character(len=*), intent(in), optional :: nInputRoot, wiresflavor
       logical, intent(in), optional :: wirecrank, resume, saveall, NF2FFDecim, simu_devia, singlefilewrite
       type(nf2ff_t), intent(in), optional :: facesNF2FF
 
@@ -167,7 +167,7 @@ contains
       control%num_procs = 0
       control%mpidir = 3
       control%finaltimestep = 0
-      control%nEntradaRoot = ""
+      control%nInputRoot = ""
       control%wiresflavor = ""
       control%wirecrank = .false.
       control%resume = .false.
@@ -182,7 +182,7 @@ contains
       if (present(sizeValue)) control%num_procs = sizeValue
       if (present(mpidir)) control%mpidir = mpidir
       if (present(finaltimestep)) control%finaltimestep = finaltimestep
-      if (present(nEntradaRoot)) control%nEntradaRoot = nEntradaRoot
+      if (present(nInputRoot)) control%nInputRoot = nInputRoot
       if (present(wiresflavor)) control%wiresflavor = wiresflavor
       if (present(wirecrank)) control%wirecrank = wirecrank
       if (present(resume)) control%resume = resume
@@ -207,14 +207,14 @@ contains
 
    subroutine init_time_array(arr, array_size, interval)
       integer, intent(in), optional :: array_size
-      real(kind=RKIND_TIEMPO), intent(in), optional :: interval
+      real(kind=RKIND_TIME), intent(in), optional :: interval
       integer(kind=4) :: i
       integer :: size_val
-      real(kind=RKIND_TIEMPO) :: interval_val
-      real(kind=RKIND_TIEMPO), pointer, dimension(:), intent(out) :: arr
+      real(kind=RKIND_TIME) :: interval_val
+      real(kind=RKIND_TIME), pointer, dimension(:), intent(out) :: arr
 
       size_val = merge(array_size, 100, present(array_size))
-      interval_val = merge(interval, 1.0_RKIND_TIEMPO, present(interval))
+      interval_val = merge(interval, 1.0_RKIND_TIME, present(interval))
 
       allocate (arr(size_val))
       do i = 1, size_val
@@ -272,9 +272,9 @@ contains
       allocate (obs%P(obs%nP))
       obs%P(1) = create_observable(1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, iEx)
 
-      obs%InitialTime = 0.0_RKIND_TIEMPO
-      obs%FinalTime = 1.0_RKIND_TIEMPO
-      obs%TimeStep = 0.1_RKIND_TIEMPO
+      obs%InitialTime = 0.0_RKIND_TIME
+      obs%FinalTime = 1.0_RKIND_TIME
+      obs%TimeStep = 0.1_RKIND_TIME
 
       obs%InitialFreq = 0.0_RKIND
       obs%FinalFreq = 0.0_RKIND
@@ -300,9 +300,9 @@ contains
       allocate (obs%P(obs%nP))
       obs%P(1) = create_observable(3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, IJX)
 
-      obs%InitialTime = 0.0_RKIND_TIEMPO
-      obs%FinalTime = 1.0_RKIND_TIEMPO
-      obs%TimeStep = 0.1_RKIND_TIEMPO
+      obs%InitialTime = 0.0_RKIND_TIME
+      obs%FinalTime = 1.0_RKIND_TIME
+      obs%TimeStep = 0.1_RKIND_TIME
 
       obs%InitialFreq = 0.0_RKIND
       obs%FinalFreq = 0.0_RKIND
@@ -327,9 +327,9 @@ contains
       allocate (obs%P(obs%nP))
       obs%P(1) = create_observable(3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, IQX)
 
-      obs%InitialTime = 0.0_RKIND_TIEMPO
-      obs%FinalTime = 1.0_RKIND_TIEMPO
-      obs%TimeStep = 0.1_RKIND_TIEMPO
+      obs%InitialTime = 0.0_RKIND_TIME
+      obs%FinalTime = 1.0_RKIND_TIME
+      obs%TimeStep = 0.1_RKIND_TIME
 
       obs%InitialFreq = 0.0_RKIND
       obs%FinalFreq = 0.0_RKIND

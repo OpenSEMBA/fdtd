@@ -151,7 +151,7 @@ module interpret_switches_m
                                 fileH5, &
                                 inductance_model, &
                                 wiresflavor, &
-                                nEntradaRoot, &
+                                nInputRoot, &
                                 opcionestotales, &
                                 conformal_file_input_name, &
                                 geomfile
@@ -967,17 +967,17 @@ contains
       end do
       if (l%prefix(1:1) == '_') then
      !!!acortado 120219  l%nEntradaRoot = trim (adjustl(l%fichin)) // trim (adjustl(prefix))// trim (adjustl(l%prefixopci))
-         l%nEntradaRoot = trim(adjustl(l%fichin))//'_'//trim(adjustl(l%prefixopci))
+         l%nInputRoot = trim(adjustl(l%fichin))//'_'//trim(adjustl(l%prefixopci))
       else
-         l%nEntradaRoot = trim(adjustl(l%fichin))
+         l%nInputRoot = trim(adjustl(l%fichin))
       end if
 !!!l%stochastic
 #ifdef CompileWithStochastic
       if (l%stochastic) then
          if (l%layoutnumber <= l%num_procs/2 - 1) then !aun no se ha dividido el l%num_procs
-            l%nEntradaRoot = trim(adjustl(l%nEntradaRoot))
+            l%nInputRoot = trim(adjustl(l%nInputRoot))
          else
-            l%nEntradaRoot = trim(adjustl('devia_'//trim(adjustl(l%nEntradaRoot))))
+            l%nInputRoot = trim(adjustl('devia_'//trim(adjustl(l%nInputRoot))))
          end if
       end if
 #ifdef CompileWithMPI
@@ -988,10 +988,10 @@ contains
 !!!   sgg%nEntradaRoot=trim (adjustl(l%nEntradaRoot))
       !
       write(chari, '(i5)') l%layoutnumber + 1
-      l%nresumeable2 = trim(adjustl(l%nEntradaRoot))//'_'//trim(adjustl(chari))//'.fields'
+      l%nresumeable2 = trim(adjustl(l%nInputRoot))//'_'//trim(adjustl(chari))//'.fields'
       !
 
-      l%geomfile = trim(adjustl(l%nEntradaRoot))//'_'//trim(adjustl(chari))
+      l%geomfile = trim(adjustl(l%nInputRoot))//'_'//trim(adjustl(chari))
       !warning file management
       if (statuse /= -1) then
          call CLOSEWARNINGFILE(l%layoutnumber, l%num_procs, l%fatalerror, .false., .false.) !!cierra el temporal !todavia no se ha dividido el l%num_procs
@@ -1000,7 +1000,7 @@ contains
             open (unit=1320, file=trim(adjustl(l%fichin))//'_tmpWarnings.txt_Warnings.txt')
             close (unit=1320, status='delete')
          end if
-         call INITWARNINGFILE(l%layoutnumber, l%num_procs, l%nEntradaRoot, l%verbose, l%ignoreerrors)
+         call INITWARNINGFILE(l%layoutnumber, l%num_procs, l%nInputRoot, l%verbose, l%ignoreerrors)
       end if
       !
       !
@@ -1013,7 +1013,7 @@ contains
          if (.NOT. resume3) then
             call stoponerror(l%layoutnumber, l%num_procs, 'l%resume fields not present', .true.); statuse = -1; !goto 668
          end if
-         write(dubuf, *) 'RESUMING simulation ', trim(adjustl(l%nEntradaRoot)), ' until n= ', l%finaltimestep
+         write(dubuf, *) 'RESUMING simulation ', trim(adjustl(l%nInputRoot)), ' until n= ', l%finaltimestep
          call print11(l%layoutnumber, dubuf)
       else
          if (resume3 .AND. (.NOT. l%freshstart) .and. (.not. l%run)) then
@@ -1068,7 +1068,7 @@ contains
                !the temporary
                close (11)
                l%file11isopen = .false.
-               open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted', POSITION='append')
+               open(11, file=trim(adjustl(l%nInputRoot))//'_Report.txt', FORM='formatted', POSITION='append')
                l%file11isopen = .true.
  !!!           if (l%layoutnumber==0) call insertalogtmp !ojo lo quito aqui porque borra el _log con la info de credits
                if (l%resume_fromold) then
@@ -1140,7 +1140,7 @@ contains
             !the temporary
             close (11)
             l%file11isopen = .false.
-            open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
+            open(11, file=trim(adjustl(l%nInputRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
             position = 0
             do while (position == 0)
@@ -1161,7 +1161,7 @@ contains
             !
          !!!!!!!!!        CLOSE (11, status='delete')
          !!!!!!!!!        l%file11isopen=.false.
-            open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
+            open(11, file=trim(adjustl(l%nInputRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
             position = 0
             do while (position == 0)
@@ -1172,13 +1172,13 @@ contains
             l%slicesoriginales = trim(adjustl(l%chdummy))
             close (11)
             l%file11isopen = .false.
-            open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted', POSITION='append')
+            open(11, file=trim(adjustl(l%nInputRoot))//'_Report.txt', FORM='formatted', POSITION='append')
             l%file11isopen = .true.
             if (l%layoutnumber == 0) call insertalogtmp(l)
          else
             close (11)
             l%file11isopen = .false.
-            open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
+            open(11, file=trim(adjustl(l%nInputRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
             if (l%layoutnumber == 0) call insertalogtmp(l)
          end if

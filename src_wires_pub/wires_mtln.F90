@@ -51,7 +51,7 @@ contains
    
       type(mtln_t) :: mtln_parsed
       logical :: thereAreMTLNbundles
-      real(kind=RKIND_TIEMPO), intent(inout) :: dtcritico
+      real(kind=RKIND_TIME), intent(inout) :: dtcritico
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
@@ -205,9 +205,9 @@ contains
       return
    end function
 
-   subroutine InitMTLNObservation(nEntradaRoot)
-      character(len=*), intent(in) :: nEntradaRoot
-      call mtln_solver%initObservation(nEntradaRoot)
+   subroutine InitMTLNObservation(nInputRoot)
+      character(len=*), intent(in) :: nInputRoot
+      call mtln_solver%initObservation(nInputRoot)
    end subroutine
 
    subroutine UpdateMTLNObservation(step)
@@ -219,12 +219,12 @@ contains
       call mtln_solver%closeObservation()
    end subroutine
 
-   subroutine initializeMTLNProblem(mtln_parsed, nEntradaRoot)
+   subroutine initializeMTLNProblem(mtln_parsed, nInputRoot)
       type(mtln_t) :: mtln_parsed
-      character(len=*), intent(in) :: nEntradaRoot
+      character(len=*), intent(in) :: nInputRoot
       mtln_solver = mtlnCtor(mtln_parsed)
       call mtln_solver%updatePULTerms()
-      call mtln_solver%initObservation(nEntradaRoot)
+      call mtln_solver%initObservation(nInputRoot)
    end subroutine
 
    subroutine runMTLNProblem()

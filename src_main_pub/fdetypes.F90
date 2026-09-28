@@ -110,19 +110,19 @@ module  FDETYPES_m
 #ifdef CompileWithReal8
    integer(kind=2), parameter  :: RKIND=DOUBLE_KIND
    integer(kind=2), parameter  :: RKIND_WIRES=DOUBLE_KIND
-   integer(kind=2), parameter  :: RKIND_TIEMPO=DOUBLE_KIND
+   integer(kind=2), parameter  :: RKIND_TIME=DOUBLE_KIND
    integer(kind=2), parameter  :: CKIND=DOUBLE_KIND
 #else
 #ifdef CompileWithReal16
    integer(kind=2), parameter  :: RKIND=LONG_DOUBLE
    integer(kind=2), parameter  :: RKIND_WIRES=LONG_DOUBLE
-   integer(kind=2), parameter  :: RKIND_TIEMPO=LONG_DOUBLE
+   integer(kind=2), parameter  :: RKIND_TIME=LONG_DOUBLE
    integer(kind=2), parameter  :: CKIND=LONG_DOUBLE
 #else
    !default
    integer(kind=2), parameter  :: RKIND=SINGLE
    integer(kind=2), parameter  :: RKIND_WIRES=DOUBLE_KIND !020719 a peticion 
-   integer(kind=2), parameter  :: RKIND_TIEMPO=DOUBLE_KIND
+   integer(kind=2), parameter  :: RKIND_TIME=DOUBLE_KIND
    !! integer(kind=2), parameter  :: CKIND=SINGLE
    integer(kind=2), parameter  :: CKIND=DOUBLE_KIND  !LOS COMPLEJOS LOS VOY A MANEJAR SIEMPRE EN DOBLE PRECISION como minimo
 #endif
@@ -206,7 +206,7 @@ module  FDETYPES_m
    1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
    real(kind=rkind), parameter :: C_VACUUM = 1.0_RKIND/sqrt(EPSILON_VACUUM*MU_VACUUM)
    
-   real(kind=RKIND_TIEMPO) :: dt0 !aqui para OLDrlo accesible en resume pscale
+   real(kind=RKIND_TIME) :: dt0 !aqui para OLDrlo accesible en resume pscale
    
    integer(kind=4), parameter :: FACE_X = 1
    integer(kind=4), parameter :: FACE_Y = 2
@@ -360,7 +360,7 @@ module  FDETYPES_m
 
    type  :: NodalSource_t
       type(fichevol_t) :: sourceFile
-      type(xyzlimit_scaled_t), pointer, dimension(:) :: punto
+      type(xyzlimit_scaled_t), pointer, dimension(:) :: gridPoint
       integer(kind=4) :: numpuntos
       logical :: IsInitialValue
       logical :: IsHard
@@ -378,7 +378,7 @@ module  FDETYPES_m
       integer(kind=4) :: i,j,k,origIndex,ilibre,jlibre,klibre,multiraboDE !si es multirabo de que indice lo es
       logical :: Is_LeftEnd,Is_RightEnd,IsEnd_norLeft_norRight
       logical :: repetido,multirabo !marca segmentos que aparecen repetidos en un mismo thin wire!los bundles deberan estar thin-wires distintos
-      logical :: orientadoalreves
+      logical :: reversedOrientation
    end type oriented_point_t
 
 #ifdef CompileWithMTLN   
@@ -627,8 +627,8 @@ module  FDETYPES_m
    ! This is the  class which stores all the simulation data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    type  :: SGGFDTDINFO_t
-      real(kind=RKIND_TIEMPO)     , pointer, dimension(:) :: time !para permit scaling
-      real(kind=RKIND_TIEMPO) :: dt
+      real(kind=RKIND_TIME)     , pointer, dimension(:) :: time !para permit scaling
+      real(kind=RKIND_TIME) :: dt
       character(len=BUFSIZE) :: extraSwitches
       !!
       integer(kind=4) :: NumMedia,AllocMed
@@ -654,8 +654,8 @@ module  FDETYPES_m
       !
       logical  :: thereAreMagneticMedia
       logical  :: thereArePMLMagneticMedia
-      character(len=BUFSIZE) :: nEntradaRoot
-      type(coorsxyzP_t) :: Punto
+      character(len=BUFSIZE) :: nInputRoot
+      type(coorsxyzP_t) :: gridPoint
    end type
 
    type media_matrices_t
@@ -706,7 +706,7 @@ module  FDETYPES_m
                            alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol, maxSourceValue
       real(kind=RKIND_WIRES) :: factorradius,factordelta
       
-      character(len=BUFSIZE) :: nEntradaRoot, inductance_model,wiresflavor, nresumeable2
+      character(len=BUFSIZE) :: nInputRoot, inductance_model,wiresflavor, nresumeable2
       character(len=BUFSIZE) :: opcionestotales
       
       integer(kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 

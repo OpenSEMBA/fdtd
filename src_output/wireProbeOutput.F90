@@ -65,7 +65,7 @@ contains
       call find_current_segment(this, node, field, media, wiresflavor)
       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIEMPO)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
       artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
@@ -93,7 +93,7 @@ contains
       call find_charge_segment(this, node, field, wiresflavor)
       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIEMPO)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
       call alloc_and_init(this%chargeValue, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
       artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
@@ -108,7 +108,7 @@ contains
    !======================================================================
    subroutine update_wire_current_probe_output(this, step, control, InvEps, InvMu)
       type(wire_current_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_TIEMPO), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
       type(sim_control_t), intent(in)     :: control
       real(kind=RKIND), intent(in)        :: InvEps(0:), InvMu(0:)
 
@@ -131,7 +131,7 @@ contains
 
    subroutine update_wire_charge_probe_output(this, step)
       type(wire_charge_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_TIEMPO), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
 
       this%nTime = this%nTime + 1
       this%timeStep(this%nTime) = step
@@ -218,7 +218,7 @@ contains
                 seg%fieldKind*10 == field) then
                found = .true.
                this%segment => seg
-               if (seg%orientadoalreves) this%signValue = -1
+               if (seg%reversedOrientation) this%signValue = -1
                exit
             end if
          end do
@@ -230,7 +230,7 @@ contains
             if (Hwireslocal_B%Segments(n)%IndexSegment == node) then
                found = .true.
                this%segmentBerenger => Hwireslocal_B%Segments(n)
-               if (Hwireslocal_B%Segments(n)%orientadoalreves) this%signValue = -1
+               if (Hwireslocal_B%Segments(n)%reversedOrientation) this%signValue = -1
                exit
             end if
          end do
@@ -262,7 +262,7 @@ contains
                      if (seg%origindex == node2) then
                         found = .true.
                         this%segment => seg
-                        if (seg%orientadoalreves) this%signValue = -1
+                        if (seg%reversedOrientation) this%signValue = -1
                         exit buscarabono
                      end if
                   end do
@@ -310,7 +310,7 @@ contains
              seg%fieldKind*10000 == field) then
             found = .true.
             this%segment => seg
-            if (seg%orientadoalreves) this%signValue = -1
+            if (seg%reversedOrientation) this%signValue = -1
             exit
          end if
       end do
@@ -365,7 +365,7 @@ contains
    subroutine clear_current_time_data(this)
       type(wire_current_probe_output_t), intent(inout) :: this
 
-      this%timeStep = 0.0_RKIND_TIEMPO
+      this%timeStep = 0.0_RKIND_TIME
       this%currentValues%current = 0.0_RKIND
       this%currentValues%deltaVoltage = 0.0_RKIND
       this%currentValues%plusVoltage = 0.0_RKIND
@@ -377,7 +377,7 @@ contains
    subroutine clear_charge_time_data(this)
       type(wire_charge_probe_output_t), intent(inout) :: this
 
-      this%timeStep = 0.0_RKIND_TIEMPO
+      this%timeStep = 0.0_RKIND_TIME
       this%chargeValue = 0.0_RKIND
       this%nTime = 0
    end subroutine clear_charge_time_data

@@ -512,7 +512,7 @@ module CreateMatrices_m
       type(MediaData_t), dimension(0:NumMedia) :: med
       integer(kind=4) :: medium
       !
-      type(XYZlimit_t) :: punto, puntoPlus1
+      type(XYZlimit_t) :: gridPoint, puntoPlus1
       type(XYZlimit_t), intent(inout) :: point
       type(XYZlimit_t), intent(in) :: BoundingBox
       !
@@ -540,13 +540,13 @@ module CreateMatrices_m
       !
       call SortInitEndWithIncreasingOrder(point)
       !
-      punto%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
-      punto%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
-      punto%ZI = Max (point%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
+      gridPoint%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
+      gridPoint%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
+      gridPoint%ZI = Max (point%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
       !
-      punto%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE)-1)
-      punto%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE)-1)
-      punto%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
+      gridPoint%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE)-1)
+      gridPoint%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE)-1)
+      gridPoint%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
       !
       puntoPlus1%XE = Min (point%XE+1, Max(BoundingBox%XI, BoundingBox%XE))
       puntoPlus1%YE = Min (point%YE+1, Max(BoundingBox%YI, BoundingBox%YE))
@@ -563,9 +563,9 @@ module CreateMatrices_m
       !!        end do
       !!      end do
       !only take care of the boundaries for interfacing
-      do k = punto%ZI, puntoPlus1%ZE
-         do j = punto%YI, puntoPlus1%YE
-            do i = punto%XI, punto%XE
+      do k = gridPoint%ZI, puntoPlus1%ZE
+         do j = gridPoint%YI, puntoPlus1%YE
+            do i = gridPoint%XI, gridPoint%XE
                medium = MMiEx (i, j, k)
 !               if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
@@ -588,9 +588,9 @@ module CreateMatrices_m
          end do
       end do
       !
-      do k = punto%ZI, puntoPlus1%ZE
-         do j = punto%YI, punto%YE
-            do i = punto%XI, puntoPlus1%XE
+      do k = gridPoint%ZI, puntoPlus1%ZE
+         do j = gridPoint%YI, gridPoint%YE
+            do i = gridPoint%XI, puntoPlus1%XE
                medium = MMiEy (i, j, k)
 !               if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
@@ -610,9 +610,9 @@ module CreateMatrices_m
          end do
       end do
       !
-      do k = punto%ZI, punto%ZE
-         do j = punto%YI, puntoPlus1%YE
-            do i = punto%XI, puntoPlus1%XE
+      do k = gridPoint%ZI, gridPoint%ZE
+         do j = gridPoint%YI, puntoPlus1%YE
+            do i = gridPoint%XI, puntoPlus1%XE
                medium = MMiEz (i, j, k)
 !               if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
@@ -631,9 +631,9 @@ module CreateMatrices_m
          end do
       end do
       !
-      do k = punto%ZI, punto%ZE
-         do j = punto%YI, punto%YE
-            do i = punto%XI, puntoPlus1%XE
+      do k = gridPoint%ZI, gridPoint%ZE
+         do j = gridPoint%YI, gridPoint%YE
+            do i = gridPoint%XI, puntoPlus1%XE
                medium = MMiHx (i, j, k)
 !               if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
@@ -647,9 +647,9 @@ module CreateMatrices_m
          end do
       end do
       !
-      do k = punto%ZI, punto%ZE
-         do j = punto%YI, puntoPlus1%YE
-            do i = punto%XI, punto%XE
+      do k = gridPoint%ZI, gridPoint%ZE
+         do j = gridPoint%YI, puntoPlus1%YE
+            do i = gridPoint%XI, gridPoint%XE
                medium = MMiHy (i, j, k)
 !               if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
@@ -663,9 +663,9 @@ module CreateMatrices_m
          end do
       end do
       !
-      do k = punto%ZI, puntoPlus1%ZE
-         do j = punto%YI, punto%YE
-            do i = punto%XI, punto%XE
+      do k = gridPoint%ZI, puntoPlus1%ZE
+         do j = gridPoint%YI, gridPoint%YE
+            do i = gridPoint%XI, gridPoint%XE
                medium = MMiHz (i, j, k)
 !               if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
@@ -704,7 +704,7 @@ module CreateMatrices_m
       type(Shared_t) :: Eshared
       type(MediaData_t), dimension(0:NumMedia) :: med
       !
-      type(XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
+      type(XYZlimit_t) :: gridPoint, puntoPlus1,puntoBboxplus1
       type(XYZlimit_t), intent(inout) :: point
       type(XYZlimit_t), intent(in) :: BoundingBox
       !
@@ -731,13 +731,13 @@ module CreateMatrices_m
 
       call SortInitEndWithIncreasingOrder(point)
       !
-      punto%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
-      punto%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
-      punto%ZI = Max (point%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
+      gridPoint%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
+      gridPoint%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
+      gridPoint%ZI = Max (point%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
       !
-      punto%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE)-1)
-      punto%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE)-1)
-      punto%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
+      gridPoint%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE)-1)
+      gridPoint%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE)-1)
+      gridPoint%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
       !sgg jun'12 para bug en deteccion medios anisotropos en MPI en flushextrainfo
       puntoBboxplus1%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE))
       puntoBboxplus1%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE))
@@ -751,9 +751,9 @@ module CreateMatrices_m
        case (iEx)
          !    i=punto%XI
          !    if ((i <= max(BoundingBox%XI,BoundingBox%XE)).and.(i >= min(BoundingBox%XI,BoundingBox%XE))) then
-         do i = punto%XI, puntoBboxplus1%XE
-            do j = punto%YI, punto%YE
-               do k = punto%ZI, puntoPlus1%ZE
+         do i = gridPoint%XI, puntoBboxplus1%XE
+            do j = gridPoint%YI, gridPoint%YE
+               do k = gridPoint%ZI, puntoPlus1%ZE
                   medium = MMiEy (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiEy (i, j, k) = mediumIndex; 
@@ -764,8 +764,8 @@ module CreateMatrices_m
                   end if
                end do
             end do
-            do j = punto%YI, puntoPlus1%YE
-               do k = punto%ZI, punto%ZE
+            do j = gridPoint%YI, puntoPlus1%YE
+               do k = gridPoint%ZI, gridPoint%ZE
                   medium = MMiEz (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiEz (i, j, k) = mediumIndex; 
@@ -776,8 +776,8 @@ module CreateMatrices_m
                   end if
                end do
             end do  
-            do j = punto%YI, punto%YE
-               do k = punto%ZI, punto%ZE
+            do j = gridPoint%YI, gridPoint%YE
+               do k = gridPoint%ZI, gridPoint%ZE
                   medium = MMiHx (i, j, k)
 !                  if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      if (med(mediumIndex)%Priority > med(medium)%Priority) then
@@ -793,9 +793,9 @@ module CreateMatrices_m
        case (iEy)
          !    j=punto%YI
          !    if ((j <= max(BoundingBox%YI,BoundingBox%YE)).and.(j >= min(BoundingBox%YI,BoundingBox%YE))) then
-         do j = punto%YI, puntoBboxplus1%YE
-            do i = punto%XI, puntoPlus1%XE
-               do k = punto%ZI, punto%ZE
+         do j = gridPoint%YI, puntoBboxplus1%YE
+            do i = gridPoint%XI, puntoPlus1%XE
+               do k = gridPoint%ZI, gridPoint%ZE
                   medium = MMiEz (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiEz (i, j, k) = mediumIndex; 
@@ -806,8 +806,8 @@ module CreateMatrices_m
                   end if
                end do
             end do
-            do i = punto%XI, punto%XE
-               do k = punto%ZI, puntoPlus1%ZE
+            do i = gridPoint%XI, gridPoint%XE
+               do k = gridPoint%ZI, puntoPlus1%ZE
                   medium = MMiEx (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiEx (i, j, k) = mediumIndex; 
@@ -818,8 +818,8 @@ module CreateMatrices_m
                   end if
                end do
             end do
-            do i = punto%XI, punto%XE
-               do k = punto%ZI, punto%ZE
+            do i = gridPoint%XI, gridPoint%XE
+               do k = gridPoint%ZI, gridPoint%ZE
                   medium = MMiHy (i, j, k)
 !                  if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      if (med(mediumIndex)%Priority > med(medium)%Priority) then
@@ -835,9 +835,9 @@ module CreateMatrices_m
        case (IEZ)
          !    k=punto%ZI
          !    if ((k <= max(BoundingBox%ZI,BoundingBox%ZE)).and.(k >= min(BoundingBox%ZI,BoundingBox%ZE))) then
-         do k = punto%ZI, puntoBboxplus1%ZE
-            do i = punto%XI, punto%XE
-               do j = punto%YI, puntoPlus1%YE
+         do k = gridPoint%ZI, puntoBboxplus1%ZE
+            do i = gridPoint%XI, gridPoint%XE
+               do j = gridPoint%YI, puntoPlus1%YE
                   medium = MMiEx (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiEx (i, j, k) = mediumIndex; 
@@ -848,8 +848,8 @@ module CreateMatrices_m
                   end if
                end do
             end do
-            do i = punto%XI, puntoPlus1%XE
-               do j = punto%YI, punto%YE
+            do i = gridPoint%XI, puntoPlus1%XE
+               do j = gridPoint%YI, gridPoint%YE
                   medium = MMiEy (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiEy (i, j, k) = mediumIndex; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
@@ -859,8 +859,8 @@ module CreateMatrices_m
                   end if
                end do
             end do
-            do i = punto%XI, punto%XE
-               do j = punto%YI, punto%YE
+            do i = gridPoint%XI, gridPoint%XE
+               do j = gridPoint%YI, gridPoint%YE
                   medium = MMiHz (i, j, k)
 !                  if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      if (med(mediumIndex)%Priority > med(medium)%Priority) then
@@ -899,7 +899,7 @@ module CreateMatrices_m
       integer(kind=4) :: NumMedia
       type(MediaData_t), dimension(0:NumMedia) :: med
       !
-      type(XYZlimit_t) :: punto
+      type(XYZlimit_t) :: gridPoint
       type(XYZlimit_t), intent(inout) :: point
       type(XYZlimit_t), intent(in) :: BoundingBox
       
@@ -930,13 +930,13 @@ module CreateMatrices_m
       !
       call SortInitEndWithIncreasingOrder(point)
       !
-      punto%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
-      punto%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
-      punto%ZI = Max (point%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
+      gridPoint%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
+      gridPoint%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
+      gridPoint%ZI = Max (point%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
       !
-      punto%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE)-1)
-      punto%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE)-1)
-      punto%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
+      gridPoint%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE)-1)
+      gridPoint%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE)-1)
+      gridPoint%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
       !
       select case (Abs(orientationIndex))
        case (iEx)
@@ -944,9 +944,9 @@ module CreateMatrices_m
          !    k=punto%ZI
          !    if ((j <= max(BoundingBox%YI,BoundingBox%YE)).and.(j >= min(BoundingBox%YI,BoundingBox%YE)).and. &
          !        (k <= max(BoundingBox%ZI,BoundingBox%ZE)).and.(k >= min(BoundingBox%ZI,BoundingBox%ZE))) then
-         do k = punto%ZI, punto%ZE
-            do j = punto%YI, punto%YE
-               do i = punto%XI, punto%XE
+         do k = gridPoint%ZI, gridPoint%ZE
+            do j = gridPoint%YI, gridPoint%YE
+               do i = gridPoint%XI, gridPoint%XE
                   medium = MMiEx (i, j, k)
 !                  if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      if (med(mediumIndex)%Priority > med(medium)%Priority) then
@@ -981,9 +981,9 @@ module CreateMatrices_m
          !    k=punto%ZI
          !    if ((i <= max(BoundingBox%XI,BoundingBox%XE)).and.(i >= min(BoundingBox%XI,BoundingBox%XE)).and. &
          !        (k <= max(BoundingBox%ZI,BoundingBox%ZE)).and.(k >= min(BoundingBox%ZI,BoundingBox%ZE))) then
-         do k = punto%ZI, punto%ZE
-            do j = punto%YI, punto%YE
-               do i = punto%XI, punto%XE
+         do k = gridPoint%ZI, gridPoint%ZE
+            do j = gridPoint%YI, gridPoint%YE
+               do i = gridPoint%XI, gridPoint%XE
                   medium = MMiEy (i, j, k)
 !                  if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      if (med(mediumIndex)%Priority > med(medium)%Priority) then
@@ -1019,9 +1019,9 @@ module CreateMatrices_m
          !    j=punto%YI
          !    if ((i <= max(BoundingBox%XI,BoundingBox%XE)).and.(i >= min(BoundingBox%XI,BoundingBox%XE)).and. &
          !        (j <= max(BoundingBox%YI,BoundingBox%YE)).and.(j >= min(BoundingBox%YI,BoundingBox%YE))) then
-         do k = punto%ZI, punto%ZE
-            do j = punto%YI, punto%YE
-               do i = punto%XI, punto%XE
+         do k = gridPoint%ZI, gridPoint%ZE
+            do j = gridPoint%YI, gridPoint%YE
+               do i = gridPoint%XI, gridPoint%XE
                   medium = MMiEz (i, j, k)
 !                  if (medio /= 0) then   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      if (med(mediumIndex)%Priority > med(medium)%Priority) then
@@ -1080,7 +1080,7 @@ module CreateMatrices_m
       integer(kind=4) :: NumMedia
       type(MediaData_t), dimension(0:NumMedia) :: med
       !
-      type(XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
+      type(XYZlimit_t) :: gridPoint, puntoPlus1,puntoBboxplus1
       type(XYZlimit_t), intent(inout) :: point
       type(XYZlimit_t), intent(in) :: BoundingBox
       !
@@ -1109,13 +1109,13 @@ module CreateMatrices_m
       call SortInitEndWithIncreasingOrder(point)
       !
       !
-      punto%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
-      punto%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
-      punto%ZI = Max (point%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
+      gridPoint%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
+      gridPoint%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
+      gridPoint%ZI = Max (point%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
       !
-      punto%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE)-1)
-      punto%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE)-1)
-      punto%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
+      gridPoint%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE)-1)
+      gridPoint%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE)-1)
+      gridPoint%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
       !sgg jun'12 para bug en deteccion medios anisotropos en MPI en flushextrainfo
       puntoBboxplus1%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE))
       puntoBboxplus1%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE))
@@ -1130,14 +1130,14 @@ module CreateMatrices_m
       offz = 0
       select case (Abs(orientationIndex))
        case (iEx)
-         do i = punto%XI, puntoBboxplus1%XE
+         do i = gridPoint%XI, puntoBboxplus1%XE
             select case (direccion)
              case (IEZ)
                offx = 0
                offy = 0
                offz = 1
-               do j = punto%YI, punto%YE
-                  do k = punto%ZI, puntoPlus1%ZE
+               do j = gridPoint%YI, gridPoint%YE
+                  do k = gridPoint%ZI, puntoPlus1%ZE
                      medium = MMiEy (i, j, k)
                      if (med(mediumIndex)%Priority > med(medium)%Priority) then
                         MMiEy (i, j, k) = mediumIndex
@@ -1153,8 +1153,8 @@ module CreateMatrices_m
                offx = 0
                offy = 1
                offz = 0
-               do j = punto%YI, puntoPlus1%YE
-                  do k = punto%ZI, punto%ZE
+               do j = gridPoint%YI, puntoPlus1%YE
+                  do k = gridPoint%ZI, gridPoint%ZE
                      medium = MMiEz (i, j, k)
                      if (med(mediumIndex)%Priority > med(medium)%Priority) then
                         MMiEz (i, j, k) = mediumIndex
@@ -1167,10 +1167,10 @@ module CreateMatrices_m
                   end do
                end do
             end select
-            do j = Max (punto%YI - offy, Min(BoundingBox%YI, BoundingBox%YE)), &
-            &       Min (punto%YE + offy, Max(BoundingBox%YI, BoundingBox%YE)-1)
-               do k = Max (punto%ZI - offz, Min(BoundingBox%ZI, BoundingBox%ZE)),  &
-               &       Min (punto%ZE + offz, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
+            do j = Max (gridPoint%YI - offy, Min(BoundingBox%YI, BoundingBox%YE)), &
+            &       Min (gridPoint%YE + offy, Max(BoundingBox%YI, BoundingBox%YE)-1)
+               do k = Max (gridPoint%ZI - offz, Min(BoundingBox%ZI, BoundingBox%ZE)),  &
+               &       Min (gridPoint%ZE + offz, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
                   medium = MMiHx (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiHx (i, j, k) = mediumIndex
@@ -1185,14 +1185,14 @@ module CreateMatrices_m
             end do
          end do
        case (iEy)
-         do j = punto%YI, puntoBboxplus1%YE
+         do j = gridPoint%YI, puntoBboxplus1%YE
             select case (direccion)
              case (iEx)
                offx = 1
                offy = 0
                offz = 0
-               do i = punto%XI, puntoPlus1%XE
-                  do k = punto%ZI, punto%ZE
+               do i = gridPoint%XI, puntoPlus1%XE
+                  do k = gridPoint%ZI, gridPoint%ZE
                      medium = MMiEz (i, j, k)
                      if (med(mediumIndex)%Priority > med(medium)%Priority) then
                         MMiEz (i, j, k) = mediumIndex
@@ -1208,8 +1208,8 @@ module CreateMatrices_m
                offx = 0
                offy = 0
                offz = 1
-               do i = punto%XI, punto%XE
-                  do k = punto%ZI, puntoPlus1%ZE
+               do i = gridPoint%XI, gridPoint%XE
+                  do k = gridPoint%ZI, puntoPlus1%ZE
                      medium = MMiEx (i, j, k)
                      if (med(mediumIndex)%Priority > med(medium)%Priority) then
                         MMiEx (i, j, k) = mediumIndex
@@ -1222,10 +1222,10 @@ module CreateMatrices_m
                   end do
                end do
             end select
-            do i = Max (punto%XI - offx, Min(BoundingBox%XI, BoundingBox%XE)),  &
-            &       Min (punto%XE + offx, Max(BoundingBox%XI, BoundingBox%XE)-1)
-               do k = Max (punto%ZI - offz, Min(BoundingBox%ZI, BoundingBox%ZE)),  &
-               &       Min (punto%ZE + offz, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
+            do i = Max (gridPoint%XI - offx, Min(BoundingBox%XI, BoundingBox%XE)),  &
+            &       Min (gridPoint%XE + offx, Max(BoundingBox%XI, BoundingBox%XE)-1)
+               do k = Max (gridPoint%ZI - offz, Min(BoundingBox%ZI, BoundingBox%ZE)),  &
+               &       Min (gridPoint%ZE + offz, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
                   medium = MMiHy (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiHy (i, j, k) = mediumIndex
@@ -1239,14 +1239,14 @@ module CreateMatrices_m
             end do
          end do
        case (IEZ)
-         do k = punto%ZI, puntoBboxplus1%ZE
+         do k = gridPoint%ZI, puntoBboxplus1%ZE
             select case (direccion)
              case (iEy)
                offx = 0
                offy = 1
                offz = 0
-               do i = punto%XI, punto%XE
-                  do j = punto%YI, puntoPlus1%YE
+               do i = gridPoint%XI, gridPoint%XE
+                  do j = gridPoint%YI, puntoPlus1%YE
                      medium = MMiEx (i, j, k)
                      if (med(mediumIndex)%Priority > med(medium)%Priority) then
                         MMiEx (i, j, k) = mediumIndex
@@ -1262,8 +1262,8 @@ module CreateMatrices_m
                offx = 1
                offy = 0
                offz = 0
-               do i = punto%XI, puntoPlus1%XE
-                  do j = punto%YI, punto%YE
+               do i = gridPoint%XI, puntoPlus1%XE
+                  do j = gridPoint%YI, gridPoint%YE
                      medium = MMiEy (i, j, k)
                      if (med(mediumIndex)%Priority > med(medium)%Priority) then
                         MMiEy (i, j, k) = mediumIndex
@@ -1276,10 +1276,10 @@ module CreateMatrices_m
                   end do
                end do
             end select
-            do i = Max (punto%XI - offx, Min(BoundingBox%XI, BoundingBox%XE)),  &
-            &       Min (punto%XE + offx, Max(BoundingBox%XI, BoundingBox%XE)-1)
-               do j = Max (punto%YI - offy, Min(BoundingBox%YI, BoundingBox%YE)),  &
-               &       Min (punto%YE + offy, Max(BoundingBox%YI, BoundingBox%YE)-1)
+            do i = Max (gridPoint%XI - offx, Min(BoundingBox%XI, BoundingBox%XE)),  &
+            &       Min (gridPoint%XE + offx, Max(BoundingBox%XI, BoundingBox%XE)-1)
+               do j = Max (gridPoint%YI - offy, Min(BoundingBox%YI, BoundingBox%YE)),  &
+               &       Min (gridPoint%YE + offy, Max(BoundingBox%YI, BoundingBox%YE)-1)
                   medium = MMiHz (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiHz (i, j, k) = mediumIndex
@@ -1319,7 +1319,7 @@ module CreateMatrices_m
       type(Shared_t) :: Eshared
       type(MediaData_t), dimension(0:NumMedia) :: med
       !
-      type(XYZlimit_t) :: punto, puntoPlus1   !,puntoBboxplus1
+      type(XYZlimit_t) :: gridPoint, puntoPlus1   !,puntoBboxplus1
       type(XYZlimit_t), intent(inout) :: point
       type(XYZlimit_t), intent(in) :: BoundingBox
       !
@@ -1347,13 +1347,13 @@ module CreateMatrices_m
       !
       call SortInitEndWithIncreasingOrder(point)
       !
-      punto%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
-      punto%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
-      punto%ZI = Max (point%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
+      gridPoint%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
+      gridPoint%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
+      gridPoint%ZI = Max (point%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
       !
-      punto%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE)-1)
-      punto%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE)-1)
-      punto%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
+      gridPoint%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE)-1)
+      gridPoint%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE)-1)
+      gridPoint%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
       !!sgg jun'12 para bug en deteccion medios anisotropos en MPI en flushextrainfo
       !      puntoBboxplus1%XE = Min (point%XE, Max(BoundingBox%XI, BoundingBox%XE))
       !      puntoBboxplus1%YE = Min (point%YE, Max(BoundingBox%YI, BoundingBox%YE))
@@ -1366,9 +1366,9 @@ module CreateMatrices_m
       !
       select case (Abs(orientationIndex))
        case (iEx)
-         do i = punto%XI, punto%XE
-            do j = punto%YI, puntoPlus1%YE
-               do k = punto%ZI, punto%ZE
+         do i = gridPoint%XI, gridPoint%XE
+            do j = gridPoint%YI, puntoPlus1%YE
+               do k = gridPoint%ZI, gridPoint%ZE
                   medium = MMiHy (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiHy (i, j, k) = mediumIndex
@@ -1378,8 +1378,8 @@ module CreateMatrices_m
                   end if
                end do
             end do
-            do j = punto%YI, punto%YE
-               do k = punto%ZI, puntoPlus1%ZE
+            do j = gridPoint%YI, gridPoint%YE
+               do k = gridPoint%ZI, puntoPlus1%ZE
                   medium = MMiHz (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiHz (i, j, k) = mediumIndex
@@ -1389,8 +1389,8 @@ module CreateMatrices_m
                   end if
                end do
             end do
-            do j = punto%YI, puntoPlus1%YE
-               do k = punto%ZI, puntoPlus1%ZE
+            do j = gridPoint%YI, puntoPlus1%YE
+               do k = gridPoint%ZI, puntoPlus1%ZE
                   medium = MMiEx (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiEx (i, j, k) = mediumIndex
@@ -1402,9 +1402,9 @@ module CreateMatrices_m
             end do
          end do
        case (iEy)
-         do j = punto%YI, punto%YE
-            do i = punto%XI, punto%XE
-               do k = punto%ZI, puntoPlus1%ZE
+         do j = gridPoint%YI, gridPoint%YE
+            do i = gridPoint%XI, gridPoint%XE
+               do k = gridPoint%ZI, puntoPlus1%ZE
                   medium = MMiHz (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiHz (i, j, k) = mediumIndex
@@ -1414,8 +1414,8 @@ module CreateMatrices_m
                   end if
                end do
             end do
-            do i = punto%XI, puntoPlus1%XE
-               do k = punto%ZI, punto%ZE
+            do i = gridPoint%XI, puntoPlus1%XE
+               do k = gridPoint%ZI, gridPoint%ZE
                   medium = MMiHx (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiHx (i, j, k) = mediumIndex
@@ -1425,8 +1425,8 @@ module CreateMatrices_m
                   end if
                end do
             end do
-            do i = punto%XI, puntoPlus1%XE
-               do k = punto%ZI, puntoPlus1%ZE
+            do i = gridPoint%XI, puntoPlus1%XE
+               do k = gridPoint%ZI, puntoPlus1%ZE
                   medium = MMiEy (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiEy (i, j, k) = mediumIndex
@@ -1439,9 +1439,9 @@ module CreateMatrices_m
          end do
          !
        case (IEZ)
-         do k = punto%ZI, punto%ZE
-            do i = punto%XI, puntoPlus1%XE
-               do j = punto%YI, punto%YE
+         do k = gridPoint%ZI, gridPoint%ZE
+            do i = gridPoint%XI, puntoPlus1%XE
+               do j = gridPoint%YI, gridPoint%YE
                   medium = MMiHx (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiHx (i, j, k) = mediumIndex
@@ -1451,8 +1451,8 @@ module CreateMatrices_m
                   end if
                end do
             end do
-            do i = punto%XI, punto%XE
-               do j = punto%YI, puntoPlus1%YE
+            do i = gridPoint%XI, gridPoint%XE
+               do j = gridPoint%YI, puntoPlus1%YE
                   medium = MMiHy (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiHy (i, j, k) = mediumIndex
@@ -1462,8 +1462,8 @@ module CreateMatrices_m
                   end if
                end do
             end do
-            do i = punto%XI, puntoPlus1%XE
-               do j = punto%YI, puntoPlus1%YE
+            do i = gridPoint%XI, puntoPlus1%XE
+               do j = gridPoint%YI, puntoPlus1%YE
                   medium = MMiEz (i, j, k)
                   if (med(mediumIndex)%Priority > med(medium)%Priority) then
                      MMiEz (i, j, k) = mediumIndex

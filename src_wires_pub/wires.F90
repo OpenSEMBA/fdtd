@@ -49,7 +49,7 @@ contains
       type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
       type(SGGFDTDINFO_t), intent(inout) , target    :: sgg
       real(kind=RKIND) , pointer, dimension(:), intent(in) :: G2
-      real(kind=RKIND_TIEMPO), intent(out) :: dtcritico
+      real(kind=RKIND_TIME), intent(out) :: dtcritico
       real(kind=RKIND) , dimension(:)   , intent(in) :: &
            Idxe(sgg%ALLOC(IHX)%XI : sgg%ALLOC(IHX)%XE), &
            Idye(sgg%ALLOC(IHY)%YI : sgg%ALLOC(IHY)%YE), &
@@ -240,7 +240,7 @@ contains
          HWires%NullSegment%k               =-1
          HWires%NullSegment%fieldKind       =-1
          HWires%NullSegment%IsPMC           =.false.
-         HWires%NullSegment%orientadoalreves =.false.
+         HWires%NullSegment%reversedOrientation =.false.
          HWires%NullSegment%HasVsource      =.false.
          HWires%NullSegment%IsShielded      =.false.
          HWires%NullSegment%HasAbsorbing_RightEnd =.false.
@@ -1191,7 +1191,7 @@ contains
             HWires%CurrentSegment(i1)%k               =-1
             HWires%CurrentSegment(i1)%fieldKind       =-1
             HWires%CurrentSegment(i1)%IsPMC           =.false.
-            HWires%CurrentSegment(i1)%orientadoalreves =.false.
+            HWires%CurrentSegment(i1)%reversedOrientation =.false.
             HWires%CurrentSegment(i1)%HasVsource      =.false.
             HWires%CurrentSegment(i1)%IsShielded      =.false.
             HWires%CurrentSegment(i1)%HasAbsorbing_RightEnd =.false.
@@ -1248,22 +1248,22 @@ contains
                      !!only for the observation sign to match (not used in this routine)
                      if (iwj < sgg%Med(HWires%wireMediumType(iwi))%wire(1)%numsegmentos) then
                         if (.not.control%strictOLD) then
-                           HWires%CurrentSegment(conta)%orientadoalreves = &
+                           HWires%CurrentSegment(conta)%reversedOrientation = &
                            (i1 > sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj+1)%i).or. &
                            (j1 > sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj+1)%j).or. &
                            (k1 > sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj+1)%k)
                         else
-                           HWires%CurrentSegment(conta)%orientadoalreves =.false. !later corrected
+                           HWires%CurrentSegment(conta)%reversedOrientation =.false. !later corrected
                         end if
                      else if     (iwj > 1) then
                         !only for the observation sign to match (not used in this routine)
                         if (.not.control%strictOLD) then
-                           HWires%CurrentSegment(conta)%orientadoalreves = &
+                           HWires%CurrentSegment(conta)%reversedOrientation = &
                            (i1 < sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj-1)%i).or. &
                            (j1 < sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj-1)%j).or. &
                            (k1 < sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj-1)%k)
                         else
-                           HWires%CurrentSegment(conta)%orientadoalreves =.false. !later corrected
+                           HWires%CurrentSegment(conta)%reversedOrientation =.false. !later corrected
                         end if
                      end if
                      !
@@ -3625,50 +3625,50 @@ contains
          if (associated(HWires%CurrentSegment(conta)%chargeplus%currentplus_1)) then
             if       ((HWires%CurrentSegment(conta)%chargeplus%currentplus_1%origindex < HWires%CurrentSegment(conta)%origindex).and.&
             (HWires%CurrentSegment(conta)%chargeplus%currentplus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !tienen que estar en el mismo hilo
-               HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
+               HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
          if (associated(HWires%CurrentSegment(conta)%chargeplus%currentplus_2)) then
             if       ((HWires%CurrentSegment(conta)%chargeplus%currentplus_2%origindex < HWires%CurrentSegment(conta)%origindex).and.&
             (HWires%CurrentSegment(conta)%chargeplus%currentplus_2%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !tienen que estar en el mismo hilo
-               HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
+               HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
          if (associated(HWires%CurrentSegment(conta)%chargeplus%currentminus_1)) then !puede que sea yo mismo, por eso miro tambien el currentminus2
             if       ((HWires%CurrentSegment(conta)%chargeplus%currentminus_1%origindex < HWires%CurrentSegment(conta)%origindex).and.&
             (HWires%CurrentSegment(conta)%chargeplus%currentminus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !tienen que estar en el mismo hilo
-               HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
+               HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
          if (associated(HWires%CurrentSegment(conta)%chargeplus%currentminus_2)) then
             if       ((HWires%CurrentSegment(conta)%chargeplus%currentminus_2%origindex < HWires%CurrentSegment(conta)%origindex).and.&
             (HWires%CurrentSegment(conta)%chargeplus%currentminus_2%indexmed == HWires%CurrentSegment(conta)%indexmed)) then !tienen que estar en el mismo hilo
-               HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
+               HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
          !!!!!!!!!
          if (associated(HWires%CurrentSegment(conta)%chargeminus%currentminus_1)) then
             if       ((HWires%CurrentSegment(conta)%chargeminus%currentminus_1%origindex > HWires%CurrentSegment(conta)%origindex).and. &
             (HWires%CurrentSegment(conta)%chargeminus%currentminus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then
-               HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
+               HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
          if (associated(HWires%CurrentSegment(conta)%chargeminus%currentminus_2)) then
             if       ((HWires%CurrentSegment(conta)%chargeminus%currentminus_2%origindex > HWires%CurrentSegment(conta)%origindex).and. &
             (HWires%CurrentSegment(conta)%chargeminus%currentminus_2%indexmed == HWires%CurrentSegment(conta)%indexmed)) then
-               HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
+               HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
          if (associated(HWires%CurrentSegment(conta)%chargeminus%currentplus_1)) then  !puede que sea yo mismo, por eso miro tambien el currentplus2
             if       ((HWires%CurrentSegment(conta)%chargeminus%currentplus_1%origindex > HWires%CurrentSegment(conta)%origindex).and. &
             (HWires%CurrentSegment(conta)%chargeminus%currentplus_1%indexmed == HWires%CurrentSegment(conta)%indexmed)) then
-               HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
+               HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
          if (associated(HWires%CurrentSegment(conta)%chargeminus%currentplus_2)) then
             if       ((HWires%CurrentSegment(conta)%chargeminus%currentplus_2%origindex > HWires%CurrentSegment(conta)%origindex).and. &
             (HWires%CurrentSegment(conta)%chargeminus%currentplus_2%indexmed == HWires%CurrentSegment(conta)%indexmed)) then
-               HWires%CurrentSegment(conta)%orientadoalreves =.true. !relies on ORIGINAL orientation
+               HWires%CurrentSegment(conta)%reversedOrientation =.true. !relies on ORIGINAL orientation
             end if
          end if
       end do

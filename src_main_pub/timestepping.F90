@@ -92,7 +92,7 @@ module Solver_m
       real(kind=rkind), pointer, dimension(:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
       real(kind=rkind), pointer, dimension(:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       type(constants_t) :: g
-      real(kind=RKIND_TIEMPO) :: lastexecutedtime
+      real(kind=RKIND_TIME) :: lastexecutedtime
       real(kind=RKIND) :: maxSourceValue
 
       integer(kind=4) :: initialtimestep, lastexecutedtimestep, ini_save, n_info, n
@@ -252,7 +252,7 @@ module Solver_m
       this%control%sgbcresol = input%sgbcresol
       this%control%factorradius = input%factorradius
       this%control%factordelta = input%factordelta
-      this%control%nEntradaRoot = trim(adjustl(input%nEntradaRoot))
+      this%control%nInputRoot = trim(adjustl(input%nInputRoot))
       this%control%inductance_model = trim(adjustl(input%inductance_model))
       this%control%wiresflavor = trim(adjustl(input%wiresflavor))
       this%control%nresumeable2 = trim(adjustl(input%nresumeable2))
@@ -293,13 +293,13 @@ module Solver_m
 #endif
 
 #ifdef CompileWithMTLN
-   subroutine launch_mtln_simulation(this, mtln_parsed, nEntradaRoot, layoutnumber)
+   subroutine launch_mtln_simulation(this, mtln_parsed, nInputRoot, layoutnumber)
       class(solver_t) :: this
       type(mtln_t) :: mtln_parsed
-      character(len=*), intent(in) :: nEntradaRoot
+      character(len=*), intent(in) :: nInputRoot
       integer(kind=4), intent(in) :: layoutnumber
 
-      call initializeMTLNProblem(mtln_parsed, nEntradaRoot)
+      call initializeMTLNProblem(mtln_parsed, nInputRoot)
       call runMTLNProblem()
       call reportSimulationEnd(layoutnumber)
    end subroutine
@@ -438,7 +438,7 @@ module Solver_m
       real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension(:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
 
-      real(kind=RKIND_TIEMPO) :: ultimodt
+      real(kind=RKIND_TIME) :: ultimodt
       
       character(len=bufsize) :: dubuf
       logical :: attinformado = .false.
@@ -470,7 +470,7 @@ module Solver_m
       !file names
       write(chari,*) this%control%layoutnumber+1
       if ((this%control%layoutnumber == 0).and.this%control%verbose) call reportmedia(this%sgg)
-      layoutcharID = trim(adjustl(this%control%nentradaroot))//'_'//trim(adjustl(chari))
+      layoutcharID = trim(adjustl(this%control%nInputRoot))//'_'//trim(adjustl(chari))
       call findbounds(this%bounds)
 
       call this%init_distances()
@@ -495,7 +495,7 @@ module Solver_m
          Ex=0.0_RKIND; Ey=0.0_RKIND; Ez=0.0_RKIND; Hx=0.0_RKIND; Hy=0.0_RKIND; Hz=0.0_RKIND
          this%initialtimestep=0 
          this%lastexecutedtimestep=0
-         this%lastexecutedtime=0.0_RKIND_TIEMPO
+         this%lastexecutedtime=0.0_RKIND_TIME
       else
          write(dubuf,*) 'Init processing resuming data'
          call print11(this%control%layoutnumber,dubuf)
@@ -599,7 +599,7 @@ module Solver_m
       call initializeWires()
 #ifdef CompileWithMTLN
        if (this%thereAre%MTLNbundles) then
-          call InitMTLNObservation(this%control%nEntradaRoot)
+          call InitMTLNObservation(this%control%nInputRoot)
           this%mtlnObservationInitialized = .true.
        end if
 #endif
@@ -1152,7 +1152,7 @@ contains
       end subroutine initializeLumped
 
       subroutine initializeWires()
-         real(kind=RKIND_TIEMPO) :: dtcritico, newdtcritico
+         real(kind=RKIND_TIME) :: dtcritico, newdtcritico
          character(len=BUFSIZE) :: dubuf, buff
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
@@ -1259,7 +1259,7 @@ contains
 #endif
 #ifdef CompileWithMPI
          !!!sincroniza el dtcritico
-         newdtcritico = 0.0_RKIND_TIEMPO
+         newdtcritico = 0.0_RKIND_TIME
          call MPI_AllReduce(dtcritico, newdtcritico, 1_4, REALSIZE_TIEMPO, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
 #endif
@@ -1731,7 +1731,7 @@ contains
 
       subroutine crea_timevector(sgg,lastexecutedtimestep,finaltimestep,lastexecutedtime)
          integer(kind=4) :: lastexecutedtimestep,finaltimestep,i
-         real(kind=RKIND_TIEMPO) :: lastexecutedtime
+         real(kind=RKIND_TIME) :: lastexecutedtime
          type(SGGFDTDINFO_t), intent(inout) :: sgg
          allocate (sgg%time(lastexecutedtimestep:finaltimestep+2))
          sgg%time(lastexecutedtimestep)=lastexecutedtime
@@ -1810,7 +1810,7 @@ contains
          if (call_timing) then
             call Timing(this%sgg,this%bounds,this%n,this%n_info,this%control%layoutnumber,this%control%num_procs, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,this%initialtimestep, &
             this%control%finaltimestep,this%perform,this%parar,.FALSE., &
-            Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
+            Ex,Ey,Ez,this%everflushed,this%control%nInputRoot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
 
             if (.not.this%parar) then !!! si es por parada se gestiona al final
                if (this%perform%flushFIELDS) then
@@ -1895,12 +1895,12 @@ contains
 #endif
 
       subroutine performFlushField()
-         write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nentradaroot)),SEPARADOR
+         write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nInputRoot)),SEPARADOR
          call printMessage(this%control%layoutnumber,dubuf)
          write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
          call printMessage(this%control%layoutnumber,dubuf)
 
-         call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
+         call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nInputRoot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1923,7 +1923,7 @@ contains
       subroutine singleUnpack()
          character(len=BUFSIZE) :: dubuf
          logical :: somethingdone, newsomethingdone
-         real(kind=RKIND_TIEMPO) :: at
+         real(kind=RKIND_TIME) :: at
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
 #endif
@@ -2638,7 +2638,7 @@ contains
       call Timing(this%sgg,this%bounds,this%n,ndummy,this%control%layoutnumber, this%control%num_procs, & 
                   this%control%maxCPUtime,this%control%flushsecondsFields, this%control%flushsecondsData, &
                   this%initialtimestep, this%control%finaltimestep,this%d_perform,dummylog,.FALSE., &
-                  Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue, & 
+                  Ex,Ey,Ez,this%everflushed,this%control%nInputRoot,this%control%maxSourceValue, & 
                   this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
 
       write(dubuf,*)'END FDTD time stepping. Beginning posprocessing at n= ',this%n
@@ -2647,7 +2647,7 @@ contains
       if ((this%control%flushsecondsFields/=0).or.this%perform%flushFIELDS) then
          write(dubuf,'(a,i9)')  ' INIT FINAL FLUSHING OF RESTARTING FIELDS n= ',this%n
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-         call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
+         call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nInputRoot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
          write(dubuf,'(a,i9)')  ' DONE FINAL FLUSHING OF RESTARTING FIELDS N=',this%n
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
@@ -2687,7 +2687,7 @@ contains
                   this%control%num_procs, this%control%maxCPUtime,this%control%flushsecondsFields, &
                   this%control%flushsecondsData,this%initialtimestep, &
                   this%control%finaltimestep,this%perform,this%parar,.FALSE., &
-                  Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales, & 
+                  Ex,Ey,Ez,this%everflushed,this%control%nInputRoot,this%control%maxSourceValue,this%control%opcionestotales, & 
                   this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
       write(dubuf,*)'END FINAL POSTPROCESSING at n= ',this%n
       call print11(this%control%layoutnumber,dubuf)

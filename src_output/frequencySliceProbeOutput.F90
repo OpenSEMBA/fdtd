@@ -60,7 +60,7 @@ contains
                                                 outputTypeExtension, control, problemInfo)
       type(frequency_slice_probe_output_t), intent(out) :: this
       type(volumetric_publication_t), intent(in) :: publication
-      real(kind=RKIND_TIEMPO), intent(in) :: timeInterval
+      real(kind=RKIND_TIME), intent(in) :: timeInterval
       integer(kind=SINGLE), intent(in) :: field
       type(domain_t), intent(in) :: domain
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
@@ -516,7 +516,7 @@ contains
 
    subroutine update_frequency_slice_probe_output(this, step, fieldsReference, control, problemInfo)
       type(frequency_slice_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_TIEMPO), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
       type(sim_control_t), intent(in) :: control
       type(problem_info_t), intent(in) :: problemInfo
       type(fields_reference_t), intent(in) :: fieldsReference
@@ -565,7 +565,7 @@ contains
       type(frequency_slice_probe_output_t), intent(inout) :: this
       type(fields_reference_t), intent(in) :: fieldsReference
       type(problem_info_t), intent(in) :: problemInfo
-      real(kind=RKIND_TIEMPO), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
 
       integer :: i, j, k, coordIdx
 
@@ -594,7 +594,7 @@ contains
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: fieldDir, nFreq
       complex(kind=ckind), intent(in), dimension(:) :: auxExp
-      real(kind=RKIND_TIEMPO), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
 
       integer :: i, j, k, coordIdx
 
@@ -619,8 +619,8 @@ contains
       complex(kind=CKIND), intent(in) :: auxExponential(:)
       integer, intent(in) :: i, j, k, coordIdx, nFreq
       type(fields_reference_t), intent(in) :: fieldsReference
-      real(kind=RKIND_TIEMPO), intent(in) :: quadratureDt
-      real(kind=RKIND_TIEMPO), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: quadratureDt
+      real(kind=RKIND_TIME), intent(in) :: step
 
       integer :: iter
       complex(kind=CKIND) :: z_cplx = (0.0_RKIND, 0.0_RKIND)
@@ -637,14 +637,14 @@ contains
    subroutine save_field_module(this, fieldInfo, simTime, request, problemInfo)
       type(frequency_slice_probe_output_t), intent(inout) :: this
       type(field_data_t), intent(in) :: fieldInfo
-      real(kind=RKIND_TIEMPO), intent(in) :: simTime
+      real(kind=RKIND_TIME), intent(in) :: simTime
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: request
 
       complex(kind=CKIND), dimension(this%nFreq) :: auxExponential
       integer :: i, j, k, coordIdx
 
-      if (IMHC == request) auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_TIEMPO*this%quadratureDt))
+      if (IMHC == request) auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_TIME*this%quadratureDt))
       if (IMEC == request) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
 
       coordIdx = 0
@@ -667,7 +667,7 @@ contains
       type(frequency_slice_probe_output_t), intent(inout) :: this
       complex(kind=CKIND), intent(inout) :: fieldData(:, :)
       real(kind=RKIND), pointer, intent(in) :: fieldComponent(:, :, :)
-      real(kind=RKIND_TIEMPO), intent(in) :: simTime
+      real(kind=RKIND_TIME), intent(in) :: simTime
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: fieldDir
 
@@ -675,7 +675,7 @@ contains
       integer :: i, j, k, coordIdx
 
       if (any(MAGNETIC_FIELD_DIRECTION == fieldDir)) then
-         auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_TIEMPO*this%quadratureDt))
+         auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_TIME*this%quadratureDt))
       end if
       if (any(ELECTRIC_FIELD_DIRECTION == fieldDir)) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
 

@@ -1,5 +1,5 @@
 module allocationUtils_m
-   use FDETYPES_m, only: RKIND, CKIND, SINGLE, RKIND_TIEMPO, IKINDMTAG, INTEGERSIZEOFMEDIAMATRICES
+   use FDETYPES_m, only: RKIND, CKIND, SINGLE, RKIND_TIME, IKINDMTAG, INTEGERSIZEOFMEDIAMATRICES
    implicit none
    private
    public :: alloc_and_init
@@ -23,9 +23,9 @@ module allocationUtils_m
 contains
 #ifndef CompileWithReal8
    subroutine alloc_and_init_real_time_1D(array, n1, initVal)
-      real(RKIND_TIEMPO), allocatable, intent(inout) :: array(:)
+      real(RKIND_TIME), allocatable, intent(inout) :: array(:)
       integer, intent(in) :: n1
-      real(RKIND_TIEMPO), intent(in) :: initVal
+      real(RKIND_TIME), intent(in) :: initVal
 
       allocate (array(n1))
       array = initVal

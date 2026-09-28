@@ -236,7 +236,7 @@ contains
             upperBound%z = sgg%observation(ii)%P(i)%ZE
             NODE = sgg%observation(ii)%P(i)%NODE
 
-            outputTypeExtension = trim(adjustl(control%nEntradaRoot))//'_'//trim(adjustl(sgg%observation(ii)%outputrequest))
+            outputTypeExtension = trim(adjustl(control%nInputRoot))//'_'//trim(adjustl(sgg%observation(ii)%outputrequest))
 
             outputRequestType = sgg%observation(ii)%P(i)%what
             select case (outputRequestType)
@@ -544,8 +544,8 @@ contains
        function preprocess_domain(observation, timeArray, simulationTimeStep, finalStepIndex, globalSaveAll) &
           result(newDomain)
           type(Obses_t), intent(in) :: observation
-          real(kind=RKIND_TIEMPO), pointer, dimension(:), intent(in) :: timeArray
-          real(kind=RKIND_TIEMPO), intent(in) :: simulationTimeStep
+          real(kind=RKIND_TIME), pointer, dimension(:), intent(in) :: timeArray
+          real(kind=RKIND_TIME), intent(in) :: simulationTimeStep
           integer(kind=4), intent(in) :: finalStepIndex
           logical, intent(in) :: globalSaveAll
           type(domain_t) :: newDomain
@@ -556,15 +556,15 @@ contains
 
           if (observation%TimeDomain .and. observation%FreqDomain) then
              nFreq = frequency_count(observation)
-             newdomain = domain_t(real(observation%InitialTime, kind=RKIND_TIEMPO), &
-                                 real(observation%FinalTime, kind=RKIND_TIEMPO), &
-                                 real(observation%TimeStep, kind=RKIND_TIEMPO), &
+             newdomain = domain_t(real(observation%InitialTime, kind=RKIND_TIME), &
+                                 real(observation%FinalTime, kind=RKIND_TIME), &
+                                 real(observation%TimeStep, kind=RKIND_TIME), &
                                  observation%InitialFreq, frequency_stop(observation, nFreq), nFreq, .false.)
 
          else if (observation%TimeDomain) then
-            newdomain = domain_t(real(observation%InitialTime, kind=RKIND_TIEMPO), &
-                                 real(observation%FinalTime, kind=RKIND_TIEMPO), &
-                                 real(observation%TimeStep, kind=RKIND_TIEMPO))
+            newdomain = domain_t(real(observation%InitialTime, kind=RKIND_TIME), &
+                                 real(observation%FinalTime, kind=RKIND_TIME), &
+                                 real(observation%TimeStep, kind=RKIND_TIME))
 
           else if (observation%FreqDomain) then
             nFreq = frequency_count(observation)
@@ -583,11 +583,11 @@ contains
              saveAllTimeSteps = globalSaveAll .or. observation%FinalTime < tiny(1.0_RKIND) .or. &
                                 observation%TimeStep < tiny(1.0_RKIND)
              if (saveAllTimeSteps) then
-                newDomain%tstart = 0.0_RKIND_TIEMPO
+                newDomain%tstart = 0.0_RKIND_TIME
                 newDomain%tstop = timeArray(simulationEndIndex)
                 newDomain%tstep = simulationTimeStep
              else
-                newDomain%tstart = max(0.0_RKIND_TIEMPO, newDomain%tstart)
+                newDomain%tstart = max(0.0_RKIND_TIME, newDomain%tstart)
                 newDomain%tstop = min(timeArray(simulationEndIndex), newDomain%tstop)
                 newDomain%tstop = max(newDomain%tstart, newDomain%tstop)
                 newDomain%tstep = max(simulationTimeStep, newDomain%tstep)
@@ -613,7 +613,7 @@ contains
 
    subroutine update_outputs(control, discreteTime, timeIndx, fieldsReference, sgg)
       integer(kind=SINGLE), intent(in) :: timeIndx
-      real(kind=RKIND_TIEMPO), intent(in) :: discreteTime
+      real(kind=RKIND_TIME), intent(in) :: discreteTime
       integer(kind=SINGLE) :: i, id
       type(sim_control_t), intent(in) :: control
       real(kind=RKIND), pointer, dimension(:, :, :) :: fieldComponent
@@ -665,15 +665,15 @@ contains
    logical function is_time_sample_due(domain, timeIndex, discreteTime) result(sampleDue)
       type(domain_t), intent(in) :: domain
       integer(kind=SINGLE), intent(in) :: timeIndex
-      real(kind=RKIND_TIEMPO), intent(in) :: discreteTime
-      real(kind=RKIND_TIEMPO) :: boundaryTolerance, timeScale
+      real(kind=RKIND_TIME), intent(in) :: discreteTime
+      real(kind=RKIND_TIME) :: boundaryTolerance, timeScale
 
       sampleDue = .false.
       if (.not. any(domain%domainType == [TIME_DOMAIN, BOTH_DOMAIN])) return
       if (modulo(timeIndex, domain%tstride) /= 0) return
 
       timeScale = max(abs(discreteTime), abs(domain%tstart), abs(domain%tstop), domain%tstep)
-      boundaryTolerance = 4.0_RKIND_TIEMPO*real(epsilon(1.0_RKIND), RKIND_TIEMPO)*timeScale
+      boundaryTolerance = 4.0_RKIND_TIME*real(epsilon(1.0_RKIND), RKIND_TIME)*timeScale
       sampleDue = discreteTime >= domain%tstart - boundaryTolerance .and. &
                   discreteTime <= domain%tstop + boundaryTolerance
    end function is_time_sample_due
@@ -685,7 +685,7 @@ contains
       type(sim_control_t), intent(in) :: control
       type(bounds_t), intent(in) :: bounds
       logical, intent(in) :: farFieldFlushRequested
-      real(kind=RKIND_TIEMPO), pointer, dimension(:), intent(in) :: simulationTimeArray
+      real(kind=RKIND_TIME), pointer, dimension(:), intent(in) :: simulationTimeArray
       integer, intent(in) :: simulationTimeIndex
       integer :: outIdx
 

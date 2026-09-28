@@ -1,5 +1,5 @@
 module lineProbeOutput_m
-   use FDETYPES_m, only: RKIND, RKIND_TIEMPO, SINGLE, BUFSIZE, direction_t, xyzlimit_t, iEx, iEy, IEZ
+   use FDETYPES_m, only: RKIND, RKIND_TIME, SINGLE, BUFSIZE, direction_t, xyzlimit_t, iEx, iEy, IEZ
    use outputTypes_m, only: field_data_t, line_probe_output_t, domain_t, TIME_DOMAIN, OUTPUT_TIME_BUFFER_SIZE, &
                             OUTPUT_ARTIFACT_TEXT, DATFILEEXTENSION, TIMEEXTENSION, declare_probe_artifacts
    use allocationUtils_m, only: alloc_and_init
@@ -76,7 +76,7 @@ contains
       else
          this%segments = segments
       end if
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIEMPO)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
       call alloc_and_init(this%valueForTime, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
 
       artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
@@ -117,7 +117,7 @@ contains
 
    subroutine update_line_probe_output(this, step, electric_field)
       type(line_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_TIEMPO), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
       type(field_data_t), intent(in) :: electric_field
 #ifdef CompileWithMPI
       integer :: ierr
@@ -143,7 +143,7 @@ contains
       if (this%nTime == 0) return
       this%nTimesFlushed = this%nTimesFlushed + this%nTime
       this%nTime = 0
-      this%timeStep = 0.0_RKIND_TIEMPO
+      this%timeStep = 0.0_RKIND_TIME
       this%valueForTime = 0.0_RKIND
    end subroutine complete_line_probe_sample
 

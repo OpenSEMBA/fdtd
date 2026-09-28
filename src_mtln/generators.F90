@@ -5,14 +5,14 @@ module generators_m
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI
 #endif
-    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
+    use FDETYPES_m, only: RKIND, RKIND_TIME
 
     implicit none
 
     type generator_t
         integer :: elementIndex, conductor
         real(kind=rkind), dimension(:), allocatable :: scalarValue
-        real(kind=RKIND_TIEMPO), dimension(:), allocatable :: time
+        real(kind=RKIND_TIME), dimension(:), allocatable :: time
         real :: resistance
         integer :: source_type = SOURCE_TYPE_UNDEFINED
         logical :: in_layer = .true.
@@ -72,7 +72,7 @@ contains
         class(generator_t) :: this
         character(*), intent(in) :: path
         real(kind=rkind) :: scalarValue
-        real(kind=RKIND_TIEMPO) :: time
+        real(kind=RKIND_TIME) :: time
         integer :: io, line_count, i
         
         if (path == "") then 
@@ -109,10 +109,10 @@ contains
     function interpolate(this, t) result(res)
         class(generator_t) :: this
         real(kind=rkind) :: res
-        real(kind=RKIND_TIEMPO) :: t, x1, x2
+        real(kind=RKIND_TIME) :: t, x1, x2
         real(kind=rkind) :: y1, y2
         integer :: elementIndex
-        real(kind=RKIND_TIEMPO), dimension(:), allocatable :: timediff
+        real(kind=RKIND_TIME), dimension(:), allocatable :: timediff
         timediff = this%time - t
         elementIndex = maxloc(timediff, 1, (timediff) <= 0)
         if (elementIndex == 0) elementIndex = 1

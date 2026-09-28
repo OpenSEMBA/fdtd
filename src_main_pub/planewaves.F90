@@ -16,7 +16,7 @@ module ilumina_m
       integer(kind=4) :: Ex=-15,Ey=-15,Ez=-15,Hx=-15,Hy=-15,Hz=-15
    end type
    type tfidaa_t
-      type(ehxyz_t) :: com,fin,tra,fro,izq,der,aba,arr
+      type(ehxyz_t) :: com,fin,backDir,frontDir,leftDir,rightDir,downDir,arr
    end type
    type ijk_t
       type(tfidaa_t) :: i,j,k
@@ -27,7 +27,7 @@ module ilumina_m
    real(kind=RKIND) :: eps0,mu0
 
    !!! local variables
-   type(coorsxyzP_t) , save :: Punto
+   type(coorsxyzP_t) , save :: gridPoint
    type(ijk_t), allocatable, dimension(:)       , save  :: TrFr,IzDe,AbAr
    logical  , allocatable, dimension(:)        , save  :: IluminaTr,IluminaFr,IluminaIz,IluminaDe,IluminaAr,IluminaAb
    public Incid,AdvancePlaneWaveE,AdvancePlaneWaveH,InitPlaneWave,DestroyIlumina,storeplanewaves,calc_planewaveconstants,corrigeondaplanaH
@@ -51,70 +51,70 @@ contains
       zvac=sqrt(mu0/eps0) !lo necesitan las variables de mas abajo
 
       do field=iEx,IHZ
-         allocate (Punto%PhysCoor(field)%x(sgg%Sweep(field)%XI-1 : sgg%Sweep(field)%XE+1), &
-         Punto%PhysCoor(field)%y(sgg%Sweep(field)%YI-1 : sgg%Sweep(field)%YE+1), &
-         Punto%PhysCoor(field)%z(sgg%Sweep(field)%ZI-1 : sgg%Sweep(field)%ZE+1))
+         allocate (gridPoint%PhysCoor(field)%x(sgg%Sweep(field)%XI-1 : sgg%Sweep(field)%XE+1), &
+         gridPoint%PhysCoor(field)%y(sgg%Sweep(field)%YI-1 : sgg%Sweep(field)%YE+1), &
+         gridPoint%PhysCoor(field)%z(sgg%Sweep(field)%ZI-1 : sgg%Sweep(field)%ZE+1))
       end do
 
       field=iEx
       do i=sgg%Sweep(field)%XI-1,sgg%Sweep(field)%XE
-         Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
       do j=sgg%Sweep(field)%YI-1,sgg%Sweep(field)%YE+1
-         Punto%PhysCoor(field)%y(j)=sgg%Liney(j)
+         gridPoint%PhysCoor(field)%y(j)=sgg%Liney(j)
       end do
       do k=sgg%Sweep(field)%ZI-1,sgg%Sweep(field)%ZE+1
-         Punto%PhysCoor(field)%z(k)=sgg%LineZ(k)
+         gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
       field=iEy
       do i=sgg%Sweep(field)%XI-1,sgg%Sweep(field)%XE+1
-         Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
+         gridPoint%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
       do j=sgg%Sweep(field)%YI-1,sgg%Sweep(field)%YE
-         Punto%PhysCoor(field)%y(j)=(sgg%Liney(j)+sgg%LineY(j+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%y(j)=(sgg%Liney(j)+sgg%LineY(j+1))*0.5_RKIND
       end do
       do k=sgg%Sweep(field)%ZI-1,sgg%Sweep(field)%ZE+1
-         Punto%PhysCoor(field)%z(k)=sgg%LineZ(k)
+         gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
       field=IEZ
       do i=sgg%Sweep(field)%XI-1,sgg%Sweep(field)%XE+1
-         Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
+         gridPoint%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
       do j=sgg%Sweep(field)%YI-1,sgg%Sweep(field)%YE+1
-         Punto%PhysCoor(field)%y(j)=sgg%Liney(j)
+         gridPoint%PhysCoor(field)%y(j)=sgg%Liney(j)
       end do
       do k=sgg%Sweep(field)%ZI-1,sgg%Sweep(field)%ZE
-         Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
       field=IHX
       do i=sgg%Sweep(field)%XI-1,sgg%Sweep(field)%XE+1
-         Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
+         gridPoint%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
       do j=sgg%Sweep(field)%YI-1,sgg%Sweep(field)%YE
-         Punto%PhysCoor(field)%y(j)=(sgg%Liney(j)+sgg%LineY(j+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%y(j)=(sgg%Liney(j)+sgg%LineY(j+1))*0.5_RKIND
       end do
       do k=sgg%Sweep(field)%ZI-1,sgg%Sweep(field)%ZE
-         Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
       field=IHY
       do i=sgg%Sweep(field)%XI-1,sgg%Sweep(field)%XE
-         Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
       do j=sgg%Sweep(field)%YI-1,sgg%Sweep(field)%YE+1
-         Punto%PhysCoor(field)%y(j)=sgg%Liney(j)
+         gridPoint%PhysCoor(field)%y(j)=sgg%Liney(j)
       end do
       do k=sgg%Sweep(field)%ZI-1,sgg%Sweep(field)%ZE
-         Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
       field=IHZ
       do i=sgg%Sweep(field)%XI-1,sgg%Sweep(field)%XE
-         Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
       do j=sgg%Sweep(field)%YI-1,sgg%Sweep(field)%YE
-         Punto%PhysCoor(field)%y(j)=(sgg%Liney(j)+sgg%LineY(j+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%y(j)=(sgg%Liney(j)+sgg%LineY(j+1))*0.5_RKIND
       end do
       do k=sgg%Sweep(field)%ZI-1,sgg%Sweep(field)%ZE+1
-         Punto%PhysCoor(field)%z(k)=sgg%LineZ(k)
+         gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
       !
       if (sgg%NumPlaneWaves >= 1) then
@@ -173,86 +173,86 @@ contains
              IluminaAr(jjj)=.true.
              !
              !find the coordinate limits of the Huygens Box for each component
-             TrFr(jjj)%I%tra%Ez=Max(sgg%SINPMLSweep(IEZ)%XI, sgg%PlaneWave(jjj)%esqx1)
-             TrFr(jjj)%I%fro%Ez=Min(sgg%SINPMLSweep(IEZ)%XE, sgg%PlaneWave(jjj)%esqx2)
+             TrFr(jjj)%I%backDir%Ez=Max(sgg%SINPMLSweep(IEZ)%XI, sgg%PlaneWave(jjj)%esqx1)
+             TrFr(jjj)%I%frontDir%Ez=Min(sgg%SINPMLSweep(IEZ)%XE, sgg%PlaneWave(jjj)%esqx2)
              TrFr(jjj)%J%com%Ez=Max(sgg%SINPMLSweep(IEZ)%YI, sgg%PlaneWave(jjj)%esqy1)
              TrFr(jjj)%J%fin%Ez=Min(sgg%SINPMLSweep(IEZ)%YE, sgg%PlaneWave(jjj)%esqy2)
              TrFr(jjj)%K%com%Ez=Max(sgg%SINPMLSweep(IEZ)%ZI, sgg%PlaneWave(jjj)%esqz1)
              TrFr(jjj)%K%fin%Ez=MIn(sgg%SINPMLSweep(IEZ)%ZE, sgg%PlaneWave(jjj)%esqz2-1)
              !
-             TrFr(jjj)%I%tra%Ey=Max(sgg%SINPMLSweep(iEy)%XI, sgg%PlaneWave(jjj)%esqx1)
-             TrFr(jjj)%I%fro%Ey=Min(sgg%SINPMLSweep(iEy)%XE, sgg%PlaneWave(jjj)%esqx2)
+             TrFr(jjj)%I%backDir%Ey=Max(sgg%SINPMLSweep(iEy)%XI, sgg%PlaneWave(jjj)%esqx1)
+             TrFr(jjj)%I%frontDir%Ey=Min(sgg%SINPMLSweep(iEy)%XE, sgg%PlaneWave(jjj)%esqx2)
              TrFr(jjj)%J%com%Ey=Max(sgg%SINPMLSweep(iEy)%YI, sgg%PlaneWave(jjj)%esqy1)
              TrFr(jjj)%J%fin%Ey=Min(sgg%SINPMLSweep(iEy)%YE, sgg%PlaneWave(jjj)%esqy2-1)
              TrFr(jjj)%K%com%Ey=Max(sgg%SINPMLSweep(iEy)%ZI ,sgg%PlaneWave(jjj)%esqz1)
              TrFr(jjj)%K%fin%Ey=MIn(sgg%SINPMLSweep(iEy)%ZE ,sgg%PlaneWave(jjj)%esqz2)
              !
-             TrFr(jjj)%I%tra%Hy= TrFr(jjj)%I%tra%Ez - 1
-             TrFr(jjj)%I%fro%Hy= TrFr(jjj)%I%fro%Ez
+             TrFr(jjj)%I%backDir%Hy= TrFr(jjj)%I%backDir%Ez - 1
+             TrFr(jjj)%I%frontDir%Hy= TrFr(jjj)%I%frontDir%Ez
              TrFr(jjj)%J%com%Hy= TrFr(jjj)%J%com%Ez
              TrFr(jjj)%J%fin%Hy= TrFr(jjj)%J%fin%Ez
              TrFr(jjj)%K%com%Hy= TrFr(jjj)%K%com%Ez
              TrFr(jjj)%K%fin%Hy= TrFr(jjj)%K%fin%Ez
              !
-             TrFr(jjj)%I%tra%Hz= TrFr(jjj)%I%tra%Ey - 1
-             TrFr(jjj)%I%fro%Hz= TrFr(jjj)%I%fro%Ey
+             TrFr(jjj)%I%backDir%Hz= TrFr(jjj)%I%backDir%Ey - 1
+             TrFr(jjj)%I%frontDir%Hz= TrFr(jjj)%I%frontDir%Ey
              TrFr(jjj)%J%com%Hz= TrFr(jjj)%J%com%Ey
              TrFr(jjj)%J%fin%Hz= TrFr(jjj)%J%fin%Ey
              TrFr(jjj)%K%com%Hz= TrFr(jjj)%K%com%Ey
              TrFr(jjj)%K%fin%Hz= TrFr(jjj)%K%fin%Ey
              !
              !
-             IzDe(jjj)%J%izq%Ex=Max(sgg%SINPMLSweep(iEx)%yI, sgg%PlaneWave(jjj)%esqy1)
-             IzDe(jjj)%J%der%Ex=Min(sgg%SINPMLSweep(iEx)%yE, sgg%PlaneWave(jjj)%esqy2)
+             IzDe(jjj)%J%leftDir%Ex=Max(sgg%SINPMLSweep(iEx)%yI, sgg%PlaneWave(jjj)%esqy1)
+             IzDe(jjj)%J%rightDir%Ex=Min(sgg%SINPMLSweep(iEx)%yE, sgg%PlaneWave(jjj)%esqy2)
              IzDe(jjj)%I%com%Ex=Max(sgg%SINPMLSweep(iEx)%xI, sgg%PlaneWave(jjj)%esqx1)
              IzDe(jjj)%I%fin%Ex=Min(sgg%SINPMLSweep(iEx)%xE, sgg%PlaneWave(jjj)%esqx2-1)
              IzDe(jjj)%K%com%Ex=Max(sgg%SINPMLSweep(iEx)%ZI ,sgg%PlaneWave(jjj)%esqz1)
              IzDe(jjj)%K%fin%Ex=MIn(sgg%SINPMLSweep(iEx)%ZE ,sgg%PlaneWave(jjj)%esqz2)
              !
-             IzDe(jjj)%J%izq%Ez=Max(sgg%SINPMLSweep(IEZ)%yI, sgg%PlaneWave(jjj)%esqy1)
-             IzDe(jjj)%J%der%Ez=Min(sgg%SINPMLSweep(IEZ)%yE, sgg%PlaneWave(jjj)%esqy2)
+             IzDe(jjj)%J%leftDir%Ez=Max(sgg%SINPMLSweep(IEZ)%yI, sgg%PlaneWave(jjj)%esqy1)
+             IzDe(jjj)%J%rightDir%Ez=Min(sgg%SINPMLSweep(IEZ)%yE, sgg%PlaneWave(jjj)%esqy2)
              IzDe(jjj)%I%com%Ez=Max(sgg%SINPMLSweep(IEZ)%xI, sgg%PlaneWave(jjj)%esqx1)
              IzDe(jjj)%I%fin%Ez=Min(sgg%SINPMLSweep(IEZ)%xE, sgg%PlaneWave(jjj)%esqx2)
              IzDe(jjj)%K%com%Ez=Max(sgg%SINPMLSweep(IEZ)%ZI ,sgg%PlaneWave(jjj)%esqz1)
              IzDe(jjj)%K%fin%Ez=MIn(sgg%SINPMLSweep(IEZ)%ZE ,sgg%PlaneWave(jjj)%esqz2-1)
              !
-             IzDe(jjj)%J%izq%Hz= IzDe(jjj)%J%izq%Ex - 1
-             IzDe(jjj)%J%der%Hz= IzDe(jjj)%J%der%Ex
+             IzDe(jjj)%J%leftDir%Hz= IzDe(jjj)%J%leftDir%Ex - 1
+             IzDe(jjj)%J%rightDir%Hz= IzDe(jjj)%J%rightDir%Ex
              IzDe(jjj)%I%com%Hz= IzDe(jjj)%I%com%Ex
              IzDe(jjj)%I%fin%Hz= IzDe(jjj)%I%fin%Ex
              IzDe(jjj)%K%com%Hz= IzDe(jjj)%K%com%Ex
              IzDe(jjj)%K%fin%Hz= IzDe(jjj)%K%fin%Ex
              !
-             IzDe(jjj)%J%izq%Hx= IzDe(jjj)%J%izq%Ez - 1
-             IzDe(jjj)%J%der%Hx= IzDe(jjj)%J%der%Ez
+             IzDe(jjj)%J%leftDir%Hx= IzDe(jjj)%J%leftDir%Ez - 1
+             IzDe(jjj)%J%rightDir%Hx= IzDe(jjj)%J%rightDir%Ez
              IzDe(jjj)%I%com%Hx= IzDe(jjj)%I%com%Ez
              IzDe(jjj)%I%fin%Hx= IzDe(jjj)%I%fin%Ez
              IzDe(jjj)%K%com%Hx= IzDe(jjj)%K%com%Ez
              IzDe(jjj)%K%fin%Hx= IzDe(jjj)%K%fin%Ez
              !
              !
-             AbAr(jjj)%K%aba%Ey=Max(sgg%SINPMLSweep(iEy)%ZI, sgg%PlaneWave(jjj)%esqz1)
+             AbAr(jjj)%K%downDir%Ey=Max(sgg%SINPMLSweep(iEy)%ZI, sgg%PlaneWave(jjj)%esqz1)
              AbAr(jjj)%K%arr%Ey=Min(sgg%SINPMLSweep(iEy)%ZE, sgg%PlaneWave(jjj)%esqz2)
              AbAr(jjj)%I%com%Ey=Max(sgg%SINPMLSweep(iEy)%XI, sgg%PlaneWave(jjj)%esqx1)
              AbAr(jjj)%I%fin%Ey=Min(sgg%SINPMLSweep(iEy)%XE, sgg%PlaneWave(jjj)%esqx2)
              AbAr(jjj)%J%com%Ey=Max(sgg%SINPMLSweep(iEy)%YI, sgg%PlaneWave(jjj)%esqy1)
              AbAr(jjj)%J%fin%Ey=Min(sgg%SINPMLSweep(iEy)%YE, sgg%PlaneWave(jjj)%esqy2-1)
              !
-             AbAr(jjj)%K%aba%Ex=Max(sgg%SINPMLSweep(iEx)%ZI, sgg%PlaneWave(jjj)%esqz1)
+             AbAr(jjj)%K%downDir%Ex=Max(sgg%SINPMLSweep(iEx)%ZI, sgg%PlaneWave(jjj)%esqz1)
              AbAr(jjj)%K%arr%Ex=Min(sgg%SINPMLSweep(iEx)%ZE, sgg%PlaneWave(jjj)%esqz2)
              AbAr(jjj)%I%com%Ex=Max(sgg%SINPMLSweep(iEx)%XI, sgg%PlaneWave(jjj)%esqx1)
              AbAr(jjj)%I%fin%Ex=Min(sgg%SINPMLSweep(iEx)%XE, sgg%PlaneWave(jjj)%esqx2-1)
              AbAr(jjj)%J%com%Ex=Max(sgg%SINPMLSweep(iEx)%YI, sgg%PlaneWave(jjj)%esqy1)
              AbAr(jjj)%J%fin%Ex=Min(sgg%SINPMLSweep(iEx)%YE, sgg%PlaneWave(jjj)%esqy2)
              !
-             AbAr(jjj)%K%aba%Hx= AbAr(jjj)%K%aba%Ey - 1
+             AbAr(jjj)%K%downDir%Hx= AbAr(jjj)%K%downDir%Ey - 1
              AbAr(jjj)%K%arr%Hx= AbAr(jjj)%K%arr%Ey
              AbAr(jjj)%I%com%Hx= AbAr(jjj)%I%com%Ey
              AbAr(jjj)%I%fin%Hx= AbAr(jjj)%I%fin%Ey
              AbAr(jjj)%J%com%Hx= AbAr(jjj)%J%com%Ey
              AbAr(jjj)%J%fin%Hx= AbAr(jjj)%J%fin%Ey
              !
-             AbAr(jjj)%K%aba%Hy= AbAr(jjj)%K%aba%Ex -1
+             AbAr(jjj)%K%downDir%Hy= AbAr(jjj)%K%downDir%Ex -1
              AbAr(jjj)%K%arr%Hy= AbAr(jjj)%K%arr%Ex
              AbAr(jjj)%I%com%Hy= AbAr(jjj)%I%com%Ex
              AbAr(jjj)%I%fin%Hy= AbAr(jjj)%I%fin%Ex
@@ -378,7 +378,7 @@ contains
       do jjj=1, sgg%numplanewaves
           if(IluminaTr(jjj)) then
              !Ez Back
-             i = TrFr(jjj)%I%tra%Ez !Back
+             i = TrFr(jjj)%I%backDir%Ez !Back
              do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
                 do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
                    if (media%sggMiEz(i, j, k) /=1) then
@@ -391,7 +391,7 @@ contains
                 end do
              end do
              !Ey Back
-             i = TrFr(jjj)%I%tra%Ey
+             i = TrFr(jjj)%I%backDir%Ey
              do k = TrFr(jjj)%K%com%Ey, TrFr(jjj)%K%fin%Ey
                 do j = TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey
                    if (media%sggMiEy(i,j,k) /=1) then
@@ -407,7 +407,7 @@ contains
           !--->
           if(IluminaFr(jjj)) then
              !Ez  Front
-             i = TrFr(jjj)%I%fro%Ez !Front
+             i = TrFr(jjj)%I%frontDir%Ez !Front
              do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
                 do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
                    if (media%sggMiEz(i,j,k) /=1) then
@@ -420,7 +420,7 @@ contains
                 end do
              end do
              !Ey  Front
-             i = TrFr(jjj)%I%fro%Ey !Front
+             i = TrFr(jjj)%I%frontDir%Ey !Front
              do k = TrFr(jjj)%K%com%Ey, TrFr(jjj)%K%fin%Ey
                 do j = TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey
                    if (media%sggMiEy(i,j,k) /=1) then
@@ -436,7 +436,7 @@ contains
           !--->
           if(IluminaIz(jjj)) then
              !Ex Left
-             j = IzDe(jjj)%J%izq%Ex  !Left
+             j = IzDe(jjj)%J%leftDir%Ex  !Left
              do k = IzDe(jjj)%K%com%Ex, IzDe(jjj)%K%fin%Ex
                 do i = IzDe(jjj)%I%com%Ex, IzDe(jjj)%I%fin%Ex
                    if (media%sggMiEx(i,j,k) /=1) then
@@ -449,7 +449,7 @@ contains
                 end do
              end do
              !Ez Left
-             j = IzDe(jjj)%J%izq%Ez  !Left
+             j = IzDe(jjj)%J%leftDir%Ez  !Left
              do k = IzDe(jjj)%K%com%Ez, IzDe(jjj)%K%fin%Ez
                 do i = IzDe(jjj)%I%com%Ez, IzDe(jjj)%I%fin%Ez
                    if (media%sggMiEz(i,j,k) /=1) then
@@ -465,7 +465,7 @@ contains
           !--->
           if(IluminaDe(jjj)) then
              !Ez  Right
-             j = IzDe(jjj)%J%der%Ez !Right
+             j = IzDe(jjj)%J%rightDir%Ez !Right
              do k = IzDe(jjj)%K%com%Ez, IzDe(jjj)%K%fin%Ez
                 do i = IzDe(jjj)%I%com%Ez, IzDe(jjj)%I%fin%Ez
                    if (media%sggMiEz(i,j,k) /=1) then
@@ -478,7 +478,7 @@ contains
                 end do
              end do
              !Ex  Right
-             j = IzDe(jjj)%J%der%Ex !Right
+             j = IzDe(jjj)%J%rightDir%Ex !Right
              do k = IzDe(jjj)%K%com%Ex,IzDe(jjj)%K%fin%Ex
                 do i=IzDe(jjj)%I%com%Ex,IzDe(jjj)%I%fin%Ex
                    if (media%sggMiEx(i,j,k) /=1) then
@@ -494,7 +494,7 @@ contains
           !--->
           if(IluminaAb(jjj)) then
              !Ex  Down
-             k = AbAr(jjj)%K%aba%Ex  !Down
+             k = AbAr(jjj)%K%downDir%Ex  !Down
              do j = AbAr(jjj)%J%com%Ex, AbAr(jjj)%J%fin%Ex
                 do i=AbAr(jjj)%I%com%Ex,AbAr(jjj)%I%fin%Ex
                    if (media%sggMiEx(i,j,k) /=1) then
@@ -507,7 +507,7 @@ contains
                 end do
              end do
              !Ey Down
-             k = AbAr(jjj)%K%aba%Ey  !Down
+             k = AbAr(jjj)%K%downDir%Ey  !Down
              do j = AbAr(jjj)%J%com%Ey, AbAr(jjj)%J%fin%Ey
                 do i = AbAr(jjj)%I%com%Ey, AbAr(jjj)%I%fin%Ey
                    if (media%sggMiEy(i,j,k) /=1) then
@@ -552,7 +552,7 @@ contains
           !!!
           if(IluminaTr(jjj)) then
              !Hz Back
-             i = TrFr(jjj)%I%tra%Hz  !Back
+             i = TrFr(jjj)%I%backDir%Hz  !Back
              do k = TrFr(jjj)%K%com%Hz, TrFr(jjj)%K%fin%Hz
                 do j = TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz
                    if (media%sggMiHz(i,j,k) /=1) then
@@ -565,7 +565,7 @@ contains
                 end do
              end do
              !Hy Back
-             i = TrFr(jjj)%I%tra%Hy  !Back
+             i = TrFr(jjj)%I%backDir%Hy  !Back
              do k = TrFr(jjj)%K%com%Hy, TrFr(jjj)%K%fin%Hy
                 do j = TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy
                    if (media%sggMiHy(i,j,k) /=1) then
@@ -580,7 +580,7 @@ contains
           end if
           if(IluminaFr(jjj)) then
              !Hz  Front
-             i = TrFr(jjj)%I%fro%Hz !Front
+             i = TrFr(jjj)%I%frontDir%Hz !Front
              do k = TrFr(jjj)%K%com%Hz, TrFr(jjj)%K%fin%Hz
                 do j = TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz
                    if (media%sggMiHz(i,j,k) /=1) then
@@ -593,7 +593,7 @@ contains
                 end do
              end do
              !Hy  Front
-             i = TrFr(jjj)%I%fro%Hy !Front
+             i = TrFr(jjj)%I%frontDir%Hy !Front
              do k = TrFr(jjj)%K%com%Hy, TrFr(jjj)%K%fin%Hy
                 do j = TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy
                    if (media%sggMiHy(i,j,k) /=1) then
@@ -609,7 +609,7 @@ contains
           end if
           if(IluminaIz(jjj)) then
              !Hx Left
-             j = IzDe(jjj)%J%izq%Hx  !Left
+             j = IzDe(jjj)%J%leftDir%Hx  !Left
              do k = IzDe(jjj)%K%com%Hx, IzDe(jjj)%K%fin%Hx
                 do i = IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx
                    if (media%sggMiHx(i,j,k) /=1) then
@@ -622,7 +622,7 @@ contains
                 end do
              end do
              !Hz Left
-             j = IzDe(jjj)%J%izq%Hz  !Left
+             j = IzDe(jjj)%J%leftDir%Hz  !Left
              do k = IzDe(jjj)%K%com%Hz, IzDe(jjj)%K%fin%Hz
                 do i = IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz
                    if (media%sggMiHz(i,j,k) /=1) then
@@ -637,7 +637,7 @@ contains
           end if
           if(IluminaDe(jjj)) then
              !Hx  Right
-             j = IzDe(jjj)%J%der%Hx !Right
+             j = IzDe(jjj)%J%rightDir%Hx !Right
              do k = IzDe(jjj)%K%com%Hx, IzDe(jjj)%K%fin%Hx
                 do i = IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx
                    if (media%sggMiHx(i,j,k) /=1) then
@@ -650,7 +650,7 @@ contains
                 end do
              end do
              !Hz  Right
-             j = IzDe(jjj)%J%der%Hz !Right
+             j = IzDe(jjj)%J%rightDir%Hz !Right
              do k = IzDe(jjj)%K%com%Hz, IzDe(jjj)%K%fin%Hz
                 do i = IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz
                    if (media%sggMiHz(i,j,k) /=1) then
@@ -665,7 +665,7 @@ contains
           end if
           if(IluminaAb(jjj)) then
              !Hx  Down
-             k = AbAr(jjj)%K%aba%Hx  !Down
+             k = AbAr(jjj)%K%downDir%Hx  !Down
              do j = AbAr(jjj)%J%com%Hx, AbAr(jjj)%J%fin%Hx
                 do i = AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx
                    if (media%sggMiHx(i,j,k) /=1) then
@@ -678,7 +678,7 @@ contains
                 end do
              end do
              !Hy  Down
-             k = AbAr(jjj)%K%aba%Hy  !Down
+             k = AbAr(jjj)%K%downDir%Hy  !Down
              do j = AbAr(jjj)%J%com%Hy, AbAr(jjj)%J%fin%Hy
                 do i=AbAr(jjj)%I%com%Hy,AbAr(jjj)%I%fin%Hy
                    if (media%sggMiHy(i,j,k) /=1) then
@@ -741,9 +741,9 @@ contains
       real(kind=RKIND) :: EHI
       real(kind=RKIND) :: time,d,xf,yf,zf
       !
-      xf=Punto%PhysCoor(nfield)%x(i)
-      yf=Punto%PhysCoor(nfield)%y(j)
-      zf=Punto%PhysCoor(nfield)%z(k)
+      xf=gridPoint%PhysCoor(nfield)%x(i)
+      yf=gridPoint%PhysCoor(nfield)%y(j)
+      zf=gridPoint%PhysCoor(nfield)%z(k)
       ehi=0.0_RKIND
 
       if (calledfromobservation) then     
@@ -819,9 +819,9 @@ contains
       integer(kind=4) :: field
 
       do field=iEx,IHZ
-         if (associated(Punto%PhysCoor(field)%x)) deallocate(Punto%PhysCoor(field)%x)
-         if (associated(Punto%PhysCoor(field)%y)) deallocate(Punto%PhysCoor(field)%y)
-         if (associated(Punto%PhysCoor(field)%z)) deallocate(Punto%PhysCoor(field)%z)
+         if (associated(gridPoint%PhysCoor(field)%x)) deallocate(gridPoint%PhysCoor(field)%x)
+         if (associated(gridPoint%PhysCoor(field)%y)) deallocate(gridPoint%PhysCoor(field)%y)
+         if (associated(gridPoint%PhysCoor(field)%z)) deallocate(gridPoint%PhysCoor(field)%z)
       end do
 
       if (sgg%numplanewaves >=1) then
@@ -872,7 +872,7 @@ contains
       do jjj=1, sgg%numplanewaves
           if(IluminaTr(jjj)) then
              !Ez Back
-             i = TrFr(jjj)%I%tra%Ez !Back
+             i = TrFr(jjj)%I%backDir%Ez !Back
              i_m = i - b%Ez%XI
              Id = Idxh(i_m)
              !--->
@@ -892,7 +892,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
              !Ey Back
-             i = TrFr(jjj)%I%tra%Ey  !Back
+             i = TrFr(jjj)%I%backDir%Ey  !Back
              i_m = i - b%Ey%XI
              Id = Idxh(i_m)
              !--->
@@ -915,7 +915,7 @@ contains
           !--->
           if(IluminaFr(jjj)) then
              !Ez  Front
-             i = TrFr(jjj)%I%fro%Ez !Front
+             i = TrFr(jjj)%I%frontDir%Ez !Front
              i_m = i - b%Ez%XI
              Id = Idxh(i_m)
              !--->
@@ -935,7 +935,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
              !Ey  Front
-             i = TrFr(jjj)%I%fro%Ey !Front
+             i = TrFr(jjj)%I%frontDir%Ey !Front
              i_m = i - b%Ey%XI
              Id = Idxh(i_m)
              !--->
@@ -958,7 +958,7 @@ contains
           !--->
           if(IluminaIz(jjj)) then
              !Ex Left
-             j = IzDe(jjj)%J%izq%Ex  !Left
+             j = IzDe(jjj)%J%leftDir%Ex  !Left
              j_m = j - b%Ex%YI
              Id = Idyh(j_m)
              !--->
@@ -978,7 +978,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
              !Ez Left
-             j = IzDe(jjj)%J%izq%Ez  !Left
+             j = IzDe(jjj)%J%leftDir%Ez  !Left
              j_m = j - b%Ez%YI
              Id = Idyh(j_m)
              !--->
@@ -1001,7 +1001,7 @@ contains
           !--->
           if(IluminaDe(jjj)) then
              !Ez  Right
-             j = IzDe(jjj)%J%der%Ez !Right
+             j = IzDe(jjj)%J%rightDir%Ez !Right
              j_m = j - b%Ez%YI
              Id = Idyh(j_m)
              !--->
@@ -1021,7 +1021,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
              !Ex  Right
-             j = IzDe(jjj)%J%der%Ex !Right
+             j = IzDe(jjj)%J%rightDir%Ex !Right
              j_m = j - b%Ex%YI
              Id = Idyh(j_m)
              !--->
@@ -1044,7 +1044,7 @@ contains
           !--->
           if(IluminaAb(jjj)) then
              !Ex  Down
-             k = AbAr(jjj)%K%aba%Ex  !Down
+             k = AbAr(jjj)%K%downDir%Ex  !Down
              k_m = k - b%Ex%ZI
              Id = Idzh(k_m)
              !--->
@@ -1064,7 +1064,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
              !Ey Down
-             k = AbAr(jjj)%K%aba%Ey  !Down
+             k = AbAr(jjj)%K%downDir%Ey  !Down
              k_m = k - b%Ey%ZI
              Id = Idzh(k_m)
              !--->
@@ -1173,7 +1173,7 @@ contains
      do jjj=1, sgg%numplanewaves
               if(IluminaTr(jjj)) then
                  !Hz Back
-                 i = TrFr(jjj)%I%tra%Hz  !Back
+                 i = TrFr(jjj)%I%backDir%Hz  !Back
                  i_m = i - b%Hz%XI
                  Id = Idxe(i_m)
                  !--->
@@ -1193,7 +1193,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
                  !Hy Back
-                 i = TrFr(jjj)%I%tra%Hy  !Back
+                 i = TrFr(jjj)%I%backDir%Hy  !Back
                  i_m = i - b%Hy%XI
                  Id = Idxe(i_m)
                  !--->
@@ -1216,7 +1216,7 @@ contains
               !--->
               if(IluminaFr(jjj)) then
                  !Hz  Front
-                 i = TrFr(jjj)%I%fro%Hz !Front
+                 i = TrFr(jjj)%I%frontDir%Hz !Front
                  i_m = i - b%Hz%XI
                  Id = Idxe(i_m)
                  !--->
@@ -1236,7 +1236,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
                  !Hy  Front
-                 i = TrFr(jjj)%I%fro%Hy !Front
+                 i = TrFr(jjj)%I%frontDir%Hy !Front
                  i_m = i - b%Hy%XI
                  Id = Idxe(i_m)
                  !--->
@@ -1259,7 +1259,7 @@ contains
               !--->
               if(IluminaIz(jjj)) then
                  !Hx Left
-                 j = IzDe(jjj)%J%izq%Hx  !Left
+                 j = IzDe(jjj)%J%leftDir%Hx  !Left
                  j_m = j - b%Hx%YI
                  Id = Idye(j_m)
                  !--->
@@ -1279,7 +1279,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
                  !Hz Left
-                 j = IzDe(jjj)%J%izq%Hz  !Left
+                 j = IzDe(jjj)%J%leftDir%Hz  !Left
                  j_m = j - b%Hz%YI
                  Id = Idye(j_m)
                  !--->
@@ -1302,7 +1302,7 @@ contains
               !--->
               if(IluminaDe(jjj)) then
                  !Hx  Right
-                 j = IzDe(jjj)%J%der%Hx !Right
+                 j = IzDe(jjj)%J%rightDir%Hx !Right
                  j_m = j - b%Hx%YI
                  Id = Idye(j_m)
                  !--->
@@ -1322,7 +1322,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
                  !Hz  Right
-                 j = IzDe(jjj)%J%der%Hz !Right
+                 j = IzDe(jjj)%J%rightDir%Hz !Right
                  j_m = j - b%Hz%YI
                  Id = Idye(j_m)
                  !--->
@@ -1345,7 +1345,7 @@ contains
               !--->
               if(IluminaAb(jjj)) then
                  !Hx  Down
-                 k = AbAr(jjj)%K%aba%Hx  !Down
+                 k = AbAr(jjj)%K%downDir%Hx  !Down
                  k_m = k - b%Hx%ZI
                  Id = Idze(k_m)
                  !--->
@@ -1365,7 +1365,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
                  !Hy  Down
-                 k = AbAr(jjj)%K%aba%Hy  !Down
+                 k = AbAr(jjj)%K%downDir%Hy  !Down
                  k_m = k - b%Hy%ZI
                  Id = Idze(k_m)
                  !--->
@@ -1488,7 +1488,7 @@ contains
       do jjj=1, sgg%numplanewaves
               if(IluminaTr(jjj)) then
                  !Hz Back
-                 i = TrFr(jjj)%I%tra%Hz  !Back
+                 i = TrFr(jjj)%I%backDir%Hz  !Back
                  i_m = i - b%Hz%XI
                  !--->
 #ifdef CompileWithOpenMP
@@ -1506,7 +1506,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
                  !Hy Back
-                 i = TrFr(jjj)%I%tra%Hy  !Back
+                 i = TrFr(jjj)%I%backDir%Hy  !Back
                  i_m = i - b%Hy%XI
                  !--->
 #ifdef CompileWithOpenMP
@@ -1526,7 +1526,7 @@ contains
               !--->
               if(IluminaFr(jjj)) then
                  !Hz  Front
-                 i = TrFr(jjj)%I%fro%Hz !Front
+                 i = TrFr(jjj)%I%frontDir%Hz !Front
                  i_m = i - b%Hz%XI
                  !--->
 #ifdef CompileWithOpenMP
@@ -1543,7 +1543,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
                  !Hy  Front
-                 i = TrFr(jjj)%I%fro%Hy !Front
+                 i = TrFr(jjj)%I%frontDir%Hy !Front
                  i_m = i - b%Hy%XI
                  !--->
 #ifdef CompileWithOpenMP
@@ -1563,7 +1563,7 @@ contains
               !--->
               if(IluminaIz(jjj)) then
                  !Hx Left
-                 j = IzDe(jjj)%J%izq%Hx  !Left
+                 j = IzDe(jjj)%J%leftDir%Hx  !Left
                  j_m = j - b%Hx%YI
                  !--->
 #ifdef CompileWithOpenMP
@@ -1580,7 +1580,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
                  !Hz Left
-                 j = IzDe(jjj)%J%izq%Hz  !Left
+                 j = IzDe(jjj)%J%leftDir%Hz  !Left
                  j_m = j - b%Hz%YI
                  !--->
 #ifdef CompileWithOpenMP
@@ -1600,7 +1600,7 @@ contains
               !--->
               if(IluminaDe(jjj)) then
                  !Hx  Right
-                 j = IzDe(jjj)%J%der%Hx !Right
+                 j = IzDe(jjj)%J%rightDir%Hx !Right
                  j_m = j - b%Hx%YI
                  !--->
 #ifdef CompileWithOpenMP
@@ -1617,7 +1617,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
                  !Hz  Right
-                 j = IzDe(jjj)%J%der%Hz !Right
+                 j = IzDe(jjj)%J%rightDir%Hz !Right
                  j_m = j - b%Hz%YI
                  !--->
 #ifdef CompileWithOpenMP
@@ -1637,7 +1637,7 @@ contains
               !--->
               if(IluminaAb(jjj)) then
                  !Hx  Down
-                 k = AbAr(jjj)%K%aba%Hx  !Down
+                 k = AbAr(jjj)%K%downDir%Hx  !Down
                  k_m = k - b%Hx%ZI
                  !--->
 #ifdef CompileWithOpenMP
@@ -1654,7 +1654,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
                  !Hy  Down
-                 k = AbAr(jjj)%K%aba%Hy  !Down
+                 k = AbAr(jjj)%K%downDir%Hy  !Down
                  k_m = k - b%Hy%ZI
                  !--->
 #ifdef CompileWithOpenMP

@@ -66,7 +66,7 @@ contains
    end function
 
    function assert_real_time_equal_impl(val, expected, tolerance, errorMessage) result(err)
-      real(kind=RKIND_TIEMPO), intent(in) :: val, expected, tolerance
+      real(kind=RKIND_TIME), intent(in) :: val, expected, tolerance
       character(*), intent(in) :: errorMessage
       integer :: err
       if (abs(val - expected) <= tolerance) then

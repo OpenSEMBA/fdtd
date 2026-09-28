@@ -77,7 +77,7 @@ contains
       Hx(sggalloc(IHX)%XI : sggalloc(IHX)%XE,sggalloc(IHX)%YI : sggalloc(IHX)%YE,sggalloc(IHX)%ZI : sggalloc(IHX)%ZE),&
       Hy(sggalloc(IHY)%XI : sggalloc(IHY)%XE,sggalloc(IHY)%YI : sggalloc(IHY)%YE,sggalloc(IHY)%ZI : sggalloc(IHY)%ZE),&
       Hz(sggalloc(IHZ)%XI : sggalloc(IHZ)%XE,sggalloc(IHZ)%YI : sggalloc(IHZ)%YE,sggalloc(IHZ)%ZI : sggalloc(IHZ)%ZE)
-      real(kind=RKIND_TIEMPO) :: lastexecutedtime,ultimodt
+      real(kind=RKIND_TIME) :: lastexecutedtime,ultimodt
       real(kind=RKIND) :: eps00,mu00
       integer(kind=4) :: lastexecutedtimestep,i,j,k,i_block,n_block,ini,fin
 
@@ -167,7 +167,7 @@ contains
 
    !---------------------------------------------------->
    !**************************************************************************************************
-   subroutine flush_and_save_resume(sgg, b, layoutnumber, num_procs, nentradaroot, nresumeable2, thereare, fin,eps00,mu00, everflushed,  &
+   subroutine flush_and_save_resume(sgg, b, layoutnumber, num_procs, nInputRoot, nresumeable2, thereare, fin,eps00,mu00, everflushed,  &
    Ex, Ey, Ez, Hx, Hy, Hz,wiresflavor,simu_devia,stochastic)
       logical :: simu_devia,stochastic
       type(SGGFDTDINFO_t), intent(in) :: sgg
@@ -177,7 +177,7 @@ contains
       type(bounds_t), intent(in) :: b
       integer(kind = 4), intent(in) :: layoutnumber, num_procs
       !--->
-      character(LEN=*), intent(in) :: nresumeable2, nEntradaRoot
+      character(LEN=*), intent(in) :: nresumeable2, nInputRoot
       type(logic_control_t), intent(in) :: thereare
       integer(kind=4), intent(in) :: fin
       logical :: existe

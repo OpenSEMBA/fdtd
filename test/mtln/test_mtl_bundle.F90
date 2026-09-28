@@ -37,7 +37,7 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
                     step_size, &
                     name = "line_in", &
                     segments = segments, &
-                    dt = 1e-11_RKIND_TIEMPO, & 
+                    dt = 1e-11_RKIND_TIME, & 
                     parent_name = "line_out", &
                     conductor_in_parent = 1, &
                     transfer_impedance = Zt)
@@ -46,7 +46,7 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
                     step_size, &
                     name = "line_out", &
                     segments = segments, &
-                    dt = 1e-11_RKIND_TIEMPO, &
+                    dt = 1e-11_RKIND_TIME, &
                     multipolar_expansion = mE, &
                     radius = 0.0_rkind )
 

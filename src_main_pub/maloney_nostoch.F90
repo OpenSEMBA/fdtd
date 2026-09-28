@@ -1225,7 +1225,7 @@ end subroutine calc_g1g2gm1gm2_compo
 
 !!!!!!!
 subroutine g1g2(dt,epsilonValue,sigma,G1,G2)
-   real(kind=RKIND_TIEMPO), intent(in) :: dt
+   real(kind=RKIND_TIME), intent(in) :: dt
    real(kind=RKIND), intent(in) :: epsilonValue,sigma
    real(kind=RKIND), intent(out) :: g1,g2
 
@@ -1245,7 +1245,7 @@ end subroutine g1g2
 
 !!!!!!!
 subroutine gm1gm2(dt,mu,sigmam,Gm1,Gm2)
-   real(kind=RKIND_TIEMPO), intent(in) :: dt
+   real(kind=RKIND_TIME), intent(in) :: dt
    real(kind=RKIND), intent(in) :: mu,sigmam
    real(kind=RKIND), intent(out) :: gm1,gm2
 
@@ -1266,7 +1266,7 @@ end subroutine gm1gm2
 !!!!!!! medios dispersivos sgg 12/05/16 
 subroutine g1g2_Dispersive(dt,epsilonValue,sigma,G1,G2,Beta,Kappa,G3,numpolres,a11,c11)
    real(kind=RKIND), intent(in) :: epsilonValue,sigma
-   real(kind=RKIND_TIEMPO), intent(in) :: dt
+   real(kind=RKIND_TIME), intent(in) :: dt
    real(kind=RKIND), intent(out) :: g1,g2
    complex(kind=ckind), intent(in), allocatable, dimension(:) :: a11, c11
    integer(kind=4) :: numpolres, i1

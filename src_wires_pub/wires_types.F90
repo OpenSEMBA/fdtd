@@ -92,7 +92,7 @@ module wiresHolland_constants_m
       real(kind=RKIND_WIRES)                            :: Lintrinsic
       !fin dama
       integer(kind=4) :: fieldKind !iEx,iEy o iEz
-      logical :: orientadoalreves
+      logical :: reversedOrientation
       type(source_t), pointer                  :: Vsource
 #ifdef CompileWithMPI
       !only required by the new MPI wires routines march'12 2012 bug multiwires MPI

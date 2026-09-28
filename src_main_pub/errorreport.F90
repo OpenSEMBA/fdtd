@@ -29,7 +29,7 @@ module Report_m
    integer, save :: thefile !for mpi file management
    logical, save :: ignoreerrors
    !
-   type(coorsxyzP_t) , save  :: Punto
+   type(coorsxyzP_t) , save  :: gridPoint
 
    character(len=BUFSIZE), save :: mynEntradaRoot
 
@@ -71,7 +71,7 @@ contains
    end subroutine
    !!!!!!!!!!!!!!!!!
    subroutine StopOnError(layoutnumber,num_procs,message,calledfrommain)
-      character(len=BUFSIZE) :: ficherito
+      character(len=BUFSIZE) :: lockFile
       logical , optional  :: calledfrommain
       character(len=*), intent(in) :: message
       integer(kind=4), optional  :: layoutnumber,num_procs
@@ -119,14 +119,14 @@ contains
       end if
 #else
       if (layoutnumber == 0) then
-         ficherito='running'
-          call openclosedelete(ficherito)
+         lockFile='running'
+          call openclosedelete(lockFile)
          !
-         ficherito='pause'
-          call openclosedelete(ficherito)
+         lockFile='pause'
+          call openclosedelete(lockFile)
          !
-         ficherito='relaunch'
-          call openclosedelete(ficherito)
+         lockFile='relaunch'
+          call openclosedelete(lockFile)
       end if
 #endif
 
@@ -177,15 +177,15 @@ contains
 #endif
 
       !
-      Punto=Creapuntos(sgg) !crea coordenadas fisicas
+      gridPoint=Creapuntos(sgg) !crea coordenadas fisicas
 
       !
 
       if (c%layoutnumber == 0) then  !only the master
          if (c%resume) then
-            open (10,file=trim(adjustl(c%nEntradaRoot))//'_Energy.dat',form='formatted',position='append')
+            open (10,file=trim(adjustl(c%nInputRoot))//'_Energy.dat',form='formatted',position='append')
          else
-            open (10,file=trim(adjustl(c%nEntradaRoot))//'_Energy.dat',form='formatted')
+            open (10,file=trim(adjustl(c%nInputRoot))//'_Energy.dat',form='formatted')
          end if
       end if
       file10isopen=.true.
@@ -544,7 +544,7 @@ contains
    !**************************************************************************************************
    subroutine Timing(sgg, b, n, n_info, layoutnumber, num_procs, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
    finaltimestep, perform, &
-   parar, forcetiming,Ex,Ey,Ez,everflushed, nentradaroot,maxSourceValue,opcionestotales,simu_devia,dontwritevtk,permitscaling)
+   parar, forcetiming,Ex,Ey,Ez,everflushed, nInputRoot,maxSourceValue,opcionestotales,simu_devia,dontwritevtk,permitscaling)
    ! subroutine Timing(sgg, b, n, n_info, layoutnumber, num_procs, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
    ! finaltimestep, &
    ! parar, forcetiming,Ex,Ey,Ez,everflushed, nentradaroot,maxSourceValue,opcionestotales,simu_devia,dontwritevtk,permitscaling)
@@ -567,7 +567,7 @@ contains
       logical, intent(in) :: forcetiming, everflushed,permitscaling
       !
       character(len=BUFSIZE) :: fichsnap,minmax,quien_es
-      character(len = *), intent(in) :: nEntradaRoot
+      character(len = *), intent(in) :: nInputRoot
       !---------------------------> input/output <----------------------------------------------------
       integer(kind=4), intent(inout) :: n_info
       logical, intent(inout) :: parar
@@ -600,7 +600,7 @@ contains
       integer(kind = 4) :: ini_ibox,fin_ibox,ini_jbox,fin_jbox,ini_kbox,fin_kbox
       integer(kind = 4) :: ini_iboxsin,fin_iboxsin,ini_jboxsin,fin_jboxsin,ini_kboxsin,fin_kboxsin
 
-      character(len=BUFSIZE) :: ficherito
+      character(len=BUFSIZE) :: lockFile
 
       real(kind=4), dimension(:,:,:,:), allocatable  :: snap
 
@@ -696,7 +696,7 @@ contains
          if (stop_only) then
              open(newunit=thefilenoflu,FILE = 'stop_only',action="read")
              read(thefilenoflu,*) quien_es
-             if (trim(adjustl(quien_es))==trim(adjustl(nentradaroot))) then
+             if (trim(adjustl(quien_es))==trim(adjustl(nInputRoot))) then
                  pararNOflushing=.true.
              else
                  pararNOflushing=.false.
@@ -722,7 +722,7 @@ contains
          if (stopflushing_only) then
              open(newunit=thefilenoflu,FILE = 'stopflushing_only',action="read")
              read(thefilenoflu,*) quien_es
-             if (trim(adjustl(quien_es))==trim(adjustl(nentradaroot))) then
+             if (trim(adjustl(quien_es))==trim(adjustl(nInputRoot))) then
                  pararflushing=.true.
              else
                  pararflushing=.false.
@@ -748,7 +748,7 @@ contains
          if (flush_only) then
              open(newunit=thefilenoflu,FILE = 'flush_only',action="read")
              read(thefilenoflu,*) quien_es
-             if (trim(adjustl(quien_es))==trim(adjustl(nentradaroot))) then
+             if (trim(adjustl(quien_es))==trim(adjustl(nInputRoot))) then
                  mustflushFIELDS=.true.
              else
                  mustflushFIELDS=.false.
@@ -774,7 +774,7 @@ contains
          if (flushdata_only) then
              open(newunit=thefilenoflu,FILE = 'flushdata_only',action="read")
              read(thefilenoflu,*) quien_es
-             if (trim(adjustl(quien_es))==trim(adjustl(nentradaroot))) then
+             if (trim(adjustl(quien_es))==trim(adjustl(nInputRoot))) then
                  mustflushdata=.true.
              else
                  mustflushdata=.false.
@@ -917,18 +917,18 @@ contains
                      lmaxval_i(layoutnumber+1)=i+b%Hx%XI
                      lmaxval_j(layoutnumber+1)=j+b%Hy%YI
                      lmaxval_k(layoutnumber+1)=k+b%Hz%ZI
-                     lmaxval_x(layoutnumber+1)=Punto%PhysCoor(IHX)%x(lmaxval_i(layoutnumber+1))
-                     lmaxval_y(layoutnumber+1)=Punto%PhysCoor(IHY)%y(lmaxval_j(layoutnumber+1))
-                     lmaxval_z(layoutnumber+1)=Punto%PhysCoor(IHZ)%z(lmaxval_k(layoutnumber+1))
+                     lmaxval_x(layoutnumber+1)=gridPoint%PhysCoor(IHX)%x(lmaxval_i(layoutnumber+1))
+                     lmaxval_y(layoutnumber+1)=gridPoint%PhysCoor(IHY)%y(lmaxval_j(layoutnumber+1))
+                     lmaxval_z(layoutnumber+1)=gridPoint%PhysCoor(IHZ)%z(lmaxval_k(layoutnumber+1))
                   end if
                   if (lminval  (layoutnumber+1)> value) then
                      lminval  (layoutnumber+1)= value
                      lminval_i(layoutnumber+1)=i+b%Hx%XI
                      lminval_j(layoutnumber+1)=j+b%Hy%YI
                      lminval_k(layoutnumber+1)=k+b%Hz%ZI
-                     lminval_x(layoutnumber+1)=Punto%PhysCoor(IHX)%x(lminval_i(layoutnumber+1))
-                     lminval_y(layoutnumber+1)=Punto%PhysCoor(IHY)%y(lminval_j(layoutnumber+1))
-                     lminval_z(layoutnumber+1)=Punto%PhysCoor(IHZ)%z(lminval_k(layoutnumber+1))
+                     lminval_x(layoutnumber+1)=gridPoint%PhysCoor(IHX)%x(lminval_i(layoutnumber+1))
+                     lminval_y(layoutnumber+1)=gridPoint%PhysCoor(IHY)%y(lminval_j(layoutnumber+1))
+                     lminval_z(layoutnumber+1)=gridPoint%PhysCoor(IHZ)%z(lminval_k(layoutnumber+1))
                   end if
                end do
             end do
@@ -1111,11 +1111,11 @@ contains
 
             write(chinstant,'(i8)') n
             write(minmax,'(a,e15.4e3,a,e15.4e3,a)')  '_',lminval(layoutnumber+1),'_',lmaxval(layoutnumber+1),'_'
-            fichsnap=trim(adjustl(nEntradaRoot))//'_snap_'//trim(adjustl(chinstant))//'_'// &
+            fichsnap=trim(adjustl(nInputRoot))//'_snap_'//trim(adjustl(chinstant))//'_'// &
             trim(adjustl(whoamishort))
 
-            ficherito=trim(adjustl(fichsnap))//'.h5' 
-            call openclosedelete(ficherito)
+            lockFile=trim(adjustl(fichsnap))//'.h5' 
+            call openclosedelete(lockFile)
             
             call write_xdmfsnap(n,fichsnap,ini_ibox + b%Ex%XI , ini_ibox + dimxsnap + b%Ex%XI , &
             ini_jbox + b%Ex%YI , ini_jbox + dimysnap + b%Ex%YI , &
@@ -1156,7 +1156,7 @@ contains
          !
          if (layoutnumber == 0) then
             !
-            write(dubuf,*) SEPARADOR,trim(adjustl(nentradaroot)),separador
+            write(dubuf,*) SEPARADOR,trim(adjustl(nInputRoot)),separador
             call print11(layoutnumber,dubuf)
             write(dubuf,*) 'Switches: '//trim(adjustl(opcionestotales))
             call print11(layoutnumber,dubuf)
@@ -1435,8 +1435,8 @@ contains
 
 
 
-   subroutine INITWARNINGFILE(layoutnumber,num_procs,nEntradaRoot,verbosete,ignoreErrors1)
-      character(len=*) :: nEntradaRoot
+   subroutine INITWARNINGFILE(layoutnumber,num_procs,nInputRoot,verbosete,ignoreErrors1)
+      character(len=*) :: nInputRoot
       integer(kind=4), intent(in) :: layoutnumber,num_procs
       !file management
       character(len=BUFSIZE) :: whoamishort
@@ -1446,7 +1446,7 @@ contains
 #endif
       logical verbosete,ignoreerrors1       , itsopen2
       integer :: my_iostat
-      character(len=BUFSIZE) :: ficherito
+      character(len=BUFSIZE) :: lockFile
       verbose=verbosete
 
       ignoreerrors=ignoreerrors1
@@ -1458,8 +1458,8 @@ contains
 
       !!!inquire(unit=17, opened=itsopen2)
       !!!if (itsopen2) print *,'----------->17 open!!!'
-        ficherito=trim(adjustl(nEntradaRoot))//trim(adjustl(whoamishort))//'_tmpWarnings.txt'
-        call openclosedelete(ficherito)
+        lockFile=trim(adjustl(nInputRoot))//trim(adjustl(whoamishort))//'_tmpWarnings.txt'
+        call openclosedelete(lockFile)
       end if
 
       !!!#ifdef CompileWithMPI
@@ -1480,12 +1480,12 @@ contains
       
       inquire(unit=17, opened=itsopen2)
       !!!if (itsopen2) print *,'----------->17 open!!!'
-      ficherito=trim(adjustl(nEntradaRoot))//trim(adjustl(whoamishort))//'_tmpWarnings.txt'
-      call opensolo(17,ficherito)
+      lockFile=trim(adjustl(nInputRoot))//trim(adjustl(whoamishort))//'_tmpWarnings.txt'
+      call opensolo(17,lockFile)
       !!!#endif
 
       warningfileIsOpen=.true.
-      warningfile=nEntradaRoot
+      warningfile=nInputRoot
       fatalerror = .false.
       CONTADORDEMENSAJES=0
 
@@ -1546,7 +1546,7 @@ contains
       logical :: fatalerror_final , lexis,stoch_undivided,simu_devia        , itsopen2
       character(LEN=BUFSIZE) :: whoamishort,whoami,chinstant
       integer :: my_iostat,file87
-      character(len=BUFSIZE) :: ficherito
+      character(len=BUFSIZE) :: lockFile
 
       if (.not.WarningFileIsOpen) return
 
@@ -1583,8 +1583,8 @@ contains
             if (lexis) then         
       !!!inquire(unit=87, opened=itsopen2)
       !!!if (itsopen2) print *,'----------->87 open!!!'
-               ficherito=trim(adjustl(WarningFile))//trim(adjustl(whoamishort))//'_tmpWarnings.txt'
-               call opensolo(87,ficherito)
+               lockFile=trim(adjustl(WarningFile))//trim(adjustl(whoamishort))//'_tmpWarnings.txt'
+               call opensolo(87,lockFile)
                !
 875            read(87,'(a)',end=876,err=876) buf2
                call trimnullchar(buf2)
@@ -1603,8 +1603,8 @@ contains
 !!!                         trim(adjustl(WarningFile))//trim(adjustl(whoamishort))//'_tmpWarnings.txt'
 !!               open (newunit=file87,file=trim(adjustl(WarningFile))//trim(adjustl(whoamishort))//'_tmpWarnings.txt',&
 !!                           err=3467,iostat=my_iostat,status='new',action='write')
-               ficherito=trim(adjustl(WarningFile))//trim(adjustl(whoamishort))//'_tmpWarnings.txt'
-               call openclosedelete(ficherito)
+               lockFile=trim(adjustl(WarningFile))//trim(adjustl(whoamishort))//'_tmpWarnings.txt'
+               call openclosedelete(lockFile)
 #endif
             end if
          end do
@@ -2178,7 +2178,7 @@ end function openfile_mpi
       integer(kind=4) :: conta,i
       character(len=BUFSIZE) :: whoamishort
       logical lexis
-      character(len=BUFSIZE) :: ficherito
+      character(len=BUFSIZE) :: lockFile
 
 
       !!!!#ifdef CompileWithMPI
@@ -2213,8 +2213,8 @@ end function openfile_mpi
                !
 876            continue
                close (thefile19)
-               ficherito=trim(adjustl(nombrefich))//trim(adjustl(whoamishort))//'_tmp'
-               call openclosedelete(ficherito)
+               lockFile=trim(adjustl(nombrefich))//trim(adjustl(whoamishort))//'_tmp'
+               call openclosedelete(lockFile)
             end if
          end do
          close (thefile8)
@@ -2228,20 +2228,20 @@ end function openfile_mpi
       return
    end subroutine closefile_mpi
 
-   function creaPuntos(sgg)  result(punto) !crea coordenadas fisicas
+   function creaPuntos(sgg)  result(gridPoint) !crea coordenadas fisicas
       !
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      type(coorsxyzP_t) :: Punto
+      type(coorsxyzP_t) :: gridPoint
       integer(kind=4) :: i,j,k,field
 
 
       do field=iEx,IHZ
-         allocate (Punto%PhysCoor(field)%x(sgg%Sweep(field)%XI-1 : sgg%Sweep(field)%XE+1), &
-         Punto%PhysCoor(field)%y(sgg%Sweep(field)%YI-1 : sgg%Sweep(field)%YE+1), &
-         Punto%PhysCoor(field)%z(sgg%Sweep(field)%ZI-1 : sgg%Sweep(field)%ZE+1))
-         Punto%PhysCoor(field)%x(sgg%Sweep(field)%XI-1 : sgg%Sweep(field)%XE+1) = -1e20
-         Punto%PhysCoor(field)%y(sgg%Sweep(field)%YI-1 : sgg%Sweep(field)%YE+1) = -1e20
-         Punto%PhysCoor(field)%z(sgg%Sweep(field)%ZI-1 : sgg%Sweep(field)%ZE+1) = -1e20
+         allocate (gridPoint%PhysCoor(field)%x(sgg%Sweep(field)%XI-1 : sgg%Sweep(field)%XE+1), &
+         gridPoint%PhysCoor(field)%y(sgg%Sweep(field)%YI-1 : sgg%Sweep(field)%YE+1), &
+         gridPoint%PhysCoor(field)%z(sgg%Sweep(field)%ZI-1 : sgg%Sweep(field)%ZE+1))
+         gridPoint%PhysCoor(field)%x(sgg%Sweep(field)%XI-1 : sgg%Sweep(field)%XE+1) = -1e20
+         gridPoint%PhysCoor(field)%y(sgg%Sweep(field)%YI-1 : sgg%Sweep(field)%YE+1) = -1e20
+         gridPoint%PhysCoor(field)%z(sgg%Sweep(field)%ZI-1 : sgg%Sweep(field)%ZE+1) = -1e20
       end do
 
       !
@@ -2249,66 +2249,66 @@ end function openfile_mpi
       !
       field=iEx
       do i=sgg%SINPMLSweep(field)%XI-1,sgg%SINPMLSweep(field)%XE+1
-         Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
       do j=sgg%SINPMLSweep(field)%YI-1,sgg%SINPMLSweep(field)%YE+1
-         Punto%PhysCoor(field)%y(j)=sgg%LineY(j)
+         gridPoint%PhysCoor(field)%y(j)=sgg%LineY(j)
       end do
       do k=sgg%SINPMLSweep(field)%ZI-1,sgg%SINPMLSweep(field)%ZE+1
-         Punto%PhysCoor(field)%z(k)=sgg%LineZ(k)
+         gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
       field=iEy
       do i=sgg%SINPMLSweep(field)%XI-1,sgg%SINPMLSweep(field)%XE+1
-         Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
+         gridPoint%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
       do j=sgg%SINPMLSweep(field)%YI-1,sgg%SINPMLSweep(field)%YE+1
-         Punto%PhysCoor(field)%y(j)=(sgg%LineY(j)+sgg%LineY(j+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%y(j)=(sgg%LineY(j)+sgg%LineY(j+1))*0.5_RKIND
       end do
       do k=sgg%SINPMLSweep(field)%ZI-1,sgg%SINPMLSweep(field)%ZE+1
-         Punto%PhysCoor(field)%z(k)=sgg%LineZ(k)
+         gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
       field=IEZ
       do i=sgg%SINPMLSweep(field)%XI-1,sgg%SINPMLSweep(field)%XE+1
-         Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
+         gridPoint%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
       do j=sgg%SINPMLSweep(field)%YI-1,sgg%SINPMLSweep(field)%YE+1
-         Punto%PhysCoor(field)%y(j)=sgg%LineY(j)
+         gridPoint%PhysCoor(field)%y(j)=sgg%LineY(j)
       end do
       do k=sgg%SINPMLSweep(field)%ZI-1,sgg%SINPMLSweep(field)%ZE+1
-         Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
       field=IHX
       do i=sgg%SINPMLSweep(field)%XI-1,sgg%SINPMLSweep(field)%XE+1
-         Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
+         gridPoint%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
       do j=sgg%SINPMLSweep(field)%YI-1,sgg%SINPMLSweep(field)%YE+1
-         Punto%PhysCoor(field)%y(j)=(sgg%LineY(j)+sgg%LineY(j+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%y(j)=(sgg%LineY(j)+sgg%LineY(j+1))*0.5_RKIND
       end do
       do k=sgg%SINPMLSweep(field)%ZI-1,sgg%SINPMLSweep(field)%ZE+1
-         Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
       field=IHY
       do i=sgg%SINPMLSweep(field)%XI-1,sgg%SINPMLSweep(field)%XE+1
-         Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
       do j=sgg%SINPMLSweep(field)%YI-1,sgg%SINPMLSweep(field)%YE+1
-         Punto%PhysCoor(field)%y(j)=sgg%LineY(j)
+         gridPoint%PhysCoor(field)%y(j)=sgg%LineY(j)
       end do
       do k=sgg%SINPMLSweep(field)%ZI-1,sgg%SINPMLSweep(field)%ZE+1
-         Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
       field=IHZ
       do i=sgg%SINPMLSweep(field)%XI-1,sgg%SINPMLSweep(field)%XE+1
-         Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
       do j=sgg%SINPMLSweep(field)%YI-1,sgg%SINPMLSweep(field)%YE+1
-         Punto%PhysCoor(field)%y(j)=(sgg%LineY(j)+sgg%LineY(j+1))*0.5_RKIND
+         gridPoint%PhysCoor(field)%y(j)=(sgg%LineY(j)+sgg%LineY(j+1))*0.5_RKIND
       end do
       do k=sgg%SINPMLSweep(field)%ZI-1,sgg%SINPMLSweep(field)%ZE+1
-         Punto%PhysCoor(field)%z(k)=sgg%LineZ(k)
+         gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
       !
-      sgg%Punto = Punto
+      sgg%gridPoint = gridPoint
       return
    end function
 
@@ -2388,59 +2388,59 @@ end function openfile_mpi
 
    subroutine erasesignalingfiles(simu_devia)
       logical :: simu_devia
-      character(len=BUFSIZE) :: ficherito
+      character(len=BUFSIZE) :: lockFile
       if (.not.simu_devia) then
           !!force erasing the signaling files
-          ficherito='stop'
-          call openclosedelete(ficherito)
-          ficherito='stopflushing'
-          call openclosedelete(ficherito)
-          ficherito='flush'
-          call openclosedelete(ficherito)
-          ficherito='flushdata'
-          call openclosedelete(ficherito)
-          ficherito='unpack'
-          call openclosedelete(ficherito)
-          ficherito='postprocess'
-          call openclosedelete(ficherito)
-          ficherito='flushxdmf'
-          call openclosedelete(ficherito)
-          ficherito='flushvtk'
-          call openclosedelete(ficherito)
-          ficherito='snap'
-          call openclosedelete(ficherito)         !
+          lockFile='stop'
+          call openclosedelete(lockFile)
+          lockFile='stopflushing'
+          call openclosedelete(lockFile)
+          lockFile='flush'
+          call openclosedelete(lockFile)
+          lockFile='flushdata'
+          call openclosedelete(lockFile)
+          lockFile='unpack'
+          call openclosedelete(lockFile)
+          lockFile='postprocess'
+          call openclosedelete(lockFile)
+          lockFile='flushxdmf'
+          call openclosedelete(lockFile)
+          lockFile='flushvtk'
+          call openclosedelete(lockFile)
+          lockFile='snap'
+          call openclosedelete(lockFile)         !
           !
-          ficherito='stop_only'
-          call openclosedelete(ficherito)
-          ficherito='stopflushing_only'
-          call openclosedelete(ficherito)
-          ficherito='flush_only'
-          call openclosedelete(ficherito)
-          ficherito='flushdata_only'
-          call openclosedelete(ficherito)
+          lockFile='stop_only'
+          call openclosedelete(lockFile)
+          lockFile='stopflushing_only'
+          call openclosedelete(lockFile)
+          lockFile='flush_only'
+          call openclosedelete(lockFile)
+          lockFile='flushdata_only'
+          call openclosedelete(lockFile)
           !
           !
-          ficherito='stop_dontwritevtk'
-          call openclosedelete(ficherito)
-          ficherito='stop_only_dontwritevtk'
-          call openclosedelete(ficherito)
-          ficherito='stopflushing_dontwritevtk'
-          call openclosedelete(ficherito)
-          ficherito='stopflushing_only_dontwritevtk'
-          call openclosedelete(ficherito)
-          ficherito='flush_dontwritevtk'
-          call openclosedelete(ficherito)
-          ficherito='flush_only_dontwritevtk'
-          call openclosedelete(ficherito)
+          lockFile='stop_dontwritevtk'
+          call openclosedelete(lockFile)
+          lockFile='stop_only_dontwritevtk'
+          call openclosedelete(lockFile)
+          lockFile='stopflushing_dontwritevtk'
+          call openclosedelete(lockFile)
+          lockFile='stopflushing_only_dontwritevtk'
+          call openclosedelete(lockFile)
+          lockFile='flush_dontwritevtk'
+          call openclosedelete(lockFile)
+          lockFile='flush_only_dontwritevtk'
+          call openclosedelete(lockFile)
       !     
-          ficherito='unpack'
-          call openclosedelete(ficherito)
-          ficherito='postprocess'
-          call openclosedelete(ficherito)
-          ficherito='flushxdmf'
-          call openclosedelete(ficherito)
-          ficherito='flushvtk'
-          call openclosedelete(ficherito)
+          lockFile='unpack'
+          call openclosedelete(lockFile)
+          lockFile='postprocess'
+          call openclosedelete(lockFile)
+          lockFile='flushxdmf'
+          call openclosedelete(lockFile)
+          lockFile='flushvtk'
+          call openclosedelete(lockFile)
       end if
       return
         

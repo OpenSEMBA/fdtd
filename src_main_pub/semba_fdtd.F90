@@ -321,7 +321,7 @@ contains
    this%l%chaininput=trim(adjustl(this%l%chain2))
 !!!!
    call interpreta(this%l,status)      
-   this%sgg%nEntradaRoot=trim (adjustl(this%l%nEntradaRoot))
+   this%sgg%nInputRoot=trim (adjustl(this%l%nInputRoot))
 
 #ifdef CompileWithMPI            
    call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
@@ -335,7 +335,7 @@ contains
 
 #ifdef CompileWithMTLN   
    if (parser%general%mtlnProblem) then 
-      call solver%launch_mtln_simulation(parser%mtln, this%l%nEntradaRoot, this%l%layoutnumber) 
+      call solver%launch_mtln_simulation(parser%mtln, this%l%nInputRoot, this%l%layoutnumber) 
       stop
    end if
 #endif
@@ -530,7 +530,7 @@ contains
       
       if (this%l%layoutnumber==0) then
          
-         open(newunit=thefileno,FILE = trim(adjustl(this%l%nEntradaRoot))//'_tag_paraviewfilters.txt')
+         open(newunit=thefileno,FILE = trim(adjustl(this%l%nInputRoot))//'_tag_paraviewfilters.txt')
                write(thefileno,'(a)') trim(adjustl('### FOR SLICE CURRENT VTK PROBES select the "current_t" or "current_f"                           '))   
                write(thefileno,'(a)') trim(adjustl('### FOR MAP VTK PROBES select the "mediatype" layer                                               '))             
                write(thefileno,'(a)') trim(adjustl('### For Paraview versions over 5.10 just use the Threshold exisiting filter to select the interval'))           
@@ -1117,11 +1117,11 @@ contains
             call get_secnds (this%l%time_out2)
             if (this%l%layoutnumber == 0) then
                call print_credits(this%l)
-               write(dubuf,*) 'BEGUN '//trim (adjustl(this%l%nEntradaRoot)),' at ', this%time_comienzo%fecha(7:8), &
+               write(dubuf,*) 'BEGUN '//trim (adjustl(this%l%nInputRoot)),' at ', this%time_comienzo%fecha(7:8), &
                & '/', this%time_comienzo%fecha(5:6), '/', this%time_comienzo%fecha(1:4),' , ',  &
                & this%time_comienzo%hora(1:2), ':', this%time_comienzo%hora(3:4)
                call print11 (this%l%layoutnumber, dubuf)
-               write(dubuf,*) 'ENDED '//trim (adjustl(this%l%nEntradaRoot)),' at ', this%l%time_out2%fecha(7:8), &
+               write(dubuf,*) 'ENDED '//trim (adjustl(this%l%nInputRoot)),' at ', this%l%time_out2%fecha(7:8), &
                & '/', this%l%time_out2%fecha(5:6), '/', this%l%time_out2%fecha(1:4),' , ',  &
                & this%l%time_out2%hora(1:2), ':', this%l%time_out2%hora(3:4)
                call print11 (this%l%layoutnumber, dubuf)
@@ -1156,7 +1156,7 @@ contains
          end if
          write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
          call print11 (this%l%layoutnumber, dubuf)
-         write(dubuf,*) 'DONE :  ', trim (adjustl(this%l%nEntradaRoot)), ' UNTIL n=', this%l%finaltimestep
+         write(dubuf,*) 'DONE :  ', trim (adjustl(this%l%nInputRoot)), ' UNTIL n=', this%l%finaltimestep
          call print11 (this%l%layoutnumber, dubuf)
          write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
          call print11 (this%l%layoutnumber, dubuf)
@@ -1184,11 +1184,11 @@ contains
       call get_secnds (this%l%time_out2)
       if (this%l%layoutnumber == 0) then
          call print_credits(this%l)
-         write(dubuf,*) 'BEGUN '//trim (adjustl(this%l%nEntradaRoot)),' at ', this%time_comienzo%fecha(7:8), &
+         write(dubuf,*) 'BEGUN '//trim (adjustl(this%l%nInputRoot)),' at ', this%time_comienzo%fecha(7:8), &
          & '/', this%time_comienzo%fecha(5:6), '/', this%time_comienzo%fecha(1:4),' , ',  &
          & this%time_comienzo%hora(1:2), ':', this%time_comienzo%hora(3:4)
          call print11 (this%l%layoutnumber, dubuf)
-         write(dubuf,*) 'ENDED '//trim (adjustl(this%l%nEntradaRoot)),' at ', this%l%time_out2%fecha(7:8), &
+         write(dubuf,*) 'ENDED '//trim (adjustl(this%l%nInputRoot)),' at ', this%l%time_out2%fecha(7:8), &
          & '/', this%l%time_out2%fecha(5:6), '/', this%l%time_out2%fecha(1:4),' , ',  &
          & this%l%time_out2%hora(1:2), ':', this%l%time_out2%hora(3:4)
          call print11 (this%l%layoutnumber, dubuf)
@@ -1274,7 +1274,7 @@ contains
       input%fichin = ' ';
       input%chain2 = ' ';
       input%opcionestotales = ' ' 
-      input%nEntradaRoot = ' ';
+      input%nInputRoot = ' ';
       input%fileFDE = ' ';
       input%fileH5 = ' '
       input%prefixopci = ' ';

@@ -3,7 +3,7 @@ module network_manager_m
     use network_m
     use circuit_m
     ! use mtln_types_m, only: node_source_t
-    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
+    use FDETYPES_m, only: RKIND, RKIND_TIME
 
     implicit none 
 
@@ -62,7 +62,7 @@ contains
     function network_managerCtor(networks, description, final_time, dt) result(res)
         type(network_t), dimension(:), intent(in) :: networks
         character(*), dimension(:), intent(in) :: description
-        real(kind=RKIND_TIEMPO), intent(in) :: final_time, dt
+        real(kind=RKIND_TIME), intent(in) :: final_time, dt
         type(network_manager_t) :: res
         logical :: printInput = .true.
         res%dt = dt

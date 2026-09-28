@@ -40,7 +40,7 @@ contains
       this%isWriter = mpi_rank == 0
 #endif
 
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIEMPO)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
       call alloc_and_init(this%valueForTime, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
       artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
@@ -72,7 +72,7 @@ contains
 
    subroutine update_bulk_probe_output(this, step, field)
       type(bulk_current_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_TIEMPO), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
       type(field_data_t), intent(in) :: field
 
       integer(kind=SINGLE) :: i1_m, i2_m, j1_m, j2_m, k1_m, k2_m
@@ -231,7 +231,7 @@ contains
       call clear_time_data()
    contains
       subroutine clear_time_data()
-         this%timeStep = 0.0_RKIND_TIEMPO
+         this%timeStep = 0.0_RKIND_TIME
          this%valueForTime = 0.0_RKIND
 
          this%nTime = 0

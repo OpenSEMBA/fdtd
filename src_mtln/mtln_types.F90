@@ -1,5 +1,5 @@
 module mtln_types_m
-   use FDETYPES_m, only: direction_t, BUFSIZE, RKIND, RKIND_TIEMPO
+   use FDETYPES_m, only: direction_t, BUFSIZE, RKIND, RKIND_TIME
    implicit none
 
    integer(kind=4), parameter :: TERMINATION_UNDEFINED  = -1
@@ -253,7 +253,7 @@ module mtln_types_m
       type(probe_t), dimension(:), allocatable :: probes
       type(parsed_generator_t), dimension(:), allocatable :: wireGenerators
       type(connector_t), dimension(:), pointer :: connectors
-      real(kind=RKIND_TIEMPO) :: time_step = 0.0
+      real(kind=RKIND_TIME) :: time_step = 0.0
       integer(kind=4) :: number_of_steps = 0
       integer(kind=4) :: n_sh = 0, n_unsh = 0
    contains
