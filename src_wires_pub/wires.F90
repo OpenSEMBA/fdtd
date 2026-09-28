@@ -97,7 +97,7 @@ contains
       DenominatorFractionPlusDummy,givenautoin,resist,givenautoin_devia,resist_devia, &
       mindt,maxA,dt0,sigt,totalLind,capaci,autoin,deltax,sigtPlus,sigtMinu
       type(CurrentSegments_t), pointer  :: dummy , org  ,fin ,orgmenos1 ,orgmas1 ,finmenos1,finmas1 ,segmento
-      type(ChargeNodes_t), pointer  :: nodo
+      type(ChargeNodes_t), pointer  :: wireNode
 
       !dama
       integer(kind=4)                          :: NumMultilines, NumParallel
@@ -2799,27 +2799,27 @@ contains
 
       !I point segments nodal info to the nodes connected to each segment
       do i1=1,HWires%NumChargeNodes
-         nodo=>HWires%ChargeNode(i1)
+         wireNode=>HWires%ChargeNode(i1)
          do j1=1,HWires%NumCurrentSegments
             segmento=>HWires%CurrentSegment(j1)
             proceed=.false.
             total: do k1=1,2*MAXNUMCURRENTMINUSPLUS
-               if (j1 == nodo%YESsegment(k1))  then
+               if (j1 == wireNode%YESsegment(k1))  then
                   proceed=.true.
                   exit total
                end if
             end do total
             if (proceed) then
-               if  ((segmento%i  ==nodo%i).and.(segmento%j==nodo%j).and.(segmento%k==nodo%k)) then
+               if  ((segmento%i  ==wireNode%i).and.(segmento%j==wireNode%j).and.(segmento%k==wireNode%k)) then
                   segmento%ChargeMinus=>HWires%ChargeNode(i1)
                end if
-               if  ((segmento%i+1==nodo%i).and.(segmento%j==nodo%j).and.(segmento%k==nodo%k).and.(segmento%tipofield==iEx)) then
+               if  ((segmento%i+1==wireNode%i).and.(segmento%j==wireNode%j).and.(segmento%k==wireNode%k).and.(segmento%tipofield==iEx)) then
                   segmento%ChargePlus=>HWires%ChargeNode(i1)
                end if
-               if  ((segmento%i==nodo%i).and.(segmento%j+1==nodo%j).and.(segmento%k==nodo%k).and.(segmento%tipofield==iEy)) then
+               if  ((segmento%i==wireNode%i).and.(segmento%j+1==wireNode%j).and.(segmento%k==wireNode%k).and.(segmento%tipofield==iEy)) then
                   segmento%ChargePlus=>HWires%ChargeNode(i1)
                end if
-               if  ((segmento%i==nodo%i).and.(segmento%j==nodo%j).and.(segmento%k+1==nodo%k).and.(segmento%tipofield==IEZ)) then
+               if  ((segmento%i==wireNode%i).and.(segmento%j==wireNode%j).and.(segmento%k+1==wireNode%k).and.(segmento%tipofield==IEZ)) then
                   segmento%ChargePlus=>HWires%ChargeNode(i1)
                end if
             else
@@ -3104,189 +3104,189 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !ojo que lo del shielding siguiente no es valido si hay branching. habria que shieldear canda segmento del junction !\E7\E7
       do i1=1,HWires%NumChargeNodes
-         nodo=>HWires%Chargenode(i1)
-         if (nodo%i==SINPML_FULLSIZE(IHX)%XI) then
+         wireNode=>HWires%Chargenode(i1)
+         if (wireNode%i==SINPML_FULLSIZE(IHX)%XI) then
             if (sgg%Border%IsBackPML.or.sgg%Border%IsBackMur) then
                thereAreMurConditions=.true.
-               nodo%IsMur =.true.
-               nodo%IsBackDownLeftMur =.true.
-               nodo%IsFrontUpRightMur =.false.
-               dummy => nodo%CurrentPlus_1
+               wireNode%IsMur =.true.
+               wireNode%IsBackDownLeftMur =.true.
+               wireNode%IsFrontUpRightMur =.false.
+               dummy => wireNode%CurrentPlus_1
                !adjust constants
                HWires%Chargenode(i1)%NodeInside =>  HWires%Chargenode(i1)%CurrentPlus_1%ChargePlus
                !!dummy%IsShielded                                                  =.true.
                !!dummy%ChargePlus%CurrentPlus_1%IsShielded                         =.true.
                !!dummy%ChargePlus%CurrentPlus_1%ChargePlus%CurrentPlus_1%IsShielded=.true.
-               nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))  *sgg%dt- &
+               wireNode%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))  *sgg%dt- &
                dummy%delta )/ &
                (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))  *sgg%dt+ &
                dummy%delta )
 
                !
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with BACK Mur conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with BACK Mur conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             else if (sgg%Border%IsBackPeriodic) then
-               nodo%IsPeriodic =.true.
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with BACK Periodic conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               wireNode%IsPeriodic =.true.
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with BACK Periodic conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             else if (sgg%Border%IsBackPEC) then
-               nodo%IsPec =.true.
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with BACK PEC boundary conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               wireNode%IsPec =.true.
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with BACK PEC boundary conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             end if
          end if
-         if (nodo%i==SINPML_FULLSIZe(IHX)%XE) then
+         if (wireNode%i==SINPML_FULLSIZe(IHX)%XE) then
             if (sgg%Border%IsFrontPML.or.sgg%Border%IsFrontMur) then
                thereAreMurConditions=.true.
-               nodo%IsMur =.true.
-               nodo%IsBackDownLeftMur =.false.
-               nodo%IsFrontUpRightMur =.true.
-               dummy => nodo%CurrentMInus_1
+               wireNode%IsMur =.true.
+               wireNode%IsBackDownLeftMur =.false.
+               wireNode%IsFrontUpRightMur =.true.
+               dummy => wireNode%CurrentMInus_1
                !adjust constantas shielding 3 levels of segments (no junctions permitted) !must be tested!!!!
                HWires%Chargenode(i1)%NodeInside =>  HWires%Chargenode(i1)%CurrentMinus_1%ChargeMinus
                !!dummy%IsShielded                                                      =.true.  !One current back
                !!dummy%ChargeMinus%CurrentMinus_1%IsShielded                           =.true.  !Two currents back
                !!dummy%ChargeMinus%CurrentMinus_1%ChargeMinus%CurrentMinus_1%IsShielded=.true.  !Three current back
-               nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt- &
+               wireNode%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt- &
                dummy%delta)/ &
                (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt+ &
                dummy%delta)
                !
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with FRONT Mur conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with FRONT Mur conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             else if (sgg%Border%IsFrontPeriodic) then
-               nodo%IsPeriodic =.true.
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with Front Periodic conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               wireNode%IsPeriodic =.true.
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with Front Periodic conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             else if (sgg%Border%IsFrontPEC) then
-               nodo%IsPec =.true.
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with FRONT PEC boundary conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               wireNode%IsPec =.true.
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with FRONT PEC boundary conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             end if
          end if
          !
-         if (nodo%j==SINPML_FULLSIZe(IHY)%YI) then
+         if (wireNode%j==SINPML_FULLSIZe(IHY)%YI) then
             if (sgg%Border%IsLeftPML.or.sgg%Border%IsLeftMur) then
                thereAreMurConditions=.true.
-               nodo%IsMur =.true.
-               nodo%IsBackDownLeftMur =.true.
-               nodo%IsFrontUpRightMur =.false.
-               dummy => nodo%CurrentPlus_1
+               wireNode%IsMur =.true.
+               wireNode%IsBackDownLeftMur =.true.
+               wireNode%IsFrontUpRightMur =.false.
+               dummy => wireNode%CurrentPlus_1
                !adjust constants
                HWires%Chargenode(i1)%NodeInside =>  HWires%Chargenode(i1)%CurrentPlus_1%ChargePlus
                !!dummy%IsShielded                                                  =.true.
                !!dummy%ChargePlus%CurrentPlus_1%IsShielded                         =.true.
                !!dummy%ChargePlus%CurrentPlus_1%ChargePlus%CurrentPlus_1%IsShielded=.true.
-               nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))  *sgg%dt- &
+               wireNode%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))  *sgg%dt- &
                dummy%delta )/ &
                (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))  *sgg%dt+ &
                dummy%delta )
 
                !
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with LEFT Mur conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with LEFT Mur conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             else if (sgg%Border%IsLeftPeriodic) then
-               nodo%IsPeriodic =.true.
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with Left Periodic conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               wireNode%IsPeriodic =.true.
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with Left Periodic conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             else if (sgg%Border%IsLeftPEC) then
-               nodo%IsPec =.true.
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with LEFT PEC boundary conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               wireNode%IsPec =.true.
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with LEFT PEC boundary conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             end if
          end if
-         if (nodo%j==SINPML_FULLSIZe(IHY)%YE) then
+         if (wireNode%j==SINPML_FULLSIZe(IHY)%YE) then
             if (sgg%Border%IsRightPML.or.sgg%Border%IsRightMur) then
                thereAreMurConditions=.true.
-               nodo%IsMur =.true.
-               nodo%IsBackDownLeftMur =.false.
-               nodo%IsFrontUpRightMur =.true.
-               dummy => nodo%CurrentMInus_1
+               wireNode%IsMur =.true.
+               wireNode%IsBackDownLeftMur =.false.
+               wireNode%IsFrontUpRightMur =.true.
+               dummy => wireNode%CurrentMInus_1
                !adjust constantas shielding 3 levels of segments (no junctions permitted) !must be tested!!!!
                HWires%Chargenode(i1)%NodeInside =>  HWires%Chargenode(i1)%CurrentMinus_1%ChargeMinus
                !!dummy%IsShielded                                                      =.true.  !One current back
                !!dummy%ChargeMinus%CurrentMinus_1%IsShielded                           =.true.  !Two currents back
                !!dummy%ChargeMinus%CurrentMinus_1%ChargeMinus%CurrentMinus_1%IsShielded=.true.  !Three current back
-               nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt- &
+               wireNode%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt- &
                dummy%delta)/ &
                (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt+ &
                dummy%delta)
                !
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with RIGHT Mur conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with RIGHT Mur conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             else if (sgg%Border%IsRightPeriodic) then
-               nodo%IsPeriodic =.true.
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with Right Periodic conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               wireNode%IsPeriodic =.true.
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with Right Periodic conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             else if (sgg%Border%IsRightPEC) then
-               nodo%IsPec =.true.
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with RIGHT PEC boundary conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               wireNode%IsPec =.true.
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with RIGHT PEC boundary conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             end if
          end if
          !
-         if (nodo%k==SINPML_FULLSIZe(IHZ)%ZI) then
+         if (wireNode%k==SINPML_FULLSIZe(IHZ)%ZI) then
             if (sgg%Border%IsDownPML.or.sgg%Border%IsDownMur) then
                thereAreMurConditions=.true.
-               nodo%IsMur =.true.
-               nodo%IsBackDownLeftMur =.true.
-               nodo%IsFrontUpRightMur =.false.
-               dummy => nodo%CurrentPlus_1
+               wireNode%IsMur =.true.
+               wireNode%IsBackDownLeftMur =.true.
+               wireNode%IsFrontUpRightMur =.false.
+               dummy => wireNode%CurrentPlus_1
                !adjust constants
                HWires%Chargenode(i1)%NodeInside =>  HWires%Chargenode(i1)%CurrentPlus_1%ChargePlus
                !!dummy%IsShielded                                                  =.true.
                !!dummy%ChargePlus%CurrentPlus_1%IsShielded                         =.true.
                !!dummy%ChargePlus%CurrentPlus_1%ChargePlus%CurrentPlus_1%IsShielded=.true.
-               nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))  *sgg%dt- &
+               wireNode%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))  *sgg%dt- &
                dummy%delta )/ &
                (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))  *sgg%dt+ &
                dummy%delta )
 
                !
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with DOWN Mur conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with DOWN Mur conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             else if (sgg%Border%IsDownPeriodic) then
-               nodo%IsPeriodic =.true.
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with Down Periodic conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               wireNode%IsPeriodic =.true.
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with Down Periodic conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             else if (sgg%Border%IsDownPEC) then
-               nodo%IsPec =.true.
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with DOWN PEC boundary conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               wireNode%IsPec =.true.
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with DOWN PEC boundary conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             end if
          end if
-         if (nodo%k==SINPML_FULLSIZe(IHZ)%ZE) then
+         if (wireNode%k==SINPML_FULLSIZe(IHZ)%ZE) then
             if (sgg%Border%IsUpPML.or.sgg%Border%IsUpMur) then
                thereAreMurConditions=.true.
-               nodo%IsMur =.true.
-               nodo%IsBackDownLeftMur =.false.
-               nodo%IsFrontUpRightMur =.true.
-               dummy => nodo%CurrentMInus_1
+               wireNode%IsMur =.true.
+               wireNode%IsBackDownLeftMur =.false.
+               wireNode%IsFrontUpRightMur =.true.
+               dummy => wireNode%CurrentMInus_1
                !adjust constantas shielding 3 levels of segments (no junctions permitted) !must be tested!!!!
                HWires%Chargenode(i1)%NodeInside =>  HWires%Chargenode(i1)%CurrentMinus_1%ChargeMinus
                !!dummy%IsShielded                                                      =.true.  !One current back
                !!dummy%ChargeMinus%CurrentMinus_1%IsShielded                           =.true.  !Two currents back
                !!dummy%ChargeMinus%CurrentMinus_1%ChargeMinus%CurrentMinus_1%IsShielded=.true.  !Three current back
-               nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt- &
+               wireNode%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt- &
                dummy%delta)/ &
                (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt+ &
                dummy%delta)
                !
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with UP Mur conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with UP Mur conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             else if (sgg%Border%IsUpPeriodic) then
-               nodo%IsPeriodic =.true.
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with Up Periodic conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               wireNode%IsPeriodic =.true.
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with Up Periodic conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             else if (sgg%Border%IsUpPEC) then
-               nodo%IsPec =.true.
-               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'with UP PEC boundary conditions'
-               if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+               wireNode%IsPec =.true.
+               write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'with UP PEC boundary conditions'
+               if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
             end if
          end if
-         if ((nodo%isMur).and.(nodo%NumCurrentPlus+nodo%NumCurrentMinus >1)) then
-            write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',nodo%I,nodo%J,nodo%k,'is both a non-open and a Mur'
-            if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff)
+         if ((wireNode%isMur).and.(wireNode%NumCurrentPlus+wireNode%NumCurrentMinus >1)) then
+            write (buff,'(a,3i7,a)')  'wir1_WARNING: Node ',wireNode%I,wireNode%J,wireNode%k,'is both a non-open and a Mur'
+            if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff)
          end if
       end do
 
@@ -3296,52 +3296,52 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       do i1=1,HWires%NumChargeNodes
-         nodo => HWires%ChargeNode(i1)
+         wireNode => HWires%ChargeNode(i1)
          !asign constants taking junctions into account
          deltadummy=0.0_RKIND_WIRES
          indexnode = 0
-         do j1=1,nodo%NumCurrentPlus + nodo%NumCurrentMinus
-            if (j1 <= nodo%NumCurrentPlus) then
+         do j1=1,wireNode%NumCurrentPlus + wireNode%NumCurrentMinus
+            if (j1 <= wireNode%NumCurrentPlus) then
                select case (j1)
                 case (1)
-                  segmento=>nodo%CurrentPlus_1
+                  segmento=>wireNode%CurrentPlus_1
                 case (2)
-                  segmento=>nodo%CurrentPlus_2
+                  segmento=>wireNode%CurrentPlus_2
                 case (3)
-                  segmento=>nodo%CurrentPlus_3
+                  segmento=>wireNode%CurrentPlus_3
                 case (4)
-                  segmento=>nodo%CurrentPlus_4
+                  segmento=>wireNode%CurrentPlus_4
                 case (5)
-                  segmento=>nodo%CurrentPlus_5
+                  segmento=>wireNode%CurrentPlus_5
                 case (6)
-                  segmento=>nodo%CurrentPlus_6
+                  segmento=>wireNode%CurrentPlus_6
                 case (7)
-                  segmento=>nodo%CurrentPlus_7
+                  segmento=>wireNode%CurrentPlus_7
                 case (8)
-                  segmento=>nodo%CurrentPlus_8
+                  segmento=>wireNode%CurrentPlus_8
                 case (9)
-                  segmento=>nodo%CurrentPlus_9
+                  segmento=>wireNode%CurrentPlus_9
                end select
             else
-               select case (j1-nodo%NumCurrentPlus)
+               select case (j1-wireNode%NumCurrentPlus)
                 case (1)
-                  segmento=>nodo%CurrentMinus_1
+                  segmento=>wireNode%CurrentMinus_1
                 case (2)
-                  segmento=>nodo%CurrentMinus_2
+                  segmento=>wireNode%CurrentMinus_2
                 case (3)
-                  segmento=>nodo%CurrentMinus_3
+                  segmento=>wireNode%CurrentMinus_3
                 case (4)
-                  segmento=>nodo%CurrentMinus_4
+                  segmento=>wireNode%CurrentMinus_4
                 case (5)
-                  segmento=>nodo%CurrentMinus_5
+                  segmento=>wireNode%CurrentMinus_5
                 case (6)
-                  segmento=>nodo%CurrentMinus_6
+                  segmento=>wireNode%CurrentMinus_6
                 case (7)
-                  segmento=>nodo%CurrentMinus_7
+                  segmento=>wireNode%CurrentMinus_7
                 case (8)
-                  segmento=>nodo%CurrentMinus_8
+                  segmento=>wireNode%CurrentMinus_8
                 case (9)
-                  segmento=>nodo%CurrentMinus_9
+                  segmento=>wireNode%CurrentMinus_9
                end select
             end if
             deltadummy=deltadummy + segmento%delta/2.0_RKIND_WIRES   !holland pag. 92
@@ -3349,43 +3349,43 @@ contains
             !
          end do
          !
-         nodo%indexnode = indexnode !just for normalization of numbers and debugging mpi/nonmpi
-         nodo%CteProp = 1.0_RKIND_WIRES
-         nodo%CtePlain = sgg%dt/deltadummy
-         if (nodo%NumCurrentPlus + nodo%NumCurrentMinus == 1) then
-            nodo%CtePlain = sgg%dt/(2.0_RKIND_WIRES * deltadummy) !correct the ending in case of open terminal
+         wireNode%indexnode = indexnode !just for normalization of numbers and debugging mpi/nonmpi
+         wireNode%CteProp = 1.0_RKIND_WIRES
+         wireNode%CtePlain = sgg%dt/deltadummy
+         if (wireNode%NumCurrentPlus + wireNode%NumCurrentMinus == 1) then
+            wireNode%CtePlain = sgg%dt/(2.0_RKIND_WIRES * deltadummy) !correct the ending in case of open terminal
          end if
-         NODO%oRIGctePlain =nodo%CtePlain !lo salvo para que al ungroundear retome esta constante
+         wireNode%oRIGctePlain =wireNode%CtePlain !lo salvo para que al ungroundear retome esta constante
       end do
 
       !!!!!!!!!!
       !corrige cteplain para PEC lossy nodes
       do i1=1,HWires%NumChargeNodes
-        nodo => HWires%ChargeNode(i1)
-        if (nodo%IsLossy.or.nodo%isPEC) then
-            nodo%CtePlain = 0.0_RKIND_WIRES
-            nodo%cteprop  = 0.0_RKIND_WIRES
+        wireNode => HWires%ChargeNode(i1)
+        if (wireNode%IsLossy.or.wireNode%isPEC) then
+            wireNode%CtePlain = 0.0_RKIND_WIRES
+            wireNode%cteprop  = 0.0_RKIND_WIRES
         end if
       end do
    
       !!!!FINAL reporting of unGROUNDING OF PEC/LOSSY NODES
 
       do i1=1,HWires%NumChargeNodes
-         nodo => Hwires%ChargeNode(i1)
-         if ((nodo%k >= sgg%Sweep(IHZ)%ZI).and. &
-         (nodo%k <= sgg%Sweep(IHZ)%ZE)) then !check that the node is inside the layout (just for MPI)
-            if (nodo%IsPec.or.nodo%IsLossy) then
-               if ((nodo%Is_LeftEnd).or.(nodo%Is_RightEnd).or.(nodo%NumCurrentPlus + nodo%NumCurrentMinus < 2)) then !es un nodo terminal
+         wireNode => Hwires%ChargeNode(i1)
+         if ((wireNode%k >= sgg%Sweep(IHZ)%ZI).and. &
+         (wireNode%k <= sgg%Sweep(IHZ)%ZE)) then !check that the node is inside the layout (just for MPI)
+            if (wireNode%IsPec.or.wireNode%IsLossy) then
+               if ((wireNode%Is_LeftEnd).or.(wireNode%Is_RightEnd).or.(wireNode%NumCurrentPlus + wireNode%NumCurrentMinus < 2)) then !es un nodo terminal
                     continue
                else !no es un nodo terminal LeftEnd o RightEnd o abierto pero Si es un nodo material
                      if (.not.control%groundwires) then
-                         if (nodo%IsPec) write (buff,'(a,i7,3i7,a,2i3,a,a)')  'wir1_BUGGYERROR: NON-terminal node lying on PEC ()', &
-                        nodo%indexnode, nodo%i,nodo%j,nodo%k, &
-                        ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'
-                         if (nodo%IsLossy) write (buff,'(a,i7,3i7,a,2i3,a,a)')  'wir1_BUGGYERROR: NON-terminal node lying on Lossy ()', &
-                        nodo%indexnode, nodo%i,nodo%j,nodo%k, &
-                        ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'
-                        if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff,.true.)
+                         if (wireNode%IsPec) write (buff,'(a,i7,3i7,a,2i3,a,a)')  'wir1_BUGGYERROR: NON-terminal node lying on PEC ()', &
+                        wireNode%indexnode, wireNode%i,wireNode%j,wireNode%k, &
+                        ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,')'
+                         if (wireNode%IsLossy) write (buff,'(a,i7,3i7,a,2i3,a,a)')  'wir1_BUGGYERROR: NON-terminal node lying on Lossy ()', &
+                        wireNode%indexnode, wireNode%i,wireNode%j,wireNode%k, &
+                        ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,')'
+                        if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff,.true.)
                         !!if (nodo%isPEC)   nodo%isPEC = .false.
                         !!if (nodo%isLossy) nodo%isLossy = .false.
                         !!!restaura las constantes
@@ -3393,13 +3393,13 @@ contains
                         !!nodo%Cteplain = nodo%OrigCteplain
                      else
                         !lo deja como esta
-                        if (nodo%IsPec) write (buff,'(a,i7,3i7,a,2i3,a,a)')  'wir1_INFO: Leaving grounded a  NON-Terminal node lying on PEC (LAUNCHED WITH -groundwires) ', &
-                        nodo%indexnode, nodo%i,nodo%j,nodo%k, &
-                        ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'
-                         if (nodo%IsLossy) write (buff,'(a,i7,3i7,a,2i3,a,a)')  'wir1_INFO: Leaving grounded a  NON-Terminal node lying on Lossy (LAUNCHED WITH -groundwires) ', &
-                        nodo%indexnode, nodo%i,nodo%j,nodo%k, &
-                        ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'
-                        if ((nodo%k >=  ZI).and.(nodo%k <= ZE).and.control%verbose) call WarnErrReport(buff)
+                        if (wireNode%IsPec) write (buff,'(a,i7,3i7,a,2i3,a,a)')  'wir1_INFO: Leaving grounded a  NON-Terminal node lying on PEC (LAUNCHED WITH -groundwires) ', &
+                        wireNode%indexnode, wireNode%i,wireNode%j,wireNode%k, &
+                        ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,')'
+                         if (wireNode%IsLossy) write (buff,'(a,i7,3i7,a,2i3,a,a)')  'wir1_INFO: Leaving grounded a  NON-Terminal node lying on Lossy (LAUNCHED WITH -groundwires) ', &
+                        wireNode%indexnode, wireNode%i,wireNode%j,wireNode%k, &
+                        ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,')'
+                        if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE).and.control%verbose) call WarnErrReport(buff)
                      end if
                end if
             end if
@@ -3411,84 +3411,84 @@ contains
       !gestion condiciones mur en nodos frontera
 
       do i1=1,HWires%NumChargeNodes
-         nodo => HWires%ChargeNode(i1)
+         wireNode => HWires%ChargeNode(i1)
 
-         do j1=1,nodo%NumCurrentPlus + nodo%NumCurrentMinus
-            if (j1 <= nodo%NumCurrentPlus) then
+         do j1=1,wireNode%NumCurrentPlus + wireNode%NumCurrentMinus
+            if (j1 <= wireNode%NumCurrentPlus) then
                select case (j1)
                 case (1)
-                  segmento=>nodo%CurrentPlus_1
+                  segmento=>wireNode%CurrentPlus_1
                 case (2)
-                  segmento=>nodo%CurrentPlus_2
+                  segmento=>wireNode%CurrentPlus_2
                 case (3)
-                  segmento=>nodo%CurrentPlus_3
+                  segmento=>wireNode%CurrentPlus_3
                 case (4)
-                  segmento=>nodo%CurrentPlus_4
+                  segmento=>wireNode%CurrentPlus_4
                 case (5)
-                  segmento=>nodo%CurrentPlus_5
+                  segmento=>wireNode%CurrentPlus_5
                 case (6)
-                  segmento=>nodo%CurrentPlus_6
+                  segmento=>wireNode%CurrentPlus_6
                 case (7)
-                  segmento=>nodo%CurrentPlus_7
+                  segmento=>wireNode%CurrentPlus_7
                 case (8)
-                  segmento=>nodo%CurrentPlus_8
+                  segmento=>wireNode%CurrentPlus_8
                 case (9)
-                  segmento=>nodo%CurrentPlus_9
+                  segmento=>wireNode%CurrentPlus_9
                end select
             else
-               select case (j1-nodo%NumCurrentPlus)
+               select case (j1-wireNode%NumCurrentPlus)
                 case (1)
-                  segmento=>nodo%CurrentMinus_1
+                  segmento=>wireNode%CurrentMinus_1
                 case (2)
-                  segmento=>nodo%CurrentMinus_2
+                  segmento=>wireNode%CurrentMinus_2
                 case (3)
-                  segmento=>nodo%CurrentMinus_3
+                  segmento=>wireNode%CurrentMinus_3
                 case (4)
-                  segmento=>nodo%CurrentMinus_4
+                  segmento=>wireNode%CurrentMinus_4
                 case (5)
-                  segmento=>nodo%CurrentMinus_5
+                  segmento=>wireNode%CurrentMinus_5
                 case (6)
-                  segmento=>nodo%CurrentMinus_6
+                  segmento=>wireNode%CurrentMinus_6
                 case (7)
-                  segmento=>nodo%CurrentMinus_7
+                  segmento=>wireNode%CurrentMinus_7
                 case (8)
-                  segmento=>nodo%CurrentMinus_8
+                  segmento=>wireNode%CurrentMinus_8
                 case (9)
-                  segmento=>nodo%CurrentMinus_9
+                  segmento=>wireNode%CurrentMinus_9
                end select
             end if
 
             !HOLD 251019
-            if     ((segmento%HasAbsorbing_RightEnd).and.(nodo%Is_RightEnd))  then
+            if     ((segmento%HasAbsorbing_RightEnd).and.(wireNode%Is_RightEnd))  then
                thereAreMurConditions=.true.
-               nodo%IsMur = .true.
-               if (associated(nodo%CurrentPlus_1)) then 
-                   nodo%NodeInside =>  nodo%CurrentPlus_1%ChargePlus
-                              dummy => nodo%CurrentPlus_1
-               else if (associated(nodo%CurrentMinus_1)) then  
-                              dummy => nodo%CurrentMinus_1
-                   nodo%NodeInside =>  nodo%CurrentMinus_1%ChargeMinus
+               wireNode%IsMur = .true.
+               if (associated(wireNode%CurrentPlus_1)) then 
+                   wireNode%NodeInside =>  wireNode%CurrentPlus_1%ChargePlus
+                              dummy => wireNode%CurrentPlus_1
+               else if (associated(wireNode%CurrentMinus_1)) then  
+                              dummy => wireNode%CurrentMinus_1
+                   wireNode%NodeInside =>  wireNode%CurrentMinus_1%ChargeMinus
                else
                   write (buff,*)  'wir0_BUGGYERROR: Mur1 on wires wrong. '
                   call WarnErrReport(buff,.true.)
                end if
-               nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt - dummy%delta)/ &
+               wireNode%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt - dummy%delta)/ &
                      (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt + dummy%delta)
 
-            else if ((segmento%HasAbsorbing_LeftEnd).and.(nodo%Is_LeftEnd))  then
+            else if ((segmento%HasAbsorbing_LeftEnd).and.(wireNode%Is_LeftEnd))  then
                thereAreMurConditions=.true.
-               nodo%IsMur = .true.
-               if (associated(nodo%CurrentPlus_1)) then 
-                   nodo%NodeInside =>  nodo%CurrentPlus_1%ChargePlus
-                              dummy => nodo%CurrentPlus_1
-               else if (associated(nodo%CurrentMinus_1)) then  
-                              dummy => nodo%CurrentMinus_1
-                   nodo%NodeInside =>  nodo%CurrentMinus_1%ChargeMinus
+               wireNode%IsMur = .true.
+               if (associated(wireNode%CurrentPlus_1)) then 
+                   wireNode%NodeInside =>  wireNode%CurrentPlus_1%ChargePlus
+                              dummy => wireNode%CurrentPlus_1
+               else if (associated(wireNode%CurrentMinus_1)) then  
+                              dummy => wireNode%CurrentMinus_1
+                   wireNode%NodeInside =>  wireNode%CurrentMinus_1%ChargeMinus
                else
                   write (buff,*)  'wir0_BUGGYERROR: Mur1 on wires wrong. '
                   call WarnErrReport(buff,.true.)
                end if
-               nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt - dummy%delta)/ &
+               wireNode%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt - dummy%delta)/ &
                      (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt + dummy%delta)
             end if
             !!!
@@ -3501,111 +3501,111 @@ contains
       !I create the FranctionPlus and FractionMinus actualization constants needed to update the currents in junctions
       do i1=1,HWires%NumCurrentSegments
          segmento=>HWires%CurrentSegment(i1)
-         nodo=>segmento%ChargeMinus
+         wireNode=>segmento%ChargeMinus
          segmento%FractionMinus=-1.0e30_RKIND_wires !valor absurdo tiene que entrar siempre en algun case
          !Junctions and plain nodes require this correction in case of two distinct radius segments meet
          DenominatorFractionMinusDummy=0.0_RKIND_WIRES
          deltadummy1=0.0_RKIND_WIRES
-         if (nodo%NumCurrentPlus<=0)  call StopOnError(0,0,'Bug fractionminuss. ')
-         do j1=1,nodo%NumCurrentPlus
+         if (wireNode%NumCurrentPlus<=0)  call StopOnError(0,0,'Bug fractionminuss. ')
+         do j1=1,wireNode%NumCurrentPlus
             select case (j1)
              case (1)
-               dummy=>nodo%CurrentPlus_1
+               dummy=>wireNode%CurrentPlus_1
              case (2)
-               dummy=>nodo%CurrentPlus_2
+               dummy=>wireNode%CurrentPlus_2
              case (3)
-               dummy=>nodo%CurrentPlus_3
+               dummy=>wireNode%CurrentPlus_3
              case (4)
-               dummy=>nodo%CurrentPlus_4
+               dummy=>wireNode%CurrentPlus_4
              case (5)
-               dummy=>nodo%CurrentPlus_5
+               dummy=>wireNode%CurrentPlus_5
              case (6)
-               dummy=>nodo%CurrentPlus_6
+               dummy=>wireNode%CurrentPlus_6
              case (7)
-               dummy=>nodo%CurrentPlus_7
+               dummy=>wireNode%CurrentPlus_7
              case (8)
-               dummy=>nodo%CurrentPlus_8
+               dummy=>wireNode%CurrentPlus_8
              case (9)
-               dummy=>nodo%CurrentPlus_9
+               dummy=>wireNode%CurrentPlus_9
             end select
             deltadummy1=deltadummy1 + dummy%delta
             DenominatorFractionMinusDummy=DenominatorFractionMinusDummy+dummy%delta/(dummy%Lind * InvMu(dummy%indexmed) * InvEPS(dummy%indexmed))
          end do
-         do j1=1,nodo%NumCurrentMinus
+         do j1=1,wireNode%NumCurrentMinus
             select case (j1)
              case (1)
-               dummy=>nodo%CurrentMinus_1
+               dummy=>wireNode%CurrentMinus_1
              case (2)
-               dummy=>nodo%CurrentMinus_2
+               dummy=>wireNode%CurrentMinus_2
              case (3)
-               dummy=>nodo%CurrentMinus_3
+               dummy=>wireNode%CurrentMinus_3
              case (4)
-               dummy=>nodo%CurrentMinus_4
+               dummy=>wireNode%CurrentMinus_4
              case (5)
-               dummy=>nodo%CurrentMinus_5
+               dummy=>wireNode%CurrentMinus_5
              case (6)
-               dummy=>nodo%CurrentMinus_6
+               dummy=>wireNode%CurrentMinus_6
              case (7)
-               dummy=>nodo%CurrentMinus_7
+               dummy=>wireNode%CurrentMinus_7
              case (8)
-               dummy=>nodo%CurrentMinus_8
+               dummy=>wireNode%CurrentMinus_8
              case (9)
-               dummy=>nodo%CurrentMinus_9
+               dummy=>wireNode%CurrentMinus_9
             end select
             deltadummy1=deltadummy1 + dummy%delta
             DenominatorFractionMinusDummy=DenominatorFractionMinusDummy+dummy%delta/(dummy%Lind * InvMu(dummy%indexmed) * InvEPS(dummy%indexmed))
          end do
          segmento%FractionMinus=(deltadummy1/(segmento%Lind * InvMu(segmento%indexmed) * InvEPS(segmento%indexmed)))/(DenominatorFractionMinusDummy)  !Hollond paper on wires'81 (page 91) <--- esta mal. lo de berenger en -wiresflavor new es lo correcto.. yo lo hago ahora 22/07/15
          !
-         nodo=>segmento%ChargePlus
+         wireNode=>segmento%ChargePlus
          segmento%FractionPlus=-1.0e30_RKIND_wires !valor absurdo tiene que entrar siempre en algun case
          DenominatorFractionPlusDummy=0.0_RKIND_WIRES
          deltadummy2=0.0_RKIND_WIRES
-         if (nodo%NumCurrentMinus<=0)  call StopOnError(0,0,'Bug fractionplus. ')
-         do j1=1,nodo%NumCurrentMinus
+         if (wireNode%NumCurrentMinus<=0)  call StopOnError(0,0,'Bug fractionplus. ')
+         do j1=1,wireNode%NumCurrentMinus
             select case (j1)
              case (1)
-               dummy=>nodo%CurrentMinus_1
+               dummy=>wireNode%CurrentMinus_1
              case (2)
-               dummy=>nodo%CurrentMinus_2
+               dummy=>wireNode%CurrentMinus_2
              case (3)
-               dummy=>nodo%CurrentMinus_3
+               dummy=>wireNode%CurrentMinus_3
              case (4)
-               dummy=>nodo%CurrentMinus_4
+               dummy=>wireNode%CurrentMinus_4
              case (5)
-               dummy=>nodo%CurrentMinus_5
+               dummy=>wireNode%CurrentMinus_5
              case (6)
-               dummy=>nodo%CurrentMinus_6
+               dummy=>wireNode%CurrentMinus_6
              case (7)
-               dummy=>nodo%CurrentMinus_7
+               dummy=>wireNode%CurrentMinus_7
              case (8)
-               dummy=>nodo%CurrentMinus_8
+               dummy=>wireNode%CurrentMinus_8
              case (9)
-               dummy=>nodo%CurrentMinus_9
+               dummy=>wireNode%CurrentMinus_9
             end select
             deltadummy2=deltadummy2 + dummy%delta
             DenominatorFractionPlusDummy=DenominatorFractionPlusDummy+dummy%delta/(dummy%Lind * InvMu(dummy%indexmed) * InvEPS(dummy%indexmed))
          end do
-         do j1=1,nodo%NumCurrentPlus
+         do j1=1,wireNode%NumCurrentPlus
             select case (j1)
              case (1)
-               dummy=>nodo%CurrentPlus_1
+               dummy=>wireNode%CurrentPlus_1
              case (2)
-               dummy=>nodo%CurrentPlus_2
+               dummy=>wireNode%CurrentPlus_2
              case (3)
-               dummy=>nodo%CurrentPlus_3
+               dummy=>wireNode%CurrentPlus_3
              case (4)
-               dummy=>nodo%CurrentPlus_4
+               dummy=>wireNode%CurrentPlus_4
              case (5)
-               dummy=>nodo%CurrentPlus_5
+               dummy=>wireNode%CurrentPlus_5
              case (6)
-               dummy=>nodo%CurrentPlus_6
+               dummy=>wireNode%CurrentPlus_6
              case (7)
-               dummy=>nodo%CurrentPlus_7
+               dummy=>wireNode%CurrentPlus_7
              case (8)
-               dummy=>nodo%CurrentPlus_8
+               dummy=>wireNode%CurrentPlus_8
              case (9)
-               dummy=>nodo%CurrentPlus_9
+               dummy=>wireNode%CurrentPlus_9
             end select
             deltadummy2=deltadummy2 + dummy%delta
             DenominatorFractionPlusDummy=DenominatorFractionPlusDummy+dummy%delta/(dummy%Lind * InvMu(dummy%indexmed) * InvEPS(dummy%indexmed))
@@ -3698,7 +3698,7 @@ contains
 
                      thereareIsources=.true.
                      write (buff,'(a,i7,3i7)')  'wir1_INFO: Current source at node ', &
-                     nodo%indexnode, nodo%i,nodo%j,nodo%k
+                     wireNode%indexnode, wireNode%i,wireNode%j,wireNode%k
                      if ((HWires%ChargeNode(i1)%k > ZI).and.(HWires%ChargeNode(i1)%k <= ZE).and.control%verbose) call WarnErrReport(buff)
                      !
                      if (HWires%ChargeNode(i1)%Isource%Fichero%DeltaSamples > sgg%dt) then
@@ -3854,10 +3854,10 @@ end subroutine deembed_segment
       
       !detect PEC and lossy nodes
       do i1=1,HWires%NumChargeNodes
-         nodo =>  HWires%ChargeNode(i1)
-         i = nodo%i
-         j = nodo%j
-         k = nodo%k
+         wireNode =>  HWires%ChargeNode(i1)
+         i = wireNode%i
+         j = wireNode%j
+         k = wireNode%k
 
          if ((i >  SINPML_fullsize(iEx)%XI).and. &
          (i <= SINPML_fullsize(iEx)%XE).and. &
@@ -3872,7 +3872,7 @@ end subroutine deembed_segment
                kmenos1= k-1
                if (k-1 <  sgg%alloc(IEZ)%ZI) kmenos1=k
                !
-               Nodo%IsLossy   = &
+               wireNode%IsLossy   = &
                sgg%Med(sggMino(i  ,j,k))%Is%Lossy .or. &
                sgg%Med(sggMiEx(i  ,j,k))%Is%Lossy .or. &
                sgg%Med(sggMiEy(i,j  ,k))%Is%Lossy .or. &
@@ -3888,7 +3888,7 @@ end subroutine deembed_segment
                                    sgg%Med(sggMiEx(i-1,j  ,k))%sigma)),&
                                    MAX(    sgg%Med(sggMiEy(i  ,j-1,k))%sigma,  &
                                    sgg%Med(sggMiEz(i  ,j  ,kmenos1))%sigma) )
-               nodo%islossy = nodo%islossy .or. (abs(sigt) > 1.0e-19_RKIND_WIRES)
+               wireNode%islossy = wireNode%islossy .or. (abs(sigt) > 1.0e-19_RKIND_WIRES)
                
               !091024 para poner bien uniones hilo-lossy sgbc conformal !ojooo es bruto  !bug  FU50_50mm_conf    
                !fallaria en un hipotetico conformal dielectrico con hilos unidos... habria que distinguir bien ojooooo  y propagar este cambio al resto de sabores de hilos
@@ -3911,7 +3911,7 @@ end subroutine deembed_segment
              !!!!! end if
                !tampoco es esto lo del bug  FU50_50mm_conf   pero no esta de mas tenerlo en cuenta
             
-               nodo%ispec = &
+               wireNode%ispec = &
                ( sggMiNo(i  ,j,k) ==0).or.(sgg%med(sggMiNo(i  ,j,k))%is%PEC) .or. &
                ( sggMiEx(i  ,j,k) ==0).or.(sgg%med(sggMiEx(i  ,j,k))%is%PEC) .or. &
                ( sggMiEy(i,j  ,k) ==0).or.(sgg%med(sggMiEy(i,j  ,k))%is%PEC) .or. &
@@ -3923,17 +3923,17 @@ end subroutine deembed_segment
 
                
                
-               if ((.not.(nodo%Is_RightEnd.or.nodo%Is_LeftEnd)).and.(nodo%ispec.or.nodo%islossy)) then
-                   if (nodo%ispec) write (buff,*)  'wir1_WARNING: Un-grounding NON-TERMINAL node from PEC ', i,j,k
-                   if (nodo%islossy) write (buff,*)  'wir1_WARNING: Un-grounding NON-TERMINAL node from Lossy ', i,j,k
+               if ((.not.(wireNode%Is_RightEnd.or.wireNode%Is_LeftEnd)).and.(wireNode%ispec.or.wireNode%islossy)) then
+                   if (wireNode%ispec) write (buff,*)  'wir1_WARNING: Un-grounding NON-TERMINAL node from PEC ', i,j,k
+                   if (wireNode%islossy) write (buff,*)  'wir1_WARNING: Un-grounding NON-TERMINAL node from Lossy ', i,j,k
                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
-                   nodo%ispec=.false.
-                   nodo%islossy=.false.
+                   wireNode%ispec=.false.
+                   wireNode%islossy=.false.
                end if
                
                
 !pedazo de niapa para poner los nodos conformal a voltage nulo y sus segmentos conformal tambien si son already_YEEadvanced_byconformal (old notouch o no_touch) y que Dios reparta suerte 140220
-               if ((nodo%Is_RightEnd.or.nodo%Is_LeftEnd)) then !!!los busy_nodes se han puesto a pec cuando en realidad estan unidos a already_YEEadvanced_byconformal .and.(.not.(nodo%ispec.or.nodo%islossy))) then   !solo si es un extremo y no estaba ya puesto a pec            
+               if ((wireNode%Is_RightEnd.or.wireNode%Is_LeftEnd)) then !!!los busy_nodes se han puesto a pec cuando en realidad estan unidos a already_YEEadvanced_byconformal .and.(.not.(nodo%ispec.or.nodo%islossy))) then   !solo si es un extremo y no estaba ya puesto a pec            
                       medio1  =sggMiEx(i  ,j  ,k)    
                       medio1m =sggMiEx(i-1,j  ,k)
                       medio2  =sggMiEy(i  ,j  ,k)
@@ -3950,7 +3950,7 @@ end subroutine deembed_segment
                      !
                       if (sgg%med(medio1)%is%already_YEEadvanced_byconformal .or. sgg%med(medio2)%is%already_YEEadvanced_byconformal .or. sgg%med(medio3)%is%already_YEEadvanced_byconformal.or. &
                           sgg%med(medio1m)%is%already_YEEadvanced_byconformal .or. sgg%med(medio2m)%is%already_YEEadvanced_byconformal .or. sgg%med(medio3m)%is%already_YEEadvanced_byconformal) then
-			               nodo%ispec=.true. !luego se pondra nodo%cteplain = 0 para todos los pec
+			               wireNode%ispec=.true. !luego se pondra nodo%cteplain = 0 para todos los pec
                            write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal node changed to PEC grounded node at ', i,j,k
                            if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                            !ademas anotar y poner a cero el efield correspondiente already_YEEadvanced_byconformal overrideando el conformal_advance_E() que ya se ha hecho antes a partir de esta version   
@@ -3958,7 +3958,7 @@ end subroutine deembed_segment
                                call check_embed(embed,iEx,i,j,k)
                                if (.not.embed) then
                                   ! sggmiEx(i,j,k)=0;!ojoo quitar luego solo para visualiz
-                                   nodo%already_YEEadvanced_byconformal_changedtoPECfield1 => Ex(i,j,k)
+                                   wireNode%already_YEEadvanced_byconformal_changedtoPECfield1 => Ex(i,j,k)
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, also changed to PEC line at Ex ', i,j,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                                else
@@ -3970,7 +3970,7 @@ end subroutine deembed_segment
                                call check_embed(embed,iEx,i-1,j,k)
                                if (.not.embed) then
                                !    sggmiEx(i-1,j,k)=0;!ojoo quitar luego solo para visualiz
-                                   nodo%already_YEEadvanced_byconformal_changedtoPECfield2 => Ex(i-1,j,k)
+                                   wireNode%already_YEEadvanced_byconformal_changedtoPECfield2 => Ex(i-1,j,k)
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, also changed to PEC line at mEx ', i-1,j,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                                else
@@ -3982,7 +3982,7 @@ end subroutine deembed_segment
                                call check_embed(embed,iEy,i,j,k)
                                if (.not.embed) then
                             !       sggmiEy(i,j,k)=0;!ojoo quitar luego solo para visualiz
-                                   nodo%already_YEEadvanced_byconformal_changedtoPECfield3 => Ey(i,j,k)
+                                   wireNode%already_YEEadvanced_byconformal_changedtoPECfield3 => Ey(i,j,k)
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, also changed to PEC line at Ey ', i,j,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                                else
@@ -3994,7 +3994,7 @@ end subroutine deembed_segment
                                call check_embed(embed,iEy,i,j-1,k)
                                if (.not.embed) then
                           !         sggmiEy(i,j-1,k)=0;!ojoo quitar luego solo para visualiz
-                                   nodo%already_YEEadvanced_byconformal_changedtoPECfield4 => Ey(i,j-1,k)
+                                   wireNode%already_YEEadvanced_byconformal_changedtoPECfield4 => Ey(i,j-1,k)
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, also changed to PEC line at mEy ', i,j-1,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                                else
@@ -4006,7 +4006,7 @@ end subroutine deembed_segment
                                call check_embed(embed,IEZ,i,j,k)
                                if (.not.embed) then
                           !         sggmiEz(i,j,k)=0;!ojoo quitar luego solo para visualiz
-                                   nodo%already_YEEadvanced_byconformal_changedtoPECfield5 => Ez(i,j,k)
+                                   wireNode%already_YEEadvanced_byconformal_changedtoPECfield5 => Ez(i,j,k)
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, also changed to PEC line at Ez ', i,j,k
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                                else
@@ -4018,7 +4018,7 @@ end subroutine deembed_segment
                                call check_embed(embed,IEZ,i,j,kmenos1)
                                if (.not.embed) then
                           !         sggmiEz(i,j,kmenos1)=0;!ojoo quitar luego solo para visualiz
-                                   nodo%already_YEEadvanced_byconformal_changedtoPECfield6 => Ez(i,j,kmenos1)
+                                   wireNode%already_YEEadvanced_byconformal_changedtoPECfield6 => Ez(i,j,kmenos1)
                                    write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal segment atached to PEC grounded node, also changed to PEC line at mEz ', i,j,kmenos1
                                    if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                                else
@@ -4035,13 +4035,13 @@ end subroutine deembed_segment
                       end if
                       !esta a PEC/lossy o al punietero aire
                               !!!lo he sacado del if. solo para reporte y que coincida con lo que da estructurado  280323
-                      if (nodo%ispec)  then
+                      if (wireNode%ispec)  then
                           write (buff,*)  'wir1_INFO: (SHOULD BE REDUNDANT) Terminal Node grounded to PEC ', i,j,k  
                           if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
-                      else if (nodo%islossy) then
+                      else if (wireNode%islossy) then
                           write (buff,*)  'wir1_INFO: (SHOULD BE REDUNDANT) Terminal Node grounded to Lossy ', i,j,k    
                           if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
-                      else if (nodo%IsHeterogeneousJunction) then
+                      else if (wireNode%IsHeterogeneousJunction) then
                           write (buff,*)  'wir1_INFO: (SHOULD BE REDUNDANT) Terminal Node is heteoreneous junction ', i,j,k    
                           if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                       else
@@ -4054,21 +4054,21 @@ end subroutine deembed_segment
                
 
 !!!!! ojo cambio AGRESIVO: sgg 08092016 a peticion OLD. si un nodo es heterogeneousjunction automaticamente no es ni pec ni lossy !esto es delicado !validado con gra_simple_conectado179_162_173.nfde
-               if (nodo%isPEC.and.(nodo%IsHeterogeneousJunction)) then
-                    nodo%isPEC   = .false.
-			        write (buff,*)  'wir1_ERROR: (Deprecated 170220-010324: no longer an error, though I stop. If sure relaunch with -ignoreerrors) ENL/ENR PEC grounded node detached from ground-material for being a wire junction', i,j,k,nodo%ispec,nodo%islossy
+               if (wireNode%isPEC.and.(wireNode%IsHeterogeneousJunction)) then
+                    wireNode%isPEC   = .false.
+			        write (buff,*)  'wir1_ERROR: (Deprecated 170220-010324: no longer an error, though I stop. If sure relaunch with -ignoreerrors) ENL/ENR PEC grounded node detached from ground-material for being a wire junction', i,j,k,wireNode%ispec,wireNode%islossy
                     if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff,.true.)
                end if               
-               if (nodo%isLossy.and.(nodo%IsHeterogeneousJunction)) then
-                    nodo%isLossy   = .false.
-                    write (buff,*) 'wir1_ERROR: (Deprecated 170220-010324: no longer an error, though I stop. If sure relaunch with -ignoreerrors)  ENL/ENR Lossy grounded node detached from ground-material for being a wire junction', i,j,k,nodo%ispec,nodo%islossy
+               if (wireNode%isLossy.and.(wireNode%IsHeterogeneousJunction)) then
+                    wireNode%isLossy   = .false.
+                    write (buff,*) 'wir1_ERROR: (Deprecated 170220-010324: no longer an error, though I stop. If sure relaunch with -ignoreerrors)  ENL/ENR Lossy grounded node detached from ground-material for being a wire junction', i,j,k,wireNode%ispec,wireNode%islossy
                     if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff,.true.)
                end if
 !!!!!!!!! fin cambio sgg 080912016               
                
                
-               if (nodo%isPec) then
-                    nodo%isLossy=.false. !tocado 030615 para evitar conflictos en nodos frontera entre Lossy y pec
+               if (wireNode%isPec) then
+                    wireNode%isLossy=.false. !tocado 030615 para evitar conflictos en nodos frontera entre Lossy y pec
                end if
                !
             end if
@@ -4085,77 +4085,77 @@ end subroutine deembed_segment
   !!!!!!!!!!!!!!!!! embed=.true.; return !!!!ojoooo sgg tocado a mano para ver bug conformal 220323 
    
     embed=.false.
-    if (associated(nodo%CurrentMinus_1))  then
-        dummy => nodo%CurrentMinus_1
+    if (associated(wireNode%CurrentMinus_1))  then
+        dummy => wireNode%CurrentMinus_1
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentMinus_2))  then
-        dummy => nodo%CurrentMinus_2
+    if (associated(wireNode%CurrentMinus_2))  then
+        dummy => wireNode%CurrentMinus_2
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentMinus_3))  then
-        dummy => nodo%CurrentMinus_3
+    if (associated(wireNode%CurrentMinus_3))  then
+        dummy => wireNode%CurrentMinus_3
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentMinus_4))  then
-        dummy => nodo%CurrentMinus_4
+    if (associated(wireNode%CurrentMinus_4))  then
+        dummy => wireNode%CurrentMinus_4
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentMinus_5))  then
-        dummy => nodo%CurrentMinus_5
+    if (associated(wireNode%CurrentMinus_5))  then
+        dummy => wireNode%CurrentMinus_5
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentMinus_6))  then
-        dummy => nodo%CurrentMinus_6
+    if (associated(wireNode%CurrentMinus_6))  then
+        dummy => wireNode%CurrentMinus_6
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentMinus_7))  then
-        dummy => nodo%CurrentMinus_7
+    if (associated(wireNode%CurrentMinus_7))  then
+        dummy => wireNode%CurrentMinus_7
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentMinus_8))  then
-        dummy => nodo%CurrentMinus_8
+    if (associated(wireNode%CurrentMinus_8))  then
+        dummy => wireNode%CurrentMinus_8
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentMinus_9))  then
-        dummy => nodo%CurrentMinus_9
+    if (associated(wireNode%CurrentMinus_9))  then
+        dummy => wireNode%CurrentMinus_9
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
     !
-    if (associated(nodo%CurrentPlus_1))  then
-        dummy => nodo%CurrentPlus_1
+    if (associated(wireNode%CurrentPlus_1))  then
+        dummy => wireNode%CurrentPlus_1
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentPlus_2))  then
-        dummy => nodo%CurrentPlus_2
+    if (associated(wireNode%CurrentPlus_2))  then
+        dummy => wireNode%CurrentPlus_2
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentPlus_3))  then
-        dummy => nodo%CurrentPlus_3
+    if (associated(wireNode%CurrentPlus_3))  then
+        dummy => wireNode%CurrentPlus_3
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentPlus_4))  then
-        dummy => nodo%CurrentPlus_4
+    if (associated(wireNode%CurrentPlus_4))  then
+        dummy => wireNode%CurrentPlus_4
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentPlus_5))  then
-        dummy => nodo%CurrentPlus_5
+    if (associated(wireNode%CurrentPlus_5))  then
+        dummy => wireNode%CurrentPlus_5
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentPlus_6))  then
-        dummy => nodo%CurrentPlus_6
+    if (associated(wireNode%CurrentPlus_6))  then
+        dummy => wireNode%CurrentPlus_6
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentPlus_7))  then
-        dummy => nodo%CurrentPlus_7
+    if (associated(wireNode%CurrentPlus_7))  then
+        dummy => wireNode%CurrentPlus_7
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentPlus_8))  then
-        dummy => nodo%CurrentPlus_8
+    if (associated(wireNode%CurrentPlus_8))  then
+        dummy => wireNode%CurrentPlus_8
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
-    if (associated(nodo%CurrentPlus_9))  then
-        dummy => nodo%CurrentPlus_9
+    if (associated(wireNode%CurrentPlus_9))  then
+        dummy => wireNode%CurrentPlus_9
         call auxem(embed,tipofieldo,io,jo,ko,dummy)  
     end if
     
@@ -4296,7 +4296,7 @@ subroutine resume_casuistics
       real(kind=RKIND_WIRES) :: df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
 
       type(CurrentSegments_t), pointer  :: dummy
-      type(ChargeNodes_t), pointer  :: Nodo
+      type(ChargeNodes_t), pointer  :: wireNode
       type(TMultiline_t), pointer                      :: Multiline
    
 
@@ -4311,20 +4311,20 @@ subroutine resume_casuistics
 ! Constantes nodales
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       do i1=1,HWires%NumChargeNodes
-         nodo => HWires%ChargeNode(i1)
-         nodo%CtePlain = nodo%CtePlain/Hwires%olddt*sgg%dt 
+         wireNode => HWires%ChargeNode(i1)
+         wireNode%CtePlain = wireNode%CtePlain/Hwires%olddt*sgg%dt 
       end do
 
 !ctes Mur
       do i1=1,HWires%NumChargeNodes
-         nodo=>HWires%Chargenode(i1)
-         if (nodo%IsBackDownLeftMur) then
-            dummy => nodo%CurrentPlus_1
-            nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt - dummy%delta)/ &
+         wireNode=>HWires%Chargenode(i1)
+         if (wireNode%IsBackDownLeftMur) then
+            dummy => wireNode%CurrentPlus_1
+            wireNode%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt - dummy%delta)/ &
                      (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt + dummy%delta)
-         else if (nodo%IsFrontUpRightMur) then
-            dummy => nodo%CurrentMInus_1
-            nodo%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt - dummy%delta)/ &
+         else if (wireNode%IsFrontUpRightMur) then
+            dummy => wireNode%CurrentMInus_1
+            wireNode%cteMur=(sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt - dummy%delta)/ &
                      (sqrt(InvMu (dummy%indexmed)*InvEps(dummy%indexmed))*sgg%dt + dummy%delta)
          end if
       end do
@@ -5145,7 +5145,7 @@ subroutine resume_casuistics
       real(kind=RKIND_WIRES) :: Iplus,IMinus,Qplus,QMinus,timei
       real(kind=RKIND_WIRES) :: Vincid,Iincid
       type(CurrentSegments_t), pointer  :: Segmento, Segmento2
-      type(ChargeNodes_t), pointer  :: Nodo
+      type(ChargeNodes_t), pointer  :: wireNode
       type(TMultiline_t), pointer                      :: Multiline
       character(len=*), intent(in) :: wiresflavor
       timei = sgg%tiempo(timeinstant) 
@@ -5192,54 +5192,54 @@ subroutine resume_casuistics
 !!!#endif
 !
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED)  private(Iplus,IMinus,Nodo)
+!$OMP PARALLEL do DEFAULT(SHARED)  private(Iplus,IMinus,wireNode)
 #endif
       do n=1,HWires%NumChargeNodes
-         Nodo => HWires%ChargeNode(n)
+         wireNode => HWires%ChargeNode(n)
 !
-         if (nodo%exists) then
-            Nodo%ChargePast=Nodo%ChargePresent
+         if (wireNode%exists) then
+            wireNode%ChargePast=wireNode%ChargePresent
             !I sum up the plus and the minus currents accordingly in advance
             Iplus = 0.0_RKIND_WIRES
             IMinus = 0.0_RKIND_WIRES
-            if (Nodo%NumCurrentPlus>=1) Iplus = Nodo%CurrentPlus_1%Current
-            if (Nodo%NumCurrentPlus>=2) Iplus = Iplus+Nodo%CurrentPlus_2%Current
-            if (Nodo%NumCurrentPlus>=3) Iplus = Iplus+Nodo%CurrentPlus_3%Current
-            if (Nodo%NumCurrentPlus>=4) Iplus = Iplus+Nodo%CurrentPlus_4%Current
-            if (Nodo%NumCurrentPlus>=5) Iplus = Iplus+Nodo%CurrentPlus_5%Current
-            if (Nodo%NumCurrentPlus>=6) Iplus = Iplus+Nodo%CurrentPlus_6%Current
-            if (Nodo%NumCurrentPlus>=7) Iplus = Iplus+Nodo%CurrentPlus_7%Current
-            if (Nodo%NumCurrentPlus>=8) Iplus = Iplus+Nodo%CurrentPlus_8%Current
-            if (Nodo%NumCurrentPlus>=9) Iplus = Iplus+Nodo%CurrentPlus_9%Current
+            if (wireNode%NumCurrentPlus>=1) Iplus = wireNode%CurrentPlus_1%Current
+            if (wireNode%NumCurrentPlus>=2) Iplus = Iplus+wireNode%CurrentPlus_2%Current
+            if (wireNode%NumCurrentPlus>=3) Iplus = Iplus+wireNode%CurrentPlus_3%Current
+            if (wireNode%NumCurrentPlus>=4) Iplus = Iplus+wireNode%CurrentPlus_4%Current
+            if (wireNode%NumCurrentPlus>=5) Iplus = Iplus+wireNode%CurrentPlus_5%Current
+            if (wireNode%NumCurrentPlus>=6) Iplus = Iplus+wireNode%CurrentPlus_6%Current
+            if (wireNode%NumCurrentPlus>=7) Iplus = Iplus+wireNode%CurrentPlus_7%Current
+            if (wireNode%NumCurrentPlus>=8) Iplus = Iplus+wireNode%CurrentPlus_8%Current
+            if (wireNode%NumCurrentPlus>=9) Iplus = Iplus+wireNode%CurrentPlus_9%Current
             !
-            if (Nodo%NumCurrentMinus>=1) IMinus = Nodo%CurrentMinus_1%Current
-            if (Nodo%NumCurrentMinus>=2) IMinus = IMinus+Nodo%CurrentMinus_2%Current
-            if (Nodo%NumCurrentMinus>=3) IMinus = IMinus+Nodo%CurrentMinus_3%Current
-            if (Nodo%NumCurrentMinus>=4) IMinus = IMinus+Nodo%CurrentMinus_4%Current
-            if (Nodo%NumCurrentMinus>=5) IMinus = IMinus+Nodo%CurrentMinus_5%Current
-            if (Nodo%NumCurrentMinus>=6) IMinus = IMinus+Nodo%CurrentMinus_6%Current
-            if (Nodo%NumCurrentMinus>=7) IMinus = IMinus+Nodo%CurrentMinus_7%Current
-            if (Nodo%NumCurrentMinus>=8) IMinus = IMinus+Nodo%CurrentMinus_8%Current
-            if (Nodo%NumCurrentMinus>=9) IMinus = IMinus+Nodo%CurrentMinus_9%Current
+            if (wireNode%NumCurrentMinus>=1) IMinus = wireNode%CurrentMinus_1%Current
+            if (wireNode%NumCurrentMinus>=2) IMinus = IMinus+wireNode%CurrentMinus_2%Current
+            if (wireNode%NumCurrentMinus>=3) IMinus = IMinus+wireNode%CurrentMinus_3%Current
+            if (wireNode%NumCurrentMinus>=4) IMinus = IMinus+wireNode%CurrentMinus_4%Current
+            if (wireNode%NumCurrentMinus>=5) IMinus = IMinus+wireNode%CurrentMinus_5%Current
+            if (wireNode%NumCurrentMinus>=6) IMinus = IMinus+wireNode%CurrentMinus_6%Current
+            if (wireNode%NumCurrentMinus>=7) IMinus = IMinus+wireNode%CurrentMinus_7%Current
+            if (wireNode%NumCurrentMinus>=8) IMinus = IMinus+wireNode%CurrentMinus_8%Current
+            if (wireNode%NumCurrentMinus>=9) IMinus = IMinus+wireNode%CurrentMinus_9%Current
 
-            if ((Nodo%NumCurrentMinus == 1).and.(Nodo%NumCurrentPlus == 0)) then
-                if (Nodo%IsPeriodic) then
+            if ((wireNode%NumCurrentMinus == 1).and.(wireNode%NumCurrentPlus == 0)) then
+                if (wireNode%IsPeriodic) then
                     Iplus = + Iminus
                 else
             !The node is a true terminal one and the mirror of the current is employed for updating (Edelvik's treatment similar to PMC)
                     Iplus = -Iminus
                 end if
             end if
-            if ((Nodo%NumCurrentMinus == 0).and.(Nodo%NumCurrentPlus == 1)) then
-                if (Nodo%IsPeriodic) then
+            if ((wireNode%NumCurrentMinus == 0).and.(wireNode%NumCurrentPlus == 1)) then
+                if (wireNode%IsPeriodic) then
                     IMinus = +Iplus
                 else
                     IMinus = -Iplus
                 end if
             end if
             !Algoritmo comun a toda la casuistica !feb 13
-            if (.not.nodo%IsMur)   then
-               Nodo%ChargePresent =  Nodo%CteProp*Nodo%ChargePast   - Nodo%CtePlain*(Iplus-IMinus)
+            if (.not.wireNode%IsMur)   then
+               wireNode%ChargePresent =  wireNode%CteProp*wireNode%ChargePast   - wireNode%CtePlain*(Iplus-IMinus)
             else
                 continue
             end if
@@ -5273,10 +5273,10 @@ subroutine resume_casuistics
               do n=1,HWires%NumChargeNodes
                   if (HWires%ChargeNode(n)%exists) then
                      if  (HWires%ChargeNode(n)%HasIsource) then
-                        Nodo => HWires%ChargeNode(n)
-                        Iincid=evolucion(timei-unmedio*sgg%dt,Nodo%Isource%Fichero%Samples, &
-                                        Nodo%Isource%Fichero%DeltaSamples,Nodo%Isource%Fichero%NumSamples)
-                        Nodo%ChargePresent = Nodo%ChargePresent    +  Nodo%CtePlain     * Iincid
+                        wireNode => HWires%ChargeNode(n)
+                        Iincid=evolucion(timei-unmedio*sgg%dt,wireNode%Isource%Fichero%Samples, &
+                                        wireNode%Isource%Fichero%DeltaSamples,wireNode%Isource%Fichero%NumSamples)
+                        wireNode%ChargePresent = wireNode%ChargePresent    +  wireNode%CtePlain     * Iincid
                      end if
                   end if
               end do
@@ -5286,12 +5286,12 @@ subroutine resume_casuistics
       !Absorbing Mur boundary conditions if necessary in the charges
       if (thereAreMurConditions) then
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED)  private(Nodo)
+!$OMP PARALLEL do DEFAULT(SHARED)  private(wireNode)
 #endif
          do n=1,HWires%NumChargeNodes
-            Nodo => HWires%ChargeNode(n)
-            if (nodo%exists.and.nodo%IsMur) then
-               Nodo%ChargePresent=Nodo%NodeInside%ChargePast + Nodo%cteMur*(Nodo%NodeInside%ChargePresent - Nodo%ChargePast)
+            wireNode => HWires%ChargeNode(n)
+            if (wireNode%exists.and.wireNode%IsMur) then
+               wireNode%ChargePresent=wireNode%NodeInside%ChargePast + wireNode%cteMur*(wireNode%NodeInside%ChargePresent - wireNode%ChargePast)
             end if
          end do
 #ifdef CompileWithOpenMP
@@ -5538,7 +5538,7 @@ subroutine resume_casuistics
       real(kind=RKIND_WIRES) :: Iplus,IMinus,Qplus,QMinus,timei
       real(kind=RKIND_WIRES) :: Vincid,Iincid
       type(CurrentSegments_t), pointer  :: Segmento, Segmento2
-      type(ChargeNodes_t), pointer  :: Nodo
+      type(ChargeNodes_t), pointer  :: wireNode
       type(TMultiline_t), pointer                      :: Multiline
       character(len=*), intent(in) :: wiresflavor
       timei = sgg%tiempo(timeinstant) 
@@ -5584,7 +5584,7 @@ subroutine resume_casuistics
       real(kind=RKIND_WIRES) :: Iplus,IMinus,IplusPast,IMinusPast,source,timei
       real(kind=RKIND_WIRES) :: Vincid,Iincid
       type(CurrentSegments_t), pointer  :: Segmento , Segmento2
-      type(ChargeNodes_t), pointer  :: Nodo
+      type(ChargeNodes_t), pointer  :: wireNode
       type(TMultiline_t), pointer                      :: Multiline
       character(len=*), intent(in) :: wiresflavor
       real(kind=RKIND_WIRES) , dimension(1:HWires%NumCurrentSegments) :: a,b,c,d,x
@@ -5693,24 +5693,24 @@ subroutine resume_casuistics
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED)  private(Iplus,IMinus,Nodo)
+!$OMP PARALLEL do DEFAULT(SHARED)  private(Iplus,IMinus,wireNode)
 #endif
       do n=1,HWires%NumChargeNodes
-         Nodo => HWires%ChargeNode(n)
-         if (nodo%exists) then
-            Nodo%ChargePast=Nodo%ChargePresent
-            if (Nodo%NumCurrentPlus==1) Iplus = Nodo%CurrentPlus_1%Current
-            if (Nodo%NumCurrentPlus==1) IplusPast = Nodo%CurrentPlus_1%CurrentPast
+         wireNode => HWires%ChargeNode(n)
+         if (wireNode%exists) then
+            wireNode%ChargePast=wireNode%ChargePresent
+            if (wireNode%NumCurrentPlus==1) Iplus = wireNode%CurrentPlus_1%Current
+            if (wireNode%NumCurrentPlus==1) IplusPast = wireNode%CurrentPlus_1%CurrentPast
             !
-            if (Nodo%NumCurrentMinus==1) IMinus = Nodo%CurrentMinus_1%Current
-            if (Nodo%NumCurrentMinus==1) IMinusPast = Nodo%CurrentMinus_1%CurrentPast
+            if (wireNode%NumCurrentMinus==1) IMinus = wireNode%CurrentMinus_1%Current
+            if (wireNode%NumCurrentMinus==1) IMinusPast = wireNode%CurrentMinus_1%CurrentPast
             !
-            if ((Nodo%NumCurrentMinus == 1).and.(Nodo%NumCurrentPlus == 0)) Iplus = -Iminus
-            if ((Nodo%NumCurrentMinus == 0).and.(Nodo%NumCurrentPlus == 1)) IMinus = -Iplus
-            if ((Nodo%NumCurrentMinus == 1).and.(Nodo%NumCurrentPlus == 0)) IplusPast = -IminusPast
-            if ((Nodo%NumCurrentMinus == 0).and.(Nodo%NumCurrentPlus == 1)) IMinusPast = -IplusPast
+            if ((wireNode%NumCurrentMinus == 1).and.(wireNode%NumCurrentPlus == 0)) Iplus = -Iminus
+            if ((wireNode%NumCurrentMinus == 0).and.(wireNode%NumCurrentPlus == 1)) IMinus = -Iplus
+            if ((wireNode%NumCurrentMinus == 1).and.(wireNode%NumCurrentPlus == 0)) IplusPast = -IminusPast
+            if ((wireNode%NumCurrentMinus == 0).and.(wireNode%NumCurrentPlus == 1)) IMinusPast = -IplusPast
 
-            Nodo%ChargePresent =  Nodo%CteProp*Nodo%ChargePast   - Nodo%CtePlain*((Iplus+IplusPast)/2.0_RKIND_WIRES-(IMinus+IminusPast)/2.0_RKIND_WIRES)
+            wireNode%ChargePresent =  wireNode%CteProp*wireNode%ChargePast   - wireNode%CtePlain*((Iplus+IplusPast)/2.0_RKIND_WIRES-(IMinus+IminusPast)/2.0_RKIND_WIRES)
 
          end if
       end do
@@ -5880,7 +5880,7 @@ subroutine resume_casuistics
       type(CurrentSegments_t), pointer  :: org,fin
       character(len=3), dimension(1:3) :: DIR
       character(len=BUFSIZE) :: ig
-      type(ChargeNodes_t), pointer :: nodo
+      type(ChargeNodes_t), pointer :: wireNode
       type :: nodosopentoair_t 
         integer(kind=4) :: i,j,k,indexnode
       end type
@@ -5958,130 +5958,130 @@ subroutine resume_casuistics
 #endif
 
       do i1=1,HWires%NumChargeNodes
-         nodo => HWires%Chargenode(i1)
-         if (nodo%exists) then
-            if ((nodo%NumCurrentMinus == 1).and.(nodo%NumCurrentPlus == 1)) then
+         wireNode => HWires%Chargenode(i1)
+         if (wireNode%exists) then
+            if ((wireNode%NumCurrentMinus == 1).and.(wireNode%NumCurrentPlus == 1)) then
                !special cases of 1plus and 1minus
-               IsHeterogeneousJunction = (nodo%CurrentMinus_1%indexmed /= nodo%CurrentPlus_1%indexmed )
-            else if (nodo%NumCurrentMinus + nodo%NumCurrentPlus == 1) then
+               IsHeterogeneousJunction = (wireNode%CurrentMinus_1%indexmed /= wireNode%CurrentPlus_1%indexmed )
+            else if (wireNode%NumCurrentMinus + wireNode%NumCurrentPlus == 1) then
                IsHeterogeneousJunction =.false.
             else
                IsHeterogeneousJunction =.true.
-               if (nodo%NumCurrentMInus >= 2) &
+               if (wireNode%NumCurrentMInus >= 2) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentMinus_1%indexmed /= nodo%CurrentMinus_2%indexmed )
-               if (nodo%NumCurrentMInus >= 3) &
+               (wireNode%CurrentMinus_1%indexmed /= wireNode%CurrentMinus_2%indexmed )
+               if (wireNode%NumCurrentMInus >= 3) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentMinus_1%indexmed /= nodo%CurrentMinus_3%indexmed ).and. &
-               (nodo%CurrentMinus_2%indexmed /= nodo%CurrentMinus_3%indexmed )
-               if (nodo%NumCurrentMInus >= 4) &
+               (wireNode%CurrentMinus_1%indexmed /= wireNode%CurrentMinus_3%indexmed ).and. &
+               (wireNode%CurrentMinus_2%indexmed /= wireNode%CurrentMinus_3%indexmed )
+               if (wireNode%NumCurrentMInus >= 4) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentMinus_1%indexmed /= nodo%CurrentMinus_4%indexmed ).and. &
-               (nodo%CurrentMinus_2%indexmed /= nodo%CurrentMinus_4%indexmed ).and. &
-               (nodo%CurrentMinus_3%indexmed /= nodo%CurrentMinus_4%indexmed )
-               if (nodo%NumCurrentMInus >= 5) &
+               (wireNode%CurrentMinus_1%indexmed /= wireNode%CurrentMinus_4%indexmed ).and. &
+               (wireNode%CurrentMinus_2%indexmed /= wireNode%CurrentMinus_4%indexmed ).and. &
+               (wireNode%CurrentMinus_3%indexmed /= wireNode%CurrentMinus_4%indexmed )
+               if (wireNode%NumCurrentMInus >= 5) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentMinus_1%indexmed /= nodo%CurrentMinus_5%indexmed ).and. &
-               (nodo%CurrentMinus_2%indexmed /= nodo%CurrentMinus_5%indexmed ).and. &
-               (nodo%CurrentMinus_3%indexmed /= nodo%CurrentMinus_5%indexmed ).and. &
-               (nodo%CurrentMinus_4%indexmed /= nodo%CurrentMinus_5%indexmed )
-               if (nodo%NumCurrentMInus >= 6) &
+               (wireNode%CurrentMinus_1%indexmed /= wireNode%CurrentMinus_5%indexmed ).and. &
+               (wireNode%CurrentMinus_2%indexmed /= wireNode%CurrentMinus_5%indexmed ).and. &
+               (wireNode%CurrentMinus_3%indexmed /= wireNode%CurrentMinus_5%indexmed ).and. &
+               (wireNode%CurrentMinus_4%indexmed /= wireNode%CurrentMinus_5%indexmed )
+               if (wireNode%NumCurrentMInus >= 6) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentMinus_1%indexmed /= nodo%CurrentMinus_6%indexmed ).and. &
-               (nodo%CurrentMinus_2%indexmed /= nodo%CurrentMinus_6%indexmed ).and. &
-               (nodo%CurrentMinus_3%indexmed /= nodo%CurrentMinus_6%indexmed ).and. &
-               (nodo%CurrentMinus_4%indexmed /= nodo%CurrentMinus_6%indexmed ).and. &
-               (nodo%CurrentMinus_5%indexmed /= nodo%CurrentMinus_6%indexmed )
-               if (nodo%NumCurrentMInus >= 7) &
+               (wireNode%CurrentMinus_1%indexmed /= wireNode%CurrentMinus_6%indexmed ).and. &
+               (wireNode%CurrentMinus_2%indexmed /= wireNode%CurrentMinus_6%indexmed ).and. &
+               (wireNode%CurrentMinus_3%indexmed /= wireNode%CurrentMinus_6%indexmed ).and. &
+               (wireNode%CurrentMinus_4%indexmed /= wireNode%CurrentMinus_6%indexmed ).and. &
+               (wireNode%CurrentMinus_5%indexmed /= wireNode%CurrentMinus_6%indexmed )
+               if (wireNode%NumCurrentMInus >= 7) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentMinus_1%indexmed /= nodo%CurrentMinus_7%indexmed ).and. &
-               (nodo%CurrentMinus_2%indexmed /= nodo%CurrentMinus_7%indexmed ).and. &
-               (nodo%CurrentMinus_3%indexmed /= nodo%CurrentMinus_7%indexmed ).and. &
-               (nodo%CurrentMinus_4%indexmed /= nodo%CurrentMinus_7%indexmed ).and. &
-               (nodo%CurrentMinus_5%indexmed /= nodo%CurrentMinus_7%indexmed ).and. &
-               (nodo%CurrentMinus_6%indexmed /= nodo%CurrentMinus_7%indexmed )
-               if (nodo%NumCurrentMInus >= 8) &
+               (wireNode%CurrentMinus_1%indexmed /= wireNode%CurrentMinus_7%indexmed ).and. &
+               (wireNode%CurrentMinus_2%indexmed /= wireNode%CurrentMinus_7%indexmed ).and. &
+               (wireNode%CurrentMinus_3%indexmed /= wireNode%CurrentMinus_7%indexmed ).and. &
+               (wireNode%CurrentMinus_4%indexmed /= wireNode%CurrentMinus_7%indexmed ).and. &
+               (wireNode%CurrentMinus_5%indexmed /= wireNode%CurrentMinus_7%indexmed ).and. &
+               (wireNode%CurrentMinus_6%indexmed /= wireNode%CurrentMinus_7%indexmed )
+               if (wireNode%NumCurrentMInus >= 8) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentMinus_1%indexmed /= nodo%CurrentMinus_8%indexmed ).and. &
-               (nodo%CurrentMinus_2%indexmed /= nodo%CurrentMinus_8%indexmed ).and. &
-               (nodo%CurrentMinus_3%indexmed /= nodo%CurrentMinus_8%indexmed ).and. &
-               (nodo%CurrentMinus_4%indexmed /= nodo%CurrentMinus_8%indexmed ).and. &
-               (nodo%CurrentMinus_5%indexmed /= nodo%CurrentMinus_8%indexmed ).and. &
-               (nodo%CurrentMinus_6%indexmed /= nodo%CurrentMinus_8%indexmed ).and. &
-               (nodo%CurrentMinus_7%indexmed /= nodo%CurrentMinus_8%indexmed )
-               if (nodo%NumCurrentMInus >= 9) &
+               (wireNode%CurrentMinus_1%indexmed /= wireNode%CurrentMinus_8%indexmed ).and. &
+               (wireNode%CurrentMinus_2%indexmed /= wireNode%CurrentMinus_8%indexmed ).and. &
+               (wireNode%CurrentMinus_3%indexmed /= wireNode%CurrentMinus_8%indexmed ).and. &
+               (wireNode%CurrentMinus_4%indexmed /= wireNode%CurrentMinus_8%indexmed ).and. &
+               (wireNode%CurrentMinus_5%indexmed /= wireNode%CurrentMinus_8%indexmed ).and. &
+               (wireNode%CurrentMinus_6%indexmed /= wireNode%CurrentMinus_8%indexmed ).and. &
+               (wireNode%CurrentMinus_7%indexmed /= wireNode%CurrentMinus_8%indexmed )
+               if (wireNode%NumCurrentMInus >= 9) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentMinus_1%indexmed /= nodo%CurrentMinus_9%indexmed ).and. &
-               (nodo%CurrentMinus_2%indexmed /= nodo%CurrentMinus_9%indexmed ).and. &
-               (nodo%CurrentMinus_3%indexmed /= nodo%CurrentMinus_9%indexmed ).and. &
-               (nodo%CurrentMinus_4%indexmed /= nodo%CurrentMinus_9%indexmed ).and. &
-               (nodo%CurrentMinus_5%indexmed /= nodo%CurrentMinus_9%indexmed ).and. &
-               (nodo%CurrentMinus_6%indexmed /= nodo%CurrentMinus_9%indexmed ).and. &
-               (nodo%CurrentMinus_7%indexmed /= nodo%CurrentMinus_9%indexmed ).and. &
-               (nodo%CurrentMinus_8%indexmed /= nodo%CurrentMinus_9%indexmed )
+               (wireNode%CurrentMinus_1%indexmed /= wireNode%CurrentMinus_9%indexmed ).and. &
+               (wireNode%CurrentMinus_2%indexmed /= wireNode%CurrentMinus_9%indexmed ).and. &
+               (wireNode%CurrentMinus_3%indexmed /= wireNode%CurrentMinus_9%indexmed ).and. &
+               (wireNode%CurrentMinus_4%indexmed /= wireNode%CurrentMinus_9%indexmed ).and. &
+               (wireNode%CurrentMinus_5%indexmed /= wireNode%CurrentMinus_9%indexmed ).and. &
+               (wireNode%CurrentMinus_6%indexmed /= wireNode%CurrentMinus_9%indexmed ).and. &
+               (wireNode%CurrentMinus_7%indexmed /= wireNode%CurrentMinus_9%indexmed ).and. &
+               (wireNode%CurrentMinus_8%indexmed /= wireNode%CurrentMinus_9%indexmed )
                !
-               if (nodo%NumCurrentPlus >= 2) &
+               if (wireNode%NumCurrentPlus >= 2) &
                IsHeterogeneousJunction =  IsHeterogeneousJunction .and.  &
-               (nodo%CurrentPlus_1%indexmed /= nodo%CurrentPlus_2%indexmed )
-               if (nodo%NumCurrentPlus >= 3) &
+               (wireNode%CurrentPlus_1%indexmed /= wireNode%CurrentPlus_2%indexmed )
+               if (wireNode%NumCurrentPlus >= 3) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentPlus_1%indexmed /= nodo%CurrentPlus_3%indexmed ).and. &
-               (nodo%CurrentPlus_2%indexmed /= nodo%CurrentPlus_3%indexmed )
-               if (nodo%NumCurrentPlus >= 4) &
+               (wireNode%CurrentPlus_1%indexmed /= wireNode%CurrentPlus_3%indexmed ).and. &
+               (wireNode%CurrentPlus_2%indexmed /= wireNode%CurrentPlus_3%indexmed )
+               if (wireNode%NumCurrentPlus >= 4) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentPlus_1%indexmed /= nodo%CurrentPlus_4%indexmed ).and. &
-               (nodo%CurrentPlus_2%indexmed /= nodo%CurrentPlus_4%indexmed ).and. &
-               (nodo%CurrentPlus_3%indexmed /= nodo%CurrentPlus_4%indexmed )
-               if (nodo%NumCurrentPlus >= 5) &
+               (wireNode%CurrentPlus_1%indexmed /= wireNode%CurrentPlus_4%indexmed ).and. &
+               (wireNode%CurrentPlus_2%indexmed /= wireNode%CurrentPlus_4%indexmed ).and. &
+               (wireNode%CurrentPlus_3%indexmed /= wireNode%CurrentPlus_4%indexmed )
+               if (wireNode%NumCurrentPlus >= 5) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentPlus_1%indexmed /= nodo%CurrentPlus_5%indexmed ).and. &
-               (nodo%CurrentPlus_2%indexmed /= nodo%CurrentPlus_5%indexmed ).and. &
-               (nodo%CurrentPlus_3%indexmed /= nodo%CurrentPlus_5%indexmed ).and. &
-               (nodo%CurrentPlus_4%indexmed /= nodo%CurrentPlus_5%indexmed )
-               if (nodo%NumCurrentPlus >= 6) &
+               (wireNode%CurrentPlus_1%indexmed /= wireNode%CurrentPlus_5%indexmed ).and. &
+               (wireNode%CurrentPlus_2%indexmed /= wireNode%CurrentPlus_5%indexmed ).and. &
+               (wireNode%CurrentPlus_3%indexmed /= wireNode%CurrentPlus_5%indexmed ).and. &
+               (wireNode%CurrentPlus_4%indexmed /= wireNode%CurrentPlus_5%indexmed )
+               if (wireNode%NumCurrentPlus >= 6) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentPlus_1%indexmed /= nodo%CurrentPlus_6%indexmed ).and. &
-               (nodo%CurrentPlus_2%indexmed /= nodo%CurrentPlus_6%indexmed ).and. &
-               (nodo%CurrentPlus_3%indexmed /= nodo%CurrentPlus_6%indexmed ).and. &
-               (nodo%CurrentPlus_4%indexmed /= nodo%CurrentPlus_6%indexmed ).and. &
-               (nodo%CurrentPlus_5%indexmed /= nodo%CurrentPlus_6%indexmed )
-               if (nodo%NumCurrentPlus >= 7) &
+               (wireNode%CurrentPlus_1%indexmed /= wireNode%CurrentPlus_6%indexmed ).and. &
+               (wireNode%CurrentPlus_2%indexmed /= wireNode%CurrentPlus_6%indexmed ).and. &
+               (wireNode%CurrentPlus_3%indexmed /= wireNode%CurrentPlus_6%indexmed ).and. &
+               (wireNode%CurrentPlus_4%indexmed /= wireNode%CurrentPlus_6%indexmed ).and. &
+               (wireNode%CurrentPlus_5%indexmed /= wireNode%CurrentPlus_6%indexmed )
+               if (wireNode%NumCurrentPlus >= 7) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentPlus_1%indexmed /= nodo%CurrentPlus_7%indexmed ).and. &
-               (nodo%CurrentPlus_2%indexmed /= nodo%CurrentPlus_7%indexmed ).and. &
-               (nodo%CurrentPlus_3%indexmed /= nodo%CurrentPlus_7%indexmed ).and. &
-               (nodo%CurrentPlus_4%indexmed /= nodo%CurrentPlus_7%indexmed ).and. &
-               (nodo%CurrentPlus_5%indexmed /= nodo%CurrentPlus_7%indexmed ).and. &
-               (nodo%CurrentPlus_6%indexmed /= nodo%CurrentPlus_7%indexmed )
-               if (nodo%NumCurrentPlus >= 8) &
+               (wireNode%CurrentPlus_1%indexmed /= wireNode%CurrentPlus_7%indexmed ).and. &
+               (wireNode%CurrentPlus_2%indexmed /= wireNode%CurrentPlus_7%indexmed ).and. &
+               (wireNode%CurrentPlus_3%indexmed /= wireNode%CurrentPlus_7%indexmed ).and. &
+               (wireNode%CurrentPlus_4%indexmed /= wireNode%CurrentPlus_7%indexmed ).and. &
+               (wireNode%CurrentPlus_5%indexmed /= wireNode%CurrentPlus_7%indexmed ).and. &
+               (wireNode%CurrentPlus_6%indexmed /= wireNode%CurrentPlus_7%indexmed )
+               if (wireNode%NumCurrentPlus >= 8) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentPlus_1%indexmed /= nodo%CurrentPlus_8%indexmed ).and. &
-               (nodo%CurrentPlus_2%indexmed /= nodo%CurrentPlus_8%indexmed ).and. &
-               (nodo%CurrentPlus_3%indexmed /= nodo%CurrentPlus_8%indexmed ).and. &
-               (nodo%CurrentPlus_4%indexmed /= nodo%CurrentPlus_8%indexmed ).and. &
-               (nodo%CurrentPlus_5%indexmed /= nodo%CurrentPlus_8%indexmed ).and. &
-               (nodo%CurrentPlus_6%indexmed /= nodo%CurrentPlus_8%indexmed ).and. &
-               (nodo%CurrentPlus_7%indexmed /= nodo%CurrentPlus_8%indexmed )
-               if (nodo%NumCurrentPlus >= 9) &
+               (wireNode%CurrentPlus_1%indexmed /= wireNode%CurrentPlus_8%indexmed ).and. &
+               (wireNode%CurrentPlus_2%indexmed /= wireNode%CurrentPlus_8%indexmed ).and. &
+               (wireNode%CurrentPlus_3%indexmed /= wireNode%CurrentPlus_8%indexmed ).and. &
+               (wireNode%CurrentPlus_4%indexmed /= wireNode%CurrentPlus_8%indexmed ).and. &
+               (wireNode%CurrentPlus_5%indexmed /= wireNode%CurrentPlus_8%indexmed ).and. &
+               (wireNode%CurrentPlus_6%indexmed /= wireNode%CurrentPlus_8%indexmed ).and. &
+               (wireNode%CurrentPlus_7%indexmed /= wireNode%CurrentPlus_8%indexmed )
+               if (wireNode%NumCurrentPlus >= 9) &
                IsHeterogeneousJunction = IsHeterogeneousJunction .and.  &
-               (nodo%CurrentPlus_1%indexmed /= nodo%CurrentPlus_9%indexmed ).and. &
-               (nodo%CurrentPlus_2%indexmed /= nodo%CurrentPlus_9%indexmed ).and. &
-               (nodo%CurrentPlus_3%indexmed /= nodo%CurrentPlus_9%indexmed ).and. &
-               (nodo%CurrentPlus_4%indexmed /= nodo%CurrentPlus_9%indexmed ).and. &
-               (nodo%CurrentPlus_5%indexmed /= nodo%CurrentPlus_9%indexmed ).and. &
-               (nodo%CurrentPlus_6%indexmed /= nodo%CurrentPlus_9%indexmed ).and. &
-               (nodo%CurrentPlus_7%indexmed /= nodo%CurrentPlus_9%indexmed ).and. &
-               (nodo%CurrentPlus_8%indexmed /= nodo%CurrentPlus_9%indexmed )
+               (wireNode%CurrentPlus_1%indexmed /= wireNode%CurrentPlus_9%indexmed ).and. &
+               (wireNode%CurrentPlus_2%indexmed /= wireNode%CurrentPlus_9%indexmed ).and. &
+               (wireNode%CurrentPlus_3%indexmed /= wireNode%CurrentPlus_9%indexmed ).and. &
+               (wireNode%CurrentPlus_4%indexmed /= wireNode%CurrentPlus_9%indexmed ).and. &
+               (wireNode%CurrentPlus_5%indexmed /= wireNode%CurrentPlus_9%indexmed ).and. &
+               (wireNode%CurrentPlus_6%indexmed /= wireNode%CurrentPlus_9%indexmed ).and. &
+               (wireNode%CurrentPlus_7%indexmed /= wireNode%CurrentPlus_9%indexmed ).and. &
+               (wireNode%CurrentPlus_8%indexmed /= wireNode%CurrentPlus_9%indexmed )
             end if
 
-            if ((IsHeterogeneousJunction       .and. nodo%IsHeterogeneousJunction).or. &
-            (.not.IsHeterogeneousJunction).and.(.not.nodo%IsHeterogeneousJunction)) then
+            if ((IsHeterogeneousJunction       .and. wireNode%IsHeterogeneousJunction).or. &
+            (.not.IsHeterogeneousJunction).and.(.not.wireNode%IsHeterogeneousJunction)) then
                continue
             else
                write (buff,'(a,i7,3i7,a,2i3,a)')  'wir3_BUGGYERROR: Heterogeneous Junctions mismatch ', &
-               nodo%indexnode, nodo%i,nodo%j,nodo%k, &
-               ' (',nodo%numcurrentminus,nodo%numcurrentplus,'). '
-               if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,.true.)
+               wireNode%indexnode, wireNode%i,wireNode%j,wireNode%k, &
+               ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,'). '
+               if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,.true.)
             end if
 
          end if !del if exist
@@ -6095,33 +6095,33 @@ subroutine resume_casuistics
 
       !!!!!!!!!!!!!!!!
       do i1=1,HWires%NumChargeNodes
-         nodo => Hwires%ChargeNode(i1)
-         if (nodo%exists) then
-            if (nodo%isLossy.or.nodo%isPEC) then
-               if (nodo%isLossy) ig=' to Lossy'
-               if (nodo%isLossy)   ig=' to Lossy'
-               if (nodo%ispec)   ig=' to PEC'
-                  if ((nodo%Is_LeftEnd).or.(nodo%Is_RightEnd)) then
-                     write (buff,'(a,i7,3i7,a,2i3,a,3e12.2e3)')  'wir3_INFO: Terminal (LeftEnd/RightEnd) node directly GROUNDED  ',nodo%indexnode, &
-                     nodo%i,nodo%j,nodo%k, &
-                     ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'//trim(adjustl(ig)),Nodo%CteProp,Nodo%CtePlain
-                     if ((nodo%k >=  ZI).and.(nodo%k <= ZE).and.verbose) call WarnErrReport(buff)
-                  else if ((nodo%NumCurrentPlus + nodo%NumCurrentMinus < 2)) then
-                     write (buff,'(a,i7,3i7,a,2i3,a,3e12.2e3)')  'wir3_WARNING: Terminal (other) node  direcly GROUNDED  ',nodo%indexnode, &
-                     nodo%i,nodo%j,nodo%k, &
-                     ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'//trim(adjustl(ig)),Nodo%CteProp,Nodo%CtePlain
-                     if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+         wireNode => Hwires%ChargeNode(i1)
+         if (wireNode%exists) then
+            if (wireNode%isLossy.or.wireNode%isPEC) then
+               if (wireNode%isLossy) ig=' to Lossy'
+               if (wireNode%isLossy)   ig=' to Lossy'
+               if (wireNode%ispec)   ig=' to PEC'
+                  if ((wireNode%Is_LeftEnd).or.(wireNode%Is_RightEnd)) then
+                     write (buff,'(a,i7,3i7,a,2i3,a,3e12.2e3)')  'wir3_INFO: Terminal (LeftEnd/RightEnd) node directly GROUNDED  ',wireNode%indexnode, &
+                     wireNode%i,wireNode%j,wireNode%k, &
+                     ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,')'//trim(adjustl(ig)),wireNode%CteProp,wireNode%CtePlain
+                     if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE).and.verbose) call WarnErrReport(buff)
+                  else if ((wireNode%NumCurrentPlus + wireNode%NumCurrentMinus < 2)) then
+                     write (buff,'(a,i7,3i7,a,2i3,a,3e12.2e3)')  'wir3_WARNING: Terminal (other) node  direcly GROUNDED  ',wireNode%indexnode, &
+                     wireNode%i,wireNode%j,wireNode%k, &
+                     ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,')'//trim(adjustl(ig)),wireNode%CteProp,wireNode%CtePlain
+                     if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
                   else
                      if (groundwires) then
                         write (buff,'(a,i7,3i7,a,2i3,a,3e12.2e3)')  'wir3_INFO: NON-terminal node directly GROUNDED (-groundWIREs)', &
-                        nodo%indexnode, nodo%i,nodo%j,nodo%k, &
-                        ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'//trim(adjustl(ig)),Nodo%CteProp,Nodo%CtePlain
-                     if ((nodo%k >=  ZI).and.(nodo%k <= ZE).and.verbose) call WarnErrReport(buff)
+                        wireNode%indexnode, wireNode%i,wireNode%j,wireNode%k, &
+                        ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,')'//trim(adjustl(ig)),wireNode%CteProp,wireNode%CtePlain
+                     if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE).and.verbose) call WarnErrReport(buff)
                      else
                         write (buff,'(a,i7,3i7,a,2i3,a,3e12.2e3)')  'wir3_WARNING: NON-terminal node directly GROUNDED ', &
-                        nodo%indexnode, nodo%i,nodo%j,nodo%k, &
-                        ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'//trim(adjustl(ig)),Nodo%CteProp,Nodo%CtePlain
-                     if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+                        wireNode%indexnode, wireNode%i,wireNode%j,wireNode%k, &
+                        ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,')'//trim(adjustl(ig)),wireNode%CteProp,wireNode%CtePlain
+                     if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
                      end if
                   end if
             end if
@@ -6130,231 +6130,231 @@ subroutine resume_casuistics
 
 
       do i1=1,HWires%NumChargeNodes
-         nodo => Hwires%ChargeNode(i1)
-         if (nodo%exists) then
-            if (nodo%IsHeterogeneousJunction) then
+         wireNode => Hwires%ChargeNode(i1)
+         if (wireNode%exists) then
+            if (wireNode%IsHeterogeneousJunction) then
                !
-               write (buff,'(a,i7,3i7,a,2i3,a)')  'wir3_INFO: MultiWIRE Junction made at node ',nodo%indexnode, &
-               nodo%i,nodo%j,nodo%k, &
-               ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'
-               if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+               write (buff,'(a,i7,3i7,a,2i3,a)')  'wir3_INFO: MultiWIRE Junction made at node ',wireNode%indexnode, &
+               wireNode%i,wireNode%j,wireNode%k, &
+               ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,')'
+               if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                Terminal = .false. !7/2/14 esti estaba mal
-               if (nodo%NumCurrentMinus >=1) then
+               if (wireNode%NumCurrentMinus >=1) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentMinus_1%Is_LeftEnd.or.nodo%CurrentMinus_1%Is_RightEnd.or.nodo%CurrentMinus_1%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentMinus_1%Is_LeftEnd.or.wireNode%CurrentMinus_1%Is_RightEnd.or.wireNode%CurrentMinus_1%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -1: ', &
-                  nodo%CurrentMinus_1%origindex, &
-                  nodo%CurrentMinus_1%i, &
-                  nodo%CurrentMinus_1%j, &
-                  nodo%CurrentMinus_1%k, &
-                  dir(nodo%CurrentMinus_1%tipofield), &
-                  nodo%CurrentMinus_1%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%CurrentMinus_1%origindex, &
+                  wireNode%CurrentMinus_1%i, &
+                  wireNode%CurrentMinus_1%j, &
+                  wireNode%CurrentMinus_1%k, &
+                  dir(wireNode%CurrentMinus_1%tipofield), &
+                  wireNode%CurrentMinus_1%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentMinus >= 2) then
+               if (wireNode%NumCurrentMinus >= 2) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentMinus_2%Is_LeftEnd.or.nodo%CurrentMinus_2%Is_RightEnd.or.nodo%CurrentMinus_2%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentMinus_2%Is_LeftEnd.or.wireNode%CurrentMinus_2%Is_RightEnd.or.wireNode%CurrentMinus_2%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -2: ',  &
-                  nodo%CurrentMinus_2%origindex, &
-                  nodo%CurrentMinus_2%i, &
-                  nodo%CurrentMinus_2%j, &
-                  nodo%CurrentMinus_2%k, &
-                  dir(nodo%CurrentMinus_2%tipofield), &
-                  nodo%CurrentMinus_2%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%CurrentMinus_2%origindex, &
+                  wireNode%CurrentMinus_2%i, &
+                  wireNode%CurrentMinus_2%j, &
+                  wireNode%CurrentMinus_2%k, &
+                  dir(wireNode%CurrentMinus_2%tipofield), &
+                  wireNode%CurrentMinus_2%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentMinus >= 3) then
+               if (wireNode%NumCurrentMinus >= 3) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentMinus_3%Is_LeftEnd.or.nodo%CurrentMinus_3%Is_RightEnd.or.nodo%CurrentMinus_3%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentMinus_3%Is_LeftEnd.or.wireNode%CurrentMinus_3%Is_RightEnd.or.wireNode%CurrentMinus_3%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -3: ',  &
-                  nodo%CurrentMinus_3%origindex, &
-                  nodo%CurrentMinus_3%i, &
-                  nodo%CurrentMinus_3%j, &
-                  nodo%CurrentMinus_3%k, &
-                  dir(nodo%CurrentMinus_3%tipofield), &
-                  nodo%CurrentMinus_3%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%CurrentMinus_3%origindex, &
+                  wireNode%CurrentMinus_3%i, &
+                  wireNode%CurrentMinus_3%j, &
+                  wireNode%CurrentMinus_3%k, &
+                  dir(wireNode%CurrentMinus_3%tipofield), &
+                  wireNode%CurrentMinus_3%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentMinus >= 4) then
+               if (wireNode%NumCurrentMinus >= 4) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentMinus_4%Is_LeftEnd.or.nodo%CurrentMinus_4%Is_RightEnd.or.nodo%CurrentMinus_4%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentMinus_4%Is_LeftEnd.or.wireNode%CurrentMinus_4%Is_RightEnd.or.wireNode%CurrentMinus_4%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -4: ',  &
-                  nodo%CurrentMinus_4%origindex, &
-                  nodo%CurrentMinus_4%i, &
-                  nodo%CurrentMinus_4%j, &
-                  nodo%CurrentMinus_4%k, &
-                  dir(nodo%CurrentMinus_4%tipofield), &
-                  nodo%CurrentMinus_4%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%CurrentMinus_4%origindex, &
+                  wireNode%CurrentMinus_4%i, &
+                  wireNode%CurrentMinus_4%j, &
+                  wireNode%CurrentMinus_4%k, &
+                  dir(wireNode%CurrentMinus_4%tipofield), &
+                  wireNode%CurrentMinus_4%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentMinus >= 5) then
+               if (wireNode%NumCurrentMinus >= 5) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentMinus_5%Is_LeftEnd.or.nodo%CurrentMinus_5%Is_RightEnd.or.nodo%CurrentMinus_5%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentMinus_5%Is_LeftEnd.or.wireNode%CurrentMinus_5%Is_RightEnd.or.wireNode%CurrentMinus_5%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -5: ',  &
-                  nodo%CurrentMinus_5%origindex, &
-                  nodo%CurrentMinus_5%i, &
-                  nodo%CurrentMinus_5%j, &
-                  nodo%CurrentMinus_5%k, &
-                  dir(nodo%CurrentMinus_5%tipofield), &
-                  nodo%CurrentMinus_5%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%CurrentMinus_5%origindex, &
+                  wireNode%CurrentMinus_5%i, &
+                  wireNode%CurrentMinus_5%j, &
+                  wireNode%CurrentMinus_5%k, &
+                  dir(wireNode%CurrentMinus_5%tipofield), &
+                  wireNode%CurrentMinus_5%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentMinus >= 6) then
+               if (wireNode%NumCurrentMinus >= 6) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentMinus_6%Is_LeftEnd.or.nodo%CurrentMinus_6%Is_RightEnd.or.nodo%CurrentMinus_6%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentMinus_6%Is_LeftEnd.or.wireNode%CurrentMinus_6%Is_RightEnd.or.wireNode%CurrentMinus_6%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -6: ',  &
-                  nodo%CurrentMinus_6%origindex, &
-                  nodo%CurrentMinus_6%i, &
-                  nodo%CurrentMinus_6%j, &
-                  nodo%CurrentMinus_6%k, &
-                  dir(nodo%CurrentMinus_6%tipofield), &
-                  nodo%CurrentMinus_6%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%CurrentMinus_6%origindex, &
+                  wireNode%CurrentMinus_6%i, &
+                  wireNode%CurrentMinus_6%j, &
+                  wireNode%CurrentMinus_6%k, &
+                  dir(wireNode%CurrentMinus_6%tipofield), &
+                  wireNode%CurrentMinus_6%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentMinus >= 7) then
+               if (wireNode%NumCurrentMinus >= 7) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentMinus_7%Is_LeftEnd.or.nodo%CurrentMinus_7%Is_RightEnd.or.nodo%CurrentMinus_7%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentMinus_7%Is_LeftEnd.or.wireNode%CurrentMinus_7%Is_RightEnd.or.wireNode%CurrentMinus_7%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -7: ',  &
-                  nodo%CurrentMinus_7%origindex, &
-                  nodo%CurrentMinus_7%i, &
-                  nodo%CurrentMinus_7%j, &
-                  nodo%CurrentMinus_7%k, &
-                  dir(nodo%CurrentMinus_7%tipofield), &
-                  nodo%CurrentMinus_7%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%CurrentMinus_7%origindex, &
+                  wireNode%CurrentMinus_7%i, &
+                  wireNode%CurrentMinus_7%j, &
+                  wireNode%CurrentMinus_7%k, &
+                  dir(wireNode%CurrentMinus_7%tipofield), &
+                  wireNode%CurrentMinus_7%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentMinus >= 8) then
+               if (wireNode%NumCurrentMinus >= 8) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentMinus_8%Is_LeftEnd.or.nodo%CurrentMinus_8%Is_RightEnd.or.nodo%CurrentMinus_8%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentMinus_8%Is_LeftEnd.or.wireNode%CurrentMinus_8%Is_RightEnd.or.wireNode%CurrentMinus_8%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -8: ',  &
-                  nodo%CurrentMinus_8%origindex, &
-                  nodo%CurrentMinus_8%i, &
-                  nodo%CurrentMinus_8%j, &
-                  nodo%CurrentMinus_8%k, &
-                  dir(nodo%CurrentMinus_8%tipofield), &
-                  nodo%CurrentMinus_8%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%CurrentMinus_8%origindex, &
+                  wireNode%CurrentMinus_8%i, &
+                  wireNode%CurrentMinus_8%j, &
+                  wireNode%CurrentMinus_8%k, &
+                  dir(wireNode%CurrentMinus_8%tipofield), &
+                  wireNode%CurrentMinus_8%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentMinus >= 9) then
+               if (wireNode%NumCurrentMinus >= 9) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentMinus_9%Is_LeftEnd.or.nodo%CurrentMinus_9%Is_RightEnd.or.nodo%CurrentMinus_9%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentMinus_9%Is_LeftEnd.or.wireNode%CurrentMinus_9%Is_RightEnd.or.wireNode%CurrentMinus_9%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -9: ',  &
-                  nodo%CurrentMinus_9%origindex, &
-                  nodo%CurrentMinus_9%i, &
-                  nodo%CurrentMinus_9%j, &
-                  nodo%CurrentMinus_9%k, &
-                  dir(nodo%CurrentMinus_9%tipofield), &
-                  nodo%CurrentMinus_9%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff)
+                  wireNode%CurrentMinus_9%origindex, &
+                  wireNode%CurrentMinus_9%i, &
+                  wireNode%CurrentMinus_9%j, &
+                  wireNode%CurrentMinus_9%k, &
+                  dir(wireNode%CurrentMinus_9%tipofield), &
+                  wireNode%CurrentMinus_9%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff)
                end if
                !
-               if (nodo%NumCurrentplus >= 1) then
+               if (wireNode%NumCurrentplus >= 1) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentPlus_1%Is_LeftEnd.or.nodo%CurrentPlus_1%Is_RightEnd.or.nodo%CurrentPlus_1%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentPlus_1%Is_LeftEnd.or.wireNode%CurrentPlus_1%Is_RightEnd.or.wireNode%CurrentPlus_1%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +1: ',  &
-                  nodo%Currentplus_1%origindex, &
-                  nodo%Currentplus_1%i, &
-                  nodo%Currentplus_1%j, &
-                  nodo%Currentplus_1%k, &
-                  dir(nodo%Currentplus_1%tipofield), &
-                  nodo%Currentplus_1%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%Currentplus_1%origindex, &
+                  wireNode%Currentplus_1%i, &
+                  wireNode%Currentplus_1%j, &
+                  wireNode%Currentplus_1%k, &
+                  dir(wireNode%Currentplus_1%tipofield), &
+                  wireNode%Currentplus_1%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentplus >= 2) then
+               if (wireNode%NumCurrentplus >= 2) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentPlus_2%Is_LeftEnd.or.nodo%CurrentPlus_2%Is_RightEnd.or.nodo%CurrentPlus_2%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentPlus_2%Is_LeftEnd.or.wireNode%CurrentPlus_2%Is_RightEnd.or.wireNode%CurrentPlus_2%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +2: ',  &
-                  nodo%Currentplus_2%origindex, &
-                  nodo%Currentplus_2%i, &
-                  nodo%Currentplus_2%j, &
-                  nodo%Currentplus_2%k, &
-                  dir(nodo%Currentplus_2%tipofield), &
-                  nodo%Currentplus_2%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%Currentplus_2%origindex, &
+                  wireNode%Currentplus_2%i, &
+                  wireNode%Currentplus_2%j, &
+                  wireNode%Currentplus_2%k, &
+                  dir(wireNode%Currentplus_2%tipofield), &
+                  wireNode%Currentplus_2%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentplus >= 3) then
+               if (wireNode%NumCurrentplus >= 3) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentPlus_3%Is_LeftEnd.or.nodo%CurrentPlus_3%Is_RightEnd.or.nodo%CurrentPlus_3%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentPlus_3%Is_LeftEnd.or.wireNode%CurrentPlus_3%Is_RightEnd.or.wireNode%CurrentPlus_3%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +3: ',  &
-                  nodo%Currentplus_3%origindex, &
-                  nodo%Currentplus_3%i, &
-                  nodo%Currentplus_3%j, &
-                  nodo%Currentplus_3%k, &
-                  dir(nodo%Currentplus_3%tipofield), &
-                  nodo%Currentplus_3%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff)
+                  wireNode%Currentplus_3%origindex, &
+                  wireNode%Currentplus_3%i, &
+                  wireNode%Currentplus_3%j, &
+                  wireNode%Currentplus_3%k, &
+                  dir(wireNode%Currentplus_3%tipofield), &
+                  wireNode%Currentplus_3%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentplus >= 4) then
+               if (wireNode%NumCurrentplus >= 4) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentPlus_4%Is_LeftEnd.or.nodo%CurrentPlus_4%Is_RightEnd.or.nodo%CurrentPlus_4%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentPlus_4%Is_LeftEnd.or.wireNode%CurrentPlus_4%Is_RightEnd.or.wireNode%CurrentPlus_4%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +4: ',  &
-                  nodo%Currentplus_4%origindex, &
-                  nodo%Currentplus_4%i, &
-                  nodo%Currentplus_4%j, &
-                  nodo%Currentplus_4%k, &
-                  dir(nodo%Currentplus_4%tipofield), &
-                  nodo%Currentplus_4%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%Currentplus_4%origindex, &
+                  wireNode%Currentplus_4%i, &
+                  wireNode%Currentplus_4%j, &
+                  wireNode%Currentplus_4%k, &
+                  dir(wireNode%Currentplus_4%tipofield), &
+                  wireNode%Currentplus_4%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentplus >= 5) then
+               if (wireNode%NumCurrentplus >= 5) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentPlus_5%Is_LeftEnd.or.nodo%CurrentPlus_5%Is_RightEnd.or.nodo%CurrentPlus_5%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentPlus_5%Is_LeftEnd.or.wireNode%CurrentPlus_5%Is_RightEnd.or.wireNode%CurrentPlus_5%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +5: ',  &
-                  nodo%Currentplus_5%origindex, &
-                  nodo%Currentplus_5%i, &
-                  nodo%Currentplus_5%j, &
-                  nodo%Currentplus_5%k, &
-                  dir(nodo%Currentplus_5%tipofield), &
-                  nodo%Currentplus_5%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%Currentplus_5%origindex, &
+                  wireNode%Currentplus_5%i, &
+                  wireNode%Currentplus_5%j, &
+                  wireNode%Currentplus_5%k, &
+                  dir(wireNode%Currentplus_5%tipofield), &
+                  wireNode%Currentplus_5%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentplus >= 6) then
+               if (wireNode%NumCurrentplus >= 6) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentPlus_6%Is_LeftEnd.or.nodo%CurrentPlus_6%Is_RightEnd.or.nodo%CurrentPlus_6%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentPlus_6%Is_LeftEnd.or.wireNode%CurrentPlus_6%Is_RightEnd.or.wireNode%CurrentPlus_6%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +6: ',  &
-                  nodo%Currentplus_6%origindex, &
-                  nodo%Currentplus_6%i, &
-                  nodo%Currentplus_6%j, &
-                  nodo%Currentplus_6%k, &
-                  dir(nodo%Currentplus_6%tipofield), &
-                  nodo%Currentplus_6%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%Currentplus_6%origindex, &
+                  wireNode%Currentplus_6%i, &
+                  wireNode%Currentplus_6%j, &
+                  wireNode%Currentplus_6%k, &
+                  dir(wireNode%Currentplus_6%tipofield), &
+                  wireNode%Currentplus_6%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentplus >= 7) then
+               if (wireNode%NumCurrentplus >= 7) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentPlus_7%Is_LeftEnd.or.nodo%CurrentPlus_7%Is_RightEnd.or.nodo%CurrentPlus_7%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentPlus_7%Is_LeftEnd.or.wireNode%CurrentPlus_7%Is_RightEnd.or.wireNode%CurrentPlus_7%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +7: ',  &
-                  nodo%Currentplus_7%origindex, &
-                  nodo%Currentplus_7%i, &
-                  nodo%Currentplus_7%j, &
-                  nodo%Currentplus_7%k, &
-                  dir(nodo%Currentplus_7%tipofield), &
-                  nodo%Currentplus_7%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%Currentplus_7%origindex, &
+                  wireNode%Currentplus_7%i, &
+                  wireNode%Currentplus_7%j, &
+                  wireNode%Currentplus_7%k, &
+                  dir(wireNode%Currentplus_7%tipofield), &
+                  wireNode%Currentplus_7%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentplus >= 8) then
+               if (wireNode%NumCurrentplus >= 8) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentPlus_8%Is_LeftEnd.or.nodo%CurrentPlus_8%Is_RightEnd.or.nodo%CurrentPlus_8%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentPlus_8%Is_LeftEnd.or.wireNode%CurrentPlus_8%Is_RightEnd.or.wireNode%CurrentPlus_8%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +8: ',  &
-                  nodo%Currentplus_8%origindex, &
-                  nodo%Currentplus_8%i, &
-                  nodo%Currentplus_8%j, &
-                  nodo%Currentplus_8%k, &
-                  dir(nodo%Currentplus_8%tipofield), &
-                  nodo%Currentplus_8%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%Currentplus_8%origindex, &
+                  wireNode%Currentplus_8%i, &
+                  wireNode%Currentplus_8%j, &
+                  wireNode%Currentplus_8%k, &
+                  dir(wireNode%Currentplus_8%tipofield), &
+                  wireNode%Currentplus_8%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
-               if (nodo%NumCurrentplus >= 9) then
+               if (wireNode%NumCurrentplus >= 9) then
                   Terminal = Terminal .or. &
-                  (nodo%CurrentPlus_9%Is_LeftEnd.or.nodo%CurrentPlus_9%Is_RightEnd.or.nodo%CurrentPlus_9%IsEnd_norLeft_norRight)
+                  (wireNode%CurrentPlus_9%Is_LeftEnd.or.wireNode%CurrentPlus_9%Is_RightEnd.or.wireNode%CurrentPlus_9%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +9: ',  &
-                  nodo%Currentplus_9%origindex, &
-                  nodo%Currentplus_9%i, &
-                  nodo%Currentplus_9%j, &
-                  nodo%Currentplus_9%k, &
-                  dir(nodo%Currentplus_9%tipofield), &
-                  nodo%Currentplus_9%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
+                  wireNode%Currentplus_9%origindex, &
+                  wireNode%Currentplus_9%i, &
+                  wireNode%Currentplus_9%j, &
+                  wireNode%Currentplus_9%k, &
+                  dir(wireNode%Currentplus_9%tipofield), &
+                  wireNode%Currentplus_9%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff)
                end if
                if (.not.Terminal) then
                   write (buff,'(a)')  'wir3_BUGGYERROR: Some of the segments are not terminal'
@@ -6368,204 +6368,204 @@ subroutine resume_casuistics
       !!!!!!!!!!!!!!!!
 
       do i1=1,HWires%NumChargeNodes
-         nodo => Hwires%ChargeNode(i1)
-         if (nodo%exists) then
-            if ((.not.nodo%IsHeterogeneousJunction).and. &
-            (nodo%NumCurrentMinus + nodo%NumCurrentPlus >= 3)) then !homogeneo y verdadera union
+         wireNode => Hwires%ChargeNode(i1)
+         if (wireNode%exists) then
+            if ((.not.wireNode%IsHeterogeneousJunction).and. &
+            (wireNode%NumCurrentMinus + wireNode%NumCurrentPlus >= 3)) then !homogeneo y verdadera union
                if (.not.strictOLD) then
                   write (buff,'(a)')  'wir3_INFO: Intra-WIRE Junction made between: '
                   paraerr=.false.
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff,paraerr)
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE).and.verbose) call WarnErrReport(buff,paraerr)
                else
                   write (buff,'(a)')  'wir3_ERROR: Intra-WIRE Junction of more than 2 segments is forbidden: '
                   paraerr=.true.
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
                write (buff,'(a,3i7)')  '         At node: ', &
-               nodo%i, &
-               nodo%j, &
-               nodo%k
-               if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               if (nodo%NumCurrentMinus >=1) then
+               wireNode%i, &
+               wireNode%j, &
+               wireNode%k
+               if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
+               if (wireNode%NumCurrentMinus >=1) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -1: ', &
-                  nodo%CurrentMinus_1%origindex, &
-                  nodo%CurrentMinus_1%i, &
-                  nodo%CurrentMinus_1%j, &
-                  nodo%CurrentMinus_1%k, &
-                  dir(nodo%CurrentMinus_1%tipofield), &
-                  nodo%CurrentMinus_1%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%CurrentMinus_1%origindex, &
+                  wireNode%CurrentMinus_1%i, &
+                  wireNode%CurrentMinus_1%j, &
+                  wireNode%CurrentMinus_1%k, &
+                  dir(wireNode%CurrentMinus_1%tipofield), &
+                  wireNode%CurrentMinus_1%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentMinus >= 2) then
+               if (wireNode%NumCurrentMinus >= 2) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -2: ',  &
-                  nodo%CurrentMinus_2%origindex, &
-                  nodo%CurrentMinus_2%i, &
-                  nodo%CurrentMinus_2%j, &
-                  nodo%CurrentMinus_2%k, &
-                  dir(nodo%CurrentMinus_2%tipofield), &
-                  nodo%CurrentMinus_2%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%CurrentMinus_2%origindex, &
+                  wireNode%CurrentMinus_2%i, &
+                  wireNode%CurrentMinus_2%j, &
+                  wireNode%CurrentMinus_2%k, &
+                  dir(wireNode%CurrentMinus_2%tipofield), &
+                  wireNode%CurrentMinus_2%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentMinus >= 3) then
+               if (wireNode%NumCurrentMinus >= 3) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -3: ',  &
-                  nodo%CurrentMinus_3%origindex, &
-                  nodo%CurrentMinus_3%i, &
-                  nodo%CurrentMinus_3%j, &
-                  nodo%CurrentMinus_3%k, &
-                  dir(nodo%CurrentMinus_3%tipofield), &
-                  nodo%CurrentMinus_3%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%CurrentMinus_3%origindex, &
+                  wireNode%CurrentMinus_3%i, &
+                  wireNode%CurrentMinus_3%j, &
+                  wireNode%CurrentMinus_3%k, &
+                  dir(wireNode%CurrentMinus_3%tipofield), &
+                  wireNode%CurrentMinus_3%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentMinus >= 4) then
+               if (wireNode%NumCurrentMinus >= 4) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -4: ',  &
-                  nodo%CurrentMinus_4%origindex, &
-                  nodo%CurrentMinus_4%i, &
-                  nodo%CurrentMinus_4%j, &
-                  nodo%CurrentMinus_4%k, &
-                  dir(nodo%CurrentMinus_4%tipofield), &
-                  nodo%CurrentMinus_4%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%CurrentMinus_4%origindex, &
+                  wireNode%CurrentMinus_4%i, &
+                  wireNode%CurrentMinus_4%j, &
+                  wireNode%CurrentMinus_4%k, &
+                  dir(wireNode%CurrentMinus_4%tipofield), &
+                  wireNode%CurrentMinus_4%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentMinus >= 5) then
+               if (wireNode%NumCurrentMinus >= 5) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -5: ',  &
-                  nodo%CurrentMinus_5%origindex, &
-                  nodo%CurrentMinus_5%i, &
-                  nodo%CurrentMinus_5%j, &
-                  nodo%CurrentMinus_5%k, &
-                  dir(nodo%CurrentMinus_5%tipofield), &
-                  nodo%CurrentMinus_5%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%CurrentMinus_5%origindex, &
+                  wireNode%CurrentMinus_5%i, &
+                  wireNode%CurrentMinus_5%j, &
+                  wireNode%CurrentMinus_5%k, &
+                  dir(wireNode%CurrentMinus_5%tipofield), &
+                  wireNode%CurrentMinus_5%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentMinus >= 6) then
+               if (wireNode%NumCurrentMinus >= 6) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -6: ',  &
-                  nodo%CurrentMinus_6%origindex, &
-                  nodo%CurrentMinus_6%i, &
-                  nodo%CurrentMinus_6%j, &
-                  nodo%CurrentMinus_6%k, &
-                  dir(nodo%CurrentMinus_6%tipofield), &
-                  nodo%CurrentMinus_6%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%CurrentMinus_6%origindex, &
+                  wireNode%CurrentMinus_6%i, &
+                  wireNode%CurrentMinus_6%j, &
+                  wireNode%CurrentMinus_6%k, &
+                  dir(wireNode%CurrentMinus_6%tipofield), &
+                  wireNode%CurrentMinus_6%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentMinus >= 7) then
+               if (wireNode%NumCurrentMinus >= 7) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -7: ',  &
-                  nodo%CurrentMinus_7%origindex, &
-                  nodo%CurrentMinus_7%i, &
-                  nodo%CurrentMinus_7%j, &
-                  nodo%CurrentMinus_7%k, &
-                  dir(nodo%CurrentMinus_7%tipofield), &
-                  nodo%CurrentMinus_7%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%CurrentMinus_7%origindex, &
+                  wireNode%CurrentMinus_7%i, &
+                  wireNode%CurrentMinus_7%j, &
+                  wireNode%CurrentMinus_7%k, &
+                  dir(wireNode%CurrentMinus_7%tipofield), &
+                  wireNode%CurrentMinus_7%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentMinus >= 8) then
+               if (wireNode%NumCurrentMinus >= 8) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -8: ',  &
-                  nodo%CurrentMinus_8%origindex, &
-                  nodo%CurrentMinus_8%i, &
-                  nodo%CurrentMinus_8%j, &
-                  nodo%CurrentMinus_8%k, &
-                  dir(nodo%CurrentMinus_8%tipofield), &
-                  nodo%CurrentMinus_8%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%CurrentMinus_8%origindex, &
+                  wireNode%CurrentMinus_8%i, &
+                  wireNode%CurrentMinus_8%j, &
+                  wireNode%CurrentMinus_8%k, &
+                  dir(wireNode%CurrentMinus_8%tipofield), &
+                  wireNode%CurrentMinus_8%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentMinus >= 9) then
+               if (wireNode%NumCurrentMinus >= 9) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -9: ',  &
-                  nodo%CurrentMinus_9%origindex, &
-                  nodo%CurrentMinus_9%i, &
-                  nodo%CurrentMinus_9%j, &
-                  nodo%CurrentMinus_9%k, &
-                  dir(nodo%CurrentMinus_9%tipofield), &
-                  nodo%CurrentMinus_9%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%CurrentMinus_9%origindex, &
+                  wireNode%CurrentMinus_9%i, &
+                  wireNode%CurrentMinus_9%j, &
+                  wireNode%CurrentMinus_9%k, &
+                  dir(wireNode%CurrentMinus_9%tipofield), &
+                  wireNode%CurrentMinus_9%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
                !
-               if (nodo%NumCurrentplus >= 1) then
+               if (wireNode%NumCurrentplus >= 1) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +1: ',  &
-                  nodo%Currentplus_1%origindex, &
-                  nodo%Currentplus_1%i, &
-                  nodo%Currentplus_1%j, &
-                  nodo%Currentplus_1%k, &
-                  dir(nodo%Currentplus_1%tipofield), &
-                  nodo%Currentplus_1%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%Currentplus_1%origindex, &
+                  wireNode%Currentplus_1%i, &
+                  wireNode%Currentplus_1%j, &
+                  wireNode%Currentplus_1%k, &
+                  dir(wireNode%Currentplus_1%tipofield), &
+                  wireNode%Currentplus_1%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentplus >= 2) then
+               if (wireNode%NumCurrentplus >= 2) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +2: ',  &
-                  nodo%Currentplus_2%origindex, &
-                  nodo%Currentplus_2%i, &
-                  nodo%Currentplus_2%j, &
-                  nodo%Currentplus_2%k, &
-                  dir(nodo%Currentplus_2%tipofield), &
-                  nodo%Currentplus_2%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%Currentplus_2%origindex, &
+                  wireNode%Currentplus_2%i, &
+                  wireNode%Currentplus_2%j, &
+                  wireNode%Currentplus_2%k, &
+                  dir(wireNode%Currentplus_2%tipofield), &
+                  wireNode%Currentplus_2%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentplus >= 3) then
+               if (wireNode%NumCurrentplus >= 3) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +3: ',  &
-                  nodo%Currentplus_3%origindex, &
-                  nodo%Currentplus_3%i, &
-                  nodo%Currentplus_3%j, &
-                  nodo%Currentplus_3%k, &
-                  dir(nodo%Currentplus_3%tipofield), &
-                  nodo%Currentplus_3%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%Currentplus_3%origindex, &
+                  wireNode%Currentplus_3%i, &
+                  wireNode%Currentplus_3%j, &
+                  wireNode%Currentplus_3%k, &
+                  dir(wireNode%Currentplus_3%tipofield), &
+                  wireNode%Currentplus_3%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentplus >= 4) then
+               if (wireNode%NumCurrentplus >= 4) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +4: ',  &
-                  nodo%Currentplus_4%origindex, &
-                  nodo%Currentplus_4%i, &
-                  nodo%Currentplus_4%j, &
-                  nodo%Currentplus_4%k, &
-                  dir(nodo%Currentplus_4%tipofield), &
-                  nodo%Currentplus_4%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%Currentplus_4%origindex, &
+                  wireNode%Currentplus_4%i, &
+                  wireNode%Currentplus_4%j, &
+                  wireNode%Currentplus_4%k, &
+                  dir(wireNode%Currentplus_4%tipofield), &
+                  wireNode%Currentplus_4%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentplus >= 5) then
+               if (wireNode%NumCurrentplus >= 5) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +5: ',  &
-                  nodo%Currentplus_5%origindex, &
-                  nodo%Currentplus_5%i, &
-                  nodo%Currentplus_5%j, &
-                  nodo%Currentplus_5%k, &
-                  dir(nodo%Currentplus_5%tipofield), &
-                  nodo%Currentplus_5%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%Currentplus_5%origindex, &
+                  wireNode%Currentplus_5%i, &
+                  wireNode%Currentplus_5%j, &
+                  wireNode%Currentplus_5%k, &
+                  dir(wireNode%Currentplus_5%tipofield), &
+                  wireNode%Currentplus_5%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentplus >= 6) then
+               if (wireNode%NumCurrentplus >= 6) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +6: ',  &
-                  nodo%Currentplus_6%origindex, &
-                  nodo%Currentplus_6%i, &
-                  nodo%Currentplus_6%j, &
-                  nodo%Currentplus_6%k, &
-                  dir(nodo%Currentplus_6%tipofield), &
-                  nodo%Currentplus_6%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%Currentplus_6%origindex, &
+                  wireNode%Currentplus_6%i, &
+                  wireNode%Currentplus_6%j, &
+                  wireNode%Currentplus_6%k, &
+                  dir(wireNode%Currentplus_6%tipofield), &
+                  wireNode%Currentplus_6%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentplus >= 7) then
+               if (wireNode%NumCurrentplus >= 7) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +7: ',  &
-                  nodo%Currentplus_7%origindex, &
-                  nodo%Currentplus_7%i, &
-                  nodo%Currentplus_7%j, &
-                  nodo%Currentplus_7%k, &
-                  dir(nodo%Currentplus_7%tipofield), &
-                  nodo%Currentplus_7%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%Currentplus_7%origindex, &
+                  wireNode%Currentplus_7%i, &
+                  wireNode%Currentplus_7%j, &
+                  wireNode%Currentplus_7%k, &
+                  dir(wireNode%Currentplus_7%tipofield), &
+                  wireNode%Currentplus_7%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentplus >= 8) then
+               if (wireNode%NumCurrentplus >= 8) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +8: ',  &
-                  nodo%Currentplus_8%origindex, &
-                  nodo%Currentplus_8%i, &
-                  nodo%Currentplus_8%j, &
-                  nodo%Currentplus_8%k, &
-                  dir(nodo%Currentplus_8%tipofield), &
-                  nodo%Currentplus_8%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%Currentplus_8%origindex, &
+                  wireNode%Currentplus_8%i, &
+                  wireNode%Currentplus_8%j, &
+                  wireNode%Currentplus_8%k, &
+                  dir(wireNode%Currentplus_8%tipofield), &
+                  wireNode%Currentplus_8%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
-               if (nodo%NumCurrentplus >= 9) then
+               if (wireNode%NumCurrentplus >= 9) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment +9: ',  &
-                  nodo%Currentplus_9%origindex, &
-                  nodo%Currentplus_9%i, &
-                  nodo%Currentplus_9%j, &
-                  nodo%Currentplus_9%k, &
-                  dir(nodo%Currentplus_9%tipofield), &
-                  nodo%Currentplus_9%indexmed
-                  if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
+                  wireNode%Currentplus_9%origindex, &
+                  wireNode%Currentplus_9%i, &
+                  wireNode%Currentplus_9%j, &
+                  wireNode%Currentplus_9%k, &
+                  dir(wireNode%Currentplus_9%tipofield), &
+                  wireNode%Currentplus_9%indexmed
+                  if ((wireNode%k >=  ZI).and.(wireNode%k<=ZE)) call WarnErrReport(buff,paraerr)
                end if
             end if
          end if
@@ -6583,22 +6583,22 @@ subroutine resume_casuistics
       allocate (nodosopentoair(1:HWires%NumChargeNodes))
       indio=0
       do i1=1,HWires%NumChargeNodes
-         nodo => Hwires%ChargeNode(i1)
-         if (nodo%exists) then
-            if ((nodo%numcurrentPlus+nodo%numcurrentMinus < 2)) then
-               if ((.not.(nodo%IsPec.or.nodo%IsLossy))) then
+         wireNode => Hwires%ChargeNode(i1)
+         if (wireNode%exists) then
+            if ((wireNode%numcurrentPlus+wireNode%numcurrentMinus < 2)) then
+               if ((.not.(wireNode%IsPec.or.wireNode%IsLossy))) then
                   indio=indio+1
-                  nodosopentoair(indio)%indexnode=nodo%indexnode
-                  nodosopentoair(indio)%i=nodo%i
-                  nodosopentoair(indio)%j=nodo%j
-                  nodosopentoair(indio)%k=nodo%k
-                  write (buff,'(a,i7,3i7)')  'wir3_WARNING: Node open to air ',nodo%indexnode, &
-                  nodo%i,nodo%j,nodo%k
-                  if ((nodo%k >=  ZI).and.(nodo%k <= ZE)) call WarnErrReport(buff)
+                  nodosopentoair(indio)%indexnode=wireNode%indexnode
+                  nodosopentoair(indio)%i=wireNode%i
+                  nodosopentoair(indio)%j=wireNode%j
+                  nodosopentoair(indio)%k=wireNode%k
+                  write (buff,'(a,i7,3i7)')  'wir3_WARNING: Node open to air ',wireNode%indexnode, &
+                  wireNode%i,wireNode%j,wireNode%k
+                  if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE)) call WarnErrReport(buff)
                else
-                     write (buff,'(a,i7,3i7)')  'wir3_INFO: NON-JUNCTION Node  GROUNDED ',nodo%indexnode, &
-                     nodo%i,nodo%j,nodo%k
-                     if ((nodo%k >=  ZI).and.(nodo%k <= ZE).and.verbose) call WarnErrReport(buff)
+                     write (buff,'(a,i7,3i7)')  'wir3_INFO: NON-JUNCTION Node  GROUNDED ',wireNode%indexnode, &
+                     wireNode%i,wireNode%j,wireNode%k
+                     if ((wireNode%k >=  ZI).and.(wireNode%k <= ZE).and.verbose) call WarnErrReport(buff)
                end if
             end if
          end if
@@ -6625,8 +6625,8 @@ subroutine resume_casuistics
       do i1=1,HWires%NumCurrentSegments
          if (.not.(HWires%CurrentSegment(i1)%chargeplus%exists.and.HWires%CurrentSegment(i1)%chargeminus%exists)) then
             write (buff,'(a,i7,3i7,a,2i3,a)') 'wir3_BUGGYERROR: Bug in WIRE node assignment. ', &
-            nodo%indexnode,nodo%i,nodo%j,nodo%k, &
-            ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'
+            wireNode%indexnode,wireNode%i,wireNode%j,wireNode%k, &
+            ' (',wireNode%numcurrentminus,wireNode%numcurrentplus,')'
             call WarnErrReport(buff,.true.)
          end if
       end do
