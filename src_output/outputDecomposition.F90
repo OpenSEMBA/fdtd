@@ -1,6 +1,6 @@
 module outputDecomposition_m
    use iso_fortran_env, only: int64
-   use FDETYPES_m, only: SINGLE, limit_t, iEx, iEy, iEz, iHx, iHy, iHz
+   use FDETYPES_m, only: SINGLE, limit_t, iEx, iEy, IEZ, IHX, IHY, IHZ
    use outputTypes_m, only: cell_coordinate_t
    implicit none
    private
@@ -102,13 +102,13 @@ contains
    pure logical function is_supported_component(field_component)
       integer, intent(in) :: field_component
 
-      is_supported_component = any(field_component == [iEx, iEy, iEz, iHx, iHy, iHz])
+      is_supported_component = any(field_component == [iEx, iEy, IEZ, IHX, IHY, IHZ])
    end function is_supported_component
 
    pure logical function has_shared_upper_plane(field_component)
       integer, intent(in) :: field_component
 
-      has_shared_upper_plane = any(field_component == [iEx, iEy, iHz])
+      has_shared_upper_plane = any(field_component == [iEx, iEy, IHZ])
    end function has_shared_upper_plane
 
    pure logical function is_valid_limit(bounds)

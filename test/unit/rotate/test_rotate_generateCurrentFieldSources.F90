@@ -36,7 +36,7 @@ integer function test_rotate_generate_current_field_sources() bind(C) result(err
     call expect_eq_int(test_err, 6, this%nodsrc%NodalSource(1)%c2P(1)%XI, "rotate_generateCurrent_Field_Sources: c2P XI should be 6")
     call expect_eq_int(test_err, 4, this%nodsrc%NodalSource(1)%c2P(1)%YI, "rotate_generateCurrent_Field_Sources: c2P YI should be 4")
     call expect_eq_int(test_err, 5, this%nodsrc%NodalSource(1)%c2P(1)%ZI, "rotate_generateCurrent_Field_Sources: c2P ZI should be 5")
-    call expect_eq_int(test_err, iEz, this%nodsrc%NodalSource(1)%c2P(1)%OR, "rotate_generateCurrent_Field_Sources: c2P OR should be iEz")
+    call expect_eq_int(test_err, IEZ, this%nodsrc%NodalSource(1)%c2P(1)%OR, "rotate_generateCurrent_Field_Sources: c2P OR should be iEz")
     
     deallocate(this%nodsrc%NodalSource(1)%c1P)
     deallocate(this%nodsrc%NodalSource(1)%c2P)

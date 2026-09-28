@@ -5,7 +5,7 @@ module mtl_m
     use dispersive_m, dispersive_lumped_t => lumped_t
     use mtln_types_m, only: segment_t, multipolar_expansion_t
     use multipolar_expansion_m, only: getCellCapacitanceOnBox, getCellInductanceOnBox
-    use FDETYPES_m, only: pi, mu_vacuum, c_vacuum, RKIND_wires, RKIND, RKIND_TIEMPO
+    use FDETYPES_m, only: pi, mu_vacuum, C_VACUUM, RKIND_WIRES, RKIND, RKIND_TIEMPO
 #ifdef CompileWithMPI 
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
 #endif
@@ -278,7 +278,7 @@ contains
     subroutine computeLCParametersFromRadius(this, rad) 
         class(mtl_t) :: this
         real(kind=rkind), intent(in) :: rad
-        real(kind=RKIND_wires) :: invMu
+        real(kind=RKIND_WIRES) :: invMu
         integer(kind=4) :: i
         real(kind=rkind) :: d1, d2
         invMu = 1.0/mu_vacuum
@@ -286,19 +286,19 @@ contains
             d1 = this%segments(i)%d1
             d2 = this%segments(i)%d2
             this%lpul(i,:,:) = &
-                (1.0_RKIND_wires / (4.0_RKIND_wires * pi*invMu))*(log((d1**2.0_RKIND_wires +d2**2.0_RKIND_wires )/(4.0_RKIND_wires *rad**2.0_RKIND_wires ))+     &
+                (1.0_RKIND_WIRES / (4.0_RKIND_WIRES * pi*invMu))*(log((d1**2.0_RKIND_WIRES +d2**2.0_RKIND_WIRES )/(4.0_RKIND_WIRES *rad**2.0_RKIND_WIRES ))+     &
                 d1/d2*atan(d2/d1) + &
-                d2/d1*atan(d1/d2) + pi*rad**2.0_RKIND_wires /(d2*d1)-3.0_RKIND_wires)
+                d2/d1*atan(d1/d2) + pi*rad**2.0_RKIND_WIRES /(d2*d1)-3.0_RKIND_WIRES)
 
-            if ((rad < 0.3_RKIND_wires  *d1).or.(rad < 0.3_RKIND_wires *d2)) then
-                this%lpul(i,:,:) = this%lpul(i,:,:) - 0.57_RKIND_wires/(4.0_RKIND_wires * pi*invMu)
+            if ((rad < 0.3_RKIND_WIRES  *d1).or.(rad < 0.3_RKIND_WIRES *d2)) then
+                this%lpul(i,:,:) = this%lpul(i,:,:) - 0.57_RKIND_WIRES/(4.0_RKIND_WIRES * pi*invMu)
             end if
 
-            if ((rad > 0.3_RKIND_wires  *d1).or.(rad > 0.3_RKIND_wires *d2)) then
+            if ((rad > 0.3_RKIND_WIRES  *d1).or.(rad > 0.3_RKIND_WIRES *d2)) then
                 this%lpul(i,:,:) =  this%lpul(i,:,:) &
-                /(1.0_RKIND_wires-pi*rad**2.0_RKIND_wires /(d1*d2))
+                /(1.0_RKIND_WIRES-pi*rad**2.0_RKIND_WIRES /(d1*d2))
             end if
-            this%cpul(i,:,:) = 1.0/(this%lpul(i,:,:)*c_vacuum**2)
+            this%cpul(i,:,:) = 1.0/(this%lpul(i,:,:)*C_VACUUM**2)
         end do
         this%cpul(size(this%segments)+1, :,:) = this%cpul(size(this%segments), :,:)
 

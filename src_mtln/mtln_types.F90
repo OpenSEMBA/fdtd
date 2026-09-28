@@ -1,5 +1,5 @@
 module mtln_types_m
-   use FDETYPES_m, ONLY: direction_t, BUFSIZE, RKIND, RKIND_TIEMPO
+   use FDETYPES_m, only: direction_t, BUFSIZE, RKIND, RKIND_TIEMPO
    implicit none
 
    integer(kind=4), parameter :: TERMINATION_UNDEFINED  = -1
@@ -7,12 +7,12 @@ module mtln_types_m
    integer(kind=4), parameter :: TERMINATION_OPEN       =  2
    integer(kind=4), parameter :: TERMINATION_SERIES     =  3
    integer(kind=4), parameter :: TERMINATION_PARALLEL   =  4
-   integer(kind=4), parameter :: TERMINATION_RsLCp      =  5
-   integer(kind=4), parameter :: TERMINATION_RLsCp      =  6
-   integer(kind=4), parameter :: TERMINATION_LsRCp      =  7
-   integer(kind=4), parameter :: TERMINATION_CsLRp      =  8
-   integer(kind=4), parameter :: TERMINATION_RCsLp      =  9
-   integer(kind=4), parameter :: TERMINATION_LCsRp      =  10
+   integer(kind=4), parameter :: TERMINATION_RSLCP      =  5
+   integer(kind=4), parameter :: TERMINATION_RLSCP      =  6
+   integer(kind=4), parameter :: TERMINATION_LSRCP      =  7
+   integer(kind=4), parameter :: TERMINATION_CSLRP      =  8
+   integer(kind=4), parameter :: TERMINATION_RCSLP      =  9
+   integer(kind=4), parameter :: TERMINATION_LCSRP      =  10
    integer(kind=4), parameter :: TERMINATION_CIRCUIT    =  11
    integer(kind=4), parameter :: TERMINATION_NETWORK    =  12
 

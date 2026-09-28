@@ -285,7 +285,7 @@ contains
 
     function getTime(this) result(res)
         class(circuit_t) :: this
-        real(kind=rkind_tiempo) :: res
+        real(kind=RKIND_TIEMPO) :: res
         res = this%time
     end function
 

@@ -40,20 +40,20 @@ contains
       this%isWriter = mpi_rank == 0
 #endif
 
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIEMPO)
       call alloc_and_init(this%valueForTime, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
-      artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+      artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       this%filePathTime = this%artifacts(1)%relative_path
       select case (field)
-      case (iBloqueMx, iBloqueMy, iBloqueMz)
+      case (IBLOQUEMX, IBLOQUEMY, IBLOQUEMZ)
          data_header = 't circulation'
       case default
          data_header = 't current'
       end select
       if (this%isWriter) then
-         call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, data_header)
+         call create_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, data_header)
       end if
 
    contains
@@ -72,7 +72,7 @@ contains
 
    subroutine update_bulk_probe_output(this, step, field)
       type(bulk_current_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_tiempo), intent(in) :: step
+      real(kind=RKIND_TIEMPO), intent(in) :: step
       type(field_data_t), intent(in) :: field
 
       integer(kind=SINGLE) :: i1_m, i2_m, j1_m, j2_m, k1_m, k2_m
@@ -111,7 +111,7 @@ contains
       this%timeStep(this%nTime) = step
       this%valueForTime(this%nTime) = 0.0_RKIND !Clear uninitialized value
       selectcase (this%component)
-      case (iBloqueJx)
+      case (IBLOQUEJX)
          do JJJ = j1, j2
             if (k1_m - 1 >= lbound(yF, 3) .and. k1_m - 1 <= ubound(yF, 3)) then
                this%valueForTime(this%nTime) = this%valueForTime(this%nTime) + yF(i1_m, JJJ, k1_m - 1)*dy(JJJ)
@@ -126,7 +126,7 @@ contains
                (-zF(i1_m, j1_m - 1, KKK) + zF(i1_m, j2_m, KKK))*dz(KKK)
          end do
 
-      case (iBloqueJy)
+      case (IBLOQUEJY)
          do KKK = max(k1, lbound(zF, 3)), min(k2, ubound(zF, 3))
             this%valueForTime(this%nTime) = &
                this%valueForTime(this%nTime) + &
@@ -141,7 +141,7 @@ contains
             end if
          end do
 
-      case (iBloqueJz)
+      case (IBLOQUEJZ)
          if (k1_m >= lbound(xF, 3) .and. k1_m <= ubound(xF, 3)) then
             do III = i1, i2
                this%valueForTime(this%nTime) = this%valueForTime(this%nTime) + &
@@ -155,7 +155,7 @@ contains
             end do
          end if
 
-      case (iBloqueMx)
+      case (IBLOQUEMX)
          do JJJ = j1, j2
             if (k1_m >= lbound(yF, 3) .and. k1_m <= ubound(yF, 3)) then
                this%valueForTime(this%nTime) = this%valueForTime(this%nTime) - yF(i1_m, JJJ, k1_m)*dy(JJJ)
@@ -170,7 +170,7 @@ contains
                (zF(i1_m, j1_m, KKK) - zF(i1_m, j2_m + 1, KKK))*dz(KKK)
          end do
 
-      case (iBloqueMy)
+      case (IBLOQUEMY)
          do KKK = max(k1, lbound(zF, 3)), min(k2, ubound(zF, 3))
             this%valueForTime(this%nTime) = &
                this%valueForTime(this%nTime) + &
@@ -185,7 +185,7 @@ contains
             end if
          end do
 
-      case (iBloqueMz)
+      case (IBLOQUEMZ)
          if (k1_m >= lbound(xF, 3) .and. k1_m <= ubound(xF, 3)) then
             do III = i1, i2
                this%valueForTime(this%nTime) = this%valueForTime(this%nTime) + &
@@ -223,7 +223,7 @@ contains
          open (newunit=unit, file=this%filePathTime, status="old", action="write", position="append")
 
          do i = 1, this%nTime
-            write (unit, fmt) this%timeStep(i), this%valueForTime(i)
+            write (unit, FMT) this%timeStep(i), this%valueForTime(i)
          end do
 
          close (unit)
@@ -231,7 +231,7 @@ contains
       call clear_time_data()
    contains
       subroutine clear_time_data()
-         this%timeStep = 0.0_RKIND_tiempo
+         this%timeStep = 0.0_RKIND_TIEMPO
          this%valueForTime = 0.0_RKIND
 
          this%nTime = 0

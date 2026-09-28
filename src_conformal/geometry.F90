@@ -144,7 +144,7 @@ contains
                 res = buildVertexToSideContour(inner_path)
             else if (.not. init%isOnVertex() .and. end%isOnVertex()) then 
                 res = buildSideToVertexContour(inner_path)
-            elseif (.not. init%isOnVertex() .and. .not. end%isOnVertex()) then 
+            else if (.not. init%isOnVertex() .and. .not. end%isOnVertex()) then 
                 res = buildSideToSideContour(inner_path)
             end if
         end if

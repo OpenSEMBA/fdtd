@@ -4,7 +4,7 @@ integer function test_read_sgbc() bind (C) result(err)
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'sgbc.fdtd.json'
+   character(len=*), parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'sgbc.fdtd.json'
    type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
@@ -62,7 +62,7 @@ contains
       allocate(expected%pecRegs%Surfs(1))
       
       !!! 2x2 PEC square
-      expected%pecRegs%Surfs(1)%Or = +iEz
+      expected%pecRegs%Surfs(1)%Or = +IEZ
       expected%pecRegs%Surfs(1)%Xi = 3
       expected%pecRegs%Surfs(1)%Xe = 4
       expected%pecRegs%Surfs(1)%Yi = 3

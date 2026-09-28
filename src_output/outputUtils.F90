@@ -72,10 +72,10 @@ contains
       select case (field)
       case (iEx); res = CoordToMaterial%sggMiEx(i, j, k)
       case (iEy); res = CoordToMaterial%sggMiEy(i, j, k)
-      case (iEz); res = CoordToMaterial%sggMiEz(i, j, k)
-      case (iHx); res = CoordToMaterial%sggMiHx(i, j, k)
-      case (iHy); res = CoordToMaterial%sggMiHy(i, j, k)
-      case (iHz); res = CoordToMaterial%sggMiHz(i, j, k)
+      case (IEZ); res = CoordToMaterial%sggMiEz(i, j, k)
+      case (IHX); res = CoordToMaterial%sggMiHx(i, j, k)
+      case (IHY); res = CoordToMaterial%sggMiHy(i, j, k)
+      case (IHZ); res = CoordToMaterial%sggMiHz(i, j, k)
       end select
 
    end function
@@ -85,20 +85,20 @@ contains
       type(media_matrices_t), pointer, intent(in) :: CoordToMaterial
       integer(4), intent(in) :: field, i, j, k
       integer(4), intent(out) :: media, firstPositiveMedia, firstNegativeMedia, secondPositiveMedia, secondNegativeMedia
-      integer, parameter :: nFields = 3
+      integer, parameter :: NFIELDS = 3
 
       ! Precomputed shifts for first direction
-      integer, dimension(nFields) :: shift_i = [0, -1, 0]
-      integer, dimension(nFields) :: shift_j = [0, 0, -1]
-      integer, dimension(nFields) :: shift_k = [-1, 0, 0]
+      integer, dimension(NFIELDS) :: shift_i = [0, -1, 0]
+      integer, dimension(NFIELDS) :: shift_j = [0, 0, -1]
+      integer, dimension(NFIELDS) :: shift_k = [-1, 0, 0]
 
       ! Precomputed shifts for second direction
-      integer, dimension(nFields) :: shift_i2 = [0, 0, -1]
-      integer, dimension(nFields) :: shift_j2 = [-1, 0, 0]
-      integer, dimension(nFields) :: shift_k2 = [0, -1, 0]
+      integer, dimension(NFIELDS) :: shift_i2 = [0, 0, -1]
+      integer, dimension(NFIELDS) :: shift_j2 = [-1, 0, 0]
+      integer, dimension(NFIELDS) :: shift_k2 = [0, -1, 0]
 
       ! Precomputed neighbor hfield types
-      integer, dimension(nFields) :: HFieldTable = [iHy, iHz, iHx]  ! returns perpendicular field tags from H
+      integer, dimension(NFIELDS) :: HFieldTable = [IHY, IHZ, IHX]  ! returns perpendicular field tags from H
 
       ! Main mediua
       media = getMediaIndex(field, i, j, k, CoordToMaterial)
@@ -109,8 +109,8 @@ contains
  firstNegativeMedia = getMediaIndex(HFieldTable(field), i + shift_i(field), j + shift_j(field), k + shift_k(field), CoordToMaterial)
 
       !Second Direction
-      secondPositiveMedia = getMediaIndex(HFieldTable(mod(field, nFields) + 1), i, j, k, CoordToMaterial)
-      secondNegativeMedia = getMediaIndex(HFieldTable(mod(field, nFields) + 1), i + shift_i2(field), j + shift_j2(field), k + shift_k2(field), CoordToMaterial)
+      secondPositiveMedia = getMediaIndex(HFieldTable(mod(field, NFIELDS) + 1), i, j, k, CoordToMaterial)
+      secondNegativeMedia = getMediaIndex(HFieldTable(mod(field, NFIELDS) + 1), i + shift_i2(field), j + shift_j2(field), k + shift_k2(field), CoordToMaterial)
    end subroutine
 
    function get_probe_coords_extension(coordinates, mpidir) result(ext)
@@ -126,9 +126,9 @@ contains
 #if CompileWithMPI
       if (mpidir == 3) then
          ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
-      elseif (mpidir == 2) then
+      else if (mpidir == 2) then
          ext = trim(adjustl(charj))//'_'//trim(adjustl(chark))//'_'//trim(adjustl(chari))
-      elseif (mpidir == 1) then
+      else if (mpidir == 1) then
          ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))
       else
          call stoponerror(0, 0, 'Buggy error in mpidir. ')
@@ -158,10 +158,10 @@ contains
       if (mpidir == 3) then
          ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))//'__'// &
                trim(adjustl(chari2))//'_'//trim(adjustl(charj2))//'_'//trim(adjustl(chark2))
-      elseif (mpidir == 2) then
+      else if (mpidir == 2) then
          ext = trim(adjustl(charj))//'_'//trim(adjustl(chark))//'_'//trim(adjustl(chari))//'__'// &
                trim(adjustl(charj2))//'_'//trim(adjustl(chark2))//'_'//trim(adjustl(chari2))
-      elseif (mpidir == 1) then
+      else if (mpidir == 1) then
          ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))//'__'// &
                trim(adjustl(chark2))//'_'//trim(adjustl(chari2))//'_'//trim(adjustl(charj2))
       else
@@ -193,75 +193,75 @@ contains
          select case (field)
          case (iEx); prefixExtension = prefix(iEx)
          case (iEy); prefixExtension = prefix(iEy)
-         case (iEz); prefixExtension = prefix(iEz)
-         case (iJx); prefixExtension = prefix(iJx)
-         case (iJy); prefixExtension = prefix(iJy)
-         case (iJz); prefixExtension = prefix(iJz)
-         case (iQx); prefixExtension = prefix(iQx)
-         case (iQy); prefixExtension = prefix(iQy)
-         case (iQz); prefixExtension = prefix(iQz)
-         case (iVx); prefixExtension = prefix(iVx)
-         case (iVy); prefixExtension = prefix(iVy)
-         case (iVz); prefixExtension = prefix(iVz)
-         case (iHx); prefixExtension = prefix(iHx)
-         case (iHy); prefixExtension = prefix(iHy)
-         case (iHz); prefixExtension = prefix(iHz)
-         case (iBloqueJx); prefixExtension = prefix(iBloqueJx)
-         case (iBloqueJy); prefixExtension = prefix(iBloqueJy)
-         case (iBloqueJz); prefixExtension = prefix(iBloqueJz)
-         case (iBloqueMx); prefixExtension = prefix(iBloqueMx)
-         case (iBloqueMy); prefixExtension = prefix(iBloqueMy)
-         case (iBloqueMz); prefixExtension = prefix(iBloqueMz)
+         case (IEZ); prefixExtension = prefix(IEZ)
+         case (IJX); prefixExtension = prefix(IJX)
+         case (IJY); prefixExtension = prefix(IJY)
+         case (IJZ); prefixExtension = prefix(IJZ)
+         case (IQX); prefixExtension = prefix(IQX)
+         case (IQY); prefixExtension = prefix(IQY)
+         case (IQZ); prefixExtension = prefix(IQZ)
+         case (IVX); prefixExtension = prefix(IVX)
+         case (IVY); prefixExtension = prefix(IVY)
+         case (IVZ); prefixExtension = prefix(IVZ)
+         case (IHX); prefixExtension = prefix(IHX)
+         case (IHY); prefixExtension = prefix(IHY)
+         case (IHZ); prefixExtension = prefix(IHZ)
+         case (IBLOQUEJX); prefixExtension = prefix(IBLOQUEJX)
+         case (IBLOQUEJY); prefixExtension = prefix(IBLOQUEJY)
+         case (IBLOQUEJZ); prefixExtension = prefix(IBLOQUEJZ)
+         case (IBLOQUEMX); prefixExtension = prefix(IBLOQUEMX)
+         case (IBLOQUEMY); prefixExtension = prefix(IBLOQUEMY)
+         case (IBLOQUEMZ); prefixExtension = prefix(IBLOQUEMZ)
          case default; prefixExtension = prefix(field)
          end select
-      elseif (mpidir == 2) then
+      else if (mpidir == 2) then
          select case (field)
-         case (iEx); prefixExtension = prefix(iEz)
+         case (iEx); prefixExtension = prefix(IEZ)
          case (iEy); prefixExtension = prefix(iEx)
-         case (iEz); prefixExtension = prefix(iEy)
-         case (iJx); prefixExtension = prefix(iJz)
-         case (iJy); prefixExtension = prefix(iJx)
-         case (iJz); prefixExtension = prefix(iJy)
-         case (iQx); prefixExtension = prefix(iQz)
-         case (iQy); prefixExtension = prefix(iQx)
-         case (iQz); prefixExtension = prefix(iQy)
-         case (iVx); prefixExtension = prefix(iVz)
-         case (iVy); prefixExtension = prefix(iVx)
-         case (iVz); prefixExtension = prefix(iVy)
-         case (iHx); prefixExtension = prefix(iHz)
-         case (iHy); prefixExtension = prefix(iHx)
-         case (iHz); prefixExtension = prefix(iHy)
-         case (iBloqueJx); prefixExtension = prefix(iBloqueJz)
-         case (iBloqueJy); prefixExtension = prefix(iBloqueJx)
-         case (iBloqueJz); prefixExtension = prefix(iBloqueJy)
-         case (iBloqueMx); prefixExtension = prefix(iBloqueMz)
-         case (iBloqueMy); prefixExtension = prefix(iBloqueMx)
-         case (iBloqueMz); prefixExtension = prefix(iBloqueMy)
+         case (IEZ); prefixExtension = prefix(iEy)
+         case (IJX); prefixExtension = prefix(IJZ)
+         case (IJY); prefixExtension = prefix(IJX)
+         case (IJZ); prefixExtension = prefix(IJY)
+         case (IQX); prefixExtension = prefix(IQZ)
+         case (IQY); prefixExtension = prefix(IQX)
+         case (IQZ); prefixExtension = prefix(IQY)
+         case (IVX); prefixExtension = prefix(IVZ)
+         case (IVY); prefixExtension = prefix(IVX)
+         case (IVZ); prefixExtension = prefix(IVY)
+         case (IHX); prefixExtension = prefix(IHZ)
+         case (IHY); prefixExtension = prefix(IHX)
+         case (IHZ); prefixExtension = prefix(IHY)
+         case (IBLOQUEJX); prefixExtension = prefix(IBLOQUEJZ)
+         case (IBLOQUEJY); prefixExtension = prefix(IBLOQUEJX)
+         case (IBLOQUEJZ); prefixExtension = prefix(IBLOQUEJY)
+         case (IBLOQUEMX); prefixExtension = prefix(IBLOQUEMZ)
+         case (IBLOQUEMY); prefixExtension = prefix(IBLOQUEMX)
+         case (IBLOQUEMZ); prefixExtension = prefix(IBLOQUEMY)
          case default; prefixExtension = prefix(field)
          end select
-      elseif (mpidir == 1) then
+      else if (mpidir == 1) then
          select case (field)
          case (iEx); prefixExtension = prefix(iEy)
-         case (iEy); prefixExtension = prefix(iEz)
-         case (iEz); prefixExtension = prefix(iEx)
-         case (iJx); prefixExtension = prefix(iJy)
-         case (iJy); prefixExtension = prefix(iJz)
-         case (iJz); prefixExtension = prefix(iJx)
-         case (iQx); prefixExtension = prefix(iQy)
-         case (iQy); prefixExtension = prefix(iQz)
-         case (iQz); prefixExtension = prefix(iQx)
-         case (iVx); prefixExtension = prefix(iVy)
-         case (iVy); prefixExtension = prefix(iVz)
-         case (iVz); prefixExtension = prefix(iVx)
-         case (iHx); prefixExtension = prefix(iHy)
-         case (iHy); prefixExtension = prefix(iHz)
-         case (iHz); prefixExtension = prefix(iHx)
-         case (iBloqueJx); prefixExtension = prefix(iBloqueJy)
-         case (iBloqueJy); prefixExtension = prefix(iBloqueJz)
-         case (iBloqueJz); prefixExtension = prefix(iBloqueJx)
-         case (iBloqueMx); prefixExtension = prefix(iBloqueMy)
-         case (iBloqueMy); prefixExtension = prefix(iBloqueMz)
-         case (iBloqueMz); prefixExtension = prefix(iBloqueMx)
+         case (iEy); prefixExtension = prefix(IEZ)
+         case (IEZ); prefixExtension = prefix(iEx)
+         case (IJX); prefixExtension = prefix(IJY)
+         case (IJY); prefixExtension = prefix(IJZ)
+         case (IJZ); prefixExtension = prefix(IJX)
+         case (IQX); prefixExtension = prefix(IQY)
+         case (IQY); prefixExtension = prefix(IQZ)
+         case (IQZ); prefixExtension = prefix(IQX)
+         case (IVX); prefixExtension = prefix(IVY)
+         case (IVY); prefixExtension = prefix(IVZ)
+         case (IVZ); prefixExtension = prefix(IVX)
+         case (IHX); prefixExtension = prefix(IHY)
+         case (IHY); prefixExtension = prefix(IHZ)
+         case (IHZ); prefixExtension = prefix(IHX)
+         case (IBLOQUEJX); prefixExtension = prefix(IBLOQUEJY)
+         case (IBLOQUEJY); prefixExtension = prefix(IBLOQUEJZ)
+         case (IBLOQUEJZ); prefixExtension = prefix(IBLOQUEJX)
+         case (IBLOQUEMX); prefixExtension = prefix(IBLOQUEMY)
+         case (IBLOQUEMY); prefixExtension = prefix(IBLOQUEMZ)
+         case (IBLOQUEMZ); prefixExtension = prefix(IBLOQUEMX)
          case default; prefixExtension = prefix(field)
          end select
       else
@@ -277,40 +277,40 @@ contains
       select case (campo)
       case (iEx); ext = 'Ex'
       case (iEy); ext = 'Ey'
-      case (iEz); ext = 'Ez'
-      case (iVx); ext = 'Vx'
-      case (iVy); ext = 'Vy'
-      case (iVz); ext = 'Vz'
-      case (iHx); ext = 'Hx'
-      case (iHy); ext = 'Hy'
-      case (iHz); ext = 'Hz'
-      case (iBloqueJx); ext = 'Jx'
-      case (iBloqueJy); ext = 'Jy'
-      case (iBloqueJz); ext = 'Jz'
-      case (iBloqueMx); ext = 'Mx'
-      case (iBloqueMy); ext = 'My'
-      case (iBloqueMz); ext = 'Mz'
-      case (iJx); ext = 'Wx'
-      case (iJy); ext = 'Wy'
-      case (iJz); ext = 'Wz'
-      case (iQx); ext = 'Qx'
-      case (iQy); ext = 'Qy'
-      case (iQz); ext = 'Qz'
-      case (iExC); ext = 'ExC'
-      case (iEyC); ext = 'EyC'
-      case (iEzC); ext = 'EzC'
-      case (iHxC); ext = 'HxC'
-      case (iHyC); ext = 'HyC'
-      case (iHzC); ext = 'HzC'
-      case (iMEC); ext = 'ME'
-      case (iMHC); ext = 'MH'
-      case (iCur); ext = 'BC'
-      case (mapvtk); ext = 'MAP'
-      case (iCurX); ext = 'BCX'
-      case (iCurY); ext = 'BCY'
-      case (iCurZ); ext = 'BCZ'
+      case (IEZ); ext = 'Ez'
+      case (IVX); ext = 'Vx'
+      case (IVY); ext = 'Vy'
+      case (IVZ); ext = 'Vz'
+      case (IHX); ext = 'Hx'
+      case (IHY); ext = 'Hy'
+      case (IHZ); ext = 'Hz'
+      case (IBLOQUEJX); ext = 'Jx'
+      case (IBLOQUEJY); ext = 'Jy'
+      case (IBLOQUEJZ); ext = 'Jz'
+      case (IBLOQUEMX); ext = 'Mx'
+      case (IBLOQUEMY); ext = 'My'
+      case (IBLOQUEMZ); ext = 'Mz'
+      case (IJX); ext = 'Wx'
+      case (IJY); ext = 'Wy'
+      case (IJZ); ext = 'Wz'
+      case (IQX); ext = 'Qx'
+      case (IQY); ext = 'Qy'
+      case (IQZ); ext = 'Qz'
+      case (IEXC); ext = 'ExC'
+      case (IEYC); ext = 'EyC'
+      case (IEZC); ext = 'EzC'
+      case (IHXC); ext = 'HxC'
+      case (IHYC); ext = 'HyC'
+      case (IHZC); ext = 'HzC'
+      case (IMEC); ext = 'ME'
+      case (IMHC); ext = 'MH'
+      case (ICUR); ext = 'BC'
+      case (MAPVTK); ext = 'MAP'
+      case (ICURX); ext = 'BCX'
+      case (ICURY); ext = 'BCY'
+      case (ICURZ); ext = 'BCZ'
       case (farfield); ext = 'FF'
-      case (lineIntegral); ext = 'LI'
+      case (LINEINTEGRAL); ext = 'LI'
       end select
       return
    end function prefix
@@ -320,31 +320,31 @@ contains
       character(len=1) :: dir
       fieldo2 = -1
       select case (field)
-      case (iEx, iEy, iEz, iHx, iHy, iHz); fieldo2 = field
-      case (iJx, iVx, iBloqueJx, iExC, iQx); fieldo2 = iEx
-      case (iJy, iVy, iBloqueJy, iEyC, iQy); fieldo2 = iEy
-      case (iJz, iVz, iBloqueJz, iEzC, iQz); fieldo2 = iEz
-      case (iBloqueMx, iHxC); fieldo2 = iHx
-      case (iBloqueMy, iHyC); fieldo2 = iHy
-      case (iBloqueMz, iHzC); fieldo2 = iHz
-      case (iMEC)
+      case (iEx, iEy, IEZ, IHX, IHY, IHZ); fieldo2 = field
+      case (IJX, IVX, IBLOQUEJX, IEXC, IQX); fieldo2 = iEx
+      case (IJY, IVY, IBLOQUEJY, IEYC, IQY); fieldo2 = iEy
+      case (IJZ, IVZ, IBLOQUEJZ, IEZC, IQZ); fieldo2 = IEZ
+      case (IBLOQUEMX, IHXC); fieldo2 = IHX
+      case (IBLOQUEMY, IHYC); fieldo2 = IHY
+      case (IBLOQUEMZ, IHZC); fieldo2 = IHZ
+      case (IMEC)
          select case (dir)
-         CASE ('X', 'x'); fieldo2 = iEx
-         CASE ('Y', 'y'); fieldo2 = iEY
-         CASE ('Z', 'z'); fieldo2 = iEz
-         END SELECT
-      case (iMHC)
+         case ('X', 'x'); fieldo2 = iEx
+         case ('Y', 'y'); fieldo2 = iEY
+         case ('Z', 'z'); fieldo2 = IEZ
+         end select
+      case (IMHC)
          select case (dir)
-         CASE ('X', 'x'); fieldo2 = ihx
-         CASE ('Y', 'y'); fieldo2 = iHY
-         CASE ('Z', 'z'); fieldo2 = iHz
-         END SELECT
-      case (iCur, iCurX, icurY, icurZ, mapvtk)  !los pongo en efield para evitar problemas con el MPI
+         case ('X', 'x'); fieldo2 = IHX
+         case ('Y', 'y'); fieldo2 = IHY
+         case ('Z', 'z'); fieldo2 = IHZ
+         end select
+      case (ICUR, ICURX, ICURY, ICURZ, MAPVTK)  !los pongo en efield para evitar problemas con el MPI
          select case (dir)
-         CASE ('X', 'x'); fieldo2 = iEx
-         CASE ('Y', 'y'); fieldo2 = iEY
-         CASE ('Z', 'z'); fieldo2 = iEz
-         END SELECT
+         case ('X', 'x'); fieldo2 = iEx
+         case ('Y', 'y'); fieldo2 = iEY
+         case ('Z', 'z'); fieldo2 = IEZ
+         end select
       end select
    end function
 
@@ -355,10 +355,10 @@ contains
       select case (fieldId)
       case (iEx); component => fieldReference%E%x
       case (iEy); component => fieldReference%E%y
-      case (iEz); component => fieldReference%E%z
-      case (iHx); component => fieldReference%H%x
-      case (iHy); component => fieldReference%H%y
-      case (iHz); component => fieldReference%H%z
+      case (IEZ); component => fieldReference%E%z
+      case (IHX); component => fieldReference%H%x
+      case (IHY); component => fieldReference%H%y
+      case (IHZ); component => fieldReference%H%z
       end select
    end function
 
@@ -367,7 +367,7 @@ contains
       integer(kind=SINGLE), intent(in) :: fieldId
       type(field_data_t) :: field
       select case (fieldId)
-      case (iBloqueJx, iBloqueJy, iBloqueJz)
+      case (IBLOQUEJX, IBLOQUEJY, IBLOQUEJZ)
          field%x => fieldReference%H%x
          field%y => fieldReference%H%y
          field%z => fieldReference%H%z
@@ -375,7 +375,7 @@ contains
          field%deltaX => fieldReference%H%deltax
          field%deltaY => fieldReference%H%deltay
          field%deltaZ => fieldReference%H%deltaz
-      case (iBloqueMx, iBloqueMy, iBloqueMz)
+      case (IBLOQUEMX, IBLOQUEMY, IBLOQUEMZ)
          field%x => fieldReference%E%x
          field%y => fieldReference%E%y
          field%z => fieldReference%E%z
@@ -406,9 +406,9 @@ contains
    integer function getBlockCurrentDirection(field)
       integer(kind=4) :: field
       select case (field)
-      case (iHx); getBlockCurrentDirection = iCurX
-      case (iHy); getBlockCurrentDirection = iCurY
-      case (iHz); getBlockCurrentDirection = iCurZ
+      case (IHX); getBlockCurrentDirection = ICURX
+      case (IHY); getBlockCurrentDirection = ICURY
+      case (IHZ); getBlockCurrentDirection = ICURZ
       case default; call StopOnError(0, 0, 'field is not H field')
       end select
    end function
@@ -468,10 +468,10 @@ contains
       type(problem_info_t), intent(in) :: problem
 
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES), parameter :: vacuum = 1
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES), parameter :: VACUUM = 1
 
       mediaIndex = getMediaIndex(field, i, j, k, problem%geometryToMaterialData)
-      isMediaVacuum = (mediaIndex == vacuum)
+      isMediaVacuum = (mediaIndex == VACUUM)
    end function
 
    logical function isSplitOrAdvanced(field, i, j, k, problem)
@@ -520,12 +520,12 @@ contains
       ! Shift for Term A
       i_shift_a = i - merge(1, 0, curl_component_b == iex)
       j_shift_a = j - merge(1, 0, curl_component_b == iey)
-      k_shift_a = k - merge(1, 0, curl_component_b == iez)
+      k_shift_a = k - merge(1, 0, curl_component_b == IEZ)
 
       ! Shift for Term B
       i_shift_b = i - merge(1, 0, curl_component_a == iex)
       j_shift_b = j - merge(1, 0, curl_component_a == iey)
-      k_shift_b = k - merge(1, 0, curl_component_a == iez)
+      k_shift_b = k - merge(1, 0, curl_component_a == IEZ)
 
       ! -----------------------------------------------------------
       ! 3. Calculate J (Curl Difference)
@@ -559,16 +559,16 @@ contains
 
       ! First set of H-field terms
       curl_h_term_a = get_delta(c, i, j, k, fields_reference)*get_field(c, i, j, k, fields_reference) + &
-                    get_delta(c, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx), fields_reference) * get_field(c, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx), fields_reference)
+                    get_delta(c, i+u(f,IHY), j+u(f,IHZ), k+u(f,IHX), fields_reference) * get_field(c, i+u(f,IHY), j+u(f,IHZ), k+u(f,IHX), fields_reference)
 
       ! Second set of H-field terms
-    curl_h_term_b = get_delta(c, i, j, k, fields_reference) * get_field(c, i-u(f,iHx), j-u(f,iHy), k-u(f,iHz), fields_reference) + &
-                    get_delta(c, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx), fields_reference) * get_field(c, i-u(f,iHx)+u(f,iHy), j-u(f,iHy)+u(f,iHz), k-u(f,iHz)+u(f,iHx), fields_reference)
+    curl_h_term_b = get_delta(c, i, j, k, fields_reference) * get_field(c, i-u(f,IHX), j-u(f,IHY), k-u(f,IHZ), fields_reference) + &
+                    get_delta(c, i+u(f,IHY), j+u(f,IHZ), k+u(f,IHX), fields_reference) * get_field(c, i-u(f,IHX)+u(f,IHY), j-u(f,IHY)+u(f,IHZ), k-u(f,IHZ)+u(f,IHX), fields_reference)
 
       ! E-field term (approximates the change in E-field at the J-node)
       field_diff_term = get_delta(f, i, j, k, fields_reference)*( &
-                        get_field(f, i - u(f, iHy), j - u(f, iHz), k - u(f, iHx), fields_reference) - &
-                        get_field(f, i + u(f, iHy), j + u(f, iHz), k + u(f, iHx), fields_reference))
+                        get_field(f, i - u(f, IHY), j - u(f, IHZ), k - u(f, IHX), fields_reference) - &
+                        get_field(f, i + u(f, IHY), j + u(f, IHZ), k + u(f, IHX), fields_reference))
 
       ! Final computation: J1 = - ((Curl_H_A) - (Curl_H_B) + (E_diff))
       res = -((curl_h_term_a - curl_h_term_b) + field_diff_term)
@@ -589,16 +589,16 @@ contains
 
       ! First set of H-field terms
       curl_h_term_a = get_delta(c, i, j, k, fields_reference)*get_field(c, i, j, k, fields_reference) + &
-                    get_delta(c, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy), fields_reference) * get_field(c, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy), fields_reference)
+                    get_delta(c, i+u(f,IHZ), j+u(f,IHX), k+u(f,IHY), fields_reference) * get_field(c, i+u(f,IHZ), j+u(f,IHX), k+u(f,IHY), fields_reference)
 
       ! Second set of H-field terms
-    curl_h_term_b = get_delta(c, i, j, k, fields_reference) * get_field(c, i-u(f,iHx), j-u(f,iHy), k-u(f,iHz), fields_reference) + &
-                    get_delta(c, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy), fields_reference) * get_field(c, i-u(f,iHx)+u(f,iHz), j-u(f,iHy)+u(f,iHx), k-u(f,iHz)+u(f,iHy), fields_reference)
+    curl_h_term_b = get_delta(c, i, j, k, fields_reference) * get_field(c, i-u(f,IHX), j-u(f,IHY), k-u(f,IHZ), fields_reference) + &
+                    get_delta(c, i+u(f,IHZ), j+u(f,IHX), k+u(f,IHY), fields_reference) * get_field(c, i-u(f,IHX)+u(f,IHZ), j-u(f,IHY)+u(f,IHX), k-u(f,IHZ)+u(f,IHY), fields_reference)
 
       ! E-field term (approximates the change in E-field at the J-node)
       field_diff_term = get_delta(f, i, j, k, fields_reference)*( &
-                        get_field(f, i - u(f, iHz), j - u(f, iHx), k - u(f, iHy), fields_reference) - &
-                        get_field(f, i + u(f, iHz), j + u(f, iHx), k + u(f, iHy), fields_reference))
+                        get_field(f, i - u(f, IHZ), j - u(f, IHX), k - u(f, IHY), fields_reference) - &
+                        get_field(f, i + u(f, IHZ), j + u(f, IHX), k + u(f, IHY), fields_reference))
 
       ! Final computation: J2 = (Curl_H_A) - (Curl_H_B) + (E_diff)
       res = (curl_h_term_a - curl_h_term_b) + field_diff_term
@@ -617,12 +617,12 @@ contains
    integer function currentType(field)
       integer(kind=4) :: field
       select case (field)
-      case (iEx); currentType = iJx
-      case (iEy); currentType = iJy
-      case (iEz); currentType = iJz
-      case (iHx); currentType = iBloqueJx
-      case (iHy); currentType = iBloqueJy
-      case (iHz); currentType = iBloqueJz
+      case (iEx); currentType = IJX
+      case (iEy); currentType = IJY
+      case (IEZ); currentType = IJZ
+      case (IHX); currentType = IBLOQUEJX
+      case (IHY); currentType = IBLOQUEJY
+      case (IHZ); currentType = IBLOQUEJZ
       case default; call StopOnError(0, 0, 'field is not a E or H field')
       end select
    end function
@@ -632,16 +632,16 @@ contains
       integer, intent(in) :: axis
 
       select case (component)
-      case (iCur, iMEC)
+      case (ICUR, IMEC)
          get_volumetric_classification_field = iEx + axis - 1
-      case (iMHC)
-         get_volumetric_classification_field = iHx + axis - 1
-      case (iCurX, iExC); get_volumetric_classification_field = iEx
-      case (iCurY, iEyC); get_volumetric_classification_field = iEy
-      case (iCurZ, iEzC); get_volumetric_classification_field = iEz
-      case (iHxC); get_volumetric_classification_field = iHx
-      case (iHyC); get_volumetric_classification_field = iHy
-      case (iHzC); get_volumetric_classification_field = iHz
+      case (IMHC)
+         get_volumetric_classification_field = IHX + axis - 1
+      case (ICURX, IEXC); get_volumetric_classification_field = iEx
+      case (ICURY, IEYC); get_volumetric_classification_field = iEy
+      case (ICURZ, IEZC); get_volumetric_classification_field = IEZ
+      case (IHXC); get_volumetric_classification_field = IHX
+      case (IHYC); get_volumetric_classification_field = IHY
+      case (IHZC); get_volumetric_classification_field = IHZ
       case default
          call StopOnError(0, 0, 'Unsupported volumetric classification component')
       end select
@@ -658,16 +658,16 @@ contains
          if (.not. allocated(problemInfo%materialTag%edge%x)) return
       case (iEy)
          if (.not. allocated(problemInfo%materialTag%edge%y)) return
-      case (iEz)
+      case (IEZ)
          if (.not. allocated(problemInfo%materialTag%edge%z)) return
-      case (iHx)
+      case (IHX)
          if (.not. allocated(problemInfo%materialTag%face%x)) return
-      case (iHy)
+      case (IHY)
          if (.not. allocated(problemInfo%materialTag%face%y)) return
-      case (iHz)
+      case (IHZ)
          if (.not. allocated(problemInfo%materialTag%face%z)) return
       end select
-      if (field <= iEz) then
+      if (field <= IEZ) then
          get_output_tag_number = problemInfo%materialTag%getEdgeTag(field, position(1), position(2), position(3))
       else
          get_output_tag_number = problemInfo%materialTag%getFaceTag(field, position(1), position(2), position(3))
@@ -681,7 +681,7 @@ contains
 
       media = getMediaIndex(field, position(1), position(2), position(3), &
                             problemInfo%geometryToMaterialData)
-      if (field <= iEz) then
+      if (field <= IEZ) then
          get_output_media_type = edge_output_media_type(field, position, problemInfo, media)
       else
          get_output_media_type = surface_output_media_type(problemInfo%materialList(media), media)
@@ -692,7 +692,7 @@ contains
       type(MediaData_t), intent(in) :: material
       integer, intent(in) :: media
 
-      if (material%is%Pec) then
+      if (material%is%PEC) then
          surface_output_media_type = 0.0_RKIND
       else if (material%is%PMC) then
          surface_output_media_type = 16.0_RKIND
@@ -705,7 +705,7 @@ contains
          surface_output_media_type = 100.0_RKIND + media
       else if (material%is%ThinSlot) then
          surface_output_media_type = 400.0_RKIND + media
-      else if (material%is%Dielectric .or. material%is%Anisotropic) then
+      else if (material%is%DIELECTRIC .or. material%is%Anisotropic) then
          surface_output_media_type = 200.0_RKIND + media
       else if (material%is%already_YEEadvanced_byconformal) then
          surface_output_media_type = 5.0_RKIND
@@ -727,7 +727,7 @@ contains
          edge_output_media_type = 5.5_RKIND
       else if (material%is%split_and_useless) then
          edge_output_media_type = 6.5_RKIND
-      else if (material%is%Pec) then
+      else if (material%is%PEC) then
          edge_output_media_type = 0.5_RKIND
       else if (material%is%PMC) then
          edge_output_media_type = 16.5_RKIND
@@ -740,7 +740,7 @@ contains
          edge_output_media_type = 1.5_RKIND
       else if (material%is%ThinSlot) then
          edge_output_media_type = 4.5_RKIND
-      else if (material%is%Dielectric .or. material%is%Anisotropic) then
+      else if (material%is%DIELECTRIC .or. material%is%Anisotropic) then
          edge_output_media_type = 2.5_RKIND
       else if (material%is%ThinWire) then
          edge_output_media_type = 7.0_RKIND
@@ -761,7 +761,7 @@ contains
       integer :: candidate_field, candidate_media, candidate_position(3)
 
       edge_touches_another_medium = .false.
-      do candidate_field = iEx, iEz
+      do candidate_field = iEx, IEZ
          candidate_media = getMediaIndex(candidate_field, position(1), position(2), position(3), &
                                          problemInfo%geometryToMaterialData)
          if (candidate_media /= 1 .and. candidate_media /= media) then
@@ -771,7 +771,7 @@ contains
       end do
       candidate_position = position
       candidate_position(field) = candidate_position(field) + 1
-      do candidate_field = iEx, iEz
+      do candidate_field = iEx, IEZ
          candidate_media = getMediaIndex(candidate_field, candidate_position(1), candidate_position(2), &
                                          candidate_position(3), problemInfo%geometryToMaterialData)
          if (candidate_media /= 1 .and. candidate_media /= media) then
@@ -791,10 +791,10 @@ contains
       select case (field)
       case (iex); res = fields_reference%e%x(i, j, k)
       case (iey); res = fields_reference%e%y(i, j, k)
-      case (iez); res = fields_reference%e%z(i, j, k)
-      case (ihx); res = fields_reference%h%x(i, j, k)
-      case (ihy); res = fields_reference%h%y(i, j, k)
-      case (ihz); res = fields_reference%h%z(i, j, k)
+      case (IEZ); res = fields_reference%e%z(i, j, k)
+      case (IHX); res = fields_reference%h%x(i, j, k)
+      case (IHY); res = fields_reference%h%y(i, j, k)
+      case (IHZ); res = fields_reference%h%z(i, j, k)
       end select
    end function get_field
 
@@ -809,10 +809,10 @@ contains
       select case (field)
       case (iex); res = fields_reference%e%deltax(i)
       case (iey); res = fields_reference%e%deltay(j)
-      case (iez); res = fields_reference%e%deltaz(k)
-      case (ihx); res = fields_reference%h%deltax(i)
-      case (ihy); res = fields_reference%h%deltay(j)
-      case (ihz); res = fields_reference%h%deltaz(k)
+      case (IEZ); res = fields_reference%e%deltaz(k)
+      case (IHX); res = fields_reference%h%deltax(i)
+      case (IHY); res = fields_reference%h%deltay(j)
+      case (IHZ); res = fields_reference%h%deltaz(k)
       end select
    end function get_delta
 

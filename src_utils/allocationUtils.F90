@@ -1,5 +1,5 @@
 module allocationUtils_m
-   use FDETYPES_m, only: RKIND, CKIND, SINGLE, RKIND_tiempo, IKINDMTAG, INTEGERSIZEOFMEDIAMATRICES
+   use FDETYPES_m, only: RKIND, CKIND, SINGLE, RKIND_TIEMPO, IKINDMTAG, INTEGERSIZEOFMEDIAMATRICES
    implicit none
    private
    public :: alloc_and_init
@@ -23,40 +23,40 @@ module allocationUtils_m
 contains
 #ifndef CompileWithReal8
    subroutine alloc_and_init_real_time_1D(array, n1, initVal)
-      REAL(RKIND_tiempo), allocatable, intent(inout) :: array(:)
-      integer, intent(IN) :: n1
-      REAL(RKIND_tiempo), intent(IN) :: initVal
+      real(RKIND_TIEMPO), allocatable, intent(inout) :: array(:)
+      integer, intent(in) :: n1
+      real(RKIND_TIEMPO), intent(in) :: initVal
 
       allocate (array(n1))
       array = initVal
-   END subroutine alloc_and_init_real_time_1D
+   end subroutine alloc_and_init_real_time_1D
 #endif
    subroutine alloc_and_init_int_1D(array, n1, initVal)
       integer(SINGLE), allocatable, intent(inout) :: array(:)
-      integer, intent(IN) :: n1
-      integer(SINGLE), intent(IN) :: initVal
+      integer, intent(in) :: n1
+      integer(SINGLE), intent(in) :: initVal
 
       allocate (array(n1))
       array = initVal
-   END subroutine alloc_and_init_int_1D
+   end subroutine alloc_and_init_int_1D
 
    subroutine alloc_and_init_int_2D(array, n1, n2, initVal)
       integer(SINGLE), allocatable, intent(inout) :: array(:, :)
-      integer, intent(IN) :: n1, n2
-      integer(SINGLE), intent(IN) :: initVal
+      integer, intent(in) :: n1, n2
+      integer(SINGLE), intent(in) :: initVal
 
       allocate (array(n1, n2))
       array = initVal
-   END subroutine alloc_and_init_int_2D
+   end subroutine alloc_and_init_int_2D
 
    subroutine alloc_and_init_int_3D(array, n1, n2, n3, initVal)
       integer(SINGLE), allocatable, intent(inout) :: array(:, :, :)
-      integer, intent(IN) :: n1, n2, n3
-      integer(SINGLE), intent(IN) :: initVal
+      integer, intent(in) :: n1, n2, n3
+      integer(SINGLE), intent(in) :: initVal
 
       allocate (array(n1, n2, n3))
       array = initVal
-   END subroutine alloc_and_init_int_3D
+   end subroutine alloc_and_init_int_3D
 
    ! Allocate array of kind=IKINDMTAG
    subroutine alloc_and_init_int_3D_tag(array, n1_min, n1_max, n2_min, n2_max, n3_min, n3_max, initVal)
@@ -81,56 +81,56 @@ contains
    end subroutine
 
    subroutine alloc_and_init_real_1D(array, n1, initVal)
-      REAL(RKIND), allocatable, intent(inout) :: array(:)
-      integer, intent(IN) :: n1
-      REAL(RKIND), intent(IN) :: initVal
+      real(RKIND), allocatable, intent(inout) :: array(:)
+      integer, intent(in) :: n1
+      real(RKIND), intent(in) :: initVal
 
       allocate (array(n1))
       array = initVal
-   END subroutine alloc_and_init_real_1D
+   end subroutine alloc_and_init_real_1D
 
    subroutine alloc_and_init_real_2D(array, n1, n2, initVal)
-      REAL(RKIND), allocatable, intent(inout) :: array(:, :)
-      integer, intent(IN) :: n1, n2
-      REAL(RKIND), intent(IN) :: initVal
+      real(RKIND), allocatable, intent(inout) :: array(:, :)
+      integer, intent(in) :: n1, n2
+      real(RKIND), intent(in) :: initVal
 
       allocate (array(n1, n2))
       array = initVal
-   END subroutine alloc_and_init_real_2D
+   end subroutine alloc_and_init_real_2D
 
    subroutine alloc_and_init_real_3D(array, n1, n2, n3, initVal)
-      REAL(RKIND), allocatable, intent(inout) :: array(:, :, :)
-      integer, intent(IN) :: n1, n2, n3
-      REAL(RKIND), intent(IN) :: initVal
+      real(RKIND), allocatable, intent(inout) :: array(:, :, :)
+      integer, intent(in) :: n1, n2, n3
+      real(RKIND), intent(in) :: initVal
 
       allocate (array(n1, n2, n3))
       array = initVal
-   END subroutine alloc_and_init_real_3D
+   end subroutine alloc_and_init_real_3D
 
    subroutine alloc_and_init_complex_1D(array, n1, initVal)
-      COMPLEX(CKIND), allocatable, intent(inout) :: array(:)
-      integer, intent(IN) :: n1
-      COMPLEX(CKIND), intent(IN) :: initVal
+      complex(CKIND), allocatable, intent(inout) :: array(:)
+      integer, intent(in) :: n1
+      complex(CKIND), intent(in) :: initVal
 
       allocate (array(n1))
       array = initVal
-   END subroutine alloc_and_init_complex_1D
+   end subroutine alloc_and_init_complex_1D
 
    subroutine alloc_and_init_complex_2D(array, n1, n2, initVal)
-      COMPLEX(CKIND), allocatable, intent(inout) :: array(:, :)
-      integer, intent(IN) :: n1, n2
-      COMPLEX(CKIND), intent(IN) :: initVal
+      complex(CKIND), allocatable, intent(inout) :: array(:, :)
+      integer, intent(in) :: n1, n2
+      complex(CKIND), intent(in) :: initVal
 
       allocate (array(n1, n2))
       array = initVal
-   END subroutine alloc_and_init_complex_2D
+   end subroutine alloc_and_init_complex_2D
 
    subroutine alloc_and_init_complex_3D(array, n1, n2, n3, initVal)
-      COMPLEX(CKIND), allocatable, intent(inout) :: array(:, :, :)
-      integer, intent(IN) :: n1, n2, n3
-      COMPLEX(CKIND), intent(IN) :: initVal
+      complex(CKIND), allocatable, intent(inout) :: array(:, :, :)
+      integer, intent(in) :: n1, n2, n3
+      complex(CKIND), intent(in) :: initVal
 
       allocate (array(n1, n2, n3))
       array = initVal
-   END subroutine alloc_and_init_complex_3D
+   end subroutine alloc_and_init_complex_3D
 end module allocationUtils_m

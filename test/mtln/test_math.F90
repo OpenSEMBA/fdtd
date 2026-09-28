@@ -25,7 +25,7 @@ integer function test_math_eigvals() bind(C) result(error_cnt)
         .not.(checkNear(-0.0988341_dp, ev_real(3), 0.005)) .or. .not.(checkNear(-0.41323483_dp, ev_imag(3), 0.005)) .or. &
         .not.(checkNear(-0.05863542_dp, ev_real(4), 0.005)) .or. .not.(checkNear(0.0_dp, ev_imag(4), 0.005))) then
         error_cnt = 1
-    endif  
+    end if  
 
 end function
 
@@ -55,7 +55,7 @@ integer function test_math_matmul_broadcast() bind(C) result(error_cnt)
 
     do i = 1,3
         res1(i,:,:) = matmul(A(i,:,:),B(i,:,:))    
-    enddo
+    end do
     
     res2 = reshape(source=[(matmul(A(i,:,:),B(i,:,:)), i = 1,3)], shape=[3,2,2], order=[2,3,1])
 

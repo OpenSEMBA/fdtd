@@ -5,7 +5,7 @@ program test_output_transport
                                  OUTPUT_TRANSPORT_SUCCESS
    implicit none
 
-   integer, parameter :: root_rank = 0
+   integer, parameter :: ROOT_RANK = 0
    integer :: ierr, rank, rank_count, status, failures, i
    integer, allocatable :: counts(:), displacements(:)
     real(real64), allocatable :: local_batch(:), gathered_batch(:)

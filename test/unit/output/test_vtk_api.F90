@@ -149,7 +149,7 @@ integer function test_vtkAPI_vts_file_creation() bind(C) result(error_cnt)
    real, allocatable :: points(:, :), scalars(:)
    integer :: nx=2, ny=2, nz=2
    integer :: ierr
-   character(len=14), parameter :: folder='testing_folder'
+   character(len=14), parameter :: FOLDER='testing_folder'
    character(len=1024) :: file
 
    error_cnt = 0
@@ -188,7 +188,7 @@ integer function test_vtkAPI_vtu_file_creation() bind(C) result(error_cnt)
    real, allocatable :: points(:, :), scalars(:)
    integer, allocatable :: conn(:), offsets(:), types(:)
    integer :: ierr
-   character(len=14), parameter :: folder='testing_folder'
+   character(len=14), parameter :: FOLDER='testing_folder'
    character(len=1024) :: file
 
    error_cnt = 0
@@ -272,7 +272,7 @@ integer function test_vtkAPI_vts_content() bind(C) result(error_cnt)
    real, allocatable :: points(:, :), scalars(:), vectors(:)
    integer :: nx=2, ny=2, nz=2
    integer :: ierr, i
-   character(len=14), parameter :: folder='testing_folder'
+   character(len=14), parameter :: FOLDER='testing_folder'
    character(len=1024) :: file
    character(len=256) :: line
    logical :: found_scalar, found_vector
@@ -342,7 +342,7 @@ integer function test_vtkAPI_vtu_content() bind(C) result(error_cnt)
    real, allocatable :: points(:, :), scalars(:), cell_scalars(:)
    integer, allocatable :: conn(:), offsets(:), types(:)
    integer :: ierr
-   character(len=14), parameter :: folder='testing_folder'
+   character(len=14), parameter :: FOLDER='testing_folder'
    character(len=1024) :: file
    character(len=256) :: line
    logical :: found_point_scalar, found_cell_scalar, found_cells, found_points
@@ -414,7 +414,7 @@ integer function test_vtkAPI_pvtu_content() bind(C) result(error_cnt)
    implicit none
    character(len=64) :: piece_paths(2)
    character(len=10) :: scalar_names(2)
-   character(len=14), parameter :: folder = 'testing_folder'
+   character(len=14), parameter :: FOLDER = 'testing_folder'
    character(len=1024) :: file
    character(len=256) :: line
    integer :: ierr

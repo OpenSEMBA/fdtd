@@ -54,7 +54,7 @@ contains
             write(q,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
             write(q,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
             write(q,*) 'Is MultiportPadding ', sgg%Med(j)%Is%multiportpadding
-            write(q,*) 'Is Dielectric ', sgg%Med(j)%Is%dielectric
+            write(q,*) 'Is Dielectric ', sgg%Med(j)%Is%DIELECTRIC
             write(q,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
             write(q,*) 'Is Anisotropic ', sgg%Med(j)%Is%Anisotropic
             write(q,*) 'Is Needed ', sgg%Med(j)%Is%Needed
@@ -79,23 +79,23 @@ contains
             write(19+campo, '(A,400a)') 'I=  |', ('0123456789', i=sgg%Alloc(campo)%XI, sgg%Alloc(campo)%XE+10, 10)
             write(19+campo, '(A)') 'J______________________________________________________________________'
             do j = sgg%sweep(campo)%YE, sgg%sweep(campo)%YI, - 1
-               SELECT CASE (campo)
-                CASE (iEx)
+               select case (campo)
+                case (iEx)
                   write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEx(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
-                CASE (iEy)
+                case (iEy)
                   write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEy(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
-                CASE (iEz)
+                case (IEZ)
                   write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEz(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
-                CASE (iHx)
+                case (IHX)
                   write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHx(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
-                CASE (iHy)
+                case (IHY)
                   write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHy(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
-                CASE (iHz)
+                case (IHZ)
                   write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHz(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
                end select
@@ -103,7 +103,7 @@ contains
          end do
       end do
       do i = 20, 25
-         CLOSE (i)
+         close (i)
       end do
       !
       return
@@ -112,16 +112,16 @@ contains
       !
       !Function to translate media indexes into characters for the mapping files
       !
-      function chartranslate (entero) RESULT (chara)
+      function chartranslate (entero) result (chara)
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) entero
          character(len=1) chara
          if (entero == 1) then
             chara = '_'
-         ELSE if (entero == 0) then
+         else if (entero == 0) then
             chara = '0'
-         ELSE if (entero ==-1) then
+         else if (entero ==-1) then
             chara = '#'
-         ELSE
+         else
             chara = char (48+Abs(entero))
          end if
          return

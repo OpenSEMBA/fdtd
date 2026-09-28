@@ -72,8 +72,8 @@ contains
       type(SGGFDTDINFO_t), intent(inout) :: obj
 
       ! ===== Optional arguments =====
-      real(kind=RKIND_tiempo), pointer, optional :: tiempo(:)
-      real(kind=RKIND_tiempo), optional          :: dt
+      real(kind=RKIND_TIEMPO), pointer, optional :: tiempo(:)
+      real(kind=RKIND_TIEMPO), optional          :: dt
       character(len=*), optional          :: extraswitches
 
       integer(kind=SINGLE), optional :: NumMedia, AllocMed
@@ -89,7 +89,7 @@ contains
       ! ===== Defaults =====
 
       nullify (obj%tiempo)
-      obj%dt = 0.0_RKIND_tiempo
+      obj%dt = 0.0_RKIND_TIEMPO
       obj%extraswitches = ""
 
       obj%NumMedia = 0_SINGLE
@@ -154,13 +154,13 @@ contains
 
    subroutine sgg_set_tiempo(sgg, tiempo)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      real(kind=RKIND_tiempo), pointer :: tiempo(:)
+      real(kind=RKIND_TIEMPO), pointer :: tiempo(:)
       sgg%tiempo => tiempo
    end subroutine
 
    subroutine sgg_set_dt(sgg, dt)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      real(kind=RKIND_tiempo), intent(in) :: dt
+      real(kind=RKIND_TIEMPO), intent(in) :: dt
       sgg%dt = dt
    end subroutine
 

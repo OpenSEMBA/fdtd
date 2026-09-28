@@ -433,7 +433,7 @@ contains
                                                       this%e_L(:,i) * this%step_size(i) - &
                                                       matmul(this%du(i,:,:),this%v_source(:,i))) - &
                           matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
-        enddo
+        end do
         call this%transfer_impedance%updatePhi(this%i_prev, this%i)
     end subroutine
 

@@ -65,7 +65,7 @@ contains
       call dgeev('n','n', n, m1, n, eigvals_real, eigvals_imag, dummy,1,dummy,1,dummy, lwork, info)
       
       lwork = max((nb+2)*n, nint(dummy(1,1)))
-      Allocate (work(lwork))
+      allocate (work(lwork))
       
       call dgeev('n','n', n, m2, n, eigvals_real, eigvals_imag, vl,n,vr,n,work, lwork, info)
       eigvals = [eigvals_real, eigvals_imag]

@@ -4,7 +4,7 @@ integer function test_termination_resistive() bind(C) result(error_cnt)
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
+    character(len=*), parameter :: SQUARE_EXCITATION = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
 
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left, node_right
@@ -41,7 +41,7 @@ integer function test_termination_resistive() bind(C) result(error_cnt)
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0 
@@ -106,7 +106,7 @@ integer function test_termination_resistive_inductive() bind(C) result(error_cnt
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
+    character(len=*), parameter :: SQUARE_EXCITATION = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
 
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left, node_right
@@ -144,7 +144,7 @@ integer function test_termination_resistive_inductive() bind(C) result(error_cnt
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0
@@ -209,7 +209,7 @@ integer function test_termination_resistive_capacitive_parallel() bind(C) result
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: square_excitation = &
+    character(len=*), parameter :: SQUARE_EXCITATION = &
         PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
 
     type(cable_t), target :: cable
@@ -248,7 +248,7 @@ integer function test_termination_resistive_capacitive_parallel() bind(C) result
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation 
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION 
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0 
@@ -259,7 +259,7 @@ integer function test_termination_resistive_capacitive_parallel() bind(C) result
     node_right%belongs_to_cable => cable
     node_right%conductor_in_cable = 1
     node_right%side = TERMINAL_NODE_SIDE_END
-    node_right%termination%termination_type = TERMINATION_RLsCp
+    node_right%termination%termination_type = TERMINATION_RLSCP
     node_right%termination%resistance = 0.1 
     node_right%termination%inductance = 0.0 
     node_right%termination%capacitance = 100e-12
@@ -313,7 +313,7 @@ integer function test_termination_rls_cp() bind(C) result(error_cnt)
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: square_excitation = &
+    character(len=*), parameter :: SQUARE_EXCITATION = &
         PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
 
     type(cable_t), target :: cable
@@ -352,7 +352,7 @@ integer function test_termination_rls_cp() bind(C) result(error_cnt)
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0 
@@ -363,7 +363,7 @@ integer function test_termination_rls_cp() bind(C) result(error_cnt)
     node_right%belongs_to_cable => cable
     node_right%conductor_in_cable = 1
     node_right%side = TERMINAL_NODE_SIDE_END
-    node_right%termination%termination_type = TERMINATION_RLsCP
+    node_right%termination%termination_type = TERMINATION_RLSCP
     node_right%termination%resistance = 10
     node_right%termination%inductance = 10e-6
     node_right%termination%capacitance = 100e-12
@@ -417,7 +417,7 @@ integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_gauss.exc'
+    character(len=*), parameter :: PULSE_EXCITATION = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_gauss.exc'
 
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left, node_right
@@ -461,7 +461,7 @@ integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=pulse_excitation 
+    node_left%termination%path_to_excitation=PULSE_EXCITATION 
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0 
@@ -472,7 +472,7 @@ integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
     node_right%belongs_to_cable => cable
     node_right%conductor_in_cable = 1
     node_right%side = TERMINAL_NODE_SIDE_END
-    node_right%termination%termination_type = TERMINATION_RLsCP
+    node_right%termination%termination_type = TERMINATION_RLSCP
     node_right%termination%resistance = 10
     node_right%termination%inductance = 10e-6
     node_right%termination%capacitance = 100e-12
@@ -526,7 +526,7 @@ integer function test_termination_rcp() bind(C) result(error_cnt)
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: square_excitation = &
+    character(len=*), parameter :: SQUARE_EXCITATION = &
         PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
 
     type(cable_t), target :: cable
@@ -565,7 +565,7 @@ integer function test_termination_rcp() bind(C) result(error_cnt)
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0 
@@ -576,7 +576,7 @@ integer function test_termination_rcp() bind(C) result(error_cnt)
     node_right%belongs_to_cable => cable
     node_right%conductor_in_cable = 1
     node_right%side = TERMINAL_NODE_SIDE_END
-    node_right%termination%termination_type = TERMINATION_RLsCp
+    node_right%termination%termination_type = TERMINATION_RLSCP
     node_right%termination%resistance = 10
     node_right%termination%inductance = 0.0
     node_right%termination%capacitance = 100e-12
@@ -631,7 +631,7 @@ integer function test_termination_resistive_capacitive() bind(C) result(error_cn
     implicit none
 
     ! character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
-    character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/5u_1u_gauss.exc'
+    character(len=*), parameter :: PULSE_EXCITATION = PATH_TO_TEST_DATA//'excitations/5u_1u_gauss.exc'
 
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left, node_right
@@ -669,7 +669,7 @@ integer function test_termination_resistive_capacitive() bind(C) result(error_cn
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=pulse_excitation
+    node_left%termination%path_to_excitation=PULSE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0
@@ -735,7 +735,7 @@ integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)
     implicit none
 
     ! character(len=*), parameter :: filename = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.5_square.smb.json'
-    character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.25_square.exc'
+    character(len=*), parameter :: SQUARE_EXCITATION = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.25_square.exc'
     
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left, node_right
@@ -778,7 +778,7 @@ integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0
@@ -859,7 +859,7 @@ integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.05_triangle.exc'
+    character(len=*), parameter :: SQUARE_EXCITATION = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.05_triangle.exc'
     
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left, node_right
@@ -905,7 +905,7 @@ integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0
@@ -984,7 +984,7 @@ integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)
 
     ! character(len=*), parameter :: filename = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_square.smb.json'
     ! character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_pulse.exc'
-    character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_gauss.exc'
+    character(len=*), parameter :: PULSE_EXCITATION = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_gauss.exc'
     
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left_1, node_right_1
@@ -1028,7 +1028,7 @@ integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)
     node_left_1%belongs_to_cable => cable
     node_left_1%conductor_in_cable = 1
     node_left_1%side = TERMINAL_NODE_SIDE_INI
-    node_left_1%termination%path_to_excitation=pulse_excitation
+    node_left_1%termination%path_to_excitation=PULSE_EXCITATION
     node_left_1%termination%termination_type = TERMINATION_SERIES
     node_left_1%termination%resistance = 50
     node_left_1%termination%inductance = 0.0
@@ -1038,7 +1038,7 @@ integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)
     node_right_1%belongs_to_cable => cable
     node_right_1%conductor_in_cable = 1
     node_right_1%side = TERMINAL_NODE_SIDE_END
-    node_right_1%termination%termination_type = TERMINATION_RLsCp
+    node_right_1%termination%termination_type = TERMINATION_RLSCP
     node_right_1%termination%resistance = 50
     node_right_1%termination%inductance = 0.0
     node_right_1%termination%capacitance = 50e-12
@@ -1112,7 +1112,7 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_pulse.exc'
+    character(len=*), parameter :: PULSE_EXCITATION = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_pulse.exc'
     
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left_1, node_right_1, node_left_2, node_right_2
@@ -1173,7 +1173,7 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
     node_left_2%belongs_to_cable => cable
     node_left_2%conductor_in_cable = 2
     node_left_2%side = TERMINAL_NODE_SIDE_INI
-    node_left_2%termination%path_to_excitation=pulse_excitation
+    node_left_2%termination%path_to_excitation=PULSE_EXCITATION
     node_left_2%termination%termination_type = TERMINATION_SERIES
     node_left_2%termination%resistance = 50
     node_left_2%termination%inductance = 0.0
@@ -1187,7 +1187,7 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
     !                                          resistance = 50, &
     !                                          inductance = 0, &
     !                                          capacitance = 1e22)
-    node_right_1%termination%termination_type = TERMINATION_RLsCP
+    node_right_1%termination%termination_type = TERMINATION_RLSCP
     node_right_1%termination%resistance = 10
     node_right_1%termination%inductance = 1e-6
     node_right_1%termination%capacitance = 100e-12
@@ -1288,7 +1288,7 @@ integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_11_20ns.exc'
+    character(len=*), parameter :: PULSE_EXCITATION = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_11_20ns.exc'
     
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left_1, node_right_1, node_left_2, node_right_2
@@ -1338,7 +1338,7 @@ integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt
     node_left_2%belongs_to_cable => cable
     node_left_2%conductor_in_cable = 2
     node_left_2%side = TERMINAL_NODE_SIDE_INI
-    node_left_2%termination%path_to_excitation=pulse_excitation
+    node_left_2%termination%path_to_excitation=PULSE_EXCITATION
     node_left_2%termination%termination_type = TERMINATION_SERIES
     node_left_2%termination%resistance = 50
     node_left_2%termination%inductance = 0.0
@@ -1404,7 +1404,7 @@ integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_11_1ns.exc'
+    character(len=*), parameter :: PULSE_EXCITATION = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_11_1ns.exc'
     
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left_1, node_right_1, node_left_2, node_right_2
@@ -1454,7 +1454,7 @@ integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)
     node_left_2%belongs_to_cable => cable
     node_left_2%conductor_in_cable = 2
     node_left_2%side = TERMINAL_NODE_SIDE_INI
-    node_left_2%termination%path_to_excitation=pulse_excitation
+    node_left_2%termination%path_to_excitation=PULSE_EXCITATION
     node_left_2%termination%termination_type = TERMINATION_SERIES
     node_left_2%termination%resistance = 50 
     node_left_2%termination%inductance = 0.0

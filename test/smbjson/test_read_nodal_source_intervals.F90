@@ -5,7 +5,7 @@ integer function test_read_nodal_source_zero_length() bind (C) result(err)
 
    implicit none
 
-   character(len=*), parameter :: filename = &
+   character(len=*), parameter :: FILENAME = &
       PATH_TO_TEST_DATA//INPUT_EXAMPLES//'nodal_source_zero_length.fdtd.json'
    type(Parseador_t) :: problem
    type(parser_t) :: parser
@@ -27,7 +27,7 @@ integer function test_read_nodal_source_non_line_interval() bind (C) result(err)
 
    implicit none
 
-   character(len=*), parameter :: filename = &
+   character(len=*), parameter :: FILENAME = &
       PATH_TO_TEST_DATA//INPUT_EXAMPLES//'nodal_source_non_line_interval.fdtd.json'
    type(Parseador_t) :: problem
    type(parser_t) :: parser
@@ -49,7 +49,7 @@ integer function test_read_nodal_source_one_cell_interval() bind (C) result(err)
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA// &
+   character(len=*), parameter :: FILENAME = PATH_TO_TEST_DATA// &
       'cases/nodalSource/nodal-source-with-movie.fdtd.json'
    type(Parseador_t) :: problem
    type(parser_t) :: parser

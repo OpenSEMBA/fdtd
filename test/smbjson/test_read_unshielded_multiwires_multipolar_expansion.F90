@@ -4,7 +4,7 @@ integer function test_read_unshielded_multiwires_multipolar_expansion() bind (C)
 
    implicit none
 
-   character(len=*),parameter :: filename = &
+   character(len=*),parameter :: FILENAME = &
       PATH_TO_TEST_DATA//INPUT_EXAMPLES//'unshielded_multiwires_multipolar_expansion.fdtd.json'
    type(Parseador_t) :: pr, ex
    type(parser_t) :: parser

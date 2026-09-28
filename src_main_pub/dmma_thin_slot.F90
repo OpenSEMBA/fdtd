@@ -73,7 +73,7 @@ contains
       !
       cfm = 1.0_RKIND /  Sqrt (eabs*uabs) !si lo tomo relativo a la direccion de incidencia puede ser cfm=0.0_RKIND y se jode el logaritmo.
       !asi que lo tomo fijo !2012 bug articulo1_tgap_sgg_stair
-      if (orientacion == iEz) then
+      if (orientacion == IEZ) then
          !        cfm = Abs (dir(3)) / Sqrt (eabs*uabs)
          maxfreq = cfm / (incz*10.0)
          omega = 2.0_RKIND * pi * maxfreq
@@ -103,7 +103,7 @@ contains
             epse (3, 3) = (incz/incy) * (cap/eabs)
             mue (2, 2) = 1.0_RKIND / epse (3, 3)
          end if
-         if (direccion == iEz) then
+         if (direccion == IEZ) then
             epse (1, 1) = (incx/incy) * (cap/eabs)
             mue (2, 2) = 1.0_RKIND / epse (1, 1)
          end if
@@ -121,7 +121,7 @@ contains
             epse (3, 3) = (incz/incx) * (cap/eabs)
             mue (1, 1) = 1.0_RKIND / epse (3, 3)
          end if
-         if (direccion == iEz) then
+         if (direccion == IEZ) then
             epse (2, 2) = (incy/incx) * (cap/eabs)
             mue (1, 1) = 1.0_RKIND / epse (2, 2)
          end if

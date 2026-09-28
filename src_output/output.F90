@@ -62,8 +62,8 @@ module output_m
                                       FAR_FIELD_PROBE_ID = 7, &
                                       MAPVTK_ID = 8, LINE_PROBE_ID = 9, MTLN_PROBE_ID = 10
 
-   REAL(KIND=RKIND), save           ::  eps0, mu0
-   REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
+   real(kind=RKIND), save           ::  eps0, mu0
+   real(kind=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
    type(solver_output_t), pointer, dimension(:), save  ::  outputs
    type(output_partition_t), allocatable, save :: outputPartitions(:)
    type(problem_info_t), save, target :: problemInfo
@@ -240,7 +240,7 @@ contains
 
             outputRequestType = sgg%observation(ii)%P(i)%what
             select case (outputRequestType)
-            case (mapvtk)
+            case (MAPVTK)
                call get_local_map_bounds(lowerBound, upperBound, localMapLower, localMapUpper, mapHasData)
                globalMapLower = localMapLower
                globalMapUpper = localMapUpper
@@ -301,14 +301,14 @@ contains
                end if
 #endif
 
-            case (iEx, iEy, iEz, iHx, iHy, iHz)
+            case (iEx, iEy, IEZ, IHX, IHY, IHZ)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
                allocate (outputs(outputCount)%pointProbe)
                  call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt, &
                                        sgg%NumPlaneWaves >= 1)
-            case (iJx, iJy, iJz)
+            case (IJX, IJY, IJZ)
                if (wiresExists) then
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = WIRE_CURRENT_PROBE_ID
@@ -317,21 +317,21 @@ contains
                    call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, problemInfo%materialList, outputTypeExtension, control%mpidir, control%wiresflavor)
                end if
 
-            case (iQx, iQy, iQz)
+            case (IQX, IQY, IQZ)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
 
                allocate (outputs(outputCount)%wireChargeProbe)
                  call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
 
-            case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
+            case (IBLOQUEJX, IBLOQUEJY, IBLOQUEJZ, IBLOQUEMX, IBLOQUEMY, IBLOQUEMZ)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = BULK_PROBE_ID
 
                allocate (outputs(outputCount)%bulkCurrentProbe)
                  call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
 
-            case (lineIntegral)
+            case (LINEINTEGRAL)
                if (domain%domainType /= TIME_DOMAIN) then
                   call stoponerror(0, 0, 'Line probes only support the time domain')
                else
@@ -343,7 +343,7 @@ contains
                                               sgg%Sweep, control%layoutnumber, control%num_procs)
                end if
 
-            case (iCur, iMEC, iMHC, iCurX, iCurY, iCurZ, iExC, iEyC, iEzC, iHxC, iHyC, iHzC)
+            case (ICUR, IMEC, IMHC, ICURX, ICURY, ICURZ, IEXC, IEYC, IEZC, IHXC, IHYC, IHZC)
                if (domain%domainType == TIME_DOMAIN) then
                   block
                      type(volumetric_publication_t) :: publication
@@ -403,13 +403,13 @@ contains
          integer :: color, ierr, root_candidate
 
          output%MPISubcomm = -1
-         if (lower_bound%z <= sgg%SINPMLSweep(iHz)%ZE .and. &
-             upper_bound%z >= sgg%SINPMLSweep(iHz)%ZI) then
+         if (lower_bound%z <= sgg%SINPMLSweep(IHZ)%ZE .and. &
+             upper_bound%z >= sgg%SINPMLSweep(IHZ)%ZI) then
             output%MPISubcomm = 1
          end if
          root_candidate = -1
-         if (lower_bound%z >= sgg%SINPMLSweep(iHz)%ZI .and. &
-             lower_bound%z < sgg%SINPMLSweep(iHz)%ZE) then
+         if (lower_bound%z >= sgg%SINPMLSweep(IHZ)%ZI .and. &
+             lower_bound%z < sgg%SINPMLSweep(IHZ)%ZE) then
             root_candidate = control%layoutnumber
          end if
          call MPI_AllReduce(root_candidate, output%MPIRoot, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
@@ -528,7 +528,7 @@ contains
 
          local_lower = request_lower
          local_upper = request_upper
-         do field = iEx, iHz
+         do field = iEx, IHZ
             ! Restrict iteration to owned cells; isEdge uses Alloc halos for neighbours.
             local_lower%x = max(local_lower%x, sgg%Sweep(field)%XI)
             local_lower%y = max(local_lower%y, sgg%Sweep(field)%YI)
@@ -544,8 +544,8 @@ contains
        function preprocess_domain(observation, timeArray, simulationTimeStep, finalStepIndex, globalSaveAll) &
           result(newDomain)
           type(Obses_t), intent(in) :: observation
-          real(kind=RKIND_tiempo), pointer, dimension(:), intent(in) :: timeArray
-          real(kind=RKIND_tiempo), intent(in) :: simulationTimeStep
+          real(kind=RKIND_TIEMPO), pointer, dimension(:), intent(in) :: timeArray
+          real(kind=RKIND_TIEMPO), intent(in) :: simulationTimeStep
           integer(kind=4), intent(in) :: finalStepIndex
           logical, intent(in) :: globalSaveAll
           type(domain_t) :: newDomain
@@ -556,17 +556,17 @@ contains
 
           if (observation%TimeDomain .and. observation%FreqDomain) then
              nFreq = frequency_count(observation)
-             newdomain = domain_t(real(observation%InitialTime, kind=RKIND_tiempo), &
-                                 real(observation%FinalTime, kind=RKIND_tiempo), &
-                                 real(observation%TimeStep, kind=RKIND_tiempo), &
+             newdomain = domain_t(real(observation%InitialTime, kind=RKIND_TIEMPO), &
+                                 real(observation%FinalTime, kind=RKIND_TIEMPO), &
+                                 real(observation%TimeStep, kind=RKIND_TIEMPO), &
                                  observation%InitialFreq, frequency_stop(observation, nFreq), nFreq, .false.)
 
          else if (observation%TimeDomain) then
-            newdomain = domain_t(real(observation%InitialTime, kind=RKIND_tiempo), &
-                                 real(observation%FinalTime, kind=RKIND_tiempo), &
-                                 real(observation%TimeStep, kind=RKIND_tiempo))
+            newdomain = domain_t(real(observation%InitialTime, kind=RKIND_TIEMPO), &
+                                 real(observation%FinalTime, kind=RKIND_TIEMPO), &
+                                 real(observation%TimeStep, kind=RKIND_TIEMPO))
 
-          elseif (observation%FreqDomain) then
+          else if (observation%FreqDomain) then
             nFreq = frequency_count(observation)
             newdomain = domain_t(observation%InitialFreq, frequency_stop(observation, nFreq), nFreq, &
                                  logarithmicspacing=.false.)
@@ -583,11 +583,11 @@ contains
              saveAllTimeSteps = globalSaveAll .or. observation%FinalTime < tiny(1.0_RKIND) .or. &
                                 observation%TimeStep < tiny(1.0_RKIND)
              if (saveAllTimeSteps) then
-                newDomain%tstart = 0.0_RKIND_tiempo
+                newDomain%tstart = 0.0_RKIND_TIEMPO
                 newDomain%tstop = timeArray(simulationEndIndex)
                 newDomain%tstep = simulationTimeStep
              else
-                newDomain%tstart = max(0.0_RKIND_tiempo, newDomain%tstart)
+                newDomain%tstart = max(0.0_RKIND_TIEMPO, newDomain%tstart)
                 newDomain%tstop = min(timeArray(simulationEndIndex), newDomain%tstop)
                 newDomain%tstop = max(newDomain%tstart, newDomain%tstop)
                 newDomain%tstep = max(simulationTimeStep, newDomain%tstep)
@@ -613,7 +613,7 @@ contains
 
    subroutine update_outputs(control, discreteTime, timeIndx, fieldsReference, sgg)
       integer(kind=SINGLE), intent(in) :: timeIndx
-      real(kind=RKIND_tiempo), intent(in) :: discreteTime
+      real(kind=RKIND_TIEMPO), intent(in) :: discreteTime
       integer(kind=SINGLE) :: i, id
       type(sim_control_t), intent(in) :: control
       real(kind=RKIND), pointer, dimension(:, :, :) :: fieldComponent
@@ -665,15 +665,15 @@ contains
    logical function is_time_sample_due(domain, timeIndex, discreteTime) result(sampleDue)
       type(domain_t), intent(in) :: domain
       integer(kind=SINGLE), intent(in) :: timeIndex
-      real(kind=RKIND_tiempo), intent(in) :: discreteTime
-      real(kind=RKIND_tiempo) :: boundaryTolerance, timeScale
+      real(kind=RKIND_TIEMPO), intent(in) :: discreteTime
+      real(kind=RKIND_TIEMPO) :: boundaryTolerance, timeScale
 
       sampleDue = .false.
       if (.not. any(domain%domainType == [TIME_DOMAIN, BOTH_DOMAIN])) return
       if (modulo(timeIndex, domain%tstride) /= 0) return
 
       timeScale = max(abs(discreteTime), abs(domain%tstart), abs(domain%tstop), domain%tstep)
-      boundaryTolerance = 4.0_RKIND_tiempo*real(epsilon(1.0_RKIND), RKIND_tiempo)*timeScale
+      boundaryTolerance = 4.0_RKIND_TIEMPO*real(epsilon(1.0_RKIND), RKIND_TIEMPO)*timeScale
       sampleDue = discreteTime >= domain%tstart - boundaryTolerance .and. &
                   discreteTime <= domain%tstop + boundaryTolerance
    end function is_time_sample_due
@@ -685,7 +685,7 @@ contains
       type(sim_control_t), intent(in) :: control
       type(bounds_t), intent(in) :: bounds
       logical, intent(in) :: farFieldFlushRequested
-      real(KIND=RKIND_tiempo), pointer, dimension(:), intent(in) :: simulationTimeArray
+      real(kind=RKIND_TIEMPO), pointer, dimension(:), intent(in) :: simulationTimeArray
       integer, intent(in) :: simulationTimeIndex
       integer :: outIdx
 
@@ -822,7 +822,7 @@ contains
          if (.not. allocated(mtln_solver%bundles(i)%probes)) cycle
          do j = 1, size(mtln_solver%bundles(i)%probes)
             call delete_file(mtln_solver%bundles(i)%probes(j)%output_path, ios)
-            separator = scan(trim(mtln_solver%bundles(i)%probes(j)%output_path), '/\', back=.true.)
+            separator = scan(trim(mtln_solver%bundles(i)%probes(j)%output_path), '/\', BACK=.true.)
             if (separator > 1) then
                call remove_folder(mtln_solver%bundles(i)%probes(j)%output_path(:separator - 1), ios)
             end if

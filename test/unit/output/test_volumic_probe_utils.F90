@@ -23,7 +23,7 @@ integer function test_count_required_coords() bind(c) result(err)
    call setup_dummy_problem_info(problemInfo)
 
    ! Test Case 1: Field Request (iExC)
-   call find_and_store_important_coords(lowerBound, upperBound, iExC, problemInfo, count, dummy_coords)
+   call find_and_store_important_coords(lowerBound, upperBound, IEXC, problemInfo, count, dummy_coords)
 
    ! Expected: 3*3*3 = 27 points
    test_err = test_err + assert_integer_equal(count, 27_SINGLE, "Failed count for iExC")
@@ -56,7 +56,7 @@ integer function test_store_required_coords() bind(c) result(err)
    upperBound = new_cell_coordinate(2, 2, 2)
    call setup_dummy_problem_info(problemInfo)
 
-   call find_and_store_important_coords(lowerBound, upperBound, iHyC, problemInfo, nPoints, stored_coords)
+   call find_and_store_important_coords(lowerBound, upperBound, IHYC, problemInfo, nPoints, stored_coords)
 
    test_err = test_err + assert_integer_equal(nPoints, 8_SINGLE, "Failed nPoints for iHyC")
 
@@ -95,7 +95,7 @@ integer function test_is_valid_point_current() bind(c) result(err)
 
    ! By default, our dummy setup has NO PEC and NO Wires.
    ! So isValidPointForCurrent should be FALSE (as it requires PEC or Wire)
-   valid = isValidPointForCurrent(iCur, 1, 1, 1, problemInfo)
+   valid = isValidPointForCurrent(ICUR, 1, 1, 1, problemInfo)
 
    if (valid) then
        print *, "Expected False for empty space current probe (no PEC/Wire)"

@@ -4,7 +4,7 @@ integer function test_read_thinSlot() bind (C) result(err)
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'thinSlot.fdtd.json'
+   character(len=*), parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'thinSlot.fdtd.json'
    type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
@@ -84,7 +84,7 @@ contains
       allocate(expected%pecRegs%Vols(0))
       allocate(expected%pecRegs%Surfs(1))
       allocate(expected%pecRegs%Lins(0))
-      expected%pecRegs%Surfs(1)%Or = +iEz
+      expected%pecRegs%Surfs(1)%Or = +IEZ
       expected%pecRegs%Surfs(1)%Xi = 0
       expected%pecRegs%Surfs(1)%Xe = 3
       expected%pecRegs%Surfs(1)%Yi = 0

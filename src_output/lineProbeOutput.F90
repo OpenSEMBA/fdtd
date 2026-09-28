@@ -1,7 +1,7 @@
 module lineProbeOutput_m
-   use FDETYPES_m, only: RKIND, RKIND_tiempo, SINGLE, BUFSIZE, direction_t, xyzlimit_t, iEx, iEy, iEz
+   use FDETYPES_m, only: RKIND, RKIND_TIEMPO, SINGLE, BUFSIZE, direction_t, xyzlimit_t, iEx, iEy, IEZ
    use outputTypes_m, only: field_data_t, line_probe_output_t, domain_t, TIME_DOMAIN, OUTPUT_TIME_BUFFER_SIZE, &
-                            OUTPUT_ARTIFACT_TEXT, datFileExtension, timeExtension, declare_probe_artifacts
+                            OUTPUT_ARTIFACT_TEXT, DATFILEEXTENSION, TIMEEXTENSION, declare_probe_artifacts
    use allocationUtils_m, only: alloc_and_init
    use directoryUtils_m, only: create_file_with_path
 #ifdef CompileWithMPI
@@ -34,7 +34,7 @@ contains
             value = value + electric_field%y(segments(segment_index)%x, segments(segment_index)%y, &
                                              segments(segment_index)%z)*sign(1, orientation)* &
                     electric_field%deltaY(segments(segment_index)%y)
-         case (iEz)
+         case (IEZ)
             value = value + electric_field%z(segments(segment_index)%x, segments(segment_index)%y, &
                                              segments(segment_index)%z)*sign(1, orientation)* &
                     electric_field%deltaZ(segments(segment_index)%z)
@@ -76,10 +76,10 @@ contains
       else
          this%segments = segments
       end if
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIEMPO)
       call alloc_and_init(this%valueForTime, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
 
-      artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+      artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       if (this%isWriter) then
@@ -117,7 +117,7 @@ contains
 
    subroutine update_line_probe_output(this, step, electric_field)
       type(line_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_tiempo), intent(in) :: step
+      real(kind=RKIND_TIEMPO), intent(in) :: step
       type(field_data_t), intent(in) :: electric_field
 #ifdef CompileWithMPI
       integer :: ierr
@@ -143,7 +143,7 @@ contains
       if (this%nTime == 0) return
       this%nTimesFlushed = this%nTimesFlushed + this%nTime
       this%nTime = 0
-      this%timeStep = 0.0_RKIND_tiempo
+      this%timeStep = 0.0_RKIND_TIEMPO
       this%valueForTime = 0.0_RKIND
    end subroutine complete_line_probe_sample
 

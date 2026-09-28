@@ -93,7 +93,7 @@ contains
       real(kind=RKIND) :: eps00,mu00
 
       type(nf2ff_t) :: facesNF2FF
-      LOGICAL :: NF2FFDecim
+      logical :: NF2FFDecim
       type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize
       real(kind=Rkind) :: InitialFreq,FinalFreq,FreqStep
       real(kind=RKIND) :: thetaStart,thetaStop,thetaStep
@@ -104,17 +104,17 @@ contains
       integer(kind=4) :: MPISubComm,MPIRoot
 
       !---------------------------> inputs <----------------------------------------------------------
-      type( bounds_t), intent( IN) :: b
+      type( bounds_t), intent( in) :: b
       !
       type(SGGFDTDINFO_t), intent(in) :: sgg
       logical , intent(in) :: resume
       integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
       sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
       sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-      sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-      sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-      sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+      sggMiEz(sgg%alloc(IEZ)%XI : sgg%alloc(IEZ)%XE,sgg%alloc(IEZ)%YI : sgg%alloc(IEZ)%YE,sgg%alloc(IEZ)%ZI : sgg%alloc(IEZ)%ZE), &
+      sggMiHx(sgg%alloc(IHX)%XI : sgg%alloc(IHX)%XE,sgg%alloc(IHX)%YI : sgg%alloc(IHX)%YE,sgg%alloc(IHX)%ZI : sgg%alloc(IHX)%ZE), &
+      sggMiHy(sgg%alloc(IHY)%XI : sgg%alloc(IHY)%XE,sgg%alloc(IHY)%YI : sgg%alloc(IHY)%YE,sgg%alloc(IHY)%ZI : sgg%alloc(IHY)%ZE), &
+      sggMiHz(sgg%alloc(IHZ)%XI : sgg%alloc(IHZ)%XE,sgg%alloc(IHZ)%YI : sgg%alloc(IHZ)%YE,sgg%alloc(IHZ)%ZI : sgg%alloc(IHZ)%ZE)
       real(kind=RKIND) ::tiempo1,tiempo2,field1,field2,dtevol
       integer j,k,field,i,layoutnumber,num_procs,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
       character(len=BUFSIZE) :: buFF
@@ -126,19 +126,19 @@ contains
       zvac=sqrt(mu0/eps0)
 !
 
-      do field=iEx,iHz
+      do field=iEx,IHZ
         FF%Punto%PhysCoor(field)%x => null()
         FF%Punto%PhysCoor(field)%y => null()
         FF%Punto%PhysCoor(field)%z => null()
       end do
       !!!
       !store absolute limits to later correct edge contributions
-      FF%esqx1=max(esqx1,SINPML_fullsize(iHx)%XI)
-      FF%esqx2=min(esqx2,SINPML_fullsize(iHx)%XE)
-      FF%esqy1=max(esqy1,SINPML_fullsize(iHy)%YI)
-      FF%esqy2=min(esqy2,SINPML_fullsize(iHy)%YE)
-      FF%esqz1=max(esqz1,SINPML_fullsize(iHz)%ZI)
-      FF%esqz2=min(esqz2,SINPML_fullsize(iHz)%ZE)
+      FF%esqx1=max(esqx1,SINPML_fullsize(IHX)%XI)
+      FF%esqx2=min(esqx2,SINPML_fullsize(IHX)%XE)
+      FF%esqy1=max(esqy1,SINPML_fullsize(IHY)%YI)
+      FF%esqy2=min(esqy2,SINPML_fullsize(IHY)%YE)
+      FF%esqz1=max(esqz1,SINPML_fullsize(IHZ)%ZI)
+      FF%esqz2=min(esqz2,SINPML_fullsize(IHZ)%ZE)
       !!!!!!!!
       FF%unitfarfield =    unitfarfield
       FF%filefarfield =    filefarfield
@@ -166,7 +166,7 @@ contains
 
       !!!
 
-      do field=iEx,iHz
+      do field=iEx,IHZ
          allocate (FF%Punto%PhysCoor(field)%x(SINPML_fullsize(field)%XI-1 : SINPML_fullsize(field)%XE+1), &
          FF%Punto%PhysCoor(field)%y(SINPML_fullsize(field)%YI-1 : SINPML_fullsize(field)%YE+1), &
          FF%Punto%PhysCoor(field)%z(SINPML_fullsize(field)%ZI-1 : SINPML_fullsize(field)%ZE+1))
@@ -192,7 +192,7 @@ contains
       do k=SINPML_fullsize(field)%ZI-1,SINPML_fullsize(field)%ZE+1
          FF%Punto%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
-      field=iEz
+      field=IEZ
       do i=SINPML_fullsize(field)%XI-1,SINPML_fullsize(field)%XE+1
          FF%Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
@@ -202,7 +202,7 @@ contains
       do k=SINPML_fullsize(field)%ZI-1,SINPML_fullsize(field)%ZE+1
          FF%Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
-      field=iHx
+      field=IHX
       do i=SINPML_fullsize(field)%XI-1,SINPML_fullsize(field)%XE+1
          FF%Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
@@ -212,7 +212,7 @@ contains
       do k=SINPML_fullsize(field)%ZI-1,SINPML_fullsize(field)%ZE+1
          FF%Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
-      field=iHy
+      field=IHY
       do i=SINPML_fullsize(field)%XI-1,SINPML_fullsize(field)%XE+1
          FF%Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
@@ -222,7 +222,7 @@ contains
       do k=SINPML_fullsize(field)%ZI-1,SINPML_fullsize(field)%ZE+1
          FF%Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
-      field=iHz
+      field=IHZ
       do i=SINPML_fullsize(field)%XI-1,SINPML_fullsize(field)%XE+1
          FF%Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
@@ -254,33 +254,33 @@ contains
       FF%farfieldAr=.false.
       FF%farfieldAb=.false.
       !MPI NO DUPLICAR CALCULOS !revisar cuando se haga lo de las geometrias
-      if ((FF%esqx1 > sgg%SINPMLSweep(iHx)%XI).and.(FF%esqx1 <= sgg%SINPMLSweep(IHx)%XE)) &
+      if ((FF%esqx1 > sgg%SINPMLSweep(IHX)%XI).and.(FF%esqx1 <= sgg%SINPMLSweep(IHX)%XE)) &
       FF%farfieldTr=.true.
-      if ((FF%esqx2 < sgg%SINPMLSweep(IHx)%XE).and.(FF%esqx2 >= sgg%SINPMLSweep(iHx)%XI)) &
+      if ((FF%esqx2 < sgg%SINPMLSweep(IHX)%XE).and.(FF%esqx2 >= sgg%SINPMLSweep(IHX)%XI)) &
       FF%farfieldFr=.true.
-      if ((FF%esqy1 > sgg%SINPMLSweep(iHy)%YI).and.(FF%esqy1 <= sgg%SINPMLSweep(IHy)%YE)) &
+      if ((FF%esqy1 > sgg%SINPMLSweep(IHY)%YI).and.(FF%esqy1 <= sgg%SINPMLSweep(IHY)%YE)) &
       FF%farfieldIz=.true.
-      if ((FF%esqy2 < sgg%SINPMLSweep(IHy)%YE).and.(FF%esqy2 >= sgg%SINPMLSweep(iHy)%YI)) &
+      if ((FF%esqy2 < sgg%SINPMLSweep(IHY)%YE).and.(FF%esqy2 >= sgg%SINPMLSweep(IHY)%YI)) &
       FF%farfieldDe=.true.
-      if ((FF%esqz1 > sgg%SINPMLSweep(iHz)%ZI).and.(FF%esqz1 <= sgg%SINPMLSweep(IHz)%ZE)) &
+      if ((FF%esqz1 > sgg%SINPMLSweep(IHZ)%ZI).and.(FF%esqz1 <= sgg%SINPMLSweep(IHZ)%ZE)) &
       FF%farfieldAb=.true.
-      if ((FF%esqz2 < sgg%SINPMLSweep(IHz)%ZE).and.(FF%esqz2 >= sgg%SINPMLSweep(iHz)%ZI)) &
+      if ((FF%esqz2 < sgg%SINPMLSweep(IHZ)%ZE).and.(FF%esqz2 >= sgg%SINPMLSweep(IHZ)%ZI)) &
       FF%farfieldAr=.true.
       !
 
-      FF%XDobleAncho= 2*( FF%Punto%PhysCoor(iHx)%x(FF%esqx2)-FF%Punto%PhysCoor(iHx)%x(FF%esqx1) )
-      FF%YDobleAncho= 2*( FF%Punto%PhysCoor(iHy)%y(FF%esqy2)-FF%Punto%PhysCoor(iHy)%y(FF%esqy1) )
-      FF%ZDobleAncho= 2*( FF%Punto%PhysCoor(iHz)%z(FF%esqz2)-FF%Punto%PhysCoor(iHz)%z(FF%esqz1) )
-      FF%XOffsetMinus=2*( FF%Punto%PhysCoor(iHx)%x(FF%esqx1) )
-      FF%YOffsetMinus=2*( FF%Punto%PhysCoor(iHy)%y(FF%esqy1) )
-      FF%ZOffsetMinus=2*( FF%Punto%PhysCoor(iHz)%z(FF%esqz1) )
-      FF%XOffsetPlus= 2*( FF%Punto%PhysCoor(iHx)%x(FF%esqx2))
-      FF%YOffsetPlus= 2*( FF%Punto%PhysCoor(iHy)%y(FF%esqy2))
-      FF%ZOffsetPlus= 2*( FF%Punto%PhysCoor(iHz)%z(FF%esqz2))
+      FF%XDobleAncho= 2*( FF%Punto%PhysCoor(IHX)%x(FF%esqx2)-FF%Punto%PhysCoor(IHX)%x(FF%esqx1) )
+      FF%YDobleAncho= 2*( FF%Punto%PhysCoor(IHY)%y(FF%esqy2)-FF%Punto%PhysCoor(IHY)%y(FF%esqy1) )
+      FF%ZDobleAncho= 2*( FF%Punto%PhysCoor(IHZ)%z(FF%esqz2)-FF%Punto%PhysCoor(IHZ)%z(FF%esqz1) )
+      FF%XOffsetMinus=2*( FF%Punto%PhysCoor(IHX)%x(FF%esqx1) )
+      FF%YOffsetMinus=2*( FF%Punto%PhysCoor(IHY)%y(FF%esqy1) )
+      FF%ZOffsetMinus=2*( FF%Punto%PhysCoor(IHZ)%z(FF%esqz1) )
+      FF%XOffsetPlus= 2*( FF%Punto%PhysCoor(IHX)%x(FF%esqx2))
+      FF%YOffsetPlus= 2*( FF%Punto%PhysCoor(IHY)%y(FF%esqy2))
+      FF%ZOffsetPlus= 2*( FF%Punto%PhysCoor(IHZ)%z(FF%esqz2))
 
       !manejo de simetrias PEC y PMC
-      if (FF%esqx1 <= SINPML_fullsize(IHx)%XI) then
-         FF%esqx1  = SINPML_fullsize(IHx)%XI
+      if (FF%esqx1 <= SINPML_fullsize(IHX)%XI) then
+         FF%esqx1  = SINPML_fullsize(IHX)%XI
          if (FF%farfieldTr) then
             error=.TRUE.
          else
@@ -300,8 +300,8 @@ contains
             if ((FF%farfieldAb).and.(sgg%Border%IsBackPMC)) FF%farfieldAb_clonePMC_Back=.true.
          end if
       end if
-      if (FF%esqx2 >= SINPML_fullsize(IHx)%XE) then
-         FF%esqx2  = SINPML_fullsize(IHx)%XE
+      if (FF%esqx2 >= SINPML_fullsize(IHX)%XE) then
+         FF%esqx2  = SINPML_fullsize(IHX)%XE
          if (FF%farfieldFr) then
             error=.TRUE.
          else
@@ -321,8 +321,8 @@ contains
             if ((FF%farfieldAb).and.(sgg%Border%IsFrontPMC)) FF%farfieldAb_clonePMC_Front=.true.
          end if
       end if
-      if (FF%esqy1 <= SINPML_fullsize(iHy)%YI) then
-         FF%esqy1  = SINPML_fullsize(iHy)%YI
+      if (FF%esqy1 <= SINPML_fullsize(IHY)%YI) then
+         FF%esqy1  = SINPML_fullsize(IHY)%YI
          if (FF%farfieldIz) then
             error=.TRUE.
          else
@@ -342,8 +342,8 @@ contains
             if ((FF%farfieldAb).and.(sgg%Border%IsLeftPMC)) FF%farfieldAb_clonePMC_Left=.true.
          end if
       end if
-      if (FF%esqy2 >= SINPML_fullsize(IHy)%YE) then
-         FF%esqy2  = SINPML_fullsize(IHy)%YE
+      if (FF%esqy2 >= SINPML_fullsize(IHY)%YE) then
+         FF%esqy2  = SINPML_fullsize(IHY)%YE
          if (FF%farfieldDe) then
             error=.TRUE.
          else
@@ -363,8 +363,8 @@ contains
             if ((FF%farfieldAb).and.(sgg%Border%IsRightPMC)) FF%farfieldAb_clonePMC_Right=.true.
          end if
       end if
-      if (FF%esqz1 <= SINPML_fullsize(iHz)%ZI) then
-         FF%esqz1  = SINPML_fullsize(iHz)%ZI
+      if (FF%esqz1 <= SINPML_fullsize(IHZ)%ZI) then
+         FF%esqz1  = SINPML_fullsize(IHZ)%ZI
          if (FF%farfieldAb) then
             error=.TRUE.
          else
@@ -385,8 +385,8 @@ contains
 
          end if
       end if
-      if (FF%esqz2 >= SINPML_fullsize(IHz)%ZE) then
-         FF%esqz2  = SINPML_fullsize(IHz)%ZE
+      if (FF%esqz2 >= SINPML_fullsize(IHZ)%ZE) then
+         FF%esqz2  = SINPML_fullsize(IHZ)%ZE
          if (FF%farfieldAr) then
             error=.TRUE.
          else
@@ -475,12 +475,12 @@ contains
 
 
       !find the coordinate limits of the Huygens Box for each component
-      FF%TrFr%I%tra%Ez=Max( sgg%SINPMLSweep(iEz)%XI,       FF%esqx1     )
-      FF%TrFr%I%fro%Ez=Min( sgg%SINPMLSweep(iEz)%XE,       FF%esqx2     )
-      FF%TrFr%J%com%Ez=Max( sgg%SINPMLSweep(iEz)%YI,       FF%esqy1     )
-      FF%TrFr%J%fin%Ez=Min( sgg%SINPMLSweep(iEz)%YE,       FF%esqy2     )
-      FF%TrFr%K%com%Ez=Max( sgg%SINPMLSweep(iEz)%ZI,       FF%esqz1     )
-      FF%TrFr%K%fin%Ez=MIn( sgg%SINPMLSweep(iEz)%ZE,       FF%esqz2-1   )
+      FF%TrFr%I%tra%Ez=Max( sgg%SINPMLSweep(IEZ)%XI,       FF%esqx1     )
+      FF%TrFr%I%fro%Ez=Min( sgg%SINPMLSweep(IEZ)%XE,       FF%esqx2     )
+      FF%TrFr%J%com%Ez=Max( sgg%SINPMLSweep(IEZ)%YI,       FF%esqy1     )
+      FF%TrFr%J%fin%Ez=Min( sgg%SINPMLSweep(IEZ)%YE,       FF%esqy2     )
+      FF%TrFr%K%com%Ez=Max( sgg%SINPMLSweep(IEZ)%ZI,       FF%esqz1     )
+      FF%TrFr%K%fin%Ez=MIn( sgg%SINPMLSweep(IEZ)%ZE,       FF%esqz2-1   )
       !
       FF%TrFr%I%tra%Ey=Max( sgg%SINPMLSweep(iEy)%XI,       FF%esqx1     )
       FF%TrFr%I%fro%Ey=Min( sgg%SINPMLSweep(iEy)%XE,       FF%esqx2     )
@@ -511,12 +511,12 @@ contains
       FF%IzDe%K%com%Ex=Max( sgg%SINPMLSweep(iEx)%ZI,       FF%esqz1     )
       FF%IzDe%K%fin%Ex=MIn( sgg%SINPMLSweep(iEx)%ZE-01,    FF%esqz2     ) !MPI NO DUPLICAR CALCULOS
       !
-      FF%IzDe%J%izq%Ez=Max( sgg%SINPMLSweep(iEz)%yI,    FF%esqy1     )
-      FF%IzDe%J%der%Ez=Min( sgg%SINPMLSweep(iEz)%yE,    FF%esqy2     )
-      FF%IzDe%I%com%Ez=Max( sgg%SINPMLSweep(iEz)%xI,    FF%esqx1     )
-      FF%IzDe%I%fin%Ez=Min( sgg%SINPMLSweep(iEz)%xE,    FF%esqx2     )
-      FF%IzDe%K%com%Ez=Max( sgg%SINPMLSweep(iEz)%ZI,    FF%esqz1     )
-      FF%IzDe%K%fin%Ez=MIn( sgg%SINPMLSweep(iEz)%ZE,    FF%esqz2-1   )
+      FF%IzDe%J%izq%Ez=Max( sgg%SINPMLSweep(IEZ)%yI,    FF%esqy1     )
+      FF%IzDe%J%der%Ez=Min( sgg%SINPMLSweep(IEZ)%yE,    FF%esqy2     )
+      FF%IzDe%I%com%Ez=Max( sgg%SINPMLSweep(IEZ)%xI,    FF%esqx1     )
+      FF%IzDe%I%fin%Ez=Min( sgg%SINPMLSweep(IEZ)%xE,    FF%esqx2     )
+      FF%IzDe%K%com%Ez=Max( sgg%SINPMLSweep(IEZ)%ZI,    FF%esqz1     )
+      FF%IzDe%K%fin%Ez=MIn( sgg%SINPMLSweep(IEZ)%ZE,    FF%esqz2-1   )
       !
       FF%IzDe%J%izq%Hz= FF%IzDe%J%izq%Ex - 1
       FF%IzDe%J%der%Hz= FF%IzDe%J%der%Ex
@@ -563,16 +563,16 @@ contains
 
 
       !check if materials are crossed by the box
-      If( FF%farfieldTr) then
+      if( FF%farfieldTr) then
          !Ez Back
          i = FF%TrFr%I%tra%Ez !Back
          do k = FF%TrFr%K%com%Ez, FF%TrFr%K%fin%Ez
             do j = FF%TrFr%J%com%Ez, FF%TrFr%J%fin%Ez
                if (sggMiEz( i, j, k) /=1 ) then
                   write (buff,'(a,3i7)') 'Back NF/FF region intersects a material'//' at Ez',i,j,k
-                  if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -583,25 +583,25 @@ contains
             do j = FF%TrFr%J%com%Ey, FF%TrFr%J%fin%Ey
                if (sggMiEy(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Back NF/FF region intersects a material'//' at Ey',i,j,k
-                  if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
-            End do
+            end do
          end do
       end if
       !--->
-      If( FF%farfieldFr) then
+      if( FF%farfieldFr) then
          !Ez  Front
          i = FF%TrFr%I%fro%Ez !Front
          do k = FF%TrFr%K%com%Ez, FF%TrFr%K%fin%Ez
             do j = FF%TrFr%J%com%Ez, FF%TrFr%J%fin%Ez
                if (sggMiEz(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Front NF/FF region intersects a material'//' at Ez',i,j,k
-                  if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -612,25 +612,25 @@ contains
             do j = FF%TrFr%J%com%Ey, FF%TrFr%J%fin%Ey
                if (sggMiEy(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Front NF/FF region intersects a material'//' at Ey',i,j,k
-                  if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
       end if
       !--->
-      If( FF%farfieldIz) then
+      if( FF%farfieldIz) then
          !Ex Left
          j = FF%IzDe%J%izq%Ex  !Left
          do k = FF%IzDe%K%com%Ex, FF%IzDe%K%fin%Ex
             do i = FF%IzDe%I%com%Ex, FF%IzDe%I%fin%Ex
                if (sggMiEx(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Left NF/FF region intersects a material'//' at Ex',i,j,k
-                  if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -641,25 +641,25 @@ contains
             do i = FF%IzDe%I%com%Ez, FF%IzDe%I%fin%Ez
                if (sggMiEz(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Left NF/FF region intersects a material'//' at Ez',i,j,k
-                  if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
       end if
       !--->
-      If( FF%farfieldDe) then
+      if( FF%farfieldDe) then
          !Ez  Right
          j = FF%IzDe%J%der%Ez !Right
          do k = FF%IzDe%K%com%Ez, FF%IzDe%K%fin%Ez
             do i = FF%IzDe%I%com%Ez, FF%IzDe%I%fin%Ez
                if (sggMiEz(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Right NF/FF region intersects a material'//' at Ez',i,j,k
-                  if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -670,25 +670,25 @@ contains
             do i=FF%IzDe%I%com%Ex,FF%IzDe%I%fin%Ex
                if (sggMiEx(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Right NF/FF region intersects a material'//' at Ex',i,j,k
-                  if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
-            End do
+            end do
          end do
       end if
       !--->
-      If( FF%farfieldAb) then
+      if( FF%farfieldAb) then
          !Ex  Down
          k = FF%AbAr%K%aba%Ex  !Down
          do j = FF%AbAr%J%com%Ex, FF%AbAr%J%fin%Ex
-            Do i=FF%AbAr%I%com%Ex,FF%AbAr%I%fin%Ex
+            do i=FF%AbAr%I%com%Ex,FF%AbAr%I%fin%Ex
                if (sggMiEx(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Down NF/FF region intersects a material'//' at Ex',i,j,k
-                  if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -699,25 +699,25 @@ contains
             do i = FF%AbAr%I%com%Ey, FF%AbAr%I%fin%Ey
                if (sggMiEy(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Down NF/FF region intersects a material'//' at Ey',i,j,k
-                  if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
       end if
       !--->
-      If( FF%farfieldAr) then
+      if( FF%farfieldAr) then
          !Ex Up
          k = FF%AbAr%K%arr%Ex  !Up
          do j = FF%AbAr%J%com%Ex, FF%AbAr%J%fin%Ex
             do i = FF%AbAr%I%com%Ex, FF%AbAr%I%fin%Ex
                if (sggMiEx(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Up NF/FF region intersects a material'//' at Ex',i,j,k
-                  if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -728,9 +728,9 @@ contains
             do i = FF%AbAr%I%com%Ey, FF%AbAr%I%fin%Ey
                if (sggMiEy(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Up NF/FF region intersects a material'//' at Ey',i,j,k
-                  if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -744,9 +744,9 @@ contains
             do j = FF%TrFr%J%com%Hz, FF%TrFr%J%fin%Hz
                if (sggMiHz(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Back NF/FF region intersects a material'//' at Hz',i,j,k
-                  if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -757,9 +757,9 @@ contains
             do j = FF%TrFr%J%com%Hy, FF%TrFr%J%fin%Hy
                if (sggMiHy(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Back NF/FF region intersects a material'//' at Hy',i,j,k
-                  if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -772,9 +772,9 @@ contains
             do j = FF%TrFr%J%com%Hz, FF%TrFr%J%fin%Hz
                if (sggMiHz(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Front NF/FF region intersects a material'//' at Hz',i,j,k
-                  if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -785,9 +785,9 @@ contains
             do j = FF%TrFr%J%com%Hy, FF%TrFr%J%fin%Hy
                if (sggMiHy( i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Front NF/FF region intersects a material'//' at Hy',i,j,k
-                  if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -801,9 +801,9 @@ contains
             do i = FF%IzDe%I%com%Hx, FF%IzDe%I%fin%Hx
                if (sggMiHx( i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Left NF/FF region intersects a material'//' at Hx',i,j,k
-                  if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -814,9 +814,9 @@ contains
             do i = FF%IzDe%I%com%Hz, FF%IzDe%I%fin%Hz
                if (sggMiHz( i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Left NF/FF region intersects a material'//' at Hz',i,j,k
-                  if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -829,9 +829,9 @@ contains
             do i = FF%IzDe%I%com%Hx, FF%IzDe%I%fin%Hx
                if (sggMiHx(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Right NF/FF region intersects a material'//' at Hx',i,j,k
-                  if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -842,9 +842,9 @@ contains
             do i = FF%IzDe%I%com%Hz, FF%IzDe%I%fin%Hz
                if (sggMiHz(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Right NF/FF region intersects a material'//' at Hz',i,j,k
-                  if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -857,9 +857,9 @@ contains
             do i = FF%AbAr%I%com%Hx, FF%AbAr%I%fin%Hx
                if (sggMiHx(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Down NF/FF region intersects a material'//' at Hx',i,j,k
-                  if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -870,9 +870,9 @@ contains
             do i=FF%AbAr%I%com%Hy,FF%AbAr%I%fin%Hy
                if (sggMiHy(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Down NF/FF region intersects a material'//' at Hy',i,j,k
-                  if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -886,9 +886,9 @@ contains
             do i = FF%AbAr%I%com%Hx, FF%AbAr%I%fin%Hx
                if (sggMiHx(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Up NF/FF region intersects a material'//' at Hx',i,j,k
-                  if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -899,9 +899,9 @@ contains
             do i = FF%AbAr%I%com%Hy, FF%AbAr%I%fin%Hy
                if (sggMiHy(i,j,k) /=1 ) then
                   write (buff,'(a,3i7)') 'Up NF/FF region intersects a material'//' at Hy',i,j,k
-                  if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec)).and. .not. &
-                  ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                  (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                  if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%PEC)).and. .not. &
+                  ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                  (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                   call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
@@ -987,9 +987,9 @@ contains
          call STOPONERROR (layoutnumber,num_procs,Buff)
       end if
       open(15, FILE=trim(adjustl(FF%FileNormalize)))
-      READ (15,*) tiempo1, field1
-      READ (15,*) tiempo2, field2
-      CLOSE (15)
+      read (15,*) tiempo1, field1
+      read (15,*) tiempo2, field2
+      close (15)
       dtevol = tiempo2 - tiempo1 !!!ojo tocar para permit scaling pq. no estan sampleadas uniformemente 06118
       FF%dftEntrada=0.0_RKIND
 
@@ -1009,13 +1009,13 @@ contains
       if (pozi == 0) then
          !vector con exponenciales con el sgg%dt del fichero de entrada
          do ii=1,FF%NumFreqs
-            FF%expIwdt(ii)=     Exp(mcpi2*(FF%InitialFreq + (ii-1) *FF%FreqStep) *dtevol     )
+            FF%expIwdt(ii)=     Exp(MCPI2*(FF%InitialFreq + (ii-1) *FF%FreqStep) *dtevol     )
             !iniciales
             FF%auxExp_E(ii)=   dtevol * (1.0E0_RKIND, 0.0E0_RKIND)   !hay que multiplicar por sgg%dt !bug
          end do
       else !logaritmico
          do ii=1,FF%NumFreqs
-            FF%expIwdt(ii)=     Exp(mcpi2*(10.0_RKIND **(FF%InitialFreq + (ii-1) *FF%FreqStep)) *dtevol     )
+            FF%expIwdt(ii)=     Exp(MCPI2*(10.0_RKIND **(FF%InitialFreq + (ii-1) *FF%FreqStep)) *dtevol     )
             !iniciales
             FF%auxExp_E(ii)=   dtevol * (1.0E0_RKIND, 0.0E0_RKIND)   !hay que multiplicar por sgg%dt !bug 
          end do
@@ -1026,9 +1026,9 @@ contains
 
 
       open(15, FILE=trim(adjustl(FF%FileNormalize)))
-      READ (15,*) tiempo1, field1
-      DO
-         READ (15,*, end=98) tiempo1, field1
+      read (15,*) tiempo1, field1
+      do
+         read (15,*, end=98) tiempo1, field1
          do ii=1,FF%NumFreqs
             FF%dftEntrada(ii) = FF%dftEntrada(ii) + field1 * FF%auxExp_E(ii)
          end do
@@ -1039,7 +1039,7 @@ contains
          end do
       end do
 98    continue
-      CLOSE (15)
+      close (15)
 
       !!
       !machaca con el vector con exponenciales para el sgg%dt de la simulacion
@@ -1131,15 +1131,15 @@ contains
 
    !**************************************************************************************************
    subroutine UpdateFarField(ntime, b, Ex, Ey, Ez,Hx,Hy,Hz)
-      type( bounds_t), intent( IN) :: b
+      type( bounds_t), intent( in) :: b
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN) :: Ex
-      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN) :: Ey
-      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN) :: Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( in) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( in) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( in) :: Ez
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN) :: Hx
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN) :: Hy
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN) :: Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( in) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( in) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( in) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
       integer  :: i, j, k, i_m, j_m, k_m,ii, ntime
       !---------------------------> empieza UpdateFarField <---------------------------------------
@@ -1152,7 +1152,7 @@ contains
       !!!!!!!!!!!!!!!
       !electricos
       !!!!!!!!!!!!!!!!!!!!
-      If( FF%farfieldTr) then
+      if( FF%farfieldTr) then
          !Ez Back
          i = FF%TrFr%I%tra%Ez !Back
          i_m = i - b%Ez%XI
@@ -1186,14 +1186,14 @@ contains
                   FF%EyTr( j_m, k_m,ii) = FF%EyTr(j_m, k_m,ii) + FF%auxExp_E(ii) *  Ey( i_m, j_m, k_m)
 
                end do
-            End do
+            end do
          end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
       end if
       !--->
-      If( FF%farfieldFr) then
+      if( FF%farfieldFr) then
          !Ez  Front
          i = FF%TrFr%I%fro%Ez !Front
          i_m = i - b%Ez%XI
@@ -1235,7 +1235,7 @@ contains
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !--->
-      If( FF%farfieldIz) then
+      if( FF%farfieldIz) then
          !Ex Left
          j = FF%IzDe%J%izq%Ex  !Left
          j_m = j - b%Ex%YI
@@ -1276,7 +1276,7 @@ contains
 #endif
       end if
       !--->
-      If( FF%farfieldDe) then
+      if( FF%farfieldDe) then
          !Ez  Right
          j = FF%IzDe%J%der%Ez !Right
          j_m = j - b%Ez%YI
@@ -1310,7 +1310,7 @@ contains
                   FF%ExDe( i_m, k_m,ii) = FF%ExDe( i_m, k_m,ii) + FF%auxExp_E(ii) *  Ex( i_m, j_m, k_m)
 
                end do
-            End do
+            end do
          end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -1318,7 +1318,7 @@ contains
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!
       !--->
-      If( FF%farfieldAb) then
+      if( FF%farfieldAb) then
          !Ex  Down
          k = FF%AbAr%K%aba%Ex  !Down
          k_m = k - b%Ex%ZI
@@ -1327,7 +1327,7 @@ contains
 #endif
          do j = FF%AbAr%J%com%Ex, FF%AbAr%J%fin%Ex
             j_m = j - b%Ex%YI
-            Do i=FF%AbAr%I%com%Ex,FF%AbAr%I%fin%Ex
+            do i=FF%AbAr%I%com%Ex,FF%AbAr%I%fin%Ex
                i_m = i - b%Ex%XI
                do ii=1,FF%NumFreqs
                   FF%ExAb( i_m, j_m,ii) = FF%ExAb( i_m, j_m,ii) + FF%auxExp_E(ii) *  Ex( i_m, j_m, k_m)
@@ -1359,7 +1359,7 @@ contains
 #endif
       end if
       !--->
-      If( FF%farfieldAr) then
+      if( FF%farfieldAr) then
          !Ex Up
          k = FF%AbAr%K%arr%Ex  !Up
          k_m = k - b%Ex%ZI
@@ -1700,12 +1700,12 @@ contains
       !---------------------------> acaba UpdateFarFieldH <-----------------------------------------
       return
 
-   endsubroutine UpdateFarField
+   end subroutine UpdateFarField
    !
    !
    !
    subroutine StoreFarFields(B)
-      type( bounds_t), intent( IN) :: b
+      type( bounds_t), intent( in) :: b
 
       integer(kind=4) :: i, j, k, i_m, j_m, k_m,ii
 
@@ -1715,7 +1715,7 @@ contains
          write (14,err=634) FF%auxExp_H(ii)
       end do
       !
-      If( FF%farfieldTr) then
+      if( FF%farfieldTr) then
          !Ez Back
          i = FF%TrFr%I%tra%Ez !Back
          i_m = i - b%Ez%XI
@@ -1734,11 +1734,11 @@ contains
             do j = FF%TrFr%J%com%Ey, FF%TrFr%J%fin%Ey
                j_m = j - b%Ey%YI
                write (14,err=634) ( FF%EyTr(j_m, k_m,ii), ii=1,FF%NumFreqs)
-            End do
+            end do
          end do
       end if
       !--->
-      If( FF%farfieldFr) then
+      if( FF%farfieldFr) then
          !Ez  Front
          i = FF%TrFr%I%fro%Ez !Front
          i_m = i - b%Ez%XI
@@ -1761,7 +1761,7 @@ contains
          end do
       end if
       !--->
-      If( FF%farfieldIz) then
+      if( FF%farfieldIz) then
          !Ex Left
          j = FF%IzDe%J%izq%Ex  !Left
          j_m = j - b%Ex%YI
@@ -1784,7 +1784,7 @@ contains
          end do
       end if
       !--->
-      If( FF%farfieldDe) then
+      if( FF%farfieldDe) then
          !Ez  Right
          j = FF%IzDe%J%der%Ez !Right
          j_m = j - b%Ez%YI
@@ -1803,17 +1803,17 @@ contains
             do i=FF%IzDe%I%com%Ex,FF%IzDe%I%fin%Ex
                i_m = i - b%Ex%XI
                write (14,err=634) ( FF%ExDe( i_m, k_m,ii) , ii=1,FF%NumFreqs)
-            End do
+            end do
          end do
       end if
       !--->
-      If( FF%farfieldAb) then
+      if( FF%farfieldAb) then
          !Ex  Down
          k = FF%AbAr%K%aba%Ex  !Down
          k_m = k - b%Ex%ZI
          do j = FF%AbAr%J%com%Ex, FF%AbAr%J%fin%Ex
             j_m = j - b%Ex%YI
-            Do i=FF%AbAr%I%com%Ex,FF%AbAr%I%fin%Ex
+            do i=FF%AbAr%I%com%Ex,FF%AbAr%I%fin%Ex
                i_m = i - b%Ex%XI
                write (14,err=634) ( FF%ExAb( i_m, j_m,ii) , ii=1,FF%NumFreqs)
             end do
@@ -1830,7 +1830,7 @@ contains
          end do
       end if
       !--->
-      If( FF%farfieldAr) then
+      if( FF%farfieldAr) then
          !Ex Up
          k = FF%AbAr%K%arr%Ex  !Up
          k_m = k - b%Ex%ZI
@@ -2013,21 +2013,21 @@ contains
       call print11(0,'FARFIELD: ERROR WRITING RESTARTING FIELDS. IGNORING AND CONTINUING')
       call print11(0,SEPARADOR//separador//separador)          
 635   return
-   endsubroutine
+   end subroutine
    !
 
    subroutine ReadFarfield(b)
-      type( bounds_t), intent( IN) :: b
+      type( bounds_t), intent( in) :: b
 
 
       integer :: i, j, k, i_m, j_m, k_m,ii
 
       !---------------------------> empieza  <---------------------------------------
       do ii=1,FF%NumFreqs
-         READ (14) FF%auxExp_E(ii)
-         READ (14) FF%auxExp_H(ii)
+         read (14) FF%auxExp_E(ii)
+         read (14) FF%auxExp_H(ii)
       end do
-      If( FF%farfieldTr) then
+      if( FF%farfieldTr) then
          !Ez Back
          i = FF%TrFr%I%tra%Ez !Back
          i_m = i - b%Ez%XI
@@ -2035,7 +2035,7 @@ contains
             k_m = k - b%Ez%ZI
             do j = FF%TrFr%J%com%Ez, FF%TrFr%J%fin%Ez
                j_m = j - b%Ez%YI
-               READ (14) ( FF%EzTr(j_m, k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%EzTr(j_m, k_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
          !Ey Back
@@ -2045,12 +2045,12 @@ contains
             k_m = k - b%Ey%ZI
             do j = FF%TrFr%J%com%Ey, FF%TrFr%J%fin%Ey
                j_m = j - b%Ey%YI
-               READ (14) ( FF%EyTr(j_m, k_m,ii), ii=1,FF%NumFreqs)
-            End do
+               read (14) ( FF%EyTr(j_m, k_m,ii), ii=1,FF%NumFreqs)
+            end do
          end do
       end if
       !--->
-      If( FF%farfieldFr) then
+      if( FF%farfieldFr) then
          !Ez  Front
          i = FF%TrFr%I%fro%Ez !Front
          i_m = i - b%Ez%XI
@@ -2058,7 +2058,7 @@ contains
             k_m = k - b%Ez%ZI
             do j = FF%TrFr%J%com%Ez, FF%TrFr%J%fin%Ez
                j_m = j - b%Ez%YI
-               READ (14) ( FF%EzFr(j_m, k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%EzFr(j_m, k_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
          !Ey  Front
@@ -2068,12 +2068,12 @@ contains
             k_m = k - b%Ey%ZI
             do j = FF%TrFr%J%com%Ey, FF%TrFr%J%fin%Ey
                j_m = j - b%Ey%YI
-               READ (14) ( FF%EyFr(j_m, k_m,ii) , ii=1,FF%NumFreqs)
+               read (14) ( FF%EyFr(j_m, k_m,ii) , ii=1,FF%NumFreqs)
             end do
          end do
       end if
       !--->
-      If( FF%farfieldIz) then
+      if( FF%farfieldIz) then
          !Ex Left
          j = FF%IzDe%J%izq%Ex  !Left
          j_m = j - b%Ex%YI
@@ -2081,7 +2081,7 @@ contains
             k_m = k - b%Ex%ZI
             do i = FF%IzDe%I%com%Ex, FF%IzDe%I%fin%Ex
                i_m = i - b%Ex%XI
-               READ (14) ( FF%ExIz( i_m, k_m,ii) , ii=1,FF%NumFreqs)
+               read (14) ( FF%ExIz( i_m, k_m,ii) , ii=1,FF%NumFreqs)
             end do
          end do
          !Ez Left
@@ -2091,12 +2091,12 @@ contains
             k_m = k - b%Ez%ZI
             do i = FF%IzDe%I%com%Ez, FF%IzDe%I%fin%Ez
                i_m = i - b%Ez%XI
-               READ (14) ( FF%EzIz( i_m, k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%EzIz( i_m, k_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
       end if
       !--->
-      If( FF%farfieldDe) then
+      if( FF%farfieldDe) then
          !Ez  Right
          j = FF%IzDe%J%der%Ez !Right
          j_m = j - b%Ez%YI
@@ -2104,7 +2104,7 @@ contains
             k_m = k - b%Ez%ZI
             do i = FF%IzDe%I%com%Ez, FF%IzDe%I%fin%Ez
                i_m = i - b%Ez%XI
-               READ (14) ( FF%EzDe( i_m, k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%EzDe( i_m, k_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
          !Ex  Right
@@ -2114,20 +2114,20 @@ contains
             k_m = k - b%Ex%ZI
             do i=FF%IzDe%I%com%Ex,FF%IzDe%I%fin%Ex
                i_m = i - b%Ex%XI
-               READ (14) ( FF%ExDe( i_m, k_m,ii) , ii=1,FF%NumFreqs)
-            End do
+               read (14) ( FF%ExDe( i_m, k_m,ii) , ii=1,FF%NumFreqs)
+            end do
          end do
       end if
       !--->
-      If( FF%farfieldAb) then
+      if( FF%farfieldAb) then
          !Ex  Down
          k = FF%AbAr%K%aba%Ex  !Down
          k_m = k - b%Ex%ZI
          do j = FF%AbAr%J%com%Ex, FF%AbAr%J%fin%Ex
             j_m = j - b%Ex%YI
-            Do i=FF%AbAr%I%com%Ex,FF%AbAr%I%fin%Ex
+            do i=FF%AbAr%I%com%Ex,FF%AbAr%I%fin%Ex
                i_m = i - b%Ex%XI
-               READ (14) ( FF%ExAb( i_m, j_m,ii) , ii=1,FF%NumFreqs)
+               read (14) ( FF%ExAb( i_m, j_m,ii) , ii=1,FF%NumFreqs)
             end do
          end do
          !Ey Down
@@ -2137,12 +2137,12 @@ contains
             j_m = j - b%Ey%YI
             do i = FF%AbAr%I%com%Ey, FF%AbAr%I%fin%Ey
                i_m = i - b%Ey%XI
-               READ (14) ( FF%EyAb( i_m, j_m,ii) , ii=1,FF%NumFreqs)
+               read (14) ( FF%EyAb( i_m, j_m,ii) , ii=1,FF%NumFreqs)
             end do
          end do
       end if
       !--->
-      If( FF%farfieldAr) then
+      if( FF%farfieldAr) then
          !Ex Up
          k = FF%AbAr%K%arr%Ex  !Up
          k_m = k - b%Ex%ZI
@@ -2150,7 +2150,7 @@ contains
             j_m = j - b%Ex%YI
             do i = FF%AbAr%I%com%Ex, FF%AbAr%I%fin%Ex
                i_m = i - b%Ex%XI
-               READ (14) ( FF%ExAr( i_m, j_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%ExAr( i_m, j_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
          !Ey Up
@@ -2160,7 +2160,7 @@ contains
             j_m = j - b%Ey%YI
             do i = FF%AbAr%I%com%Ey, FF%AbAr%I%fin%Ey
                i_m = i - b%Ey%XI
-               READ (14) ( FF%EyAr( i_m, j_m,ii) , ii=1,FF%NumFreqs)
+               read (14) ( FF%EyAr( i_m, j_m,ii) , ii=1,FF%NumFreqs)
             end do
          end do
       end if
@@ -2176,8 +2176,8 @@ contains
             k_m = k - b%Hz%ZI
             do j = FF%TrFr%J%com%Hz, FF%TrFr%J%fin%Hz
                j_m = j - b%Hz%YI
-               READ (14) ( FF%HzTr(  j_m, k_m,ii), ii=1,FF%NumFreqs)
-               READ (14) ( FF%HzTr2(  j_m, k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HzTr(  j_m, k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HzTr2(  j_m, k_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
          !Hy Back
@@ -2187,8 +2187,8 @@ contains
             k_m = k - b%Hy%ZI
             do j = FF%TrFr%J%com%Hy, FF%TrFr%J%fin%Hy
                j_m = j - b%Hy%YI
-               READ (14) ( FF%HyTr(  j_m, k_m,ii) , ii=1,FF%NumFreqs)
-               READ (14) ( FF%HyTr2(  j_m, k_m,ii) , ii=1,FF%NumFreqs)
+               read (14) ( FF%HyTr(  j_m, k_m,ii) , ii=1,FF%NumFreqs)
+               read (14) ( FF%HyTr2(  j_m, k_m,ii) , ii=1,FF%NumFreqs)
             end do
          end do
       end if
@@ -2201,8 +2201,8 @@ contains
             k_m = k - b%Hz%ZI
             do j = FF%TrFr%J%com%Hz, FF%TrFr%J%fin%Hz
                j_m = j - b%Hz%YI
-               READ (14) ( FF%HzFr(  j_m, k_m,ii), ii=1,FF%NumFreqs)
-               READ (14) ( FF%HzFr2(  j_m, k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HzFr(  j_m, k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HzFr2(  j_m, k_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
          !Hy  Front
@@ -2212,8 +2212,8 @@ contains
             k_m = k - b%Hy%ZI
             do j = FF%TrFr%J%com%Hy, FF%TrFr%J%fin%Hy
                j_m = j - b%Hy%YI
-               READ (14) ( FF%HyFr(  j_m, k_m,ii), ii=1,FF%NumFreqs)
-               READ (14) ( FF%HyFr2(  j_m, k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HyFr(  j_m, k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HyFr2(  j_m, k_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
       end if
@@ -2226,8 +2226,8 @@ contains
             k_m = k - b%Hx%ZI
             do i = FF%IzDe%I%com%Hx, FF%IzDe%I%fin%Hx
                i_m = i - b%Hx%XI
-               READ (14) ( FF%HxIz( i_m,  k_m,ii), ii=1,FF%NumFreqs)
-               READ (14) ( FF%HxIz2( i_m,  k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HxIz( i_m,  k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HxIz2( i_m,  k_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
          !Hz Left
@@ -2237,8 +2237,8 @@ contains
             k_m = k - b%Hz%ZI
             do i = FF%IzDe%I%com%Hz, FF%IzDe%I%fin%Hz
                i_m = i - b%Hz%XI
-               READ (14) ( FF%HzIz( i_m,  k_m,ii) , ii=1,FF%NumFreqs)
-               READ (14) ( FF%HzIz2( i_m,  k_m,ii) , ii=1,FF%NumFreqs)
+               read (14) ( FF%HzIz( i_m,  k_m,ii) , ii=1,FF%NumFreqs)
+               read (14) ( FF%HzIz2( i_m,  k_m,ii) , ii=1,FF%NumFreqs)
             end do
          end do
       end if
@@ -2252,8 +2252,8 @@ contains
             k_m = k - b%Hx%ZI
             do i = FF%IzDe%I%com%Hx, FF%IzDe%I%fin%Hx
                i_m = i - b%Hx%XI
-               READ (14) ( FF%HxDe( i_m,  k_m,ii), ii=1,FF%NumFreqs)
-               READ (14) ( FF%HxDe2( i_m,  k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HxDe( i_m,  k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HxDe2( i_m,  k_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
          !Hz  Right
@@ -2263,8 +2263,8 @@ contains
             k_m = k - b%Hz%ZI
             do i = FF%IzDe%I%com%Hz, FF%IzDe%I%fin%Hz
                i_m = i - b%Hz%XI
-               READ (14) ( FF%HzDe( i_m,  k_m,ii), ii=1,FF%NumFreqs)
-               READ (14) ( FF%HzDe2( i_m,  k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HzDe( i_m,  k_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HzDe2( i_m,  k_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
       end if
@@ -2277,8 +2277,8 @@ contains
             j_m = j - b%Hx%YI
             do i = FF%AbAr%I%com%Hx, FF%AbAr%I%fin%Hx
                i_m = i - b%Hx%XI
-               READ (14) ( FF%HxAb( i_m, j_m,ii), ii=1,FF%NumFreqs)
-               READ (14) ( FF%HxAb2( i_m, j_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HxAb( i_m, j_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HxAb2( i_m, j_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
          !Hy  Down
@@ -2288,8 +2288,8 @@ contains
             j_m = j - b%Hy%YI
             do i=FF%AbAr%I%com%Hy,FF%AbAr%I%fin%Hy
                i_m = i - b%Hy%XI
-               READ (14) ( FF%HyAb( i_m, j_m,ii) , ii=1,FF%NumFreqs)
-               READ (14) ( FF%HyAb2( i_m, j_m,ii) , ii=1,FF%NumFreqs)
+               read (14) ( FF%HyAb( i_m, j_m,ii) , ii=1,FF%NumFreqs)
+               read (14) ( FF%HyAb2( i_m, j_m,ii) , ii=1,FF%NumFreqs)
             end do
          end do
       end if
@@ -2302,8 +2302,8 @@ contains
             j_m = j - b%Hx%YI
             do i = FF%AbAr%I%com%Hx, FF%AbAr%I%fin%Hx
                i_m = i - b%Hx%XI
-               READ (14) ( FF%HxAr( i_m, j_m,ii), ii=1,FF%NumFreqs)
-               READ (14) ( FF%HxAr2( i_m, j_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HxAr( i_m, j_m,ii), ii=1,FF%NumFreqs)
+               read (14) ( FF%HxAr2( i_m, j_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
          !Hy Up
@@ -2313,14 +2313,14 @@ contains
             j_m = j - b%Hy%YI
             do i = FF%AbAr%I%com%Hy, FF%AbAr%I%fin%Hy
                i_m = i - b%Hy%XI
-               READ (14) (FF%HyAr( i_m, j_m,ii), ii=1,FF%NumFreqs)
-               READ (14) (FF%HyAr2( i_m, j_m,ii), ii=1,FF%NumFreqs)
+               read (14) (FF%HyAr( i_m, j_m,ii), ii=1,FF%NumFreqs)
+               read (14) (FF%HyAr2( i_m, j_m,ii), ii=1,FF%NumFreqs)
             end do
          end do
       end if
 
       return
-   endsubroutine ReadFarField
+   end subroutine ReadFarField
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Calculate the physical point coordinates of index i,j,k
@@ -2343,7 +2343,7 @@ contains
    subroutine Destroyfarfield
       integer(kind=4) :: field
 
-      do field=iEx,iHz
+      do field=iEx,IHZ
          if (associated(FF%Punto%PhysCoor(field)%x)) deallocate(FF%Punto%PhysCoor(field)%x)
          if (associated(FF%Punto%PhysCoor(field)%y)) deallocate(FF%Punto%PhysCoor(field)%y)
          if (associated(FF%Punto%PhysCoor(field)%z)) deallocate(FF%Punto%PhysCoor(field)%z)
@@ -2378,14 +2378,14 @@ contains
    subroutine FlushFarfield(layoutnumber,num_procs, b, dxe, dye, dze, dxh, dyh, dzh,facesNF2FF,rinstant)
       type(co_t) :: co,new_co
       type(nf2ff_t) :: facesNF2FF
-      type( bounds_t), intent( IN) :: b
-      real(kind = RKIND), dimension( 0 :  b%dxe%NX-1), intent( IN) :: dxe
-      real(kind = RKIND), dimension( 0 :  b%dye%NY-1), intent( IN) :: dye
-      real(kind = RKIND), dimension( 0 :  b%dze%NZ-1), intent( IN) :: dze
+      type( bounds_t), intent( in) :: b
+      real(kind = RKIND), dimension( 0 :  b%dxe%NX-1), intent( in) :: dxe
+      real(kind = RKIND), dimension( 0 :  b%dye%NY-1), intent( in) :: dye
+      real(kind = RKIND), dimension( 0 :  b%dze%NZ-1), intent( in) :: dze
       !--->
-      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN) :: dxh
-      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN) :: dyh
-      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN) :: dzh
+      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( in) :: dxh
+      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( in) :: dyh
+      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( in) :: dzh
 
       integer(kind=4), intent(in) :: layoutnumber,num_procs
 
@@ -2393,7 +2393,7 @@ contains
       real(kind = RKIND) :: theta,phi,sintheta_sinphi,sintheta_cosphi, &
       costheta,cosphi,costheta_cosphi,costheta_sinphi,sintheta,sinphi,&
       freq, NORMAL, SIGNO,  dummy,newdummy1,newdummy2,RCS(1:2)
-      real(kind = RKIND_tiempo) :: rinstant
+      real(kind = RKIND_TIEMPO) :: rinstant
       integer(kind=4) :: ierr,pozi,donde
       complex( kind = CKIND) :: L_theta,L_phi,N_theta,N_phi,Etheta(1:2),Ephi(1:2),Mx,My,Mz,Jx,Jy,Jz,comun
       complex( kind = CKIND) :: new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz
@@ -2408,7 +2408,7 @@ contains
       integer :: my_iostat
 !
       character(len=BUFSIZE) :: chninstant
-      write(chninstant,fmt) rinstant
+      write(chninstant,FMT) rinstant
 
       write(dubuf,'(a)')  ' NF2FF: INIT ' ! mpimaster=',LAYOUTNUMBER
       if (layoutnumber == 0) call print11(layoutnumber,dubuf,.TRUE.)
@@ -2417,11 +2417,11 @@ contains
       if (FF%MPIRoot == layoutnumber) then
 #endif
       open (FF%unitfarfield,file=trim(adjustl(FF%filefarfield)))
-      CLOSE (FF%unitfarfield, STATUS='delete')
+      close (FF%unitfarfield, STATUS='delete')
       
       
       my_iostat=0
-9138  if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',9138,'.',layoutnumber,trim(adjustl(FF%filefarfield))
+9138  if(my_iostat /= 0) write(*,FMT='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',9138,'.',layoutnumber,trim(adjustl(FF%filefarfield))
       open (FF%unitfarfield,file=trim(adjustl(FF%filefarfield)),form='formatted',position='append',err=9138,iostat=my_iostat,status='new',action='write') !lista de todos los .h5bin   
       write(FF%unitfarfield,'(a)') ' f_at_'//trim(adjustl(chninstant))//'   Theta    Phi    Etheta_mod    Etheta_phase    Ephi_mod    Ephi_phase    RCS(ARIT) RCS(GEOM)'
 
@@ -2559,7 +2559,7 @@ contains
                               if (j.le.FF%TrFr%J%fin%Ey) Mz = + EcampoY( j_m, k_m,ii) *dye(j_m)*dzh(k_m)*NORMAL !los finales si varian
                               if (k.le.FF%TrFr%K%fin%Hz) Jy = + (Average(pasadas, HcampoZ( j_m, k_m,ii) , Hcampo2Z( j_m, k_m,ii))) *dye(j_m)*dzh(k_m)*NORMAL
                               if (j.le.FF%TrFr%J%fin%Hy) Jz = - (Average(pasadas, HcampoY( j_m, k_m,ii) , Hcampo2Y( j_m, k_m,ii))) *dyh(j_m)*dze(k_m)*NORMAL
-                              co%x_My=FF%Punto%PhysCoor(iEz)%x(i); co%y_My=FF%Punto%PhysCoor(iEz)%y(j); co%z_My=FF%Punto%PhysCoor(iEz)%z(k)
+                              co%x_My=FF%Punto%PhysCoor(IEZ)%x(i); co%y_My=FF%Punto%PhysCoor(IEZ)%y(j); co%z_My=FF%Punto%PhysCoor(IEZ)%z(k)
                               co%x_Mz=FF%Punto%PhysCoor(iEy)%x(i); co%y_Mz=FF%Punto%PhysCoor(iEy)%y(j); co%z_Mz=FF%Punto%PhysCoor(iEy)%z(k)
                               co%x_Jy=co%x_Mz;                     co%y_Jy=co%y_Mz;                     co%z_Jy=co%z_Mz;
                               co%x_Jz=co%x_My;                     co%y_Jz=co%y_My;                     co%z_Jz=co%z_My;
@@ -2573,7 +2573,7 @@ contains
                               new_co = co
                               call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               !
-                              If( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN) then
+                              if( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN) then
                                  new_My = + My
                                  new_Mz = - Mz
                                  new_Jy = - Jy
@@ -2598,7 +2598,7 @@ contains
                                  call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
                               !
-                              If( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP) then
+                              if( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP) then
                                  new_My = + My
                                  new_Mz = - Mz
                                  new_Jy = - Jy
@@ -2623,7 +2623,7 @@ contains
                                  call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
                               !
-                              If( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT) then
+                              if( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT) then
                                  !!!!!!!!!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?
                                  new_My = - My
                                  new_Mz = + Mz
@@ -2649,7 +2649,7 @@ contains
                                  call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
                               !
-                              If( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT) then
+                              if( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT) then
                                  new_My = - My
                                  new_Mz = + Mz
                                  new_Jy = + Jy
@@ -2675,12 +2675,12 @@ contains
                               end if
 
                               !!!!!!!!!CASOS MIXTOS esquinas
-                              If ((( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)).or. &
+                              if ((( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)).or. &
                               (( FF%farfieldTr_ClonePMC_DOWN.or.FF%farfieldFr_ClonePMC_DOWN).and.( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT)).or. &
                               (( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT)).or. &
                               (( FF%farfieldTr_ClonePMC_DOWN.or.FF%farfieldFr_ClonePMC_DOWN).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)) )  then
                                  sigNo=+1.0_RKIND
-                                 If ((( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)).or. &
+                                 if ((( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)).or. &
                                  (( FF%farfieldTr_ClonePMC_DOWN.or.FF%farfieldFr_ClonePMC_DOWN).and.( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT)) )  signo=-1.0_RKIND
                                  new_My = signo * My
                                  new_Mz = signo * Mz
@@ -2698,12 +2698,12 @@ contains
                                  call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
 
-                              If ((( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
+                              if ((( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
                               (( FF%farfieldTr_ClonePMC_DOWN.or.FF%farfieldFr_ClonePMC_DOWN).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)).or. &
                               (( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)).or. &
                               (( FF%farfieldTr_ClonePMC_DOWN.or.FF%farfieldFr_ClonePMC_DOWN).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)) ) then
                                  sigNo=+1.0_RKIND
-                                 If ((( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
+                                 if ((( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
                                  (( FF%farfieldTr_ClonePMC_DOWN.or.FF%farfieldFr_ClonePMC_DOWN).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)) ) signo=-1.0_RKIND
                                  new_My = signo * My
                                  new_Mz = signo * Mz
@@ -2721,12 +2721,12 @@ contains
                                  call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
 
-                              If ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)).or. &
+                              if ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)).or. &
                               (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT)).or. &
                               (( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT)).or. &
                               (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)) ) then
                                  sigNo=+1.0_RKIND
-                                 If ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)).or. &
+                                 if ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)).or. &
                                  (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT)) )  signo=-1.0_RKIND
                                  new_My = signo * My
                                  new_Mz = signo * Mz
@@ -2744,12 +2744,12 @@ contains
                                  call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
 
-                              If ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
+                              if ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
                               (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)).or. &
                               (( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
                               (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT))) then
                                  sigNo=+1.0_RKIND
-                                 If ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
+                                 if ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
                                  (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)))  signo=-1.0_RKIND
                                  new_My = signo * My
                                  new_Mz = signo * Mz
@@ -2817,7 +2817,7 @@ contains
                               if (i.le.FF%IzDe%I%fin%Ex)  Mz = - EcampoX( i_m, k_m,ii) *dxe(i_m)*dzh(k_m)*NORMAL
                               if (k.le.FF%IzDe%K%fin%Hz)  Jx = - (Average(pasadas, HcampoZ( i_m, k_m,ii) , Hcampo2Z( i_m, k_m,ii))) *dxe(i_m)*dzh(k_m)*NORMAL
                               if (i.le.FF%IzDe%I%fin%Hx)  Jz = + (Average(pasadas, HcampoX( i_m, k_m,ii) , Hcampo2X( i_m, k_m,ii))) *dxh(i_m)*dze(k_m)*NORMAL
-                              co%x_Mx=FF%Punto%PhysCoor(iEz)%x(i); co%y_Mx=FF%Punto%PhysCoor(iEz)%y(j); co%z_Mx=FF%Punto%PhysCoor(iEz)%z(k)
+                              co%x_Mx=FF%Punto%PhysCoor(IEZ)%x(i); co%y_Mx=FF%Punto%PhysCoor(IEZ)%y(j); co%z_Mx=FF%Punto%PhysCoor(IEZ)%z(k)
                               co%x_Mz=FF%Punto%PhysCoor(iEx)%x(i); co%y_Mz=FF%Punto%PhysCoor(iEx)%y(j); co%z_Mz=FF%Punto%PhysCoor(iEx)%z(k)
                               co%x_Jz=co%x_Mx;                     co%y_Jz=co%y_Mx;                     co%z_Jz=co%z_Mx;
                               co%x_Jx=co%x_Mz;                     co%y_Jx=co%y_Mz;                     co%z_Jx=co%z_Mz;
@@ -2831,7 +2831,7 @@ contains
                               new_co = co
                               call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               !
-                              If( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN) then
+                              if( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN) then
                                  new_Mx = + Mx
                                  new_Mz = - Mz
                                  new_Jx = - Jx
@@ -2856,7 +2856,7 @@ contains
                                  call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
                               !
-                              If( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP) then
+                              if( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP) then
                                  new_Mx = + Mx
                                  new_Mz = - Mz
                                  new_Jx = - Jx
@@ -2881,7 +2881,7 @@ contains
                                  call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
                               !
-                              If( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK) then
+                              if( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK) then
                                  new_Mx = - Mx
                                  new_Mz = + Mz
                                  new_Jx = + Jx
@@ -2906,7 +2906,7 @@ contains
                                  call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
                               !
-                              If( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT) then
+                              if( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT) then
                                  new_Mx = - Mx
                                  new_Mz = + Mz
                                  new_Jx = + Jx
@@ -2932,12 +2932,12 @@ contains
                               end if
 
                               !!!!!!!!!CASOS MIXTOS esquinas
-                              If ((( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN).and.( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK)).or. &
+                              if ((( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN).and.( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK)).or. &
                               (( FF%farfieldIz_ClonePMC_DOWN.or.FF%farfieldDe_ClonePMC_DOWN).and.( FF%farfieldIz_ClonePMC_BACK.or.FF%farfieldDe_ClonePMC_BACK)).or. &
                               (( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN).and.( FF%farfieldIz_ClonePMC_BACK.or.FF%farfieldDe_ClonePMC_BACK)).or. &
                               (( FF%farfieldIz_ClonePMC_DOWN.or.FF%farfieldDe_ClonePMC_DOWN).and.( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK)) )  then
                                  sigNo=+1.0_RKIND
-                                 If ((( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN).and.( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK)).or. &
+                                 if ((( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN).and.( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK)).or. &
                                  (( FF%farfieldIz_ClonePMC_DOWN.or.FF%farfieldDe_ClonePMC_DOWN).and.( FF%farfieldIz_ClonePMC_BACK.or.FF%farfieldDe_ClonePMC_BACK)) )  sigNo=-1.0_RKIND
                                  new_Mx = signo * Mx
                                  new_Mz = signo * Mz
@@ -2955,12 +2955,12 @@ contains
                                  call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
 
-                              If ((( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)).or. &
+                              if ((( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)).or. &
                               (( FF%farfieldIz_ClonePMC_DOWN.or.FF%farfieldDe_ClonePMC_DOWN).and.( FF%farfieldIz_ClonePMC_FRONT.or.FF%farfieldDe_ClonePMC_FRONT)).or. &
                               (( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN).and.( FF%farfieldIz_ClonePMC_FRONT.or.FF%farfieldDe_ClonePMC_FRONT)).or. &
                               (( FF%farfieldIz_ClonePMC_DOWN.or.FF%farfieldDe_ClonePMC_DOWN).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)) ) then
                                  sigNo=+1.0_RKIND
-                                 If ((( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)).or. &
+                                 if ((( FF%farfieldIz_ClonePEC_DOWN.or.FF%farfieldDe_ClonePEC_DOWN).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)).or. &
                                  (( FF%farfieldIz_ClonePMC_DOWN.or.FF%farfieldDe_ClonePMC_DOWN).and.( FF%farfieldIz_ClonePMC_FRONT.or.FF%farfieldDe_ClonePMC_FRONT)) )   sigNo=-1.0_RKIND
                                  new_Mx = signo * Mx
                                  new_Mz = signo * Mz
@@ -2978,12 +2978,12 @@ contains
                                  call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
 
-                              If ((( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK)).or. &
+                              if ((( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK)).or. &
                               (( FF%farfieldIz_ClonePMC_UP.or.FF%farfieldDe_ClonePMC_UP).and.( FF%farfieldIz_ClonePMC_BACK.or.FF%farfieldDe_ClonePMC_BACK)).or. &
                               (( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePMC_BACK.or.FF%farfieldDe_ClonePMC_BACK)).or. &
                               (( FF%farfieldIz_ClonePMC_UP.or.FF%farfieldDe_ClonePMC_UP).and.( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK)) )  then
                                  sigNo=+1.0_RKIND
-                                 If ((( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK)).or. &
+                                 if ((( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePEC_BACK.or.FF%farfieldDe_ClonePEC_BACK)).or. &
                                  (( FF%farfieldIz_ClonePMC_UP.or.FF%farfieldDe_ClonePMC_UP).and.( FF%farfieldIz_ClonePMC_BACK.or.FF%farfieldDe_ClonePMC_BACK)) )  sigNo=-1.0_RKIND
                                  new_Mx = signo * Mx
                                  new_Mz = signo * Mz
@@ -3001,12 +3001,12 @@ contains
                                  call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
 
-                              If ((( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)).or. &
+                              if ((( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)).or. &
                               (( FF%farfieldIz_ClonePMC_UP.or.FF%farfieldDe_ClonePMC_UP).and.( FF%farfieldIz_ClonePMC_FRONT.or.FF%farfieldDe_ClonePMC_FRONT)).or. &
                               (( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePMC_UP).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePMC_FRONT)).or. &
                               (( FF%farfieldIz_ClonePMC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePMC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)))  then
                                  sigNo=+1.0_RKIND
-                                 If ((( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)).or. &
+                                 if ((( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)).or. &
                                  (( FF%farfieldIz_ClonePMC_UP.or.FF%farfieldDe_ClonePMC_UP).and.( FF%farfieldIz_ClonePMC_FRONT.or.FF%farfieldDe_ClonePMC_FRONT)))  sigNo=-1.0_RKIND
                                  new_Mx = signo * Mx
                                  new_Mz = signo * Mz
@@ -3088,7 +3088,7 @@ contains
                               new_co = co
                               call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               !
-                              If( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT) then
+                              if( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT) then
                                  !!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?
                                  new_Mx = + Mx
                                  new_My = - My
@@ -3114,7 +3114,7 @@ contains
                                  call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
                               !
-                              If( FF%farfieldAb_ClonePEC_RIGHT.or.FF%farfieldAr_ClonePEC_RIGHT) then
+                              if( FF%farfieldAb_ClonePEC_RIGHT.or.FF%farfieldAr_ClonePEC_RIGHT) then
                                  new_Mx = + Mx
                                  new_My = - My
                                  new_Jx = - Jx
@@ -3139,7 +3139,7 @@ contains
                                  call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
                               !
-                              If( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK) then
+                              if( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK) then
                                  new_Mx = - Mx
                                  new_My = + My
                                  new_Jx = + Jx
@@ -3164,7 +3164,7 @@ contains
                                  call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
                               !
-                              If( FF%farfieldAb_ClonePEC_FRONT.or.FF%farfieldAr_ClonePEC_FRONT) then
+                              if( FF%farfieldAb_ClonePEC_FRONT.or.FF%farfieldAr_ClonePEC_FRONT) then
                                  new_Mx = - Mx
                                  new_My = + My
                                  new_Jx = + Jx
@@ -3190,12 +3190,12 @@ contains
                               end if
 
                               !!!!!!!!!CASOS MIXTOS esquinas
-                              If ((( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT).and.( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK)).or. &
+                              if ((( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT).and.( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK)).or. &
                               (( FF%farfieldAb_ClonePMC_LEFT.or.FF%farfieldAr_ClonePMC_LEFT).and.( FF%farfieldAb_ClonePMC_BACK.or.FF%farfieldAr_ClonePMC_BACK)).or. &
                               (( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT).and.( FF%farfieldAb_ClonePMC_BACK.or.FF%farfieldAr_ClonePMC_BACK)).or. &
                               (( FF%farfieldAb_ClonePMC_LEFT.or.FF%farfieldAr_ClonePMC_LEFT).and.( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK)) )  then
                                  sigNo=+1.0_RKIND
-                                 If ((( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT).and.( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK)).or. &
+                                 if ((( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT).and.( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK)).or. &
                                  (( FF%farfieldAb_ClonePMC_LEFT.or.FF%farfieldAr_ClonePMC_LEFT).and.( FF%farfieldAb_ClonePMC_BACK.or.FF%farfieldAr_ClonePMC_BACK)) )  sigNo=-1.0_RKIND
                                  new_Mx = signo * Mx
                                  new_My = signo * My
@@ -3213,12 +3213,12 @@ contains
                                  call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
 
-                              If ((( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT).and.( FF%farfieldAb_ClonePEC_FRONT.or.FF%farfieldAr_ClonePEC_FRONT)).or. &
+                              if ((( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT).and.( FF%farfieldAb_ClonePEC_FRONT.or.FF%farfieldAr_ClonePEC_FRONT)).or. &
                               (( FF%farfieldAb_ClonePMC_LEFT.or.FF%farfieldAr_ClonePMC_LEFT).and.( FF%farfieldAb_ClonePMC_FRONT.or.FF%farfieldAr_ClonePMC_FRONT)).or. &
                               (( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT).and.( FF%farfieldAb_ClonePMC_FRONT.or.FF%farfieldAr_ClonePMC_FRONT)).or. &
                               (( FF%farfieldAb_ClonePMC_LEFT.or.FF%farfieldAr_ClonePMC_LEFT).and.( FF%farfieldAb_ClonePEC_FRONT.or.FF%farfieldAr_ClonePEC_FRONT)) ) then
                                  sigNo=+1.0_RKIND
-                                 If ((( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT).and.( FF%farfieldAb_ClonePEC_FRONT.or.FF%farfieldAr_ClonePEC_FRONT)).or. &
+                                 if ((( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT).and.( FF%farfieldAb_ClonePEC_FRONT.or.FF%farfieldAr_ClonePEC_FRONT)).or. &
                                  (( FF%farfieldAb_ClonePMC_LEFT.or.FF%farfieldAr_ClonePMC_LEFT).and.( FF%farfieldAb_ClonePMC_FRONT.or.FF%farfieldAr_ClonePMC_FRONT)) )  sigNo=-1.0_RKIND
                                  new_Mx = signo * Mx
                                  new_My = signo * My
@@ -3236,12 +3236,12 @@ contains
                                  call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
 
-                              If ((( FF%farfieldAb_ClonePEC_RIGHT.or.FF%farfieldAr_ClonePEC_RIGHT).and.( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK)).or. &
+                              if ((( FF%farfieldAb_ClonePEC_RIGHT.or.FF%farfieldAr_ClonePEC_RIGHT).and.( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK)).or. &
                               (( FF%farfieldAb_ClonePMC_RIGHT.or.FF%farfieldAr_ClonePMC_RIGHT).and.( FF%farfieldAb_ClonePMC_BACK.or.FF%farfieldAr_ClonePMC_BACK)).or. &
                               (( FF%farfieldAb_ClonePEC_RIGHT.or.FF%farfieldAr_ClonePEC_RIGHT).and.( FF%farfieldAb_ClonePMC_BACK.or.FF%farfieldAr_ClonePMC_BACK)).or. &
                               (( FF%farfieldAb_ClonePMC_RIGHT.or.FF%farfieldAr_ClonePMC_RIGHT).and.( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK)) )  then
                                  sigNo=+1.0_RKIND
-                                 If ((( FF%farfieldAb_ClonePEC_RIGHT.or.FF%farfieldAr_ClonePEC_RIGHT).and.( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK)).or. &
+                                 if ((( FF%farfieldAb_ClonePEC_RIGHT.or.FF%farfieldAr_ClonePEC_RIGHT).and.( FF%farfieldAb_ClonePEC_BACK.or.FF%farfieldAr_ClonePEC_BACK)).or. &
                                  (( FF%farfieldAb_ClonePMC_RIGHT.or.FF%farfieldAr_ClonePMC_RIGHT).and.( FF%farfieldAb_ClonePMC_BACK.or.FF%farfieldAr_ClonePMC_BACK)) )  sigNo=-1.0_RKIND
                                  new_Mx = signo * Mx
                                  new_My = signo * My
@@ -3259,12 +3259,12 @@ contains
                                  call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               end if
 
-                              If ((( FF%farfieldAb_ClonePEC_RIGHT.or.FF%farfieldAr_ClonePEC_RIGHT).and.( FF%farfieldAb_ClonePEC_FRONT.or.FF%farfieldAr_ClonePEC_FRONT)).or. &
+                              if ((( FF%farfieldAb_ClonePEC_RIGHT.or.FF%farfieldAr_ClonePEC_RIGHT).and.( FF%farfieldAb_ClonePEC_FRONT.or.FF%farfieldAr_ClonePEC_FRONT)).or. &
                               (( FF%farfieldAb_ClonePMC_RIGHT.or.FF%farfieldAr_ClonePMC_RIGHT).and.( FF%farfieldAb_ClonePMC_FRONT.or.FF%farfieldAr_ClonePMC_FRONT)).or. &
                               (( FF%farfieldAb_ClonePEC_RIGHT.or.FF%farfieldAr_ClonePEC_RIGHT).and.( FF%farfieldAb_ClonePMC_FRONT.or.FF%farfieldAr_ClonePMC_FRONT)).or. &
                               (( FF%farfieldAb_ClonePMC_RIGHT.or.FF%farfieldAr_ClonePMC_RIGHT).and.( FF%farfieldAb_ClonePEC_FRONT.or.FF%farfieldAr_ClonePEC_FRONT)))  then
                                  sigNo=+1.0_RKIND
-                                 If ((( FF%farfieldAb_ClonePEC_RIGHT.or.FF%farfieldAr_ClonePEC_RIGHT).and.( FF%farfieldAb_ClonePEC_FRONT.or.FF%farfieldAr_ClonePEC_FRONT)).or. &
+                                 if ((( FF%farfieldAb_ClonePEC_RIGHT.or.FF%farfieldAr_ClonePEC_RIGHT).and.( FF%farfieldAb_ClonePEC_FRONT.or.FF%farfieldAr_ClonePEC_FRONT)).or. &
                                  (( FF%farfieldAb_ClonePMC_RIGHT.or.FF%farfieldAr_ClonePMC_RIGHT).and.( FF%farfieldAb_ClonePMC_FRONT.or.FF%farfieldAr_ClonePMC_FRONT)))  sigNo=-1.0_RKIND
                                  new_Mx = signo * Mx
                                  new_My = signo * My
@@ -3344,7 +3344,7 @@ contains
 #ifdef CompileWithMPI
                   if (FF%MPIRoot == layoutnumber)  then
 #endif
-                  if (pasadas==1) write(FF%unitfarfield,fmt) freq,theta,phi,&
+                  if (pasadas==1) write(FF%unitfarfield,FMT) freq,theta,phi,&
                   abs(Etheta(2)),ATAN2( AIMAG( Etheta(2)) , real( Etheta(2) ) ), & !!! PASADAS=2=GEOMETRICA,, PASADAS=1=ARITMETICA
                   abs(Ephi(2)) , ATAN2( AIMAG( Ephi(2)  ) , real( Ephi(2)   ) ), RCS(1),RCS(2)
 
@@ -3364,7 +3364,7 @@ contains
       if (allocated(sizephi)) deallocate(sizephi)
       if (allocated(Phimatrix)) deallocate(Phimatrix)
 
-      CLOSE (FF%unitfarfield)
+      close (FF%unitfarfield)
 
 
 
@@ -3404,7 +3404,7 @@ contains
       real(kind=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
 
       new_co=co; new_Mx=Mx; new_My=My; new_Mz=Mz; new_Jx=Jx; new_Jy=Jy; new_Jz=Jz;
-      If( FF%farfieldTr_ClonePEC_Front.or.FF%farfieldFr_ClonePEC_Back) then
+      if( FF%farfieldTr_ClonePEC_Front.or.FF%farfieldFr_ClonePEC_Back) then
          new_My = + My  !solo en este caso cambian las normales
          new_Mz = + Mz
          new_Jy = - Jy
@@ -3439,7 +3439,7 @@ contains
       real(kind=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
 
       new_co=co; new_Mx=Mx; new_My=My; new_Mz=Mz; new_Jx=Jx; new_Jy=Jy; new_Jz=Jz;
-      If( FF%farfieldIz_ClonePEC_Right.or.FF%farfieldDe_ClonePEC_Left) then
+      if( FF%farfieldIz_ClonePEC_Right.or.FF%farfieldDe_ClonePEC_Left) then
          new_Mx = + Mx !solo en este caso cambian las normales
          new_Mz = + Mz
          new_Jx = - Jx
@@ -3473,7 +3473,7 @@ contains
       real(kind=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
 
       new_co=co; new_Mx=Mx; new_My=My; new_Mz=Mz; new_Jx=Jx; new_Jy=Jy; new_Jz=Jz;
-      If( FF%farfieldAb_ClonePEC_UP.or.FF%farfieldAr_ClonePEC_DOWN) then
+      if( FF%farfieldAb_ClonePEC_UP.or.FF%farfieldAr_ClonePEC_DOWN) then
          new_Mx = + Mx !solo en este caso cambian las normales
          new_My = + My
          new_Jx = - Jx
@@ -3517,7 +3517,7 @@ contains
          if ((phi2 < -pi/2.0_RKIND).AND.(PHI1 > PI/2.0_RKIND)) nphi2 =phi2 -2.0_RKIND * pi
 
          Z=SQRT(ABS(Z1*Z2)) * EXP((0.0_RKIND,1.0_RKIND)*(nPHI1+nPHI2)/2.0_RKIND)
-      elseif (pasadas==1) then !aritmetica
+      else if (pasadas==1) then !aritmetica
          Z=(z1+z2)/2.0_RKIND
       end if
 

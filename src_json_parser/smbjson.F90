@@ -257,7 +257,7 @@ contains
                   coordIds = this%getIntsAt(je, J_COORDINATE_IDS)
                   polyline%coordIds = coordIds
                   call mesh%addElement(id, polyline)
-               CASE (J_ELEM_TYPE_CELL)
+               case (J_ELEM_TYPE_CELL)
                   block
                      logical :: isConformal
                      type(json_value), pointer :: triangles
@@ -357,7 +357,7 @@ contains
    end function
 
    function readAdditionalArguments(this) result (res)
-      class (parser_t) :: this
+      class(parser_t) :: this
       character(len=BUFSIZE) :: res
       res = this%getStrAt(this%root, J_GENERAL//'.'//J_GEN_ADDITIONAL_ARGUMENTS, default = '')
    end function
@@ -447,7 +447,7 @@ contains
       character(len=:), allocatable :: bdrType
       type(json_value), pointer :: bdrs
       logical :: found
-      character(len=*), parameter :: errorMsgInit = "ERROR reading boundary: "
+      character(len=*), parameter :: ERRORMSGINIT = "ERROR reading boundary: "
       
       call this%core%get(this%root, J_BOUNDARY, bdrs, found)
       if (.not. found) then
@@ -466,18 +466,18 @@ contains
       end block
          
       block
-         character(len=*), dimension(6), parameter :: placeLabels = &
+         character(len=*), dimension(6), parameter :: PLACELABELS = &
             [J_BND_XL, J_BND_XU, J_BND_YL, J_BND_YU, J_BND_ZL, J_BND_ZU]
          integer :: i, j
          do i = 1, 6
-            bdrType = this%getStrAt(bdrs, placeLabels(i)//"."//J_TYPE, found)
+            bdrType = this%getStrAt(bdrs, PLACELABELS(i)//"."//J_TYPE, found)
             if (.not. found) then
-               call WarnErrReport(errorMsgInit // placeLabels(i) // " or " // J_BND_ALL // " not found.", .true.)
+               call WarnErrReport(ERRORMSGINIT // PLACELABELS(i) // " or " // J_BND_ALL // " not found.", .true.)
             end if
-            j = labelToBoundaryPlace(placeLabels(i))
+            j = labelToBoundaryPlace(PLACELABELS(i))
             res%tipoFrontera(j) = labelToBoundaryType(bdrType)
             if (res%tipoFrontera(j) == F_PML) then
-               res%propiedadesPML(j) = readPMLProperties(J_BOUNDARY//"."//placeLabels(i))
+               res%propiedadesPML(j) = readPMLProperties(J_BOUNDARY//"."//PLACELABELS(i))
             end if
          end do
       end block
@@ -788,7 +788,7 @@ contains
          integer :: e, j
          character(len=:), allocatable :: model
          logical :: found
-         character(len=*), parameter :: errorMsgInit = "ERROR reading lumped material: "
+         character(len=*), parameter :: ERRORMSGINIT = "ERROR reading lumped material: "
          character(len=BUFSIZE) :: errorMsg
 
          allocate(res%c1P(0))
@@ -801,7 +801,7 @@ contains
          ! Get the model type
          model = this%getStrAt(matPtr%p, J_MAT_LUMPED_MODEL, found)
          if (.not. found) then
-            write(errorMsg, '(A)') errorMsgInit, mA%materialId, " model not found."
+            write(errorMsg, '(A)') ERRORMSGINIT, mA%materialId, " model not found."
             call WarnErrReport(errorMsg, .true.)
          end if
          
@@ -819,20 +819,20 @@ contains
             res%resistor = .true.
             res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, found)
             if (.not. found) then
-               write(errorMsg, '(A)') errorMsgInit, mA%materialId, " resistance not found."
+               write(errorMsg, '(A)') ERRORMSGINIT, mA%materialId, " resistance not found."
                call WarnErrReport(errorMsg, .true.)
             end if
             res%Rtime_on = this%getRealAt(matPtr%p, J_MAT_LUMPED_STARTING_TIME, default=0.0_RKIND)
             res%Rtime_off = this%getRealAt(matPtr%p, J_MAT_LUMPED_END_TIME, default=1.0_RKIND)
             if (res%Rtime_on < 0 .or. res%Rtime_off <0) then 
-               write(errorMsg,'(A)') errorMsgInit, mA%materialId, " starting or end time is negative"
+               write(errorMsg,'(A)') ERRORMSGINIT, mA%materialId, " starting or end time is negative"
                call WarnErrReport('', .true.)
             end if
           case (J_MAT_LUMPED_MODEL_INDUCTOR)
             res%inductor = .true.
             res%L = this%getRealAt(matPtr%p, J_MAT_LUMPED_INDUCTANCE, found)
             if (.not. found) then
-               write(errorMsg, '(A)') errorMsgInit, mA%materialId, " inductance not found."
+               write(errorMsg, '(A)') ERRORMSGINIT, mA%materialId, " inductance not found."
                call WarnErrReport(errorMsg, .true.)
             end if
             res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, default=0.0_RKIND)
@@ -840,16 +840,16 @@ contains
             res%capacitor = .true.
             res%C = this%getRealAt(matPtr%p, J_MAT_LUMPED_CAPACITANCE, found)
             if (.not. found) then
-               write(errorMsg, '(A)') errorMsgInit, mA%materialId, " capacitance not found."
+               write(errorMsg, '(A)') ERRORMSGINIT, mA%materialId, " capacitance not found."
                call WarnErrReport(errorMsg, .true.)
             end if
             res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, found)
             if (.not. found) then
-               write(errorMsg, '(A)') errorMsgInit, mA%materialId, " resistance not found."
+               write(errorMsg, '(A)') ERRORMSGINIT, mA%materialId, " resistance not found."
                call WarnErrReport(errorMsg, .true.)
             end if
           case default
-            write(errorMsg, '(A)') errorMsgInit, mA%materialId, " invalid model."
+            write(errorMsg, '(A)') ERRORMSGINIT, mA%materialId, " invalid model."
             call WarnErrReport(errorMsg, .true.)
           end select
 
@@ -954,7 +954,7 @@ contains
          type(materialAssociation_t), intent(in) :: mA
          type(LossyThinSurface_t) :: res
          logical :: found, hasAbsPermittivity, hasAbsPermeability
-         character(len=*), parameter :: errorMsgInit = "ERROR reading lossy thin surface: "
+         character(len=*), parameter :: ERRORMSGINIT = "ERROR reading lossy thin surface: "
          integer :: i
          type(json_value_ptr_t) :: mat
          type(json_value), pointer :: layer
@@ -992,7 +992,7 @@ contains
             end if
             res%thk(i)    = this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
             if (.not. found) then
-               call WarnErrReport(errorMsgInit // J_MAT_MULTILAYERED_SURF_THICKNESS // " in layer not found.", .true.)
+               call WarnErrReport(ERRORMSGINIT // J_MAT_MULTILAYERED_SURF_THICKNESS // " in layer not found.", .true.)
             end if
             res%sigma_devia(i) = 0.0_RKIND
             res%eps_devia(i) = 0.0_RKIND
@@ -1197,7 +1197,7 @@ contains
       type(json_value), pointer :: allProbes
       type(json_value_ptr_t), dimension(:), allocatable :: ps
       ! The only oldProbe present in the format is the far field.
-      character(len=*), dimension(1), parameter :: validTypes = [J_PR_TYPE_FARFIELD]
+      character(len=*), dimension(1), parameter :: VALIDTYPES = [J_PR_TYPE_FARFIELD]
       integer :: i
       logical :: found
 
@@ -1209,7 +1209,7 @@ contains
          return
       end if
 
-      ps = this%jsonValueFilterByKeyValues(allProbes, J_TYPE, validTypes)
+      ps = this%jsonValueFilterByKeyValues(allProbes, J_TYPE, VALIDTYPES)
 
       res%n_probes = size(ps)
       res%n_probes_max = size(ps)
@@ -1326,7 +1326,7 @@ contains
       type(json_value_ptr_t), dimension(:), allocatable :: ps
 
       integer :: i
-      character(len=*), dimension(2), parameter :: validTypes = &
+      character(len=*), dimension(2), parameter :: VALIDTYPES = &
          [J_PR_TYPE_POINT, J_PR_TYPE_LINE]
       logical :: found
       character(len=:), allocatable :: probeLbl
@@ -1341,7 +1341,7 @@ contains
          return
       end if
 
-      ps = this%jsonValueFilterByKeyValues(allProbes, J_TYPE, validTypes)
+      ps = this%jsonValueFilterByKeyValues(allProbes, J_TYPE, VALIDTYPES)
       
       filtered_size = 0
       do i=1, size(ps)
@@ -1661,7 +1661,7 @@ contains
 
          res%skip = 1
          res%tag = trim(adjustl(this%getStrAt(bp, J_NAME, default=" ")))
-         res%t = BcELECT
+         res%t = BCELECT
 
       end function
 
@@ -1768,35 +1768,35 @@ contains
          case (J_FIELD_ELECTRIC)
             select case (component)
             case (J_DIR_X)
-               res = iExC
+               res = IEXC
             case (J_DIR_Y)
-               res = iEyC
+               res = IEYC
             case (J_DIR_Z)
-               res = iEzC
+               res = IEZC
             case (J_DIR_M)
-               res = iMEC
+               res = IMEC
             end select
          case (J_FIELD_MAGNETIC)
             select case (component)
             case (J_DIR_X)
-               res = iHxC
+               res = IHXC
             case (J_DIR_Y)
-               res = iHyC
+               res = IHYC
             case (J_DIR_Z)
-               res = iHzC
+               res = IHZC
             case (J_DIR_M)
-               res = iMHC
+               res = IMHC
             end select
          case (J_FIELD_CURRENT_DENSITY)
             select case (component)
             case (J_DIR_X)
-               res = iCurX
+               res = ICURX
             case (J_DIR_Y)
-               res = iCurY
+               res = ICURY
             case (J_DIR_Z)
-               res = iCurZ
+               res = ICURZ
             case (J_DIR_M)
-               res = iCur
+               res = ICUR
             end select
          case default
             call WarnErrReport("Invalid field type for movie probe.", .true.)
@@ -1902,7 +1902,7 @@ contains
                   tc(j)%j = cs(i)%yi + k - 1
                   j = j + 1
                end do
-            case (iEz)
+            case (IEZ)
                do k = 1, (cs(i)%xe - cs(i)%xi + 1)
                   tc(j) = buildBaseThinSlotComponent(cs(i))
                   tc(j)%k = cs(i)%zi + k - 1
@@ -2530,7 +2530,7 @@ contains
       type(json_value), pointer, intent(in) :: matAss
       type(json_value_ptr_t) :: mat
       type(materialAssociation_t) :: res
-      character(len=*), parameter :: errorMsgInit = "ERROR reading material association: "
+      character(len=*), parameter :: ERRORMSGINIT = "ERROR reading material association: "
       logical :: found
       logical :: isMultiwire, isWireOrMultiwire
       character(len=BUFSIZE) :: errorMsg
@@ -2566,19 +2566,19 @@ contains
 
       ! Checks validity of associations.
       if (this%matTable%checkId(res%materialId) /= 0) then
-         write(errorMsg, *) errorMsgInit, "material with id ", res%materialId, " not found."
+         write(errorMsg, *) ERRORMSGINIT, "material with id ", res%materialId, " not found."
          call WarnErrReport(errorMsg, .true.)
       end if
       
       if (size(res%elementIds) == 0) then
-         write(errorMsg, *) errorMsgInit, J_ELEMENTIDS, "must not be empty."
+         write(errorMsg, *) ERRORMSGINIT, J_ELEMENTIDS, "must not be empty."
          call WarnErrReport(errorMsg, .true.)
       end if
       block
          integer :: i
          do i = 1, size(res%elementIds)
             if (this%mesh%checkElementId(res%elementIds(i)) /= 0) then
-               write(errorMsg, *) errorMsgInit, "element with id ", res%elementIds(i), " not found."
+               write(errorMsg, *) ERRORMSGINIT, "element with id ", res%elementIds(i), " not found."
                call WarnErrReport(errorMsg, .true.)
             end if
          end do
@@ -2593,26 +2593,26 @@ contains
       
       if (isWireOrMultiwire) then
          if (res%initialTerminalId == -1 .or. res%endTerminalId == -1) then
-            write(errorMsg, *), errorMsgInit, "wire associations must include terminals."
+            write(errorMsg, *), ERRORMSGINIT, "wire associations must include terminals."
             call WarnErrReport(errorMsg, .true.)
          end if
          if (.not. isMaterialIdOfType(res%initialTerminalId, J_MAT_TYPE_TERMINAL)) then
-            write(errorMsg, *) errorMsgInit, "material with id ", res%materialId, " must be a terminal."
+            write(errorMsg, *) ERRORMSGINIT, "material with id ", res%materialId, " must be a terminal."
             call WarnErrReport(errorMsg, .true.)
          end if
          if (.not. isMaterialIdOfType(res%endTerminalId, J_MAT_TYPE_TERMINAL)) then
-            write(errorMsg, *) errorMsgInit, "material with id ", res%materialId, " must be a terminal."
+            write(errorMsg, *) ERRORMSGINIT, "material with id ", res%materialId, " must be a terminal."
             call WarnErrReport(errorMsg, .true.)
          end if
          if (res%initialConnectorId /= -1) then
             if (.not. isMaterialIdOfType(res%initialConnectorId, J_MAT_TYPE_CONNECTOR)) then
-               write(errorMsg, *) errorMsgInit, "material with id ", res%materialId, " must be a connector."
+               write(errorMsg, *) ERRORMSGINIT, "material with id ", res%materialId, " must be a connector."
                call WarnErrReport(errorMsg, .true.)
             end if
          end if 
          if (res%endConnectorId /= -1) then
             if (.not. isMaterialIdOfType(res%endConnectorId, J_MAT_TYPE_CONNECTOR)) then
-               write(errorMsg, *) errorMsgInit, "material with id ", res%materialId, " must be a connector."
+               write(errorMsg, *) ERRORMSGINIT, "material with id ", res%materialId, " must be a connector."
                call WarnErrReport(errorMsg, .true.)
             end if
          end if
@@ -2790,12 +2790,12 @@ contains
    contains
       subroutine checkIsValidName(str)
          character(len=:), allocatable, intent(in) :: str
-         character(len=*), parameter :: notAllowedChars = '@'
+         character(len=*), parameter :: NOTALLOWEDCHARS = '@'
          integer :: i
-         do i = 1, len((notAllowedChars))
-            if (index(str, notAllowedChars(i:i)) /= 0) then
+         do i = 1, len((NOTALLOWEDCHARS))
+            if (index(str, NOTALLOWEDCHARS(i:i)) /= 0) then
                write(errorMsg, *) "ERROR in name: ", str, &
-                  " contains invalid character ", notAllowedChars(i:i)
+                  " contains invalid character ", NOTALLOWEDCHARS(i:i)
                call WarnErrReport(errorMsg, .true.)
             end if 
          end do
@@ -3483,7 +3483,7 @@ contains
          type(json_value), pointer, intent(in) :: matPtr
          real(kind=RKIND) :: relEps, relMu, sigmaE, sigmaM
          real(kind=RKIND) :: absEps, absMu
-         real(kind=RKIND), parameter :: tol = 1.0e-12_RKIND
+         real(kind=RKIND), parameter :: TOL = 1.0e-12_RKIND
 
          relEps = this%getRealAt(matPtr, J_MAT_REL_PERMITTIVITY, default = 1.0_RKIND)
          relMu = this%getRealAt(matPtr, J_MAT_REL_PERMEABILITY, default = 1.0_RKIND)
@@ -3528,7 +3528,7 @@ contains
          type(node_source_t) :: res
          integer :: polylineId
 
-         character(len=*), dimension(1), parameter :: validTypes = &
+         character(len=*), dimension(1), parameter :: VALIDTYPES = &
          [J_SRC_TYPE_GEN]
 
          call this%core%get(this%root, J_SOURCES, sources, found)
@@ -3538,7 +3538,7 @@ contains
             return
          end if
          
-         genSrcs = this%jsonValueFilterByKeyValues(sources, J_TYPE, validTypes)
+         genSrcs = this%jsonValueFilterByKeyValues(sources, J_TYPE, VALIDTYPES)
          if (size(genSrcs) == 0) then
             res%path_to_excitation = trim("")
             res%source_type = SOURCE_TYPE_UNDEFINED
@@ -3631,18 +3631,18 @@ contains
             res = TERMINATION_SERIES
          else if (type == J_MAT_TERM_TYPE_PARALLEL) then
             res = TERMINATION_PARALLEL
-         else if (type == J_MAT_TERM_TYPE_RsLCp) then
-            res = TERMINATION_RsLCp
-         else if (type == J_MAT_TERM_TYPE_LsRCp) then
-            res = TERMINATION_LsRCp
-         else if (type == J_MAT_TERM_TYPE_CsLRp) then
-            res = TERMINATION_CsLRp
-         else if (type == J_MAT_TERM_TYPE_RCsLp) then
-            res = TERMINATION_RCsLp
-         else if (type == J_MAT_TERM_TYPE_LCsRp) then
-            res = TERMINATION_LCsRp
-         else if (type == J_MAT_TERM_TYPE_RLsCp) then
-            res = TERMINATION_RLsCp
+         else if (type == J_MAT_TERM_TYPE_RSLCP) then
+            res = TERMINATION_RSLCP
+         else if (type == J_MAT_TERM_TYPE_LSRCP) then
+            res = TERMINATION_LSRCP
+         else if (type == J_MAT_TERM_TYPE_CSLRP) then
+            res = TERMINATION_CSLRP
+         else if (type == J_MAT_TERM_TYPE_RCSLP) then
+            res = TERMINATION_RCSLP
+         else if (type == J_MAT_TERM_TYPE_LCSRP) then
+            res = TERMINATION_LCSRP
+         else if (type == J_MAT_TERM_TYPE_RLSCP) then
+            res = TERMINATION_RLSCP
          else if (type == J_MAT_TERM_TYPE_CIRCUIT) then 
             res = TERMINATION_CIRCUIT
          else if (type == J_MAT_TERM_TYPE_NETWORK) then 
@@ -3757,7 +3757,7 @@ contains
 
       logical function IsGeneratorOnWire(p)
          type(json_value), pointer :: p
-         character (len=:), allocatable :: fieldLabel
+         character(len=:), allocatable :: fieldLabel
          logical :: found
          type(materialAssociation_t), dimension(:), allocatable :: mAs
          integer :: i, j, k, l
@@ -3935,7 +3935,7 @@ contains
 
       logical function isProbeDefinedOnMultiwire(p)
          type(json_value), pointer :: p
-         character (len=:), allocatable :: fieldLabel
+         character(len=:), allocatable :: fieldLabel
          logical :: found
          type(materialAssociation_t), dimension(:), allocatable :: mAs
          integer :: i, j

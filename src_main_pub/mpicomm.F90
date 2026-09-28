@@ -2,7 +2,7 @@ module MPIcomm_m
 
 #ifdef CompileWithMPI
    !
-   Use Report_m
+   use Report_m
    use FDETYPES_m
 
    use wiresHolland_constants_m
@@ -14,12 +14,12 @@ module MPIcomm_m
    type(Thinwires_t), pointer  :: HwiresMPI
 
 
-   Type buffer_t
-      real(kind=RKIND_wires), pointer, dimension( : ) :: SendUP,SendDown,RecUp,RecDown !for the wire exchange
+   type buffer_t
+      real(kind=RKIND_WIRES), pointer, dimension( : ) :: SendUP,SendDown,RecUp,RecDown !for the wire exchange
       integer(kind=4) :: SendSizeUp,SendSizeDown,RecSizeUp ,RecSizeDown  !,uno
    end type
 
-   Type ibuffer_t
+   type ibuffer_t
       integer(kind=4), pointer, dimension( : ) :: SendUP,SendDown,RecUp,RecDown !for the wire exchange
       integer(kind=4) :: SendSizeUp,SendSizeDown,RecSizeUp,RecSizeDown !,uno
    end type
@@ -28,11 +28,11 @@ module MPIcomm_m
    type(buffer_t) , save :: buffer
    type(ibuffer_t), save  :: ibuffer
 
-   Logical, SAVE :: FlushExtraInfoDown,FlushExtraInfoUp
-   integer(kind=4), SAVE  :: sizeHx,sizeHy,HxXI,HxXE,HyXI,HyXE,HxYI,HxYE,HyYI,HyYE,comZ,finZ
-   integer(kind=4), SAVE  :: sizeEx,sizeEy,ExXI,ExXE,EyXI,EyXE,ExYI,ExYE,EyYI,EyYE
-   integer(kind=4), SAVE  :: sizeEz,sizeHz,EzXI,EzXE,HzXI,HzXE,EzYI,EzYE,HzYI,HzYE
-   integer(kind=4), SAVE,pointer, dimension(:) :: mpiZcom ,mpiZfin
+   logical, save :: FlushExtraInfoDown,FlushExtraInfoUp
+   integer(kind=4), save  :: sizeHx,sizeHy,HxXI,HxXE,HyXI,HyXE,HxYI,HxYE,HyYI,HyYE,comZ,finZ
+   integer(kind=4), save  :: sizeEx,sizeEy,ExXI,ExXE,EyXI,EyXE,ExYI,ExYE,EyYI,EyYE
+   integer(kind=4), save  :: sizeEz,sizeHz,EzXI,EzXE,HzXI,HzXE,EzYI,EzYE,HzYI,HzYE
+   integer(kind=4), save,pointer, dimension(:) :: mpiZcom ,mpiZfin
 
 
    public FlushMPI_E,FlushMPI_H,InitMPI,MPIupdateMin, InitGeneralMPI,MPIdivide
@@ -49,7 +49,7 @@ module MPIcomm_m
       logical :: FlushExtraInfo
       real(kind = RKIND), dimension( :, :), pointer :: buf_x_rx, buf_y_rx, buf_z_rx
       real(kind = RKIND), dimension( :, :), pointer :: buf_x_tx, buf_y_tx, buf_z_tx
-   endtype t_databuf_t
+   end type t_databuf_t
 
    type :: t_databuf_Set_t
       logical :: syncUp, pbcUp
@@ -57,7 +57,7 @@ module MPIcomm_m
       !--->
       logical :: syncDown, pbcDown
       type( t_databuf_t) :: databuf_Down
-   endtype t_databuf_Set_t
+   end type t_databuf_Set_t
    !
    type(t_databuf_Set_t),save, target :: databuf_SetH
    type(t_databuf_Set_t),save, target :: databuf_SetE
@@ -85,7 +85,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine MPIdivide(sgg,fullsize,SINPML_FULLSIZE,layoutnumber,num_procs,forcing,forced,slicesoriginales,resume,fatalerror)
 
-      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(limit_t), dimension(1:6) :: fullsize,SINPML_fullsize
       integer(kind=4) num_procs, layoutnumber,ilay,padding,index(1:1),j
       integer(kind=4) forced
@@ -112,20 +112,20 @@ contains
       !clip the simulation region
       !Take into account the PML overhead factor plusCPU_PML (2= double overhead, 1=no overhead)
       allocate(trancos(0 : num_procs-1),cZI(0 : num_procs),cZE(0 : num_procs-1))
-      carga= 1.0_RKIND *(fullsize(iHz)%ZE        - fullsize(iHz)%ZI)/(1.0_RKIND * num_procs) + &
-      (plusCPU_PML-1.0_RKIND)*((SINPML_fullsize(iHz)%ZI - fullsize(iHz)%ZI)   + &
-      (fullsize(iHz)%ZE - SINPML_fullsize(iHz)%ZE))/(1.0_RKIND * num_procs)
-      cZI(0)=fullsize(iHz)%ZI
+      carga= 1.0_RKIND *(fullsize(IHZ)%ZE        - fullsize(IHZ)%ZI)/(1.0_RKIND * num_procs) + &
+      (PLUSCPU_PML-1.0_RKIND)*((SINPML_fullsize(IHZ)%ZI - fullsize(IHZ)%ZI)   + &
+      (fullsize(IHZ)%ZE - SINPML_fullsize(IHZ)%ZE))/(1.0_RKIND * num_procs)
+      cZI(0)=fullsize(IHZ)%ZI
       do ilay=0,num_procs-1
-         guess=carga+cZI(ilay)+(plusCPU_PML-1.0_RKIND)*(min(cZI(ilay),1.0_RKIND * sinpml_fullsize(iHz)%ZI) + &
-         max(cZI(ilay),1.0_RKIND * sinpml_fullsize(iHz)%ZE))
-         ZE(1)=(guess-(plusCPU_PML-1.0_RKIND)*(sinpml_fullsize(iHz)%ZI))/(1.0_RKIND+(plusCPU_PML-1.0_RKIND))
-         ZE(2)=(guess-(plusCPU_PML-1.0_RKIND)*(sinpml_fullsize(iHz)%ZE))/(1.0_RKIND+(plusCPU_PML-1.0_RKIND))
-         ZE(3)=(guess-(plusCPU_PML-1.0_RKIND)*(sinpml_fullsize(iHz)%ZE)-(plusCPU_PML-1.0_RKIND)*(sinpml_fullsize(iHz)%ZI))
+         guess=carga+cZI(ilay)+(PLUSCPU_PML-1.0_RKIND)*(min(cZI(ilay),1.0_RKIND * sinpml_fullsize(IHZ)%ZI) + &
+         max(cZI(ilay),1.0_RKIND * sinpml_fullsize(IHZ)%ZE))
+         ZE(1)=(guess-(PLUSCPU_PML-1.0_RKIND)*(sinpml_fullsize(IHZ)%ZI))/(1.0_RKIND+(PLUSCPU_PML-1.0_RKIND))
+         ZE(2)=(guess-(PLUSCPU_PML-1.0_RKIND)*(sinpml_fullsize(IHZ)%ZE))/(1.0_RKIND+(PLUSCPU_PML-1.0_RKIND))
+         ZE(3)=(guess-(PLUSCPU_PML-1.0_RKIND)*(sinpml_fullsize(IHZ)%ZE)-(PLUSCPU_PML-1.0_RKIND)*(sinpml_fullsize(IHZ)%ZI))
          do j=1,3
             cargaZE(j)=ABS( (ZE(j)-cZI(ilay)) + &
-            (plusCPU_PML-1.0_RKIND)*(min(1.0_RKIND * SINPML_fullsize(iHz)%ZI,ZE(j)) - Min(1.0_RKIND * SINPML_fullsize(iHz)%ZI,cZI(ilay))  + &
-            max(1.0_RKIND * SINPML_fullsize(iHz)%ZE,ZE(j)) - Max(1.0_RKIND * SINPML_fullsize(iHz)%ZE,cZI(ilay)))-carga)
+            (PLUSCPU_PML-1.0_RKIND)*(min(1.0_RKIND * SINPML_fullsize(IHZ)%ZI,ZE(j)) - Min(1.0_RKIND * SINPML_fullsize(IHZ)%ZI,cZI(ilay))  + &
+            max(1.0_RKIND * SINPML_fullsize(IHZ)%ZE,ZE(j)) - Max(1.0_RKIND * SINPML_fullsize(IHZ)%ZE,cZI(ilay)))-carga)
          end do
          !select the closest to 0 one
          index=minloc(cargaZE)
@@ -140,12 +140,12 @@ contains
             cZI=-1;cZE=-1; !voided
             ilay=0
             !
-            cZI(ilay)= fullsize(iHz)%ZI
+            cZI(ilay)= fullsize(IHZ)%ZI
             cZE(ilay)=forced
             ilay=ilay+1
             !repeat as many times as wanted for more cuts in a future
             cZI(ilay)=cZE(ilay-1)
-            cZE(ilay)= fullsize(iHz)%ZE  !14
+            cZE(ilay)= fullsize(IHZ)%ZE  !14
         else
             write(dubuf,*) 'Cannot force for more than 1 cut in a num_procs=2 MPI'
             call print11(layoutnumber,dubuf,.true.)
@@ -160,38 +160,38 @@ contains
       !end PML CPU overhead tunning
 
       allocate (mpiZcom(0:num_procs-1),mpiZfin(0:num_procs-1))
-      mpiZcom(0)=fullsize(iHz)%ZI
-      mpiZfin(0)=fullsize(iHz)%ZI+trancos(0)
+      mpiZcom(0)=fullsize(IHZ)%ZI
+      mpiZfin(0)=fullsize(IHZ)%ZI+trancos(0)
       do ilay=1,num_procs-2
-         mpiZcom(ilay)=fullsize(iHz)%ZI+trancos(ilay-1)
-         mpiZfin(ilay)=fullsize(iHz)%ZI+trancos(ilay)
+         mpiZcom(ilay)=fullsize(IHZ)%ZI+trancos(ilay-1)
+         mpiZfin(ilay)=fullsize(IHZ)%ZI+trancos(ilay)
       end do
-      mpiZcom(num_procs-1)=fullsize(iHz)%ZI+trancos(num_procs-2)
-      mpiZfin(num_procs-1)=fullsize(iHz)%ZE
+      mpiZcom(num_procs-1)=fullsize(IHZ)%ZI+trancos(num_procs-2)
+      mpiZfin(num_procs-1)=fullsize(IHZ)%ZE
 
       !asign the  limits
       if ((LAYOUTNUMBER>0).and.(LAYOUTNUMBER<num_procs-1)) then
          sgg%Sweep(1:6)%ZI=fullsize(1:6)%ZI+trancos(LAYOUTNUMBER-1)
          sgg%Sweep(1:6)%ZE=fullsize(1:6)%ZI+trancos(LAYOUTNUMBER  )
-      elseif ((layoutnumber == 0).and.(LAYOUTNUMBER/=num_procs-1))  then
+      else if ((layoutnumber == 0).and.(LAYOUTNUMBER/=num_procs-1))  then
          sgg%Sweep(1:6)%ZI=fullsize(1:6)%ZI
          sgg%Sweep(1:6)%ZE=fullsize(1:6)%ZI+trancos(LAYOUTNUMBER)
-      elseif ((LAYOUTNUMBER/=0).and.(LAYOUTNUMBER==num_procs-1)) then
+      else if ((LAYOUTNUMBER/=0).and.(LAYOUTNUMBER==num_procs-1)) then
          sgg%Sweep(1:6)%ZI=fullsize(1:6)%ZI+trancos(LAYOUTNUMBER-1)
          sgg%Sweep(1:6)%ZE=fullsize(1:6)%ZE
       end if
       !adjust THE ENDINGS OF THE INTERMDIATE computational limits
       if ((LAYOUTNUMBER>0).and.(LAYOUTNUMBER<num_procs-1)) then
          !adjust computational limits
-         sgg%Sweep(iEz)%ZE=sgg%Sweep(iEz)%ZE-1
-         sgg%Sweep(iHx)%ZE=sgg%Sweep(iHx)%ZE-1
-         sgg%Sweep(iHy)%ZE=sgg%Sweep(iHy)%ZE-1
-      elseif ((layoutnumber == 0).and.(LAYOUTNUMBER/=num_procs-1))  then
+         sgg%Sweep(IEZ)%ZE=sgg%Sweep(IEZ)%ZE-1
+         sgg%Sweep(IHX)%ZE=sgg%Sweep(IHX)%ZE-1
+         sgg%Sweep(IHY)%ZE=sgg%Sweep(IHY)%ZE-1
+      else if ((layoutnumber == 0).and.(LAYOUTNUMBER/=num_procs-1))  then
          !adjust computational limits
-         sgg%Sweep(iEz)%ZE=sgg%Sweep(iEz)%ZE-1
-         sgg%Sweep(iHx)%ZE=sgg%Sweep(iHx)%ZE-1
-         sgg%Sweep(iHy)%ZE=sgg%Sweep(iHy)%ZE-1
-      elseif ((LAYOUTNUMBER/=0).and.(LAYOUTNUMBER==num_procs-1)) then
+         sgg%Sweep(IEZ)%ZE=sgg%Sweep(IEZ)%ZE-1
+         sgg%Sweep(IHX)%ZE=sgg%Sweep(IHX)%ZE-1
+         sgg%Sweep(IHY)%ZE=sgg%Sweep(IHY)%ZE-1
+      else if ((LAYOUTNUMBER/=0).and.(LAYOUTNUMBER==num_procs-1)) then
          continue
          !adjustment not necessary since fullsize%ZE is already adjusted
       end if
@@ -224,10 +224,10 @@ contains
       if ((layoutnumber>0).and.(layoutnumber<num_procs-1)) then
          sgg%alloc(1:6)%ZI=sgg%Sweep(1:6)%ZI - padding !I read one more MM for routines (wires, e.g.) requiring it
          sgg%alloc(1:6)%ZE=sgg%Sweep(1:6)%ZE + padding !I read one more MM for routines (wires, e.g.) requiring it
-      elseif ((layoutnumber == 0).and.(layoutnumber/=num_procs-1)) then
+      else if ((layoutnumber == 0).and.(layoutnumber/=num_procs-1)) then
          sgg%alloc(1:6)%ZI=sgg%Sweep(1:6)%ZI-1  !I use this extra length in the global boundaries
          sgg%alloc(1:6)%ZE=sgg%Sweep(1:6)%ZE + padding !I read one more MM for routines (wires, e.g.) requiring it
-      elseif ((layoutnumber/=0).and.(layoutnumber==num_procs-1)) then
+      else if ((layoutnumber/=0).and.(layoutnumber==num_procs-1)) then
          sgg%alloc(1:6)%ZI=sgg%Sweep(1:6)%ZI - padding
          sgg%alloc(1:6)%ZE=sgg%Sweep(1:6)%ZE+1   !I use this extra length in the global boundaries
       end if
@@ -238,7 +238,7 @@ contains
          sgg%Border%IsUpmur=.false.
          sgg%Border%IsUpPMC=.false.
          sgg%Border%IsUpPEC=.false.   !no PML layers UP
-      elseif (layoutnumber==num_procs-1) then
+      else if (layoutnumber==num_procs-1) then
          sgg%Border%IsDownPML=.false.
          sgg%Border%IsDownmur=.false.
          sgg%Border%IsDownPMC=.false.
@@ -317,29 +317,29 @@ contains
       ExXE=sggalloc(iEx)%XE
       EyXI=sggalloc(iEy)%XI
       EyXE=sggalloc(iEy)%XE
-      EzXI=sggalloc(iEz)%XI
-      EzXE=sggalloc(iEz)%XE
+      EzXI=sggalloc(IEZ)%XI
+      EzXE=sggalloc(IEZ)%XE
 
       ExYI=sggalloc(iEx)%YI
       ExYE=sggalloc(iEx)%YE
       EyYI=sggalloc(iEy)%YI
       EyYE=sggalloc(iEy)%YE
-      EzYI=sggalloc(iEz)%YI
-      EzYE=sggalloc(iEz)%YE
+      EzYI=sggalloc(IEZ)%YI
+      EzYE=sggalloc(IEZ)%YE
 
-      HxXI=sggalloc(iHx)%XI
-      HxXE=sggalloc(iHx)%XE
-      HyXI=sggalloc(iHy)%XI
-      HyXE=sggalloc(iHy)%XE
-      HzXI=sggalloc(iHz)%XI
-      HzXE=sggalloc(iHz)%XE
+      HxXI=sggalloc(IHX)%XI
+      HxXE=sggalloc(IHX)%XE
+      HyXI=sggalloc(IHY)%XI
+      HyXE=sggalloc(IHY)%XE
+      HzXI=sggalloc(IHZ)%XI
+      HzXE=sggalloc(IHZ)%XE
 
-      HxYI=sggalloc(iHx)%YI
-      HxYE=sggalloc(iHx)%YE
-      HyYI=sggalloc(iHy)%YI
-      HyYE=sggalloc(iHy)%YE
-      HzYI=sggalloc(iHz)%YI
-      HzYE=sggalloc(iHz)%YE
+      HxYI=sggalloc(IHX)%YI
+      HxYE=sggalloc(IHX)%YE
+      HyYI=sggalloc(IHY)%YI
+      HyYE=sggalloc(IHY)%YE
+      HzYI=sggalloc(IHZ)%YI
+      HzYE=sggalloc(IHZ)%YE
 
       sizeEx=(ExXE-ExXI+1)*(ExYE-ExYI+1)
       sizeEy=(EyXE-EyXI+1)*(EyYE-EyYI+1)
@@ -349,8 +349,8 @@ contains
       sizeHy=(HyXE-HyXI+1)*(HyYE-HyYI+1)
       sizeHz=(HzXE-HzXI+1)*(HzYE-HzYI+1)
       !
-      ComZ=sggsweep(iHx)%ZI !both Hx and Hy coincide in this
-      FinZ=sggsweep(iHx)%ZE
+      ComZ=sggsweep(IHX)%ZI !both Hx and Hy coincide in this
+      FinZ=sggsweep(IHX)%ZE
 
       return
    end subroutine
@@ -371,11 +371,11 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine MPIupdateBloques(layoutnumber,valores,newvalores,SubComm)
       integer(kind=4) :: ierr,sizeofvalores,SubComm
-      real(kind=RKIND), intent(in), dimension( 0:BuffObse ) :: valores
-      real(kind=RKIND), intent(out), dimension( 0:BuffObse ) :: newvalores
+      real(kind=RKIND), intent(in), dimension( 0:BUFFOBSE ) :: valores
+      real(kind=RKIND), intent(out), dimension( 0:BUFFOBSE ) :: newvalores
       integer :: layoutnumber
       
-      sizeofvalores=BuffObse+1
+      sizeofvalores=BUFFOBSE+1
       call MPI_AllReduce(valores, newvalores, sizeofvalores, REALSIZE, MPI_SUM, SubComm, ierr)
    end subroutine
 
@@ -437,9 +437,9 @@ contains
 !!!! ojo hay que cambiar tambien si algun dia se vuelve a esta rutina para comunicar reales INTEGERSIZE por REALSIZE
 !!!!      real(kind=RKIND)   , intent(inout) :: &
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) , intent(inout) :: &
-      Hx(sggalloc(iHx)%XI : sggalloc(iHx)%XE,sggalloc(iHx)%YI : sggalloc(iHx)%YE,sggalloc(iHx)%ZI : sggalloc(iHx)%ZE), &
-      Hy(sggalloc(iHy)%XI : sggalloc(iHy)%XE,sggalloc(iHy)%YI : sggalloc(iHy)%YE,sggalloc(iHy)%ZI : sggalloc(iHy)%ZE), &
-      Hz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
+      Hx(sggalloc(IHX)%XI : sggalloc(IHX)%XE,sggalloc(IHX)%YI : sggalloc(IHX)%YE,sggalloc(IHX)%ZI : sggalloc(IHX)%ZE), &
+      Hy(sggalloc(IHY)%XI : sggalloc(IHY)%XE,sggalloc(IHY)%YI : sggalloc(IHY)%YE,sggalloc(IHY)%ZI : sggalloc(IHY)%ZE), &
+      Hz(sggalloc(IHZ)%XI : sggalloc(IHZ)%XE,sggalloc(IHZ)%YI : sggalloc(IHZ)%YE,sggalloc(IHZ)%ZI : sggalloc(IHZ)%ZE)
 
 
 
@@ -465,7 +465,7 @@ contains
             call MPI_IRECV (Hz(HzXI,HzYI,finZ+2), sizeHz, INTEGERSIZE, layoutnumber+1_4, 5_4, SUBCOMM_MPI, req1b(1), ierr11)
             call MPI_ISEND (Hz(HzXI,HzYI,finZ  ), sizeHz, INTEGERSIZE, layoutnumber+1_4, 6_4, SUBCOMM_MPI, req1b(2), ierr12)
          end if
-      ELSE !only NEEDED BY THE PERIODIC BOUNDARY CONDITIONS !no real MPI burden since all layers communicate two sets
+      else !only NEEDED BY THE PERIODIC BOUNDARY CONDITIONS !no real MPI burden since all layers communicate two sets
          !print *,'---fluHup>',layoutnumber
          call MPI_IRECV     (Hx(HxXI,HxYI,finZ+1), sizeHx, INTEGERSIZE, 0_4,  1_4, SUBCOMM_MPI, req1(1 ), ierr1 )
          call MPI_ISEND     (Hx(HxXI,HxYI,finZ  ), sizeHx, INTEGERSIZE, 0_4,  2_4, SUBCOMM_MPI, req1(2 ), ierr2 )
@@ -483,7 +483,7 @@ contains
             call MPI_ISEND (Hz(HzXI,HzYI,comZ+1), sizeHz, INTEGERSIZE, layoutnumber-1_4, 5_4, SUBCOMM_MPI, req2b(1), jerr11)
             call MPI_IRECV (Hz(HzXI,HzYI,comZ-1), sizeHz, INTEGERSIZE, layoutnumber-1_4, 6_4, SUBCOMM_MPI, req2b(2), jerr12)
          end if
-      ELSE !only NEEDED BY THE PERIODIC BOUNDARY CONDITIONS
+      else !only NEEDED BY THE PERIODIC BOUNDARY CONDITIONS
          call MPI_ISEND     (Hx(HxXI,HxYI,comZ  ), sizeHx, INTEGERSIZE, num_procs-1_4,  1_4, SUBCOMM_MPI, req2(1 ), jerr1 )
          call MPI_IRECV     (Hx(HxXI,HxYI,comZ-1), sizeHx, INTEGERSIZE, num_procs-1_4,  2_4, SUBCOMM_MPI, req2(2 ), jerr2 )
          call MPI_ISEND     (Hy(HyXI,HyYI,comZ  ), sizeHy, INTEGERSIZE, num_procs-1_4,  3_4, SUBCOMM_MPI, req2(3 ), jerr3 )
@@ -524,7 +524,7 @@ contains
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) , intent(inout) :: &
       Ex(sggalloc(iEx)%XI : sggalloc(iEx)%XE,sggalloc(iEx)%YI : sggalloc(iEx)%YE,sggalloc(iEx)%ZI : sggalloc(iEx)%ZE),&
       Ey(sggalloc(iEy)%XI : sggalloc(iEy)%XE,sggalloc(iEy)%YI : sggalloc(iEy)%YE,sggalloc(iEy)%ZI : sggalloc(iEy)%ZE),&
-      Ez(sggalloc(iEz)%XI : sggalloc(iEz)%XE,sggalloc(iEz)%YI : sggalloc(iEz)%YE,sggalloc(iEz)%ZI : sggalloc(iEz)%ZE)
+      Ez(sggalloc(IEZ)%XI : sggalloc(IEZ)%XE,sggalloc(IEZ)%YI : sggalloc(IEZ)%YE,sggalloc(IEZ)%ZI : sggalloc(IEZ)%ZE)
 
 
 
@@ -632,14 +632,14 @@ contains
       if (layoutnumber/=num_procs-1) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(iEz)%ZE+1).and.(segmento%tipofield==iEz)) NeedscontaMPIup = NeedscontaMPIup + 1
+            if ((segmento%k==C(IEZ)%ZE+1).and.(segmento%tipofield==IEZ)) NeedscontaMPIup = NeedscontaMPIup + 1
          end do
       end if
       !
       if (layoutnumber/=0) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(iEz)%ZI-1).and.(segmento%tipofield==iEz)) NeedscontaMPIdown = NeedscontaMPIdown + 1
+            if ((segmento%k==C(IEZ)%ZI-1).and.(segmento%tipofield==IEZ)) NeedscontaMPIdown = NeedscontaMPIdown + 1
          end do
       end if
 
@@ -649,14 +649,14 @@ contains
       if (layoutnumber/=num_procs-1) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(iEz)%ZE).and.(segmento%tipofield==iEz)) SharescontaMPIup = SharescontaMPIup + 1
+            if ((segmento%k==C(IEZ)%ZE).and.(segmento%tipofield==IEZ)) SharescontaMPIup = SharescontaMPIup + 1
          end do
       end if
       !
       if (layoutnumber/=0) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(iEz)%ZI).and.(segmento%tipofield==iEz)) SharescontaMPIdown = SharescontaMPIdown + 1
+            if ((segmento%k==C(IEZ)%ZI).and.(segmento%tipofield==IEZ)) SharescontaMPIdown = SharescontaMPIdown + 1
          end do
       end if
 
@@ -689,7 +689,7 @@ contains
       if (layoutnumber/=num_procs-1) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(iEz)%ZE+1).and.(segmento%tipofield==iEz)) then
+            if ((segmento%k==C(IEZ)%ZE+1).and.(segmento%tipofield==IEZ)) then
                NeedscontaMPIup = NeedscontaMPIup + 1
                HwiresMPI%MPIUpNeededCurrentSegment (NeedscontaMPIup)%equivalentIndex = i1
             end if
@@ -699,7 +699,7 @@ contains
       if (layoutnumber/=0) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(iEz)%ZI-1).and.(segmento%tipofield==iEz)) then
+            if ((segmento%k==C(IEZ)%ZI-1).and.(segmento%tipofield==IEZ)) then
                NeedscontaMPIdown = NeedscontaMPIdown + 1
                HwiresMPI%MPIDownNeededCurrentSegment (NeedscontaMPIdown)%equivalentIndex = i1
             end if
@@ -711,7 +711,7 @@ contains
       if (layoutnumber/=num_procs-1) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(iEz)%ZE).and.(segmento%tipofield==iEz)) then
+            if ((segmento%k==C(IEZ)%ZE).and.(segmento%tipofield==IEZ)) then
                SharescontaMPIup = SharescontaMPIup + 1
                HwiresMPI%MPIUpSharedCurrentSegment(SharescontaMPIup)%equivalentIndex = i1
             end if
@@ -721,7 +721,7 @@ contains
       if (layoutnumber/=0) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
-            if ((segmento%k==C(iEz)%ZI).and.(segmento%tipofield==iEz)) then
+            if ((segmento%k==C(IEZ)%ZI).and.(segmento%tipofield==IEZ)) then
                SharescontaMPIdown = SharescontaMPIdown + 1
                HwiresMPI%MPIDownSharedCurrentSegment(SharescontaMPIdown)%equivalentIndex = i1
             end if
@@ -888,16 +888,16 @@ contains
       !
       if ((layoutnumber/=num_procs-1).and.(Buffer%RecSizeUp/=0)) & !syncUp
       call MPI_IRECV (Buffer%RecUp(1),  &
-      Buffer%RecSizeUp, REALSIZE_wires, layoutnumber+1_4, 1_4, SUBCOMM_MPI, req1,  ierr5)
+      Buffer%RecSizeUp, REALSIZE_WIRES, layoutnumber+1_4, 1_4, SUBCOMM_MPI, req1,  ierr5)
       if ((layoutnumber/=num_procs-1).and.(Buffer%SendSizeUp/=0)) & !syncUp
       call MPI_ISEND (Buffer%SendUp(1), &
-      Buffer%SendSizeUp, REALSIZE_wires, layoutnumber+1_4, 2_4, SUBCOMM_MPI, req11,  ierr6)
+      Buffer%SendSizeUp, REALSIZE_WIRES, layoutnumber+1_4, 2_4, SUBCOMM_MPI, req11,  ierr6)
       if ((layoutnumber/=0    ).and.(Buffer%SendSizeDown/=0)) & !syncDown
       call MPI_ISEND (Buffer%SendDown(1), &
-      Buffer%SendSizeDown, REALSIZE_wires, layoutnumber-1_4, 1_4, SUBCOMM_MPI, req2,  ierr7)
+      Buffer%SendSizeDown, REALSIZE_WIRES, layoutnumber-1_4, 1_4, SUBCOMM_MPI, req2,  ierr7)
       if ((layoutnumber/=0    ).and.(Buffer%RecSizeDown/=0)) & !syncDown
       call MPI_IRECV (Buffer%RecDown(1), &
-      Buffer%RecSizeDown, REALSIZE_wires, layoutnumber-1_4, 2_4, SUBCOMM_MPI, req21,  ierr8)
+      Buffer%RecSizeDown, REALSIZE_WIRES, layoutnumber-1_4, 2_4, SUBCOMM_MPI, req21,  ierr8)
 
       !
       if ((layoutnumber/=num_procs-1).and.(Buffer%RecSizeUp/=0))    call MPI_WAIT(req1 ,status1,ierr9)
@@ -949,25 +949,25 @@ contains
       ierr1=0;ierr2=0;ierr3=0;ierr4=0;ierr5=0;ierr6=0;ierr7=0;ierr8=0;ierr9=0;ierr10=0;ierr11=0;ierr12=0;
 
       do i=1,Buffer%SendSizeUP
-         Buffer%SendUp(i)  =HwiresMPI%MPIUpChargeNode(i)%MPIsharedCurrent%origindex * 1.0_RKIND_wires
+         Buffer%SendUp(i)  =HwiresMPI%MPIUpChargeNode(i)%MPIsharedCurrent%origindex * 1.0_RKIND_WIRES
       end do
       do i=1,Buffer%SendSizeDown
-         Buffer%SendDown(i)=HwiresMPI%MPIDownChargeNode(i)%MPIsharedCurrent%origindex * 1.0_RKIND_wires
+         Buffer%SendDown(i)=HwiresMPI%MPIDownChargeNode(i)%MPIsharedCurrent%origindex * 1.0_RKIND_WIRES
       end do
 
       !
       if ((layoutnumber/=num_procs-1).and.(Buffer%RecSizeUp/=0)) & !syncUp
       call MPI_IRECV (Buffer%RecUp(1),  &
-      Buffer%RecSizeUp, REALSIZE_wires, layoutnumber+1_4, 1_4, SUBCOMM_MPI, req1,  ierr5)
+      Buffer%RecSizeUp, REALSIZE_WIRES, layoutnumber+1_4, 1_4, SUBCOMM_MPI, req1,  ierr5)
       if ((layoutnumber/=num_procs-1).and.(Buffer%SendSizeUp/=0)) & !syncUp
       call MPI_ISEND (Buffer%SendUp(1), &
-      Buffer%SendSizeUp, REALSIZE_wires, layoutnumber+1_4, 2_4, SUBCOMM_MPI, req11,  ierr6)
+      Buffer%SendSizeUp, REALSIZE_WIRES, layoutnumber+1_4, 2_4, SUBCOMM_MPI, req11,  ierr6)
       if ((layoutnumber/=0    ).and.(Buffer%SendSizeDown/=0)) & !syncDown
       call MPI_ISEND (Buffer%SendDown(1), &
-      Buffer%SendSizeDown, REALSIZE_wires, layoutnumber-1_4, 1_4, SUBCOMM_MPI, req2,  ierr7)
+      Buffer%SendSizeDown, REALSIZE_WIRES, layoutnumber-1_4, 1_4, SUBCOMM_MPI, req2,  ierr7)
       if ((layoutnumber/=0    ).and.(Buffer%RecSizeDown/=0)) & !syncDown
       call MPI_IRECV (Buffer%RecDown(1), &
-      Buffer%RecSizeDown, REALSIZE_wires, layoutnumber-1_4, 2_4, SUBCOMM_MPI, req21,  ierr8)
+      Buffer%RecSizeDown, REALSIZE_WIRES, layoutnumber-1_4, 2_4, SUBCOMM_MPI, req21,  ierr8)
 
       !
       if ((layoutnumber/=num_procs-1).and.(Buffer%RecSizeUp/=0))    call MPI_WAIT(req1 ,status1,ierr9)
@@ -1145,8 +1145,8 @@ contains
       type(XYZlimit_t), dimension(1:6) :: sggalloc,sggsweep
       integer(kind=4) :: layoutnumber
       integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
-      sggMiEz(sggalloc(iEz)%XI : sggalloc(iEz)%XE,sggalloc(iEz)%YI : sggalloc(iEz)%YE,sggalloc(iEz)%ZI : sggalloc(iEz)%ZE), &
-      sggMiHz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
+      sggMiEz(sggalloc(IEZ)%XI : sggalloc(IEZ)%XE,sggalloc(IEZ)%YI : sggalloc(IEZ)%YE,sggalloc(IEZ)%ZI : sggalloc(IEZ)%ZE), &
+      sggMiHz(sggalloc(IHZ)%XI : sggalloc(IHZ)%XE,sggalloc(IHZ)%YI : sggalloc(IHZ)%YE,sggalloc(IHZ)%ZI : sggalloc(IHZ)%ZE)
 
       integer(kind=4) :: j1,i1,jmed
       integer(kind=4) , intent(in) :: nummed
@@ -1164,8 +1164,8 @@ contains
       do jmed=1,NumMed
          if( Med( jmed)%Is%Anisotropic) then
             !!!Ez
-            Do j1=sggsweep(iEz)%YI,sggsweep(iEz)%YE
-               Do i1=sggsweep(iEz)%XI,sggsweep(iEz)%XE
+            do j1=sggsweep(IEZ)%YI,sggsweep(IEZ)%YE
+               do i1=sggsweep(IEZ)%XI,sggsweep(IEZ)%XE
                   if ((sggMiEz(i1,j1,   comZ)) == jmed)   then
                      FlushExtraInfoDown=.true.
                   end if
@@ -1181,8 +1181,8 @@ contains
                end do
             end do
             !!!Hz
-            Do j1=sggsweep(iHz)%YI,sggsweep(iHz)%YE
-               Do i1=sggsweep(iHz)%XI,sggsweep(iHz)%XE
+            do j1=sggsweep(IHZ)%YI,sggsweep(IHZ)%YE
+               do i1=sggsweep(IHZ)%XI,sggsweep(IHZ)%XE
                   if ((sggMiHz(i1,j1,   comZ)) == jmed)   then
                      FlushExtraInfoDown=.true.
                   end if
@@ -1200,8 +1200,8 @@ contains
          end if
          if(Med( jmed)%Is%SGBC .or. Med( jmed)%Is%Multiport .or. Med( jmed)%Is%AnisMultiport ) then
             !!!Hz
-            Do j1=sggsweep(iHz)%YI,sggsweep(iHz)%YE
-               Do i1=sggsweep(iHz)%XI,sggsweep(iHz)%XE
+            do j1=sggsweep(IHZ)%YI,sggsweep(IHZ)%YE
+               do i1=sggsweep(IHZ)%XI,sggsweep(IHZ)%XE
                   if ((sggMiHz(i1,j1,   comZ)) == jmed) then
                      FlushExtraInfoDown  = .true.
                   end if
@@ -1238,17 +1238,17 @@ contains
    subroutine InitMPI_Cray( layoutnumber, num_procs, sggsweep, sggalloc, PBCDown, PBCUp, &
    Ex, Ey, Ez, Hx, Hy, Hz)
       !---------------- inputs -----------------------------------------------------------------------
-      type( XYZlimit_t), dimension( 1: 6), intent( IN) :: sggalloc, sggsweep
-      real(kind = RKIND), intent( IN), target :: &
-      Hx( sggalloc( iHx)%XI: sggalloc( iHx)%XE, sggalloc( iHx)%YI: sggalloc( iHx)%YE, sggalloc( iHx)%ZI: sggalloc( iHx)%ZE), &
-      Hy( sggalloc( iHy)%XI: sggalloc( iHy)%XE, sggalloc( iHy)%YI: sggalloc( iHy)%YE, sggalloc( iHy)%ZI: sggalloc( iHy)%ZE), &
-      Hz( sggalloc( iHz)%XI: sggalloc( iHz)%XE, sggalloc( iHz)%YI: sggalloc( iHz)%YE, sggalloc( iHz)%ZI: sggalloc( iHz)%ZE)
-      real(kind=RKIND)   , intent( IN),target :: &
+      type( XYZlimit_t), dimension( 1: 6), intent( in) :: sggalloc, sggsweep
+      real(kind = RKIND), intent( in), target :: &
+      Hx( sggalloc( IHX)%XI: sggalloc( IHX)%XE, sggalloc( IHX)%YI: sggalloc( IHX)%YE, sggalloc( IHX)%ZI: sggalloc( IHX)%ZE), &
+      Hy( sggalloc( IHY)%XI: sggalloc( IHY)%XE, sggalloc( IHY)%YI: sggalloc( IHY)%YE, sggalloc( IHY)%ZI: sggalloc( IHY)%ZE), &
+      Hz( sggalloc( IHZ)%XI: sggalloc( IHZ)%XE, sggalloc( IHZ)%YI: sggalloc( IHZ)%YE, sggalloc( IHZ)%ZI: sggalloc( IHZ)%ZE)
+      real(kind=RKIND)   , intent( in),target :: &
       Ex( sggalloc( iEx)%XI: sggalloc( iEx)%XE, sggalloc( iEx)%YI: sggalloc( iEx)%YE, sggalloc( iEx)%ZI: sggalloc( iEx)%ZE), &
       Ey( sggalloc( iEy)%XI: sggalloc( iEy)%XE, sggalloc( iEy)%YI: sggalloc( iEy)%YE, sggalloc( iEy)%ZI: sggalloc( iEy)%ZE), &
-      Ez( sggalloc( iEz)%XI: sggalloc( iEz)%XE, sggalloc( iEz)%YI: sggalloc( iEz)%YE, sggalloc( iEz)%ZI: sggalloc( iEz)%ZE)
-      integer( kind = 4), intent( IN) :: layoutnumber, num_procs
-      logical, intent( IN) :: PBCDown, PBCUp
+      Ez( sggalloc( IEZ)%XI: sggalloc( IEZ)%XE, sggalloc( IEZ)%YI: sggalloc( IEZ)%YE, sggalloc( IEZ)%ZI: sggalloc( IEZ)%ZE)
+      integer( kind = 4), intent( in) :: layoutnumber, num_procs
+      logical, intent( in) :: PBCDown, PBCUp
       !---------------- variables locales ------------------------------------------------------------
       type( t_databuf_t), pointer :: databufH, databufE
       !---------------- empieza InitMPI_Cray ---------------------------------------------------------
@@ -1257,29 +1257,29 @@ contains
       ExXE=sggalloc(iEx)%XE
       EyXI=sggalloc(iEy)%XI
       EyXE=sggalloc(iEy)%XE
-      EzXI=sggalloc(iEz)%XI
-      EzXE=sggalloc(iEz)%XE
+      EzXI=sggalloc(IEZ)%XI
+      EzXE=sggalloc(IEZ)%XE
       !--->
       ExYI=sggalloc(iEx)%YI
       ExYE=sggalloc(iEx)%YE
       EyYI=sggalloc(iEy)%YI
       EyYE=sggalloc(iEy)%YE
-      EzYI=sggalloc(iEz)%YI
-      EzYE=sggalloc(iEz)%YE
+      EzYI=sggalloc(IEZ)%YI
+      EzYE=sggalloc(IEZ)%YE
       !--->
-      HxXI=sggalloc(iHx)%XI
-      HxXE=sggalloc(iHx)%XE
-      HyXI=sggalloc(iHy)%XI
-      HyXE=sggalloc(iHy)%XE
-      HzXI=sggalloc(iHz)%XI
-      HzXE=sggalloc(iHz)%XE
+      HxXI=sggalloc(IHX)%XI
+      HxXE=sggalloc(IHX)%XE
+      HyXI=sggalloc(IHY)%XI
+      HyXE=sggalloc(IHY)%XE
+      HzXI=sggalloc(IHZ)%XI
+      HzXE=sggalloc(IHZ)%XE
       !--->
-      HxYI=sggalloc(iHx)%YI
-      HxYE=sggalloc(iHx)%YE
-      HyYI=sggalloc(iHy)%YI
-      HyYE=sggalloc(iHy)%YE
-      HzYI=sggalloc(iHz)%YI
-      HzYE=sggalloc(iHz)%YE
+      HxYI=sggalloc(IHX)%YI
+      HxYE=sggalloc(IHX)%YE
+      HyYI=sggalloc(IHY)%YI
+      HyYE=sggalloc(IHY)%YE
+      HzYI=sggalloc(IHZ)%YI
+      HzYE=sggalloc(IHZ)%YE
       !--->
       sizeEx=(ExXE-ExXI+1)*(ExYE-ExYI+1)
       sizeEy=(EyXE-EyXI+1)*(EyYE-EyYI+1)
@@ -1289,8 +1289,8 @@ contains
       sizeHy=(HyXE-HyXI+1)*(HyYE-HyYI+1)
       sizeHz=(HzXE-HzXI+1)*(HzYE-HzYI+1)
       !--->
-      ComZ=sggsweep(iHx)%ZI !both Hx and Hy coincide in this
-      FinZ=sggsweep(iHx)%ZE
+      ComZ=sggsweep(IHX)%ZI !both Hx and Hy coincide in this
+      FinZ=sggsweep(IHX)%ZE
       !--->
       !jag: bug Antares mas de 65295 steps
       databuf_SetH%syncUp = layoutnumber /= (num_procs-1)
@@ -1420,7 +1420,7 @@ contains
       end if
       !---------------- acaba InitMPI_Cray -----------------------------------------------------------
       return
-   endsubroutine InitMPI_Cray
+   end subroutine InitMPI_Cray
    !**************************************************************************************************
    subroutine FlushMPI_H_Cray
       !---------------- variables locales ------------------------------------------------------------
@@ -1465,10 +1465,10 @@ contains
    contains
       subroutine MPI_VAMOS_ALLA_Hup( databufH, req, reqb)
          !---------------- inputs --------------------------------------------------------------------
-         type( t_databuf_t), intent( IN) :: databufH
+         type( t_databuf_t), intent( in) :: databufH
          !---------------- outputs -------------------------------------------------------------------
-         integer, dimension( 4), intent( OUT) :: req
-         integer, dimension( 2), intent( OUT) :: reqb
+         integer, dimension( 4), intent( out) :: req
+         integer, dimension( 2), intent( out) :: reqb
          integer :: ierr
          !---------------- empieza MPI_VAMOS_ALLA_Hup ------------------------------------------------
          call MPI_IRECV( databufH%buf_x_rx, databufH%sizex, REALSIZE, databufH%ip_target, 1_4, SUBCOMM_MPI, req( 1), ierr)
@@ -1482,14 +1482,14 @@ contains
          end if
          !---------------- acaba MPI_VAMOS_ALLA_Hup --------------------------------------------------
          return
-      endsubroutine MPI_VAMOS_ALLA_Hup
+      end subroutine MPI_VAMOS_ALLA_Hup
       !***********************************************************************************************
       subroutine MPI_VAMOS_ALLA_Hdown( databufH, req, reqb)
          !---------------- inputs --------------------------------------------------------------------
-         type( t_databuf_t), intent( IN) :: databufH
+         type( t_databuf_t), intent( in) :: databufH
          !---------------- outputs -------------------------------------------------------------------
-         integer, dimension( 4), intent( OUT) :: req
-         integer, dimension( 2), intent( OUT) :: reqb
+         integer, dimension( 4), intent( out) :: req
+         integer, dimension( 2), intent( out) :: reqb
          integer :: ierr
          !---------------- empieza MPI_VAMOS_ALLA_Hdown ----------------------------------------------
          call MPI_ISEND( databufH%buf_x_tx, databufH%sizex, REALSIZE, databufH%ip_target, 1_4, SUBCOMM_MPI, req( 1), ierr)
@@ -1503,9 +1503,9 @@ contains
          end if
          !---------------- acaba MPI_VAMOS_ALLA_Hdown ------------------------------------------------
          return
-      endsubroutine MPI_VAMOS_ALLA_Hdown
+      end subroutine MPI_VAMOS_ALLA_Hdown
       !---------------- acaba FlushMPI_H -------------------------------------------------------------
-   endsubroutine FlushMPI_H_Cray
+   end subroutine FlushMPI_H_Cray
    !**************************************************************************************************
    subroutine FlushMPI_E_Cray
       !---------------- variables locales ------------------------------------------------------------
@@ -1548,10 +1548,10 @@ contains
    contains
       subroutine MPI_VAMOS_ALLA_Eup( databufE, req, reqb)
          !---------------- inputs --------------------------------------------------------------------
-         type( t_databuf_t), intent( IN) :: databufE
+         type( t_databuf_t), intent( in) :: databufE
          !---------------- outputs -------------------------------------------------------------------
-         integer, dimension( 2), intent( OUT) :: req
-         integer, dimension( 4), intent( OUT) :: reqb
+         integer, dimension( 2), intent( out) :: req
+         integer, dimension( 4), intent( out) :: reqb
          integer :: ierr
          !---------------- empieza MPI_VAMOS_ALLA_Eup ------------------------------------------------
          if( databufE%FlushExtraInfo) then
@@ -1566,14 +1566,14 @@ contains
          end if
          !---------------- acaba MPI_VAMOS_ALLA_Eup --------------------------------------------------
          return
-      endsubroutine MPI_VAMOS_ALLA_Eup
+      end subroutine MPI_VAMOS_ALLA_Eup
       !***********************************************************************************************
       subroutine MPI_VAMOS_ALLA_Edown( databufE, req, reqb)
          !---------------- inputs --------------------------------------------------------------------
-         type( t_databuf_t), intent( IN) :: databufE
+         type( t_databuf_t), intent( in) :: databufE
          !---------------- outputs -------------------------------------------------------------------
-         integer, dimension( 2), intent( OUT) :: req
-         integer, dimension( 4), intent( OUT) :: reqb
+         integer, dimension( 2), intent( out) :: req
+         integer, dimension( 4), intent( out) :: reqb
          integer :: ierr
          !---------------- empieza MPI_VAMOS_ALLA_Edown ----------------------------------------------
          if( databufE%FlushExtraInfo) then
@@ -1588,30 +1588,30 @@ contains
          end if
          !---------------- acaba MPI_VAMOS_ALLA_Edown ------------------------------------------------
          return
-      endsubroutine MPI_VAMOS_ALLA_Edown
+      end subroutine MPI_VAMOS_ALLA_Edown
       !---------------- acaba FlushMPI_E -------------------------------------------------------------
-   endsubroutine FlushMPI_E_Cray
+   end subroutine FlushMPI_E_Cray
    !**************************************************************************************************
    !--->
    subroutine InitExtraFlushMPI_Cray( layoutnumber, sggsweep, sggalloc, med, nummed, sggmiez, sggMiHz, &
    Ex, Ey, Ez, Hx, Hy, Hz,therearemurborders)
       !---------------- inputs -----------------------------------------------------------------------
       logical, intent(in) :: therearemurborders
-      type( XYZlimit_t), dimension( 1: 6), intent( IN) :: sggalloc, sggsweep
-      integer( kind = 4), intent( IN) :: layoutnumber
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), intent( IN) :: &
-      sggMiEz( sggalloc( iEz)%XI: sggalloc( iEz)%XE, sggalloc( iEz)%YI: sggalloc( iEz)%YE, sggalloc( iEz)%ZI: sggalloc( iEz)%ZE), &
-      sggMiHz( sggalloc( iHz)%XI: sggalloc( iHz)%XE, sggalloc( iHz)%YI: sggalloc( iHz)%YE, sggalloc( iHz)%ZI: sggalloc( iHz)%ZE)
-      real(kind=RKIND), intent( IN), target :: &
-      Hx( sggalloc( iHx)%XI: sggalloc( iHx)%XE, sggalloc( iHx)%YI: sggalloc( iHx)%YE, sggalloc( iHx)%ZI: sggalloc( iHx)%ZE), &
-      Hy( sggalloc( iHy)%XI: sggalloc( iHy)%XE, sggalloc( iHy)%YI: sggalloc( iHy)%YE, sggalloc( iHy)%ZI: sggalloc( iHy)%ZE), &
-      Hz( sggalloc( iHz)%XI: sggalloc( iHz)%XE, sggalloc( iHz)%YI: sggalloc( iHz)%YE, sggalloc( iHz)%ZI: sggalloc( iHz)%ZE)
-      real(kind=RKIND), intent( IN), target :: &
+      type( XYZlimit_t), dimension( 1: 6), intent( in) :: sggalloc, sggsweep
+      integer( kind = 4), intent( in) :: layoutnumber
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), intent( in) :: &
+      sggMiEz( sggalloc( IEZ)%XI: sggalloc( IEZ)%XE, sggalloc( IEZ)%YI: sggalloc( IEZ)%YE, sggalloc( IEZ)%ZI: sggalloc( IEZ)%ZE), &
+      sggMiHz( sggalloc( IHZ)%XI: sggalloc( IHZ)%XE, sggalloc( IHZ)%YI: sggalloc( IHZ)%YE, sggalloc( IHZ)%ZI: sggalloc( IHZ)%ZE)
+      real(kind=RKIND), intent( in), target :: &
+      Hx( sggalloc( IHX)%XI: sggalloc( IHX)%XE, sggalloc( IHX)%YI: sggalloc( IHX)%YE, sggalloc( IHX)%ZI: sggalloc( IHX)%ZE), &
+      Hy( sggalloc( IHY)%XI: sggalloc( IHY)%XE, sggalloc( IHY)%YI: sggalloc( IHY)%YE, sggalloc( IHY)%ZI: sggalloc( IHY)%ZE), &
+      Hz( sggalloc( IHZ)%XI: sggalloc( IHZ)%XE, sggalloc( IHZ)%YI: sggalloc( IHZ)%YE, sggalloc( IHZ)%ZI: sggalloc( IHZ)%ZE)
+      real(kind=RKIND), intent( in), target :: &
       Ex( sggalloc( iEx)%XI: sggalloc( iEx)%XE, sggalloc( iEx)%YI: sggalloc( iEx)%YE, sggalloc( iEx)%ZI: sggalloc( iEx)%ZE), &
       Ey( sggalloc( iEy)%XI: sggalloc( iEy)%XE, sggalloc( iEy)%YI: sggalloc( iEy)%YE, sggalloc( iEy)%ZI: sggalloc( iEy)%ZE), &
-      Ez( sggalloc( iEz)%XI: sggalloc( iEz)%XE, sggalloc( iEz)%YI: sggalloc( iEz)%YE, sggalloc( iEz)%ZI: sggalloc( iEz)%ZE)
-      integer( kind = 4), intent( IN) :: nummed
-      type( MediaData_t), dimension( 0: NumMed), intent( IN) :: med
+      Ez( sggalloc( IEZ)%XI: sggalloc( IEZ)%XE, sggalloc( IEZ)%YI: sggalloc( IEZ)%YE, sggalloc( IEZ)%ZI: sggalloc( IEZ)%ZE)
+      integer( kind = 4), intent( in) :: nummed
+      type( MediaData_t), dimension( 0: NumMed), intent( in) :: med
       !---------------- variables locales ------------------------------------------------------------
       integer( kind = 4) :: j1, i1, jmed
       type( t_databuf_t), pointer :: databufH, databufE
@@ -1631,8 +1631,8 @@ contains
       do jmed = 1, NumMed
          if( Med( jmed)%Is%Anisotropic) then
             !!!Ez
-            do j1 = sggsweep( iEz)%YI, sggsweep( iEz)%YE
-               do i1=sggsweep(iEz)%XI,sggsweep(iEz)%XE
+            do j1 = sggsweep( IEZ)%YI, sggsweep( IEZ)%YE
+               do i1=sggsweep(IEZ)%XI,sggsweep(IEZ)%XE
                   if( (sggMiEz(i1, j1, comZ)) == jmed) then
                           FlushExtraInfoDown =.true.
                   end if
@@ -1648,8 +1648,8 @@ contains
                end do
             end do
             !!!Hz
-            do j1=sggsweep(iHz)%YI,sggsweep(iHz)%YE
-               do i1=sggsweep(iHz)%XI,sggsweep(iHz)%XE
+            do j1=sggsweep(IHZ)%YI,sggsweep(IHZ)%YE
+               do i1=sggsweep(IHZ)%XI,sggsweep(IHZ)%XE
                   if ((sggMiHz(i1,j1,   comZ)) == jmed) then
                        FlushExtraInfoDown  = .true.
                   end if
@@ -1667,8 +1667,8 @@ contains
          end if
          if(Med( jmed)%Is%SGBC .or. Med( jmed)%Is%Multiport .or. Med( jmed)%Is%AnisMultiport) then
             !!!Hz
-            do j1=sggsweep(iHz)%YI,sggsweep(iHz)%YE
-               do i1=sggsweep(iHz)%XI,sggsweep(iHz)%XE
+            do j1=sggsweep(IHZ)%YI,sggsweep(IHZ)%YE
+               do i1=sggsweep(IHZ)%XI,sggsweep(IHZ)%XE
                   if ((sggMiHz(i1,j1,   comZ)) == jmed) then
                      FlushExtraInfoDown  = .true.
                   end if
@@ -1732,7 +1732,7 @@ contains
       end if
       !---------------- acaba InitExtraFlushMPI_Cray ------------------------------------------------
       return
-   endsubroutine InitExtraFlushMPI_Cray
+   end subroutine InitExtraFlushMPI_Cray
   
     
 #endif
@@ -1756,7 +1756,7 @@ contains
 
 
     ! local
-    integer(kind=4),parameter              :: number=2
+    integer(kind=4),parameter              :: NUMBER=2
     integer(kind=4)                        :: ierr, i
     integer(kind=4)                        :: block_lengths(1:number)
     integer(kind=MPI_ADDRESS_KIND) :: displacements(1:number)

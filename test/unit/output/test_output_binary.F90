@@ -92,7 +92,7 @@ integer function test_output_binary_append_real64() bind(c) result(err)
 
    type(output_artifact_t) :: artifact
    integer :: file_size, ios, status
-   character(len=*), parameter :: path = 'testing binary/append-real64.bin'
+   character(len=*), parameter :: PATH = 'testing binary/append-real64.bin'
 
    err = 0
    artifact%kind = OUTPUT_ARTIFACT_BINARY
@@ -124,7 +124,7 @@ integer function test_output_binary_append_empty_real64() bind(c) result(err)
    type(output_artifact_t) :: artifact
    real(real64), allocatable :: values(:)
    integer :: file_size, ios, status
-   character(len=*), parameter :: path = 'testing binary/append-empty-real64.bin'
+   character(len=*), parameter :: PATH = 'testing binary/append-empty-real64.bin'
 
    err = 0
    artifact%kind = OUTPUT_ARTIFACT_BINARY

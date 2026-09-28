@@ -92,7 +92,7 @@ module Solver_m
       real(kind=rkind), pointer, dimension(:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
       real(kind=rkind), pointer, dimension(:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       type(constants_t) :: g
-      real(kind=RKIND_tiempo) :: lastexecutedtime
+      real(kind=RKIND_TIEMPO) :: lastexecutedtime
       real(kind=RKIND) :: maxSourceValue
 
       integer(kind=4) :: initialtimestep, lastexecutedtimestep, ini_save, n_info, n
@@ -310,10 +310,10 @@ module Solver_m
       allocate ( &
       this%Ex(this%sgg%Alloc(iEx)%XI : this%sgg%Alloc(iEx)%XE,this%sgg%Alloc(iEx)%YI : this%sgg%Alloc(iEx)%YE,this%sgg%Alloc(iEx)%ZI : this%sgg%Alloc(iEx)%ZE),&
       this%Ey(this%sgg%Alloc(iEy)%XI : this%sgg%Alloc(iEy)%XE,this%sgg%Alloc(iEy)%YI : this%sgg%Alloc(iEy)%YE,this%sgg%Alloc(iEy)%ZI : this%sgg%Alloc(iEy)%ZE),&
-      this%Ez(this%sgg%Alloc(iEz)%XI : this%sgg%Alloc(iEz)%XE,this%sgg%Alloc(iEz)%YI : this%sgg%Alloc(iEz)%YE,this%sgg%Alloc(iEz)%ZI : this%sgg%Alloc(iEz)%ZE),&
-      this%Hx(this%sgg%Alloc(iHx)%XI : this%sgg%Alloc(iHx)%XE,this%sgg%Alloc(iHx)%YI : this%sgg%Alloc(iHx)%YE,this%sgg%Alloc(iHx)%ZI : this%sgg%Alloc(iHx)%ZE),&
-      this%Hy(this%sgg%Alloc(iHy)%XI : this%sgg%Alloc(iHy)%XE,this%sgg%Alloc(iHy)%YI : this%sgg%Alloc(iHy)%YE,this%sgg%Alloc(iHy)%ZI : this%sgg%Alloc(iHy)%ZE),&
-      this%Hz(this%sgg%Alloc(iHz)%XI : this%sgg%Alloc(iHz)%XE,this%sgg%Alloc(iHz)%YI : this%sgg%Alloc(iHz)%YE,this%sgg%Alloc(iHz)%ZI : this%sgg%Alloc(iHz)%ZE))
+      this%Ez(this%sgg%Alloc(IEZ)%XI : this%sgg%Alloc(IEZ)%XE,this%sgg%Alloc(IEZ)%YI : this%sgg%Alloc(IEZ)%YE,this%sgg%Alloc(IEZ)%ZI : this%sgg%Alloc(IEZ)%ZE),&
+      this%Hx(this%sgg%Alloc(IHX)%XI : this%sgg%Alloc(IHX)%XE,this%sgg%Alloc(IHX)%YI : this%sgg%Alloc(IHX)%YE,this%sgg%Alloc(IHX)%ZI : this%sgg%Alloc(IHX)%ZE),&
+      this%Hy(this%sgg%Alloc(IHY)%XI : this%sgg%Alloc(IHY)%XE,this%sgg%Alloc(IHY)%YI : this%sgg%Alloc(IHY)%YE,this%sgg%Alloc(IHY)%ZI : this%sgg%Alloc(IHY)%ZE),&
+      this%Hz(this%sgg%Alloc(IHZ)%XI : this%sgg%Alloc(IHZ)%XE,this%sgg%Alloc(IHZ)%YI : this%sgg%Alloc(IHZ)%YE,this%sgg%Alloc(IHZ)%ZI : this%sgg%Alloc(IHZ)%ZE))
       this%Ex = 0.0_RKIND; this%Ey = 0.0_RKIND; this%Ez = 0.0_RKIND; this%Hx = 0.0_RKIND; this%Hy = 0.0_RKIND; this%Hz = 0.0_RKIND
    end subroutine
 
@@ -321,18 +321,18 @@ module Solver_m
       class(solver_t) :: this
       integer :: i
       allocate ( & 
-      this%dxe (this%sgg%ALLOC(iHx)%XI : this%sgg%ALLOC(iHx)%XE), &
-      this%dye (this%sgg%ALLOC(iHy)%YI : this%sgg%ALLOC(iHy)%YE), &
-      this%dze (this%sgg%ALLOC(iHz)%ZI : this%sgg%ALLOC(iHz)%ZE), &
-      this%Idxe(this%sgg%ALLOC(iHx)%XI : this%sgg%ALLOC(iHx)%XE), &
-      this%Idye(this%sgg%ALLOC(iHy)%YI : this%sgg%ALLOC(iHy)%YE), &
-      this%Idze(this%sgg%ALLOC(iHz)%ZI : this%sgg%ALLOC(iHz)%ZE), &
+      this%dxe (this%sgg%ALLOC(IHX)%XI : this%sgg%ALLOC(IHX)%XE), &
+      this%dye (this%sgg%ALLOC(IHY)%YI : this%sgg%ALLOC(IHY)%YE), &
+      this%dze (this%sgg%ALLOC(IHZ)%ZI : this%sgg%ALLOC(IHZ)%ZE), &
+      this%Idxe(this%sgg%ALLOC(IHX)%XI : this%sgg%ALLOC(IHX)%XE), &
+      this%Idye(this%sgg%ALLOC(IHY)%YI : this%sgg%ALLOC(IHY)%YE), &
+      this%Idze(this%sgg%ALLOC(IHZ)%ZI : this%sgg%ALLOC(IHZ)%ZE), &
       this%dxh (this%sgg%ALLOC(iEx)%XI : this%sgg%ALLOC(iEx)%XE), &
       this%dyh (this%sgg%ALLOC(iEy)%YI : this%sgg%ALLOC(iEy)%YE), &
-      this%dzh (this%sgg%ALLOC(iEz)%ZI : this%sgg%ALLOC(iEz)%ZE), &
+      this%dzh (this%sgg%ALLOC(IEZ)%ZI : this%sgg%ALLOC(IEZ)%ZE), &
       this%Idxh(this%sgg%ALLOC(iEx)%XI : this%sgg%ALLOC(iEx)%XE), &
       this%Idyh(this%sgg%ALLOC(iEy)%YI : this%sgg%ALLOC(iEy)%YE), &
-      this%Idzh(this%sgg%ALLOC(iEz)%ZI : this%sgg%ALLOC(iEz)%ZE))
+      this%Idzh(this%sgg%ALLOC(IEZ)%ZI : this%sgg%ALLOC(IEZ)%ZE))
       this%dxe=-1.0e10_RKIND
       this%dye=-1.0e10_RKIND
       this%dze=-1.0e10_RKIND
@@ -340,13 +340,13 @@ module Solver_m
       this%dyh=-1.0e10_RKIND
       this%dzh=-1.0e10_RKIND
       
-      do i=this%sgg%ALLOC(iHx)%XI,this%sgg%ALLOC(iHx)%XE
+      do i=this%sgg%ALLOC(IHX)%XI,this%sgg%ALLOC(IHX)%XE
          this%dxe(i)=this%sgg%DX(i)
       end do
-      do i=this%sgg%ALLOC(iHy)%YI,this%sgg%ALLOC(iHy)%YE
+      do i=this%sgg%ALLOC(IHY)%YI,this%sgg%ALLOC(IHY)%YE
          this%dye(i)=this%sgg%DY(i)
       end do
-      do i=this%sgg%ALLOC(iHz)%ZI,this%sgg%ALLOC(iHz)%ZE
+      do i=this%sgg%ALLOC(IHZ)%ZI,this%sgg%ALLOC(IHZ)%ZE
          this%dze(i)=this%sgg%DZ(i)
       end do
       do i=this%sgg%ALLOC(iEx)%XI,this%sgg%ALLOC(iEx)%XE
@@ -355,7 +355,7 @@ module Solver_m
       do i=this%sgg%ALLOC(iEy)%YI,this%sgg%ALLOC(iEy)%YE
          this%dyh(i)=(this%sgg%DY(i)+this%sgg%DY(i-1))/2.0_RKIND
       end do
-      do i=this%sgg%ALLOC(iEz)%ZI,this%sgg%ALLOC(iEz)%ZE
+      do i=this%sgg%ALLOC(IEZ)%ZI,this%sgg%ALLOC(IEZ)%ZE
          this%dzh(i)=(this%sgg%DZ(i)+this%sgg%DZ(i-1))/2.0_RKIND
       end do
 
@@ -380,13 +380,13 @@ module Solver_m
          field => this%Ex
       case(iEy)
          field => this%Ey
-      case(iEz)
+      case(IEZ)
          field => this%Ez
-      case(iHx)
+      case(IHX)
          field => this%Hx
-      case(iHy)
+      case(IHY)
          field => this%Hy
-      case(iHz)
+      case(IHZ)
          field => this%Hz
       end select
       do i = i_range(1), i_range(2)
@@ -410,13 +410,13 @@ module Solver_m
          field => this%Ex
       case(iEy)
          field => this%Ey
-      case(iEz)
+      case(IEZ)
          field => this%Ez
-      case(iHx)
+      case(IHX)
          field => this%Hx
-      case(iHy)
+      case(IHY)
          field => this%Hy
-      case(iHz)
+      case(IHZ)
          field => this%Hz
       end select
       res = field(fi,fj,fk)
@@ -438,7 +438,7 @@ module Solver_m
       real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension(:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
 
-      real(kind=RKIND_tiempo) :: ultimodt
+      real(kind=RKIND_TIEMPO) :: ultimodt
       
       character(len=bufsize) :: dubuf
       logical :: attinformado = .false.
@@ -495,7 +495,7 @@ module Solver_m
          Ex=0.0_RKIND; Ey=0.0_RKIND; Ez=0.0_RKIND; Hx=0.0_RKIND; Hy=0.0_RKIND; Hz=0.0_RKIND
          this%initialtimestep=0 
          this%lastexecutedtimestep=0
-         this%lastexecutedtime=0.0_RKIND_tiempo
+         this%lastexecutedtime=0.0_RKIND_TIEMPO
       else
          write(dubuf,*) 'Init processing resuming data'
          call print11(this%control%layoutnumber,dubuf)
@@ -667,19 +667,19 @@ contains
          !
 
          !No tocar. Dejar como estan alocateados
-         b%dxe%XI=this%sgg%alloc(iHx)%XI
-         b%dxe%XE=this%sgg%alloc(iHx)%XE
-         b%dye%YI=this%sgg%alloc(iHy)%YI
-         b%dye%YE=this%sgg%alloc(iHy)%YE
-         b%dze%ZI=this%sgg%alloc(iHz)%ZI
-         b%dze%ZE=this%sgg%alloc(iHz)%ZE
+         b%dxe%XI=this%sgg%alloc(IHX)%XI
+         b%dxe%XE=this%sgg%alloc(IHX)%XE
+         b%dye%YI=this%sgg%alloc(IHY)%YI
+         b%dye%YE=this%sgg%alloc(IHY)%YE
+         b%dze%ZI=this%sgg%alloc(IHZ)%ZI
+         b%dze%ZE=this%sgg%alloc(IHZ)%ZE
          !
          b%dxh%XI=this%sgg%alloc(iEx)%XI
          b%dxh%XE=this%sgg%alloc(iEx)%XE
          b%dyh%YI=this%sgg%alloc(iEy)%YI
          b%dyh%YE=this%sgg%alloc(iEy)%YE
-         b%dzh%ZI=this%sgg%alloc(iEz)%ZI
-         b%dzh%ZE=this%sgg%alloc(iEz)%ZE
+         b%dzh%ZI=this%sgg%alloc(IEZ)%ZI
+         b%dzh%ZE=this%sgg%alloc(IEZ)%ZE
 
          !
          !No tocar. Dejar como estan alocateados
@@ -687,43 +687,43 @@ contains
          b%Ex%XE=this%sgg%Alloc(iEx)%XE
          b%Ey%XI=this%sgg%Alloc(iEy)%XI
          b%Ey%XE=this%sgg%Alloc(iEy)%XE
-         b%Ez%XI=this%sgg%Alloc(iEz)%XI
-         b%Ez%XE=this%sgg%Alloc(iEz)%XE
+         b%Ez%XI=this%sgg%Alloc(IEZ)%XI
+         b%Ez%XE=this%sgg%Alloc(IEZ)%XE
          !
-         b%Hx%XI=this%sgg%Alloc(iHx)%XI
-         b%Hx%XE=this%sgg%Alloc(iHx)%XE
-         b%Hy%XI=this%sgg%Alloc(iHy)%XI
-         b%Hy%XE=this%sgg%Alloc(iHy)%XE
-         b%Hz%XI=this%sgg%Alloc(iHz)%XI
-         b%Hz%XE=this%sgg%Alloc(iHz)%XE
+         b%Hx%XI=this%sgg%Alloc(IHX)%XI
+         b%Hx%XE=this%sgg%Alloc(IHX)%XE
+         b%Hy%XI=this%sgg%Alloc(IHY)%XI
+         b%Hy%XE=this%sgg%Alloc(IHY)%XE
+         b%Hz%XI=this%sgg%Alloc(IHZ)%XI
+         b%Hz%XE=this%sgg%Alloc(IHZ)%XE
          !
          b%Ex%YI=this%sgg%Alloc(iEx)%YI
          b%Ex%YE=this%sgg%Alloc(iEx)%YE
          b%Ey%YI=this%sgg%Alloc(iEy)%YI
          b%Ey%YE=this%sgg%Alloc(iEy)%YE
-         b%Ez%YI=this%sgg%Alloc(iEz)%YI
-         b%Ez%YE=this%sgg%Alloc(iEz)%YE
+         b%Ez%YI=this%sgg%Alloc(IEZ)%YI
+         b%Ez%YE=this%sgg%Alloc(IEZ)%YE
          !
-         b%Hx%YI=this%sgg%Alloc(iHx)%YI
-         b%Hx%YE=this%sgg%Alloc(iHx)%YE
-         b%Hy%YI=this%sgg%Alloc(iHy)%YI
-         b%Hy%YE=this%sgg%Alloc(iHy)%YE
-         b%Hz%YI=this%sgg%Alloc(iHz)%YI
-         b%Hz%YE=this%sgg%Alloc(iHz)%YE
+         b%Hx%YI=this%sgg%Alloc(IHX)%YI
+         b%Hx%YE=this%sgg%Alloc(IHX)%YE
+         b%Hy%YI=this%sgg%Alloc(IHY)%YI
+         b%Hy%YE=this%sgg%Alloc(IHY)%YE
+         b%Hz%YI=this%sgg%Alloc(IHZ)%YI
+         b%Hz%YE=this%sgg%Alloc(IHZ)%YE
          !
          b%Ex%ZI=this%sgg%Alloc(iEx)%ZI
          b%Ex%ZE=this%sgg%Alloc(iEx)%ZE
          b%Ey%ZI=this%sgg%Alloc(iEy)%ZI
          b%Ey%ZE=this%sgg%Alloc(iEy)%ZE
-         b%Ez%ZI=this%sgg%Alloc(iEz)%ZI
-         b%Ez%ZE=this%sgg%Alloc(iEz)%ZE
+         b%Ez%ZI=this%sgg%Alloc(IEZ)%ZI
+         b%Ez%ZE=this%sgg%Alloc(IEZ)%ZE
          !
-         b%Hx%ZI=this%sgg%Alloc(iHx)%ZI
-         b%Hx%ZE=this%sgg%Alloc(iHx)%ZE
-         b%Hy%ZI=this%sgg%Alloc(iHy)%ZI
-         b%Hy%ZE=this%sgg%Alloc(iHy)%ZE
-         b%Hz%ZI=this%sgg%Alloc(iHz)%ZI
-         b%Hz%ZE=this%sgg%Alloc(iHz)%ZE
+         b%Hx%ZI=this%sgg%Alloc(IHX)%ZI
+         b%Hx%ZE=this%sgg%Alloc(IHX)%ZE
+         b%Hy%ZI=this%sgg%Alloc(IHY)%ZI
+         b%Hy%ZE=this%sgg%Alloc(IHY)%ZE
+         b%Hz%ZI=this%sgg%Alloc(IHZ)%ZI
+         b%Hz%ZE=this%sgg%Alloc(IHZ)%ZE
          !
          !
          !
@@ -733,43 +733,43 @@ contains
          b%sggMiEx%XE=this%sgg%Alloc(iEx)%XE
          b%sggMiEy%XI=this%sgg%Alloc(iEy)%XI
          b%sggMiEy%XE=this%sgg%Alloc(iEy)%XE
-         b%sggMiEz%XI=this%sgg%Alloc(iEz)%XI
-         b%sggMiEz%XE=this%sgg%Alloc(iEz)%XE
+         b%sggMiEz%XI=this%sgg%Alloc(IEZ)%XI
+         b%sggMiEz%XE=this%sgg%Alloc(IEZ)%XE
          !
-         b%sggMiHx%XI=this%sgg%Alloc(iHx)%XI
-         b%sggMiHx%XE=this%sgg%Alloc(iHx)%XE
-         b%sggMiHy%XI=this%sgg%Alloc(iHy)%XI
-         b%sggMiHy%XE=this%sgg%Alloc(iHy)%XE
-         b%sggMiHz%XI=this%sgg%Alloc(iHz)%XI
-         b%sggMiHz%XE=this%sgg%Alloc(iHz)%XE
+         b%sggMiHx%XI=this%sgg%Alloc(IHX)%XI
+         b%sggMiHx%XE=this%sgg%Alloc(IHX)%XE
+         b%sggMiHy%XI=this%sgg%Alloc(IHY)%XI
+         b%sggMiHy%XE=this%sgg%Alloc(IHY)%XE
+         b%sggMiHz%XI=this%sgg%Alloc(IHZ)%XI
+         b%sggMiHz%XE=this%sgg%Alloc(IHZ)%XE
          !
          b%sggMiEx%YI=this%sgg%Alloc(iEx)%YI
          b%sggMiEx%YE=this%sgg%Alloc(iEx)%YE
          b%sggMiEy%YI=this%sgg%Alloc(iEy)%YI
          b%sggMiEy%YE=this%sgg%Alloc(iEy)%YE
-         b%sggMiEz%YI=this%sgg%Alloc(iEz)%YI
-         b%sggMiEz%YE=this%sgg%Alloc(iEz)%YE
+         b%sggMiEz%YI=this%sgg%Alloc(IEZ)%YI
+         b%sggMiEz%YE=this%sgg%Alloc(IEZ)%YE
          !
-         b%sggMiHx%YI=this%sgg%Alloc(iHx)%YI
-         b%sggMiHx%YE=this%sgg%Alloc(iHx)%YE
-         b%sggMiHy%YI=this%sgg%Alloc(iHy)%YI
-         b%sggMiHy%YE=this%sgg%Alloc(iHy)%YE
-         b%sggMiHz%YI=this%sgg%Alloc(iHz)%YI
-         b%sggMiHz%YE=this%sgg%Alloc(iHz)%YE
+         b%sggMiHx%YI=this%sgg%Alloc(IHX)%YI
+         b%sggMiHx%YE=this%sgg%Alloc(IHX)%YE
+         b%sggMiHy%YI=this%sgg%Alloc(IHY)%YI
+         b%sggMiHy%YE=this%sgg%Alloc(IHY)%YE
+         b%sggMiHz%YI=this%sgg%Alloc(IHZ)%YI
+         b%sggMiHz%YE=this%sgg%Alloc(IHZ)%YE
          !
          b%sggMiEx%ZI=this%sgg%Alloc(iEx)%ZI
          b%sggMiEx%ZE=this%sgg%Alloc(iEx)%ZE
          b%sggMiEy%ZI=this%sgg%Alloc(iEy)%ZI
          b%sggMiEy%ZE=this%sgg%Alloc(iEy)%ZE
-         b%sggMiEz%ZI=this%sgg%Alloc(iEz)%ZI
-         b%sggMiEz%ZE=this%sgg%Alloc(iEz)%ZE
+         b%sggMiEz%ZI=this%sgg%Alloc(IEZ)%ZI
+         b%sggMiEz%ZE=this%sgg%Alloc(IEZ)%ZE
          !
-         b%sggMiHx%ZI=this%sgg%Alloc(iHx)%ZI
-         b%sggMiHx%ZE=this%sgg%Alloc(iHx)%ZE
-         b%sggMiHy%ZI=this%sgg%Alloc(iHy)%ZI
-         b%sggMiHy%ZE=this%sgg%Alloc(iHy)%ZE
-         b%sggMiHz%ZI=this%sgg%Alloc(iHz)%ZI
-         b%sggMiHz%ZE=this%sgg%Alloc(iHz)%ZE
+         b%sggMiHx%ZI=this%sgg%Alloc(IHX)%ZI
+         b%sggMiHx%ZE=this%sgg%Alloc(IHX)%ZE
+         b%sggMiHy%ZI=this%sgg%Alloc(IHY)%ZI
+         b%sggMiHy%ZE=this%sgg%Alloc(IHY)%ZE
+         b%sggMiHz%ZI=this%sgg%Alloc(IHZ)%ZI
+         b%sggMiHz%ZE=this%sgg%Alloc(IHZ)%ZE
          !
          !
          !
@@ -777,86 +777,86 @@ contains
          b%sweepEx%XE=this%sgg%Sweep(iEx)%XE
          b%sweepEy%XI=this%sgg%Sweep(iEy)%XI
          b%sweepEy%XE=this%sgg%Sweep(iEy)%XE
-         b%sweepEz%XI=this%sgg%Sweep(iEz)%XI
-         b%sweepEz%XE=this%sgg%Sweep(iEz)%XE
+         b%sweepEz%XI=this%sgg%Sweep(IEZ)%XI
+         b%sweepEz%XE=this%sgg%Sweep(IEZ)%XE
          !
-         b%sweepHx%XI=this%sgg%Sweep(iHx)%XI
-         b%sweepHx%XE=this%sgg%Sweep(iHx)%XE
-         b%sweepHy%XI=this%sgg%Sweep(iHy)%XI
-         b%sweepHy%XE=this%sgg%Sweep(iHy)%XE
-         b%sweepHz%XI=this%sgg%Sweep(iHz)%XI
-         b%sweepHz%XE=this%sgg%Sweep(iHz)%XE
+         b%sweepHx%XI=this%sgg%Sweep(IHX)%XI
+         b%sweepHx%XE=this%sgg%Sweep(IHX)%XE
+         b%sweepHy%XI=this%sgg%Sweep(IHY)%XI
+         b%sweepHy%XE=this%sgg%Sweep(IHY)%XE
+         b%sweepHz%XI=this%sgg%Sweep(IHZ)%XI
+         b%sweepHz%XE=this%sgg%Sweep(IHZ)%XE
          !
          !
          b%sweepEx%YI=this%sgg%Sweep(iEx)%YI
          b%sweepEx%YE=this%sgg%Sweep(iEx)%YE
          b%sweepEy%YI=this%sgg%Sweep(iEy)%YI
          b%sweepEy%YE=this%sgg%Sweep(iEy)%YE
-         b%sweepEz%YI=this%sgg%Sweep(iEz)%YI
-         b%sweepEz%YE=this%sgg%Sweep(iEz)%YE
+         b%sweepEz%YI=this%sgg%Sweep(IEZ)%YI
+         b%sweepEz%YE=this%sgg%Sweep(IEZ)%YE
          !
-         b%sweepHx%YI=this%sgg%Sweep(iHx)%YI
-         b%sweepHx%YE=this%sgg%Sweep(iHx)%YE
-         b%sweepHy%YI=this%sgg%Sweep(iHy)%YI
-         b%sweepHy%YE=this%sgg%Sweep(iHy)%YE
-         b%sweepHz%YI=this%sgg%Sweep(iHz)%YI
-         b%sweepHz%YE=this%sgg%Sweep(iHz)%YE
+         b%sweepHx%YI=this%sgg%Sweep(IHX)%YI
+         b%sweepHx%YE=this%sgg%Sweep(IHX)%YE
+         b%sweepHy%YI=this%sgg%Sweep(IHY)%YI
+         b%sweepHy%YE=this%sgg%Sweep(IHY)%YE
+         b%sweepHz%YI=this%sgg%Sweep(IHZ)%YI
+         b%sweepHz%YE=this%sgg%Sweep(IHZ)%YE
          !
          b%sweepEx%ZI=this%sgg%Sweep(iEx)%ZI
          b%sweepEx%ZE=this%sgg%Sweep(iEx)%ZE
          b%sweepEy%ZI=this%sgg%Sweep(iEy)%ZI
          b%sweepEy%ZE=this%sgg%Sweep(iEy)%ZE
-         b%sweepEz%ZI=this%sgg%Sweep(iEz)%ZI
-         b%sweepEz%ZE=this%sgg%Sweep(iEz)%ZE
+         b%sweepEz%ZI=this%sgg%Sweep(IEZ)%ZI
+         b%sweepEz%ZE=this%sgg%Sweep(IEZ)%ZE
          !
-         b%sweepHx%ZI=this%sgg%Sweep(iHx)%ZI
-         b%sweepHx%ZE=this%sgg%Sweep(iHx)%ZE
-         b%sweepHy%ZI=this%sgg%Sweep(iHy)%ZI
-         b%sweepHy%ZE=this%sgg%Sweep(iHy)%ZE
-         b%sweepHz%ZI=this%sgg%Sweep(iHz)%ZI
-         b%sweepHz%ZE=this%sgg%Sweep(iHz)%ZE
+         b%sweepHx%ZI=this%sgg%Sweep(IHX)%ZI
+         b%sweepHx%ZE=this%sgg%Sweep(IHX)%ZE
+         b%sweepHy%ZI=this%sgg%Sweep(IHY)%ZI
+         b%sweepHy%ZE=this%sgg%Sweep(IHY)%ZE
+         b%sweepHz%ZI=this%sgg%Sweep(IHZ)%ZI
+         b%sweepHz%ZE=this%sgg%Sweep(IHZ)%ZE
          !
          b%sweepSINPMLEx%XI=this%sgg%SINPMLSweep(iEx)%XI
          b%sweepSINPMLEy%XI=this%sgg%SINPMLSweep(iEy)%XI
-         b%sweepSINPMLEz%XI=this%sgg%SINPMLSweep(iEz)%XI
-         b%sweepSINPMLHx%XI=this%sgg%SINPMLSweep(iHx)%XI
-         b%sweepSINPMLHy%XI=this%sgg%SINPMLSweep(iHy)%XI
-         b%sweepSINPMLHz%XI=this%sgg%SINPMLSweep(iHz)%XI
+         b%sweepSINPMLEz%XI=this%sgg%SINPMLSweep(IEZ)%XI
+         b%sweepSINPMLHx%XI=this%sgg%SINPMLSweep(IHX)%XI
+         b%sweepSINPMLHy%XI=this%sgg%SINPMLSweep(IHY)%XI
+         b%sweepSINPMLHz%XI=this%sgg%SINPMLSweep(IHZ)%XI
          !
          b%sweepSINPMLEx%XE=this%sgg%SINPMLSweep(iEx)%XE
          b%sweepSINPMLEy%XE=this%sgg%SINPMLSweep(iEy)%XE
-         b%sweepSINPMLEz%XE=this%sgg%SINPMLSweep(iEz)%XE
-         b%sweepSINPMLHx%XE=this%sgg%SINPMLSweep(iHx)%XE
-         b%sweepSINPMLHy%XE=this%sgg%SINPMLSweep(iHy)%XE
-         b%sweepSINPMLHz%XE=this%sgg%SINPMLSweep(iHz)%XE
+         b%sweepSINPMLEz%XE=this%sgg%SINPMLSweep(IEZ)%XE
+         b%sweepSINPMLHx%XE=this%sgg%SINPMLSweep(IHX)%XE
+         b%sweepSINPMLHy%XE=this%sgg%SINPMLSweep(IHY)%XE
+         b%sweepSINPMLHz%XE=this%sgg%SINPMLSweep(IHZ)%XE
          !
          b%sweepSINPMLEx%YI=this%sgg%SINPMLSweep(iEx)%YI
          b%sweepSINPMLEy%YI=this%sgg%SINPMLSweep(iEy)%YI
-         b%sweepSINPMLEz%YI=this%sgg%SINPMLSweep(iEz)%YI
-         b%sweepSINPMLHx%YI=this%sgg%SINPMLSweep(iHx)%YI
-         b%sweepSINPMLHy%YI=this%sgg%SINPMLSweep(iHy)%YI
-         b%sweepSINPMLHz%YI=this%sgg%SINPMLSweep(iHz)%YI
+         b%sweepSINPMLEz%YI=this%sgg%SINPMLSweep(IEZ)%YI
+         b%sweepSINPMLHx%YI=this%sgg%SINPMLSweep(IHX)%YI
+         b%sweepSINPMLHy%YI=this%sgg%SINPMLSweep(IHY)%YI
+         b%sweepSINPMLHz%YI=this%sgg%SINPMLSweep(IHZ)%YI
          !
          b%sweepSINPMLEx%YE=this%sgg%SINPMLSweep(iEx)%YE
          b%sweepSINPMLEy%YE=this%sgg%SINPMLSweep(iEy)%YE
-         b%sweepSINPMLEz%YE=this%sgg%SINPMLSweep(iEz)%YE
-         b%sweepSINPMLHx%YE=this%sgg%SINPMLSweep(iHx)%YE
-         b%sweepSINPMLHy%YE=this%sgg%SINPMLSweep(iHy)%YE
-         b%sweepSINPMLHz%YE=this%sgg%SINPMLSweep(iHz)%YE
+         b%sweepSINPMLEz%YE=this%sgg%SINPMLSweep(IEZ)%YE
+         b%sweepSINPMLHx%YE=this%sgg%SINPMLSweep(IHX)%YE
+         b%sweepSINPMLHy%YE=this%sgg%SINPMLSweep(IHY)%YE
+         b%sweepSINPMLHz%YE=this%sgg%SINPMLSweep(IHZ)%YE
          !
          b%sweepSINPMLEx%ZI=this%sgg%SINPMLSweep(iEx)%ZI
          b%sweepSINPMLEy%ZI=this%sgg%SINPMLSweep(iEy)%ZI
-         b%sweepSINPMLEz%ZI=this%sgg%SINPMLSweep(iEz)%ZI
-         b%sweepSINPMLHx%ZI=this%sgg%SINPMLSweep(iHx)%ZI
-         b%sweepSINPMLHy%ZI=this%sgg%SINPMLSweep(iHy)%ZI
-         b%sweepSINPMLHz%ZI=this%sgg%SINPMLSweep(iHz)%ZI
+         b%sweepSINPMLEz%ZI=this%sgg%SINPMLSweep(IEZ)%ZI
+         b%sweepSINPMLHx%ZI=this%sgg%SINPMLSweep(IHX)%ZI
+         b%sweepSINPMLHy%ZI=this%sgg%SINPMLSweep(IHY)%ZI
+         b%sweepSINPMLHz%ZI=this%sgg%SINPMLSweep(IHZ)%ZI
          !
          b%sweepSINPMLEx%ZE=this%sgg%SINPMLSweep(iEx)%ZE
          b%sweepSINPMLEy%ZE=this%sgg%SINPMLSweep(iEy)%ZE
-         b%sweepSINPMLEz%ZE=this%sgg%SINPMLSweep(iEz)%ZE
-         b%sweepSINPMLHx%ZE=this%sgg%SINPMLSweep(iHx)%ZE
-         b%sweepSINPMLHy%ZE=this%sgg%SINPMLSweep(iHy)%ZE
-         b%sweepSINPMLHz%ZE=this%sgg%SINPMLSweep(iHz)%ZE
+         b%sweepSINPMLEz%ZE=this%sgg%SINPMLSweep(IEZ)%ZE
+         b%sweepSINPMLHx%ZE=this%sgg%SINPMLSweep(IHX)%ZE
+         b%sweepSINPMLHy%ZE=this%sgg%SINPMLSweep(IHY)%ZE
+         b%sweepSINPMLHz%ZE=this%sgg%SINPMLSweep(IHZ)%ZE
 
          !
 
@@ -1152,7 +1152,7 @@ contains
       end subroutine initializeLumped
 
       subroutine initializeWires()
-         real(kind=rkind_tiempo) :: dtcritico, newdtcritico
+         real(kind=RKIND_TIEMPO) :: dtcritico, newdtcritico
          character(len=BUFSIZE) :: dubuf, buff
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
@@ -1259,8 +1259,8 @@ contains
 #endif
 #ifdef CompileWithMPI
          !!!sincroniza el dtcritico
-         newdtcritico = 0.0_RKIND_tiempo
-         call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE_tiempo, MPI_MIN, SUBCOMM_MPI, ierr)
+         newdtcritico = 0.0_RKIND_TIEMPO
+         call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE_TIEMPO, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
 #endif
          if (this%sgg%dt <= dtcritico) then
@@ -1558,12 +1558,12 @@ contains
       !must be called now in case the MPI has changed the connectivity info
          if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
-            call ReportWireJunctions(this%control%layoutnumber,this%control%num_procs,this%thereAre%wires,this%sgg%Sweep(iHz)%ZI, this%sgg%Sweep(iHz)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
+            call ReportWireJunctions(this%control%layoutnumber,this%control%num_procs,this%thereAre%wires,this%sgg%Sweep(IHZ)%ZI, this%sgg%Sweep(IHZ)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
          end if
 
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-               call ReportWireJunctionsBerenger(this%control%layoutnumber,this%control%num_procs,this%thereAre%wires,this%sgg%Sweep(iHz)%ZI, this%sgg%Sweep(iHz)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
+               call ReportWireJunctionsBerenger(this%control%layoutnumber,this%control%num_procs,this%thereAre%wires,this%sgg%Sweep(IHZ)%ZI, this%sgg%Sweep(IHZ)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
                   !dama no tenia el equivalente 050416
       end if
 #endif
@@ -1640,14 +1640,14 @@ contains
 
          !------------------------>
          type(SGGFDTDINFO_t), intent(in) :: sgg
-         type(bounds_t), intent( IN) :: b
-         integer(KIND = IKINDMTAG), dimension( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( INOUT) :: sggMtag
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHx%NY-1 , 0 : b%sggMiHx%NZ-1 )  , intent( IN   ) :: sggMiHx
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHy%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHy%NZ-1 )  , intent( IN   ) :: sggMiHy
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHz%NX-1 , 0 : b%sggMiHz%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( IN   ) :: sggMiHz
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEx%NX-1 , 0 : b%sggMiEx%NY-1 , 0 : b%sggMiEx%NZ-1 )  , intent( IN   ) :: sggMiEx
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1 )  , intent( IN   ) :: sggMiEy
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1 )  , intent( IN   ) :: sggMiEz
+         type(bounds_t), intent( in) :: b
+         integer(kind = IKINDMTAG), dimension( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( inout) :: sggMtag
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHx%NY-1 , 0 : b%sggMiHx%NZ-1 )  , intent( in   ) :: sggMiHx
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHy%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHy%NZ-1 )  , intent( in   ) :: sggMiHy
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHz%NX-1 , 0 : b%sggMiHz%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( in   ) :: sggMiHz
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEx%NX-1 , 0 : b%sggMiEx%NY-1 , 0 : b%sggMiEx%NZ-1 )  , intent( in   ) :: sggMiEx
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1 )  , intent( in   ) :: sggMiEy
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1 )  , intent( in   ) :: sggMiEz
          type(taglist_t) :: tag_numbers
          !------------------------> Variables locales
          integer(kind = 4) :: i, j, k
@@ -1662,9 +1662,9 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
 #endif
-         Do k=1,b%sweepHx%NZ
-            Do j=1,b%sweepHx%NY
-               Do i=1,b%sweepHx%NX
+         do k=1,b%sweepHx%NZ
+            do j=1,b%sweepHx%NY
+               do i=1,b%sweepHx%NX
                   medio1 =sggMiEy(i,j,k)
                   medio2 =sggMiEy(i,j,k+1)
                   medio3 =sggMiEz(i,j,k)
@@ -1678,16 +1678,16 @@ contains
                       tag_numbers%face%x(i+lbx(1)-1,j+lbx(2)-1,k+lbx(3)-1)=-ibset(iabs(tag_numbers%face%x(i+lbx(1)-1,j+lbx(2)-1,k+lbx(3)-1)),3) 
                       !ojo no cambiar: interacciona con observation tags 141020 !151020 a efectos de mapvtk el signo importa
                   end if
-               End do
-            End do
-         End do
+               end do
+            end do
+         end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
 !$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
 #endif
-         Do k=1,b%sweepHy%NZ
-            Do j=1,b%sweepHy%NY
-               Do i=1,b%sweepHy%NX
+         do k=1,b%sweepHy%NZ
+            do j=1,b%sweepHy%NY
+               do i=1,b%sweepHy%NX
                   medio1 =sggMiEz(i,j,k)
                   medio2 =sggMiEz(i+1,j,k)
                   medio3 =sggMiEx(i,j,k)
@@ -1699,16 +1699,16 @@ contains
                   if ((mediois1.or.mediois2).and.(mediois3))  then
                      tag_numbers%face%y(i+lby(1)-1,j+lby(2)-1,k+lby(3)-1)=-ibset(iabs(tag_numbers%face%y(i+lby(1)-1,j+lby(2)-1,k+lby(3)-1)),4) 
                   end if
-               End do
-            End do
-         End do
+               end do
+            end do
+         end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
 !$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
 #endif
-         Do k=1,b%sweepHz%NZ
-            Do j=1,b%sweepHz%NY
-               Do i=1,b%sweepHz%NX
+         do k=1,b%sweepHz%NZ
+            do j=1,b%sweepHz%NY
+               do i=1,b%sweepHz%NX
                   medio1 =sggMiEx(i,j,k)
                   medio2 =sggMiEx(i,j+1,k)
                   medio3 =sggMiEy(i,j,k)
@@ -1720,9 +1720,9 @@ contains
                   if ((mediois1.or.mediois2).and.(mediois3))  then
                      tag_numbers%face%z(i+lbz(1)-1,j+lbz(2)-1,k+lbz(3)-1)=-ibset(iabs(tag_numbers%face%z(i+lbz(1)-1,j+lbz(2)-1,k+lbz(3)-1)),5) 
                   end if
-               End do
-            End do
-         End do
+               end do
+            end do
+         end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
 #endif
@@ -1731,8 +1731,8 @@ contains
 
       subroutine crea_timevector(sgg,lastexecutedtimestep,finaltimestep,lastexecutedtime)
          integer(kind=4) :: lastexecutedtimestep,finaltimestep,i
-         real(kind=RKIND_tiempo) :: lastexecutedtime
-         type(SGGFDTDINFO_t), intent(INOUT) :: sgg
+         real(kind=RKIND_TIEMPO) :: lastexecutedtime
+         type(SGGFDTDINFO_t), intent(inout) :: sgg
          allocate (sgg%tiempo(lastexecutedtimestep:finaltimestep+2))
          sgg%tiempo(lastexecutedtimestep)=lastexecutedtime
          do i=lastexecutedtimestep+1,finaltimestep+2
@@ -1923,7 +1923,7 @@ contains
       subroutine singleUnpack()
          character(len=BUFSIZE) :: dubuf
          logical :: somethingdone, newsomethingdone
-         real(kind=rkind_tiempo) :: at
+         real(kind=RKIND_TIEMPO) :: at
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
 #endif
@@ -2145,17 +2145,17 @@ contains
 #ifdef CompileWithACC   
 !$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk,Idyhj)  copyin(Ex,sggMiEx,Hy,Hz,Idyh,Idzh,b,G1,G2) copyout(Ex) 
 #endif
-      Do k=1,this%bounds%sweepEx%NZ
-         Do j=1,this%bounds%sweepEx%NY
-            Do i=1,this%bounds%sweepEx%NX
+      do k=1,this%bounds%sweepEx%NZ
+         do j=1,this%bounds%sweepEx%NY
+            do i=1,this%bounds%sweepEx%NX
                Idzhk=Idzh(k)
                Idyhj=Idyh(j)
                medio =sggMiEx(i,j,k)
                Ex(i,j,k)=this%g%g1(MEDIO)*Ex(i,j,k)+this%g%g2(MEDIO)* &
                ((Hz(i,j,k)-Hz(i,j-1,k))*Idyhj-(Hy(i,j,k)-Hy(i,j,k-1))*Idzhk)
-            End do
-         End do
-      End do
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP   
 !$OMP  END PARALLEL DO
 #endif
@@ -2188,15 +2188,15 @@ contains
 #ifdef CompileWithACC   
 !$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk)     copyin(Ey,sggMiEy,Hz,Hx,Idzh,Idxh,b,G1,G2) copyout(Ey) 
 #endif
-      Do k=1,this%bounds%sweepEy%NZ
-         Do j=1,this%bounds%sweepEy%NY
-            Do i=1,this%bounds%sweepEy%NX
+      do k=1,this%bounds%sweepEy%NZ
+         do j=1,this%bounds%sweepEy%NY
+            do i=1,this%bounds%sweepEy%NX
                Idzhk=Idzh(k)
                medio =sggMiEy(i,j,k)
                Ey(i,j,k)=this%g%g1(MEDIO)*Ey(i,j,k)+this%g%g2(MEDIO)*((Hx(i,j,k)-Hx(i,j,k-1))*Idzhk-(Hz(i,j,k)-Hz(i-1,j,k))*Idxh(i))
-            End do
-         End do
-      End do
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
 #endif
@@ -2234,15 +2234,15 @@ contains
 #ifdef CompileWithACC   
 !$ACC parallel loop   DEFAULT(present) collapse (2) private (i,j,k,medio,Idyhj)        copyin(Ez,sggMiEz,Hx,Hy,Idxh,Idyh,b,G1,G2) copyout(Ez) 
 #endif
-      Do k=1,this%bounds%sweepEz%NZ
-         Do j=1,this%bounds%sweepEz%NY
-            Do i=1,this%bounds%sweepEz%NX
+      do k=1,this%bounds%sweepEz%NZ
+         do j=1,this%bounds%sweepEz%NY
+            do i=1,this%bounds%sweepEz%NX
                Idyhj=Idyh(j)
                medio =sggMiEz(i,j,k)
                Ez(i,j,k)=this%g%g1(MEDIO)*Ez(i,j,k)+this%g%g2(MEDIO)*((Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj)
-            End do
-         End do
-      End do
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
 #endif
@@ -2297,16 +2297,16 @@ contains
 #ifdef CompileWithACC   
 !$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek,Idyej)       copyin(Hx,sggMiHx,Ey,Ez,Idye,Idze,b,GM1,GM2) copyout(Hx) 
 #endif
-      Do k=1,this%bounds%sweepHx%NZ
-         Do j=1,this%bounds%sweepHx%NY
-            Do i=1,this%bounds%sweepHx%NX
+      do k=1,this%bounds%sweepHx%NZ
+         do j=1,this%bounds%sweepHx%NY
+            do i=1,this%bounds%sweepHx%NX
             Idzek=Idze(k)
             Idyej=Idye(j)
                medio =sggMiHx(i,j,k)
                Hx(i,j,k)=this%g%gm1(medio)*Hx(i,j,k)+this%g%gm2(medio)*((Ey(i,j,k+1)-Ey(i,j,k))*Idzek-(Ez(i,j+1,k)-Ez(i,j,k))*Idyej)
-            End do
-         End do
-      End do
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
 #endif
@@ -2339,15 +2339,15 @@ contains
 #ifdef CompileWithACC   
 !$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek)         copyin(Hy,sggMiHy,Ez,Ex,Idze,Idxe,b,GM1,GM2) copyout(Hy) 
 #endif
-      Do k=1,this%bounds%sweepHy%NZ
-         Do j=1,this%bounds%sweepHy%NY
-            Do i=1,this%bounds%sweepHy%NX
+      do k=1,this%bounds%sweepHy%NZ
+         do j=1,this%bounds%sweepHy%NY
+            do i=1,this%bounds%sweepHy%NX
                Idzek=Idze(k)
                medio =sggMiHy(i,j,k)
                Hy(i,j,k)=this%g%gm1(medio)*Hy(i,j,k)+this%g%gm2(medio)*((Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek)
-            End do
-         End do
-      End do
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
 #endif
@@ -2378,15 +2378,15 @@ contains
 #ifdef CompileWithACC   
 !$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idyej)       copyin(Hz,sggMiHz,Ex,Ey,Idxe,Idye,b,GM1,GM2) copyout(Hz)
 #endif
-      Do k=1,this%bounds%sweepHz%NZ
-         Do j=1,this%bounds%sweepHz%NY
-            Do i=1,this%bounds%sweepHz%NX
+      do k=1,this%bounds%sweepHz%NZ
+         do j=1,this%bounds%sweepHz%NY
+            do i=1,this%bounds%sweepHz%NX
                Idyej=Idye(j)
                medio =sggMiHz(i,j,k)
                Hz(i,j,k)=this%g%gm1(medio)*Hz(i,j,k)+this%g%gm2(medio)*((Ex(i,j+1,k)-Ex(i,j,k))*Idyej-(Ey(i+1,j,k)-Ey(i,j,k))*Idxe(i))
-            End do
-         End do
-      End do
+            end do
+         end do
+      end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
 #endif
@@ -2412,7 +2412,7 @@ contains
 
    subroutine solver_advancePlaneWaveE(this)
       class(solver_t) :: this
-      If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time) then 
+      if (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time) then 
          if(.not.this%control%simu_devia) call AdvancePlaneWaveE(this%sgg,this%n, this%bounds,this%g%G2, &
                                                                  this%Idxh,this%Idyh,this%Idzh, & 
                                                                  this%Ex,this%Ey,this%Ez, & 
@@ -2422,7 +2422,7 @@ contains
 
    subroutine solver_advancePlaneWaveH(this)
       class(solver_t) :: this
-      If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time)  then
+      if (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time)  then
          if (.not.this%control%simu_devia) call AdvancePlaneWaveH(this%sgg,this%n, this%bounds, this%g%GM2, & 
                                                                   this%Idxe, this%Idye, this%Idze, & 
                                                                   this%Hx, this%Hy, this%Hz, & 
@@ -2475,7 +2475,7 @@ contains
 
    subroutine solver_advanceMagneticCPML(this)
       class(solver_t) :: this
-      If (this%thereAre%PMLBorders) call advanceMagneticCPML(this%sgg%numMedia, this%bounds, & 
+      if (this%thereAre%PMLBorders) call advanceMagneticCPML(this%sgg%numMedia, this%bounds, & 
                                                              this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, & 
                                                              this%g%gm2, this%Hx, this%Hy, this%Hz, & 
                                                              this%Ex, this%Ey, this%Ez)
@@ -2483,23 +2483,23 @@ contains
 
    subroutine solver_MinusCloneMagneticPMC(this)
       class(solver_t) :: this
-      If (this%thereAre%PMCBorders) call MinusCloneMagneticPMC(this%sgg%alloc,this%sgg%border,this%Hx,this%Hy,this%Hz,this%sgg%sweep, & 
+      if (this%thereAre%PMCBorders) call MinusCloneMagneticPMC(this%sgg%alloc,this%sgg%border,this%Hx,this%Hy,this%Hz,this%sgg%sweep, & 
                                                                this%control%layoutnumber,this%control%num_procs)
    end subroutine
 
    subroutine solver_CloneMagneticPeriodic(this)
       class(solver_t) :: this
-      If (this%thereAre%PeriodicBorders) call CloneMagneticPeriodic(this%sgg%alloc,this%sgg%border,this%Hx,this%Hy,this%Hz,this%sgg%sweep,& 
+      if (this%thereAre%PeriodicBorders) call CloneMagneticPeriodic(this%sgg%alloc,this%sgg%border,this%Hx,this%Hy,this%Hz,this%sgg%sweep,& 
                                                                     this%control%layoutnumber,this%control%num_procs)
    end subroutine
 
 
    subroutine solver_advancePMLE(this)
-      class (solver_t) :: this
-      If (this%thereAre%PMLbodies) then !waveport absorbers
+      class(solver_t) :: this
+      if (this%thereAre%PMLbodies) then !waveport absorbers
          call AdvancePMLbodyE()
       end if
-      If (this%thereAre%PMLBorders) then
+      if (this%thereAre%PMLBorders) then
          call AdvanceelectricCPML(this%sgg%numMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, & 
                                   this%g%G2, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
       end if
@@ -2572,7 +2572,7 @@ contains
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
-      If (this%thereAre%MURBorders) then
+      if (this%thereAre%MURBorders) then
          call AdvanceMagneticMUR(this%bounds, this%sgg, & 
                                  this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
                                  this%Hx, this%Hy, this%Hz, & 
@@ -2700,11 +2700,11 @@ contains
    subroutine Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,wiresflavor )
       character(len=*) , intent(in) :: wiresflavor
       type(logic_control_t), intent(in) :: thereare
-      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
-      real(kind=RKIND), intent(INOUT)     , pointer, dimension( : , : , : ) :: Ex,Ey,Ez,Hx,Hy,Hz
-      real(kind=RKIND), intent(INOUT)     , pointer, dimension( : ) :: G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
+      real(kind=RKIND), intent(inout)     , pointer, dimension( : , : , : ) :: Ex,Ey,Ez,Hx,Hy,Hz
+      real(kind=RKIND), intent(inout)     , pointer, dimension( : ) :: G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
 
-      Call DestroyNodal(sgg)
+      call DestroyNodal(sgg)
       call DestroyIlumina(sgg)
 #ifdef CompileWithNIBC
       call DestroyMultiports(sgg)
@@ -2743,7 +2743,7 @@ contains
    subroutine destroy_and_deallocate(this)
       class(solver_t) :: this
 
-      Call DestroyNodal(this%sgg)
+      call DestroyNodal(this%sgg)
       call DestroyIlumina(this%sgg)
 #ifdef CompileWithNIBC
       call DestroyMultiports(this%sgg)

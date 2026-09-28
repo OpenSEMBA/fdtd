@@ -4,7 +4,7 @@ integer function test_read_lumped_fixture() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'lumped_fixture.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'lumped_fixture.fdtd.json'
    type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -75,7 +75,7 @@ contains
       expected%pecRegs%Surfs(1)%tag = 'pec@left_side'
 
       ! Left side - Surface 2
-      expected%pecRegs%Surfs(2)%Or = +iEz
+      expected%pecRegs%Surfs(2)%Or = +IEZ
       expected%pecRegs%Surfs(2)%Xi = 2
       expected%pecRegs%Surfs(2)%Xe = 8
       expected%pecRegs%Surfs(2)%Yi = 2
@@ -85,7 +85,7 @@ contains
       expected%pecRegs%Surfs(2)%tag = 'pec@left_side'
 
       ! Left side - Surface 3
-      expected%pecRegs%Surfs(3)%Or = +iEz
+      expected%pecRegs%Surfs(3)%Or = +IEZ
       expected%pecRegs%Surfs(3)%Xi = 2
       expected%pecRegs%Surfs(3)%Xe = 8
       expected%pecRegs%Surfs(3)%Yi = 2
@@ -95,7 +95,7 @@ contains
       expected%pecRegs%Surfs(3)%tag = 'pec@left_side'
 
       ! Right side - Surface 1
-      expected%pecRegs%Surfs(4)%Or = +iEz
+      expected%pecRegs%Surfs(4)%Or = +IEZ
       expected%pecRegs%Surfs(4)%Xi = 11
       expected%pecRegs%Surfs(4)%Xe = 17
       expected%pecRegs%Surfs(4)%Yi = 2
@@ -105,7 +105,7 @@ contains
       expected%pecRegs%Surfs(4)%tag = 'pec@right_side'
 
       ! Right side - Surface 2
-      expected%pecRegs%Surfs(5)%Or = +iEz
+      expected%pecRegs%Surfs(5)%Or = +IEZ
       expected%pecRegs%Surfs(5)%Xi = 11
       expected%pecRegs%Surfs(5)%Xe = 17
       expected%pecRegs%Surfs(5)%Yi = 2
@@ -237,7 +237,7 @@ contains
       expected%BloquePrb%bp(1)%k2 = 7
       expected%BloquePrb%bp(1)%skip = 1
       expected%BloquePrb%bp(1)%nml = iEx
-      expected%BloquePrb%bp(1)%t = BcELECT
+      expected%BloquePrb%bp(1)%t = BCELECT
       expected%BloquePrb%bp(1)%tag = "Bulk probe"
 
    end function

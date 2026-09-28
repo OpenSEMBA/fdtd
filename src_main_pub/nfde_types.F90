@@ -36,12 +36,12 @@ module NFDETypes_m
    integer(kind=4), parameter :: NP_COR_DDP = 7
    integer(kind=4), parameter :: NP_COR_LINE = 8
    integer(kind=4), parameter :: NP_COR_CHARGE = 9
-   LOGICAL, parameter :: BcELECT = .TRUE.
-   LOGICAL, parameter :: BcMAGNE = .FALSE.
+   logical, parameter :: BCELECT = .TRUE.
+   logical, parameter :: BCMAGNE = .FALSE.
    ! THIN WIRES
    integer(kind=4), parameter :: MATERIAL_CONS = 0
-   integer(kind=4), parameter :: MATERIAL_absorbing = 100
-   integer(kind=4), parameter :: Parallel_CONS = 1
+   integer(kind=4), parameter :: MATERIAL_ABSORBING = 100
+   integer(kind=4), parameter :: PARALLEL_CONS = 1
    integer(kind=4), parameter :: SERIES_CONS = 2
    integer(kind=4), parameter :: DISPERSIVE_CONS = 3
    ! BORDERS
@@ -58,12 +58,12 @@ module NFDETypes_m
    integer(kind=4), parameter :: F_ZU = 6
    integer(kind=4), parameter :: F_TIMEFRECTRANSF = 0
    ! rlc y diodos
-   integer(kind=4), parameter :: inductor = 20
-   integer(kind=4), parameter :: capacitor = 21
-   integer(kind=4), parameter :: resistor = 22
-   integer(kind=4), parameter :: diodo = 23
-   integer(kind=4), parameter :: Dielectric = 24
-   integer(kind=4), parameter :: PMLbody = 25
+   integer(kind=4), parameter :: INDUCTOR = 20
+   integer(kind=4), parameter :: CAPACITOR = 21
+   integer(kind=4), parameter :: RESISTOR = 22
+   integer(kind=4), parameter :: DIODO = 23
+   integer(kind=4), parameter :: DIELECTRIC = 24
+   integer(kind=4), parameter :: PMLBODY = 25
 
    !------------------------------------------------------------------------------
    ! TYPES
@@ -379,7 +379,7 @@ module NFDETypes_m
    type, public :: ThinWire_t
       type(ThinWireComp_t), dimension(:), pointer :: twc => NULL ()
       real(kind=RK) :: rad = 0 , rad_devia = 0
-      LOGICAL :: disp = .false.
+      logical :: disp = .false.
       character(len=BUFSIZE) :: dispfile
       real(kind=RK) :: res = 0 , res_devia = 0
       real(kind=RK) :: ind = 0 , ind_devia = 0
@@ -431,7 +431,7 @@ module NFDETypes_m
    type, public :: SlantedWire_t
       type(SlantedWireComp_t), dimension(:), pointer :: swc => NULL ()
       real(kind=RK) :: rad = 0
-      LOGICAL :: disp = .false.
+      logical :: disp = .false.
       character(len=BUFSIZE) :: dispfile
       real(kind=RK) :: res = 0
       real(kind=RK) :: ind = 0
@@ -655,7 +655,7 @@ module NFDETypes_m
       integer(kind=4) :: type2
       integer(kind=4) :: i1, i2, j1, j2, k1, k2, skip
       integer(kind=4) :: nml
-      LOGICAL :: t
+      logical :: t
       character(len=BUFSIZE) :: outputrequest
       character(len=BUFSIZE) :: tag
    end type BloqueProbe_t
@@ -729,7 +729,7 @@ module NFDETypes_m
       character(len=BUFSIZE) :: nombre
       integer(kind=4) :: n_C1P = 0
       integer(kind=4) :: n_C2P = 0
-      LOGICAL :: isElec, isHard, isInitialValue
+      logical :: isElec, isHard, isInitialValue
    end type Curr_Field_Src_t
    !------------------------------------------------------------------------------
    ! Definicin de las Nodal Source global
@@ -754,7 +754,7 @@ module NFDETypes_m
    type NFDEGeneral_t
       real(kind=RK) :: dt
       integer(kind=4) :: nmax
-      LOGICAL :: mtlnProblem
+      logical :: mtlnProblem
    end type NFDEGeneral_t
    !------------------------------------------------------------------------------
    ! Definition of the type. Three vectors are defined, for each axis X,Y,Z. If

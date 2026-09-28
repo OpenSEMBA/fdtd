@@ -4,7 +4,7 @@ integer function test_read_currentinjection() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'currentInjection.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'currentInjection.fdtd.json'
    type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -65,7 +65,7 @@ contains
       allocate(expected%pecRegs%Lins(1))
       
       ! Body
-      expected%pecRegs%Surfs(1)%Or = +iEz
+      expected%pecRegs%Surfs(1)%Or = +IEZ
       expected%pecRegs%Surfs(1)%Xi = 5
       expected%pecRegs%Surfs(1)%Xe = 14
       expected%pecRegs%Surfs(1)%Yi = 5
@@ -130,7 +130,7 @@ contains
       expected%BloquePrb%bp(1)%k2 = 10
       expected%BloquePrb%bp(1)%skip = 1
       expected%BloquePrb%bp(1)%nml = iEy
-      expected%BloquePrb%bp(1)%t = BcELECT
+      expected%BloquePrb%bp(1)%t = BCELECT
       expected%BloquePrb%bp(1)%tag = "bulk_current_at_entry"
 
       expected%BloquePrb%bp(2)%outputrequest = "bulk_current_at_exit"
@@ -150,7 +150,7 @@ contains
       expected%BloquePrb%bp(2)%k2 = 10
       expected%BloquePrb%bp(2)%skip = 1
       expected%BloquePrb%bp(2)%nml = iEy
-      expected%BloquePrb%bp(2)%t = BcELECT
+      expected%BloquePrb%bp(2)%t = BCELECT
       expected%BloquePrb%bp(2)%tag = "bulk_current_at_exit"
    end function
 end function

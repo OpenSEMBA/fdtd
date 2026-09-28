@@ -183,22 +183,22 @@ contains
                end if
                amplit = sggNodalSource(j)%punto(i)%zc
                if (amplit /= 0.0_RKIND) then
-                  call CreateNodal(layoutnumber,Nodal_Ez,sggNodalSource(J),sggSweep(iEz),i,amplit)
+                  call CreateNodal(layoutnumber,Nodal_Ez,sggNodalSource(J),sggSweep(IEZ),i,amplit)
                end if
             end do
          else !es magnetico
             do i=1,sggNodalSource(j)%numpuntos
                amplit = sggNodalSource(J)%punto(i)%xc
                if (amplit /= 0.0_RKIND) then
-                  call CreateNodal(layoutnumber,Nodal_Hx,sggNodalSource(J),sggSweep(iHx),i,amplit)
+                  call CreateNodal(layoutnumber,Nodal_Hx,sggNodalSource(J),sggSweep(IHX),i,amplit)
                end if
                amplit = sggNodalSource(j)%punto(i)%yc
                if (amplit /= 0.0_RKIND) then
-                  call CreateNodal(layoutnumber,Nodal_Hy,sggNodalSource(J),sggSweep(iHy),i,amplit)
+                  call CreateNodal(layoutnumber,Nodal_Hy,sggNodalSource(J),sggSweep(IHY),i,amplit)
                end if
                amplit = sggNodalSource(j)%punto(i)%zc
                if (amplit /= 0.0_RKIND) then
-                  call CreateNodal(layoutnumber,Nodal_Hz,sggNodalSource(J),sggSweep(iHz),i,amplit)
+                  call CreateNodal(layoutnumber,Nodal_Hz,sggNodalSource(J),sggSweep(IHZ),i,amplit)
                end if
             end do
          end if
@@ -331,7 +331,7 @@ contains
    !!!  Free-up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine DestroyNodal(sgg)
-      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
 
 
       if (Nodal_Ex%NumSoft+Nodal_Ey%NumSoft+Nodal_Ez%NumSoft /= 0) then
@@ -366,23 +366,23 @@ contains
       !---------------------------> inputs <----------------------------------------------------------
       type(SGGFDTDINFO_t), intent(in)     , target  :: sgg
       logical, intent(in) :: simu_devia
-      integer, intent( IN) :: NumMedia, timeinstant
+      integer, intent( in) :: NumMedia, timeinstant
       !!!
-      type( bounds_t), intent( IN) :: b
+      type( bounds_t), intent( in) :: b
       !--->
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent( IN) :: sggMiEx
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent( IN) :: sggMiEy
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent( IN) :: sggMiEz
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent( in) :: sggMiEx
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent( in) :: sggMiEy
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent( in) :: sggMiEz
       !--->
-      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN) :: g2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( in) :: g2
       !--->
-      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN) :: Idxh
-      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN) :: Idyh
-      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN) :: Idzh
+      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( in) :: Idxh
+      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( in) :: Idyh
+      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( in) :: Idzh
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT) :: Ex
-      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT) :: Ey
-      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT) :: Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( inout) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( inout) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( inout) :: Ez
 
       !---------------------------> variables locales <-----------------------------------------------
       real(kind = RKIND) :: timei,amp
@@ -414,7 +414,7 @@ contains
                         if (.not.sgg%Med(medio)%Is%PEC) Ex(i_m,j_m,k_m) = 0.0 !!!!!!
                   end if
                end do
-            End do
+            end do
          end do
       end do barridonodalhardEx
       !
@@ -438,7 +438,7 @@ contains
                        if (.not.sgg%Med(medio)%Is%PEC)  Ex(i_m,j_m,k_m) = Ex(i_m,j_m,k_m) !!!!!!
                   end if
                end do
-            End do
+            end do
          end do
       end do barridonodalsoftEx
       !
@@ -463,7 +463,7 @@ contains
                         if (.not.sgg%Med(medio)%Is%PEC) Ey(i_m,j_m,k_m) = 0.0 !!!!!!
                   end if
                end do
-            End do
+            end do
          end do
       end do barridonodalhardEy
       !
@@ -487,7 +487,7 @@ contains
                        if (.not.sgg%Med(medio)%Is%PEC)  Ey(i_m,j_m,k_m) = Ey(i_m,j_m,k_m) !!!!!!
                   end if
                end do
-            End do
+            end do
          end do
       end do barridonodalsoftEy
 
@@ -511,7 +511,7 @@ contains
                         if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = 0.0 !!!!!!
                   end if
                end do
-            End do
+            end do
          end do
       end do barridonodalhardEz
       !
@@ -535,7 +535,7 @@ contains
                         if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = Ez(i_m,j_m,k_m) !!!!!!
                   end if
                end do
-            End do
+            end do
          end do
       end do barridonodalsoftEz
 
@@ -544,7 +544,7 @@ contains
 
       return
 
-   endsubroutine AdvancenodalE
+   end subroutine AdvancenodalE
    !**************************************************************************************************
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Feed the currents to illuminate the H-field at n+0.5_RKIND
@@ -554,24 +554,24 @@ contains
       !---------------------------> inputs <----------------------------------------------------------
       type(SGGFDTDINFO_t), intent(in)     , target  :: sgg
       logical , intent(in) :: simu_devia !ojo untested con simu_devia este tipo de fuentes
-      integer, intent( IN) :: NumMedia, timeinstant
+      integer, intent( in) :: NumMedia, timeinstant
       !!!
-      type( bounds_t), intent( IN) :: b
+      type( bounds_t), intent( in) :: b
       !--->
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( IN) :: sggMiHx
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN) :: sggMiHy
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN) :: sggMiHz
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( in) :: sggMiHx
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( in) :: sggMiHy
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( in) :: sggMiHz
       !--->
-      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN) :: gm2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( in) :: gm2
       !--->
-      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN) :: Idxe
-      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN) :: Idye
-      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN) :: Idze
+      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( in) :: Idxe
+      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( in) :: Idye
+      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( in) :: Idze
 
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hx
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT) :: Hy
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT) :: Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( inout) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( inout) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( inout) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
       real(kind = RKIND) :: timei,amp
       integer(kind=4) :: i, j, k, i_m, j_m, k_m,ii,medio
@@ -604,7 +604,7 @@ contains
                   medio = sggMiHx(i_m,j_m,k_m)
                   if (.not.sgg%Med(medio)%Is%PMC) Hx(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hx%nodHard(ii))
                end do
-            End do
+            end do
          end do
       end do barridonodalhardHx
       !
@@ -623,7 +623,7 @@ contains
                   medio = sggMiHx(i_m,j_m,k_m)
                   if (.not.sgg%Med(medio)%Is%PMC) Hx(i_m,j_m,k_m) = Hx(i_m,j_m,k_m)- Gm2(medio) * Idye(j_m) * Idze(k_m) * amp * evolucion(timei,Nodal_Hx%nodSoft(ii))
                end do
-            End do
+            end do
          end do
       end do barridonodalsoftHx
       !
@@ -643,7 +643,7 @@ contains
                   medio = sggMiHx(i_m,j_m,k_m)
                   if (.not.sgg%Med(medio)%Is%PMC) Hy(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hy%nodHard(ii))
                end do
-            End do
+            end do
          end do
       end do barridonodalhardHy
       !
@@ -662,7 +662,7 @@ contains
                   medio = sggMiHy(i_m,j_m,k_m)
                   if (.not.sgg%Med(medio)%Is%PMC) Hy(i_m,j_m,k_m) = Hy(i_m,j_m,k_m)- Gm2(medio) * Idxe(i_m) * Idze(k_m) * amp * evolucion(timei,Nodal_Hy%nodSoft(ii))
                end do
-            End do
+            end do
          end do
       end do barridonodalsoftHy
 
@@ -681,7 +681,7 @@ contains
                   medio = sggMiHx(i_m,j_m,k_m)
                   if (.not.sgg%Med(medio)%Is%PMC) Hz(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hz%nodHard(ii))
                end do
-            End do
+            end do
          end do
       end do barridonodalhardHz
       !
@@ -700,7 +700,7 @@ contains
                   medio = sggMiHz(i_m,j_m,k_m)
                   if (.not.sgg%Med(medio)%Is%PMC) Hz(i_m,j_m,k_m) = Hz(i_m,j_m,k_m)- Gm2(medio) * Idye(j_m) * Idxe(i_m) * amp * evolucion(timei,Nodal_Hz%nodSoft(ii))
                end do
-            End do
+            end do
          end do
       end do barridonodalsoftHz
 
@@ -708,7 +708,7 @@ contains
 
 
       return
-   endsubroutine AdvancenodalH
+   end subroutine AdvancenodalH
 
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!

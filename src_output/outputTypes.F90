@@ -23,14 +23,14 @@ module outputTypes_m
    integer, parameter :: BOTH_DOMAIN = 2
    integer, parameter :: OUTPUT_TIME_BUFFER_SIZE = 128
 
-   character(len=4), parameter :: binaryExtension = '.bin'
-   character(len=4), parameter :: datFileExtension = '.dat'
-   character(len=4), parameter :: vtkFileExtension = '.vtk'
-   character(len=4), parameter :: vtuFileExtension = '.vtu'
-   character(len=5), parameter :: pvtuFileExtension = '.pvtu'
-   character(len=2), parameter :: timeExtension = 'tm'
-   character(len=2), parameter :: frequencyExtension = 'fq'
-   character(len=1), parameter :: wordseparation = '_'
+   character(len=4), parameter :: BINARYEXTENSION = '.bin'
+   character(len=4), parameter :: DATFILEEXTENSION = '.dat'
+   character(len=4), parameter :: VTKFILEEXTENSION = '.vtk'
+   character(len=4), parameter :: VTUFILEEXTENSION = '.vtu'
+   character(len=5), parameter :: PVTUFILEEXTENSION = '.pvtu'
+   character(len=2), parameter :: TIMEEXTENSION = 'tm'
+   character(len=2), parameter :: FREQUENCYEXTENSION = 'fq'
+   character(len=1), parameter :: WORDSEPARATION = '_'
 
    integer, parameter :: OUTPUT_ARTIFACT_UNDEFINED = 0
    integer, parameter :: OUTPUT_ARTIFACT_TEXT = 1
@@ -151,9 +151,9 @@ module outputTypes_m
    end type probe_metadata_t
 
    type :: domain_t
-      real(kind=RKIND_tiempo) :: tstart = 0.0_RKIND_tiempo
-      real(kind=RKIND_tiempo) :: tstop = 0.0_RKIND_tiempo
-      real(kind=RKIND_tiempo) :: tstep = 0.0_RKIND_tiempo
+      real(kind=RKIND_TIEMPO) :: tstart = 0.0_RKIND_TIEMPO
+      real(kind=RKIND_TIEMPO) :: tstop = 0.0_RKIND_TIEMPO
+      real(kind=RKIND_TIEMPO) :: tstep = 0.0_RKIND_TIEMPO
       integer(kind=SINGLE)    :: tstride = 1_SINGLE
       real(kind=RKIND)        :: fstart = 0.0_RKIND
       real(kind=RKIND)        :: fstop = 0.0_RKIND
@@ -212,13 +212,13 @@ module outputTypes_m
       character(len=BUFSIZE) :: filePathTime
       integer(kind=SINGLE) :: nTime = 0_SINGLE
       integer(kind=SINGLE) :: nTimesFlushed = 0_SINGLE !times alredy writen in disk
-      real(kind=RKIND_tiempo), allocatable :: timeStep(:)
+      real(kind=RKIND_TIEMPO), allocatable :: timeStep(:)
    end type abstract_time_probe_t
 
    type, extends(abstract_probe_t) :: abstract_frequency_probe_t
       character(len=BUFSIZE) :: filePathFreq
       integer(kind=SINGLE) :: nFreq = 0_SINGLE
-      real(kind=RKIND_tiempo) :: quadratureDt = 0.0_RKIND_tiempo
+      real(kind=RKIND_TIEMPO) :: quadratureDt = 0.0_RKIND_TIEMPO
       real(kind=RKIND), allocatable    :: frequencySlice(:)
       complex(kind=CKIND), allocatable :: auxExp_E(:), auxExp_H(:)
    end type abstract_frequency_probe_t
@@ -226,8 +226,8 @@ module outputTypes_m
    type, extends(abstract_probe_t) :: abstract_time_frequency_probe_t
       character(len=BUFSIZE) :: filePathTime, filePathFreq
       integer(kind=SINGLE) :: nTime = 0_SINGLE, nFreq = 0_SINGLE
-      real(kind=RKIND_tiempo) :: quadratureDt = 0.0_RKIND_tiempo
-      real(kind=RKIND_tiempo), allocatable :: timeStep(:)
+      real(kind=RKIND_TIEMPO) :: quadratureDt = 0.0_RKIND_TIEMPO
+      real(kind=RKIND_TIEMPO), allocatable :: timeStep(:)
       real(kind=RKIND), allocatable        :: frequencySlice(:)
       complex(kind=CKIND), allocatable     :: auxExp_E(:), auxExp_H(:)
    end type abstract_time_frequency_probe_t

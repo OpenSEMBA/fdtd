@@ -15,7 +15,7 @@ module Wire_bundles_mtln_m
    use ilumina_m
    implicit none
    
-   real(kind=RKIND_wires) :: eps0,mu0
+   real(kind=RKIND_WIRES) :: eps0,mu0
    private   
 
    public InitWires_mtln, AdvanceWiresE_mtln, GetSolverPtr, initializeMTLNProblem, runMTLNProblem, reportSimulationEnd
@@ -35,23 +35,23 @@ contains
          Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,  &
             sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,  &
             sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
-         Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,  &
-            sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,  &
-            sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
+         Ez(sgg%Alloc(IEZ)%XI : sgg%Alloc(IEZ)%XE,  &
+            sgg%Alloc(IEZ)%YI : sgg%Alloc(IEZ)%YE,  &
+            sgg%Alloc(IEZ)%ZI : sgg%Alloc(IEZ)%ZE)
 
       integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
          sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
          sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
-         sggMiEz(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE), &
-         sggMiHx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE), &
-         sggMiHy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE), &
-         sggMiHz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE)
+         sggMiEz(sgg%Alloc(IEZ)%XI : sgg%Alloc(IEZ)%XE,sgg%Alloc(IEZ)%YI : sgg%Alloc(IEZ)%YE,sgg%Alloc(IEZ)%ZI : sgg%Alloc(IEZ)%ZE), &
+         sggMiHx(sgg%Alloc(IHX)%XI : sgg%Alloc(IHX)%XE,sgg%Alloc(IHX)%YI : sgg%Alloc(IHX)%YE,sgg%Alloc(IHX)%ZI : sgg%Alloc(IHX)%ZE), &
+         sggMiHy(sgg%Alloc(IHY)%XI : sgg%Alloc(IHY)%XE,sgg%Alloc(IHY)%YI : sgg%Alloc(IHY)%YE,sgg%Alloc(IHY)%ZI : sgg%Alloc(IHY)%ZE), &
+         sggMiHz(sgg%Alloc(IHZ)%XI : sgg%Alloc(IHZ)%XE,sgg%Alloc(IHZ)%YI : sgg%Alloc(IHZ)%YE,sgg%Alloc(IHZ)%ZI : sgg%Alloc(IHZ)%ZE)
    
       real(kind=RKIND) :: eps00,mu00
    
       type(mtln_t) :: mtln_parsed
       logical :: thereAreMTLNbundles
-      real(kind=rkind_tiempo), intent(inout) :: dtcritico
+      real(kind=RKIND_TIEMPO), intent(inout) :: dtcritico
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
@@ -119,7 +119,7 @@ contains
 
       logical function isEmbeddedInPECorLossy(media)
          integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: media
-         isEmbeddedInPECorLossy = (media == 0 .or. sgg%med(media)%is%pec .or. sgg%med(media)%is%lossy)
+         isEmbeddedInPECorLossy = (media == 0 .or. sgg%med(media)%is%PEC .or. sgg%med(media)%is%lossy)
    end function
 
    end subroutine InitWires_mtln
@@ -129,7 +129,7 @@ contains
       real(kind=RKIND), dimension(:), intent(in) :: &
          Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE),&
          Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE),&
-         Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)  
+         Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE)  
       real(kind=RKIND) :: cte,eps00,mu00, f
       integer(kind=4) :: m, n
       real(kind=RKIND),pointer:: punt
@@ -144,7 +144,7 @@ contains
                ! pointer is never associated (see pointSegmentsToFields above).
                if (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction) > 3) cycle
                punt => mtln_solver%bundles(m)%external_field_segments(n)%field
-               punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
+               punt = real(punt, kind=RKIND_WIRES) - computeFieldFromCurrent(m,n)
             end do
          end if
       end do

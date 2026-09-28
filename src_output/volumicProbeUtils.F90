@@ -94,7 +94,7 @@ contains
       integer, intent(in) :: counter
       integer(kind=SINGLE), intent(in) :: coords(:, :), currentType(:)
       logical, intent(in) :: usevtkindex
-      real(KIND=RKIND), pointer, dimension(:), intent(in) :: realXGrid, realYGrid, realZGrid
+      real(kind=RKIND), pointer, dimension(:), intent(in) :: realXGrid, realYGrid, realZGrid
 
       integer(kind=4), intent(out):: numNodes, numQuads, numEdges
       real(kind=RKIND), allocatable, dimension(:, :), intent(out) :: Nodes
@@ -166,8 +166,8 @@ contains
       numQuads = 0
 
       do i = 1, counter
-         if ((currentType(i) == iJx) .or. (currentType(i) == iJy) .or. (currentType(i) == iJz)) numEdges = numEdges + 1
-    if ((currentType(i) == iBloqueJx) .or. (currentType(i) == iBloqueJy) .or. (currentType(i) == iBloqueJz)) numQuads = numQuads + 1
+         if ((currentType(i) == IJX) .or. (currentType(i) == IJY) .or. (currentType(i) == IJZ)) numEdges = numEdges + 1
+    if ((currentType(i) == IBLOQUEJX) .or. (currentType(i) == IBLOQUEJY) .or. (currentType(i) == IBLOQUEJZ)) numQuads = numQuads + 1
       end do
    end subroutine
 
@@ -177,7 +177,7 @@ contains
       real(kind=RKIND), intent(inout) :: Nodes(:, :)
       integer(kind=4), intent(inout) :: Edges(:, :), Quads(:, :)
       logical :: usevtkindex
-      real(KIND=RKIND), pointer, dimension(:), intent(in) :: realXGrid, realYGrid, realZGrid
+      real(kind=RKIND), pointer, dimension(:), intent(in) :: realXGrid, realYGrid, realZGrid
 
       integer :: nodeIdx, quadIdx, edgeIdx
       integer :: xCoord, yCoord, zCoord
@@ -193,7 +193,7 @@ contains
          zCoord = coords(3, i)
 
          select case (currentType(i))
-         case (iJx)
+         case (IJX)
             nodeIdx = nodeIdx + 2
             if (usevtkindex) then
                call registerNode(Nodes, nodeIdx - 1, xCoord, yCoord, zCoord)
@@ -205,7 +205,7 @@ contains
             edgeIdx = edgeIdx + 1
             call registerEdge(Edges, edgeIdx, nodeIdx - 1, nodeIdx)
 
-         case (iJy)
+         case (IJY)
             nodeIdx = nodeIdx + 2
             if (usevtkindex) then
                call registerNode(Nodes, nodeIdx - 1, xCoord, yCoord, zCoord)
@@ -217,7 +217,7 @@ contains
             edgeIdx = edgeIdx + 1
             call registerEdge(Edges, edgeIdx, nodeIdx - 1, nodeIdx)
 
-         case (iJz)
+         case (IJZ)
             nodeIdx = nodeIdx + 2
             if (usevtkindex) then
                call registerNode(Nodes, nodeIdx - 1, xCoord, yCoord, zCoord)
@@ -229,7 +229,7 @@ contains
             edgeIdx = edgeIdx + 1
             call registerEdge(Edges, edgeIdx, nodeIdx - 1, nodeIdx)
 
-         case (iBloqueJx)
+         case (IBLOQUEJX)
             nodeIdx = nodeIdx + 4
             if (usevtkindex) then
                call registerNode(Nodes, nodeIdx - 3, xCoord, yCoord, zCoord)
@@ -245,7 +245,7 @@ contains
             quadIdx = quadIdx + 1
             call registerQuad(Quads, quadIdx, nodeIdx - 3, nodeIdx - 2, nodeIdx - 1, nodeIdx)
 
-         case (iBloqueJy)
+         case (IBLOQUEJY)
             nodeIdx = nodeIdx + 4
             if (usevtkindex) then
                call registerNode(Nodes, nodeIdx - 3, xCoord, yCoord, zCoord)
@@ -261,7 +261,7 @@ contains
             quadIdx = quadIdx + 1
             call registerQuad(Quads, quadIdx, nodeIdx - 3, nodeIdx - 2, nodeIdx - 1, nodeIdx)
 
-         case (iBloqueJz)
+         case (IBLOQUEJZ)
             nodeIdx = nodeIdx + 4
             if (usevtkindex) then
                call registerNode(Nodes, nodeIdx - 3, xCoord, yCoord, zCoord)
@@ -286,18 +286,18 @@ contains
       integer(kind=SINGLE), intent(out)             :: component
 
       select case (request)
-      case (iCur); checker => volumicCurrentRequest; component = iCur
-      case (iMEC); checker => volumicElectricRequest; component = iMEC
-      case (iMHC); checker => volumicMagneticRequest; component = iMHC
-      case (iCurx); checker => componentCurrentRequest; component = iEx
-      case (iExC); checker => componentFieldRequest; component = iEx
-      case (iHxC); checker => componentFieldRequest; component = iHx
-      case (iCurY); checker => componentCurrentRequest; component = iEy
-      case (iEyC); checker => componentFieldRequest; component = iEy
-      case (iHyC); checker => componentFieldRequest; component = iHy
-      case (iCurZ); checker => componentCurrentRequest; component = iEz
-      case (iEzC); checker => componentFieldRequest; component = iEz
-      case (iHzC); checker => componentFieldRequest; component = iHz
+      case (ICUR); checker => volumicCurrentRequest; component = ICUR
+      case (IMEC); checker => volumicElectricRequest; component = IMEC
+      case (IMHC); checker => volumicMagneticRequest; component = IMHC
+      case (ICURX); checker => componentCurrentRequest; component = iEx
+      case (IEXC); checker => componentFieldRequest; component = iEx
+      case (IHXC); checker => componentFieldRequest; component = IHX
+      case (ICURY); checker => componentCurrentRequest; component = iEy
+      case (IEYC); checker => componentFieldRequest; component = iEy
+      case (IHYC); checker => componentFieldRequest; component = IHY
+      case (ICURZ); checker => componentCurrentRequest; component = IEZ
+      case (IEZC); checker => componentFieldRequest; component = IEZ
+      case (IHZC); checker => componentFieldRequest; component = IHZ
       end select
    end subroutine get_checker_and_component
 
@@ -309,9 +309,9 @@ contains
       integer(kind=SINGLE), intent(in) :: request, i, j, k
       type(problem_info_t), intent(in) :: problemInfo
       select case (request)
-      case (iCur)
+      case (ICUR)
          isValidPointForCurrent = volumicCurrentRequest(request, i, j, k, problemInfo)
-      case (iEx, iEy, iEz)
+      case (iEx, iEy, IEZ)
          isValidPointForCurrent = componentCurrentRequest(request, i, j, k, problemInfo)
       case default
          isValidPointForCurrent = .false.
@@ -322,11 +322,11 @@ contains
       integer(kind=SINGLE), intent(in) :: request, i, j, k
       type(problem_info_t), intent(in) :: problemInfo
       select case (request)
-      case (iMEC)
+      case (IMEC)
          isValidPointForField = volumicElectricRequest(request, i, j, k, problemInfo)
-      case (iMHC)
+      case (IMHC)
          isValidPointForField = volumicMagneticRequest(request, i, j, k, problemInfo)
-      case (iEx, iEy, iEz, iHx, iHy, iHz)
+      case (iEx, iEy, IEZ, IHX, IHY, IHZ)
          isValidPointForField = componentFieldRequest(request, i, j, k, problemInfo)
       case default
          isValidPointForField = .false.
@@ -338,7 +338,7 @@ contains
       type(problem_info_t), intent(in) :: problemInfo
       volumicCurrentRequest = componentCurrentRequest(iEx, i, j, k, problemInfo) .or. &
                               componentCurrentRequest(iEy, i, j, k, problemInfo) .or. &
-                              componentCurrentRequest(iEz, i, j, k, problemInfo)
+                              componentCurrentRequest(IEZ, i, j, k, problemInfo)
    end function volumicCurrentRequest
 
    logical function volumicElectricRequest(request, i, j, k, problemInfo)
@@ -346,15 +346,15 @@ contains
       type(problem_info_t), intent(in) :: problemInfo
       volumicElectricRequest = componentFieldRequest(iEx, i, j, k, problemInfo) .or. &
                                componentFieldRequest(iEy, i, j, k, problemInfo) .or. &
-                               componentFieldRequest(iEz, i, j, k, problemInfo)
+                               componentFieldRequest(IEZ, i, j, k, problemInfo)
    end function volumicElectricRequest
 
    logical function volumicMagneticRequest(request, i, j, k, problemInfo)
       integer(kind=SINGLE), intent(in) :: request, i, j, k
       type(problem_info_t), intent(in) :: problemInfo
-      volumicMagneticRequest = componentFieldRequest(iHx, i, j, k, problemInfo) .or. &
-                               componentFieldRequest(iHy, i, j, k, problemInfo) .or. &
-                               componentFieldRequest(iHz, i, j, k, problemInfo)
+      volumicMagneticRequest = componentFieldRequest(IHX, i, j, k, problemInfo) .or. &
+                               componentFieldRequest(IHY, i, j, k, problemInfo) .or. &
+                               componentFieldRequest(IHZ, i, j, k, problemInfo)
    end function volumicMagneticRequest
 
    logical function componentCurrentRequest(fieldDir, i, j, k, problemInfo)

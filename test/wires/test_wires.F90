@@ -113,20 +113,20 @@ end function test_destroyWireMedia_thinwire
 
 integer function test_evolucion_out_of_range_low() bind(C, name="test_evolucion_out_of_range_low") result(status)
     use HollandWires_m, only: evolucion
-    use FDETYPES_m, only: RKIND_wires
+    use FDETYPES_m, only: RKIND_WIRES
     implicit none
     integer(kind=4) :: numus
-    real(kind=RKIND_wires), dimension(0:3) :: evol
-    real(kind=RKIND_wires) :: deltaevol, t, result
+    real(kind=RKIND_WIRES), dimension(0:3) :: evol
+    real(kind=RKIND_WIRES) :: deltaevol, t, result
 
     status = 0
     numus = 3
-    deltaevol = 1.0_RKIND_wires
-    evol = [0.0_RKIND_wires, 1.0_RKIND_wires, 2.0_RKIND_wires, 3.0_RKIND_wires]
+    deltaevol = 1.0_RKIND_WIRES
+    evol = [0.0_RKIND_WIRES, 1.0_RKIND_WIRES, 2.0_RKIND_WIRES, 3.0_RKIND_WIRES]
     ! t = -1.5 -> nprev = int(-1.5) = -1 -> nprev+1 = 0 <= 0 -> returns 0
-    t = -1.5_RKIND_wires
+    t = -1.5_RKIND_WIRES
     result = evolucion(t, evol, deltaevol, numus)
-    if (abs(result) > 1.0e-12_RKIND_wires) then
+    if (abs(result) > 1.0e-12_RKIND_WIRES) then
         print *, "test_evolucion_out_of_range_low FAILED: result=", result
         status = 1
     end if
@@ -134,20 +134,20 @@ end function test_evolucion_out_of_range_low
 
 integer function test_evolucion_out_of_range_high() bind(C, name="test_evolucion_out_of_range_high") result(status)
     use HollandWires_m, only: evolucion
-    use FDETYPES_m, only: RKIND_wires
+    use FDETYPES_m, only: RKIND_WIRES
     implicit none
     integer(kind=4) :: numus
-    real(kind=RKIND_wires), dimension(0:3) :: evol
-    real(kind=RKIND_wires) :: deltaevol, t, result
+    real(kind=RKIND_WIRES), dimension(0:3) :: evol
+    real(kind=RKIND_WIRES) :: deltaevol, t, result
 
     status = 0
     numus = 3
-    deltaevol = 1.0_RKIND_wires
-    evol = [0.0_RKIND_wires, 1.0_RKIND_wires, 2.0_RKIND_wires, 3.0_RKIND_wires]
+    deltaevol = 1.0_RKIND_WIRES
+    evol = [0.0_RKIND_WIRES, 1.0_RKIND_WIRES, 2.0_RKIND_WIRES, 3.0_RKIND_WIRES]
     ! t = 3.0 -> nprev = int(3.0) = 3 = numus -> nprev+1 = 4 > 3 = numus -> returns 0
-    t = 3.0_RKIND_wires
+    t = 3.0_RKIND_WIRES
     result = evolucion(t, evol, deltaevol, numus)
-    if (abs(result) > 1.0e-12_RKIND_wires) then
+    if (abs(result) > 1.0e-12_RKIND_WIRES) then
         print *, "test_evolucion_out_of_range_high FAILED: result=", result
         status = 1
     end if
@@ -155,20 +155,20 @@ end function test_evolucion_out_of_range_high
 
 integer function test_evolucion_at_zero() bind(C, name="test_evolucion_at_zero") result(status)
     use HollandWires_m, only: evolucion
-    use FDETYPES_m, only: RKIND_wires
+    use FDETYPES_m, only: RKIND_WIRES
     implicit none
     integer(kind=4) :: numus
-    real(kind=RKIND_wires), dimension(0:3) :: evol
-    real(kind=RKIND_wires) :: deltaevol, t, result
+    real(kind=RKIND_WIRES), dimension(0:3) :: evol
+    real(kind=RKIND_WIRES) :: deltaevol, t, result
 
     status = 0
     numus = 3
-    deltaevol = 1.0_RKIND_wires
-    evol = [5.0_RKIND_wires, 1.0_RKIND_wires, 2.0_RKIND_wires, 3.0_RKIND_wires]
+    deltaevol = 1.0_RKIND_WIRES
+    evol = [5.0_RKIND_WIRES, 1.0_RKIND_WIRES, 2.0_RKIND_WIRES, 3.0_RKIND_WIRES]
     ! t = 0.0 -> nprev = 0, returns evol(0) = 5.0
-    t = 0.0_RKIND_wires
+    t = 0.0_RKIND_WIRES
     result = evolucion(t, evol, deltaevol, numus)
-    if (abs(result - 5.0_RKIND_wires) > 1.0e-12_RKIND_wires) then
+    if (abs(result - 5.0_RKIND_WIRES) > 1.0e-12_RKIND_WIRES) then
         print *, "test_evolucion_at_zero FAILED: result=", result
         status = 1
     end if
@@ -176,21 +176,21 @@ end function test_evolucion_at_zero
 
 integer function test_evolucion_midpoint_interp() bind(C, name="test_evolucion_midpoint_interp") result(status)
     use HollandWires_m, only: evolucion
-    use FDETYPES_m, only: RKIND_wires
+    use FDETYPES_m, only: RKIND_WIRES
     implicit none
     integer(kind=4) :: numus
-    real(kind=RKIND_wires), dimension(0:3) :: evol
-    real(kind=RKIND_wires) :: deltaevol, t, result, expected
+    real(kind=RKIND_WIRES), dimension(0:3) :: evol
+    real(kind=RKIND_WIRES) :: deltaevol, t, result, expected
 
     status = 0
     numus = 3
-    deltaevol = 1.0_RKIND_wires
-    evol = [0.0_RKIND_wires, 2.0_RKIND_wires, 4.0_RKIND_wires, 6.0_RKIND_wires]
+    deltaevol = 1.0_RKIND_WIRES
+    evol = [0.0_RKIND_WIRES, 2.0_RKIND_WIRES, 4.0_RKIND_WIRES, 6.0_RKIND_WIRES]
     ! t = 0.5 -> nprev = 0, result = (2-0)/1*0.5 + 0 = 1.0
-    t = 0.5_RKIND_wires
-    expected = 1.0_RKIND_wires
+    t = 0.5_RKIND_WIRES
+    expected = 1.0_RKIND_WIRES
     result = evolucion(t, evol, deltaevol, numus)
-    if (abs(result - expected) > 1.0e-10_RKIND_wires) then
+    if (abs(result - expected) > 1.0e-10_RKIND_WIRES) then
         print *, "test_evolucion_midpoint_interp FAILED: result=", result, " expected=", expected
         status = 1
     end if
@@ -198,20 +198,20 @@ end function test_evolucion_midpoint_interp
 
 integer function test_evolucion_exact_sample() bind(C, name="test_evolucion_exact_sample") result(status)
     use HollandWires_m, only: evolucion
-    use FDETYPES_m, only: RKIND_wires
+    use FDETYPES_m, only: RKIND_WIRES
     implicit none
     integer(kind=4) :: numus
-    real(kind=RKIND_wires), dimension(0:3) :: evol
-    real(kind=RKIND_wires) :: deltaevol, t, result
+    real(kind=RKIND_WIRES), dimension(0:3) :: evol
+    real(kind=RKIND_WIRES) :: deltaevol, t, result
 
     status = 0
     numus = 3
-    deltaevol = 1.0_RKIND_wires
-    evol = [0.0_RKIND_wires, 7.0_RKIND_wires, 4.0_RKIND_wires, 6.0_RKIND_wires]
+    deltaevol = 1.0_RKIND_WIRES
+    evol = [0.0_RKIND_WIRES, 7.0_RKIND_WIRES, 4.0_RKIND_WIRES, 6.0_RKIND_WIRES]
     ! t = 1.0 -> nprev = 1, result = (evol(2)-evol(1))/1*0 + evol(1) = 7.0
-    t = 1.0_RKIND_wires
+    t = 1.0_RKIND_WIRES
     result = evolucion(t, evol, deltaevol, numus)
-    if (abs(result - 7.0_RKIND_wires) > 1.0e-12_RKIND_wires) then
+    if (abs(result - 7.0_RKIND_WIRES) > 1.0e-12_RKIND_WIRES) then
         print *, "test_evolucion_exact_sample FAILED: result=", result
         status = 1
     end if

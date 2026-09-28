@@ -3,7 +3,7 @@ integer function test_read_shieldedpair() bind (C) result(err)
    use smbjson_testingTools
 
    implicit none
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'shieldedPair.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'shieldedPair.fdtd.json'
    type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame

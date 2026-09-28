@@ -4,7 +4,7 @@ integer function test_read_nodal_source_resistance_per_meter() bind (C) result(e
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA// &
+   character(len=*), parameter :: FILENAME = PATH_TO_TEST_DATA// &
       'cases/nodalSource/nodalSource.fdtd.json'
 
    err = 0
@@ -50,7 +50,7 @@ integer function test_read_nodal_source_total_resistance() bind (C) result(err)
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA// &
+   character(len=*), parameter :: FILENAME = PATH_TO_TEST_DATA// &
       'cases/nodalSource/nodalSource_totalResistance.fdtd.json'
 
    err = 0

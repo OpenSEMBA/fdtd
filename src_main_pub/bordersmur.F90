@@ -30,12 +30,12 @@ module BORDERS_MUR_m
    end type
 
    !!!LOCAL VARIABLES
-   type(LR_t), dimension(left : right) , save :: regLR
-   type(DU_t), dimension(down : up)    , save :: regDU
-   type(BF_t), dimension(back : front) , save :: regBF
+   type(LR_t), dimension(LEFT : RIGHT) , save :: regLR
+   type(DU_t), dimension(DOWN : UP)    , save :: regDU
+   type(BF_t), dimension(BACK : front) , save :: regBF
 
 
-   real(kind = RKIND), dimension(  :), allocatable, SAVE :: back_CAB1, back_CAB3, back_cab4, &
+   real(kind = RKIND), dimension(  :), allocatable, save :: back_CAB1, back_CAB3, back_cab4, &
    front_CAB1,front_CAB3,front_cab4, &
    left_CAB1, left_CAB3, left_cab4, &
    right_CAB1,right_CAB3,right_cab4, &
@@ -62,7 +62,7 @@ contains
       real(kind=RKIND) , dimension(:)   , intent(in) :: &
       Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
       Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
-      Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
+      Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE)
       !!!
       !
       logical  :: ThereAreMURBorders,resume
@@ -91,42 +91,42 @@ contains
       !Find the limits of each of the 6 padding MUR regions for each field component
 
 
-      do field=iHx,iHz
+      do field=IHX,IHZ
          !
-         MURc(field)%XI(Down)  =                                sgg%Sweep(field)%XI
-         MURc(field)%XE(Down)  =                                sgg%Sweep(field)%XE
-         MURc(field)%YI(Down)  =                                sgg%Sweep(field)%YI
-         MURc(field)%YE(Down)  =                                sgg%Sweep(field)%YE
-         MURc(field)%ZI(Down)  =                                sgg%Sweep(field)%ZI-1
-         MURc(field)%ZE(Down)  = MURc(field)%ZI(Down) + 1
+         MURc(field)%XI(DOWN)  =                                sgg%Sweep(field)%XI
+         MURc(field)%XE(DOWN)  =                                sgg%Sweep(field)%XE
+         MURc(field)%YI(DOWN)  =                                sgg%Sweep(field)%YI
+         MURc(field)%YE(DOWN)  =                                sgg%Sweep(field)%YE
+         MURc(field)%ZI(DOWN)  =                                sgg%Sweep(field)%ZI-1
+         MURc(field)%ZE(DOWN)  = MURc(field)%ZI(DOWN) + 1
          !
-         MURc(field)%XI(Up)    =                                sgg%Sweep(field)%XI
-         MURc(field)%XE(Up)    =                                sgg%Sweep(field)%XE
-         MURc(field)%YI(Up)    =                                sgg%Sweep(field)%YI
-         MURc(field)%YE(Up)    =                                sgg%Sweep(field)%YE
-         MURc(field)%ZI(Up)    =                                sgg%Sweep(field)%ZE
-         MURc(field)%ZE(Up)    = MURc(field)%ZI(Up) + 1
+         MURc(field)%XI(UP)    =                                sgg%Sweep(field)%XI
+         MURc(field)%XE(UP)    =                                sgg%Sweep(field)%XE
+         MURc(field)%YI(UP)    =                                sgg%Sweep(field)%YI
+         MURc(field)%YE(UP)    =                                sgg%Sweep(field)%YE
+         MURc(field)%ZI(UP)    =                                sgg%Sweep(field)%ZE
+         MURc(field)%ZE(UP)    = MURc(field)%ZI(UP) + 1
          !
-         MURc(field)%XI(Left)  =                                sgg%Sweep(field)%XI
-         MURc(field)%XE(Left)  =                                sgg%Sweep(field)%XE
-         MURc(field)%YI(Left)  =                                sgg%Sweep(field)%YI-1
-         MURc(field)%YE(Left)  = MURc(field)%YI(Left) + 1
-         MURc(field)%ZI(Left)  =                                sgg%Sweep(field)%ZI
-         MURc(field)%ZE(Left)  =                                sgg%Sweep(field)%ZE
+         MURc(field)%XI(LEFT)  =                                sgg%Sweep(field)%XI
+         MURc(field)%XE(LEFT)  =                                sgg%Sweep(field)%XE
+         MURc(field)%YI(LEFT)  =                                sgg%Sweep(field)%YI-1
+         MURc(field)%YE(LEFT)  = MURc(field)%YI(LEFT) + 1
+         MURc(field)%ZI(LEFT)  =                                sgg%Sweep(field)%ZI
+         MURc(field)%ZE(LEFT)  =                                sgg%Sweep(field)%ZE
          !
-         MURc(field)%XI(Right) =                                sgg%Sweep(field)%XI
-         MURc(field)%XE(Right) =                                sgg%Sweep(field)%XE
-         MURc(field)%YI(Right) =                                sgg%Sweep(field)%YE
-         MURc(field)%YE(Right) = MURc(field)%YI(Right) + 1
-         MURc(field)%ZI(Right) =                                sgg%Sweep(field)%ZI
-         MURc(field)%ZE(Right) =                                sgg%Sweep(field)%ZE
+         MURc(field)%XI(RIGHT) =                                sgg%Sweep(field)%XI
+         MURc(field)%XE(RIGHT) =                                sgg%Sweep(field)%XE
+         MURc(field)%YI(RIGHT) =                                sgg%Sweep(field)%YE
+         MURc(field)%YE(RIGHT) = MURc(field)%YI(RIGHT) + 1
+         MURc(field)%ZI(RIGHT) =                                sgg%Sweep(field)%ZI
+         MURc(field)%ZE(RIGHT) =                                sgg%Sweep(field)%ZE
          !
-         MURc(field)%XI(Back)  =                                sgg%Sweep(field)%XI-1
-         MURc(field)%XE(Back)  = MURc(field)%XI(Back) + 1
-         MURc(field)%YI(Back)  =                                sgg%Sweep(field)%YI
-         MURc(field)%YE(Back)  =                                sgg%Sweep(field)%YE
-         MURc(field)%ZI(Back)  =                                sgg%Sweep(field)%ZI
-         MURc(field)%ZE(Back)  =                                sgg%Sweep(field)%ZE
+         MURc(field)%XI(BACK)  =                                sgg%Sweep(field)%XI-1
+         MURc(field)%XE(BACK)  = MURc(field)%XI(BACK) + 1
+         MURc(field)%YI(BACK)  =                                sgg%Sweep(field)%YI
+         MURc(field)%YE(BACK)  =                                sgg%Sweep(field)%YE
+         MURc(field)%ZI(BACK)  =                                sgg%Sweep(field)%ZI
+         MURc(field)%ZE(BACK)  =                                sgg%Sweep(field)%ZE
          !
          MURc(field)%XI(Front) =                                sgg%Sweep(field)%XE
          MURc(field)%XE(Front) = MURc(field)%XI(Front) + 1
@@ -138,150 +138,150 @@ contains
       end do
 
       !Fake coms and ends IN CASE OF NO MUR SO THAT NEVER ENTER THE do FOR THESE CASES
-      if (.not.(sgg%Border%IsDownMUR)) MURc(4:6)%ZI(down)=MURc(4:6)%ZE(down)+100
-      if (.not.(sgg%Border%IsUpMUR))   MURc(4:6)%ZI(up)  =MURc(4:6)%ZE(up)  +100
+      if (.not.(sgg%Border%IsDownMUR)) MURc(4:6)%ZI(DOWN)=MURc(4:6)%ZE(DOWN)+100
+      if (.not.(sgg%Border%IsUpMUR))   MURc(4:6)%ZI(UP)  =MURc(4:6)%ZE(UP)  +100
       !
-      if (.not.(sgg%Border%IsLeftMUR))  MURc(4:6)%ZI(left) =MURc(4:6)%ZE(left) +100
-      if (.not.(sgg%Border%IsRightMUR)) MURc(4:6)%ZI(right)=MURc(4:6)%ZE(right)+100
+      if (.not.(sgg%Border%IsLeftMUR))  MURc(4:6)%ZI(LEFT) =MURc(4:6)%ZE(LEFT) +100
+      if (.not.(sgg%Border%IsRightMUR)) MURc(4:6)%ZI(RIGHT)=MURc(4:6)%ZE(RIGHT)+100
       !
       if (.not.(sgg%Border%IsFrontMUR)) MURc(4:6)%ZI(front)=MURc(4:6)%ZE(front)+100
-      if (.not.(sgg%Border%IsBackMUR))  MURc(4:6)%ZI(back) =MURc(4:6)%ZE(back) +100
+      if (.not.(sgg%Border%IsBackMUR))  MURc(4:6)%ZI(BACK) =MURc(4:6)%ZE(BACK) +100
 
       !MUR Field component matrix allocation
-      do REGION =left,right
-         allocate (regLR(region)%Past_Hx(MURc(iHx)%XI(region) : MURc(iHx)%XE(region), &
-         MURc(iHx)%YI(region) : MURc(iHx)%YE(region), &
-         MURc(iHx)%ZI(region) : MURc(iHx)%ZE(region)),&
-         regLR(region)%Past_Hz(MURc(iHz)%XI(region) : MURc(iHz)%XE(region), &
-         MURc(iHz)%YI(region) : MURc(iHz)%YE(region), &
-         MURc(iHz)%ZI(region) : MURc(iHz)%ZE(region)))
+      do REGION =LEFT,RIGHT
+         allocate (regLR(region)%Past_Hx(MURc(IHX)%XI(region) : MURc(IHX)%XE(region), &
+         MURc(IHX)%YI(region) : MURc(IHX)%YE(region), &
+         MURc(IHX)%ZI(region) : MURc(IHX)%ZE(region)),&
+         regLR(region)%Past_Hz(MURc(IHZ)%XI(region) : MURc(IHZ)%XE(region), &
+         MURc(IHZ)%YI(region) : MURc(IHZ)%YE(region), &
+         MURc(IHZ)%ZI(region) : MURc(IHZ)%ZE(region)))
          if (.not.resume) then
             regLR(REGION)%Past_Hx=0.0_RKIND ; regLR(REGION)%Past_Hz=0.0_RKIND ;
          else
-            Do k=MURc(iHx)%ZI(region),MURc(iHx)%ZE(region)
-               Do j=MURc(iHx)%YI(region),MURc(iHx)%YE(region)
-                  READ (14) (regLR(region)%Past_Hx(i,j,k),i=MURc(iHx)%XI(region),MURc(iHx)%XE(region))
-               End do
-            End do
-            Do k=MURc(iHz)%ZI(region),MURc(iHz)%ZE(region)
-               Do j=MURc(iHz)%YI(region),MURc(iHz)%YE(region)
-                  READ (14) ( regLR(region)%Past_Hz(i,j,k),i=MURc(iHz)%XI(region),MURc(iHz)%XE(region))
-               End do
-            End do
+            do k=MURc(IHX)%ZI(region),MURc(IHX)%ZE(region)
+               do j=MURc(IHX)%YI(region),MURc(IHX)%YE(region)
+                  read (14) (regLR(region)%Past_Hx(i,j,k),i=MURc(IHX)%XI(region),MURc(IHX)%XE(region))
+               end do
+            end do
+            do k=MURc(IHZ)%ZI(region),MURc(IHZ)%ZE(region)
+               do j=MURc(IHZ)%YI(region),MURc(IHZ)%YE(region)
+                  read (14) ( regLR(region)%Past_Hz(i,j,k),i=MURc(IHZ)%XI(region),MURc(IHZ)%XE(region))
+               end do
+            end do
          end if
       end do
-      do REGION =down,up
-         allocate (regDU(region)%Past_Hy(MURc(iHy)%XI(region) : MURc(iHy)%XE(region), &
-         MURc(iHy)%YI(region) : MURc(iHy)%YE(region), &
-         MURc(iHy)%ZI(region) : MURc(iHy)%ZE(region)),&
-         regDU(region)%Past_Hx(MURc(iHx)%XI(region) : MURc(iHx)%XE(region), &
-         MURc(iHx)%YI(region) : MURc(iHx)%YE(region), &
-         MURc(iHx)%ZI(region) : MURc(iHx)%ZE(region)))
+      do REGION =DOWN,UP
+         allocate (regDU(region)%Past_Hy(MURc(IHY)%XI(region) : MURc(IHY)%XE(region), &
+         MURc(IHY)%YI(region) : MURc(IHY)%YE(region), &
+         MURc(IHY)%ZI(region) : MURc(IHY)%ZE(region)),&
+         regDU(region)%Past_Hx(MURc(IHX)%XI(region) : MURc(IHX)%XE(region), &
+         MURc(IHX)%YI(region) : MURc(IHX)%YE(region), &
+         MURc(IHX)%ZI(region) : MURc(IHX)%ZE(region)))
          if (.not.resume) then
             regDU(REGION)%Past_Hy=0.0_RKIND ; regDU(REGION)%Past_Hx=0.0_RKIND ;
          else
-            Do k=MURc(iHy)%ZI(region),MURc(iHy)%ZE(region)
-               Do j=MURc(iHy)%YI(region),MURc(iHy)%YE(region)
-                  READ (14) (regDU(region)%Past_Hy(i,j,k),i=MURc(iHy)%XI(region),MURc(iHy)%XE(region))
-               End do
-            End do
-            Do k=MURc(iHx)%ZI(region),MURc(iHx)%ZE(region)
-               Do j=MURc(iHx)%YI(region),MURc(iHx)%YE(region)
-                  READ (14) ( regDU(region)%Past_Hx(i,j,k),i=MURc(iHx)%XI(region),MURc(iHx)%XE(region))
-               End do
-            End do
+            do k=MURc(IHY)%ZI(region),MURc(IHY)%ZE(region)
+               do j=MURc(IHY)%YI(region),MURc(IHY)%YE(region)
+                  read (14) (regDU(region)%Past_Hy(i,j,k),i=MURc(IHY)%XI(region),MURc(IHY)%XE(region))
+               end do
+            end do
+            do k=MURc(IHX)%ZI(region),MURc(IHX)%ZE(region)
+               do j=MURc(IHX)%YI(region),MURc(IHX)%YE(region)
+                  read (14) ( regDU(region)%Past_Hx(i,j,k),i=MURc(IHX)%XI(region),MURc(IHX)%XE(region))
+               end do
+            end do
          end if
       end do
-      do REGION =back,front
-         allocate (regBF(region)%Past_Hz(MURc(iHz)%XI(region) : MURc(iHz)%XE(region), &
-         MURc(iHz)%YI(region) : MURc(iHz)%YE(region), &
-         MURc(iHz)%ZI(region) : MURc(iHz)%ZE(region)),&
-         regBF(region)%Past_Hy(MURc(iHy)%XI(region) : MURc(iHy)%XE(region), &
-         MURc(iHy)%YI(region) : MURc(iHy)%YE(region), &
-         MURc(iHy)%ZI(region) : MURc(iHy)%ZE(region)))
+      do REGION =BACK,front
+         allocate (regBF(region)%Past_Hz(MURc(IHZ)%XI(region) : MURc(IHZ)%XE(region), &
+         MURc(IHZ)%YI(region) : MURc(IHZ)%YE(region), &
+         MURc(IHZ)%ZI(region) : MURc(IHZ)%ZE(region)),&
+         regBF(region)%Past_Hy(MURc(IHY)%XI(region) : MURc(IHY)%XE(region), &
+         MURc(IHY)%YI(region) : MURc(IHY)%YE(region), &
+         MURc(IHY)%ZI(region) : MURc(IHY)%ZE(region)))
          if (.not.resume) then
             regBF(REGION)%Past_Hz=0.0_RKIND ; regBF(REGION)%Past_Hy=0.0_RKIND ;
          else
-            Do k=MURc(iHz)%ZI(region),MURc(iHz)%ZE(region)
-               Do j=MURc(iHz)%YI(region),MURc(iHz)%YE(region)
-                  READ (14) (regBF(region)%Past_Hz(i,j,k),i=MURc(iHz)%XI(region),MURc(iHz)%XE(region))
-               End do
-            End do
-            Do k=MURc(iHy)%ZI(region),MURc(iHy)%ZE(region)
-               Do j=MURc(iHy)%YI(region),MURc(iHy)%YE(region)
-                  READ (14) ( regBF(region)%Past_Hy(i,j,k),i=MURc(iHy)%XI(region),MURc(iHy)%XE(region))
-               End do
-            End do
+            do k=MURc(IHZ)%ZI(region),MURc(IHZ)%ZE(region)
+               do j=MURc(IHZ)%YI(region),MURc(IHZ)%YE(region)
+                  read (14) (regBF(region)%Past_Hz(i,j,k),i=MURc(IHZ)%XI(region),MURc(IHZ)%XE(region))
+               end do
+            end do
+            do k=MURc(IHY)%ZI(region),MURc(IHY)%ZE(region)
+               do j=MURc(IHY)%YI(region),MURc(IHY)%YE(region)
+                  read (14) ( regBF(region)%Past_Hy(i,j,k),i=MURc(IHY)%XI(region),MURc(IHY)%XE(region))
+               end do
+            end do
          end if
       end do
 
       !past past
 
       !MUR Field component matrix allocation
-      do REGION =left,right
-         allocate (regLR(region)%PastPast_Hx(MURc(iHx)%XI(region) : MURc(iHx)%XE(region), &
-         MURc(iHx)%YI(region) : MURc(iHx)%YE(region), &
-         MURc(iHx)%ZI(region) : MURc(iHx)%ZE(region)),&
-         regLR(region)%PastPast_Hz(MURc(iHz)%XI(region) : MURc(iHz)%XE(region), &
-         MURc(iHz)%YI(region) : MURc(iHz)%YE(region), &
-         MURc(iHz)%ZI(region) : MURc(iHz)%ZE(region)))
+      do REGION =LEFT,RIGHT
+         allocate (regLR(region)%PastPast_Hx(MURc(IHX)%XI(region) : MURc(IHX)%XE(region), &
+         MURc(IHX)%YI(region) : MURc(IHX)%YE(region), &
+         MURc(IHX)%ZI(region) : MURc(IHX)%ZE(region)),&
+         regLR(region)%PastPast_Hz(MURc(IHZ)%XI(region) : MURc(IHZ)%XE(region), &
+         MURc(IHZ)%YI(region) : MURc(IHZ)%YE(region), &
+         MURc(IHZ)%ZI(region) : MURc(IHZ)%ZE(region)))
          if (.not.resume) then
             regLR(REGION)%PastPast_Hx=0.0_RKIND ; regLR(REGION)%PastPast_Hz=0.0_RKIND ;
          else
-            Do k=MURc(iHx)%ZI(region),MURc(iHx)%ZE(region)
-               Do j=MURc(iHx)%YI(region),MURc(iHx)%YE(region)
-                  READ (14) (regLR(region)%PastPast_Hx(i,j,k),i=MURc(iHx)%XI(region),MURc(iHx)%XE(region))
-               End do
-            End do
-            Do k=MURc(iHz)%ZI(region),MURc(iHz)%ZE(region)
-               Do j=MURc(iHz)%YI(region),MURc(iHz)%YE(region)
-                  READ (14) ( regLR(region)%PastPast_Hz(i,j,k),i=MURc(iHz)%XI(region),MURc(iHz)%XE(region))
-               End do
-            End do
+            do k=MURc(IHX)%ZI(region),MURc(IHX)%ZE(region)
+               do j=MURc(IHX)%YI(region),MURc(IHX)%YE(region)
+                  read (14) (regLR(region)%PastPast_Hx(i,j,k),i=MURc(IHX)%XI(region),MURc(IHX)%XE(region))
+               end do
+            end do
+            do k=MURc(IHZ)%ZI(region),MURc(IHZ)%ZE(region)
+               do j=MURc(IHZ)%YI(region),MURc(IHZ)%YE(region)
+                  read (14) ( regLR(region)%PastPast_Hz(i,j,k),i=MURc(IHZ)%XI(region),MURc(IHZ)%XE(region))
+               end do
+            end do
          end if
       end do
-      do REGION =down,up
-         allocate (regDU(region)%PastPast_Hy(MURc(iHy)%XI(region) : MURc(iHy)%XE(region), &
-         MURc(iHy)%YI(region) : MURc(iHy)%YE(region), &
-         MURc(iHy)%ZI(region) : MURc(iHy)%ZE(region)),&
-         regDU(region)%PastPast_Hx(MURc(iHx)%XI(region) : MURc(iHx)%XE(region), &
-         MURc(iHx)%YI(region) : MURc(iHx)%YE(region), &
-         MURc(iHx)%ZI(region) : MURc(iHx)%ZE(region)))
+      do REGION =DOWN,UP
+         allocate (regDU(region)%PastPast_Hy(MURc(IHY)%XI(region) : MURc(IHY)%XE(region), &
+         MURc(IHY)%YI(region) : MURc(IHY)%YE(region), &
+         MURc(IHY)%ZI(region) : MURc(IHY)%ZE(region)),&
+         regDU(region)%PastPast_Hx(MURc(IHX)%XI(region) : MURc(IHX)%XE(region), &
+         MURc(IHX)%YI(region) : MURc(IHX)%YE(region), &
+         MURc(IHX)%ZI(region) : MURc(IHX)%ZE(region)))
          if (.not.resume) then
             regDU(REGION)%PastPast_Hy=0.0_RKIND ; regDU(REGION)%PastPast_Hx=0.0_RKIND ;
          else
-            Do k=MURc(iHy)%ZI(region),MURc(iHy)%ZE(region)
-               Do j=MURc(iHy)%YI(region),MURc(iHy)%YE(region)
-                  READ (14) (regDU(region)%PastPast_Hy(i,j,k),i=MURc(iHy)%XI(region),MURc(iHy)%XE(region))
-               End do
-            End do
-            Do k=MURc(iHx)%ZI(region),MURc(iHx)%ZE(region)
-               Do j=MURc(iHx)%YI(region),MURc(iHx)%YE(region)
-                  READ (14) ( regDU(region)%PastPast_Hx(i,j,k),i=MURc(iHx)%XI(region),MURc(iHx)%XE(region))
-               End do
-            End do
+            do k=MURc(IHY)%ZI(region),MURc(IHY)%ZE(region)
+               do j=MURc(IHY)%YI(region),MURc(IHY)%YE(region)
+                  read (14) (regDU(region)%PastPast_Hy(i,j,k),i=MURc(IHY)%XI(region),MURc(IHY)%XE(region))
+               end do
+            end do
+            do k=MURc(IHX)%ZI(region),MURc(IHX)%ZE(region)
+               do j=MURc(IHX)%YI(region),MURc(IHX)%YE(region)
+                  read (14) ( regDU(region)%PastPast_Hx(i,j,k),i=MURc(IHX)%XI(region),MURc(IHX)%XE(region))
+               end do
+            end do
          end if
       end do
-      do REGION =back,front
-         allocate (regBF(region)%PastPast_Hz(MURc(iHz)%XI(region) : MURc(iHz)%XE(region), &
-         MURc(iHz)%YI(region) : MURc(iHz)%YE(region), &
-         MURc(iHz)%ZI(region) : MURc(iHz)%ZE(region)),&
-         regBF(region)%PastPast_Hy(MURc(iHy)%XI(region) : MURc(iHy)%XE(region), &
-         MURc(iHy)%YI(region) : MURc(iHy)%YE(region), &
-         MURc(iHy)%ZI(region) : MURc(iHy)%ZE(region)))
+      do REGION =BACK,front
+         allocate (regBF(region)%PastPast_Hz(MURc(IHZ)%XI(region) : MURc(IHZ)%XE(region), &
+         MURc(IHZ)%YI(region) : MURc(IHZ)%YE(region), &
+         MURc(IHZ)%ZI(region) : MURc(IHZ)%ZE(region)),&
+         regBF(region)%PastPast_Hy(MURc(IHY)%XI(region) : MURc(IHY)%XE(region), &
+         MURc(IHY)%YI(region) : MURc(IHY)%YE(region), &
+         MURc(IHY)%ZI(region) : MURc(IHY)%ZE(region)))
          if (.not.resume) then
             regBF(REGION)%PastPast_Hz=0.0_RKIND ; regBF(REGION)%PastPast_Hy=0.0_RKIND ;
          else
-            Do k=MURc(iHz)%ZI(region),MURc(iHz)%ZE(region)
-               Do j=MURc(iHz)%YI(region),MURc(iHz)%YE(region)
-                  READ (14) (regBF(region)%PastPast_Hz(i,j,k),i=MURc(iHz)%XI(region),MURc(iHz)%XE(region))
-               End do
-            End do
-            Do k=MURc(iHy)%ZI(region),MURc(iHy)%ZE(region)
-               Do j=MURc(iHy)%YI(region),MURc(iHy)%YE(region)
-                  READ (14) ( regBF(region)%PastPast_Hy(i,j,k),i=MURc(iHy)%XI(region),MURc(iHy)%XE(region))
-               End do
-            End do
+            do k=MURc(IHZ)%ZI(region),MURc(IHZ)%ZE(region)
+               do j=MURc(IHZ)%YI(region),MURc(IHZ)%YE(region)
+                  read (14) (regBF(region)%PastPast_Hz(i,j,k),i=MURc(IHZ)%XI(region),MURc(IHZ)%XE(region))
+               end do
+            end do
+            do k=MURc(IHY)%ZI(region),MURc(IHY)%ZE(region)
+               do j=MURc(IHY)%YI(region),MURc(IHY)%YE(region)
+                  read (14) ( regBF(region)%PastPast_Hy(i,j,k),i=MURc(IHY)%XI(region),MURc(IHY)%XE(region))
+               end do
+            end do
          end if
       end do
 
@@ -299,7 +299,7 @@ contains
         real(kind=RKIND) , dimension(:)   , intent(in) :: &
         Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
         Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
-        Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
+        Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE)
 !
         eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
         cluz=1.0_RKIND/sqrt(eps0*mu0)
@@ -327,12 +327,12 @@ contains
             right_CAB3(i1) = 1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))
             right_cab4(i1) = (2.0_RKIND * CNUM/(1.0_RKIND+CNUM)-4.0_RKIND * (1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))))
             !!
-            cnum=(1.0_RKIND/Idzh(sgg%ALLOC(iEz)%ZI))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
+            cnum=(1.0_RKIND/Idzh(sgg%ALLOC(IEZ)%ZI))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
             down_CAB1(i1) = (1.0_RKIND-CNUM)/(1.0_RKIND+CNUM)
             down_CAB3(i1) = 1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))
             down_cab4(i1) = (2.0_RKIND * CNUM/(1.0_RKIND+CNUM)-4.0_RKIND * (1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))))
             !
-            cnum=(1.0_RKIND/Idzh(sgg%ALLOC(iEz)%ZE))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
+            cnum=(1.0_RKIND/Idzh(sgg%ALLOC(IEZ)%ZE))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
             up_CAB1(i1) = (1.0_RKIND-CNUM)/(1.0_RKIND+CNUM)
             up_CAB3(i1) = 1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))
             up_cab4(i1) = (2.0_RKIND * CNUM/(1.0_RKIND+CNUM)-4.0_RKIND * (1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))))
@@ -349,79 +349,79 @@ contains
       integer(kind=4) :: region,i,j,k
 
 
-      do REGION =left,right
-         Do k=MURc(iHx)%ZI(region),MURc(iHx)%ZE(region)
-            Do j=MURc(iHx)%YI(region),MURc(iHx)%YE(region)
-               write(14,err=634) (regLR(region)%Past_Hx(i,j,k),i=MURc(iHx)%XI(region),MURc(iHx)%XE(region))
-            End do
-         End do
-         Do k=MURc(iHz)%ZI(region),MURc(iHz)%ZE(region)
-            Do j=MURc(iHz)%YI(region),MURc(iHz)%YE(region)
-               write(14,err=634) ( regLR(region)%Past_Hz(i,j,k),i=MURc(iHz)%XI(region),MURc(iHz)%XE(region))
-            End do
-         End do
+      do REGION =LEFT,RIGHT
+         do k=MURc(IHX)%ZI(region),MURc(IHX)%ZE(region)
+            do j=MURc(IHX)%YI(region),MURc(IHX)%YE(region)
+               write(14,err=634) (regLR(region)%Past_Hx(i,j,k),i=MURc(IHX)%XI(region),MURc(IHX)%XE(region))
+            end do
+         end do
+         do k=MURc(IHZ)%ZI(region),MURc(IHZ)%ZE(region)
+            do j=MURc(IHZ)%YI(region),MURc(IHZ)%YE(region)
+               write(14,err=634) ( regLR(region)%Past_Hz(i,j,k),i=MURc(IHZ)%XI(region),MURc(IHZ)%XE(region))
+            end do
+         end do
       end do
-      do REGION =down,up
-         Do k=MURc(iHy)%ZI(region),MURc(iHy)%ZE(region)
-            Do j=MURc(iHy)%YI(region),MURc(iHy)%YE(region)
-               write(14,err=634) (regDU(region)%Past_Hy(i,j,k),i=MURc(iHy)%XI(region),MURc(iHy)%XE(region))
-            End do
-         End do
-         Do k=MURc(iHx)%ZI(region),MURc(iHx)%ZE(region)
-            Do j=MURc(iHx)%YI(region),MURc(iHx)%YE(region)
-               write(14,err=634) ( regDU(region)%Past_Hx(i,j,k),i=MURc(iHx)%XI(region),MURc(iHx)%XE(region))
-            End do
-         End do
+      do REGION =DOWN,UP
+         do k=MURc(IHY)%ZI(region),MURc(IHY)%ZE(region)
+            do j=MURc(IHY)%YI(region),MURc(IHY)%YE(region)
+               write(14,err=634) (regDU(region)%Past_Hy(i,j,k),i=MURc(IHY)%XI(region),MURc(IHY)%XE(region))
+            end do
+         end do
+         do k=MURc(IHX)%ZI(region),MURc(IHX)%ZE(region)
+            do j=MURc(IHX)%YI(region),MURc(IHX)%YE(region)
+               write(14,err=634) ( regDU(region)%Past_Hx(i,j,k),i=MURc(IHX)%XI(region),MURc(IHX)%XE(region))
+            end do
+         end do
       end do
-      do REGION =back,front
-         Do k=MURc(iHz)%ZI(region),MURc(iHz)%ZE(region)
-            Do j=MURc(iHz)%YI(region),MURc(iHz)%YE(region)
-               write(14,err=634) (regBF(region)%Past_Hz(i,j,k),i=MURc(iHz)%XI(region),MURc(iHz)%XE(region))
-            End do
-         End do
-         Do k=MURc(iHy)%ZI(region),MURc(iHy)%ZE(region)
-            Do j=MURc(iHy)%YI(region),MURc(iHy)%YE(region)
-               write(14,err=634) ( regBF(region)%Past_Hy(i,j,k),i=MURc(iHy)%XI(region),MURc(iHy)%XE(region))
-            End do
-         End do
+      do REGION =BACK,front
+         do k=MURc(IHZ)%ZI(region),MURc(IHZ)%ZE(region)
+            do j=MURc(IHZ)%YI(region),MURc(IHZ)%YE(region)
+               write(14,err=634) (regBF(region)%Past_Hz(i,j,k),i=MURc(IHZ)%XI(region),MURc(IHZ)%XE(region))
+            end do
+         end do
+         do k=MURc(IHY)%ZI(region),MURc(IHY)%ZE(region)
+            do j=MURc(IHY)%YI(region),MURc(IHY)%YE(region)
+               write(14,err=634) ( regBF(region)%Past_Hy(i,j,k),i=MURc(IHY)%XI(region),MURc(IHY)%XE(region))
+            end do
+         end do
       end do
 
 
-      do REGION =left,right
-         Do k=MURc(iHx)%ZI(region),MURc(iHx)%ZE(region)
-            Do j=MURc(iHx)%YI(region),MURc(iHx)%YE(region)
-               write(14,err=634) (regLR(region)%PastPast_Hx(i,j,k),i=MURc(iHx)%XI(region),MURc(iHx)%XE(region))
-            End do
-         End do
-         Do k=MURc(iHz)%ZI(region),MURc(iHz)%ZE(region)
-            Do j=MURc(iHz)%YI(region),MURc(iHz)%YE(region)
-               write(14,err=634) ( regLR(region)%PastPast_Hz(i,j,k),i=MURc(iHz)%XI(region),MURc(iHz)%XE(region))
-            End do
-         End do
+      do REGION =LEFT,RIGHT
+         do k=MURc(IHX)%ZI(region),MURc(IHX)%ZE(region)
+            do j=MURc(IHX)%YI(region),MURc(IHX)%YE(region)
+               write(14,err=634) (regLR(region)%PastPast_Hx(i,j,k),i=MURc(IHX)%XI(region),MURc(IHX)%XE(region))
+            end do
+         end do
+         do k=MURc(IHZ)%ZI(region),MURc(IHZ)%ZE(region)
+            do j=MURc(IHZ)%YI(region),MURc(IHZ)%YE(region)
+               write(14,err=634) ( regLR(region)%PastPast_Hz(i,j,k),i=MURc(IHZ)%XI(region),MURc(IHZ)%XE(region))
+            end do
+         end do
       end do
-      do REGION =down,up
-         Do k=MURc(iHy)%ZI(region),MURc(iHy)%ZE(region)
-            Do j=MURc(iHy)%YI(region),MURc(iHy)%YE(region)
-               write(14,err=634) (regDU(region)%PastPast_Hy(i,j,k),i=MURc(iHy)%XI(region),MURc(iHy)%XE(region))
-            End do
-         End do
-         Do k=MURc(iHx)%ZI(region),MURc(iHx)%ZE(region)
-            Do j=MURc(iHx)%YI(region),MURc(iHx)%YE(region)
-               write(14,err=634) ( regDU(region)%PastPast_Hx(i,j,k),i=MURc(iHx)%XI(region),MURc(iHx)%XE(region))
-            End do
-         End do
+      do REGION =DOWN,UP
+         do k=MURc(IHY)%ZI(region),MURc(IHY)%ZE(region)
+            do j=MURc(IHY)%YI(region),MURc(IHY)%YE(region)
+               write(14,err=634) (regDU(region)%PastPast_Hy(i,j,k),i=MURc(IHY)%XI(region),MURc(IHY)%XE(region))
+            end do
+         end do
+         do k=MURc(IHX)%ZI(region),MURc(IHX)%ZE(region)
+            do j=MURc(IHX)%YI(region),MURc(IHX)%YE(region)
+               write(14,err=634) ( regDU(region)%PastPast_Hx(i,j,k),i=MURc(IHX)%XI(region),MURc(IHX)%XE(region))
+            end do
+         end do
       end do
-      do REGION =back,front
-         Do k=MURc(iHz)%ZI(region),MURc(iHz)%ZE(region)
-            Do j=MURc(iHz)%YI(region),MURc(iHz)%YE(region)
-               write(14,err=634) (regBF(region)%PastPast_Hz(i,j,k),i=MURc(iHz)%XI(region),MURc(iHz)%XE(region))
-            End do
-         End do
-         Do k=MURc(iHy)%ZI(region),MURc(iHy)%ZE(region)
-            Do j=MURc(iHy)%YI(region),MURc(iHy)%YE(region)
-               write(14,err=634) ( regBF(region)%PastPast_Hy(i,j,k),i=MURc(iHy)%XI(region),MURc(iHy)%XE(region))
-            End do
-         End do
+      do REGION =BACK,front
+         do k=MURc(IHZ)%ZI(region),MURc(IHZ)%ZE(region)
+            do j=MURc(IHZ)%YI(region),MURc(IHZ)%YE(region)
+               write(14,err=634) (regBF(region)%PastPast_Hz(i,j,k),i=MURc(IHZ)%XI(region),MURc(IHZ)%XE(region))
+            end do
+         end do
+         do k=MURc(IHY)%ZI(region),MURc(IHY)%ZE(region)
+            do j=MURc(IHY)%YI(region),MURc(IHY)%YE(region)
+               write(14,err=634) ( regBF(region)%PastPast_Hy(i,j,k),i=MURc(IHY)%XI(region),MURc(IHY)%XE(region))
+            end do
+         end do
       end do
 
       goto 635
@@ -438,24 +438,24 @@ contains
    subroutine DestroyMURBorders
       integer(kind=4) :: region
 
-      do REGION =left,right
+      do REGION =LEFT,RIGHT
          if (associated(regLR(region)%Past_Hx)) deallocate(regLR(region)%Past_Hx,regLR(region)%Past_Hz)
       end do
-      do REGION =down,up
+      do REGION =DOWN,UP
          if (associated(regDU(region)%Past_Hy)) deallocate(regDU(region)%Past_Hy,regDU(region)%Past_Hx)
       end do
-      do REGION =back,front
+      do REGION =BACK,front
          if (associated(regBF(region)%Past_Hz)) deallocate(regBF(region)%Past_Hz,regBF(region)%Past_Hy)
       end do
 
 
-      do REGION =left,right
+      do REGION =LEFT,RIGHT
          if (associated(regLR(region)%PastPast_Hx)) deallocate(regLR(region)%PastPast_Hx,regLR(region)%PastPast_Hz)
       end do
-      do REGION =down,up
+      do REGION =DOWN,UP
          if (associated(regDU(region)%PastPast_Hy)) deallocate(regDU(region)%PastPast_Hy,regDU(region)%PastPast_Hx)
       end do
-      do REGION =back,front
+      do REGION =BACK,front
          if (associated(regBF(region)%PastPast_Hz)) deallocate(regBF(region)%PastPast_Hz,regBF(region)%PastPast_Hy)
       end do
 
@@ -480,17 +480,17 @@ contains
    subroutine AdvanceMagneticMUR(b, sgg,sggMiHx, sggMiHy, sggMiHz, Hx, Hy, Hz,mur_second)
       !---------------------------> inputs <----------------------------------------------------------
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      type( bounds_t), intent( IN) :: b
+      type( bounds_t), intent( in) :: b
       logical :: mur_second
       !--->
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( IN) :: sggMiHx
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN) :: sggMiHy
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN) :: sggMiHz
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( in) :: sggMiHx
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( in) :: sggMiHy
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( in) :: sggMiHz
       !--->
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hx
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT) :: Hy
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT) :: Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( inout) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( inout) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( inout) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
       integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceMagneTicMUR <-------------------------------------
@@ -509,15 +509,15 @@ contains
          !!!!!!?!?!?!?!?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsLeftMUR) then
-            REGION = left
-            j = MURc(iHx)%YI( REGION)
+            REGION = LEFT
+            j = MURc(IHX)%YI( REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
 #endif
-            do k = MURc(iHx)%ZI( REGION), MURc(iHx)%ZE( REGION)
+            do k = MURc(IHX)%ZI( REGION), MURc(IHX)%ZE( REGION)
                k_m = k - b%Hx%ZI
-               do i = MURc(iHx)%XI( REGION), MURc(iHx)%XE( REGION)
+               do i = MURc(IHX)%XI( REGION), MURc(IHX)%XE( REGION)
                   i_m = i - b%Hx%XI
                   !--->
                   medio = sggMiHx( i_m    , j_m + 1, k_m    )
@@ -528,14 +528,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            j = MURc(iHz)%YI( REGION)
+            j = MURc(IHZ)%YI( REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
 #endif
-            do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
+            do k = MURc(IHZ)%ZI( REGION), MURc(IHZ)%ZE( REGION)
                k_m = k - b%Hz%ZI
-               do i = MURc(iHz)%XI( REGION), MURc(iHz)%XE( REGION)
+               do i = MURc(IHZ)%XI( REGION), MURc(IHZ)%XE( REGION)
                   i_m = i - b%Hz%XI
                   !--->
                   medio = sggMiHz( i_m    , j_m + 1, k_m    )
@@ -552,15 +552,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsRightMUR) then
-            REGION = right
-            j = MURc(iHx)%YE( REGION)
+            REGION = RIGHT
+            j = MURc(IHX)%YE( REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
 #endif
-            do k = MURc(iHx)%ZI( REGION), MURc(iHx)%ZE( REGION)
+            do k = MURc(IHX)%ZI( REGION), MURc(IHX)%ZE( REGION)
                k_m = k - b%Hx%ZI
-               do i = MURc(iHx)%XI( REGION), MURc(iHx)%XE( REGION)
+               do i = MURc(IHX)%XI( REGION), MURc(IHX)%XE( REGION)
                   i_m = i - b%Hx%XI
                   !--->
                   medio = sggMiHx( i_m    , j_m - 1, k_m    )
@@ -571,14 +571,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            j = MURc(iHz)%YE( REGION)
+            j = MURc(IHZ)%YE( REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
 #endif
-            do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
+            do k = MURc(IHZ)%ZI( REGION), MURc(IHZ)%ZE( REGION)
                k_m = k - b%Hz%ZI
-               do i = MURc(iHz)%XI( REGION), MURc(iHz)%XE( REGION)
+               do i = MURc(IHZ)%XI( REGION), MURc(IHZ)%XE( REGION)
                   i_m = i - b%Hz%XI
                   !--->
                   medio = sggMiHz( i_m    , j_m - 1, k_m    )
@@ -595,15 +595,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsDownMUR) then
-            REGION = down
-            k = MURc(iHy)%ZI( REGION)
+            REGION = DOWN
+            k = MURc(IHY)%ZI( REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
 #endif
-            do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
+            do j = MURc(IHY)%YI( REGION), MURc(IHY)%YE( REGION)
                j_m = j - b%Hy%YI
-               do i = MURc(iHy)%XI( REGION), MURc(iHy)%XE( REGION)
+               do i = MURc(IHY)%XI( REGION), MURc(IHY)%XE( REGION)
                   i_m = i - b%Hy%XI
                   !--->
                   medio = sggMiHy( i_m    , j_m    , k_m + 1)
@@ -614,14 +614,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            k = MURc(iHx)%ZI( REGION)
+            k = MURc(IHX)%ZI( REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
 #endif
-            do j = MURc(iHx)%YI( REGION), MURc(iHx)%YE( REGION)
+            do j = MURc(IHX)%YI( REGION), MURc(IHX)%YE( REGION)
                j_m = j - b%Hx%YI
-               do i = MURc(iHx)%XI( REGION), MURc(iHx)%XE( REGION)
+               do i = MURc(IHX)%XI( REGION), MURc(IHX)%XE( REGION)
                   i_m = i - b%Hx%XI
                   !--->
                   medio = sggMiHx( i_m    , j_m    , k_m + 1)
@@ -638,15 +638,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsUpMUR) then
-            REGION = up
-            k = MURc(iHy)%ZE( REGION)
+            REGION = UP
+            k = MURc(IHY)%ZE( REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
 #endif
-            do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
+            do j = MURc(IHY)%YI( REGION), MURc(IHY)%YE( REGION)
                j_m = j - b%Hy%YI
-               do i = MURc(iHy)%XI( REGION), MURc(iHy)%XE( REGION)
+               do i = MURc(IHY)%XI( REGION), MURc(IHY)%XE( REGION)
                   i_m = i - b%Hy%XI
                   !--->
                   medio = sggMiHy( i_m    , j_m    , k_m - 1)
@@ -657,14 +657,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            k = MURc(iHx)%ZE( REGION)
+            k = MURc(IHX)%ZE( REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
 #endif
-            do j = MURc(iHx)%YI( REGION), MURc(iHx)%YE( REGION)
+            do j = MURc(IHX)%YI( REGION), MURc(IHX)%YE( REGION)
                j_m = j - b%Hx%YI
-               do i = MURc(iHx)%XI( REGION), MURc(iHx)%XE( REGION)
+               do i = MURc(IHX)%XI( REGION), MURc(IHX)%XE( REGION)
                   i_m = i - b%Hx%XI
                   !--->
                   medio = sggMiHx( i_m    , j_m    , k_m - 1)
@@ -681,15 +681,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsBackMUR) then
-            REGION =back
-            i = MURc(iHz)%XI( REGION)
+            REGION =BACK
+            i = MURc(IHZ)%XI( REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
 #endif
-            do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
+            do k = MURc(IHZ)%ZI( REGION), MURc(IHZ)%ZE( REGION)
                k_m = k - b%Hz%ZI
-               do j = MURc(iHz)%YI( REGION), MURc(iHz)%YE( REGION)
+               do j = MURc(IHZ)%YI( REGION), MURc(IHZ)%YE( REGION)
                   j_m = j - b%Hz%YI
                   !--->
                   medio = sggMiHz( i_m + 1, j_m    , k_m    )
@@ -700,14 +700,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            i = MURc(iHy)%XI( REGION)
+            i = MURc(IHY)%XI( REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
 #endif
-            do k = MURc(iHy)%ZI( REGION), MURc(iHy)%ZE( REGION)
+            do k = MURc(IHY)%ZI( REGION), MURc(IHY)%ZE( REGION)
                k_m = k - b%Hy%ZI
-               do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
+               do j = MURc(IHY)%YI( REGION), MURc(IHY)%YE( REGION)
                   j_m = j - b%Hy%YI
                   !--->orig
                   medio = sggMiHy( i_m + 1, j_m    , k_m    )
@@ -725,14 +725,14 @@ contains
 
          if (sgg%Border%IsFrontMUR) then
             REGION =front
-            i = MURc(iHz)%XE( REGION)
+            i = MURc(IHZ)%XE( REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
 #endif
-            do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
+            do k = MURc(IHZ)%ZI( REGION), MURc(IHZ)%ZE( REGION)
                k_m = k - b%Hz%ZI
-               do j = MURc(iHz)%YI( REGION), MURc(iHz)%YE( REGION)
+               do j = MURc(IHZ)%YI( REGION), MURc(IHZ)%YE( REGION)
                   j_m = j - b%Hz%YI
                   !--->
                   medio = sggMiHz( i_m - 1, j_m    , k_m    )
@@ -743,14 +743,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            i = MURc(iHy)%XE( REGION)
+            i = MURc(IHY)%XE( REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
 #endif
-            do k = MURc(iHy)%ZI( REGION), MURc(iHy)%ZE( REGION)
+            do k = MURc(IHY)%ZI( REGION), MURc(IHY)%ZE( REGION)
                k_m = k - b%Hy%ZI
-               do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
+               do j = MURc(IHY)%YI( REGION), MURc(IHY)%YE( REGION)
                   j_m = j - b%Hy%YI
                   !--->
                   medio = sggMiHy( i_m - 1, j_m    , k_m    )
@@ -776,15 +776,15 @@ contains
          !!!!!!!!!!!!!!Faces!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          if (sgg%Border%IsLeftMUR) then
-            REGION = left
-            j = MURc(iHx)%YI( REGION)
+            REGION = LEFT
+            j = MURc(IHX)%YI( REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
 #endif
-            do k = MURc(iHx)%ZI( REGION) + 1, MURc(iHx)%ZE( REGION) - 1
+            do k = MURc(IHX)%ZI( REGION) + 1, MURc(IHX)%ZE( REGION) - 1
                k_m = k - b%Hx%ZI
-               do i = MURc(iHx)%XI( REGION) + 1, MURc(iHx)%XE( REGION) - 1
+               do i = MURc(IHX)%XI( REGION) + 1, MURc(IHX)%XE( REGION) - 1
                   i_m = i - b%Hx%XI
                   !--->
                   medio = sggMiHx( i_m    , j_m + 1, k_m    )
@@ -800,14 +800,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            j = MURc(iHz)%YI( REGION)
+            j = MURc(IHZ)%YI( REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
 #endif
-            do k = MURc(iHz)%ZI( REGION) + 1, MURc(iHz)%ZE( REGION) - 1
+            do k = MURc(IHZ)%ZI( REGION) + 1, MURc(IHZ)%ZE( REGION) - 1
                k_m = k - b%Hz%ZI
-               do i = MURc(iHz)%XI( REGION) + 1, MURc(iHz)%XE( REGION) - 1
+               do i = MURc(IHZ)%XI( REGION) + 1, MURc(IHZ)%XE( REGION) - 1
                   i_m = i - b%Hz%XI
                   !--->
                   medio = sggMiHz( i_m    , j_m + 1, k_m    )
@@ -829,15 +829,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsRightMUR) then
-            REGION = right
-            j = MURc(iHx)%YE( REGION)
+            REGION = RIGHT
+            j = MURc(IHX)%YE( REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
 #endif
-            do k = MURc(iHx)%ZI( REGION) + 1, MURc(iHx)%ZE( REGION) - 1
+            do k = MURc(IHX)%ZI( REGION) + 1, MURc(IHX)%ZE( REGION) - 1
                k_m = k - b%Hx%ZI
-               do i = MURc(iHx)%XI( REGION) + 1, MURc(iHx)%XE( REGION) - 1
+               do i = MURc(IHX)%XI( REGION) + 1, MURc(IHX)%XE( REGION) - 1
                   i_m = i - b%Hx%XI
                   !--->
                   medio = sggMiHx( i_m    , j_m - 1, k_m    )
@@ -853,14 +853,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            j = MURc(iHz)%YE( REGION)
+            j = MURc(IHZ)%YE( REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
 #endif
-            do k = MURc(iHz)%ZI( REGION) + 1, MURc(iHz)%ZE( REGION) - 1
+            do k = MURc(IHZ)%ZI( REGION) + 1, MURc(IHZ)%ZE( REGION) - 1
                k_m = k - b%Hz%ZI
-               do i = MURc(iHz)%XI( REGION) + 1, MURc(iHz)%XE( REGION) - 1
+               do i = MURc(IHZ)%XI( REGION) + 1, MURc(IHZ)%XE( REGION) - 1
                   i_m = i - b%Hz%XI
                   !--->
                   medio = sggMiHz( i_m    , j_m - 1, k_m    )
@@ -882,15 +882,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsDownMUR) then
-            REGION = down
-            k = MURc(iHy)%ZI( REGION)
+            REGION = DOWN
+            k = MURc(IHY)%ZI( REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
 #endif
-            do j = MURc(iHy)%YI( REGION) + 1, MURc(iHy)%YE( REGION) - 1
+            do j = MURc(IHY)%YI( REGION) + 1, MURc(IHY)%YE( REGION) - 1
                j_m = j - b%Hy%YI
-               do i = MURc(iHy)%XI( REGION) + 1, MURc(iHy)%XE( REGION) - 1
+               do i = MURc(IHY)%XI( REGION) + 1, MURc(IHY)%XE( REGION) - 1
                   i_m = i - b%Hy%XI
                   !--->
                   medio = sggMiHy( i_m    , j_m    , k_m + 1)
@@ -906,14 +906,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            k = MURc(iHx)%ZI( REGION)
+            k = MURc(IHX)%ZI( REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
 #endif
-            do j = MURc(iHx)%YI( REGION) + 1, MURc(iHx)%YE( REGION) - 1
+            do j = MURc(IHX)%YI( REGION) + 1, MURc(IHX)%YE( REGION) - 1
                j_m = j - b%Hx%YI
-               do i = MURc(iHx)%XI( REGION) + 1, MURc(iHx)%XE( REGION) - 1
+               do i = MURc(IHX)%XI( REGION) + 1, MURc(IHX)%XE( REGION) - 1
                   i_m = i - b%Hx%XI
                   !--->
                   medio = sggMiHx( i_m    , j_m    , k_m + 1)
@@ -935,15 +935,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsUpMUR) then
-            REGION = up
-            k = MURc(iHy)%ZE( REGION)
+            REGION = UP
+            k = MURc(IHY)%ZE( REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
 #endif
-            do j = MURc(iHy)%YI( REGION) + 1, MURc(iHy)%YE( REGION) - 1
+            do j = MURc(IHY)%YI( REGION) + 1, MURc(IHY)%YE( REGION) - 1
                j_m = j - b%Hy%YI
-               do i = MURc(iHy)%XI( REGION) + 1, MURc(iHy)%XE( REGION) - 1
+               do i = MURc(IHY)%XI( REGION) + 1, MURc(IHY)%XE( REGION) - 1
                   i_m = i - b%Hy%XI
                   !--->
                   medio = sggMiHy( i_m    , j_m    , k_m - 1)
@@ -959,14 +959,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            k = MURc(iHx)%ZE( REGION)
+            k = MURc(IHX)%ZE( REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
 #endif
-            do j = MURc(iHx)%YI( REGION) + 1, MURc(iHx)%YE( REGION) - 1
+            do j = MURc(IHX)%YI( REGION) + 1, MURc(IHX)%YE( REGION) - 1
                j_m = j - b%Hx%YI
-               do i = MURc(iHx)%XI( REGION) + 1, MURc(iHx)%XE( REGION) - 1
+               do i = MURc(IHX)%XI( REGION) + 1, MURc(IHX)%XE( REGION) - 1
                   i_m = i - b%Hx%XI
                   !--->
                   medio = sggMiHx( i_m    , j_m    , k_m - 1)
@@ -988,15 +988,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsBackMUR) then
-            REGION =back
-            i = MURc(iHz)%XI( REGION)
+            REGION =BACK
+            i = MURc(IHZ)%XI( REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
 #endif
-            do k = MURc(iHz)%ZI( REGION) + 1, MURc(iHz)%ZE( REGION) - 1
+            do k = MURc(IHZ)%ZI( REGION) + 1, MURc(IHZ)%ZE( REGION) - 1
                k_m = k - b%Hz%ZI
-               do j = MURc(iHz)%YI( REGION) + 1, MURc(iHz)%YE( REGION) - 1
+               do j = MURc(IHZ)%YI( REGION) + 1, MURc(IHZ)%YE( REGION) - 1
                   j_m = j - b%Hz%YI
                   !--->
                   medio = sggMiHz( i_m + 1, j_m    , k_m    )
@@ -1012,14 +1012,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            i = MURc(iHy)%XI( REGION)
+            i = MURc(IHY)%XI( REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
 #endif
-            do k = MURc(iHy)%ZI( REGION) + 1, MURc(iHy)%ZE( REGION) - 1
+            do k = MURc(IHY)%ZI( REGION) + 1, MURc(IHY)%ZE( REGION) - 1
                k_m = k - b%Hy%ZI
-               do j = MURc(iHy)%YI( REGION) + 1, MURc(iHy)%YE( REGION) - 1
+               do j = MURc(IHY)%YI( REGION) + 1, MURc(IHY)%YE( REGION) - 1
                   j_m = j - b%Hy%YI
                   !--->orig
                   medio = sggMiHy( i_m + 1, j_m    , k_m    )
@@ -1042,14 +1042,14 @@ contains
 
          if (sgg%Border%IsFrontMUR) then
             REGION =front
-            i = MURc(iHz)%XE( REGION)
+            i = MURc(IHZ)%XE( REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
 #endif
-            do k = MURc(iHz)%ZI( REGION) + 1, MURc(iHz)%ZE( REGION) - 1
+            do k = MURc(IHZ)%ZI( REGION) + 1, MURc(IHZ)%ZE( REGION) - 1
                k_m = k - b%Hz%ZI
-               do j = MURc(iHz)%YI( REGION) + 1, MURc(iHz)%YE( REGION) - 1
+               do j = MURc(IHZ)%YI( REGION) + 1, MURc(IHZ)%YE( REGION) - 1
                   j_m = j - b%Hz%YI
                   !--->
                   medio = sggMiHz( i_m - 1, j_m    , k_m    )
@@ -1065,14 +1065,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            i = MURc(iHy)%XE( REGION)
+            i = MURc(IHY)%XE( REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
 #endif
-            do k = MURc(iHy)%ZI( REGION) + 1, MURc(iHy)%ZE( REGION) - 1
+            do k = MURc(IHY)%ZI( REGION) + 1, MURc(IHY)%ZE( REGION) - 1
                k_m = k - b%Hy%ZI
-               do j = MURc(iHy)%YI( REGION) + 1, MURc(iHy)%YE( REGION) - 1
+               do j = MURc(IHY)%YI( REGION) + 1, MURc(IHY)%YE( REGION) - 1
                   j_m = j - b%Hy%YI
                   !--->
                   medio = sggMiHy( i_m - 1, j_m    , k_m    )
@@ -1106,15 +1106,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       else !first order mur
          if (sgg%Border%IsLeftMUR) then
-            REGION = left
-            j = MURc(iHx)%YI( REGION)
+            REGION = LEFT
+            j = MURc(IHX)%YI( REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
 #endif
-            do k = MURc(iHx)%ZI( REGION), MURc(iHx)%ZE( REGION)
+            do k = MURc(IHX)%ZI( REGION), MURc(IHX)%ZE( REGION)
                k_m = k - b%Hx%ZI
-               do i = MURc(iHx)%XI( REGION), MURc(iHx)%XE( REGION)
+               do i = MURc(IHX)%XI( REGION), MURc(IHX)%XE( REGION)
                   i_m = i - b%Hx%XI
                   !--->
                   medio = sggMiHx( i_m    , j_m + 1, k_m    )
@@ -1125,14 +1125,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            j = MURc(iHz)%YI( REGION)
+            j = MURc(IHZ)%YI( REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
 #endif
-            do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
+            do k = MURc(IHZ)%ZI( REGION), MURc(IHZ)%ZE( REGION)
                k_m = k - b%Hz%ZI
-               do i = MURc(iHz)%XI( REGION), MURc(iHz)%XE( REGION)
+               do i = MURc(IHZ)%XI( REGION), MURc(IHZ)%XE( REGION)
                   i_m = i - b%Hz%XI
                   !--->
                   medio = sggMiHz( i_m    , j_m + 1, k_m    )
@@ -1149,15 +1149,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsRightMUR) then
-            REGION = right
-            j = MURc(iHx)%YE( REGION)
+            REGION = RIGHT
+            j = MURc(IHX)%YE( REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
 #endif
-            do k = MURc(iHx)%ZI( REGION), MURc(iHx)%ZE( REGION)
+            do k = MURc(IHX)%ZI( REGION), MURc(IHX)%ZE( REGION)
                k_m = k - b%Hx%ZI
-               do i = MURc(iHx)%XI( REGION), MURc(iHx)%XE( REGION)
+               do i = MURc(IHX)%XI( REGION), MURc(IHX)%XE( REGION)
                   i_m = i - b%Hx%XI
                   !--->
                   medio = sggMiHx( i_m    , j_m - 1, k_m    )
@@ -1168,14 +1168,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            j = MURc(iHz)%YE( REGION)
+            j = MURc(IHZ)%YE( REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
 #endif
-            do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
+            do k = MURc(IHZ)%ZI( REGION), MURc(IHZ)%ZE( REGION)
                k_m = k - b%Hz%ZI
-               do i = MURc(iHz)%XI( REGION), MURc(iHz)%XE( REGION)
+               do i = MURc(IHZ)%XI( REGION), MURc(IHZ)%XE( REGION)
                   i_m = i - b%Hz%XI
                   !--->
                   medio = sggMiHz( i_m    , j_m - 1, k_m    )
@@ -1192,15 +1192,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsDownMUR) then
-            REGION = down
-            k = MURc(iHy)%ZI( REGION)
+            REGION = DOWN
+            k = MURc(IHY)%ZI( REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
 #endif
-            do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
+            do j = MURc(IHY)%YI( REGION), MURc(IHY)%YE( REGION)
                j_m = j - b%Hy%YI
-               do i = MURc(iHy)%XI( REGION), MURc(iHy)%XE( REGION)
+               do i = MURc(IHY)%XI( REGION), MURc(IHY)%XE( REGION)
                   i_m = i - b%Hy%XI
                   !--->
                   medio = sggMiHy( i_m    , j_m    , k_m + 1)
@@ -1211,14 +1211,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            k = MURc(iHx)%ZI( REGION)
+            k = MURc(IHX)%ZI( REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
 #endif
-            do j = MURc(iHx)%YI( REGION), MURc(iHx)%YE( REGION)
+            do j = MURc(IHX)%YI( REGION), MURc(IHX)%YE( REGION)
                j_m = j - b%Hx%YI
-               do i = MURc(iHx)%XI( REGION), MURc(iHx)%XE( REGION)
+               do i = MURc(IHX)%XI( REGION), MURc(IHX)%XE( REGION)
                   i_m = i - b%Hx%XI
                   !--->
                   medio = sggMiHx( i_m    , j_m    , k_m + 1)
@@ -1235,15 +1235,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsUpMUR) then
-            REGION = up
-            k = MURc(iHy)%ZE( REGION)
+            REGION = UP
+            k = MURc(IHY)%ZE( REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
 #endif
-            do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
+            do j = MURc(IHY)%YI( REGION), MURc(IHY)%YE( REGION)
                j_m = j - b%Hy%YI
-               do i = MURc(iHy)%XI( REGION), MURc(iHy)%XE( REGION)
+               do i = MURc(IHY)%XI( REGION), MURc(IHY)%XE( REGION)
                   i_m = i - b%Hy%XI
                   !--->
                   medio = sggMiHy( i_m    , j_m    , k_m - 1)
@@ -1254,14 +1254,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            k = MURc(iHx)%ZE( REGION)
+            k = MURc(IHX)%ZE( REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
 #endif
-            do j = MURc(iHx)%YI( REGION), MURc(iHx)%YE( REGION)
+            do j = MURc(IHX)%YI( REGION), MURc(IHX)%YE( REGION)
                j_m = j - b%Hx%YI
-               do i = MURc(iHx)%XI( REGION), MURc(iHx)%XE( REGION)
+               do i = MURc(IHX)%XI( REGION), MURc(IHX)%XE( REGION)
                   i_m = i - b%Hx%XI
                   !--->
                   medio = sggMiHx( i_m    , j_m    , k_m - 1)
@@ -1278,15 +1278,15 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          if (sgg%Border%IsBackMUR) then
-            REGION =back
-            i = MURc(iHz)%XI( REGION)
+            REGION =BACK
+            i = MURc(IHZ)%XI( REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
 #endif
-            do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
+            do k = MURc(IHZ)%ZI( REGION), MURc(IHZ)%ZE( REGION)
                k_m = k - b%Hz%ZI
-               do j = MURc(iHz)%YI( REGION), MURc(iHz)%YE( REGION)
+               do j = MURc(IHZ)%YI( REGION), MURc(IHZ)%YE( REGION)
                   j_m = j - b%Hz%YI
                   !--->
                   medio = sggMiHz( i_m + 1, j_m    , k_m    )
@@ -1297,14 +1297,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            i = MURc(iHy)%XI( REGION)
+            i = MURc(IHY)%XI( REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
 #endif
-            do k = MURc(iHy)%ZI( REGION), MURc(iHy)%ZE( REGION)
+            do k = MURc(IHY)%ZI( REGION), MURc(IHY)%ZE( REGION)
                k_m = k - b%Hy%ZI
-               do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
+               do j = MURc(IHY)%YI( REGION), MURc(IHY)%YE( REGION)
                   j_m = j - b%Hy%YI
                   !--->orig
                   medio = sggMiHy( i_m + 1, j_m    , k_m    )
@@ -1322,14 +1322,14 @@ contains
 
          if (sgg%Border%IsFrontMUR) then
             REGION =front
-            i = MURc(iHz)%XE( REGION)
+            i = MURc(IHZ)%XE( REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
 #endif
-            do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
+            do k = MURc(IHZ)%ZI( REGION), MURc(IHZ)%ZE( REGION)
                k_m = k - b%Hz%ZI
-               do j = MURc(iHz)%YI( REGION), MURc(iHz)%YE( REGION)
+               do j = MURc(IHZ)%YI( REGION), MURc(IHZ)%YE( REGION)
                   j_m = j - b%Hz%YI
                   !--->
                   medio = sggMiHz( i_m - 1, j_m    , k_m    )
@@ -1340,14 +1340,14 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-            i = MURc(iHy)%XE( REGION)
+            i = MURc(IHY)%XE( REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
 #endif
-            do k = MURc(iHy)%ZI( REGION), MURc(iHy)%ZE( REGION)
+            do k = MURc(IHY)%ZI( REGION), MURc(IHY)%ZE( REGION)
                k_m = k - b%Hy%ZI
-               do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
+               do j = MURc(IHY)%YI( REGION), MURc(IHY)%YE( REGION)
                   j_m = j - b%Hy%YI
                   !--->
                   medio = sggMiHy( i_m - 1, j_m    , k_m    )
@@ -1372,15 +1372,15 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (sgg%Border%IsLeftMUR) then
-         REGION = left
+         REGION = LEFT
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 #endif
-         do k = MURc(iHx)%ZI( REGION) , MURc(iHx)%ZE( REGION)
+         do k = MURc(IHX)%ZI( REGION) , MURc(IHX)%ZE( REGION)
             k_m = k - b%Hx%ZI
-            do j = MURc(iHx)%YI( REGION)  , MURc(iHx)%YE( REGION)
+            do j = MURc(IHX)%YI( REGION)  , MURc(IHX)%YE( REGION)
                j_m = j - b%Hx%YI
-               do i = MURc(iHx)%XI( REGION) , MURc(iHx)%XE( REGION)
+               do i = MURc(IHX)%XI( REGION) , MURc(IHX)%XE( REGION)
                   i_m = i - b%Hx%XI
                   !--->
                   regLR( REGION)%PastPast_Hx(i,j,k) = regLR( REGION)%Past_Hx(i  ,j   ,k   )
@@ -1394,11 +1394,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 #endif
-         do k = MURc(iHz)%ZI( REGION) , MURc(iHz)%ZE( REGION)
+         do k = MURc(IHZ)%ZI( REGION) , MURc(IHZ)%ZE( REGION)
             k_m = k - b%Hz%ZI
-            do j = MURc(iHz)%YI( REGION) , MURc(iHz)%YE( REGION)
+            do j = MURc(IHZ)%YI( REGION) , MURc(IHZ)%YE( REGION)
                j_m = j - b%Hz%YI
-               do i = MURc(iHz)%XI( REGION) , MURc(iHz)%XE( REGION)
+               do i = MURc(IHZ)%XI( REGION) , MURc(IHZ)%XE( REGION)
                   i_m = i - b%Hz%XI
                   !--->
                   regLR( REGION)%PastPast_Hz(i,j,k) = regLR( REGION)%Past_Hz(i  ,j   ,k   )
@@ -1415,15 +1415,15 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (sgg%Border%IsRightMUR) then
-         REGION = right
+         REGION = RIGHT
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 #endif
-         do k = MURc(iHx)%ZI( REGION), MURc(iHx)%ZE( REGION)
+         do k = MURc(IHX)%ZI( REGION), MURc(IHX)%ZE( REGION)
             k_m = k - b%Hx%ZI
-            do j = MURc(iHx)%YI( REGION) , MURc(iHx)%YE( REGION)
+            do j = MURc(IHX)%YI( REGION) , MURc(IHX)%YE( REGION)
                j_m = j - b%Hx%YI
-               do i = MURc(iHx)%XI( REGION), MURc(iHx)%XE( REGION)
+               do i = MURc(IHX)%XI( REGION), MURc(IHX)%XE( REGION)
                   i_m = i - b%Hx%XI
                   !--->
                   regLR( REGION)%PastPast_Hx(i,j,k) = regLR( REGION)%Past_Hx(i  ,j   ,k   )
@@ -1437,11 +1437,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 #endif
-         do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
+         do k = MURc(IHZ)%ZI( REGION), MURc(IHZ)%ZE( REGION)
             k_m = k - b%Hz%ZI
-            do j = MURc(iHz)%YI( REGION) , MURc(iHz)%YE( REGION)
+            do j = MURc(IHZ)%YI( REGION) , MURc(IHZ)%YE( REGION)
                j_m = j - b%Hz%YI
-               do i = MURc(iHz)%XI( REGION), MURc(iHz)%XE( REGION)
+               do i = MURc(IHZ)%XI( REGION), MURc(IHZ)%XE( REGION)
                   i_m = i - b%Hz%XI
                   !--->
                   regLR( REGION)%PastPast_Hz(i,j,k) = regLR( REGION)%Past_Hz(i  ,j   ,k   )
@@ -1458,15 +1458,15 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (sgg%Border%IsDownMUR) then
-         REGION = down
+         REGION = DOWN
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 #endif
-         do k = MURc(iHy)%ZI( REGION) , MURc(iHy)%ZE( REGION)
+         do k = MURc(IHY)%ZI( REGION) , MURc(IHY)%ZE( REGION)
             k_m = k - b%Hy%ZI
-            do j = MURc(iHy)%YI( REGION) , MURc(iHy)%YE( REGION)
+            do j = MURc(IHY)%YI( REGION) , MURc(IHY)%YE( REGION)
                j_m = j - b%Hy%YI
-               do i = MURc(iHy)%XI( REGION) , MURc(iHy)%XE( REGION)
+               do i = MURc(IHY)%XI( REGION) , MURc(IHY)%XE( REGION)
                   i_m = i - b%Hy%XI
                   !--->
                   regDU( REGION)%PastPast_Hy(i,j,k) = regDU( REGION)%Past_Hy(i  ,j   ,k   )
@@ -1480,11 +1480,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 #endif
-         do k = MURc(iHx)%ZI( REGION) , MURc(iHx)%ZE( REGION)
+         do k = MURc(IHX)%ZI( REGION) , MURc(IHX)%ZE( REGION)
             k_m = k - b%Hx%ZI
-            do j = MURc(iHx)%YI( REGION), MURc(iHx)%YE( REGION)
+            do j = MURc(IHX)%YI( REGION), MURc(IHX)%YE( REGION)
                j_m = j - b%Hx%YI
-               do i = MURc(iHx)%XI( REGION) , MURc(iHx)%XE( REGION)
+               do i = MURc(IHX)%XI( REGION) , MURc(IHX)%XE( REGION)
                   i_m = i - b%Hx%XI
                   !--->
                   regDU( REGION)%PastPast_Hx(i,j,k) = regDU( REGION)%Past_Hx(i  ,j   ,k   )
@@ -1501,15 +1501,15 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (sgg%Border%IsUpMUR) then
-         REGION = up
+         REGION = UP
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 #endif
-         do k = MURc(iHy)%ZI( REGION) , MURc(iHy)%ZE( REGION)
+         do k = MURc(IHY)%ZI( REGION) , MURc(IHY)%ZE( REGION)
             k_m = k - b%Hy%ZI
-            do j = MURc(iHy)%YI( REGION) , MURc(iHy)%YE( REGION)
+            do j = MURc(IHY)%YI( REGION) , MURc(IHY)%YE( REGION)
                j_m = j - b%Hy%YI
-               do i = MURc(iHy)%XI( REGION), MURc(iHy)%XE( REGION)
+               do i = MURc(IHY)%XI( REGION), MURc(IHY)%XE( REGION)
                   i_m = i - b%Hy%XI
                   !--->
                   regDU( REGION)%PastPast_Hy(i,j,k) = regDU( REGION)%Past_Hy(i  ,j   ,k   )
@@ -1523,11 +1523,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 #endif
-         do k = MURc(iHx)%ZI( REGION) , MURc(iHx)%ZE( REGION)
+         do k = MURc(IHX)%ZI( REGION) , MURc(IHX)%ZE( REGION)
             k_m = k - b%Hx%ZI
-            do j = MURc(iHx)%YI( REGION), MURc(iHx)%YE( REGION)
+            do j = MURc(IHX)%YI( REGION), MURc(IHX)%YE( REGION)
                j_m = j - b%Hx%YI
-               do i = MURc(iHx)%XI( REGION), MURc(iHx)%XE( REGION)
+               do i = MURc(IHX)%XI( REGION), MURc(IHX)%XE( REGION)
                   i_m = i - b%Hx%XI
                   !--->
                   regDU( REGION)%PastPast_Hx(i,j,k) = regDU( REGION)%Past_Hx(i  ,j   ,k   )
@@ -1544,15 +1544,15 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (sgg%Border%IsBackMUR) then
-         REGION =back
+         REGION =BACK
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 #endif
-         do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
+         do k = MURc(IHZ)%ZI( REGION), MURc(IHZ)%ZE( REGION)
             k_m = k - b%Hz%ZI
-            do j = MURc(iHz)%YI( REGION), MURc(iHz)%YE( REGION)
+            do j = MURc(IHZ)%YI( REGION), MURc(IHZ)%YE( REGION)
                j_m = j - b%Hz%YI
-               do i = MURc(iHz)%XI( REGION) , MURc(iHz)%XE( REGION)
+               do i = MURc(IHZ)%XI( REGION) , MURc(IHZ)%XE( REGION)
                   i_m = i - b%Hz%XI
                   !--->
                   regBF( REGION)%PastPast_Hz(i,j,k) = regBF( REGION)%Past_Hz(i  ,j   ,k   )
@@ -1566,11 +1566,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 #endif
-         do k = MURc(iHy)%ZI( REGION), MURc(iHy)%ZE( REGION)
+         do k = MURc(IHY)%ZI( REGION), MURc(IHY)%ZE( REGION)
             k_m = k - b%Hy%ZI
-            do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
+            do j = MURc(IHY)%YI( REGION), MURc(IHY)%YE( REGION)
                j_m = j - b%Hy%YI
-               do i = MURc(iHy)%XI( REGION) , MURc(iHy)%XE( REGION)
+               do i = MURc(IHY)%XI( REGION) , MURc(IHY)%XE( REGION)
                   i_m = i - b%Hy%XI
                   !--->orig
                   regBF( REGION)%PastPast_Hy(i,j,k) = regBF( REGION)%Past_Hy(i  ,j   ,k   )
@@ -1591,11 +1591,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 #endif
-         do k = MURc(iHz)%ZI( REGION), MURc(iHz)%ZE( REGION)
+         do k = MURc(IHZ)%ZI( REGION), MURc(IHZ)%ZE( REGION)
             k_m = k - b%Hz%ZI
-            do j = MURc(iHz)%YI( REGION), MURc(iHz)%YE( REGION)
+            do j = MURc(IHZ)%YI( REGION), MURc(IHZ)%YE( REGION)
                j_m = j - b%Hz%YI
-               do i = MURc(iHz)%XI( REGION) , MURc(iHz)%XE( REGION)
+               do i = MURc(IHZ)%XI( REGION) , MURc(IHZ)%XE( REGION)
                   i_m = i - b%Hz%XI
                   !--->
                   regBF( REGION)%PastPast_Hz(i,j,k) = regBF( REGION)%Past_Hz(i  ,j   ,k   )
@@ -1609,11 +1609,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
 #endif
-         do k = MURc(iHy)%ZI( REGION) , MURc(iHy)%ZE( REGION)
+         do k = MURc(IHY)%ZI( REGION) , MURc(IHY)%ZE( REGION)
             k_m = k - b%Hy%ZI
-            do j = MURc(iHy)%YI( REGION), MURc(iHy)%YE( REGION)
+            do j = MURc(IHY)%YI( REGION), MURc(IHY)%YE( REGION)
                j_m = j - b%Hy%YI
-               do i = MURc(iHy)%XI( REGION) , MURc(iHy)%XE( REGION)
+               do i = MURc(IHY)%XI( REGION) , MURc(IHY)%XE( REGION)
                   i_m = i - b%Hy%XI
                   !--->
                   regBF( REGION)%PastPast_Hy(i,j,k) = regBF( REGION)%Past_Hy(i  ,j   ,k   )
@@ -1628,9 +1628,9 @@ contains
 
       !---------------------------> acaba AdvanceMagneTicMUR <---------------------------------------
       return
-   endsubroutine AdvanceMagneTicMUR
+   end subroutine AdvanceMagneTicMUR
 
 
-end Module BORDERS_MUR_m
+end module BORDERS_MUR_m
 
 

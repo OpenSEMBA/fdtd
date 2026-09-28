@@ -105,9 +105,9 @@ contains
             res(i)%yc = 1.0
           case (-iEy)
             res(i)%yc = -1.0
-          case (iEz)
+          case (IEZ)
             res(i)%zc = 1.0
-          case (-iEz)
+          case (-IEZ)
             res(i)%zc = -1.0
          end select
       end do

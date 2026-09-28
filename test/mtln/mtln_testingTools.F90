@@ -21,7 +21,7 @@ contains
     
         integer, intent(in) :: n
         character(len=*), intent(in) :: name
-        real(kind=rkind_tiempo), intent(in), optional :: dt
+        real(kind=RKIND_TIEMPO), intent(in), optional :: dt
         character(len=*), intent(in), optional :: parent_name
         integer, intent(in), optional :: conductor_in_parent
         character(len=*), intent(in) :: type
@@ -147,13 +147,13 @@ contains
             is_near = .true.
         else 
             is_near = abs(target-number)/target < rel_tol
-        endif
+        end if
 
     end function 
 
     function checkNear_time(target, number, rel_tol) result(is_near)
-        real(kind=rkind_tiempo), intent(in) :: target, number
-        real(kind=rkind_tiempo) :: rel_tol
+        real(kind=RKIND_TIEMPO), intent(in) :: target, number
+        real(kind=RKIND_TIEMPO) :: rel_tol
         logical :: is_near
         real :: abs_diff
 
@@ -162,7 +162,7 @@ contains
             is_near = .true.
         else 
             is_near = abs(target-number)/target < rel_tol
-        endif
+        end if
 
     end function 
 
@@ -177,7 +177,7 @@ contains
             is_near = .true.
         else 
             is_near = abs(target-number)/target < rel_tol
-        endif
+        end if
 
     end function 
 

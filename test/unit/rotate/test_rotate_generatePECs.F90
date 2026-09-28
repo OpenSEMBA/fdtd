@@ -41,7 +41,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     this%pecRegs%Lins(1)%XE = 16
     this%pecRegs%Lins(1)%YE = 17
     this%pecRegs%Lins(1)%ZE = 18
-    this%pecRegs%Lins(1)%OR = iEz
+    this%pecRegs%Lins(1)%OR = IEZ
     
     
     call rotate_generatePECs(this, mpidir)
@@ -62,7 +62,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     call expect_eq_int(test_err, this%pecRegs%Surfs(1)%XE, 12, "rotate_generatePECs: Surfs XE should be 12")
     call expect_eq_int(test_err, this%pecRegs%Surfs(1)%YE, 10, "rotate_generatePECs: Surfs YE should be 10")
     call expect_eq_int(test_err, this%pecRegs%Surfs(1)%ZE, 11, "rotate_generatePECs: Surfs ZE should be 11")
-    call expect_eq_int(test_err, this%pecRegs%Surfs(1)%OR, iEz, "rotate_generatePECs: Surfs OR should be iEz")
+    call expect_eq_int(test_err, this%pecRegs%Surfs(1)%OR, IEZ, "rotate_generatePECs: Surfs OR should be iEz")
     
     
     call expect_eq_int(test_err, this%pecRegs%Lins(1)%XI, 15, "rotate_generatePECs: Lins XI should be 15")
@@ -111,7 +111,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     this%pecRegs%Lins(1)%XE = 16
     this%pecRegs%Lins(1)%YE = 17
     this%pecRegs%Lins(1)%ZE = 18
-    this%pecRegs%Lins(1)%OR = iEz
+    this%pecRegs%Lins(1)%OR = IEZ
     
     
     call rotate_generatePECs(this, mpidir)
@@ -123,7 +123,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     call expect_eq_int(test_err, this%pecRegs%Vols(1)%XE, 5, "rotate_generatePECs: Vols XE should be 5")
     call expect_eq_int(test_err, this%pecRegs%Vols(1)%YE, 6, "rotate_generatePECs: Vols YE should be 6")
     call expect_eq_int(test_err, this%pecRegs%Vols(1)%ZE, 4, "rotate_generatePECs: Vols ZE should be 4")
-    call expect_eq_int(test_err, this%pecRegs%Vols(1)%OR, iEz, "rotate_generatePECs: Vols OR should be iEz")
+    call expect_eq_int(test_err, this%pecRegs%Vols(1)%OR, IEZ, "rotate_generatePECs: Vols OR should be iEz")
     
     
     call expect_eq_int(test_err, this%pecRegs%Surfs(1)%XI, 8, "rotate_generatePECs: Surfs XI should be 8")

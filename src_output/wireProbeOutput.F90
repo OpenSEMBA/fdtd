@@ -65,12 +65,12 @@ contains
       call find_current_segment(this, node, field, media, wiresflavor)
       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
-      artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIEMPO)
+      artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       this%filePathTime = this%artifacts(1)%relative_path
-      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, &
+      call create_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, &
                             't current delta_voltage plus_voltage minus_voltage voltage_difference')
 
    end subroutine init_wire_current_probe_output
@@ -93,13 +93,13 @@ contains
       call find_charge_segment(this, node, field, wiresflavor)
       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIEMPO)
       call alloc_and_init(this%chargeValue, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
-      artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+      artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       this%filePathTime = this%artifacts(1)%relative_path
-      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, 't charge')
+      call create_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, 't charge')
 
    end subroutine init_wire_charge_probe_output
 
@@ -108,7 +108,7 @@ contains
    !======================================================================
    subroutine update_wire_current_probe_output(this, step, control, InvEps, InvMu)
       type(wire_current_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_tiempo), intent(in) :: step
+      real(kind=RKIND_TIEMPO), intent(in) :: step
       type(sim_control_t), intent(in)     :: control
       real(kind=RKIND), intent(in)        :: InvEps(0:), InvMu(0:)
 
@@ -131,7 +131,7 @@ contains
 
    subroutine update_wire_charge_probe_output(this, step)
       type(wire_charge_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_tiempo), intent(in) :: step
+      real(kind=RKIND_TIEMPO), intent(in) :: step
 
       this%nTime = this%nTime + 1
       this%timeStep(this%nTime) = step
@@ -149,7 +149,7 @@ contains
       if (ios /= 0) return
 
       do i = 1, this%nTime
-         write (unit, fmt, iostat=ios) this%timeStep(i), &
+         write (unit, FMT, iostat=ios) this%timeStep(i), &
             this%currentValues(i)%current, &
             this%currentValues(i)%deltaVoltage, &
             this%currentValues(i)%plusVoltage, &
@@ -171,7 +171,7 @@ contains
       if (ios /= 0) return
 
       do i = 1, this%nTime
-         write (unit, fmt, iostat=ios) this%timeStep(i), this%chargeValue(i)
+         write (unit, FMT, iostat=ios) this%timeStep(i), this%chargeValue(i)
          if (ios /= 0) exit
       end do
       close (unit, iostat=ios)
@@ -365,7 +365,7 @@ contains
    subroutine clear_current_time_data(this)
       type(wire_current_probe_output_t), intent(inout) :: this
 
-      this%timeStep = 0.0_RKIND_tiempo
+      this%timeStep = 0.0_RKIND_TIEMPO
       this%currentValues%current = 0.0_RKIND
       this%currentValues%deltaVoltage = 0.0_RKIND
       this%currentValues%plusVoltage = 0.0_RKIND
@@ -377,7 +377,7 @@ contains
    subroutine clear_charge_time_data(this)
       type(wire_charge_probe_output_t), intent(inout) :: this
 
-      this%timeStep = 0.0_RKIND_tiempo
+      this%timeStep = 0.0_RKIND_TIEMPO
       this%chargeValue = 0.0_RKIND
       this%nTime = 0
    end subroutine clear_charge_time_data

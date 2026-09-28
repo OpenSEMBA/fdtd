@@ -94,7 +94,7 @@ contains
       type(solver_t) :: solver 
          
 #ifdef CompileWithMPI
-      LOGICAL :: fatalerror_aux
+      logical :: fatalerror_aux
       type(XYZlimit_t), dimension(1:6) :: tempalloc
 #endif
 
@@ -129,30 +129,30 @@ contains
       if (this%l%layoutnumber==0) then
          open(38, file='running')
          write (38,*) '!END'
-         CLOSE (38,status='delete')
+         close (38,status='delete')
          open(38, file='pause')
          write (38,*) '!END'
-         CLOSE (38,status='delete')
+         close (38,status='delete')
          open(38, file='relaunch')
          write (38,*) '!END'
-         CLOSE (38,status='delete')
+         close (38,status='delete')
          open(38, file='forcestop')
          write (38,*) '!END'
-         CLOSE (38,status='delete')
+         close (38,status='delete')
       end if
 #endif
 
    if (this%l%layoutnumber==0) then
          my_iostat=0
-   3443  if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.' 
+   3443  if(my_iostat /= 0) write(*,FMT='(a)',advance='no'), '.' 
          open(11, file='SEMBA_FDTD_temp.log',err=3443,iostat=my_iostat,action='write')
          write (11,*) '!END'
-         CLOSE (11,status='delete')
+         close (11,status='delete')
          my_iostat=0
-   3447  if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',3447,'.',this%l%layoutnumber,'SEMBA_FDTD_temp.log' 
+   3447  if(my_iostat /= 0) write(*,FMT='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',3447,'.',this%l%layoutnumber,'SEMBA_FDTD_temp.log' 
          open(11, file='SEMBA_FDTD_temp.log',err=3447,iostat=my_iostat,status='new',action='write')
          call print_credits(this%l)
-         CLOSE (11)
+         close (11)
    end if
 
 #ifdef CompileWithMPI
@@ -226,22 +226,22 @@ contains
          if (this%l%layoutnumber==0) then
             open(38, file='running')
             write (38,*) '!END'
-            CLOSE (38,status='delete')
+            close (38,status='delete')
             open(38, file='pause')
             write (38,*) '!END'
-            CLOSE (38,status='delete')
+            close (38,status='delete')
             open(38, file='relaunch')
             write (38,*) '!END'
-            CLOSE (38,status='delete')
+            close (38,status='delete')
             open(38, file='forcestop')
             write (38,*) '!END'
-            CLOSE (38,status='delete')
+            close (38,status='delete')
          end if
 #ifdef CompileWithMPI
          call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
          call MPI_FINALIZE (this%l%ierr)
 #endif
-         STOP
+         stop
       end if
 #endif
 
@@ -268,9 +268,9 @@ contains
       inquire(file='launch', EXIST=hayinput)
       if (hayinput) then
          open(9, file='launch', FORM='formatted',action='read')
-         READ (9, '(a)') chain3
+         read (9, '(a)') chain3
          chain3=trim(adjustl(chain3))
-         CLOSE (9)               
+         close (9)               
          print *,'----> launch input file '//trim(adjustl(chain3))
       end if
 #ifdef CompileWithMPI
@@ -336,7 +336,7 @@ contains
 #ifdef CompileWithMTLN   
    if (parser%general%mtlnProblem) then 
       call solver%launch_mtln_simulation(parser%mtln, this%l%nEntradaRoot, this%l%layoutnumber) 
-      STOP
+      stop
    end if
 #endif
 
@@ -473,7 +473,7 @@ contains
          call print11 (this%l%layoutnumber, '---> this%l%mibc    solver for NIBC multilayer: '//trim(adjustl(dubuf)))
          write(dubuf,*) this%l%ade         
          call print11 (this%l%layoutnumber, '---> this%l%ade     solver for ADC multilayer: '//trim(adjustl(dubuf)))
-         Write(dubuf,*) this%l%sgbc    
+         write(dubuf,*) this%l%sgbc    
          call print11 (this%l%layoutnumber, '---> sgbc    solver for multilayer: '//trim(adjustl(dubuf)))
          if (this%l%sgbc) then
                write(dubuf,*) this%l%sgbcDispersive      
@@ -635,14 +635,14 @@ contains
             write(dubuf,*) SEPARADOR//separador//separador
             call print11(this%l%layoutnumber,dubuf)
          else
-            if (dtantesdecorregir == 0.0 .or. this%sgg%dt > dt*heurCFL) then
+            if (dtantesdecorregir == 0.0 .or. this%sgg%dt > dt*HEURCFL) then
                write(dubuf,*) SEPARADOR//separador//separador
                call print11(this%l%layoutnumber,dubuf)
                write(dubuf,*) 'Automatically correcting dt for stability reasons: '
                call print11(this%l%layoutnumber,dubuf)
                write(dubuf,*) 'Original dt: ', this%sgg%dt
                call print11(this%l%layoutnumber,dubuf)
-               this%sgg%dt=dt*heurCFL
+               this%sgg%dt=dt*HEURCFL
                write(dubuf,*) 'New dt: ', this%sgg%dt
                call print11(this%l%layoutnumber,dubuf)
                write(dubuf,*) SEPARADOR//separador//separador
@@ -700,7 +700,7 @@ contains
             this%sgg%Sweep(1:6)%ZI = this%fullsize(1:6)%ZI
             this%sgg%Sweep(1:6)%ZE = this%fullsize(1:6)%ZE
             !!incluido aqui pq se precisa para clip 16/07/15
-            do field = iEx, iHz
+            do field = iEx, IHZ
                this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
                this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
                this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
@@ -728,7 +728,7 @@ contains
             call print11 (this%l%layoutnumber, dubuf)
             !writing
             slices = '!SLICES'
-            write(buff, '(i7)') this%sgg%Sweep(iHz)%ZE - this%sgg%Sweep(iHz)%ZI
+            write(buff, '(i7)') this%sgg%Sweep(IHZ)%ZE - this%sgg%Sweep(IHZ)%ZI
             slices = trim (adjustl(slices)) // '_' // trim (adjustl(buff))
             if (this%l%resume .AND. (slices /= this%l%slicesoriginales)) then
                buff='Different resumed/original MPI slices: '//trim(adjustl(slices))//' '//&
@@ -737,7 +737,7 @@ contains
             end if
             call print11 (this%l%layoutnumber, trim(adjustl(slices)))
             !end writing
-            write(buff, '(a,i7,a,i7)') '_________Spanning from z=', this%sgg%Sweep(iHz)%ZI, ' to z=', this%sgg%Sweep(iHz)%ZE
+            write(buff, '(a,i7,a,i7)') '_________Spanning from z=', this%sgg%Sweep(IHZ)%ZI, ' to z=', this%sgg%Sweep(IHZ)%ZE
             call print11 (this%l%layoutnumber, trim(adjustl(buff)))
 #ifdef CompileWithMPI
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
@@ -748,7 +748,7 @@ contains
             end if
 #endif
 #endif
-         ELSE !del this%l%num_procs==1       
+         else !del this%l%num_procs==1       
 #ifdef CompileWithMPI
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #ifdef CompileWithStochastic
@@ -769,7 +769,7 @@ contains
       
             ! if the layout is pure PML then take at least a line of non PML to build the PML data insider read_geomDAta
             ! Uses extra memory but later matrix sggm is deallocated in favor of smaller sggMIEX, etc
-            do field = iEx, iHz
+            do field = iEx, IHZ
                tempalloc(field)%ZE = this%sgg%Alloc(field)%ZE
                tempalloc(field)%ZI = this%sgg%Alloc(field)%ZI
                this%sgg%Alloc(field)%ZE = Max (this%sgg%Alloc(field)%ZE, this%SINPML_fullsize(field)%ZI+1)
@@ -778,7 +778,7 @@ contains
             !   
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)  
             !!incluido aqui pq se precisa para clip 16/07/15
-            do field = iEx, iHz
+            do field = iEx, IHZ
                this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
                this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
                this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
@@ -811,7 +811,7 @@ contains
             write(dubuf,*) '[OK] ENDED NFDE --------> GEOM'
             call print11 (this%l%layoutnumber, dubuf)
             !restore back the indexes
-            do field = iEx, iHz
+            do field = iEx, IHZ
                this%sgg%Alloc(field)%ZE = tempalloc(field)%ZE
                this%sgg%Alloc(field)%ZI = tempalloc(field)%ZI
             end do
@@ -824,7 +824,7 @@ contains
          call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
          !!!!!!!!!!!!!lo dejo aqui debajo tambien aunque ya se ha calculado antes para lo del clipping
-         do field = iEx, iHz
+         do field = iEx, IHZ
             this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
             this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
             this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
@@ -883,12 +883,12 @@ contains
 
       call build_derived_t_linea(mpi_t_linea_t)
 
-      rawInfoBuffer=ceiling(maxmpibytes*1.0_8/(BUFSIZE*1.0_8+8.0_8),8)
+      rawInfoBuffer=ceiling(MAXMPIBYTES*1.0_8/(BUFSIZE*1.0_8+8.0_8),8)
 
       do i8=1, numeroLineasFichero, rawInfoBuffer
                   longitud8=min(rawInfoBuffer, numeroLineasFichero - i8 + 1)
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-            if ((longitud8>huge(1_4)).or.(longitud8>maxmpibytes)) then
+            if ((longitud8>huge(1_4)).or.(longitud8>MAXMPIBYTES)) then
                print *,'Stop. Buggy error: MPI longitud greater that greatest integer*4'
                stop
             else
@@ -920,7 +920,7 @@ contains
 #endif
       
 #ifdef CompileWithSMBJSON
-      elseif (trim(adjustl(this%l%extension))=='.json') then
+      else if (trim(adjustl(this%l%extension))=='.json') then
          parsed_t = fdtdjson_parser_t(filename)   
          allocate(parsedProblem)
          parsedProblem = parsed_t%readProblemDescription()
@@ -946,12 +946,12 @@ contains
       integer :: size_read, pos, d, io
       res = 0
       open(UNIT=unit, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
-      DO
-         READ (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
+      do
+         read (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
          if (size_read == 0) exit
          res = res + 1
       end do
-      CLOSE (unit)
+      close (unit)
 
    end function
 
@@ -967,8 +967,8 @@ contains
      allocate(rInfo%lineas(rInfo%numero))
       rInfo%numero = 0
       open(UNIT=unit, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
-      DO
-         READ (unit, '(A)', end=2010) l_aux
+      do
+         read (unit, '(A)', end=2010) l_aux
          if (len_trim (adjustl(l_aux))>=BUFSIZE) then
             write(buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
             call warnerrreport(buffer,.TRUE.) !ABORTA
@@ -978,7 +978,7 @@ contains
          linea%dato = adjustl(l_aux)
          linea%LEN=len_trim (linea%dato)
       end do
-   2010   CLOSE (unit)
+   2010   close (unit)
 
    end subroutine
 
@@ -995,15 +995,15 @@ contains
      allocate(rInfo%lineas(rInfo%numero))
       rInfo%numero = 0
       open(UNIT=unit, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
-      DO
-         READ (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
+      do
+         read (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
          if (size_read == 0) exit
          rInfo%numero = rInfo%numero + 1
          linea => rInfo%lineas (rInfo%numero)
          linea%dato = adjustl(l_aux)
          linea%LEN=len_trim (linea%dato)
       end do
-      CLOSE (unit)
+      close (unit)
 
    end subroutine
 
@@ -1012,11 +1012,11 @@ contains
       type(t_NFDE_FILE_t), pointer :: rawFileInfo
       
       type(t_linea_t), pointer :: linea
-      LOGICAL :: ok
+      logical :: ok
       character(len=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
       integer(kind=4) :: i,tamanio,i0,ascii,offset,ascii_menos1,j,k
-      Character (Len=:), Allocatable :: fichero
+      character(Len=:), allocatable :: fichero
       integer(kind=4), parameter :: UNIT_EF = 10
 
       integer(kind=4) :: prelines = 0, io
@@ -1026,12 +1026,12 @@ contains
 
       !precount
       open(UNIT=UNIT_EF, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
-      DO
-         READ (UNIT_EF, '(A)', iostat=io) l_aux
+      do
+         read (UNIT_EF, '(A)', iostat=io) l_aux
          if (io/=0) exit
          prelines = prelines + 1
       end do
-      CLOSE (UNIT_EF)
+      close (UNIT_EF)
 
       if (prelines == 1 .and. trim(adjustl(extension))=='.json') then
          rawFileInfo%numero = countLinesInJSONOneLiner(filename, UNIT_EF)      
@@ -1152,7 +1152,7 @@ contains
          if (this%l%run) then
             open(38, file='running')
             write(38, '(a)') '!END'
-            CLOSE (38,status='delete')
+            close (38,status='delete')
          end if
          write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
          call print11 (this%l%layoutnumber, dubuf)
@@ -1224,10 +1224,10 @@ contains
             call print11 (this%l%layoutnumber, SEPARADOR//SEPARADOR)
             open(9, file='pause', FORM='formatted')
             write (9, '(a)') ' '
-            CLOSE (9)
+            close (9)
             open(9, file='relaunch', FORM='formatted')
             write (9, '(a)') ' '
-            CLOSE (9,status='delete')
+            close (9,status='delete')
          end if
          !!!!!
 #ifdef CompileWithMPI
@@ -1243,13 +1243,13 @@ contains
          if (this%l%layoutnumber == 0) then
             open(9, file='pause', FORM='formatted')
             write (9, '(a)') ' '
-            CLOSE (9,status='delete')
+            close (9,status='delete')
             open(9, file='relaunch', FORM='formatted')
             write (9, '(a)') ' '
-            CLOSE (9,status='delete')
+            close (9,status='delete')
             open(9, file='running', FORM='formatted')
             write (9, '(a)') ' '
-            CLOSE (9,status='delete')
+            close (9,status='delete')
       end if
       end if
 

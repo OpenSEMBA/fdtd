@@ -4,7 +4,7 @@ integer function test_read_airplane() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'airplane.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'airplane.fdtd.json'
    type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -73,7 +73,7 @@ contains
       expected%nodSrc%NodalSource(1)%isInitialValue = .false.
       allocate(expected%nodSrc%NodalSource(1)%c2P(1))
       expected%nodSrc%NodalSource(1)%n_C2P = 1
-      expected%nodSrc%NodalSource(1)%c2P(1)%Or = iEz
+      expected%nodSrc%NodalSource(1)%c2P(1)%Or = IEZ
       expected%nodSrc%NodalSource(1)%c2P(1)%Xi = 5
       expected%nodSrc%NodalSource(1)%c2P(1)%Xe = 5
       expected%nodSrc%NodalSource(1)%c2P(1)%Yi = 30

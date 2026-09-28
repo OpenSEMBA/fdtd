@@ -381,7 +381,7 @@ contains
     contains
         logical function isBundleInLayer(cable, alloc_z)
             integer(kind=4), dimension(2), intent(in) :: alloc_z
-            class (cable_t), pointer, intent(in) :: cable
+            class(cable_t), pointer, intent(in) :: cable
             integer(kind=4) :: n, i
             logical :: in_layer
             in_layer = .false.
@@ -404,7 +404,7 @@ contains
 
         function findIndicesInLayer(cable, alloc_z) result(res)
             integer(kind=4), dimension(2), intent(in) :: alloc_z
-            class (cable_t), pointer, intent(in) :: cable
+            class(cable_t), pointer, intent(in) :: cable
             integer(kind=4), allocatable, dimension(:,:) :: res
             integer(kind=4) :: n, i, direction, position(1:3)
             logical :: in_layer
@@ -618,17 +618,17 @@ contains
             res = writeSeriesNode(node, termination, end_node)
         case(TERMINATION_PARALLEL)
             res = writeParallelRLCNode(node, termination, end_node)
-        case(TERMINATION_RsLCp)
+        case(TERMINATION_RSLCP)
             res = writeXsYZpNode(node, termination, end_node, XYZ = "RLC")
-        case(TERMINATION_LsRCp)
+        case(TERMINATION_LSRCP)
             res = writeXsYZpNode(node, termination, end_node, XYZ = "LRC")
-        case(TERMINATION_CsLRp)
+        case(TERMINATION_CSLRP)
             res = writeXsYZpNode(node, termination, end_node, XYZ = "CLR")
-        case(TERMINATION_RLsCp)
+        case(TERMINATION_RLSCP)
             res = writeXYsZpNode(node, termination, end_node, XYZ = "RLC")
-        case(TERMINATION_RCsLp)
+        case(TERMINATION_RCSLP)
             res = writeXYsZpNode(node, termination, end_node, XYZ = "RCL")
-        case(TERMINATION_LCsRp)
+        case(TERMINATION_LCSRP)
             res = writeXYsZpNode(node, termination, end_node, XYZ = "LCR")
         case(TERMINATION_SHORT)
             res = writeShortNode(node, termination , end_node)

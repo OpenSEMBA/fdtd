@@ -4,7 +4,7 @@ integer function test_read_sphere() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'sphere.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'sphere.fdtd.json'
    type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
@@ -125,7 +125,7 @@ contains
       ex%VolPrb%collection(1)%cordinates(1)%Ye = 77
       ex%VolPrb%collection(1)%cordinates(1)%Zi = 2
       ex%VolPrb%collection(1)%cordinates(1)%Ze = 77
-      ex%VolPrb%collection(1)%cordinates(1)%or = iExC
+      ex%VolPrb%collection(1)%cordinates(1)%or = IEXC
       ex%VolPrb%collection(1)%cordinates(1)%xtrancos = 1
       ex%VolPrb%collection(1)%cordinates(1)%ytrancos = 1
       ex%VolPrb%collection(1)%cordinates(1)%ztrancos = 1

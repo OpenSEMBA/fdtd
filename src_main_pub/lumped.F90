@@ -41,16 +41,16 @@ contains
       real(kind=RKIND)   , intent(in) , target     :: &
       Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
       Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
-      Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
-      Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
-      Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
-      Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+      Ez(sgg%alloc(IEZ)%XI : sgg%alloc(IEZ)%XE,sgg%alloc(IEZ)%YI : sgg%alloc(IEZ)%YE,sgg%alloc(IEZ)%ZI : sgg%alloc(IEZ)%ZE),&
+      Hx(sgg%alloc(IHX)%XI : sgg%alloc(IHX)%XE,sgg%alloc(IHX)%YI : sgg%alloc(IHX)%YE,sgg%alloc(IHX)%ZI : sgg%alloc(IHX)%ZE),&
+      Hy(sgg%alloc(IHY)%XI : sgg%alloc(IHY)%XE,sgg%alloc(IHY)%YI : sgg%alloc(IHY)%YE,sgg%alloc(IHY)%ZI : sgg%alloc(IHY)%ZE),&
+      Hz(sgg%alloc(IHZ)%XI : sgg%alloc(IHZ)%XE,sgg%alloc(IHZ)%YI : sgg%alloc(IHZ)%YE,sgg%alloc(IHZ)%ZI : sgg%alloc(IHZ)%ZE)
       real(kind=RKIND) , dimension(:)   , intent(in) :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
                                                          &  Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
-                                                         &  Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE), &
-                                                            Idxe(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE), &
-                                                            Idye(sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE), &
-                                                            Idze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+                                                         &  Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE), &
+                                                            Idxe(sgg%alloc(IHX)%XI : sgg%alloc(IHX)%XE), &
+                                                            Idye(sgg%alloc(IHY)%YI : sgg%alloc(IHY)%YE), &
+                                                            Idze(sgg%alloc(IHZ)%ZI : sgg%alloc(IHZ)%ZE)
 
       logical, intent(out) :: ThereAreLumped
       type(sim_control_t), intent(in) :: control
@@ -72,26 +72,26 @@ contains
       !precontaje
 
       conta=0
-      Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
-         Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
-            Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
+      do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
+         do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
+            do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
                jmed=media%sggMiEx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped)  conta=conta+1
             end do
          end do
       end do
-      Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
-         Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
-            Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
+      do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
+         do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
+            do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
                jmed=media%sggMiEy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped)  conta=conta+1
             end do
          end do
       end do
 
-      Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
-         Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
-            Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
+      do k1=sgg%SINPMLSweep(IEZ)%ZI,sgg%SINPMLSweep(IEZ)%ZE
+         do j1=sgg%SINPMLSweep(IEZ)%YI,sgg%SINPMLSweep(IEZ)%YE
+            do i1=sgg%SINPMLSweep(IEZ)%XI,sgg%SINPMLSweep(IEZ)%XE
                jmed=media%sggMiEz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped) conta=conta+1
             end do
@@ -106,9 +106,9 @@ contains
       allocate (LumpElem%Nodes(1 : LumpElem%NumNodes))
       !!!!!!!!
       conta=0
-      Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
-         Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
-            Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
+      do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
+         do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
+            do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
                jmed=media%sggMiEx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped)  then
                   conta=conta+1
@@ -128,9 +128,9 @@ contains
          end do
       end do
       !!!!!!!!!!
-      Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
-         Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
-            Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
+      do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
+         do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
+            do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
                jmed=media%sggMiEy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped)  then
                   conta=conta+1
@@ -150,9 +150,9 @@ contains
          end do
       end do
 
-      Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
-         Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
-            Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
+      do k1=sgg%SINPMLSweep(IEZ)%ZI,sgg%SINPMLSweep(IEZ)%ZE
+         do j1=sgg%SINPMLSweep(IEZ)%YI,sgg%SINPMLSweep(IEZ)%YE
+            do i1=sgg%SINPMLSweep(IEZ)%XI,sgg%SINPMLSweep(IEZ)%XE
                jmed=media%sggMiEz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped) then
                   conta=conta+1
@@ -308,13 +308,13 @@ contains
             if (sgg%med(jmed)%lumped(1)%resistor) then
                 sigmaeff= sigma     + sigmaEffResist                     
                 epsiloneff= epsilon 
-            elseif (sgg%med(jmed)%lumped(1)%inductor) then
+            else if (sgg%med(jmed)%lumped(1)%inductor) then
                 sigmaeff= sigma     + sigmaEffResistInduct                     
                 epsiloneff= epsilon 
-            elseif (sgg%med(jmed)%lumped(1)%capacitor) then
+            else if (sgg%med(jmed)%lumped(1)%capacitor) then
                 sigmaeff= sigma     + sigmaEffResistCapac                    
                 epsiloneff= epsilon + epsilonEffCapac
-            elseif (sgg%med(jmed)%lumped(1)%diodo) then
+            else if (sgg%med(jmed)%lumped(1)%diodo) then
                 sigmaeff= sigma     + sigmaEffResistDiode                    
                 epsiloneff= epsilon 
             end if 
@@ -369,7 +369,7 @@ contains
             if (orient>0.0) then
                 lumped_%diodeB    = lumped_%diodeB * alignedDeltaE / 2.0_RKIND
                 lumped_%diodepreA = DiodIsat * G2 / ( transversalDeltaHa * transversalDeltaHb)  !DiodIsat es la corriente de saturacions
-            elseif (orient<0.0) then
+            else if (orient<0.0) then
                 lumped_%diodeB    = -lumped_%diodeB * alignedDeltaE / 2.0_RKIND
                 lumped_%diodepreA = -DiodIsat * G2 / ( transversalDeltaHa * transversalDeltaHb) 
             else
@@ -412,7 +412,7 @@ contains
 
    subroutine DestroyLumped(sgg)
 
-      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=4) :: i
 
       !free up memory
@@ -432,7 +432,7 @@ contains
    real(kind=RKIND) :: x
    real(kind=RKIND) :: x0, xx0, fxx0, dfxx0
    real(kind=RKIND) :: tol ! Tolerancia error relativo
-   integer, parameter :: nmax=1024  !limite de iteraciones/iteraciones realizadas
+   integer, parameter :: NMAX=1024  !limite de iteraciones/iteraciones realizadas
    integer :: clave,i,n      ! Clave de exito
 
     clave = 1
@@ -444,7 +444,7 @@ contains
         if (ABS(x-xx0) < tol*ABS(x) ) then
             clave = 0
             n = i
-            EXIT busca
+            exit busca
         end if
         xx0 = x
     end do busca

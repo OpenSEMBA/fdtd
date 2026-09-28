@@ -87,7 +87,7 @@ subroutine verify_thin_wire_rotation(test_err, this, mpidir)
         call expect_eq_int(test_err, 1, this%tWires%tw(1)%twc(2)%d, "rotate_generateThinWires: d(2) should change to iEx")
         call expect_eq_real(test_err, 0.8_RKIND, this%tWires%tw(1)%twc(2)%m, "rotate_generateThinWires: m(2) should remain unchanged")
 
-    elseif(mpidir==1) then
+    else if(mpidir==1) then
         call expect_eq_int(test_err, 2, this%tWires%tw(1)%twc(1)%i, "rotate_generateThinWires: i(1) should be rotated with mpidir 1")
         call expect_eq_int(test_err, 3, this%tWires%tw(1)%twc(1)%j, "rotate_generateThinWires: j(1) should be rotated with mpidir 1")
         call expect_eq_int(test_err, 1, this%tWires%tw(1)%twc(1)%k, "rotate_generateThinWires: k(1) should be rotated with mpidir 1")
@@ -101,7 +101,7 @@ subroutine verify_thin_wire_rotation(test_err, this, mpidir)
         call expect_eq_int(test_err, 2, this%tWires%tw(1)%twc(2)%nd, "rotate_generateThinWires: nd(2) should remain unchanged")
         call expect_eq_int(test_err, 2, this%tWires%tw(1)%twc(2)%d, "rotate_generateThinWires: d(2) should change to iEy")
         call expect_eq_real(test_err, 0.8_RKIND, this%tWires%tw(1)%twc(2)%m, "rotate_generateThinWires: m(2) should remain unchanged")
-    endif
+    end if
 end subroutine verify_thin_wire_rotation
 
 subroutine cleanup_thin_wires_test(this)

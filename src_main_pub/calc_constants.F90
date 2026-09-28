@@ -37,15 +37,15 @@ module CALC_CONSTANTS_m
                g%g2(r)  = sgg%dt /Epsilon
                g%gm1(r) = 1
                g%gm2(r) = sgg%dt/ Mu
-            elseif ((sgg%Med(R)%Is%multiport).or.(sgg%Med(R)%Is%AnisMultiport)) then
+            else if ((sgg%Med(R)%Is%multiport).or.(sgg%Med(R)%Is%AnisMultiport)) then
                g%g1(r)=0.0_RKIND !mull fields on the main procedure (good both for Ian and for me)
                g%g2(r)=0.0_RKIND
                g%gm1(r)=0.0_RKIND
                g%gm2(r)=0.0_RKIND
-            elseif ((sgg%Med(R)%Is%pec).or.(r==0)) then
+            else if ((sgg%Med(R)%Is%PEC).or.(r==0)) then
                !Trivially PEC updating Ca, Cbfficients are set to 0.0_RKIND
                g%g1(r)=0.0_RKIND ;  g%g2(r)=0.0_RKIND;  g%gm1(r)=0.0_RKIND;  g%gm2(r)=0.0_RKIND ;
-            elseif (sgg%Med(R)%Is%lumped) then
+            else if (sgg%Med(R)%Is%lumped) then
                !Trivially PEC NOT updating coefficients para el avance en E. They are set to 1.0_RKIND. La rutina propia ya se encargara
                g%g1(r)=1.0_RKIND ;  g%g2(r)=0.0_RKIND; 
                g%gm1(r)=(1- SigmaM*sgg%dt/(2.0_RKIND *  Mu )) /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
@@ -54,7 +54,7 @@ module CALC_CONSTANTS_m
                    g%gm1(r)=exp(- Sigmam * sgg%dt / (Mu ))
                    g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
                end if
-            elseif (sgg%Med(R)%Is%SGBC) then
+            else if (sgg%Med(R)%Is%SGBC) then
 !!!!! 090519 He quitado todo este calculo que luego hara InitSGBCs para no duplicar codigo propenso a errores. Uso valores absurdos por lo que truene.
 !!!!! ojo que los parametros stochastic tambien se obtendran en InitSGBCs, por eso lo he quitado esto de aqui
                       g%g1(r)=0.0; g%g2(r)=0.0;
@@ -84,12 +84,12 @@ module CALC_CONSTANTS_m
                              g%gm1(r)=exp(- Sigmam * sgg%dt / (Mu ))
                              g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
                           end if
-            elseif (sgg%Med(R)%Is%Anisotropic) then
+            else if (sgg%Med(R)%Is%Anisotropic) then
                g%g1(r)=1.0_RKIND !para que no haga nada en el bucle principal evitando los ifs
                g%g2(r)=0.0_RKIND
                g%gm1(r)=1.0_RKIND !para que no haga nada en el bucle principal evitando los ifs
                g%gm2(r)=0.0_RKIND
-            elseif  ((sgg%Med(R)%Is%EDispersive).and.(.not.sgg%Med(R)%Is%MDispersive).and.(.not.sgg%Med(r)%Is%EdispersiveANIS)) then
+            else if  ((sgg%Med(R)%Is%EDispersive).and.(.not.sgg%Med(R)%Is%MDispersive).and.(.not.sgg%Med(r)%Is%EdispersiveANIS)) then
                !solo cierto para ISOTROPOS
                g%g1(r)=0.0_RKIND !will be overwritten by own values created by InitEDispersives
                g%g2(r)=0.0_RKIND !will be overwritten by own values created by InitEDispersives
@@ -99,7 +99,7 @@ module CALC_CONSTANTS_m
                   g%gm1(r)=exp(- Sigmam * sgg%dt / (Mu ))
                   g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
                end if
-            elseif  ((sgg%Med(R)%Is%MDispersive).and.(.not.sgg%Med(R)%Is%EDispersive).and.(.not.sgg%Med(r)%Is%MdispersiveANIS)) then
+            else if  ((sgg%Med(R)%Is%MDispersive).and.(.not.sgg%Med(R)%Is%EDispersive).and.(.not.sgg%Med(r)%Is%MdispersiveANIS)) then
                !solo cierto para ISOTROPOS
                g%g1(r)=(1.0_RKIND- Sigma*sgg%dt/(2.0_RKIND * Epsilon)) / (1.0_RKIND + Sigma*sgg%dt/(2.0_RKIND * Epsilon))
                g%g2(r)=sgg%dt / Epsilon                / (1.0_RKIND + Sigma*sgg%dt/(2.0_RKIND * Epsilon))
@@ -109,7 +109,7 @@ module CALC_CONSTANTS_m
                end if
                g%gm1(r)=0.0_RKIND !will be overwritten by own values created by InitMDispersives !when written this routine
                g%gm2(r)=0.0_RKIND !will be overwritten by own values created by InitMDispersives
-            elseif  ((sgg%Med(r)%Is%MdispersiveANIS).OR.(sgg%Med(r)%Is%EdispersiveANIS)) then
+            else if  ((sgg%Med(r)%Is%MdispersiveANIS).OR.(sgg%Med(r)%Is%EdispersiveANIS)) then
                BUFF='ERROR: ANISOTROPIC DISPERSIVE CURRENTLY UNSUPPORTED IN THE ENGINE'
                call StopOnError (0,0,buff)  !lo deberia reportar y parar antes SEMBA_FDTD.F90 !quitar algun dia para que no ralentice 170719
             else
@@ -127,7 +127,7 @@ module CALC_CONSTANTS_m
                end if
             end if !Multiports
          end if
-      End do
+      end do
    end subroutine calc_g1g2gm1gm2
 
 end module CALC_CONSTANTS_m

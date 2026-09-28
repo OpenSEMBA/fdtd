@@ -28,7 +28,7 @@ module ilumina_m
 
    !!! local variables
    type(coorsxyzP_t) , save :: Punto
-   type(ijk_t), allocatable, dimension(:)       , SAVE  :: TrFr,IzDe,AbAr
+   type(ijk_t), allocatable, dimension(:)       , save  :: TrFr,IzDe,AbAr
    logical  , allocatable, dimension(:)        , save  :: IluminaTr,IluminaFr,IluminaIz,IluminaDe,IluminaAr,IluminaAb
    public Incid,AdvancePlaneWaveE,AdvancePlaneWaveH,InitPlaneWave,DestroyIlumina,storeplanewaves,calc_planewaveconstants,corrigeondaplanaH
 
@@ -50,7 +50,7 @@ contains
       cluz=1.0_RKIND/sqrt(eps0*mu0) !lo necesitara incid
       zvac=sqrt(mu0/eps0) !lo necesitan las variables de mas abajo
 
-      do field=iEx,iHz
+      do field=iEx,IHZ
          allocate (Punto%PhysCoor(field)%x(sgg%Sweep(field)%XI-1 : sgg%Sweep(field)%XE+1), &
          Punto%PhysCoor(field)%y(sgg%Sweep(field)%YI-1 : sgg%Sweep(field)%YE+1), &
          Punto%PhysCoor(field)%z(sgg%Sweep(field)%ZI-1 : sgg%Sweep(field)%ZE+1))
@@ -76,7 +76,7 @@ contains
       do k=sgg%Sweep(field)%ZI-1,sgg%Sweep(field)%ZE+1
          Punto%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
-      field=iEz
+      field=IEZ
       do i=sgg%Sweep(field)%XI-1,sgg%Sweep(field)%XE+1
          Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
@@ -86,7 +86,7 @@ contains
       do k=sgg%Sweep(field)%ZI-1,sgg%Sweep(field)%ZE
          Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
-      field=iHx
+      field=IHX
       do i=sgg%Sweep(field)%XI-1,sgg%Sweep(field)%XE+1
          Punto%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
@@ -96,7 +96,7 @@ contains
       do k=sgg%Sweep(field)%ZI-1,sgg%Sweep(field)%ZE
          Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
-      field=iHy
+      field=IHY
       do i=sgg%Sweep(field)%XI-1,sgg%Sweep(field)%XE
          Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
@@ -106,7 +106,7 @@ contains
       do k=sgg%Sweep(field)%ZI-1,sgg%Sweep(field)%ZE
          Punto%PhysCoor(field)%z(k)=(sgg%LineZ(k)+sgg%LineZ(k+1))*0.5_RKIND
       end do
-      field=iHz
+      field=IHZ
       do i=sgg%Sweep(field)%XI-1,sgg%Sweep(field)%XE
          Punto%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
@@ -124,7 +124,7 @@ contains
           TherearePlaneWaveBoxes=.false.
           return
       end if
-      If (ThereArePlaneWaveBoxes) then
+      if (ThereArePlaneWaveBoxes) then
          thereareplanewaveboxes=.false. !resetealo porque puede que el slice MPI no tenga
          allocate (TrFr(1:sgg%numplanewaves), &
                    IzDe(1:sgg%numplanewaves), &
@@ -141,12 +141,12 @@ contains
              numus(jjj)=sgg%PlaneWave(jjj)%Fichero%NumSamples
              !a peticion de OLD aborto si no hay nada que iluminar
              abortar= &
-             (sgg%PlaneWave(jjj)%esqx1 <=  SINPML_fullsize(iHx)%XI).and. &
-             (sgg%PlaneWave(jjj)%esqx2 >=  SINPML_fullsize(iHx)%XE).and. &
-             (sgg%PlaneWave(jjj)%esqy1 <=  SINPML_fullsize(iHy)%YI).and. &
-             (sgg%PlaneWave(jjj)%esqy2 >=  SINPML_fullsize(iHy)%YE).and. &
-             (sgg%PlaneWave(jjj)%esqz1 <=  SINPML_fullsize(iHz)%ZI).and. &
-             (sgg%PlaneWave(jjj)%esqz2 >=  SINPML_fullsize(iHz)%ZE)
+             (sgg%PlaneWave(jjj)%esqx1 <=  SINPML_fullsize(IHX)%XI).and. &
+             (sgg%PlaneWave(jjj)%esqx2 >=  SINPML_fullsize(IHX)%XE).and. &
+             (sgg%PlaneWave(jjj)%esqy1 <=  SINPML_fullsize(IHY)%YI).and. &
+             (sgg%PlaneWave(jjj)%esqy2 >=  SINPML_fullsize(IHY)%YE).and. &
+             (sgg%PlaneWave(jjj)%esqz1 <=  SINPML_fullsize(IHZ)%ZI).and. &
+             (sgg%PlaneWave(jjj)%esqz2 >=  SINPML_fullsize(IHZ)%ZE)
              if (abortar) then
                 write (buff,'(a)') 'At least one of TF/SF planes must be 1 cell inside the simulation region. Aborting'
                 call stoponerror(layoutnumber,num_procs,buff)
@@ -159,26 +159,26 @@ contains
              IluminaDe(jjj)=.false.
              IluminaAr(jjj)=.false.
              IluminaAb(jjj)=.false.
-             if ((sgg%PlaneWave(jjj)%esqx1 >= sgg%SINPMLSweep(iHx)%XI).and.(sgg%PlaneWave(jjj)%esqx1 <= sgg%SINPMLSweep(IHx)%XE)) &
+             if ((sgg%PlaneWave(jjj)%esqx1 >= sgg%SINPMLSweep(IHX)%XI).and.(sgg%PlaneWave(jjj)%esqx1 <= sgg%SINPMLSweep(IHX)%XE)) &
              IluminaTr(jjj)=.true.
-             if ((sgg%PlaneWave(jjj)%esqx2 <= sgg%SINPMLSweep(IHx)%XE).and.(sgg%PlaneWave(jjj)%esqx2 >= sgg%SINPMLSweep(iHx)%XI)) &
+             if ((sgg%PlaneWave(jjj)%esqx2 <= sgg%SINPMLSweep(IHX)%XE).and.(sgg%PlaneWave(jjj)%esqx2 >= sgg%SINPMLSweep(IHX)%XI)) &
              IluminaFr(jjj)=.true.
-             if ((sgg%PlaneWave(jjj)%esqy1 >= sgg%SINPMLSweep(iHy)%YI).and.(sgg%PlaneWave(jjj)%esqy1 <= sgg%SINPMLSweep(IHy)%YE)) &
+             if ((sgg%PlaneWave(jjj)%esqy1 >= sgg%SINPMLSweep(IHY)%YI).and.(sgg%PlaneWave(jjj)%esqy1 <= sgg%SINPMLSweep(IHY)%YE)) &
              IluminaIz(jjj)=.true.
-             if ((sgg%PlaneWave(jjj)%esqy2 <= sgg%SINPMLSweep(IHy)%YE).and.(sgg%PlaneWave(jjj)%esqy2 >= sgg%SINPMLSweep(iHy)%YI)) &
+             if ((sgg%PlaneWave(jjj)%esqy2 <= sgg%SINPMLSweep(IHY)%YE).and.(sgg%PlaneWave(jjj)%esqy2 >= sgg%SINPMLSweep(IHY)%YI)) &
              IluminaDe(jjj)=.true.
-             if ((sgg%PlaneWave(jjj)%esqz1 >= sgg%SINPMLSweep(iHz)%ZI).and.(sgg%PlaneWave(jjj)%esqz1 <= sgg%SINPMLSweep(IHz)%ZE)) &
+             if ((sgg%PlaneWave(jjj)%esqz1 >= sgg%SINPMLSweep(IHZ)%ZI).and.(sgg%PlaneWave(jjj)%esqz1 <= sgg%SINPMLSweep(IHZ)%ZE)) &
              IluminaAb(jjj)=.true.
-             if ((sgg%PlaneWave(jjj)%esqz2 <= sgg%SINPMLSweep(IHz)%ZE).and.(sgg%PlaneWave(jjj)%esqz2 >= sgg%SINPMLSweep(iHz)%ZI)) &
+             if ((sgg%PlaneWave(jjj)%esqz2 <= sgg%SINPMLSweep(IHZ)%ZE).and.(sgg%PlaneWave(jjj)%esqz2 >= sgg%SINPMLSweep(IHZ)%ZI)) &
              IluminaAr(jjj)=.true.
              !
              !find the coordinate limits of the Huygens Box for each component
-             TrFr(jjj)%I%tra%Ez=Max( sgg%SINPMLSweep(iEz)%XI, sgg%PlaneWave(jjj)%esqx1    )
-             TrFr(jjj)%I%fro%Ez=Min( sgg%SINPMLSweep(iEz)%XE, sgg%PlaneWave(jjj)%esqx2    )
-             TrFr(jjj)%J%com%Ez=Max( sgg%SINPMLSweep(iEz)%YI, sgg%PlaneWave(jjj)%esqy1    )
-             TrFr(jjj)%J%fin%Ez=Min( sgg%SINPMLSweep(iEz)%YE, sgg%PlaneWave(jjj)%esqy2    )
-             TrFr(jjj)%K%com%Ez=Max( sgg%SINPMLSweep(iEz)%ZI, sgg%PlaneWave(jjj)%esqz1    )
-             TrFr(jjj)%K%fin%Ez=MIn( sgg%SINPMLSweep(iEz)%ZE, sgg%PlaneWave(jjj)%esqz2-1  )
+             TrFr(jjj)%I%tra%Ez=Max( sgg%SINPMLSweep(IEZ)%XI, sgg%PlaneWave(jjj)%esqx1    )
+             TrFr(jjj)%I%fro%Ez=Min( sgg%SINPMLSweep(IEZ)%XE, sgg%PlaneWave(jjj)%esqx2    )
+             TrFr(jjj)%J%com%Ez=Max( sgg%SINPMLSweep(IEZ)%YI, sgg%PlaneWave(jjj)%esqy1    )
+             TrFr(jjj)%J%fin%Ez=Min( sgg%SINPMLSweep(IEZ)%YE, sgg%PlaneWave(jjj)%esqy2    )
+             TrFr(jjj)%K%com%Ez=Max( sgg%SINPMLSweep(IEZ)%ZI, sgg%PlaneWave(jjj)%esqz1    )
+             TrFr(jjj)%K%fin%Ez=MIn( sgg%SINPMLSweep(IEZ)%ZE, sgg%PlaneWave(jjj)%esqz2-1  )
              !
              TrFr(jjj)%I%tra%Ey=Max( sgg%SINPMLSweep(iEy)%XI, sgg%PlaneWave(jjj)%esqx1    )
              TrFr(jjj)%I%fro%Ey=Min( sgg%SINPMLSweep(iEy)%XE, sgg%PlaneWave(jjj)%esqx2    )
@@ -209,12 +209,12 @@ contains
              IzDe(jjj)%K%com%Ex=Max( sgg%SINPMLSweep(iEx)%ZI ,sgg%PlaneWave(jjj)%esqz1     )
              IzDe(jjj)%K%fin%Ex=MIn( sgg%SINPMLSweep(iEx)%ZE ,sgg%PlaneWave(jjj)%esqz2     )
              !
-             IzDe(jjj)%J%izq%Ez=Max( sgg%SINPMLSweep(iEz)%yI, sgg%PlaneWave(jjj)%esqy1     )
-             IzDe(jjj)%J%der%Ez=Min( sgg%SINPMLSweep(iEz)%yE, sgg%PlaneWave(jjj)%esqy2     )
-             IzDe(jjj)%I%com%Ez=Max( sgg%SINPMLSweep(iEz)%xI, sgg%PlaneWave(jjj)%esqx1     )
-             IzDe(jjj)%I%fin%Ez=Min( sgg%SINPMLSweep(iEz)%xE, sgg%PlaneWave(jjj)%esqx2     )
-             IzDe(jjj)%K%com%Ez=Max( sgg%SINPMLSweep(iEz)%ZI ,sgg%PlaneWave(jjj)%esqz1     )
-             IzDe(jjj)%K%fin%Ez=MIn( sgg%SINPMLSweep(iEz)%ZE ,sgg%PlaneWave(jjj)%esqz2-1   )
+             IzDe(jjj)%J%izq%Ez=Max( sgg%SINPMLSweep(IEZ)%yI, sgg%PlaneWave(jjj)%esqy1     )
+             IzDe(jjj)%J%der%Ez=Min( sgg%SINPMLSweep(IEZ)%yE, sgg%PlaneWave(jjj)%esqy2     )
+             IzDe(jjj)%I%com%Ez=Max( sgg%SINPMLSweep(IEZ)%xI, sgg%PlaneWave(jjj)%esqx1     )
+             IzDe(jjj)%I%fin%Ez=Min( sgg%SINPMLSweep(IEZ)%xE, sgg%PlaneWave(jjj)%esqx2     )
+             IzDe(jjj)%K%com%Ez=Max( sgg%SINPMLSweep(IEZ)%ZI ,sgg%PlaneWave(jjj)%esqz1     )
+             IzDe(jjj)%K%fin%Ez=MIn( sgg%SINPMLSweep(IEZ)%ZE ,sgg%PlaneWave(jjj)%esqz2-1   )
              !
              IzDe(jjj)%J%izq%Hz= IzDe(jjj)%J%izq%Ex - 1
              IzDe(jjj)%J%der%Hz= IzDe(jjj)%J%der%Ex
@@ -330,43 +330,43 @@ contains
              !
              !Find the null-phase corner depending on the angle of propagation
              if ((pxpw(jjj,kkk) >= 0).and.(pypw(jjj,kkk) >= 0).and.(pzpw(jjj,kkk) >= 0)) then
-                XD0=sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(iHx)%XI))
-                YD0=sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(iHy)%YI))
-                ZD0=sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(iHz)%ZI))
-             elseIF ((pxpw(jjj,kkk) >= 0).and.(pypw(jjj,kkk) >= 0).and.(pzpw(jjj,kkk) < 0)) then
-                XD0=sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(iHx)%XI))
-                YD0=sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(iHy)%YI))
-                ZD0=sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(iHz)%ZE))
-             elseIF ((pxpw(jjj,kkk) >= 0).and.(pypw(jjj,kkk) < 0).and.(pzpw(jjj,kkk) >= 0)) then
-                XD0=sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(iHx)%XI))
-                YD0=sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(iHy)%YE))
-                ZD0=sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(iHz)%ZI))
-             elseIF ((pxpw(jjj,kkk) < 0).and.(pypw(jjj,kkk) >= 0).and.(pzpw(jjj,kkk) >= 0)) then
-                XD0=sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(iHx)%XE))
-                YD0=sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(iHy)%YI))
-                ZD0=sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(iHz)%ZI))
-             elseIF ((pxpw(jjj,kkk) >= 0).and.(pypw(jjj,kkk) < 0).and.(pzpw(jjj,kkk) < 0)) then
-                XD0=sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(iHx)%XI))
-                YD0=sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(iHy)%YE))
-                ZD0=sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(iHz)%ZE))
-             elseIF ((pxpw(jjj,kkk) < 0).and.(pypw(jjj,kkk) < 0).and.(pzpw(jjj,kkk) >= 0)) then
-                XD0=sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(iHx)%XE))
-                YD0=sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(iHy)%YE))
-                ZD0=sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(iHz)%ZI))
-             elseIF ((pxpw(jjj,kkk) < 0).and.(pypw(jjj,kkk) >= 0).and.(pzpw(jjj,kkk) < 0)) then
-                XD0=sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(iHx)%XE))
-                YD0=sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(iHy)%YI))
-                ZD0=sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(iHz)%ZE))
-             elseIF ((pxpw(jjj,kkk) < 0).and.(pypw(jjj,kkk) < 0).and.(pzpw(jjj,kkk) < 0)) then
-                XD0=sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(iHx)%XE))
-                YD0=sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(iHy)%YE))
-                ZD0=sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(iHz)%ZE))
+                XD0=sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(IHX)%XI))
+                YD0=sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(IHY)%YI))
+                ZD0=sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(IHZ)%ZI))
+             else if ((pxpw(jjj,kkk) >= 0).and.(pypw(jjj,kkk) >= 0).and.(pzpw(jjj,kkk) < 0)) then
+                XD0=sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(IHX)%XI))
+                YD0=sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(IHY)%YI))
+                ZD0=sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(IHZ)%ZE))
+             else if ((pxpw(jjj,kkk) >= 0).and.(pypw(jjj,kkk) < 0).and.(pzpw(jjj,kkk) >= 0)) then
+                XD0=sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(IHX)%XI))
+                YD0=sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(IHY)%YE))
+                ZD0=sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(IHZ)%ZI))
+             else if ((pxpw(jjj,kkk) < 0).and.(pypw(jjj,kkk) >= 0).and.(pzpw(jjj,kkk) >= 0)) then
+                XD0=sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(IHX)%XE))
+                YD0=sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(IHY)%YI))
+                ZD0=sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(IHZ)%ZI))
+             else if ((pxpw(jjj,kkk) >= 0).and.(pypw(jjj,kkk) < 0).and.(pzpw(jjj,kkk) < 0)) then
+                XD0=sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(IHX)%XI))
+                YD0=sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(IHY)%YE))
+                ZD0=sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(IHZ)%ZE))
+             else if ((pxpw(jjj,kkk) < 0).and.(pypw(jjj,kkk) < 0).and.(pzpw(jjj,kkk) >= 0)) then
+                XD0=sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(IHX)%XE))
+                YD0=sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(IHY)%YE))
+                ZD0=sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(IHZ)%ZI))
+             else if ((pxpw(jjj,kkk) < 0).and.(pypw(jjj,kkk) >= 0).and.(pzpw(jjj,kkk) < 0)) then
+                XD0=sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(IHX)%XE))
+                YD0=sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(IHY)%YI))
+                ZD0=sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(IHZ)%ZE))
+             else if ((pxpw(jjj,kkk) < 0).and.(pypw(jjj,kkk) < 0).and.(pzpw(jjj,kkk) < 0)) then
+                XD0=sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(IHX)%XE))
+                YD0=sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(IHY)%YE))
+                ZD0=sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(IHZ)%ZE))
              else
                 call stoponerror(layoutnumber,num_procs,'buggy xo,yo,z0')
              end if
-             diagonalcaja=sqrt( (sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(iHx)%XI)) - sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(iHx)%XE)))**2.0_RKIND  + &
-                                (sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(iHy)%YI)) - sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(iHy)%YE)))**2.0_RKIND  + &
-                                (sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(iHz)%ZI)) - sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(iHz)%ZE)))**2.0_RKIND  ) 
+             diagonalcaja=sqrt( (sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(IHX)%XI)) - sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(IHX)%XE)))**2.0_RKIND  + &
+                                (sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(IHY)%YI)) - sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(IHY)%YE)))**2.0_RKIND  + &
+                                (sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(IHZ)%ZI)) - sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(IHZ)%ZE)))**2.0_RKIND  ) 
              distanciaInicial(jjj,kkk)=((XD0*pxpw(jjj,kkk)+YD0*pypw(jjj,kkk)+ZD0*pzpw(jjj,kkk)))-INCERT(jjj,kkk)*diagonalcaja !CREO QUE LA TENGO QUE RESTAR PARA QUE LA INCERTIDUMBRE SOLO AGRANDE LA CAJA (RETRASE LA SEniAL)
                                                                            !!!! corroboro a 150419 que hay que restar la incertidumbre, despues de dudar sobre el signo, pq luego t-d/c, d=n.r-(n.r0-incert)>0 sii incert>0, ya que n.r-n.r0>0 siempre
 
@@ -376,16 +376,16 @@ contains
 
       !check if materials are crossed by the box
       do jjj=1, sgg%numplanewaves
-          If( IluminaTr(jjj)) then
+          if( IluminaTr(jjj)) then
              !Ez Back
              i = TrFr(jjj)%I%tra%Ez !Back
              do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
                 do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
                    if (media%sggMiEz( i, j, k) /=1 ) then
                       write (buff,'(a,3i7)') 'Back TF/SF region intersects a material at Ez ',i,j,k
-                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -396,25 +396,25 @@ contains
                 do j = TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey
                    if (media%sggMiEy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Back TF/SF region intersects a material at Ey ',i,j,k
-                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
-                End do
+                end do
              end do
           end if
           !--->
-          If( IluminaFr(jjj)) then
+          if( IluminaFr(jjj)) then
              !Ez  Front
              i = TrFr(jjj)%I%fro%Ez !Front
              do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
                 do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
                    if (media%sggMiEz(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Front TF/SF region intersects a material at Ez ',i,j,k
-                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -425,25 +425,25 @@ contains
                 do j = TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey
                    if (media%sggMiEy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Front TF/SF region intersects a material at Ey ',i,j,k
-                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
              end do
           end if
           !--->
-          If( IluminaIz(jjj)) then
+          if( IluminaIz(jjj)) then
              !Ex Left
              j = IzDe(jjj)%J%izq%Ex  !Left
              do k = IzDe(jjj)%K%com%Ex, IzDe(jjj)%K%fin%Ex
                 do i = IzDe(jjj)%I%com%Ex, IzDe(jjj)%I%fin%Ex
                    if (media%sggMiEx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Left TF/SF region intersects a material at Ex ',i,j,k
-                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -454,25 +454,25 @@ contains
                 do i = IzDe(jjj)%I%com%Ez, IzDe(jjj)%I%fin%Ez
                    if (media%sggMiEz(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Left TF/SF region intersects a material at Ez ',i,j,k
-                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
              end do
           end if
           !--->
-          If( IluminaDe(jjj)) then
+          if( IluminaDe(jjj)) then
              !Ez  Right
              j = IzDe(jjj)%J%der%Ez !Right
              do k = IzDe(jjj)%K%com%Ez, IzDe(jjj)%K%fin%Ez
                 do i = IzDe(jjj)%I%com%Ez, IzDe(jjj)%I%fin%Ez
                    if (media%sggMiEz(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Right TF/SF region intersects a material at Ez ',i,j,k
-                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -483,25 +483,25 @@ contains
                 do i=IzDe(jjj)%I%com%Ex,IzDe(jjj)%I%fin%Ex
                    if (media%sggMiEx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Right TF/SF region intersects a material at Ex ',i,j,k
-                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
-                End do
+                end do
              end do
           end if
           !--->
-          If( IluminaAb(jjj)) then
+          if( IluminaAb(jjj)) then
              !Ex  Down
              k = AbAr(jjj)%K%aba%Ex  !Down
              do j = AbAr(jjj)%J%com%Ex, AbAr(jjj)%J%fin%Ex
-                Do i=AbAr(jjj)%I%com%Ex,AbAr(jjj)%I%fin%Ex
+                do i=AbAr(jjj)%I%com%Ex,AbAr(jjj)%I%fin%Ex
                    if (media%sggMiEx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Down TF/SF region intersects a material at Ex ',i,j,k
-                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -512,25 +512,25 @@ contains
                 do i = AbAr(jjj)%I%com%Ey, AbAr(jjj)%I%fin%Ey
                    if (media%sggMiEy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Down TF/SF region intersects a material at Ey ',i,j,k
-                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
              end do
           end if
           !--->
-          If( IluminaAr(jjj)) then
+          if( IluminaAr(jjj)) then
              !Ex Up
              k = AbAr(jjj)%K%arr%Ex  !Up
              do j = AbAr(jjj)%J%com%Ex, AbAr(jjj)%J%fin%Ex
                 do i = AbAr(jjj)%I%com%Ex, AbAr(jjj)%I%fin%Ex
                    if (media%sggMiEx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Up TF/SF region intersects a material at Ex ',i,j,k
-                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -541,9 +541,9 @@ contains
                 do i = AbAr(jjj)%I%com%Ey, AbAr(jjj)%I%fin%Ey
                    if (media%sggMiEy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Up TF/SF region intersects a material at Ey ',i,j,k
-                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -557,9 +557,9 @@ contains
                 do j = TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz
                    if (media%sggMiHz(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Back TF/SF region intersects a material at Hz ',i,j,k
-                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -570,9 +570,9 @@ contains
                 do j = TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy
                    if (media%sggMiHy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Back TF/SF region intersects a material at Hy ',i,j,k
-                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -585,9 +585,9 @@ contains
                 do j = TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz
                    if (media%sggMiHz(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Front TF/SF region intersects a material at Hz ',i,j,k
-                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -598,9 +598,9 @@ contains
                 do j = TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy
                    if (media%sggMiHy( i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Front TF/SF region intersects a material at Hy ',i,j,k
-                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -614,9 +614,9 @@ contains
                 do i = IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx
                    if (media%sggMiHx( i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Left TF/SF region intersects a material at Hx ',i,j,k
-                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -627,9 +627,9 @@ contains
                 do i = IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz
                    if (media%sggMiHz( i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Left TF/SF region intersects a material at Hz ',i,j,k
-                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -642,9 +642,9 @@ contains
                 do i = IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx
                    if (media%sggMiHx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Right TF/SF region intersects a material at Hx ',i,j,k
-                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -655,9 +655,9 @@ contains
                 do i = IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz
                    if (media%sggMiHz(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Right TF/SF region intersects a material at Hz ',i,j,k
-                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -670,9 +670,9 @@ contains
                 do i = AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx
                    if (media%sggMiHx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Down TF/SF region intersects a material at Hx ',i,j,k
-                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -683,9 +683,9 @@ contains
                 do i=AbAr(jjj)%I%com%Hy,AbAr(jjj)%I%fin%Hy
                    if (media%sggMiHy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Down TF/SF region intersects a material at Hy ',i,j,k
-                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -699,9 +699,9 @@ contains
                 do i = AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx
                    if (media%sggMiHx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Up TF/SF region intersects a material at Hx ',i,j,k
-                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -712,9 +712,9 @@ contains
                 do i = AbAr(jjj)%I%com%Hy, AbAr(jjj)%I%fin%Hy
                    if (media%sggMiHy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Up TF/SF region intersects a material at Hy ',i,j,k
-                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%pec)).and. .not. &
-                      ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
-                      (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
+                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%PEC)).and. .not. &
+                      ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
+                      (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
                    end if
                 end do
@@ -734,7 +734,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Calculate the incident field at a given time/space point
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   function Incid(sgg,jjj, nfield,time,i,j,k,still_planewave_time,calledfromobservation)    RESULT(EHI)
+   function Incid(sgg,jjj, nfield,time,i,j,k,still_planewave_time,calledfromobservation)    result(EHI)
       type(SGGFDTDINFO_t), intent(in) :: sgg
       logical :: still_planewave_time,calledfromobservation
       integer(kind=4) i,j,k,nfield,jjj,kkk,jdum
@@ -815,10 +815,10 @@ contains
    !!!  Free-up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine DestroyIlumina(sgg)
-      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=4) :: field
 
-      do field=iEx,iHz
+      do field=iEx,IHZ
          if (associated(Punto%PhysCoor(field)%x)) deallocate(Punto%PhysCoor(field)%x)
          if (associated(Punto%PhysCoor(field)%y)) deallocate(Punto%PhysCoor(field)%y)
          if (associated(Punto%PhysCoor(field)%z)) deallocate(Punto%PhysCoor(field)%z)
@@ -839,19 +839,19 @@ contains
       logical :: still_planewave_time
       logical :: called_fromobservation
       !---------------------------> inputs <----------------------------------------------------------
-      integer, intent( IN) :: timeinstant
+      integer, intent( in) :: timeinstant
       !!!
-      type( bounds_t), intent( IN) :: b
+      type( bounds_t), intent( in) :: b
       !--->
-      real(kind = RKIND), dimension( 0 :  sgg%NumMedia), intent( IN) :: g2
+      real(kind = RKIND), dimension( 0 :  sgg%NumMedia), intent( in) :: g2
       !--->
-      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN) :: Idxh
-      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN) :: Idyh
-      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN) :: Idzh
+      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( in) :: Idxh
+      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( in) :: Idyh
+      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( in) :: Idzh
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT) :: Ex
-      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT) :: Ey
-      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT) :: Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( inout) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( inout) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( inout) :: Ez
       !---------------------------> variables locales <-----------------------------------------------
       real(kind = RKIND) :: timei, G2_1, Id,incidente
       integer  :: i, j, k, i_m, j_m, k_m,jjj
@@ -870,7 +870,7 @@ contains
       G2_1 = G2( 1)
       !--->
       do jjj=1, sgg%numplanewaves
-          If( IluminaTr(jjj)) then
+          if( IluminaTr(jjj)) then
              !Ez Back
              i = TrFr(jjj)%I%tra%Ez !Back
              i_m = i - b%Ez%XI
@@ -884,7 +884,7 @@ contains
                 do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
                    j_m = j - b%Ez%YI
                    !--->
-                   incidente = Incid(sgg,jjj, iHy, timei, i-1, j, k,still_planewave_time,called_fromobservation)
+                   incidente = Incid(sgg,jjj, IHY, timei, i-1, j, k,still_planewave_time,called_fromobservation)
                    Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) - G2_1 * incidente * Id
                 end do
              end do
@@ -904,16 +904,16 @@ contains
                 do j = TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey
                    j_m = j - b%Ey%YI
                    !--->
-                   incidente = Incid(sgg,jjj, iHz, timei, i-1, j, k,still_planewave_time,called_fromobservation)
+                   incidente = Incid(sgg,jjj, IHZ, timei, i-1, j, k,still_planewave_time,called_fromobservation)
                    Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) + G2_1 * incidente * Id
-                End do
+                end do
              end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
           end if
           !--->
-          If( IluminaFr(jjj)) then
+          if( IluminaFr(jjj)) then
              !Ez  Front
              i = TrFr(jjj)%I%fro%Ez !Front
              i_m = i - b%Ez%XI
@@ -927,7 +927,7 @@ contains
                 do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
                    j_m = j - b%Ez%YI
                    !--->
-                   incidente = Incid(sgg,jjj, iHy, timei, i, j, k,still_planewave_time,called_fromobservation)
+                   incidente = Incid(sgg,jjj, IHY, timei, i, j, k,still_planewave_time,called_fromobservation)
                    Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) + G2_1 * incidente * Id
                 end do
              end do
@@ -947,7 +947,7 @@ contains
                 do j = TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey
                    j_m = j - b%Ey%YI
                    !--->
-                   incidente = Incid(sgg,jjj, iHz, timei, i, j, k,still_planewave_time,called_fromobservation)
+                   incidente = Incid(sgg,jjj, IHZ, timei, i, j, k,still_planewave_time,called_fromobservation)
                    Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) - G2_1 * incidente * Id
                 end do
              end do
@@ -956,7 +956,7 @@ contains
 #endif
           end if
           !--->
-          If( IluminaIz(jjj)) then
+          if( IluminaIz(jjj)) then
              !Ex Left
              j = IzDe(jjj)%J%izq%Ex  !Left
              j_m = j - b%Ex%YI
@@ -970,7 +970,7 @@ contains
                 do i = IzDe(jjj)%I%com%Ex, IzDe(jjj)%I%fin%Ex
                    i_m = i - b%Ex%XI
                    !--->
-                   incidente = Incid(sgg,jjj, iHz, timei, i, j-1, k,still_planewave_time,called_fromobservation)
+                   incidente = Incid(sgg,jjj, IHZ, timei, i, j-1, k,still_planewave_time,called_fromobservation)
                    Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) - G2_1 * incidente * Id
                 end do
              end do
@@ -990,7 +990,7 @@ contains
                 do i = IzDe(jjj)%I%com%Ez, IzDe(jjj)%I%fin%Ez
                    i_m = i - b%Ez%XI
                    !--->
-                   incidente = Incid(sgg,jjj, iHx, timei, i, j-1, k,still_planewave_time,called_fromobservation)
+                   incidente = Incid(sgg,jjj, IHX, timei, i, j-1, k,still_planewave_time,called_fromobservation)
                    Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) + G2_1 * incidente * Id
                 end do
              end do
@@ -999,7 +999,7 @@ contains
 #endif
           end if
           !--->
-          If( IluminaDe(jjj)) then
+          if( IluminaDe(jjj)) then
              !Ez  Right
              j = IzDe(jjj)%J%der%Ez !Right
              j_m = j - b%Ez%YI
@@ -1013,7 +1013,7 @@ contains
                 do i = IzDe(jjj)%I%com%Ez, IzDe(jjj)%I%fin%Ez
                    i_m = i - b%Ez%XI
                    !--->
-                   incidente = Incid(sgg,jjj, iHx, timei, i, j, k,still_planewave_time,called_fromobservation)
+                   incidente = Incid(sgg,jjj, IHX, timei, i, j, k,still_planewave_time,called_fromobservation)
                    Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) - G2_1 * incidente * Id
                 end do
              end do
@@ -1033,16 +1033,16 @@ contains
                 do i=IzDe(jjj)%I%com%Ex,IzDe(jjj)%I%fin%Ex
                    i_m = i - b%Ex%XI
                    !--->
-                   incidente = Incid(sgg,jjj, iHz, timei, i, j, k,still_planewave_time,called_fromobservation)
+                   incidente = Incid(sgg,jjj, IHZ, timei, i, j, k,still_planewave_time,called_fromobservation)
                    Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) + G2_1 * incidente * Id
-                End do
+                end do
              end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
           end if
           !--->
-          If( IluminaAb(jjj)) then
+          if( IluminaAb(jjj)) then
              !Ex  Down
              k = AbAr(jjj)%K%aba%Ex  !Down
              k_m = k - b%Ex%ZI
@@ -1053,10 +1053,10 @@ contains
 #endif
              do j = AbAr(jjj)%J%com%Ex, AbAr(jjj)%J%fin%Ex
                 j_m = j - b%Ex%YI
-                Do i=AbAr(jjj)%I%com%Ex,AbAr(jjj)%I%fin%Ex
+                do i=AbAr(jjj)%I%com%Ex,AbAr(jjj)%I%fin%Ex
                    i_m = i - b%Ex%XI
                    !--->
-                   incidente = Incid(sgg,jjj, iHy, timei, i, j, k-1,still_planewave_time,called_fromobservation)
+                   incidente = Incid(sgg,jjj, IHY, timei, i, j, k-1,still_planewave_time,called_fromobservation)
                    Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) + G2_1 * incidente * Id
                 end do
              end do
@@ -1076,7 +1076,7 @@ contains
                 do i = AbAr(jjj)%I%com%Ey, AbAr(jjj)%I%fin%Ey
                    i_m = i - b%Ey%XI
                    !--->
-                   incidente = Incid(sgg,jjj, iHx, timei, i, j, k-1,still_planewave_time,called_fromobservation)
+                   incidente = Incid(sgg,jjj, IHX, timei, i, j, k-1,still_planewave_time,called_fromobservation)
                    Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) - G2_1 * incidente * Id
                 end do
              end do
@@ -1085,7 +1085,7 @@ contains
 #endif
           end if
           !--->
-          If( IluminaAr(jjj)) then
+          if( IluminaAr(jjj)) then
              !Ex Up
              k = AbAr(jjj)%K%arr%Ex  !Up
              k_m = k - b%Ex%ZI
@@ -1099,7 +1099,7 @@ contains
                 do i = AbAr(jjj)%I%com%Ex, AbAr(jjj)%I%fin%Ex
                    i_m = i - b%Ex%XI
                    !--->
-                   incidente = Incid(sgg,jjj, iHy, timei, i, j, k,still_planewave_time,called_fromobservation)
+                   incidente = Incid(sgg,jjj, IHY, timei, i, j, k,still_planewave_time,called_fromobservation)
                    Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) - G2_1 * incidente * Id
                 end do
              end do
@@ -1119,7 +1119,7 @@ contains
                 do i = AbAr(jjj)%I%com%Ey, AbAr(jjj)%I%fin%Ey
                    i_m = i - b%Ey%XI
                    !--->
-                   incidente = Incid(sgg,jjj, iHx, timei, i, j, k,still_planewave_time,called_fromobservation)
+                   incidente = Incid(sgg,jjj, IHX, timei, i, j, k,still_planewave_time,called_fromobservation)
                    Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) + G2_1 * incidente * Id
                 end do
              end do
@@ -1130,7 +1130,7 @@ contains
       end do
       !---------------------------> acaba AdvancePlaneWaveE <-----------------------------------------
       return
-   endsubroutine AdvancePlaneWaveE
+   end subroutine AdvancePlaneWaveE
    !**************************************************************************************************
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Feed the currents to illuminate the H-field at n+0.5_RKIND
@@ -1142,19 +1142,19 @@ contains
       logical :: called_fromobservation
       
       !---------------------------> inputs <----------------------------------------------------------
-      integer, intent( IN) :: timeinstant
+      integer, intent( in) :: timeinstant
       !!!
-      type( bounds_t), intent( IN) :: b
+      type( bounds_t), intent( in) :: b
       !--->
-      real(kind = RKIND), dimension( 0 :  sgg%NumMedia), intent( IN) :: gm2
+      real(kind = RKIND), dimension( 0 :  sgg%NumMedia), intent( in) :: gm2
       !--->
-      real(kind = RKIND), dimension( 0 :  b%dxe%NX-1), intent( IN) :: Idxe
-      real(kind = RKIND), dimension( 0 :  b%dye%NY-1), intent( IN) :: Idye
-      real(kind = RKIND), dimension( 0 :  b%dze%NZ-1), intent( IN) :: Idze
+      real(kind = RKIND), dimension( 0 :  b%dxe%NX-1), intent( in) :: Idxe
+      real(kind = RKIND), dimension( 0 :  b%dye%NY-1), intent( in) :: Idye
+      real(kind = RKIND), dimension( 0 :  b%dze%NZ-1), intent( in) :: Idze
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hx
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT) :: Hy
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT) :: Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( inout) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( inout) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( inout) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
       real(kind = RKIND) :: timei, Gm2_1, Id,incidente
       integer(kind=4) :: i, j, k, i_m, j_m, k_m,jjj
@@ -1205,7 +1205,7 @@ contains
                     do j = TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy
                        j_m = j - b%Hy%YI
                        !--->
-                       incidente = Incid(sgg,jjj,  iEz, timei, i+1, j, k,still_planewave_time,called_fromobservation)
+                       incidente = Incid(sgg,jjj,  IEZ, timei, i+1, j, k,still_planewave_time,called_fromobservation)
                        Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - Gm2_1 * incidente * Id
                     end do
                  end do
@@ -1248,7 +1248,7 @@ contains
                     do j = TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy
                        j_m = j - b%Hy%YI
                        !--->
-                       incidente = Incid(sgg,jjj,  iEz, timei, i, j, k,still_planewave_time,called_fromobservation)
+                       incidente = Incid(sgg,jjj,  IEZ, timei, i, j, k,still_planewave_time,called_fromobservation)
                        Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) + Gm2_1 * incidente * Id
                     end do
                  end do
@@ -1271,7 +1271,7 @@ contains
                     do i = IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx
                        i_m = i - b%Hx%XI
                        !--->
-                       incidente = Incid(sgg,jjj,  iEz, timei, i, j+1, k,still_planewave_time,called_fromobservation)
+                       incidente = Incid(sgg,jjj,  IEZ, timei, i, j+1, k,still_planewave_time,called_fromobservation)
                        Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) + Gm2_1 * incidente * Id
                     end do
                  end do
@@ -1314,7 +1314,7 @@ contains
                     do i = IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx
                        i_m = i - b%Hx%XI
                        !--->
-                       incidente = Incid(sgg,jjj,  iEz, timei, i, j, k,still_planewave_time,called_fromobservation)
+                       incidente = Incid(sgg,jjj,  IEZ, timei, i, j, k,still_planewave_time,called_fromobservation)
                        Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) - Gm2_1 * incidente * Id
                     end do
                  end do
@@ -1431,7 +1431,7 @@ contains
       end do 
       !---------------------------> acaba AdvancePlaneWaveH <-----------------------------------------
       return
-   endsubroutine AdvancePlaneWaveH
+   end subroutine AdvancePlaneWaveH
 
     subroutine storeplanewaves(sgg)
       type(SGGFDTDINFO_t), intent(in) :: sgg
@@ -1472,16 +1472,16 @@ contains
     subroutine corrigeondaplanaH(sgg,b,Hx,Hy,Hz,Hxvac, Hyvac, Hzvac)
       !!!
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      type( bounds_t), intent( IN) :: b
+      type( bounds_t), intent( in) :: b
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hx
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT) :: Hy
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT) :: Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( inout) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( inout) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( inout) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hxvac
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT) :: Hyvac
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT) :: Hzvac
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( inout) :: Hxvac
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( inout) :: Hyvac
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( inout) :: Hzvac
       !---------------------------> variables locales <-----------------------------------------------
       integer(kind=4) :: i, j, k, i_m, j_m, k_m,jjj
 

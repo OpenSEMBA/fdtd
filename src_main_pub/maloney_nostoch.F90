@@ -23,14 +23,14 @@ implicit none
 private
 !structures needed by the SGBC
 type :: val_t
-    complex(Kind=CKIND), allocatable, dimension( : ) :: val
+    complex(kind=CKIND), allocatable, dimension( : ) :: val
 end type
 
 
 type :: MDfield_t
    real(kind=RKIND), pointer                 :: FieldPresent !apunta al campo del background
    real(kind=RKIND)                          :: FieldPrevious
-   complex(Kind=CKIND), pointer, dimension( : ) :: Current
+   complex(kind=CKIND), pointer, dimension( : ) :: Current
 end type
 
 
@@ -103,20 +103,20 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    real(kind=RKIND) :: eps00,mu00
    logical :: temp_SGBCcrank,temp_SGBCDispersive
    type(constants_t), intent(inout) :: g
-   type(SGGFDTDINFO_t), intent(INOUT) :: sgg !ojo pq se machacan los epr, mur, sigma, sigmam en caso de materiales dispersivos
+   type(SGGFDTDINFO_t), intent(inout) :: sgg !ojo pq se machacan los epr, mur, sigma, sigmam en caso de materiales dispersivos
    real(kind=RKIND)   , intent(in) , target     :: &
    Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
    Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
-   Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
-   Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
-   Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
-   Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+   Ez(sgg%alloc(IEZ)%XI : sgg%alloc(IEZ)%XE,sgg%alloc(IEZ)%YI : sgg%alloc(IEZ)%YE,sgg%alloc(IEZ)%ZI : sgg%alloc(IEZ)%ZE),&
+   Hx(sgg%alloc(IHX)%XI : sgg%alloc(IHX)%XE,sgg%alloc(IHX)%YI : sgg%alloc(IHX)%YE,sgg%alloc(IHX)%ZI : sgg%alloc(IHX)%ZE),&
+   Hy(sgg%alloc(IHY)%XI : sgg%alloc(IHY)%XE,sgg%alloc(IHY)%YI : sgg%alloc(IHY)%YE,sgg%alloc(IHY)%ZI : sgg%alloc(IHY)%ZE),&
+   Hz(sgg%alloc(IHZ)%XI : sgg%alloc(IHZ)%XE,sgg%alloc(IHZ)%YI : sgg%alloc(IHZ)%YE,sgg%alloc(IHZ)%ZI : sgg%alloc(IHZ)%ZE)
    real(kind=RKIND) , dimension(:)   , intent(in) :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
                                                       &  Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
-                                                      &  Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE), &
-                                                         Idxe(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE), &
-                                                         Idye(sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE), &
-                                                         Idze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+                                                      &  Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE), &
+                                                         Idxe(sgg%alloc(IHX)%XI : sgg%alloc(IHX)%XE), &
+                                                         Idye(sgg%alloc(IHY)%YI : sgg%alloc(IHY)%YE), &
+                                                         Idze(sgg%alloc(IHZ)%ZI : sgg%alloc(IHZ)%ZE)
 
    real(kind=RKIND) :: temp_SGBCFreq,temp_SGBCresol, rra,rrb,rrc,rrd
    real(kind=RKIND) :: signo,g1eff_0,g1eff_1,g2eff_0,g2eff_1,Sigmam,Epsilon,Mu,Sigma   
@@ -158,26 +158,26 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
 
 !pre-cuenta los medios
    conta=0
-   Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
-      Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
-         Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
+   do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
+      do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
+         do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
             jmed=media%sggMiEx(i1,j1,k1)
             if (SGG%Med(jmed)%Is%SGBC)  conta=conta+1
          end do
       end do
    end do
-   Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
-      Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
-         Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
+   do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
+      do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
+         do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
             jmed=media%sggMiEy(i1,j1,k1)
             if (SGG%Med(jmed)%Is%SGBC)  conta=conta+1
          end do
       end do
    end do
 
-   Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
-      Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
-         Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
+   do k1=sgg%SINPMLSweep(IEZ)%ZI,sgg%SINPMLSweep(IEZ)%ZE
+      do j1=sgg%SINPMLSweep(IEZ)%YI,sgg%SINPMLSweep(IEZ)%YE
+         do i1=sgg%SINPMLSweep(IEZ)%XI,sgg%SINPMLSweep(IEZ)%XE
             jmed=media%sggMiEz(i1,j1,k1)
             if (SGG%Med(jmed)%Is%SGBC) conta=conta+1
          end do
@@ -240,7 +240,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
                  call StopOnError(layoutnumber,num_procs,buff)
               end if
               open (7345,file=trim(adjustl(ficheropolos)),form='formatted')
-              READ (7345,*) rra,rrb,rrc,rrd 
+              read (7345,*) rra,rrb,rrc,rrd 
               rrb= rrb/eps0 ;  rrc = rrc/mu0 !no les afecta el permit scaling creo 071118 pq son relativos a la entrada del programa que DEBE ENTRAR CON los eps0 y mu0 autenticos
               SGG%Med(jmed)%multiport(1)%sigma(1)=rra; 
               SGG%Med(jmed)%multiport(1)%epr(1)=rrb; 
@@ -251,7 +251,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
               SGG%Med(jmed)%mur=rrc; 
               SGG%Med(jmed)%sigmam=rrd;
               !
-              READ (7345,*) numpolres, IDUMMY, IDUMMY, IDUMMY
+              read (7345,*) numpolres, IDUMMY, IDUMMY, IDUMMY
               malon%mediosDis(jmed)%numpolres = numpolres
               allocate (malon%mediosDis(jmed)%a11(1:numpolres)) 
               allocate (malon%mediosDis(jmed)%c11(1:numpolres)) 
@@ -286,9 +286,9 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    !!!!!!!! del SGBCdispersive
    conta=0
 !asigna los signos del rotacional de H y los transversaldelta.0->filo_placaizquierdo, 1->filo_placaderecho y las variable es_unfilo_placa para los filos de la lamina SGBC      
-Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
-    Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
-         Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
+do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
+    do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
+         do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
             jmed=media%sggMiEx(i1,j1,k1)
             if (SGG%Med(jmed)%Is%SGBC)  then
 !!!
@@ -315,7 +315,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                   compo%med(0) =                     media%sggMiHz(i1,j1-1,k1)
                   compo%Correct_Ha=.true. !son ciclicos a,b -> x,y,z
                   compo%Correct_Hb=.false.
-                case (iEz)
+                case (IEZ)
                   compo%transversalDeltaE    = 1.0_RKIND/IDze(      k1  )
                   compo%transversalDeltaH    = 1.0_RKIND/IDzh(      k1  )
                   compo%alignedlDeltaH        = 1.0_RKIND/IDYh(   j1     )
@@ -341,7 +341,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                call  depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
                if (compo%depth==0) then
                     compo%SGBCCrank=.false.
-               elseif (compo%depth<0) then
+               else if (compo%depth<0) then
                   write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
                   call WarnErrReport (buff,.TRUE.)
                else
@@ -375,9 +375,9 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
       end do
    end do
    !!!!!!!!!!
-   Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
-      Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
-         Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
+   do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
+      do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
+         do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
             jmed=media%sggMiEy(i1,j1,k1)
             if (SGG%Med(jmed)%Is%SGBC)  then
 !!!
@@ -396,7 +396,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                compo%es_unfilo_placa = es_unfilo_placa
                SGBCdir=abs(SGG%Med(jmed)%Multiport(1)%Multiportdir)
                select case (SGBCdir)
-                case (iEz)
+                case (IEZ)
                   compo%transversalDeltaE = 1.0_RKIND/IDze(      k1  )
                   compo%transversalDeltaH = 1.0_RKIND/IDzh(      k1  )
                   compo%alignedlDeltaH     = 1.0_RKIND/Idxh(i1        )
@@ -430,7 +430,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                call  depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
                if (compo%depth==0) then
                     compo%SGBCCrank=.false.
-               elseif (compo%depth<0) then
+               else if (compo%depth<0) then
                   write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
                   call WarnErrReport (buff,.TRUE.)
                else
@@ -464,9 +464,9 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
       end do
    end do
 
-   Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
-      Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
-         Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
+   do k1=sgg%SINPMLSweep(IEZ)%ZI,sgg%SINPMLSweep(IEZ)%ZE
+      do j1=sgg%SINPMLSweep(IEZ)%YI,sgg%SINPMLSweep(IEZ)%YE
+         do i1=sgg%SINPMLSweep(IEZ)%XI,sgg%SINPMLSweep(IEZ)%XE
             jmed=media%sggMiEz(i1,j1,k1)
             if (SGG%Med(jmed)%Is%SGBC) then
 !!!
@@ -519,7 +519,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                call  depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
                if (compo%depth==0) then
                     compo%SGBCCrank=.false.
-               elseif (compo%depth<0) then
+               else if (compo%depth<0) then
                   write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
                   call WarnErrReport (buff,.TRUE.)
                else
@@ -586,7 +586,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
          compo%H     =0.0_RKIND
          !
          if (malon%SGBCDispersive) then 
-             Do i=-compo%depth,compo%depth
+             do i=-compo%depth,compo%depth
                 compo%EDis(i)%fieldPresent=0.0_rkind
                 compo%EDis(i)%fieldPrevious=0.0_rkind
                 compo%EDis(i)%current=0.0_rkind
@@ -596,15 +596,15 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
    else  
       do conta=1,malon%numnodes
          compo => malon%Nodes(conta)
-         READ (14) (compo%E     (i),i=-compo%depth,compo%depth)
-         READ (14) (compo%E_past(i),i=-compo%depth,compo%depth)
-         READ (14) compo%Hyee__left
-         READ (14) compo%Hyee_right
-         READ (14) (compo%H     (i),i=-compo%depth,compo%depth-1)
+         read (14) (compo%E     (i),i=-compo%depth,compo%depth)
+         read (14) (compo%E_past(i),i=-compo%depth,compo%depth)
+         read (14) compo%Hyee__left
+         read (14) compo%Hyee_right
+         read (14) (compo%H     (i),i=-compo%depth,compo%depth-1)
          !
          if (malon%SGBCDispersive) then 
              read(14) (compo%EDis(i)%fieldPrevious, i=-compo%depth,compo%depth)
-             Do k1=1,compo%NumPolRes
+             do k1=1,compo%NumPolRes
                 read(14) (compo%EDis(i)%current(k1), i=-compo%depth,compo%depth)
              end do
          end if
@@ -719,7 +719,7 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
              g1eff_1=   compo%G1(1)   
              g2eff_0=   signo *compo%G2a(0)  
              g2eff_1=   signo *compo%G2a(1)
-          elseif (compo%Correct_Hb) then
+          else if (compo%Correct_Hb) then
              signo=-1.0_RKIND
              g1eff_0=   compo%G1(0)  
              g1eff_1=   compo%G1(1)   
@@ -787,10 +787,10 @@ end subroutine calc_SGBCconstants
    integer(kind=4) :: k1,numpolres
    type(val_t) :: Beta,Kappa,G3
    
-         Do k1=1,NumPolRes
+         do k1=1,NumPolRes
             tempnode%fieldPresent=tempnode%FieldPresent-real(G3%val(k1)*tempnode%current(k1) )
          end do
-         Do k1=1,NumPolRes
+         do k1=1,NumPolRes
             tempnode%current(k1)= Kappa%val(k1)  *tempnode%current(k1) + &
                                   Beta%val(k1)*(tempnode%fieldPresent-tempnode%fieldPrevious) /dt
          end do
@@ -808,7 +808,7 @@ end subroutine calc_SGBCconstants
    type(MDfield_t), pointer  :: tempnode
    integer(kind=4) :: k1,numpolres
    type(val_t) :: Beta,Kappa,G3
-         Do k1=1,NumPolRes
+         do k1=1,NumPolRes
             tempD=tempD-real(G3%val(k1)*tempnode%current(k1) )
          end do
  end subroutine primero_CNAdvanceSGBCDispersive
@@ -821,7 +821,7 @@ end subroutine calc_SGBCconstants
    integer(kind=4) :: k1,numpolres
    type(val_t) :: Beta,Kappa,G3
 
-         Do k1=1,NumPolRes
+         do k1=1,NumPolRes
             tempnode%fieldPresent=campocalculado
             tempnode%current(k1)= Kappa%val(k1)  *tempnode%current(k1) + &
                                   Beta%val(k1)*(tempnode%fieldPresent-tempnode%fieldPrevious) /dt
@@ -885,7 +885,7 @@ contains
                   compo%E(-compo%depth  ) = compo%G1(0) *compo%E(-compo%depth ) +  &
                                           (compo%G2a(0) *(compo%Hyee__Left - compo%Ha_Minu  ) - compo%G2b(0) *(compo%Hb_Plus   - compo%Hb_Minu  ) )
 
-               elseif (compo%Correct_Hb) then
+               else if (compo%Correct_Hb) then
                   compo%E( compo%depth  ) = compo%G1(1) *compo%E( compo%depth ) +  &
                                           (compo%G2a(1) *(compo%Ha_Plus   - compo%Ha_Minu  ) - compo%G2b(1) *(compo%Hb_Plus   - compo%Hyee_Right ) )
                   compo%E(-compo%depth  ) = compo%G1(0) *compo%E(-compo%depth ) +  &
@@ -918,7 +918,7 @@ contains
                                           (compo%G2a(0) *(compo%Hyee__Left - compo%Ha_Minu  ) - compo%G2b(0) *(compo%Hb_Plus   - compo%Hb_Minu  ) )
                !
                !
-            elseif (compo%Correct_Hb) then !!!-compo%G2b(0) es igual a compo%rh1 !!!-compo%G2b(1) es igual a compo%rhn
+            else if (compo%Correct_Hb) then !!!-compo%G2b(0) es igual a compo%rh1 !!!-compo%G2b(1) es igual a compo%rhn
                i=compo%depth
                compo%d( i  ) =   - compo%an * (compo%E_past(i-1)) + compo%rbn * compo%E_past(i ) + &
                                           (compo%G2a(1) *(compo%Ha_Plus   - compo%Ha_Minu  ) - compo%G2b(1) *(compo%Hb_Plus   - compo%Hyee_Right ) )
@@ -1009,7 +1009,7 @@ subroutine AdvanceSGBCH
       if (compo%Correct_Ha) then
          compo%Ha_Plus = compo%Ha_Plus +  compo%gm2_externo* (compo%Efield - compo%E( compo%depth)) !insisto: es una correccion: el principal ha aniadido/quitado Efield y debe quitar/aniadir E del extremo correspondiente
          compo%Ha_Minu = compo%Ha_Minu -  compo%gm2_externo* (compo%Efield - compo%E(-compo%depth))
-      elseif (compo%Correct_Hb) then                                                       
+      else if (compo%Correct_Hb) then                                                       
          compo%Hb_Plus = compo%Hb_Plus -  compo%gm2_externo* (compo%Efield - compo%E( compo%depth))
          compo%Hb_Minu = compo%Hb_Minu +  compo%gm2_externo* (compo%Efield - compo%E(-compo%depth))
       else     
@@ -1022,10 +1022,10 @@ end subroutine AdvanceSGBCH
 
 subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
    real(kind=RKIND), intent(in) :: eps00,mu00
-   complex(Kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,G3
+   complex(kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,G3
 !!!!      
    type(SGGFDTDINFO_t), intent(in) :: sgg
-   type(SGBCSurface_t), pointer, intent(INOUT) :: compo
+   type(SGBCSurface_t), pointer, intent(inout) :: compo
    character(len=BUFSIZE) :: buff
 !!!variables locales
  real(kind=RKIND) :: width,sigmatemp,eprtemp,sigmamtemp,murtemp,epsilon,sigma,mu,sigmam,g1,g2,gm1,gm2,delta_entreEinterno_temp,epr_adyacentei,sig_adyacentei
@@ -1085,7 +1085,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
  !!!!los indices (1) no se utilizan para el caso particular depth=0
              compo%g2a(1)= compo%g2a(0)
              compo%g2b(1)= compo%g2b(0)
-         elseif (compo%correct_hb) then
+         else if (compo%correct_hb) then
              compo%g2a(0)= g2 / compo%alignedldeltah
              compo%g2b(0)= g2 / compo%transversaldeltah
              compo%g2a(1)= compo%g2a(0)
@@ -1162,7 +1162,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
          if (compo%Correct_Ha) then
              compo%G2a(i)= G2 / (0.5_RKIND * compo%transversalDeltaH + 0.5_RKIND*delta_entreEinterno_temp)
              compo%G2b(i)= G2 / compo%alignedlDeltaH
-         elseif (compo%Correct_Hb) then
+         else if (compo%Correct_Hb) then
              compo%G2a(i)= G2 / compo%alignedlDeltaH
              compo%G2b(i)= G2 / (0.5_RKIND * compo%transversalDeltaH + 0.5_RKIND*delta_entreEinterno_temp)
          end if
@@ -1225,7 +1225,7 @@ end subroutine calc_g1g2gm1gm2_compo
 
 !!!!!!!
 subroutine g1g2(dt,epsilon,sigma,G1,G2)
-   real(kind=RKIND_tiempo), intent(in) :: dt
+   real(kind=RKIND_TIEMPO), intent(in) :: dt
    real(kind=RKIND), intent(in) :: epsilon,sigma
    real(kind=RKIND), intent(out) :: g1,g2
 
@@ -1245,7 +1245,7 @@ end subroutine g1g2
 
 !!!!!!!
 subroutine gm1gm2(dt,mu,sigmam,Gm1,Gm2)
-   real(kind=RKIND_tiempo), intent(in) :: dt
+   real(kind=RKIND_TIEMPO), intent(in) :: dt
    real(kind=RKIND), intent(in) :: mu,sigmam
    real(kind=RKIND), intent(out) :: gm1,gm2
 
@@ -1266,13 +1266,13 @@ end subroutine gm1gm2
 !!!!!!! medios dispersivos sgg 12/05/16 
 subroutine g1g2_Dispersive(dt,epsilon,sigma,G1,G2,Beta,Kappa,G3,numpolres,a11,c11)
    real(kind=RKIND), intent(in) :: epsilon,sigma
-   real(kind=RKIND_tiempo), intent(in) :: dt
+   real(kind=RKIND_TIEMPO), intent(in) :: dt
    real(kind=RKIND), intent(out) :: g1,g2
    complex(kind=ckind), intent(in), allocatable, dimension(:) :: a11, c11
    integer(kind=4) :: numpolres, i1
    real(kind=RKIND) :: tempo
 !!!SGBC dispersivos 12/05/16
-   complex(Kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,G3
+   complex(kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,G3
 
      do i1=1,numpolres
          Kappa(i1) =(1.0_RKIND + a11(i1)*dt/2.0_RKIND)/&
@@ -1281,14 +1281,14 @@ subroutine g1g2_Dispersive(dt,epsilon,sigma,G1,G2,Beta,Kappa,G3,numpolres,a11,c1
                     (1.0_RKIND - a11(i1)*dt/2.0_RKIND)
      end do
      tempo=0.0_RKIND
-     Do i1=1,NumPolRes
+     do i1=1,NumPolRes
          tempo=tempo+real(Beta(i1))
      end do
      G1=                        (2.0_RKIND * epsilon + tempo - sigma*dt) / & !ojo No estes tentado de cambiar este signo. Cuadra con han dutton 130516 y con edispersives 
                                 (2.0_RKIND * epsilon + tempo + sigma*dt)
      G2=         2.0_RKIND *dt/ (2.0_RKIND * epsilon + tempo + sigma*dt)
 !!!! aqui no cabe exponential time stepping
-     Do i1=1,NumPolRes
+     do i1=1,NumPolRes
          G3(i1)=G2/2.0_RKIND * (1.0_RKIND+Kappa(i1))
      end do
    return
@@ -1311,7 +1311,7 @@ subroutine StoreFieldsSGBCs(stochastic)
          !
          if (malon%SGBCDispersive) then 
              write(14,err=634) (compo%EDis(i)%fieldPrevious, i=-compo%depth,compo%depth)
-             Do k1=1,compo%NumPolRes
+             do k1=1,compo%NumPolRes
                 write(14,err=634) (compo%EDis(i)%current(k1), i=-compo%depth,compo%depth)
              end do
          end if
@@ -1328,7 +1328,7 @@ end subroutine StoreFieldsSGBCs
 
 subroutine DestroySGBCs(sgg)
 
-   type(SGGFDTDINFO_t), intent(INOUT) :: sgg
+   type(SGGFDTDINFO_t), intent(inout) :: sgg
    integer(kind=4) :: i,conta
 
    !free up memory
@@ -1443,7 +1443,7 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
              else
                  anchocapa=1 !numcapas es necesariamente 1 si continua
              end if
-         elseif (SGBCdepth>0) then
+         else if (SGBCdepth>0) then
              anchocapa=SGBCdepth
          else !si es negativo se calcula con la resol
              anchocapa=1+int(SGBCresol*width/skin_depth)
@@ -1456,7 +1456,7 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
              else
                  compo%depth=compo%depth+anchocapa
              end if
-         elseif (precuenta==1) then
+         else if (precuenta==1) then
              if (SGBCDepth==0) then      !!!bug corregido a 040523
                      celdainicial=0
                      celdafinal=0

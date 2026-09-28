@@ -12,7 +12,7 @@ module domain_m
 
 contains
    function new_domain_time(tstart, tstop, tstep) result(new_domain)
-      real(kind=RKIND_tiempo), intent(in) :: tstart, tstop, tstep
+      real(kind=RKIND_TIEMPO), intent(in) :: tstart, tstop, tstep
       type(domain_t) :: new_domain
 
       new_domain%tstart = tstart
@@ -42,7 +42,7 @@ contains
    end function new_domain_freq
 
    function new_domain_both(tstart, tstop, tstep, fstart, fstop, fnum, logarithmicSpacing) result(new_domain)
-      real(kind=RKIND_tiempo), intent(in) :: tstart, tstop, tstep
+      real(kind=RKIND_TIEMPO), intent(in) :: tstart, tstop, tstep
       real(kind=RKIND), intent(in)     :: fstart, fstop
       integer(kind=SINGLE), intent(in) :: fnum
       logical, intent(in)   :: logarithmicSpacing

@@ -4,7 +4,7 @@ integer function test_read_planewave() bind (C) result(err)
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
+   character(len=*), parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
    type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
@@ -122,7 +122,7 @@ integer function test_read_planewave_empty_elementids() bind(C) result(err)
 
    implicit none
 
-   character(len=*), parameter :: filename = &
+   character(len=*), parameter :: FILENAME = &
       PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave_empty_elementids.fdtd.json'
    type(Parseador_t) :: pr
    type(parser_t) :: parser

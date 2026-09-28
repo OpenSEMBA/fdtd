@@ -4,7 +4,7 @@ integer function test_read_mtln() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mtln.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mtln.fdtd.json'
    type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -534,22 +534,22 @@ contains
       expected%mtln%networks(1)%connections(10)%nodes(1)%termination%termination_type = TERMINATION_SERIES
       expected%mtln%networks(1)%connections(10)%nodes(1)%termination%resistance = 1e10_RKIND
 
-      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
+      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%termination_type = TERMINATION_RSLCP
       expected%mtln%networks(1)%connections(3)%nodes(1)%termination%resistance = 50.0_RKIND
       expected%mtln%networks(1)%connections(3)%nodes(1)%termination%inductance = 30e-12_RKIND
       expected%mtln%networks(1)%connections(3)%nodes(1)%termination%capacitance = 60e-9_RKIND
 
-      expected%mtln%networks(1)%connections(5)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
+      expected%mtln%networks(1)%connections(5)%nodes(1)%termination%termination_type = TERMINATION_RSLCP
       expected%mtln%networks(1)%connections(5)%nodes(1)%termination%resistance = 50.0_RKIND
       expected%mtln%networks(1)%connections(5)%nodes(1)%termination%inductance = 30e-12_RKIND
       expected%mtln%networks(1)%connections(5)%nodes(1)%termination%capacitance = 60e-9_RKIND
 
-      expected%mtln%networks(1)%connections(7)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
+      expected%mtln%networks(1)%connections(7)%nodes(1)%termination%termination_type = TERMINATION_RSLCP
       expected%mtln%networks(1)%connections(7)%nodes(1)%termination%resistance = 50.0_RKIND
       expected%mtln%networks(1)%connections(7)%nodes(1)%termination%inductance = 30e-12_RKIND
       expected%mtln%networks(1)%connections(7)%nodes(1)%termination%capacitance = 60e-9_RKIND
 
-      expected%mtln%networks(1)%connections(9)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
+      expected%mtln%networks(1)%connections(9)%nodes(1)%termination%termination_type = TERMINATION_RSLCP
       expected%mtln%networks(1)%connections(9)%nodes(1)%termination%resistance = 50.0_RKIND
       expected%mtln%networks(1)%connections(9)%nodes(1)%termination%inductance = 30e-12_RKIND
       expected%mtln%networks(1)%connections(9)%nodes(1)%termination%capacitance = 60e-9_RKIND

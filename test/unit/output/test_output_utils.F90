@@ -62,7 +62,7 @@ contains
       type(observation_domain_t) :: domain
 
       allocate (P(1))
-      P(1) = create_observable(xi, yi, zi, xi+1, yi+1, zi+1, iCurX)
+      P(1) = create_observable(xi, yi, zi, xi+1, yi+1, zi+1, ICURX)
 
       call initialize_observation_time_domain(domain, 0.0_RKIND, 10.0_RKIND, 0.1_RKIND)
       call initialize_observation_frequency_domain(domain, 0.0_RKIND, 1000.0_RKIND, 50.0_RKIND)
@@ -78,7 +78,7 @@ contains
       type(observation_domain_t) :: domain
 
       allocate (P(1))
-      P(1) = create_observable(xi, yi, zi, xe, ye, ze, iCurX)
+      P(1) = create_observable(xi, yi, zi, xe, ye, ze, ICURX)
 
       call initialize_observation_time_domain(domain, 0.0_RKIND, 10.0_RKIND, 0.1_RKIND)
       call initialize_observation_frequency_domain(domain, 0.0_RKIND, 1000.0_RKIND, 50.0_RKIND)

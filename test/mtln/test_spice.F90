@@ -89,7 +89,7 @@ integer function test_spice_tran() bind(C) result(error_cnt)
     implicit none
 
     type(circuit_t) :: circuit
-    character(len=*, kind=c_char), parameter :: netlist= PATH_TO_TEST_DATA//c_char_'netlists/netlist_tran.cir'
+    character(len=*, kind=c_char), parameter :: NETLIST= PATH_TO_TEST_DATA//c_char_'netlists/netlist_tran.cir'
     real(kind=RKIND_TIEMPO) :: finalTime
     real(kind=rkind) :: result(3)
     integer :: i
@@ -111,7 +111,7 @@ integer function test_spice_tran() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         call circuit%updateNodes()
-        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
+        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_RKIND_TIEMPO) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -136,7 +136,7 @@ integer function test_spice_tran_2() bind(C) result(error_cnt)
     implicit none
 
     type(circuit_t) :: circuit
-    character(len=*, kind=c_char), parameter :: netlist= PATH_TO_TEST_DATA//c_char_'netlists/netlist_tran_2.cir'
+    character(len=*, kind=c_char), parameter :: NETLIST= PATH_TO_TEST_DATA//c_char_'netlists/netlist_tran_2.cir'
     real(kind=RKIND_TIEMPO) :: finalTime
     integer :: i
     real(kind=rkind) :: result(3)
@@ -158,7 +158,7 @@ integer function test_spice_tran_2() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         call circuit%updateNodes()
-        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
+        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_RKIND_TIEMPO) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -246,7 +246,7 @@ integer function test_spice_multiple() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         call circuit%updateNodes()
-        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
+        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_RKIND_TIEMPO) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -261,7 +261,7 @@ integer function test_spice_stop_mod_times() bind(C) result(error_cnt)
     implicit none
 
     type(circuit_t) :: circuit
-    character(len=*, kind=c_char), parameter :: netlist= PATH_TO_TEST_DATA//c_char_'netlists/netlist_tran.cir'
+    character(len=*, kind=c_char), parameter :: NETLIST= PATH_TO_TEST_DATA//c_char_'netlists/netlist_tran.cir'
     real(kind=RKIND_TIEMPO) :: finalTime
     real(kind=rkind) :: result(3)
     integer :: i
@@ -283,7 +283,7 @@ integer function test_spice_stop_mod_times() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         call circuit%updateNodes()
-        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
+        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_RKIND_TIEMPO) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -308,7 +308,7 @@ integer function test_load_codemodels() bind(C) result(error_cnt)
     implicit none
     type(circuit_t) :: circuit
     type(string_t), dimension(7) :: names
-    character(len=*, kind=c_char), parameter :: netlist= PATH_TO_TEST_DATA//c_char_'netlists/saturation.cir'
+    character(len=*, kind=c_char), parameter :: NETLIST= PATH_TO_TEST_DATA//c_char_'netlists/saturation.cir'
     names(1) = string_t("wire1_1_initial_R", 17)
     names(2) = string_t("wire1_1_initial", 15)
     names(3) = string_t("wire1_1_initial_S", 17)

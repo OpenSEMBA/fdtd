@@ -301,7 +301,7 @@ contains
 
       ios = 0
       ! Find last slash or backslash
-       pos = scan(trim(fullpath), '/\\', back=.true.)
+       pos = scan(trim(fullpath), '/\\', BACK=.true.)
 
       if (pos > 0) then
          folder = adjustl(fullpath(:pos - 1))
