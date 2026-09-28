@@ -133,13 +133,13 @@ contains
       call res%jsonfile%initialize()
       if (res%jsonfile%failed()) then
          call WarnErrReport("Failed to initialize JSONfile", .true.)
-         return
+         error stop 'smbjson: failed to initialize JSON file: '//res%filename
       end if
 
       call res%jsonfile%load(filename = res%filename)
       if (res%jsonfile%failed()) then
          call WarnErrReport("Failed to load JSON file: "//res%filename, .true.)
-         return
+         error stop 'smbjson: failed to load JSON file: '//res%filename
       end if
 
       allocate(res%core)
@@ -153,6 +153,11 @@ contains
       class(parser_t) :: this
       type(Parseador_t) :: res
       integer :: stat 
+
+      if (.not. this%isInitialized .or. .not. associated(this%core) .or. .not. associated(this%root)) then
+         call WarnErrReport('smbjson: parser is not initialized for input file: '//this%filename, .true.)
+         error stop 'smbjson: parser is not initialized'
+      end if
 
       this%mesh = this%readMesh()
       this%matTable = IdChildTable_t(this%core, this%root, J_MATERIALS)

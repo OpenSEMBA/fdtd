@@ -2,7 +2,11 @@ module smbjson_testingTools
    use NFDETypes_extension_m
    implicit none
 
+#ifdef SMBJSON_TEST_DATA_PATH
+   character(len=*), parameter :: PATH_TO_TEST_DATA = SMBJSON_TEST_DATA_PATH
+#else
    character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'
+#endif
    character(len=*), parameter :: INPUT_EXAMPLES='input_examples/'
    
 contains

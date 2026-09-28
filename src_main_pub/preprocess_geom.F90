@@ -4832,19 +4832,99 @@ contains
          end do
       end subroutine
 
+      ! A thin slot embedded in a PEC sheet must not run along the sheet
+      ! boundary. Legacy NFDE files describe PEC sheets as many single-cell
+      ! (!!!1PNT) entries, so the test is done on the assembled conductor in
+      ! the media matrices instead of on the input region rectangles. The slot
+      ! stamping writes its perpendicular E edges and its H face, but never its
+      ! own parallel E line: if that line is PEC and the conductor only
+      ! continues on one of its two sides, the slot lies on the sheet edge.
       subroutine rejectThinSlotOnPECSurfacePerimeter(slot)
          integer(kind=4), intent(in) :: slot
-         integer(kind=4) :: a, surface
+         integer(kind=4) :: a
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: ownMedium, minusMedium, plusMedium
 
          do a = 1, this%tSlots%Tg(slot)%n_tgc
-            do surface = 1, this%pecregs%nSurfs
-               if (componentOnPECSurface(this%tSlots%Tg(slot)%TgC(a), this%pecregs%Surfs(surface)) .and. &
-                  componentRunsAlongSurfacePerimeter(this%tSlots%Tg(slot)%TgC(a), this%pecregs%Surfs(surface))) then
-                  call StopOnError(layoutnumber, num_procs, 'Thin Slot cannot run along the perimeter of its PEC sheet')
-               end if
-            end do
+            if (.not. getThinSlotParallelLines(this%tSlots%Tg(slot)%TgC(a), &
+                                               ownMedium, minusMedium, plusMedium)) cycle
+            if (.not. isPECOrThinSlotMedium(ownMedium)) cycle
+            if (isPECOrThinSlotMedium(minusMedium) .neqv. isPECOrThinSlotMedium(plusMedium)) then
+               call StopOnError(layoutnumber, num_procs, 'Thin Slot cannot run along the perimeter of its PEC sheet')
+            end if
          end do
       end subroutine
+
+      logical function getThinSlotParallelLines(component, ownMedium, minusMedium, plusMedium)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(out) :: ownMedium, minusMedium, plusMedium
+         integer(kind=4) :: i, j, k
+
+         i = component%i
+         j = component%j
+         k = component%k
+         ownMedium = -1
+         minusMedium = -1
+         plusMedium = -1
+         getThinSlotParallelLines = .true.
+         select case (abs(component%or))
+         case (iEx)
+            select case (component%dir)
+            case (iEy)
+               if (inEyBounds(i, j, k)) ownMedium = media%sggMiEy(i, j, k)
+               if (inEyBounds(i, j, k - 1)) minusMedium = media%sggMiEy(i, j, k - 1)
+               if (inEyBounds(i, j, k + 1)) plusMedium = media%sggMiEy(i, j, k + 1)
+            case (iEz)
+               if (inEzBounds(i, j, k)) ownMedium = media%sggMiEz(i, j, k)
+               if (inEzBounds(i, j - 1, k)) minusMedium = media%sggMiEz(i, j - 1, k)
+               if (inEzBounds(i, j + 1, k)) plusMedium = media%sggMiEz(i, j + 1, k)
+            case default
+               getThinSlotParallelLines = .false.
+            end select
+         case (iEy)
+            select case (component%dir)
+            case (iEx)
+               if (inExBounds(i, j, k)) ownMedium = media%sggMiEx(i, j, k)
+               if (inExBounds(i, j, k - 1)) minusMedium = media%sggMiEx(i, j, k - 1)
+               if (inExBounds(i, j, k + 1)) plusMedium = media%sggMiEx(i, j, k + 1)
+            case (iEz)
+               if (inEzBounds(i, j, k)) ownMedium = media%sggMiEz(i, j, k)
+               if (inEzBounds(i - 1, j, k)) minusMedium = media%sggMiEz(i - 1, j, k)
+               if (inEzBounds(i + 1, j, k)) plusMedium = media%sggMiEz(i + 1, j, k)
+            case default
+               getThinSlotParallelLines = .false.
+            end select
+         case (iEz)
+            select case (component%dir)
+            case (iEx)
+               if (inExBounds(i, j, k)) ownMedium = media%sggMiEx(i, j, k)
+               if (inExBounds(i, j - 1, k)) minusMedium = media%sggMiEx(i, j - 1, k)
+               if (inExBounds(i, j + 1, k)) plusMedium = media%sggMiEx(i, j + 1, k)
+            case (iEy)
+               if (inEyBounds(i, j, k)) ownMedium = media%sggMiEy(i, j, k)
+               if (inEyBounds(i - 1, j, k)) minusMedium = media%sggMiEy(i - 1, j, k)
+               if (inEyBounds(i + 1, j, k)) plusMedium = media%sggMiEy(i + 1, j, k)
+            case default
+               getThinSlotParallelLines = .false.
+            end select
+         case default
+            getThinSlotParallelLines = .false.
+         end select
+      end function
+
+      ! A medium counts as conductor for the slot perimeter test when it is
+      ! PEC or a thin slot: at the junction of two slot legs, one leg stamps
+      ! its perpendicular E edges on the parallel line of the other one, so
+      ! the structure must be considered to continue through the slot medium.
+      logical function isPECOrThinSlotMedium(medium)
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: medium
+
+         isPECOrThinSlotMedium = .false.
+         if (medium == 0) then
+            isPECOrThinSlotMedium = .true.
+         else if (medium > 0 .and. medium <= sgg%NumMedia) then
+            isPECOrThinSlotMedium = sgg%Med(medium)%Is%PEC .or. sgg%Med(medium)%Is%ThinSlot
+         end if
+      end function
 
       subroutine completeThinSlotTurns(slot)
          integer(kind=4), intent(in) :: slot
@@ -5160,57 +5240,6 @@ contains
             call componentTerminal(this%tSlots%Tg(slot)%TgC(a), ex, ey, ez)
             if (ex == vx .and. ey == vy .and. ez == vz) thinSlotVertexDegree = thinSlotVertexDegree + 1
          end do
-      end function
-
-      logical function componentOnPECSurface(component, surface)
-         type(ThinSlotComp_t), intent(in) :: component
-         type(coords_t), intent(in) :: surface
-         integer(kind=4) :: vx, vy, vz
-
-         call componentTerminal(component, vx, vy, vz)
-         componentOnPECSurface = .false.
-         if (abs(component%or) /= abs(surface%or)) return
-         select case (abs(component%or))
-         case (iEx)
-            componentOnPECSurface = component%i == min(surface%xi, surface%xe) .and. &
-               vx == min(surface%xi, surface%xe) .and. component%j >= min(surface%yi, surface%ye) .and. &
-               vy <= max(surface%yi, surface%ye) + 1 .and. component%k >= min(surface%zi, surface%ze) .and. &
-               vz <= max(surface%zi, surface%ze) + 1
-         case (iEy)
-            componentOnPECSurface = component%j == min(surface%yi, surface%ye) .and. &
-               vy == min(surface%yi, surface%ye) .and. component%i >= min(surface%xi, surface%xe) .and. &
-               vx <= max(surface%xi, surface%xe) + 1 .and. component%k >= min(surface%zi, surface%ze) .and. &
-               vz <= max(surface%zi, surface%ze) + 1
-         case (iEz)
-            componentOnPECSurface = component%k == min(surface%zi, surface%ze) .and. &
-               vz == min(surface%zi, surface%ze) .and. component%i >= min(surface%xi, surface%xe) .and. &
-               vx <= max(surface%xi, surface%xe) + 1 .and. component%j >= min(surface%yi, surface%ye) .and. &
-               vy <= max(surface%yi, surface%ye) + 1
-         end select
-      end function
-
-      logical function componentRunsAlongSurfacePerimeter(component, surface)
-         type(ThinSlotComp_t), intent(in) :: component
-         type(coords_t), intent(in) :: surface
-
-         componentRunsAlongSurfacePerimeter = .false.
-         select case (abs(component%or))
-         case (iEx)
-            if (component%dir == iEy) componentRunsAlongSurfacePerimeter = component%k == min(surface%zi, surface%ze) .or. &
-               component%k == max(surface%zi, surface%ze) + 1
-            if (component%dir == iEz) componentRunsAlongSurfacePerimeter = component%j == min(surface%yi, surface%ye) .or. &
-               component%j == max(surface%yi, surface%ye) + 1
-         case (iEy)
-            if (component%dir == iEx) componentRunsAlongSurfacePerimeter = component%k == min(surface%zi, surface%ze) .or. &
-               component%k == max(surface%zi, surface%ze) + 1
-            if (component%dir == iEz) componentRunsAlongSurfacePerimeter = component%i == min(surface%xi, surface%xe) .or. &
-               component%i == max(surface%xi, surface%xe) + 1
-         case (iEz)
-            if (component%dir == iEx) componentRunsAlongSurfacePerimeter = component%j == min(surface%yi, surface%ye) .or. &
-               component%j == max(surface%yi, surface%ye) + 1
-            if (component%dir == iEy) componentRunsAlongSurfacePerimeter = component%i == min(surface%xi, surface%xe) .or. &
-               component%i == max(surface%xi, surface%xe) + 1
-         end select
       end function
 
       logical function vertexOnPECSurfacePerimeter(component, vx, vy, vz, surface)
@@ -7804,8 +7833,11 @@ contains
 
       tagToCheck = trim(adjustl(component%TgC(idx)%tag))
       if (len_trim(tagToCheck) == 0) then
-         print *, 'Bug in ThinSlot Tags. Empty tag on component', idx
-         stop
+         ! Legacy NFDE thin gaps carry no layer tag. Keep them out of the
+         ! tag list, so searchtag() returns -1 for them, as it did before
+         ! the layer tag checks were introduced.
+         numertag = numertag - 1
+         return
       end if
       foundDuplicate = .false.
 
