@@ -16,6 +16,7 @@ module Preprocess_m
    
    use FDETYPES_m
    use DMMA_m
+   use directoryUtils_m, only: file_has_samples
    use conformal_m, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
    implicit none
 !!!variables globales del modulo
@@ -5808,6 +5809,10 @@ contains
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%name))//' DOES NOT EXIST'
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
+                     if (.not. file_has_samples(trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)), 2)) then
+                        buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
+                        call STOPONERROR(layoutnumber,num_procs,buff)
+                     end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
                      READ (15,*) tiempo2, field2
@@ -5858,6 +5863,10 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%name))//' DOES NOT EXIST'
+                        call STOPONERROR(layoutnumber,num_procs,buff)
+                     end if
+                     if (.not. file_has_samples(trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)), 2)) then
+                        buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)),action='read')
@@ -5914,6 +5923,10 @@ contains
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%name))//' DOES NOT EXIST'
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
+                     if (.not. file_has_samples(trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)), 2)) then
+                        buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
+                        call STOPONERROR(layoutnumber,num_procs,buff)
+                     end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
                      READ (15,*) tiempo2, field2
@@ -5961,6 +5974,10 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%name))//' DOES NOT EXIST'
+                        call STOPONERROR(layoutnumber,num_procs,buff)
+                     end if
+                     if (.not. file_has_samples(trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)), 2)) then
+                        buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)),action='read')
@@ -6017,6 +6034,10 @@ contains
                inquire(file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)), EXIST=errnofile)
                if ( .NOT. errnofile) then
                   buff=trim(adjustl(sgg%NodalSource(j)%fichero%name))//' DOES NOT EXIST'
+                  call STOPONERROR(layoutnumber,num_procs,buff)
+               end if
+               if (.not. file_has_samples(trim(adjustl(sgg%NodalSource(j)%fichero%NAME)), 2)) then
+                  buff=trim(adjustl(sgg%NodalSource(j)%fichero%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
                   call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                open(15, file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)),action='read')
@@ -6077,6 +6098,10 @@ contains
             inquire(file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)), EXIST=errnofile)
             if ( .NOT. errnofile) then
                buff=trim(adjustl(sgg%PlaneWave(j)%fichero%name))//' DOES NOT EXIST'
+               call STOPONERROR(layoutnumber,num_procs,buff)
+            end if
+            if (.not. file_has_samples(trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)), 2)) then
+               buff=trim(adjustl(sgg%PlaneWave(j)%fichero%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
                call STOPONERROR(layoutnumber,num_procs,buff)
             end if
             open(15, file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)),action='read')
