@@ -266,7 +266,7 @@ module Solver_m
       this%control%wirethickness = input%wirethickness
       this%control%maxCPUtime = input%maxCPUtime
       this%control%SGBCDepth = input%SGBCDepth
-      this%control%precision = input%precision
+      this%control%precisionValue = input%precisionValue
       this%control%num_procs = input%num_procs
       this%control%extraMedium = input%extraMedium
       this%control%facesNF2FF = input%facesNF2FF
@@ -1225,8 +1225,8 @@ contains
 #endif
             write(dubuf,*) 'Init Slanted Wires...';  call print11(this%control%layoutnumber,dubuf)
             if ((trim(adjustl(this%control%wiresflavor))=='semistructured')) then
-               write(dubuf,*) '...',this%control%precision;  call print11(this%control%layoutnumber,dubuf)
-               call estructura_slanted(this%sgg,this%control%precision)
+               write(dubuf,*) '...',this%control%precisionValue;  call print11(this%control%layoutnumber,dubuf)
+               call estructura_slanted(this%sgg,this%control%precisionValue)
             else
                continue
             end if

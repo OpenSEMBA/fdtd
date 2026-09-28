@@ -710,7 +710,7 @@ module  FDETYPES_m
       character(len=BUFSIZE) :: opcionestotales
       
       integer(kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 
-                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, num_procs
+                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precisionValue, num_procs
       
       type(ExtraMedium_t) :: extraMedium
       type(nf2ff_T) :: facesNF2FF

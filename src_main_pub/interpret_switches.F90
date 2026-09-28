@@ -103,7 +103,7 @@ module interpret_switches_m
          forced, &
          maxCPUtime, &
          sgbcdepth, &
-         precision, &
+         precisionValue, &
          statuse
 
       real(kind=RKIND) :: &
@@ -678,10 +678,10 @@ contains
                   call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                   l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(f))
                   ! Converts the characters to real
-                  read (f, *, ERR=2561) l%precision
+                  read (f, *, ERR=2561) l%precisionValue
                   go TO 2562
 2561              call stoponerror(l%layoutnumber, l%num_procs, 'Invalid l%precision for semistructured', .true.); statuse = -1; !goto 668
-2562              if (l%precision < 0) then
+2562              if (l%precisionValue < 0) then
                      call stoponerror(l%layoutnumber, l%num_procs, 'Invalid l%precision for semistructured', .true.); statuse = -1; !goto 668
                   end if
                   !
@@ -1812,7 +1812,7 @@ contains
       l%statuse = 0
       l%time_begin = 0
 !
-      l%precision = 0 !rounding for the semistructured
+      l%precisionValue = 0 !rounding for the semistructured
       l%stochastic = .false.
       l%chosenyesornostochastic = .false. !it is an informative flag that must be initialized to .false. even though common sense says otherwise
       l%simu_devia = .false.
