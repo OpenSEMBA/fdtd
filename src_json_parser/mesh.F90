@@ -66,7 +66,7 @@ module mesh_m
    type, public :: conformal_region_t
       type(triangle_t), dimension(:), allocatable :: triangles
       type(cell_interval_t), dimension(:), allocatable :: intervals
-      integer :: type
+      integer :: typeName
     end type
 
 
@@ -328,7 +328,7 @@ contains
          iC = this%getCoordinate(pl%coordIds(i))
          eC = this%getCoordinate(pl%coordIds(i+1))
          interval%ini%cell = int(iC%position)
-         interval%end%cell = int(eC%position)
+         interval%endNode%cell = int(eC%position)
          res = res + interval%getSize()
       end do
       
@@ -387,9 +387,9 @@ contains
          iC = this%getCoordinate(pl%coordIds(i))
          eC = this%getCoordinate(pl%coordIds(i+1))
          interval%ini%cell = int(iC%position)
-         interval%end%cell = int(eC%position)
+         interval%endNode%cell = int(eC%position)
          if (any(iC%position /= eC%position)) then
-            segment = (interval%end%cell - interval%ini%cell) / interval%getSize()
+            segment = (interval%endNode%cell - interval%ini%cell) / interval%getSize()
             
             res(lastSegment)%tag = pl%coordIds(i)
             do j = 1, interval%getSize()

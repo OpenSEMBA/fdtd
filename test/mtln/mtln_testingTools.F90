@@ -17,14 +17,14 @@ module mtln_testingTools_mod
 contains
     
     
-    function buildLineWithNConductors(n,name, parent_name, conductor_in_parent, dt, type) result(res)
+    function buildLineWithNConductors(n,name, parent_name, conductor_in_parent, dt, typeName) result(res)
     
         integer, intent(in) :: n
         character(len=*), intent(in) :: name
         real(kind=RKIND_TIEMPO), intent(in), optional :: dt
         character(len=*), intent(in), optional :: parent_name
         integer, intent(in), optional :: conductor_in_parent
-        character(len=*), intent(in) :: type
+        character(len=*), intent(in) :: typeName
         type(mtl_t) :: res
         
         real(kind=rkind), allocatable, dimension(:,:) :: lpul, cpul, rpul, gpul
@@ -75,7 +75,7 @@ contains
             time_step = dt
         end if
         
-        if (type == MTL_TYPE_SHIELDED) then 
+        if (typeName == MTL_TYPE_SHIELDED) then 
             if (.not. present(parent_name)) then 
                 parent = "p" 
             else
@@ -87,7 +87,7 @@ contains
                 conductor = conductor_in_parent
             end if
             res = mtl_shielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, parent, conductor, Zt)
-        else if (type == MTL_TYPE_UNSHIELDED) then 
+        else if (typeName == MTL_TYPE_UNSHIELDED) then 
             res = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, mE, radius = 0.0_rkind)
         else
             write(*,*) 'Unrecognized line type'
@@ -136,47 +136,47 @@ contains
         
     end subroutine 
 
-    function checkNear_real(target, number, rel_tol) result(is_near)
-        real(kind=rkind), intent(in) :: target, number
+    function checkNear_real(targetValue, number, rel_tol) result(is_near)
+        real(kind=rkind), intent(in) :: targetValue, number
         real(kind=rkind) :: rel_tol
         logical :: is_near
         real :: abs_diff
 
-        abs_diff = abs(target-number)
+        abs_diff = abs(targetValue-number)
         if (abs_diff == 0.0) then
             is_near = .true.
         else 
-            is_near = abs(target-number)/target < rel_tol
+            is_near = abs(targetValue-number)/targetValue < rel_tol
         end if
 
     end function 
 
-    function checkNear_time(target, number, rel_tol) result(is_near)
-        real(kind=RKIND_TIEMPO), intent(in) :: target, number
+    function checkNear_time(targetValue, number, rel_tol) result(is_near)
+        real(kind=RKIND_TIEMPO), intent(in) :: targetValue, number
         real(kind=RKIND_TIEMPO) :: rel_tol
         logical :: is_near
         real :: abs_diff
 
-        abs_diff = abs(target-number)
+        abs_diff = abs(targetValue-number)
         if (abs_diff == 0.0) then
             is_near = .true.
         else 
-            is_near = abs(target-number)/target < rel_tol
+            is_near = abs(targetValue-number)/targetValue < rel_tol
         end if
 
     end function 
 
-    function checkNear_dp(target, number, rel_tol) result(is_near)
-        double precision, intent(in) :: target, number
+    function checkNear_dp(targetValue, number, rel_tol) result(is_near)
+        double precision, intent(in) :: targetValue, number
         real :: rel_tol
         logical :: is_near
         double precision :: abs_diff
 
-        abs_diff = abs(target-number)
+        abs_diff = abs(targetValue-number)
         if (abs_diff == 0.0) then
             is_near = .true.
         else 
-            is_near = abs(target-number)/target < rel_tol
+            is_near = abs(targetValue-number)/targetValue < rel_tol
         end if
 
     end function 

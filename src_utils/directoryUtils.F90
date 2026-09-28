@@ -42,9 +42,9 @@ module directoryUtils_m
          character(kind=c_char), intent(in) :: path(*)
        end function fdtd_delete_file
 
-       integer(c_int) function fdtd_atomic_replace(source, target) bind(C, name='fdtd_atomic_replace')
+       integer(c_int) function fdtd_atomic_replace(source, targetValue) bind(C, name='fdtd_atomic_replace')
           import :: c_char, c_int
-          character(kind=c_char), intent(in) :: source(*), target(*)
+          character(kind=c_char), intent(in) :: source(*), targetValue(*)
        end function fdtd_atomic_replace
    end interface
 
@@ -313,20 +313,20 @@ contains
 
      end subroutine create_file_with_path
 
-    subroutine atomic_replace_file(source, target, ios)
-       character(len=*), intent(in) :: source, target
+    subroutine atomic_replace_file(source, targetValue, ios)
+       character(len=*), intent(in) :: source, targetValue
        integer, intent(out) :: ios
        character(kind=c_char), allocatable :: c_source(:), c_target(:)
        integer :: i, source_length, target_length
 
        source_length = len_trim(source)
-       target_length = len_trim(target)
+       target_length = len_trim(targetValue)
        allocate(c_source(source_length + 1), c_target(target_length + 1))
        do i = 1, source_length
           c_source(i) = source(i:i)
        end do
        do i = 1, target_length
-          c_target(i) = target(i:i)
+          c_target(i) = targetValue(i:i)
        end do
        c_source(source_length + 1) = c_null_char
        c_target(target_length + 1) = c_null_char

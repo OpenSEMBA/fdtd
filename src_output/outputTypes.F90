@@ -95,7 +95,7 @@ module outputTypes_m
    end type output_fragment_descriptor_t
 
    type :: output_artifact_t
-      integer :: kind = OUTPUT_ARTIFACT_UNDEFINED
+      integer :: kindTag = OUTPUT_ARTIFACT_UNDEFINED
       integer :: role = OUTPUT_ARTIFACT_ROLE_CANONICAL
       character(len=BUFSIZE) :: relative_path = ''
       logical :: required = .true.
@@ -400,7 +400,7 @@ contains
       if (allocated(metadata%artifacts)) deallocate (metadata%artifacts)
       allocate (metadata%artifacts(size(paths)))
       do i = 1, size(paths)
-         metadata%artifacts(i)%kind = kinds(i)
+         metadata%artifacts(i)%kindTag = kinds(i)
          metadata%artifacts(i)%relative_path = paths(i)
       end do
       metadata%lifecycle%state = OUTPUT_LIFECYCLE_DECLARED
@@ -413,7 +413,7 @@ contains
       integer :: i
 
       do i = 1, size(artifacts)
-         artifacts(i)%kind = OUTPUT_ARTIFACT_UNDEFINED
+         artifacts(i)%kindTag = OUTPUT_ARTIFACT_UNDEFINED
          artifacts(i)%role = OUTPUT_ARTIFACT_ROLE_CANONICAL
          artifacts(i)%relative_path = ''
          artifacts(i)%required = .true.
@@ -426,7 +426,7 @@ contains
          artifacts(i)%fragment%contributor_rank = -1
       end do
       do i = 1, size(paths)
-         artifacts(i)%kind = kinds(i)
+         artifacts(i)%kindTag = kinds(i)
          artifacts(i)%relative_path = paths(i)
       end do
    end subroutine declare_probe_artifacts
@@ -455,15 +455,15 @@ contains
 
    pure logical function output_artifact_path_is_relative(path)
       character(len=*), intent(in) :: path
-      character(len=:), allocatable :: value
+      character(len=:), allocatable :: scalarValue
 
-      value = trim(path)
-      output_artifact_path_is_relative = len(value) > 0
+      scalarValue = trim(path)
+      output_artifact_path_is_relative = len(scalarValue) > 0
       if (.not. output_artifact_path_is_relative) return
 
-      output_artifact_path_is_relative = value(1:1) /= '/' .and. value(1:1) /= '\'
-      if (len(value) > 1) output_artifact_path_is_relative = &
-         output_artifact_path_is_relative .and. value(2:2) /= ':'
+      output_artifact_path_is_relative = scalarValue(1:1) /= '/' .and. scalarValue(1:1) /= '\'
+      if (len(scalarValue) > 1) output_artifact_path_is_relative = &
+         output_artifact_path_is_relative .and. scalarValue(2:2) /= ':'
    end function output_artifact_path_is_relative
 
    pure logical function output_fragment_descriptor_is_valid(descriptor, parent_probe_id)
@@ -521,7 +521,7 @@ contains
 
       if (.not. allocated(metadata%artifacts)) return
       do i = 1, size(metadata%artifacts)
-         if (metadata%artifacts(i)%required .and. metadata%artifacts(i)%kind == OUTPUT_ARTIFACT_UNDEFINED) then
+         if (metadata%artifacts(i)%required .and. metadata%artifacts(i)%kindTag == OUTPUT_ARTIFACT_UNDEFINED) then
             probe_metadata_is_complete = .false.
             return
          end if

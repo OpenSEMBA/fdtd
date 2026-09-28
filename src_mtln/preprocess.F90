@@ -687,10 +687,10 @@ contains
     !
     ! ¡: start !: end
     ! [A] : V source w/series R OR I source w/parallel R
-    function writeSeriesRLCnode(node, termination, end) result(res)
+    function writeSeriesRLCnode(node, termination, endNode) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
-        character(len=*), intent(in) :: end
+        character(len=*), intent(in) :: endNode
         character(len=:), allocatable :: start
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
@@ -699,9 +699,9 @@ contains
         call addResistance(res, start, start, start//"_R", termination%resistance)
         call addInductance(res, start, start//"_R", start//"_L", termination%inductance)
         if (hasSource(termination)) then
-            call addSource(res, node%name, end, termination)
+            call addSource(res, node%name, endNode, termination)
         else
-            call addCapacitance(res, start, start//"_L", end, termination%capacitance)
+            call addCapacitance(res, start, start//"_L", endNode, termination%capacitance)
         end if
         call addTransmissionLineEquivalent(res, node)
         call addConductance(res, node)
@@ -1035,34 +1035,34 @@ contains
         call appendToStringArray(arr, buff)
     end subroutine
 
-    subroutine addResistance(arr, r_name, start_name, end_name, value)
+    subroutine addResistance(arr, r_name, start_name, end_name, scalarValue)
         character(len=256), allocatable, intent(inout) :: arr(:)
         character(*) :: r_name, start_name, end_name
-        real(kind=rkind) :: value
-        call addComponent(arr, "R"//r_name, start_name, end_name, value)
+        real(kind=rkind) :: scalarValue
+        call addComponent(arr, "R"//r_name, start_name, end_name, scalarValue)
     end subroutine
 
-    subroutine addInductance(arr, r_name, start_name, end_name, value)
+    subroutine addInductance(arr, r_name, start_name, end_name, scalarValue)
         character(len=256), allocatable, intent(inout) :: arr(:)
         character(*) :: r_name, start_name, end_name
-        real(kind=rkind) :: value
-        call addComponent(arr, "L"//r_name, start_name, end_name, value)
+        real(kind=rkind) :: scalarValue
+        call addComponent(arr, "L"//r_name, start_name, end_name, scalarValue)
     end subroutine
     
-    subroutine addCapacitance(arr, r_name, start_name, end_name, value)
+    subroutine addCapacitance(arr, r_name, start_name, end_name, scalarValue)
         character(len=256), allocatable, intent(inout) :: arr(:)
         character(*) :: r_name, start_name, end_name
-        real(kind=rkind) :: value
-        call addComponent(arr, "C"//r_name, start_name, end_name, value)
+        real(kind=rkind) :: scalarValue
+        call addComponent(arr, "C"//r_name, start_name, end_name, scalarValue)
     end subroutine
     
-    subroutine addComponent(arr, component_name, start_name, end_name, value)
+    subroutine addComponent(arr, component_name, start_name, end_name, scalarValue)
         character(len=256), allocatable, intent(inout) :: arr(:)
         character(*) :: component_name, start_name, end_name
-        real(kind=rkind) :: value
+        real(kind=rkind) :: scalarValue
         character(30) :: c_value
         character(len=256) :: buff
-        write(c_value, *) value
+        write(c_value, *) scalarValue
         buff = trim(component_name)// " " //trim(start_name) //" "//trim(end_name)//" "//trim(c_value)
         call appendToStringArray(arr, buff) 
     end subroutine
@@ -1152,7 +1152,7 @@ contains
             res%step = step
         end block
 
-        if (node%termination%termination_type == TERMINATION_open) res%open = .true.
+        if (node%termination%termination_type == TERMINATION_open) res%isOpen = .true.
         res%source = node%termination%source
 
     contains
@@ -1591,9 +1591,9 @@ contains
         character(len=*), intent(in) :: src, dst
 #ifndef _WIN32
         interface
-            function c_symlink(target, linkpath) bind(C, name="symlink") result(res)
+            function c_symlink(targetValue, linkpath) bind(C, name="symlink") result(res)
                 use iso_c_binding, only: c_int, c_char
-                character(kind=c_char), intent(in) :: target(*), linkpath(*)
+                character(kind=c_char), intent(in) :: targetValue(*), linkpath(*)
                 integer(c_int) :: res
             end function c_symlink
         end interface

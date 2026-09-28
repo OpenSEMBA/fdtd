@@ -285,8 +285,8 @@ contains
                            cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
                            subtype = this%getStrAt(je, J_SUBTYPE)
 
-                           if (subtype == J_CONF_SUBTYPE_VOLUME) cV%type = REGION_TYPE_VOLUME
-                           if (subtype == J_CONF_SUBTYPE_SURFACE) cV%type = REGION_TYPE_SURFACE
+                           if (subtype == J_CONF_SUBTYPE_VOLUME) cV%typeName = REGION_TYPE_VOLUME
+                           if (subtype == J_CONF_SUBTYPE_SURFACE) cV%typeName = REGION_TYPE_SURFACE
 
                            call mesh%addConformalRegion(id, cV)
                         end block
@@ -321,7 +321,7 @@ contains
             cellIni = this%getRealsAt(interval, '(1)')
             cellEnd = this%getRealsAt(interval, '(2)')
             res(i)%ini%cell = cellIni(1:3)
-            res(i)%end%cell = cellEnd(1:3)
+            res(i)%endNode%cell = cellEnd(1:3)
          end do
       end function
 
@@ -636,10 +636,10 @@ contains
             cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j), found)
             if (found) then 
                tagName = this%buildTagName(mAs(i)%materialId, mAs(i)%elementIds(j))
-               if (cR%type == REGION_TYPE_VOLUME) then 
+               if (cR%typeName == REGION_TYPE_VOLUME) then 
                   call appendRegion(res%volumes, cR, tagName)
                end if
-               if (cR%type == REGION_TYPE_SURFACE) then 
+               if (cR%typeName == REGION_TYPE_SURFACE) then 
                   call appendRegion(res%surfaces, cR, tagName)
                end if
             end if
@@ -684,7 +684,7 @@ contains
          allocate(res(size(intervals)))
          do i = 1, size(res)
             res(i)%ini%cell(:) = intervals(i)%ini%cell(:)
-            res(i)%end%cell(:) = intervals(i)%end%cell(:)
+            res(i)%endNode%cell(:) = intervals(i)%endNode%cell(:)
          end do
       end function
 
@@ -1302,19 +1302,19 @@ contains
          end block
       end function
 
-      subroutine readDirection(p, label, initial, final, step)
+      subroutine readDirection(p, label, initial, finalValue, step)
          type(json_value), pointer :: p
          type(json_value), pointer :: dir
          character(len=*), intent(in) :: label
          logical :: found
-         real(kind=rkind), intent(inout) :: initial, final, step
+         real(kind=rkind), intent(inout) :: initial, finalValue, step
 
          call this%core%get(p, label, dir, found=found)
          if (.not. found) then
             call WarnErrReport("Error reading far field probe. Direction label not found.", .true.)
          end if
          initial = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_INITIAL)
-         final   = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_FINAL)
+         finalValue   = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_FINAL)
          step    = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_STEP)
       end subroutine
    end function
@@ -3467,12 +3467,12 @@ contains
          integer, intent(in) :: ix, iy, iz
          integer :: ax, bx, ay, by, az, bz
 
-         ax = min(interval%ini%cell(1), interval%end%cell(1))
-         bx = max(interval%ini%cell(1), interval%end%cell(1))
-         ay = min(interval%ini%cell(2), interval%end%cell(2))
-         by = max(interval%ini%cell(2), interval%end%cell(2))
-         az = min(interval%ini%cell(3), interval%end%cell(3))
-         bz = max(interval%ini%cell(3), interval%end%cell(3))
+         ax = min(interval%ini%cell(1), interval%endNode%cell(1))
+         bx = max(interval%ini%cell(1), interval%endNode%cell(1))
+         ay = min(interval%ini%cell(2), interval%endNode%cell(2))
+         by = max(interval%ini%cell(2), interval%endNode%cell(2))
+         az = min(interval%ini%cell(3), interval%endNode%cell(3))
+         bz = max(interval%ini%cell(3), interval%endNode%cell(3))
 
          intervalContainsNode = (ix >= ax .and. ix <= bx .and. &
                                  iy >= ay .and. iy <= by .and. &
@@ -3621,31 +3621,31 @@ contains
       function readTerminationType(termination) result(res)
          type(json_value), pointer :: termination
          integer :: res
-         character(:), allocatable :: type
-         type = this%getStrAt(termination, J_TYPE)
-         if (type == J_MAT_TERM_TYPE_OPEN) then
+         character(:), allocatable :: typeName
+         typeName = this%getStrAt(termination, J_TYPE)
+         if (typeName == J_MAT_TERM_TYPE_OPEN) then
             res = TERMINATION_OPEN
-         else if (type == J_MAT_TERM_TYPE_SHORT) then
+         else if (typeName == J_MAT_TERM_TYPE_SHORT) then
             res = TERMINATION_SHORT
-         else if (type == J_MAT_TERM_TYPE_SERIES) then
+         else if (typeName == J_MAT_TERM_TYPE_SERIES) then
             res = TERMINATION_SERIES
-         else if (type == J_MAT_TERM_TYPE_PARALLEL) then
+         else if (typeName == J_MAT_TERM_TYPE_PARALLEL) then
             res = TERMINATION_PARALLEL
-         else if (type == J_MAT_TERM_TYPE_RSLCP) then
+         else if (typeName == J_MAT_TERM_TYPE_RSLCP) then
             res = TERMINATION_RSLCP
-         else if (type == J_MAT_TERM_TYPE_LSRCP) then
+         else if (typeName == J_MAT_TERM_TYPE_LSRCP) then
             res = TERMINATION_LSRCP
-         else if (type == J_MAT_TERM_TYPE_CSLRP) then
+         else if (typeName == J_MAT_TERM_TYPE_CSLRP) then
             res = TERMINATION_CSLRP
-         else if (type == J_MAT_TERM_TYPE_RCSLP) then
+         else if (typeName == J_MAT_TERM_TYPE_RCSLP) then
             res = TERMINATION_RCSLP
-         else if (type == J_MAT_TERM_TYPE_LCSRP) then
+         else if (typeName == J_MAT_TERM_TYPE_LCSRP) then
             res = TERMINATION_LCSRP
-         else if (type == J_MAT_TERM_TYPE_RLSCP) then
+         else if (typeName == J_MAT_TERM_TYPE_RLSCP) then
             res = TERMINATION_RLSCP
-         else if (type == J_MAT_TERM_TYPE_CIRCUIT) then 
+         else if (typeName == J_MAT_TERM_TYPE_CIRCUIT) then 
             res = TERMINATION_CIRCUIT
-         else if (type == J_MAT_TERM_TYPE_NETWORK) then 
+         else if (typeName == J_MAT_TERM_TYPE_NETWORK) then 
             res = TERMINATION_NETWORK
          else
             res = TERMINATION_UNDEFINED
@@ -4826,10 +4826,10 @@ contains
       end do
    end function
 
-   function jsonValueFilterByKeyValue(this, place, key, value) result (res)
+   function jsonValueFilterByKeyValue(this, place, key, scalarValue) result (res)
       class(parser_t) :: this
       type(json_value_ptr_t), allocatable :: res(:)
-      character(kind=JSON_CK, len=*) :: key, value
+      character(kind=JSON_CK, len=*) :: key, scalarValue
       type(json_value), pointer :: place, src
       character(kind=JSON_CK, len=:), allocatable :: typeStr
       integer :: i, j, n
@@ -4846,7 +4846,7 @@ contains
             write(errorMsg, *) "Key: ", key, " not found while doing value filter."
             call WarnErrReport(errorMsg, .true.)
          end if
-         if(found .and. typeStr == trim(value)) then
+         if(found .and. typeStr == trim(scalarValue)) then
             n = n + 1
          end if
       end do
@@ -4856,7 +4856,7 @@ contains
       do i = 1, this%core%count(place)
          call this%core%get_child(place, i, src)
          typeStr = this%getStrAt(src, key, found)
-         if(found .and. typeStr == value) then
+         if(found .and. typeStr == scalarValue) then
             res(j)%p => src
             j = j + 1
          end if

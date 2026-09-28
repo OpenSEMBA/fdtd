@@ -88,7 +88,7 @@ contains
             n = 0
             do i = 1, size(nws)
                 do j = 1, nws(i)%number_of_nodes
-                    if (nws(i)%nodes(j)%open) n = n + 1
+                    if (nws(i)%nodes(j)%isOpen) n = n + 1
                 end do
             end do
             allocate(res(n))
@@ -96,7 +96,7 @@ contains
             n = 0
             do i = 1, size(nws)
                 do j = 1, nws(i)%number_of_nodes
-                    if (nws(i)%nodes(j)%open) then 
+                    if (nws(i)%nodes(j)%isOpen) then 
                         n = n + 1
                         res(n) = nws(i)%nodes(j)
                     end if
@@ -170,7 +170,7 @@ contains
                 end if
 
                 call c_f_pointer(info%vRealData, values,shape=[info%vLength])
-                if (this%networks(i)%nodes(j)%name /= "time" .and. .not. this%networks(i)%nodes(j)%open) then 
+                if (this%networks(i)%nodes(j)%name /= "time" .and. .not. this%networks(i)%nodes(j)%isOpen) then 
                     this%networks(i)%nodes(j)%v = values(ubound(values,1))
                 end if
             end do

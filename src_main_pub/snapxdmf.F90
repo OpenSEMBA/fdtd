@@ -56,10 +56,10 @@ contains
 
    contains
 
-      subroutine check_status(result)
-         type(xdmf_status_t), intent(in) :: result
+      subroutine check_status(resultValue)
+         type(xdmf_status_t), intent(in) :: resultValue
 
-         if (result%is_error()) error stop result%message()
+         if (resultValue%is_error()) error stop resultValue%message()
       end subroutine check_status
    end subroutine write_xdmfsnap
 end module snapxdmf_m

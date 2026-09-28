@@ -105,13 +105,13 @@ module  FDETYPES_m
    integer(kind=4), parameter  :: IKINDMTAG=4 !PARA SGGMTAG 151020 !dejarlo en 4 bytes. No tocar
 
    integer(kind=2), parameter  :: SINGLE=4
-   integer(kind=2), parameter  :: double=8
+   integer(kind=2), parameter  :: DOUBLE_KIND=8
    integer(kind=2), parameter  :: LONG_DOUBLE=16
 #ifdef CompileWithReal8
-   integer(kind=2), parameter  :: RKIND=double
-   integer(kind=2), parameter  :: RKIND_WIRES=double
-   integer(kind=2), parameter  :: RKIND_TIEMPO=double
-   integer(kind=2), parameter  :: CKIND=double
+   integer(kind=2), parameter  :: RKIND=DOUBLE_KIND
+   integer(kind=2), parameter  :: RKIND_WIRES=DOUBLE_KIND
+   integer(kind=2), parameter  :: RKIND_TIEMPO=DOUBLE_KIND
+   integer(kind=2), parameter  :: CKIND=DOUBLE_KIND
 #else
 #ifdef CompileWithReal16
    integer(kind=2), parameter  :: RKIND=LONG_DOUBLE
@@ -121,10 +121,10 @@ module  FDETYPES_m
 #else
    !default
    integer(kind=2), parameter  :: RKIND=SINGLE
-   integer(kind=2), parameter  :: RKIND_WIRES=double !020719 a peticion 
-   integer(kind=2), parameter  :: RKIND_TIEMPO=double
+   integer(kind=2), parameter  :: RKIND_WIRES=DOUBLE_KIND !020719 a peticion 
+   integer(kind=2), parameter  :: RKIND_TIEMPO=DOUBLE_KIND
    !! integer(kind=2), parameter  :: CKIND=SINGLE
-   integer(kind=2), parameter  :: CKIND=double  !LOS COMPLEJOS LOS VOY A MANEJAR SIEMPRE EN DOBLE PRECISION como minimo
+   integer(kind=2), parameter  :: CKIND=DOUBLE_KIND  !LOS COMPLEJOS LOS VOY A MANEJAR SIEMPRE EN DOBLE PRECISION como minimo
 #endif
 #endif
 

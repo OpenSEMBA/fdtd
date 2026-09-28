@@ -825,7 +825,7 @@ integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)
     block
         integer :: i
         real, dimension(:), allocatable :: start_times, end_times, expected_voltages, aux_times
-        integer :: j, start, end, idx
+        integer :: j, start, endNode, idx
 
         ! open(unit = 1, file =  'testData/outputs/paul/paul_8.6_square.txt')
         ! do i = 1, size(solver%bundles(1)%probes(1)%t)
@@ -949,7 +949,7 @@ integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)
     block
         integer :: i
         real, dimension(:), allocatable :: times, expected_voltages, aux_times
-        integer :: j, start, end, idx
+        integer :: j, start, endNode, idx
 
         ! open(unit = 1, file =  'testData/outputs/paul/paul_8.6_triangle.txt')
         ! do i = 1, size(solver%bundles(1)%probes(1)%t)

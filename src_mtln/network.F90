@@ -16,7 +16,7 @@ module network_m
         real(kind=rkind), pointer :: i
         integer(kind=4) :: bundle_number, conductor_number, v_index, i_index
         integer(kind=4) :: side
-        logical :: open = .false.
+        logical :: isOpen = .false.
     end type
 
 

@@ -121,7 +121,7 @@ module Solver_m
    contains
       procedure :: init => solver_init
       procedure :: run => solver_run
-      procedure :: end => solver_end
+      procedure :: endNode => solver_end
       procedure :: init_control => solver_init_control
       procedure, private :: init_fields
       procedure, private :: init_distances
@@ -426,7 +426,7 @@ module Solver_m
       class(solver_t) :: this
       call this%init()
       call this%run()
-      call this%end()
+      call this%endNode()
    end subroutine launch_simulation
 
    subroutine solver_init(this)

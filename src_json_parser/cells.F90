@@ -36,7 +36,7 @@ module cells_m
    end type
 
    type :: cell_interval_t
-      type(cell_t) :: ini, end
+      type(cell_t) :: ini, endNode
    contains
       procedure :: getType => cell_interval_getType
       procedure :: getOrientation => cell_interval_getOrientation
@@ -101,7 +101,7 @@ contains
          block
             integer :: diff
             do i = DIR_X, DIR_Z
-               diff = this%end%cell(i) - this%ini%cell(i)
+               diff = this%endNode%cell(i) - this%ini%cell(i)
                if (diff > 0) then
                   res = i
                   return
@@ -114,7 +114,7 @@ contains
        case (CELL_TYPE_SURFEL)
          block
             integer, dimension(3) :: diff
-            diff = this%end%cell - this%ini%cell
+            diff = this%endNode%cell - this%ini%cell
             do i = DIR_X, DIR_Z
                if (diff(i) == 0) res = i
             end do
@@ -132,7 +132,7 @@ contains
       integer :: i
       integer, dimension(3) :: diff
       res = 1
-      diff = abs(this%end%cell - this%ini%cell)
+      diff = abs(this%endNode%cell - this%ini%cell)
       do i = DIR_X, DIR_Z
          if (diff(i) /= 0) res = res * diff(i)
       end do
@@ -145,7 +145,7 @@ contains
       integer :: i
       res = 0
       do i = DIR_X, DIR_Z
-         if ((this%end%cell(i) - this%ini%cell(i)) /= 0) res = res + 1
+         if ((this%endNode%cell(i) - this%ini%cell(i)) /= 0) res = res + 1
       end do
    end function
 

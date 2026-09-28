@@ -211,7 +211,7 @@ contains
             b = this%network_manager%open_nodes(i)%bundle_number
             if (this%bundles(b)%bundle_in_layer) then
                 c = this%network_manager%open_nodes(i)%conductor_number
-                if (this%network_manager%open_nodes(i)%open) then
+                if (this%network_manager%open_nodes(i)%isOpen) then
                     if (this%network_manager%open_nodes(i)%side == TERMINAL_NODE_SIDE_INI) then
                         this%bundles(b)%v(c,1) = this%bundles(b)%v(c,1) - 2*dot_product(this%bundles(b)%i_diff(1,c,:), this%bundles(b)%i(:,1))
                     else if (this%network_manager%open_nodes(i)%side == TERMINAL_NODE_SIDE_END) then

@@ -8,7 +8,7 @@ program SEMBA_FDTD_launcher
 
    call semba%init()
    call semba%launch()
-   call semba%end()
+   call semba%endNode()
 
 end program SEMBA_FDTD_launcher
 

@@ -24,7 +24,7 @@ contains
       integer(kind=8) :: scalar_bytes
 
       status = BINARY_WRITER_INVALID_LAYOUT
-      if (artifact%kind /= OUTPUT_ARTIFACT_BINARY) return
+      if (artifact%kindTag /= OUTPUT_ARTIFACT_BINARY) return
       if (.not. output_artifact_identity_is_valid(artifact)) return
       if (len_trim(artifact%component_order) == 0) return
       if (artifact%byte_order /= BINARY_ENDIAN_LITTLE) return
@@ -165,14 +165,14 @@ contains
       if (ios /= 0) status = BINARY_WRITER_IO_ERROR
    end subroutine prepare_write
 
-   subroutine write_int64_little_endian(unit, value, ios)
+   subroutine write_int64_little_endian(unit, scalarValue, ios)
       integer, intent(in) :: unit
-      integer(int64), intent(in) :: value
+      integer(int64), intent(in) :: scalarValue
       integer, intent(inout) :: ios
       integer :: byte_index
 
       do byte_index = 0, BINARY_BYTES_REAL64 - 1
-         write (unit, iostat=ios) achar(ibits(value, 8*byte_index, 8))
+         write (unit, iostat=ios) achar(ibits(scalarValue, 8*byte_index, 8))
          if (ios /= 0) return
       end do
    end subroutine write_int64_little_endian

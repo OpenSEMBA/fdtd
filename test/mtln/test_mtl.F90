@@ -7,7 +7,7 @@ integer function test_mtl_wrong_dt() bind(C) result(error_cnt)
 
     type(mtl_t) :: line
     real(kind=RKIND_TIEMPO) :: dt = 1.0 
-    line = buildLineWithNConductors(2,'line0', dt = dt, type = "shielded")
+    line = buildLineWithNConductors(2,'line0', dt = dt, typeName = "shielded")
     error_cnt = 0
     if (line%dt == dt) then 
         error_cnt = error_cnt + 1
@@ -78,7 +78,7 @@ integer function test_mtl_time_step() bind(C) result(error_cnt)
 
 
     type(mtl_t) :: line 
-    line = buildLineWithNConductors(2, "line0", dt = 1e-6_RKIND_TIEMPO, type = "unshielded")
+    line = buildLineWithNConductors(2, "line0", dt = 1e-6_RKIND_TIEMPO, typeName = "unshielded")
 
     error_cnt = 0
 

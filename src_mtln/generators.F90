@@ -11,7 +11,7 @@ module generators_m
 
     type generator_t
         integer :: elementIndex, conductor
-        real(kind=rkind), dimension(:), allocatable :: value
+        real(kind=rkind), dimension(:), allocatable :: scalarValue
         real(kind=RKIND_TIEMPO), dimension(:), allocatable :: time
         real :: resistance
         integer :: source_type = SOURCE_TYPE_UNDEFINED
@@ -71,19 +71,19 @@ contains
     subroutine initGenerator(this, path)
         class(generator_t) :: this
         character(*), intent(in) :: path
-        real(kind=rkind) :: value
+        real(kind=rkind) :: scalarValue
         real(kind=RKIND_TIEMPO) :: time
         integer :: io, line_count, i
         
         if (path == "") then 
-            allocate(this%time(0), this%value(0))
+            allocate(this%time(0), this%scalarValue(0))
             ! error
         end if
         ! First pass: count the number of lines
         line_count = 0
         open(unit = 1, file = path)
         do
-            read(1, *, iostat = io) time, value
+            read(1, *, iostat = io) time, scalarValue
             if (io /= 0) exit
             line_count = line_count + 1
         end do
@@ -91,12 +91,12 @@ contains
         
         ! Allocate arrays with the exact size needed
         allocate(this%time(line_count))
-        allocate(this%value(line_count))
+        allocate(this%scalarValue(line_count))
         
         ! Second pass: fill the arrays
         open(unit = 1, file = path)
         do i = 1, line_count
-            read(1, *, iostat = io) this%time(i), this%value(i)
+            read(1, *, iostat = io) this%time(i), this%scalarValue(i)
             if (io /= 0) then
                 ! Handle unexpected read error
                 close(1)
@@ -117,13 +117,13 @@ contains
         elementIndex = maxloc(timediff, 1, (timediff) <= 0)
         if (elementIndex == 0) elementIndex = 1
         x1 = this%time(elementIndex)
-        y1 = this%value(elementIndex)
+        y1 = this%scalarValue(elementIndex)
         if (elementIndex+1 > size(this%time)) then
             x2 = x1
             y2 = y1
         else 
             x2 = this%time(elementIndex+1)
-            y2 = this%value(elementIndex+1)
+            y2 = this%scalarValue(elementIndex+1)
         end if
         res = (t*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
     end function

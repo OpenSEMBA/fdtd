@@ -68,20 +68,20 @@ integer function test_geometry_side_position() bind(C) result(err)
     c4 = coord_t(position = [0.0,1.0,1.0], id=  4)
     c5 = coord_t(position = [0.0,1.0,0.0], id=  5)
 
-    side = side_t(init=c1, end = c2)
+    side = side_t(init=c1, endNode = c2)
     if (.not. side%isOnEdge(EDGE_X)) err = err + 1
     if (side%isOnAnyFace()) err = err + 1
 
-    side = side_t(init=c1, end = c5)
+    side = side_t(init=c1, endNode = c5)
     if (.not. side%isOnEdge(EDGE_Y)) err = err + 1
     if (side%isOnAnyFace()) err = err + 1
 
-    side = side_t(init=c1, end = c3)
+    side = side_t(init=c1, endNode = c3)
     if (.not. side%isOnEdge(EDGE_Z)) err = err + 1
     if (side%isOnAnyFace()) err = err + 1
 
 
-    side = side_t(init=c1, end = c4)
+    side = side_t(init=c1, endNode = c4)
     if (side%isOnAnyEdge()) err = err + 1
     if (.not. side%isOnFace(FACE_X)) err = err + 1
 
@@ -336,11 +336,11 @@ integer function test_geometry_path() bind(C) result(err)
     sides_on_face = getSidesOnFace(sides, FACE_Z)
     path = getPathOnFace(sides_on_face)
     if (.not. path(1)%init%id == 2) err = err + 1
-    if (.not. path(1)%end%id == 3) err = err + 1
+    if (.not. path(1)%endNode%id == 3) err = err + 1
     if (.not. path(2)%init%id == 3) err = err + 1
-    if (.not. path(2)%end%id == 4) err = err + 1
+    if (.not. path(2)%endNode%id == 4) err = err + 1
     if (.not. path(3)%init%id == 4) err = err + 1
-    if (.not. path(3)%end%id == 5) err = err + 1
+    if (.not. path(3)%endNode%id == 5) err = err + 1
 
 end function
 
@@ -355,7 +355,7 @@ integer function test_geometry_vertex_vertex_contour() bind(C) result(err)
     type(triangle_t) :: t1,t2,t3
     type(coord_t) :: c1, c2, c3, c4, c5, c6
     integer, dimension(3) :: cell
-    type(coord_t) :: init, end
+    type(coord_t) :: init, endNode
 
     err = 0
 
@@ -386,13 +386,13 @@ integer function test_geometry_vertex_vertex_contour() bind(C) result(err)
     sides_on_face = getSidesOnFace(sides, FACE_Z)
     path = getPathOnFace(sides_on_face)
     init = path(1)%init
-    end = path(size(path))%end
+    endNode = path(size(path))%endNode
     contour = buildSidesContour(path)
     if (size(contour) /= 5) err = err + 1
     if (.not. all(contour(4)%init%position .eq. c5%position)) err = err + 1
-    if (.not. all(contour(4)%end%position .eq. c1%position)) err = err + 1
+    if (.not. all(contour(4)%endNode%position .eq. c1%position)) err = err + 1
     if (.not. all(contour(5)%init%position .eq. c1%position)) err = err + 1
-    if (.not. all(contour(5)%end%position .eq. c2%position)) err = err + 1
+    if (.not. all(contour(5)%endNode%position .eq. c2%position)) err = err + 1
 
 end function
 
@@ -407,7 +407,7 @@ integer function test_geometry_vertex_side_contour() bind(C) result(err)
     type(triangle_t) :: t1,t2,t3
     type(coord_t) :: c1, c2, c3, c4, c5, c6
     integer, dimension(3) :: cell
-    type(coord_t) :: init, end
+    type(coord_t) :: init, endNode
 
     err = 0
 
@@ -438,13 +438,13 @@ integer function test_geometry_vertex_side_contour() bind(C) result(err)
     sides_on_face = getSidesOnFace(sides, FACE_Z)
     path = getPathOnFace(sides_on_face)
     init = path(1)%init
-    end = path(size(path))%end
+    endNode = path(size(path))%endNode
     contour = buildSidesContour(path)
     if (size(contour) /= 5) err = err + 1
     if (.not. all(contour(4)%init%position .eq. c5%position)) err = err + 1
-    if (.not. all(contour(4)%end%position .eq. c1%position)) err = err + 1
+    if (.not. all(contour(4)%endNode%position .eq. c1%position)) err = err + 1
     if (.not. all(contour(5)%init%position .eq. c1%position)) err = err + 1
-    if (.not. all(contour(5)%end%position .eq. c2%position)) err = err + 1
+    if (.not. all(contour(5)%endNode%position .eq. c2%position)) err = err + 1
 
 
 end function
@@ -460,7 +460,7 @@ integer function test_geometry_side_vertex_contour() bind(C) result(err)
     type(triangle_t) :: t1,t2,t3
     type(coord_t) :: c1, c2, c3, c4, c5, c6
     integer, dimension(3) :: cell
-    type(coord_t) :: init, end
+    type(coord_t) :: init, endNode
 
     err = 0
 
@@ -491,13 +491,13 @@ integer function test_geometry_side_vertex_contour() bind(C) result(err)
     sides_on_face = getSidesOnFace(sides, FACE_Z)
     path = getPathOnFace(sides_on_face)
     init = path(1)%init
-    end = path(size(path))%end
+    endNode = path(size(path))%endNode
     contour = buildSidesContour(path)
     if (size(contour) /= 5) err = err + 1
     if (.not. all(contour(4)%init%position .eq. c5%position)) err = err + 1
-    if (.not. all(contour(4)%end%position .eq. c1%position)) err = err + 1
+    if (.not. all(contour(4)%endNode%position .eq. c1%position)) err = err + 1
     if (.not. all(contour(5)%init%position .eq. c1%position)) err = err + 1
-    if (.not. all(contour(5)%end%position .eq. c2%position)) err = err + 1
+    if (.not. all(contour(5)%endNode%position .eq. c2%position)) err = err + 1
 
 
 end function
@@ -513,7 +513,7 @@ integer function test_geometry_side_side_contour() bind(C) result(err)
     type(triangle_t) :: t1,t2,t3
     type(coord_t) :: c1, c2, c3, c4, c5, c6
     integer, dimension(3) :: cell
-    type(coord_t) :: init, end
+    type(coord_t) :: init, endNode
 
     err = 0
 
@@ -544,13 +544,13 @@ integer function test_geometry_side_side_contour() bind(C) result(err)
     sides_on_face = getSidesOnFace(sides, FACE_Z)
     path = getPathOnFace(sides_on_face)
     init = path(1)%init
-    end = path(size(path))%end
+    endNode = path(size(path))%endNode
     contour = buildSidesContour(path)
     if (size(contour) /= 5) err = err + 1
     if (.not. all(contour(4)%init%position .eq. c5%position)) err = err + 1
-    if (.not. all(contour(4)%end%position .eq. c1%position)) err = err + 1
+    if (.not. all(contour(4)%endNode%position .eq. c1%position)) err = err + 1
     if (.not. all(contour(5)%init%position .eq. c1%position)) err = err + 1
-    if (.not. all(contour(5)%end%position .eq. c2%position)) err = err + 1
+    if (.not. all(contour(5)%endNode%position .eq. c2%position)) err = err + 1
 
 end function
 
@@ -565,7 +565,7 @@ integer function test_geometry_side_side_contour_2() bind(C) result(err)
     type(triangle_t) :: t1,t2,t3
     type(coord_t) :: c1, c2, c3, c4, c5, c6, c7
     integer, dimension(3) :: cell
-    type(coord_t) :: init, end
+    type(coord_t) :: init, endNode
 
     err = 0
 
@@ -600,15 +600,15 @@ integer function test_geometry_side_side_contour_2() bind(C) result(err)
     sides_on_face = getSidesOnFace(sides, FACE_Z)
     path = getPathOnFace(sides_on_face)
     init = path(1)%init
-    end = path(size(path))%end
+    endNode = path(size(path))%endNode
     contour = buildSidesContour(path)
     if (size(contour) /= 5) err = err + 1
     if (.not. all(contour(3)%init%position .eq. c3%position)) err = err + 1
-    if (.not. all(contour(3)%end%position .eq. c1%position)) err = err + 1
+    if (.not. all(contour(3)%endNode%position .eq. c1%position)) err = err + 1
     if (.not. all(contour(4)%init%position .eq. c1%position)) err = err + 1
-    if (.not. all(contour(4)%end%position .eq. c2%position)) err = err + 1
+    if (.not. all(contour(4)%endNode%position .eq. c2%position)) err = err + 1
     if (.not. all(contour(5)%init%position .eq. c2%position)) err = err + 1
-    if (.not. all(contour(5)%end%position .eq. c4%position)) err = err + 1
+    if (.not. all(contour(5)%endNode%position .eq. c4%position)) err = err + 1
 
 end function
 
@@ -623,7 +623,7 @@ integer function test_geometry_side_side_contour_3() bind(C) result(err)
     type(triangle_t) :: t1
     type(coord_t) :: c1, c2, c3, c4, c5
     integer, dimension(3) :: cell
-    type(coord_t) :: init, end
+    type(coord_t) :: init, endNode
 
     err = 0
 
@@ -643,17 +643,17 @@ integer function test_geometry_side_side_contour_3() bind(C) result(err)
     sides_on_face = getSidesOnFace(sides, FACE_Y)
     path = getPathOnFace(sides_on_face)
     init = path(1)%init
-    end = path(size(path))%end
+    endNode = path(size(path))%endNode
     contour = buildSidesContour(path)
     if (size(contour) /= 4) err = err + 1
     if (.not. all(contour(1)%init%position .eq. c1%position)) err = err + 1
-    if (.not. all(contour(1)%end%position .eq. c2%position)) err = err + 1
+    if (.not. all(contour(1)%endNode%position .eq. c2%position)) err = err + 1
     if (.not. all(contour(2)%init%position .eq. c2%position)) err = err + 1
-    if (.not. all(contour(2)%end%position .eq. c5%position)) err = err + 1
+    if (.not. all(contour(2)%endNode%position .eq. c5%position)) err = err + 1
     if (.not. all(contour(3)%init%position .eq. c5%position)) err = err + 1
-    if (.not. all(contour(3)%end%position .eq. c4%position)) err = err + 1
+    if (.not. all(contour(3)%endNode%position .eq. c4%position)) err = err + 1
     if (.not. all(contour(4)%init%position .eq. c4%position)) err = err + 1
-    if (.not. all(contour(4)%end%position .eq. c1%position)) err = err + 1
+    if (.not. all(contour(4)%endNode%position .eq. c1%position)) err = err + 1
     
 end function
 
@@ -669,7 +669,7 @@ integer function test_geometry_areas() bind(C) result(err)
     type(triangle_t) :: t1,t2,t3
     type(coord_t) :: c1, c2, c3, c4, c5, c6, c7
     integer, dimension(3) :: cell
-    type(coord_t) :: init, end
+    type(coord_t) :: init, endNode
     real :: area
 
     err = 0

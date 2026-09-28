@@ -5,7 +5,7 @@ integer function test_spice_read_message() bind(C) result(error_cnt)
     implicit none
 
     type(circuit_t) :: circuit
-    real(kind=rkind) :: result(4)
+    real(kind=rkind) :: resultValue(4)
     character(50), dimension(:), allocatable :: input
     integer :: i
     type(string_t), dimension(4) :: names
@@ -33,13 +33,13 @@ integer function test_spice_read_message() bind(C) result(error_cnt)
     call circuit%step()
     call circuit%updateNodes()
 
-    result = [24.000000000000000, 9.7469741675197206, 15.000000000000000, 24.000000000000000]
+    resultValue = [24.000000000000000, 9.7469741675197206, 15.000000000000000, 24.000000000000000]
     if (size(circuit%nodes%values) /= 4) then 
         error_cnt = error_cnt + 1
     end if
 
     do i = 1, 4                      
-        if (checkNear(circuit%nodes%values(i)%voltage, result(i), 0.01_rkind) .eqv. .false.) then 
+        if (checkNear(circuit%nodes%values(i)%voltage, resultValue(i), 0.01_rkind) .eqv. .false.) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -54,7 +54,7 @@ integer function test_spice_dc() bind(C) result(error_cnt)
 
     type(circuit_t) :: circuit
     character(len=50) :: netlist
-    real(kind=rkind) :: result(4)
+    real(kind=rkind) :: resultValue(4)
     integer :: i
     type(string_t), dimension(4) :: names
     names(1) = string_t("node1", 5)
@@ -69,13 +69,13 @@ integer function test_spice_dc() bind(C) result(error_cnt)
     call circuit%step()
     call circuit%updateNodes()
 
-    result = [24.000000000000000, 9.7469741675197206, 15.000000000000000, 24.000000000000000]
+    resultValue = [24.000000000000000, 9.7469741675197206, 15.000000000000000, 24.000000000000000]
     if (size(circuit%nodes%values) /= 4) then 
         error_cnt = error_cnt + 1
     end if
 
     do i = 1, 4                      
-        if (checkNear(circuit%nodes%values(i)%voltage, result(i), 0.01_rkind) .eqv. .false.) then 
+        if (checkNear(circuit%nodes%values(i)%voltage, resultValue(i), 0.01_rkind) .eqv. .false.) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -91,7 +91,7 @@ integer function test_spice_tran() bind(C) result(error_cnt)
     type(circuit_t) :: circuit
     character(len=*, kind=c_char), parameter :: NETLIST= PATH_TO_TEST_DATA//c_char_'netlists/netlist_tran.cir'
     real(kind=RKIND_TIEMPO) :: finalTime
-    real(kind=rkind) :: result(3)
+    real(kind=rkind) :: resultValue(3)
     integer :: i
     type(string_t), dimension(4) :: names
     names(1) = string_t("in", 2)
@@ -99,7 +99,7 @@ integer function test_spice_tran() bind(C) result(error_cnt)
     names(3) = string_t("out", 3)
     names(4) = string_t("time", 4)
 
-    result = [5.0,0.092995181699999999,0.053166680000000001]
+    resultValue = [5.0,0.092995181699999999,0.053166680000000001]
 
     circuit%time = 0.0
     circuit%dt = 50e-6
@@ -115,13 +115,13 @@ integer function test_spice_tran() bind(C) result(error_cnt)
             error_cnt = error_cnt + 1
         end if
     end do
-    if (checkNear(circuit%getNodeVoltage("in"), result(1), 0.01_rkind) .eqv. .false.) then 
+    if (checkNear(circuit%getNodeVoltage("in"), resultValue(1), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
-    if (checkNear(circuit%getNodeVoltage("int"), result(2), 0.01_rkind) .eqv. .false.) then 
+    if (checkNear(circuit%getNodeVoltage("int"), resultValue(2), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
-    if (checkNear(circuit%getNodeVoltage("out"), result(3), 0.01_rkind) .eqv. .false.) then 
+    if (checkNear(circuit%getNodeVoltage("out"), resultValue(3), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
 
@@ -139,14 +139,14 @@ integer function test_spice_tran_2() bind(C) result(error_cnt)
     character(len=*, kind=c_char), parameter :: NETLIST= PATH_TO_TEST_DATA//c_char_'netlists/netlist_tran_2.cir'
     real(kind=RKIND_TIEMPO) :: finalTime
     integer :: i
-    real(kind=rkind) :: result(3)
+    real(kind=rkind) :: resultValue(3)
     type(string_t), dimension(4) :: names
     names(1) = string_t("in", 2)
     names(2) = string_t("int", 3)
     names(3) = string_t("out", 3)
     names(4) = string_t("time", 4)
     
-    result = [5.0_rkind,0.0039656539400000001_rkind,0.00069279532199999997_rkind]
+    resultValue = [5.0_rkind,0.0039656539400000001_rkind,0.00069279532199999997_rkind]
     
     circuit%time = 0.0
     circuit%dt = 50e-6
@@ -162,13 +162,13 @@ integer function test_spice_tran_2() bind(C) result(error_cnt)
             error_cnt = error_cnt + 1
         end if
     end do
-    if (checkNear(circuit%getNodeVoltage("in"), result(1), 0.01_rkind) .eqv. .false.) then 
+    if (checkNear(circuit%getNodeVoltage("in"), resultValue(1), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
-    if (checkNear(circuit%getNodeVoltage("int"), result(2), 0.01_rkind) .eqv. .false.) then 
+    if (checkNear(circuit%getNodeVoltage("int"), resultValue(2), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
-    if (checkNear(circuit%getNodeVoltage("out"), result(3), 0.01_rkind) .eqv. .false.) then 
+    if (checkNear(circuit%getNodeVoltage("out"), resultValue(3), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
 
@@ -263,7 +263,7 @@ integer function test_spice_stop_mod_times() bind(C) result(error_cnt)
     type(circuit_t) :: circuit
     character(len=*, kind=c_char), parameter :: NETLIST= PATH_TO_TEST_DATA//c_char_'netlists/netlist_tran.cir'
     real(kind=RKIND_TIEMPO) :: finalTime
-    real(kind=rkind) :: result(3)
+    real(kind=rkind) :: resultValue(3)
     integer :: i
     type(string_t), dimension(4) :: names
     names(1) = string_t("in", 2)
@@ -271,7 +271,7 @@ integer function test_spice_stop_mod_times() bind(C) result(error_cnt)
     names(3) = string_t("out", 3)
     names(4) = string_t("time", 4)
 
-    result = [5.0,0.092995181699999999,0.053166680000000001]
+    resultValue = [5.0,0.092995181699999999,0.053166680000000001]
 
     circuit%time = 0.0
     circuit%dt = 50e-6
@@ -287,13 +287,13 @@ integer function test_spice_stop_mod_times() bind(C) result(error_cnt)
             error_cnt = error_cnt + 1
         end if
     end do
-    if (checkNear(circuit%getNodeVoltage("in"), result(1), 0.01_rkind) .eqv. .false.) then 
+    if (checkNear(circuit%getNodeVoltage("in"), resultValue(1), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
-    if (checkNear(circuit%getNodeVoltage("int"), result(2), 0.01_rkind) .eqv. .false.) then 
+    if (checkNear(circuit%getNodeVoltage("int"), resultValue(2), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
-    if (checkNear(circuit%getNodeVoltage("out"), result(3), 0.01_rkind) .eqv. .false.) then 
+    if (checkNear(circuit%getNodeVoltage("out"), resultValue(3), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
 

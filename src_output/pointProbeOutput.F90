@@ -127,23 +127,23 @@ contains
       type(point_probe_output_t), intent(inout) :: this
       integer :: unit, ioStatus, i
       real(kind=RKIND_TIEMPO) :: t0, t1, t, dt
-      real(kind=RKIND) :: value
+      real(kind=RKIND) :: scalarValue
 
       open(newunit=unit, file=trim(this%domain%normalizationFile), status='old', action='read', iostat=ioStatus)
       if (ioStatus /= 0) call StopOnError(0, 0, 'Unable to read point-probe normalization file')
-      read(unit, *, iostat=ioStatus) t0, value
-      read(unit, *, iostat=ioStatus) t1, value
+      read(unit, *, iostat=ioStatus) t0, scalarValue
+      read(unit, *, iostat=ioStatus) t1, scalarValue
       if (ioStatus /= 0) call StopOnError(0, 0, 'Normalization file needs at least two samples')
       dt = abs(t1 - t0)
       if (dt <= tiny(1.0_RKIND_TIEMPO)) call StopOnError(0, 0, 'Normalization file has a zero sampling interval')
       rewind(unit)
       call alloc_and_init(this%normalizationForFreq, this%nFreq, (0.0_CKIND, 0.0_CKIND))
       do
-         read(unit, *, iostat=ioStatus) t, value
+         read(unit, *, iostat=ioStatus) t, scalarValue
          if (ioStatus < 0) exit
          if (ioStatus /= 0) call StopOnError(0, 0, 'Invalid normalization sample')
          do i = 1, this%nFreq
-            this%normalizationForFreq(i) = this%normalizationForFreq(i) + dt*value*exp(MCPI2*this%frequencySlice(i)*t)
+            this%normalizationForFreq(i) = this%normalizationForFreq(i) + dt*scalarValue*exp(MCPI2*this%frequencySlice(i)*t)
          end do
       end do
       close(unit)

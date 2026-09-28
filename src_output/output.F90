@@ -805,7 +805,7 @@ contains
       integer :: i, ios
 
       do i = 1, size(artifacts)
-         if (artifacts(i)%kind == OUTPUT_ARTIFACT_UNDEFINED .or. &
+         if (artifacts(i)%kindTag == OUTPUT_ARTIFACT_UNDEFINED .or. &
              len_trim(artifacts(i)%relative_path) == 0) cycle
          call delete_file(artifacts(i)%relative_path, ios)
       end do
@@ -853,15 +853,15 @@ contains
       end if
    end function frequency_count
 
-   function frequency_stop(observation, countValue) result(stop)
+   function frequency_stop(observation, countValue) result(stopRequested)
       type(Obses_t), intent(in) :: observation
       integer(kind=SINGLE), intent(in) :: countValue
-      real(kind=RKIND) :: stop
+      real(kind=RKIND) :: stopRequested
 
       if (countValue == 1_SINGLE) then
-         stop = observation%InitialFreq
+         stopRequested = observation%InitialFreq
       else
-         stop = observation%InitialFreq + real(countValue - 1_SINGLE, RKIND)*observation%FreqStep
+         stopRequested = observation%InitialFreq + real(countValue - 1_SINGLE, RKIND)*observation%FreqStep
       end if
    end function frequency_stop
 

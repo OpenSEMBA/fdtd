@@ -22,7 +22,7 @@ integer function  test_conformal_pec_corner() bind(C) result(err)
     if (semba%media%sggmiHz(2,2,3) /= 6) err = err + 1
 
     if (semba%l%fatalerror .eqv. .true.) err = err + 1
-    call semba%end()
+    call semba%endNode()
 #endif
 end function
 
@@ -129,7 +129,7 @@ integer function  test_conformal_pec_media() bind(C) result(err)
     if (semba%media%sggmiHz(16,16,16) /= 6) err = err + 1
 
     if (semba%l%fatalerror .eqv. .true.) err = err + 1
-    call semba%end()
+    call semba%endNode()
 #endif
 end function
 

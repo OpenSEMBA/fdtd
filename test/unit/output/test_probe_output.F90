@@ -111,7 +111,7 @@ integer function test_init_point_probe_with_incident() bind(c) result(err)
    err = err + assert_true(probe%hasIncident .and. allocated(probe%incidentForTime), &
                            'Incident point probe did not allocate incident samples')
    err = err + assert_true(size(probe%artifacts) == 1 .and. &
-                           probe%artifacts(1)%kind /= OUTPUT_ARTIFACT_UNDEFINED, &
+                           probe%artifacts(1)%kindTag /= OUTPUT_ARTIFACT_UNDEFINED, &
                            'Incident point probe declared a non-text sidecar')
    open (newunit=unit, file=probe%filePathTime, status='old', action='read', iostat=ios)
    read (unit, '(A)', iostat=ios) header
@@ -187,7 +187,7 @@ integer function test_line_probe_integral() bind(c) result(err)
    type(field_data_t) :: electric_field
    real(kind=RKIND), target :: ex(3, 3, 3), ey(3, 3, 3), ez(3, 3, 3)
    real(kind=RKIND), target :: dx(3), dy(3), dz(3)
-   real(kind=RKIND) :: value
+   real(kind=RKIND) :: scalarValue
 
    err = 0
    ex = 0.0_RKIND
@@ -217,11 +217,11 @@ integer function test_line_probe_integral() bind(c) result(err)
    electric_field%deltaY => dy
    electric_field%deltaZ => dz
 
-   value = calculate_line_integral(segments, electric_field)
-   err = err + assert_real_equal(value, 1.0_RKIND - 6.0_RKIND + 6.0_RKIND, 1.0e-6_RKIND, &
+   scalarValue = calculate_line_integral(segments, electric_field)
+   err = err + assert_real_equal(scalarValue, 1.0_RKIND - 6.0_RKIND + 6.0_RKIND, 1.0e-6_RKIND, &
                                  'Mixed-direction line integral is incorrect')
-   value = calculate_line_integral(reversed_segments, electric_field)
-   err = err + assert_real_equal(value, -1.0_RKIND, 1.0e-6_RKIND, &
+   scalarValue = calculate_line_integral(reversed_segments, electric_field)
+   err = err + assert_real_equal(scalarValue, -1.0_RKIND, 1.0e-6_RKIND, &
                                  'Reversed line orientation did not reverse the integral sign')
 end function test_line_probe_integral
 
@@ -364,12 +364,12 @@ integer function test_output_artifact_contract() bind(c) result(err)
    type(output_lifecycle_t) :: lifecycle
 
    err = 0
-   artifact%kind = OUTPUT_ARTIFACT_BINARY
+   artifact%kindTag = OUTPUT_ARTIFACT_BINARY
    artifact%byte_order = BINARY_ENDIAN_LITTLE
    artifact%complex_representation = BINARY_COMPLEX_REAL_IMAG
    lifecycle%state = OUTPUT_LIFECYCLE_DECLARED
 
-   err = err + assert_integer_equal(artifact%kind, OUTPUT_ARTIFACT_BINARY, 'Binary artifact kind')
+   err = err + assert_integer_equal(artifact%kindTag, OUTPUT_ARTIFACT_BINARY, 'Binary artifact kind')
    err = err + assert_integer_equal(artifact%byte_order, BINARY_ENDIAN_LITTLE, 'Binary byte order')
    err = err + assert_integer_equal(artifact%complex_representation, BINARY_COMPLEX_REAL_IMAG, &
                                     'Complex representation')
@@ -397,7 +397,7 @@ integer function test_portable_binary_output() bind(c) result(err)
    err = 0
    folder = join_path(get_temp_folder(), 'testing binary')
    path = join_path(folder, 'payload.bin')
-   artifact%kind = OUTPUT_ARTIFACT_BINARY
+   artifact%kindTag = OUTPUT_ARTIFACT_BINARY
    artifact%byte_order = BINARY_ENDIAN_LITTLE
    artifact%numeric_representation = BINARY_NUMERIC_REAL64
    artifact%complex_representation = BINARY_COMPLEX_UNSPECIFIED
@@ -442,9 +442,9 @@ integer function test_declared_output_artifacts() bind(c) result(err)
 
    err = err + assert_true(allocated(metadata%artifacts), 'Artifacts were not declared')
    err = err + assert_integer_equal(size(metadata%artifacts), 2, 'Unexpected artifact count')
-   err = err + assert_integer_equal(metadata%artifacts(1)%kind, OUTPUT_ARTIFACT_TEXT, 'Text kind was not retained')
+   err = err + assert_integer_equal(metadata%artifacts(1)%kindTag, OUTPUT_ARTIFACT_TEXT, 'Text kind was not retained')
    err = err + assert_string_equal(metadata%artifacts(1)%relative_path, 'probe_tm.dat', 'Text path was not retained')
-   err = err + assert_integer_equal(metadata%artifacts(2)%kind, OUTPUT_ARTIFACT_GEOMETRY, 'Geometry kind was not retained')
+   err = err + assert_integer_equal(metadata%artifacts(2)%kindTag, OUTPUT_ARTIFACT_GEOMETRY, 'Geometry kind was not retained')
    err = err + assert_string_equal(metadata%artifacts(2)%relative_path, 'geometry.vtu', 'Geometry path was not retained')
 end function
 
@@ -462,7 +462,7 @@ integer function test_output_lifecycle_contract() bind(c) result(err)
    metadata%probe_id = 'lifecycle-001'
    metadata%quantity = 'Ex'
    allocate (output_artifact_t :: metadata%artifacts(1))
-   metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
+   metadata%artifacts(1)%kindTag = OUTPUT_ARTIFACT_BINARY
    metadata%artifacts(1)%relative_path = 'lifecycle.bin'
 
    metadata%lifecycle%state = OUTPUT_LIFECYCLE_DECLARED
@@ -496,10 +496,10 @@ integer function test_output_serial_distributed_equivalence() bind(c) result(err
    integer :: coverage(0:5), rank, z, status
 
    err = 0
-   serial_artifact%kind = OUTPUT_ARTIFACT_BINARY
+   serial_artifact%kindTag = OUTPUT_ARTIFACT_BINARY
    serial_artifact%relative_path = 'probe.bin'
    distributed_artifact = serial_artifact
-   err = err + assert_integer_equal(distributed_artifact%kind, serial_artifact%kind, 'Artifact kind differs')
+   err = err + assert_integer_equal(distributed_artifact%kindTag, serial_artifact%kindTag, 'Artifact kind differs')
    err = err + assert_string_equal(distributed_artifact%relative_path, serial_artifact%relative_path, &
                                    'Artifact path differs')
 
@@ -1026,7 +1026,7 @@ integer function test_flush_wire_probe_dat() bind(c) result(err)
    err = 0
    folder = join_path(get_temp_folder(), 'testing wire')
    current_probe%filePathTime = join_path(folder, 'current_tm.dat')
-   current_probe%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
+   current_probe%artifacts(1)%kindTag = OUTPUT_ARTIFACT_TEXT
    current_probe%artifacts(1)%relative_path = current_probe%filePathTime
    allocate (current_probe%timeStep(1))
    current_probe%nTime = 1
@@ -1040,7 +1040,7 @@ integer function test_flush_wire_probe_dat() bind(c) result(err)
                            'Wire-current probe created a binary sidecar')
 
    charge_probe%filePathTime = join_path(folder, 'charge_tm.dat')
-   charge_probe%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
+   charge_probe%artifacts(1)%kindTag = OUTPUT_ARTIFACT_TEXT
    charge_probe%artifacts(1)%relative_path = charge_probe%filePathTime
    allocate (charge_probe%timeStep(1), charge_probe%chargeValue(1))
    charge_probe%nTime = 1
@@ -1074,7 +1074,7 @@ integer function test_flush_bulk_probe_dat() bind(c) result(err)
    err = 0
    folder = join_path(get_temp_folder(), 'testing bulk')
    probe%filePathTime = join_path(folder, 'probe_tm.dat')
-   probe%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
+   probe%artifacts(1)%kindTag = OUTPUT_ARTIFACT_TEXT
    probe%artifacts(1)%relative_path = probe%filePathTime
    allocate (probe%timeStep(1), probe%valueForTime(1))
    probe%nTime = 1

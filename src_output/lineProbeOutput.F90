@@ -16,26 +16,26 @@ module lineProbeOutput_m
 
 contains
 
-   function calculate_line_integral(segments, electric_field) result(value)
+   function calculate_line_integral(segments, electric_field) result(scalarValue)
       type(direction_t), intent(in) :: segments(:)
       type(field_data_t), intent(in) :: electric_field
-      real(kind=RKIND) :: value
+      real(kind=RKIND) :: scalarValue
       integer :: segment_index, orientation
 
-      value = 0.0_RKIND
+      scalarValue = 0.0_RKIND
       do segment_index = 1, size(segments)
          orientation = segments(segment_index)%orientation
          select case (abs(orientation))
          case (iEx)
-            value = value + electric_field%x(segments(segment_index)%x, segments(segment_index)%y, &
+            scalarValue = scalarValue + electric_field%x(segments(segment_index)%x, segments(segment_index)%y, &
                                              segments(segment_index)%z)*sign(1, orientation)* &
                     electric_field%deltaX(segments(segment_index)%x)
          case (iEy)
-            value = value + electric_field%y(segments(segment_index)%x, segments(segment_index)%y, &
+            scalarValue = scalarValue + electric_field%y(segments(segment_index)%x, segments(segment_index)%y, &
                                              segments(segment_index)%z)*sign(1, orientation)* &
                     electric_field%deltaY(segments(segment_index)%y)
          case (IEZ)
-            value = value + electric_field%z(segments(segment_index)%x, segments(segment_index)%y, &
+            scalarValue = scalarValue + electric_field%z(segments(segment_index)%x, segments(segment_index)%y, &
                                              segments(segment_index)%z)*sign(1, orientation)* &
                     electric_field%deltaZ(segments(segment_index)%z)
          end select

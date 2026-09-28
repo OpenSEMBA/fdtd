@@ -240,12 +240,12 @@ contains
        character(len=*), intent(in) :: path
        integer, intent(out) :: error
 
-       character(len=8) :: value
+       character(len=8) :: scalarValue
        integer :: status
 
-       call get_environment_variable('SEMBA_FDTD_KEEP_ARTIFACTS', value, status=status)
-       if (status == 0 .and. any([trim(value) == '1', trim(value) == 'true', trim(value) == 'TRUE', &
-                                  trim(value) == 'on', trim(value) == 'ON'])) then
+       call get_environment_variable('SEMBA_FDTD_KEEP_ARTIFACTS', scalarValue, status=status)
+       if (status == 0 .and. any([trim(scalarValue) == '1', trim(scalarValue) == 'true', trim(scalarValue) == 'TRUE', &
+                                  trim(scalarValue) == 'on', trim(scalarValue) == 'ON'])) then
           error = 0
           write(*, '(A)') 'Retained test artifacts: '//trim(path)
           return
@@ -257,19 +257,19 @@ contains
     function get_temp_folder() result(path)
        character(len=:), allocatable :: path
 
-       character(len=4096) :: value
+       character(len=4096) :: scalarValue
        integer :: length, status
 
-       call get_environment_variable('TMPDIR', value, length, status)
+       call get_environment_variable('TMPDIR', scalarValue, length, status)
        if (status /= 0 .or. length == 0) then
-          call get_environment_variable('TEMP', value, length, status)
+          call get_environment_variable('TEMP', scalarValue, length, status)
        end if
        if (status /= 0 .or. length == 0) then
-          call get_environment_variable('TMP', value, length, status)
+          call get_environment_variable('TMP', scalarValue, length, status)
        end if
 
        if (status == 0 .and. length > 0) then
-          path = value(:length)
+          path = scalarValue(:length)
        else
           path = '/tmp'
        end if

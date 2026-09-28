@@ -157,7 +157,7 @@ contains
          integer, intent(in) :: dir
          integer :: a, b
          a = interval%ini%cell(dir)
-         b = interval%end%cell(dir)
+         b = interval%endNode%cell(dir)
          if (a < b) then
             xi = a
             xe = b - 1

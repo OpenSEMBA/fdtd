@@ -51,7 +51,7 @@ integer function test_vtkAPI_point_scalar() bind(C) result(error_cnt)
    call grid_base%add_scalar('Density', scalars)
 
    if (.not. allocated(grid%scalars)) error_cnt = error_cnt + 1
-   if (grid%scalars(1)%data(1) /= 1.0) error_cnt = error_cnt + 1
+   if (grid%scalars(1)%dataValues(1) /= 1.0) error_cnt = error_cnt + 1
 end function
 
 !==============================
@@ -79,7 +79,7 @@ integer function test_vtkAPI_point_vector() bind(C) result(error_cnt)
    call grid_base%add_vector('Momentum', vec)
 
    if (.not. allocated(grid%vectors)) error_cnt = error_cnt + 1
-   if (grid%vectors(1)%data(2) /= 10.0) error_cnt = error_cnt + 1
+   if (grid%vectors(1)%dataValues(2) /= 10.0) error_cnt = error_cnt + 1
 end function
 
 !==============================
@@ -105,7 +105,7 @@ integer function test_vtkAPI_cell_scalar() bind(C) result(error_cnt)
    call grid_base%add_cell_scalar('Pressure', cell_data)
 
    if (.not. allocated(grid%cell_scalars)) error_cnt = error_cnt + 1
-   if (grid%cell_scalars(1)%data(1) /= 1.0) error_cnt = error_cnt + 1
+   if (grid%cell_scalars(1)%dataValues(1) /= 1.0) error_cnt = error_cnt + 1
 end function
 
 !==============================
@@ -133,7 +133,7 @@ integer function test_vtkAPI_cell_vector() bind(C) result(error_cnt)
    call grid_base%add_cell_vector('Flux', vec)
 
    if (.not. allocated(grid%cell_vectors)) error_cnt = error_cnt + 1
-   if (grid%cell_vectors(1)%data(3) /= 100.0) error_cnt = error_cnt + 1
+   if (grid%cell_vectors(1)%dataValues(3) /= 100.0) error_cnt = error_cnt + 1
 end function
 
 !==============================
@@ -251,12 +251,12 @@ integer function test_vtkAPI_vtu_cell_data() bind(C) result(error_cnt)
    ! Cell scalar
    allocate(cell_scalars(1)); cell_scalars(1) = 5.0
    call grid_base%add_cell_scalar('Pressure', cell_scalars)
-   if (ugrid%cell_scalars(1)%data(1) /= 5.0) error_cnt = error_cnt + 1
+   if (ugrid%cell_scalars(1)%dataValues(1) /= 5.0) error_cnt = error_cnt + 1
 
    ! Cell vector
    allocate(cell_vectors(3*1)); cell_vectors = (/1.0,2.0,3.0/)
    call grid_base%add_cell_vector('Flux', cell_vectors)
-   if (ugrid%cell_vectors(1)%data(3) /= 3.0) error_cnt = error_cnt + 1
+   if (ugrid%cell_vectors(1)%dataValues(3) /= 3.0) error_cnt = error_cnt + 1
 end function
 
 !==============================

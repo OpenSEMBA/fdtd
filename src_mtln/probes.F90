@@ -17,7 +17,7 @@ module probes_m
     integer, parameter, public :: MTLN_PROBE_OUTPUT_FAILED = 3
 
     type, public :: probe_t
-        integer :: type
+        integer :: typeName
         real(kind=RKIND), allocatable, dimension(:) :: t
         real(kind=RKIND), allocatable, dimension(:,:) :: val
         real(kind=RKIND_TIEMPO) :: dt
@@ -58,7 +58,7 @@ contains
         integer :: layer_index, ierr, sizeof
 #endif
 
-        res%type = probe_type
+        res%typeName = probe_type
         res%elementIndex = elementIndex
         res%dt = dt
         res%current_frame = 1
@@ -121,9 +121,9 @@ contains
         real(kind=RKIND), dimension(:,:), intent(in) :: v
         real(kind=RKIND), dimension(:,:), intent(in) :: i
         
-        if (this%type == PROBE_TYPE_VOLTAGE) then
+        if (this%typeName == PROBE_TYPE_VOLTAGE) then
             call this%saveFrame(t, v(:,this%elementIndex))
-        else if (this%type == PROBE_TYPE_CURRENT) then
+        else if (this%typeName == PROBE_TYPE_CURRENT) then
             if (this%elementIndex == size(i,2) + 1) then
                 call this%saveFrame(t + 0.5*this%dt, i(:,this%elementIndex - 1))
             else 

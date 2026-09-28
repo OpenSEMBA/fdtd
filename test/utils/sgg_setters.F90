@@ -362,28 +362,28 @@ contains
       sgg%SINPMLSweep = newValue
    end subroutine
 
-   subroutine sgg_set_thereAreMagneticMedia(sgg, value)
+   subroutine sgg_set_thereAreMagneticMedia(sgg, scalarValue)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      logical, intent(in) :: value
-      sgg%thereAreMagneticMedia = value
+      logical, intent(in) :: scalarValue
+      sgg%thereAreMagneticMedia = scalarValue
    end subroutine
 
-   subroutine sgg_set_thereArePMLMagneticMedia(sgg, value)
+   subroutine sgg_set_thereArePMLMagneticMedia(sgg, scalarValue)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      logical, intent(in) :: value
-      sgg%thereArePMLMagneticMedia = value
+      logical, intent(in) :: scalarValue
+      sgg%thereArePMLMagneticMedia = scalarValue
    end subroutine
 
-   subroutine sgg_set_nEntradaRoot(sgg, value)
+   subroutine sgg_set_nEntradaRoot(sgg, scalarValue)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      character(len=*), intent(in) :: value
-      sgg%nEntradaRoot = value
+      character(len=*), intent(in) :: scalarValue
+      sgg%nEntradaRoot = scalarValue
    end subroutine
 
-   subroutine sgg_set_Punto(sgg, value)
+   subroutine sgg_set_Punto(sgg, scalarValue)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      type(coorsxyzP_t), intent(in) :: value
-      sgg%Punto = value
+      type(coorsxyzP_t), intent(in) :: scalarValue
+      sgg%Punto = scalarValue
    end subroutine
 
    subroutine sgg_add_observation(sgg, new_observation)

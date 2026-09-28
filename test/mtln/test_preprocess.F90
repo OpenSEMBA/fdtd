@@ -8,11 +8,11 @@ integer function test_preprocess_conductors_before_cable() bind(C) result(error_
     type(transmission_line_bundle_t) :: line_bundle
     error_cnt = 0
   
-    line1   = buildLineWithNConductors(1, "line1", type = "unshielded")
-    line2   = buildLineWithNConductors(2, "line2",   parent_name = "line1",   conductor_in_parent = 1, type = "shielded")
-    line3_1 = buildLineWithNConductors(2, "line3_1", parent_name = "line2",   conductor_in_parent = 1, type = "shielded")
-    line3_2 = buildLineWithNConductors(2, "line3_2", parent_name = "line2",   conductor_in_parent = 2, type = "shielded")
-    line4   = buildLineWithNConductors(2, "line4",   parent_name = "line3_2", conductor_in_parent = 2, type = "shielded")
+    line1   = buildLineWithNConductors(1, "line1", typeName = "unshielded")
+    line2   = buildLineWithNConductors(2, "line2",   parent_name = "line1",   conductor_in_parent = 1, typeName = "shielded")
+    line3_1 = buildLineWithNConductors(2, "line3_1", parent_name = "line2",   conductor_in_parent = 1, typeName = "shielded")
+    line3_2 = buildLineWithNConductors(2, "line3_2", parent_name = "line2",   conductor_in_parent = 2, typeName = "shielded")
+    line4   = buildLineWithNConductors(2, "line4",   parent_name = "line3_2", conductor_in_parent = 2, typeName = "shielded")
 
     allocate(line_bundle%levels(4))
     line_bundle%levels(1)%lines = [line1]
@@ -46,11 +46,11 @@ integer function test_preprocess_conductors_in_level() bind(C) result(error_cnt)
 
     error_cnt = 0
     
-    line1   = buildLineWithNConductors(1, name= "line1", type = "unshielded")
-    line2   = buildLineWithNConductors(2, name= "line2"  , parent_name = "line1",   conductor_in_parent = 1, type = "shielded")
-    line3_1 = buildLineWithNConductors(2, name= "line3_1", parent_name = "line2",   conductor_in_parent = 1, type = "shielded")
-    line3_2 = buildLineWithNConductors(2, name= "line3_2", parent_name = "line2",   conductor_in_parent = 2, type = "shielded")
-    line4   = buildLineWithNConductors(2, name= "line4"  , parent_name = "line3_2", conductor_in_parent = 2, type = "shielded")
+    line1   = buildLineWithNConductors(1, name= "line1", typeName = "unshielded")
+    line2   = buildLineWithNConductors(2, name= "line2"  , parent_name = "line1",   conductor_in_parent = 1, typeName = "shielded")
+    line3_1 = buildLineWithNConductors(2, name= "line3_1", parent_name = "line2",   conductor_in_parent = 1, typeName = "shielded")
+    line3_2 = buildLineWithNConductors(2, name= "line3_2", parent_name = "line2",   conductor_in_parent = 2, typeName = "shielded")
+    line4   = buildLineWithNConductors(2, name= "line4"  , parent_name = "line3_2", conductor_in_parent = 2, typeName = "shielded")
 
     allocate(line_bundle%levels(4))
     line_bundle%levels(1)%lines = [line1]
@@ -72,7 +72,7 @@ integer function test_preprocess_zt_conductor_ranges() bind(C) result(error_cnt)
     use mtln_preprocess_m, only: conductorsInLevel, findOuterConductorNumber, findInnerConductorRange
     use mtln_testingTools_mod
 
-    type :: range
+    type :: range_t
         integer, dimension(:), allocatable :: idx
     end type
 
@@ -87,7 +87,7 @@ integer function test_preprocess_zt_conductor_ranges() bind(C) result(error_cnt)
     integer, dimension(:), allocatable :: range_in
 
     integer, dimension(4) :: expected_out
-    type(range), dimension(4) :: expected_in
+    type(range_t), dimension(4) :: expected_in
 
     expected_out = [1,2,3,7]
     expected_in(1)%idx = [2,3]
@@ -96,11 +96,11 @@ integer function test_preprocess_zt_conductor_ranges() bind(C) result(error_cnt)
     expected_in(4)%idx = [8,9]
 
     error_cnt = 0
-    line1 =   buildLineWithNConductors(1, "line1", type = "unshielded")
-    line2 =   buildLineWithNConductors(2, "line2",  parent_name= "line1", conductor_in_parent= 1, type = "shielded")
-    line3_1 = buildLineWithNConductors(2, "line3_1",parent_name= "line2", conductor_in_parent= 1, type = "shielded")
-    line3_2 = buildLineWithNConductors(2, "line3_2",parent_name= "line2", conductor_in_parent= 2, type = "shielded")
-    line4 =   buildLineWithNConductors(2, "line4",  parent_name= "line3_2", conductor_in_parent= 2, type = "shielded")
+    line1 =   buildLineWithNConductors(1, "line1", typeName = "unshielded")
+    line2 =   buildLineWithNConductors(2, "line2",  parent_name= "line1", conductor_in_parent= 1, typeName = "shielded")
+    line3_1 = buildLineWithNConductors(2, "line3_1",parent_name= "line2", conductor_in_parent= 1, typeName = "shielded")
+    line3_2 = buildLineWithNConductors(2, "line3_2",parent_name= "line2", conductor_in_parent= 2, typeName = "shielded")
+    line4 =   buildLineWithNConductors(2, "line4",  parent_name= "line3_2", conductor_in_parent= 2, typeName = "shielded")
 
     allocate(line_bundle%levels(4))
     line_bundle%levels(1)%lines = [line1]
@@ -144,7 +144,7 @@ integer function test_preprocess_zt_conductor_ranges_2() bind(C) result(error_cn
     use mtln_preprocess_m, only: conductorsInLevel, findOuterConductorNumber, findInnerConductorRange
     use mtln_testingTools_mod
 
-    type :: range
+    type :: range_t
         integer, dimension(:), allocatable :: idx
     end type
 
@@ -159,7 +159,7 @@ integer function test_preprocess_zt_conductor_ranges_2() bind(C) result(error_cn
     integer, dimension(:), allocatable :: range_in
 
     integer, dimension(7) :: expected_out
-    type(range), dimension(7) :: expected_in
+    type(range_t), dimension(7) :: expected_in
 
     expected_out = [1,2,3,4,7,8,9]
     expected_in(1)%idx = [2,3,4]
@@ -171,14 +171,14 @@ integer function test_preprocess_zt_conductor_ranges_2() bind(C) result(error_cn
     expected_in(7)%idx = [13]
 
     error_cnt = 0
-    line1   = buildLineWithNConductors(1, name = "line1", type = "unshielded")
-    line2   = buildLineWithNConductors(3, name = "line2",   parent_name = "line1",   conductor_in_parent = 1, type = "shielded")
-    line3_1 = buildLineWithNConductors(1, name = "line3_1", parent_name = "line2", conductor_in_parent = 1, type = "shielded")
-    line3_2 = buildLineWithNConductors(2, name = "line3_2", parent_name = "line2", conductor_in_parent = 2, type = "shielded")
-    line3_3 = buildLineWithNConductors(2, name = "line3_3", parent_name = "line2", conductor_in_parent = 3, type = "shielded")
-    line4_1 = buildLineWithNConductors(2, name = "line4_1", parent_name = "line3_2", conductor_in_parent = 2, type = "shielded")
-    line4_2 = buildLineWithNConductors(1, name = "line4_2", parent_name = "line3_3", conductor_in_parent = 1, type = "shielded")
-    line4_3 = buildLineWithNConductors(1, name = "line4_3", parent_name = "line3_3", conductor_in_parent = 2, type = "shielded")
+    line1   = buildLineWithNConductors(1, name = "line1", typeName = "unshielded")
+    line2   = buildLineWithNConductors(3, name = "line2",   parent_name = "line1",   conductor_in_parent = 1, typeName = "shielded")
+    line3_1 = buildLineWithNConductors(1, name = "line3_1", parent_name = "line2", conductor_in_parent = 1, typeName = "shielded")
+    line3_2 = buildLineWithNConductors(2, name = "line3_2", parent_name = "line2", conductor_in_parent = 2, typeName = "shielded")
+    line3_3 = buildLineWithNConductors(2, name = "line3_3", parent_name = "line2", conductor_in_parent = 3, typeName = "shielded")
+    line4_1 = buildLineWithNConductors(2, name = "line4_1", parent_name = "line3_2", conductor_in_parent = 2, typeName = "shielded")
+    line4_2 = buildLineWithNConductors(1, name = "line4_2", parent_name = "line3_3", conductor_in_parent = 1, typeName = "shielded")
+    line4_3 = buildLineWithNConductors(1, name = "line4_3", parent_name = "line3_3", conductor_in_parent = 2, typeName = "shielded")
 
     allocate(line_bundle%levels(4))
     line_bundle%levels(1)%lines = [line1]

@@ -8,9 +8,9 @@ module vtkAPI_m
    !==========================
    type :: vtk_data_array_t
       character(len=:), allocatable :: name
-      character(len=:), allocatable :: type
+      character(len=:), allocatable :: typeName
       integer :: num_components
-      real, allocatable :: data(:)
+      real, allocatable :: dataValues(:)
    end type vtk_data_array_t
 
    !==========================
@@ -74,32 +74,32 @@ module vtkAPI_m
          real, intent(in) :: pts(:, :)
       end subroutine add_points_generic
 
-      subroutine add_scalar_generic(this, name, data)
+      subroutine add_scalar_generic(this, name, dataValues)
          import :: vtk_grid_t
          class(vtk_grid_t), intent(inout) :: this
          character(len=*), intent(in) :: name
-         real, intent(in) :: data(:)
+         real, intent(in) :: dataValues(:)
       end subroutine add_scalar_generic
 
-      subroutine add_vector_generic(this, name, data)
+      subroutine add_vector_generic(this, name, dataValues)
          import :: vtk_grid_t
          class(vtk_grid_t), intent(inout) :: this
          character(len=*), intent(in) :: name
-         real, intent(in) :: data(:)
+         real, intent(in) :: dataValues(:)
       end subroutine add_vector_generic
 
-      subroutine add_cell_scalar_generic(this, name, data)
+      subroutine add_cell_scalar_generic(this, name, dataValues)
          import :: vtk_grid_t
          class(vtk_grid_t), intent(inout) :: this
          character(len=*), intent(in) :: name
-         real, intent(in) :: data(:)
+         real, intent(in) :: dataValues(:)
       end subroutine add_cell_scalar_generic
 
-      subroutine add_cell_vector_generic(this, name, data)
+      subroutine add_cell_vector_generic(this, name, dataValues)
          import :: vtk_grid_t
          class(vtk_grid_t), intent(inout) :: this
          character(len=*), intent(in) :: name
-         real, intent(in) :: data(:)
+         real, intent(in) :: dataValues(:)
       end subroutine add_cell_vector_generic
 
       subroutine write_file_generic(this, filename)
@@ -126,32 +126,32 @@ contains
       this%points = pts
    end subroutine add_points_structured
 
-   subroutine add_scalar_structured(this, name, data)
+   subroutine add_scalar_structured(this, name, dataValues)
       class(vtk_structured_grid_t), intent(inout) :: this
       character(len=*), intent(in) :: name
-      real, intent(in) :: data(:)
-      call add_array_generic(this%scalars, name, data, 1)
+      real, intent(in) :: dataValues(:)
+      call add_array_generic(this%scalars, name, dataValues, 1)
    end subroutine add_scalar_structured
 
-   subroutine add_vector_structured(this, name, data)
+   subroutine add_vector_structured(this, name, dataValues)
       class(vtk_structured_grid_t), intent(inout) :: this
       character(len=*), intent(in) :: name
-      real, intent(in) :: data(:)
-      call add_array_generic(this%vectors, name, data, 3)
+      real, intent(in) :: dataValues(:)
+      call add_array_generic(this%vectors, name, dataValues, 3)
    end subroutine add_vector_structured
 
-   subroutine add_cell_scalar_structured(this, name, data)
+   subroutine add_cell_scalar_structured(this, name, dataValues)
       class(vtk_structured_grid_t), intent(inout) :: this
       character(len=*), intent(in) :: name
-      real, intent(in) :: data(:)
-      call add_array_generic(this%cell_scalars, name, data, 1)
+      real, intent(in) :: dataValues(:)
+      call add_array_generic(this%cell_scalars, name, dataValues, 1)
    end subroutine add_cell_scalar_structured
 
-   subroutine add_cell_vector_structured(this, name, data)
+   subroutine add_cell_vector_structured(this, name, dataValues)
       class(vtk_structured_grid_t), intent(inout) :: this
       character(len=*), intent(in) :: name
-      real, intent(in) :: data(:)
-      call add_array_generic(this%cell_vectors, name, data, 3)
+      real, intent(in) :: dataValues(:)
+      call add_array_generic(this%cell_vectors, name, dataValues, 3)
    end subroutine add_cell_vector_structured
 
    !==========================
@@ -187,32 +187,32 @@ contains
       this%points = pts
    end subroutine add_points_unstructured
 
-   subroutine add_scalar_unstructured(this, name, data)
+   subroutine add_scalar_unstructured(this, name, dataValues)
       character(len=*), intent(in) :: name
-      real, intent(in) :: data(:)
+      real, intent(in) :: dataValues(:)
       class(vtk_unstructured_grid_t), intent(inout) :: this
-      call add_array_generic(this%scalars, name, data, 1)
+      call add_array_generic(this%scalars, name, dataValues, 1)
    end subroutine add_scalar_unstructured
 
-   subroutine add_vector_unstructured(this, name, data)
+   subroutine add_vector_unstructured(this, name, dataValues)
       character(len=*), intent(in) :: name
-      real, intent(in) :: data(:)
+      real, intent(in) :: dataValues(:)
       class(vtk_unstructured_grid_t), intent(inout) :: this
-      call add_array_generic(this%vectors, name, data, 3)
+      call add_array_generic(this%vectors, name, dataValues, 3)
    end subroutine add_vector_unstructured
 
-   subroutine add_cell_scalar_unstructured(this, name, data)
+   subroutine add_cell_scalar_unstructured(this, name, dataValues)
       character(len=*), intent(in) :: name
-      real, intent(in) :: data(:)
+      real, intent(in) :: dataValues(:)
       class(vtk_unstructured_grid_t), intent(inout) :: this
-      call add_array_generic(this%cell_scalars, name, data, 1)
+      call add_array_generic(this%cell_scalars, name, dataValues, 1)
    end subroutine add_cell_scalar_unstructured
 
-   subroutine add_cell_vector_unstructured(this, name, data)
+   subroutine add_cell_vector_unstructured(this, name, dataValues)
       character(len=*), intent(in) :: name
-      real, intent(in) :: data(:)
+      real, intent(in) :: dataValues(:)
       class(vtk_unstructured_grid_t), intent(inout) :: this
-      call add_array_generic(this%cell_vectors, name, data, 3)
+      call add_array_generic(this%cell_vectors, name, dataValues, 3)
    end subroutine add_cell_vector_unstructured
 
    subroutine add_cell_connectivity(this, conn, offsets, types)
@@ -284,10 +284,10 @@ contains
 !==========================
 !==== Shared helper routines ====
 !==========================
-   subroutine add_array_generic(array_list, name, data, ncomp)
+   subroutine add_array_generic(array_list, name, dataValues, ncomp)
       type(vtk_data_array_t), allocatable, intent(inout) :: array_list(:)
       character(len=*), intent(in) :: name
-      real, intent(in) :: data(:)
+      real, intent(in) :: dataValues(:)
       integer, intent(in) :: ncomp
       type(vtk_data_array_t), allocatable :: tmp(:)
       integer :: n
@@ -301,9 +301,9 @@ contains
          call move_alloc(tmp, array_list)
       end if
       array_list(n)%name = name
-      array_list(n)%type = 'Float32'
+      array_list(n)%typeName = 'Float32'
       array_list(n)%num_components = ncomp
-      array_list(n)%data = data
+      array_list(n)%dataValues = dataValues
    end subroutine add_array_generic
 
    subroutine write_pointdata(iunit, scalars, vectors)
@@ -324,14 +324,14 @@ contains
       if (allocated(scalars)) then
          do i = 1, size(scalars)
             write (iunit, '(A)') '        <DataArray type="Float32" Name="'//trim(scalars(i)%name)//'" format="ascii">'
-            write (iunit, '(1000(F12.6,1X))') scalars(i)%data
+            write (iunit, '(1000(F12.6,1X))') scalars(i)%dataValues
             write (iunit, '(A)') '        </DataArray>'
          end do
       end if
       if (allocated(vectors)) then
          do i = 1, size(vectors)
   write (iunit, '(A)') '        <DataArray type="Float32" Name="'//trim(vectors(i)%name)//'" NumberOfComponents="3" format="ascii">'
-            write (iunit, '(1000(F12.6,1X))') vectors(i)%data
+            write (iunit, '(1000(F12.6,1X))') vectors(i)%dataValues
             write (iunit, '(A)') '        </DataArray>'
          end do
       end if
@@ -352,14 +352,14 @@ contains
       if (allocated(scalars)) then
          do i = 1, size(scalars)
             write (iunit, '(A)') '        <DataArray type="Float32" Name="'//trim(scalars(i)%name)//'" format="ascii">'
-            write (iunit, '(1000(F12.6,1X))') scalars(i)%data
+            write (iunit, '(1000(F12.6,1X))') scalars(i)%dataValues
             write (iunit, '(A)') '        </DataArray>'
          end do
       end if
       if (allocated(vectors)) then
          do i = 1, size(vectors)
   write (iunit, '(A)') '        <DataArray type="Float32" Name="'//trim(vectors(i)%name)//'" NumberOfComponents="3" format="ascii">'
-            write (iunit, '(1000(F12.6,1X))') vectors(i)%data
+            write (iunit, '(1000(F12.6,1X))') vectors(i)%dataValues
             write (iunit, '(A)') '        </DataArray>'
          end do
       end if
@@ -392,25 +392,25 @@ contains
       write (iunit, '(A)') '      </Cells>'
    end subroutine write_cells
 
-   pure function normalize_vtk_path(value) result(normalized)
-      character(len=*), intent(in) :: value
+   pure function normalize_vtk_path(scalarValue) result(normalized)
+      character(len=*), intent(in) :: scalarValue
       character(len=:), allocatable :: normalized
       integer :: i
 
-      normalized = value
+      normalized = scalarValue
       do i = 1, len(normalized)
          if (normalized(i:i) == '\') normalized(i:i) = '/'
       end do
    end function normalize_vtk_path
 
-   pure function xml_escape(value) result(escaped)
-      character(len=*), intent(in) :: value
+   pure function xml_escape(scalarValue) result(escaped)
+      character(len=*), intent(in) :: scalarValue
       character(len=:), allocatable :: escaped
       integer :: i
 
       escaped = ''
-      do i = 1, len(value)
-         select case (value(i:i))
+      do i = 1, len(scalarValue)
+         select case (scalarValue(i:i))
          case ('&')
             escaped = escaped//'&amp;'
          case ('<')
@@ -422,7 +422,7 @@ contains
          case ("'")
             escaped = escaped//'&apos;'
          case default
-            escaped = escaped//value(i:i)
+            escaped = escaped//scalarValue(i:i)
          end select
       end do
    end function xml_escape

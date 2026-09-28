@@ -167,19 +167,19 @@ contains
       this%metadata%ownership%scalar_writer_rank = this%publication%owner_rank
       if (allocated(this%metadata%artifacts)) deallocate (this%metadata%artifacts)
       allocate (this%metadata%artifacts(5))
-      this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
+      this%metadata%artifacts(1)%kindTag = OUTPUT_ARTIFACT_BINARY
       this%metadata%artifacts(1)%relative_path = trim(base_name)//BINARYEXTENSION
       this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
       this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL64
       this%metadata%artifacts(1)%record_bytes = 56
       this%metadata%artifacts(1)%component_order = 'time,x,y,z,Ex,Ey,Ez'
-      this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
+      this%metadata%artifacts(2)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_METADATA
       this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
-      this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(3)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
       this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
-      this%metadata%artifacts(4)%kind = OUTPUT_ARTIFACT_GEOMETRY
+      this%metadata%artifacts(4)%kindTag = OUTPUT_ARTIFACT_GEOMETRY
       this%metadata%artifacts(4)%relative_path = trim(base_name)//'_geometry.xdmf'
-      this%metadata%artifacts(5)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(5)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
       this%metadata%artifacts(5)%relative_path = trim(base_name)//'_geometry.h5'
 
       call validate_binary_layout(this%metadata%artifacts(1), error)
