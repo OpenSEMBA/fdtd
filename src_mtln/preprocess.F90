@@ -6,6 +6,7 @@ module mtln_preprocess_m
     use network_manager_m
     use mtl_m
     use Report_m, only: WarnErrReport
+    use directoryUtils_m, only: file_has_samples
     use fhash, only: fhash_tbl_t, key=>fhash_key, fhash_key_t
     use json_string_utilities, only: lowercase_string
     implicit none
@@ -49,6 +50,7 @@ module mtln_preprocess_m
         type(cable_level_t), dimension(:), allocatable :: levels
     end type
 
+    private :: checkSourceExcitationFile
 
 contains
 
@@ -972,12 +974,22 @@ contains
         character(len=256), allocatable, intent(inout) :: arr(:)
         character(*), intent(in) :: start_name, end_name
         type(termination_t) :: termination
+        call checkSourceExcitationFile(termination%source%path_to_excitation)
         if (isVSource(termination)) then 
             call addVSourceWithSeriesR(arr, start_name, end_name, termination%source)
         else if (isISource(termination)) then 
             call addISourceWithParallelR(arr,start_name, end_name, termination%source)
         end if
     end subroutine
+
+    subroutine checkSourceExcitationFile(path)
+        character(len=*), intent(in) :: path
+        character(len=:), allocatable :: message
+        if (file_has_samples(trim(adjustl(path)), 2)) return
+        message = 'Excitation file '//trim(adjustl(path))//' is empty or contains fewer than two samples'
+        call WarnErrReport(message, .true.)
+        error stop 'Empty or invalid excitation file'
+    end subroutine checkSourceExcitationFile
 
     subroutine addVSourceWithSeriesR(arr, start_name, end_name, source)
         character(len=256), allocatable, intent(inout) :: arr(:)
@@ -1521,6 +1533,7 @@ contains
         integer(kind=4) :: i, d, stat, n
 
         do i = 1, size(parsed_generators)
+            call checkSourceExcitationFile(parsed_generators(i)%path_to_excitation)
             call this%cable_name_to_bundle_id%get(key = key(parsed_generators(i)%attached_to_cable%name), &
                                                value = d, &
                                                stat=stat)
