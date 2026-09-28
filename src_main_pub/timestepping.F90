@@ -28,7 +28,7 @@ module Solver_m
    use nodalsources_m
    use Lumped_m
    use PMLbodies_m
-   use interpret_switches_m, only: entrada_t
+   use interpret_switches_m, only: input_t
 #ifdef CompileWithMPI
    use MPIcomm_m
 #ifdef CompileWithOpenMP
@@ -175,7 +175,7 @@ module Solver_m
       logical, intent(in) :: finishedwithsuccess
       real(kind=RKIND), intent(in) :: eps0,mu0
       type(tagtype_t), intent(in) :: tagtype
-      type(entrada_t), intent(in) :: input
+      type(input_t), intent(in) :: input
       real(kind=RKIND), intent(in) :: maxSourceValue
       real(kind=8), intent(in) :: time_desdelanzamiento
       type(solver_t) :: res
@@ -194,7 +194,7 @@ module Solver_m
 
    subroutine solver_init_control(this, input, maxSourceValue, time_desdelanzamiento)
       class(solver_t) :: this
-      type(entrada_t), intent(in) :: input
+      type(input_t), intent(in) :: input
       real(kind=RKIND), intent(in) :: maxSourceValue
       real(kind=8), intent(in) :: time_desdelanzamiento
 
@@ -1260,7 +1260,7 @@ contains
 #ifdef CompileWithMPI
          !!!sincroniza el dtcritico
          newdtcritico = 0.0_RKIND_TIME
-         call MPI_AllReduce(dtcritico, newdtcritico, 1_4, REALSIZE_TIEMPO, MPI_MIN, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce(dtcritico, newdtcritico, 1_4, REALSIZE_TIME, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
 #endif
          if (this%sgg%dt <= dtcritico) then
@@ -1607,7 +1607,7 @@ contains
 
       subroutine printSimulationStart()
          character(len=bufsize) :: dubuf
-         type(tiempo_t) :: time_out2
+         type(time_t) :: time_out2
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
 #endif

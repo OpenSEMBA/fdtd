@@ -6,7 +6,7 @@ module sggMethods_m
 
    public :: sgg_init
 
-   public :: sgg_set_tiempo
+   public :: sggSetTime
    public :: sgg_set_dt
    public :: sgg_set_extraswitches
 
@@ -53,8 +53,8 @@ module sggMethods_m
    public :: sgg_set_thereAreMagneticMedia
    public :: sgg_set_thereArePMLMagneticMedia
 
-   public :: sgg_set_nEntradaRoot
-   public :: sgg_set_Punto
+   public :: sggSetNInputRoot
+   public :: sggSetPoint
 
    public :: sgg_add_observation
 contains
@@ -152,7 +152,7 @@ contains
 
    end subroutine sgg_init
 
-   subroutine sgg_set_tiempo(sgg, time)
+   subroutine sggSetTime(sgg, time)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
       real(kind=RKIND_TIME), pointer :: time(:)
       sgg%time => time
@@ -374,13 +374,13 @@ contains
       sgg%thereArePMLMagneticMedia = scalarValue
    end subroutine
 
-   subroutine sgg_set_nEntradaRoot(sgg, scalarValue)
+   subroutine sggSetNInputRoot(sgg, scalarValue)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
       character(len=*), intent(in) :: scalarValue
       sgg%nInputRoot = scalarValue
    end subroutine
 
-   subroutine sgg_set_Punto(sgg, scalarValue)
+   subroutine sggSetPoint(sgg, scalarValue)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(coorsxyzP_t), intent(in) :: scalarValue
       sgg%gridPoint = scalarValue

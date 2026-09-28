@@ -78,7 +78,7 @@ contains
       
       do j=1,NumNodalSources
          if (sggNodalSource(j)%IsElec) then
-            do i=1,sggNodalSource(j)%numpuntos
+            do i=1,sggNodalSource(j)%numPoints
                if (sggNodalSource(j)%gridPoint(i)%xc /= 0.0_RKIND) then
                   if (sggNodalSource(j)%IsHard) then
                      numNodalHard_Ex = numNodalHard_Ex  +1
@@ -102,7 +102,7 @@ contains
                end if
             end do
          else
-            do i=1,sggNodalSource(j)%numpuntos
+            do i=1,sggNodalSource(j)%numPoints
                if (sggNodalSource(j)%gridPoint(i)%xc /= 0.0_RKIND) then
                   if (sggNodalSource(j)%IsHard) then
                      numNodalHard_Hx = numNodalHard_Hx  +1
@@ -172,7 +172,7 @@ contains
 
       do j=1,NumNodalSources
          if (sggNodalSource(j)%IsElec) then
-            do i=1,sggNodalSource(j)%numpuntos
+            do i=1,sggNodalSource(j)%numPoints
                amplit = sggNodalSource(J)%gridPoint(i)%xc
                if (amplit /= 0.0_RKIND) then
                   call CreateNodal(layoutnumber,Nodal_Ex,sggNodalSource(J),sggSweep(iEx),i,amplit)
@@ -187,7 +187,7 @@ contains
                end if
             end do
          else !es magnetico
-            do i=1,sggNodalSource(j)%numpuntos
+            do i=1,sggNodalSource(j)%numPoints
                amplit = sggNodalSource(J)%gridPoint(i)%xc
                if (amplit /= 0.0_RKIND) then
                   call CreateNodal(layoutnumber,Nodal_Hx,sggNodalSource(J),sggSweep(IHX),i,amplit)

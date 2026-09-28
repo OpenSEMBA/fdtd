@@ -1397,7 +1397,7 @@ end subroutine test_stab
 subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth) 
  type(SGGFDTDINFO_t), intent(in) :: sgg
  real(kind=rkind) :: SGBCFreq,SGBCresol,sigma, epr,epsilonValue,skin_depth,width,widthtotal
- integer(kind=4) :: jmed,i,SGBCdepth,numcapas,precuenta,celdafinal,celdainicial,anchocapa
+ integer(kind=4) :: jmed,i,SGBCdepth,numcapas,precuenta,celdafinal,celdainicial,layerWidth
  integer(kind=4) , pointer, dimension(:) :: capa
  logical :: ultimacapamas1
  character(len=BUFSIZE) :: buff
@@ -1441,39 +1441,39 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
                 write(buff, *)   'SGBCDepth=0 and numcapas>1 not compatible. Please, relaunch'
                 call StopOnError (0,0,buff)
              else
-                 anchocapa=1 !numcapas es necesariamente 1 si continua
+                 layerWidth=1 !numcapas es necesariamente 1 si continua
              end if
          else if (SGBCdepth>0) then
-             anchocapa=SGBCdepth
+             layerWidth=SGBCdepth
          else !si es negativo se calcula con la resol
-             anchocapa=1+int(SGBCresol*width/skin_depth)
+             layerWidth=1+int(SGBCresol*width/skin_depth)
          end if
-         if (anchocapa<2) anchocapa=2 !es razonable no dejarlo nunca en 1
+         if (layerWidth<2) layerWidth=2 !es razonable no dejarlo nunca en 1
          !fin niapas
          if (precuenta==0) then 
              if (SGBCDepth==0) then 
                  compo%depth=0
              else
-                 compo%depth=compo%depth+anchocapa
+                 compo%depth=compo%depth+layerWidth
              end if
          else if (precuenta==1) then
              if (SGBCDepth==0) then      !!!bug corregido a 040523
                      celdainicial=0
                      celdafinal=0
-                     anchocapa=1
+                     layerWidth=1
                      compo%capa(celdainicial:celdafinal) = i
-                     compo%delta_entreEinterno(celdainicial:celdafinal)=width/anchocapa
+                     compo%delta_entreEinterno(celdainicial:celdafinal)=width/layerWidth
                      continue
              else  
              celdainicial=celdafinal+1
-             celdafinal=celdainicial+anchocapa-1
+             celdafinal=celdainicial+layerWidth-1
              if ((i==numcapas).and.ultimacapamas1) then
 !rellena el sobrante con la ultima capa si no es una division cabal
-                     anchocapa=anchocapa+1
+                     layerWidth=layerWidth+1
                      celdafinal=celdafinal+1
              end if
              compo%capa(celdainicial:celdafinal) = i
-             compo%delta_entreEinterno(celdainicial:celdafinal)=width/anchocapa
+             compo%delta_entreEinterno(celdainicial:celdafinal)=width/layerWidth
              continue
          end if
          end if

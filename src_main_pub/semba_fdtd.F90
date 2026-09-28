@@ -42,8 +42,8 @@ module SEMBA_FDTD_m
    ! should eps0 and mu0 be global variables?
 
    type, public :: semba_fdtd_t 
-      type(entrada_t) :: l
-      type(tiempo_t) :: time_comienzo
+      type(input_t) :: l
+      type(time_t) :: time_comienzo
       real(kind=8) time_desdelanzamiento
       type(media_matrices_t) :: media
       type(SGGFDTDINFO_t) :: sgg
@@ -100,7 +100,7 @@ contains
 
       integer(kind=4) :: conf_err
 
-      call initEntrada(this%l) 
+      call initInput(this%l) 
 
       this%eps0= 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
       this%mu0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
@@ -1267,8 +1267,8 @@ contains
 #endif
    end subroutine semba_end
 
-   subroutine initEntrada(input)
-      type(entrada_t), intent(inout) :: input
+   subroutine initInput(input)
+      type(input_t), intent(inout) :: input
       input%geomfile = ' ';
       input%prefix = ' ';
       input%fichin = ' ';

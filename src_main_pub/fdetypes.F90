@@ -138,16 +138,16 @@ module  FDETYPES_m
    integer(kind=4), parameter  :: REALSIZE=MPI_DOUBLE_PRECISION
    integer(kind=4), parameter  :: REALSIZE_WIRES=MPI_DOUBLE_PRECISION
    integer(kind=4), parameter  :: COMPLEXSIZE=MPI_DOUBLE_COMPLEX
-   integer(kind=4), parameter  :: REALSIZE_TIEMPO=MPI_DOUBLE_PRECISION
+   integer(kind=4), parameter  :: REALSIZE_TIME=MPI_DOUBLE_PRECISION
 #else
 #ifdef CompileWithReal16
    integer(kind=4), parameter  :: REALSIZE=MPI_REAL16
    integer(kind=4), parameter  :: COMPLEXSIZE=MPI_COMPLEX32
-   integer(kind=4), parameter  :: REALSIZE_TIEMPO=MPI_REAL_16
+   integer(kind=4), parameter  :: REALSIZE_TIME=MPI_REAL_16
 #else
    integer(kind=4), parameter  :: REALSIZE=MPI_REAL
    integer(kind=4), parameter  :: REALSIZE_WIRES=MPI_DOUBLE_PRECISION
-   integer(kind=4), parameter  :: REALSIZE_TIEMPO=MPI_DOUBLE_PRECISION
+   integer(kind=4), parameter  :: REALSIZE_TIME=MPI_DOUBLE_PRECISION
 
 !!!   integer(kind=4), parameter  :: COMPLEXSIZE=MPI_COMPLEX
    integer(kind=4), parameter  :: COMPLEXSIZE=MPI_DOUBLE_COMPLEX  !LOS COMPLEJOS LOS VOY A MANEJAR SIEMPRE EN DOBLE PRECISION como minimo !esto debe ir ligado a la definicion de ckind
@@ -361,7 +361,7 @@ module  FDETYPES_m
    type  :: NodalSource_t
       type(fichevol_t) :: sourceFile
       type(xyzlimit_scaled_t), pointer, dimension(:) :: gridPoint
-      integer(kind=4) :: numpuntos
+      integer(kind=4) :: numPoints
       logical :: IsInitialValue
       logical :: IsHard
       logical :: IsElec

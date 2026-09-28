@@ -59,17 +59,17 @@ contains
       character(len=BUFSIZE) :: tag
 
       type(XYZlimit_t) :: gridPoint, BoundingBox, conf_bounding_box
-      type(xyzlimit_scaled_t) :: punto_s
+      type(xyzlimit_scaled_t) :: pointArray
       integer(kind=4) :: orientationIndex,orientacionL,orientacionR, direccion, contamedia,oldcontamedia, maxcontamedia, mincontamedia, inicontamedia, &
          i1, j1, field, k1, pecMedium, ii, medium1, medium2, sondas,CONTACURR,CONTAVOLT,I_,J_
       !
       logical :: isathinwire, isValid, existia,medioespecial,input_conformal_flag,trappedNode
       logical :: errnofile,errnofile1,errnofile2,errnofile3,errnofile4
-      real(kind=RKIND) :: time1, tiempo2, field1, field2,rdummy
+      real(kind=RKIND) :: time1, time2, field1, field2,rdummy
       integer(kind=4) :: nsurfs, numus, layoutnumber, num_procs,OrigIndex,numminus
       real(kind=RKIND) :: delta,del,sig_max
-      integer(kind=4), dimension(:), allocatable :: contapuntos
-      integer(kind=4) :: conta1, conta2, medium,imenos1,jmenos1,kmenos1,o,p,puntoxi,puntoyi,puntozi, &
+      integer(kind=4), dimension(:), allocatable :: pointCount
+      integer(kind=4) :: conta1, conta2, medium,imenos1,jmenos1,kmenos1,o,p,pointXI,pointYI,pointZI, &
          bboxwirXI,dummy_bboxwirXI,bboxwirYI,dummy_bboxwirYI,bboxwirzI,dummy_bboxwirzI, &
          bboxwirXE,dummy_bboxwirXE,bboxwirYE,dummy_bboxwirYE,bboxwirZE,dummy_bboxwirZE,IERR
       integer(kind=8) :: memo
@@ -1301,38 +1301,38 @@ contains
                      sgg%Med(contamedia)%Multiport(1)%sigmaM_devia(1:this%LossyThinSurfs%cs(j)%numcapas), &
                      sgg%Med(contamedia)%Multiport(1)%width_devia(1:this%LossyThinSurfs%cs(j)%numcapas))
                   !!!
-                  puntoXI = Max (gridPoint%XI, Min(BoundingBox%XI, BoundingBox%XE))
-                  puntoYI = Max (gridPoint%YI, Min(BoundingBox%YI, BoundingBox%YE))
-                  puntoZI = Max (gridPoint%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
+                  pointXI = Max (gridPoint%XI, Min(BoundingBox%XI, BoundingBox%XE))
+                  pointYI = Max (gridPoint%YI, Min(BoundingBox%YI, BoundingBox%YE))
+                  pointZI = Max (gridPoint%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
 
                   !!!!!!!!estaba antes  maaaal. bug 140815verano
-                  if(.not.((puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE))) then
-                     puntoXI= sgg%allocDxI
-                     write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
+                  if(.not.((pointXI>=sgg%allocDxI).and.(pointXI<=sgg%allocDxE))) then
+                     pointXI= sgg%allocDxI
+                     write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',pointXI,pointYI,pointZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call WarnErrReport (buff,.TRUE.)
                   end if
-                  if(.not.((puntoYI>=sgg%allocDyI).and.(puntoYI<=sgg%allocDyE))) then
-                     puntoYI= sgg%allocDyI
-                     write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
+                  if(.not.((pointYI>=sgg%allocDyI).and.(pointYI<=sgg%allocDyE))) then
+                     pointYI= sgg%allocDyI
+                     write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',pointXI,pointYI,pointZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call WarnErrReport (buff,.TRUE.)
                   end if
-                  if(.not.((puntoZI>=sgg%allocDzI).and.(puntoZI<=sgg%allocDzE))) then
-                     puntoZI= sgg%allocDzI
-                     write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
+                  if(.not.((pointZI>=sgg%allocDzI).and.(pointZI<=sgg%allocDzE))) then
+                     pointZI= sgg%allocDzI
+                     write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',pointXI,pointYI,pointZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call WarnErrReport (buff,.TRUE.)
                   end if
-                  isInside = (puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE).and. &
-                     (puntoYI>=sgg%allocDyI).and.(puntoYI<=sgg%allocDyE).and. &
-                     (puntoZI>=sgg%allocDzI).and.(puntoZI<=sgg%allocDzE)
+                  isInside = (pointXI>=sgg%allocDxI).and.(pointXI<=sgg%allocDxE).and. &
+                     (pointYI>=sgg%allocDyI).and.(pointYI<=sgg%allocDyE).and. &
+                     (pointZI>=sgg%allocDzI).and.(pointZI<=sgg%allocDzE)
                   delta=-1.0_RKIND
                   if (isInside) then
                      select case (abs(this%LossyThinSurfs%cs(j)%C(i)%or))
                       case (iEx)
-                        delta=(sgg%DX(puntoXI)+sgg%DX(puntoXI-1))/2.0_RKIND
+                        delta=(sgg%DX(pointXI)+sgg%DX(pointXI-1))/2.0_RKIND
                       case (iEy)
-                        delta=(sgg%DY(puntoYI)+sgg%Dy(puntoYI-1))/2.0_RKIND
+                        delta=(sgg%DY(pointYI)+sgg%Dy(pointYI-1))/2.0_RKIND
                       case (IEZ)
-                        delta=(sgg%DZ(puntoZI)+sgg%Dz(puntoZI-1))/2.0_RKIND
+                        delta=(sgg%DZ(pointZI)+sgg%Dz(pointZI-1))/2.0_RKIND
                       case default
                         write(buff, '(a)')    'Buggy error 1 in preprocess composites. .'
                         call STOPONERROR(layoutnumber,num_procs,buff)
@@ -1492,30 +1492,30 @@ contains
                      write(buff, '(a)')    'pre1_ERROR:  Anisotropic multiport materials unsupported for multilayered structures.'
                      call WarnErrReport (buff,.TRUE.)
                   end if
-                  puntoXI = Max (gridPoint%XI, Min(BoundingBox%XI, BoundingBox%XE)) !copiado de healer
-                  puntoYI = Max (gridPoint%YI, Min(BoundingBox%YI, BoundingBox%YE))
-                  puntoZI = Max (gridPoint%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
+                  pointXI = Max (gridPoint%XI, Min(BoundingBox%XI, BoundingBox%XE)) !copiado de healer
+                  pointYI = Max (gridPoint%YI, Min(BoundingBox%YI, BoundingBox%YE))
+                  pointZI = Max (gridPoint%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
 
 
                   !!!!!!!!estaba antes  maaaal. bug 140815verano
-                  if(.not.((puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE))) puntoXI= sgg%allocDxI
-                  if(.not.((puntoYI>=sgg%allocDyI).and.(puntoYI<=sgg%allocDyE))) puntoYI= sgg%allocDyI
-                  if(.not.((puntoZI>=sgg%allocDzI).and.(puntoZI<=sgg%allocDzE))) puntoZI= sgg%allocDzI
+                  if(.not.((pointXI>=sgg%allocDxI).and.(pointXI<=sgg%allocDxE))) pointXI= sgg%allocDxI
+                  if(.not.((pointYI>=sgg%allocDyI).and.(pointYI<=sgg%allocDyE))) pointYI= sgg%allocDyI
+                  if(.not.((pointZI>=sgg%allocDzI).and.(pointZI<=sgg%allocDzE))) pointZI= sgg%allocDzI
                   write(buff, '(a)')    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)'
                   call WarnErrReport (buff,.TRUE.)
 
-                  isInside = (puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE).and. &
-                     (puntoYI>=sgg%allocDyI).and.(puntoYI<=sgg%allocDyE).and. &
-                     (puntoZI>=sgg%allocDzI).and.(puntoZI<=sgg%allocDzE)
+                  isInside = (pointXI>=sgg%allocDxI).and.(pointXI<=sgg%allocDxE).and. &
+                     (pointYI>=sgg%allocDyI).and.(pointYI<=sgg%allocDyE).and. &
+                     (pointZI>=sgg%allocDzI).and.(pointZI<=sgg%allocDzE)
                   delta=-1.0_RKIND
                   if (isInside) then
                      select case (abs(this%LossyThinSurfs%cs(j)%C(i)%or))
                       case (iEx)
-                        delta=(sgg%DX(puntoXI)+sgg%DX(puntoXI-1))/2.0_RKIND
+                        delta=(sgg%DX(pointXI)+sgg%DX(pointXI-1))/2.0_RKIND
                       case (iEy)
-                        delta=(sgg%DY(puntoYI)+sgg%Dy(puntoYI-1))/2.0_RKIND
+                        delta=(sgg%DY(pointYI)+sgg%Dy(pointYI-1))/2.0_RKIND
                       case (IEZ)
-                        delta=(sgg%DZ(puntoZI)+sgg%Dz(puntoZI-1))/2.0_RKIND
+                        delta=(sgg%DZ(pointZI)+sgg%Dz(pointZI-1))/2.0_RKIND
                       case default
                         write(buff, '(a)')    'Buggy error 1 in preprocess composites. .'
                         call STOPONERROR(layoutnumber,num_procs,buff)
@@ -2874,42 +2874,42 @@ contains
       !precounting
       tama = this%nodsrc%n_nodSrc
       !at most
-     allocate(contapuntos(tama*(this%nodsrc%n_C2p_max+this%nodsrc%n_C1p_max)))
-      contapuntos = 0
+     allocate(pointCount(tama*(this%nodsrc%n_C2p_max+this%nodsrc%n_C1p_max)))
+      pointCount = 0
       conta1 = 0
       do i = 1, tama
          conta2 = 0
          tama2 = this%nodsrc%NodalSource(i)%n_c1P
          tama3 = this%nodsrc%NodalSource(i)%n_c2P
          do ii = 1, tama2
-            punto_s%or = this%nodsrc%NodalSource(i)%c1P(ii)%or
-            punto_s%XI = this%nodsrc%NodalSource(i)%c1P(ii)%XI
-            punto_s%XE = this%nodsrc%NodalSource(i)%c1P(ii)%XE
-            punto_s%YI = this%nodsrc%NodalSource(i)%c1P(ii)%YI
-            punto_s%YE = this%nodsrc%NodalSource(i)%c1P(ii)%YE
-            punto_s%ZI = this%nodsrc%NodalSource(i)%c1P(ii)%ZI
-            punto_s%ZE = this%nodsrc%NodalSource(i)%c1P(ii)%ZE
-            if ((punto_s%XI <= punto_s%XE) .AND. (punto_s%YI <= punto_s%YE) .AND. (punto_s%ZI <= punto_s%ZE)) then
+            pointArray%or = this%nodsrc%NodalSource(i)%c1P(ii)%or
+            pointArray%XI = this%nodsrc%NodalSource(i)%c1P(ii)%XI
+            pointArray%XE = this%nodsrc%NodalSource(i)%c1P(ii)%XE
+            pointArray%YI = this%nodsrc%NodalSource(i)%c1P(ii)%YI
+            pointArray%YE = this%nodsrc%NodalSource(i)%c1P(ii)%YE
+            pointArray%ZI = this%nodsrc%NodalSource(i)%c1P(ii)%ZI
+            pointArray%ZE = this%nodsrc%NodalSource(i)%c1P(ii)%ZE
+            if ((pointArray%XI <= pointArray%XE) .AND. (pointArray%YI <= pointArray%YE) .AND. (pointArray%ZI <= pointArray%ZE)) then
                conta2 = conta2 + 1
             end if
          end do
          !
          !
          do ii = 1, tama3
-            punto_s%or = this%nodsrc%NodalSource(i)%c2P(ii)%or
-            punto_s%XI = this%nodsrc%NodalSource(i)%c2P(ii)%XI
-            punto_s%XE = this%nodsrc%NodalSource(i)%c2P(ii)%XE
-            punto_s%YI = this%nodsrc%NodalSource(i)%c2P(ii)%YI
-            punto_s%YE = this%nodsrc%NodalSource(i)%c2P(ii)%YE
-            punto_s%ZI = this%nodsrc%NodalSource(i)%c2P(ii)%ZI
-            punto_s%ZE = this%nodsrc%NodalSource(i)%c2P(ii)%ZE
-            if ((punto_s%XI <= punto_s%XE) .AND. (punto_s%YI <= punto_s%YE) .AND. (punto_s%ZI <= punto_s%ZE)) then
+            pointArray%or = this%nodsrc%NodalSource(i)%c2P(ii)%or
+            pointArray%XI = this%nodsrc%NodalSource(i)%c2P(ii)%XI
+            pointArray%XE = this%nodsrc%NodalSource(i)%c2P(ii)%XE
+            pointArray%YI = this%nodsrc%NodalSource(i)%c2P(ii)%YI
+            pointArray%YE = this%nodsrc%NodalSource(i)%c2P(ii)%YE
+            pointArray%ZI = this%nodsrc%NodalSource(i)%c2P(ii)%ZI
+            pointArray%ZE = this%nodsrc%NodalSource(i)%c2P(ii)%ZE
+            if ((pointArray%XI <= pointArray%XE) .AND. (pointArray%YI <= pointArray%YE) .AND. (pointArray%ZI <= pointArray%ZE)) then
                conta2 = conta2 + 1
             end if
          end do
          if (conta2 /= 0) then
             conta1 = conta1 + 1
-            contapuntos (conta1) = conta2
+            pointCount (conta1) = conta2
          end if
       end do
       sgg%NumNodalSources = conta1
@@ -2918,12 +2918,12 @@ contains
       !
       conta1 = 0
       do i = 1, tama
-         if (contapuntos(i) /= 0) then
+         if (pointCount(i) /= 0) then
             conta1 = conta1 + 1
-            sgg%NodalSource(conta1)%numpuntos = contapuntos (conta1)
-           allocate(sgg%NodalSource(conta1)%gridPoint(contapuntos(conta1)))
+            sgg%NodalSource(conta1)%numPoints = pointCount (conta1)
+           allocate(sgg%NodalSource(conta1)%gridPoint(pointCount(conta1)))
             !initialization
-            do ii=1,contapuntos(conta1)
+            do ii=1,pointCount(conta1)
                sgg%NodalSource(conta1)%gridPoint(ii)%or = 0
                sgg%NodalSource(conta1)%gridPoint(ii)%xc = 0.0_RKIND
                sgg%NodalSource(conta1)%gridPoint(ii)%yc = 0.0_RKIND
@@ -2941,7 +2941,7 @@ contains
       conta1 = 0
       do i = 1, tama
          conta2 = 0
-         if (contapuntos(i) /= 0) then
+         if (pointCount(i) /= 0) then
             conta1 = conta1 + 1
             !
             sgg%NodalSource(conta1)%sourceFile%name = trim (adjustl(this%nodsrc%NodalSource(i)%nombre))
@@ -2954,28 +2954,28 @@ contains
          tama3 = this%nodsrc%NodalSource(i)%n_c2P
          do ii = 1, tama2
             !!correct bounding box
-            punto_s%or = this%nodsrc%NodalSource(i)%c1P(ii)%or
-            punto_s%xc = this%nodsrc%NodalSource(i)%c1P(ii)%xc
-            punto_s%yc = this%nodsrc%NodalSource(i)%c1P(ii)%yc
-            punto_s%zc = this%nodsrc%NodalSource(i)%c1P(ii)%zc
+            pointArray%or = this%nodsrc%NodalSource(i)%c1P(ii)%or
+            pointArray%xc = this%nodsrc%NodalSource(i)%c1P(ii)%xc
+            pointArray%yc = this%nodsrc%NodalSource(i)%c1P(ii)%yc
+            pointArray%zc = this%nodsrc%NodalSource(i)%c1P(ii)%zc
             !
-            punto_s%XI = Max (this%nodsrc%NodalSource(i)%c1P(ii)%XI, Min(BoundingBox%XI, BoundingBox%XE))
-            punto_s%YI = Max (this%nodsrc%NodalSource(i)%c1P(ii)%YI, Min(BoundingBox%YI, BoundingBox%YE))
-            punto_s%ZI = Max (this%nodsrc%NodalSource(i)%c1P(ii)%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
+            pointArray%XI = Max (this%nodsrc%NodalSource(i)%c1P(ii)%XI, Min(BoundingBox%XI, BoundingBox%XE))
+            pointArray%YI = Max (this%nodsrc%NodalSource(i)%c1P(ii)%YI, Min(BoundingBox%YI, BoundingBox%YE))
+            pointArray%ZI = Max (this%nodsrc%NodalSource(i)%c1P(ii)%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
             !
-            punto_s%XE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%XE, Max(BoundingBox%XI, BoundingBox%XE))
-            punto_s%YE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%YE, Max(BoundingBox%YI, BoundingBox%YE))
-            if ((punto_s%zc /= 0).and.(this%nodsrc%NodalSource(i)%isElec))  then !only in case of Ez
-               punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE-1))
+            pointArray%XE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%XE, Max(BoundingBox%XI, BoundingBox%XE))
+            pointArray%YE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%YE, Max(BoundingBox%YI, BoundingBox%YE))
+            if ((pointArray%zc /= 0).and.(this%nodsrc%NodalSource(i)%isElec))  then !only in case of Ez
+               pointArray%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE-1))
             else
-               punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE))
+               pointArray%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE))
             end if
             !
             !
-            do k1 = punto_s%ZI, punto_s%ZE
-               do j1 = punto_s%YI, punto_s%YE
-                  do i1 = punto_s%XI, punto_s%XE
-                     if (punto_s%xc /= 0) then
+            do k1 = pointArray%ZI, pointArray%ZE
+               do j1 = pointArray%YI, pointArray%YE
+                  do i1 = pointArray%XI, pointArray%XE
+                     if (pointArray%xc /= 0) then
                         !bug OLD 181214 sl_4_20mm_gli.nfde. Fuente nodal electrica embebida en pec y nodal magnetica en pmc se ignoraran sean hard or soft
                         medium = media%sggMiEx (i1, j1, k1)
                         isValid=.true.
@@ -3008,7 +3008,7 @@ contains
                      end if
                      !
                      !
-                     if (punto_s%yc /= 0) then
+                     if (pointArray%yc /= 0) then
                         medium = media%sggMiEy (i1, j1, k1)
                         isValid=.true.
                         !if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
@@ -3040,7 +3040,7 @@ contains
                      end if
                      !
                      !
-                     if (punto_s%zc /= 0) then
+                     if (pointArray%zc /= 0) then
                         medium = media%sggMiEz (i1, j1, k1)
                         isValid=.true.
                         !if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
@@ -3075,18 +3075,18 @@ contains
             end do
             !
             !
-            if ((punto_s%XI <= punto_s%XE) .AND. (punto_s%YI <= punto_s%YE) .AND. (punto_s%ZI <= punto_s%ZE)) then
+            if ((pointArray%XI <= pointArray%XE) .AND. (pointArray%YI <= pointArray%YE) .AND. (pointArray%ZI <= pointArray%ZE)) then
                conta2 = conta2 + 1
-               sgg%NodalSource(conta1)%gridPoint(conta2)%or = punto_s%or
-               sgg%NodalSource(conta1)%gridPoint(conta2)%xc = punto_s%xc
-               sgg%NodalSource(conta1)%gridPoint(conta2)%yc = punto_s%yc
-               sgg%NodalSource(conta1)%gridPoint(conta2)%zc = punto_s%zc
-               sgg%NodalSource(conta1)%gridPoint(conta2)%XI = punto_s%XI
-               sgg%NodalSource(conta1)%gridPoint(conta2)%XE = punto_s%XE
-               sgg%NodalSource(conta1)%gridPoint(conta2)%YI = punto_s%YI
-               sgg%NodalSource(conta1)%gridPoint(conta2)%YE = punto_s%YE
-               sgg%NodalSource(conta1)%gridPoint(conta2)%ZI = punto_s%ZI
-               sgg%NodalSource(conta1)%gridPoint(conta2)%ZE = punto_s%ZE
+               sgg%NodalSource(conta1)%gridPoint(conta2)%or = pointArray%or
+               sgg%NodalSource(conta1)%gridPoint(conta2)%xc = pointArray%xc
+               sgg%NodalSource(conta1)%gridPoint(conta2)%yc = pointArray%yc
+               sgg%NodalSource(conta1)%gridPoint(conta2)%zc = pointArray%zc
+               sgg%NodalSource(conta1)%gridPoint(conta2)%XI = pointArray%XI
+               sgg%NodalSource(conta1)%gridPoint(conta2)%XE = pointArray%XE
+               sgg%NodalSource(conta1)%gridPoint(conta2)%YI = pointArray%YI
+               sgg%NodalSource(conta1)%gridPoint(conta2)%YE = pointArray%YE
+               sgg%NodalSource(conta1)%gridPoint(conta2)%ZI = pointArray%ZI
+               sgg%NodalSource(conta1)%gridPoint(conta2)%ZE = pointArray%ZE
                !PARA ACOMODAR LAS NODAL SOURCE COMO MEDIOS LINE Y PODER VISUALIZAR SONDAS 010824
                sgg%Med(contamedia)%Is%DIELECTRIC = .TRUE.
                sgg%Med(contamedia)%Is%LINE = .TRUE.
@@ -3095,13 +3095,13 @@ contains
                sgg%Med(contamedia)%Sigma = 0.
                sgg%Med(contamedia)%Mur =  1.0
                sgg%Med(contamedia)%SigmaM = 0.
-               gridPoint%XI = punto_s%XI
-               gridPoint%XE = punto_s%XE
-               gridPoint%YI = punto_s%YI
-               gridPoint%YE = punto_s%YE
-               gridPoint%ZI = punto_s%ZI
-               gridPoint%ZE = punto_s%ZE
-               orientationIndex = punto_s%or
+               gridPoint%XI = pointArray%XI
+               gridPoint%XE = pointArray%XE
+               gridPoint%YI = pointArray%YI
+               gridPoint%YE = pointArray%YE
+               gridPoint%ZI = pointArray%ZI
+               gridPoint%ZE = pointArray%ZE
+               orientationIndex = pointArray%or
                isathinwire = .FALSE.
                numertag = 37
                call CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
@@ -3113,44 +3113,44 @@ contains
                   Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
                   contamedia, isathinwire,verbose,numberOfAssignments)
             end if
-            sgg%NodalSource(conta1)%numpuntos = conta2 !update with the correct value
+            sgg%NodalSource(conta1)%numPoints = conta2 !update with the correct value
          end do
          !
          !
          do ii = 1, tama3
-            punto_s%or = this%nodsrc%NodalSource(i)%c2P(ii)%or
-            punto_s%XI = this%nodsrc%NodalSource(i)%c2P(ii)%XI
-            punto_s%XE = this%nodsrc%NodalSource(i)%c2P(ii)%XE
-            punto_s%YI = this%nodsrc%NodalSource(i)%c2P(ii)%YI
-            punto_s%YE = this%nodsrc%NodalSource(i)%c2P(ii)%YE
-            punto_s%ZI = this%nodsrc%NodalSource(i)%c2P(ii)%ZI
-            punto_s%ZE = this%nodsrc%NodalSource(i)%c2P(ii)%ZE
-            punto_s%xc = this%nodsrc%NodalSource(i)%c2P(ii)%xc
-            punto_s%yc = this%nodsrc%NodalSource(i)%c2P(ii)%yc
-            punto_s%zc = this%nodsrc%NodalSource(i)%c2P(ii)%zc
+            pointArray%or = this%nodsrc%NodalSource(i)%c2P(ii)%or
+            pointArray%XI = this%nodsrc%NodalSource(i)%c2P(ii)%XI
+            pointArray%XE = this%nodsrc%NodalSource(i)%c2P(ii)%XE
+            pointArray%YI = this%nodsrc%NodalSource(i)%c2P(ii)%YI
+            pointArray%YE = this%nodsrc%NodalSource(i)%c2P(ii)%YE
+            pointArray%ZI = this%nodsrc%NodalSource(i)%c2P(ii)%ZI
+            pointArray%ZE = this%nodsrc%NodalSource(i)%c2P(ii)%ZE
+            pointArray%xc = this%nodsrc%NodalSource(i)%c2P(ii)%xc
+            pointArray%yc = this%nodsrc%NodalSource(i)%c2P(ii)%yc
+            pointArray%zc = this%nodsrc%NodalSource(i)%c2P(ii)%zc
             !!correct bounding box
-            punto_s%XI = Max (this%nodsrc%NodalSource(i)%c2p(ii)%XI, Min(BoundingBox%XI, BoundingBox%XE))
-            punto_s%YI = Max (this%nodsrc%NodalSource(i)%c2p(ii)%YI, Min(BoundingBox%YI, BoundingBox%YE))
-            punto_s%ZI = Max (this%nodsrc%NodalSource(i)%c2p(ii)%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
+            pointArray%XI = Max (this%nodsrc%NodalSource(i)%c2p(ii)%XI, Min(BoundingBox%XI, BoundingBox%XE))
+            pointArray%YI = Max (this%nodsrc%NodalSource(i)%c2p(ii)%YI, Min(BoundingBox%YI, BoundingBox%YE))
+            pointArray%ZI = Max (this%nodsrc%NodalSource(i)%c2p(ii)%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
             !
-            punto_s%XE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%XE, Max(BoundingBox%XI, BoundingBox%XE))
-            punto_s%YE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%YE, Max(BoundingBox%YI, BoundingBox%YE))
-            if ((punto_s%zc /= 0).and.(this%nodsrc%NodalSource(i)%isElec))  then !only in case of Ez
-               punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE-1))
+            pointArray%XE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%XE, Max(BoundingBox%XI, BoundingBox%XE))
+            pointArray%YE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%YE, Max(BoundingBox%YI, BoundingBox%YE))
+            if ((pointArray%zc /= 0).and.(this%nodsrc%NodalSource(i)%isElec))  then !only in case of Ez
+               pointArray%ZE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE-1))
             else
-               punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE))
+               pointArray%ZE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE))
             end if
             !
-            punto_s%or = this%nodsrc%NodalSource(i)%c2p(ii)%or
-            punto_s%xc = this%nodsrc%NodalSource(i)%c2p(ii)%xc
-            punto_s%yc = this%nodsrc%NodalSource(i)%c2p(ii)%yc
-            punto_s%zc = this%nodsrc%NodalSource(i)%c2p(ii)%zc
+            pointArray%or = this%nodsrc%NodalSource(i)%c2p(ii)%or
+            pointArray%xc = this%nodsrc%NodalSource(i)%c2p(ii)%xc
+            pointArray%yc = this%nodsrc%NodalSource(i)%c2p(ii)%yc
+            pointArray%zc = this%nodsrc%NodalSource(i)%c2p(ii)%zc
             !
             !
-            do k1 = punto_s%ZI, punto_s%ZE
-               do j1 = punto_s%YI, punto_s%YE
-                  do i1 = punto_s%XI, punto_s%XE
-                     if (punto_s%xc /= 0) then
+            do k1 = pointArray%ZI, pointArray%ZE
+               do j1 = pointArray%YI, pointArray%YE
+                  do i1 = pointArray%XI, pointArray%XE
+                     if (pointArray%xc /= 0) then
                         medium = media%sggMiEx (i1, j1, k1)
                         isValid=.true.
                         !if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
@@ -3183,7 +3183,7 @@ contains
                      end if
                      !
                      !
-                     if (punto_s%yc /= 0) then
+                     if (pointArray%yc /= 0) then
                         medium = media%sggMiEy (i1, j1, k1)
                         isValid=.true.
                         !if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
@@ -3215,7 +3215,7 @@ contains
                      end if
                      !
                      !
-                     if (punto_s%zc /= 0) then
+                     if (pointArray%zc /= 0) then
                         medium = media%sggMiEz (i1, j1, k1)
                         isValid=.true.
                         !if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
@@ -3250,18 +3250,18 @@ contains
             end do
             !
             !
-            if ((punto_s%XI <= punto_s%XE) .AND. (punto_s%YI <= punto_s%YE) .AND. (punto_s%ZI <= punto_s%ZE)) then
+            if ((pointArray%XI <= pointArray%XE) .AND. (pointArray%YI <= pointArray%YE) .AND. (pointArray%ZI <= pointArray%ZE)) then
                conta2 = conta2 + 1
-               sgg%NodalSource(conta1)%gridPoint(conta2)%or = punto_s%or
-               sgg%NodalSource(conta1)%gridPoint(conta2)%xc = punto_s%xc
-               sgg%NodalSource(conta1)%gridPoint(conta2)%yc = punto_s%yc
-               sgg%NodalSource(conta1)%gridPoint(conta2)%zc = punto_s%zc
-               sgg%NodalSource(conta1)%gridPoint(conta2)%XI = punto_s%XI
-               sgg%NodalSource(conta1)%gridPoint(conta2)%XE = punto_s%XE
-               sgg%NodalSource(conta1)%gridPoint(conta2)%YI = punto_s%YI
-               sgg%NodalSource(conta1)%gridPoint(conta2)%YE = punto_s%YE
-               sgg%NodalSource(conta1)%gridPoint(conta2)%ZI = punto_s%ZI
-               sgg%NodalSource(conta1)%gridPoint(conta2)%ZE = punto_s%ZE
+               sgg%NodalSource(conta1)%gridPoint(conta2)%or = pointArray%or
+               sgg%NodalSource(conta1)%gridPoint(conta2)%xc = pointArray%xc
+               sgg%NodalSource(conta1)%gridPoint(conta2)%yc = pointArray%yc
+               sgg%NodalSource(conta1)%gridPoint(conta2)%zc = pointArray%zc
+               sgg%NodalSource(conta1)%gridPoint(conta2)%XI = pointArray%XI
+               sgg%NodalSource(conta1)%gridPoint(conta2)%XE = pointArray%XE
+               sgg%NodalSource(conta1)%gridPoint(conta2)%YI = pointArray%YI
+               sgg%NodalSource(conta1)%gridPoint(conta2)%YE = pointArray%YE
+               sgg%NodalSource(conta1)%gridPoint(conta2)%ZI = pointArray%ZI
+               sgg%NodalSource(conta1)%gridPoint(conta2)%ZE = pointArray%ZE
                !PARA ACOMODAR LAS NODAL SOURCE COMO MEDIOS LINE Y PODER VISUALIZAR SONDAS 010824
                sgg%Med(contamedia)%Is%DIELECTRIC = .TRUE.
                sgg%Med(contamedia)%Is%LINE = .TRUE.
@@ -3270,13 +3270,13 @@ contains
                sgg%Med(contamedia)%Sigma = 0.
                sgg%Med(contamedia)%Mur =  1.0
                sgg%Med(contamedia)%SigmaM = 0.
-               gridPoint%XI = punto_s%XI
-               gridPoint%XE = punto_s%XE
-               gridPoint%YI = punto_s%YI
-               gridPoint%YE = punto_s%YE
-               gridPoint%ZI = punto_s%ZI
-               gridPoint%ZE = punto_s%ZE
-               orientationIndex = punto_s%or
+               gridPoint%XI = pointArray%XI
+               gridPoint%XE = pointArray%XE
+               gridPoint%YI = pointArray%YI
+               gridPoint%YE = pointArray%YE
+               gridPoint%ZI = pointArray%ZI
+               gridPoint%ZE = pointArray%ZE
+               orientationIndex = pointArray%or
                isathinwire = .FALSE.
                numertag = 37
                call CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
@@ -3288,11 +3288,11 @@ contains
                   Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, gridPoint, orientationIndex, &
                   contamedia, isathinwire,verbose,numberOfAssignments)
             end if
-            sgg%NodalSource(conta1)%numpuntos = conta2 !update with the correct value
+            sgg%NodalSource(conta1)%numPoints = conta2 !update with the correct value
          end do
       end do
       !
-      if (allocated(contapuntos)) deallocate(contapuntos)
+      if (allocated(pointCount)) deallocate(pointCount)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -5208,8 +5208,8 @@ contains
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%NAME)),action='read')
                      read (15,*) time1, field1
-                     read (15,*) tiempo2, field2
-                     sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%deltaSamples = tiempo2 - time1
+                     read (15,*) time2, field2
+                     sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%deltaSamples = time2 - time1
                      nsurfs = 3
                      !problemas con multivac
                      ! while (.not.eof(15))
@@ -5264,8 +5264,8 @@ contains
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%NAME)),action='read')
                      read (15,*) time1, field1
-                     read (15,*) tiempo2, field2
-                     sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%deltaSamples = tiempo2 - time1
+                     read (15,*) time2, field2
+                     sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%deltaSamples = time2 - time1
                      nsurfs = 3
                      !problemas con multivac
                      ! while (.not.eof(15))
@@ -5322,8 +5322,8 @@ contains
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%NAME)),action='read')
                      read (15,*) time1, field1
-                     read (15,*) tiempo2, field2
-                     sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%deltaSamples = tiempo2 - time1
+                     read (15,*) time2, field2
+                     sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%deltaSamples = time2 - time1
                      nsurfs = 3
                      !problemas con multivac
                      ! while (.not.eof(15))
@@ -5375,8 +5375,8 @@ contains
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%NAME)),action='read')
                      read (15,*) time1, field1
-                     read (15,*) tiempo2, field2
-                     sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%deltaSamples = tiempo2 - time1
+                     read (15,*) time2, field2
+                     sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%deltaSamples = time2 - time1
                      nsurfs = 3
                      !problemas con multivac
                      ! while (.not.eof(15))
@@ -5435,8 +5435,8 @@ contains
                end if
                open(15, file=trim(adjustl(sgg%NodalSource(j)%sourceFile%NAME)),action='read')
                read (15,*) time1, field1
-               read (15,*) tiempo2, field2
-               sgg%NodalSource(j)%sourceFile%deltaSamples = tiempo2 - time1
+               read (15,*) time2, field2
+               sgg%NodalSource(j)%sourceFile%deltaSamples = time2 - time1
                nsurfs = 3
                do
                   read (15,*, end=78) time1, field1
@@ -5499,8 +5499,8 @@ contains
             end if
             open(15, file=trim(adjustl(sgg%PlaneWave(j)%sourceFile%NAME)),action='read')
             read (15,*) time1, field1
-            read (15,*) tiempo2, field2
-            sgg%PlaneWave(j)%sourceFile%deltaSamples = tiempo2 - time1
+            read (15,*) time2, field2
+            sgg%PlaneWave(j)%sourceFile%deltaSamples = time2 - time1
             nsurfs = 3
             do
                read (15,*, end=98) time1, field1

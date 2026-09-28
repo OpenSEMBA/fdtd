@@ -49,7 +49,7 @@ module farfield_m
       complex(kind = CKIND), dimension(:,:,:), allocatable :: ExIz,ExDe,ExAb,ExAr,EyFr,EyTr,EyAb,EyAr,EzIz,EzDe,EzFr,EzTr
       complex(kind = CKIND), dimension(:,:,:), allocatable :: HxIz,HxDe,HxAb,HxAr,HyFr,HyTr,HyAb,HyAr,HzIz,HzDe,HzFr,HzTr
       complex(kind = CKIND), dimension(:,:,:), allocatable :: HxIz2,HxDe2,HxAb2,HxAr2,HyFr2,HyTr2,HyAb2,HyAr2,HzIz2,HzDe2,HzFr2,HzTr2 !to compute the scheneider geometric mean
-      complex(kind = CKIND), dimension(:), allocatable  :: expIwdt,auxExp_E,auxExp_H,dftEntrada
+      complex(kind = CKIND), dimension(:), allocatable  :: expIwdt,auxExp_E,auxExp_H,dftInput
       integer(kind=4) :: NumFreqs,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2, Ndecim
       type(coorsxyzP_t) :: gridPoint
       real(kind=Rkind) :: InitialFreq,FinalFreq,FreqStep,dtDecim
@@ -58,7 +58,7 @@ module farfield_m
       character(len=BUFSIZE) :: FileNormalize
       integer(kind=4) :: unitfarfield
       character(len=BUFSIZE) :: filefarfield
-      real(kind=RKIND) :: XDobleAncho,YDobleAncho,ZDobleAncho
+      real(kind=RKIND) :: XDoubleWidth,YDoubleWidth,ZDoubleWidth
       real(kind=RKIND) :: XOffsetPlus,YOffsetPlus,ZOffsetPlus
       real(kind=RKIND) :: XOffsetMinus,YOffsetMinus,ZOffsetMinus
 #ifdef CompileWithMPI
@@ -115,7 +115,7 @@ contains
       sggMiHx(sgg%alloc(IHX)%XI : sgg%alloc(IHX)%XE,sgg%alloc(IHX)%YI : sgg%alloc(IHX)%YE,sgg%alloc(IHX)%ZI : sgg%alloc(IHX)%ZE), &
       sggMiHy(sgg%alloc(IHY)%XI : sgg%alloc(IHY)%XE,sgg%alloc(IHY)%YI : sgg%alloc(IHY)%YE,sgg%alloc(IHY)%ZI : sgg%alloc(IHY)%ZE), &
       sggMiHz(sgg%alloc(IHZ)%XI : sgg%alloc(IHZ)%XE,sgg%alloc(IHZ)%YI : sgg%alloc(IHZ)%YE,sgg%alloc(IHZ)%ZI : sgg%alloc(IHZ)%ZE)
-      real(kind=RKIND) ::time1,tiempo2,field1,field2,dtevol
+      real(kind=RKIND) ::time1,time2,field1,field2,dtevol
       integer j,k,field,i,layoutnumber,num_procs,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
       character(len=BUFSIZE) :: buFF
       logical :: errnofile,error
@@ -268,9 +268,9 @@ contains
       FF%farfieldAr=.true.
       !
 
-      FF%XDobleAncho= 2*( FF%gridPoint%PhysCoor(IHX)%x(FF%esqx2)-FF%gridPoint%PhysCoor(IHX)%x(FF%esqx1) )
-      FF%YDobleAncho= 2*( FF%gridPoint%PhysCoor(IHY)%y(FF%esqy2)-FF%gridPoint%PhysCoor(IHY)%y(FF%esqy1) )
-      FF%ZDobleAncho= 2*( FF%gridPoint%PhysCoor(IHZ)%z(FF%esqz2)-FF%gridPoint%PhysCoor(IHZ)%z(FF%esqz1) )
+      FF%XDoubleWidth= 2*( FF%gridPoint%PhysCoor(IHX)%x(FF%esqx2)-FF%gridPoint%PhysCoor(IHX)%x(FF%esqx1) )
+      FF%YDoubleWidth= 2*( FF%gridPoint%PhysCoor(IHY)%y(FF%esqy2)-FF%gridPoint%PhysCoor(IHY)%y(FF%esqy1) )
+      FF%ZDoubleWidth= 2*( FF%gridPoint%PhysCoor(IHZ)%z(FF%esqz2)-FF%gridPoint%PhysCoor(IHZ)%z(FF%esqz1) )
       FF%XOffsetMinus=2*( FF%gridPoint%PhysCoor(IHX)%x(FF%esqx1) )
       FF%YOffsetMinus=2*( FF%gridPoint%PhysCoor(IHY)%y(FF%esqy1) )
       FF%ZOffsetMinus=2*( FF%gridPoint%PhysCoor(IHZ)%z(FF%esqz1) )
@@ -926,7 +926,7 @@ contains
          call stoponerror(layoutnumber,num_procs,Buff)
       end if
 
-     allocate(FF%expIwdt(1:FF%NumFreqs),FF%auxExp_E(1:FF%NumFreqs),FF%auxExp_H(1:FF%NumFreqs),FF%dftEntrada(1:FF%NumFreqs))
+     allocate(FF%expIwdt(1:FF%NumFreqs),FF%auxExp_E(1:FF%NumFreqs),FF%auxExp_H(1:FF%NumFreqs),FF%dftInput(1:FF%NumFreqs))
       !
       if(FF%farfieldIz) then
          allocate (FF%ExIz(0 :  b%Ex%NX-1, 0 :  b%Ex%NZ-1, 1:FF%NumFreqs))
@@ -988,10 +988,10 @@ contains
       end if
       open(15, FILE=trim(adjustl(FF%FileNormalize)))
       read (15,*) time1, field1
-      read (15,*) tiempo2, field2
+      read (15,*) time2, field2
       close (15)
-      dtevol = tiempo2 - time1 !!!ojo tocar para permit scaling pq. no estan sampleadas uniformemente 06118
-      FF%dftEntrada=0.0_RKIND
+      dtevol = time2 - time1 !!!ojo tocar para permit scaling pq. no estan sampleadas uniformemente 06118
+      FF%dftInput=0.0_RKIND
 
 
 
@@ -1030,7 +1030,7 @@ contains
       do
          read (15,*, end=98) time1, field1
          do ii=1,FF%NumFreqs
-            FF%dftEntrada(ii) = FF%dftEntrada(ii) + field1 * FF%auxExp_E(ii)
+            FF%dftInput(ii) = FF%dftInput(ii) + field1 * FF%auxExp_E(ii)
          end do
          !solo los samples despues de 1 actualizan el valor
          !ver rutina dtft en postprocesws
@@ -3337,7 +3337,7 @@ contains
 #endif
                   Etheta(pasadas) = -(0,1.0_RKIND)*freq/(2.0_RKIND * cluz)*(L_phi_final + zvac * N_theta_final) !/FF%dftEntrada(ii) !no normalizar para calcular bien potencia
                   Ephi(pasadas)   =  (0,1.0_RKIND)*freq/(2.0_RKIND * cluz)*(L_theta_final - zvac * N_phi_final) !/FF%dftEntrada(ii) !no normalizar para calcular bien potencia
-                  RCS(pasadas)    =  (2.0_RKIND * pi*freq/cluz)**2.0_RKIND  / (4.0_RKIND * pi*Abs(FF%dftEntrada(ii))**2.0_RKIND ) * &
+                  RCS(pasadas)    =  (2.0_RKIND * pi*freq/cluz)**2.0_RKIND  / (4.0_RKIND * pi*Abs(FF%dftInput(ii))**2.0_RKIND ) * &
                   (abs(L_phi_final + zvac * N_theta_final)**2.0_RKIND + abs(L_theta_final - zvac * N_phi_final)**2.0_RKIND )
 
 
@@ -3409,8 +3409,8 @@ contains
          new_Mz = + Mz
          new_Jy = - Jy
          new_Jz = - Jz
-         new_co%x_My=     co%x_My + FF%XDobleAncho*NORMAL !cambio de signo resto o sumo distancia
-         new_co%x_Mz=     co%x_Mz + FF%XDobleAncho*NORMAL
+         new_co%x_My=     co%x_My + FF%XDoubleWidth*NORMAL !cambio de signo resto o sumo distancia
+         new_co%x_Mz=     co%x_Mz + FF%XDoubleWidth*NORMAL
          new_co%x_Jy= new_co%x_Mz
          new_co%x_Jz= new_co%x_My
          call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
@@ -3420,8 +3420,8 @@ contains
          new_Mz = - Mz
          new_Jy = + Jy
          new_Jz = + Jz
-         new_co%x_My=     co%x_My + FF%XDobleAncho*NORMAL !cambio de signo resto o sumo distancia
-         new_co%x_Mz=     co%x_Mz + FF%XDobleAncho*NORMAL
+         new_co%x_My=     co%x_My + FF%XDoubleWidth*NORMAL !cambio de signo resto o sumo distancia
+         new_co%x_Mz=     co%x_Mz + FF%XDoubleWidth*NORMAL
          new_co%x_Jy= new_co%x_Mz
          new_co%x_Jz= new_co%x_My
          call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
@@ -3444,8 +3444,8 @@ contains
          new_Mz = + Mz
          new_Jx = - Jx
          new_Jz = - Jz
-         new_co%y_Mx=     co%y_Mx + FF%YDobleAncho*NORMAL !cambio de signo resto o sumo distancia
-         new_co%y_Mz=     co%y_Mz + FF%YDobleAncho*NORMAL
+         new_co%y_Mx=     co%y_Mx + FF%YDoubleWidth*NORMAL !cambio de signo resto o sumo distancia
+         new_co%y_Mz=     co%y_Mz + FF%YDoubleWidth*NORMAL
          new_co%y_Jx= new_co%y_Mz
          new_co%y_Jz= new_co%y_Mx
          call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
@@ -3455,8 +3455,8 @@ contains
          new_Mz = - Mz
          new_Jx = + Jx
          new_Jz = + Jz
-         new_co%y_Mx=     co%y_Mx + FF%YDobleAncho*NORMAL !cambio de signo resto o sumo distancia
-         new_co%y_Mz=     co%y_Mz + FF%YDobleAncho*NORMAL
+         new_co%y_Mx=     co%y_Mx + FF%YDoubleWidth*NORMAL !cambio de signo resto o sumo distancia
+         new_co%y_Mz=     co%y_Mz + FF%YDoubleWidth*NORMAL
          new_co%y_Jx= new_co%y_Mz
          new_co%y_Jz= new_co%y_Mx
          call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
@@ -3478,8 +3478,8 @@ contains
          new_My = + My
          new_Jx = - Jx
          new_Jy = - Jy
-         new_co%Z_Mx=     co%Z_Mx + FF%ZDobleAncho*NORMAL !cambio de signo resto o sumo distancia
-         new_co%Z_My=     co%Z_My + FF%ZDobleAncho*NORMAL
+         new_co%Z_Mx=     co%Z_Mx + FF%ZDoubleWidth*NORMAL !cambio de signo resto o sumo distancia
+         new_co%Z_My=     co%Z_My + FF%ZDoubleWidth*NORMAL
          new_co%Z_Jx= new_co%Z_My
          new_co%Z_Jy= new_co%Z_Mx
          call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
@@ -3489,8 +3489,8 @@ contains
          new_My = - My
          new_Jx = + Jx
          new_Jy = + Jy
-         new_co%Z_Mx=     co%Z_Mx + FF%ZDobleAncho*NORMAL !cambio de signo resto o sumo distancia
-         new_co%Z_My=     co%Z_My + FF%ZDobleAncho*NORMAL
+         new_co%Z_Mx=     co%Z_Mx + FF%ZDoubleWidth*NORMAL !cambio de signo resto o sumo distancia
+         new_co%Z_My=     co%Z_My + FF%ZDoubleWidth*NORMAL
          new_co%Z_Jx= new_co%Z_My
          new_co%Z_Jy= new_co%Z_Mx
          call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)

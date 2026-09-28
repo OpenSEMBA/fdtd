@@ -9,7 +9,7 @@ module interpret_switches_m
    implicit none
    private
    !
-   type entrada_t
+   type input_t
 
       logical :: &
          forcing, &
@@ -129,7 +129,7 @@ module interpret_switches_m
       type(nf2ff_T) :: facesNF2FF
       type(ExtraMedium_t) :: extraMedium
       type(EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
-      type(tiempo_t) :: time_out2
+      type(time_t) :: time_out2
 
 !pgi        character(len=BUFSIZE_LONG) :: &
       character(len=BUFSIZE) :: &
@@ -156,18 +156,18 @@ module interpret_switches_m
                                 conformal_file_input_name, &
                                 geomfile
 
-   end type entrada_t
+   end type input_t
 
    public interpreta, insertalogtmp, print_help, print_basic_help, print_credits, &
       removeintraspaces, buscaswitchficheroinput, default_flags
-   public entrada_t
+   public input_t
    !
 contains
 
    subroutine interpreta(l, statuse)
 
 !!!!!!!!!!!!!
-      type(entrada_t), intent(inout) :: l
+      type(input_t), intent(inout) :: l
       integer(kind=4), intent(out) :: statuse
 !!!!!!!!!
 
@@ -1249,7 +1249,7 @@ contains
    end subroutine interpreta
 
    subroutine insertalogtmp(l) !para 100920
-      type(entrada_t), intent(inout) :: l
+      type(input_t), intent(inout) :: l
       character(len=BUFSIZE) :: dubuf
       integer(kind=4) :: MYUNIT11
       call OffPrint !no reimprimas, esto ya estaba por pantalla
@@ -1265,7 +1265,7 @@ contains
    end subroutine insertalogtmp
 
    subroutine print_basic_help(l)
-      type(entrada_t), intent(inout) :: l
+      type(input_t), intent(inout) :: l
       call print_credits(l)
       call print11(l%layoutnumber, '___________________________________________________________________________')
       call print11(l%layoutnumber, 'Basic usage: ')
@@ -1277,7 +1277,7 @@ contains
    end subroutine print_basic_help
 
    subroutine print_credits(l)
-      type(entrada_t), intent(inout) :: l
+      type(input_t), intent(inout) :: l
       character(len=BUFSIZE) :: dubuf
 
       if (l%creditosyaprinteados) return
@@ -1330,7 +1330,7 @@ contains
    end subroutine print_credits
 
    subroutine print_help(l)
-      type(entrada_t), intent(inout) :: l
+      type(input_t), intent(inout) :: l
       character(len=BUFSIZE) :: buff
       call print11(l%layoutnumber, '___________________________________________________________________________')
       call print11(l%layoutnumber, 'Command line arguments: ')
@@ -1601,7 +1601,7 @@ contains
    subroutine buscaswitchficheroinput(l)
 
 !!!!!!!!!!!!!
-      type(entrada_t), intent(inout) :: l
+      type(input_t), intent(inout) :: l
 !!!!!!!!!
 
       character(len=BUFSIZE) :: lineText, buff, f, binaryPath
@@ -1805,7 +1805,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine default_flags(l)
 !!!!!!!!!!!!!
-      type(entrada_t), intent(inout) :: l
+      type(input_t), intent(inout) :: l
       l%noconformalmapvtk = .false.
       l%forced = -1
       l%sgbcdepth = -1

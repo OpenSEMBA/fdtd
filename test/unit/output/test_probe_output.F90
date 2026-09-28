@@ -45,7 +45,7 @@ integer function test_init_point_probe() bind(c) result(err)
 
    call sgg_init(sgg)
    call init_time_array(timeArray, nSteps, dt)
-   call sgg_set_tiempo(sgg, timeArray)
+   call sggSetTime(sgg, timeArray)
    call sgg_set_dt(sgg, dt)
 
    call init_simulation_material_list(materials)
@@ -152,7 +152,7 @@ integer function test_scalar_probe_has_no_manifest() bind(c) result(err)
    probe_path = trim(path)//'_pointProbe_Ex_4_4_4'
    call sgg_init(sgg)
    call init_time_array(time_array, 2_SINGLE, 0.1_RKIND_TIME)
-   call sgg_set_tiempo(sgg, time_array)
+   call sggSetTime(sgg, time_array)
    call sgg_set_dt(sgg, 0.1_RKIND_TIME)
    call init_simulation_material_list(materials)
    materials_ptr => materials
@@ -531,7 +531,7 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
    use outputDecomposition_m, only: output_partition_t, OUTPUT_PARTITION_SUCCESS
    use outputCollective_m, only: OUTPUT_PUBLICATION_ROOT_AGGREGATION
    use testOutputUtils_m, only: create_movie_observation, get_temp_folder
-   use sggMethods_m, only: sgg_init, sgg_set_tiempo, sgg_set_dt, sgg_set_Med, sgg_set_NumMedia, &
+   use sggMethods_m, only: sgg_init, sggSetTime, sgg_set_dt, sgg_set_Med, sgg_set_NumMedia, &
                            sgg_set_Sweep, sgg_set_SINPMLSweep, sgg_set_NumPlaneWaves, sgg_set_Alloc, &
                            sgg_set_LineX, sgg_set_LineY, sgg_set_LineZ, sgg_add_observation
    use assertionTools_m, only: assert_integer_equal, assert_true
@@ -562,7 +562,7 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
    wires_exist = .false.
    call sgg_init(sgg)
    call init_time_array(time_array, 2_SINGLE, 0.1_RKIND_TIME)
-   call sgg_set_tiempo(sgg, time_array)
+   call sggSetTime(sgg, time_array)
    call sgg_set_dt(sgg, 0.1_RKIND_TIME)
    call init_simulation_material_list(materials)
    materials_ptr => materials
@@ -655,7 +655,7 @@ integer function test_update_point_probe() bind(c) result(err)
 
    call sgg_init(sgg)
    call init_time_array(timeArray, nSteps, dt)
-   call sgg_set_tiempo(sgg, timeArray)
+   call sggSetTime(sgg, timeArray)
    call sgg_set_dt(sgg, dt)
 
    probe = create_point_probe_observation(4, 4, 4)
@@ -767,7 +767,7 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
 
    call sgg_init(sgg)
    call init_time_array(timeArray, nSteps, dt)
-   call sgg_set_tiempo(sgg, timeArray)
+   call sggSetTime(sgg, timeArray)
    call sgg_set_dt(sgg, dt)
    sweep = create_xyz_limit_array(1, 1, 1, 5, 5, 5)
    call sgg_set_Sweep(sgg, sweep)
@@ -1259,7 +1259,7 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    call sgg_init(dummysgg)
    call init_time_array(timeArray, nTimeSteps, dt)
-   call sgg_set_tiempo(dummysgg, timeArray)
+   call sggSetTime(dummysgg, timeArray)
    call sgg_set_dt(dummysgg, dt)
 
    call init_simulation_material_list(simulationMaterials)
@@ -1396,7 +1396,7 @@ integer function test_update_movie_probe() bind(c) result(err)
 
    call sgg_init(dummysgg)
    call init_time_array(timeArray, nTimeSteps, dt)
-   call sgg_set_tiempo(dummysgg, timeArray)
+   call sggSetTime(dummysgg, timeArray)
    call sgg_set_dt(dummysgg, dt)
 
    call init_simulation_material_list(simulationMaterials)
@@ -1559,7 +1559,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
 
    call sgg_init(dummysgg)
    call init_time_array(timeArray, nTimeSteps, dt)
-   call sgg_set_tiempo(dummysgg, timeArray)
+   call sggSetTime(dummysgg, timeArray)
    call sgg_set_dt(dummysgg, dt)
 
    call init_simulation_material_list(simulationMaterials)
@@ -1715,7 +1715,7 @@ integer function test_close_movie_probe() bind(c) result(err)
    inputPath = join_path(testPath, TEST_NAME)
    call sgg_init(dummysgg)
    call init_time_array(timeArray, 100_SINGLE, dt)
-   call sgg_set_tiempo(dummysgg, timeArray)
+   call sggSetTime(dummysgg, timeArray)
    call sgg_set_dt(dummysgg, dt)
    call init_simulation_material_list(simulationMaterials)
    simulationMaterialsPtr => simulationMaterials
@@ -1815,7 +1815,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    call sgg_init(dummysgg)
 
    call init_time_array(timeArray, nTimeSteps, dt)
-   call sgg_set_tiempo(dummysgg, timeArray)
+   call sggSetTime(dummysgg, timeArray)
    call sgg_set_dt(dummysgg, dt)
 
    call init_simulation_material_list(simulationMaterials)
@@ -1972,7 +1972,7 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 
    call sgg_init(dummysgg)
    call init_time_array(timeArray, nTimeSteps, dt)
-   call sgg_set_tiempo(dummysgg, timeArray)
+   call sggSetTime(dummysgg, timeArray)
    call sgg_set_dt(dummysgg, dt)
 
    call init_simulation_material_list(simulationMaterials)

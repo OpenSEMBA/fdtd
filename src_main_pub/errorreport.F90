@@ -7,7 +7,7 @@ module Report_m
    private
 
    integer(kind=4), parameter  :: REPORTINGSECONDS=60
-   type :: tiempo_t
+   type :: time_t
       real(kind = 8) :: segundos
       character(LEN=BUFSIZE) :: hora
       character(LEN=BUFSIZE) :: fecha
@@ -18,7 +18,7 @@ module Report_m
    real(kind=8), save :: time_begin, time_end, time_begin2,time_begin3,time_begin_absoluto, time_end2,time_desdelanzamiento
    real(kind=RKIND), save :: megaceldas,megaceldastotales,speedInst, speedGlobInst,speedAvg,speedGlobAvg
    real(kind=RKIND), save  :: energy,energyTotal,oldenergyTotal,snapLevel
-   type(tiempo_t), save  :: time_out2
+   type(time_t), save  :: time_out2
    !
    character(len=BUFSIZE), save :: charmeg
    integer(kind=4), save   :: reportedinstant,snapStep,snapHowMany,countersnap
@@ -31,7 +31,7 @@ module Report_m
    !
    type(coorsxyzP_t) , save  :: gridPoint
 
-   character(len=BUFSIZE), save :: mynEntradaRoot
+   character(len=BUFSIZE), save :: myNInputRoot
 
    !!!logical, SAVE :: dxfFileIsOpen=.false.
    logical, save :: fatalerror=.false.
@@ -47,7 +47,7 @@ module Report_m
 
    !part of the dxf
    !!!public dxfwrite,INITdxfFILE,CLOSEdxfFILE,writemmdxf,TRIMNULLCHAR
-   public TRIMNULLCHAR,tiempo_t
+   public TRIMNULLCHAR,time_t
 
 
 
@@ -177,7 +177,7 @@ contains
 #endif
 
       !
-      gridPoint=Creapuntos(sgg) !crea coordenadas fisicas
+      gridPoint=createPoints(sgg) !crea coordenadas fisicas
 
       !
 
@@ -393,7 +393,7 @@ contains
       real(kind=8), intent(in) :: t
       integer(kind=4), intent(in) :: initialtimestep
       real(kind=RKIND), intent(in) :: maxSourceValue
-      type(tiempo_t) :: time_out2,time_comienzo
+      type(time_t) :: time_out2,time_comienzo
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
@@ -478,7 +478,7 @@ contains
       integer(kind=4), dimension(0:11) :: diasen, diasenbisiesto
       data diasen /31,59 ,90 ,120,151,181,212,243,273,304,334,365/
       data diasenbisiesto /31,60 ,91 ,121,152,182,213,244,274,305,335,366/
-      type(tiempo_t), intent(out) :: time_out2
+      type(time_t), intent(out) :: time_out2
 
       real(kind = 8) :: time_out
 
@@ -2228,7 +2228,7 @@ end function openfile_mpi
       return
    end subroutine closefile_mpi
 
-   function creaPuntos(sgg)  result(gridPoint) !crea coordenadas fisicas
+   function createPoints(sgg)  result(gridPoint) !crea coordenadas fisicas
       !
       type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(coorsxyzP_t) :: gridPoint
