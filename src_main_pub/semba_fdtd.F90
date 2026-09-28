@@ -976,7 +976,7 @@ contains
          rInfo%numero = rInfo%numero + 1
          linea => rInfo%lineas (rInfo%numero)
          linea%dato = adjustl(l_aux)
-         linea%LEN=len_trim (linea%dato)
+         linea%lengthValue=len_trim (linea%dato)
       end do
    2010   close (unit)
 
@@ -1001,7 +1001,7 @@ contains
          rInfo%numero = rInfo%numero + 1
          linea => rInfo%lineas (rInfo%numero)
          linea%dato = adjustl(l_aux)
-         linea%LEN=len_trim (linea%dato)
+         linea%lengthValue=len_trim (linea%dato)
       end do
       close (unit)
 
@@ -1043,19 +1043,19 @@ contains
 
       do k=1,rawFileInfo%numero
           linea => rawFileInfo%lineas (k)
-          do j=1,linea%len
+          do j=1,linea%lengthValue
               i=j
               buscaespa: do while ((ichar(linea%dato(i:i))==32).or.(ichar(linea%dato(i:i))==9))
                  if ((ichar(linea%dato(i+1:i+1))==32).or.(ichar(linea%dato(i+1:i+1))==9)) then
-                     linea%dato = trim (adjustl(linea%dato(1:i)))//' '//trim (adjustl(linea%dato(i+2:linea%len)))
+                     linea%dato = trim (adjustl(linea%dato(1:i)))//' '//trim (adjustl(linea%dato(i+2:linea%lengthValue)))
                  end if
                  i=i+1
-                 if (i>linea%len) exit buscaespa
+                 if (i>linea%lengthValue) exit buscaespa
               end do buscaespa
           end do
           !update
           linea%dato =  trim (adjustl(linea%dato))
-          linea%LEN=len_trim (adjustl(linea%dato))   
+          linea%lengthValue=len_trim (adjustl(linea%dato))   
      end do
 
 

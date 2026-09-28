@@ -820,7 +820,7 @@ module NFDETypes_m
    
    !---> definicion de tipos
    type, public :: t_linea_t
-      integer(kind=4) :: LEN
+      integer(kind=4) :: lengthValue
       character(len=BUFSIZE) :: dato
    end type t_linea_t
    !--->
