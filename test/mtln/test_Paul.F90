@@ -63,15 +63,15 @@ integer function test_termination_resistive() bind(C) result(error_cnt)
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_r%attached_to_cable => cable
-    probe_v_r%index = 50
+    probe_v_r%elementIndex = 50
     probe_v_r%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -166,15 +166,15 @@ integer function test_termination_resistive_inductive() bind(C) result(error_cnt
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_R%attached_to_cable => cable
-    probe_v_R%index = 50
+    probe_v_R%elementIndex = 50
     probe_v_R%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -270,15 +270,15 @@ integer function test_termination_resistive_capacitive_parallel() bind(C) result
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_r%attached_to_cable => cable
-    probe_v_r%index = 50
+    probe_v_r%elementIndex = 50
     probe_v_r%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -374,15 +374,15 @@ integer function test_termination_rls_cp() bind(C) result(error_cnt)
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_r%attached_to_cable => cable
-    probe_v_r%index = 50
+    probe_v_r%elementIndex = 50
     probe_v_r%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -483,15 +483,15 @@ integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_r%attached_to_cable => cable
-    probe_v_r%index = 50
+    probe_v_r%elementIndex = 50
     probe_v_r%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -587,15 +587,15 @@ integer function test_termination_rcp() bind(C) result(error_cnt)
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_r%attached_to_cable => cable
-    probe_v_r%index = 50
+    probe_v_r%elementIndex = 50
     probe_v_r%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -691,15 +691,15 @@ integer function test_termination_resistive_capacitive() bind(C) result(error_cn
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_r%attached_to_cable => cable
-    probe_v_r%index = 50
+    probe_v_r%elementIndex = 50
     probe_v_r%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -803,11 +803,11 @@ integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 100
+    probe_i%elementIndex = 100
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     allocate(parsed%networks(2))
@@ -927,11 +927,11 @@ integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 100
+    probe_i%elementIndex = 100
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     allocate(parsed%networks(2))
@@ -1060,19 +1060,19 @@ integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)
     network_right%connections = [connection_right_1]
 
     probe_v_left%attached_to_cable => cable
-    probe_v_left%index = 1 
+    probe_v_left%elementIndex = 1 
     probe_v_left%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_v_right%attached_to_cable => cable
-    probe_v_right%index = 796
+    probe_v_right%elementIndex = 796
     probe_v_right%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i_left%attached_to_cable => cable
-    probe_i_left%index = 1 
+    probe_i_left%elementIndex = 1 
     probe_i_left%probe_type = PROBE_TYPE_CURRENT
 
     probe_i_right%attached_to_cable => cable
-    probe_i_right%index = 795
+    probe_i_right%elementIndex = 795
     probe_i_right%probe_type = PROBE_TYPE_CURRENT
 
     
@@ -1217,27 +1217,27 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
     network_right%connections = [connection_right_1, connection_right_2]
 
     probe_v_left%attached_to_cable => cable
-    probe_v_left%index = 1 
+    probe_v_left%elementIndex = 1 
     probe_v_left%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_v_mid%attached_to_cable => cable
-    probe_v_mid%index = 398
+    probe_v_mid%elementIndex = 398
     probe_v_mid%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_v_right%attached_to_cable => cable
-    probe_v_right%index = 796
+    probe_v_right%elementIndex = 796
     probe_v_right%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i_left%attached_to_cable => cable
-    probe_i_left%index = 1 
+    probe_i_left%elementIndex = 1 
     probe_i_left%probe_type = PROBE_TYPE_CURRENT
 
     probe_i_mid%attached_to_cable => cable
-    probe_i_mid%index = 398
+    probe_i_mid%elementIndex = 398
     probe_i_mid%probe_type = PROBE_TYPE_CURRENT
 
     probe_i_right%attached_to_cable => cable
-    probe_i_right%index = 795
+    probe_i_right%elementIndex = 795
     probe_i_right%probe_type = PROBE_TYPE_CURRENT
 
 
@@ -1372,7 +1372,7 @@ integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt
     network_right%connections = [connection_right_1, connection_right_2]
 
     probe_v_101%attached_to_cable => cable
-    probe_v_101%index = 1 
+    probe_v_101%elementIndex = 1 
     probe_v_101%probe_type = PROBE_TYPE_VOLTAGE
 
     parsed%networks = [network_left, network_right]
@@ -1488,7 +1488,7 @@ integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)
     network_right%connections = [connection_right_1, connection_right_2]
 
     probe_v_101%attached_to_cable => cable
-    probe_v_101%index = 1 
+    probe_v_101%elementIndex = 1 
     probe_v_101%probe_type = PROBE_TYPE_VOLTAGE
 
     parsed%networks = [network_left, network_right]

@@ -1857,7 +1857,7 @@ contains
       l%kappamaxpar = 1.0_RKIND !15.0_RKIND !061118 mantener a 1 por conflictos cpml and permittivity scaling
       !and final layer electric sigma
       l%MEDIOEXTRA%exists = .false.
-      l%MEDIOEXTRA%index = -7 !void
+      l%MEDIOEXTRA%elementIndex = -7 !void
       l%MEDIOEXTRA%pml_size = -1  !void
       l%MEDIOEXTRA%sigma = -1e20 !void
       !

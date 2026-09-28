@@ -211,12 +211,12 @@ contains
 
    contains
 
-      subroutine createnodal(layoutnumber,dummy,sggdummy,sggSweep,index,amplit)
+      subroutine createnodal(layoutnumber,dummy,sggdummy,sggSweep,elementIndex,amplit)
 
          type(nodsou_t), intent (inout) :: dummy
          type(NodalSource_t), intent(in), target :: sggdummy
          real(kind=rkind), intent(in) :: amplit
-         integer(kind=4), intent(in) :: index
+         integer(kind=4), intent(in) :: elementIndex
          integer(kind=4) :: layoutnumber,i,j,k
          type(XYZlimit_t) :: sggSweep
 
@@ -227,12 +227,12 @@ contains
             dummy%numHard=dummy%numHard+1
             !
             dummy%nodHard(dummy%numHard)%IsInitialValue=sggdummy%IsInitialValue
-            dummy%nodHard(dummy%numHard)%punto%XI = max(sggdummy%punto(index)%XI,sggSweep%XI)
-            dummy%nodHard(dummy%numHard)%punto%XE = min(sggdummy%punto(index)%XE,sggSweep%XE)
-            dummy%nodHard(dummy%numHard)%punto%YI = max(sggdummy%punto(index)%YI,sggSweep%YI)
-            dummy%nodHard(dummy%numHard)%punto%YE = min(sggdummy%punto(index)%YE,sggSweep%YE)
-            dummy%nodHard(dummy%numHard)%punto%ZI = max(sggdummy%punto(index)%ZI,sggSweep%ZI)
-            dummy%nodHard(dummy%numHard)%punto%ZE = min(sggdummy%punto(index)%ZE,sggSweep%ZE)
+            dummy%nodHard(dummy%numHard)%punto%XI = max(sggdummy%punto(elementIndex)%XI,sggSweep%XI)
+            dummy%nodHard(dummy%numHard)%punto%XE = min(sggdummy%punto(elementIndex)%XE,sggSweep%XE)
+            dummy%nodHard(dummy%numHard)%punto%YI = max(sggdummy%punto(elementIndex)%YI,sggSweep%YI)
+            dummy%nodHard(dummy%numHard)%punto%YE = min(sggdummy%punto(elementIndex)%YE,sggSweep%YE)
+            dummy%nodHard(dummy%numHard)%punto%ZI = max(sggdummy%punto(elementIndex)%ZI,sggSweep%ZI)
+            dummy%nodHard(dummy%numHard)%punto%ZE = min(sggdummy%punto(elementIndex)%ZE,sggSweep%ZE)
             !
             dummy%nodHard(dummy%numHard)%punto%amplitude = amplit
             !Read the time evolution
@@ -248,12 +248,12 @@ contains
             dummy%numSoft=dummy%numSoft+1
             !
             dummy%nodSoft(dummy%numSoft)%IsInitialValue=sggdummy%IsInitialValue
-            dummy%nodSoft(dummy%numSoft)%punto%XI = max(sggdummy%punto(index)%XI,sggSweep%XI)
-            dummy%nodSoft(dummy%numSoft)%punto%XE = min(sggdummy%punto(index)%XE,sggSweep%XE)
-            dummy%nodSoft(dummy%numSoft)%punto%YI = max(sggdummy%punto(index)%YI,sggSweep%YI)
-            dummy%nodSoft(dummy%numSoft)%punto%YE = min(sggdummy%punto(index)%YE,sggSweep%YE)
-            dummy%nodSoft(dummy%numSoft)%punto%ZI = max(sggdummy%punto(index)%ZI,sggSweep%ZI)
-            dummy%nodSoft(dummy%numSoft)%punto%ZE = min(sggdummy%punto(index)%ZE,sggSweep%ZE)
+            dummy%nodSoft(dummy%numSoft)%punto%XI = max(sggdummy%punto(elementIndex)%XI,sggSweep%XI)
+            dummy%nodSoft(dummy%numSoft)%punto%XE = min(sggdummy%punto(elementIndex)%XE,sggSweep%XE)
+            dummy%nodSoft(dummy%numSoft)%punto%YI = max(sggdummy%punto(elementIndex)%YI,sggSweep%YI)
+            dummy%nodSoft(dummy%numSoft)%punto%YE = min(sggdummy%punto(elementIndex)%YE,sggSweep%YE)
+            dummy%nodSoft(dummy%numSoft)%punto%ZI = max(sggdummy%punto(elementIndex)%ZI,sggSweep%ZI)
+            dummy%nodSoft(dummy%numSoft)%punto%ZE = min(sggdummy%punto(elementIndex)%ZE,sggSweep%ZE)
             !
             dummy%nodSoft(dummy%numSoft)%punto%amplitude = amplit
             !Read the time evolution

@@ -128,7 +128,7 @@ contains
             max(1.0_RKIND * SINPML_fullsize(IHZ)%ZE,ZE(j)) - Max(1.0_RKIND * SINPML_fullsize(IHZ)%ZE,cZI(ilay)))-carga)
          end do
          !select the closest to 0 one
-         index=minloc(cargaZE)
+         elementIndex=minloc(cargaZE)
          cZE(ilay)=ZE(index(1))
          cZI(ilay+1)=cZE(ilay)
       end do

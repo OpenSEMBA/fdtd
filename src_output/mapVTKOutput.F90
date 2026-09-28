@@ -533,27 +533,27 @@ contains
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: numEdges, numQuads
       real, allocatable, intent(out) :: tags(:), media_types(:)
-      integer :: edge_index, quad_index, index, field
+      integer :: edge_index, quad_index, elementIndex, field
 
       allocate (tags(numEdges + numQuads), media_types(numEdges + numQuads))
       edge_index = 0
       quad_index = numEdges
-      do index = 1, this%nPoints
-         select case (this%currentType(index))
+      do elementIndex = 1, this%nPoints
+         select case (this%currentType(elementIndex))
          case (IJX, IJY, IJZ)
             edge_index = edge_index + 1
-            field = electric_field(this%currentType(index))
-            tags(edge_index) = real(this%materialTag(index))
-            if (this%mediaType(index) >= 0.0_RKIND) then
-               media_types(edge_index) = this%mediaType(index)
+            field = electric_field(this%currentType(elementIndex))
+            tags(edge_index) = real(this%materialTag(elementIndex))
+            if (this%mediaType(elementIndex) >= 0.0_RKIND) then
+               media_types(edge_index) = this%mediaType(elementIndex)
             else
-               media_types(edge_index) = get_output_media_type(field, this%coords(:, index), problemInfo)
+               media_types(edge_index) = get_output_media_type(field, this%coords(:, elementIndex), problemInfo)
             end if
          case (IBLOQUEJX, IBLOQUEJY, IBLOQUEJZ)
             quad_index = quad_index + 1
-            field = magnetic_field(this%currentType(index))
-            tags(quad_index) = real(this%materialTag(index))
-            media_types(quad_index) = get_output_media_type(field, this%coords(:, index), problemInfo)
+            field = magnetic_field(this%currentType(elementIndex))
+            tags(quad_index) = real(this%materialTag(elementIndex))
+            media_types(quad_index) = get_output_media_type(field, this%coords(:, elementIndex), problemInfo)
          end select
       end do
    contains

@@ -1539,7 +1539,7 @@ contains
                                                stat=stat)
             if (stat /= 0) return
             call this%conductors_before_cable%get(key(parsed_generators(i)%attached_to_cable%name), n)
-            call this%bundles(d)%addGenerator(index = parsed_generators(i)%index, &
+            call this%bundles(d)%addGenerator(elementIndex = parsed_generators(i)%elementIndex, &
                                               conductor = n + parsed_generators(i)%conductor, &
                                               gen_type = parsed_generators(i)%generator_type, &
                                               resistance = parsed_generators(i)%resistance, &
@@ -1569,7 +1569,7 @@ contains
             probe_name = parsed_probes(i)%probe_name//"_"//this%bundles(d)%name
             
 
-            call this%bundles(d)%addProbe(index = parsed_probes(i)%index, &
+            call this%bundles(d)%addProbe(elementIndex = parsed_probes(i)%elementIndex, &
                                           probe_type = parsed_probes(i)%probe_type,&
                                           name = probe_name,&
                                           position =parsed_probes(i)%probe_position &

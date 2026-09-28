@@ -454,43 +454,43 @@ contains
       deallocate(expected%mtln%probes)
       allocate(expected%mtln%probes(7))
       expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1)%ptr ! to which cable is the probe attached in mtln?
-      expected%mtln%probes(1)%index = 1
+      expected%mtln%probes(1)%elementIndex = 1
       expected%mtln%probes(1)%probe_type = PROBE_TYPE_VOLTAGE
       expected%mtln%probes(1)%probe_name = "b1_terminal_voltage"
       expected%mtln%probes(1)%probe_position = [1,7,1]
 
       expected%mtln%probes(2)%attached_to_cable => expected%mtln%cables(1)%ptr
-      expected%mtln%probes(2)%index = 1
+      expected%mtln%probes(2)%elementIndex = 1
       expected%mtln%probes(2)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(2)%probe_name = "b1_terminal_current"
       expected%mtln%probes(2)%probe_position = [1,7,1]
 
       expected%mtln%probes(3)%attached_to_cable => expected%mtln%cables(1)%ptr
-      expected%mtln%probes(3)%index = 10
+      expected%mtln%probes(3)%elementIndex = 10
       expected%mtln%probes(3)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(3)%probe_name = "junction_current"
       expected%mtln%probes(3)%probe_position = [10, 7, 1]
 
       expected%mtln%probes(4)%attached_to_cable => expected%mtln%cables(4)%ptr
-      expected%mtln%probes(4)%index = 1
+      expected%mtln%probes(4)%elementIndex = 1
       expected%mtln%probes(4)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(4)%probe_name = "junction_current"
       expected%mtln%probes(4)%probe_position = [10, 7, 1]
 
       expected%mtln%probes(5)%attached_to_cable => expected%mtln%cables(7)%ptr
-      expected%mtln%probes(5)%index = 1
+      expected%mtln%probes(5)%elementIndex = 1
       expected%mtln%probes(5)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(5)%probe_name = "junction_current"
       expected%mtln%probes(5)%probe_position = [10, 7, 1]
 
       expected%mtln%probes(6)%attached_to_cable => expected%mtln%cables(4)%ptr
-      expected%mtln%probes(6)%index = 9
+      expected%mtln%probes(6)%elementIndex = 9
       expected%mtln%probes(6)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(6)%probe_name = "b2_terminal_current"
       expected%mtln%probes(6)%probe_position = [ 18, 7, 1]
 
       expected%mtln%probes(7)%attached_to_cable => expected%mtln%cables(7)%ptr
-      expected%mtln%probes(7)%index = 8
+      expected%mtln%probes(7)%elementIndex = 8
       expected%mtln%probes(7)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(7)%probe_name = "b3_terminal_current"
       expected%mtln%probes(7)%probe_position = [10, 0, 1]

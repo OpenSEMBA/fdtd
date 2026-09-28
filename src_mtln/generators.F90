@@ -10,7 +10,7 @@ module generators_m
     implicit none
 
     type generator_t
-        integer :: index, conductor
+        integer :: elementIndex, conductor
         real(kind=rkind), dimension(:), allocatable :: value
         real(kind=RKIND_TIEMPO), dimension(:), allocatable :: time
         real :: resistance
@@ -28,9 +28,9 @@ module generators_m
 
 contains
 
-    function generatorCtor(index, conductor, gen_type, resistance, path, layer_indices) result(res)
+    function generatorCtor(elementIndex, conductor, gen_type, resistance, path, layer_indices) result(res)
         type(generator_t) :: res
-        integer, intent(in) :: index, conductor, gen_type
+        integer, intent(in) :: elementIndex, conductor, gen_type
         real(kind=rkind) :: resistance
         character(*), intent(in) :: path
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
@@ -38,7 +38,7 @@ contains
         integer :: layer_index, ierr, sizeof, i, slice
 #endif
 
-        res%index = index
+        res%elementIndex = elementIndex
         res%conductor = conductor
         res%resistance = resistance
         res%source_type = gen_type
@@ -48,7 +48,7 @@ contains
             if (sizeof > 1) then
                 res%in_layer = .false.
                 do i = 1, size(layer_indices,1) 
-                    if (index >= layer_indices(i, 1) .and. index <= layer_indices(i,2)+1) then 
+                    if (elementIndex >= layer_indices(i, 1) .and. elementIndex <= layer_indices(i,2)+1) then 
                         res%in_layer = .true.
                         slice = i
                     end if
@@ -59,9 +59,9 @@ contains
                     do i = 1, slice - 1
                         layer_index = layer_index + layer_indices(i,2) + 1 - (layer_indices(i,1) - 1)
                     end do
-                    layer_index = layer_index + res%index - layer_indices(slice,1) + 1
+                    layer_index = layer_index + res%elementIndex - layer_indices(slice,1) + 1
                 end if
-                res%index = layer_index
+                res%elementIndex = layer_index
             end if
         end if
 #endif
@@ -111,19 +111,19 @@ contains
         real(kind=rkind) :: res
         real(kind=RKIND_TIEMPO) :: t, x1, x2
         real(kind=rkind) :: y1, y2
-        integer :: index
+        integer :: elementIndex
         real(kind=RKIND_TIEMPO), dimension(:), allocatable :: timediff
         timediff = this%time - t
-        index = maxloc(timediff, 1, (timediff) <= 0)
-        if (index == 0) index = 1
-        x1 = this%time(index)
-        y1 = this%value(index)
-        if (index+1 > size(this%time)) then
+        elementIndex = maxloc(timediff, 1, (timediff) <= 0)
+        if (elementIndex == 0) elementIndex = 1
+        x1 = this%time(elementIndex)
+        y1 = this%value(elementIndex)
+        if (elementIndex+1 > size(this%time)) then
             x2 = x1
             y2 = y1
         else 
-            x2 = this%time(index+1)
-            y2 = this%value(index+1)
+            x2 = this%time(elementIndex+1)
+            y2 = this%value(elementIndex+1)
         end if
         res = (t*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
     end function

@@ -46,7 +46,7 @@ module mtln_types_m
       integer(kind=4) :: generator_type = SOURCE_TYPE_UNDEFINED
       type(cable_t), pointer :: attached_to_cable => null()
       real(kind=rkind) :: resistance = 0.0
-      integer(kind=4) :: index = -1, conductor = -1
+      integer(kind=4) :: elementIndex = -1, conductor = -1
    contains
       private
       procedure :: wire_source_eq
@@ -233,7 +233,7 @@ module mtln_types_m
 
    type :: probe_t
       class(cable_t), pointer :: attached_to_cable => null()
-      integer(kind=4) :: index
+      integer(kind=4) :: elementIndex
       integer(kind=4) :: probe_type = PROBE_TYPE_UNDEFINED
       character(len=:), allocatable :: probe_name
       real(kind=rkind), dimension(3) :: probe_position
@@ -442,7 +442,7 @@ contains
          (a%path_to_excitation == b%path_to_excitation) .and. &
          (a%generator_type == b%generator_type) .and. &
          (a%resistance == b%resistance) .and. &
-         (a%index == b%index)
+         (a%elementIndex == b%elementIndex)
       if (.not. associated(a%attached_to_cable) .or. .not. associated(b%attached_to_cable)) then 
          wire_source_eq = wire_source_eq .and. .false.
       else 
@@ -466,7 +466,7 @@ contains
    logical function probe_eq(a,b)
       class(probe_t), intent(in) :: a,b
       probe_eq = &
-         (a%index == b%index) .and. &
+         (a%elementIndex == b%elementIndex) .and. &
          (a%probe_type == b%probe_type) .and. &
          (a%probe_name == b%probe_name) .and. &
          all(a%probe_position == b%probe_position)

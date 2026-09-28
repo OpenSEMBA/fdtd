@@ -252,7 +252,7 @@ module  FDETYPES_m
    end type coorsxyzP_t
 
    type MedioExtra_t
-      integer(kind=4) :: pml_size,index
+      integer(kind=4) :: pml_size,elementIndex
       real(kind=rkind) :: sigma,sigmam
       logical :: exists
    end type
@@ -416,7 +416,7 @@ module  FDETYPES_m
    end type Wires_t
    
    type  :: SlantedNode_t
-      integer(kind=4) :: index
+      integer(kind=4) :: elementIndex
       real(kind=RKIND_WIRES) :: x, y, z
       logical                 :: VsourceExists, IsourceExists
       type(source_t), pointer  :: Vsource, Isource

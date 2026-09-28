@@ -77,7 +77,7 @@ contains
       type(output_artifact_t), intent(in) :: artifact
       real(real64), intent(in) :: values(:)
       integer, intent(out) :: status
-      integer :: index, ios, unit, write_ios
+      integer :: elementIndex, ios, unit, write_ios
 
       call validate_binary_layout(artifact, status)
       if (status /= BINARY_WRITER_SUCCESS) return
@@ -90,8 +90,8 @@ contains
       call open_binary_append(path, artifact, unit, status)
       if (status /= BINARY_WRITER_SUCCESS) return
       ios = 0
-      do index = 1, size(values)
-         call write_int64_little_endian(unit, transfer(values(index), 0_int64), ios)
+      do elementIndex = 1, size(values)
+         call write_int64_little_endian(unit, transfer(values(elementIndex), 0_int64), ios)
          if (ios /= 0) exit
       end do
       write_ios = ios

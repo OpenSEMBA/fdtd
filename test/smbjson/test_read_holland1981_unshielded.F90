@@ -99,7 +99,7 @@ contains
       deallocate(ex%mtln%probes)
       allocate(ex%mtln%probes(1))
       ex%mtln%probes(1)%attached_to_cable => ex%mtln%cables(1)%ptr
-      ex%mtln%probes(1)%index = 6
+      ex%mtln%probes(1)%elementIndex = 6
       ex%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
       ex%mtln%probes(1)%probe_name = "mid_point"
       ex%mtln%probes(1)%probe_position = [11,11,12]

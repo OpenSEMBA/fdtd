@@ -2880,7 +2880,7 @@ contains
          type(materialAssociation_t) :: cable
          type(cable_abstract_t), dimension(:), allocatable :: cables
          type(json_value_ptr_t) :: mat
-         integer :: parentId, index
+         integer :: parentId, elementIndex
          class(cable_t), pointer :: res
 
          mat = this%matTable%getId(cable%materialId)
@@ -3087,7 +3087,7 @@ contains
          integer, intent(in) :: network_index
          type(aux_node_t), dimension(:), allocatable :: subckt_filtered_nodes, id_filtered_nodes
          type(network_circuit_t), dimension(:), allocatable :: res
-         character(20) :: index
+         character(20) :: elementIndex
          character(BUFSIZE) :: circuit_name
          integer :: i, j, n
          n = 0
@@ -3096,7 +3096,7 @@ contains
             id_filtered_nodes = filterNetworkNodesById(subckt_filtered_nodes, node_ids(i))
             if (size(id_filtered_nodes) /= 0) n = n + 1
          end do
-         write(index, '(I0)') network_index
+         write(elementIndex, '(I0)') network_index
 
          allocate(res(n))
          n = 1
@@ -3106,7 +3106,7 @@ contains
                res(n)%nodeId = id_filtered_nodes(1)%cId
                res(n)%model_name = trim(id_filtered_nodes(1)%node%termination%model%name)
                res(n)%model_file = trim(id_filtered_nodes(1)%node%termination%model%file)
-               res(n)%circuit_name =  'subckt_' // trim(res(n)%model_file)//'_'// trim(adjustl(index))
+               res(n)%circuit_name =  'subckt_' // trim(res(n)%model_file)//'_'// trim(adjustl(elementIndex))
                res(n)%number_of_nodes = readNumberOfNodes(res(n)%model_file,res(n)%model_name)
                if (res(n)%number_of_nodes == 0) call WarnErrReport('Problem in network model. No ports detected', .true.)
                n = n + 1
@@ -3303,17 +3303,17 @@ contains
 
 
 
-      function buildNode(termination_list, label, index, id, isShieldedCable) result(res)
+      function buildNode(termination_list, label, elementIndex, id, isShieldedCable) result(res)
          type(json_value), pointer :: termination_list, termination
          integer, intent(in) :: label
-         integer, intent(in) :: index, id
+         integer, intent(in) :: elementIndex, id
          logical, intent(in) :: isShieldedCable
          type(polyline_t) :: polyline
          type(aux_node_t) :: res
          integer :: cable_index
          integer :: stat
          character(len=BUFSIZE) :: warningMsg
-         call this%core%get_child(termination_list, index, termination)
+         call this%core%get_child(termination_list, elementIndex, termination)
          
          res%node%termination%termination_type = readTerminationType(termination)
          res%node%termination%capacitance = readTerminationRLC(termination,J_MAT_TERM_CAPACITANCE, default = 1e22_RKIND)
@@ -3324,7 +3324,7 @@ contains
          res%node%termination%networkCircuitNode = readTerminationnetworkCircuitNode(termination, default = -1)
          
          res%node%side = label
-         res%node%conductor_in_cable = index
+         res%node%conductor_in_cable = elementIndex
 
          call elemIdToCable%get(key(id), value=cable_index, stat=stat)
          if (stat == 0) then
@@ -3343,7 +3343,7 @@ contains
                if (.not. terminalTouchesAnyEntity(res%cId, res%relPos, id)) then
                   res%node%termination%termination_type = TERMINATION_OPEN
                   write(warningMsg, '(A)') 'MTLN terminal on cable '//trim(res%node%belongs_to_cable%name)// &
-                        ' (conductor '//trim(intToStr(index))//', side '//trim(sideToStr(label))//') is short but not touching any wire or non-vacuum material. Treating as open.'
+                        ' (conductor '//trim(intToStr(elementIndex))//', side '//trim(sideToStr(label))//') is short but not touching any wire or non-vacuum material. Treating as open.'
                   call WarnErrReport(trim(warningMsg), .false.)
                end if
             end if
@@ -3596,7 +3596,7 @@ contains
          type(json_value), pointer, intent(in) :: src
          type(polyline_t), intent(in) :: polyline
          integer, intent(in) :: id, label
-         integer :: index
+         integer :: elementIndex
          integer, dimension(:), allocatable :: sourceElemIds
          type(node_t) :: srcCoord
          logical :: res
@@ -3605,15 +3605,15 @@ contains
          srcCoord = this%mesh%getNode(sourceElemIds(1))
 
          if (label == TERMINAL_NODE_SIDE_INI) then
-            index = 1
+            elementIndex = 1
          else if (label == TERMINAL_NODE_SIDE_END) then 
-            index = ubound(polyline%coordIds,1)
+            elementIndex = ubound(polyline%coordIds,1)
          end if
          
          if (this%existsAt(src, J_SRC_ATTACHED_ID)) then 
-            res = (srcCoord%coordIds(1) == polyline%coordIds(index)) .and. (this%getIntAt(src, J_SRC_ATTACHED_ID) == id)
+            res = (srcCoord%coordIds(1) == polyline%coordIds(elementIndex)) .and. (this%getIntAt(src, J_SRC_ATTACHED_ID) == id)
          else
-            res = (srcCoord%coordIds(1) == polyline%coordIds(index))
+            res = (srcCoord%coordIds(1) == polyline%coordIds(elementIndex))
          end if
       
       end function
@@ -3703,7 +3703,7 @@ contains
          type(linel_t), dimension(:), allocatable :: linels
          type(polyline_t) :: pl
          type(coordinate_t) :: coord
-         integer :: idAndPos(2), index
+         integer :: idAndPos(2), elementIndex
 
          call this%core%get(this%root, J_sources, sources, found)
          if (.not. found) then 
@@ -3739,14 +3739,14 @@ contains
                res(n)%path_to_excitation = this%getStrAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)
                
                idAndPos = getPolylineElemIdAndConductorOfGenerator(gens(i)%p)
-               call elemIdToCable%get(key(idAndPos(1)), value=index)
+               call elemIdToCable%get(key(idAndPos(1)), value=elementIndex)
                coord = GetCoordinateFromElemIdNode(gens(i)%p)
                pl = this%mesh%getPolyline(idAndPos(1))
                linels = this%mesh%polylineToLinels(pl)
 
                res(n)%conductor = idAndPos(2)
-               res(n)%index = findIndexInLinels(coord, linels)
-               res(n)%attached_to_cable => mtln_res%cables(index)%ptr
+               res(n)%elementIndex = findIndexInLinels(coord, linels)
+               res(n)%attached_to_cable => mtln_res%cables(elementIndex)%ptr
 
                n = n + 1
             end if
@@ -3809,7 +3809,7 @@ contains
          type(probe_t), dimension(:), allocatable :: res
          type(json_value_ptr_t), dimension(:), allocatable :: wire_probes
          type(json_value), pointer :: probes
-         integer :: i, j, index, n
+         integer :: i, j, elementIndex, n
          integer, dimension(:), allocatable :: ids
          type(coordinate_t) :: probe_node_coord
          type(linel_t), dimension(:), allocatable :: linels
@@ -3840,12 +3840,12 @@ contains
                   res(n)%probe_type = readProbeType(wire_probes(i)%p)
                   res(n)%probe_position = probe_node_coord%position
                   
-                  call elemIdToCable%get(key(ids(j)), value=index)
+                  call elemIdToCable%get(key(ids(j)), value=elementIndex)
                   pl = this%mesh%getPolyline(ids(j))
                   linels = this%mesh%polylineToLinels(pl)
-                  res(n)%index = findIndexInLinels(probe_node_coord, linels)
+                  res(n)%elementIndex = findIndexInLinels(probe_node_coord, linels)
 
-                  cable_ptr => mtln_res%cables(index)%ptr
+                  cable_ptr => mtln_res%cables(elementIndex)%ptr
                   ! Inside select type, cable_ptr is shielded_multiwire_t but parent_cable is cable_t
                   ! Outside, cable_t does not have the parent_cable member
                   ! aux_ptr is used insted of cable_ptr => cable_ptr%parent_cable  
@@ -4087,7 +4087,7 @@ contains
          type(cable_abstract_t), dimension(:), allocatable :: cables
          integer, intent(in) :: id
          integer :: mStat
-         integer :: index
+         integer :: elementIndex
          class(cable_t), pointer :: res
 
 
@@ -4095,8 +4095,8 @@ contains
          if (mStat /= 0) then
             res => null()
          else
-            call elemIdToCable%get(key(id), value=index)
-            res => cables(index)%ptr
+            call elemIdToCable%get(key(id), value=elementIndex)
+            res => cables(elementIndex)%ptr
          end if
       end function
 
@@ -4135,13 +4135,13 @@ contains
       end subroutine
 
 
-      subroutine addElemIdToCableMap(map, elemIds, index)
+      subroutine addElemIdToCableMap(map, elemIds, elementIndex)
          type(fhash_tbl_t), intent(inout) :: map
          integer, dimension(:), intent(in) :: elemIds
-         integer :: index
+         integer :: elementIndex
          integer :: i
          do i = 1, size(elemIds)
-            call map%set(key(elemIds(i)), index)
+            call map%set(key(elemIds(i)), elementIndex)
          end do
       end subroutine
 

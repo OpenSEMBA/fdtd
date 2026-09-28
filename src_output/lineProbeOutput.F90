@@ -149,14 +149,14 @@ contains
 
    subroutine flush_line_probe_output(this)
       type(line_probe_output_t), intent(inout) :: this
-      integer :: index, ios, unit
+      integer :: elementIndex, ios, unit
 
       if (this%nTime == 0) return
       if (this%isWriter) then
          open (newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
          if (ios /= 0) return
-         do index = 1, this%nTime
-            write (unit, '(ES24.16E3,1X,ES24.16E3)', iostat=ios) this%timeStep(index), this%valueForTime(index)
+         do elementIndex = 1, this%nTime
+            write (unit, '(ES24.16E3,1X,ES24.16E3)', iostat=ios) this%timeStep(elementIndex), this%valueForTime(elementIndex)
             if (ios /= 0) exit
          end do
          close (unit)

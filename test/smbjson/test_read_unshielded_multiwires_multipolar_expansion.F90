@@ -144,7 +144,7 @@ contains
       deallocate(ex%mtln%probes)
       allocate(ex%mtln%probes(1))
       ex%mtln%probes(1)%attached_to_cable => ex%mtln%cables(1)%ptr
-      ex%mtln%probes(1)%index = 8
+      ex%mtln%probes(1)%elementIndex = 8
       ex%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
       ex%mtln%probes(1)%probe_name = "test"
       ex%mtln%probes(1)%probe_position = [2,11,14]

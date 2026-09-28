@@ -181,25 +181,25 @@ contains
       deallocate(expected%mtln%probes)
       allocate(expected%mtln%probes(4))
       expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1)%ptr ! to which cable is the probe attached in mtln?
-      expected%mtln%probes(1)%index = 1
+      expected%mtln%probes(1)%elementIndex = 1
       expected%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(1)%probe_name = "wire_end"
       expected%mtln%probes(1)%probe_position = [75,71,74]
       
       expected%mtln%probes(2)%attached_to_cable => expected%mtln%cables(1)%ptr
-      expected%mtln%probes(2)%index = 1
+      expected%mtln%probes(2)%elementIndex = 1
       expected%mtln%probes(2)%probe_type = PROBE_TYPE_VOLTAGE
       expected%mtln%probes(2)%probe_name = "wire_end"
       expected%mtln%probes(2)%probe_position = [75,71,74]
       
       expected%mtln%probes(3)%attached_to_cable => expected%mtln%cables(1)%ptr ! to which cable is the probe attached in mtln?
-      expected%mtln%probes(3)%index = 6
+      expected%mtln%probes(3)%elementIndex = 6
       expected%mtln%probes(3)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(3)%probe_name = "wire_start"
       expected%mtln%probes(3)%probe_position = [75,74,74]
       
       expected%mtln%probes(4)%attached_to_cable => expected%mtln%cables(1)%ptr
-      expected%mtln%probes(4)%index = 6
+      expected%mtln%probes(4)%elementIndex = 6
       expected%mtln%probes(4)%probe_type = PROBE_TYPE_VOLTAGE
       expected%mtln%probes(4)%probe_name = "wire_start"
       expected%mtln%probes(4)%probe_position = [75,74,74]

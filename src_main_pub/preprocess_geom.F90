@@ -202,7 +202,7 @@ contains
       !PARA LA CAPA EXTRA 2013
       if (medioextra%exists) then
          CONTAMEDIA = CONTAMEDIA+1
-         MEDIOEXTRA%index=CONTAMEDIA
+         MEDIOEXTRA%elementIndex=CONTAMEDIA
       end if
       !para modulos que necesiten senialar con already_YEEadvanced_byconformal y split_and_useless (eg. conformal)
       !se crea siempre por defecto
@@ -539,14 +539,14 @@ contains
          end do
          MEDIOEXTRA%sigma = MEDIOEXTRA%sigma * sig_max !la especificacion se da en terminos de tanto por uno en la linea de comandos
          !
-         sgg%Med(MEDIOEXTRA%index)%Epr = this%mats%mats(1)%eps / Eps0 !luego se machaca este valor
-         sgg%Med(MEDIOEXTRA%index)%Sigma = MEDIOEXTRA%sigma !luego se machaca este valor
-         sgg%Med(MEDIOEXTRA%index)%Mur = this%mats%mats(1)%mu / Mu0 !luego se machaca este valor
-         sgg%Med(MEDIOEXTRA%index)%SigmaM = 0.0_RKIND !solo lo creo para las tangenciales electricas
-         sgg%Med(MEDIOEXTRA%index)%Priority = prior_PEC
-         sgg%Med(MEDIOEXTRA%index)%Is%DIELECTRIC = .TRUE.
-         sgg%Med(MEDIOEXTRA%index)%Is%Volume = .TRUE.
-         sgg%Med(MEDIOEXTRA%index)%Is%PML = .TRUE.
+         sgg%Med(MEDIOEXTRA%elementIndex)%Epr = this%mats%mats(1)%eps / Eps0 !luego se machaca este valor
+         sgg%Med(MEDIOEXTRA%elementIndex)%Sigma = MEDIOEXTRA%sigma !luego se machaca este valor
+         sgg%Med(MEDIOEXTRA%elementIndex)%Mur = this%mats%mats(1)%mu / Mu0 !luego se machaca este valor
+         sgg%Med(MEDIOEXTRA%elementIndex)%SigmaM = 0.0_RKIND !solo lo creo para las tangenciales electricas
+         sgg%Med(MEDIOEXTRA%elementIndex)%Priority = prior_PEC
+         sgg%Med(MEDIOEXTRA%elementIndex)%Is%DIELECTRIC = .TRUE.
+         sgg%Med(MEDIOEXTRA%elementIndex)%Is%Volume = .TRUE.
+         sgg%Med(MEDIOEXTRA%elementIndex)%Is%PML = .TRUE.
       end if
       !
       !barre los medios
@@ -2478,7 +2478,7 @@ contains
             !fin clipeo
 
 
-            sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%index = this%swires%SW(j)%swc(i)%nd
+            sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%elementIndex = this%swires%SW(j)%swc(i)%nd
             sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%x     = this%swires%SW(j)%swc(i)%x
             sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%y     = this%swires%SW(j)%swc(i)%y
             sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%z     = this%swires%SW(j)%swc(i)%z
@@ -4665,10 +4665,10 @@ contains
       !PARA LA CAPA EXTRA 2013
       if (medioextra%exists) then
          CONTAMEDIA = CONTAMEDIA+1
-         if  (MEDIOEXTRA%index /= contamedia) then !should be already done earlier
+         if  (MEDIOEXTRA%elementIndex /= contamedia) then !should be already done earlier
             call STOPONERROR(layoutnumber,num_procs,'Bug in media count. ')
          end if
-         MEDIOEXTRA%index=CONTAMEDIA
+         MEDIOEXTRA%elementIndex=CONTAMEDIA
       end if
       !!!!!!!!!!!!!
       sgg%NumMedia = contamedia

@@ -21,7 +21,7 @@ module probes_m
         real(kind=RKIND), allocatable, dimension(:) :: t
         real(kind=RKIND), allocatable, dimension(:,:) :: val
         real(kind=RKIND_TIEMPO) :: dt
-        integer :: index, current_frame, unit = 0
+        integer :: elementIndex, current_frame, unit = 0
         character(len=:), allocatable :: name
         logical :: in_layer = .true.
         character(len=BUFSIZE) :: output_path = ''
@@ -45,9 +45,9 @@ module probes_m
 
 contains
 
-    function probeCtor(index, probe_type, dt, name, position, layer_indices) result(res)
+    function probeCtor(elementIndex, probe_type, dt, name, position, layer_indices) result(res)
         type(probe_t) :: res
-        integer, intent(in) :: index
+        integer, intent(in) :: elementIndex
         integer, intent(in) :: probe_type
         real(kind=RKIND_TIEMPO), intent(in) :: dt
         real(kind=RKIND), dimension(3) :: position
@@ -59,7 +59,7 @@ contains
 #endif
 
         res%type = probe_type
-        res%index = index
+        res%elementIndex = elementIndex
         res%dt = dt
         res%current_frame = 1
         
@@ -69,7 +69,7 @@ contains
             if (sizeof > 1) then
                 res%in_layer = .false.
                 do i = 1, size(layer_indices,1) 
-                    if (index >= layer_indices(i, 1) .and. index <= layer_indices(i,2)+1) then 
+                    if (elementIndex >= layer_indices(i, 1) .and. elementIndex <= layer_indices(i,2)+1) then 
                         res%in_layer = .true.
                         slice = i
                     end if
@@ -80,9 +80,9 @@ contains
                     do i = 1, slice - 1
                         layer_index = layer_index + layer_indices(i,2) + 1 - (layer_indices(i,1) - 1)
                     end do
-                    layer_index = layer_index + res%index - layer_indices(slice,1) + 1
+                    layer_index = layer_index + res%elementIndex - layer_indices(slice,1) + 1
                 end if
-                res%index = layer_index
+                res%elementIndex = layer_index
             end if
         end if
 #endif
@@ -122,12 +122,12 @@ contains
         real(kind=RKIND), dimension(:,:), intent(in) :: i
         
         if (this%type == PROBE_TYPE_VOLTAGE) then
-            call this%saveFrame(t, v(:,this%index))
+            call this%saveFrame(t, v(:,this%elementIndex))
         else if (this%type == PROBE_TYPE_CURRENT) then
-            if (this%index == size(i,2) + 1) then
-                call this%saveFrame(t + 0.5*this%dt, i(:,this%index - 1))
+            if (this%elementIndex == size(i,2) + 1) then
+                call this%saveFrame(t + 0.5*this%dt, i(:,this%elementIndex - 1))
             else 
-                call this%saveFrame(t+ 0.5*this%dt, i(:,this%index))
+                call this%saveFrame(t+ 0.5*this%dt, i(:,this%elementIndex))
             end if
         end if  
 
