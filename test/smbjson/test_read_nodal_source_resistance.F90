@@ -1,6 +1,6 @@
 integer function test_read_nodal_source_resistance_per_meter() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
@@ -46,7 +46,7 @@ end function
 
 integer function test_read_nodal_source_total_resistance() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 

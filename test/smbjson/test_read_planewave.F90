@@ -1,6 +1,6 @@
 integer function test_read_planewave() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
@@ -117,7 +117,7 @@ end function
 
 integer function test_read_planewave_empty_elementids() bind(C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use Report_m, only: isFatalError, resetFatalError
 
    implicit none

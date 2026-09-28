@@ -24,7 +24,7 @@ integer function test_idchildtable() bind(C) result(err)
    use idchildtable_m
    use smbjson_labels_m
    use parser_tools_m, only: json_value_ptr_t
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use json_module
 
    implicit none

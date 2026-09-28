@@ -1,6 +1,6 @@
 integer function test_read_nodal_source_zero_length() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use Report_m, only: isFatalError, resetFatalError
 
    implicit none
@@ -22,7 +22,7 @@ end function
 
 integer function test_read_nodal_source_non_line_interval() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use Report_m, only: isFatalError, resetFatalError
 
    implicit none
@@ -44,7 +44,7 @@ end function
 
 integer function test_read_nodal_source_one_cell_interval() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use Report_m, only: isFatalError, resetFatalError
 
    implicit none

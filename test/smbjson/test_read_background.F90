@@ -1,6 +1,6 @@
 integer function test_read_background_defaults() bind(C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use NFDETypes_m
 
    implicit none
@@ -22,7 +22,7 @@ end function
 
 integer function test_read_background_set() bind(C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use NFDETypes_m
 
    implicit none

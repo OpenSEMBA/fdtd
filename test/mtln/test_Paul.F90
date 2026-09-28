@@ -1,6 +1,6 @@
 integer function test_termination_resistive() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
@@ -102,7 +102,7 @@ end function
 
 integer function test_termination_resistive_inductive() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
@@ -205,7 +205,7 @@ end function
 
 integer function test_termination_resistive_capacitive_parallel() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
@@ -309,7 +309,7 @@ end function
 
 integer function test_termination_rls_cp() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
@@ -413,7 +413,7 @@ end function
 
 integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
@@ -522,7 +522,7 @@ end function
 
 integer function test_termination_rcp() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
@@ -626,7 +626,7 @@ end function
 
 integer function test_termination_resistive_capacitive() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
@@ -730,7 +730,7 @@ end function
 
 integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)    
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
@@ -855,7 +855,7 @@ end function
 
 integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)    
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
@@ -978,7 +978,7 @@ end function
 
 integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)    
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
@@ -1108,7 +1108,7 @@ end function
 
 integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)    
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
@@ -1284,7 +1284,7 @@ end function
 
 integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt)    
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
@@ -1400,7 +1400,7 @@ end function
 
 integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)    
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 

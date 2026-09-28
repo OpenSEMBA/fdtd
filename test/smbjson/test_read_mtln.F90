@@ -1,6 +1,6 @@
 integer function test_read_mtln() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 

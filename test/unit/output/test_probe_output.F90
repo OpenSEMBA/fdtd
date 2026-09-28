@@ -1,7 +1,7 @@
 integer function test_init_point_probe() bind(c) result(err)
    ! Verifies point probes publish one flat text file without metadata sidecars.
    use FDETYPES_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use output_m
    use outputTypes_m
    use testOutputUtils_m
@@ -88,7 +88,7 @@ end function
 integer function test_init_point_probe_with_incident() bind(c) result(err)
    ! Verifies incident point probes preserve their text header without a binary sidecar.
    use FDETYPES_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use outputTypes_m, only: point_probe_output_t, domain_t, cell_coordinate_t, TIME_DOMAIN, OUTPUT_ARTIFACT_UNDEFINED
    use pointProbeOutput_m, only: init_point_probe_output
    use assertionTools_m, only: assert_true, assert_string_equal
@@ -125,7 +125,7 @@ end function test_init_point_probe_with_incident
 integer function test_scalar_probe_has_no_manifest() bind(c) result(err)
    ! Verifies a scalar-only run does not publish descriptors or a root manifest.
    use FDETYPES_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use output_m
    use testOutputUtils_m
    use sggMethods_m
@@ -525,7 +525,7 @@ end function
 integer function test_volumetric_output_partition_attachment() bind(c) result(err)
    ! Verifies volumetric partitions attach to outputs and select serial fallback.
    use FDETYPES_m
-   use FDETYPES_TOOLS, only: create_limit_t, create_control_flags, init_time_array, &
+   use fdetypes_tools_m, only: create_limit_t, create_control_flags, init_time_array, &
                              init_simulation_material_list, create_geometry_media, create_xyz_limit_array, create_tag_list
    use output_m, only: init_outputs, GetOutputs, GetOutputPartition, solver_output_t
    use outputDecomposition_m, only: output_partition_t, OUTPUT_PARTITION_SUCCESS
@@ -608,7 +608,7 @@ end function
 integer function test_update_point_probe() bind(c) result(err)
    ! Verifies time-frequency point probes honour their time window without decimating frequency updates.
    use FDETYPES_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use output_m
    use outputTypes_m
    use testOutputUtils_m
@@ -721,7 +721,7 @@ end function
 integer function test_update_time_probe_ranges() bind(c) result(err)
    ! Verifies each scalar time output honours an explicit time window and sampling period.
    use FDETYPES_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use output_m
    use outputTypes_m
    use testOutputUtils_m
@@ -1201,7 +1201,7 @@ integer function test_init_movie_probe() bind(c) result(err)
    use output_m
    use outputTypes_m
    use testOutputUtils_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use sggMethods_m
    use assertionTools_m
    use directoryUtils_m
@@ -1339,7 +1339,7 @@ integer function test_update_movie_probe() bind(c) result(err)
    use output_m
    use outputTypes_m
    use testOutputUtils_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use sggMethods_m
    use assertionTools_m
    use directoryUtils_m
@@ -1501,7 +1501,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    use output_m
    use outputTypes_m
    use testOutputUtils_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use sggMethods_m
    use assertionTools_m
    use directoryUtils_m
@@ -1683,7 +1683,7 @@ integer function test_close_movie_probe() bind(c) result(err)
    use output_m
    use outputTypes_m
    use testOutputUtils_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use sggMethods_m
    use assertionTools_m
    use directoryUtils_m
@@ -1760,7 +1760,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    use outputTypes_m
    use frequencySliceProbeOutput_m, only: flush_frequency_slice_probe_output, close_frequency_slice_probe_output
    use testOutputUtils_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use sggMethods_m
    use assertionTools_m
    use directoryUtils_m
@@ -1914,7 +1914,7 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    use output_m
    use outputTypes_m
    use testOutputUtils_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use sggMethods_m
    use assertionTools_m
    use directoryUtils_m

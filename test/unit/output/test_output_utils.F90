@@ -1,6 +1,6 @@
 module testOutputUtils_m
    use FDETYPES_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use outputTypes_m
    implicit none
    private

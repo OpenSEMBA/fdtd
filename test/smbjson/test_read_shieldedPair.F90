@@ -1,6 +1,6 @@
 integer function test_read_shieldedpair() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
    character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'shieldedPair.fdtd.json'

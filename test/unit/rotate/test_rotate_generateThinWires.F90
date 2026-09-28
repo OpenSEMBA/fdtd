@@ -1,7 +1,7 @@
 module test_rotate_generateThinWires_m
     use smbjson_m
     use nfde_rotate_m
-    use rotate_testingTools
+    use rotate_testingTools_m
     implicit none
 
 contains

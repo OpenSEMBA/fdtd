@@ -1,6 +1,6 @@
 integer function test_parser_ctor() bind(C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
@@ -17,7 +17,7 @@ end function
 
 integer function test_parser_tools_interval_to_coords() result(err)
    use parser_tools_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
@@ -72,7 +72,7 @@ end function
 integer function test_parser_read_mesh() bind(C) result(err)
 
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
@@ -108,7 +108,7 @@ end function
 integer function test_parser_read_conformal_volume() bind(C) result(err)
 
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    
    implicit none
 

@@ -1,4 +1,4 @@
-module FDETYPES_TOOLS
+module fdetypes_tools_m
    use FDETYPES_m
     use utils_m
     use NFDETypes_m
@@ -805,4 +805,4 @@ contains
 
    end subroutine initialize_observation_domain_logical_flags
 
-end module FDETYPES_TOOLS
+end module fdetypes_tools_m

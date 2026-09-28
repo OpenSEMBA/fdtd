@@ -1,4 +1,4 @@
-module smbjson_testingTools
+module smbjson_testingTools_m
    use NFDETypes_extension_m
    implicit none
 
