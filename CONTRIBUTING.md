@@ -76,7 +76,8 @@ MPI execution, and focused test commands.
 
 - Keep changes focused and as small as reasonably possible.
 - Follow the existing code style of the surrounding Fortran and Python
-  code instead of introducing new styles.
+  code instead of introducing new styles. The Fortran conventions are
+  listed in the [style guide](doc/style.md).
 - Update or add documentation in `doc/` when behaviour or usage
   changes.
 - When modifying public interfaces (input formats, command line
