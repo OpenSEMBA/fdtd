@@ -173,7 +173,7 @@ contains
 
       character(len=BUFSIZE) :: chari, f, dubuf, buff, binaryPath
       logical :: existiarunningigual, mpidirset, resume3
-      integer(kind=4) :: i, j, donde, n, newmpidir
+      integer(kind=4) :: i, j, position, n, newmpidir
       real(kind=RKIND) :: pausetime
       integer(kind=4) :: iostatus = 0
 
@@ -1142,11 +1142,11 @@ contains
             l%file11isopen = .false.
             open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
-            donde = 0
-            do while (donde == 0)
+            position = 0
+            do while (position == 0)
                !the first one is a dummy read
                read (11, '(a)') l%chdummy
-               donde = index(l%chdummy, 'mpirun -n')
+               position = index(l%chdummy, 'mpirun -n')
             end do
             close (11)
             l%file11isopen = .false.
@@ -1163,11 +1163,11 @@ contains
          !!!!!!!!!        l%file11isopen=.false.
             open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
-            donde = 0
-            do while (donde == 0)
+            position = 0
+            do while (position == 0)
                !the first one is a dummy read
                read (11, '(a)') l%chdummy
-               donde = index(l%chdummy, '!SLICES')
+               position = index(l%chdummy, '!SLICES')
             end do
             l%slicesoriginales = trim(adjustl(l%chdummy))
             close (11)
@@ -1604,7 +1604,7 @@ contains
       type(entrada_t), intent(inout) :: l
 !!!!!!!!!
 
-      character(len=BUFSIZE) :: dato, buff, f, binaryPath
+      character(len=BUFSIZE) :: lineText, buff, f, binaryPath
       integer(kind=4) :: i, n, statuse, NUM_NFDES, TEMP_NUMNFDES, p
       character(len=5) :: NFDEEXTENSION, CONFEXTENSION, CMSHEXTENSION
 
@@ -1706,12 +1706,12 @@ contains
                   if (l%layoutnumber == 0) then
                      open (196, file=trim(adjustl(l%fichin))//NFDEEXTENSION, form='formatted')
                      do
-                        read (196, '(a)', end=197) dato
-                        if (trim(adjustl(dato)) /= '!END') then
-                           write (194, '(a)') trim(adjustl(dato))
+                        read (196, '(a)', end=197) lineText
+                        if (trim(adjustl(lineText)) /= '!END') then
+                           write (194, '(a)') trim(adjustl(lineText))
                         else
-                           dato = '***** End merging file: '//trim(adjustl(l%fichin))//NFDEEXTENSION//' ********'
-                           write (194, '(a)') trim(adjustl(dato))
+                           lineText = '***** End merging file: '//trim(adjustl(l%fichin))//NFDEEXTENSION//' ********'
+                           write (194, '(a)') trim(adjustl(lineText))
                         end if
                      end do
 197                  close (196)

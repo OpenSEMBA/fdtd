@@ -59,7 +59,7 @@ module sggMethods_m
    public :: sgg_add_observation
 contains
    subroutine sgg_init(obj, &
-      tiempo, dt, extraSwitches, &
+      time, dt, extraSwitches, &
       NumMedia, AllocMed, &
       IniPMLMedia, EndPMLMedia, &
       NumPlaneWaves, TimeSteps, InitialTimeStep, &
@@ -72,7 +72,7 @@ contains
       type(SGGFDTDINFO_t), intent(inout) :: obj
 
       ! ===== Optional arguments =====
-      real(kind=RKIND_TIEMPO), pointer, optional :: tiempo(:)
+      real(kind=RKIND_TIEMPO), pointer, optional :: time(:)
       real(kind=RKIND_TIEMPO), optional          :: dt
       character(len=*), optional          :: extraSwitches
 
@@ -88,7 +88,7 @@ contains
 
       ! ===== Defaults =====
 
-      nullify (obj%tiempo)
+      nullify (obj%time)
       obj%dt = 0.0_RKIND_TIEMPO
       obj%extraSwitches = ""
 
@@ -128,7 +128,7 @@ contains
 
       ! ===== Overrides from arguments =====
 
-      if (present(tiempo)) obj%tiempo => tiempo
+      if (present(time)) obj%time => time
       if (present(dt)) obj%dt = dt
       if (present(extraSwitches)) obj%extraSwitches = extraSwitches
 
@@ -152,10 +152,10 @@ contains
 
    end subroutine sgg_init
 
-   subroutine sgg_set_tiempo(sgg, tiempo)
+   subroutine sgg_set_tiempo(sgg, time)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      real(kind=RKIND_TIEMPO), pointer :: tiempo(:)
-      sgg%tiempo => tiempo
+      real(kind=RKIND_TIEMPO), pointer :: time(:)
+      sgg%time => time
    end subroutine
 
    subroutine sgg_set_dt(sgg, dt)

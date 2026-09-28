@@ -386,13 +386,13 @@ contains
 
       !---------------------------> variables locales <-----------------------------------------------
       real(kind = RKIND) :: timei,amp
-      integer  :: i, j, k, i_m, j_m, k_m,ii,medio
+      integer  :: i, j, k, i_m, j_m, k_m,ii,medium
       !---------------------------> empieza AdvancenodalE <---------------------------------------
 
       !!!
       !!!! deprecado en pscale y el+3 de la sincronia con ORIGINAL se jode para siempre 110219 
       !!!timei = (timeinstant +3) * sgg%dt !ORIGINAL sync
-      timei = sgg%tiempo(timeinstant) 
+      timei = sgg%time(timeinstant) 
 
       !
       barridonodalhardEx: do ii=1,Nodal_Ex%numHard
@@ -407,11 +407,11 @@ contains
                j_m = j - b%Ex%YI
                do i=Nodal_Ex%nodHard(ii)%punto%xi,Nodal_Ex%nodHard(ii)%punto%xe
                   i_m = i - b%Ex%XI
-                  medio = sggMiEx(i_m,j_m,k_m)
+                  medium = sggMiEx(i_m,j_m,k_m)
                   if (.not.simu_devia)   then !bug 280323 mdrc
-                        if (.not.sgg%Med(medio)%Is%PEC) Ex(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ex%nodHard(ii))
+                        if (.not.sgg%Med(medium)%Is%PEC) Ex(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ex%nodHard(ii))
                   else
-                        if (.not.sgg%Med(medio)%Is%PEC) Ex(i_m,j_m,k_m) = 0.0 !!!!!!
+                        if (.not.sgg%Med(medium)%Is%PEC) Ex(i_m,j_m,k_m) = 0.0 !!!!!!
                   end if
                end do
             end do
@@ -430,12 +430,12 @@ contains
                j_m = j - b%Ex%YI
                do i=Nodal_Ex%nodSoft(ii)%punto%xi,Nodal_Ex%nodSoft(ii)%punto%xe
                   i_m = i - b%Ex%XI
-                  medio = sggMiEx(i_m,j_m,k_m)
+                  medium = sggMiEx(i_m,j_m,k_m)
                   
                   if (.not.simu_devia)   then !bug 280323 mdrc
-                        if (.not.sgg%Med(medio)%Is%PEC) Ex(i_m,j_m,k_m) = Ex(i_m,j_m,k_m)- G2(medio) * Idyh(j_m) * Idzh(k_m) * amp * evolucion(timei,Nodal_Ex%nodSoft(ii)) 
+                        if (.not.sgg%Med(medium)%Is%PEC) Ex(i_m,j_m,k_m) = Ex(i_m,j_m,k_m)- G2(medium) * Idyh(j_m) * Idzh(k_m) * amp * evolucion(timei,Nodal_Ex%nodSoft(ii)) 
                   else
-                       if (.not.sgg%Med(medio)%Is%PEC)  Ex(i_m,j_m,k_m) = Ex(i_m,j_m,k_m) !!!!!!
+                       if (.not.sgg%Med(medium)%Is%PEC)  Ex(i_m,j_m,k_m) = Ex(i_m,j_m,k_m) !!!!!!
                   end if
                end do
             end do
@@ -455,12 +455,12 @@ contains
                j_m = j - b%Ey%YI
                do i=Nodal_Ey%nodHard(ii)%punto%xi,Nodal_Ey%nodHard(ii)%punto%xe
                   i_m = i - b%Ey%XI
-                  medio = sggMiEy(i_m,j_m,k_m)
+                  medium = sggMiEy(i_m,j_m,k_m)
                   
                   if (.not.simu_devia)   then !bug 280323 mdrc
-                        if (.not.sgg%Med(medio)%Is%PEC) Ey(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ey%nodHard(ii))   
+                        if (.not.sgg%Med(medium)%Is%PEC) Ey(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ey%nodHard(ii))   
                   else
-                        if (.not.sgg%Med(medio)%Is%PEC) Ey(i_m,j_m,k_m) = 0.0 !!!!!!
+                        if (.not.sgg%Med(medium)%Is%PEC) Ey(i_m,j_m,k_m) = 0.0 !!!!!!
                   end if
                end do
             end do
@@ -479,12 +479,12 @@ contains
                j_m = j - b%Ey%YI
                do i=Nodal_Ey%nodSoft(ii)%punto%xi,Nodal_Ey%nodSoft(ii)%punto%xe
                   i_m = i - b%Ey%XI
-                  medio = sggMiEy(i_m,j_m,k_m)
+                  medium = sggMiEy(i_m,j_m,k_m)
                   
                   if (.not.simu_devia)   then !bug 280323 mdrc
-                        if (.not.sgg%Med(medio)%Is%PEC) Ey(i_m,j_m,k_m) = Ey(i_m,j_m,k_m)- G2(medio) * Idxh(i_m) * Idzh(k_m) * amp * evolucion(timei,Nodal_Ey%nodSoft(ii))   
+                        if (.not.sgg%Med(medium)%Is%PEC) Ey(i_m,j_m,k_m) = Ey(i_m,j_m,k_m)- G2(medium) * Idxh(i_m) * Idzh(k_m) * amp * evolucion(timei,Nodal_Ey%nodSoft(ii))   
                   else
-                       if (.not.sgg%Med(medio)%Is%PEC)  Ey(i_m,j_m,k_m) = Ey(i_m,j_m,k_m) !!!!!!
+                       if (.not.sgg%Med(medium)%Is%PEC)  Ey(i_m,j_m,k_m) = Ey(i_m,j_m,k_m) !!!!!!
                   end if
                end do
             end do
@@ -503,12 +503,12 @@ contains
                j_m = j - b%Ez%YI
                do i=Nodal_Ez%nodHard(ii)%punto%xi,Nodal_Ez%nodHard(ii)%punto%xe
                   i_m = i - b%Ez%XI
-                  medio = sggMiEz(i_m,j_m,k_m)
+                  medium = sggMiEz(i_m,j_m,k_m)
                   
                   if (.not.simu_devia)   then !bug 280323 mdrc
-                        if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ez%nodHard(ii))  
+                        if (.not.sgg%Med(medium)%Is%PEC) Ez(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ez%nodHard(ii))  
                   else
-                        if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = 0.0 !!!!!!
+                        if (.not.sgg%Med(medium)%Is%PEC) Ez(i_m,j_m,k_m) = 0.0 !!!!!!
                   end if
                end do
             end do
@@ -527,12 +527,12 @@ contains
                j_m = j - b%Ez%YI
                do i=Nodal_Ez%nodSoft(ii)%punto%xi,Nodal_Ez%nodSoft(ii)%punto%xe
                   i_m = i - b%Ez%XI
-                  medio = sggMiEz(i_m,j_m,k_m)
+                  medium = sggMiEz(i_m,j_m,k_m)
                   
                   if (.not.simu_devia)   then !bug 280323 mdrc
-                        if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = Ez(i_m,j_m,k_m)- G2(medio) * Idyh(j_m) * Idxh(i_m) * amp * evolucion(timei,Nodal_Ez%nodSoft(ii))
+                        if (.not.sgg%Med(medium)%Is%PEC) Ez(i_m,j_m,k_m) = Ez(i_m,j_m,k_m)- G2(medium) * Idyh(j_m) * Idxh(i_m) * amp * evolucion(timei,Nodal_Ez%nodSoft(ii))
                   else
-                        if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = Ez(i_m,j_m,k_m) !!!!!!
+                        if (.not.sgg%Med(medium)%Is%PEC) Ez(i_m,j_m,k_m) = Ez(i_m,j_m,k_m) !!!!!!
                   end if
                end do
             end do
@@ -574,7 +574,7 @@ contains
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
       real(kind = RKIND) :: timei,amp
-      integer(kind=4) :: i, j, k, i_m, j_m, k_m,ii,medio
+      integer(kind=4) :: i, j, k, i_m, j_m, k_m,ii,medium
       real(kind = RKIND) :: GM2_1
       !!!
       if (simu_devia) then
@@ -584,7 +584,7 @@ contains
       GM2_1=GM2(1)
       !---------------------------> empieza AdvancenodalH <---------------------------------------
       
-      timei = sgg%tiempo(timeinstant) + 0.5_RKIND  * sgg%dt
+      timei = sgg%time(timeinstant) + 0.5_RKIND  * sgg%dt
       !!!! deprecado en pscale y el+3 de la sincronia con ORIGINAL se jode para siempre 110219 
       !!! timei = ( timeinstant + 0.5_RKIND  +3.0_RKIND) * sgg%dt  !ORIGINAL sync
 
@@ -601,8 +601,8 @@ contains
                j_m = j - b%Hx%YI
                do i=Nodal_Hx%nodHard(ii)%punto%xi,Nodal_Hx%nodHard(ii)%punto%xe
                   i_m = i - b%Hx%XI
-                  medio = sggMiHx(i_m,j_m,k_m)
-                  if (.not.sgg%Med(medio)%Is%PMC) Hx(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hx%nodHard(ii))
+                  medium = sggMiHx(i_m,j_m,k_m)
+                  if (.not.sgg%Med(medium)%Is%PMC) Hx(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hx%nodHard(ii))
                end do
             end do
          end do
@@ -620,8 +620,8 @@ contains
                j_m = j - b%Hx%YI
                do i=Nodal_Hx%nodSoft(ii)%punto%xi,Nodal_Hx%nodSoft(ii)%punto%xe
                   i_m = i - b%Hx%XI
-                  medio = sggMiHx(i_m,j_m,k_m)
-                  if (.not.sgg%Med(medio)%Is%PMC) Hx(i_m,j_m,k_m) = Hx(i_m,j_m,k_m)- Gm2(medio) * Idye(j_m) * Idze(k_m) * amp * evolucion(timei,Nodal_Hx%nodSoft(ii))
+                  medium = sggMiHx(i_m,j_m,k_m)
+                  if (.not.sgg%Med(medium)%Is%PMC) Hx(i_m,j_m,k_m) = Hx(i_m,j_m,k_m)- Gm2(medium) * Idye(j_m) * Idze(k_m) * amp * evolucion(timei,Nodal_Hx%nodSoft(ii))
                end do
             end do
          end do
@@ -640,8 +640,8 @@ contains
                j_m = j - b%Hy%YI
                do i=Nodal_Hy%nodHard(ii)%punto%xi,Nodal_Hy%nodHard(ii)%punto%xe
                   i_m = i - b%Hy%XI
-                  medio = sggMiHx(i_m,j_m,k_m)
-                  if (.not.sgg%Med(medio)%Is%PMC) Hy(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hy%nodHard(ii))
+                  medium = sggMiHx(i_m,j_m,k_m)
+                  if (.not.sgg%Med(medium)%Is%PMC) Hy(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hy%nodHard(ii))
                end do
             end do
          end do
@@ -659,8 +659,8 @@ contains
                j_m = j - b%Hy%YI
                do i=Nodal_Hy%nodSoft(ii)%punto%xi,Nodal_Hy%nodSoft(ii)%punto%xe
                   i_m = i - b%Hy%XI
-                  medio = sggMiHy(i_m,j_m,k_m)
-                  if (.not.sgg%Med(medio)%Is%PMC) Hy(i_m,j_m,k_m) = Hy(i_m,j_m,k_m)- Gm2(medio) * Idxe(i_m) * Idze(k_m) * amp * evolucion(timei,Nodal_Hy%nodSoft(ii))
+                  medium = sggMiHy(i_m,j_m,k_m)
+                  if (.not.sgg%Med(medium)%Is%PMC) Hy(i_m,j_m,k_m) = Hy(i_m,j_m,k_m)- Gm2(medium) * Idxe(i_m) * Idze(k_m) * amp * evolucion(timei,Nodal_Hy%nodSoft(ii))
                end do
             end do
          end do
@@ -678,8 +678,8 @@ contains
                j_m = j - b%Hz%YI
                do i=Nodal_Hz%nodHard(ii)%punto%xi,Nodal_Hz%nodHard(ii)%punto%xe
                   i_m = i - b%Hz%XI
-                  medio = sggMiHx(i_m,j_m,k_m)
-                  if (.not.sgg%Med(medio)%Is%PMC) Hz(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hz%nodHard(ii))
+                  medium = sggMiHx(i_m,j_m,k_m)
+                  if (.not.sgg%Med(medium)%Is%PMC) Hz(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hz%nodHard(ii))
                end do
             end do
          end do
@@ -697,8 +697,8 @@ contains
                j_m = j - b%Hz%YI
                do i=Nodal_Hz%nodSoft(ii)%punto%xi,Nodal_Hz%nodSoft(ii)%punto%xe
                   i_m = i - b%Hz%XI
-                  medio = sggMiHz(i_m,j_m,k_m)
-                  if (.not.sgg%Med(medio)%Is%PMC) Hz(i_m,j_m,k_m) = Hz(i_m,j_m,k_m)- Gm2(medio) * Idye(j_m) * Idxe(i_m) * amp * evolucion(timei,Nodal_Hz%nodSoft(ii))
+                  medium = sggMiHz(i_m,j_m,k_m)
+                  if (.not.sgg%Med(medium)%Is%PMC) Hz(i_m,j_m,k_m) = Hz(i_m,j_m,k_m)- Gm2(medium) * Idye(j_m) * Idxe(i_m) * amp * evolucion(timei,Nodal_Hz%nodSoft(ii))
                end do
             end do
          end do

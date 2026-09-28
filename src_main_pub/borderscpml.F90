@@ -542,7 +542,7 @@ contains
       real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(inout) :: Ey
       real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(inout) :: Ez
       !---------------------------> variables locales <-----------------------------------------------
-      integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
+      integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
       !---------------------------> empieza AdvanceelectricCPML <-------------------------------------
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -550,7 +550,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = LEFT
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
          k_m = k - b%Ex%ZI
@@ -559,10 +559,10 @@ contains
             do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
                i_m = i - b%Ex%XI
                !--->
-               medio = sggMiEx(i_m , j_m , k_m)
+               medium = sggMiEx(i_m , j_m , k_m)
                regLR(REGION)%Psi_Exy(i, j, k) = P_be_y(j) * regLR(REGION)%Psi_Exy(i, j, k) +  &
                (Hz(i_m, j_m, k_m) - Hz(i_m, j_m-1, k_m)) * P_ce_y(j)
-               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) + G2(medio) * regLR(REGION)%Psi_Exy(i, j, k)
+               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) + G2(medium) * regLR(REGION)%Psi_Exy(i, j, k)
             end do
          end do
       end do
@@ -570,7 +570,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IEZ)%ZI(REGION), PMLc(IEZ)%ZE(REGION)
          k_m = k - b%Ez%ZI
@@ -578,10 +578,10 @@ contains
             j_m = j - b%Ez%YI
             do i = PMLc(IEZ)%XI(REGION), PMLc(IEZ)%XE(REGION)
                i_m = i - b%Ez%XI
-               medio = sggMiEz(i_m , j_m , k_m)
+               medium = sggMiEz(i_m , j_m , k_m)
                regLR(REGION)%Psi_Ezy(i, j, k) = P_be_y(j) * regLR(REGION)%Psi_Ezy(i, j, k) +  &
                (Hx(i_m, j_m, k_m) - Hx(i_m, j_m-1, k_m)) * P_ce_y(j)
-               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) - G2(medio) * regLR(REGION)%Psi_Ezy(i, j, k)
+               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) - G2(medium) * regLR(REGION)%Psi_Ezy(i, j, k)
             end do
          end do
       end do
@@ -594,7 +594,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION =  RIGHT
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
          k_m = k - b%Ex%ZI
@@ -603,10 +603,10 @@ contains
             do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
                i_m = i - b%Ex%XI
                !--->
-               medio = sggMiEx(i_m , j_m , k_m)
+               medium = sggMiEx(i_m , j_m , k_m)
                regLR(REGION)%Psi_Exy(i, j, k) = P_be_y(j) * regLR(REGION)%Psi_Exy(i, j, k) +  &
                (Hz(i_m, j_m, k_m) - Hz(i_m, j_m-1, k_m)) * P_ce_y(j)
-               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) + G2(medio) * regLR(REGION)%Psi_Exy(i, j, k)
+               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) + G2(medium) * regLR(REGION)%Psi_Exy(i, j, k)
             end do
          end do
       end do
@@ -614,7 +614,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IEZ)%ZI(REGION), PMLc(IEZ)%ZE(REGION)
          k_m = k - b%Ez%ZI
@@ -622,10 +622,10 @@ contains
             j_m = j - b%Ez%YI
             do i = PMLc(IEZ)%XI(REGION), PMLc(IEZ)%XE(REGION)
                i_m = i - b%Ez%XI
-               medio = sggMiEz(i_m , j_m , k_m)
+               medium = sggMiEz(i_m , j_m , k_m)
                regLR(REGION)%Psi_Ezy(i, j, k) = P_be_y(j) * regLR(REGION)%Psi_Ezy(i, j, k) +  &
                (Hx(i_m, j_m, k_m) - Hx(i_m, j_m-1, k_m)) * P_ce_y(j)
-               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) - G2(medio) * regLR(REGION)%Psi_Ezy(i, j, k)
+               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) - G2(medium) * regLR(REGION)%Psi_Ezy(i, j, k)
             end do
          end do
       end do
@@ -640,7 +640,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = DOWN
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
          k_m = k - b%Ey%ZI
@@ -648,10 +648,10 @@ contains
             j_m = j - b%Ey%YI
             do i = PMLc(iEy)%XI(REGION),PMLc(iEy)%XE(REGION)
                i_m = i - b%Ey%XI
-               medio = sggMiEy(i_m , j_m , k_m)
+               medium = sggMiEy(i_m , j_m , k_m)
                regDU(REGION)%Psi_Eyz(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Eyz(i, j, k) +  &
                (Hx(i_m, j_m, k_m) - Hx(i_m, j_m, k_m-1)) * P_ce_z(k)
-               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) + G2(medio) * regDU(REGION)%Psi_Eyz(i, j, k)
+               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) + G2(medium) * regDU(REGION)%Psi_Eyz(i, j, k)
             end do
          end do
       end do
@@ -659,7 +659,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
          k_m = k - b%Ex%ZI
@@ -667,10 +667,10 @@ contains
             j_m = j - b%Ex%YI
             do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
                i_m = i - b%Ex%XI
-               medio = sggMiEx(i_m , j_m , k_m)
+               medium = sggMiEx(i_m , j_m , k_m)
                regDU(REGION)%Psi_Exz(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Exz(i, j, k) +  &
                (Hy(i_m, j_m, k_m) - Hy(i_m, j_m, k_m-1)) * P_ce_z(k)
-               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) - G2(medio) * regDU(REGION)%Psi_Exz(i, j, k)
+               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) - G2(medium) * regDU(REGION)%Psi_Exz(i, j, k)
             end do
          end do
       end do
@@ -684,7 +684,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = UP
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
          k_m = k - b%Ey%ZI
@@ -692,10 +692,10 @@ contains
             j_m = j - b%Ey%YI
             do i = PMLc(iEy)%XI(REGION),PMLc(iEy)%XE(REGION)
                i_m = i - b%Ey%XI
-               medio = sggMiEy(i_m , j_m , k_m)
+               medium = sggMiEy(i_m , j_m , k_m)
                regDU(REGION)%Psi_Eyz(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Eyz(i, j, k) +  &
                (Hx(i_m, j_m, k_m) - Hx(i_m, j_m, k_m-1)) * P_ce_z(k)
-               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) + G2(medio) * regDU(REGION)%Psi_Eyz(i, j, k)
+               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) + G2(medium) * regDU(REGION)%Psi_Eyz(i, j, k)
             end do
          end do
       end do
@@ -703,7 +703,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
          k_m = k - b%Ex%ZI
@@ -711,10 +711,10 @@ contains
             j_m = j - b%Ex%YI
             do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
                i_m = i - b%Ex%XI
-               medio = sggMiEx(i_m , j_m , k_m)
+               medium = sggMiEx(i_m , j_m , k_m)
                regDU(REGION)%Psi_Exz(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Exz(i, j, k) +  &
                (Hy(i_m, j_m, k_m) - Hy(i_m, j_m, k_m-1)) * P_ce_z(k)
-               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) - G2(medio) * regDU(REGION)%Psi_Exz(i, j, k)
+               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) - G2(medium) * regDU(REGION)%Psi_Exz(i, j, k)
             end do
          end do
       end do
@@ -730,7 +730,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = BACK
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IEZ)%ZI(REGION), PMLc(IEZ)%ZE(REGION)
          k_m = k - b%Ez%ZI
@@ -738,10 +738,10 @@ contains
             j_m = j - b%Ez%YI
             do i = PMLc(IEZ)%XI(REGION), PMLc(IEZ)%XE(REGION)
                i_m = i - b%Ez%XI
-               medio = sggMiEz(i_m , j_m , k_m)
+               medium = sggMiEz(i_m , j_m , k_m)
                regBF(REGION)%Psi_Ezx(i, j, k) = P_be_x(i) * regBF(REGION)%Psi_Ezx(i, j, k) +  &
                (Hy(i_m, j_m, k_m) - Hy(i_m-1, j_m, k_m)) * P_ce_x(i)
-               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) + G2(medio) * regBF(REGION)%Psi_Ezx(i, j, k)
+               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) + G2(medium) * regBF(REGION)%Psi_Ezx(i, j, k)
             end do
          end do
       end do
@@ -749,7 +749,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
          k_m = k - b%Ey%ZI
@@ -757,10 +757,10 @@ contains
             j_m = j - b%Ey%YI
             do i = PMLc(iEy)%XI(REGION), PMLc(iEy)%XE(REGION)
                i_m = i - b%Ey%XI
-               medio = sggMiEy(i_m , j_m , k_m)
+               medium = sggMiEy(i_m , j_m , k_m)
                regBF(REGION)%Psi_Eyx(i, j, k) = P_be_x(i) * regBF(REGION)%Psi_Eyx(i, j, k) +  &
                (Hz(i_m, j_m, k_m) - Hz(i_m-1, j_m, k_m)) * P_ce_x(i)
-               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) - G2(medio) * regBF(REGION)%Psi_Eyx(i, j, k)
+               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) - G2(medium) * regBF(REGION)%Psi_Eyx(i, j, k)
             end do
          end do
       end do
@@ -774,7 +774,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IEZ)%ZI(REGION), PMLc(IEZ)%ZE(REGION)
          k_m = k - b%Ez%ZI
@@ -782,10 +782,10 @@ contains
             j_m = j - b%Ez%YI
             do i = PMLc(IEZ)%XI(REGION), PMLc(IEZ)%XE(REGION)
                i_m = i - b%Ez%XI
-               medio = sggMiEz(i_m , j_m , k_m)
+               medium = sggMiEz(i_m , j_m , k_m)
                regBF(REGION)%Psi_Ezx(i, j, k) = P_be_x(i) * regBF(REGION)%Psi_Ezx(i, j, k) +  &
                (Hy(i_m, j_m, k_m) - Hy(i_m-1, j_m, k_m)) * P_ce_x(i)
-               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) + G2(medio) * regBF(REGION)%Psi_Ezx(i, j, k)
+               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) + G2(medium) * regBF(REGION)%Psi_Ezx(i, j, k)
             end do
          end do
       end do
@@ -793,7 +793,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
          k_m = k - b%Ey%ZI
@@ -801,10 +801,10 @@ contains
             j_m = j - b%Ey%YI
             do i = PMLc(iEy)%XI(REGION), PMLc(iEy)%XE(REGION)
                i_m = i - b%Ey%XI
-               medio = sggMiEy(i_m , j_m , k_m)
+               medium = sggMiEy(i_m , j_m , k_m)
                regBF(REGION)%Psi_Eyx(i, j, k) = P_be_x(i) * regBF(REGION)%Psi_Eyx(i, j, k) +  &
                (Hz(i_m, j_m, k_m) - Hz(i_m-1, j_m, k_m)) * P_ce_x(i)
-               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) - G2(medio) * regBF(REGION)%Psi_Eyx(i, j, k)
+               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) - G2(medium) * regBF(REGION)%Psi_Eyx(i, j, k)
             end do
          end do
       end do
@@ -839,7 +839,7 @@ contains
       real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
-      integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
+      integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
       !---------------------------> empieza AdvanceMagneTicCPML <-------------------------------------
       !Hetic Fields PML Zone
       !
@@ -848,7 +848,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = LEFT
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHX)%ZI(REGION), PMLc(IHX)%ZE(REGION)
          k_m = k - b%Hx%ZI
@@ -859,8 +859,8 @@ contains
                !--->
                regLR(REGION)%Psi_Hxy(i, j, k) = P_bm_y(j) * regLR(REGION)%Psi_Hxy(i, j, k) +  &
                (Ez(i_m, j_m+1, k_m) - Ez(i_m, j_m, k_m)) * P_cm_y(j)
-               medio = sggMiHx(i_m , j_m , k_m)
-               Hx(i_m, j_m, k_m)=Hx(i_m, j_m, k_m)-GM2(medio)*regLR(REGION)%Psi_Hxy(i,j,k)
+               medium = sggMiHx(i_m , j_m , k_m)
+               Hx(i_m, j_m, k_m)=Hx(i_m, j_m, k_m)-GM2(medium)*regLR(REGION)%Psi_Hxy(i,j,k)
             end do
          end do
       end do
@@ -868,7 +868,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHZ)%ZI(REGION), PMLc(IHZ)%ZE(REGION)
          k_m = k - b%Hz%ZI
@@ -879,8 +879,8 @@ contains
                !--->
                regLR(REGION)%Psi_Hzy(i, j, k) = P_bm_y(j) * regLR(REGION)%Psi_Hzy(i, j, k) +  &
                (Ex(i_m, j_m+1, k_m) - Ex(i_m, j_m, k_m)) * P_cm_y(j)
-               medio = sggMiHz(i_m , j_m , k_m)
-               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) + GM2(medio) * regLR(REGION)%Psi_Hzy(i, j, k)
+               medium = sggMiHz(i_m , j_m , k_m)
+               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) + GM2(medium) * regLR(REGION)%Psi_Hzy(i, j, k)
             end do
          end do
       end do
@@ -893,7 +893,7 @@ contains
 
       REGION = RIGHT
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHX)%ZI(REGION), PMLc(IHX)%ZE(REGION)
          k_m = k - b%Hx%ZI
@@ -904,8 +904,8 @@ contains
                !--->
                regLR(REGION)%Psi_Hxy(i, j, k) = P_bm_y(j) * regLR(REGION)%Psi_Hxy(i, j, k) +  &
                (Ez(i_m, j_m+1, k_m) - Ez(i_m, j_m, k_m)) * P_cm_y(j)
-               medio = sggMiHx(i_m , j_m , k_m)
-               Hx(i_m, j_m, k_m)=Hx(i_m, j_m, k_m)-GM2(medio)*regLR(REGION)%Psi_Hxy(i,j,k)
+               medium = sggMiHx(i_m , j_m , k_m)
+               Hx(i_m, j_m, k_m)=Hx(i_m, j_m, k_m)-GM2(medium)*regLR(REGION)%Psi_Hxy(i,j,k)
             end do
          end do
       end do
@@ -913,7 +913,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHZ)%ZI(REGION), PMLc(IHZ)%ZE(REGION)
          k_m = k - b%Hz%ZI
@@ -924,8 +924,8 @@ contains
                !--->
                regLR(REGION)%Psi_Hzy(i, j, k) = P_bm_y(j) * regLR(REGION)%Psi_Hzy(i, j, k) +  &
                (Ex(i_m, j_m+1, k_m) - Ex(i_m, j_m, k_m)) * P_cm_y(j)
-               medio = sggMiHz(i_m , j_m , k_m)
-               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) + GM2(medio) * regLR(REGION)%Psi_Hzy(i, j, k)
+               medium = sggMiHz(i_m , j_m , k_m)
+               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) + GM2(medium) * regLR(REGION)%Psi_Hzy(i, j, k)
             end do
          end do
       end do
@@ -938,7 +938,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = DOWN
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHY)%ZI(REGION), PMLc(IHY)%ZE(REGION)
          k_m = k - b%Hy%ZI
@@ -949,8 +949,8 @@ contains
                !--->
                regDU(REGION)%Psi_Hyz(i, j, k) = P_bm_z(k) * regDU(REGION)%Psi_Hyz(i, j, k) +  &
                (Ex(i_m, j_m, k_m+1) - Ex(i_m, j_m, k_m)) * P_cm_z(k)
-               medio = sggMiHy(i_m , j_m , k_m)
-               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - GM2(medio) * regDU(REGION)%Psi_Hyz(i, j, k)
+               medium = sggMiHy(i_m , j_m , k_m)
+               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - GM2(medium) * regDU(REGION)%Psi_Hyz(i, j, k)
             end do !bucle i
          end do
       end do
@@ -958,7 +958,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHX)%ZI(REGION), PMLc(IHX)%ZE(REGION)
          k_m = k - b%Hx%ZI
@@ -969,8 +969,8 @@ contains
                !--->
                regDU(REGION)%Psi_Hxz(i, j, k) = P_bm_z(k) * regDU(REGION)%Psi_Hxz(i, j, k) +  &
                (Ey(i_m, j_m, k_m+1) - Ey(i_m, j_m, k_m)) * P_cm_z(k)
-               medio = sggMiHx(i_m , j_m , k_m)
-               Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + GM2(medio) * regDU(REGION)%Psi_Hxz(i, j, k)
+               medium = sggMiHx(i_m , j_m , k_m)
+               Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + GM2(medium) * regDU(REGION)%Psi_Hxz(i, j, k)
             end do !bucle i
          end do
       end do
@@ -983,7 +983,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = UP
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHY)%ZI(REGION), PMLc(IHY)%ZE(REGION)
          k_m = k - b%Hy%ZI
@@ -994,8 +994,8 @@ contains
                !--->
                regDU(REGION)%Psi_Hyz(i, j, k) = P_bm_z(k) * regDU(REGION)%Psi_Hyz(i, j, k) +  &
                (Ex(i_m, j_m, k_m+1) - Ex(i_m, j_m, k_m)) * P_cm_z(k)
-               medio = sggMiHy(i_m , j_m , k_m)
-               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - GM2(medio) * regDU(REGION)%Psi_Hyz(i, j, k)
+               medium = sggMiHy(i_m , j_m , k_m)
+               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - GM2(medium) * regDU(REGION)%Psi_Hyz(i, j, k)
             end do !bucle i
          end do
       end do
@@ -1003,7 +1003,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHX)%ZI(REGION), PMLc(IHX)%ZE(REGION)
          k_m = k - b%Hx%ZI
@@ -1014,8 +1014,8 @@ contains
                !--->
                regDU(REGION)%Psi_Hxz(i, j, k) = P_bm_z(k) * regDU(REGION)%Psi_Hxz(i, j, k) +  &
                (Ey(i_m, j_m, k_m+1) - Ey(i_m, j_m, k_m)) * P_cm_z(k)
-               medio = sggMiHx(i_m , j_m , k_m)
-               Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + GM2(medio) * regDU(REGION)%Psi_Hxz(i, j, k)
+               medium = sggMiHx(i_m , j_m , k_m)
+               Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + GM2(medium) * regDU(REGION)%Psi_Hxz(i, j, k)
             end do !bucle i
          end do
       end do
@@ -1028,7 +1028,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION=BACK
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHZ)%ZI(REGION), PMLc(IHZ)%ZE(REGION)
          k_m = k - b%Hz%ZI
@@ -1039,8 +1039,8 @@ contains
                !--->
                regBF(REGION)%Psi_Hzx(i, j, k) = P_bm_x(i) * regBF(REGION)%Psi_Hzx(i, j, k) +  &
                (Ey(i_m+1, j_m, k_m) - Ey(i_m, j_m, k_m)) * P_cm_x(i)
-               medio = sggMiHz(i_m , j_m , k_m)
-               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - GM2(medio) * regBF(REGION)%Psi_Hzx(i, j, k)
+               medium = sggMiHz(i_m , j_m , k_m)
+               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - GM2(medium) * regBF(REGION)%Psi_Hzx(i, j, k)
             end do
          end do
       end do
@@ -1048,7 +1048,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHY)%ZI(REGION), PMLc(IHY)%ZE(REGION)
          k_m = k - b%Hy%ZI
@@ -1059,8 +1059,8 @@ contains
                !--->
                regBF(region)%Psi_Hyx(i, j, k) = P_bm_x(i) * regBF(REGION)%Psi_Hyx(i, j, k) +  &
                (Ez(i_m+1, j_m, k_m) - Ez(i_m, j_m, k_m)) * P_cm_x(i)
-               medio = sggMiHy(i_m , j_m , k_m)
-               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) + GM2(medio) * regBF(REGION)%Psi_Hyx(i, j, k)
+               medium = sggMiHy(i_m , j_m , k_m)
+               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) + GM2(medium) * regBF(REGION)%Psi_Hyx(i, j, k)
             end do
          end do
       end do
@@ -1072,7 +1072,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION=front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHZ)%ZI(REGION), PMLc(IHZ)%ZE(REGION)
          k_m = k - b%Hz%ZI
@@ -1083,8 +1083,8 @@ contains
                !--->
                regBF(REGION)%Psi_Hzx(i, j, k) = P_bm_x(i) * regBF(REGION)%Psi_Hzx(i, j, k) +  &
                (Ey(i_m+1, j_m, k_m) - Ey(i_m, j_m, k_m)) * P_cm_x(i)
-               medio = sggMiHz(i_m , j_m , k_m)
-               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - GM2(medio) * regBF(REGION)%Psi_Hzx(i, j, k)
+               medium = sggMiHz(i_m , j_m , k_m)
+               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - GM2(medium) * regBF(REGION)%Psi_Hzx(i, j, k)
             end do
          end do
       end do
@@ -1092,7 +1092,7 @@ contains
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHY)%ZI(REGION), PMLc(IHY)%ZE(REGION)
          k_m = k - b%Hy%ZI
@@ -1103,8 +1103,8 @@ contains
                !--->
                regBF(region)%Psi_Hyx(i, j, k) = P_bm_x(i) * regBF(REGION)%Psi_Hyx(i, j, k) +  &
                (Ez(i_m+1, j_m, k_m) - Ez(i_m, j_m, k_m)) * P_cm_x(i)
-               medio = sggMiHy(i_m , j_m , k_m)
-               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) + GM2(medio) * regBF(REGION)%Psi_Hyx(i, j, k)
+               medium = sggMiHy(i_m , j_m , k_m)
+               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) + GM2(medium) * regBF(REGION)%Psi_Hyx(i, j, k)
             end do
          end do
       end do
@@ -1697,7 +1697,7 @@ end subroutine calc_cpmlconstants
       real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(inout) :: Ey
       real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(inout) :: Ez
       !---------------------------> variables locales <-----------------------------------------------
-      integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
+      integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
       !---------------------------> empieza AdvanceelectricCPML <-------------------------------------
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1705,7 +1705,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = LEFT
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
          k_m = k - b%Ex%ZI
@@ -1714,10 +1714,10 @@ end subroutine calc_cpmlconstants
             do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
                i_m = i - b%Ex%XI
                !--->
-               medio = 1
+               medium = 1
                regLR(REGION)%Psi_Exyvac(i, j, k) = P_be_y(j) * regLR(REGION)%Psi_Exyvac(i, j, k) +  &
                (Hz(i_m, j_m, k_m) - Hz(i_m, j_m-1, k_m)) * P_ce_y(j)
-               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) + G2(medio) * regLR(REGION)%Psi_Exyvac(i, j, k)
+               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) + G2(medium) * regLR(REGION)%Psi_Exyvac(i, j, k)
             end do
          end do
       end do
@@ -1725,7 +1725,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IEZ)%ZI(REGION), PMLc(IEZ)%ZE(REGION)
          k_m = k - b%Ez%ZI
@@ -1733,10 +1733,10 @@ end subroutine calc_cpmlconstants
             j_m = j - b%Ez%YI
             do i = PMLc(IEZ)%XI(REGION), PMLc(IEZ)%XE(REGION)
                i_m = i - b%Ez%XI
-               medio = 1
+               medium = 1
                regLR(REGION)%Psi_Ezyvac(i, j, k) = P_be_y(j) * regLR(REGION)%Psi_Ezyvac(i, j, k) +  &
                (Hx(i_m, j_m, k_m) - Hx(i_m, j_m-1, k_m)) * P_ce_y(j)
-               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) - G2(medio) * regLR(REGION)%Psi_Ezyvac(i, j, k)
+               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) - G2(medium) * regLR(REGION)%Psi_Ezyvac(i, j, k)
             end do
          end do
       end do
@@ -1749,7 +1749,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION =  RIGHT
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
          k_m = k - b%Ex%ZI
@@ -1758,10 +1758,10 @@ end subroutine calc_cpmlconstants
             do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
                i_m = i - b%Ex%XI
                !--->
-               medio = 1
+               medium = 1
                regLR(REGION)%Psi_Exyvac(i, j, k) = P_be_y(j) * regLR(REGION)%Psi_Exyvac(i, j, k) +  &
                (Hz(i_m, j_m, k_m) - Hz(i_m, j_m-1, k_m)) * P_ce_y(j)
-               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) + G2(medio) * regLR(REGION)%Psi_Exyvac(i, j, k)
+               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) + G2(medium) * regLR(REGION)%Psi_Exyvac(i, j, k)
             end do
          end do
       end do
@@ -1769,7 +1769,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IEZ)%ZI(REGION), PMLc(IEZ)%ZE(REGION)
          k_m = k - b%Ez%ZI
@@ -1777,10 +1777,10 @@ end subroutine calc_cpmlconstants
             j_m = j - b%Ez%YI
             do i = PMLc(IEZ)%XI(REGION), PMLc(IEZ)%XE(REGION)
                i_m = i - b%Ez%XI
-               medio = 1
+               medium = 1
                regLR(REGION)%Psi_Ezyvac(i, j, k) = P_be_y(j) * regLR(REGION)%Psi_Ezyvac(i, j, k) +  &
                (Hx(i_m, j_m, k_m) - Hx(i_m, j_m-1, k_m)) * P_ce_y(j)
-               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) - G2(medio) * regLR(REGION)%Psi_Ezyvac(i, j, k)
+               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) - G2(medium) * regLR(REGION)%Psi_Ezyvac(i, j, k)
             end do
          end do
       end do
@@ -1795,7 +1795,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = DOWN
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
          k_m = k - b%Ey%ZI
@@ -1803,10 +1803,10 @@ end subroutine calc_cpmlconstants
             j_m = j - b%Ey%YI
             do i = PMLc(iEy)%XI(REGION),PMLc(iEy)%XE(REGION)
                i_m = i - b%Ey%XI
-               medio = 1
+               medium = 1
                regDU(REGION)%Psi_Eyzvac(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Eyzvac(i, j, k) +  &
                (Hx(i_m, j_m, k_m) - Hx(i_m, j_m, k_m-1)) * P_ce_z(k)
-               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) + G2(medio) * regDU(REGION)%Psi_Eyzvac(i, j, k)
+               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) + G2(medium) * regDU(REGION)%Psi_Eyzvac(i, j, k)
             end do
          end do
       end do
@@ -1814,7 +1814,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
          k_m = k - b%Ex%ZI
@@ -1822,10 +1822,10 @@ end subroutine calc_cpmlconstants
             j_m = j - b%Ex%YI
             do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
                i_m = i - b%Ex%XI
-               medio = 1
+               medium = 1
                regDU(REGION)%Psi_Exzvac(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Exzvac(i, j, k) +  &
                (Hy(i_m, j_m, k_m) - Hy(i_m, j_m, k_m-1)) * P_ce_z(k)
-               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) - G2(medio) * regDU(REGION)%Psi_Exzvac(i, j, k)
+               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) - G2(medium) * regDU(REGION)%Psi_Exzvac(i, j, k)
             end do
          end do
       end do
@@ -1839,7 +1839,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = UP
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
          k_m = k - b%Ey%ZI
@@ -1847,10 +1847,10 @@ end subroutine calc_cpmlconstants
             j_m = j - b%Ey%YI
             do i = PMLc(iEy)%XI(REGION),PMLc(iEy)%XE(REGION)
                i_m = i - b%Ey%XI
-               medio = 1
+               medium = 1
                regDU(REGION)%Psi_Eyzvac(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Eyzvac(i, j, k) +  &
                (Hx(i_m, j_m, k_m) - Hx(i_m, j_m, k_m-1)) * P_ce_z(k)
-               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) + G2(medio) * regDU(REGION)%Psi_Eyzvac(i, j, k)
+               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) + G2(medium) * regDU(REGION)%Psi_Eyzvac(i, j, k)
             end do
          end do
       end do
@@ -1858,7 +1858,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
          k_m = k - b%Ex%ZI
@@ -1866,10 +1866,10 @@ end subroutine calc_cpmlconstants
             j_m = j - b%Ex%YI
             do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
                i_m = i - b%Ex%XI
-               medio = 1
+               medium = 1
                regDU(REGION)%Psi_Exzvac(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Exzvac(i, j, k) +  &
                (Hy(i_m, j_m, k_m) - Hy(i_m, j_m, k_m-1)) * P_ce_z(k)
-               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) - G2(medio) * regDU(REGION)%Psi_Exzvac(i, j, k)
+               Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) - G2(medium) * regDU(REGION)%Psi_Exzvac(i, j, k)
             end do
          end do
       end do
@@ -1885,7 +1885,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = BACK
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IEZ)%ZI(REGION), PMLc(IEZ)%ZE(REGION)
          k_m = k - b%Ez%ZI
@@ -1893,10 +1893,10 @@ end subroutine calc_cpmlconstants
             j_m = j - b%Ez%YI
             do i = PMLc(IEZ)%XI(REGION), PMLc(IEZ)%XE(REGION)
                i_m = i - b%Ez%XI
-               medio = 1
+               medium = 1
                regBF(REGION)%Psi_Ezxvac(i, j, k) = P_be_x(i) * regBF(REGION)%Psi_Ezxvac(i, j, k) +  &
                (Hy(i_m, j_m, k_m) - Hy(i_m-1, j_m, k_m)) * P_ce_x(i)
-               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) + G2(medio) * regBF(REGION)%Psi_Ezxvac(i, j, k)
+               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) + G2(medium) * regBF(REGION)%Psi_Ezxvac(i, j, k)
             end do
          end do
       end do
@@ -1904,7 +1904,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
          k_m = k - b%Ey%ZI
@@ -1912,10 +1912,10 @@ end subroutine calc_cpmlconstants
             j_m = j - b%Ey%YI
             do i = PMLc(iEy)%XI(REGION), PMLc(iEy)%XE(REGION)
                i_m = i - b%Ey%XI
-               medio = 1
+               medium = 1
                regBF(REGION)%Psi_Eyxvac(i, j, k) = P_be_x(i) * regBF(REGION)%Psi_Eyxvac(i, j, k) +  &
                (Hz(i_m, j_m, k_m) - Hz(i_m-1, j_m, k_m)) * P_ce_x(i)
-               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) - G2(medio) * regBF(REGION)%Psi_Eyxvac(i, j, k)
+               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) - G2(medium) * regBF(REGION)%Psi_Eyxvac(i, j, k)
             end do
          end do
       end do
@@ -1929,7 +1929,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IEZ)%ZI(REGION), PMLc(IEZ)%ZE(REGION)
          k_m = k - b%Ez%ZI
@@ -1937,10 +1937,10 @@ end subroutine calc_cpmlconstants
             j_m = j - b%Ez%YI
             do i = PMLc(IEZ)%XI(REGION), PMLc(IEZ)%XE(REGION)
                i_m = i - b%Ez%XI
-               medio = 1
+               medium = 1
                regBF(REGION)%Psi_Ezxvac(i, j, k) = P_be_x(i) * regBF(REGION)%Psi_Ezxvac(i, j, k) +  &
                (Hy(i_m, j_m, k_m) - Hy(i_m-1, j_m, k_m)) * P_ce_x(i)
-               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) + G2(medio) * regBF(REGION)%Psi_Ezxvac(i, j, k)
+               Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) + G2(medium) * regBF(REGION)%Psi_Ezxvac(i, j, k)
             end do
          end do
       end do
@@ -1948,7 +1948,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
          k_m = k - b%Ey%ZI
@@ -1956,10 +1956,10 @@ end subroutine calc_cpmlconstants
             j_m = j - b%Ey%YI
             do i = PMLc(iEy)%XI(REGION), PMLc(iEy)%XE(REGION)
                i_m = i - b%Ey%XI
-               medio = 1
+               medium = 1
                regBF(REGION)%Psi_Eyxvac(i, j, k) = P_be_x(i) * regBF(REGION)%Psi_Eyxvac(i, j, k) +  &
                (Hz(i_m, j_m, k_m) - Hz(i_m-1, j_m, k_m)) * P_ce_x(i)
-               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) - G2(medio) * regBF(REGION)%Psi_Eyxvac(i, j, k)
+               Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) - G2(medium) * regBF(REGION)%Psi_Eyxvac(i, j, k)
             end do
          end do
       end do
@@ -1994,7 +1994,7 @@ end subroutine calc_cpmlconstants
       real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
-      integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
+      integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
       !---------------------------> empieza AdvanceMagneTicCPML <-------------------------------------
       !Hetic Fields PML Zone
       !
@@ -2003,7 +2003,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = LEFT
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHX)%ZI(REGION), PMLc(IHX)%ZE(REGION)
          k_m = k - b%Hx%ZI
@@ -2014,8 +2014,8 @@ end subroutine calc_cpmlconstants
                !--->
                regLR(REGION)%Psi_Hxyvac(i, j, k) = P_bm_y(j) * regLR(REGION)%Psi_Hxyvac(i, j, k) +  &
                (Ez(i_m, j_m+1, k_m) - Ez(i_m, j_m, k_m)) * P_cm_y(j)
-               medio = 1
-               Hx(i_m, j_m, k_m)=Hx(i_m, j_m, k_m)-GM2(medio)*regLR(REGION)%Psi_Hxyvac(i,j,k)
+               medium = 1
+               Hx(i_m, j_m, k_m)=Hx(i_m, j_m, k_m)-GM2(medium)*regLR(REGION)%Psi_Hxyvac(i,j,k)
             end do
          end do
       end do
@@ -2023,7 +2023,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHZ)%ZI(REGION), PMLc(IHZ)%ZE(REGION)
          k_m = k - b%Hz%ZI
@@ -2034,8 +2034,8 @@ end subroutine calc_cpmlconstants
                !--->
                regLR(REGION)%Psi_Hzyvac(i, j, k) = P_bm_y(j) * regLR(REGION)%Psi_Hzyvac(i, j, k) +  &
                (Ex(i_m, j_m+1, k_m) - Ex(i_m, j_m, k_m)) * P_cm_y(j)
-               medio = 1
-               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) + GM2(medio) * regLR(REGION)%Psi_Hzyvac(i, j, k)
+               medium = 1
+               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) + GM2(medium) * regLR(REGION)%Psi_Hzyvac(i, j, k)
             end do
          end do
       end do
@@ -2048,7 +2048,7 @@ end subroutine calc_cpmlconstants
 
       REGION = RIGHT
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHX)%ZI(REGION), PMLc(IHX)%ZE(REGION)
          k_m = k - b%Hx%ZI
@@ -2059,8 +2059,8 @@ end subroutine calc_cpmlconstants
                !--->
                regLR(REGION)%Psi_Hxyvac(i, j, k) = P_bm_y(j) * regLR(REGION)%Psi_Hxyvac(i, j, k) +  &
                (Ez(i_m, j_m+1, k_m) - Ez(i_m, j_m, k_m)) * P_cm_y(j)
-               medio = 1
-               Hx(i_m, j_m, k_m)=Hx(i_m, j_m, k_m)-GM2(medio)*regLR(REGION)%Psi_Hxyvac(i,j,k)
+               medium = 1
+               Hx(i_m, j_m, k_m)=Hx(i_m, j_m, k_m)-GM2(medium)*regLR(REGION)%Psi_Hxyvac(i,j,k)
             end do
          end do
       end do
@@ -2068,7 +2068,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHZ)%ZI(REGION), PMLc(IHZ)%ZE(REGION)
          k_m = k - b%Hz%ZI
@@ -2079,8 +2079,8 @@ end subroutine calc_cpmlconstants
                !--->
                regLR(REGION)%Psi_Hzyvac(i, j, k) = P_bm_y(j) * regLR(REGION)%Psi_Hzyvac(i, j, k) +  &
                (Ex(i_m, j_m+1, k_m) - Ex(i_m, j_m, k_m)) * P_cm_y(j)
-               medio = 1
-               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) + GM2(medio) * regLR(REGION)%Psi_Hzyvac(i, j, k)
+               medium = 1
+               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) + GM2(medium) * regLR(REGION)%Psi_Hzyvac(i, j, k)
             end do
          end do
       end do
@@ -2093,7 +2093,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = DOWN
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHY)%ZI(REGION), PMLc(IHY)%ZE(REGION)
          k_m = k - b%Hy%ZI
@@ -2104,8 +2104,8 @@ end subroutine calc_cpmlconstants
                !--->
                regDU(REGION)%Psi_Hyzvac(i, j, k) = P_bm_z(k) * regDU(REGION)%Psi_Hyzvac(i, j, k) +  &
                (Ex(i_m, j_m, k_m+1) - Ex(i_m, j_m, k_m)) * P_cm_z(k)
-               medio = 1
-               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - GM2(medio) * regDU(REGION)%Psi_Hyzvac(i, j, k)
+               medium = 1
+               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - GM2(medium) * regDU(REGION)%Psi_Hyzvac(i, j, k)
             end do !bucle i
          end do
       end do
@@ -2113,7 +2113,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHX)%ZI(REGION), PMLc(IHX)%ZE(REGION)
          k_m = k - b%Hx%ZI
@@ -2124,8 +2124,8 @@ end subroutine calc_cpmlconstants
                !--->
                regDU(REGION)%Psi_Hxzvac(i, j, k) = P_bm_z(k) * regDU(REGION)%Psi_Hxzvac(i, j, k) +  &
                (Ey(i_m, j_m, k_m+1) - Ey(i_m, j_m, k_m)) * P_cm_z(k)
-               medio = 1
-               Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + GM2(medio) * regDU(REGION)%Psi_Hxzvac(i, j, k)
+               medium = 1
+               Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + GM2(medium) * regDU(REGION)%Psi_Hxzvac(i, j, k)
             end do !bucle i
          end do
       end do
@@ -2138,7 +2138,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION = UP
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHY)%ZI(REGION), PMLc(IHY)%ZE(REGION)
          k_m = k - b%Hy%ZI
@@ -2149,8 +2149,8 @@ end subroutine calc_cpmlconstants
                !--->
                regDU(REGION)%Psi_Hyzvac(i, j, k) = P_bm_z(k) * regDU(REGION)%Psi_Hyzvac(i, j, k) +  &
                (Ex(i_m, j_m, k_m+1) - Ex(i_m, j_m, k_m)) * P_cm_z(k)
-               medio = 1
-               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - GM2(medio) * regDU(REGION)%Psi_Hyzvac(i, j, k)
+               medium = 1
+               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - GM2(medium) * regDU(REGION)%Psi_Hyzvac(i, j, k)
             end do !bucle i
          end do
       end do
@@ -2158,7 +2158,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHX)%ZI(REGION), PMLc(IHX)%ZE(REGION)
          k_m = k - b%Hx%ZI
@@ -2169,8 +2169,8 @@ end subroutine calc_cpmlconstants
                !--->
                regDU(REGION)%Psi_Hxzvac(i, j, k) = P_bm_z(k) * regDU(REGION)%Psi_Hxzvac(i, j, k) +  &
                (Ey(i_m, j_m, k_m+1) - Ey(i_m, j_m, k_m)) * P_cm_z(k)
-               medio = 1
-               Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + GM2(medio) * regDU(REGION)%Psi_Hxzvac(i, j, k)
+               medium = 1
+               Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + GM2(medium) * regDU(REGION)%Psi_Hxzvac(i, j, k)
             end do !bucle i
          end do
       end do
@@ -2183,7 +2183,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION=BACK
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHZ)%ZI(REGION), PMLc(IHZ)%ZE(REGION)
          k_m = k - b%Hz%ZI
@@ -2194,8 +2194,8 @@ end subroutine calc_cpmlconstants
                !--->
                regBF(REGION)%Psi_Hzxvac(i, j, k) = P_bm_x(i) * regBF(REGION)%Psi_Hzxvac(i, j, k) +  &
                (Ey(i_m+1, j_m, k_m) - Ey(i_m, j_m, k_m)) * P_cm_x(i)
-               medio = 1
-               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - GM2(medio) * regBF(REGION)%Psi_Hzxvac(i, j, k)
+               medium = 1
+               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - GM2(medium) * regBF(REGION)%Psi_Hzxvac(i, j, k)
             end do
          end do
       end do
@@ -2203,7 +2203,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHY)%ZI(REGION), PMLc(IHY)%ZE(REGION)
          k_m = k - b%Hy%ZI
@@ -2214,8 +2214,8 @@ end subroutine calc_cpmlconstants
                !--->
                regBF(region)%Psi_Hyxvac(i, j, k) = P_bm_x(i) * regBF(REGION)%Psi_Hyxvac(i, j, k) +  &
                (Ez(i_m+1, j_m, k_m) - Ez(i_m, j_m, k_m)) * P_cm_x(i)
-               medio = 1
-               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) + GM2(medio) * regBF(REGION)%Psi_Hyxvac(i, j, k)
+               medium = 1
+               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) + GM2(medium) * regBF(REGION)%Psi_Hyxvac(i, j, k)
             end do
          end do
       end do
@@ -2227,7 +2227,7 @@ end subroutine calc_cpmlconstants
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       REGION=front
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHZ)%ZI(REGION), PMLc(IHZ)%ZE(REGION)
          k_m = k - b%Hz%ZI
@@ -2238,8 +2238,8 @@ end subroutine calc_cpmlconstants
                !--->
                regBF(REGION)%Psi_Hzxvac(i, j, k) = P_bm_x(i) * regBF(REGION)%Psi_Hzxvac(i, j, k) +  &
                (Ey(i_m+1, j_m, k_m) - Ey(i_m, j_m, k_m)) * P_cm_x(i)
-               medio = 1
-               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - GM2(medio) * regBF(REGION)%Psi_Hzxvac(i, j, k)
+               medium = 1
+               Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - GM2(medium) * regBF(REGION)%Psi_Hzxvac(i, j, k)
             end do
          end do
       end do
@@ -2247,7 +2247,7 @@ end subroutine calc_cpmlconstants
 !$OMP END PARALLEL DO
 #endif
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
       do k = PMLc(IHY)%ZI(REGION), PMLc(IHY)%ZE(REGION)
          k_m = k - b%Hy%ZI
@@ -2258,8 +2258,8 @@ end subroutine calc_cpmlconstants
                !--->
                regBF(region)%Psi_Hyxvac(i, j, k) = P_bm_x(i) * regBF(REGION)%Psi_Hyxvac(i, j, k) +  &
                (Ez(i_m+1, j_m, k_m) - Ez(i_m, j_m, k_m)) * P_cm_x(i)
-               medio = 1
-               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) + GM2(medio) * regBF(REGION)%Psi_Hyxvac(i, j, k)
+               medium = 1
+               Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) + GM2(medium) * regBF(REGION)%Psi_Hyxvac(i, j, k)
             end do
          end do
       end do

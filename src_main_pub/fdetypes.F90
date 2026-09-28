@@ -627,7 +627,7 @@ module  FDETYPES_m
    ! This is the  class which stores all the simulation data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    type  :: SGGFDTDINFO_t
-      real(kind=RKIND_TIEMPO)     , pointer, dimension(:) :: tiempo !para permit scaling
+      real(kind=RKIND_TIEMPO)     , pointer, dimension(:) :: time !para permit scaling
       real(kind=RKIND_TIEMPO) :: dt
       character(len=BUFSIZE) :: extraSwitches
       !!

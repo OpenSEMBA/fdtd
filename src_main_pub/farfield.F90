@@ -2394,7 +2394,7 @@ contains
       costheta,cosphi,costheta_cosphi,costheta_sinphi,sintheta,sinphi,&
       freq, NORMAL, SIGNO,  dummy,newdummy1,newdummy2,RCS(1:2)
       real(kind = RKIND_TIEMPO) :: rinstant
-      integer(kind=4) :: ierr,pozi,donde
+      integer(kind=4) :: ierr,pozi,position
       complex(kind = CKIND) :: L_theta,L_phi,N_theta,N_phi,Etheta(1:2),Ephi(1:2),Mx,My,Mz,Jx,Jy,Jz,comun
       complex(kind = CKIND) :: new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz
       complex(kind = CKIND) :: L_theta_final,L_phi_final,N_theta_final,N_phi_final
@@ -2521,14 +2521,14 @@ contains
 
 
                   L_theta=0.0_RKIND ; L_phi=0.0_RKIND ; N_theta=0.0_RKIND ; N_phi=0.0_RKIND ;
-                  do donde=1,2
+                  do position=1,2
                      co%x_Mx=0;co%y_Mx=0;co%z_Mx=0;
                      co%x_My=0;co%y_My=0;co%z_My=0;
                      co%x_Mz=0;co%y_Mz=0;co%z_Mz=0;
                      co%x_Jx=0;co%y_Jx=0;co%z_Jx=0;
                      co%x_Jy=0;co%y_Jy=0;co%z_Jy=0;
                      co%x_Jz=0;co%y_Jz=0;co%z_Jz=0;
-                     if (donde==1) then
+                     if (position==1) then
                         i = FF%TrFr%I%tra%Ez !Back !el del Ey coincide. Lo hago asi para no picar tanto codigo!!!
                         normal=-1.0_RKIND
                         GOahead = ( FF%farfieldTr .and. facesNF2FF%Tr)
@@ -2779,14 +2779,14 @@ contains
                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                   ! Left Right
                   L_theta=0.0_RKIND ; L_phi=0.0_RKIND ; N_theta=0.0_RKIND ; N_phi=0.0_RKIND ;
-                  do donde=1,2
+                  do position=1,2
                      co%x_Mx=0;co%y_Mx=0;co%z_Mx=0;
                      co%x_My=0;co%y_My=0;co%z_My=0;
                      co%x_Mz=0;co%y_Mz=0;co%z_Mz=0;
                      co%x_Jx=0;co%y_Jx=0;co%z_Jx=0;
                      co%x_Jy=0;co%y_Jy=0;co%z_Jy=0;
                      co%x_Jz=0;co%y_Jz=0;co%z_Jz=0;
-                     if (donde==1) then
+                     if (position==1) then
                         j = FF%IzDe%J%izq%Ex
                         normal=-1.0_RKIND
                         GOahead = ( FF%farfieldIz .and. facesNF2FF%Iz)
@@ -3036,14 +3036,14 @@ contains
                   !--->
                   !Down Up
                   L_theta=0.0_RKIND ; L_phi=0.0_RKIND ; N_theta=0.0_RKIND ; N_phi=0.0_RKIND ;
-                  do donde=1,2
+                  do position=1,2
                      co%x_Mx=0;co%y_Mx=0;co%z_Mx=0;
                      co%x_My=0;co%y_My=0;co%z_My=0;
                      co%x_Mz=0;co%y_Mz=0;co%z_Mz=0;
                      co%x_Jx=0;co%y_Jx=0;co%z_Jx=0;
                      co%x_Jy=0;co%y_Jy=0;co%z_Jy=0;
                      co%x_Jz=0;co%y_Jz=0;co%z_Jz=0;
-                     if (donde==1) then
+                     if (position==1) then
                         k = FF%AbAr%K%aba%Ey
                         normal=-1.0_RKIND
                         GOahead = ( FF%farfieldAb .and. facesNF2FF%Ab)

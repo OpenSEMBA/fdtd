@@ -821,14 +821,14 @@ module NFDETypes_m
    !---> definicion de tipos
    type, public :: t_line_t
       integer(kind=4) :: lengthValue
-      character(len=BUFSIZE) :: dato
+      character(len=BUFSIZE) :: lineText
    end type t_line_t
    !--->
    type, public :: t_NFDE_FILE_t
       integer(kind=8) :: targ
       !--->
       integer(kind=8) :: numberValue
-      type(t_line_t), dimension(:), pointer :: lineas
+      type(t_line_t), dimension(:), pointer :: lines
       logical :: thereare_stoch
    end type t_NFDE_FILE_t
 !--->

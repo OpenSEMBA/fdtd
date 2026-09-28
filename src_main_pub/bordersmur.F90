@@ -492,7 +492,7 @@ contains
       real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
       real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
-      integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
+      integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
       !---------------------------> empieza AdvanceMagneTicMUR <-------------------------------------
 
       !Hetic Fields MUR Zone
@@ -513,16 +513,16 @@ contains
             j = MURc(IHX)%YI(REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medium)
 #endif
             do k = MURc(IHX)%ZI(REGION), MURc(IHX)%ZE(REGION)
                k_m = k - b%Hx%ZI
                do i = MURc(IHX)%XI(REGION), MURc(IHX)%XE(REGION)
                   i_m = i - b%Hx%XI
                   !--->
-                  medio = sggMiHx(i_m    , j_m + 1, k_m)
+                  medium = sggMiHx(i_m    , j_m + 1, k_m)
                   Hx(i_m, j_m, k_m)=                                           + regLR(REGION)%Past_Hx(i    ,j + 1,k)          &
-                  +  left_CAB1(medio)*(                    Hx(i_m  ,j_m + 1,k_m) - regLR(REGION)%Past_Hx(i    ,j    ,k))
+                  +  left_CAB1(medium)*(                    Hx(i_m  ,j_m + 1,k_m) - regLR(REGION)%Past_Hx(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -531,16 +531,16 @@ contains
             j = MURc(IHZ)%YI(REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medium)
 #endif
             do k = MURc(IHZ)%ZI(REGION), MURc(IHZ)%ZE(REGION)
                k_m = k - b%Hz%ZI
                do i = MURc(IHZ)%XI(REGION), MURc(IHZ)%XE(REGION)
                   i_m = i - b%Hz%XI
                   !--->
-                  medio = sggMiHz(i_m    , j_m + 1, k_m)
+                  medium = sggMiHz(i_m    , j_m + 1, k_m)
                   Hz(i_m, j_m, k_m) =                                             + regLR(REGION)%Past_Hz(i    ,j + 1,k)          &
-                  + left_CAB1(medio)*(                   Hz(i_m  ,j_m + 1,k_m) - regLR(REGION)%Past_Hz(i    ,j    ,k))
+                  + left_CAB1(medium)*(                   Hz(i_m  ,j_m + 1,k_m) - regLR(REGION)%Past_Hz(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -556,16 +556,16 @@ contains
             j = MURc(IHX)%YE(REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medium)
 #endif
             do k = MURc(IHX)%ZI(REGION), MURc(IHX)%ZE(REGION)
                k_m = k - b%Hx%ZI
                do i = MURc(IHX)%XI(REGION), MURc(IHX)%XE(REGION)
                   i_m = i - b%Hx%XI
                   !--->
-                  medio = sggMiHx(i_m    , j_m - 1, k_m)
+                  medium = sggMiHx(i_m    , j_m - 1, k_m)
                   Hx(i_m, j_m, k_m)=                                            + regLR(REGION)%Past_Hx(i    ,j - 1,k)          &
-                  + right_CAB1(medio)*(                   Hx(i_m  ,j_m - 1,k_m) - regLR(REGION)%Past_Hx(i    ,j    ,k))
+                  + right_CAB1(medium)*(                   Hx(i_m  ,j_m - 1,k_m) - regLR(REGION)%Past_Hx(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -574,16 +574,16 @@ contains
             j = MURc(IHZ)%YE(REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medium)
 #endif
             do k = MURc(IHZ)%ZI(REGION), MURc(IHZ)%ZE(REGION)
                k_m = k - b%Hz%ZI
                do i = MURc(IHZ)%XI(REGION), MURc(IHZ)%XE(REGION)
                   i_m = i - b%Hz%XI
                   !--->
-                  medio = sggMiHz(i_m    , j_m - 1, k_m)
+                  medium = sggMiHz(i_m    , j_m - 1, k_m)
                   Hz(i_m, j_m, k_m) =                                              + regLR(REGION)%Past_Hz(i    ,j - 1,k)      &
-                  + right_CAB1(medio)*(                   Hz(i_m  ,j_m - 1,k_m) - regLR(REGION)%Past_Hz(i    ,j    ,k))
+                  + right_CAB1(medium)*(                   Hz(i_m  ,j_m - 1,k_m) - regLR(REGION)%Past_Hz(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -599,16 +599,16 @@ contains
             k = MURc(IHY)%ZI(REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medium)
 #endif
             do j = MURc(IHY)%YI(REGION), MURc(IHY)%YE(REGION)
                j_m = j - b%Hy%YI
                do i = MURc(IHY)%XI(REGION), MURc(IHY)%XE(REGION)
                   i_m = i - b%Hy%XI
                   !--->
-                  medio = sggMiHy(i_m    , j_m    , k_m + 1)
+                  medium = sggMiHy(i_m    , j_m    , k_m + 1)
                   Hy(i_m, j_m, k_m) =                                             + regDU(REGION)%Past_Hy(i    ,j    ,k + 1)      &
-                  + down_CAB1(medio)*(                   Hy(i_m  ,j_m,k_m + 1) - regDU(REGION)%Past_Hy(i    ,j    ,k))
+                  + down_CAB1(medium)*(                   Hy(i_m  ,j_m,k_m + 1) - regDU(REGION)%Past_Hy(i    ,j    ,k))
                end do !bucle i
             end do
 #ifdef CompileWithOpenMP
@@ -617,16 +617,16 @@ contains
             k = MURc(IHX)%ZI(REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medium)
 #endif
             do j = MURc(IHX)%YI(REGION), MURc(IHX)%YE(REGION)
                j_m = j - b%Hx%YI
                do i = MURc(IHX)%XI(REGION), MURc(IHX)%XE(REGION)
                   i_m = i - b%Hx%XI
                   !--->
-                  medio = sggMiHx(i_m    , j_m    , k_m + 1)
+                  medium = sggMiHx(i_m    , j_m    , k_m + 1)
                   Hx(i_m, j_m, k_m) =                                             + regDU(REGION)%Past_Hx(i    ,j    ,k + 1)      &
-                  + down_CAB1(medio)*(                   Hx(i_m  ,j_m,k_m + 1) - regDU(REGION)%Past_Hx(i    ,j    ,k))
+                  + down_CAB1(medium)*(                   Hx(i_m  ,j_m,k_m + 1) - regDU(REGION)%Past_Hx(i    ,j    ,k))
                end do !bucle i
             end do
 #ifdef CompileWithOpenMP
@@ -642,16 +642,16 @@ contains
             k = MURc(IHY)%ZE(REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medium)
 #endif
             do j = MURc(IHY)%YI(REGION), MURc(IHY)%YE(REGION)
                j_m = j - b%Hy%YI
                do i = MURc(IHY)%XI(REGION), MURc(IHY)%XE(REGION)
                   i_m = i - b%Hy%XI
                   !--->
-                  medio = sggMiHy(i_m    , j_m    , k_m - 1)
+                  medium = sggMiHy(i_m    , j_m    , k_m - 1)
                   Hy(i_m, j_m, k_m) =                                            + regDU(REGION)%Past_Hy(i    ,j    ,k - 1)      &
-                  + up_CAB1(medio)*(                     Hy(i_m  ,j_m    ,k_m - 1) - regDU(REGION)%Past_Hy(i    ,j    ,k))
+                  + up_CAB1(medium)*(                     Hy(i_m  ,j_m    ,k_m - 1) - regDU(REGION)%Past_Hy(i    ,j    ,k))
                end do !bucle i
             end do
 #ifdef CompileWithOpenMP
@@ -660,16 +660,16 @@ contains
             k = MURc(IHX)%ZE(REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medium)
 #endif
             do j = MURc(IHX)%YI(REGION), MURc(IHX)%YE(REGION)
                j_m = j - b%Hx%YI
                do i = MURc(IHX)%XI(REGION), MURc(IHX)%XE(REGION)
                   i_m = i - b%Hx%XI
                   !--->
-                  medio = sggMiHx(i_m    , j_m    , k_m - 1)
+                  medium = sggMiHx(i_m    , j_m    , k_m - 1)
                   Hx(i_m, j_m, k_m) =                                               + regDU(REGION)%Past_Hx(i    ,j    ,k - 1)      &
-                  + up_CAB1(medio)*(                   Hx(i_m  ,j_m  ,k_m - 1)   - regDU(REGION)%Past_Hx(i    ,j    ,k))
+                  + up_CAB1(medium)*(                   Hx(i_m  ,j_m  ,k_m - 1)   - regDU(REGION)%Past_Hx(i    ,j    ,k))
                end do !bucle i
             end do
 #ifdef CompileWithOpenMP
@@ -685,16 +685,16 @@ contains
             i = MURc(IHZ)%XI(REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medium)
 #endif
             do k = MURc(IHZ)%ZI(REGION), MURc(IHZ)%ZE(REGION)
                k_m = k - b%Hz%ZI
                do j = MURc(IHZ)%YI(REGION), MURc(IHZ)%YE(REGION)
                   j_m = j - b%Hz%YI
                   !--->
-                  medio = sggMiHz(i_m + 1, j_m    , k_m)
+                  medium = sggMiHz(i_m + 1, j_m    , k_m)
                   Hz(i_m, j_m, k_m) =                                              + regBF(REGION)%Past_Hz(i + 1,j    ,k)      &
-                  + back_CAB1(medio)*(                     Hz(i_m + 1,j_m  ,k_m) - regBF(REGION)%Past_Hz(i    ,j    ,k))
+                  + back_CAB1(medium)*(                     Hz(i_m + 1,j_m  ,k_m) - regBF(REGION)%Past_Hz(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -703,16 +703,16 @@ contains
             i = MURc(IHY)%XI(REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medium)
 #endif
             do k = MURc(IHY)%ZI(REGION), MURc(IHY)%ZE(REGION)
                k_m = k - b%Hy%ZI
                do j = MURc(IHY)%YI(REGION), MURc(IHY)%YE(REGION)
                   j_m = j - b%Hy%YI
                   !--->orig
-                  medio = sggMiHy(i_m + 1, j_m    , k_m)
+                  medium = sggMiHy(i_m + 1, j_m    , k_m)
                   Hy(i_m, j_m, k_m) =                                              + regBF(REGION)%Past_Hy(i + 1,j    ,k)      &
-                  + back_CAB1(medio)*(                   Hy(i_m + 1,j_m  ,k_m) - regBF(REGION)%Past_Hy(i    ,j    ,k))
+                  + back_CAB1(medium)*(                   Hy(i_m + 1,j_m  ,k_m) - regBF(REGION)%Past_Hy(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -728,16 +728,16 @@ contains
             i = MURc(IHZ)%XE(REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medium)
 #endif
             do k = MURc(IHZ)%ZI(REGION), MURc(IHZ)%ZE(REGION)
                k_m = k - b%Hz%ZI
                do j = MURc(IHZ)%YI(REGION), MURc(IHZ)%YE(REGION)
                   j_m = j - b%Hz%YI
                   !--->
-                  medio = sggMiHz(i_m - 1, j_m    , k_m)
+                  medium = sggMiHz(i_m - 1, j_m    , k_m)
                   Hz(i_m, j_m, k_m) =                                               + regBF(REGION)%Past_Hz(i - 1,j    ,k)      &
-                  + front_CAB1(medio)*(                   Hz(i_m - 1,j_m  ,k_m) - regBF(REGION)%Past_Hz(i    ,j    ,k))
+                  + front_CAB1(medium)*(                   Hz(i_m - 1,j_m  ,k_m) - regBF(REGION)%Past_Hz(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -746,16 +746,16 @@ contains
             i = MURc(IHY)%XE(REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medium)
 #endif
             do k = MURc(IHY)%ZI(REGION), MURc(IHY)%ZE(REGION)
                k_m = k - b%Hy%ZI
                do j = MURc(IHY)%YI(REGION), MURc(IHY)%YE(REGION)
                   j_m = j - b%Hy%YI
                   !--->
-                  medio = sggMiHy(i_m - 1, j_m    , k_m)
+                  medium = sggMiHy(i_m - 1, j_m    , k_m)
                   Hy(i_m, j_m, k_m) =                                               + regBF(REGION)%Past_Hy(i - 1,j    ,k)      &
-                  + front_CAB1(medio)*(                   Hy(i_m - 1,j_m  ,k_m) - regBF(REGION)%Past_Hy(i    ,j    ,k))
+                  + front_CAB1(medium)*(                   Hy(i_m - 1,j_m  ,k_m) - regBF(REGION)%Past_Hy(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -780,18 +780,18 @@ contains
             j = MURc(IHX)%YI(REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medium)
 #endif
             do k = MURc(IHX)%ZI(REGION) + 1, MURc(IHX)%ZE(REGION) - 1
                k_m = k - b%Hx%ZI
                do i = MURc(IHX)%XI(REGION) + 1, MURc(IHX)%XE(REGION) - 1
                   i_m = i - b%Hx%XI
                   !--->
-                  medio = sggMiHx(i_m    , j_m + 1, k_m)
+                  medium = sggMiHx(i_m    , j_m + 1, k_m)
                   Hx(i_m, j_m, k_m)=                                           - regLR(REGION)%PastPast_Hx(i    ,j + 1,k)          &
-                  + left_CAB1(medio)*(                     Hx(i_m  ,j_m + 1,k_m) + regLR(REGION)%PastPast_Hx(i    ,j    ,k))         &
-                  + left_CAB4(medio)*( regLR(REGION)%Past_Hx(i    ,j    ,k) +     regLR(REGION)%Past_Hx(i    ,j + 1,k))     &
-                  + left_CAB3(medio)*( regLR(REGION)%Past_Hx(i + 1,j    ,k) +     regLR(REGION)%Past_Hx(i - 1,j    ,k)      &
+                  + left_CAB1(medium)*(                     Hx(i_m  ,j_m + 1,k_m) + regLR(REGION)%PastPast_Hx(i    ,j    ,k))         &
+                  + left_CAB4(medium)*( regLR(REGION)%Past_Hx(i    ,j    ,k) +     regLR(REGION)%Past_Hx(i    ,j + 1,k))     &
+                  + left_CAB3(medium)*( regLR(REGION)%Past_Hx(i + 1,j    ,k) +     regLR(REGION)%Past_Hx(i - 1,j    ,k)      &
                   +                    regLR(REGION)%Past_Hx(i + 1,j + 1,k) +     regLR(REGION)%Past_Hx(i - 1,j + 1,k)      &
                   +                    regLR(REGION)%Past_Hx(i    ,j    ,k +1) +     regLR(REGION)%Past_Hx(i    ,j    ,k - 1)      &
                   +                    regLR(REGION)%Past_Hx(i    ,j + 1,k +1) +     regLR(REGION)%Past_Hx(i    ,j + 1,k - 1))
@@ -803,18 +803,18 @@ contains
             j = MURc(IHZ)%YI(REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medium)
 #endif
             do k = MURc(IHZ)%ZI(REGION) + 1, MURc(IHZ)%ZE(REGION) - 1
                k_m = k - b%Hz%ZI
                do i = MURc(IHZ)%XI(REGION) + 1, MURc(IHZ)%XE(REGION) - 1
                   i_m = i - b%Hz%XI
                   !--->
-                  medio = sggMiHz(i_m    , j_m + 1, k_m)
+                  medium = sggMiHz(i_m    , j_m + 1, k_m)
                   Hz(i_m, j_m, k_m) =                                             - regLR(REGION)%PastPast_Hz(i    ,j + 1,k)          &
-                  + left_CAB1(medio)*(                     Hz(i_m  ,j_m + 1,k_m) + regLR(REGION)%PastPast_Hz(i    ,j    ,k))         &
-                  + left_CAB4(medio)*( regLR(REGION)%Past_Hz(i    ,j    ,k) +     regLR(REGION)%Past_Hz(i    ,j + 1,k))     &
-                  + left_CAB3(medio)*( regLR(REGION)%Past_Hz(i + 1,j    ,k) +     regLR(REGION)%Past_Hz(i - 1,j    ,k)      &
+                  + left_CAB1(medium)*(                     Hz(i_m  ,j_m + 1,k_m) + regLR(REGION)%PastPast_Hz(i    ,j    ,k))         &
+                  + left_CAB4(medium)*( regLR(REGION)%Past_Hz(i    ,j    ,k) +     regLR(REGION)%Past_Hz(i    ,j + 1,k))     &
+                  + left_CAB3(medium)*( regLR(REGION)%Past_Hz(i + 1,j    ,k) +     regLR(REGION)%Past_Hz(i - 1,j    ,k)      &
                   +                    regLR(REGION)%Past_Hz(i + 1,j + 1,k) +     regLR(REGION)%Past_Hz(i - 1,j + 1,k)      &
                   +                    regLR(REGION)%Past_Hz(i    ,j    ,k +1) +     regLR(REGION)%Past_Hz(i    ,j    ,k - 1)      &
                   +                    regLR(REGION)%Past_Hz(i    ,j + 1,k +1) +     regLR(REGION)%Past_Hz(i    ,j + 1,k - 1))
@@ -833,18 +833,18 @@ contains
             j = MURc(IHX)%YE(REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medium)
 #endif
             do k = MURc(IHX)%ZI(REGION) + 1, MURc(IHX)%ZE(REGION) - 1
                k_m = k - b%Hx%ZI
                do i = MURc(IHX)%XI(REGION) + 1, MURc(IHX)%XE(REGION) - 1
                   i_m = i - b%Hx%XI
                   !--->
-                  medio = sggMiHx(i_m    , j_m - 1, k_m)
+                  medium = sggMiHx(i_m    , j_m - 1, k_m)
                   Hx(i_m, j_m- 1, k_m)=                                            - regLR(REGION)%PastPast_Hx(i    ,j - 1,k)          &
-                  + right_CAB1(medio)*(                     Hx(i_m  ,j_m - 1,k_m) + regLR(REGION)%PastPast_Hx(i    ,j    ,k))         &
-                  + right_CAB4(medio)*( regLR(REGION)%Past_Hx(i    ,j    ,k) +     regLR(REGION)%Past_Hx(i    ,j - 1,k))     &
-                  + right_CAB3(medio)*( regLR(REGION)%Past_Hx(i + 1,j    ,k) +     regLR(REGION)%Past_Hx(i - 1,j    ,k)      &
+                  + right_CAB1(medium)*(                     Hx(i_m  ,j_m - 1,k_m) + regLR(REGION)%PastPast_Hx(i    ,j    ,k))         &
+                  + right_CAB4(medium)*( regLR(REGION)%Past_Hx(i    ,j    ,k) +     regLR(REGION)%Past_Hx(i    ,j - 1,k))     &
+                  + right_CAB3(medium)*( regLR(REGION)%Past_Hx(i + 1,j    ,k) +     regLR(REGION)%Past_Hx(i - 1,j    ,k)      &
                   +                     regLR(REGION)%Past_Hx(i + 1,j - 1,k) +     regLR(REGION)%Past_Hx(i - 1,j - 1,k)      &
                   +                     regLR(REGION)%Past_Hx(i    ,j    ,k +1) +     regLR(REGION)%Past_Hx(i    ,j    ,k - 1)      &
                   +                     regLR(REGION)%Past_Hx(i    ,j - 1,k +1) +     regLR(REGION)%Past_Hx(i    ,j - 1,k - 1))
@@ -856,18 +856,18 @@ contains
             j = MURc(IHZ)%YE(REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medium)
 #endif
             do k = MURc(IHZ)%ZI(REGION) + 1, MURc(IHZ)%ZE(REGION) - 1
                k_m = k - b%Hz%ZI
                do i = MURc(IHZ)%XI(REGION) + 1, MURc(IHZ)%XE(REGION) - 1
                   i_m = i - b%Hz%XI
                   !--->
-                  medio = sggMiHz(i_m    , j_m - 1, k_m)
+                  medium = sggMiHz(i_m    , j_m - 1, k_m)
                   Hz(i_m, j_m, k_m) =                                              - regLR(REGION)%PastPast_Hz(i    ,j - 1,k)      &
-                  + right_CAB1(medio)*(                     Hz(i_m  ,j_m - 1,k_m) + regLR(REGION)%PastPast_Hz(i    ,j    ,k))     &
-                  + right_CAB4(medio)*( regLR(REGION)%Past_Hz(i    ,j    ,k) +     regLR(REGION)%Past_Hz(i    ,j - 1,k))     &
-                  + right_CAB3(medio)*( regLR(REGION)%Past_Hz(i + 1,j    ,k) +     regLR(REGION)%Past_Hz(i - 1,j    ,k)      &
+                  + right_CAB1(medium)*(                     Hz(i_m  ,j_m - 1,k_m) + regLR(REGION)%PastPast_Hz(i    ,j    ,k))     &
+                  + right_CAB4(medium)*( regLR(REGION)%Past_Hz(i    ,j    ,k) +     regLR(REGION)%Past_Hz(i    ,j - 1,k))     &
+                  + right_CAB3(medium)*( regLR(REGION)%Past_Hz(i + 1,j    ,k) +     regLR(REGION)%Past_Hz(i - 1,j    ,k)      &
                   +                     regLR(REGION)%Past_Hz(i + 1,j - 1,k) +     regLR(REGION)%Past_Hz(i - 1,j - 1,k)      &
                   +                     regLR(REGION)%Past_Hz(i    ,j    ,k +1) +     regLR(REGION)%Past_Hz(i    ,j    ,k - 1)      &
                   +                     regLR(REGION)%Past_Hz(i    ,j - 1,k +1) +     regLR(REGION)%Past_Hz(i    ,j - 1,k - 1))
@@ -886,18 +886,18 @@ contains
             k = MURc(IHY)%ZI(REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medium)
 #endif
             do j = MURc(IHY)%YI(REGION) + 1, MURc(IHY)%YE(REGION) - 1
                j_m = j - b%Hy%YI
                do i = MURc(IHY)%XI(REGION) + 1, MURc(IHY)%XE(REGION) - 1
                   i_m = i - b%Hy%XI
                   !--->
-                  medio = sggMiHy(i_m    , j_m    , k_m + 1)
+                  medium = sggMiHy(i_m    , j_m    , k_m + 1)
                   Hy(i_m, j_m, k_m) =                                             - regDU(REGION)%PastPast_Hy(i    ,j    ,k + 1)      &
-                  + down_CAB1(medio)*(                     Hy(i_m  ,j_m,k_m + 1) + regDU(REGION)%PastPast_Hy(i    ,j    ,k))     &
-                  + down_CAB4(medio)*( regDU(REGION)%Past_Hy(i    ,j    ,k) +     regDU(REGION)%Past_Hy(i    ,j    ,k + 1))     &
-                  + down_CAB3(medio)*( regDU(REGION)%Past_Hy(i + 1,j    ,k) +     regDU(REGION)%Past_Hy(i - 1,j    ,k)      &
+                  + down_CAB1(medium)*(                     Hy(i_m  ,j_m,k_m + 1) + regDU(REGION)%PastPast_Hy(i    ,j    ,k))     &
+                  + down_CAB4(medium)*( regDU(REGION)%Past_Hy(i    ,j    ,k) +     regDU(REGION)%Past_Hy(i    ,j    ,k + 1))     &
+                  + down_CAB3(medium)*( regDU(REGION)%Past_Hy(i + 1,j    ,k) +     regDU(REGION)%Past_Hy(i - 1,j    ,k)      &
                   +                    regDU(REGION)%Past_Hy(i + 1,j    ,k + 1) +     regDU(REGION)%Past_Hy(i - 1,j    ,k + 1)      &
                   +                    regDU(REGION)%Past_Hy(i    ,j +1 ,k) +     regDU(REGION)%Past_Hy(i    ,j - 1,k)      &
                   +                    regDU(REGION)%Past_Hy(i    ,j +1 ,k + 1) +     regDU(REGION)%Past_Hy(i    ,j - 1,k + 1))
@@ -909,18 +909,18 @@ contains
             k = MURc(IHX)%ZI(REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medium)
 #endif
             do j = MURc(IHX)%YI(REGION) + 1, MURc(IHX)%YE(REGION) - 1
                j_m = j - b%Hx%YI
                do i = MURc(IHX)%XI(REGION) + 1, MURc(IHX)%XE(REGION) - 1
                   i_m = i - b%Hx%XI
                   !--->
-                  medio = sggMiHx(i_m    , j_m    , k_m + 1)
+                  medium = sggMiHx(i_m    , j_m    , k_m + 1)
                   Hx(i_m, j_m, k_m) =                                             - regDU(REGION)%PastPast_Hx(i    ,j    ,k + 1)      &
-                  + down_CAB1(medio)*(                     Hx(i_m  ,j_m,k_m + 1) + regDU(REGION)%PastPast_Hx(i    ,j    ,k))     &
-                  + down_CAB4(medio)*( regDU(REGION)%Past_Hx(i    ,j    ,k) +     regDU(REGION)%Past_Hx(i    ,j    ,k + 1))     &
-                  + down_CAB3(medio)*( regDU(REGION)%Past_Hx(i + 1,j    ,k) +     regDU(REGION)%Past_Hx(i - 1,j    ,k)      &
+                  + down_CAB1(medium)*(                     Hx(i_m  ,j_m,k_m + 1) + regDU(REGION)%PastPast_Hx(i    ,j    ,k))     &
+                  + down_CAB4(medium)*( regDU(REGION)%Past_Hx(i    ,j    ,k) +     regDU(REGION)%Past_Hx(i    ,j    ,k + 1))     &
+                  + down_CAB3(medium)*( regDU(REGION)%Past_Hx(i + 1,j    ,k) +     regDU(REGION)%Past_Hx(i - 1,j    ,k)      &
                   +                    regDU(REGION)%Past_Hx(i + 1,j    ,k + 1) +     regDU(REGION)%Past_Hx(i - 1,j    ,k + 1)      &
                   +                    regDU(REGION)%Past_Hx(i    ,j +1 ,k) +     regDU(REGION)%Past_Hx(i    ,j - 1,k)      &
                   +                    regDU(REGION)%Past_Hx(i    ,j +1 ,k + 1) +     regDU(REGION)%Past_Hx(i    ,j - 1,k + 1))
@@ -939,18 +939,18 @@ contains
             k = MURc(IHY)%ZE(REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medium)
 #endif
             do j = MURc(IHY)%YI(REGION) + 1, MURc(IHY)%YE(REGION) - 1
                j_m = j - b%Hy%YI
                do i = MURc(IHY)%XI(REGION) + 1, MURc(IHY)%XE(REGION) - 1
                   i_m = i - b%Hy%XI
                   !--->
-                  medio = sggMiHy(i_m    , j_m    , k_m - 1)
+                  medium = sggMiHy(i_m    , j_m    , k_m - 1)
                   Hy(i_m, j_m, k_m) =                                            - regDU(REGION)%PastPast_Hy(i    ,j    ,k - 1)      &
-                  + up_CAB1(medio)*(                     Hy(i_m  ,j_m    ,k_m - 1) + regDU(REGION)%PastPast_Hy(i    ,j    ,k))     &
-                  + up_CAB4(medio)*( regDU(REGION)%Past_Hy(i    ,j     ,k) +     regDU(REGION)%Past_Hy(i    ,j    ,k - 1))     &
-                  + up_CAB3(medio)*( regDU(REGION)%Past_Hy(i + 1,j     ,k) +     regDU(REGION)%Past_Hy(i - 1,j    ,k)      &
+                  + up_CAB1(medium)*(                     Hy(i_m  ,j_m    ,k_m - 1) + regDU(REGION)%PastPast_Hy(i    ,j    ,k))     &
+                  + up_CAB4(medium)*( regDU(REGION)%Past_Hy(i    ,j     ,k) +     regDU(REGION)%Past_Hy(i    ,j    ,k - 1))     &
+                  + up_CAB3(medium)*( regDU(REGION)%Past_Hy(i + 1,j     ,k) +     regDU(REGION)%Past_Hy(i - 1,j    ,k)      &
                   +                  regDU(REGION)%Past_Hy(i + 1,j     ,k - 1) +     regDU(REGION)%Past_Hy(i - 1,j    ,k - 1)      &
                   +                  regDU(REGION)%Past_Hy(i    ,j +1  ,k) +     regDU(REGION)%Past_Hy(i    ,j - 1,k)      &
                   +                  regDU(REGION)%Past_Hy(i    ,j +1  ,k - 1) +     regDU(REGION)%Past_Hy(i    ,j - 1,k - 1))
@@ -962,18 +962,18 @@ contains
             k = MURc(IHX)%ZE(REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medium)
 #endif
             do j = MURc(IHX)%YI(REGION) + 1, MURc(IHX)%YE(REGION) - 1
                j_m = j - b%Hx%YI
                do i = MURc(IHX)%XI(REGION) + 1, MURc(IHX)%XE(REGION) - 1
                   i_m = i - b%Hx%XI
                   !--->
-                  medio = sggMiHx(i_m    , j_m    , k_m - 1)
+                  medium = sggMiHx(i_m    , j_m    , k_m - 1)
                   Hx(i_m, j_m, k_m) =                                               - regDU(REGION)%PastPast_Hx(i    ,j    ,k - 1)      &
-                  + up_CAB1(medio)*(                     Hx(i_m  ,j_m  ,k_m - 1)   + regDU(REGION)%PastPast_Hx(i    ,j    ,k))     &
-                  + up_CAB4(medio)*( regDU(REGION)%Past_Hx(i    ,j    ,k)   +     regDU(REGION)%Past_Hx(i    ,j    ,k - 1))     &
-                  + up_CAB3(medio)*( regDU(REGION)%Past_Hx(i + 1,j    ,k)   +     regDU(REGION)%Past_Hx(i - 1,j    ,k)      &
+                  + up_CAB1(medium)*(                     Hx(i_m  ,j_m  ,k_m - 1)   + regDU(REGION)%PastPast_Hx(i    ,j    ,k))     &
+                  + up_CAB4(medium)*( regDU(REGION)%Past_Hx(i    ,j    ,k)   +     regDU(REGION)%Past_Hx(i    ,j    ,k - 1))     &
+                  + up_CAB3(medium)*( regDU(REGION)%Past_Hx(i + 1,j    ,k)   +     regDU(REGION)%Past_Hx(i - 1,j    ,k)      &
                   +                  regDU(REGION)%Past_Hx(i + 1,j    ,k - 1)   +     regDU(REGION)%Past_Hx(i - 1,j    ,k - 1)      &
                   +                  regDU(REGION)%Past_Hx(i    ,j +1 ,k)   +     regDU(REGION)%Past_Hx(i    ,j - 1,k)      &
                   +                  regDU(REGION)%Past_Hx(i    ,j +1 ,k - 1)   +     regDU(REGION)%Past_Hx(i    ,j - 1,k - 1))
@@ -992,18 +992,18 @@ contains
             i = MURc(IHZ)%XI(REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medium)
 #endif
             do k = MURc(IHZ)%ZI(REGION) + 1, MURc(IHZ)%ZE(REGION) - 1
                k_m = k - b%Hz%ZI
                do j = MURc(IHZ)%YI(REGION) + 1, MURc(IHZ)%YE(REGION) - 1
                   j_m = j - b%Hz%YI
                   !--->
-                  medio = sggMiHz(i_m + 1, j_m    , k_m)
+                  medium = sggMiHz(i_m + 1, j_m    , k_m)
                   Hz(i_m, j_m, k_m) =                                              - regBF(REGION)%PastPast_Hz(i + 1,j    ,k)      &
-                  + back_CAB1(medio)*(                     Hz(i_m + 1,j_m  ,k_m) + regBF(REGION)%PastPast_Hz(i    ,j    ,k))     &
-                  + back_CAB4(medio)*( regBF(REGION)%Past_Hz(i      ,j    ,k) +     regBF(REGION)%Past_Hz(i + 1,j    ,k))     &
-                  + back_CAB3(medio)*( regBF(REGION)%Past_Hz(i      ,j + 1,k) +     regBF(REGION)%Past_Hz(i    ,j - 1,k)      &
+                  + back_CAB1(medium)*(                     Hz(i_m + 1,j_m  ,k_m) + regBF(REGION)%PastPast_Hz(i    ,j    ,k))     &
+                  + back_CAB4(medium)*( regBF(REGION)%Past_Hz(i      ,j    ,k) +     regBF(REGION)%Past_Hz(i + 1,j    ,k))     &
+                  + back_CAB3(medium)*( regBF(REGION)%Past_Hz(i      ,j + 1,k) +     regBF(REGION)%Past_Hz(i    ,j - 1,k)      &
                   +                    regBF(REGION)%Past_Hz(i + 1  ,j + 1,k) +     regBF(REGION)%Past_Hz(i + 1,j - 1,k)      &
                   +                    regBF(REGION)%Past_Hz(i      ,j    ,k +1) +     regBF(REGION)%Past_Hz(i    ,j    ,k - 1)      &
                   +                    regBF(REGION)%Past_Hz(i + 1  ,j    ,k +1) +     regBF(REGION)%Past_Hz(i + 1,j    ,k - 1))
@@ -1015,18 +1015,18 @@ contains
             i = MURc(IHY)%XI(REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medium)
 #endif
             do k = MURc(IHY)%ZI(REGION) + 1, MURc(IHY)%ZE(REGION) - 1
                k_m = k - b%Hy%ZI
                do j = MURc(IHY)%YI(REGION) + 1, MURc(IHY)%YE(REGION) - 1
                   j_m = j - b%Hy%YI
                   !--->orig
-                  medio = sggMiHy(i_m + 1, j_m    , k_m)
+                  medium = sggMiHy(i_m + 1, j_m    , k_m)
                   Hy(i_m, j_m, k_m) =                                              - regBF(REGION)%PastPast_Hy(i + 1,j    ,k)      &
-                  + back_CAB1(medio)*(                     Hy(i_m + 1,j_m  ,k_m) + regBF(REGION)%PastPast_Hy(i    ,j    ,k))     &
-                  + back_CAB4(medio)*( regBF(REGION)%Past_Hy(i      ,j    ,k) +     regBF(REGION)%Past_Hy(i + 1,j    ,k))     &
-                  + back_CAB3(medio)*( regBF(REGION)%Past_Hy(i      ,j + 1,k) +     regBF(REGION)%Past_Hy(i    ,j - 1,k)      &
+                  + back_CAB1(medium)*(                     Hy(i_m + 1,j_m  ,k_m) + regBF(REGION)%PastPast_Hy(i    ,j    ,k))     &
+                  + back_CAB4(medium)*( regBF(REGION)%Past_Hy(i      ,j    ,k) +     regBF(REGION)%Past_Hy(i + 1,j    ,k))     &
+                  + back_CAB3(medium)*( regBF(REGION)%Past_Hy(i      ,j + 1,k) +     regBF(REGION)%Past_Hy(i    ,j - 1,k)      &
                   +                    regBF(REGION)%Past_Hy(i + 1  ,j + 1,k) +     regBF(REGION)%Past_Hy(i + 1,j - 1,k)      &
                   +                    regBF(REGION)%Past_Hy(i      ,j    ,k +1) +     regBF(REGION)%Past_Hy(i    ,j    ,k - 1)      &
                   +                    regBF(REGION)%Past_Hy(i + 1  ,j    ,k +1) +     regBF(REGION)%Past_Hy(i + 1,j    ,k - 1))
@@ -1045,18 +1045,18 @@ contains
             i = MURc(IHZ)%XE(REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medium)
 #endif
             do k = MURc(IHZ)%ZI(REGION) + 1, MURc(IHZ)%ZE(REGION) - 1
                k_m = k - b%Hz%ZI
                do j = MURc(IHZ)%YI(REGION) + 1, MURc(IHZ)%YE(REGION) - 1
                   j_m = j - b%Hz%YI
                   !--->
-                  medio = sggMiHz(i_m - 1, j_m    , k_m)
+                  medium = sggMiHz(i_m - 1, j_m    , k_m)
                   Hz(i_m, j_m, k_m) =                                               - regBF(REGION)%PastPast_Hz(i - 1,j    ,k)      &
-                  + front_CAB1(medio)*(                     Hz(i_m - 1,j_m  ,k_m) + regBF(REGION)%PastPast_Hz(i    ,j    ,k))     &
-                  + front_CAB4(medio)*( regBF(REGION)%Past_Hz(i      ,j    ,k) +     regBF(REGION)%Past_Hz(i - 1,j    ,k))     &
-                  + front_CAB3(medio)*( regBF(REGION)%Past_Hz(i      ,j + 1,k) +     regBF(REGION)%Past_Hz(i    ,j - 1,k)      &
+                  + front_CAB1(medium)*(                     Hz(i_m - 1,j_m  ,k_m) + regBF(REGION)%PastPast_Hz(i    ,j    ,k))     &
+                  + front_CAB4(medium)*( regBF(REGION)%Past_Hz(i      ,j    ,k) +     regBF(REGION)%Past_Hz(i - 1,j    ,k))     &
+                  + front_CAB3(medium)*( regBF(REGION)%Past_Hz(i      ,j + 1,k) +     regBF(REGION)%Past_Hz(i    ,j - 1,k)      &
                   +                     regBF(REGION)%Past_Hz(i - 1  ,j + 1,k) +     regBF(REGION)%Past_Hz(i - 1,j - 1,k)      &
                   +                     regBF(REGION)%Past_Hz(i      ,j    ,k +1) +     regBF(REGION)%Past_Hz(i    ,j    ,k - 1)      &
                   +                     regBF(REGION)%Past_Hz(i - 1  ,j    ,k +1) +     regBF(REGION)%Past_Hz(i - 1,j    ,k - 1))
@@ -1068,18 +1068,18 @@ contains
             i = MURc(IHY)%XE(REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medium)
 #endif
             do k = MURc(IHY)%ZI(REGION) + 1, MURc(IHY)%ZE(REGION) - 1
                k_m = k - b%Hy%ZI
                do j = MURc(IHY)%YI(REGION) + 1, MURc(IHY)%YE(REGION) - 1
                   j_m = j - b%Hy%YI
                   !--->
-                  medio = sggMiHy(i_m - 1, j_m    , k_m)
+                  medium = sggMiHy(i_m - 1, j_m    , k_m)
                   Hy(i_m, j_m, k_m) =                                               - regBF(REGION)%PastPast_Hy(i - 1,j    ,k)      &
-                  + front_CAB1(medio)*(                     Hy(i_m - 1,j_m  ,k_m) + regBF(REGION)%PastPast_Hy(i    ,j    ,k))     &
-                  + front_CAB4(medio)*( regBF(REGION)%Past_Hy(i      ,j    ,k) +     regBF(REGION)%Past_Hy(i - 1,j    ,k))     &
-                  + front_CAB3(medio)*( regBF(REGION)%Past_Hy(i      ,j + 1,k) +     regBF(REGION)%Past_Hy(i    ,j - 1,k)      &
+                  + front_CAB1(medium)*(                     Hy(i_m - 1,j_m  ,k_m) + regBF(REGION)%PastPast_Hy(i    ,j    ,k))     &
+                  + front_CAB4(medium)*( regBF(REGION)%Past_Hy(i      ,j    ,k) +     regBF(REGION)%Past_Hy(i - 1,j    ,k))     &
+                  + front_CAB3(medium)*( regBF(REGION)%Past_Hy(i      ,j + 1,k) +     regBF(REGION)%Past_Hy(i    ,j - 1,k)      &
                   +                     regBF(REGION)%Past_Hy(i - 1  ,j + 1,k) +     regBF(REGION)%Past_Hy(i - 1,j - 1,k)      &
                   +                     regBF(REGION)%Past_Hy(i      ,j    ,k +1) +     regBF(REGION)%Past_Hy(i    ,j    ,k - 1)      &
                   +                     regBF(REGION)%Past_Hy(i - 1  ,j    ,k +1) +     regBF(REGION)%Past_Hy(i - 1,j    ,k - 1))
@@ -1110,16 +1110,16 @@ contains
             j = MURc(IHX)%YI(REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medium)
 #endif
             do k = MURc(IHX)%ZI(REGION), MURc(IHX)%ZE(REGION)
                k_m = k - b%Hx%ZI
                do i = MURc(IHX)%XI(REGION), MURc(IHX)%XE(REGION)
                   i_m = i - b%Hx%XI
                   !--->
-                  medio = sggMiHx(i_m    , j_m + 1, k_m)
+                  medium = sggMiHx(i_m    , j_m + 1, k_m)
                   Hx(i_m, j_m, k_m)=                                           + regLR(REGION)%Past_Hx(i    ,j + 1,k)          &
-                  +  left_CAB1(medio)*(                    Hx(i_m  ,j_m + 1,k_m) - regLR(REGION)%Past_Hx(i    ,j    ,k))
+                  +  left_CAB1(medium)*(                    Hx(i_m  ,j_m + 1,k_m) - regLR(REGION)%Past_Hx(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -1128,16 +1128,16 @@ contains
             j = MURc(IHZ)%YI(REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medium)
 #endif
             do k = MURc(IHZ)%ZI(REGION), MURc(IHZ)%ZE(REGION)
                k_m = k - b%Hz%ZI
                do i = MURc(IHZ)%XI(REGION), MURc(IHZ)%XE(REGION)
                   i_m = i - b%Hz%XI
                   !--->
-                  medio = sggMiHz(i_m    , j_m + 1, k_m)
+                  medium = sggMiHz(i_m    , j_m + 1, k_m)
                   Hz(i_m, j_m, k_m) =                                             + regLR(REGION)%Past_Hz(i    ,j + 1,k)          &
-                  + left_CAB1(medio)*(                   Hz(i_m  ,j_m + 1,k_m) - regLR(REGION)%Past_Hz(i    ,j    ,k))
+                  + left_CAB1(medium)*(                   Hz(i_m  ,j_m + 1,k_m) - regLR(REGION)%Past_Hz(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -1153,16 +1153,16 @@ contains
             j = MURc(IHX)%YE(REGION)
             j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medium)
 #endif
             do k = MURc(IHX)%ZI(REGION), MURc(IHX)%ZE(REGION)
                k_m = k - b%Hx%ZI
                do i = MURc(IHX)%XI(REGION), MURc(IHX)%XE(REGION)
                   i_m = i - b%Hx%XI
                   !--->
-                  medio = sggMiHx(i_m    , j_m - 1, k_m)
+                  medium = sggMiHx(i_m    , j_m - 1, k_m)
                   Hx(i_m, j_m, k_m)=                                            + regLR(REGION)%Past_Hx(i    ,j - 1,k)          &
-                  + right_CAB1(medio)*(                   Hx(i_m  ,j_m - 1,k_m) - regLR(REGION)%Past_Hx(i    ,j    ,k))
+                  + right_CAB1(medium)*(                   Hx(i_m  ,j_m - 1,k_m) - regLR(REGION)%Past_Hx(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -1171,16 +1171,16 @@ contains
             j = MURc(IHZ)%YE(REGION)
             j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,k,i_m,k_m,medium)
 #endif
             do k = MURc(IHZ)%ZI(REGION), MURc(IHZ)%ZE(REGION)
                k_m = k - b%Hz%ZI
                do i = MURc(IHZ)%XI(REGION), MURc(IHZ)%XE(REGION)
                   i_m = i - b%Hz%XI
                   !--->
-                  medio = sggMiHz(i_m    , j_m - 1, k_m)
+                  medium = sggMiHz(i_m    , j_m - 1, k_m)
                   Hz(i_m, j_m, k_m) =                                              + regLR(REGION)%Past_Hz(i    ,j - 1,k)      &
-                  + right_CAB1(medio)*(                   Hz(i_m  ,j_m - 1,k_m) - regLR(REGION)%Past_Hz(i    ,j    ,k))
+                  + right_CAB1(medium)*(                   Hz(i_m  ,j_m - 1,k_m) - regLR(REGION)%Past_Hz(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -1196,16 +1196,16 @@ contains
             k = MURc(IHY)%ZI(REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medium)
 #endif
             do j = MURc(IHY)%YI(REGION), MURc(IHY)%YE(REGION)
                j_m = j - b%Hy%YI
                do i = MURc(IHY)%XI(REGION), MURc(IHY)%XE(REGION)
                   i_m = i - b%Hy%XI
                   !--->
-                  medio = sggMiHy(i_m    , j_m    , k_m + 1)
+                  medium = sggMiHy(i_m    , j_m    , k_m + 1)
                   Hy(i_m, j_m, k_m) =                                             + regDU(REGION)%Past_Hy(i    ,j    ,k + 1)      &
-                  + down_CAB1(medio)*(                   Hy(i_m  ,j_m,k_m + 1) - regDU(REGION)%Past_Hy(i    ,j    ,k))
+                  + down_CAB1(medium)*(                   Hy(i_m  ,j_m,k_m + 1) - regDU(REGION)%Past_Hy(i    ,j    ,k))
                end do !bucle i
             end do
 #ifdef CompileWithOpenMP
@@ -1214,16 +1214,16 @@ contains
             k = MURc(IHX)%ZI(REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medium)
 #endif
             do j = MURc(IHX)%YI(REGION), MURc(IHX)%YE(REGION)
                j_m = j - b%Hx%YI
                do i = MURc(IHX)%XI(REGION), MURc(IHX)%XE(REGION)
                   i_m = i - b%Hx%XI
                   !--->
-                  medio = sggMiHx(i_m    , j_m    , k_m + 1)
+                  medium = sggMiHx(i_m    , j_m    , k_m + 1)
                   Hx(i_m, j_m, k_m) =                                             + regDU(REGION)%Past_Hx(i    ,j    ,k + 1)      &
-                  + down_CAB1(medio)*(                   Hx(i_m  ,j_m,k_m + 1) - regDU(REGION)%Past_Hx(i    ,j    ,k))
+                  + down_CAB1(medium)*(                   Hx(i_m  ,j_m,k_m + 1) - regDU(REGION)%Past_Hx(i    ,j    ,k))
                end do !bucle i
             end do
 #ifdef CompileWithOpenMP
@@ -1239,16 +1239,16 @@ contains
             k = MURc(IHY)%ZE(REGION)
             k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medium)
 #endif
             do j = MURc(IHY)%YI(REGION), MURc(IHY)%YE(REGION)
                j_m = j - b%Hy%YI
                do i = MURc(IHY)%XI(REGION), MURc(IHY)%XE(REGION)
                   i_m = i - b%Hy%XI
                   !--->
-                  medio = sggMiHy(i_m    , j_m    , k_m - 1)
+                  medium = sggMiHy(i_m    , j_m    , k_m - 1)
                   Hy(i_m, j_m, k_m) =                                            + regDU(REGION)%Past_Hy(i    ,j    ,k - 1)      &
-                  + up_CAB1(medio)*(                     Hy(i_m  ,j_m    ,k_m - 1) - regDU(REGION)%Past_Hy(i    ,j    ,k))
+                  + up_CAB1(medium)*(                     Hy(i_m  ,j_m    ,k_m - 1) - regDU(REGION)%Past_Hy(i    ,j    ,k))
                end do !bucle i
             end do
 #ifdef CompileWithOpenMP
@@ -1257,16 +1257,16 @@ contains
             k = MURc(IHX)%ZE(REGION)
             k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m,medium)
 #endif
             do j = MURc(IHX)%YI(REGION), MURc(IHX)%YE(REGION)
                j_m = j - b%Hx%YI
                do i = MURc(IHX)%XI(REGION), MURc(IHX)%XE(REGION)
                   i_m = i - b%Hx%XI
                   !--->
-                  medio = sggMiHx(i_m    , j_m    , k_m - 1)
+                  medium = sggMiHx(i_m    , j_m    , k_m - 1)
                   Hx(i_m, j_m, k_m) =                                               + regDU(REGION)%Past_Hx(i    ,j    ,k - 1)      &
-                  + up_CAB1(medio)*(                   Hx(i_m  ,j_m  ,k_m - 1)   - regDU(REGION)%Past_Hx(i    ,j    ,k))
+                  + up_CAB1(medium)*(                   Hx(i_m  ,j_m  ,k_m - 1)   - regDU(REGION)%Past_Hx(i    ,j    ,k))
                end do !bucle i
             end do
 #ifdef CompileWithOpenMP
@@ -1282,16 +1282,16 @@ contains
             i = MURc(IHZ)%XI(REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medium)
 #endif
             do k = MURc(IHZ)%ZI(REGION), MURc(IHZ)%ZE(REGION)
                k_m = k - b%Hz%ZI
                do j = MURc(IHZ)%YI(REGION), MURc(IHZ)%YE(REGION)
                   j_m = j - b%Hz%YI
                   !--->
-                  medio = sggMiHz(i_m + 1, j_m    , k_m)
+                  medium = sggMiHz(i_m + 1, j_m    , k_m)
                   Hz(i_m, j_m, k_m) =                                              + regBF(REGION)%Past_Hz(i + 1,j    ,k)      &
-                  + back_CAB1(medio)*(                     Hz(i_m + 1,j_m  ,k_m) - regBF(REGION)%Past_Hz(i    ,j    ,k))
+                  + back_CAB1(medium)*(                     Hz(i_m + 1,j_m  ,k_m) - regBF(REGION)%Past_Hz(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -1300,16 +1300,16 @@ contains
             i = MURc(IHY)%XI(REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medium)
 #endif
             do k = MURc(IHY)%ZI(REGION), MURc(IHY)%ZE(REGION)
                k_m = k - b%Hy%ZI
                do j = MURc(IHY)%YI(REGION), MURc(IHY)%YE(REGION)
                   j_m = j - b%Hy%YI
                   !--->orig
-                  medio = sggMiHy(i_m + 1, j_m    , k_m)
+                  medium = sggMiHy(i_m + 1, j_m    , k_m)
                   Hy(i_m, j_m, k_m) =                                              + regBF(REGION)%Past_Hy(i + 1,j    ,k)      &
-                  + back_CAB1(medio)*(                   Hy(i_m + 1,j_m  ,k_m) - regBF(REGION)%Past_Hy(i    ,j    ,k))
+                  + back_CAB1(medium)*(                   Hy(i_m + 1,j_m  ,k_m) - regBF(REGION)%Past_Hy(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -1325,16 +1325,16 @@ contains
             i = MURc(IHZ)%XE(REGION)
             i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medium)
 #endif
             do k = MURc(IHZ)%ZI(REGION), MURc(IHZ)%ZE(REGION)
                k_m = k - b%Hz%ZI
                do j = MURc(IHZ)%YI(REGION), MURc(IHZ)%YE(REGION)
                   j_m = j - b%Hz%YI
                   !--->
-                  medio = sggMiHz(i_m - 1, j_m    , k_m)
+                  medium = sggMiHz(i_m - 1, j_m    , k_m)
                   Hz(i_m, j_m, k_m) =                                               + regBF(REGION)%Past_Hz(i - 1,j    ,k)      &
-                  + front_CAB1(medio)*(                   Hz(i_m - 1,j_m  ,k_m) - regBF(REGION)%Past_Hz(i    ,j    ,k))
+                  + front_CAB1(medium)*(                   Hz(i_m - 1,j_m  ,k_m) - regBF(REGION)%Past_Hz(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP
@@ -1343,16 +1343,16 @@ contains
             i = MURc(IHY)%XE(REGION)
             i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medio)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m,medium)
 #endif
             do k = MURc(IHY)%ZI(REGION), MURc(IHY)%ZE(REGION)
                k_m = k - b%Hy%ZI
                do j = MURc(IHY)%YI(REGION), MURc(IHY)%YE(REGION)
                   j_m = j - b%Hy%YI
                   !--->
-                  medio = sggMiHy(i_m - 1, j_m    , k_m)
+                  medium = sggMiHy(i_m - 1, j_m    , k_m)
                   Hy(i_m, j_m, k_m) =                                               + regBF(REGION)%Past_Hy(i - 1,j    ,k)      &
-                  + front_CAB1(medio)*(                   Hy(i_m - 1,j_m  ,k_m) - regBF(REGION)%Past_Hy(i    ,j    ,k))
+                  + front_CAB1(medium)*(                   Hy(i_m - 1,j_m  ,k_m) - regBF(REGION)%Past_Hy(i    ,j    ,k))
                end do
             end do
 #ifdef CompileWithOpenMP

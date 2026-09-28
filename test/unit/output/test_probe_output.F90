@@ -695,7 +695,7 @@ integer function test_update_point_probe() bind(c) result(err)
    ! Action
    do i = 0, 8
       dummyFields%Ex(4, 4, 4) = real(i, RKIND)
-      call update_outputs(control, sgg%tiempo(i + 1), int(i, SINGLE), fields)
+      call update_outputs(control, sgg%time(i + 1), int(i, SINGLE), fields)
    end do
    outputs => GetOutputs()
 
@@ -844,7 +844,7 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
       wires%CurrentSegment(1)%CurrentPast = real(i, RKIND_WIRES)
       wires%ChargeNode(2)%ChargePresent = 10.0_RKIND_WIRES + real(i, RKIND_WIRES)
       dummyFields%Ex(3, 3, 3) = real(i, RKIND)
-      call update_outputs(control, sgg%tiempo(i + 1), int(i, SINGLE), fields)
+      call update_outputs(control, sgg%time(i + 1), int(i, SINGLE), fields)
    end do
 
    test_err = test_err + assert_integer_equal(size(outputs), 4, 'Unexpected time output count')
@@ -1469,7 +1469,7 @@ integer function test_update_movie_probe() bind(c) result(err)
    dummyFields%Hz(3, 3, 3) = 4.0_RKIND
 
    do iter = 1, 4
-      call update_outputs(dummyControl, dummysgg%tiempo(iter + 1), iter, fields)
+      call update_outputs(dummyControl, dummysgg%time(iter + 1), iter, fields)
    end do
 
    test_err = test_err + assert_real_equal(outputs(1)%movieProbe%yValueForTime(1, 1), &
@@ -1487,7 +1487,7 @@ integer function test_update_movie_probe() bind(c) result(err)
    test_err = test_err + assert_integer_equal( &
               size(outputs(1)%movieProbe%timeStep), OUTPUT_TIME_BUFFER_SIZE, 'Unexpected timestep buffer size')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nTime, 1, 'Movie update did not buffer a timestep')
-   test_err = test_err + assert_true(outputs(1)%movieProbe%timeStep(1) == dummysgg%tiempo(3), &
+   test_err = test_err + assert_true(outputs(1)%movieProbe%timeStep(1) == dummysgg%time(3), &
                                       'Movie update stored an incorrect timestep')
 
    !Cleanup
@@ -1661,7 +1661,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    outputs(3)%movieProbe%timeStep(2) = 0.75_RKIND_TIEMPO
    outputs(3)%movieProbe%yValueForTime(2, :4) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
 
-   call flush_outputs(dummysgg%tiempo, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
+   call flush_outputs(dummysgg%time, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
 
    expectedPath = trim(outputs(1)%movieProbe%filesPath)
    test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.bin'), 'Movie binary payload does not exist')
@@ -2038,10 +2038,10 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 
    call fillGradient(dummyFields, 1, 0.0_RKIND, 10.0_RKIND)
 
-   call update_outputs(dummyControl, dummysgg%tiempo(3), 2_SINGLE, fields)
+   call update_outputs(dummyControl, dummysgg%time(3), 2_SINGLE, fields)
    firstFrequencyUpdate = outputs(1)%frequencySliceProbe%yValueForFreq(1, :)
    do iter = 3, 5
-      call update_outputs(dummyControl, dummysgg%tiempo(iter + 1), iter, fields)
+      call update_outputs(dummyControl, dummysgg%time(iter + 1), iter, fields)
    end do
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, &

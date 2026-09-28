@@ -69,7 +69,7 @@ contains
       integer(kind=4) :: nsurfs, numus, layoutnumber, num_procs,OrigIndex,numminus
       real(kind=RKIND) :: delta,del,sig_max
       integer(kind=4), dimension(:), allocatable :: contapuntos
-      integer(kind=4) :: conta1, conta2, MEDIO,imenos1,jmenos1,kmenos1,o,p,puntoxi,puntoyi,puntozi, &
+      integer(kind=4) :: conta1, conta2, medium,imenos1,jmenos1,kmenos1,o,p,puntoxi,puntoyi,puntozi, &
          bboxwirXI,dummy_bboxwirXI,bboxwirYI,dummy_bboxwirYI,bboxwirzI,dummy_bboxwirzI, &
          bboxwirXE,dummy_bboxwirXE,bboxwirYE,dummy_bboxwirYE,bboxwirZE,dummy_bboxwirZE,IERR
       integer(kind=8) :: memo
@@ -82,7 +82,7 @@ contains
       character(len=BUFSIZE) :: ext,extpoint
       character(len=BUFSIZE) :: chari,charj,chark,chari2,charj2,chark2
       !
-      logical :: paraerrhilo,groundwires,islossy,DENTRO
+      logical :: paraerrhilo,groundwires,islossy,isInside
       real(kind=RKIND) :: width, dir (1:3), epr1, mur1
       logical :: oriX, oriY, oriZ, oriX2, oriY2, oriZ2, oriX3, oriY3, oriZ3, isEqual
       logical :: oriX4, oriY4, oriZ4
@@ -1321,11 +1321,11 @@ contains
                      write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call WarnErrReport (buff,.TRUE.)
                   end if
-                  dentro = (puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE).and. &
+                  isInside = (puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE).and. &
                      (puntoYI>=sgg%allocDyI).and.(puntoYI<=sgg%allocDyE).and. &
                      (puntoZI>=sgg%allocDzI).and.(puntoZI<=sgg%allocDzE)
                   delta=-1.0_RKIND
-                  if (DENTRO) then
+                  if (isInside) then
                      select case (abs(this%LossyThinSurfs%cs(j)%C(i)%or))
                       case (iEx)
                         delta=(sgg%DX(puntoXI)+sgg%DX(puntoXI-1))/2.0_RKIND
@@ -1504,11 +1504,11 @@ contains
                   write(buff, '(a)')    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)'
                   call WarnErrReport (buff,.TRUE.)
 
-                  dentro = (puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE).and. &
+                  isInside = (puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE).and. &
                      (puntoYI>=sgg%allocDyI).and.(puntoYI<=sgg%allocDyE).and. &
                      (puntoZI>=sgg%allocDzI).and.(puntoZI<=sgg%allocDzE)
                   delta=-1.0_RKIND
-                  if (DENTRO) then
+                  if (isInside) then
                      select case (abs(this%LossyThinSurfs%cs(j)%C(i)%or))
                       case (iEx)
                         delta=(sgg%DX(puntoXI)+sgg%DX(puntoXI-1))/2.0_RKIND
@@ -2977,7 +2977,7 @@ contains
                   do i1 = punto_s%XI, punto_s%XE
                      if (punto_s%xc /= 0) then
                         !bug OLD 181214 sl_4_20mm_gli.nfde. Fuente nodal electrica embebida en pec y nodal magnetica en pmc se ignoraran sean hard or soft
-                        MEDIO = media%sggMiEx (i1, j1, k1)
+                        medium = media%sggMiEx (i1, j1, k1)
                         isValid=.true.
                         !if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
@@ -2986,7 +2986,7 @@ contains
                         !  VALIDO = .TRUE.
                         !end if
                         if (this%nodsrc%NodalSource(i)%isElec) then
-                           isValid = isValid .AND. ( .NOT. sgg%Med(MEDIO)%Is%PEC)
+                           isValid = isValid .AND. ( .NOT. sgg%Med(medium)%Is%PEC)
                         end if
                         write (buff,*) 'WARNING: Ex Nodal source on PEC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  WarnErrReport (buff)
@@ -3009,7 +3009,7 @@ contains
                      !
                      !
                      if (punto_s%yc /= 0) then
-                        MEDIO = media%sggMiEy (i1, j1, k1)
+                        medium = media%sggMiEy (i1, j1, k1)
                         isValid=.true.
                         !if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
@@ -3018,7 +3018,7 @@ contains
                         !  VALIDO = .TRUE.
                         !end if
                         if (this%nodsrc%NodalSource(i)%isElec) then
-                           isValid = isValid .AND. ( .NOT. sgg%Med(MEDIO)%Is%PEC)
+                           isValid = isValid .AND. ( .NOT. sgg%Med(medium)%Is%PEC)
                         end if
                         write (buff,*) 'WARNING: Ey Nodal source on PMC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  WarnErrReport (buff)
@@ -3041,7 +3041,7 @@ contains
                      !
                      !
                      if (punto_s%zc /= 0) then
-                        MEDIO = media%sggMiEz (i1, j1, k1)
+                        medium = media%sggMiEz (i1, j1, k1)
                         isValid=.true.
                         !if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
@@ -3050,7 +3050,7 @@ contains
                         !  VALIDO = .TRUE.
                         !end if
                         if (this%nodsrc%NodalSource(i)%isElec) then
-                           isValid = isValid .AND. ( .NOT. sgg%Med(MEDIO)%Is%PEC)
+                           isValid = isValid .AND. ( .NOT. sgg%Med(medium)%Is%PEC)
                         end if
                         write (buff,*) 'WARNING: Ez Nodal source on PMC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  WarnErrReport (buff)
@@ -3151,7 +3151,7 @@ contains
                do j1 = punto_s%YI, punto_s%YE
                   do i1 = punto_s%XI, punto_s%XE
                      if (punto_s%xc /= 0) then
-                        MEDIO = media%sggMiEx (i1, j1, k1)
+                        medium = media%sggMiEx (i1, j1, k1)
                         isValid=.true.
                         !if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
@@ -3160,7 +3160,7 @@ contains
                         !  VALIDO = .TRUE.
                         !end if
                         if (this%nodsrc%NodalSource(i)%isElec) then
-                           isValid = isValid .AND. ( .NOT. sgg%Med(MEDIO)%Is%PEC)
+                           isValid = isValid .AND. ( .NOT. sgg%Med(medium)%Is%PEC)
                         end if
                         write (buff,*) 'WARNING: Ex Nodal source on PEC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  WarnErrReport (buff)
@@ -3184,7 +3184,7 @@ contains
                      !
                      !
                      if (punto_s%yc /= 0) then
-                        MEDIO = media%sggMiEy (i1, j1, k1)
+                        medium = media%sggMiEy (i1, j1, k1)
                         isValid=.true.
                         !if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
@@ -3193,7 +3193,7 @@ contains
                         !  VALIDO = .TRUE.
                         !end if
                         if (this%nodsrc%NodalSource(i)%isElec) then
-                           isValid = isValid .AND. ( .NOT. sgg%Med(MEDIO)%Is%PEC)
+                           isValid = isValid .AND. ( .NOT. sgg%Med(medium)%Is%PEC)
                         end if
                         write (buff,*) 'WARNING: Ey Nodal source on PMC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  WarnErrReport (buff)
@@ -3216,7 +3216,7 @@ contains
                      !
                      !
                      if (punto_s%zc /= 0) then
-                        MEDIO = media%sggMiEz (i1, j1, k1)
+                        medium = media%sggMiEz (i1, j1, k1)
                         isValid=.true.
                         !if ( .NOT. this%nodsrc%NodalSource(i)%isHard) then
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
@@ -3225,7 +3225,7 @@ contains
                         !  VALIDO = .TRUE.
                         !end if
                         if (this%nodsrc%NodalSource(i)%isElec) then
-                           isValid = isValid .AND. ( .NOT. sgg%Med(MEDIO)%Is%PEC)
+                           isValid = isValid .AND. ( .NOT. sgg%Med(medium)%Is%PEC)
                         end if
                         write (buff,*) 'WARNING: Ez Nodal source on PMC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  WarnErrReport (buff)

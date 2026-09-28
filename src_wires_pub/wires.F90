@@ -5148,7 +5148,7 @@ subroutine resume_casuistics
       type(ChargeNodes_t), pointer  :: wireNode
       type(TMultiline_t), pointer                      :: Multiline
       character(len=*), intent(in) :: wiresflavor
-      timei = sgg%tiempo(timeinstant) 
+      timei = sgg%time(timeinstant) 
       !!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !FIRST ADVANCE THE CHARGE from n+1.0_RKIND_wires / 2 to n+3/2 using the current known at n+1
@@ -5541,7 +5541,7 @@ subroutine resume_casuistics
       type(ChargeNodes_t), pointer  :: wireNode
       type(TMultiline_t), pointer                      :: Multiline
       character(len=*), intent(in) :: wiresflavor
-      timei = sgg%tiempo(timeinstant) 
+      timei = sgg%time(timeinstant) 
    
 !
 
@@ -5589,7 +5589,7 @@ subroutine resume_casuistics
       character(len=*), intent(in) :: wiresflavor
       real(kind=RKIND_WIRES) , dimension(1:HWires%NumCurrentSegments) :: a,b,c,d,x
       
-      timei = sgg%tiempo(timeinstant) 
+      timei = sgg%time(timeinstant) 
       !!!
       iplus=-1.0; iminus=-1.0;
       

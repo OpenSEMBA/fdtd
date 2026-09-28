@@ -1733,10 +1733,10 @@ contains
          integer(kind=4) :: lastexecutedtimestep,finaltimestep,i
          real(kind=RKIND_TIEMPO) :: lastexecutedtime
          type(SGGFDTDINFO_t), intent(inout) :: sgg
-         allocate (sgg%tiempo(lastexecutedtimestep:finaltimestep+2))
-         sgg%tiempo(lastexecutedtimestep)=lastexecutedtime
+         allocate (sgg%time(lastexecutedtimestep:finaltimestep+2))
+         sgg%time(lastexecutedtimestep)=lastexecutedtime
          do i=lastexecutedtimestep+1,finaltimestep+2
-               sgg%tiempo(i)=sgg%tiempo(i-1)+sgg%dt !equiespaciados por defecto !luego los modifica prescale
+               sgg%time(i)=sgg%time(i-1)+sgg%dt !equiespaciados por defecto !luego los modifica prescale
          end do
          return
       end subroutine
@@ -1826,7 +1826,7 @@ contains
                           write(dubuf,'(a,i9)')  ' INIT OBSERVATION DATA FLUSHING n= ',this%n
                       end if
                       call printMessageWithSeparator(this%control%layoutnumber,dubuf)
-                      if (this%thereAre%Observation) call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, flushFF)
+                      if (this%thereAre%Observation) call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, flushFF)
                  end if !del if (this%performflushDATA.or....
                   if (this%control%singlefilewrite.and.this%perform%unpackFlag) call singleUnpack()
                   if ((this%control%singlefilewrite.and.this%perform%unpackFlag).or.this%perform%isFlush()) then
@@ -1846,8 +1846,8 @@ contains
 #ifdef CompileWithPrescale
          if (this%control%permitscaling) then
 #ifndef miguelPscaleStandAlone
-            if ((this%sgg%tiempo(this%n)>=this%EpsMuTimeScale_input_parameters%tini).and.&
-                &(this%sgg%tiempo(this%n)<=this%EpsMuTimeScale_input_parameters%tend)) then
+            if ((this%sgg%time(this%n)>=this%EpsMuTimeScale_input_parameters%tini).and.&
+                &(this%sgg%time(this%n)<=this%EpsMuTimeScale_input_parameters%tend)) then
 #endif
              call updateconstants(this%sgg,this%n,this%thereare,this%g, & 
                                Idxe,Idye,Idze,Idxh,Idyh,Idzh, &  !needed by  CPML to be updated
@@ -1914,9 +1914,9 @@ contains
          integer(kind=4) :: mindum
          if (this%thereAre%Observation) then
             if (this%n > 0 .and. mod(this%n, OUTPUT_TIME_BUFFER_SIZE) == 0) then
-               call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .FALSE.)
+               call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .FALSE.)
             end if
-            call update_outputs(this%control, this%sgg%tiempo(this%n), this%n, fieldReference, this%sgg)
+            call update_outputs(this%control, this%sgg%time(this%n), this%n, fieldReference, this%sgg)
          end if
       end subroutine
 
@@ -2130,7 +2130,7 @@ contains
 
       real(kind=rkind) :: Idzhk, Idyhj
       integer(kind=4) :: i, j, k
-      integer(kind=integersizeofmediamatrices) :: medio
+      integer(kind=integersizeofmediamatrices) :: medium
 
       Ex(0:this%bounds%Ex%NX-1,0:this%bounds%Ex%NY-1,0:this%bounds%Ex%NZ-1) => this%Ex
       Hy(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1) => this%Hy
@@ -2140,18 +2140,18 @@ contains
       Idzh(0:this%bounds%dzh%NZ-1) => this%Idzh
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk,Idyhj) 
+!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idzhk,Idyhj) 
 #endif
 #ifdef CompileWithACC   
-!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk,Idyhj)  copyin(Ex,sggMiEx,Hy,Hz,Idyh,Idzh,b,G1,G2) copyout(Ex) 
+!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medium,Idzhk,Idyhj)  copyin(Ex,sggMiEx,Hy,Hz,Idyh,Idzh,b,G1,G2) copyout(Ex) 
 #endif
       do k=1,this%bounds%sweepEx%NZ
          do j=1,this%bounds%sweepEx%NY
             do i=1,this%bounds%sweepEx%NX
                Idzhk=Idzh(k)
                Idyhj=Idyh(j)
-               medio =sggMiEx(i,j,k)
-               Ex(i,j,k)=this%g%g1(MEDIO)*Ex(i,j,k)+this%g%g2(MEDIO)* &
+               medium =sggMiEx(i,j,k)
+               Ex(i,j,k)=this%g%g1(medium)*Ex(i,j,k)+this%g%g2(medium)* &
                ((Hz(i,j,k)-Hz(i,j-1,k))*Idyhj-(Hy(i,j,k)-Hy(i,j,k-1))*Idzhk)
             end do
          end do
@@ -2173,7 +2173,7 @@ contains
 
       real(kind=rkind) :: Idzhk
       integer(kind=4) :: i, j, k
-      integer(kind=integersizeofmediamatrices) :: medio
+      integer(kind=integersizeofmediamatrices) :: medium
 
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
       Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
@@ -2183,17 +2183,17 @@ contains
       Idxh(0:this%bounds%dxh%NX-1) => this%Idxh
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk)  
+!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idzhk)  
 #endif
 #ifdef CompileWithACC   
-!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk)     copyin(Ey,sggMiEy,Hz,Hx,Idzh,Idxh,b,G1,G2) copyout(Ey) 
+!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medium,Idzhk)     copyin(Ey,sggMiEy,Hz,Hx,Idzh,Idxh,b,G1,G2) copyout(Ey) 
 #endif
       do k=1,this%bounds%sweepEy%NZ
          do j=1,this%bounds%sweepEy%NY
             do i=1,this%bounds%sweepEy%NX
                Idzhk=Idzh(k)
-               medio =sggMiEy(i,j,k)
-               Ey(i,j,k)=this%g%g1(MEDIO)*Ey(i,j,k)+this%g%g2(MEDIO)*((Hx(i,j,k)-Hx(i,j,k-1))*Idzhk-(Hz(i,j,k)-Hz(i-1,j,k))*Idxh(i))
+               medium =sggMiEy(i,j,k)
+               Ey(i,j,k)=this%g%g1(medium)*Ey(i,j,k)+this%g%g2(medium)*((Hx(i,j,k)-Hx(i,j,k-1))*Idzhk-(Hz(i,j,k)-Hz(i-1,j,k))*Idxh(i))
             end do
          end do
       end do
@@ -2218,7 +2218,7 @@ contains
       !------------------------> Variables locales
       real(kind = RKIND) :: Idyhj
       integer(kind = 4) :: i, j, k
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medium
 
 
       Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
@@ -2229,17 +2229,17 @@ contains
       Idxh(0:this%bounds%dxh%NX-1) => this%Idxh
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyhj)    
+!$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idyhj)    
 #endif
 #ifdef CompileWithACC   
-!$ACC parallel loop   DEFAULT(present) collapse (2) private (i,j,k,medio,Idyhj)        copyin(Ez,sggMiEz,Hx,Hy,Idxh,Idyh,b,G1,G2) copyout(Ez) 
+!$ACC parallel loop   DEFAULT(present) collapse (2) private (i,j,k,medium,Idyhj)        copyin(Ez,sggMiEz,Hx,Hy,Idxh,Idyh,b,G1,G2) copyout(Ez) 
 #endif
       do k=1,this%bounds%sweepEz%NZ
          do j=1,this%bounds%sweepEz%NY
             do i=1,this%bounds%sweepEz%NX
                Idyhj=Idyh(j)
-               medio =sggMiEz(i,j,k)
-               Ez(i,j,k)=this%g%g1(MEDIO)*Ez(i,j,k)+this%g%g2(MEDIO)*((Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj)
+               medium =sggMiEz(i,j,k)
+               Ez(i,j,k)=this%g%g1(medium)*Ez(i,j,k)+this%g%g2(medium)*((Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj)
             end do
          end do
       end do
@@ -2281,7 +2281,7 @@ contains
       real(kind=rkind), dimension(:), pointer:: IdzE
       real(kind=rkind) :: Idzek, Idyej
       integer(kind=4) :: i, j, k
-      integer(kind=integersizeofmediamatrices) :: medio
+      integer(kind=integersizeofmediamatrices) :: medium
 
       Hx(0:this%bounds%Hx%NX-1,0:this%bounds%Hx%NY-1,0:this%bounds%Hx%NZ-1) => this%Hx
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
@@ -2292,18 +2292,18 @@ contains
 
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek,Idyej)     
+!$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idzek,Idyej)     
 #endif
 #ifdef CompileWithACC   
-!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek,Idyej)       copyin(Hx,sggMiHx,Ey,Ez,Idye,Idze,b,GM1,GM2) copyout(Hx) 
+!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medium,Idzek,Idyej)       copyin(Hx,sggMiHx,Ey,Ez,Idye,Idze,b,GM1,GM2) copyout(Hx) 
 #endif
       do k=1,this%bounds%sweepHx%NZ
          do j=1,this%bounds%sweepHx%NY
             do i=1,this%bounds%sweepHx%NX
             Idzek=Idze(k)
             Idyej=Idye(j)
-               medio =sggMiHx(i,j,k)
-               Hx(i,j,k)=this%g%gm1(medio)*Hx(i,j,k)+this%g%gm2(medio)*((Ey(i,j,k+1)-Ey(i,j,k))*Idzek-(Ez(i,j+1,k)-Ez(i,j,k))*Idyej)
+               medium =sggMiHx(i,j,k)
+               Hx(i,j,k)=this%g%gm1(medium)*Hx(i,j,k)+this%g%gm2(medium)*((Ey(i,j,k+1)-Ey(i,j,k))*Idzek-(Ez(i,j+1,k)-Ez(i,j,k))*Idyej)
             end do
          end do
       end do
@@ -2324,7 +2324,7 @@ contains
       real(kind=rkind), dimension(:), pointer :: IdxE
       real(kind=rkind) :: Idzek
       integer(kind=4) :: i, j, k
-      integer(kind=integersizeofmediamatrices) :: medio
+      integer(kind=integersizeofmediamatrices) :: medium
 
       Hy(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1) => this%Hy
       Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
@@ -2334,17 +2334,17 @@ contains
       IdxE(0:this%bounds%dxE%NX-1) => this%IdxE
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek)     
+!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idzek)     
 #endif
 #ifdef CompileWithACC   
-!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek)         copyin(Hy,sggMiHy,Ez,Ex,Idze,Idxe,b,GM1,GM2) copyout(Hy) 
+!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medium,Idzek)         copyin(Hy,sggMiHy,Ez,Ex,Idze,Idxe,b,GM1,GM2) copyout(Hy) 
 #endif
       do k=1,this%bounds%sweepHy%NZ
          do j=1,this%bounds%sweepHy%NY
             do i=1,this%bounds%sweepHy%NX
                Idzek=Idze(k)
-               medio =sggMiHy(i,j,k)
-               Hy(i,j,k)=this%g%gm1(medio)*Hy(i,j,k)+this%g%gm2(medio)*((Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek)
+               medium =sggMiHy(i,j,k)
+               Hy(i,j,k)=this%g%gm1(medium)*Hy(i,j,k)+this%g%gm2(medium)*((Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek)
             end do
          end do
       end do
@@ -2365,7 +2365,7 @@ contains
 
       real(kind = RKIND) :: Idyej
       integer(kind = 4) :: i, j, k
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medium
       Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
       Ex(0:this%bounds%EX%NX-1,0:this%bounds%EX%NY-1,0:this%bounds%EX%NZ-1) => this%Ex
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
@@ -2373,17 +2373,17 @@ contains
       IdxE(0:this%bounds%dxE%NX-1) => this%IdxE
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyej)  
+!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idyej)  
 #endif
 #ifdef CompileWithACC   
-!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idyej)       copyin(Hz,sggMiHz,Ex,Ey,Idxe,Idye,b,GM1,GM2) copyout(Hz)
+!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medium,Idyej)       copyin(Hz,sggMiHz,Ex,Ey,Idxe,Idye,b,GM1,GM2) copyout(Hz)
 #endif
       do k=1,this%bounds%sweepHz%NZ
          do j=1,this%bounds%sweepHz%NY
             do i=1,this%bounds%sweepHz%NX
                Idyej=Idye(j)
-               medio =sggMiHz(i,j,k)
-               Hz(i,j,k)=this%g%gm1(medio)*Hz(i,j,k)+this%g%gm2(medio)*((Ex(i,j+1,k)-Ex(i,j,k))*Idyej-(Ey(i+1,j,k)-Ey(i,j,k))*Idxe(i))
+               medium =sggMiHz(i,j,k)
+               Hz(i,j,k)=this%g%gm1(medium)*Hz(i,j,k)+this%g%gm2(medium)*((Ex(i,j+1,k)-Ex(i,j,k))*Idyej-(Ey(i+1,j,k)-Ey(i,j,k))*Idxe(i))
             end do
          end do
       end do
@@ -2633,7 +2633,7 @@ contains
 
       if (this%n>this%control%finaltimestep) this%n = this%control%finaltimestep !readjust n since after finishing it is increased
       this%control%finaltimestep = this%n
-      this%lastexecutedtime=this%sgg%tiempo(this%control%finaltimestep)
+      this%lastexecutedtime=this%sgg%time(this%control%finaltimestep)
       !se llama con dummylog para no perder los flags de parada
       call Timing(this%sgg,this%bounds,this%n,ndummy,this%control%layoutnumber, this%control%num_procs, & 
                   this%control%maxCPUtime,this%control%flushsecondsFields, this%control%flushsecondsData, &
@@ -2664,7 +2664,7 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       if (this%thereAre%Observation) then
-         call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .TRUE.)
+         call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .TRUE.)
       end if
 #ifdef CompileWithMTLN
       if (this%mtlnObservationInitialized) call CloseMTLNObservation()
@@ -2733,7 +2733,7 @@ contains
       call DestroyPMLbodies(sgg)
       call DestroyMURBorders
       !Destroy the remaining
-      deallocate(sgg%Med,sgg%LineX,sgg%LineY,sgg%LineZ,sgg%DX,sgg%DY,sgg%DZ,sgg%tiempo)
+      deallocate(sgg%Med,sgg%LineX,sgg%LineY,sgg%LineZ,sgg%DX,sgg%DY,sgg%DZ,sgg%time)
       deallocate(G1,G2,GM1,GM2)
       deallocate(Ex, Ey, Ez, Hx, Hy, Hz)
       deallocate(dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh)
@@ -2772,7 +2772,7 @@ contains
       call DestroyPMLbodies(this%sgg)
       call DestroyMURBorders
       !Destroy the remaining
-      deallocate(this%sgg%Med,this%sgg%LineX,this%sgg%LineY,this%sgg%LineZ,this%sgg%DX,this%sgg%DY,this%sgg%DZ,this%sgg%tiempo)
+      deallocate(this%sgg%Med,this%sgg%LineX,this%sgg%LineY,this%sgg%LineZ,this%sgg%DX,this%sgg%DY,this%sgg%DZ,this%sgg%time)
       call this%g%destroy()
       deallocate(this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
       deallocate(this%dxe, this%dye, this%dze, this%Idxe, this%Idye, this%Idze, this%dxh, this%dyh, this%dzh, this%Idxh, this%Idyh, this%Idzh)

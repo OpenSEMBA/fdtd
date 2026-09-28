@@ -877,7 +877,7 @@ contains
       if (this%l%layoutnumber/=0) then
          NFDE_FILE%targ = 1
          NFDE_FILE%numberValue=numberOfLinesInFile
-        allocate(NFDE_FILE%lineas(NFDE_FILE%numberValue))
+        allocate(NFDE_FILE%lines(NFDE_FILE%numberValue))
       end if
       call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 
@@ -894,7 +894,7 @@ contains
             else
                longitud4=int(longitud8,4)
             end if
-            call MPI_BCAST(NFDE_FILE%lineas(i8),longitud4,mpi_t_line_t,0_4,SUBCOMM_MPI,this%l%ierr)    
+            call MPI_BCAST(NFDE_FILE%lines(i8),longitud4,mpi_t_line_t,0_4,SUBCOMM_MPI,this%l%ierr)    
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
       end do
    end subroutine initialize_MPI_process
@@ -960,11 +960,11 @@ contains
       character(len=*), intent(in) :: filename
       integer(kind=4), intent(in) :: unit
 
-      type(t_line_t), pointer :: linea
+      type(t_line_t), pointer :: line
       character(len=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
 
-     allocate(rInfo%lineas(rInfo%numberValue))
+     allocate(rInfo%lines(rInfo%numberValue))
       rInfo%numberValue = 0
       open(UNIT=unit, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
       do
@@ -974,9 +974,9 @@ contains
             call warnerrreport(buffer,.TRUE.) !ABORTA
          end if
          rInfo%numberValue = rInfo%numberValue + 1
-         linea => rInfo%lineas (rInfo%numberValue)
-         linea%dato = adjustl(l_aux)
-         linea%lengthValue=len_trim (linea%dato)
+         line => rInfo%lines (rInfo%numberValue)
+         line%lineText = adjustl(l_aux)
+         line%lengthValue=len_trim (line%lineText)
       end do
    2010   close (unit)
 
@@ -988,20 +988,20 @@ contains
       integer(kind=4), intent(in) :: unit
 
       integer(kind=4) :: io, size_read, pos, d
-      type(t_line_t), pointer :: linea
+      type(t_line_t), pointer :: line
       character(len=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
 
-     allocate(rInfo%lineas(rInfo%numberValue))
+     allocate(rInfo%lines(rInfo%numberValue))
       rInfo%numberValue = 0
       open(UNIT=unit, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
       do
          read (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
          if (size_read == 0) exit
          rInfo%numberValue = rInfo%numberValue + 1
-         linea => rInfo%lineas (rInfo%numberValue)
-         linea%dato = adjustl(l_aux)
-         linea%lengthValue=len_trim (linea%dato)
+         line => rInfo%lines (rInfo%numberValue)
+         line%lineText = adjustl(l_aux)
+         line%lengthValue=len_trim (line%lineText)
       end do
       close (unit)
 
@@ -1011,7 +1011,7 @@ contains
       character(len=*), intent(in) :: filename, extension
       type(t_NFDE_FILE_t), pointer :: rawFileInfo
       
-      type(t_line_t), pointer :: linea
+      type(t_line_t), pointer :: line
       logical :: ok
       character(len=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
@@ -1042,20 +1042,20 @@ contains
       end if
 
       do k=1,rawFileInfo%numberValue
-          linea => rawFileInfo%lineas (k)
-          do j=1,linea%lengthValue
+          line => rawFileInfo%lines (k)
+          do j=1,line%lengthValue
               i=j
-              buscaespa: do while ((ichar(linea%dato(i:i))==32).or.(ichar(linea%dato(i:i))==9))
-                 if ((ichar(linea%dato(i+1:i+1))==32).or.(ichar(linea%dato(i+1:i+1))==9)) then
-                     linea%dato = trim (adjustl(linea%dato(1:i)))//' '//trim (adjustl(linea%dato(i+2:linea%lengthValue)))
+              buscaespa: do while ((ichar(line%lineText(i:i))==32).or.(ichar(line%lineText(i:i))==9))
+                 if ((ichar(line%lineText(i+1:i+1))==32).or.(ichar(line%lineText(i+1:i+1))==9)) then
+                     line%lineText = trim (adjustl(line%lineText(1:i)))//' '//trim (adjustl(line%lineText(i+2:line%lengthValue)))
                  end if
                  i=i+1
-                 if (i>linea%lengthValue) exit buscaespa
+                 if (i>line%lengthValue) exit buscaespa
               end do buscaespa
           end do
           !update
-          linea%dato =  trim (adjustl(linea%dato))
-          linea%lengthValue=len_trim (adjustl(linea%dato))   
+          line%lineText =  trim (adjustl(line%lineText))
+          line%lengthValue=len_trim (adjustl(line%lineText))   
      end do
 
 

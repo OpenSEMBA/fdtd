@@ -92,7 +92,7 @@ contains
       logical :: forcing
       integer(kind=4), dimension(:), pointer :: trancos
       real(kind=RKIND), dimension(:), pointer :: cZI,cZE
-      real(kind=RKIND) :: carga,guess,ZE(1:3),cargaZE(1:3)
+      real(kind=RKIND) :: workload,guess,ZE(1:3),cargaZE(1:3)
       real(kind=RKIND) :: deltatrancos
       character(len=*), intent(in) :: slicesoriginales
       character(len=BUFSIZE_LONG) :: slices=' '
@@ -112,12 +112,12 @@ contains
       !clip the simulation region
       !Take into account the PML overhead factor plusCPU_PML (2= double overhead, 1=no overhead)
       allocate(trancos(0 : num_procs-1),cZI(0 : num_procs),cZE(0 : num_procs-1))
-      carga= 1.0_RKIND *(fullsize(IHZ)%ZE        - fullsize(IHZ)%ZI)/(1.0_RKIND * num_procs) + &
+      workload= 1.0_RKIND *(fullsize(IHZ)%ZE        - fullsize(IHZ)%ZI)/(1.0_RKIND * num_procs) + &
       (PLUSCPU_PML-1.0_RKIND)*((SINPML_fullsize(IHZ)%ZI - fullsize(IHZ)%ZI)   + &
       (fullsize(IHZ)%ZE - SINPML_fullsize(IHZ)%ZE))/(1.0_RKIND * num_procs)
       cZI(0)=fullsize(IHZ)%ZI
       do ilay=0,num_procs-1
-         guess=carga+cZI(ilay)+(PLUSCPU_PML-1.0_RKIND)*(min(cZI(ilay),1.0_RKIND * sinpml_fullsize(IHZ)%ZI) + &
+         guess=workload+cZI(ilay)+(PLUSCPU_PML-1.0_RKIND)*(min(cZI(ilay),1.0_RKIND * sinpml_fullsize(IHZ)%ZI) + &
          max(cZI(ilay),1.0_RKIND * sinpml_fullsize(IHZ)%ZE))
          ZE(1)=(guess-(PLUSCPU_PML-1.0_RKIND)*(sinpml_fullsize(IHZ)%ZI))/(1.0_RKIND+(PLUSCPU_PML-1.0_RKIND))
          ZE(2)=(guess-(PLUSCPU_PML-1.0_RKIND)*(sinpml_fullsize(IHZ)%ZE))/(1.0_RKIND+(PLUSCPU_PML-1.0_RKIND))
@@ -125,7 +125,7 @@ contains
          do j=1,3
             cargaZE(j)=ABS( (ZE(j)-cZI(ilay)) + &
             (PLUSCPU_PML-1.0_RKIND)*(min(1.0_RKIND * SINPML_fullsize(IHZ)%ZI,ZE(j)) - Min(1.0_RKIND * SINPML_fullsize(IHZ)%ZI,cZI(ilay))  + &
-            max(1.0_RKIND * SINPML_fullsize(IHZ)%ZE,ZE(j)) - Max(1.0_RKIND * SINPML_fullsize(IHZ)%ZE,cZI(ilay)))-carga)
+            max(1.0_RKIND * SINPML_fullsize(IHZ)%ZE,ZE(j)) - Max(1.0_RKIND * SINPML_fullsize(IHZ)%ZE,cZI(ilay)))-workload)
          end do
          !select the closest to 0 one
          elementIndex=minloc(cargaZE)

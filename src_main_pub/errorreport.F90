@@ -449,8 +449,8 @@ contains
 #endif
       call get_secnds(time_out2)
       call print11(c%layoutnumber,SEPARADOR//separador//separador)
-      write(dubuf,'(a,i7,a,e19.9e3,a,i9,a,e19.9e3)')  'Simulation from n=',initialtimestep,', t=',sgg%tiempo(initialtimestep),&
-                                                      ' to n=',c%finaltimestep,', t=',sgg%tiempo(c%finaltimestep)
+      write(dubuf,'(a,i7,a,e19.9e3,a,i9,a,e19.9e3)')  'Simulation from n=',initialtimestep,', t=',sgg%time(initialtimestep),&
+                                                      ' to n=',c%finaltimestep,', t=',sgg%time(c%finaltimestep)
       call print11(c%layoutnumber,dubuf)
       write(dubuf,*)  'Date/time ', time_out2%fecha(7: 8),'/',time_out2%fecha(5: 6),'/',time_out2%fecha(1:4),'   ', &
                                     time_out2%hora(1: 2), ':',time_out2%hora(3: 4),':',time_out2%hora(5: 6)
@@ -576,7 +576,7 @@ contains
       ! logical, intent( OUT) :: performflushFIELDS, performflushDATA,performUnpack,performpostprocess,&
                                  ! performflushXdmf,performflushVTK
       !---------------------------> variables locales <-----------------------------------------------
-      real(kind=rKIND) :: valor,maxSourceValue,LA,LV,LB
+      real(kind=rKIND) :: value,maxSourceValue,LA,LV,LB
       logical  :: hay_timing, l_aux, hay_flushFIELDS, hay_flushDATA, mustflushFIELDS, mustflushDATA,mustUnpack, &
                    mustPostprocess,mustflushXdmf , mustflushVTK ,   &
       pararflushing, pararNOflushing, stoponNaN , stoponNaN_aux,mustSnap,stop_only,stopflushing_only,flush_only,flushdata_only
@@ -839,7 +839,7 @@ contains
          lminval_z(1:num_procs) =  1e+20
          !
 
-         valor = 0.0_RKIND
+         value = 0.0_RKIND
          !--->
          ini_i = b%sweepSINPMLEx%XI - b%Ex%XI
          fin_i = b%sweepSINPMLEx%XE - b%Ex%XI
@@ -851,7 +851,7 @@ contains
          do k = ini_k, fin_k
             do j = ini_j, fin_j
                do i = ini_i, fin_i
-                  valor = valor + Ex(i, j, k) * Ex(i, j, k)
+                  value = value + Ex(i, j, k) * Ex(i, j, k)
                end do
             end do
          end do
@@ -865,7 +865,7 @@ contains
          do k = ini_k, fin_k
             do j = ini_j, fin_j
                do i = ini_i, fin_i
-                  valor = valor + Ey(i, j, k) * Ey(i, j, k)
+                  value = value + Ey(i, j, k) * Ey(i, j, k)
                end do
             end do
          end do
@@ -879,13 +879,13 @@ contains
          do k = ini_k, fin_k
             do j = ini_j, fin_j
                do i = ini_i, fin_i
-                  valor = valor + Ez(i, j, k) * Ez(i, j, k)
+                  value = value + Ez(i, j, k) * Ez(i, j, k)
                end do
             end do
          end do
          !
          !--->
-         energy = valor !!! quitado 241018 para evitar pasar el eps0----> 0.5_RKIND * Eps0 * valor
+         energy = value !!! quitado 241018 para evitar pasar el eps0----> 0.5_RKIND * Eps0 * valor
          !--->
          energytotal = energy
 #ifdef CompileWithMPI
@@ -911,9 +911,9 @@ contains
          do k = ini_kbox, fin_kbox
             do j = ini_jbox, fin_jbox
                do i = ini_ibox, fin_ibox
-                  valor = sqrt(Ex(i, j, k) * Ex(i, j, k) + Ey(i, j, k) * Ey(i, j, k)+Ez(i, j, k) * Ez(i, j, k))
-                  if (lmaxval  (layoutnumber+1)< valor) then
-                     lmaxval  (layoutnumber+1)= valor
+                  value = sqrt(Ex(i, j, k) * Ex(i, j, k) + Ey(i, j, k) * Ey(i, j, k)+Ez(i, j, k) * Ez(i, j, k))
+                  if (lmaxval  (layoutnumber+1)< value) then
+                     lmaxval  (layoutnumber+1)= value
                      lmaxval_i(layoutnumber+1)=i+b%Hx%XI
                      lmaxval_j(layoutnumber+1)=j+b%Hy%YI
                      lmaxval_k(layoutnumber+1)=k+b%Hz%ZI
@@ -921,8 +921,8 @@ contains
                      lmaxval_y(layoutnumber+1)=Punto%PhysCoor(IHY)%y(lmaxval_j(layoutnumber+1))
                      lmaxval_z(layoutnumber+1)=Punto%PhysCoor(IHZ)%z(lmaxval_k(layoutnumber+1))
                   end if
-                  if (lminval  (layoutnumber+1)> valor) then
-                     lminval  (layoutnumber+1)= valor
+                  if (lminval  (layoutnumber+1)> value) then
+                     lminval  (layoutnumber+1)= value
                      lminval_i(layoutnumber+1)=i+b%Hx%XI
                      lminval_j(layoutnumber+1)=j+b%Hy%YI
                      lminval_k(layoutnumber+1)=k+b%Hz%ZI
@@ -1089,12 +1089,12 @@ contains
                do  j = ini_jbox, fin_jbox , snapStep
                   do i = ini_ibox, fin_ibox , snapStep
                      veces=0
-                     valor=0.0_RKIND
+                     value=0.0_RKIND
                      do k1=0,snapstep-1
                         do j1=0,snapstep-1
                            do i1=0,snapstep-1
                               if ((i+i1 <= fin_ibox).and.(j+j1 <= fin_jbox).and.(k+k1 <= fin_kbox)) then
-                                 valor = valor+sqrt(Ex(i+i1, j+j1, k+k1) * Ex(i+i1, j+j1, k+k1) + &
+                                 value = value+sqrt(Ex(i+i1, j+j1, k+k1) * Ex(i+i1, j+j1, k+k1) + &
                                                     Ey(i+i1, j+j1, k+k1) * Ey(i+i1, j+j1, k+k1)+ &
                                  Ez(i+i1, j+j1, k+k1) * Ez(i+i1, j+j1, k+k1))
                                  veces=veces+1
@@ -1103,7 +1103,7 @@ contains
                         end do
                      end do
                      snap(ini_ibox+int((i-ini_ibox)/snapstep),ini_jbox+int((j-ini_jbox)/snapstep), &
-                          ini_kbox+int((k-ini_kbox)/snapstep),1) = valor/veces
+                          ini_kbox+int((k-ini_kbox)/snapstep),1) = value/veces
                   end do
                end do
             end do
@@ -1175,10 +1175,10 @@ contains
             call print11(layoutnumber,dubuf)
             !
             if (permitscaling) then
-                write(dubuf,'(a,e19.9e3,a,e19.9e3,a,e19.9e3)') 'Time= ',sgg%tiempo(n),', dt0 (original)= ',dt0, &
+                write(dubuf,'(a,e19.9e3,a,e19.9e3,a,e19.9e3)') 'Time= ',sgg%time(n),', dt0 (original)= ',dt0, &
                                                                ', dt(pscaled)= ',sgg%dt
             else
-                write(dubuf,'(a,e19.9e3,a,e19.9e3,a,e19.9e3)') 'Time= ',sgg%tiempo(n),', dt0 = ',sgg%dt
+                write(dubuf,'(a,e19.9e3,a,e19.9e3,a,e19.9e3)') 'Time= ',sgg%time(n),', dt0 = ',sgg%dt
             end if
             call print11(layoutnumber,dubuf)
             !
@@ -1287,7 +1287,7 @@ contains
             write(dubuf,*) SEPARADOR//separador//separador
             call print11(layoutnumber,dubuf)
             !
-            write (10,*)      sgg%tiempo(n),energytotal
+            write (10,*)      sgg%time(n),energytotal
             !write(67,'(i5)') nint(100.0_RKIND * n/finaltimestep) !percentage
             call flush(11)
             call flush(10)

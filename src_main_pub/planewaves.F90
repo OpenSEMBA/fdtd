@@ -863,7 +863,7 @@ contains
       still_planewave_time=.false. !por defecto no va a haber mas actividad de onda plana, a menos que pase por algun incid no trivial
       called_fromobservation=.false. !210419 
       
-      timei = sgg%tiempo(timeinstant)
+      timei = sgg%time(timeinstant)
       !!!! deprecado en pscale y el+3 de la sincronia con ORIGINAL se jode para siempre 110219 
       !!! timei = (timeinstant +3) * sgg%dt !ORIGINAL sync
       
@@ -1165,7 +1165,7 @@ contains
       !!!
       !!!
       
-      timei = sgg%tiempo(timeinstant) + 0.5_RKIND  * sgg%dt
+      timei = sgg%time(timeinstant) + 0.5_RKIND  * sgg%dt
       !!!! deprecado en pscale y el+3 de la sincronia con ORIGINAL se jode para siempre 110219 
       !!! timei = ( timeinstant + 0.5_RKIND  +3.0_RKIND) * sgg%dt  !ORIGINAL sync
       Gm2_1 = Gm2(1)

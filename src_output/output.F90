@@ -223,7 +223,7 @@ contains
 #endif
 
       do ii = 1, sgg%NumberRequest
-         domain = preprocess_domain(sgg%Observation(ii), sgg%tiempo, sgg%dt, control%finaltimestep, &
+         domain = preprocess_domain(sgg%Observation(ii), sgg%time, sgg%dt, control%finaltimestep, &
                                     control%saveall)
          if (domain%domainType == UNDEFINED_DOMAIN) cycle
          do i = 1, sgg%Observation(ii)%nP

@@ -353,7 +353,7 @@ contains
       integer(kind = 4) :: i, j, k, i_block, n_block, ini, fin
       real(kind = RKIND) :: eps0,mu0,cluz,zvac
       !---------------------------> empieza StoreFields <---------------------------------------------
-      write(14,err=634) finaltimestep,sgg%tiempo(finaltimestep),sgg%dt,eps0,mu0
+      write(14,err=634) finaltimestep,sgg%time(finaltimestep),sgg%dt,eps0,mu0
       !--->
       do k = 0, b%Ex%NZ-1
          do j = 0, b%Ex%NY-1
