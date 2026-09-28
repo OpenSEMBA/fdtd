@@ -55,6 +55,187 @@ integer function test_geometry_coord_position() bind(C) result(err)
 
 end function
 
+integer function test_geometry_closed_surface_orientation() bind(C) result(err)
+    use conformal_m
+    use NFDETypes_m, only: ConformalPECElements_t
+    implicit none
+
+    type(coord_t) :: c1, c2, c3, c4, c5, c6, c7, c8, c9, c10
+    type(ConformalPECElements_t) :: surface
+    type(triangle_t), dimension(:), allocatable :: outward, inward
+    logical :: is_valid
+    character(len=256) :: message
+    integer :: triangle_index, vertex_index
+    integer, dimension(3,4) :: inward_ids
+
+    err = 0
+    c1 = coord_t(position=[0.2,0.2,0.2], id=1)
+    c2 = coord_t(position=[0.8,0.2,0.2], id=2)
+    c3 = coord_t(position=[0.2,0.8,0.2], id=3)
+    c4 = coord_t(position=[0.2,0.2,0.8], id=4)
+
+    allocate(outward(4))
+    outward(1) = triangle_t(vertices=[c2,c3,c4])
+    outward(2) = triangle_t(vertices=[c1,c4,c3])
+    outward(3) = triangle_t(vertices=[c1,c2,c4])
+    outward(4) = triangle_t(vertices=[c1,c3,c2])
+    inward = outward
+    do triangle_index = 1, size(inward)
+        inward(triangle_index)%vertices = [outward(triangle_index)%vertices(1), &
+                                             outward(triangle_index)%vertices(3), &
+                                             outward(triangle_index)%vertices(2)]
+    end do
+
+    surface%triangles = outward
+    allocate(surface%intervals(0))
+    call validateConformalSurface(surface, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    call validateConformalVolume(surface, is_valid, message)
+    if (.not. is_valid) err = err + 1
+
+    surface%triangles = inward
+    do triangle_index = 1, size(inward)
+        do vertex_index = 1, 3
+            inward_ids(vertex_index, triangle_index) = inward(triangle_index)%vertices(vertex_index)%id
+        end do
+    end do
+    call validateConformalSurface(surface, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    call validateConformalVolume(surface, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    do triangle_index = 1, size(inward)
+        do vertex_index = 1, 3
+            if (surface%triangles(triangle_index)%vertices(vertex_index)%id /= inward_ids(vertex_index, triangle_index)) err = err + 1
+        end do
+    end do
+
+    surface%triangles(2)%vertices = [c1,c4,c3]
+    call validateConformalSurface(surface, is_valid, message)
+    if (is_valid) err = err + 1
+    call validateConformalVolume(surface, is_valid, message)
+    if (is_valid) err = err + 1
+
+    surface%triangles = [outward, outward(1)]
+    call validateConformalSurface(surface, is_valid, message)
+    if (is_valid) err = err + 1
+    call validateConformalVolume(surface, is_valid, message)
+    if (is_valid) err = err + 1
+
+    deallocate(surface%triangles)
+    allocate(surface%triangles(1))
+    surface%triangles(1) = triangle_t(vertices=[c1,c3,c2])
+    call validateConformalSurface(surface, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    call validateConformalVolume(surface, is_valid, message)
+    if (is_valid) err = err + 1
+
+    c5 = coord_t(position=[0.0,0.0,0.2], id=5)
+    c6 = coord_t(position=[1.0,0.0,0.2], id=6)
+    c7 = coord_t(position=[0.5,0.5,0.5], id=7)
+    c8 = coord_t(position=[0.0,0.0,0.7], id=8)
+    c9 = coord_t(position=[1.0,0.0,0.7], id=9)
+    c10 = coord_t(position=[0.5,0.5,0.6], id=10)
+    deallocate(surface%triangles)
+    allocate(surface%triangles(2))
+    surface%triangles(1) = triangle_t(vertices=[c5,c6,c7])
+    surface%triangles(2) = triangle_t(vertices=[c8,c9,c10])
+    call validateConformalSurface(surface, is_valid, message)
+    if (is_valid) err = err + 1
+end function test_geometry_closed_surface_orientation
+
+integer function test_geometry_combined_surface_topology() bind(C) result(err)
+    use conformal_m
+    use NFDETypes_m, only: ConformalPECElements_t
+    use Report_m, only: isFatalError, resetFatalError
+    implicit none
+
+    type(ConformalPECElements_t) :: region
+    type(coord_t) :: c1, c2, c3, c4
+    logical :: is_valid
+    character(len=256) :: message
+    integer :: interval_index
+
+    err = 0
+    allocate(region%triangles(0), region%intervals(6))
+    region%intervals(1)%ini%cell = [1,0,0]; region%intervals(1)%end%cell = [1,1,1]
+    region%intervals(2)%ini%cell = [0,1,1]; region%intervals(2)%end%cell = [0,0,0]
+    region%intervals(3)%ini%cell = [0,1,0]; region%intervals(3)%end%cell = [1,1,1]
+    region%intervals(4)%ini%cell = [1,0,1]; region%intervals(4)%end%cell = [0,0,0]
+    region%intervals(5)%ini%cell = [0,0,1]; region%intervals(5)%end%cell = [1,1,1]
+    region%intervals(6)%ini%cell = [1,1,0]; region%intervals(6)%end%cell = [0,0,0]
+    call validateConformalVolume(region, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    do interval_index = 1, size(region%intervals)
+        call reverse_interval(region%intervals(interval_index))
+    end do
+    call validateConformalVolume(region, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    do interval_index = 1, size(region%intervals)
+        call reverse_interval(region%intervals(interval_index))
+    end do
+    call reverse_interval(region%intervals(1))
+    call validateConformalVolume(region, is_valid, message)
+    if (is_valid) err = err + 1
+    call reverse_interval(region%intervals(1))
+
+    deallocate(region%triangles, region%intervals)
+    allocate(region%intervals(5), region%triangles(2))
+    region%intervals(1)%ini%cell = [1,0,0]; region%intervals(1)%end%cell = [1,1,1]
+    region%intervals(2)%ini%cell = [0,1,1]; region%intervals(2)%end%cell = [0,0,0]
+    region%intervals(3)%ini%cell = [0,1,0]; region%intervals(3)%end%cell = [1,1,1]
+    region%intervals(4)%ini%cell = [1,0,1]; region%intervals(4)%end%cell = [0,0,0]
+    region%intervals(5)%ini%cell = [1,1,0]; region%intervals(5)%end%cell = [0,0,0]
+    c1 = coord_t(position=[0.0,0.0,1.0], id=1)
+    c2 = coord_t(position=[1.0,0.0,1.0], id=2)
+    c3 = coord_t(position=[1.0,1.0,1.0], id=3)
+    c4 = coord_t(position=[0.0,1.0,1.0], id=4)
+    region%triangles(1) = triangle_t(vertices=[c1,c2,c3])
+    region%triangles(2) = triangle_t(vertices=[c1,c3,c4])
+    call validateConformalVolume(region, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    region%triangles(2)%vertices = [c1,c4,c3]
+    call validateConformalVolume(region, is_valid, message)
+    if (is_valid) err = err + 1
+
+    deallocate(region%triangles, region%intervals)
+    allocate(region%triangles(0), region%intervals(2))
+    region%intervals(1)%ini%cell = [0,0,0]; region%intervals(1)%end%cell = [1,1,0]
+    region%intervals(2)%ini%cell = [1,0,0]; region%intervals(2)%end%cell = [2,1,0]
+    call validateConformalSurface(region, is_valid, message)
+    if (.not. is_valid) err = err + 1
+    call reverse_interval(region%intervals(2))
+    call validateConformalSurface(region, is_valid, message)
+    if (is_valid) err = err + 1
+    call reverse_interval(region%intervals(2))
+    region%intervals(2) = region%intervals(1)
+    call validateConformalSurface(region, is_valid, message)
+    if (is_valid) err = err + 1
+    region%intervals(2)%ini%cell = [0,0,0]
+    region%intervals(2)%end%cell = [1,0,0]
+    call validateConformalSurface(region, is_valid, message)
+    if (is_valid) err = err + 1
+
+    deallocate(region%triangles, region%intervals)
+    allocate(region%triangles(0), region%intervals(1))
+    region%intervals(1)%ini%cell = [0,1,0]
+    region%intervals(1)%end%cell = [1,0,0]
+    call resetFatalError()
+    call validateConformalSurface(region, is_valid, message)
+    if (is_valid) err = err + 1
+    if (index(message, 'mixed-sign directions') == 0) err = err + 1
+    if (.not. isFatalError()) err = err + 1
+    call resetFatalError()
+
+contains
+    subroutine reverse_interval(interval)
+        type(interval_t), intent(inout) :: interval
+        type(point_t) :: point
+        point = interval%ini
+        interval%ini = interval%end
+        interval%end = point
+    end subroutine reverse_interval
+end function test_geometry_combined_surface_topology
+
 integer function test_geometry_side_position() bind(C) result(err)
     use geometry_m
     implicit none
@@ -128,13 +309,13 @@ integer function test_geometry_triangle_normal() bind(C) result(err)
     type(triangle_t) :: t
     err = 0
 
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,0.0,1.0]; t%vertices(3)%position = [0.0,1.0,0.0]
     if (t%getFace() /= FACE_X) err = err + 1
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,0.0,1.0]; t%vertices(3)%position = [1.0,0.0,0.0]
     if (t%getFace() /= FACE_Y) err = err + 1
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,1.0,0.0]; t%vertices(3)%position = [1.0,0.0,0.0]
     if (t%getFace() /= FACE_Z) err = err + 1
 
@@ -151,19 +332,19 @@ integer function test_geometry_triangle_edges() bind(C) result(err)
     type(triangle_t) :: t
     type(side_t), dimension(3) :: sides
     err = 0
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,0.0,1.0]; t%vertices(3)%position = [0.0,1.0,0.0]
     sides = t%getSides()
     if (sides(1)%getEdge() /= EDGE_Z) err = err + 1
     if (sides(2)%getEdge() /= NOT_ON_EDGE) err = err + 1
     if (sides(3)%getEdge() /= EDGE_Y) err = err + 1
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,0.0,1.0]; t%vertices(3)%position = [1.0,0.0,0.0]
     sides = t%getSides()
     if (sides(1)%getEdge() /= EDGE_Z) err = err + 1
     if (sides(2)%getEdge() /= NOT_ON_EDGE) err = err + 1
     if (sides(3)%getEdge() /= EDGE_X) err = err + 1
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,1.0,0.0]; t%vertices(3)%position = [1.0,0.0,0.0]
     sides = t%getSides()
     if (sides(1)%getEdge() /= EDGE_Y) err = err + 1
@@ -187,15 +368,15 @@ integer function test_geometry_triangle_cell() bind(C) result(err)
     type(side_t), dimension(3) :: sides
     integer(kind=4), dimension(3) :: cell
     err = 0
-    
+
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,0.0,1.0]; t%vertices(3)%position = [0.0,1.0,0.0]
     cell = [0.0,0.0,0.0]
     if (all(t%getCell() .eq. cell) .eqv. .false.) err = err + 1
-    
+
     t%vertices(1)%position = [1.0,0.0,0.0]; t%vertices(2)%position = [1.0,0.0,1.0]; t%vertices(3)%position = [1.0,1.0,0.0]
     cell = [1.0,0.0,0.0]
     if (all(t%getCell() .eq. cell) .eqv. .false.) err = err + 1
-    
+
     t%vertices(1)%position = [1.0,0.0,1.0]; t%vertices(2)%position = [1.0,0.0,2.0]; t%vertices(3)%position = [1.0,1.0,1.0]
     cell = [1.0,0.0,1.0]
     if (all(t%getCell() .eq. cell) .eqv. .false.) err = err + 1
@@ -212,7 +393,7 @@ integer function test_geometry_elements_in_cell() bind(C) result(err)
 
     use cell_map_m
     use geometry_m
-    implicit none 
+    implicit none
 
     type(triangle_map_t) :: tri_map
     type(side_map_t) :: side_map
@@ -247,7 +428,7 @@ end function
 integer function test_geometry_map_sides() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(triangle_map_t) :: tri_map
     type(side_map_t) :: side_map
@@ -299,7 +480,7 @@ end function
 integer function test_geometry_path() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(triangle_map_t) :: tri_map
     type(side_map_t) :: side_map
@@ -347,7 +528,7 @@ end function
 integer function test_geometry_vertex_vertex_contour() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -382,7 +563,7 @@ integer function test_geometry_vertex_vertex_contour() bind(C) result(err)
     cell = triangles(1)%getCell()
     call buildMapOfSidesOnFaceOrEdgeFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
-    
+
     sides_on_face = getSidesOnFace(sides, FACE_Z)
     path = getPathOnFace(sides_on_face)
     init = path(1)%init
@@ -399,7 +580,7 @@ end function
 integer function test_geometry_vertex_side_contour() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -452,7 +633,7 @@ end function
 integer function test_geometry_side_vertex_contour() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -505,7 +686,7 @@ end function
 integer function test_geometry_side_side_contour() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -557,7 +738,7 @@ end function
 integer function test_geometry_side_side_contour_2() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -615,7 +796,7 @@ end function
 integer function test_geometry_side_side_contour_3() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -654,14 +835,14 @@ integer function test_geometry_side_side_contour_3() bind(C) result(err)
     if (.not. all(contour(3)%end%position .eq. c4%position)) err = err + 1
     if (.not. all(contour(4)%init%position .eq. c4%position)) err = err + 1
     if (.not. all(contour(4)%end%position .eq. c1%position)) err = err + 1
-    
+
 end function
 
 
 integer function test_geometry_areas() bind(C) result(err)
     use geometry_m
     use cell_map_m
-    implicit none 
+    implicit none
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides, path, sides_on_face, contour
@@ -677,7 +858,7 @@ integer function test_geometry_areas() bind(C) result(err)
     c1 = coord_t(position = [1.0,0.0,0.0],   id = 1)
     c2 = coord_t(position = [0.0,1.0,0.0],  id=  2)
     c3 = coord_t(position = [0.0,0.0,1.0], id=  3)
-    
+
     allocate(triangles(1))
     triangles(1) = triangle_t(vertices = [c1,c2,c3])
     cell = triangles(1)%getCell()
@@ -702,7 +883,7 @@ integer function test_geometry_areas() bind(C) result(err)
     contour = buildSidesContour(path)
     area = contourArea(contour)
     if (area /= 0.25) err = err + 1
-    
+
     call side_map%unset(key(cell))
     triangles(1)%vertices(2)%position = [0.0,0.25,0.0]
     call buildMapOfSidesOnFaceOrEdgeFromTrisNotOnFaces(side_map, triangles)

@@ -1,6 +1,6 @@
 module smbjson_labels_m
 
-#ifdef CompileWithSMBJSON    
+#ifdef CompileWithSMBJSON
    ! LABELS
    ! -- common labels
    character(len=*), parameter :: J_NAME = "name"
@@ -31,7 +31,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_REL_PERMEABILITY = "relativePermeability"
    character(len=*), parameter :: J_MAT_ELECTRIC_CONDUCTIVITY = "electricConductivity"
    character(len=*), parameter :: J_MAT_MAGNETIC_CONDUCTIVITY = "magneticConductivity"
-   
+
    character(len=*), parameter :: J_MAT_TYPE_PEC = "pec"
    character(len=*), parameter :: J_MAT_TYPE_PMC = "pmc"
    character(len=*), parameter :: J_MAT_TYPE_ISOTROPIC = "isotropic"
@@ -43,7 +43,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_TYPE_UNSHIELDED_MULTIWIRE = "unshieldedMultiwire"
    character(len=*), parameter :: J_MAT_TYPE_TERMINAL = "terminal"
    character(len=*), parameter :: J_MAT_TYPE_CONNECTOR = "connector"
-   
+
    character(len=*), parameter :: J_MAT_WIRE_RADIUS = "radius"
    character(len=*), parameter :: J_MAT_WIRE_RESISTANCE = "resistancePerMeter"
    character(len=*), parameter :: J_MAT_WIRE_INDUCTANCE = "inductancePermeter"
@@ -56,8 +56,8 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_LUMPED_STARTING_TIME = "startingTime"
    character(len=*), parameter :: J_MAT_LUMPED_END_TIME = "endTime"
    character(len=*), parameter :: J_MAT_LUMPED_INDUCTANCE = "inductance"
-   character(len=*), parameter :: J_MAT_LUMPED_CAPACITANCE = "capacitance" 
-      
+   character(len=*), parameter :: J_MAT_LUMPED_CAPACITANCE = "capacitance"
+
    character(len=*), parameter :: J_MAT_TERM_TERMINATIONS = "terminations"
    character(len=*), parameter :: J_MAT_TERM_TYPE_OPEN = "open"
    character(len=*), parameter :: J_MAT_TERM_TYPE_SHORT = "short"
@@ -85,7 +85,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_MULTIWIRE_INDUCTANCE = "inductancePerMeter"
    character(len=*), parameter :: J_MAT_MULTIWIRE_RESISTANCE = "resistancePerMeter"
    character(len=*), parameter :: J_MAT_MULTIWIRE_CONDUCTANCE = "conductancePerMeter"
-   
+
    character(len=*), parameter :: J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION = "multipolarExpansion"
    ! ME = Multipolar Expansion
    character(len=*), parameter :: J_MAT_MULTIWIRE_ME_INNER_REGION_BOX = "innerRegionBox"
@@ -102,7 +102,7 @@ module smbjson_labels_m
 
    character(len=*), parameter :: J_MAT_MULTILAYERED_SURF_LAYERS = "layers"
    character(len=*), parameter :: J_MAT_MULTILAYERED_SURF_THICKNESS = "thickness"
-   
+
    character(len=*), parameter :: J_MAT_THINSLOT_WIDTH = "width"
 
    ! -- materialAssociations
@@ -116,7 +116,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_ASS_CAB_END_CONN_ID = "endConnectorId"
    character(len=*), parameter :: J_MAT_ASS_CAB_CONTAINED_WITHIN_ID = "containedWithinElementId"
    character(len=*), parameter :: J_MAT_ASS_TOTAL_RESISTANCE = "totalResistance"
-   
+
    ! -- connector
    character(len=*), parameter :: J_MAT_CONN_RESISTANCES = "resistances"
    character(len=*), parameter :: J_MAT_CONN_TRANSFER_IMPEDANCES = "transferImpedancesPerMeter"
@@ -128,28 +128,29 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_POLES = "poles"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESIDUES = "residues"
    character(len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_NUMBER_POLES = "numberOfPoles"
-   
+
    ! -- Mesh and geometry.
    character(len=*), parameter :: J_MESH = "mesh"
-   
+
    character(len=*), parameter :: J_GRID = "grid"
    character(len=*), parameter :: J_COORDINATES = "coordinates"
    character(len=*), parameter :: J_ELEMENTS = "elements"
-   
+
    character(len=*), parameter :: J_GRID_NUMBER_OF_CELLS = "numberOfCells"
    character(len=*), parameter :: J_GRID_STEPS = "steps"
    character(len=*), parameter :: J_GRID_ORIGIN = "origin"
-   
+
    character(len=*), parameter :: J_COORDINATE_IDS = "coordinateIds"
    character(len=*), parameter :: J_COORDINATE_POS = "relativePosition"
-   
+
    character(len=*), parameter :: J_ELEM_TYPE_NODE = "node"
    character(len=*), parameter :: J_ELEM_TYPE_POLYLINE = "polyline"
    character(len=*), parameter :: J_ELEM_TYPE_CELL = "cell"
+   character(len=*), parameter :: J_ELEM_TYPE_CONFORMAL = "conformal"
    character(len=*), parameter :: J_CELL_INTERVALS = "intervals"
    character(len=*), parameter :: J_CONF_VOLUME_TRIANGLES = "triangles"
    character(len=*), parameter :: J_CONF_VOLUME_INTERVALS = "intervals"
-   
+
    character(len=*), parameter :: J_CONF_SUBTYPE_VOLUME  = "volume"
    character(len=*), parameter :: J_CONF_SUBTYPE_SURFACE = "surface"
 
@@ -188,7 +189,7 @@ module smbjson_labels_m
    ! -- source types
    character(len=*), parameter :: J_SOURCES = "sources"
    character(len=*), parameter :: J_SRC_MAGNITUDE_FILE = "magnitudeFile"
-   
+
    character (len=*), parameter :: J_SRC_TYPE_PW = "planewave"
    character (len=*), parameter :: J_SRC_TYPE_NS = "nodalSource"
    character (len=*), parameter :: J_SRC_TYPE_GEN = "generator"
@@ -208,14 +209,14 @@ module smbjson_labels_m
 
    ! --- probe types
    character(len=*), parameter :: J_PROBES = "probes"
-   
+
    character(len=*), parameter :: J_PR_TYPE_POINT = "point"
    character(len=*), parameter :: J_PR_TYPE_WIRE = "wire"
    character(len=*), parameter :: J_PR_TYPE_BULK_CURRENT = "bulkCurrent"
    character(len=*), parameter :: J_PR_TYPE_FARFIELD = "farField"
    character(len=*), parameter :: J_PR_TYPE_MOVIE = "movie"
    character(len=*), parameter :: J_PR_TYPE_LINE = "line"
-   
+
    character(len=*), parameter :: J_PR_POINT_DIRECTIONS = "directions"
 
    character(len=*), parameter :: J_PR_MOVIE_COMPONENT = "component"
@@ -229,7 +230,7 @@ module smbjson_labels_m
    ! domain stuff
    character(len=*), parameter :: J_PR_DOMAIN = "domain"
    character(len=*), parameter :: J_PR_DOMAIN_TYPE = "type"
-   
+
    character(len=*), parameter :: J_PR_DOMAIN_TYPE_TIME = "time"
    character(len=*), parameter :: J_PR_DOMAIN_TYPE_FREQ = "frequency"
    character(len=*), parameter :: J_PR_DOMAIN_TYPE_TIMEFREQ = "timeFrequency"
@@ -239,7 +240,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_PR_DOMAIN_TIME_START = "initialTime"
    character(len=*), parameter :: J_PR_DOMAIN_TIME_STOP   = "finalTime"
    character(len=*), parameter :: J_PR_DOMAIN_TIME_STEP  = "samplingPeriod"
-   
+
    character(len=*), parameter :: J_PR_DOMAIN_FREQ_START = "initialFrequency"
    character(len=*), parameter :: J_PR_DOMAIN_FREQ_STOP   = "finalFrequency"
    character(len=*), parameter :: J_PR_DOMAIN_FREQ_NUMBER  = "numberOfFrequencies"

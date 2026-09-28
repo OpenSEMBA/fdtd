@@ -32,7 +32,7 @@ module CALC_CONSTANTS_m
             g%gm1(r)=1.0_RKIND
             g%gm2(r)=0.0_RKIND
          else
-            if (sgg%Med(R)%Is%ConformalPEC) then
+            if (sgg%Med(R)%Is%ConformalPEC .or. sgg%Med(R)%Is%ConformalSGBC) then
                g%g1(r)  = 1 
                g%g2(r)  = sgg%dt /Epsilon
                g%gm1(r) = 1
@@ -209,4 +209,3 @@ end module CALC_CONSTANTS_m
 
 
    
-
