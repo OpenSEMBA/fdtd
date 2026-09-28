@@ -91,7 +91,88 @@ jobs:
           build/pytest-tmp/**/*.xdmf
           build/pytest-tmp/**/*.json
         if-no-files-found: warn
-    
+
+    # Bundle the Intel Fortran and MSVC runtime libraries so the released
+    # binaries do not depend on a oneAPI installation being present (#85).
+    - name: Bundle Windows runtime libraries
+      shell: pwsh
+      run: |
+        $destination = "build/bin"
+
+        # Non-system DLLs imported by the released binaries.
+        $intelDlls = @(
+          "libifcoremd.dll",
+          "libifportmd.dll",
+          "libmmd.dll",
+          "svml_dispmd.dll",
+          "libiomp5md.dll"
+        )
+
+        # The oneAPI compiler layout differs across versions, so try the known
+        # runtime locations of the pinned compiler and fall back to any install.
+        $intelDirs = @(
+          "$env:ONEAPI_ROOT\compiler\latest\windows\redist\intel64_win\compiler",
+          "$env:ONEAPI_ROOT\compiler\latest\redist\intel64_win\compiler",
+          "$env:ONEAPI_ROOT\compiler\latest\bin"
+        ) | Where-Object { Test-Path $_ }
+        if (-not $intelDirs) {
+          $intelDirs = Get-ChildItem "$env:ONEAPI_ROOT\compiler" -Directory -ErrorAction SilentlyContinue |
+            ForEach-Object {
+              "$($_.FullName)\windows\redist\intel64_win\compiler"
+              "$($_.FullName)\redist\intel64_win\compiler"
+              "$($_.FullName)\bin"
+            } |
+            Where-Object { Test-Path $_ }
+        }
+
+        foreach ($dll in $intelDlls) {
+          $source = $null
+          foreach ($dir in $intelDirs) {
+            if (Test-Path (Join-Path $dir $dll)) { $source = Join-Path $dir $dll; break }
+          }
+          if (-not $source) { throw "Intel runtime library '$dll' not found under '$env:ONEAPI_ROOT'" }
+          Copy-Item $source -Destination $destination -Force
+        }
+
+        # The Intel runtime and ngspice also need the MSVC C++ runtime.
+        $crtDir = Get-ChildItem "$env:VCToolsRedistDir\x64" -Directory -Filter "Microsoft.VC*.CRT" -ErrorAction SilentlyContinue |
+          Select-Object -First 1
+        if (-not $crtDir) { throw "MSVC redistributable folder not found under '$env:VCToolsRedistDir\x64'" }
+        Copy-Item "$($crtDir.FullName)\*.dll" -Destination $destination -Force
+
+    - name: Verify bundled Windows runtime libraries
+      shell: pwsh
+      run: |
+        $binDir = "build/bin"
+
+        # DLLs shipped with Windows itself; any other dependency must be bundled.
+        $systemDlls = @(
+          "advapi32.dll", "bcrypt.dll", "comdlg32.dll", "crypt32.dll", "gdi32.dll",
+          "kernel32.dll", "ntdll.dll", "ole32.dll", "oleaut32.dll", "shell32.dll",
+          "shlwapi.dll", "user32.dll", "userenv.dll", "winmm.dll", "ws2_32.dll"
+        )
+
+        $missing = @()
+        $binaries = Get-ChildItem $binDir -File | Where-Object { $_.Extension.ToLower() -in @(".exe", ".dll") }
+        foreach ($binary in $binaries) {
+          $dependencies = & dumpbin /nologo /dependents $binary.FullName |
+            Select-String '^\s+(\S+\.dll)\s*$' |
+            ForEach-Object { $_.Matches[0].Groups[1].Value.ToLower() }
+          foreach ($dependency in $dependencies) {
+            if ($dependency.StartsWith("api-ms-win-") -or $dependency.StartsWith("ext-ms-")) { continue }
+            if ($systemDlls -contains $dependency) { continue }
+            if (-not (Test-Path (Join-Path $binDir $dependency))) {
+              $missing += "$($binary.Name) -> $dependency"
+            }
+          }
+        }
+
+        if ($missing.Count -gt 0) {
+          $missing | ForEach-Object { Write-Host "Missing: $_" }
+          throw "$($missing.Count) runtime dependencies are not bundled in $binDir"
+        }
+        Write-Host "All runtime dependencies are bundled in $binDir."
+
     - name: Get current date
       id: date
       run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
