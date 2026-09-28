@@ -575,8 +575,8 @@ contains
              newDomain = domain_t()
           end if
 
-          newDomain%transfer = observation%Transfer
-          if (observation%Transfer) newDomain%normalizationFile = observation%FileNormalize
+          newDomain%transferFlag = observation%transferFlag
+          if (observation%transferFlag) newDomain%normalizationFile = observation%FileNormalize
 
           if (any(newDomain%domainType == [TIME_DOMAIN, BOTH_DOMAIN])) then
              simulationEndIndex = min(max(finalStepIndex + 2, lbound(timeArray, 1)), ubound(timeArray, 1))
@@ -831,37 +831,37 @@ contains
    end subroutine delete_mtln_probe_outputs
 #endif
 
-   function get_required_output_count(sgg) result(count)
+   function get_required_output_count(sgg) result(countValue)
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      integer(kind=SINGLE) ::i, count
-      count = 0
+      integer(kind=SINGLE) ::i, countValue
+      countValue = 0
       do i = 1, sgg%NumberRequest
-         count = count + sgg%Observation(i)%nP
+         countValue = countValue + sgg%Observation(i)%nP
       end do
       return
    end function
 
-   function frequency_count(observation) result(count)
+   function frequency_count(observation) result(countValue)
       type(Obses_t), intent(in) :: observation
-      integer(kind=SINGLE) :: count
+      integer(kind=SINGLE) :: countValue
 
       if (observation%FreqStep <= 0.0_RKIND) then
-         count = 1_SINGLE
+         countValue = 1_SINGLE
       else
-         count = int(floor((observation%FinalFreq - observation%InitialFreq)/observation%FreqStep), &
+         countValue = int(floor((observation%FinalFreq - observation%InitialFreq)/observation%FreqStep), &
                      kind=SINGLE) + 1_SINGLE
       end if
    end function frequency_count
 
-   function frequency_stop(observation, count) result(stop)
+   function frequency_stop(observation, countValue) result(stop)
       type(Obses_t), intent(in) :: observation
-      integer(kind=SINGLE), intent(in) :: count
+      integer(kind=SINGLE), intent(in) :: countValue
       real(kind=RKIND) :: stop
 
-      if (count == 1_SINGLE) then
+      if (countValue == 1_SINGLE) then
          stop = observation%InitialFreq
       else
-         stop = observation%InitialFreq + real(count - 1_SINGLE, RKIND)*observation%FreqStep
+         stop = observation%InitialFreq + real(countValue - 1_SINGLE, RKIND)*observation%FreqStep
       end if
    end function frequency_stop
 

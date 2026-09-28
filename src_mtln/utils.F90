@@ -36,13 +36,13 @@ contains
       end do
   end function
 
-   function eye(dim) result(res)
-      integer, intent(in) :: dim
-      real(kind=rkind), dimension(dim, dim) :: res
+   function eye(dimValue) result(res)
+      integer, intent(in) :: dimValue
+      real(kind=rkind), dimension(dimValue, dimValue) :: res
       integer :: i
 
       res = 0
-      do i = 1, dim
+      do i = 1, dimValue
          res(i,i) = 1.0_rkind
       end do
    end function eye

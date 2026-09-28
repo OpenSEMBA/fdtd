@@ -1828,8 +1828,8 @@ contains
                       call printMessageWithSeparator(this%control%layoutnumber,dubuf)
                       if (this%thereAre%Observation) call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, flushFF)
                  end if !del if (this%performflushDATA.or....
-                  if (this%control%singlefilewrite.and.this%perform%Unpack) call singleUnpack()
-                  if ((this%control%singlefilewrite.and.this%perform%Unpack).or.this%perform%isFlush()) then
+                  if (this%control%singlefilewrite.and.this%perform%unpackFlag) call singleUnpack()
+                  if ((this%control%singlefilewrite.and.this%perform%unpackFlag).or.this%perform%isFlush()) then
                      write(dubuf,'(a,i9)')  ' Continuing simulation at n= ',this%n
                      call printMessageWithSeparator(this%control%layoutnumber,dubuf)
                   end if
@@ -1931,7 +1931,7 @@ contains
          call printMessageWithSeparator(this%control%layoutnumber, dubuf)
 
          somethingdone=.false.
-         if (this%control%singlefilewrite.and.this%perform%Unpack) then
+         if (this%control%singlefilewrite.and.this%perform%unpackFlag) then
             at=this%n*this%sgg%dt
          end if
 #ifdef CompileWithMPI

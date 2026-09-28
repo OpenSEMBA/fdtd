@@ -16,12 +16,12 @@ module CALC_CONSTANTS_m
         type(constants_t), intent(inout) :: g
         real(kind=RKIND) , intent(inout) :: Eps0, Mu0
         integer :: r,i
-        real(kind=RKIND) :: Sigmam , Epsilon , Mu , Sigma,width, epr
+        real(kind=RKIND) :: Sigmam , epsilonValue , Mu , Sigma,width, epr
         character(len=BUFSIZE) :: buff
         
         do r=0,sgg%NumMedia
          Sigmam = sgg%Med(r)%SigmaM
-         Epsilon = Eps0*sgg%Med(r)%Epr
+         epsilonValue = Eps0*sgg%Med(r)%Epr
          Mu = Mu0*sgg%Med(r)%Mur
          Sigma = sgg%Med(r)%Sigma
          !In case of Multiport set updating Ca, Cbfficients trivially, since the field
@@ -34,7 +34,7 @@ module CALC_CONSTANTS_m
          else
             if (sgg%Med(R)%Is%ConformalPEC) then
                g%g1(r)  = 1 
-               g%g2(r)  = sgg%dt /Epsilon
+               g%g2(r)  = sgg%dt /epsilonValue
                g%gm1(r) = 1
                g%gm2(r) = sgg%dt/ Mu
             else if ((sgg%Med(R)%Is%multiport).or.(sgg%Med(R)%Is%AnisMultiport)) then
@@ -101,10 +101,10 @@ module CALC_CONSTANTS_m
                end if
             else if  ((sgg%Med(R)%Is%MDispersive).and.(.not.sgg%Med(R)%Is%EDispersive).and.(.not.sgg%Med(r)%Is%MdispersiveANIS)) then
                !solo cierto para ISOTROPOS
-               g%g1(r)=(1.0_RKIND- Sigma*sgg%dt/(2.0_RKIND * Epsilon)) / (1.0_RKIND + Sigma*sgg%dt/(2.0_RKIND * Epsilon))
-               g%g2(r)=sgg%dt / Epsilon                / (1.0_RKIND + Sigma*sgg%dt/(2.0_RKIND * Epsilon))
+               g%g1(r)=(1.0_RKIND- Sigma*sgg%dt/(2.0_RKIND * epsilonValue)) / (1.0_RKIND + Sigma*sgg%dt/(2.0_RKIND * epsilonValue))
+               g%g2(r)=sgg%dt / epsilonValue                / (1.0_RKIND + Sigma*sgg%dt/(2.0_RKIND * epsilonValue))
                if (g%g1(r) < 0.0_RKIND) then !exponential time stepping
-                  g%g1(r)=exp(- Sigma * sgg%dt / (Epsilon ))
+                  g%g1(r)=exp(- Sigma * sgg%dt / (epsilonValue ))
                   g%g2(r)=(1.0_RKIND-g%g1(r))/ Sigma
                end if
                g%gm1(r)=0.0_RKIND !will be overwritten by own values created by InitMDispersives !when written this routine
@@ -113,10 +113,10 @@ module CALC_CONSTANTS_m
                BUFF='ERROR: ANISOTROPIC DISPERSIVE CURRENTLY UNSUPPORTED IN THE ENGINE'
                call StopOnError (0,0,buff)  !lo deberia reportar y parar antes SEMBA_FDTD.F90 !quitar algun dia para que no ralentice 170719
             else
-               g%g1(r)=(1 -  Sigma * sgg%dt / (2.0_RKIND * Epsilon ) ) / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * Epsilon ))
-               g%g2(r)=sgg%dt /Epsilon                        / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * Epsilon ))
+               g%g1(r)=(1 -  Sigma * sgg%dt / (2.0_RKIND * epsilonValue ) ) / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * epsilonValue ))
+               g%g2(r)=sgg%dt /epsilonValue                        / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * epsilonValue ))
                if (g%g1(r) < 0.0_RKIND) then !exponential time stepping
-                  g%g1(r)=exp(- Sigma * sgg%dt / (Epsilon ))
+                  g%g1(r)=exp(- Sigma * sgg%dt / (epsilonValue ))
                   g%g2(r)=(1.0_RKIND-g%g1(r))/ Sigma
                end if
                g%gm1(r)=(1- SigmaM*sgg%dt/(2.0_RKIND *  Mu )) /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))

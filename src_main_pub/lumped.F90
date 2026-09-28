@@ -268,7 +268,7 @@ contains
 !!!variables locales
       integer(kind=4) :: jmed
       integer(kind=4) :: orient
-      real(kind=RKIND) :: epsilon,sigma,g1,g2,Resist,Induct,Capaci,sigmaeff,epsiloneff,DiodB,DiodIsat
+      real(kind=RKIND) :: epsilonValue,sigma,g1,g2,Resist,Induct,Capaci,sigmaeff,epsiloneff,DiodB,DiodIsat
       real(kind=RKIND) :: g1_usual,g2_usual
       real(kind=RKIND) :: epsilonEffCapac    ,sigmaEffResistInduct,sigmaEffResist   ,sigmaEffResistCapac ,sigmaEffResistDiode, &
                            alignedDeltaE,transversalDeltaHa,transversalDeltaHb,  currentCoeff
@@ -291,7 +291,7 @@ contains
             Capaci=               sgg%Med(jmed)%Lumped(1)%C
             DiodB=                sgg%Med(jmed)%Lumped(1)%DiodB
             DiodIsat=             sgg%Med(jmed)%Lumped(1)%DiodIsat
-            epsilon            =  sgg%Med(jmed)%epr * eps0
+            epsilonValue            =  sgg%Med(jmed)%epr * eps0
             sigma              =  sgg%Med(jmed)%sigma
             alignedDeltaE      =lumped_%alignedDeltaE      
             transversalDeltaHa =lumped_%transversalDeltaHa 
@@ -307,16 +307,16 @@ contains
 !!!! Mittra pag65   Parallel Finite-Difference Time-Domain Method
             if (sgg%med(jmed)%lumped(1)%resistor) then
                 sigmaeff= sigma     + sigmaEffResist                     
-                epsiloneff= epsilon 
+                epsiloneff= epsilonValue 
             else if (sgg%med(jmed)%lumped(1)%inductor) then
                 sigmaeff= sigma     + sigmaEffResistInduct                     
-                epsiloneff= epsilon 
+                epsiloneff= epsilonValue 
             else if (sgg%med(jmed)%lumped(1)%capacitor) then
                 sigmaeff= sigma     + sigmaEffResistCapac                    
-                epsiloneff= epsilon + epsilonEffCapac
+                epsiloneff= epsilonValue + epsilonEffCapac
             else if (sgg%med(jmed)%lumped(1)%diodo) then
                 sigmaeff= sigma     + sigmaEffResistDiode                    
-                epsiloneff= epsilon 
+                epsiloneff= epsilonValue 
             end if 
             if (.not.sgg%Med(jmed)%sigmareasignado) then
                 sgg%Med(jmed)%sigma = sigmaeff !devuelve al principal el efectivo para hacer bien las conexiones lossy con thin wires 120123
@@ -352,13 +352,13 @@ contains
             lumped_%currentCoeff = currentCoeff
   
             !!!!usual para resistencia que se encienden/apagan 200319
-            G1_usual=(1.0_RKIND  - Sigma * sgg%dt / (2.0_RKIND * epsilon) ) / &
-                (1.0_RKIND  + Sigma * sgg%dt / (2.0_RKIND * epsilon) ) 
-            G2_usual=  sgg%dt / epsilon                        / &
-                (1.0_RKIND  + Sigma * sgg%dt / (2.0_RKIND * epsilon) ) 
+            G1_usual=(1.0_RKIND  - Sigma * sgg%dt / (2.0_RKIND * epsilonValue) ) / &
+                (1.0_RKIND  + Sigma * sgg%dt / (2.0_RKIND * epsilonValue) ) 
+            G2_usual=  sgg%dt / epsilonValue                        / &
+                (1.0_RKIND  + Sigma * sgg%dt / (2.0_RKIND * epsilonValue) ) 
 
             if (g1_usual < 0.0_RKIND) then !exponential time stepping
-                g1_usual=exp(- Sigma * sgg%dt / (epsilon ))
+                g1_usual=exp(- Sigma * sgg%dt / (epsilonValue ))
                 g2_usual=(1.0_RKIND-g1_usual)/ Sigma
             end if
             lumped_%g1_usual=g1_usual

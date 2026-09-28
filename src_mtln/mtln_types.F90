@@ -169,7 +169,7 @@ module mtln_types_m
    end type
 
    type, public :: box_2d_t
-      real(kind=rkind), dimension(2) :: min, max
+      real(kind=rkind), dimension(2) :: minBound, maxBound
    contains
       private
       procedure :: box_2d_eq
@@ -350,7 +350,7 @@ contains
 
    elemental logical function box_2d_eq(a, b) result(res)
       class(box_2d_t), intent(in) :: a, b
-      res = all(a%min == b%min) .and. all(a%max == b%max)
+      res = all(a%minBound == b%minBound) .and. all(a%maxBound == b%maxBound)
    end function
 
    elemental function multipolar_expansion_eq(a, b) result(res)

@@ -54,8 +54,8 @@ integer function test_multipolar_expansion_for_lansink_two_wires() bind(C) resul
 
     error_cnt = 0
 
-    mE%inner_region%min = [-0.0265_rkind, -0.031_rkind]
-    mE%inner_region%max = [ 0.0355_rkind,  0.031_rkind]
+    mE%inner_region%minBound = [-0.0265_rkind, -0.031_rkind]
+    mE%inner_region%maxBound = [ 0.0355_rkind,  0.031_rkind]
 
     allocate(mE%electric(2))
     mE%electric(1)%inner_region_average_potential = 0.56086362615993235
@@ -83,8 +83,8 @@ integer function test_multipolar_expansion_for_lansink_two_wires() bind(C) resul
     ! In cases with no dielectrics, the magnetic and electric expansions are the same.
     mE%magnetic = mE%electric
 
-    fdtdCell%min = [-0.100_rkind, -0.100_rkind]
-    fdtdCell%max = [ 0.100_rkind,  0.100_rkind]
+    fdtdCell%minBound = [-0.100_rkind, -0.100_rkind]
+    fdtdCell%maxBound = [ 0.100_rkind,  0.100_rkind]
 
     computedC = getCellCapacitanceOnBox(mE, fdtdCell)
     if (.not. checkNear(14.08e-12_rkind, computedC(1,1), 6e-2_rkind)) then
@@ -134,8 +134,8 @@ integer function test_multipolar_expansion_for_lansink_wire_with_dielectric() bi
 
     error_cnt = 0
 
-    mE%inner_region%min = [-0.004_rkind, -0.004_rkind]
-    mE%inner_region%max = [ 0.004_rkind,  0.004_rkind]
+    mE%inner_region%minBound = [-0.004_rkind, -0.004_rkind]
+    mE%inner_region%maxBound = [ 0.004_rkind,  0.004_rkind]
 
     allocate(mE%electric(1))
     mE%electric(1)%inner_region_average_potential = 0.90407844239490087
@@ -155,8 +155,8 @@ integer function test_multipolar_expansion_for_lansink_wire_with_dielectric() bi
     mE%magnetic(1)%ab(1)%b = 0.0
 
 
-    fdtdCell%min = [-0.0075_rkind, -0.0075_rkind]
-    fdtdCell%max = [ 0.0075_rkind,  0.0075_rkind]
+    fdtdCell%minBound = [-0.0075_rkind, -0.0075_rkind]
+    fdtdCell%maxBound = [ 0.0075_rkind,  0.0075_rkind]
 
     computedC = getCellCapacitanceOnBox(mE, fdtdCell)
     if (.not. checkNear(49e-12_RKIND, computedC(1,1), 6e-2_RKIND)) then

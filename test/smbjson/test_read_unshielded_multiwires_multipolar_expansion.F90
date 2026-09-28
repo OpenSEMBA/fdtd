@@ -99,9 +99,9 @@ contains
 
          deallocate(ptr%multipolar_expansion)
          allocate(ptr%multipolar_expansion(1))
-         ptr%multipolar_expansion(1)%inner_region%min = &
+         ptr%multipolar_expansion(1)%inner_region%minBound = &
             [-0.0265000002_RKIND, -0.0310000002_RKIND] 
-         ptr%multipolar_expansion(1)%inner_region%max =  &
+         ptr%multipolar_expansion(1)%inner_region%maxBound =  &
             [ 0.03550000020000001_RKIND, 0.0310000002_RKIND] 
          allocate(ptr%multipolar_expansion(1)%electric(2))
          ! First conductor.

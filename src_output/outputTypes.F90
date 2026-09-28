@@ -161,7 +161,7 @@ module outputTypes_m
       integer(kind=SINGLE)    :: fnum = 0
       integer(kind=SINGLE)    :: domainType = UNDEFINED_DOMAIN
       logical                 :: logarithmicSpacing = .false.
-      logical                 :: transfer = .false.
+      logical                 :: transferFlag = .false.
       character(len=BUFSIZE)  :: normalizationFile = ''
    end type domain_t
 
@@ -257,14 +257,14 @@ module outputTypes_m
    end type point_probe_output_t
 
    type, extends(abstract_time_probe_t) :: wire_charge_probe_output_t
-      integer(kind=SINGLE) :: sign = +1
+      integer(kind=SINGLE) :: signValue = +1
       real(kind=RKIND), allocatable :: chargeValue(:)
       type(CurrentSegments_t), pointer :: segment
       type(output_artifact_t) :: artifacts(1)
    end type wire_charge_probe_output_t
 
    type, extends(abstract_time_probe_t) :: wire_current_probe_output_t
-      integer(kind=SINGLE) :: sign = +1
+      integer(kind=SINGLE) :: signValue = +1
       type(current_values_t) :: currentValues(OUTPUT_TIME_BUFFER_SIZE)
       type(CurrentSegments_t), pointer :: segment
       type(output_artifact_t) :: artifacts(1)

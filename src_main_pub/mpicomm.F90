@@ -384,7 +384,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine MPIinitSubcomm(layoutnumber,num_procs,SubComm,Root,group1)
       integer(kind=4), intent(in) :: layoutnumber,num_procs
-      integer(kind=4) :: count,i
+      integer(kind=4) :: countValue,i
       integer(kind=4) :: ierr,wgroup,GROUP1,SubComm,Root,NewRoot
       logical, pointer, dimension(:) :: newallranks ,allranks
       integer(kind=4), pointer, dimension(:) :: NGroup
@@ -397,22 +397,22 @@ contains
       !choose the maximum layer to be root !ojo no poner el minimo pq es -1 (voided de entrada)
       call MPI_AllReduce(Root, newRoot, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
       Root=newRoot
-      count=-1
+      countValue=-1
       do i=0,num_procs-1
-         if (newallranks(i)) count=count+1
+         if (newallranks(i)) countValue=countValue+1
       end do
-      allocate (NGroup(0 : count))
-      count=-1
+      allocate (NGroup(0 : countValue))
+      countValue=-1
       do i=0,num_procs-1
          if (newallranks(i)) then
-            count=count+1
-            NGroup(count)=i
+            countValue=countValue+1
+            NGroup(countValue)=i
          end if
       end do
       !all must create the same subcomm group though only some will synchronize
-      if (count >= 0) then
+      if (countValue >= 0) then
          call MPI_COMM_GROUP(SUBCOMM_MPI, WGROUP, IERR) ! get default group
-         call MPI_GROUP_INCL(WGROUP, COUNT+1_4, NGroup, GROUP1, IERR) !create a group called group1
+         call MPI_GROUP_INCL(WGROUP, countValue+1_4, NGroup, GROUP1, IERR) !create a group called group1
          call MPI_COMM_CREATE(SUBCOMM_MPI, GROUP1, SUBCOMM, IERR)!create a communicator for group1
       else
          SUBCOMM=-1

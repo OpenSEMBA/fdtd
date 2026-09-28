@@ -541,7 +541,7 @@ module  FDETYPES_m
       character(len=BUFSIZE) :: outputrequest
       character(len=BUFSIZE) :: FileNormalize
       logical :: FreqDomain ,TimeDomain , Saveall,  &
-      TransFer, Volumic,Done,Begun,Flushed
+      transferFlag, Volumic,Done,Begun,Flushed
    end type
 
    type SharedElement_t
@@ -678,7 +678,7 @@ module  FDETYPES_m
    type :: perform_t
       logical :: flushFields = .false.
       logical :: flushData = .false.
-      logical :: unpack = .false.
+      logical :: unpackFlag = .false.
       logical :: postprocess = .false.
       logical :: flushXdmf = .false.
       logical :: flushVTK = .false.
@@ -761,7 +761,7 @@ contains
       class(perform_t) :: this
       this%flushFields = .false.
       this%flushData = .false.
-      this%unpack = .false.
+      this%unpackFlag = .false.
       this%postprocess = .false.
       this%flushXdmf = .false.
       this%flushVTK = .false.

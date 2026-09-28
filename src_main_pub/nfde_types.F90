@@ -260,7 +260,7 @@ module NFDETypes_m
       complex, dimension(:), pointer :: bm33 => NULL ()
       real(kind=RK), dimension(:), pointer :: alpha => NULL ()
       real(kind=RK), dimension(:), pointer :: beta => NULL ()
-      real(kind=RK), dimension(:), pointer :: gamma => NULL ()
+      real(kind=RK), dimension(:), pointer :: gammaValue => NULL ()
       real(kind=RK), dimension(:), pointer :: alpham => NULL ()
       real(kind=RK), dimension(:), pointer :: betam => NULL ()
       real(kind=RK), dimension(:), pointer :: gammam => NULL ()

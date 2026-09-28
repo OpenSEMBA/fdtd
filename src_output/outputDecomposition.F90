@@ -127,11 +127,11 @@ contains
                      lower%z <= upper%z
    end function is_valid_box
 
-   pure function shape_of(lower, upper) result(shape)
+   pure function shape_of(lower, upper) result(shapeValue)
       type(cell_coordinate_t), intent(in) :: lower, upper
-      integer(int64) :: shape(3)
+      integer(int64) :: shapeValue(3)
 
-      shape = [ &
+      shapeValue = [ &
               int(upper%x, int64) - int(lower%x, int64) + 1_int64, &
               int(upper%y, int64) - int(lower%y, int64) + 1_int64, &
               int(upper%z, int64) - int(lower%z, int64) + 1_int64]

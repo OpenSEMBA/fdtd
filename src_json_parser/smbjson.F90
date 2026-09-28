@@ -4395,8 +4395,8 @@ contains
       function readInnnerRegionBox(ptr) result(inner_region)
          type(json_value), pointer, intent(in) :: ptr
          type(box_2d_t) :: inner_region
-         inner_region%min = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MIN)
-         inner_region%max = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX)
+         inner_region%minBound = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MIN)
+         inner_region%maxBound = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX)
       end function
       
       function readFieldReconstruction(ptr) result(res)
@@ -4493,8 +4493,8 @@ contains
          z0 = clip(segment%z-1, 0, size(despl%desZ)-1)
          z1 = clip(segment%z,   0, size(despl%desZ)-1)
 
-         res%min = [-0.5 * despl%desY(y0), -0.5 * despl%desZ(z0)]
-         res%max = [ 0.5 * despl%desY(y1),  0.5 * despl%desZ(z1)]
+         res%minBound = [-0.5 * despl%desY(y0), -0.5 * despl%desZ(z0)]
+         res%maxBound = [ 0.5 * despl%desY(y1),  0.5 * despl%desZ(z1)]
       end function
 
       function getdualBoxXY(segment, despl) result (res)
@@ -4508,8 +4508,8 @@ contains
          y0 = clip(segment%y-1, 0, size(despl%desY)-1)
          y1 = clip(segment%y,   0, size(despl%desY)-1)
 
-         res%min = [-0.5 * despl%desX(x0), -0.5 * despl%desY(y0)]
-         res%max = [ 0.5 * despl%desX(x1),  0.5 * despl%desY(y1)]
+         res%minBound = [-0.5 * despl%desX(x0), -0.5 * despl%desY(y0)]
+         res%maxBound = [ 0.5 * despl%desX(x1),  0.5 * despl%desY(y1)]
       end function
 
       function getdualBoxZX(segment, despl) result (res)
@@ -4523,8 +4523,8 @@ contains
          x0 = clip(segment%x-1, 0, size(despl%desX)-1)
          x1 = clip(segment%x,   0, size(despl%desX)-1)
 
-         res%min = [-0.5 * despl%desZ(z0), -0.5 * despl%desX(x0)]
-         res%max = [ 0.5 * despl%desZ(z1),  0.5 * despl%desX(x1)]
+         res%minBound = [-0.5 * despl%desZ(z0), -0.5 * despl%desX(x0)]
+         res%maxBound = [ 0.5 * despl%desZ(z1),  0.5 * despl%desX(x1)]
       end function
 
       function buildStepSize(segments, despl) result(res)

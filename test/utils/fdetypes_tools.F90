@@ -60,7 +60,7 @@ module FDETYPES_TOOLS
       logical :: FreqDomain = .FALSE.
       logical :: TimeDomain = .FALSE.
       logical :: Saveall = .FALSE.
-      logical :: TransFer = .FALSE.
+      logical :: transferFlag = .FALSE.
       logical :: Volumic = .FALSE.
    end type observation_domain_t
 
@@ -150,14 +150,14 @@ contains
       r%sggMiHz(:, :, :) = 1
    end function create_geometry_media_from_sggAlloc
 
-   function create_control_flags(layoutnumber, size, mpidir, finaltimestep, &
+   function create_control_flags(layoutnumber, sizeValue, mpidir, finaltimestep, &
                                  nEntradaRoot, wiresflavor, wirecrank, &
                                  resume, saveall, NF2FFDecim, simu_devia, singlefilewrite, &
                                  facesNF2FF) result(control)
 
       type(sim_control_t) :: control
 
-      integer(kind=SINGLE), intent(in), optional :: layoutnumber, size, mpidir, finaltimestep
+      integer(kind=SINGLE), intent(in), optional :: layoutnumber, sizeValue, mpidir, finaltimestep
       character(len=*), intent(in), optional :: nEntradaRoot, wiresflavor
       logical, intent(in), optional :: wirecrank, resume, saveall, NF2FFDecim, simu_devia, singlefilewrite
       type(nf2ff_t), intent(in), optional :: facesNF2FF
@@ -179,7 +179,7 @@ contains
 
       ! 2. Overwrite defaults only if the optional argument is present
       if (present(layoutnumber)) control%layoutnumber = layoutnumber
-      if (present(size)) control%num_procs = size
+      if (present(sizeValue)) control%num_procs = sizeValue
       if (present(mpidir)) control%mpidir = mpidir
       if (present(finaltimestep)) control%finaltimestep = finaltimestep
       if (present(nEntradaRoot)) control%nEntradaRoot = nEntradaRoot
@@ -285,7 +285,7 @@ contains
       obs%FreqDomain = .false.
       obs%TimeDomain = .true.
       obs%Saveall = .false.
-      obs%TransFer = .false.
+      obs%transferFlag = .false.
       obs%Volumic = .false.
       obs%Done = .false.
       obs%Begun = .false.
@@ -313,7 +313,7 @@ contains
       obs%FreqDomain = .false.
       obs%TimeDomain = .true.
       obs%Saveall = .false.
-      obs%TransFer = .false.
+      obs%transferFlag = .false.
       obs%Volumic = .false.
       obs%Done = .false.
       obs%Begun = .false.
@@ -340,7 +340,7 @@ contains
       obs%FreqDomain = .false.
       obs%TimeDomain = .true.
       obs%Saveall = .false.
-      obs%TransFer = .false.
+      obs%transferFlag = .false.
       obs%Volumic = .false.
       obs%Done = .false.
       obs%Begun = .false.
@@ -736,7 +736,7 @@ contains
       obs%FreqDomain = domain_params%FreqDomain
       obs%TimeDomain = domain_params%TimeDomain
       obs%Saveall = domain_params%Saveall
-      obs%TransFer = domain_params%TransFer
+      obs%transferFlag = domain_params%transferFlag
       obs%Volumic = domain_params%Volumic
 
    end subroutine set_observation
@@ -800,7 +800,7 @@ contains
       logical, intent(in) :: Saveall_flag, TransFer_flag, Volumic_flag
 
       domain%Saveall = Saveall_flag
-      domain%TransFer = TransFer_flag
+      domain%transferFlag = TransFer_flag
       domain%Volumic = Volumic_flag
 
    end subroutine initialize_observation_domain_logical_flags

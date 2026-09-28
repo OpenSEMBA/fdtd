@@ -1395,7 +1395,7 @@ contains
       if (mustunpack) then
          !
          mustunpack=.false.
-         perform%unpack=.true.
+         perform%unpackFlag=.true.
          !  Clear the flushing signaling file
          if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)

@@ -41,11 +41,11 @@ contains
       call store_required_coords(lowerBound, upperBound, component, problemInfo, coords)
    end subroutine find_and_store_important_coords
 
-   subroutine count_required_coords(lowerBound, upperBound, requestComponent, problemInfo, count)
+   subroutine count_required_coords(lowerBound, upperBound, requestComponent, problemInfo, countValue)
       type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
       integer(kind=SINGLE), intent(in)    :: requestComponent
       type(problem_info_t), intent(in)    :: problemInfo
-      integer(kind=SINGLE), intent(out)   :: count
+      integer(kind=SINGLE), intent(out)   :: countValue
 
       integer :: i, j, k
       procedure(logical_func), pointer :: checker => null()
@@ -53,11 +53,11 @@ contains
 
       call get_checker_and_component(requestComponent, checker, component)
 
-      count = 0
+      countValue = 0
       do k = lowerBound%z, upperBound%z
       do j = lowerBound%y, upperBound%y
       do i = lowerBound%x, upperBound%x
-         if (checker(component, i, j, k, problemInfo)) count = count + 1
+         if (checker(component, i, j, k, problemInfo)) countValue = countValue + 1
       end do
       end do
       end do
@@ -69,21 +69,21 @@ contains
       type(problem_info_t), intent(in)    :: problemInfo
       integer(kind=SINGLE), intent(inout) :: coords(:, :)
 
-      integer :: i, j, k, count
+      integer :: i, j, k, countValue
       procedure(logical_func), pointer :: checker => null()
       integer :: component
 
       call get_checker_and_component(requestComponent, checker, component)
 
-      count = 0
+      countValue = 0
       do k = lowerBound%z, upperBound%z
       do j = lowerBound%y, upperBound%y
       do i = lowerBound%x, upperBound%x
          if (checker(component, i, j, k, problemInfo)) then
-            count = count + 1
-            coords(1, count) = i
-            coords(2, count) = j
-            coords(3, count) = k
+            countValue = countValue + 1
+            coords(1, countValue) = i
+            coords(2, countValue) = j
+            coords(3, countValue) = k
          end if
       end do
       end do

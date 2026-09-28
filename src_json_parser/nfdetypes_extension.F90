@@ -326,7 +326,7 @@ contains
       if (.not. all(a%bm33  == b%bm33))  return
       if (.not. all(a%alpha  == b%alpha))  return
       if (.not. all(a%beta   == b%beta))   return
-      if (.not. all(a%gamma  == b%gamma))  return
+      if (.not. all(a%gammaValue  == b%gammaValue))  return
       if (.not. all(a%alpham == b%alpham)) return
       if (.not. all(a%betam  == b%betam))  return
       if (.not. all(a%gammam == b%gammam)) return

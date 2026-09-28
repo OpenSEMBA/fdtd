@@ -150,7 +150,7 @@ contains
       this%dze = delta
    end subroutine create_dummy_fields
 
-   subroutine fillGradient(dummyFields, direction, minVal, maxVal)
+   subroutine fillGradient(dummyFields, direction, minValue, maxValue)
       !--------------------------------------------
       ! Fills dummyFields%Hx, Hy, Hz with a linear gradient
       ! along the specified direction (1=x, 2=y, 3=z)
@@ -158,7 +158,7 @@ contains
       implicit none
       type(dummyFields_t), intent(inout) :: dummyFields
       integer, intent(in) :: direction       ! 1=x, 2=y, 3=z
-      real(RKIND), intent(in) :: minVal, maxVal
+      real(RKIND), intent(in) :: minValue, maxValue
 
       integer :: i, j, k
       integer :: nx, ny, nz
@@ -173,23 +173,23 @@ contains
       case (1)  ! x-direction
          do i = 1, nx
             factor = real(i - 1, RKIND)/real(nx - 1, RKIND)
-            dummyFields%Hx(i, :, :) = minVal + factor*(maxVal - minVal)
-            dummyFields%Hy(i, :, :) = minVal + factor*(maxVal - minVal)
-            dummyFields%Hz(i, :, :) = minVal + factor*(maxVal - minVal)
+            dummyFields%Hx(i, :, :) = minValue + factor*(maxValue - minValue)
+            dummyFields%Hy(i, :, :) = minValue + factor*(maxValue - minValue)
+            dummyFields%Hz(i, :, :) = minValue + factor*(maxValue - minValue)
          end do
       case (2)  ! y-direction
          do j = 1, ny
             factor = real(j - 1, RKIND)/real(ny - 1, RKIND)
-            dummyFields%Hx(:, j, :) = minVal + factor*(maxVal - minVal)
-            dummyFields%Hy(:, j, :) = minVal + factor*(maxVal - minVal)
-            dummyFields%Hz(:, j, :) = minVal + factor*(maxVal - minVal)
+            dummyFields%Hx(:, j, :) = minValue + factor*(maxValue - minValue)
+            dummyFields%Hy(:, j, :) = minValue + factor*(maxValue - minValue)
+            dummyFields%Hz(:, j, :) = minValue + factor*(maxValue - minValue)
          end do
       case (3)  ! z-direction
          do k = 1, nz
             factor = real(k - 1, RKIND)/real(nz - 1, RKIND)
-            dummyFields%Hx(:, :, k) = minVal + factor*(maxVal - minVal)
-            dummyFields%Hy(:, :, k) = minVal + factor*(maxVal - minVal)
-            dummyFields%Hz(:, :, k) = minVal + factor*(maxVal - minVal)
+            dummyFields%Hx(:, :, k) = minValue + factor*(maxValue - minValue)
+            dummyFields%Hy(:, :, k) = minValue + factor*(maxValue - minValue)
+            dummyFields%Hz(:, :, k) = minValue + factor*(maxValue - minValue)
          end do
       case default
          print *, "Error: direction must be 1, 2, or 3."

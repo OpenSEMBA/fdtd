@@ -159,7 +159,7 @@ integer function test_scalar_probe_has_no_manifest() bind(c) result(err)
    call sgg_set_Med(sgg, materials_ptr)
    probe = create_point_probe_observation(4, 4, 4)
    call sgg_add_observation(sgg, probe)
-   control = create_control_flags(nEntradaRoot=path, mpidir=3, size=1)
+   control = create_control_flags(nEntradaRoot=path, mpidir=3, sizeValue=1)
 
    call init_outputs(sgg, media, sinpml, tag_numbers, bounds, control, observations_exist, wires_exist)
 
@@ -240,7 +240,7 @@ integer function test_line_probe_empty_path() bind(c) result(err)
    type(domain_t) :: domain
    type(direction_t), allocatable :: segments(:)
    type(field_data_t) :: electric_field
-   real(kind=RKIND), target :: field(1, 1, 1), spacing(1)
+   real(kind=RKIND), target :: field(1, 1, 1), spacingValue(1)
    character(len=4096) :: path
    integer :: ios
 
@@ -250,13 +250,13 @@ integer function test_line_probe_empty_path() bind(c) result(err)
    domain%domainType = TIME_DOMAIN
    call init_line_probe_output(probe, segments, domain, path)
    field = 0.0_RKIND
-   spacing = 1.0_RKIND
+   spacingValue = 1.0_RKIND
    electric_field%x => field
    electric_field%y => field
    electric_field%z => field
-   electric_field%deltaX => spacing
-   electric_field%deltaY => spacing
-   electric_field%deltaZ => spacing
+   electric_field%deltaX => spacingValue
+   electric_field%deltaY => spacingValue
+   electric_field%deltaZ => spacingValue
    call update_line_probe_output(probe, 0.0_RKIND_TIEMPO, electric_field)
    err = err + assert_integer_equal(probe%nTime, 0, 'Empty line probe recorded a fabricated sample')
    call delete_file(trim(path)//'_tm.dat', ios)
@@ -277,7 +277,7 @@ integer function test_line_probe_dat_output() bind(c) result(err)
    type(domain_t) :: domain
    type(direction_t) :: segments(1)
    type(field_data_t) :: electric_field
-   real(kind=RKIND), target :: ex(1, 1, 1), ey(1, 1, 1), ez(1, 1, 1), spacing(1)
+   real(kind=RKIND), target :: ex(1, 1, 1), ey(1, 1, 1), ez(1, 1, 1), spacingValue(1)
    character(len=4096) :: path
    integer :: ios, text_unit, text_records
    character(len=128) :: line
@@ -290,13 +290,13 @@ integer function test_line_probe_dat_output() bind(c) result(err)
    ex = 2.0_RKIND
    ey = 0.0_RKIND
    ez = 0.0_RKIND
-   spacing = 0.5_RKIND
+   spacingValue = 0.5_RKIND
    electric_field%x => ex
    electric_field%y => ey
    electric_field%z => ez
-   electric_field%deltaX => spacing
-   electric_field%deltaY => spacing
-   electric_field%deltaZ => spacing
+   electric_field%deltaX => spacingValue
+   electric_field%deltaY => spacingValue
+   electric_field%deltaZ => spacingValue
    call update_line_probe_output(probe, 0.0_RKIND_TIEMPO, electric_field)
    call update_line_probe_output(probe, 0.1_RKIND_TIEMPO, electric_field)
    call flush_line_probe_output(probe)
@@ -584,7 +584,7 @@ integer function test_volumetric_output_partition_attachment() bind(c) result(er
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
    observation = create_movie_observation(2, 2, 2, 5, 5, 5, ICUR)
    call sgg_add_observation(sgg, observation)
-   control = create_control_flags(nEntradaRoot=path, mpidir=3, size=1)
+   control = create_control_flags(nEntradaRoot=path, mpidir=3, sizeValue=1)
 
    call init_outputs(sgg, media, sinpml, material_tags, bounds, control, observations_exist, wires_exist)
    call GetOutputPartition(1, partition, status)

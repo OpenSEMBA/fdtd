@@ -202,7 +202,7 @@ contains
       character(len=*), intent(in) :: fileName
       integer, intent(in), optional :: minimumSamples
       logical :: hasSamples
-      integer :: unit, ios, count, required
+      integer :: unit, ios, countValue, required
       real(kind=RKIND) :: sampleTime, sampleValue
 
       required = 1
@@ -212,16 +212,16 @@ contains
       open (newunit=unit, file=trim(adjustl(fileName)), status='old', action='read', iostat=ios)
       if (ios /= 0) return
 
-      count = 0
+      countValue = 0
       do
          read (unit, *, iostat=ios) sampleTime, sampleValue
          if (ios /= 0) exit
-         count = count + 1
-         if (count >= required) exit
+         countValue = countValue + 1
+         if (countValue >= required) exit
       end do
       close (unit)
 
-      hasSamples = count >= required
+      hasSamples = countValue >= required
    end function file_has_samples
 
    !------------------------------------------------------------

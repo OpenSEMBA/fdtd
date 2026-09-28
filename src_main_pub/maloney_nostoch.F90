@@ -119,7 +119,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
                                                          Idze(sgg%alloc(IHZ)%ZI : sgg%alloc(IHZ)%ZE)
 
    real(kind=RKIND) :: temp_SGBCFreq,temp_SGBCresol, rra,rrb,rrc,rrd
-   real(kind=RKIND) :: signo,g1eff_0,g1eff_1,g2eff_0,g2eff_1,Sigmam,Epsilon,Mu,Sigma   
+   real(kind=RKIND) :: signo,g1eff_0,g1eff_1,g2eff_0,g2eff_1,Sigmam,epsilonValue,Mu,Sigma   
    real(kind=RKIND) :: factor
    real(kind=RKIND) , allocatable, dimension(:,:) :: derivcte
 
@@ -620,7 +620,7 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
    real(kind=RKIND), pointer, dimension(:) :: gm1,g1,gm2,g2
    type(constants_t) :: g
  integer :: jmed,conta,i
-   real(kind=RKIND) :: sigmam,sigma,mu,epsilon,signo,g1eff_0,g2eff_0,g1eff_1,g2eff_1
+   real(kind=RKIND) :: sigmam,sigma,mu,epsilonValue,signo,g1eff_0,g2eff_0,g1eff_1,g2eff_1
    type(SGBCSurface_t), pointer :: compo
    character(len=BUFSIZE) :: buFF
    logical :: stochastic
@@ -671,13 +671,13 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
 !!!071118 para permit scaling
 !!!070717  recalculo y machaco los G1,G2,GM1, y GM2 con los que aparecen en el fichero de dispersivos aunque creo que no se usa para nada
                Sigmam  =      SGG%Med(jmed)%multiport(1)%sigmam(1)
-               Epsilon = Eps0*SGG%Med(jmed)%multiport(1)%epr(1)
+               epsilonValue = Eps0*SGG%Med(jmed)%multiport(1)%epr(1)
                Mu      = Mu0* SGG%Med(jmed)%multiport(1)%mur(1)
                Sigma   =      SGG%Med(jmed)%multiport(1)%sigma(1)
-               G1(jmed)=(1 -  Sigma * sgg%dt / (2.0_RKIND * Epsilon ) ) / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * Epsilon ))
-               G2(jmed)=sgg%dt /Epsilon                        / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * Epsilon ))
+               G1(jmed)=(1 -  Sigma * sgg%dt / (2.0_RKIND * epsilonValue ) ) / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * epsilonValue ))
+               G2(jmed)=sgg%dt /epsilonValue                        / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * epsilonValue ))
                if (g1(jmed) < 0.0_RKIND) then !exponential time stepping
-                  g1(jmed)=exp(- Sigma * sgg%dt / (Epsilon ))
+                  g1(jmed)=exp(- Sigma * sgg%dt / (epsilonValue ))
                   g2(jmed)=(1.0_RKIND-g1(jmed))/ Sigma
                end if
                GM1(jmed)=(1- SigmaM*sgg%dt/(2.0_RKIND *  Mu )) /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
@@ -1028,7 +1028,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
    type(SGBCSurface_t), pointer, intent(inout) :: compo
    character(len=BUFSIZE) :: buff
 !!!variables locales
- real(kind=RKIND) :: width,sigmatemp,eprtemp,sigmamtemp,murtemp,epsilon,sigma,mu,sigmam,g1,g2,gm1,gm2,delta_entreEinterno_temp,epr_adyacentei,sig_adyacentei
+ real(kind=RKIND) :: width,sigmatemp,eprtemp,sigmamtemp,murtemp,epsilonValue,sigma,mu,sigmam,g1,g2,gm1,gm2,delta_entreEinterno_temp,epr_adyacentei,sig_adyacentei
  real(kind=RKIND), dimension(0:1) :: epr_adyacente,sig_adyacente
  integer(kind=4) :: i,ib,ib_ady
  logical :: SGBCDispersive
@@ -1062,14 +1062,14 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
        !prescindo de los filo_placa 0121 poque en las pec de boundaries las detecta incorrectamente !de todos modos esto nunca me ha gustado 0121
          !no puedo prescindir de los filo_placas a 040523 SinSTOCH_antiguou_th0.0001
          if (compo%es_unfilo_placa) then
-             epsilon = ((epr_adyacente(0)+epr_adyacente(1))/2.0_rkind  * eps0 *(compo%transversaldeltah - width/2.0_rkind)   + &
+             epsilonValue = ((epr_adyacente(0)+epr_adyacente(1))/2.0_rkind  * eps0 *(compo%transversaldeltah - width/2.0_rkind)   + &
                          eprtemp                                       * eps0 * width /2.0_rkind) / &
                         (compo%transversaldeltah)
              sigma =   ((sig_adyacente(0)+sig_adyacente(1))/2.0_rkind         *(compo%transversaldeltah - width/2.0_rkind)   + &
                          sigmatemp                                            *width  /2.0_rkind) / &
                         (compo%transversaldeltah)
          else
-         epsilon = ((epr_adyacente(0)+epr_adyacente(1))/2.0_rkind  * eps0 *(compo%transversaldeltah-width)   + &
+         epsilonValue = ((epr_adyacente(0)+epr_adyacente(1))/2.0_rkind  * eps0 *(compo%transversaldeltah-width)   + &
                      eprtemp                                       * eps0 *width             ) / &
                         (compo%transversaldeltah)
          sigma =   ((sig_adyacente(0)+sig_adyacente(1))/2.0_rkind         *(compo%transversaldeltah-width)   + &
@@ -1077,7 +1077,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
                         (compo%transversaldeltah)
          end if
 !!!!!ajusta primero los g1 y g2 de los bordes del espesor de la capa !ojo en sgbcdispersive no se utilizan las constantes kappa, beta, g3 en lo putos filo_placas. solo en el interior
-         call g1g2(sgg%dt,epsilon,sigma,g1,g2)
+         call g1g2(sgg%dt,epsilonValue,sigma,g1,g2)
          compo%g1   (0)=g1 
          if (compo%correct_ha) then
              compo%g2a(0)= g2 / compo%transversaldeltah 
@@ -1092,15 +1092,15 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
              compo%g2b(1)= compo%g2b(0)
          end if
 !!!!!!!!!!!!ahora el interior  
-        epsilon =  eprtemp * eps0
+        epsilonValue =  eprtemp * eps0
         sigma =    sigmatemp 
         if (sgbcdispersive) then
              beta => compo%beta %val
              kappa => compo%kappa %val
              g3 => compo%g3 %val
-             call g1g2_dispersive(sgg%dt,epsilon,sigma,g1,g2,beta,kappa,g3,compo%numpolres,compo%a11,compo%c11)
+             call g1g2_dispersive(sgg%dt,epsilonValue,sigma,g1,g2,beta,kappa,g3,compo%numpolres,compo%a11,compo%c11)
          else
-             call g1g2(sgg%dt,epsilon,sigma,g1,g2)
+             call g1g2(sgg%dt,epsilonValue,sigma,g1,g2)
          end if
          compo%g1_interno(0)=g1
          compo%g2_interno(0)=g2
@@ -1137,14 +1137,14 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
        !prescindo de los filo_placa 0121 poque en las pec de boundaries las detecta incorrectamente !de todos modos esto nunca me ha gustado 0121
                      !no puedo prescindir de los filo_placas a 040523 SinSTOCH_antiguou_th0.0001
          if (compo%es_unfilo_placa) then
-             epsilon = (epr_adyacente(i)* eps0 *(compo%transversalDeltaH + delta_entreEinterno_temp /2.0_RKIND)   + &
+             epsilonValue = (epr_adyacente(i)* eps0 *(compo%transversalDeltaH + delta_entreEinterno_temp /2.0_RKIND)   + &
                                 eprtemp         * eps0 *               (delta_entreEinterno_temp /2.0_RKIND)) / &
                                (compo%transversalDeltaH +               delta_entreEinterno_temp)
              Sigma =   (sig_adyacente(i)       *(compo%transversalDeltaH + delta_entreEinterno_temp /2.0_RKIND)   + &
                                 sigmatemp               *(delta_entreEinterno_temp  /2.0_RKIND)) / &
                                (compo%transversalDeltaH + delta_entreEinterno_temp)
          else
-             epsilon = (epr_adyacente(i)* eps0 *compo%transversalDeltaH   + &
+             epsilonValue = (epr_adyacente(i)* eps0 *compo%transversalDeltaH   + &
                         eprtemp         * eps0 *delta_entreEinterno_temp    ) / &
                        (compo%transversalDeltaH + delta_entreEinterno_temp)                
              Sigma =   (sig_adyacente(i)       *compo%transversalDeltaH   + &
@@ -1157,7 +1157,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
          
          
  !ajusta primero los g1 Y G2      !no preciso gm1 ni gm2 en los filo_placas
-         call g1g2(sgg%dt,epsilon,sigma,g1,g2)
+         call g1g2(sgg%dt,epsilonValue,sigma,g1,g2)
          compo%g1(i)=g1 
          if (compo%Correct_Ha) then
              compo%G2a(i)= G2 / (0.5_RKIND * compo%transversalDeltaH + 0.5_RKIND*delta_entreEinterno_temp)
@@ -1191,9 +1191,9 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
                         sigmatemp       *compo%delta_entreEinterno(i) ) / &
                                         (compo%delta_entreEinterno(i-1) + compo%delta_entreEinterno(i))
          !!!
-         epsilon =  eprtemp * eps0
+         epsilonValue =  eprtemp * eps0
          Sigma =    sigmatemp 
-         call g1g2(sgg%dt,epsilon,sigma,g1,g2)
+         call g1g2(sgg%dt,epsilonValue,sigma,g1,g2)
          compo%g1_interno(i)=g1
          compo%g2_interno(i)=g2 /((compo%delta_entreEinterno (i)+compo%delta_entreEinterno (i-1))/2.0_RKIND) !semisuma diff  no centrada entre capas
      end do barridoporcapas
@@ -1224,18 +1224,18 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
 end subroutine calc_g1g2gm1gm2_compo
 
 !!!!!!!
-subroutine g1g2(dt,epsilon,sigma,G1,G2)
+subroutine g1g2(dt,epsilonValue,sigma,G1,G2)
    real(kind=RKIND_TIEMPO), intent(in) :: dt
-   real(kind=RKIND), intent(in) :: epsilon,sigma
+   real(kind=RKIND), intent(in) :: epsilonValue,sigma
    real(kind=RKIND), intent(out) :: g1,g2
 
-   G1=(1.0_RKIND  - Sigma * dt / (2.0_RKIND * epsilon ) ) / &
-      (1.0_RKIND  + Sigma * dt / (2.0_RKIND * epsilon ) )
-   G2=dt / epsilon                       / &
-      (1.0_RKIND  + Sigma * dt / (2.0_RKIND * epsilon))
+   G1=(1.0_RKIND  - Sigma * dt / (2.0_RKIND * epsilonValue ) ) / &
+      (1.0_RKIND  + Sigma * dt / (2.0_RKIND * epsilonValue ) )
+   G2=dt / epsilonValue                       / &
+      (1.0_RKIND  + Sigma * dt / (2.0_RKIND * epsilonValue))
 
    if (g1 < 0.0_RKIND) then !exponential time stepping
-      g1=exp(- Sigma * dt / (epsilon ))
+      g1=exp(- Sigma * dt / (epsilonValue ))
       g2=(1.0_RKIND-g1)/ Sigma
    else
       continue
@@ -1264,8 +1264,8 @@ subroutine gm1gm2(dt,mu,sigmam,Gm1,Gm2)
 end subroutine gm1gm2
 
 !!!!!!! medios dispersivos sgg 12/05/16 
-subroutine g1g2_Dispersive(dt,epsilon,sigma,G1,G2,Beta,Kappa,G3,numpolres,a11,c11)
-   real(kind=RKIND), intent(in) :: epsilon,sigma
+subroutine g1g2_Dispersive(dt,epsilonValue,sigma,G1,G2,Beta,Kappa,G3,numpolres,a11,c11)
+   real(kind=RKIND), intent(in) :: epsilonValue,sigma
    real(kind=RKIND_TIEMPO), intent(in) :: dt
    real(kind=RKIND), intent(out) :: g1,g2
    complex(kind=ckind), intent(in), allocatable, dimension(:) :: a11, c11
@@ -1284,9 +1284,9 @@ subroutine g1g2_Dispersive(dt,epsilon,sigma,G1,G2,Beta,Kappa,G3,numpolres,a11,c1
      do i1=1,NumPolRes
          tempo=tempo+real(Beta(i1))
      end do
-     G1=                        (2.0_RKIND * epsilon + tempo - sigma*dt) / & !ojo No estes tentado de cambiar este signo. Cuadra con han dutton 130516 y con edispersives 
-                                (2.0_RKIND * epsilon + tempo + sigma*dt)
-     G2=         2.0_RKIND *dt/ (2.0_RKIND * epsilon + tempo + sigma*dt)
+     G1=                        (2.0_RKIND * epsilonValue + tempo - sigma*dt) / & !ojo No estes tentado de cambiar este signo. Cuadra con han dutton 130516 y con edispersives 
+                                (2.0_RKIND * epsilonValue + tempo + sigma*dt)
+     G2=         2.0_RKIND *dt/ (2.0_RKIND * epsilonValue + tempo + sigma*dt)
 !!!! aqui no cabe exponential time stepping
      do i1=1,NumPolRes
          G3(i1)=G2/2.0_RKIND * (1.0_RKIND+Kappa(i1))
@@ -1396,7 +1396,7 @@ end subroutine test_stab
 
 subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth) 
  type(SGGFDTDINFO_t), intent(in) :: sgg
- real(kind=rkind) :: SGBCFreq,SGBCresol,sigma, epr,epsilon,skin_depth,width,widthtotal
+ real(kind=rkind) :: SGBCFreq,SGBCresol,sigma, epr,epsilonValue,skin_depth,width,widthtotal
  integer(kind=4) :: jmed,i,SGBCdepth,numcapas,precuenta,celdafinal,celdainicial,anchocapa
  integer(kind=4) , pointer, dimension(:) :: capa
  logical :: ultimacapamas1
@@ -1432,10 +1432,10 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
          width=      sgg%Med(jmed)%multiport(1)%width(i) 
          sigma=      sgg%Med(jmed)%multiport(1)%sigma(i) 
          epr=        sgg%Med(jmed)%multiport(1)%epr(i)  
-         epsilon=epr * eps0
+         epsilonValue=epr * eps0
          widthtotal=widthtotal +     sgg%Med(compo%jmed)%multiport(1)%width(i) 
-         skin_depth=1.0_RKIND / (Sqrt(2.0_RKIND)*SGBCFreq*Pi*(Mu0**2*(4*Epsilon**2.0_RKIND + Sigma**2/(SGBCFreq**2*Pi**2.0_RKIND )))**0.25_RKIND * &
-                                 Sin(atan2(2*Pi*Epsilon*Mu0, -(Mu0*Sigma)/SGBCFreq)/2.0_RKIND))
+         skin_depth=1.0_RKIND / (Sqrt(2.0_RKIND)*SGBCFreq*Pi*(Mu0**2*(4*epsilonValue**2.0_RKIND + Sigma**2/(SGBCFreq**2*Pi**2.0_RKIND )))**0.25_RKIND * &
+                                 Sin(atan2(2*Pi*epsilonValue*Mu0, -(Mu0*Sigma)/SGBCFreq)/2.0_RKIND))
          if (SGBCdepth==0) then !numcapas debe ser necesariamente 1
              if (numcapas > 1) then
                 write(buff, *)   'SGBCDepth=0 and numcapas>1 not compatible. Please, relaunch'

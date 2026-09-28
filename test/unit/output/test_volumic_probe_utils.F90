@@ -12,7 +12,7 @@ integer function test_count_required_coords() bind(c) result(err)
 
    type(cell_coordinate_t) :: lowerBound, upperBound
    type(problem_info_t)    :: problemInfo
-   integer(kind=SINGLE)    :: count
+   integer(kind=SINGLE)    :: countValue
    integer                 :: test_err = 0
    integer, allocatable    :: dummy_coords(:,:)
 
@@ -23,10 +23,10 @@ integer function test_count_required_coords() bind(c) result(err)
    call setup_dummy_problem_info(problemInfo)
 
    ! Test Case 1: Field Request (iExC)
-   call find_and_store_important_coords(lowerBound, upperBound, IEXC, problemInfo, count, dummy_coords)
+   call find_and_store_important_coords(lowerBound, upperBound, IEXC, problemInfo, countValue, dummy_coords)
 
    ! Expected: 3*3*3 = 27 points
-   test_err = test_err + assert_integer_equal(count, 27_SINGLE, "Failed count for iExC")
+   test_err = test_err + assert_integer_equal(countValue, 27_SINGLE, "Failed count for iExC")
 
    if (allocated(dummy_coords)) deallocate(dummy_coords)
    call clean_dummy_problem_info(problemInfo)

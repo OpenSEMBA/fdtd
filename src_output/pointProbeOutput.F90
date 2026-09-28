@@ -59,7 +59,7 @@ contains
             this%auxExp_E(i) = MCPI2*this%frequencySlice(i)
             this%auxExp_H(i) = this%auxExp_E(i)
          end do
-         if (this%domain%transfer) call initialise_normalization_spectrum(this)
+         if (this%domain%transferFlag) call initialise_normalization_spectrum(this)
       end if
 
       if (this%domain%domainType == BOTH_DOMAIN) then
@@ -262,7 +262,7 @@ contains
 
          do i = 1, this%nFreq
             spectrum = this%valueForFreq(i)
-            if (this%domain%transfer) spectrum = spectrum/this%normalizationForFreq(i)
+            if (this%domain%transferFlag) spectrum = spectrum/this%normalizationForFreq(i)
             if (this%hasIncident) then
                write (unit, FMT) this%frequencySlice(i), abs(spectrum), atan2(aimag(spectrum), real(spectrum)), &
                                   abs(this%incidentForFreq(i)), atan2(aimag(this%incidentForFreq(i)), real(this%incidentForFreq(i)))

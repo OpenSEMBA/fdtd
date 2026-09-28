@@ -48,15 +48,15 @@ contains
       type(integration_grid_t) :: res
 
       integer, parameter :: GRID_INTEGRATION_SAMPLING_POINTS = 100
-      real(kind=rkind) :: minval, maxval, step
+      real(kind=rkind) :: minValue, maxValue, step
       integer :: x, k
       real(kind=rkind), allocatable :: controlPoints(:)
       real(kind=rkind), allocatable :: allPoints(:)
       integer :: i, j
 
       ! Preconditions
-      if (any(integrationBox%min >= innerRegionBox%min) .or. &
-          any(integrationBox%max <= innerRegionBox%max)) then       
+      if (any(integrationBox%minBound >= innerRegionBox%minBound) .or. &
+          any(integrationBox%maxBound <= innerRegionBox%maxBound)) then       
          call WarnErrReport( &
             "Error in mutipolar expansion innerRegion must be fully contained within the integration Box", .true.)
          return
@@ -64,8 +64,8 @@ contains
 
       block
          real(kind=rkind), dimension(2) :: innerRegionSize, integrationBoxSize         
-         innerRegionSize = innerRegionBox%max - innerRegionBox%min
-         integrationBoxSize = integrationBox%max - integrationBox%min
+         innerRegionSize = innerRegionBox%maxBound - innerRegionBox%minBound
+         integrationBoxSize = integrationBox%maxBound - integrationBox%minBound
          if (any(integrationBoxSize < innerRegionSize * 1.25)) then
             call WarnErrReport( &
                "Error in multipolar expansion: integration box is too small for the inner region", .true.)
@@ -78,17 +78,17 @@ contains
       do x = 1, 2 
          ! control points are ordered from min to max.
          controlPoints = [&
-            integrationBox%min(x), &
-            innerRegionBox%min(x), &
-            innerRegionBox%max(x), &
-            integrationBox%max(x)]
+            integrationBox%minBound(x), &
+            innerRegionBox%minBound(x), &
+            innerRegionBox%maxBound(x), &
+            integrationBox%maxBound(x)]
          
          do i = 2, size(controlPoints)
-            minval = controlPoints(i-1)
-            maxval = controlPoints(i)
-            step = (maxval - minval) / GRID_INTEGRATION_SAMPLING_POINTS
+            minValue = controlPoints(i-1)
+            maxValue = controlPoints(i)
+            step = (maxValue - minValue) / GRID_INTEGRATION_SAMPLING_POINTS
             do k = 1, GRID_INTEGRATION_SAMPLING_POINTS
-               allPoints((i-2)*GRID_INTEGRATION_SAMPLING_POINTS+k) = minval + (k-1)*step
+               allPoints((i-2)*GRID_INTEGRATION_SAMPLING_POINTS+k) = minValue + (k-1)*step
             end do
          end do
          allPoints(size(allPoints)) = controlPoints(size(controlPoints))
@@ -104,13 +104,13 @@ contains
 
    real(kind=rkind) function boxArea(box) result(res)
       type(box_2d_t), intent(in) :: box
-      res = (box%max(1) - box%min(1)) * (box%max(2) - box%min(2))
+      res = (box%maxBound(1) - box%minBound(1)) * (box%maxBound(2) - box%minBound(2))
    end function
 
    logical function isWithinBox(box, point) result(res)
       type(box_2d_t), intent(in) :: box
       real(kind=rkind), dimension(2), intent(in) :: point
-      res = all(point >= box%min) .and. all(point <= box%max)
+      res = all(point >= box%minBound) .and. all(point <= box%maxBound)
    end function
 
    function getAveragePotential(potential, innerBox, outerBox) result(avVj)

@@ -60,7 +60,7 @@ contains
       this%mainCoords = coordinates
       this%component = field
       this%domain = domain
-      this%sign = 1
+      this%signValue = 1
 
       call find_current_segment(this, node, field, media, wiresflavor)
       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
@@ -88,7 +88,7 @@ contains
       this%mainCoords = coordinates
       this%component = field
       this%domain = domain
-      this%sign = 1
+      this%signValue = 1
 
       call find_charge_segment(this, node, field, wiresflavor)
       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
@@ -201,7 +201,7 @@ contains
       character(len=BUFSIZE) :: buff
 
       found = .false.
-      this%sign = 1
+      this%signValue = 1
       probe_i = this%mainCoords%x
       probe_j = this%mainCoords%y
       probe_k = this%mainCoords%z
@@ -218,7 +218,7 @@ contains
                 seg%tipofield*10 == field) then
                found = .true.
                this%segment => seg
-               if (seg%orientadoalreves) this%sign = -1
+               if (seg%orientadoalreves) this%signValue = -1
                exit
             end if
          end do
@@ -230,7 +230,7 @@ contains
             if (Hwireslocal_B%Segments(n)%IndexSegment == node) then
                found = .true.
                this%segmentBerenger => Hwireslocal_B%Segments(n)
-               if (Hwireslocal_B%Segments(n)%orientadoalreves) this%sign = -1
+               if (Hwireslocal_B%Segments(n)%orientadoalreves) this%signValue = -1
                exit
             end if
          end do
@@ -262,7 +262,7 @@ contains
                      if (seg%origindex == node2) then
                         found = .true.
                         this%segment => seg
-                        if (seg%orientadoalreves) this%sign = -1
+                        if (seg%orientadoalreves) this%signValue = -1
                         exit buscarabono
                      end if
                   end do
@@ -290,7 +290,7 @@ contains
       character(len=BUFSIZE) :: buff
 
       found = .false.
-      this%sign = 1
+      this%signValue = 1
       probe_i = this%mainCoords%x
       probe_j = this%mainCoords%y
       probe_k = this%mainCoords%z
@@ -310,7 +310,7 @@ contains
              seg%tipofield*10000 == field) then
             found = .true.
             this%segment => seg
-            if (seg%orientadoalreves) this%sign = -1
+            if (seg%orientadoalreves) this%signValue = -1
             exit
          end if
       end do
@@ -392,25 +392,25 @@ contains
       seg => this%segment
 
       this%currentValues(this%nTime)%current = &
-         this%sign*seg%currentpast
+         this%signValue*seg%currentpast
 
       this%currentValues(this%nTime)%deltaVoltage = &
          -seg%Efield_wire2main*seg%delta
 
       if (control%wirecrank) then
-         this%currentValues(this%nTime)%plusVoltage = this%sign* &
+         this%currentValues(this%nTime)%plusVoltage = this%signValue* &
                                                       (seg%ChargePlus%ChargePresent)*seg%Lind* &
                                                       (InvMu(seg%indexmed)*InvEps(seg%indexmed))
 
-         this%currentValues(this%nTime)%minusVoltage = this%sign* &
+         this%currentValues(this%nTime)%minusVoltage = this%signValue* &
                                                        (seg%ChargeMinus%ChargePresent)*seg%Lind* &
                                                        (InvMu(seg%indexmed)*InvEps(seg%indexmed))
       else
-         this%currentValues(this%nTime)%plusVoltage = this%sign* &
+         this%currentValues(this%nTime)%plusVoltage = this%signValue* &
                                                       ((seg%ChargePlus%ChargePresent + seg%ChargePlus%ChargePast)/2.0_RKIND)* &
                                                       seg%Lind*(InvMu(seg%indexmed)*InvEps(seg%indexmed))
 
-         this%currentValues(this%nTime)%minusVoltage = this%sign* &
+         this%currentValues(this%nTime)%minusVoltage = this%signValue* &
                                                        ((seg%ChargeMinus%ChargePresent + seg%ChargeMinus%ChargePast)/2.0_RKIND)* &
                                                        seg%Lind*(InvMu(seg%indexmed)*InvEps(seg%indexmed))
       end if
@@ -430,16 +430,16 @@ contains
       seg => this%segmentBerenger
 
       this%currentValues(this%nTime)%current = &
-         this%sign*seg%currentpast
+         this%signValue*seg%currentpast
 
       this%currentValues(this%nTime)%deltaVoltage = &
          -seg%field*seg%dl
 
-      this%currentValues(this%nTime)%plusVoltage = this%sign* &
+      this%currentValues(this%nTime)%plusVoltage = this%signValue* &
                                                    ((seg%ChargePlus + seg%ChargePlusPast)/2.0_RKIND)* &
                                                    seg%L*(InvMu(seg%imed)*InvEps(seg%imed))
 
-      this%currentValues(this%nTime)%minusVoltage = this%sign* &
+      this%currentValues(this%nTime)%minusVoltage = this%signValue* &
                                                     ((seg%ChargeMinus + seg%ChargeMinusPast)/2.0_RKIND)* &
                                                     seg%L*(InvMu(seg%imed)*InvEps(seg%imed))
 

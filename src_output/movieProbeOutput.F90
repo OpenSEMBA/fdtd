@@ -577,7 +577,7 @@ contains
 
       integer, allocatable :: counts(:), displacements(:)
       real(real64), allocatable :: gathered_values(:), local_batch(:)
-      integer(int64) :: global_shape(3), offset(3), shape(3)
+      integer(int64) :: global_shape(3), offset(3), shapeValue(3)
       integer :: global_index, i, j, k, local_index, rank_index, value_start
 
       allocate (local_batch(6 + size(local_values)))
@@ -605,18 +605,18 @@ contains
          end if
          value_start = displacements(rank_index)
          offset = nint(gathered_values(value_start + 1:value_start + 3), kind=int64)
-         shape = nint(gathered_values(value_start + 4:value_start + 6), kind=int64)
-         if (any(shape <= 0_int64) .or. any(offset < 0_int64) .or. &
-             any(offset + shape > global_shape) .or. &
-             int(counts(rank_index) - 6, int64) /= product(shape)) then
+         shapeValue = nint(gathered_values(value_start + 4:value_start + 6), kind=int64)
+         if (any(shapeValue <= 0_int64) .or. any(offset < 0_int64) .or. &
+             any(offset + shapeValue > global_shape) .or. &
+             int(counts(rank_index) - 6, int64) /= product(shapeValue)) then
             status = OUTPUT_TRANSPORT_INVALID_CONTEXT
             return
          end if
-         do k = 1, int(shape(3))
-         do j = 1, int(shape(2))
-         do i = 1, int(shape(1))
-            local_index = i + (j - 1)*int(shape(1)) + &
-                          (k - 1)*int(shape(1)*shape(2))
+         do k = 1, int(shapeValue(3))
+         do j = 1, int(shapeValue(2))
+         do i = 1, int(shapeValue(1))
+            local_index = i + (j - 1)*int(shapeValue(1)) + &
+                          (k - 1)*int(shapeValue(1)*shapeValue(2))
             global_index = int(offset(1)) + i + &
                            (int(offset(2)) + j - 1)*int(global_shape(1)) + &
                            (int(offset(3)) + k - 1)*int(global_shape(1)*global_shape(2))

@@ -3331,7 +3331,7 @@ contains
       sgg%observation(1:sgg%NumberRequest)%FreqDomain    =.false.
       sgg%observation(1:sgg%NumberRequest)%TimeDomain    =.false.
       sgg%observation(1:sgg%NumberRequest)%Saveall       =.false.
-      sgg%observation(1:sgg%NumberRequest)%TRANSFER      =.false.
+      sgg%observation(1:sgg%NumberRequest)%transferFlag      =.false.
       sgg%observation(1:sgg%NumberRequest)%Volumic       =.false.
 
       !
@@ -3604,7 +3604,7 @@ contains
             sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING !bug peligroso 2012
             sgg%observation(ii)%TimeDomain = .false.
             sgg%observation(ii)%FreqDomain = .FALSE.
-            sgg%observation(ii)%TRANSFER = .FALSE.
+            sgg%observation(ii)%transferFlag = .FALSE.
             sgg%observation(ii)%Volumic = .FALSE.
             sgg%observation(ii)%FileNormalize=' '
             !trancos
@@ -3625,38 +3625,38 @@ contains
              case (NP_T2_time)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .FALSE.
-               sgg%observation(ii)%TRANSFER = .FALSE.
+               sgg%observation(ii)%transferFlag = .FALSE.
              case (NP_T2_FREQ)
                !I will output everything in time and transform it later
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
-               sgg%observation(ii)%TRANSFER = .FALSE.
+               sgg%observation(ii)%transferFlag = .FALSE.
                !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
              case (NP_T2_TRANSFER)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
-               sgg%observation(ii)%TRANSFER = .TRUE.
+               sgg%observation(ii)%transferFlag = .TRUE.
                buff='Transfer function only in Frequency Domain'
                !!           call STOPONERROR(layoutnumber,num_procs,buff)
              case (NP_T2_TIMEFREQ)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
-               sgg%observation(ii)%TRANSFER = .FALSE.
+               sgg%observation(ii)%transferFlag = .FALSE.
                !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
              case (NP_T2_TIMETRANSF)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
-               sgg%observation(ii)%TRANSFER = .TRUE.
+               sgg%observation(ii)%transferFlag = .TRUE.
                !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
              case (NP_T2_FREQTRANSF)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
-               sgg%observation(ii)%TRANSFER = .TRUE.
+               sgg%observation(ii)%transferFlag = .TRUE.
                !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
              case (NP_T2_TIMEFRECTRANSF)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
-               sgg%observation(ii)%TRANSFER = .TRUE.
+               sgg%observation(ii)%transferFlag = .TRUE.
             end select
             !repair info
             !
@@ -3913,7 +3913,7 @@ contains
             ii = i + tamaSonda
             sgg%observation(ii)%TimeDomain = .FALSE.
             sgg%observation(ii)%FreqDomain = .TRUE.
-            sgg%observation(ii)%TRANSFER = .FALSE.
+            sgg%observation(ii)%transferFlag = .FALSE.
             !farfields (no es time domain pero una forma especial de ellos)
             tama2 = (this%oldSONDA%probes(i)%n_FarField)
             write(buff,*) 'More than 1 Far Field box unsupported'
@@ -4078,38 +4078,38 @@ contains
                 case (NP_T2_time)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .FALSE.
-                  sgg%observation(ii)%TRANSFER = .FALSE.
+                  sgg%observation(ii)%transferFlag = .FALSE.
                 case (NP_T2_FREQ)
                   !I will output everything in time and transform it later
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
-                  sgg%observation(ii)%TRANSFER = .FALSE.
+                  sgg%observation(ii)%transferFlag = .FALSE.
                   !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
                 case (NP_T2_TRANSFER)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
-                  sgg%observation(ii)%TRANSFER = .TRUE.
+                  sgg%observation(ii)%transferFlag = .TRUE.
                   buff='Transfer function only in Frequency Domain'
                   !!           call STOPONERROR(layoutnumber,num_procs,buff)
                 case (NP_T2_TIMEFREQ)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
-                  sgg%observation(ii)%TRANSFER = .FALSE.
+                  sgg%observation(ii)%transferFlag = .FALSE.
                   !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
                 case (NP_T2_TIMETRANSF)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
-                  sgg%observation(ii)%TRANSFER = .TRUE.
+                  sgg%observation(ii)%transferFlag = .TRUE.
                   !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
                 case (NP_T2_FREQTRANSF)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
-                  sgg%observation(ii)%TRANSFER = .TRUE.
+                  sgg%observation(ii)%transferFlag = .TRUE.
                   !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
                 case (NP_T2_TIMEFRECTRANSF)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
-                  sgg%observation(ii)%TRANSFER = .TRUE.
+                  sgg%observation(ii)%transferFlag = .TRUE.
                end select
                !repair info
                !
@@ -4207,7 +4207,7 @@ contains
             if (createmapvtk.and.(i==tamaScrPrb/3)) then !!!210618 En realidad hay un tercio
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .FALSE.
-               sgg%observation(ii)%TRANSFER = .FALSE.
+               sgg%observation(ii)%transferFlag = .FALSE.
                sgg%observation(ii)%saveall = .FALSE.
                sgg%observation(ii)%nP = 0
                sgg%observation(ii)%Volumic = .true.
@@ -4261,7 +4261,7 @@ contains
 !!!!210618 tambien se crrean extras dummy para los vtk
                sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .false.
-               sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+               sgg%observation(tamaScrPrb/3+ii)%transferFlag =   .false.
                if (associated(this%VolPrb%collection).and.(tamaScrPrb/=0).and.(i<=this%VolPrb%length)) then !280618 & 220319
                   sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
                else
@@ -4273,7 +4273,7 @@ contains
 !
                sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .false.
-               sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .false.
+               sgg%observation(2*tamaScrPrb/3+ii)%transferFlag =   .false.
                if (associated(this%VolPrb%collection).and.(tamaScrPrb/=0).and.(i<=this%VolPrb%length)) then !280618 & 220319
                   sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
                else
@@ -4388,12 +4388,12 @@ contains
 
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .FALSE.
-                  sgg%observation(ii)%TRANSFER = .FALSE.
+                  sgg%observation(ii)%transferFlag = .FALSE.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=tipotemp
 !
                   sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .false.
-                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%transferFlag =   .false.
                   sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
                   sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
@@ -4401,7 +4401,7 @@ contains
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .false.
-                  sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(2*tamaScrPrb/3+ii)%transferFlag =   .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
                   sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
@@ -4411,12 +4411,12 @@ contains
                   !I will TRANSFORM ON THE FLY
                   sgg%observation(ii)%TimeDomain = .false.
                   sgg%observation(ii)%FreqDomain = .false.
-                  sgg%observation(ii)%TRANSFER = .false.
+                  sgg%observation(ii)%transferFlag = .false.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING  !el nothing debe predominar
 !
                   sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .TRUE.
-                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%transferFlag =   .false.
                   sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
                   sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
@@ -4424,7 +4424,7 @@ contains
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .false.
-                  sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(2*tamaScrPrb/3+ii)%transferFlag =   .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
                   sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
@@ -4434,12 +4434,12 @@ contains
                   !I will TRANSFORM ON THE FLY
                   sgg%observation(ii)%TimeDomain = .false.
                   sgg%observation(ii)%FreqDomain = .false.
-                  sgg%observation(ii)%TRANSFER = .false.
+                  sgg%observation(ii)%transferFlag = .false.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING   !el nothing predomina sobre los true anteriores
 !
                   sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .false.
-                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%transferFlag =   .false.
                   sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
                   sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
@@ -4447,7 +4447,7 @@ contains
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .true.
-                  sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .true.
+                  sgg%observation(2*tamaScrPrb/3+ii)%transferFlag =   .true.
                   sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
                   sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
@@ -4455,12 +4455,12 @@ contains
                 case (NP_T2_TIMEFREQ)
                   sgg%observation(ii)%TimeDomain = .true.
                   sgg%observation(ii)%FreqDomain = .false.
-                  sgg%observation(ii)%TRANSFER = .false.
+                  sgg%observation(ii)%transferFlag = .false.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=tipotemp   !el nothing predomina sobre los true anteriores
 !
                   sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .TRUE.
-                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%transferFlag =   .false.
                   sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
                   sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
@@ -4468,7 +4468,7 @@ contains
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .false.
-                  sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(2*tamaScrPrb/3+ii)%transferFlag =   .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
                   sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
@@ -4476,12 +4476,12 @@ contains
                 case (NP_T2_TIMETRANSF)
                   sgg%observation(ii)%TimeDomain = .true.
                   sgg%observation(ii)%FreqDomain = .false.
-                  sgg%observation(ii)%TRANSFER = .false.
+                  sgg%observation(ii)%transferFlag = .false.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=tipotemp   !el nothing predomina sobre los true anteriores
 !
                   sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .false.
-                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%transferFlag =   .false.
                   sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
                   sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
@@ -4489,7 +4489,7 @@ contains
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .true.
-                  sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .true.
+                  sgg%observation(2*tamaScrPrb/3+ii)%transferFlag =   .true.
                   sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
                   sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
@@ -4497,12 +4497,12 @@ contains
                 case (NP_T2_FREQTRANSF)
                   sgg%observation(ii)%TimeDomain = .false.
                   sgg%observation(ii)%FreqDomain = .false.
-                  sgg%observation(ii)%TRANSFER = .false.
+                  sgg%observation(ii)%transferFlag = .false.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING
 !
                   sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .TRUE.
-                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%transferFlag =   .false.
                   sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
                   sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
@@ -4510,7 +4510,7 @@ contains
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .true.
-                  sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .true.
+                  sgg%observation(2*tamaScrPrb/3+ii)%transferFlag =   .true.
                   sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
                   sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
@@ -4519,12 +4519,12 @@ contains
                 case (NP_T2_TIMEFRECTRANSF)
                   sgg%observation(ii)%TimeDomain = .true.
                   sgg%observation(ii)%FreqDomain = .false.
-                  sgg%observation(ii)%TRANSFER = .false.
+                  sgg%observation(ii)%transferFlag = .false.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=tipotemp
 !
                   sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .TRUE.
-                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%transferFlag =   .false.
                   sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
                   sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
@@ -4532,7 +4532,7 @@ contains
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .true.
-                  sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .true.
+                  sgg%observation(2*tamaScrPrb/3+ii)%transferFlag =   .true.
                   sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
                   sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
@@ -4747,7 +4747,7 @@ contains
       do ii = 1, tamaSonda
          !Read the time normalization file
          !
-         if (sgg%observation(ii)%TRANSFER) then
+         if (sgg%observation(ii)%transferFlag) then
             errnofile = .FALSE.
             inquire(file=trim(adjustl(sgg%observation(ii)%FileNormalize)), EXIST=errnofile)
             if (.NOT. errnofile) then
