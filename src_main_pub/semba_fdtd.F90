@@ -34,7 +34,7 @@ module SEMBA_FDTD_m
 
    use EpsMuTimeScale_m
 
-   use interpreta_switches_m
+   use interpret_switches_m
    use, intrinsic:: iso_fortran_env, only: stdin=>input_unit
 
    implicit none

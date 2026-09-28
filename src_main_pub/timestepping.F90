@@ -28,7 +28,7 @@ module Solver_m
    use nodalsources_m
    use Lumped_m
    use PMLbodies_m
-   use interpreta_switches_m, only: entrada_t
+   use interpret_switches_m, only: entrada_t
 #ifdef CompileWithMPI
    use MPIcomm_m
 #ifdef CompileWithOpenMP

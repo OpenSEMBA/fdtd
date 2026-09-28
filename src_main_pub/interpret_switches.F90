@@ -1,4 +1,4 @@
-module interpreta_switches_m
+module interpret_switches_m
 
    use FDETYPES_m
    use Getargs_m
@@ -1945,4 +1945,4 @@ contains
       return
    end subroutine default_flags
 
-end module interpreta_switches_m
+end module interpret_switches_m
