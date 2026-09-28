@@ -75,7 +75,7 @@ contains
         real(kind=RKIND_TIEMPO) :: time
         integer :: io, line_count, i
         
-        if (path == "" ) then 
+        if (path == "") then 
             allocate(this%time(0), this%value(0))
             ! error
         end if

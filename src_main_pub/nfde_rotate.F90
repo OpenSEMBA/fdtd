@@ -98,7 +98,7 @@ contains
       allocate(old_matriz,source=this%matriz)
 
       !X->Y->Z->X
-      if (MPIDIR==2 ) then
+      if (MPIDIR==2) then
          OXI=old_matriz%totalX
          OYI=old_matriz%totalY
          OZI=old_matriz%totalZ
@@ -147,7 +147,7 @@ contains
          this%despl%desY => poxi
          this%despl%desZ => poyi
       !X->Z->Y->X
-      else if (MPIDIR==1 ) then
+      else if (MPIDIR==1) then
          OXI=old_matriz%totalX
          OYI=old_matriz%totalY
          OZI=old_matriz%totalZ
@@ -223,7 +223,7 @@ contains
   
    subroutine rotate_generatePlaneWaves (this, mpidir)
       type(Parseador_t), intent(inout) :: this   
-      type(PlaneWaves_t),  pointer :: old_plnSrc => null ( )
+      type(PlaneWaves_t),  pointer :: old_plnSrc => null ()
       integer(kind=4) :: mpidir
       integer(kind=4) :: oxi,oyi,ozi,oxe,oye,oze
       real(kind=RK) :: theta,phi,alpha,beta     
@@ -240,7 +240,7 @@ contains
           alpha = old_plnSrc%collection(i)%alpha 
           beta  = old_plnSrc%collection(i)%beta 
 
-          if (MPIDIR==2 ) then
+          if (MPIDIR==2) then
              OXI=  old_plnSrc%collection(i)%coor1 (1)
              OXE=  old_plnSrc%collection(i)%coor2 (1)
              OYI=  old_plnSrc%collection(i)%coor1 (2)
@@ -260,7 +260,7 @@ contains
              this%plnSrc%collection(i)%alpha = atan2(Sqrt(Cos(alpha)**2.0_RKIND+ Cos(beta)**2*Sin(alpha)**2),Sin(beta)*Sin(alpha))
              this%plnSrc%collection(i)%beta =  atan2(Cos(beta)*Sin(alpha),Cos(alpha))
 
-          else if (MPIDIR==1 ) then
+          else if (MPIDIR==1) then
              OXI=  old_plnSrc%collection(i)%coor1 (1)
              OXE=  old_plnSrc%collection(i)%coor2 (1)
              OYI=  old_plnSrc%collection(i)%coor1 (2)
@@ -291,7 +291,7 @@ contains
    
    subroutine rotate_generateBoxSources (this, mpidir) 
       type(Parseador_t), intent(inout) :: this   
-      type(Boxes_t),  pointer :: old_boxSrc => null ( )
+      type(Boxes_t),  pointer :: old_boxSrc => null ()
       integer(kind=4) :: mpidir
       integer(kind=4) :: oxi,oyi,ozi,oxe,oye,oze
       integer(kind=4) :: tama,i
@@ -303,7 +303,7 @@ contains
       do i=1,tama
       
           !MPI  ROTATE BOX
-          if (MPIDIR==2 ) then
+          if (MPIDIR==2) then
              OXI=  old_boxSrc%vols(i)%coor1 (1)
              OXE=  old_boxSrc%vols(i)%coor2 (1)
              OYI=  old_boxSrc%vols(i)%coor1 (2)
@@ -317,7 +317,7 @@ contains
              this%boxSrc%vols(i)%coor2 (2) =OXE
              this%boxSrc%vols(i)%coor1 (3) =OYI
              this%boxSrc%vols(i)%coor2 (3) =OYE
-          else if (MPIDIR==1 ) then
+          else if (MPIDIR==1) then
              OXI=  old_boxSrc%vols(i)%coor1 (1)
              OXE=  old_boxSrc%vols(i)%coor2 (1)
              OYI=  old_boxSrc%vols(i)%coor1 (2)
@@ -345,7 +345,7 @@ contains
       type(FronteraPML_t) :: OPML_XL,OPML_XU,OPML_YL,OPML_YU,OPML_ZL,OPML_ZU
       
       !!! MPI ROTATE
-      if (MPIDIR==2 ) then
+      if (MPIDIR==2) then
          OXL=this%front%tipofrontera(1)
          OXU=this%front%tipofrontera(2)
          OYL=this%front%tipofrontera(3)
@@ -404,7 +404,7 @@ contains
          this%front%propiedadesPML(5)%numCapas = OPML_YL%numCapas
          this%front%propiedadesPML(6)%numCapas = OPML_YU%numCapas
 
-      else if (MPIDIR==1 ) then
+      else if (MPIDIR==1) then
          OXL=this%front%tipofrontera(1)
          OXU=this%front%tipofrontera(2)
          OYL=this%front%tipofrontera(3)
@@ -597,7 +597,7 @@ contains
          tama2 = this%twires%TW(i)%N_TWC
          do ii = 1, tama2
       !!!ROTATE THINWIRE
-             if (MPIDIR==2 ) then
+             if (MPIDIR==2) then
                    oldx = this%twires%tw(i)%tWc(ii)%i
                    oldy = this%twires%tw(i)%tWc(ii)%j
                    oldz = this%twires%tw(i)%tWc(ii)%K
@@ -613,7 +613,7 @@ contains
                     case (IEZ)
                       this%twires%tw(i)%tWc(ii)%d = iEx
                    end select
-            else if (MPIDIR==1 ) then
+            else if (MPIDIR==1) then
                       oldx = this%twires%tw(i)%tWc(ii)%i
                       oldy = this%twires%tw(i)%tWc(ii)%j
                       oldz = this%twires%tw(i)%tWc(ii)%K
@@ -650,7 +650,7 @@ contains
          tama2 = this%swires%sW(i)%N_SWC
          do ii=1,tama2
              !!!ROTATE THINWIRE
-             if (MPIDIR==2 ) then
+             if (MPIDIR==2) then
                       oldx = this%swires%sw(i)%swc(ii)%x
                       oldy = this%swires%sw(i)%swc(ii)%y
                       oldz = this%swires%sw(i)%swc(ii)%z
@@ -658,7 +658,7 @@ contains
                       this%swires%sw(i)%swc(ii)%x = oldz
                       this%swires%sw(i)%swc(ii)%y = oldx
                       this%swires%sw(i)%swc(ii)%z = oldy
-             else if (MPIDIR==1 ) then
+             else if (MPIDIR==1) then
                       oldx = this%swires%sw(i)%swc(ii)%x
                       oldy = this%swires%sw(i)%swc(ii)%y
                       oldz = this%swires%sw(i)%swc(ii)%z
@@ -688,7 +688,7 @@ contains
          tama2 = this%tSlots%Tg(i)%N_Tgc
          do ii = 1, tama2
               !!!ROTATE THIN SLOT
-              if (MPIDIR==2 ) then
+              if (MPIDIR==2) then
                        oldx = this%tSlots%Tg(i)%TgC(ii)%i
                        oldy = this%tSlots%Tg(i)%TgC(ii)%j
                        oldz = this%tSlots%Tg(i)%TgC(ii)%K
@@ -704,7 +704,7 @@ contains
                         case (IEZ)
                           this%tSlots%Tg(i)%TgC(ii)%dir = iEx
                        end select
-              else if (MPIDIR==1 ) then
+              else if (MPIDIR==1) then
                        oldx = this%tSlots%Tg(i)%TgC(ii)%i
                        oldy = this%tSlots%Tg(i)%TgC(ii)%j
                        oldz = this%tSlots%Tg(i)%TgC(ii)%K
@@ -801,12 +801,12 @@ contains
             phistart  =old_FarField%probe%phistart
             phistop   =old_FarField%probe%phistop
             !!!mpirotate angulos farfield .... las coordenadas se rotan luego
-            if (MPIDIR==2 ) then
+            if (MPIDIR==2) then
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart = atan2(Sqrt(Cos(thetastart)**2.0_RKIND+ Cos(phistart)**2*Sin(thetastart)**2),Sin(phistart)*Sin(thetastart))
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistart = atan2(Cos(phistart)*Sin(thetastart),Cos(thetastart))      
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastop = atan2(Sqrt(Cos(thetastop)**2.0_RKIND+ Cos(phistop)**2*Sin(thetastop)**2),Sin(phistop)*Sin(thetastop))
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistop   = atan2(Cos(phistop)*Sin(thetastop),Cos(thetastop))
-            else if (MPIDIR==1 ) then
+            else if (MPIDIR==1) then
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart = atan2(Sqrt(Cos(thetastart)**2.0_RKIND+ Sin(phistart)**2*Sin(thetastart)**2),Cos(phistart)*Sin(thetastart))
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistart   = atan2(Cos(thetastart),Sin(phistart)*Sin(thetastart))    
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastop = atan2(Sqrt(Cos(thetastop)**2.0_RKIND+ Sin(phistop)**2*Sin(thetastop)**2),Cos(phistop)*Sin(thetastop))
@@ -815,7 +815,7 @@ contains
             tama3 = (this%oldSONDA%probes(i)%FarField(ii)%probe%n_cord)    
             do iii = 1, tama3
               !!!ROTATE MPI
-              if (MPIDIR==2 ) then
+              if (MPIDIR==2) then
                   iox = this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii)
                   ioy = this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii)
                   ioz = this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii)
@@ -823,7 +823,7 @@ contains
                  this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii) = ioz
                  this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii) = iox
                  this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii) = ioy
-              else if (MPIDIR==1 ) then                    
+              else if (MPIDIR==1) then                    
                  iox = this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii)
                   ioy = this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii)
                   ioz = this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii)
@@ -844,7 +844,7 @@ contains
             tama3 = (this%oldSONDA%probes(i)%Electric(ii)%probe%n_cord)    
             do iii = 1, tama3
               !!!ROTATE MPI
-              if (MPIDIR==2 ) then
+              if (MPIDIR==2) then
                  iox = this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii)
                   ioy = this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii)
                   ioz = this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii)
@@ -852,7 +852,7 @@ contains
                  this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii) = ioz
                  this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii) = iox
                  this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii) = ioy
-              else if (MPIDIR==1 ) then                    
+              else if (MPIDIR==1) then                    
                  iox = this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii)
                   ioy = this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii)
                   ioz = this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii)
@@ -873,7 +873,7 @@ contains
             tama3 = (this%oldSONDA%probes(i)%Magnetic(ii)%probe%n_cord)    
             do iii = 1, tama3
               !!!ROTATE MPI
-              if (MPIDIR==2 ) then
+              if (MPIDIR==2) then
                  iox = this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii)
                   ioy = this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii)
                   ioz = this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii)
@@ -881,7 +881,7 @@ contains
                  this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii) = ioz
                  this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii) = iox
                  this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii) = ioy
-              else if (MPIDIR==1 ) then                    
+              else if (MPIDIR==1) then                    
                  iox = this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii)
                   ioy = this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii)
                   ioz = this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii)
@@ -924,7 +924,7 @@ contains
               if ((OOR/=NP_COR_EX).AND.(OOR/=NP_COR_EY).AND.(OOR/=NP_COR_EZ).AND. &
               (OOR/=NP_COR_HX).AND.(OOR/=NP_COR_HY).AND.(OOR/=NP_COR_HZ)) return
               !!LAS IW Y LAS VG NO SE ROTAN
-              if (MPIDIR==2 ) then
+              if (MPIDIR==2) then
                  this%Sonda%collection(i)%cordinates(ii)%XI=OZI   
                  this%Sonda%collection(i)%cordinates(ii)%XE=OZE
                  this%Sonda%collection(i)%cordinates(ii)%Xtrancos=TZI
@@ -944,7 +944,7 @@ contains
                  if (OOR== NP_COR_hX) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_HY
                  if (OOR== NP_COR_hY) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_HZ
                  if (OOR== NP_COR_hZ) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_HX
-              else if (MPIDIR==1 ) then
+              else if (MPIDIR==1) then
                  this%Sonda%collection(i)%cordinates(ii)%XI=OYI
                  this%Sonda%collection(i)%cordinates(ii)%XE=OYE 
                  this%Sonda%collection(i)%cordinates(ii)%Xtrancos= TYI
@@ -982,7 +982,7 @@ contains
       do i = 1, tama      
           allocate(old_BloqueProbe,source=this%BloquePRB%BP(i))
           !MPI  ROTATE Bloque CURRENT
-          if (MPIDIR==2 ) then
+          if (MPIDIR==2) then
              OXI=  old_BloqueProbe%i1
              OXE=  old_BloqueProbe%i2
              OYI=  old_BloqueProbe%j1
@@ -1005,7 +1005,7 @@ contains
                 this%BloquePRB%BP(i)%nml =  iEx
               case DEFAULT
              end select
-          else if (MPIDIR==1 ) then
+          else if (MPIDIR==1) then
              OXI=  old_BloqueProbe%i1
              OXE=  old_BloqueProbe%i2
              OYI=  old_BloqueProbe%j1
@@ -1079,7 +1079,7 @@ contains
                (OOR/=IMEC).AND.(OOR/=IMHC).AND.(OOR/=ICUR)) return
               !!LAS IW Y LAS VG NO SE ROTAN.
         !!las imec, imhc e icur no le afecta el oor
-              if (MPIDIR==2 ) then
+              if (MPIDIR==2) then
                  this%VolPrb%collection(i)%cordinates(ii)%XI=OZI
                  this%VolPrb%collection(i)%cordinates(ii)%XE=OZE
                  this%VolPrb%collection(i)%cordinates(ii)%YI=OXI
@@ -1102,7 +1102,7 @@ contains
                  if (OOR== ICURX)  this%VolPrb%collection(i)%cordinates(ii)%OR= ICURY
                  if (OOR== ICURY)  this%VolPrb%collection(i)%cordinates(ii)%OR= ICURZ
                  if (OOR== ICURZ)  this%VolPrb%collection(i)%cordinates(ii)%OR= ICURX
-              else if (MPIDIR==1 ) then
+              else if (MPIDIR==1) then
                  this%VolPrb%collection(i)%cordinates(ii)%XI=OYI
                  this%VolPrb%collection(i)%cordinates(ii)%XE=OYE
                  this%VolPrb%collection(i)%cordinates(ii)%YI=OZI
@@ -1152,7 +1152,7 @@ contains
       OZE=COORDEN%ZE  
       TZI=COORDEN%Ztrancos    
       OOR=COORDEN%OR    
-      if (MPIDIR==2 ) then
+      if (MPIDIR==2) then
          COORDEN%XI=OZI
          COORDEN%XE=OZE      
          COORDEN%Xtrancos =TZI    
@@ -1168,7 +1168,7 @@ contains
          if (OOR==-iEy) COORDEN%OR=-IEZ
          if (OOR== IEZ) COORDEN%OR= iEx
          if (OOR==-IEZ) COORDEN%OR=-iEx
-      else if (MPIDIR==1 ) then
+      else if (MPIDIR==1) then
          COORDEN%XI=OYI
          COORDEN%XE=OYE         
          COORDEN%Xtrancos =TYI    
@@ -1203,7 +1203,7 @@ contains
       OYC=COORDEN%YC  
       OZC=COORDEN%ZC
       OOr=COORDEN%or
-      if (MPIDIR==2 ) then
+      if (MPIDIR==2) then
          COORDEN%XI=OZI
          COORDEN%XE=OZE
          COORDEN%YI=OXI
@@ -1220,7 +1220,7 @@ contains
          if (OOR== IEZ) COORDEN%OR= iEx
          if (OOR==-IEZ) COORDEN%OR=-iEx
 
-      else if (MPIDIR==1 ) then
+      else if (MPIDIR==1) then
          COORDEN%XI=OYI
          COORDEN%XE=OYE
          COORDEN%YI=OZI

@@ -1124,10 +1124,10 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
     type(parsed_probe_t) :: probe_v_left, probe_v_right, probe_v_mid, probe_i_left, probe_i_right, probe_i_mid
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real(kind=rkind), dimension(2,2) :: lpul = reshape( source = [0.805756e-6_rkind, 0.538771e-6_rkind, 0.538771e-6_rkind, 1.07754e-6_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: gpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: rpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: cpul = reshape( source = [117.791e-12_rkind, -58.8956e-12_rkind, -58.8956e-12_rkind, 71.8544e-12_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: lpul = reshape(source = [0.805756e-6_rkind, 0.538771e-6_rkind, 0.538771e-6_rkind, 1.07754e-6_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: gpul = reshape(source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: rpul = reshape(source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: cpul = reshape(source = [117.791e-12_rkind, -58.8956e-12_rkind, -58.8956e-12_rkind, 71.8544e-12_rkind], shape = [2,2])
 
 
     character(20) :: charR, charL, charC, lineC
@@ -1300,10 +1300,10 @@ integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt
     type(parsed_probe_t) :: probe_v_101, probe_v_201
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real(kind=rkind), dimension(2,2) :: lpul = reshape( source = [0.7485e-6_rkind, 0.5077e-6_rkind, 0.5077e-6_rkind, 1.0154e-6_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: gpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: rpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: cpul = reshape( source = [37.432e-12_rkind, -18.716e-12_rkind, -18.716e-12_rkind, 24.982e-12_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: lpul = reshape(source = [0.7485e-6_rkind, 0.5077e-6_rkind, 0.5077e-6_rkind, 1.0154e-6_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: gpul = reshape(source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: rpul = reshape(source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: cpul = reshape(source = [37.432e-12_rkind, -18.716e-12_rkind, -18.716e-12_rkind, 24.982e-12_rkind], shape = [2,2])
 
     real :: final_time
 
@@ -1416,10 +1416,10 @@ integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)
     type(parsed_probe_t) :: probe_v_101, probe_v_201
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real(kind=rkind), dimension(2,2) :: lpul = reshape( source = [0.7485e-6_rkind, 0.5077e-6_rkind, 0.5077e-6_rkind, 1.0154e-6_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: gpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: rpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: cpul = reshape( source = [37.432e-12_rkind, -18.716e-12_rkind, -18.716e-12_rkind, 24.982e-12_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: lpul = reshape(source = [0.7485e-6_rkind, 0.5077e-6_rkind, 0.5077e-6_rkind, 1.0154e-6_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: gpul = reshape(source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: rpul = reshape(source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: cpul = reshape(source = [37.432e-12_rkind, -18.716e-12_rkind, -18.716e-12_rkind, 24.982e-12_rkind], shape = [2,2])
 
     real :: final_time
 

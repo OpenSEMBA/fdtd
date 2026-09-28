@@ -27,19 +27,19 @@ module Mdispersives_m
       integer(kind=4) :: WhatField
       real(kind=RKIND), pointer                 :: FieldPresent !apunta al campo del background
       real(kind=RKIND)                          :: FieldPrevious
-      complex(kind=CKIND), pointer, dimension( : ) :: Current
+      complex(kind=CKIND), pointer, dimension(:) :: Current
    end type
 
    type Mdispersive_t
       integer(kind=4) :: indexmed,numnodesHx,numnodesHy,numnodesHz,numpolres11
-      complex(kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,GM3
-      type(field_t), pointer, dimension( : ) :: NodesHx,NodesHy,NodesHz
+      complex(kind=CKIND), pointer, dimension(:) :: Beta,Kappa,GM3
+      type(field_t), pointer, dimension(:) :: NodesHx,NodesHy,NodesHz
    end type Mdispersive_t
 
 
    type  Mdispersive2_t
       integer(kind=4) :: NumMdispersives
-      type(Mdispersive_t), pointer, dimension( : ) :: Medium
+      type(Mdispersive_t), pointer, dimension(:) :: Medium
    end type
 
    !!!LOCAL VARIABLES

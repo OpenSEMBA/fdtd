@@ -295,7 +295,7 @@ contains
         integer :: res, i
         res = 0
         do i = 1, size(names)
-            if ( names(i)%name(1:names(i)%length) == trim(name)) then 
+            if (names(i)%name(1:names(i)%length) == trim(name)) then 
                 res = i
                 exit
             end if
@@ -308,10 +308,10 @@ contains
         integer :: res, i
         res = 0
         do i = 1, size(names)
-            if ( names(i)%name(1:names(i)%length) == 'V('//trim(name)//')') then 
+            if (names(i)%name(1:names(i)%length) == 'V('//trim(name)//')') then 
                 res = i
                 exit
-            else if ( names(i)%name(1:names(i)%length) == trim(name)) then 
+            else if (names(i)%name(1:names(i)%length) == trim(name)) then 
                 res = i
                 exit
             end if

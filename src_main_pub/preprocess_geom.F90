@@ -377,13 +377,13 @@ contains
             if (layoutnumber==0) call populatePlaneWaveRC(sgg%PlaneWave(i),simu_devia) !only the master populates
 #ifdef CompileWithMPI
             call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-            call MPI_AllReduce( sgg%PlaneWave(i)%px, dummy_px, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
-            call MPI_AllReduce( sgg%PlaneWave(i)%py, dummy_py, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
-            call MPI_AllReduce( sgg%PlaneWave(i)%pz, dummy_pz, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
-            call MPI_AllReduce( sgg%PlaneWave(i)%ex, dummy_ex, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
-            call MPI_AllReduce( sgg%PlaneWave(i)%ey, dummy_ey, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
-            call MPI_AllReduce( sgg%PlaneWave(i)%ez, dummy_ez, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
-            call MPI_AllReduce( sgg%PlaneWave(i)%INCERT, dummy_INCERT, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
+            call MPI_AllReduce(sgg%PlaneWave(i)%px, dummy_px, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
+            call MPI_AllReduce(sgg%PlaneWave(i)%py, dummy_py, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
+            call MPI_AllReduce(sgg%PlaneWave(i)%pz, dummy_pz, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
+            call MPI_AllReduce(sgg%PlaneWave(i)%ex, dummy_ex, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
+            call MPI_AllReduce(sgg%PlaneWave(i)%ey, dummy_ey, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
+            call MPI_AllReduce(sgg%PlaneWave(i)%ez, dummy_ez, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
+            call MPI_AllReduce(sgg%PlaneWave(i)%INCERT, dummy_INCERT, sgg%PlaneWave(i)%numModes, REALSIZE, MPI_SUM, MPI_COMM_WORLD, ierr)
             call MPI_BARRIER(MPI_COMM_WORLD,ierr)
             sgg%PlaneWave(i)%px=dummy_px
             sgg%PlaneWave(i)%py=dummy_py
@@ -521,7 +521,7 @@ contains
                if ((o == 3).and.(p == 2)) del=sgg%dz(SINPML_fullsize(IHZ)%ZE-1)
                if (sgg%PML%NumLayers(o,p) /= 0) then
                   if ((sgg%PML%NumLayers(o,p) == 10).or.(sgg%PML%NumLayers(o,p) == 5)) then
-                     sig_max = max( sig_max , 0.8*(sgg%PML%orden(o,p)+1)/(zvac*del))
+                     sig_max = max(sig_max , 0.8*(sgg%PML%orden(o,p)+1)/(zvac*del))
                   else
                      if (sgg%PML%CoeffReflPML(o,p)==1.0_RKIND) then
                         !realmente en el borderscpml
@@ -530,7 +530,7 @@ contains
                         !trampa para que entonces tome la conductividad autentica que se especifique y poder anular las PML y solo dejar capa fisica !!?!?
                         sig_max = 1.0_RKIND
                      else
-                        sig_max = max(sig_max,-((log( sgg%PML%CoeffReflPML(o,p) )*(sgg%PML%orden(o,p)+1))/ &
+                        sig_max = max(sig_max,-((log(sgg%PML%CoeffReflPML(o,p))*(sgg%PML%orden(o,p)+1))/ &
                            (2.0_RKIND *sqrt(Mu0/eps0)*sgg%PML%NumLayers(o,p)*del)))
                      end if
                   end if
@@ -567,7 +567,7 @@ contains
             punto%YE = this%pecregs%vols(i)%YE
             punto%ZI = this%pecregs%vols(i)%ZI
             punto%ZE = this%pecregs%vols(i)%ZE
-            numertag = searchtag(tagtype,this%pecregs%vols(i)%tag )
+            numertag = searchtag(tagtype,this%pecregs%vols(i)%tag)
             call CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
             & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
@@ -1242,7 +1242,7 @@ contains
          end if
 
 
-         if (abs(this%LossyThinSurfs%cs(j)%SigmaM(1)) <= 1.0e-2_RKIND ) then  !!!ojoooo a 210319 manda guevos que tengamos que estar con el flag de la conductidad magnetica para llamar a SGBC todavia en 2015!!!
+         if (abs(this%LossyThinSurfs%cs(j)%SigmaM(1)) <= 1.0e-2_RKIND) then  !!!ojoooo a 210319 manda guevos que tengamos que estar con el flag de la conductidad magnetica para llamar a SGBC todavia en 2015!!!
             this%LossyThinSurfs%cs(j)%SigmaM = 0.0_RKIND
             if (.not.mibc) then
                !if (this%LossyThinSurfs%cs(j)%numcapas >1) then
@@ -1279,7 +1279,7 @@ contains
                   end if
                end do doexis
 
-               if ( .NOT. existia) then
+               if (.NOT. existia) then
                   maxcontamedia = maxcontamedia + 1
                   contamedia = maxcontamedia
                  allocate(sgg%Med(contamedia)%multiport(1))
@@ -1353,14 +1353,14 @@ contains
                      sgg%Med(contamedia)%Multiport(1)%epr         (j_) =  this%LossyThinSurfs%cs(j)%eps               (i_)    / Eps0
                      sgg%Med(contamedia)%Multiport(1)%mur         (j_) =  this%LossyThinSurfs%cs(j)%mu                (i_)    / mu0
                      sgg%Med(contamedia)%Multiport(1)%sigma       (j_) =  this%LossyThinSurfs%cs(j)%Sigma             (i_)
-                     sgg%Med(contamedia)%Multiport(1)%sigmam      (j_) =  abs(this%LossyThinSurfs%cs(j)%Sigmam        (i_)    )
+                     sgg%Med(contamedia)%Multiport(1)%sigmam      (j_) =  abs(this%LossyThinSurfs%cs(j)%Sigmam        (i_))
                      sgg%Med(contamedia)%Multiport(1)%width       (j_) =  this%LossyThinSurfs%cs(j)%thk               (i_)
 
                      !_for_devia 090519
                      sgg%Med(contamedia)%Multiport(1)%epr_devia   (j_) =  this%LossyThinSurfs%cs(j)%eps_devia         (i_)    / Eps0
                      sgg%Med(contamedia)%Multiport(1)%mur_devia   (j_) =  this%LossyThinSurfs%cs(j)%MU_devia          (i_)    / mu0
                      sgg%Med(contamedia)%Multiport(1)%sigma_devia (j_) =  this%LossyThinSurfs%cs(j)%Sigma_devia       (i_)
-                     sgg%Med(contamedia)%Multiport(1)%sigmaM_devia(j_) =  abs(this%LossyThinSurfs%cs(j)%SigmaM_devia  (i_)    )
+                     sgg%Med(contamedia)%Multiport(1)%sigmaM_devia(j_) =  abs(this%LossyThinSurfs%cs(j)%SigmaM_devia  (i_))
                      sgg%Med(contamedia)%Multiport(1)%width_devia (j_) =  this%LossyThinSurfs%cs(j)%thk_devia         (i_)
                   end do
 
@@ -1481,7 +1481,7 @@ contains
                      end if
                   end if
                end do doexis2
-               if ( .NOT. existia) then
+               if (.NOT. existia) then
                   maxcontamedia = maxcontamedia + 1
                   contamedia = maxcontamedia
                  allocate(sgg%Med(contamedia)%AnisMultiport(1))
@@ -2013,7 +2013,7 @@ contains
                end if
                select case (orientacion)
                 case (iEx)
-                  if ((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%PEC)) then
+                  if ((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k))%is%PEC)) then
                      paraerrhilo=.true.
                      write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   x-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
                      if (verbose) call WarnErrReport (buff)
@@ -2030,11 +2030,11 @@ contains
                      end if
                      if (verbose) call WarnErrReport (buff)
                   end if
-                  if ((((media%sggMiEy(i  ,j,k) ==0).or.(sgg%med(media%sggMiEy(i  ,j,k) )%is%PEC)).or. &
-                     ((media%sggMiEz(i  ,j,k) ==0).or.(sgg%med(media%sggMiEz(i  ,j,k) )%is%PEC)).or. &
-                     ((media%sggMiEy(i  ,jmenos1,k) ==0).or.(sgg%med(media%sggMiEy(i  ,jmenos1,k) )%is%PEC)).or. &
-                     ((media%sggMiEz(i  ,j,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i  ,j,kmenos1) )%is%PEC))).and. &
-                  &     ((media%sggMiEx(i  ,j,k) /=0).and.(.not.(sgg%med(media%sggMiEx(i  ,j,k) )%is%PEC)))) then
+                  if ((((media%sggMiEy(i  ,j,k) ==0).or.(sgg%med(media%sggMiEy(i  ,j,k))%is%PEC)).or. &
+                     ((media%sggMiEz(i  ,j,k) ==0).or.(sgg%med(media%sggMiEz(i  ,j,k))%is%PEC)).or. &
+                     ((media%sggMiEy(i  ,jmenos1,k) ==0).or.(sgg%med(media%sggMiEy(i  ,jmenos1,k))%is%PEC)).or. &
+                     ((media%sggMiEz(i  ,j,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i  ,j,kmenos1))%is%PEC))).and. &
+                  &     ((media%sggMiEx(i  ,j,k) /=0).and.(.not.(sgg%med(media%sggMiEx(i  ,j,k))%is%PEC)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
                         write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of x-WIRE at  ',OrigIndex, i, j, k, &
@@ -2045,11 +2045,11 @@ contains
                         !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
                      end if
-                  else if ((((media%sggMiEy(i+1,j,k) ==0).or.(sgg%med(media%sggMiEy(i+1,j,k) )%is%PEC)).or.&
-                     ((media%sggMiEz(i+1,j,k) ==0).or.(sgg%med(media%sggMiEz(i+1,j,k) )%is%PEC)).or. &
-                     ((media%sggMiEy(i+1,jmenos1,k) ==0).or.(sgg%med(media%sggMiEy(i+1,jmenos1,k) )%is%PEC)).or. &
-                     ((media%sggMiEz(i+1,j,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i+1,j,kmenos1) )%is%PEC))).and. &
-                  &         ((media%sggMiEx(i  ,j,k) /=0).and.(.not.(sgg%med(media%sggMiEx(i  ,j,k) )%is%PEC)))) then
+                  else if ((((media%sggMiEy(i+1,j,k) ==0).or.(sgg%med(media%sggMiEy(i+1,j,k))%is%PEC)).or.&
+                     ((media%sggMiEz(i+1,j,k) ==0).or.(sgg%med(media%sggMiEz(i+1,j,k))%is%PEC)).or. &
+                     ((media%sggMiEy(i+1,jmenos1,k) ==0).or.(sgg%med(media%sggMiEy(i+1,jmenos1,k))%is%PEC)).or. &
+                     ((media%sggMiEz(i+1,j,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i+1,j,kmenos1))%is%PEC))).and. &
+                  &         ((media%sggMiEx(i  ,j,k) /=0).and.(.not.(sgg%med(media%sggMiEx(i  ,j,k))%is%PEC)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
                         write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of x-WIRE at  ',OrigIndex, i+1, j, k, &
@@ -2082,7 +2082,7 @@ contains
                      if (verbose) call WarnErrReport (buff)
                   end if
                 case (iEy)
-                  if ((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%PEC)) then
+                  if ((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k))%is%PEC)) then
                      paraerrhilo=.true.
                      write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   y-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
                      if (verbose) call WarnErrReport (buff)
@@ -2098,11 +2098,11 @@ contains
                      end if
                      if (verbose) call WarnErrReport (buff)
                   end if
-                  if ((((media%sggMiEx(i,j  ,k) ==0).or.(sgg%med(media%sggMiEx(i,j  ,k) )%is%PEC)).or. &
-                     ((media%sggMiEz(i,j,k  ) ==0).or.(sgg%med(media%sggMiEz(i,j,k  ) )%is%PEC)).or. &
-                     ((media%sggMiEx(imenos1,j  ,k) ==0).or.(sgg%med(media%sggMiEx(imenos1,j  ,k) )%is%PEC)).or. &
-                     ((media%sggMiEz(i,j,kmenos1  ) ==0).or.(sgg%med(media%sggMiEz(i,j,kmenos1  ) )%is%PEC))).and. &
-                  &     ((media%sggMiEy(i,j  ,k) /=0).and.(.not.(sgg%med(media%sggMiEy(i,j  ,k) )%is%PEC)))) then
+                  if ((((media%sggMiEx(i,j  ,k) ==0).or.(sgg%med(media%sggMiEx(i,j  ,k))%is%PEC)).or. &
+                     ((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)).or. &
+                     ((media%sggMiEx(imenos1,j  ,k) ==0).or.(sgg%med(media%sggMiEx(imenos1,j  ,k))%is%PEC)).or. &
+                     ((media%sggMiEz(i,j,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i,j,kmenos1))%is%PEC))).and. &
+                  &     ((media%sggMiEy(i,j  ,k) /=0).and.(.not.(sgg%med(media%sggMiEy(i,j  ,k))%is%PEC)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
                         write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of y-WIRE at ',OrigIndex, i, j, k, &
@@ -2113,11 +2113,11 @@ contains
                         !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
                      end if
-                  else if ((((media%sggMiEx(i,j+1,k) ==0).or.(sgg%med(media%sggMiEx(i,j+1,k) )%is%PEC)).or. &
-                     ((media%sggMiEz(i,j+1,k) ==0).or.(sgg%med(media%sggMiEz(i,j+1,k) )%is%PEC)).or. &
-                     ((media%sggMiEx(imenos1,j+1,k) ==0).or.(sgg%med(media%sggMiEx(imenos1,j+1,k) )%is%PEC)).or. &
-                     ((media%sggMiEz(i,j+1,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i,j+1,kmenos1) )%is%PEC))).and. &
-                  &         ((media%sggMiEy(i,j  ,k) /=0).and.(.not.(sgg%med(media%sggMiEy(i,j  ,k) )%is%PEC)))) then
+                  else if ((((media%sggMiEx(i,j+1,k) ==0).or.(sgg%med(media%sggMiEx(i,j+1,k))%is%PEC)).or. &
+                     ((media%sggMiEz(i,j+1,k) ==0).or.(sgg%med(media%sggMiEz(i,j+1,k))%is%PEC)).or. &
+                     ((media%sggMiEx(imenos1,j+1,k) ==0).or.(sgg%med(media%sggMiEx(imenos1,j+1,k))%is%PEC)).or. &
+                     ((media%sggMiEz(i,j+1,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i,j+1,kmenos1))%is%PEC))).and. &
+                  &         ((media%sggMiEy(i,j  ,k) /=0).and.(.not.(sgg%med(media%sggMiEy(i,j  ,k))%is%PEC)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
                         write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of y-WIRE at ',OrigIndex, i, j+1, k, &
@@ -2150,7 +2150,7 @@ contains
                      if (verbose) call WarnErrReport (buff)
                   end if
                 case (IEZ)
-                  if ((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%PEC)) then
+                  if ((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)) then
                      paraerrhilo=.true.
                      write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   z-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
                      if (verbose) call WarnErrReport (buff)
@@ -2167,11 +2167,11 @@ contains
                      end if
                      if (verbose) call WarnErrReport (buff)
                   end if
-                  if ((((media%sggMiEx(i,j,k  ) ==0).or.(sgg%med(media%sggMiEx(i,j,k  ) )%is%PEC)).or. &
-                     ((media%sggMiEy(i,j,k  ) ==0).or.(sgg%med(media%sggMiEy(i,j,k  ) )%is%PEC)).or. &
-                     ((media%sggMiEx(imenos1,j,k  ) ==0).or.(sgg%med(media%sggMiEx(imenos1,j,k  ) )%is%PEC)).or. &
-                     ((media%sggMiEy(i,jmenos1,k  ) ==0).or.(sgg%med(media%sggMiEy(i,jmenos1,k  ) )%is%PEC))).and. &
-                  &     ((media%sggMiEz(i,j,k  ) /=0).and.(.not.(sgg%med(media%sggMiEz(i,j,k  ) )%is%PEC)))) then
+                  if ((((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k))%is%PEC)).or. &
+                     ((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k))%is%PEC)).or. &
+                     ((media%sggMiEx(imenos1,j,k) ==0).or.(sgg%med(media%sggMiEx(imenos1,j,k))%is%PEC)).or. &
+                     ((media%sggMiEy(i,jmenos1,k) ==0).or.(sgg%med(media%sggMiEy(i,jmenos1,k))%is%PEC))).and. &
+                  &     ((media%sggMiEz(i,j,k) /=0).and.(.not.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
                         write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of z-WIRE at ',OrigIndex, i, j, k, &
@@ -2182,11 +2182,11 @@ contains
                         !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
                      end if
-                  else if ((((media%sggMiEx(i,j  ,k+1) ==0).or.(sgg%med(media%sggMiEx(i,j  ,k+1) )%is%PEC)).or. &
-                     ((media%sggMiEy(i,j  ,k+1) ==0).or.(sgg%med(media%sggMiEy(i,j  ,k+1) )%is%PEC)).or.   &
-                  &         ((media%sggMiEx(imenos1,j,k+1) ==0).or.(sgg%med(media%sggMiEx(imenos1,j,k+1) )%is%PEC)).or. &
-                     ((media%sggMiEy(i,jmenos1,k+1) ==0).or.(sgg%med(media%sggMiEy(i,jmenos1,k+1) )%is%PEC))).and. &
-                  &         (((media%sggMiEz(i,j,k  ) /=0).and.(.not.(sgg%med(media%sggMiEz(i,j,k  ) )%is%PEC))).or.(.not.(sgg%med(media%sggMiEz(i,j,k  ) )%is%PEC)))) then
+                  else if ((((media%sggMiEx(i,j  ,k+1) ==0).or.(sgg%med(media%sggMiEx(i,j  ,k+1))%is%PEC)).or. &
+                     ((media%sggMiEy(i,j  ,k+1) ==0).or.(sgg%med(media%sggMiEy(i,j  ,k+1))%is%PEC)).or.   &
+                  &         ((media%sggMiEx(imenos1,j,k+1) ==0).or.(sgg%med(media%sggMiEx(imenos1,j,k+1))%is%PEC)).or. &
+                     ((media%sggMiEy(i,jmenos1,k+1) ==0).or.(sgg%med(media%sggMiEy(i,jmenos1,k+1))%is%PEC))).and. &
+                  &         (((media%sggMiEz(i,j,k) /=0).and.(.not.(sgg%med(media%sggMiEz(i,j,k))%is%PEC))).or.(.not.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
                         write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of z-WIRE at ',OrigIndex, i, j, k+1, &
@@ -2197,23 +2197,23 @@ contains
                         !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k+1,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
                      end if
-                  else if (((media%sggMiEx(i,j,k  ) /= 1)).and. &
-                  &         (media%sggMiEz(i,j,k  ) == 1)) then
+                  else if (((media%sggMiEx(i,j,k) /= 1)).and. &
+                  &         (media%sggMiEz(i,j,k) == 1)) then
                      write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEx(i,j,k)
                      if (verbose) call WarnErrReport (buff)
-                  else if (((media%sggMiEy(i,j,k  ) /= 1)).and. &
-                  &         (media%sggMiEz(i,j,k  ) == 1)) then
+                  else if (((media%sggMiEy(i,j,k) /= 1)).and. &
+                  &         (media%sggMiEz(i,j,k) == 1)) then
                      write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEy(i,j,k)
                      if (verbose) call WarnErrReport (buff)
                   else if (((media%sggMiEy(i,j,k+1) /= 1)).and. &
-                  &         (media%sggMiEz(i,j,k  ) == 1)) then
+                  &         (media%sggMiEz(i,j,k) == 1)) then
                      write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEy(i,j,k+1)
                      if (verbose) call WarnErrReport (buff)
                   else if (((media%sggMiEx(i,j,k+1) /= 1)).and. &
-                  &         (media%sggMiEz(i,j,k  ) == 1)) then
+                  &         (media%sggMiEz(i,j,k) == 1)) then
                      write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEx(i,j,k+1)
                      if (verbose) call WarnErrReport (buff)
@@ -2487,12 +2487,12 @@ contains
 
             !!!2019 para informacion bbox hilos
             !!!!!!2020 retocado
-            if ( int(this%swires%SW(j)%swc(i)%x)    < bboxwirxi) bboxwirXI=int(this%swires%SW(j)%swc(i)%x)
-            if ( int(this%swires%SW(j)%swc(i)%x)+1  > bboxwirxE) bboxwirXE=int(this%swires%SW(j)%swc(i)%x)+1
-            if ( int(this%swires%SW(j)%swc(i)%y)    < bboxwirYi) bboxwirYI=int(this%swires%SW(j)%swc(i)%y)
-            if ( int(this%swires%SW(j)%swc(i)%y)+1  > bboxwirYE) bboxwirYE=int(this%swires%SW(j)%swc(i)%y)+1
-            if ( int(this%swires%SW(j)%swc(i)%z)    < bboxwirZi) bboxwirZI=int(this%swires%SW(j)%swc(i)%z)
-            if ( int(this%swires%SW(j)%swc(i)%z)+1  > bboxwirZE) bboxwirZE=int(this%swires%SW(j)%swc(i)%z)+1
+            if (int(this%swires%SW(j)%swc(i)%x)    < bboxwirxi) bboxwirXI=int(this%swires%SW(j)%swc(i)%x)
+            if (int(this%swires%SW(j)%swc(i)%x)+1  > bboxwirxE) bboxwirXE=int(this%swires%SW(j)%swc(i)%x)+1
+            if (int(this%swires%SW(j)%swc(i)%y)    < bboxwirYi) bboxwirYI=int(this%swires%SW(j)%swc(i)%y)
+            if (int(this%swires%SW(j)%swc(i)%y)+1  > bboxwirYE) bboxwirYE=int(this%swires%SW(j)%swc(i)%y)+1
+            if (int(this%swires%SW(j)%swc(i)%z)    < bboxwirZi) bboxwirZI=int(this%swires%SW(j)%swc(i)%z)
+            if (int(this%swires%SW(j)%swc(i)%z)+1  > bboxwirZE) bboxwirZE=int(this%swires%SW(j)%swc(i)%z)+1
             !!!!!!
 
 
@@ -2533,8 +2533,8 @@ contains
       end do
 
       contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
-      if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
-      if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+      if (findloc(edge_ratios, 0.0,1) /= 0) contamedia = contamedia - 1
+      if (findloc(face_ratios, 0.0,1) /= 0) contamedia = contamedia - 1
 
 #ifdef CompileWithMTLN
       block
@@ -2580,12 +2580,12 @@ contains
 
 #ifdef CompileWithMPI
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      call MPI_AllReduce( bboxwirXI, dummy_bboxwirXI, 1_4, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
-      call MPI_AllReduce( bboxwirYI, dummy_bboxwirYI, 1_4, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
-      call MPI_AllReduce( bboxwirZI, dummy_bboxwirzI, 1_4, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
-      call MPI_AllReduce( bboxwirXE, dummy_bboxwirXE, 1_4, MPI_INTEGER, MPI_MAX, MPI_COMM_WORLD, ierr)
-      call MPI_AllReduce( bboxwirYE, dummy_bboxwirYE, 1_4, MPI_INTEGER, MPI_MAX, MPI_COMM_WORLD, ierr)
-      call MPI_AllReduce( bboxwirZE, dummy_bboxwirZE, 1_4, MPI_INTEGER, MPI_MAX, MPI_COMM_WORLD, ierr)
+      call MPI_AllReduce(bboxwirXI, dummy_bboxwirXI, 1_4, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
+      call MPI_AllReduce(bboxwirYI, dummy_bboxwirYI, 1_4, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
+      call MPI_AllReduce(bboxwirZI, dummy_bboxwirzI, 1_4, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
+      call MPI_AllReduce(bboxwirXE, dummy_bboxwirXE, 1_4, MPI_INTEGER, MPI_MAX, MPI_COMM_WORLD, ierr)
+      call MPI_AllReduce(bboxwirYE, dummy_bboxwirYE, 1_4, MPI_INTEGER, MPI_MAX, MPI_COMM_WORLD, ierr)
+      call MPI_AllReduce(bboxwirZE, dummy_bboxwirZE, 1_4, MPI_INTEGER, MPI_MAX, MPI_COMM_WORLD, ierr)
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
       bboxwirXI=dummy_bboxwirXI
       bboxwirYI=dummy_bboxwirYI
@@ -2626,37 +2626,37 @@ contains
                &    (k1 >= BoundingBox%ZI) .AND. (k1 < BoundingBox%ZE)) then
                   !encuentra la orientacion del plano PEC que contiene al Slot
                   oriX = (direccion == iEy)  .AND.   &
-                  &       (((media%sggMiHx(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHx(i1, j1, k1) )%is%PEC)) .OR. &
+                  &       (((media%sggMiHx(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHx(i1, j1, k1))%is%PEC)) .OR. &
                   &       (sgg%Med(media%sggMiHx(i1, j1, k1))%Is%ThinSlot))          !&
                   !& .AND. (((sggmiHz(i1, j1, k1) /=0).and.(.not.(sgg%med(sggmiHz(i1, j1, k1) )%is%pec))) .AND.                   &
                   !&       ( .NOT. sgg%Med(sggmiHz(i1, j1,k1))%Is%ThinSlot))
 
                   oriX4 =(direccion == IEZ) .AND.    &
-                  &       (((               media%sggMiHx(i1, j1, k1) ==0).or.(sgg%med(               media%sggMiHx(i1, j1, k1) )%is%PEC)) .OR.       &
+                  &       (((               media%sggMiHx(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHx(i1, j1, k1))%is%PEC)) .OR.       &
                   &        (       sgg%Med(media%sggMiHx(i1, j1, k1))%Is%ThinSlot))   !&
                   !& .AND. (((               sggmiHy(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHy(i1, j1, k1) )%is%pec))) .AND.      &
                   !&       ( .NOT.  sgg%Med(sggmiHy(i1, j1, k1))%Is%ThinSlot))
 
                   oriY = (direccion == iEx) .AND.   &
-                  &       (((               media%sggMiHy(i1, j1, k1) ==0).or.(sgg%med(               media%sggMiHy(i1, j1, k1) )%is%PEC)) .OR.       &
+                  &       (((               media%sggMiHy(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHy(i1, j1, k1))%is%PEC)) .OR.       &
                   &        (       sgg%Med(media%sggMiHy(i1, j1, k1))%Is%ThinSlot))   !&
                   !& .AND. (((               sggmiHz(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHz(i1, j1, k1) )%is%pec))) .AND.      &
                   !&        ( .NOT. sgg%Med(sggmiHz(i1, j1, k1))%Is%ThinSlot))
 
                   oriY4 =(direccion == IEZ) .AND.   &
-                  &       (((              media%sggMiHy(i1, j1, k1) ==0).or.(sgg%med(              media%sggMiHy(i1, j1, k1) )%is%PEC)) .OR.        &
+                  &       (((              media%sggMiHy(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHy(i1, j1, k1))%is%PEC)) .OR.        &
                   &        (      sgg%Med(media%sggMiHy(i1, j1, k1))%Is%ThinSlot))    !&
                   !&  .AND.(((               sggmiHx(i1, j1, k1) /=0).and.(.not.(sgg%med(              sggmiHx(i1, j1, k1) )%is%pec))) .AND.       &
                   !&       ( .NOT. sgg%Med(sggmiHx(i1, j1, k1))%Is%ThinSlot))
 
                   oriZ = (direccion == iEx) .AND.  &
-                  &       (((               media%sggMiHz(i1, j1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1, j1, k1) )%is%PEC)) .OR.        &
+                  &       (((               media%sggMiHz(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHz(i1, j1, k1))%is%PEC)) .OR.        &
                   &        (       sgg%Med(media%sggMiHz(i1, j1, k1))%Is%ThinSlot))    !&
                   !&       (((               sggmiHy(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHy(i1, j1, k1) )%is%pec))) .AND.       &
                   !&        (.NOT.  sgg%Med(sggmiHy(i1, j1, k1))%Is%ThinSlot))
 
                   oriZ4 = (direccion == iEy) .AND.   &
-                  &        (((               media%sggMiHz(i1, j1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1, j1, k1) )%is%PEC)) .OR.       &
+                  &        (((               media%sggMiHz(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHz(i1, j1, k1))%is%PEC)) .OR.       &
                   &         (       sgg%Med(media%sggMiHz(i1, j1, k1))%Is%ThinSlot))   !&
                   !& .AND.  (((              sggmiHx(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHx(i1, j1, k1) )%is%pec))) .AND.      &
                   !&         ( .NOT. sgg%Med(sggmiHx(i1, j1, k1))%Is%ThinSlot))
@@ -2666,12 +2666,12 @@ contains
                   !so k1-1/j1-1/i1-1 could still be evaluated out-of-bounds otherwise (bug fix 2026)
                   if (k1 > BoundingBox%ZI) then
                      oriX2 = (direccion == iEy) .AND.   &
-                     &        (((               media%sggMiHx(i1, j1, k1-1) ==0).or.(sgg%med(               media%sggMiHx(i1, j1, k1-1) )%is%PEC)) .OR.     &
+                     &        (((               media%sggMiHx(i1, j1, k1-1) ==0).or.(sgg%med(media%sggMiHx(i1, j1, k1-1))%is%PEC)) .OR.     &
                      &         (       sgg%Med(media%sggMiHx(i1, j1, k1-1))%Is%ThinSlot))
 
                      oriY2 = (direccion == iEx) .AND.   &
-                     &        (((               media%sggMiHy(i1, j1, k1-1) ==0).or.(sgg%med(               media%sggMiHy(i1, j1, k1-1) )%is%PEC)) .OR.      &
-                     &         (sgg%Med(       media%sggMiHy(i1, j1, k1-1))%Is%ThinSlot))
+                     &        (((               media%sggMiHy(i1, j1, k1-1) ==0).or.(sgg%med(media%sggMiHy(i1, j1, k1-1))%is%PEC)) .OR.      &
+                     &         (sgg%Med(media%sggMiHy(i1, j1, k1-1))%Is%ThinSlot))
                   else
                      oriX2 = .FALSE.
                      oriY2 = .FALSE.
@@ -2679,11 +2679,11 @@ contains
 
                   if (j1 > BoundingBox%YI) then
                      oriX3 = (direccion == IEZ) .AND.   &
-                     &        (((                media%sggMiHx(i1, j1-1, k1) ==0).or.(sgg%med(                media%sggMiHx(i1, j1-1, k1) )%is%PEC)) .OR.     &
+                     &        (((                media%sggMiHx(i1, j1-1, k1) ==0).or.(sgg%med(media%sggMiHx(i1, j1-1, k1))%is%PEC)) .OR.     &
                      &         (        sgg%Med(media%sggMiHx(i1, j1-1, k1))%Is%ThinSlot))
 
                      oriZ2 = (direccion == iEx)  .AND.   &
-                     &        (((               media%sggMiHz(i1, j1-1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1, j1-1, k1) )%is%PEC)) .OR.      &
+                     &        (((               media%sggMiHz(i1, j1-1, k1) ==0).or.(sgg%med(media%sggMiHz(i1, j1-1, k1))%is%PEC)) .OR.      &
                      &         (       sgg%Med(media%sggMiHz(i1, j1-1, k1))%Is%ThinSlot))
                   else
                      oriX3 = .FALSE.
@@ -2692,11 +2692,11 @@ contains
 
                   if (i1 > BoundingBox%XI) then
                      oriY3 = (direccion == IEZ) .AND.   &
-                     &        (((               media%sggMiHy(i1-1, j1, k1) ==0).or.(sgg%med(               media%sggMiHy(i1-1, j1, k1) )%is%PEC)) .OR.      &
+                     &        (((               media%sggMiHy(i1-1, j1, k1) ==0).or.(sgg%med(media%sggMiHy(i1-1, j1, k1))%is%PEC)) .OR.      &
                      &         (       sgg%Med(media%sggMiHy(i1-1, j1, k1))%Is%ThinSlot))
 
                      oriZ3 = (direccion == iEy) .AND.   &
-                     &        (((               media%sggMiHz(i1-1, j1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1-1, j1, k1) )%is%PEC)) .OR.      &
+                     &        (((               media%sggMiHz(i1-1, j1, k1) ==0).or.(sgg%med(media%sggMiHz(i1-1, j1, k1))%is%PEC)) .OR.      &
                      &         (       sgg%Med(media%sggMiHz(i1-1, j1, k1))%Is%ThinSlot))
                   else
                      oriY3 = .FALSE.
@@ -2968,7 +2968,7 @@ contains
             if ((punto_s%zc /= 0).and.(this%nodsrc%NodalSource(i)%isElec))  then !only in case of Ez
                punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE-1))
             else
-               punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE  ))
+               punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE))
             end if
             !
             !
@@ -2989,7 +2989,7 @@ contains
                            VALIDO = VALIDO .AND. ( .NOT. sgg%Med(MEDIO)%Is%PEC)
                         end if
                         write (buff,*) 'WARNING: Ex Nodal source on PEC media will be ignored (', i1, j1, k1,')'
-                        if ( .NOT. VALIDO) call  WarnErrReport (buff)
+                        if (.NOT. VALIDO) call  WarnErrReport (buff)
                         !
                         ! COMENTADO 250816 PQ DA UN ERROR JUISTO CUANDO CAE LA FUENTE EN UN CORTE MPI. HABRIA QU TOCA LA CASUISTICA DE punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE  )) PERO NO LO HE QUERIDO HACER
                         !!!MEDIO = sggmiHx (i1, j1, k1)
@@ -3021,7 +3021,7 @@ contains
                            VALIDO = VALIDO .AND. ( .NOT. sgg%Med(MEDIO)%Is%PEC)
                         end if
                         write (buff,*) 'WARNING: Ey Nodal source on PMC media will be ignored (', i1, j1, k1,')'
-                        if ( .NOT. VALIDO) call  WarnErrReport (buff)
+                        if (.NOT. VALIDO) call  WarnErrReport (buff)
                         !
                         !
                         !!!MEDIO = sggmiHy (i1, j1, k1)
@@ -3053,7 +3053,7 @@ contains
                            VALIDO = VALIDO .AND. ( .NOT. sgg%Med(MEDIO)%Is%PEC)
                         end if
                         write (buff,*) 'WARNING: Ez Nodal source on PMC media will be ignored (', i1, j1, k1,')'
-                        if ( .NOT. VALIDO) call  WarnErrReport (buff)
+                        if (.NOT. VALIDO) call  WarnErrReport (buff)
                         !
                         !
                         !!!MEDIO = sggmiHz (i1, j1, k1)
@@ -3138,7 +3138,7 @@ contains
             if ((punto_s%zc /= 0).and.(this%nodsrc%NodalSource(i)%isElec))  then !only in case of Ez
                punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE-1))
             else
-               punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE  ))
+               punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE))
             end if
             !
             punto_s%or = this%nodsrc%NodalSource(i)%c2p(ii)%or
@@ -3163,7 +3163,7 @@ contains
                            VALIDO = VALIDO .AND. ( .NOT. sgg%Med(MEDIO)%Is%PEC)
                         end if
                         write (buff,*) 'WARNING: Ex Nodal source on PEC media will be ignored (', i1, j1, k1,')'
-                        if ( .NOT. VALIDO) call  WarnErrReport (buff)
+                        if (.NOT. VALIDO) call  WarnErrReport (buff)
                         !
                         !
                         !
@@ -3196,7 +3196,7 @@ contains
                            VALIDO = VALIDO .AND. ( .NOT. sgg%Med(MEDIO)%Is%PEC)
                         end if
                         write (buff,*) 'WARNING: Ey Nodal source on PMC media will be ignored (', i1, j1, k1,')'
-                        if ( .NOT. VALIDO) call  WarnErrReport (buff)
+                        if (.NOT. VALIDO) call  WarnErrReport (buff)
                         !
                         !
                         !!!MEDIO = sggmiHy (i1, j1, k1)
@@ -3228,7 +3228,7 @@ contains
                            VALIDO = VALIDO .AND. ( .NOT. sgg%Med(MEDIO)%Is%PEC)
                         end if
                         write (buff,*) 'WARNING: Ez Nodal source on PMC media will be ignored (', i1, j1, k1,')'
-                        if ( .NOT. VALIDO) call  WarnErrReport (buff)
+                        if (.NOT. VALIDO) call  WarnErrReport (buff)
                         !
                         !
                         !!!MEDIO = sggmiHz (i1, j1, k1)
@@ -3638,7 +3638,7 @@ contains
                sgg%observation(ii)%TRANSFER = .TRUE.
                buff='Transfer function only in Frequency Domain'
                !!           call STOPONERROR(layoutnumber,num_procs,buff)
-             case (NP_T2_TIMEFREQ )
+             case (NP_T2_TIMEFREQ)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
                sgg%observation(ii)%TRANSFER = .FALSE.
@@ -4091,7 +4091,7 @@ contains
                   sgg%observation(ii)%TRANSFER = .TRUE.
                   buff='Transfer function only in Frequency Domain'
                   !!           call STOPONERROR(layoutnumber,num_procs,buff)
-                case (NP_T2_TIMEFREQ )
+                case (NP_T2_TIMEFREQ)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
                   sgg%observation(ii)%TRANSFER = .FALSE.
@@ -4220,7 +4220,7 @@ contains
                sgg%observation(ii)%FreqStep =  0.0_RKIND
                sgg%observation(ii)%FileNormalize = ''
                tama2 = 1
-               if (tama2 >1 ) then
+               if (tama2 >1) then
                   write(buff,*) 'Only 1 Volumic probe allown per section'
                   call STOPONERROR(layoutnumber,num_procs,buff)
                end if
@@ -4259,27 +4259,27 @@ contains
                   end if
                end do
 !!!!210618 tambien se crrean extras dummy para los vtk
-               sgg%observation(  tamaScrPrb/3+ii)%TimeDomain = .false.
-               sgg%observation(  tamaScrPrb/3+ii)%FreqDomain = .false.
-               sgg%observation(  tamaScrPrb/3+ii)%TRANSFER =   .false.
+               sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
+               sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .false.
+               sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
                if (associated(this%VolPrb%collection).and.(tamaScrPrb/=0).and.(i<=this%VolPrb%length)) then !280618 & 220319
-                  sgg%observation(  tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_df_'
+                  sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
                else
-                  sgg%observation(  tamaScrPrb/3+ii)%outputrequest=' ' !es un dummy mapvtk sin nombre 280618
+                  sgg%observation(tamaScrPrb/3+ii)%outputrequest=' ' !es un dummy mapvtk sin nombre 280618
                end if
-               sgg%observation(  tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
-              allocate(sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP))
-               sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP)%what = NOTHING
+               sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
+              allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%what = NOTHING
 !
                sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .false.
                sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .false.
                if (associated(this%VolPrb%collection).and.(tamaScrPrb/=0).and.(i<=this%VolPrb%length)) then !280618 & 220319
-                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_tr_'
+                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
                else
                   sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=' ' !es un dummy mapvtk sin nombre 280618
                end if
-               sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
+               sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
               allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%what = NOTHING
 
@@ -4292,17 +4292,17 @@ contains
                sgg%observation(tamaScrPrb/3+ii)%FinalFreq                                          =  sgg%observation(ii)%FinalFreq
                sgg%observation(tamaScrPrb/3+ii)%FreqStep                                           =  sgg%observation(ii)%FreqStep
                sgg%observation(tamaScrPrb/3+ii)%FileNormalize                                      =  sgg%observation(ii)%FileNormalize
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%XI    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%XI
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%YI    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%YI
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%ZI    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%ZI
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%XE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%XE
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%YE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%YE
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%ZE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%ZE
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%XI    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%XI
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%YI    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%YI
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%ZI    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%ZI
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%XE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%XE
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%YE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%YE
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%ZE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%ZE
                !
                !trancos
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%Xtrancos = 1 !default
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%Ytrancos = 1 !default
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%Ztrancos = 1 !default
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%Xtrancos = 1 !default
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%Ytrancos = 1 !default
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%Ztrancos = 1 !default
                !fin trancos
 
                !!!!!!!!!!!!!!!!!!
@@ -4333,14 +4333,14 @@ contains
                sgg%observation(ii)%InitialTime =      this%VolPrb%collection(i)%tstart
                sgg%observation(ii)%FinalTime =        this%VolPrb%collection(i)%tstop
                sgg%observation(ii)%TimeStep =         this%VolPrb%collection(i)%tstep
-               sgg%observation(ii)%outputrequest = trim (adjustl( this%VolPrb%collection(i)%outputrequest))
+               sgg%observation(ii)%outputrequest = trim (adjustl(this%VolPrb%collection(i)%outputrequest))
                sgg%observation(ii)%InitialFreq =      this%VolPrb%collection(i)%fstart
                sgg%observation(ii)%FinalFreq =        this%VolPrb%collection(i)%fstop
                sgg%observation(ii)%FreqStep =         this%VolPrb%collection(i)%fstep
                sgg%observation(ii)%FileNormalize = trim (adjustl(this%VolPrb%collection(i)%filename))
                sgg%observation(ii)%nP = 0
                tama2 = (this%VolPrb%collection(i)%len_cor)
-               if (tama2 >1 ) then
+               if (tama2 >1) then
                   write(buff,*) 'Only 1 Volumic probe allown per section'
                   call STOPONERROR(layoutnumber,num_procs,buff)
                end if
@@ -4391,19 +4391,19 @@ contains
                   sgg%observation(ii)%TRANSFER = .FALSE.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=tipotemp
 !
-                  sgg%observation(  tamaScrPrb/3+ii)%TimeDomain = .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%FreqDomain = .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%TRANSFER =   .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_df_'
-                  sgg%observation(  tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
-                 allocate(sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP))
-                  sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP)%what = NOTHING
+                  sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
+                  sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .false.
+                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
+                  sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
+                 allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
+                  sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%what = NOTHING
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .false.
-                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_tr_'
-                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
+                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
+                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
                   sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%what = NOTHING
 !
@@ -4414,19 +4414,19 @@ contains
                   sgg%observation(ii)%TRANSFER = .false.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING  !el nothing debe predominar
 !
-                  sgg%observation(  tamaScrPrb/3+ii)%TimeDomain = .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%FreqDomain = .TRUE.
-                  sgg%observation(  tamaScrPrb/3+ii)%TRANSFER =   .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_df_'
-                  sgg%observation(  tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
-                 allocate(sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP))
-                  sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP)%what = tipotemp
+                  sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
+                  sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .TRUE.
+                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
+                  sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
+                 allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
+                  sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%what = tipotemp
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .false.
-                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_tr_'
-                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
+                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
+                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
                   sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%what = NOTHING
 !
@@ -4437,40 +4437,40 @@ contains
                   sgg%observation(ii)%TRANSFER = .false.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING   !el nothing predomina sobre los true anteriores
 !
-                  sgg%observation(  tamaScrPrb/3+ii)%TimeDomain = .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%FreqDomain = .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%TRANSFER =   .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_df_'
-                  sgg%observation(  tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
-                 allocate(sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP))
-                  sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP)%what = NOTHING
+                  sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
+                  sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .false.
+                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
+                  sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
+                 allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
+                  sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%what = NOTHING
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .true.
                   sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .true.
-                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_tr_'
-                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
+                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
+                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
                   sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%what = tipotemp
-                case (NP_T2_TIMEFREQ )
+                case (NP_T2_TIMEFREQ)
                   sgg%observation(ii)%TimeDomain = .true.
                   sgg%observation(ii)%FreqDomain = .false.
                   sgg%observation(ii)%TRANSFER = .false.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=tipotemp   !el nothing predomina sobre los true anteriores
 !
-                  sgg%observation(  tamaScrPrb/3+ii)%TimeDomain = .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%FreqDomain = .TRUE.
-                  sgg%observation(  tamaScrPrb/3+ii)%TRANSFER =   .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_df_'
-                  sgg%observation(  tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
-                 allocate(sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP))
-                  sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP)%what = tipotemp
+                  sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
+                  sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .TRUE.
+                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
+                  sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
+                 allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
+                  sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%what = tipotemp
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .false.
-                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_tr_'
-                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
+                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
+                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
                   sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%what = NOTHING
                 case (NP_T2_TIMETRANSF)
@@ -4479,19 +4479,19 @@ contains
                   sgg%observation(ii)%TRANSFER = .false.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=tipotemp   !el nothing predomina sobre los true anteriores
 !
-                  sgg%observation(  tamaScrPrb/3+ii)%TimeDomain = .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%FreqDomain = .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%TRANSFER =   .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_df_'
-                  sgg%observation(  tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
-                 allocate(sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP))
-                  sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP)%what = NOTHING
+                  sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
+                  sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .false.
+                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
+                  sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
+                 allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
+                  sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%what = NOTHING
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .true.
                   sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .true.
-                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_tr_'
-                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
+                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
+                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
                   sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%what = tipotemp
                 case (NP_T2_FREQTRANSF)
@@ -4500,19 +4500,19 @@ contains
                   sgg%observation(ii)%TRANSFER = .false.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=NOTHING
 !
-                  sgg%observation(  tamaScrPrb/3+ii)%TimeDomain = .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%FreqDomain = .TRUE.
-                  sgg%observation(  tamaScrPrb/3+ii)%TRANSFER =   .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_df_'
-                  sgg%observation(  tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
-                 allocate(sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP))
-                  sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP)%what = tipotemp
+                  sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
+                  sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .TRUE.
+                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
+                  sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
+                 allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
+                  sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%what = tipotemp
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .true.
                   sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .true.
-                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_tr_'
-                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
+                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
+                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
                   sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%what = tipotemp
 !
@@ -4522,19 +4522,19 @@ contains
                   sgg%observation(ii)%TRANSFER = .false.
                   sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%what=tipotemp
 !
-                  sgg%observation(  tamaScrPrb/3+ii)%TimeDomain = .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%FreqDomain = .TRUE.
-                  sgg%observation(  tamaScrPrb/3+ii)%TRANSFER =   .false.
-                  sgg%observation(  tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_df_'
-                  sgg%observation(  tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
-                 allocate(sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP))
-                  sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP)%what = tipotemp
+                  sgg%observation(tamaScrPrb/3+ii)%TimeDomain = .false.
+                  sgg%observation(tamaScrPrb/3+ii)%FreqDomain = .TRUE.
+                  sgg%observation(tamaScrPrb/3+ii)%TRANSFER =   .false.
+                  sgg%observation(tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_df_'
+                  sgg%observation(tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
+                 allocate(sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP))
+                  sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%what = tipotemp
 !
                   sgg%observation(2*tamaScrPrb/3+ii)%TimeDomain = .false.
                   sgg%observation(2*tamaScrPrb/3+ii)%FreqDomain = .true.
                   sgg%observation(2*tamaScrPrb/3+ii)%TRANSFER =   .true.
-                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_tr_'
-                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
+                  sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl(this%VolPrb%collection(i)%outputrequest))//'_tr_'
+                  sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(ii)%np
                  allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
                   sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%what = tipotemp
 !
@@ -4548,16 +4548,16 @@ contains
                sgg%observation(tamaScrPrb/3+ii)%FinalFreq                                          =  sgg%observation(ii)%FinalFreq
                sgg%observation(tamaScrPrb/3+ii)%FreqStep                                           =  sgg%observation(ii)%FreqStep
                sgg%observation(tamaScrPrb/3+ii)%FileNormalize                                      =  sgg%observation(ii)%FileNormalize
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%XI    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%XI
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%YI    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%YI
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%ZI    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%ZI
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%XE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%XE
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%YE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%YE
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%ZE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%ZE
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%XI    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%XI
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%YI    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%YI
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%ZI    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%ZI
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%XE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%XE
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%YE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%YE
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%ZE    =  sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%ZE
                !trancos
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%Xtrancos =sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Xtrancos
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%Ytrancos =sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Ytrancos
-               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(    tamaScrPrb/3+ii)%nP)%Ztrancos =sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Ztrancos
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%Xtrancos =sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Xtrancos
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%Ytrancos =sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Ytrancos
+               sgg%observation(tamaScrPrb/3+ii)%P(1:sgg%observation(tamaScrPrb/3+ii)%nP)%Ztrancos =sgg%observation(ii)%P(1:sgg%observation(ii)%nP)%Ztrancos
                !fin trancos
                !!!!!!!!!!!!!!!!!!
                sgg%observation(2*tamaScrPrb/3+ii)%Volumic                                          =  sgg%observation(ii)%Volumic
@@ -4750,7 +4750,7 @@ contains
          if (sgg%observation(ii)%TRANSFER) then
             errnofile = .FALSE.
             inquire(file=trim(adjustl(sgg%observation(ii)%FileNormalize)), EXIST=errnofile)
-            if ( .NOT. errnofile) then
+            if (.NOT. errnofile) then
                buff=trim(adjustl(sgg%observation(ii)%FileNormalize))//' DOES NOT EXIST'
                call STOPONERROR(layoutnumber,num_procs,buff)
             end if
@@ -5198,7 +5198,7 @@ contains
                   do CONTAVOLT=1,sgg%Med(i)%wire(1)%NUMVOLTAGESOURCES
                      errnofile = .FALSE.
                      inquire(file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)), EXIST=errnofile)
-                     if ( .NOT. errnofile) then
+                     if (.NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%name))//' DOES NOT EXIST'
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
@@ -5254,7 +5254,7 @@ contains
                   do CONTACURR=1,sgg%Med(i)%wire(1)%NUMCURRENTSOURCES
                      errnofile = .FALSE.
                      inquire(file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)), EXIST=errnofile)
-                     if ( .NOT. errnofile) then
+                     if (.NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%name))//' DOES NOT EXIST'
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
@@ -5312,7 +5312,7 @@ contains
                   if (sgg%Med(i)%SlantedWire(1)%nodes(j)%VsourceExists) then
                      errnofile = .FALSE.
                      inquire(file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)), EXIST=errnofile)
-                     if ( .NOT. errnofile) then
+                     if (.NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%name))//' DOES NOT EXIST'
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
@@ -5365,7 +5365,7 @@ contains
                   if (sgg%Med(i)%SlantedWire(1)%nodes(j)%IsourceExists) then
                      errnofile = .FALSE.
                      inquire(file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)), EXIST=errnofile)
-                     if ( .NOT. errnofile) then
+                     if (.NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%name))//' DOES NOT EXIST'
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
@@ -5425,7 +5425,7 @@ contains
             if (.not.sgg%NodalSource(j)%IsInitialValue) then
                errnofile = .FALSE.
                inquire(file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)), EXIST=errnofile)
-               if ( .NOT. errnofile) then
+               if (.NOT. errnofile) then
                   buff=trim(adjustl(sgg%NodalSource(j)%fichero%name))//' DOES NOT EXIST'
                   call STOPONERROR(layoutnumber,num_procs,buff)
                end if
@@ -5489,7 +5489,7 @@ contains
             !
             errnofile = .FALSE.
             inquire(file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)), EXIST=errnofile)
-            if ( .NOT. errnofile) then
+            if (.NOT. errnofile) then
                buff=trim(adjustl(sgg%PlaneWave(j)%fichero%name))//' DOES NOT EXIST'
                call STOPONERROR(layoutnumber,num_procs,buff)
             end if
@@ -5573,7 +5573,7 @@ contains
       subroutine asignadisper(fdgeom)
          type(FreqDepenMaterial_t), pointer :: fdgeom
 
-         if (fdgeom%l+fdgeom%LM /=0 ) then
+         if (fdgeom%l+fdgeom%LM /=0) then
             BUFF='ERROR: SECOND ORDER DISPERSIVE MEDIA UNSUPPORTED. TRANSLATE THEM TO FIRST ORDER ()'
             call WarnErrReport (buff,.TRUE.)
          end if
@@ -6274,7 +6274,7 @@ contains
 
       tama = this%LossyThinSurfs%length
       do j = 1, tama
-         if (abs(this%LossyThinSurfs%cs(j)%SigmaM(1)) <= 1.0e-2_RKIND ) then !SGBCs que hay que sustituir
+         if (abs(this%LossyThinSurfs%cs(j)%SigmaM(1)) <= 1.0e-2_RKIND) then !SGBCs que hay que sustituir
             multiportFile =  trim(adjustl(this%LossyThinSurfs%cs(j)%files)) // '_z11.txt'
             !
             !09/07/13 !los SGBCs con skindepth se deben preprocesar
@@ -6318,12 +6318,12 @@ contains
                if (j-1 <  sgg%alloc(iEy)%YI) jmenos1=j
                if (k-1 <  sgg%alloc(IEZ)%ZI) kmenos1=k
 
-               med(0)  = media%sggMiEx(i       , j       , k       )
-               med(1)  = media%sggMiEx(imenos1 , j       , k       )
-               med(2)  = media%sggMiEy(i       , j       , k       )
-               med(3)  = media%sggMiEy(i       , jmenos1 , k       )
-               med(4)  = media%sggMiEz(i       , j       , k       )
-               med(5)  = media%sggMiEz(i       , j       , kmenos1 )
+               med(0)  = media%sggMiEx(i       , j       , k)
+               med(1)  = media%sggMiEx(imenos1 , j       , k)
+               med(2)  = media%sggMiEy(i       , j       , k)
+               med(3)  = media%sggMiEy(i       , jmenos1 , k)
+               med(4)  = media%sggMiEz(i       , j       , k)
+               med(5)  = media%sggMiEz(i       , j       , kmenos1)
                sigma                       = 0.0_RKIND
                sigmam                      = 0.0_RKIND
                epr                         = 0.0_RKIND
@@ -6338,7 +6338,7 @@ contains
                   mur                         =     mur                       + sgg%Med(imed)%mur /6.0_RKIND
                   if ((sgg%med(imed)%is%PEC).or.(imed==0)) isPEC = .true.
                end do
-               if ( (.not.isPEC).and.(sigma >= 1e-4) ) then
+               if ((.not.isPEC).and.(sigma >= 1e-4)) then
                   islossy = .true.
                else
                   islossy = .false.
@@ -6394,7 +6394,7 @@ contains
    logical function IGUALES(A,B) result(IGUAL)
       real(kind=RKIND) :: A,B,ERR
       igual=.false.
-      if (abs(A+B)>1e-20 ) then
+      if (abs(A+B)>1e-20) then
          ERR=2.0_RKIND*ABS((A-B)/(A+B))
          if (err <1e-2_RKIND) igual=.true. !en tanto por ciento me apanio con un 1 por ciento
       else
@@ -6443,7 +6443,7 @@ contains
 2        continue
          call RANDOM_NUMBER(beta)
          beta=2.0_RKIND *pi*beta
-         alpha1=atan2(  Cos(theta)/Sqrt(Cos(theta)**2.0_RKIND+ Cos(beta - phi)**2.0*Sin(theta)**2.0),-((Cos(beta - phi)*Sin(theta))/Sqrt(Cos(theta)**2.0_RKIND+ Cos(beta - phi)**2.0*Sin(theta)**2.0)))
+         alpha1=atan2(Cos(theta)/Sqrt(Cos(theta)**2.0_RKIND+ Cos(beta - phi)**2.0*Sin(theta)**2.0),-((Cos(beta - phi)*Sin(theta))/Sqrt(Cos(theta)**2.0_RKIND+ Cos(beta - phi)**2.0*Sin(theta)**2.0)))
          alpha2=atan2(-(Cos(theta)/Sqrt(Cos(theta)**2.0_RKIND+ Cos(beta - phi)**2.0*Sin(theta)**2.0)), (Cos(beta - phi)*Sin(theta))/Sqrt(Cos(theta)**2.0_RKIND+ Cos(beta - phi)**2.0*Sin(theta)**2.0))
          if ((alpha1 <= pi).and.(alpha1 >= 0.0)) then
             alpha=alpha1

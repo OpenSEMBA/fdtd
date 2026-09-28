@@ -401,8 +401,8 @@ contains
          end if
       end do
 
-      res(1)%tag             = pl%coordIds( 1 )
-      res(lastSegment-1)%tag = pl%coordIds( size(pl%coordIds) )
+      res(1)%tag             = pl%coordIds(1)
+      res(lastSegment-1)%tag = pl%coordIds(size(pl%coordIds))
       
    end function
 

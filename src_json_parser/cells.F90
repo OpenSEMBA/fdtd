@@ -118,7 +118,7 @@ contains
             do i = DIR_X, DIR_Z
                if (diff(i) == 0) res = i
             end do
-            if ( diff(mod(res,3)+1) < 0 .and. diff(mod(res+1,3)+1) < 0) &
+            if (diff(mod(res,3)+1) < 0 .and. diff(mod(res+1,3)+1) < 0) &
                res = - res
          end block
        case default
@@ -155,7 +155,7 @@ contains
       type(cell_interval_t), dimension(:), allocatable :: res
       integer :: i, j
 
-      allocate(res( count(this%intervals%getType() == cellType) ))
+      allocate(res(count(this%intervals%getType() == cellType)))
       j = 1
       do i = 1, size(this%intervals)
          if (this%intervals(i)%getType() == cellType) then

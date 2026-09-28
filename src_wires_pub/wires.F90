@@ -26,7 +26,7 @@ module HollandWires_m
 
    logical                                         , save :: thereAreVsources,thereAreIsources,thereAreMurConditions
    type(Thinwires_t)     , target                  ,save  :: HWires
-   real(kind=RKIND_WIRES)     , pointer, dimension( : ),save  :: InvEps  ,InvMu, OldInvEps  ,OldInvMu
+   real(kind=RKIND_WIRES)     , pointer, dimension(:),save  :: InvEps  ,InvMu, OldInvEps  ,OldInvMu
    
 !!!variables globales del modulo
    real(kind=RKIND_WIRES), save           :: eps0,mu0
@@ -281,8 +281,8 @@ contains
          
       do iwi=1,HWires%NumDifferentWires
             if ((allocated(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%disp)).or. &
-                (allocated(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%disp_RightEnd )).or. &
-                (allocated(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%disp_LeftEnd  ))) then
+                (allocated(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%disp_RightEnd)).or. &
+                (allocated(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%disp_LeftEnd))) then
                 write (buff,'(a)')  'Dispersive wire or connectors unsupported in Holland wires'
                 call WarnErrReport(buff,.true.)
             end if
@@ -311,32 +311,32 @@ contains
             do iwj=1,sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos
                if (.not.control%strictOLD) then
                   !
-                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = -1
-                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = -1
-                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = -1
+                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = -1
+                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = -1
+                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = -1
                   !(en formatos antiguas esta info solo viene bien si hay cargas (md me las pone al final y al principio) pero en general puede estar mal y hay que resetearla
                   if (control%connectendings) then
                      !
                      if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos == 1) then
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd = .true.
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd = .true.
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd = .true.
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd = .true.
                         !ojooo esto esta bien? parecen los TL y TR intercambiados sgg 251019 pero no lo toco
                         if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasAbsorbing_RightEnd) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasAbsorbing_LeftEnd=.true.
                         if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasAbsorbing_LeftEnd) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasAbsorbing_RightEnd=.true.
                         if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_RightEnd) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_LeftEnd=.true.
                         if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_LeftEnd) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_RightEnd=.true.
-                        if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_RightEnd  ) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_LeftEnd  =.true.
-                        if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_LeftEnd  ) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_RightEnd  =.true.
+                        if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_RightEnd) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_LeftEnd  =.true.
+                        if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_LeftEnd) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_RightEnd  =.true.
                      end if
                      !
-                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd = sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd .and. &
+                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd = sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd .and. &
                      (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_LeftEnd .or. sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_LeftEnd.or. &
                                                                                   sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasAbsorbing_LeftEnd)
-                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd = sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd .and. &
+                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd = sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd .and. &
                      (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_RightEnd .or. sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_RightEnd .or. &
                                                                                      sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasAbsorbing_RightEnd)
                   end if
-                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight= .not. &
+                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight= .not. &
                   (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd.or.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd)
                   !fin reajuste
                   i1=       sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%i
@@ -418,23 +418,23 @@ contains
                   end do buskk
 
                   if (control%connectendings) then
-                     if ((.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd).and. &
-                     (.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd)) then
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight = sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight .or. &
+                     if ((.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd).and. &
+                     (.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd)) then
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight = sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight .or. &
                         ((.not.conectado).and.conectado2).and. &
                         (.not.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_LeftEnd .or. sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_LeftEnd.or. &
                                                                                            sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasAbsorbing_LeftEnd))
                      end if
-                     if ((.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd).and. &
-                     (.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd)) then
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight = sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight.or. &
+                     if ((.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd).and. &
+                     (.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd)) then
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight = sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight.or. &
                         ((.not.conectado).and.conectado1).and. &
                         (.not.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_RightEnd .or. sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_RightEnd .or. &
                                                                                            sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasAbsorbing_RightEnd))
                      end if
                   end if
-                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight = &
-                  (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight) .and. &
+                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight = &
+                  (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight) .and. &
                   (.not.conectado).and.(conectado1.or.conectado2) .and. &
                   (.not.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd.or. &
                   sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd)) !si hay mas de uno este se pone a .true.
@@ -442,22 +442,22 @@ contains
                   if ((.not.conectado).and.conectado1) then
                      select case (whatfield)
                       case (iEx)
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1 +1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1 +1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1
                       case (iEy)
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1 +1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1 +1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1
                       case (IEZ)
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1 +1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1 +1
                      end select
                   else if ((.not.conectado).and.conectado2) then
-                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1
-                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1
-                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1
+                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1
+                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1
+                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1
                   end if
 
                   !caso especial
@@ -467,36 +467,36 @@ contains
                      sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd              = .true.
                      select case (whatfield)
                       case (iEx)
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1 +1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1 +1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1
                       case (iEy)
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1 +1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1 +1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1
                       case (IEZ)
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1 +1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1 +1
                      end select
                   end if
                   !check for intermediate RLC error
 
-                  if ( (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre == -1).or. &
-                  (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre == -1).or. &
-                  (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre == -1)) then
+                  if ( (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre == -1).or. &
+                  (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre == -1).or. &
+                  (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre == -1)) then
                      if (.not.conectado) then
                         write (buff,'(a,i7,3I7,a)')  'wir0_BUGGYERROR: Non-Intermediate multi-segment WIRE. ',origIndex,i1,j1,k1,' '//dir(whatfield)
                         if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff,.true.)
                      end if
-                     if ( ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd).and. &
+                     if ( ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd).and. &
                      (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_RightEnd .or. sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_RightEnd)).or. &
-                     ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd).and. &
+                     ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd).and. &
                      (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasParallel_LeftEnd .or. sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasSeries_LeftEnd .or. &
                                                                                      sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%HasAbsorbing_LeftEnd)) ) then
                         if (conectado) then
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd = .false.
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd = .false.
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd = .false.
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd = .false.
                            write (buff,'(a,i7,3I7,a)')  'wir0_WARNING: Intermediate segment with RLC. Neglecting RLC ',origIndex,i1,j1,k1,' '//dir(whatfield)
                            if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
                         else
@@ -508,24 +508,24 @@ contains
                   !
                else !del strictOLD
 
-                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = -1
-                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = -1
-                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = -1
-                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight=.false. !irrelevante en strictOLD
+                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = -1
+                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = -1
+                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = -1
+                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight=.false. !irrelevante en strictOLD
                   i1=       sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%i
                   j1=       sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%j
                   k1=       sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%k
                   whatfield=sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ori
                   origindex= sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origIndex
                   !
-                  if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd) then
+                  if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd) then
                      dummy1=1
                      dummyfin=sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos
-                  else if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd) then
+                  else if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd) then
                      dummy1=-1
                      dummyfin=1
                   end if
-                  if ( ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd).or.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd)) ) then
+                  if (((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd).or.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd))) then
                      if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos/=1) then
                         dummy2=-1
                         buscakk2: do iwjjj=iwj+dummy1,dummyfin,dummy1 !atras o adelante
@@ -547,28 +547,28 @@ contains
                         end if
 
                         !
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1
                         if (whatfield2==whatfield) then
                            if (abs(i1-i2)+abs(j1-j2)+abs(k1-k2)>1) then
                               write (buff,'(a,i7,3I7,a)')  'wir0_ERROR: strictOLD LeftEnd/RightEnd segment disconnected.', origIndex,i1,j1,k1,' '//dir(whatfield)
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff,.true.)
                            end if
                            if (i1>i2) then
-                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1+1-dummy3
+                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1+1-dummy3
                            else if (i1<i2) then
-                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1+dummy3
+                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1+dummy3
                            end if
                            if (j1>j2) then
-                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1+1-dummy3
+                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1+1-dummy3
                            else if (j1<j2) then
-                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1+dummy3
+                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1+dummy3
                            end if
                            if (k1>k2) then
-                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1+1-dummy3
+                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1+1-dummy3
                            else if (k1<k2) then
-                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1+dummy3
+                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1+dummy3
                            end if
                         else
                            if (abs(i1-i2)+abs(j1-j2)+abs(k1-k2)>2) then
@@ -577,27 +577,27 @@ contains
                            end if
                            select case (whatfield)
                             case (iEx)
-                              if (i2 == i1) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1+1
+                              if (i2 == i1) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1+1
                             case (iEy)
-                              if (j2 == j1) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1+1
+                              if (j2 == j1) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1+1
                             case (IEZ)
-                              if (k2 == k1) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1+1
+                              if (k2 == k1) sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1+1
                            end select
                         end if
                      else !DEL NUMERO SEGMENTOS '2014 NO PORTADO A !CHECK
                         select case (whatfield)
                          case (iEx)
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1+1
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1+1
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1
                          case (iEy)
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1+1
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1+1
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1
                          case (IEZ)
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = i1
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = j1
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = k1+1
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre = i1
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%jlibre = j1
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%klibre = k1+1
                         end select
                      end if !DEL NUMERO SEGMENTOS '2014 NO PORTADO A !CHECK
                   end if !Del Left_End Right_End
@@ -741,8 +741,8 @@ contains
                         end do buscarabos6
                         !machaca rabos
                         if ((mod(multirabos,2)/=1).and.(Jprimernorabo /= sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos)) then !no al RightEnd
-                           if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj          )%Is_LeftEnd) then
-                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj          )%Is_LeftEnd=.false.
+                           if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd) then
+                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd=.false.
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(Jprimernorabo)%Is_LeftEnd=.true. !pasa caracter Left_End al primernorabo
                               !!!tocado esto por el problema de gra_powerline_simple.nfde 190916 el rabito se quedaba con el libre mal computado. Los ilibre,jlbre,klibre para Left_End son el primer punto directamente
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(Jprimernorabo)%ilibre=sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(Jprimernorabo)%i  !!!!sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre
@@ -819,8 +819,8 @@ contains
 
                         !machaca rabos
                         if ((mod(multirabos,2)/=1).and.(Jprimernorabo /= 1)) then   !no el Left_End
-                           if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj          )%Is_RightEnd) then
-                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj          )%Is_RightEnd=.false.
+                           if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd) then
+                              sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd=.false.
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(Jprimernorabo)%Is_RightEnd=.true. !pasa caracter RightEnd al primernorabo
                               !!!tocado esto por el problema de gra_powerline_simple.nfde 190916 el rabito se quedaba con el libre mal computado. Los ilibre,jlbre,klibre para Left_End son el primer punto directamente
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(Jprimernorabo)%ilibre=sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(Jprimernorabo)%i  !!!!sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ilibre
@@ -878,8 +878,8 @@ contains
          !chequeo de errores buggy multirabo
          do iwi=1,HWires%NumDifferentWires
             do iwj=1,sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos
-               if ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%multirabo).and. &
-               ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd).or.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd))) then
+               if ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multirabo).and. &
+               ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd).or.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd))) then
                   i1=       sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%i
                   j1=       sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%j
                   k1=       sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%k
@@ -968,49 +968,49 @@ contains
 
                            sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%repetido=repetido.or. &
                            sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%repetido
-                        else if (.not.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd .or. &
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd )) then
+                        else if (.not.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd .or. &
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd )) then
 
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%repetido=repetido.or. &
-                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%repetido
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%repetido=repetido.or. &
+                           sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%repetido
                         else
                            !aviso pero tomo una decision. md 260213 a veces lo duplica en principio y final!!!!!!
 
                            if ( ((abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_R_RightEnd) < 1.0e-12_RKIND_WIRES).and. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_RightEnd  ) < 1.0e-12_RKIND_WIRES).and. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_RightEnd) < 1.0e-12_RKIND_WIRES).and. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_C_RightEnd) < 1.0e-12_RKIND_WIRES).and. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_C_RightEnd  ) > 1.0e7_RKIND_wires).and. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_C_RightEnd) > 1.0e7_RKIND_wires).and. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_L_RightEnd) < 1.0e-12_RKIND_WIRES).and. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_RightEnd  ) < 1.0e-12_RKIND_WIRES)).and. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_RightEnd) < 1.0e-12_RKIND_WIRES)).and. &
                            !
                            ((abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_R_LeftEnd) >= 1.0e-12_RKIND_WIRES).or. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_LeftEnd  ) >= 1.0e-12_RKIND_WIRES).or. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_LeftEnd) >= 1.0e-12_RKIND_WIRES).or. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_C_LeftEnd) >= 1.0e-12_RKIND_WIRES).or. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_C_LeftEnd  ) <= 1.0e7_RKIND_wires).or. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_C_LeftEnd) <= 1.0e7_RKIND_wires).or. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_L_LeftEnd) >= 1.0e-12_RKIND_WIRES).or. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_LeftEnd  ) >= 1.0e-12_RKIND_WIRES)) ) then
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_LeftEnd) >= 1.0e-12_RKIND_WIRES)) ) then
                               if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%Is_RightEnd) then
                                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%repetido=.true.
                                  if (control%strictOLD) then
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Keeping both', &
-                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
+                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  else
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Removing the second one (no RightEnd RLC)', &
-                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
+                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  end if
                                  if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= IEZ).and.control%verbose) call WarnErrReport(buff)
                                  if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == IEZ).and.control%verbose) call WarnErrReport(buff)
-                              else if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd) then
-                                 sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%repetido=.true.
+                              else if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd) then
+                                 sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%repetido=.true.
                                  if (control%strictOLD) then
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Keeping both', &
-                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
+                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  else
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Removing the first one (no RightEnd RLC)', &
-                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
+                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  end if
                                  if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= IEZ).and.control%verbose) call WarnErrReport(buff)
@@ -1019,40 +1019,40 @@ contains
                            end if
 
                            if ( ((abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_R_RightEnd) >= 1.0e-12_RKIND_WIRES).or. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_RightEnd  ) >= 1.0e-12_RKIND_WIRES).or. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_RightEnd) >= 1.0e-12_RKIND_WIRES).or. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_C_RightEnd) >= 1.0e-12_RKIND_WIRES).or. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_C_RightEnd  ) <= 1.0e7_RKIND_wires).or. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_C_RightEnd) <= 1.0e7_RKIND_wires).or. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_L_RightEnd) >= 1.0e-12_RKIND_WIRES).or. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_RightEnd  ) >= 1.0e-12_RKIND_WIRES)).and. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_RightEnd) >= 1.0e-12_RKIND_WIRES)).and. &
                            !
                            ((abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_R_LeftEnd) < 1.0e-12_RKIND_WIRES).and. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_LeftEnd  ) < 1.0e-12_RKIND_WIRES).and. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_LeftEnd) < 1.0e-12_RKIND_WIRES).and. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_C_LeftEnd) < 1.0e-12_RKIND_WIRES).and. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_C_LeftEnd  ) > 1.0e7_RKIND_wires).and. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_C_LeftEnd) > 1.0e7_RKIND_wires).and. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_L_LeftEnd) < 1.0e-12_RKIND_WIRES).and. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_LeftEnd  ) < 1.0e-12_RKIND_WIRES)) ) then
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_LeftEnd) < 1.0e-12_RKIND_WIRES)) ) then
                               if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%Is_LeftEnd) then
                                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%repetido=.true.
                                  if (control%strictOLD) then
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Keeping both', &
-                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
+                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  else
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Removing the second one (NO LeftEnd RLC, Only RightEnd RLC)', &
-                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
+                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  end if
                                  if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= IEZ).and.control%verbose) call WarnErrReport(buff)
                                  if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == IEZ).and.control%verbose) call WarnErrReport(buff)
-                              else if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd) then
-                                 sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%repetido=.true.
+                              else if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd) then
+                                 sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%repetido=.true.
                                  if (control%strictOLD) then
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Keeping both', &
-                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
+                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  else
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Removing the first one (NO LeftEnd RLC, Only RightEnd RLC)', &
-                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
+                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  end if
                                  if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= IEZ).and.control%verbose) call WarnErrReport(buff)
@@ -1061,18 +1061,18 @@ contains
                            end if
                            !
                            if ( ((abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_R_LeftEnd) >= 1.0e-12_RKIND_WIRES).or. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_LeftEnd  ) >= 1.0e-12_RKIND_WIRES).or. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_LeftEnd) >= 1.0e-12_RKIND_WIRES).or. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_C_LeftEnd) >= 1.0e-12_RKIND_WIRES).or. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_C_LeftEnd  ) <= 1.0e7_RKIND_wires).or. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_C_LeftEnd) <= 1.0e7_RKIND_wires).or. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_L_LeftEnd) >= 1.0e-12_RKIND_WIRES).or. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_LeftEnd  ) >= 1.0e-12_RKIND_WIRES)).AND. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_LeftEnd) >= 1.0e-12_RKIND_WIRES)).AND. &
                            !
                            ((abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_R_RightEnd) >= 1.0e-12_RKIND_WIRES).or. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_RightEnd  ) >= 1.0e-12_RKIND_WIRES).or. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_R_RightEnd) >= 1.0e-12_RKIND_WIRES).or. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_C_RightEnd) >= 1.0e-12_RKIND_WIRES).or. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_C_RightEnd  ) <= 1.0e7_RKIND_wires).or. &
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_C_RightEnd) <= 1.0e7_RKIND_wires).or. &
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_L_RightEnd) >= 1.0e-12_RKIND_WIRES).or. &
-                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_RightEnd  ) >= 1.0e-12_RKIND_WIRES)) ) then
+                           (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_RightEnd) >= 1.0e-12_RKIND_WIRES)) ) then
 
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%repetido=repetido.or. &
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%repetido
@@ -1091,18 +1091,18 @@ contains
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_LeftEnd  ) < 1.0e-12_RKIND_WIRES)) then
                                  if (control%strictOLD) then
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment with the same RLC. Keeping both', &
-                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
+                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  else
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment with the same RLC. Will remove the second one', &
-                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
+                                    sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  end if
                                  if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= IEZ).and.control%verbose) call WarnErrReport(buff)
                                  if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == IEZ).and.control%verbose) call WarnErrReport(buff)
                               else
                                  write (buff,'(a,2i7,3i7)')  'wir0_ERROR: Duplicate terminal LeftEnd and RightEnd Parallel segment with non-null different RLC', &
-                                 sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
+                                 sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex, &
                                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= IEZ)) call WarnErrReport(buff,.true.)
                                  if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == IEZ)) call WarnErrReport(buff,.true.)
@@ -1255,7 +1255,7 @@ contains
                         else
                            HWires%CurrentSegment(conta)%orientadoalreves =.false. !later corrected
                         end if
-                     else if     (iwj > 1 ) then
+                     else if     (iwj > 1) then
                         !only for the observation sign to match (not used in this routine)
                         if (.not.control%strictOLD) then
                            HWires%CurrentSegment(conta)%orientadoalreves = &
@@ -1358,213 +1358,213 @@ contains
                 end if
                select case (whatfield)
                 case (iEx)
-                  sggmiHx(i  ,j  ,k      ) = 1
-                  sggmiHx(i  ,j-1,k      ) = 1
-                  sggmiHx(i  ,j  ,k -1   ) = 1
-                  sggmiHx(i  ,j-1,k -1   ) = 1
-                  sggmiHx(i+1,j  ,k      ) = 1
-                  sggmiHx(i+1,j-1,k      ) = 1
-                  sggmiHx(i+1,j  ,k -1   ) = 1
-                  sggmiHx(i+1,j-1,k -1   ) = 1
-                  if (.not.sgg%med(sggmiEx(i  ,j  ,k      ))%Is%ThinWire) then
-                     sggmiEx(i  ,j  ,k      ) = 1
+                  sggmiHx(i  ,j  ,k) = 1
+                  sggmiHx(i  ,j-1,k) = 1
+                  sggmiHx(i  ,j  ,k -1) = 1
+                  sggmiHx(i  ,j-1,k -1) = 1
+                  sggmiHx(i+1,j  ,k) = 1
+                  sggmiHx(i+1,j-1,k) = 1
+                  sggmiHx(i+1,j  ,k -1) = 1
+                  sggmiHx(i+1,j-1,k -1) = 1
+                  if (.not.sgg%med(sggmiEx(i  ,j  ,k))%Is%ThinWire) then
+                     sggmiEx(i  ,j  ,k) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
                   end if
-                  if (.not.sgg%med(sggmiEy(i  ,j  ,k      ))%Is%ThinWire)  then
-                     sggmiEy(i  ,j  ,k      ) = 1
+                  if (.not.sgg%med(sggmiEy(i  ,j  ,k))%Is%ThinWire)  then
+                     sggmiEy(i  ,j  ,k) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
                   end if
-                  if (.not.sgg%med(sggmiEy(i  ,j-1,k      ))%Is%ThinWire)  then
-                     sggmiEy(i  ,j-1,k      ) = 1
+                  if (.not.sgg%med(sggmiEy(i  ,j-1,k))%Is%ThinWire)  then
+                     sggmiEy(i  ,j-1,k) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
                   end if
                   if       ((k <=  sgg%alloc(IEZ)%ZE).and.(k >= sgg%alloc(IEZ)%ZI)) then
-                     if (.not.sgg%med(sggmiEz(i  ,j  ,k      ))%Is%ThinWire)  then
-                        sggmiEz(i  ,j  ,k      ) = 1
+                     if (.not.sgg%med(sggmiEz(i  ,j  ,k))%Is%ThinWire)  then
+                        sggmiEz(i  ,j  ,k) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
                   end if
                   if   ((k-1 <=  sgg%alloc(IEZ)%ZE).and.(k -1 >=sgg%alloc(IEZ)%ZI)) then
-                     if (.not.sgg%med(sggmiEz(i  ,j  ,k-1    ))%Is%ThinWire)  then
-                        sggmiEz(i  ,j  ,k - 1  ) = 1
+                     if (.not.sgg%med(sggmiEz(i  ,j  ,k-1))%Is%ThinWire)  then
+                        sggmiEz(i  ,j  ,k - 1) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
                   end if
-                  if (.not.sgg%med(sggmiEy(i+1,j  ,k      ))%Is%ThinWire)  then
-                     sggmiEy(i+1,j  ,k      ) = 1
+                  if (.not.sgg%med(sggmiEy(i+1,j  ,k))%Is%ThinWire)  then
+                     sggmiEy(i+1,j  ,k) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
                   end if
-                  if (.not.sgg%med(sggmiEy(i+1,j-1,k      ))%Is%ThinWire)  then
-                     sggmiEy(i+1,j-1,k      ) = 1
+                  if (.not.sgg%med(sggmiEy(i+1,j-1,k))%Is%ThinWire)  then
+                     sggmiEy(i+1,j-1,k) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
                   end if
                   if         ((k <=  sgg%alloc(IEZ)%ZE).and.(k>=sgg%alloc(IEZ)%ZI)) then
-                     if (.not.sgg%med(sggmiEz(i+1,j  ,k      ))%Is%ThinWire)  then
-                        sggmiEz(i+1,j  ,k      ) = 1
+                     if (.not.sgg%med(sggmiEz(i+1,j  ,k))%Is%ThinWire)  then
+                        sggmiEz(i+1,j  ,k) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
                   end if
                   if ((k -1 <=  sgg%alloc(IEZ)%ZE).and.(k - 1 >=sgg%alloc(IEZ)%ZI)) then
-                     if (.not.sgg%med(sggmiEz(i+1,j  ,k - 1  ))%Is%ThinWire)  then
-                        sggmiEz(i+1,j  ,k - 1  ) = 1
+                     if (.not.sgg%med(sggmiEz(i+1,j  ,k - 1))%Is%ThinWire)  then
+                        sggmiEz(i+1,j  ,k - 1) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
                   end if
                 case (iEy)
-                  sggmiHy(i   ,j   ,k      ) = 1
-                  sggmiHy(i   ,j   ,k-1    ) = 1
-                  sggmiHy(i -1,j   ,k      ) = 1
-                  sggmiHy(i -1,j   ,k-1    ) = 1
-                  sggmiHy(i   ,j+1 ,k      ) = 1
-                  sggmiHy(i   ,j+1 ,k-1    ) = 1
-                  sggmiHy(i -1,j+1 ,k      ) = 1
-                  sggmiHy(i -1,j+1 ,k-1    ) = 1
-                  if (.not.sgg%med(sggmiEy(i  ,j  ,k      ))%Is%ThinWire)  then
-                     sggmiEy(i  ,j  ,k      ) = 1
+                  sggmiHy(i   ,j   ,k) = 1
+                  sggmiHy(i   ,j   ,k-1) = 1
+                  sggmiHy(i -1,j   ,k) = 1
+                  sggmiHy(i -1,j   ,k-1) = 1
+                  sggmiHy(i   ,j+1 ,k) = 1
+                  sggmiHy(i   ,j+1 ,k-1) = 1
+                  sggmiHy(i -1,j+1 ,k) = 1
+                  sggmiHy(i -1,j+1 ,k-1) = 1
+                  if (.not.sgg%med(sggmiEy(i  ,j  ,k))%Is%ThinWire)  then
+                     sggmiEy(i  ,j  ,k) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
                   end if
                   if     ((k <=  sgg%alloc(IEZ)%ZE).and.(k >= sgg%alloc(IEZ)%ZI)) then
-                     if (.not.sgg%med(sggmiEz(i  ,j  ,k      ))%Is%ThinWire)  then
-                        sggmiEz(i  ,j  ,k      ) = 1
+                     if (.not.sgg%med(sggmiEz(i  ,j  ,k))%Is%ThinWire)  then
+                        sggmiEz(i  ,j  ,k) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
                   end if
                   if ((k-1 <=  sgg%alloc(IEZ)%ZE).and.(k -1 >=sgg%alloc(IEZ)%ZI)) then
-                     if (.not.sgg%med(sggmiEz(i  ,j  ,k - 1  ))%Is%ThinWire)  then
-                        sggmiEz(i  ,j  ,k - 1  ) = 1
+                     if (.not.sgg%med(sggmiEz(i  ,j  ,k - 1))%Is%ThinWire)  then
+                        sggmiEz(i  ,j  ,k - 1) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
                   end if
-                  if (.not.sgg%med(sggmiEx(i  ,j  ,k      ))%Is%ThinWire)  then
-                     sggmiEx(i  ,j  ,k      ) = 1
+                  if (.not.sgg%med(sggmiEx(i  ,j  ,k))%Is%ThinWire)  then
+                     sggmiEx(i  ,j  ,k) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
                   end if
-                  if (.not.sgg%med(sggmiEx(i-1,j  ,k      ))%Is%ThinWire)  then
-                     sggmiEx(i-1,j  ,k      ) = 1
+                  if (.not.sgg%med(sggmiEx(i-1,j  ,k))%Is%ThinWire)  then
+                     sggmiEx(i-1,j  ,k) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
                   end if
                   if ((k     <=  sgg%alloc(IEZ)%ZE).and.(k >= sgg%alloc(IEZ)%ZI)) then
-                     if (.not.sgg%med(sggmiEz(i  ,j+1,k      ))%Is%ThinWire)  then
-                        sggmiEz(i  ,j+1,k      ) = 1
+                     if (.not.sgg%med(sggmiEz(i  ,j+1,k))%Is%ThinWire)  then
+                        sggmiEz(i  ,j+1,k) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
                   end if
                   if ((k-1 <=  sgg%alloc(IEZ)%ZE).and.(k -1 >=sgg%alloc(IEZ)%ZI)) then
-                     if (.not.sgg%med(sggmiEz(i  ,j+1,k - 1  ))%Is%ThinWire)  then
-                        sggmiEz(i  ,j+1,k - 1  ) = 1
+                     if (.not.sgg%med(sggmiEz(i  ,j+1,k - 1))%Is%ThinWire)  then
+                        sggmiEz(i  ,j+1,k - 1) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
                   end if
-                  if (.not.sgg%med(sggmiEx(i  ,j+1,k      ))%Is%ThinWire)  then
-                     sggmiEx(i  ,j+1,k      ) = 1
+                  if (.not.sgg%med(sggmiEx(i  ,j+1,k))%Is%ThinWire)  then
+                     sggmiEx(i  ,j+1,k) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
                   end if
-                  if (.not.sgg%med(sggmiEx(i-1,j+1,k      ))%Is%ThinWire)  then
-                     sggmiEx(i-1,j+1,k      ) = 1
+                  if (.not.sgg%med(sggmiEx(i-1,j+1,k))%Is%ThinWire)  then
+                     sggmiEx(i-1,j+1,k) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
                   end if
                 case (IEZ)
-                  sggmiHz(i    ,j   ,k    ) = 1
-                  sggmiHz(i -1 ,j   ,k    ) = 1
-                  sggmiHz(i    ,j-1 ,k    ) = 1
-                  sggmiHz(i -1 ,j-1 ,k    ) = 1
-                  sggmiHz(i    ,j   ,k+1 ) = 1
-                  sggmiHz(i -1 ,j   ,k+1 ) = 1
-                  sggmiHz(i    ,j-1 ,k+1 ) = 1
-                  sggmiHz(i -1 ,j-1 ,k+1 ) = 1
-                  if (.not.sgg%med(sggmiEz(i  ,j  ,k      ))%Is%ThinWire)  then
-                     sggmiEz(i  ,j  ,k      ) = 1
+                  sggmiHz(i    ,j   ,k) = 1
+                  sggmiHz(i -1 ,j   ,k) = 1
+                  sggmiHz(i    ,j-1 ,k) = 1
+                  sggmiHz(i -1 ,j-1 ,k) = 1
+                  sggmiHz(i    ,j   ,k+1) = 1
+                  sggmiHz(i -1 ,j   ,k+1) = 1
+                  sggmiHz(i    ,j-1 ,k+1) = 1
+                  sggmiHz(i -1 ,j-1 ,k+1) = 1
+                  if (.not.sgg%med(sggmiEz(i  ,j  ,k))%Is%ThinWire)  then
+                     sggmiEz(i  ,j  ,k) = 1
                      write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
                   end if
                   if ((k   <=  sgg%alloc(iEx)%ZE).and.(k  >= sgg%alloc(iEx)%ZI)) then
-                     if (.not.sgg%med(sggmiEx(i  ,j  ,k      ))%Is%ThinWire)  then
-                        sggmiEx(i  ,j  ,k      ) = 1
+                     if (.not.sgg%med(sggmiEx(i  ,j  ,k))%Is%ThinWire)  then
+                        sggmiEx(i  ,j  ,k) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
-                     if (.not.sgg%med(sggmiEx(i-1,j  ,k      ))%Is%ThinWire)  then
-                        sggmiEx(i-1,j  ,k      ) = 1
+                     if (.not.sgg%med(sggmiEx(i-1,j  ,k))%Is%ThinWire)  then
+                        sggmiEx(i-1,j  ,k) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
                   end if
                   if ((k   <=  sgg%alloc(iEy)%ZE).and.(k  >= sgg%alloc(iEy)%ZI)) then
-                     if (.not.sgg%med(sggmiEy(i  ,j  ,k      ))%Is%ThinWire)  then
-                        sggmiEy(i  ,j  ,k      ) = 1
+                     if (.not.sgg%med(sggmiEy(i  ,j  ,k))%Is%ThinWire)  then
+                        sggmiEy(i  ,j  ,k) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
-                     if (.not.sgg%med(sggmiEy(i  ,j-1,k      ))%Is%ThinWire)  then
-                        sggmiEy(i  ,j-1,k      ) = 1
+                     if (.not.sgg%med(sggmiEy(i  ,j-1,k))%Is%ThinWire)  then
+                        sggmiEy(i  ,j-1,k) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
                   end if
                   if ((k + 1  <=  sgg%alloc(iEx)%ZE).and.(k + 1 >= sgg%alloc(iEx)%ZI)) then
-                     if (.not.sgg%med(sggmiEx(i  ,j  ,k + 1  ))%Is%ThinWire)  then
-                        sggmiEx(i  ,j  ,k + 1  ) = 1
+                     if (.not.sgg%med(sggmiEx(i  ,j  ,k + 1))%Is%ThinWire)  then
+                        sggmiEx(i  ,j  ,k + 1) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
-                     if (.not.sgg%med(sggmiEx(i-1,j  ,k + 1  ))%Is%ThinWire)  then
-                        sggmiEx(i-1,j  ,k + 1  ) = 1
+                     if (.not.sgg%med(sggmiEx(i-1,j  ,k + 1))%Is%ThinWire)  then
+                        sggmiEx(i-1,j  ,k + 1) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
                   end if
                   if ((k + 1  <=  sgg%alloc(iEy)%ZE).and.(k + 1 >= sgg%alloc(iEy)%ZI)) then
-                     if (.not.sgg%med(sggmiEy(i  ,j  ,k + 1  ))%Is%ThinWire)  then
-                        sggmiEy(i  ,j  ,k + 1  ) = 1
+                     if (.not.sgg%med(sggmiEy(i  ,j  ,k + 1))%Is%ThinWire)  then
+                        sggmiEy(i  ,j  ,k + 1) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
                      end if
-                     if (.not.sgg%med(sggmiEy(i  ,j-1,k + 1  ))%Is%ThinWire)  then
-                        sggmiEy(i  ,j-1,k + 1  ) = 1
+                     if (.not.sgg%med(sggmiEy(i  ,j-1,k + 1))%Is%ThinWire)  then
+                        sggmiEy(i  ,j-1,k + 1) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
                         i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                         call WarnErrReport(buff)
@@ -1678,7 +1678,7 @@ contains
 
       end do
       !
-      allocate (LindProb(1:HWires%NumCurrentSegments ))
+      allocate (LindProb(1:HWires%NumCurrentSegments))
       do i1=1,HWires%NumCurrentSegments
          LindProb(i1)=.true.
          HWires%CurrentSegment(i1)%inv_Lind_acum    = 1.0_RKIND_WIRES /(  HWires%CurrentSegment(i1)%Lind )
@@ -1691,14 +1691,14 @@ contains
             org%Lind_acum     = org%Lind
             do j1=i1+1,HWires%NumCurrentSegments
                fin=>HWires%CurrentSegment(j1)
-               if ( (org%i == fin%i).and.(org%j == fin%j).and.(org%k == fin%k).and.(org%tipofield == fin%tipofield)) then
+               if ((org%i == fin%i).and.(org%j == fin%j).and.(org%k == fin%k).and.(org%tipofield == fin%tipofield)) then
                   org%NumParallel=org%NumParallel + 1
                   if (control%stableradholland) org%Lind_acum     = org%Lind_acum     + fin%Lind
                end if
             end do
             do j1=i1+1,HWires%NumCurrentSegments
                fin=>HWires%CurrentSegment(j1)
-               if ( (org%i == fin%i).and.(org%j == fin%j).and.(org%k == fin%k).and.(org%tipofield == fin%tipofield)) then
+               if ((org%i == fin%i).and.(org%j == fin%j).and.(org%k == fin%k).and.(org%tipofield == fin%tipofield)) then
                   fin%NumParallel=org%NumParallel
                   fin%Lind_acum     = org%Lind_acum
                   LindProb(j1)=.false.
@@ -1742,14 +1742,14 @@ contains
                   if ((r0 < 0.3_RKIND_WIRES  *despT1).or.(r0 < 0.3_RKIND_WIRES *despT2)) then
                      B= B-0.57
                   end if
-                  newr0=Sqrt(-Lambert(-A*Exp(b)/4.0_RKIND_WIRES) /A )
+                  newr0=Sqrt(-Lambert(-A*Exp(b)/4.0_RKIND_WIRES) /A)
                   !!!doublechecking
                   b= -4.0 * pi*InvMu(jmed) * (dummy%Lind)            + log(despT1**2.0_RKIND+despT2**2.0_RKIND)+ despT1/despT2*atan(despT2/despT1)+ despT2/despT1*atan(despT1/despT2)-3.0_RKIND_WIRES
                   a= pi/(despT2*despT1)
                   if ((r0 < 0.3_RKIND_WIRES  *despT1).or.(r0 < 0.3_RKIND_WIRES *despT2)) then
                      B=B-0.57
                   end if
-                  OLDR0=Sqrt(-Lambert(-A*Exp(b)/4.0_RKIND_WIRES) /A )
+                  OLDR0=Sqrt(-Lambert(-A*Exp(b)/4.0_RKIND_WIRES) /A)
                   !!!!!!!!!!
                   write (buff,'(a,e10.2e3,a,2e10.2e3,a,i9,a,3i9,a,e10.2e3,a,e10.2e3)')  'wir0_WARNING: AUTOMATIC CORRECTION OF L/mu0=', dummy%Lind/mu0, ' for r0=',r0,oldr0,&
                   ' ',dummy%NumParallel, ' wires at ',dummy%i,dummy%j,dummy%k,' to L/mu0=',dummy%Lind*deltadummy/mu0, ' for newr0=',newr0
@@ -1880,49 +1880,49 @@ contains
                 !!!bug 270224 gg Cuando se sobrepasa el MPI  kmenos1=k o kmas1=k da un buggy error. Pero no se toma decision alguna. se puede ignorar con -ignoreerrors
                 select case (whatfield)
                  case (iEx)
-                   med(0)  = sggMiEx(i + 1  , j     , k       )
-                   med(1)  = sggMiEy(i + 1  , j     , k       )
-                   med(2)  = sggMiEy(i + 1  , j - 1 , k       )
-                   med(3)  = sggMiEz(i + 1  , j     , k       )
-                   if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(4)  = sggMiEz(i + 1  , j     , kmenos1 )
-                   med(5)  = sggMiNo(i + 1  , j     , k       )
+                   med(0)  = sggMiEx(i + 1  , j     , k)
+                   med(1)  = sggMiEy(i + 1  , j     , k)
+                   med(2)  = sggMiEy(i + 1  , j - 1 , k)
+                   med(3)  = sggMiEz(i + 1  , j     , k)
+                   if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(4)  = sggMiEz(i + 1  , j     , kmenos1)
+                   med(5)  = sggMiNo(i + 1  , j     , k)
                    !
-                   med(6)  = sggMiEx(i  - 1 , j     , k       )
-                   med(7)  = sggMiEy(i      , j     , k       )
-                   med(8)  = sggMiEy(i      , j - 1 , k       )
-                   med(9)  = sggMiEz(i      , j     , k       )
-                   if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(10) = sggMiEz(i      , j     , kmenos1 )
-                   med(11) = sggMiNo(i      , j     , k       )
+                   med(6)  = sggMiEx(i  - 1 , j     , k)
+                   med(7)  = sggMiEy(i      , j     , k)
+                   med(8)  = sggMiEy(i      , j - 1 , k)
+                   med(9)  = sggMiEz(i      , j     , k)
+                   if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(10) = sggMiEz(i      , j     , kmenos1)
+                   med(11) = sggMiNo(i      , j     , k)
                  case (iEy)
-                   med(0)  = sggMiEy(i      , j + 1 , k       )
-                   med(1)  = sggMiEz(i      , j + 1 , k       )
-                   if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(2)  = sggMiEz(i      , j + 1 , kmenos1 )
-                   med(3)  = sggMiEx(i      , j + 1 , k       )
-                   med(4)  = sggMiEx(i - 1  , j + 1 , k       )
-                   med(5)  = sggMiNo(i      , j + 1 , k       )
+                   med(0)  = sggMiEy(i      , j + 1 , k)
+                   med(1)  = sggMiEz(i      , j + 1 , k)
+                   if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(2)  = sggMiEz(i      , j + 1 , kmenos1)
+                   med(3)  = sggMiEx(i      , j + 1 , k)
+                   med(4)  = sggMiEx(i - 1  , j + 1 , k)
+                   med(5)  = sggMiNo(i      , j + 1 , k)
                    !
-                   med(6)  = sggMiEy(i      , j  - 1 , k      )
-                   med(7)  = sggMiEz(i      , j     , k       )
-                   if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(8)  = sggMiEz(i      , j     , kmenos1 )
-                   med(9)  = sggMiEx(i      , j     , k       )
-                   med(10) = sggMiEx(i - 1  , j     , k       )
-                   med(11) = sggMiNo(i      , j     , k       )
+                   med(6)  = sggMiEy(i      , j  - 1 , k)
+                   med(7)  = sggMiEz(i      , j     , k)
+                   if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(8)  = sggMiEz(i      , j     , kmenos1)
+                   med(9)  = sggMiEx(i      , j     , k)
+                   med(10) = sggMiEx(i - 1  , j     , k)
+                   med(11) = sggMiNo(i      , j     , k)
                  case (IEZ)
 !!!ojooooo 270224 esta logica esta mal porque machaco las variables kmas1 y kmenos1.... corregir.... no tiene impacto pq el bucle es informativo y no se toman decisiones. en todo caso solo afectaria a MPI!
                      !!!pero esta no es la razon 27024 por la que sucede el error gg   (    8/   40) wir1_BUGGYERROR:  Lossy, pec,  2.           329         180         160   15000.0000000000      F F
-                   if (kmas1   >  sgg%alloc(IEZ)%ZE) kmas1=k  ; med(0)  = sggMiEz(i     , j     , kmas1    )
-                   if (kmas1   >  sgg%alloc(iEx)%ZE) kmas1=k  ; med(1)  = sggMiEx(i     , j     , kmas1    )
-                   if (kmas1   >  sgg%alloc(iEx)%ZE) kmas1=k  ; med(2)  = sggMiEx(i - 1 , j     , kmas1    )
-                   if (kmas1   >  sgg%alloc(iEy)%ZE) kmas1=k  ; med(3)  = sggMiEy(i     , j     , kmas1    )
-                   if (kmas1   >  sgg%alloc(iEy)%ZE) kmas1=k  ; med(4)  = sggMiEy(i     , j - 1 , kmas1    )
-                   if (kmas1   >  sgg%alloc(IHZ)%ZE) kmas1=k  ; med(5)  = sggMiNo(i     , j     , kmas1    )
+                   if (kmas1   >  sgg%alloc(IEZ)%ZE) kmas1=k  ; med(0)  = sggMiEz(i     , j     , kmas1)
+                   if (kmas1   >  sgg%alloc(iEx)%ZE) kmas1=k  ; med(1)  = sggMiEx(i     , j     , kmas1)
+                   if (kmas1   >  sgg%alloc(iEx)%ZE) kmas1=k  ; med(2)  = sggMiEx(i - 1 , j     , kmas1)
+                   if (kmas1   >  sgg%alloc(iEy)%ZE) kmas1=k  ; med(3)  = sggMiEy(i     , j     , kmas1)
+                   if (kmas1   >  sgg%alloc(iEy)%ZE) kmas1=k  ; med(4)  = sggMiEy(i     , j - 1 , kmas1)
+                   if (kmas1   >  sgg%alloc(IHZ)%ZE) kmas1=k  ; med(5)  = sggMiNo(i     , j     , kmas1)
                    !
-                   if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(6)  = sggMiEz(i     , j     , kmenos1  )
-                   med(7)  = sggMiEx(i     , j     , k        )
-                   med(8)  = sggMiEx(i - 1 , j     , k        )
-                   med(9)  = sggMiEy(i     , j     , k        )
-                   med(10) = sggMiEy(i     , j - 1 , k        )
-                   med(11) = sggMiNo(i     , j     , k        )
+                   if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(6)  = sggMiEz(i     , j     , kmenos1)
+                   med(7)  = sggMiEx(i     , j     , k)
+                   med(8)  = sggMiEx(i - 1 , j     , k)
+                   med(9)  = sggMiEy(i     , j     , k)
+                   med(10) = sggMiEy(i     , j - 1 , k)
+                   med(11) = sggMiNo(i     , j     , k)
                 end select
                 !hay que tratar cada extremo por separado
                 do nm=0,5
@@ -2204,7 +2204,7 @@ contains
 !
              dummy%Lind_devia=dummy%Lind_devia + givenautoin_devia
          else
-             if (givenautoin <= tiny(1.0e-1) )  call StopOnError(0,0,'Fieldtotl not compatible with null given self inductance. ')
+             if (givenautoin <= tiny(1.0e-1))  call StopOnError(0,0,'Fieldtotl not compatible with null given self inductance. ')
                  
              dummy%Lind=givenautoin
 !
@@ -2563,7 +2563,7 @@ contains
                                  NodeExists=.true.
                                  if (proceed1) then
                                     b2: do j2=1,2*MAXNUMCURRENTMINUSPLUS
-                                       if (HWires%ChargeNode(nn)%YESsegment(j2) < 0 )   then
+                                       if (HWires%ChargeNode(nn)%YESsegment(j2) < 0)   then
                                           HWires%ChargeNode(nn)%YESsegment(j2)  = adj%YESsegment(1)
                                           exit b2
                                        end if
@@ -2571,7 +2571,7 @@ contains
                                  end if
                                  if (PROCEED2) then
                                     b4: do j2=1,2*MAXNUMCURRENTMINUSPLUS
-                                       if (HWires%ChargeNode(nn)%YESsegment(j2)  < 0 )   then
+                                       if (HWires%ChargeNode(nn)%YESsegment(j2)  < 0)   then
                                           HWires%ChargeNode(nn)%YESsegment(j2)  = adj%YESsegment(2)
                                           exit b4
                                        end if
@@ -2659,7 +2659,7 @@ contains
                                  NodeExists=.true.
                                  if (proceed1) then
                                     b22: do j2=1,2*MAXNUMCURRENTMINUSPLUS
-                                       if (HWires%ChargeNode(nn)%YESsegment(j2) < 0 )   then
+                                       if (HWires%ChargeNode(nn)%YESsegment(j2) < 0)   then
                                           HWires%ChargeNode(nn)%YESsegment(j2)  = adj%YESsegment(1)
                                           exit b22
                                        end if
@@ -2667,7 +2667,7 @@ contains
                                  end if
                                  if (PROCEED2) then
                                     b42: do j2=1,2*MAXNUMCURRENTMINUSPLUS
-                                       if (HWires%ChargeNode(nn)%YESsegment(j2)  < 0 )   then
+                                       if (HWires%ChargeNode(nn)%YESsegment(j2)  < 0)   then
                                           HWires%ChargeNode(nn)%YESsegment(j2)  = adj%YESsegment(2)
                                           exit b42
                                        end if
@@ -2985,7 +2985,7 @@ contains
             (segmento%HasParallel_RightEnd.or.segmento%HasSeries_RightEnd)
          end if
          if (.not.asignado) then
-            if (segmento%HasParallel_LeftEnd .or. segmento%HasSeries_LeftEnd ) then
+            if (segmento%HasParallel_LeftEnd .or. segmento%HasSeries_LeftEnd) then
                if (segmento%chargeplus%isPEC .or. segmento%chargeplus%isLossy.or. segmento%chargeplus%isLossy.or. segmento%chargeplus%isLossy) then
                   if ((.not. segmento%chargeplus%Is_LeftEnd).and.(.not. segmento%chargeplus%Is_RightEnd)) then
                      segmento%chargeplus%Is_LeftEnd =.true.
@@ -3021,7 +3021,7 @@ contains
                   end if
                end if
             end if
-            if (segmento%HasParallel_RightEnd .or. segmento%HasSeries_RightEnd ) then
+            if (segmento%HasParallel_RightEnd .or. segmento%HasSeries_RightEnd) then
                if (segmento%chargeplus%isPEC .or. segmento%chargeplus%isLossy .or. segmento%chargeplus%isLossy .or. segmento%chargeplus%isLossy) then
                   if ((.not. segmento%chargeplus%Is_LeftEnd).and.(.not. segmento%chargeplus%Is_RightEnd)) then
                      segmento%chargeplus%Is_RightEnd =.true.
@@ -3462,7 +3462,7 @@ contains
             if     ((segmento%HasAbsorbing_RightEnd).and.(nodo%Is_RightEnd))  then
                thereAreMurConditions=.true.
                nodo%IsMur = .true.
-               if (associated( nodo%CurrentPlus_1)) then 
+               if (associated(nodo%CurrentPlus_1)) then 
                    nodo%NodeInside =>  nodo%CurrentPlus_1%ChargePlus
                               dummy => nodo%CurrentPlus_1
                else if (associated(nodo%CurrentMinus_1)) then  
@@ -3478,7 +3478,7 @@ contains
             else if ((segmento%HasAbsorbing_LeftEnd).and.(nodo%Is_LeftEnd))  then
                thereAreMurConditions=.true.
                nodo%IsMur = .true.
-               if (associated( nodo%CurrentPlus_1)) then 
+               if (associated(nodo%CurrentPlus_1)) then 
                    nodo%NodeInside =>  nodo%CurrentPlus_1%ChargePlus
                               dummy => nodo%CurrentPlus_1
                else if (associated(nodo%CurrentMinus_1)) then  
@@ -3873,20 +3873,20 @@ end subroutine deembed_segment
                if (k-1 <  sgg%alloc(IEZ)%ZI) kmenos1=k
                !
                Nodo%IsLossy   = &
-               sgg%Med(sggMino(i  ,j,k         ))%Is%Lossy .or. &
-               sgg%Med(sggMiEx(i  ,j,k         ))%Is%Lossy .or. &
-               sgg%Med(sggMiEy(i,j  ,k         ))%Is%Lossy .or. &
-               sgg%Med(sggMiEz(i,j,k           ))%Is%Lossy .or. &
-               sgg%Med(sggMiEx(i-1,j,k         ))%Is%Lossy .or. &
-               sgg%Med(sggMiEy(i,j-1,k         ))%Is%Lossy .or. &
-               sgg%Med(sggMiEz(i,j,kmenos1     ))%Is%Lossy
+               sgg%Med(sggMino(i  ,j,k))%Is%Lossy .or. &
+               sgg%Med(sggMiEx(i  ,j,k))%Is%Lossy .or. &
+               sgg%Med(sggMiEy(i,j  ,k))%Is%Lossy .or. &
+               sgg%Med(sggMiEz(i,j,k))%Is%Lossy .or. &
+               sgg%Med(sggMiEx(i-1,j,k))%Is%Lossy .or. &
+               sgg%Med(sggMiEy(i,j-1,k))%Is%Lossy .or. &
+               sgg%Med(sggMiEz(i,j,kmenos1))%Is%Lossy
 
                
-               sigt =MAX(max(max(sgg%Med(sggMiEx(i  ,j  ,k      ))%sigma , &
-                                   sgg%Med(sggMiEy(i  ,j  ,k      ))%sigma), &
-                                   MAX(sgg%Med(sggMiEz(i  ,j  ,k      ))%sigma,  &
-                                   sgg%Med(sggMiEx(i-1,j  ,k      ))%sigma)),&
-                                   MAX(    sgg%Med(sggMiEy(i  ,j-1,k      ))%sigma,  &
+               sigt =MAX(max(max(sgg%Med(sggMiEx(i  ,j  ,k))%sigma , &
+                                   sgg%Med(sggMiEy(i  ,j  ,k))%sigma), &
+                                   MAX(sgg%Med(sggMiEz(i  ,j  ,k))%sigma,  &
+                                   sgg%Med(sggMiEx(i-1,j  ,k))%sigma)),&
+                                   MAX(    sgg%Med(sggMiEy(i  ,j-1,k))%sigma,  &
                                    sgg%Med(sggMiEz(i  ,j  ,kmenos1))%sigma) )
                nodo%islossy = nodo%islossy .or. (abs(sigt) > 1.0e-19_RKIND_WIRES)
                
@@ -3912,13 +3912,13 @@ end subroutine deembed_segment
                !tampoco es esto lo del bug  FU50_50mm_conf   pero no esta de mas tenerlo en cuenta
             
                nodo%ispec = &
-               ( sggMiNo(i  ,j,k) ==0).or.(sgg%med( sggMiNo(i  ,j,k) )%is%PEC) .or. &
-               ( sggMiEx(i  ,j,k) ==0).or.(sgg%med( sggMiEx(i  ,j,k) )%is%PEC) .or. &
-               ( sggMiEy(i,j  ,k) ==0).or.(sgg%med( sggMiEy(i,j  ,k) )%is%PEC) .or. &
-               ( sggMiEz(i,j,k  ) ==0).or.(sgg%med( sggMiEz(i,j,k  ) )%is%PEC) .or. &
-               ( sggMiEx(i-1,j,k) ==0).or.(sgg%med( sggMiEx(i-1,j,k) )%is%PEC) .or. &
-               ( sggMiEy(i,j-1,k) ==0).or.(sgg%med( sggMiEy(i,j-1,k) )%is%PEC) .or. &
-               ( sggMiEz(i,j,kmenos1) ==0).or.(sgg%med( sggMiEz(i,j,kmenos1) )%is%PEC)
+               ( sggMiNo(i  ,j,k) ==0).or.(sgg%med(sggMiNo(i  ,j,k))%is%PEC) .or. &
+               ( sggMiEx(i  ,j,k) ==0).or.(sgg%med(sggMiEx(i  ,j,k))%is%PEC) .or. &
+               ( sggMiEy(i,j  ,k) ==0).or.(sgg%med(sggMiEy(i,j  ,k))%is%PEC) .or. &
+               ( sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k))%is%PEC) .or. &
+               ( sggMiEx(i-1,j,k) ==0).or.(sgg%med(sggMiEx(i-1,j,k))%is%PEC) .or. &
+               ( sggMiEy(i,j-1,k) ==0).or.(sgg%med(sggMiEy(i,j-1,k))%is%PEC) .or. &
+               ( sggMiEz(i,j,kmenos1) ==0).or.(sgg%med(sggMiEz(i,j,kmenos1))%is%PEC)
                
 
                
@@ -3934,21 +3934,21 @@ end subroutine deembed_segment
                
 !pedazo de niapa para poner los nodos conformal a voltage nulo y sus segmentos conformal tambien si son already_YEEadvanced_byconformal (old notouch o no_touch) y que Dios reparta suerte 140220
                if ((nodo%Is_RightEnd.or.nodo%Is_LeftEnd)) then !!!los busy_nodes se han puesto a pec cuando en realidad estan unidos a already_YEEadvanced_byconformal .and.(.not.(nodo%ispec.or.nodo%islossy))) then   !solo si es un extremo y no estaba ya puesto a pec            
-                      medio1  =sggMiEx(i  ,j  ,k  )    
-                      medio1m =sggMiEx(i-1,j  ,k  )
-                      medio2  =sggMiEy(i  ,j  ,k  )
-                      medio2m =sggMiEy(i  ,j-1,k  )
-                      medio3  =sggMiEz(i  ,j  ,k  )    
+                      medio1  =sggMiEx(i  ,j  ,k)    
+                      medio1m =sggMiEx(i-1,j  ,k)
+                      medio2  =sggMiEy(i  ,j  ,k)
+                      medio2m =sggMiEy(i  ,j-1,k)
+                      medio3  =sggMiEz(i  ,j  ,k)    
                       medio3m =sggMiEz(i  ,j  ,kmenos1)
                       
                      !
-                      if (sgg%med(medio1 )%is%split_and_useless .or. sgg%med(medio2 )%is%split_and_useless .or. sgg%med(medio3 )%is%split_and_useless.or. &
+                      if (sgg%med(medio1)%is%split_and_useless .or. sgg%med(medio2)%is%split_and_useless .or. sgg%med(medio3)%is%split_and_useless.or. &
                           sgg%med(medio1m)%is%split_and_useless .or. sgg%med(medio2m)%is%split_and_useless .or. sgg%med(medio3m)%is%split_and_useless) then
                            write (buff,*)  'wir1_BUGGYERROR: Conformal node CONNECTED TO at least one split_and_useless conformal edge that cannot be safely set to PEC () ', i,j,k
                            if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff,.true.)
                       end if
                      !
-                      if (sgg%med(medio1 )%is%already_YEEadvanced_byconformal .or. sgg%med(medio2 )%is%already_YEEadvanced_byconformal .or. sgg%med(medio3 )%is%already_YEEadvanced_byconformal.or. &
+                      if (sgg%med(medio1)%is%already_YEEadvanced_byconformal .or. sgg%med(medio2)%is%already_YEEadvanced_byconformal .or. sgg%med(medio3)%is%already_YEEadvanced_byconformal.or. &
                           sgg%med(medio1m)%is%already_YEEadvanced_byconformal .or. sgg%med(medio2m)%is%already_YEEadvanced_byconformal .or. sgg%med(medio3m)%is%already_YEEadvanced_byconformal) then
 			               nodo%ispec=.true. !luego se pondra nodo%cteplain = 0 para todos los pec
                            write (buff,*)  'wir1_WARNING: Conformal already_YEEadvanced_byconformal node changed to PEC grounded node at ', i,j,k
@@ -4027,7 +4027,7 @@ end subroutine deembed_segment
                                 end if
                            end if
                            
-                      else if (sgg%med(medio1 )%is%split_and_useless .and. sgg%med(medio2 )%is%split_and_useless .and. sgg%med(medio3 )%is%split_and_useless .and. &
+                      else if (sgg%med(medio1)%is%split_and_useless .and. sgg%med(medio2)%is%split_and_useless .and. sgg%med(medio3)%is%split_and_useless .and. &
                               sgg%med(medio1m)%is%split_and_useless .and. sgg%med(medio2m)%is%split_and_useless .and. sgg%med(medio3m)%is%split_and_useless) then
                            write (buff,*)  'wir1_ERROR: Conformal split_and_useless node NOT changed (IMPOSIBLE) to PEC grounded node at ', i,j,k
                            if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff,.true.)
@@ -4680,7 +4680,7 @@ subroutine resume_casuistics
          if (second%Is_LeftEnd) void=void+1
          if (second%Is_RightEnd) void=void+1
          if (second%IsEnd_norLeft_norRight) void=void+1
-         if ( (first%Is_LeftEnd .and. first%Is_RightEnd).and.(void==1)) then
+         if ((first%Is_LeftEnd .and. first%Is_RightEnd).and.(void==1)) then
             if ( &
             ((first%i      == second%ilibre).and.(first%j      == second%jlibre).and.(first%k      == second%klibre)).or. &
             ((first%ilibre == second%ilibre).and.(first%jlibre == second%jlibre).and.(first%klibre == second%klibre)) ) then
@@ -4694,7 +4694,7 @@ subroutine resume_casuistics
          if (first%Is_LeftEnd) void=void+1
          if (first%Is_RightEnd) void=void+1
          if (first%IsEnd_norLeft_norRight) void=void+1
-         if ( (void ==1).and.(second%Is_LeftEnd .and. second%Is_RightEnd)) then
+         if ((void ==1).and.(second%Is_LeftEnd .and. second%Is_RightEnd)) then
             if ( &
             ((first%ilibre == second%i     ).and.(first%jlibre == second%j     ).and.(first%klibre == second%k     )).or. &
             ((first%ilibre == second%ilibre).and.(first%jlibre == second%jlibre).and.(first%klibre == second%klibre)) ) then
@@ -5654,7 +5654,7 @@ subroutine resume_casuistics
          d(n)= d(n) + segmento%rightCHplus   * Segmento%ChargePlus%ChargePresent
          d(n)= d(n) + real(Segmento%Efield_wire2main,kind=RKIND_WIRES)
          if (Segmento%ChargeMinus%NumCurrentMinus==1) d(n)= d(n) + segmento%rightCUminus  * Segmento%ChargeMinus%CurrentMinus_1%Current
-         if (Segmento%ChargePlus%NumCurrentPlus==1  ) d(n)= d(n) + segmento%rightCUplus   * Segmento%ChargePlus%CurrentPlus_1%Current
+         if (Segmento%ChargePlus%NumCurrentPlus==1) d(n)= d(n) + segmento%rightCUplus   * Segmento%ChargePlus%CurrentPlus_1%Current
          if (.not.simu_devia) then             
              if  (Segmento%HasVsource) then
                 source=evolucion(timei,Segmento%Vsource%Fichero%Samples, &
@@ -5834,9 +5834,9 @@ subroutine resume_casuistics
          call DestroyWireMedia(sgg%Med(i))
       end do
 
-      if (associated(HWires%WireTipoMedio )) deallocate(HWires%WireTipoMedio )
+      if (associated(HWires%WireTipoMedio)) deallocate(HWires%WireTipoMedio)
       if (associated(HWires%CurrentSegment)) deallocate(HWires%CurrentSegment)
-      if (associated(HWires%ChargeNode    )) deallocate(HWires%ChargeNode    )
+      if (associated(HWires%ChargeNode)) deallocate(HWires%ChargeNode)
 #ifdef CompileWithMPI
       if (Hwires%NumNeededCurrentUpMPI>0)   deallocate(HWires%MPIUpNeededCurrentSegment)
       if (Hwires%NumNeededCurrentDownMPI>0) deallocate(HWires%MPIDownNeededCurrentSegment)
@@ -6139,7 +6139,7 @@ subroutine resume_casuistics
                ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'
                if ((nodo%k >=  ZI).and.(nodo%k<=ZE).and.verbose) call WarnErrReport(buff)
                Terminal = .false. !7/2/14 esti estaba mal
-               if (nodo%NumCurrentMinus >=1 ) then
+               if (nodo%NumCurrentMinus >=1) then
                   Terminal = Terminal .or. &
                   (nodo%CurrentMinus_1%Is_LeftEnd.or.nodo%CurrentMinus_1%Is_RightEnd.or.nodo%CurrentMinus_1%IsEnd_norLeft_norRight)
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -1: ', &
@@ -6386,7 +6386,7 @@ subroutine resume_casuistics
                nodo%j, &
                nodo%k
                if ((nodo%k >=  ZI).and.(nodo%k<=ZE)) call WarnErrReport(buff,paraerr)
-               if (nodo%NumCurrentMinus >=1 ) then
+               if (nodo%NumCurrentMinus >=1) then
                   write (buff,'(a,i7,3i7,a,i7)')  '         Segment -1: ', &
                   nodo%CurrentMinus_1%origindex, &
                   nodo%CurrentMinus_1%i, &
@@ -6606,7 +6606,7 @@ subroutine resume_casuistics
       
       do i1=1,indio
         do j1=i1+1,indio
-            if ( (nodosopentoair(i1)%i==nodosopentoair(j1)%i).and.(nodosopentoair(i1)%j==nodosopentoair(j1)%j).and.(nodosopentoair(i1)%k==nodosopentoair(j1)%k) ) then
+            if ((nodosopentoair(i1)%i==nodosopentoair(j1)%i).and.(nodosopentoair(i1)%j==nodosopentoair(j1)%j).and.(nodosopentoair(i1)%k==nodosopentoair(j1)%k)) then
                   write (buff,'(a,8i7)')  'wir3_ERROR: TWO nodes at the same location open to air. Should be connected? ',indio,i1,j1, &
                   nodosopentoair(i1)%indexnode, nodosopentoair(j1)%indexnode, nodosopentoair(i1)%i,nodosopentoair(i1)%j,nodosopentoair(i1)%k
                   if ((nodosopentoair(i1)%k >=  ZI).and.(nodosopentoair(i1)%k <= ZE)) call WarnErrReport(buff,.true.)

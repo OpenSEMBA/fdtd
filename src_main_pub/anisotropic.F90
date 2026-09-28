@@ -47,7 +47,7 @@ module Anisotropic_m
 
    type, public :: AnisotropicMed_t
       integer(kind=4) :: NumMed
-      type(Anisotropicinfo_t), pointer, dimension( : ) :: info
+      type(Anisotropicinfo_t), pointer, dimension(:) :: info
    end type
    type(AnisotropicMed_t),save, target :: AniMed
 
@@ -317,7 +317,7 @@ contains
                (sgg%Eshared%elem(j1)%k == AniMed%info(jmed)%Ex_k(i1)).and. &
                (sgg%Eshared%elem(j1)%Field == iEx)) then
                   AniMed%info(jmed)%Ex_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
-                  if (sgg%Eshared%elem(j1)%Times > 1 ) then
+                  if (sgg%Eshared%elem(j1)%Times > 1) then
                      allocate (AniMed%info(jmed)%Ex_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))    
                   end if
                   exit buscaEx
@@ -332,7 +332,7 @@ contains
                (sgg%Eshared%elem(j1)%k == AniMed%info(jmed)%Ey_k(i1)).and. &
                (sgg%Eshared%elem(j1)%Field == iEy)) then
                   AniMed%info(jmed)%Ey_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
-                  if (sgg%Eshared%elem(j1)%Times > 1 ) then
+                  if (sgg%Eshared%elem(j1)%Times > 1) then
                      allocate (AniMed%info(jmed)%Ey_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))
                   end if
                   exit buscaEy
@@ -347,7 +347,7 @@ contains
                (sgg%Eshared%elem(j1)%k == AniMed%info(jmed)%Ez_k(i1)).and. &
                (sgg%Eshared%elem(j1)%Field == IEZ)) then
                   AniMed%info(jmed)%Ez_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
-                  if (sgg%Eshared%elem(j1)%Times > 1 ) then
+                  if (sgg%Eshared%elem(j1)%Times > 1) then
                      allocate (AniMed%info(jmed)%Ez_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))
                   end if
                   !PRINT *,'---> ez',sgg%Eshared%elem(j1)%i,sgg%Eshared%elem(j1)%J,sgg%Eshared%elem(j1)%k,sgg%Eshared%elem(j1)%times
@@ -365,7 +365,7 @@ contains
                (sgg%Hshared%elem(j1)%k == AniMed%info(jmed)%Hx_k(i1)).and. &
                (sgg%Hshared%elem(j1)%Field == IHX)) then
                   AniMed%info(jmed)%Hx_Shared(i1)%times = sgg%Hshared%elem(j1)%Times
-                  if (sgg%Hshared%elem(j1)%Times > 1 ) then
+                  if (sgg%Hshared%elem(j1)%Times > 1) then
                      allocate (AniMed%info(jmed)%Hx_Shared(i1)%SharedMed(1:sgg%Hshared%elem(j1)%Times))
                   end if
                   !PRINT *,'---> Hx',sgg%Hshared%elem(j1)%i,sgg%Hshared%elem(j1)%J,sgg%Hshared%elem(j1)%k,sgg%Hshared%elem(j1)%times
@@ -381,7 +381,7 @@ contains
                (sgg%Hshared%elem(j1)%k == AniMed%info(jmed)%Hy_k(i1)).and. &
                (sgg%Hshared%elem(j1)%Field == IHY)) then
                   AniMed%info(jmed)%Hy_Shared(i1)%times = sgg%Hshared%elem(j1)%Times
-                  if (sgg%Hshared%elem(j1)%Times > 1 ) then
+                  if (sgg%Hshared%elem(j1)%Times > 1) then
                      allocate (AniMed%info(jmed)%Hy_Shared(i1)%SharedMed(1:sgg%Hshared%elem(j1)%Times))
                   end if
                   !PRINT *,'---> Hy',sgg%Hshared%elem(j1)%i,sgg%Hshared%elem(j1)%J,sgg%Hshared%elem(j1)%k,sgg%Hshared%elem(j1)%times
@@ -397,7 +397,7 @@ contains
                (sgg%Hshared%elem(j1)%k == AniMed%info(jmed)%Hz_k(i1)).and. &
                (sgg%Hshared%elem(j1)%Field == IHZ)) then
                   AniMed%info(jmed)%Hz_Shared(i1)%times = sgg%Hshared%elem(j1)%Times
-                  if (sgg%Hshared%elem(j1)%Times > 1 ) then
+                  if (sgg%Hshared%elem(j1)%Times > 1) then
                      allocate (AniMed%info(jmed)%Hz_Shared(i1)%SharedMed(1:sgg%Hshared%elem(j1)%Times))
                   end if
                   !PRINT *,'---> Hz',sgg%Hshared%elem(j1)%i,sgg%Hshared%elem(j1)%J,sgg%Hshared%elem(j1)%k,sgg%Hshared%elem(j1)%times
@@ -505,7 +505,7 @@ contains
 
 
       do jmed=1,AniMed%NumMed !barrelos ahora todos
-         dummyAnisProp => sgg%med( AniMed%Info(jmed)%indexmed )%Anisotropic(1)
+         dummyAnisProp => sgg%med(AniMed%Info(jmed)%indexmed)%Anisotropic(1)
          do i1=1,AniMed%info(jmed)%NumNodesEx
             conta=AniMed%info(jmed)%Ex_Shared(i1)%times
             if (conta > 1) then
@@ -514,7 +514,7 @@ contains
                AniMed%info(jmed)%mur    = dummyAnisProp%mur    /conta
                AniMed%info(jmed)%epr    = dummyAnisProp%epr    /conta
                do k1=1,conta-1
-                  dummyAnisShared => sgg%med( AniMed%info(jmed)%Ex_Shared(i1)%SharedMed(k1))%Anisotropic(1)
+                  dummyAnisShared => sgg%med(AniMed%info(jmed)%Ex_Shared(i1)%SharedMed(k1))%Anisotropic(1)
                   AniMed%info(jmed)%sigma  = AniMed%info(jmed)%sigma  + dummyAnisShared%sigma  /conta
                   AniMed%info(jmed)%sigmam = AniMed%info(jmed)%sigmam + dummyAnisShared%sigmam /conta
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
@@ -532,7 +532,7 @@ contains
                AniMed%info(jmed)%mur    = dummyAnisProp%mur    /conta
                AniMed%info(jmed)%epr    = dummyAnisProp%epr    /conta
                do k1=1,conta-1
-                  dummyAnisShared => sgg%med( AniMed%info(jmed)%Ey_Shared(i1)%SharedMed(k1))%Anisotropic(1)
+                  dummyAnisShared => sgg%med(AniMed%info(jmed)%Ey_Shared(i1)%SharedMed(k1))%Anisotropic(1)
                   AniMed%info(jmed)%sigma  = AniMed%info(jmed)%sigma  + dummyAnisShared%sigma  /conta
                   AniMed%info(jmed)%sigmam = AniMed%info(jmed)%sigmam + dummyAnisShared%sigmam /conta
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
@@ -551,7 +551,7 @@ contains
                AniMed%info(jmed)%mur    = dummyAnisProp%mur    /conta
                AniMed%info(jmed)%epr    = dummyAnisProp%epr    /conta
                do k1=1,conta-1
-                  dummyAnisShared => sgg%med( AniMed%info(jmed)%Ez_Shared(i1)%SharedMed(k1))%Anisotropic(1)
+                  dummyAnisShared => sgg%med(AniMed%info(jmed)%Ez_Shared(i1)%SharedMed(k1))%Anisotropic(1)
                   AniMed%info(jmed)%sigma  = AniMed%info(jmed)%sigma  + dummyAnisShared%sigma  /conta
                   AniMed%info(jmed)%sigmam = AniMed%info(jmed)%sigmam + dummyAnisShared%sigmam /conta
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
@@ -570,7 +570,7 @@ contains
                AniMed%info(jmed)%mur    = dummyAnisProp%mur    /conta
                AniMed%info(jmed)%epr    = dummyAnisProp%epr    /conta
                do k1=1,conta-1
-                  dummyAnisShared => sgg%med( AniMed%info(jmed)%Hx_Shared(i1)%SharedMed(k1))%Anisotropic(1)
+                  dummyAnisShared => sgg%med(AniMed%info(jmed)%Hx_Shared(i1)%SharedMed(k1))%Anisotropic(1)
                   AniMed%info(jmed)%sigma  = AniMed%info(jmed)%sigma  + dummyAnisShared%sigma  /conta
                   AniMed%info(jmed)%sigmam = AniMed%info(jmed)%sigmam + dummyAnisShared%sigmam /conta
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
@@ -589,7 +589,7 @@ contains
                AniMed%info(jmed)%mur    = dummyAnisProp%mur    /conta
                AniMed%info(jmed)%epr    = dummyAnisProp%epr    /conta
                do k1=1,conta-1
-                  dummyAnisShared => sgg%med( AniMed%info(jmed)%Hy_Shared(i1)%SharedMed(k1))%Anisotropic(1)
+                  dummyAnisShared => sgg%med(AniMed%info(jmed)%Hy_Shared(i1)%SharedMed(k1))%Anisotropic(1)
                   AniMed%info(jmed)%sigma  = AniMed%info(jmed)%sigma  + dummyAnisShared%sigma  /conta
                   AniMed%info(jmed)%sigmam = AniMed%info(jmed)%sigmam + dummyAnisShared%sigmam /conta
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
@@ -608,7 +608,7 @@ contains
                AniMed%info(jmed)%mur    = dummyAnisProp%mur    /conta
                AniMed%info(jmed)%epr    = dummyAnisProp%epr    /conta
                do k1=1,conta-1
-                  dummyAnisShared => sgg%med( AniMed%info(jmed)%Hz_Shared(i1)%SharedMed(k1))%Anisotropic(1)
+                  dummyAnisShared => sgg%med(AniMed%info(jmed)%Hz_Shared(i1)%SharedMed(k1))%Anisotropic(1)
                   AniMed%info(jmed)%sigma  = AniMed%info(jmed)%sigma  + dummyAnisShared%sigma  /conta
                   AniMed%info(jmed)%sigmam = AniMed%info(jmed)%sigmam + dummyAnisShared%sigmam /conta
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta

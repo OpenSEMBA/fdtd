@@ -113,12 +113,12 @@ contains
                if (SGG%Med(jmed)%Is%Lumped)  then
                   conta=conta+1
                   lumped_ => LumpElem%Nodes(conta)
-                  lumped_%alignedDeltaE      =    1.0_RKIND/IDXe(i1      )
-                  lumped_%transversalDeltaHa =    1.0_RKIND/IDYh(   j1   )
-                  lumped_%transversalDeltaHb    = 1.0_RKIND/IDzh(      k1)
+                  lumped_%alignedDeltaE      =    1.0_RKIND/IDXe(i1)
+                  lumped_%transversalDeltaHa =    1.0_RKIND/IDYh(j1)
+                  lumped_%transversalDeltaHb    = 1.0_RKIND/IDzh(k1)
                   lumped_%Orient=           SGG%Med(jmed)%Lumped(1)%Orient
                   lumped_%jmed       = jmed
-                  lumped_%Efield    => Ex(i1,j1  ,k1  )
+                  lumped_%Efield    => Ex(i1,j1  ,k1)
                   lumped_%Ha_Plus   => Hz(i1,j1  ,k1)
                   lumped_%Ha_Minu   => Hz(i1,j1-1,k1)
                   lumped_%Hb_Plus   => Hy(i1,j1  ,k1)
@@ -135,16 +135,16 @@ contains
                if (SGG%Med(jmed)%Is%Lumped)  then
                   conta=conta+1
                   lumped_ => LumpElem%Nodes(conta)
-                  lumped_%alignedDeltaE      = 1.0_RKIND/IDye(  j1   )
-                  lumped_%transversalDeltaHa = 1.0_RKIND/IDzh(     k1)
-                  lumped_%transversalDeltaHb = 1.0_RKIND/IDxh(i1     )
+                  lumped_%alignedDeltaE      = 1.0_RKIND/IDye(j1)
+                  lumped_%transversalDeltaHa = 1.0_RKIND/IDzh(k1)
+                  lumped_%transversalDeltaHb = 1.0_RKIND/IDxh(i1)
                   lumped_%Orient=           SGG%Med(jmed)%Lumped(1)%Orient
                   lumped_%jmed       = jmed
-                  lumped_%Efield    => Ey(i1  ,j1  ,k1  )
-                  lumped_%Ha_Plus   => Hx(i1  ,j1  ,k1  )
+                  lumped_%Efield    => Ey(i1  ,j1  ,k1)
+                  lumped_%Ha_Plus   => Hx(i1  ,j1  ,k1)
                   lumped_%Ha_Minu   => Hx(i1  ,j1  ,k1-1)
-                  lumped_%Hb_Plus   => Hz(i1  ,j1  ,k1  )
-                  lumped_%Hb_Minu   => Hz(i1-1,j1  ,k1  )
+                  lumped_%Hb_Plus   => Hz(i1  ,j1  ,k1)
+                  lumped_%Hb_Minu   => Hz(i1-1,j1  ,k1)
                end if
             end do
          end do
@@ -157,16 +157,16 @@ contains
                if (SGG%Med(jmed)%Is%Lumped) then
                   conta=conta+1
                   lumped_ => LumpElem%Nodes(conta)
-                  lumped_%alignedDeltaE      = 1.0_RKIND/IDzE(        k1)
-                  lumped_%transversalDeltaHa = 1.0_RKIND/IDxh(i1        )
-                  lumped_%transversalDeltaHb = 1.0_RKIND/IDyh(    j1    )
+                  lumped_%alignedDeltaE      = 1.0_RKIND/IDzE(k1)
+                  lumped_%transversalDeltaHa = 1.0_RKIND/IDxh(i1)
+                  lumped_%transversalDeltaHb = 1.0_RKIND/IDyh(j1)
                   lumped_%Orient=           SGG%Med(jmed)%Lumped(1)%Orient
                   lumped_%jmed  = jmed
-                  lumped_%Efield  => Ez(i1  ,j1  ,k1  )
-                  lumped_%Ha_Plus => Hy(i1  ,j1  ,k1  )
+                  lumped_%Efield  => Ez(i1  ,j1  ,k1)
+                  lumped_%Ha_Plus => Hy(i1  ,j1  ,k1)
                   lumped_%Ha_Minu => Hy(i1-1,j1  ,k1)
-                  lumped_%Hb_Plus => Hx(i1  ,j1  ,k1  )
-                  lumped_%Hb_Minu => Hx(i1  ,j1-1,k1  )
+                  lumped_%Hb_Plus => Hx(i1  ,j1  ,k1)
+                  lumped_%Hb_Minu => Hx(i1  ,j1-1,k1)
                end if
             end do
          end do
@@ -441,7 +441,7 @@ contains
         fxx0=A*exp(B*xx0)+x+C
         dfxx0=A*B*exp(B*xx0)+1.0_RKIND
         x = xx0 - fxx0/dfxx0
-        if (ABS(x-xx0) < tol*ABS(x) ) then
+        if (ABS(x-xx0) < tol*ABS(x)) then
             clave = 0
             n = i
             exit busca

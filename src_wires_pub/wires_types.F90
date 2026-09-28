@@ -125,18 +125,18 @@ module wiresHolland_constants_m
       integer(kind=4)                                :: NumMultilines !dama
       type(TMultiline_t) , pointer, dimension(:) :: Multilines    !dama
       integer(kind=4) :: NumDifferentWires,NumCurrentSegments,NumChargeNodes
-      integer(kind=4), pointer, dimension( : ) :: WireTipoMedio
+      integer(kind=4), pointer, dimension(:) :: WireTipoMedio
       type(CurrentSegments_t) :: NullSegment !contiene informacion nula precisada por segmentos voided pero observados en la rutina de observacion 12/09/13
       type(ChargeNodes_t) :: NullNode
-      type(CurrentSegments_t), pointer, dimension( : ) :: CurrentSegment
-      type(ChargeNodes_t), pointer, dimension( : ) :: ChargeNode
+      type(CurrentSegments_t), pointer, dimension(:) :: CurrentSegment
+      type(ChargeNodes_t), pointer, dimension(:) :: ChargeNode
 #ifdef CompileWithMPI
       !For MPI purposes !only handled and initialized in MPIcomm
-      type(CurrentSegments_t), pointer, dimension( : ) :: MPIUpNeededCurrentSegment,MPIDownNeededCurrentSegment
+      type(CurrentSegments_t), pointer, dimension(:) :: MPIUpNeededCurrentSegment,MPIDownNeededCurrentSegment
       integer(kind=4)                                 :: NumNeededCurrentUpMPI,NumNeededCurrentDownMPI
-      type(ChargeNodes_t), pointer, dimension( : ) :: MPIUpChargeNode,MPIDownChargeNode
+      type(ChargeNodes_t), pointer, dimension(:) :: MPIUpChargeNode,MPIDownChargeNode
       !only required by the new MPI wires routines march'12 2012 bug multiwires MPI
-      type(CurrentSegments_t), pointer, dimension( : ) :: MPIUpSharedCurrentSegment,MPIDownSharedCurrentSegment
+      type(CurrentSegments_t), pointer, dimension(:) :: MPIUpSharedCurrentSegment,MPIDownSharedCurrentSegment
       integer(kind=4)                                 :: NumSharedCurrentUpMPI,NumSharedCurrentDownMPI
 #endif
       real(kind=RKIND)                   :: null_field !en los segmentos embeddeds y en los paralelos no hay acople entre thin-wire y medio

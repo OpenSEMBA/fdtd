@@ -92,10 +92,10 @@ contains
             ini = sggalloc(iEx)%XI
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
-               read (14) ( Ex(i,j,k), i = ini, fin)
+               read (14) (Ex(i,j,k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            read (14) ( Ex(i,j,k), i = ini, sggalloc(iEx)%XE)
+            read (14) (Ex(i,j,k), i = ini, sggalloc(iEx)%XE)
          end do
       end do
       do k=sggalloc(iEy)%ZI,sggalloc(iEy)%ZE
@@ -104,10 +104,10 @@ contains
             ini = sggalloc(iEy)%XI
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
-               read (14) ( Ey(i,j,k), i = ini, fin)
+               read (14) (Ey(i,j,k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            read (14) ( Ey(i,j,k), i = ini, sggalloc(iEy)%XE)
+            read (14) (Ey(i,j,k), i = ini, sggalloc(iEy)%XE)
          end do
       end do
       do k=sggalloc(IEZ)%ZI,sggalloc(IEZ)%ZE
@@ -116,10 +116,10 @@ contains
             ini = sggalloc(IEZ)%XI
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
-               read (14) ( Ez(i,j,k), i = ini, fin)
+               read (14) (Ez(i,j,k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            read (14) ( Ez(i,j,k), i = ini, sggalloc(IEZ)%XE)
+            read (14) (Ez(i,j,k), i = ini, sggalloc(IEZ)%XE)
          end do
       end do
       do k=sggalloc(IHX)%ZI,sggalloc(IHX)%ZE
@@ -128,10 +128,10 @@ contains
             ini = sggalloc(IHX)%XI
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
-               read (14) ( Hx(i,j,k), i = ini, fin)
+               read (14) (Hx(i,j,k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            read (14) ( Hx(i,j,k), i = ini, sggalloc(IHX)%XE)
+            read (14) (Hx(i,j,k), i = ini, sggalloc(IHX)%XE)
          end do
       end do
       do k=sggalloc(IHY)%ZI,sggalloc(IHY)%ZE
@@ -140,10 +140,10 @@ contains
             ini = sggalloc(IHY)%XI
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
-               read (14) ( Hy(i,j,k), i = ini, fin)
+               read (14) (Hy(i,j,k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            read (14) ( Hy(i,j,k), i = ini, sggalloc(IHY)%XE)
+            read (14) (Hy(i,j,k), i = ini, sggalloc(IHY)%XE)
          end do
       end do
       do k=sggalloc(IHZ)%ZI,sggalloc(IHZ)%ZE
@@ -152,10 +152,10 @@ contains
             ini = sggalloc(IHZ)%XI
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
-               read (14) ( Hz(i,j,k), i = ini, fin)
+               read (14) (Hz(i,j,k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            read (14) ( Hz(i,j,k), i = ini, sggalloc(IHZ)%XE)
+            read (14) (Hz(i,j,k), i = ini, sggalloc(IHZ)%XE)
          end do
       end do
 
@@ -174,23 +174,23 @@ contains
       !---------------------------> inputs <----------------------------------------------------------
       character(len=*), intent(in) :: wiresflavor
       integer(kind=4) :: ierr
-      type( bounds_t), intent( in) :: b
-      integer( kind = 4), intent( in) :: layoutnumber, num_procs
+      type(bounds_t), intent(in) :: b
+      integer(kind = 4), intent(in) :: layoutnumber, num_procs
       !--->
-      character( LEN=*), intent( in) :: nresumeable2, nEntradaRoot
-      type( logic_control_t), intent( in) :: thereare
-      integer( kind=4), intent( in) :: fin
+      character(LEN=*), intent(in) :: nresumeable2, nEntradaRoot
+      type(logic_control_t), intent(in) :: thereare
+      integer(kind=4), intent(in) :: fin
       logical :: existe
       !--->
-      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( in) :: Ex
-      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( in) :: Ey
-      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( in) :: Ez
+      real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(in) :: Ex
+      real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(in) :: Ey
+      real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(in) :: Ez
       !--->
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( in) :: Hx
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( in) :: Hy
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( in) :: Hz
+      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(in) :: Hx
+      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(in) :: Hy
+      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(in) :: Hz
       !---------------------------> output <----------------------------------------------------------
-      logical, intent( out) :: everflushed
+      logical, intent(out) :: everflushed
       !---------------------------> variables locales <-----------------------------------------------
       character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: dubuf
@@ -202,7 +202,7 @@ contains
       zvac=sqrt(mu0/eps0)
       cluz=1.0_RKIND/sqrt(mu0*eps0)
       
-      write( whoami, '(a,i5,a,i5,a)') '(', layoutnumber+1, '/', num_procs,') '
+      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber+1, '/', num_procs,') '
       everflushed = .TRUE.
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!  Flush observation data to disk
@@ -217,14 +217,14 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
 #ifdef CompileWithOldSaving
-      inquire (file = trim(adjustl( nresumeable2)),exist=existe)
+      inquire (file = trim(adjustl(nresumeable2)),exist=existe)
       if (existe) then
          my_iostat=0
 8766     if(my_iostat /= 0) write(*,FMT='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',8766,'.',layoutnumber,trim(adjustl( nresumeable2))//'.old'
-         open ( 14, file = trim(adjustl( nresumeable2))//'.old', form = 'formatted',err=8766,iostat=my_iostat)
-         write( 14, '(a)',err=634) '!END'
-         close ( 14, status = 'delete',err=634)
-         call rename(trim(adjustl( nresumeable2)),trim(adjustl( nresumeable2))//'.old')
+         open (14, file = trim(adjustl(nresumeable2))//'.old', form = 'formatted',err=8766,iostat=my_iostat)
+         write(14, '(a)',err=634) '!END'
+         close (14, status = 'delete',err=634)
+         call rename(trim(adjustl(nresumeable2)),trim(adjustl(nresumeable2))//'.old')
       end if
 #endif
       !
@@ -234,19 +234,19 @@ contains
 
       my_iostat=0
 8776  if(my_iostat /= 0) write(*,FMT='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',8776,'.',layoutnumber,trim(adjustl( nresumeable2))//'.old'
-      open ( 14, file = trim(adjustl( nresumeable2)), form = 'formatted',err=8776,iostat=my_iostat)
-      write( 14, '(a)',err=634) '!END'
-      close ( 14, status = 'delete',err=634)
+      open (14, file = trim(adjustl(nresumeable2)), form = 'formatted',err=8776,iostat=my_iostat)
+      write(14, '(a)',err=634) '!END'
+      close (14, status = 'delete',err=634)
       !
       my_iostat=0
 8777  if(my_iostat /= 0) write(*,FMT='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',8777,'.',layoutnumber,trim(adjustl( nresumeable2))//'.old'
-      open ( 14, file = trim(adjustl( nresumeable2)), form = 'unformatted',err=8777,iostat=my_iostat,status='new',action='write')
+      open (14, file = trim(adjustl(nresumeable2)), form = 'unformatted',err=8777,iostat=my_iostat,status='new',action='write')
       !--->
       call StoreFields(sgg,fin,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
       !this module data !warning the calling order must be the same that the calling to the init routines
-      if( Thereare%PMLBorders)       call StoreFieldsCPMLBorders
+      if(Thereare%PMLBorders)       call StoreFieldsCPMLBorders
       if (Thereare%PMLbodies)        call StorefieldsPMLbodies
-      if( Thereare%MURBorders)       call StoreFieldsMURBorders
+      if(Thereare%MURBorders)       call StoreFieldsMURBorders
 #ifdef CompileWithMPI
       !do an update of the currents to later read the currents OK
       if (num_procs>1)  then
@@ -270,7 +270,7 @@ contains
       
 
 #endif
-      if( Thereare%Wires)       then
+      if(Thereare%Wires)       then
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
             call StoreFieldsWires
@@ -304,16 +304,16 @@ contains
       end if
 #endif    
 #endif    
-      if( Thereare%SGBCs)       then
+      if(Thereare%SGBCs)       then
           call StoreFieldsSGBCs(stochastic)
       end if      
 #ifdef CompileWithNIBC
-      if( Thereare%Multiports)       call StoreFieldsMultiports
+      if(Thereare%Multiports)       call StoreFieldsMultiports
 #endif
-      if( Thereare%EDispersives)     call StoreFieldsEDispersives
-      if( Thereare%MDispersives)     call StoreFieldsMDispersives
-      if( Thereare%PlaneWaveBoxes)     call StorePlaneWaves(sgg)
-      if( Thereare%FarFields)       call StoreFarFields(b)  !called at initobservation
+      if(Thereare%EDispersives)     call StoreFieldsEDispersives
+      if(Thereare%MDispersives)     call StoreFieldsMDispersives
+      if(Thereare%PlaneWaveBoxes)     call StorePlaneWaves(sgg)
+      if(Thereare%FarFields)       call StoreFarFields(b)  !called at initobservation
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -336,100 +336,100 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Flush the main stepping program fields to disk after simulation
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine StoreFields( sgg,finaltimestep,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
+   subroutine StoreFields(sgg,finaltimestep,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
       !---------------------------> inputs <----------------------------------------------------------
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      type( bounds_t), intent( in) :: b
-      integer( kind = 4), intent(in) :: finaltimestep
+      type(bounds_t), intent(in) :: b
+      integer(kind = 4), intent(in) :: finaltimestep
       !--->
-      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( in) :: Ex
-      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( in) :: Ey
-      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( in) :: Ez
+      real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(in) :: Ex
+      real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(in) :: Ey
+      real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(in) :: Ez
       !--->
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( in) :: Hx
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( in) :: Hy
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( in) :: Hz
+      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(in) :: Hx
+      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(in) :: Hy
+      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(in) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
-      integer( kind = 4) :: i, j, k, i_block, n_block, ini, fin
+      integer(kind = 4) :: i, j, k, i_block, n_block, ini, fin
       real(kind = RKIND) :: eps0,mu0,cluz,zvac
       !---------------------------> empieza StoreFields <---------------------------------------------
       write(14,err=634) finaltimestep,sgg%tiempo(finaltimestep),sgg%dt,eps0,mu0
       !--->
       do k = 0, b%Ex%NZ-1
          do j = 0, b%Ex%NY-1
-            n_block = int( b%Ex%NX / BLOCK_SIZE)
+            n_block = int(b%Ex%NX / BLOCK_SIZE)
             ini = 0
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
-               write(14,err=634) ( Ex( i, j, k), i = ini, fin)
+               write(14,err=634) (Ex(i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            write(14,err=634) ( Ex( i, j, k), i = ini, b%Ex%NX-1)
+            write(14,err=634) (Ex(i, j, k), i = ini, b%Ex%NX-1)
          end do
       end do
       !--->
       do k = 0, b%Ey%NZ-1
          do j= 0, b%Ey%NY-1
-            n_block = int( b%Ey%NX / BLOCK_SIZE)
+            n_block = int(b%Ey%NX / BLOCK_SIZE)
             ini = 0
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
-               write(14,err=634) ( Ey( i, j, k), i = ini, fin)
+               write(14,err=634) (Ey(i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            write(14,err=634) ( Ey(i,j,k), i = ini, b%Ey%NX-1)
+            write(14,err=634) (Ey(i,j,k), i = ini, b%Ey%NX-1)
          end do
       end do
       !--->
       do k = 0, b%Ez%NZ-1
          do j = 0, b%Ez%NY-1
-            n_block = int( b%Ez%NX / BLOCK_SIZE)
+            n_block = int(b%Ez%NX / BLOCK_SIZE)
             ini = 0
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
-               write(14,err=634) ( Ez( i, j, k), i = ini, fin)
+               write(14,err=634) (Ez(i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            write(14,err=634) ( Ez( i, j, k), i = ini, b%Ez%NX-1)
+            write(14,err=634) (Ez(i, j, k), i = ini, b%Ez%NX-1)
          end do
       end do
       !--->
       do k = 0, b%Hx%NZ-1
          do j = 0, b%Hx%NY-1
-            n_block = int( b%Hx%NX / BLOCK_SIZE)
+            n_block = int(b%Hx%NX / BLOCK_SIZE)
             ini = 0
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
-               write(14,err=634) ( Hx( i, j, k), i = ini, fin)
+               write(14,err=634) (Hx(i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            write(14,err=634) ( Hx( i, j, k), i = ini, b%Hx%NX-1)
+            write(14,err=634) (Hx(i, j, k), i = ini, b%Hx%NX-1)
          end do
       end do
       !--->
       do k = 0, b%Hy%NZ-1
          do j = 0, b%Hy%NY-1
-            n_block = int( b%Hy%NX / BLOCK_SIZE)
+            n_block = int(b%Hy%NX / BLOCK_SIZE)
             ini = 0
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
-               write(14,err=634) ( Hy( i, j, k), i = ini, fin)
+               write(14,err=634) (Hy(i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            write(14,err=634) ( Hy( i, j, k), i = ini, b%Hy%NX-1)
+            write(14,err=634) (Hy(i, j, k), i = ini, b%Hy%NX-1)
          end do
       end do
       !--->
       do k = 0, b%Hz%NZ-1
          do j = 0, b%Hz%NY-1
-            n_block = int( b%Hz%NX / BLOCK_SIZE)
+            n_block = int(b%Hz%NX / BLOCK_SIZE)
             ini = 0
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
-               write(14,err=634) ( Hz( i, j, k), i = ini, fin)
+               write(14,err=634) (Hz(i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            write(14,err=634) ( Hz( i, j, k), i = ini, b%Hz%NX-1)
+            write(14,err=634) (Hz(i, j, k), i = ini, b%Hz%NX-1)
          end do
       end do
 

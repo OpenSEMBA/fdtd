@@ -141,9 +141,9 @@ contains
          ptr%name = "line_1"
 
          ptr%inductance_per_meter = & 
-            reshape( source = [ 3.13182309e-07_RKIND, 7.45674981e-08_RKIND, 7.45674981e-08_RKIND, 3.13182309e-07_RKIND ], shape = [ 2,2 ] )
+            reshape(source = [ 3.13182309e-07_RKIND, 7.45674981e-08_RKIND, 7.45674981e-08_RKIND, 3.13182309e-07_RKIND ], shape = [ 2,2 ])
          ptr%capacitance_per_meter = &
-            reshape( source = [85.0e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 85.0e-12_RKIND ], shape = [ 2,2 ] )
+            reshape(source = [85.0e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 85.0e-12_RKIND ], shape = [ 2,2 ])
          
          allocate(ptr%step_size(5))
          ptr%step_size(1) =  0.0504_RKIND

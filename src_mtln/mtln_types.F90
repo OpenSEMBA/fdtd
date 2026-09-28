@@ -542,7 +542,7 @@ contains
 
       if (.not. allocated(this%nodes))  allocate(this%nodes(0))
 
-      allocate(newNodes( size(this%nodes) + 1 ) )
+      allocate(newNodes(size(this%nodes) + 1))
       newNodesSize = size(newNodes)
       newNodes(1:newNodesSize-1) = this%nodes
       newNodes(newNodesSize) = node
@@ -565,7 +565,7 @@ contains
 
       if (.not. allocated(this%connections))  allocate(this%connections(0))
 
-      allocate(newConnections( size(this%connections) + 1 ) )
+      allocate(newConnections(size(this%connections) + 1))
       newConnectionsSize = size(newConnections)
       newConnections(1:newConnectionsSize-1) = this%connections
       newConnections(newConnectionsSize) = connection

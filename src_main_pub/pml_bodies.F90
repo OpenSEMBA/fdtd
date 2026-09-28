@@ -52,7 +52,7 @@ contains
       real(kind=RKIND) :: eps00,mu00
       type(SGGFDTDINFO_t), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
-      real(kind=RKIND)     , pointer, dimension( : ) :: g2,gm2
+      real(kind=RKIND)     , pointer, dimension(:) :: g2,gm2
       real(kind=RKIND)   , intent(in) , target     :: &
       Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
       Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
@@ -219,12 +219,12 @@ contains
                 if (orient/=iEx) then
                   conta=conta+1
                   PML_ => berpmlE%Nodes(conta)
-                  PML_%field    => Ex(i1,j1  ,k1  )
+                  PML_%field    => Ex(i1,j1  ,k1)
                   berpmlE%orient=orient
                   select case (orient)
                   case (iEy)
-                     PML_%del               =    1.0_RKIND/IDye(   j1     )
-                     PML_%transversalDelta  =    1.0_RKIND/IDYh(   j1     )
+                     PML_%del               =    1.0_RKIND/IDye(j1)
+                     PML_%transversalDelta  =    1.0_RKIND/IDYh(j1)
                      PML_%Plus   => Hz(i1,j1  ,k1)
                      PML_%Minu   => Hz(i1,j1-1,k1)
                      PML_%gx2=G2(jmed)
@@ -232,8 +232,8 @@ contains
                      PML_%maxTotal=maxY(jmed)
                      PML_%posi=j1
                   case (IEZ)
-                     PML_%del               =   1.0_RKIND/IDze(   j1     )
-                     PML_%transversalDelta    = 1.0_RKIND/IDzh(      k1  )
+                     PML_%del               =   1.0_RKIND/IDze(j1)
+                     PML_%transversalDelta    = 1.0_RKIND/IDzh(k1)
                      PML_%Plus   => Hy(i1,j1  ,k1)
                      PML_%Minu   => Hy(i1,j1  ,k1-1)
                      PML_%gx2=-G2(jmed)
@@ -260,23 +260,23 @@ contains
                 if (orient/=iEy) then
                   conta=conta+1
                   PML_ => berpmlE%Nodes(conta)
-                  PML_%field    => Ey(i1  ,j1  ,k1  )
+                  PML_%field    => Ey(i1  ,j1  ,k1)
                   berpmlE%orient=orient
                   select case (orient)
                    case (IEZ)
-                                  PML_%del = 1.0_RKIND/IDze(      k1  )
-                     PML_%transversalDelta = 1.0_RKIND/IDzh(      k1  )
-                     PML_%Plus   => Hx(i1  ,j1  ,k1  )
+                                  PML_%del = 1.0_RKIND/IDze(k1)
+                     PML_%transversalDelta = 1.0_RKIND/IDzh(k1)
+                     PML_%Plus   => Hx(i1  ,j1  ,k1)
                      PML_%Minu   => Hx(i1  ,j1  ,k1-1)
                      PML_%minTotal=minZ(jmed)
                      PML_%maxTotal=maxZ(jmed)
                      PML_%gx2=G2(jmed)
                      PML_%posi=k1
                    case (iEx)
-                                  PML_%del = 1.0_RKIND/IDxe(i1        )
-                     PML_%transversalDelta = 1.0_RKIND/IDxh(i1        )
-                     PML_%Plus   => Hz(i1  ,j1  ,k1  )
-                     PML_%Minu   => Hz(i1-1,j1  ,k1  )
+                                  PML_%del = 1.0_RKIND/IDxe(i1)
+                     PML_%transversalDelta = 1.0_RKIND/IDxh(i1)
+                     PML_%Plus   => Hz(i1  ,j1  ,k1)
+                     PML_%Minu   => Hz(i1-1,j1  ,k1)
                      PML_%gx2=-G2(jmed)
                      PML_%minTotal=minX(jmed)
                      PML_%maxTotal=maxX(jmed)
@@ -301,23 +301,23 @@ contains
                 if (orient/=IEZ) then
                   conta=conta+1
                   PML_ => berpmlE%Nodes(conta)
-                  PML_%field  => Ez(i1  ,j1  ,k1  )
+                  PML_%field  => Ez(i1  ,j1  ,k1)
                   berpmlE%orient=orient
                   select case (orient)
                    case (iEx)
-                                  PML_%del = 1.0_RKIND/IDxe(i1        )
-                     PML_%transversalDelta = 1.0_RKIND/IDxh(i1        )
-                     PML_%Plus => Hy(i1  ,j1  ,k1  )
+                                  PML_%del = 1.0_RKIND/IDxe(i1)
+                     PML_%transversalDelta = 1.0_RKIND/IDxh(i1)
+                     PML_%Plus => Hy(i1  ,j1  ,k1)
                      PML_%Minu => Hy(i1-1,j1  ,k1)
                      PML_%gx2=G2(jmed)
                      PML_%minTotal=minX(jmed)
                      PML_%maxTotal=maxX(jmed)
                      PML_%posi=i1
                    case (iEy)
-                                  PML_%del = 1.0_RKIND/IDye(    j1     )
-                     PML_%transversalDelta = 1.0_RKIND/IDyh(    j1     )
-                     PML_%Plus => Hx(i1  ,j1  ,k1  )
-                     PML_%Minu => Hx(i1  ,j1-1,k1  )
+                                  PML_%del = 1.0_RKIND/IDye(j1)
+                     PML_%transversalDelta = 1.0_RKIND/IDyh(j1)
+                     PML_%Plus => Hx(i1  ,j1  ,k1)
+                     PML_%Minu => Hx(i1  ,j1-1,k1)
                      PML_%gx2=-G2(jmed)
                      PML_%minTotal=minY(jmed)
                      PML_%maxTotal=maxY(jmed)
@@ -347,12 +347,12 @@ contains
                 if (orient/=iEx) then
                   conta=conta+1
                   PML_ => berpmlH%Nodes(conta)
-                  PML_%field    => Hx(i1,j1  ,k1  )
+                  PML_%field    => Hx(i1,j1  ,k1)
                   berpmlE%orient=orient
                   select case (orient)
                   case (iEy)
-                                   PML_%del = 1.0_RKIND/IDYe(   j1     )
-                     PML_%transversalDelta  = 1.0_RKIND/IDYe(   j1     )
+                                   PML_%del = 1.0_RKIND/IDYe(j1)
+                     PML_%transversalDelta  = 1.0_RKIND/IDYe(j1)
                      PML_%Plus   => Ez(i1,j1+1,k1)
                      PML_%Minu   => Ez(i1,j1  ,k1)
                      PML_%gx2=GM2(jmed)
@@ -360,10 +360,10 @@ contains
                      PML_%maxTotal=maxY(jmed)
                      PML_%posi=j1+0.5
                   case (IEZ)
-                                     PML_%del = 1.0_RKIND/IDze(      k1  )
-                     PML_%transversalDelta    = 1.0_RKIND/IDze(      k1  )
+                                     PML_%del = 1.0_RKIND/IDze(k1)
+                     PML_%transversalDelta    = 1.0_RKIND/IDze(k1)
                      PML_%Plus   => Ey(i1,j1  ,k1+1)
-                     PML_%Minu   => Ey(i1,j1  ,k1  )
+                     PML_%Minu   => Ey(i1,j1  ,k1)
                      PML_%gx2=-GM2(jmed)
                      PML_%minTotal=minZ(jmed)
                      PML_%maxTotal=maxZ(jmed)
@@ -388,23 +388,23 @@ contains
                 if (orient/=iEy) then
                   conta=conta+1
                   PML_ => berpmlH%Nodes(conta)
-                  PML_%field    => Hy(i1  ,j1  ,k1  )
+                  PML_%field    => Hy(i1  ,j1  ,k1)
                   berpmlE%orient=orient
                   select case (orient)
                    case (IEZ)
-                                  PML_%del = 1.0_RKIND/IDze(      k1  )
-                     PML_%transversalDelta = 1.0_RKIND/IDze(      k1  )
+                                  PML_%del = 1.0_RKIND/IDze(k1)
+                     PML_%transversalDelta = 1.0_RKIND/IDze(k1)
                      PML_%Plus   => Ex(i1  ,j1  ,k1+1)
-                     PML_%Minu   => Ex(i1  ,j1  ,k1  )
+                     PML_%Minu   => Ex(i1  ,j1  ,k1)
                      PML_%gx2=GM2(jmed)
                      PML_%minTotal=minZ(jmed)
                      PML_%maxTotal=maxZ(jmed)
                      PML_%posi=k1+0.5
                    case (iEx)
-                                  PML_%del =  1.0_RKIND/IDxe(i1        )
-                     PML_%transversalDelta = 1.0_RKIND/IDxe(i1        )
-                     PML_%Plus   => Ez(i1+1,j1  ,k1  )
-                     PML_%Minu   => Ez(i1  ,j1  ,k1  )
+                                  PML_%del =  1.0_RKIND/IDxe(i1)
+                     PML_%transversalDelta = 1.0_RKIND/IDxe(i1)
+                     PML_%Plus   => Ez(i1+1,j1  ,k1)
+                     PML_%Minu   => Ez(i1  ,j1  ,k1)
                      PML_%gx2=-GM2(jmed)
                      PML_%minTotal=minX(jmed)
                      PML_%maxTotal=maxX(jmed)
@@ -429,23 +429,23 @@ contains
                 if (orient/=IEZ) then
                   conta=conta+1
                   PML_ => berpmlH%Nodes(conta)
-                  PML_%field  => Hz(i1  ,j1  ,k1  )
+                  PML_%field  => Hz(i1  ,j1  ,k1)
                   berpmlE%orient=orient
                   select case (orient)
                    case (iEx)
-                                  PML_%del = 1.0_RKIND/IDxe(i1        )
-                     PML_%transversalDelta = 1.0_RKIND/IDxe(i1        )
-                     PML_%Plus => Ey(i1+1  ,j1  ,k1  )
+                                  PML_%del = 1.0_RKIND/IDxe(i1)
+                     PML_%transversalDelta = 1.0_RKIND/IDxe(i1)
+                     PML_%Plus => Ey(i1+1  ,j1  ,k1)
                      PML_%Minu => Ey(i1    ,j1  ,k1)
                      PML_%gx2=GM2(jmed)
                      PML_%minTotal=minX(jmed)
                      PML_%maxTotal=maxX(jmed)
                      PML_%posi=i1+0.5
                    case (iEy)
-                                  PML_%del = 1.0_RKIND/IDye(    j1     )
-                     PML_%transversalDelta = 1.0_RKIND/IDye(    j1     )
-                     PML_%Plus => Ex(i1  ,j1+1  ,k1  )
-                     PML_%Minu => Ex(i1  ,j1    ,k1  )
+                                  PML_%del = 1.0_RKIND/IDye(j1)
+                     PML_%transversalDelta = 1.0_RKIND/IDye(j1)
+                     PML_%Plus => Ex(i1  ,j1+1  ,k1)
+                     PML_%Minu => Ex(i1  ,j1    ,k1)
                      PML_%gx2=-GM2(jmed)
                      PML_%minTotal=minY(jmed)
                      PML_%maxTotal=maxY(jmed)

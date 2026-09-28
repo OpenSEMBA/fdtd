@@ -320,7 +320,7 @@ contains
    this%l%chain2=trim(adjustl(chaindummy))//' '//trim(adjustl(this%sgg%extraswitches))//' '//trim(adjustl(this%l%chain2(this%l%length+1:)))               
    this%l%chaininput=trim(adjustl(this%l%chain2))
 !!!!
-   call interpreta(this%l,status )      
+   call interpreta(this%l,status)      
    this%sgg%nEntradaRoot=trim (adjustl(this%l%nEntradaRoot))
 
 #ifdef CompileWithMPI            
@@ -393,7 +393,7 @@ contains
             this%l%finaltimestep=int(dtantesdecorregir/this%sgg%dt*finaltimestepantesdecorregir)
          end if
 #ifdef CompileWithMPI
-         call MPI_AllReduce( this%l%finaltimestep, NEWfinaltimestep, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, this%l%ierr)
+         call MPI_AllReduce(this%l%finaltimestep, NEWfinaltimestep, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, this%l%ierr)
          call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
          this%l%finaltimestep=NEWfinaltimestep
 #endif
@@ -545,29 +545,29 @@ contains
                write(thefileno,'(a)') trim(adjustl('thresh.ThresholdBetween(64,127)                                                              '))
                write(thefileno,'(a)') trim(adjustl('thresh.Update()                                                              '))
                write(thefileno,'(a)') trim(adjustl('outp.ShallowCopy(thresh.GetOutput())    '))        
-               write(thefileno,'(a)') trim(adjustl( '# Replace the thresh.ThresholdBetween numbers by tag intervals below to filter by tags           '))
+               write(thefileno,'(a)') trim(adjustl('# Replace the thresh.ThresholdBetween numbers by tag intervals below to filter by tags           '))
                write(thefileno,'(a)')               '# ( -1e21    , -1e-3    ) '//trim(adjustl('Candidates for undesired free-space slots'))
                write(thefileno,'(a,i9,a,i9,a)')     '# (  0       ,  63      ) '//trim(adjustl('Nodal sources, etc.'))
                do i=1,this%tagtype%numertags
                   write(thefileno,'(a,i9,a,i9,a)') '# (',i*64,' , ',i*64+63,') '//trim(adjustl(this%tagtype%tag(i))) !los shifteo 6 bits y les sumo 2**campo ! idea de los 3 bits de 151020
                end do
                !!
-               write(thefileno,'(a)') trim(adjustl( '###    '))   
-               write(thefileno,'(a)') trim(adjustl( '###    '))   
-               write(thefileno,'(a)') trim(adjustl( '### FOR MAP VTK PROBES select the "mediatype" layer                                               '))                
-               write(thefileno,'(a)') trim(adjustl( '### For Paraview versions over 5.10 just use the Threshold exisiting filter to select the interval'))           
-               write(thefileno,'(a)') trim(adjustl( '### ######################'))
-               write(thefileno,'(a)') trim(adjustl( '### For Paraview versions under 5.10Copy and paste the next as a programmable filter to select only one types of media'))
-               write(thefileno,'(a)') trim(adjustl( 'import vtk                                                                                        '))
-               write(thefileno,'(a)') trim(adjustl( 'inp = self.GetInputDataObject(0, 0)                                                               '))
-               write(thefileno,'(a)') trim(adjustl( 'outp = self.GetOutputDataObject(0)                                                                '))
-               write(thefileno,'(a)') trim(adjustl( 'thresh = vtk.vtkThreshold()                                                                       '))
-               write(thefileno,'(a)') trim(adjustl( 'thresh.SetInputData(inp)                                                                          '))
-               write(thefileno,'(a)') trim(adjustl( 'thresh.SetInputArrayToProcess(0, 0, 0,vtk.vtkDataObject.FIELD_ASSOCIATION_CELLS, "mediatype")     '))
-               write(thefileno,'(a)') trim(adjustl( 'thresh.ThresholdBetween(0.0,0.5)                                                              '))
-               write(thefileno,'(a)') trim(adjustl( 'thresh.Update()                                                              '))
-               write(thefileno,'(a)') trim(adjustl( 'outp.ShallowCopy(thresh.GetOutput())  '))
-               write(thefileno,'(a)') trim(adjustl( '# Replace the thresh.ThresholdBetween numbers by media types below to filter by media types           '))
+               write(thefileno,'(a)') trim(adjustl('###    '))   
+               write(thefileno,'(a)') trim(adjustl('###    '))   
+               write(thefileno,'(a)') trim(adjustl('### FOR MAP VTK PROBES select the "mediatype" layer                                               '))                
+               write(thefileno,'(a)') trim(adjustl('### For Paraview versions over 5.10 just use the Threshold exisiting filter to select the interval'))           
+               write(thefileno,'(a)') trim(adjustl('### ######################'))
+               write(thefileno,'(a)') trim(adjustl('### For Paraview versions under 5.10Copy and paste the next as a programmable filter to select only one types of media'))
+               write(thefileno,'(a)') trim(adjustl('import vtk                                                                                        '))
+               write(thefileno,'(a)') trim(adjustl('inp = self.GetInputDataObject(0, 0)                                                               '))
+               write(thefileno,'(a)') trim(adjustl('outp = self.GetOutputDataObject(0)                                                                '))
+               write(thefileno,'(a)') trim(adjustl('thresh = vtk.vtkThreshold()                                                                       '))
+               write(thefileno,'(a)') trim(adjustl('thresh.SetInputData(inp)                                                                          '))
+               write(thefileno,'(a)') trim(adjustl('thresh.SetInputArrayToProcess(0, 0, 0,vtk.vtkDataObject.FIELD_ASSOCIATION_CELLS, "mediatype")     '))
+               write(thefileno,'(a)') trim(adjustl('thresh.ThresholdBetween(0.0,0.5)                                                              '))
+               write(thefileno,'(a)') trim(adjustl('thresh.Update()                                                              '))
+               write(thefileno,'(a)') trim(adjustl('outp.ShallowCopy(thresh.GetOutput())  '))
+               write(thefileno,'(a)') trim(adjustl('# Replace the thresh.ThresholdBetween numbers by media types below to filter by media types           '))
                write(thefileno,'(a)') '# ( -100 , -100 ) '//trim(adjustl('Candidates for undesired free-space slots                               (Surface)'))
                write(thefileno,'(a)') '# (  0.0 ,  0.0 ) '//trim(adjustl('PEC                                                                     (Surface)'))
                write(thefileno,'(a)') '# (  0.5 ,  0.5 ) '//trim(adjustl('PEC                                                                     (Line)'))

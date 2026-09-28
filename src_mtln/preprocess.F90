@@ -484,7 +484,7 @@ contains
             type(cable_level_t), dimension(:), allocatable :: oldLevels
             
             call move_alloc(levels, oldLevels)
-            allocate( levels(size(oldLevels) + 1)) 
+            allocate(levels(size(oldLevels) + 1)) 
             levels(1:size(oldLevels)) = oldLevels(:)
             levels(size(oldLevels) + 1) = newLevel            
         end subroutine
@@ -1258,7 +1258,7 @@ contains
 
         do i = 1, size(terminal_connection%nodes,1)
             new_node =this%addNodeWithId(terminal_connection%nodes(i))
-            nodes(size(aux_nodes) + i ) = new_node
+            nodes(size(aux_nodes) + i) = new_node
             node_description = writeNodeDescription(new_node, terminal_connection%nodes(i)%termination, interior_node)
 
             if (allocated(old_description)) then 

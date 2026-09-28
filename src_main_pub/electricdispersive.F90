@@ -27,19 +27,19 @@ module EDispersives_m
 
       real(kind=RKIND), pointer                 :: FieldPresent !apunta al campo del background
       real(kind=RKIND)                          :: FieldPrevious
-      complex(kind=CKIND), pointer, dimension( : ) :: Current
+      complex(kind=CKIND), pointer, dimension(:) :: Current
    end type
 
    type EDispersive_t
       integer(kind=4) :: indexmed,numnodesEx,numnodesEy,numnodesEz,numpolres11
-      complex(kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,G3
-      type(field_t), pointer, dimension( : ) :: NodesEx,NodesEy,NodesEz
+      complex(kind=CKIND), pointer, dimension(:) :: Beta,Kappa,G3
+      type(field_t), pointer, dimension(:) :: NodesEx,NodesEy,NodesEz
    end type EDispersive_t
 
 
    type  EDispersive2_t
       integer(kind=4) :: NumEDispersives
-      type(EDispersive_t), pointer, dimension( : ) :: Medium
+      type(EDispersive_t), pointer, dimension(:) :: Medium
    end type
    type(EDispersive2_t) , save , target :: Dutton
 
@@ -288,7 +288,7 @@ contains
          do i1=1,Dutton%Medium(jmed)%NumNodesEx
             tempnode=>Dutton%Medium(jmed)%NodesEx(i1)
             do k1=1,NumPolRes
-               tempnode%fieldPresent=tempnode%FieldPresent-real(Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1) )
+               tempnode%fieldPresent=tempnode%FieldPresent-real(Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1))
             end do
             do k1=1,NumPolRes
                tempnode%current(k1)=Dutton%Medium(jmed)%Kappa(k1)  *tempnode%current(k1) + &

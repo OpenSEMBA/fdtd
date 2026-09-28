@@ -244,7 +244,7 @@ module  FDETYPES_m
     end type
 
    type coorsxyz_t
-      real(kind=RKIND), pointer, dimension( : ) :: x,y,z
+      real(kind=RKIND), pointer, dimension(:) :: x,y,z
    end type coorsxyz_t
    !
    type coorsxyzP_t
@@ -340,7 +340,7 @@ module  FDETYPES_m
       character(len=BUFSIZE) :: Name
       integer(kind=4) :: NumSamples
       real(kind=RKIND) :: DeltaSamples
-      real(kind=RKIND), dimension( : ), pointer  :: Samples
+      real(kind=RKIND), dimension(:), pointer  :: Samples
    end type
    !
 
@@ -349,7 +349,7 @@ module  FDETYPES_m
       character(len=BUFSIZE) :: Name
       integer(kind=4) :: NumSamples
       real(kind=RKIND_WIRES) :: DeltaSamples
-      real(kind=RKIND_WIRES), dimension( : ), pointer  :: Samples
+      real(kind=RKIND_WIRES), dimension(:), pointer  :: Samples
    end type
    type  :: source_t
       type(fichevol_wires_t) :: Fichero
@@ -391,9 +391,9 @@ module  FDETYPES_m
       real(kind=RKIND_WIRES) :: Radius_devia,R_devia,L_devia,C_devia
       type(WireDispersiveParams_t), allocatable, dimension(:) :: disp
       integer(kind=4) :: numsegmentos,NUMVOLTAGESOURCES,NUMCURRENTSOURCES
-      type(oriented_point_t), pointer, dimension( : ) :: segm
-      type(source_t), pointer, dimension( : ) :: Vsource
-      type(source_t), pointer, dimension( : ) :: Isource
+      type(oriented_point_t), pointer, dimension(:) :: segm
+      type(source_t), pointer, dimension(:) :: Vsource
+      type(source_t), pointer, dimension(:) :: Isource
       logical  :: VsourceExists ,IsourceExists
       logical  :: HasParallel_LeftEnd ,HasParallel_RightEnd ,&
                    HasSeries_LeftEnd ,HasSeries_RightEnd,HasAbsorbing_LeftEnd,HasAbsorbing_RightEnd
@@ -455,9 +455,9 @@ module  FDETYPES_m
    type  :: Multiport_t
       integer(kind=4) :: Multiportdir = 0 !orientation +iEx, -iEx,+iEy.......
       character(len=BUFSIZE)                            :: multiportFileZ11,multiportFileZ22,multiportFileZ12,multiportFileZ21
-      real(kind=rkind), dimension( : ), pointer :: epr,mur,sigma,sigmam,width   
+      real(kind=rkind), dimension(:), pointer :: epr,mur,sigma,sigmam,width   
                   !_for_devia 090519
-      real(kind=rkind), dimension( : ), pointer :: epr_devia,mur_devia,sigma_devia,sigmam_devia,width_devia
+      real(kind=rkind), dimension(:), pointer :: epr_devia,mur_devia,sigma_devia,sigmam_devia,width_devia
                   !!!
 !!old pre 17/08/115: no es valido para mallados NO uniformes. Hay que hacerlo punto a punto
 !!!                     real(kind=rkind) :: transversalSpaceDelta
@@ -468,7 +468,7 @@ module  FDETYPES_m
       integer(kind=4) :: Multiportdir = 0 !orientation +iEx, -iEx,+iEy.......
       character(len=BUFSIZE)                            :: MultiportFileZ11,MultiportFileZ22, &
       MultiportFileZ12,MultiportFileZ21
-      real(kind=rkind), pointer, dimension( : ) :: epr,mur,sigma,sigmam,width
+      real(kind=rkind), pointer, dimension(:) :: epr,mur,sigma,sigmam,width
    end type AnisMultiport_t
    !
    type planeonde_t
@@ -531,7 +531,7 @@ module  FDETYPES_m
    !
    type  :: Obses_t
       integer(kind=4) :: nP
-      type(observable_t), pointer, dimension( : ) :: P
+      type(observable_t), pointer, dimension(:) :: P
       real(kind=RKIND) :: InitialTime,FinalTime,TimeStep
       real(kind=RKIND) :: InitialFreq,FinalFreq,FreqStep
 
@@ -555,7 +555,7 @@ module  FDETYPES_m
 
    type  :: DispersiveParams_t
       integer(kind=4) :: NumPolRes11,NumPolRes12,NumPolRes13,NumPolRes22,NumPolRes23,NumPolRes33
-      complex(kind=CKIND), pointer, dimension( : ) :: C11,A11,C12,A12,C13,A13,C22,A22,C23,A23,C33,A33
+      complex(kind=CKIND), pointer, dimension(:) :: C11,A11,C12,A12,C13,A13,C22,A22,C23,A23,C33,A33
       real(kind=RKIND) :: eps11,MU11,SIGMA11,SIGMAM11
       real(kind=RKIND) :: eps12,MU12,SIGMA12,SIGMAM12
       real(kind=RKIND) :: EPs13,MU13,SIGMA13,SIGMAM13
@@ -609,17 +609,17 @@ module  FDETYPES_m
       real(kind=RKIND) :: Priority,Epr,Sigma,Mur,SigmaM
       logical :: sigmareasignado !solo afecta a un chequeo de errores en lumped 120123
       type(exists_t)            :: Is
-      type(Wires_t)           , dimension( : ), pointer  :: Wire
-      type(SlantedWires_t)    , dimension( : ), pointer  :: SlantedWire
-      type(PMLbody_t)         , dimension( : ), pointer  :: PMLbody
-      type(Multiport_t)       , dimension( : ), pointer  :: Multiport
-      type(AnisMultiport_t)   , dimension( : ), pointer  :: AnisMultiport
-      type(DispersiveParams_t), dimension( : ), pointer  :: EDispersive
-      type(DispersiveParams_t), dimension( : ), pointer  :: MDispersive
-      type(Anisotropic_t)     , dimension( : ), pointer  :: Anisotropic
-      type(Lumped_t)          , dimension( : ), pointer  :: Lumped
+      type(Wires_t)           , dimension(:), pointer  :: Wire
+      type(SlantedWires_t)    , dimension(:), pointer  :: SlantedWire
+      type(PMLbody_t)         , dimension(:), pointer  :: PMLbody
+      type(Multiport_t)       , dimension(:), pointer  :: Multiport
+      type(AnisMultiport_t)   , dimension(:), pointer  :: AnisMultiport
+      type(DispersiveParams_t), dimension(:), pointer  :: EDispersive
+      type(DispersiveParams_t), dimension(:), pointer  :: MDispersive
+      type(Anisotropic_t)     , dimension(:), pointer  :: Anisotropic
+      type(Lumped_t)          , dimension(:), pointer  :: Lumped
 #ifdef CompileWithMTLN
-      type(Multiwires_t)      , dimension( : ), pointer  :: Multiwire
+      type(Multiwires_t)      , dimension(:), pointer  :: Multiwire
 #endif
    end type
 
@@ -627,7 +627,7 @@ module  FDETYPES_m
    ! This is the  class which stores all the simulation data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    type  :: SGGFDTDINFO_t
-      real(kind=RKIND_TIEMPO)     , pointer, dimension( : ) :: tiempo !para permit scaling
+      real(kind=RKIND_TIEMPO)     , pointer, dimension(:) :: tiempo !para permit scaling
       real(kind=RKIND_TIEMPO) :: dt
       character(len=BUFSIZE) :: extraswitches
       !!
@@ -637,10 +637,10 @@ module  FDETYPES_m
       integer(kind=4) :: NumNodalSources
       integer(kind=4) :: NumberRequest
       !!!
-      real(kind=RKIND)     , pointer, dimension( : ) :: LineX,LineY,LineZ
-      real(kind=RKIND)     , pointer, dimension( : ) :: DX,DY,DZ
+      real(kind=RKIND)     , pointer, dimension(:) :: LineX,LineY,LineZ
+      real(kind=RKIND)     , pointer, dimension(:) :: DX,DY,DZ
       integer(kind=4)                                        :: AllocDxI,AllocDyI,AllocDzI,AllocDxE,AllocDyE,AllocDzE
-      type(planeonde_t), pointer, dimension( : )            :: PlaneWave
+      type(planeonde_t), pointer, dimension(:)            :: PlaneWave
       type(Border_t)                                         :: Border
       type(PML_t)                                            :: PML
       !    !
@@ -648,9 +648,9 @@ module  FDETYPES_m
       !only needed by Slots and processed by anisotropic
       type(Shared_t)                                        :: Hshared !hnormal info
       type(XYZlimit_t), dimension(1:6)                      :: Alloc,Sweep,SINPMLSweep
-      type(MediaData_t), pointer, dimension( : )            :: Med
-      type(NodalSource_t), dimension( : ), pointer           :: NodalSource
-      type(obses_t)  , pointer, dimension( : )              :: Observation
+      type(MediaData_t), pointer, dimension(:)            :: Med
+      type(NodalSource_t), dimension(:), pointer           :: NodalSource
+      type(obses_t)  , pointer, dimension(:)              :: Observation
       !
       logical  :: thereAreMagneticMedia
       logical  :: thereArePMLMagneticMedia
@@ -665,7 +665,7 @@ module  FDETYPES_m
       
 
    type :: constants_t
-      real(kind=rkind), pointer, dimension( : ) :: g1,g2,gM1,gM2
+      real(kind=rkind), pointer, dimension(:) :: g1,g2,gM1,gM2
    contains
       procedure :: destroy => constants_destroy 
    end type

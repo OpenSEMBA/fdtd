@@ -127,7 +127,7 @@ contains
             if (this%index == size(i,2) + 1) then
                 call this%saveFrame(t + 0.5*this%dt, i(:,this%index - 1))
             else 
-                call this%saveFrame( t+ 0.5*this%dt, i(:,this%index))
+                call this%saveFrame(t+ 0.5*this%dt, i(:,this%index))
             end if
         end if  
 

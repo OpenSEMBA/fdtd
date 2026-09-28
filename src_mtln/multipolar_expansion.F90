@@ -74,7 +74,7 @@ contains
       end block
 
       ! Builds grid
-      allocate(allPoints( GRID_INTEGRATION_SAMPLING_POINTS * 3 + 1))
+      allocate(allPoints(GRID_INTEGRATION_SAMPLING_POINTS * 3 + 1))
       do x = 1, 2 
          ! control points are ordered from min to max.
          controlPoints = [&

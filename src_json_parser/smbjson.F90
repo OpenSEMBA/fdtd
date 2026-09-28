@@ -427,7 +427,7 @@ contains
             call WarnErrReport('Error reading grid: steps not found.', .true.)
          end if
          if (size(vec) /= 1 .and. size(vec) /= n) then
-            call WarnErrReport( 'Error reading grid: steps must be arrays of size 1 (for regular grids) or size equal to the number of cells.', .true.)
+            call WarnErrReport('Error reading grid: steps must be arrays of size 1 (for regular grids) or size equal to the number of cells.', .true.)
          end if
 
          if (size(vec) == 1) then
@@ -968,16 +968,16 @@ contains
          call this%core%get(mat%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers)
 
          res%numcapas = this%core%count(layers)
-         allocate(res%sigma( res%numcapas))
-         allocate(res%eps(   res%numcapas))
-         allocate(res%mu(    res%numcapas))
+         allocate(res%sigma(res%numcapas))
+         allocate(res%eps(res%numcapas))
+         allocate(res%mu(res%numcapas))
          allocate(res%sigmam(res%numcapas))
-         allocate(res%thk(   res%numcapas))
-         allocate(res%sigma_devia( res%numcapas))
-         allocate(res%eps_devia(   res%numcapas))
-         allocate(res%mu_devia(    res%numcapas))
+         allocate(res%thk(res%numcapas))
+         allocate(res%sigma_devia(res%numcapas))
+         allocate(res%eps_devia(res%numcapas))
+         allocate(res%mu_devia(res%numcapas))
          allocate(res%sigmam_devia(res%numcapas))
-         allocate(res%thk_devia(   res%numcapas))
+         allocate(res%thk_devia(res%numcapas))
          do i = 1, res%numcapas
             call this%core%get_child(layers, i, layer)
             res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
@@ -1945,7 +1945,7 @@ contains
       block
          integer :: nTw
          nTw = 0
-         if (size(mAs) /=0 ) then
+         if (size(mAs) /=0) then
             do i = 1, size(mAs)
                if (isThinWire(mAs(i))) nTw = nTw+1
             end do
@@ -1961,7 +1961,7 @@ contains
       allocate(nodeCoordIds(2 * res%n_tw))
       allocate(nodeNodeIdx(2 * res%n_tw))
       j = 1
-      if (size(mAs) /=0 ) then
+      if (size(mAs) /=0) then
          do i = 1, size(mAs)
             if (isThinWire(mAs(i))) then
                res%tw(j) = readThinWire(mAs(i))
@@ -2496,7 +2496,7 @@ contains
             isFrequency = .true.
          end select
 
-         if (           isTime .and. .not. isFrequency .and. .not. hasTransferFunction) then
+         if (isTime .and. .not. isFrequency .and. .not. hasTransferFunction) then
             res = NP_T2_TIME
             return
          else if (.not. isTime .and.       isFrequency .and. .not. hasTransferFunction) then
@@ -2505,16 +2505,16 @@ contains
          else if (.not. isTime .and. .not. isFrequency .and.       hasTransferFunction) then
             res = NP_T2_TRANSFER
             return
-         else if (      isTime .and.       isFrequency .and. .not. hasTransferFunction) then
+         else if (isTime .and.       isFrequency .and. .not. hasTransferFunction) then
             res = NP_T2_TIMEFREQ
             return
-         else if (      isTime .and. .not. isFrequency .and.       hasTransferFunction) then
+         else if (isTime .and. .not. isFrequency .and.       hasTransferFunction) then
             res = NP_T2_TIMETRANSF
             return
          else if (.not. isTime .and.       isFrequency .and.       hasTransferFunction) then
             res = NP_T2_FREQTRANSF
             return
-         else if (      isTime .and.       isFrequency .and.       hasTransferFunction) then
+         else if (isTime .and.       isFrequency .and.       hasTransferFunction) then
             res = NP_T2_TIMEFRECTRANSF
             return
          end if
@@ -2910,7 +2910,7 @@ contains
 
          mat = this%matTable%getId(cable%materialId)
 
-         select case (this%getStrAt(mat%p, J_TYPE) )
+         select case (this%getStrAt(mat%p, J_TYPE))
          case (J_MAT_TYPE_SHIELDED_MULTIWIRE)
             parentId = cable%containedWithinElementId
             if (parentId == -1) then

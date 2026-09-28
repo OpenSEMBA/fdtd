@@ -516,8 +516,8 @@ module Solver_m
          call MPIupdateMin(this%mu0,rdummy)
 #endif
 #ifdef CompileWithMPI
-         call MPI_AllReduce( this%lastexecutedtimestep, dummyMin, 1_4, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce(this%lastexecutedtimestep, dummyMin, 1_4, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce(this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
          if ((dummyMax /= this%lastexecutedtimestep).or.(dummyMin /= this%lastexecutedtimestep)) then
 #ifdef CompileWithOldSaving
             if (this%control%resume_fromold) then
@@ -534,8 +534,8 @@ module Solver_m
                open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted')
                call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,Ex,Ey,Ez,Hx,Hy,Hz)
                this%sgg%dt=ultimodt !para permit scaling
-               call MPI_AllReduce( this%lastexecutedtimestep, dummyMin, 1_4, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, ierr)
-               call MPI_AllReduce( this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
+               call MPI_AllReduce(this%lastexecutedtimestep, dummyMin, 1_4, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, ierr)
+               call MPI_AllReduce(this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
                if ((dummyMax /= this%lastexecutedtimestep).or.(dummyMin /= this%lastexecutedtimestep)) then
                   write(DUbuf,*) 'NO success. fields.old MPI are also incoherent for resuming.', dummyMin,dummyMax,this%lastexecutedtimestep
                   call stoponerror (this%control%layoutnumber,this%control%num_procs,DUBUF,.true.) !para que retorne
@@ -1066,9 +1066,9 @@ contains
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
-            if ( l_auxoutput) then
+            if (l_auxoutput) then
                write (dubuf,*) '----> there are PEC, PMC or periodic Borders';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no PEC, PMC or periodic Borders found';  call print11(this%control%layoutnumber,dubuf)
@@ -1085,9 +1085,9 @@ contains
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
-            if (l_auxoutput ) then
+            if (l_auxoutput) then
                write (dubuf,*) '----> there are CPML Borders';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no CPML Borders found';  call print11(this%control%layoutnumber,dubuf)
@@ -1102,9 +1102,9 @@ contains
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
-            if ( l_auxoutput) then
+            if (l_auxoutput) then
                write (dubuf,*) '----> there are PML Bodies';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no PML Bodies found';  call print11(this%control%layoutnumber,dubuf)
@@ -1118,7 +1118,7 @@ contains
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
          if (l_auxoutput) then
                write (dubuf,*) '----> there are Mur Borders';  call print11(this%control%layoutnumber,dubuf)
@@ -1142,9 +1142,9 @@ contains
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif   
-         if (l_auxoutput ) then
+         if (l_auxoutput) then
              write (dubuf,*) '----> there are Structured lumped elements';  call print11(this%control%layoutnumber,dubuf)
          else
               write(dubuf,*) '----> no lumped Structured elements found';  call print11(this%control%layoutnumber,dubuf)
@@ -1182,9 +1182,9 @@ contains
             l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
-            if (l_auxoutput ) then
+            if (l_auxoutput) then
                write (dubuf,*) '----> there are Holland/transition wires';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no Holland/transition wires found';  call print11(this%control%layoutnumber,dubuf)
@@ -1207,7 +1207,7 @@ contains
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,ierr)
-            call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+            call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
          
             if (l_auxoutput) then
@@ -1246,10 +1246,10 @@ contains
             !!!!!!
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,ierr)
-            call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+            call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
          
-            if (l_auxoutput ) then
+            if (l_auxoutput) then
                write (dubuf,*) '----> there are Slanted wires';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no Slanted wires found';  call print11(this%control%layoutnumber,dubuf)
@@ -1260,7 +1260,7 @@ contains
 #ifdef CompileWithMPI
          !!!sincroniza el dtcritico
          newdtcritico = 0.0_RKIND_TIEMPO
-         call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE_TIEMPO, MPI_MIN, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce(dtcritico, newdtcritico, 1_4, REALSIZE_TIEMPO, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
 #endif
          if (this%sgg%dt <= dtcritico) then
@@ -1302,7 +1302,7 @@ contains
 #ifdef CompileWithMPI
          call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif   
          if (l_auxoutput) then
                write (dubuf,*) '----> there are Structured anisotropic elements';  call print11(this%control%layoutnumber,dubuf)
@@ -1332,7 +1332,7 @@ contains
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
             if (l_auxoutput) then
                write (dubuf,*) '----> there are Structured sgbc elements';  call print11(this%control%layoutnumber,dubuf)
@@ -1358,7 +1358,7 @@ contains
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
             if (l_auxoutput) then
                write (dubuf,*) '----> there are Structured  multiport elements';  call print11(this%control%layoutnumber,dubuf)
@@ -1385,9 +1385,9 @@ contains
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
-            if (l_auxoutput ) then
+            if (l_auxoutput) then
                write (dubuf,*) '----> there are Structured Electric dispersive elements';  call print11(this%control%layoutnumber,dubuf)
             else
                write(dubuf,*) '----> no Structured Electric dispersive elements found';  call print11(this%control%layoutnumber,dubuf)
@@ -1410,9 +1410,9 @@ contains
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
-         if ( l_auxoutput) then
+         if (l_auxoutput) then
              write (dubuf,*) '----> there are Structured Magnetic dispersive elements';  call print11(this%control%layoutnumber,dubuf)
          else
               write(dubuf,*) '----> no Structured Magnetic dispersive elements found';  call print11(this%control%layoutnumber,dubuf)
@@ -1435,9 +1435,9 @@ contains
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
-         if ( l_auxoutput) then
+         if (l_auxoutput) then
              write (dubuf,*) '----> there are Plane Wave';  call print11(this%control%layoutnumber,dubuf)
          else
               write(dubuf,*) '----> no Plane waves are found';  call print11(this%control%layoutnumber,dubuf)
@@ -1460,9 +1460,9 @@ contains
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
-         if ( l_auxoutput) then
+         if (l_auxoutput) then
              write (dubuf,*) '----> there are Structured Nodal sources';  call print11(this%control%layoutnumber,dubuf)
          else
               write(dubuf,*) '----> no Structured Nodal sources are found';  call print11(this%control%layoutnumber,dubuf)
@@ -1489,9 +1489,9 @@ contains
 
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif
-         if (l_auxoutput ) then
+         if (l_auxoutput) then
                write (dubuf,*) '----> there are observation requests';  call print11(this%control%layoutnumber,dubuf)
          else
                write(dubuf,*) '----> no observation requests are found';  call print11(this%control%layoutnumber,dubuf)
@@ -1627,9 +1627,9 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             call get_secnds (time_out2)
-            write(dubuf,*)  'Start Date/time ', time_out2%fecha( 7: 8),'/',&
-               &time_out2%fecha( 5: 6),'   ',time_out2%hora( 1: 2), ':',&
-               &time_out2%hora( 3: 4),':',time_out2%hora( 5: 6)
+            write(dubuf,*)  'Start Date/time ', time_out2%fecha(7: 8),'/',&
+               &time_out2%fecha(5: 6),'   ',time_out2%hora(1: 2), ':',&
+               &time_out2%hora(3: 4),':',time_out2%hora(5: 6)
             call print11(this%control%layoutnumber,dubuf)
             write(dubuf,*) SEPARADOR//separador//separador
             call print11(this%control%layoutnumber,dubuf)
@@ -1640,14 +1640,14 @@ contains
 
          !------------------------>
          type(SGGFDTDINFO_t), intent(in) :: sgg
-         type(bounds_t), intent( in) :: b
-         integer(kind = IKINDMTAG), dimension( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( inout) :: sggMtag
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHx%NY-1 , 0 : b%sggMiHx%NZ-1 )  , intent( in   ) :: sggMiHx
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHy%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHy%NZ-1 )  , intent( in   ) :: sggMiHy
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHz%NX-1 , 0 : b%sggMiHz%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( in   ) :: sggMiHz
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEx%NX-1 , 0 : b%sggMiEx%NY-1 , 0 : b%sggMiEx%NZ-1 )  , intent( in   ) :: sggMiEx
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1 )  , intent( in   ) :: sggMiEy
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1 )  , intent( in   ) :: sggMiEz
+         type(bounds_t), intent(in) :: b
+         integer(kind = IKINDMTAG), dimension(0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1)  , intent(inout) :: sggMtag
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 : b%sggMiHx%NX-1 , 0 : b%sggMiHx%NY-1 , 0 : b%sggMiHx%NZ-1)  , intent(in) :: sggMiHx
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 : b%sggMiHy%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHy%NZ-1)  , intent(in) :: sggMiHy
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 : b%sggMiHz%NX-1 , 0 : b%sggMiHz%NY-1 , 0 : b%sggMiHz%NZ-1)  , intent(in) :: sggMiHz
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 : b%sggMiEx%NX-1 , 0 : b%sggMiEx%NY-1 , 0 : b%sggMiEx%NZ-1)  , intent(in) :: sggMiEx
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1)  , intent(in) :: sggMiEy
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1)  , intent(in) :: sggMiEz
          type(taglist_t) :: tag_numbers
          !------------------------> Variables locales
          integer(kind = 4) :: i, j, k
@@ -1803,7 +1803,7 @@ contains
          end if
 #ifdef CompileWithMPI
          l_aux=call_timing
-         call MPI_AllReduce( l_aux, call_timing, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         call MPI_AllReduce(l_aux, call_timing, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
          call MPI_Barrier(MPI_COMM_WORLD,ierr) !050619 incluido problemas stochastic stopflusing
 #endif
          
@@ -1882,15 +1882,15 @@ contains
          integer, intent(inout) :: integerError
          logical :: logicalAux
          logicalAux=performFlags%flushVTK
-         call MPI_AllReduce( logicalAux, performFlags%flushVTK, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         call MPI_AllReduce(logicalAux, performFlags%flushVTK, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
          logicalAux=performFlags%flushXdmf
-         call MPI_AllReduce( logicalAux, performFlags%flushXdmf, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         call MPI_AllReduce(logicalAux, performFlags%flushXdmf, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
          logicalAux=performFlags%flushDATA
-         call MPI_AllReduce( logicalAux, performFlags%flushDATA, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         call MPI_AllReduce(logicalAux, performFlags%flushDATA, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
          logicalAux=performFlags%flushFIELDS
-         call MPI_AllReduce( logicalAux, performFlags%flushFIELDS, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         call MPI_AllReduce(logicalAux, performFlags%flushFIELDS, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
          logicalAux=performFlags%postprocess
-         call MPI_AllReduce( logicalAux, performFlags%postprocess, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         call MPI_AllReduce(logicalAux, performFlags%postprocess, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
       end subroutine syncroniceFlushFlags
 #endif
 
@@ -1936,7 +1936,7 @@ contains
          end if
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce(somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
          somethingdone=newsomethingdone
 #endif
          write(dubuf,'(a,i9)')  ' Done Unpacking .bin files and prostprocessing them at n= ',this%n
@@ -2697,12 +2697,12 @@ contains
    end subroutine
 
    !las sggmixx se desctruyen el en main pq se alocatean alli
-   subroutine Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,wiresflavor )
+   subroutine Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,wiresflavor)
       character(len=*) , intent(in) :: wiresflavor
       type(logic_control_t), intent(in) :: thereare
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      real(kind=RKIND), intent(inout)     , pointer, dimension( : , : , : ) :: Ex,Ey,Ez,Hx,Hy,Hz
-      real(kind=RKIND), intent(inout)     , pointer, dimension( : ) :: G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
+      real(kind=RKIND), intent(inout)     , pointer, dimension(: , : , :) :: Ex,Ey,Ez,Hx,Hy,Hz
+      real(kind=RKIND), intent(inout)     , pointer, dimension(:) :: G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
 
       call DestroyNodal(sgg)
       call DestroyIlumina(sgg)
@@ -2736,7 +2736,7 @@ contains
       deallocate(sgg%Med,sgg%LineX,sgg%LineY,sgg%LineZ,sgg%DX,sgg%DY,sgg%DZ,sgg%tiempo)
       deallocate(G1,G2,GM1,GM2)
       deallocate(Ex, Ey, Ez, Hx, Hy, Hz)
-      deallocate(dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh )
+      deallocate(dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh)
       return
    end subroutine Destroy_All_exceptSGGMxx
 

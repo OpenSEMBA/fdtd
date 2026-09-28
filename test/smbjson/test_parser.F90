@@ -92,15 +92,15 @@ integer function test_parser_read_mesh() bind(C) result(err)
    
    obtained = mesh%getCoordinate(59, found)
    if (.not. found) err = err + 1
-   if ( any(obtained%position /= expected%position)) err = err + 1
+   if (any(obtained%position /= expected%position)) err = err + 1
 
    obtained = mesh%getCoordinate(64, found)
    if (.not. found) err = err + 1
-   if ( any(obtained%position /= expected%position)) err = err + 1
+   if (any(obtained%position /= expected%position)) err = err + 1
 
    obtained = mesh%getCoordinate(61, found)
    if (.not. found) err = err + 1
-   if ( any(obtained%position /= expected%position)) err = err + 1
+   if (any(obtained%position /= expected%position)) err = err + 1
 
 
 end function

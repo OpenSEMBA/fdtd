@@ -173,19 +173,19 @@ contains
              IluminaAr(jjj)=.true.
              !
              !find the coordinate limits of the Huygens Box for each component
-             TrFr(jjj)%I%tra%Ez=Max( sgg%SINPMLSweep(IEZ)%XI, sgg%PlaneWave(jjj)%esqx1    )
-             TrFr(jjj)%I%fro%Ez=Min( sgg%SINPMLSweep(IEZ)%XE, sgg%PlaneWave(jjj)%esqx2    )
-             TrFr(jjj)%J%com%Ez=Max( sgg%SINPMLSweep(IEZ)%YI, sgg%PlaneWave(jjj)%esqy1    )
-             TrFr(jjj)%J%fin%Ez=Min( sgg%SINPMLSweep(IEZ)%YE, sgg%PlaneWave(jjj)%esqy2    )
-             TrFr(jjj)%K%com%Ez=Max( sgg%SINPMLSweep(IEZ)%ZI, sgg%PlaneWave(jjj)%esqz1    )
-             TrFr(jjj)%K%fin%Ez=MIn( sgg%SINPMLSweep(IEZ)%ZE, sgg%PlaneWave(jjj)%esqz2-1  )
+             TrFr(jjj)%I%tra%Ez=Max(sgg%SINPMLSweep(IEZ)%XI, sgg%PlaneWave(jjj)%esqx1)
+             TrFr(jjj)%I%fro%Ez=Min(sgg%SINPMLSweep(IEZ)%XE, sgg%PlaneWave(jjj)%esqx2)
+             TrFr(jjj)%J%com%Ez=Max(sgg%SINPMLSweep(IEZ)%YI, sgg%PlaneWave(jjj)%esqy1)
+             TrFr(jjj)%J%fin%Ez=Min(sgg%SINPMLSweep(IEZ)%YE, sgg%PlaneWave(jjj)%esqy2)
+             TrFr(jjj)%K%com%Ez=Max(sgg%SINPMLSweep(IEZ)%ZI, sgg%PlaneWave(jjj)%esqz1)
+             TrFr(jjj)%K%fin%Ez=MIn(sgg%SINPMLSweep(IEZ)%ZE, sgg%PlaneWave(jjj)%esqz2-1)
              !
-             TrFr(jjj)%I%tra%Ey=Max( sgg%SINPMLSweep(iEy)%XI, sgg%PlaneWave(jjj)%esqx1    )
-             TrFr(jjj)%I%fro%Ey=Min( sgg%SINPMLSweep(iEy)%XE, sgg%PlaneWave(jjj)%esqx2    )
-             TrFr(jjj)%J%com%Ey=Max( sgg%SINPMLSweep(iEy)%YI, sgg%PlaneWave(jjj)%esqy1    )
-             TrFr(jjj)%J%fin%Ey=Min( sgg%SINPMLSweep(iEy)%YE, sgg%PlaneWave(jjj)%esqy2-1  )
-             TrFr(jjj)%K%com%Ey=Max( sgg%SINPMLSweep(iEy)%ZI ,sgg%PlaneWave(jjj)%esqz1    )
-             TrFr(jjj)%K%fin%Ey=MIn( sgg%SINPMLSweep(iEy)%ZE ,sgg%PlaneWave(jjj)%esqz2    )
+             TrFr(jjj)%I%tra%Ey=Max(sgg%SINPMLSweep(iEy)%XI, sgg%PlaneWave(jjj)%esqx1)
+             TrFr(jjj)%I%fro%Ey=Min(sgg%SINPMLSweep(iEy)%XE, sgg%PlaneWave(jjj)%esqx2)
+             TrFr(jjj)%J%com%Ey=Max(sgg%SINPMLSweep(iEy)%YI, sgg%PlaneWave(jjj)%esqy1)
+             TrFr(jjj)%J%fin%Ey=Min(sgg%SINPMLSweep(iEy)%YE, sgg%PlaneWave(jjj)%esqy2-1)
+             TrFr(jjj)%K%com%Ey=Max(sgg%SINPMLSweep(iEy)%ZI ,sgg%PlaneWave(jjj)%esqz1)
+             TrFr(jjj)%K%fin%Ey=MIn(sgg%SINPMLSweep(iEy)%ZE ,sgg%PlaneWave(jjj)%esqz2)
              !
              TrFr(jjj)%I%tra%Hy= TrFr(jjj)%I%tra%Ez - 1
              TrFr(jjj)%I%fro%Hy= TrFr(jjj)%I%fro%Ez
@@ -202,19 +202,19 @@ contains
              TrFr(jjj)%K%fin%Hz= TrFr(jjj)%K%fin%Ey
              !
              !
-             IzDe(jjj)%J%izq%Ex=Max( sgg%SINPMLSweep(iEx)%yI, sgg%PlaneWave(jjj)%esqy1     )
-             IzDe(jjj)%J%der%Ex=Min( sgg%SINPMLSweep(iEx)%yE, sgg%PlaneWave(jjj)%esqy2     )
-             IzDe(jjj)%I%com%Ex=Max( sgg%SINPMLSweep(iEx)%xI, sgg%PlaneWave(jjj)%esqx1     )
-             IzDe(jjj)%I%fin%Ex=Min( sgg%SINPMLSweep(iEx)%xE, sgg%PlaneWave(jjj)%esqx2-1   )
-             IzDe(jjj)%K%com%Ex=Max( sgg%SINPMLSweep(iEx)%ZI ,sgg%PlaneWave(jjj)%esqz1     )
-             IzDe(jjj)%K%fin%Ex=MIn( sgg%SINPMLSweep(iEx)%ZE ,sgg%PlaneWave(jjj)%esqz2     )
+             IzDe(jjj)%J%izq%Ex=Max(sgg%SINPMLSweep(iEx)%yI, sgg%PlaneWave(jjj)%esqy1)
+             IzDe(jjj)%J%der%Ex=Min(sgg%SINPMLSweep(iEx)%yE, sgg%PlaneWave(jjj)%esqy2)
+             IzDe(jjj)%I%com%Ex=Max(sgg%SINPMLSweep(iEx)%xI, sgg%PlaneWave(jjj)%esqx1)
+             IzDe(jjj)%I%fin%Ex=Min(sgg%SINPMLSweep(iEx)%xE, sgg%PlaneWave(jjj)%esqx2-1)
+             IzDe(jjj)%K%com%Ex=Max(sgg%SINPMLSweep(iEx)%ZI ,sgg%PlaneWave(jjj)%esqz1)
+             IzDe(jjj)%K%fin%Ex=MIn(sgg%SINPMLSweep(iEx)%ZE ,sgg%PlaneWave(jjj)%esqz2)
              !
-             IzDe(jjj)%J%izq%Ez=Max( sgg%SINPMLSweep(IEZ)%yI, sgg%PlaneWave(jjj)%esqy1     )
-             IzDe(jjj)%J%der%Ez=Min( sgg%SINPMLSweep(IEZ)%yE, sgg%PlaneWave(jjj)%esqy2     )
-             IzDe(jjj)%I%com%Ez=Max( sgg%SINPMLSweep(IEZ)%xI, sgg%PlaneWave(jjj)%esqx1     )
-             IzDe(jjj)%I%fin%Ez=Min( sgg%SINPMLSweep(IEZ)%xE, sgg%PlaneWave(jjj)%esqx2     )
-             IzDe(jjj)%K%com%Ez=Max( sgg%SINPMLSweep(IEZ)%ZI ,sgg%PlaneWave(jjj)%esqz1     )
-             IzDe(jjj)%K%fin%Ez=MIn( sgg%SINPMLSweep(IEZ)%ZE ,sgg%PlaneWave(jjj)%esqz2-1   )
+             IzDe(jjj)%J%izq%Ez=Max(sgg%SINPMLSweep(IEZ)%yI, sgg%PlaneWave(jjj)%esqy1)
+             IzDe(jjj)%J%der%Ez=Min(sgg%SINPMLSweep(IEZ)%yE, sgg%PlaneWave(jjj)%esqy2)
+             IzDe(jjj)%I%com%Ez=Max(sgg%SINPMLSweep(IEZ)%xI, sgg%PlaneWave(jjj)%esqx1)
+             IzDe(jjj)%I%fin%Ez=Min(sgg%SINPMLSweep(IEZ)%xE, sgg%PlaneWave(jjj)%esqx2)
+             IzDe(jjj)%K%com%Ez=Max(sgg%SINPMLSweep(IEZ)%ZI ,sgg%PlaneWave(jjj)%esqz1)
+             IzDe(jjj)%K%fin%Ez=MIn(sgg%SINPMLSweep(IEZ)%ZE ,sgg%PlaneWave(jjj)%esqz2-1)
              !
              IzDe(jjj)%J%izq%Hz= IzDe(jjj)%J%izq%Ex - 1
              IzDe(jjj)%J%der%Hz= IzDe(jjj)%J%der%Ex
@@ -231,19 +231,19 @@ contains
              IzDe(jjj)%K%fin%Hx= IzDe(jjj)%K%fin%Ez
              !
              !
-             AbAr(jjj)%K%aba%Ey=Max( sgg%SINPMLSweep(iEy)%ZI, sgg%PlaneWave(jjj)%esqz1     )
-             AbAr(jjj)%K%arr%Ey=Min( sgg%SINPMLSweep(iEy)%ZE, sgg%PlaneWave(jjj)%esqz2     )
-             AbAr(jjj)%I%com%Ey=Max( sgg%SINPMLSweep(iEy)%XI, sgg%PlaneWave(jjj)%esqx1     )
-             AbAr(jjj)%I%fin%Ey=Min( sgg%SINPMLSweep(iEy)%XE, sgg%PlaneWave(jjj)%esqx2     )
-             AbAr(jjj)%J%com%Ey=Max( sgg%SINPMLSweep(iEy)%YI, sgg%PlaneWave(jjj)%esqy1     )
-             AbAr(jjj)%J%fin%Ey=Min( sgg%SINPMLSweep(iEy)%YE, sgg%PlaneWave(jjj)%esqy2-1   )
+             AbAr(jjj)%K%aba%Ey=Max(sgg%SINPMLSweep(iEy)%ZI, sgg%PlaneWave(jjj)%esqz1)
+             AbAr(jjj)%K%arr%Ey=Min(sgg%SINPMLSweep(iEy)%ZE, sgg%PlaneWave(jjj)%esqz2)
+             AbAr(jjj)%I%com%Ey=Max(sgg%SINPMLSweep(iEy)%XI, sgg%PlaneWave(jjj)%esqx1)
+             AbAr(jjj)%I%fin%Ey=Min(sgg%SINPMLSweep(iEy)%XE, sgg%PlaneWave(jjj)%esqx2)
+             AbAr(jjj)%J%com%Ey=Max(sgg%SINPMLSweep(iEy)%YI, sgg%PlaneWave(jjj)%esqy1)
+             AbAr(jjj)%J%fin%Ey=Min(sgg%SINPMLSweep(iEy)%YE, sgg%PlaneWave(jjj)%esqy2-1)
              !
-             AbAr(jjj)%K%aba%Ex=Max( sgg%SINPMLSweep(iEx)%ZI, sgg%PlaneWave(jjj)%esqz1     )
-             AbAr(jjj)%K%arr%Ex=Min( sgg%SINPMLSweep(iEx)%ZE, sgg%PlaneWave(jjj)%esqz2     )
-             AbAr(jjj)%I%com%Ex=Max( sgg%SINPMLSweep(iEx)%XI, sgg%PlaneWave(jjj)%esqx1     )
-             AbAr(jjj)%I%fin%Ex=Min( sgg%SINPMLSweep(iEx)%XE, sgg%PlaneWave(jjj)%esqx2-1   )
-             AbAr(jjj)%J%com%Ex=Max( sgg%SINPMLSweep(iEx)%YI, sgg%PlaneWave(jjj)%esqy1     )
-             AbAr(jjj)%J%fin%Ex=Min( sgg%SINPMLSweep(iEx)%YE, sgg%PlaneWave(jjj)%esqy2     )
+             AbAr(jjj)%K%aba%Ex=Max(sgg%SINPMLSweep(iEx)%ZI, sgg%PlaneWave(jjj)%esqz1)
+             AbAr(jjj)%K%arr%Ex=Min(sgg%SINPMLSweep(iEx)%ZE, sgg%PlaneWave(jjj)%esqz2)
+             AbAr(jjj)%I%com%Ex=Max(sgg%SINPMLSweep(iEx)%XI, sgg%PlaneWave(jjj)%esqx1)
+             AbAr(jjj)%I%fin%Ex=Min(sgg%SINPMLSweep(iEx)%XE, sgg%PlaneWave(jjj)%esqx2-1)
+             AbAr(jjj)%J%com%Ex=Max(sgg%SINPMLSweep(iEx)%YI, sgg%PlaneWave(jjj)%esqy1)
+             AbAr(jjj)%J%fin%Ex=Min(sgg%SINPMLSweep(iEx)%YE, sgg%PlaneWave(jjj)%esqy2)
              !
              AbAr(jjj)%K%aba%Hx= AbAr(jjj)%K%aba%Ey - 1
              AbAr(jjj)%K%arr%Hx= AbAr(jjj)%K%arr%Ey
@@ -295,7 +295,7 @@ contains
                  fpw(jjj,2,kkk)=sgg%PlaneWave(jjj)%ey(kkk)
                  fpw(jjj,3,kkk)=sgg%PlaneWave(jjj)%ez(kkk)
 !
-                 modulus=sqrt(pxpw(jjj,kkk)**2+pypw(jjj,kkk)**2+pzpw(jjj,kkk)**2.0_RKIND )
+                 modulus=sqrt(pxpw(jjj,kkk)**2+pypw(jjj,kkk)**2+pzpw(jjj,kkk)**2.0_RKIND)
                  pxpw(jjj,kkk)=pxpw(jjj,kkk)/modulus
                  pypw(jjj,kkk)=pypw(jjj,kkk)/modulus
                  pzpw(jjj,kkk)=pzpw(jjj,kkk)/modulus  
@@ -311,7 +311,7 @@ contains
                      fpw(jjj,2,kkk)=sgg%PlaneWave(jjj)%ey(kkk)
                      fpw(jjj,3,kkk)=sgg%PlaneWave(jjj)%ez(kkk)
     !
-                     modulus=sqrt(pxpw(jjj,kkk)**2+pypw(jjj,kkk)**2+pzpw(jjj,kkk)**2.0_RKIND )
+                     modulus=sqrt(pxpw(jjj,kkk)**2+pypw(jjj,kkk)**2+pzpw(jjj,kkk)**2.0_RKIND)
                      pxpw(jjj,kkk)=pxpw(jjj,kkk)/modulus
                      pypw(jjj,kkk)=pypw(jjj,kkk)/modulus
                      pzpw(jjj,kkk)=pzpw(jjj,kkk)/modulus  
@@ -376,14 +376,14 @@ contains
 
       !check if materials are crossed by the box
       do jjj=1, sgg%numplanewaves
-          if( IluminaTr(jjj)) then
+          if(IluminaTr(jjj)) then
              !Ez Back
              i = TrFr(jjj)%I%tra%Ez !Back
              do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
                 do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
-                   if (media%sggMiEz( i, j, k) /=1 ) then
+                   if (media%sggMiEz(i, j, k) /=1) then
                       write (buff,'(a,3i7)') 'Back TF/SF region intersects a material at Ez ',i,j,k
-                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -394,9 +394,9 @@ contains
              i = TrFr(jjj)%I%tra%Ey
              do k = TrFr(jjj)%K%com%Ey, TrFr(jjj)%K%fin%Ey
                 do j = TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey
-                   if (media%sggMiEy(i,j,k) /=1 ) then
+                   if (media%sggMiEy(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Back TF/SF region intersects a material at Ey ',i,j,k
-                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -405,14 +405,14 @@ contains
              end do
           end if
           !--->
-          if( IluminaFr(jjj)) then
+          if(IluminaFr(jjj)) then
              !Ez  Front
              i = TrFr(jjj)%I%fro%Ez !Front
              do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
                 do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
-                   if (media%sggMiEz(i,j,k) /=1 ) then
+                   if (media%sggMiEz(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Front TF/SF region intersects a material at Ez ',i,j,k
-                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -423,9 +423,9 @@ contains
              i = TrFr(jjj)%I%fro%Ey !Front
              do k = TrFr(jjj)%K%com%Ey, TrFr(jjj)%K%fin%Ey
                 do j = TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey
-                   if (media%sggMiEy(i,j,k) /=1 ) then
+                   if (media%sggMiEy(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Front TF/SF region intersects a material at Ey ',i,j,k
-                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -434,14 +434,14 @@ contains
              end do
           end if
           !--->
-          if( IluminaIz(jjj)) then
+          if(IluminaIz(jjj)) then
              !Ex Left
              j = IzDe(jjj)%J%izq%Ex  !Left
              do k = IzDe(jjj)%K%com%Ex, IzDe(jjj)%K%fin%Ex
                 do i = IzDe(jjj)%I%com%Ex, IzDe(jjj)%I%fin%Ex
-                   if (media%sggMiEx(i,j,k) /=1 ) then
+                   if (media%sggMiEx(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Left TF/SF region intersects a material at Ex ',i,j,k
-                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -452,9 +452,9 @@ contains
              j = IzDe(jjj)%J%izq%Ez  !Left
              do k = IzDe(jjj)%K%com%Ez, IzDe(jjj)%K%fin%Ez
                 do i = IzDe(jjj)%I%com%Ez, IzDe(jjj)%I%fin%Ez
-                   if (media%sggMiEz(i,j,k) /=1 ) then
+                   if (media%sggMiEz(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Left TF/SF region intersects a material at Ez ',i,j,k
-                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -463,14 +463,14 @@ contains
              end do
           end if
           !--->
-          if( IluminaDe(jjj)) then
+          if(IluminaDe(jjj)) then
              !Ez  Right
              j = IzDe(jjj)%J%der%Ez !Right
              do k = IzDe(jjj)%K%com%Ez, IzDe(jjj)%K%fin%Ez
                 do i = IzDe(jjj)%I%com%Ez, IzDe(jjj)%I%fin%Ez
-                   if (media%sggMiEz(i,j,k) /=1 ) then
+                   if (media%sggMiEz(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Right TF/SF region intersects a material at Ez ',i,j,k
-                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -481,9 +481,9 @@ contains
              j = IzDe(jjj)%J%der%Ex !Right
              do k = IzDe(jjj)%K%com%Ex,IzDe(jjj)%K%fin%Ex
                 do i=IzDe(jjj)%I%com%Ex,IzDe(jjj)%I%fin%Ex
-                   if (media%sggMiEx(i,j,k) /=1 ) then
+                   if (media%sggMiEx(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Right TF/SF region intersects a material at Ex ',i,j,k
-                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -492,14 +492,14 @@ contains
              end do
           end if
           !--->
-          if( IluminaAb(jjj)) then
+          if(IluminaAb(jjj)) then
              !Ex  Down
              k = AbAr(jjj)%K%aba%Ex  !Down
              do j = AbAr(jjj)%J%com%Ex, AbAr(jjj)%J%fin%Ex
                 do i=AbAr(jjj)%I%com%Ex,AbAr(jjj)%I%fin%Ex
-                   if (media%sggMiEx(i,j,k) /=1 ) then
+                   if (media%sggMiEx(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Down TF/SF region intersects a material at Ex ',i,j,k
-                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -510,9 +510,9 @@ contains
              k = AbAr(jjj)%K%aba%Ey  !Down
              do j = AbAr(jjj)%J%com%Ey, AbAr(jjj)%J%fin%Ey
                 do i = AbAr(jjj)%I%com%Ey, AbAr(jjj)%I%fin%Ey
-                   if (media%sggMiEy(i,j,k) /=1 ) then
+                   if (media%sggMiEy(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Down TF/SF region intersects a material at Ey ',i,j,k
-                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -521,14 +521,14 @@ contains
              end do
           end if
           !--->
-          if( IluminaAr(jjj)) then
+          if(IluminaAr(jjj)) then
              !Ex Up
              k = AbAr(jjj)%K%arr%Ex  !Up
              do j = AbAr(jjj)%J%com%Ex, AbAr(jjj)%J%fin%Ex
                 do i = AbAr(jjj)%I%com%Ex, AbAr(jjj)%I%fin%Ex
-                   if (media%sggMiEx(i,j,k) /=1 ) then
+                   if (media%sggMiEx(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Up TF/SF region intersects a material at Ex ',i,j,k
-                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -539,9 +539,9 @@ contains
              k = AbAr(jjj)%K%arr%Ey
              do j = AbAr(jjj)%J%com%Ey, AbAr(jjj)%J%fin%Ey
                 do i = AbAr(jjj)%I%com%Ey, AbAr(jjj)%I%fin%Ey
-                   if (media%sggMiEy(i,j,k) /=1 ) then
+                   if (media%sggMiEy(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Up TF/SF region intersects a material at Ey ',i,j,k
-                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -550,14 +550,14 @@ contains
              end do
           end if
           !!!
-          if( IluminaTr(jjj)) then
+          if(IluminaTr(jjj)) then
              !Hz Back
              i = TrFr(jjj)%I%tra%Hz  !Back
              do k = TrFr(jjj)%K%com%Hz, TrFr(jjj)%K%fin%Hz
                 do j = TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz
-                   if (media%sggMiHz(i,j,k) /=1 ) then
+                   if (media%sggMiHz(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Back TF/SF region intersects a material at Hz ',i,j,k
-                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -568,9 +568,9 @@ contains
              i = TrFr(jjj)%I%tra%Hy  !Back
              do k = TrFr(jjj)%K%com%Hy, TrFr(jjj)%K%fin%Hy
                 do j = TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy
-                   if (media%sggMiHy(i,j,k) /=1 ) then
+                   if (media%sggMiHy(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Back TF/SF region intersects a material at Hy ',i,j,k
-                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -578,14 +578,14 @@ contains
                 end do
              end do
           end if
-          if( IluminaFr(jjj)) then
+          if(IluminaFr(jjj)) then
              !Hz  Front
              i = TrFr(jjj)%I%fro%Hz !Front
              do k = TrFr(jjj)%K%com%Hz, TrFr(jjj)%K%fin%Hz
                 do j = TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz
-                   if (media%sggMiHz(i,j,k) /=1 ) then
+                   if (media%sggMiHz(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Front TF/SF region intersects a material at Hz ',i,j,k
-                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -596,9 +596,9 @@ contains
              i = TrFr(jjj)%I%fro%Hy !Front
              do k = TrFr(jjj)%K%com%Hy, TrFr(jjj)%K%fin%Hy
                 do j = TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy
-                   if (media%sggMiHy( i,j,k) /=1 ) then
+                   if (media%sggMiHy(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Front TF/SF region intersects a material at Hy ',i,j,k
-                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -607,14 +607,14 @@ contains
              end do
 
           end if
-          if( IluminaIz(jjj)) then
+          if(IluminaIz(jjj)) then
              !Hx Left
              j = IzDe(jjj)%J%izq%Hx  !Left
              do k = IzDe(jjj)%K%com%Hx, IzDe(jjj)%K%fin%Hx
                 do i = IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx
-                   if (media%sggMiHx( i,j,k) /=1 ) then
+                   if (media%sggMiHx(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Left TF/SF region intersects a material at Hx ',i,j,k
-                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -625,9 +625,9 @@ contains
              j = IzDe(jjj)%J%izq%Hz  !Left
              do k = IzDe(jjj)%K%com%Hz, IzDe(jjj)%K%fin%Hz
                 do i = IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz
-                   if (media%sggMiHz( i,j,k) /=1 ) then
+                   if (media%sggMiHz(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Left TF/SF region intersects a material at Hz ',i,j,k
-                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -635,14 +635,14 @@ contains
                 end do
              end do
           end if
-          if( IluminaDe(jjj)) then
+          if(IluminaDe(jjj)) then
              !Hx  Right
              j = IzDe(jjj)%J%der%Hx !Right
              do k = IzDe(jjj)%K%com%Hx, IzDe(jjj)%K%fin%Hx
                 do i = IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx
-                   if (media%sggMiHx(i,j,k) /=1 ) then
+                   if (media%sggMiHx(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Right TF/SF region intersects a material at Hx ',i,j,k
-                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -653,9 +653,9 @@ contains
              j = IzDe(jjj)%J%der%Hz !Right
              do k = IzDe(jjj)%K%com%Hz, IzDe(jjj)%K%fin%Hz
                 do i = IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz
-                   if (media%sggMiHz(i,j,k) /=1 ) then
+                   if (media%sggMiHz(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Right TF/SF region intersects a material at Hz ',i,j,k
-                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -663,14 +663,14 @@ contains
                 end do
              end do
           end if
-          if( IluminaAb(jjj)) then
+          if(IluminaAb(jjj)) then
              !Hx  Down
              k = AbAr(jjj)%K%aba%Hx  !Down
              do j = AbAr(jjj)%J%com%Hx, AbAr(jjj)%J%fin%Hx
                 do i = AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx
-                   if (media%sggMiHx(i,j,k) /=1 ) then
+                   if (media%sggMiHx(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Down TF/SF region intersects a material at Hx ',i,j,k
-                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -681,9 +681,9 @@ contains
              k = AbAr(jjj)%K%aba%Hy  !Down
              do j = AbAr(jjj)%J%com%Hy, AbAr(jjj)%J%fin%Hy
                 do i=AbAr(jjj)%I%com%Hy,AbAr(jjj)%I%fin%Hy
-                   if (media%sggMiHy(i,j,k) /=1 ) then
+                   if (media%sggMiHy(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Down TF/SF region intersects a material at Hy ',i,j,k
-                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -692,14 +692,14 @@ contains
              end do
           end if
           !--->
-          if( IluminaAr(jjj)) then
+          if(IluminaAr(jjj)) then
              !Hx Up
              k = AbAr(jjj)%K%arr%Hx  !Up
              do j = AbAr(jjj)%J%com%Hx, AbAr(jjj)%J%fin%Hx
                 do i = AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx
-                   if (media%sggMiHx(i,j,k) /=1 ) then
+                   if (media%sggMiHx(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Up TF/SF region intersects a material at Hx ',i,j,k
-                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -710,9 +710,9 @@ contains
              k=AbAr(jjj)%K%arr%Hy  !Up
              do j = AbAr(jjj)%J%com%Hy, AbAr(jjj)%J%fin%Hy
                 do i = AbAr(jjj)%I%com%Hy, AbAr(jjj)%I%fin%Hy
-                   if (media%sggMiHy(i,j,k) /=1 ) then
+                   if (media%sggMiHy(i,j,k) /=1) then
                       write (buff,'(a,3i7)') 'Up TF/SF region intersects a material at Hy ',i,j,k
-                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%PEC)).and. .not. &
+                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
                       call stoponerror(layoutnumber,num_procs,buff)
@@ -834,24 +834,24 @@ contains
 
 
    !**************************************************************************************************
-   subroutine AdvancePlaneWaveE( sgg, timeinstant, b, g2, Idxh, Idyh, Idzh, Ex, Ey, Ez,still_planewave_time)
+   subroutine AdvancePlaneWaveE(sgg, timeinstant, b, g2, Idxh, Idyh, Idzh, Ex, Ey, Ez,still_planewave_time)
       type(SGGFDTDINFO_t), intent(in) :: sgg
       logical :: still_planewave_time
       logical :: called_fromobservation
       !---------------------------> inputs <----------------------------------------------------------
-      integer, intent( in) :: timeinstant
+      integer, intent(in) :: timeinstant
       !!!
-      type( bounds_t), intent( in) :: b
+      type(bounds_t), intent(in) :: b
       !--->
-      real(kind = RKIND), dimension( 0 :  sgg%NumMedia), intent( in) :: g2
+      real(kind = RKIND), dimension(0 :  sgg%NumMedia), intent(in) :: g2
       !--->
-      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( in) :: Idxh
-      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( in) :: Idyh
-      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( in) :: Idzh
+      real(kind = RKIND), dimension(0 :  b%dxh%NX-1), intent(in) :: Idxh
+      real(kind = RKIND), dimension(0 :  b%dyh%NY-1), intent(in) :: Idyh
+      real(kind = RKIND), dimension(0 :  b%dzh%NZ-1), intent(in) :: Idzh
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( inout) :: Ex
-      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( inout) :: Ey
-      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( inout) :: Ez
+      real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(inout) :: Ex
+      real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(inout) :: Ey
+      real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(inout) :: Ez
       !---------------------------> variables locales <-----------------------------------------------
       real(kind = RKIND) :: timei, G2_1, Id,incidente
       integer  :: i, j, k, i_m, j_m, k_m,jjj
@@ -867,14 +867,14 @@ contains
       !!!! deprecado en pscale y el+3 de la sincronia con ORIGINAL se jode para siempre 110219 
       !!! timei = (timeinstant +3) * sgg%dt !ORIGINAL sync
       
-      G2_1 = G2( 1)
+      G2_1 = G2(1)
       !--->
       do jjj=1, sgg%numplanewaves
-          if( IluminaTr(jjj)) then
+          if(IluminaTr(jjj)) then
              !Ez Back
              i = TrFr(jjj)%I%tra%Ez !Back
              i_m = i - b%Ez%XI
-             Id = Idxh( i_m )
+             Id = Idxh(i_m)
              !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
@@ -885,7 +885,7 @@ contains
                    j_m = j - b%Ez%YI
                    !--->
                    incidente = Incid(sgg,jjj, IHY, timei, i-1, j, k,still_planewave_time,called_fromobservation)
-                   Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) - G2_1 * incidente * Id
+                   Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) - G2_1 * incidente * Id
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -894,7 +894,7 @@ contains
              !Ey Back
              i = TrFr(jjj)%I%tra%Ey  !Back
              i_m = i - b%Ey%XI
-             Id = Idxh( i_m )
+             Id = Idxh(i_m)
              !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
@@ -905,7 +905,7 @@ contains
                    j_m = j - b%Ey%YI
                    !--->
                    incidente = Incid(sgg,jjj, IHZ, timei, i-1, j, k,still_planewave_time,called_fromobservation)
-                   Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) + G2_1 * incidente * Id
+                   Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) + G2_1 * incidente * Id
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -913,11 +913,11 @@ contains
 #endif
           end if
           !--->
-          if( IluminaFr(jjj)) then
+          if(IluminaFr(jjj)) then
              !Ez  Front
              i = TrFr(jjj)%I%fro%Ez !Front
              i_m = i - b%Ez%XI
-             Id = Idxh( i_m )
+             Id = Idxh(i_m)
              !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
@@ -928,7 +928,7 @@ contains
                    j_m = j - b%Ez%YI
                    !--->
                    incidente = Incid(sgg,jjj, IHY, timei, i, j, k,still_planewave_time,called_fromobservation)
-                   Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) + G2_1 * incidente * Id
+                   Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) + G2_1 * incidente * Id
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -937,7 +937,7 @@ contains
              !Ey  Front
              i = TrFr(jjj)%I%fro%Ey !Front
              i_m = i - b%Ey%XI
-             Id = Idxh( i_m )
+             Id = Idxh(i_m)
              !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
@@ -948,7 +948,7 @@ contains
                    j_m = j - b%Ey%YI
                    !--->
                    incidente = Incid(sgg,jjj, IHZ, timei, i, j, k,still_planewave_time,called_fromobservation)
-                   Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) - G2_1 * incidente * Id
+                   Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) - G2_1 * incidente * Id
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -956,11 +956,11 @@ contains
 #endif
           end if
           !--->
-          if( IluminaIz(jjj)) then
+          if(IluminaIz(jjj)) then
              !Ex Left
              j = IzDe(jjj)%J%izq%Ex  !Left
              j_m = j - b%Ex%YI
-             Id = Idyh( j_m )
+             Id = Idyh(j_m)
              !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
@@ -971,7 +971,7 @@ contains
                    i_m = i - b%Ex%XI
                    !--->
                    incidente = Incid(sgg,jjj, IHZ, timei, i, j-1, k,still_planewave_time,called_fromobservation)
-                   Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) - G2_1 * incidente * Id
+                   Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) - G2_1 * incidente * Id
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -980,7 +980,7 @@ contains
              !Ez Left
              j = IzDe(jjj)%J%izq%Ez  !Left
              j_m = j - b%Ez%YI
-             Id = Idyh( j_m )
+             Id = Idyh(j_m)
              !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
@@ -991,7 +991,7 @@ contains
                    i_m = i - b%Ez%XI
                    !--->
                    incidente = Incid(sgg,jjj, IHX, timei, i, j-1, k,still_planewave_time,called_fromobservation)
-                   Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) + G2_1 * incidente * Id
+                   Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) + G2_1 * incidente * Id
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -999,11 +999,11 @@ contains
 #endif
           end if
           !--->
-          if( IluminaDe(jjj)) then
+          if(IluminaDe(jjj)) then
              !Ez  Right
              j = IzDe(jjj)%J%der%Ez !Right
              j_m = j - b%Ez%YI
-             Id = Idyh( j_m )
+             Id = Idyh(j_m)
              !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
@@ -1014,7 +1014,7 @@ contains
                    i_m = i - b%Ez%XI
                    !--->
                    incidente = Incid(sgg,jjj, IHX, timei, i, j, k,still_planewave_time,called_fromobservation)
-                   Ez( i_m, j_m, k_m) = Ez( i_m, j_m, k_m) - G2_1 * incidente * Id
+                   Ez(i_m, j_m, k_m) = Ez(i_m, j_m, k_m) - G2_1 * incidente * Id
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -1023,7 +1023,7 @@ contains
              !Ex  Right
              j = IzDe(jjj)%J%der%Ex !Right
              j_m = j - b%Ex%YI
-             Id = Idyh( j_m )
+             Id = Idyh(j_m)
              !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
@@ -1034,7 +1034,7 @@ contains
                    i_m = i - b%Ex%XI
                    !--->
                    incidente = Incid(sgg,jjj, IHZ, timei, i, j, k,still_planewave_time,called_fromobservation)
-                   Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) + G2_1 * incidente * Id
+                   Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) + G2_1 * incidente * Id
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -1042,11 +1042,11 @@ contains
 #endif
           end if
           !--->
-          if( IluminaAb(jjj)) then
+          if(IluminaAb(jjj)) then
              !Ex  Down
              k = AbAr(jjj)%K%aba%Ex  !Down
              k_m = k - b%Ex%ZI
-             Id = Idzh( k_m )
+             Id = Idzh(k_m)
              !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
@@ -1057,7 +1057,7 @@ contains
                    i_m = i - b%Ex%XI
                    !--->
                    incidente = Incid(sgg,jjj, IHY, timei, i, j, k-1,still_planewave_time,called_fromobservation)
-                   Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) + G2_1 * incidente * Id
+                   Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) + G2_1 * incidente * Id
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -1066,7 +1066,7 @@ contains
              !Ey Down
              k = AbAr(jjj)%K%aba%Ey  !Down
              k_m = k - b%Ey%ZI
-             Id = Idzh( k_m )
+             Id = Idzh(k_m)
              !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
@@ -1077,7 +1077,7 @@ contains
                    i_m = i - b%Ey%XI
                    !--->
                    incidente = Incid(sgg,jjj, IHX, timei, i, j, k-1,still_planewave_time,called_fromobservation)
-                   Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) - G2_1 * incidente * Id
+                   Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) - G2_1 * incidente * Id
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -1085,11 +1085,11 @@ contains
 #endif
           end if
           !--->
-          if( IluminaAr(jjj)) then
+          if(IluminaAr(jjj)) then
              !Ex Up
              k = AbAr(jjj)%K%arr%Ex  !Up
              k_m = k - b%Ex%ZI
-             Id = Idzh( k_m )
+             Id = Idzh(k_m)
              !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
@@ -1100,7 +1100,7 @@ contains
                    i_m = i - b%Ex%XI
                    !--->
                    incidente = Incid(sgg,jjj, IHY, timei, i, j, k,still_planewave_time,called_fromobservation)
-                   Ex( i_m, j_m, k_m) = Ex( i_m, j_m, k_m) - G2_1 * incidente * Id
+                   Ex(i_m, j_m, k_m) = Ex(i_m, j_m, k_m) - G2_1 * incidente * Id
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -1109,7 +1109,7 @@ contains
              !Ey Up
              k = AbAr(jjj)%K%arr%Ey  !Up
              k_m = k - b%Ey%ZI
-             Id = Idzh( k_m )
+             Id = Idzh(k_m)
              !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
@@ -1120,7 +1120,7 @@ contains
                    i_m = i - b%Ey%XI
                    !--->
                    incidente = Incid(sgg,jjj, IHX, timei, i, j, k,still_planewave_time,called_fromobservation)
-                   Ey( i_m, j_m, k_m) = Ey( i_m, j_m, k_m) + G2_1 * incidente * Id
+                   Ey(i_m, j_m, k_m) = Ey(i_m, j_m, k_m) + G2_1 * incidente * Id
                 end do
              end do
 #ifdef CompileWithOpenMP
@@ -1142,19 +1142,19 @@ contains
       logical :: called_fromobservation
       
       !---------------------------> inputs <----------------------------------------------------------
-      integer, intent( in) :: timeinstant
+      integer, intent(in) :: timeinstant
       !!!
-      type( bounds_t), intent( in) :: b
+      type(bounds_t), intent(in) :: b
       !--->
-      real(kind = RKIND), dimension( 0 :  sgg%NumMedia), intent( in) :: gm2
+      real(kind = RKIND), dimension(0 :  sgg%NumMedia), intent(in) :: gm2
       !--->
-      real(kind = RKIND), dimension( 0 :  b%dxe%NX-1), intent( in) :: Idxe
-      real(kind = RKIND), dimension( 0 :  b%dye%NY-1), intent( in) :: Idye
-      real(kind = RKIND), dimension( 0 :  b%dze%NZ-1), intent( in) :: Idze
+      real(kind = RKIND), dimension(0 :  b%dxe%NX-1), intent(in) :: Idxe
+      real(kind = RKIND), dimension(0 :  b%dye%NY-1), intent(in) :: Idye
+      real(kind = RKIND), dimension(0 :  b%dze%NZ-1), intent(in) :: Idze
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( inout) :: Hx
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( inout) :: Hy
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( inout) :: Hz
+      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hx
+      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
+      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
       real(kind = RKIND) :: timei, Gm2_1, Id,incidente
       integer(kind=4) :: i, j, k, i_m, j_m, k_m,jjj
@@ -1171,11 +1171,11 @@ contains
       Gm2_1 = Gm2(1)
       !--->
      do jjj=1, sgg%numplanewaves
-              if( IluminaTr(jjj)) then
+              if(IluminaTr(jjj)) then
                  !Hz Back
                  i = TrFr(jjj)%I%tra%Hz  !Back
                  i_m = i - b%Hz%XI
-                 Id = Idxe( i_m )
+                 Id = Idxe(i_m)
                  !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
@@ -1186,7 +1186,7 @@ contains
                        j_m = j - b%Hz%YI
                        !--->
                        incidente = Incid(sgg,jjj, iEy, timei, i+1, j, k,still_planewave_time,called_fromobservation)
-                       Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) + Gm2_1 * incidente * Id
+                       Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) + Gm2_1 * incidente * Id
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1195,7 +1195,7 @@ contains
                  !Hy Back
                  i = TrFr(jjj)%I%tra%Hy  !Back
                  i_m = i - b%Hy%XI
-                 Id = Idxe( i_m )
+                 Id = Idxe(i_m)
                  !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
@@ -1206,7 +1206,7 @@ contains
                        j_m = j - b%Hy%YI
                        !--->
                        incidente = Incid(sgg,jjj,  IEZ, timei, i+1, j, k,still_planewave_time,called_fromobservation)
-                       Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - Gm2_1 * incidente * Id
+                       Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - Gm2_1 * incidente * Id
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1214,11 +1214,11 @@ contains
 #endif
               end if
               !--->
-              if( IluminaFr(jjj)) then
+              if(IluminaFr(jjj)) then
                  !Hz  Front
                  i = TrFr(jjj)%I%fro%Hz !Front
                  i_m = i - b%Hz%XI
-                 Id = Idxe( i_m )
+                 Id = Idxe(i_m)
                  !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
@@ -1229,7 +1229,7 @@ contains
                        j_m = j - b%Hz%YI
                        !--->
                        incidente = Incid(sgg,jjj,  iEy, timei, i, j, k,still_planewave_time,called_fromobservation)
-                       Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) - Gm2_1 * incidente * Id
+                       Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - Gm2_1 * incidente * Id
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1238,7 +1238,7 @@ contains
                  !Hy  Front
                  i = TrFr(jjj)%I%fro%Hy !Front
                  i_m = i - b%Hy%XI
-                 Id = Idxe( i_m )
+                 Id = Idxe(i_m)
                  !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
@@ -1249,7 +1249,7 @@ contains
                        j_m = j - b%Hy%YI
                        !--->
                        incidente = Incid(sgg,jjj,  IEZ, timei, i, j, k,still_planewave_time,called_fromobservation)
-                       Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) + Gm2_1 * incidente * Id
+                       Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) + Gm2_1 * incidente * Id
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1257,11 +1257,11 @@ contains
 #endif
               end if
               !--->
-              if( IluminaIz(jjj)) then
+              if(IluminaIz(jjj)) then
                  !Hx Left
                  j = IzDe(jjj)%J%izq%Hx  !Left
                  j_m = j - b%Hx%YI
-                 Id = Idye( j_m )
+                 Id = Idye(j_m)
                  !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
@@ -1272,7 +1272,7 @@ contains
                        i_m = i - b%Hx%XI
                        !--->
                        incidente = Incid(sgg,jjj,  IEZ, timei, i, j+1, k,still_planewave_time,called_fromobservation)
-                       Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) + Gm2_1 * incidente * Id
+                       Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + Gm2_1 * incidente * Id
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1281,7 +1281,7 @@ contains
                  !Hz Left
                  j = IzDe(jjj)%J%izq%Hz  !Left
                  j_m = j - b%Hz%YI
-                 Id = Idye( j_m )
+                 Id = Idye(j_m)
                  !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
@@ -1292,7 +1292,7 @@ contains
                        i_m = i - b%Hz%XI
                        !--->
                        incidente = Incid(sgg,jjj,  iEx, timei, i, j+1, k,still_planewave_time,called_fromobservation)
-                       Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) - Gm2_1 * incidente * Id
+                       Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - Gm2_1 * incidente * Id
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1300,11 +1300,11 @@ contains
 #endif
               end if
               !--->
-              if( IluminaDe(jjj)) then
+              if(IluminaDe(jjj)) then
                  !Hx  Right
                  j = IzDe(jjj)%J%der%Hx !Right
                  j_m = j - b%Hx%YI
-                 Id = Idye( j_m )
+                 Id = Idye(j_m)
                  !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
@@ -1315,7 +1315,7 @@ contains
                        i_m = i - b%Hx%XI
                        !--->
                        incidente = Incid(sgg,jjj,  IEZ, timei, i, j, k,still_planewave_time,called_fromobservation)
-                       Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) - Gm2_1 * incidente * Id
+                       Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) - Gm2_1 * incidente * Id
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1324,7 +1324,7 @@ contains
                  !Hz  Right
                  j = IzDe(jjj)%J%der%Hz !Right
                  j_m = j - b%Hz%YI
-                 Id = Idye( j_m )
+                 Id = Idye(j_m)
                  !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
@@ -1335,7 +1335,7 @@ contains
                        i_m = i - b%Hz%XI
                        !--->
                        incidente = Incid(sgg,jjj,  iEx, timei, i, j, k,still_planewave_time,called_fromobservation)
-                       Hz( i_m, j_m, k_m)=Hz( i_m, j_m, k_m) + Gm2_1 * incidente * Id
+                       Hz(i_m, j_m, k_m)=Hz(i_m, j_m, k_m) + Gm2_1 * incidente * Id
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1343,11 +1343,11 @@ contains
 #endif
               end if
               !--->
-              if( IluminaAb(jjj)) then
+              if(IluminaAb(jjj)) then
                  !Hx  Down
                  k = AbAr(jjj)%K%aba%Hx  !Down
                  k_m = k - b%Hx%ZI
-                 Id = Idze( k_m )
+                 Id = Idze(k_m)
                  !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
@@ -1358,7 +1358,7 @@ contains
                        i_m = i - b%Hx%XI
                        !--->
                        incidente = Incid(sgg,jjj,  iEy, timei, i, j, k+1,still_planewave_time,called_fromobservation)
-                       Hx( i_m, j_m, k_m)=Hx( i_m, j_m, k_m) - Gm2_1 * incidente * Id
+                       Hx(i_m, j_m, k_m)=Hx(i_m, j_m, k_m) - Gm2_1 * incidente * Id
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1367,7 +1367,7 @@ contains
                  !Hy  Down
                  k = AbAr(jjj)%K%aba%Hy  !Down
                  k_m = k - b%Hy%ZI
-                 Id = Idze( k_m )
+                 Id = Idze(k_m)
                  !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
@@ -1378,7 +1378,7 @@ contains
                        i_m = i - b%Hy%XI
                        !--->
                        incidente = Incid(sgg,jjj,  iEx, timei, i, j, k+1,still_planewave_time,called_fromobservation)
-                       Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) + Gm2_1 * incidente * Id
+                       Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) + Gm2_1 * incidente * Id
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1386,11 +1386,11 @@ contains
 #endif
               end if
               !--->
-              if( IluminaAr(jjj)) then
+              if(IluminaAr(jjj)) then
                  !Hx Up
                  k = AbAr(jjj)%K%arr%Hx  !Up
                  k_m = k - b%Hx%ZI
-                 Id = Idze( k_m )
+                 Id = Idze(k_m)
                  !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
@@ -1401,7 +1401,7 @@ contains
                        i_m = i - b%Hx%XI
                        !--->
                        incidente = Incid(sgg,jjj,  iEy, timei, i, j, k,still_planewave_time,called_fromobservation)
-                       Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) + Gm2_1 * incidente * Id
+                       Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + Gm2_1 * incidente * Id
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1410,7 +1410,7 @@ contains
                  !Hy Up
                  k=AbAr(jjj)%K%arr%Hy  !Up
                  k_m = k - b%Hy%ZI
-                 Id = Idze( k_m )
+                 Id = Idze(k_m)
                  !--->
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
@@ -1421,7 +1421,7 @@ contains
                        i_m = i - b%Hy%XI
                        !--->
                        incidente = Incid(sgg,jjj,  iEx, timei, i, j, k,still_planewave_time,called_fromobservation)
-                       Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - Gm2_1 * incidente * Id
+                       Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - Gm2_1 * incidente * Id
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1472,21 +1472,21 @@ contains
     subroutine corrigeondaplanaH(sgg,b,Hx,Hy,Hz,Hxvac, Hyvac, Hzvac)
       !!!
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      type( bounds_t), intent( in) :: b
+      type(bounds_t), intent(in) :: b
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( inout) :: Hx
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( inout) :: Hy
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( inout) :: Hz
+      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hx
+      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
+      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( inout) :: Hxvac
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( inout) :: Hyvac
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( inout) :: Hzvac
+      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hxvac
+      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hyvac
+      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hzvac
       !---------------------------> variables locales <-----------------------------------------------
       integer(kind=4) :: i, j, k, i_m, j_m, k_m,jjj
 
       do jjj=1, sgg%numplanewaves
-              if( IluminaTr(jjj)) then
+              if(IluminaTr(jjj)) then
                  !Hz Back
                  i = TrFr(jjj)%I%tra%Hz  !Back
                  i_m = i - b%Hz%XI
@@ -1499,7 +1499,7 @@ contains
                     do j = TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz
                        j_m = j - b%Hz%YI
                        !--->
-                       Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) - Hzvac( i_m, j_m, k_m)
+                       Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - Hzvac(i_m, j_m, k_m)
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1516,7 +1516,7 @@ contains
                     k_m = k - b%Hy%ZI
                     do j = TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy
                        j_m = j - b%Hy%YI
-                       Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - Hyvac( i_m, j_m, k_m)
+                       Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - Hyvac(i_m, j_m, k_m)
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1524,7 +1524,7 @@ contains
 #endif
               end if
               !--->
-              if( IluminaFr(jjj)) then
+              if(IluminaFr(jjj)) then
                  !Hz  Front
                  i = TrFr(jjj)%I%fro%Hz !Front
                  i_m = i - b%Hz%XI
@@ -1536,7 +1536,7 @@ contains
                     k_m = k - b%Hz%ZI
                     do j = TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz
                        j_m = j - b%Hz%YI
-                       Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) - Hzvac( i_m, j_m, k_m)
+                       Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - Hzvac(i_m, j_m, k_m)
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1553,7 +1553,7 @@ contains
                     k_m = k - b%Hy%ZI
                     do j = TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy
                        j_m = j - b%Hy%YI
-                       Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - Hyvac( i_m, j_m, k_m)
+                       Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - Hyvac(i_m, j_m, k_m)
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1561,7 +1561,7 @@ contains
 #endif
               end if
               !--->
-              if( IluminaIz(jjj)) then
+              if(IluminaIz(jjj)) then
                  !Hx Left
                  j = IzDe(jjj)%J%izq%Hx  !Left
                  j_m = j - b%Hx%YI
@@ -1573,7 +1573,7 @@ contains
                     k_m = k - b%Hx%ZI
                     do i = IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx
                        i_m = i - b%Hx%XI
-                       Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) - Hxvac( i_m, j_m, k_m)
+                       Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) - Hxvac(i_m, j_m, k_m)
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1590,7 +1590,7 @@ contains
                     k_m = k - b%Hz%ZI
                     do i = IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz
                        i_m = i - b%Hz%XI
-                       Hz( i_m, j_m, k_m) = Hz( i_m, j_m, k_m) - Hzvac( i_m, j_m, k_m)
+                       Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - Hzvac(i_m, j_m, k_m)
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1598,7 +1598,7 @@ contains
 #endif
               end if
               !--->
-              if( IluminaDe(jjj)) then
+              if(IluminaDe(jjj)) then
                  !Hx  Right
                  j = IzDe(jjj)%J%der%Hx !Right
                  j_m = j - b%Hx%YI
@@ -1610,7 +1610,7 @@ contains
                     k_m = k - b%Hx%ZI
                     do i = IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx
                        i_m = i - b%Hx%XI
-                       Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) - Hxvac( i_m, j_m, k_m)
+                       Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) - Hxvac(i_m, j_m, k_m)
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1627,7 +1627,7 @@ contains
                     k_m = k - b%Hz%ZI
                     do i = IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz
                        i_m = i - b%Hz%XI
-                       Hz( i_m, j_m, k_m)=Hz( i_m, j_m, k_m) - Hzvac( i_m, j_m, k_m)
+                       Hz(i_m, j_m, k_m)=Hz(i_m, j_m, k_m) - Hzvac(i_m, j_m, k_m)
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1635,7 +1635,7 @@ contains
 #endif
               end if
               !--->
-              if( IluminaAb(jjj)) then
+              if(IluminaAb(jjj)) then
                  !Hx  Down
                  k = AbAr(jjj)%K%aba%Hx  !Down
                  k_m = k - b%Hx%ZI
@@ -1647,7 +1647,7 @@ contains
                     j_m = j - b%Hx%YI
                     do i = AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx
                        i_m = i - b%Hx%XI
-                       Hx( i_m, j_m, k_m)=Hx( i_m, j_m, k_m) - Hxvac( i_m, j_m, k_m)
+                       Hx(i_m, j_m, k_m)=Hx(i_m, j_m, k_m) - Hxvac(i_m, j_m, k_m)
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1664,7 +1664,7 @@ contains
                     j_m = j - b%Hy%YI
                     do i=AbAr(jjj)%I%com%Hy,AbAr(jjj)%I%fin%Hy
                        i_m = i - b%Hy%XI
-                       Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - Hyvac( i_m, j_m, k_m)
+                       Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - Hyvac(i_m, j_m, k_m)
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1672,7 +1672,7 @@ contains
 #endif
               end if
               !--->
-              if( IluminaAr(jjj)) then
+              if(IluminaAr(jjj)) then
                  !Hx Up
                  k = AbAr(jjj)%K%arr%Hx  !Up
                  k_m = k - b%Hx%ZI
@@ -1684,7 +1684,7 @@ contains
                     j_m = j - b%Hx%YI
                     do i = AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx
                        i_m = i - b%Hx%XI
-                       Hx( i_m, j_m, k_m) = Hx( i_m, j_m, k_m) - Hxvac( i_m, j_m, k_m)
+                       Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) - Hxvac(i_m, j_m, k_m)
                     end do
                  end do
 #ifdef CompileWithOpenMP
@@ -1701,7 +1701,7 @@ contains
                     j_m = j - b%Hy%YI
                     do i = AbAr(jjj)%I%com%Hy, AbAr(jjj)%I%fin%Hy
                        i_m = i - b%Hy%XI
-                       Hy( i_m, j_m, k_m) = Hy( i_m, j_m, k_m) - Hyvac( i_m, j_m, k_m)
+                       Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - Hyvac(i_m, j_m, k_m)
                     end do
                  end do
 #ifdef CompileWithOpenMP

@@ -60,7 +60,7 @@ contains
       argum=trim(adjustl(chain2(argumentStart : argumentEnd)))
 
       !Avoids crlf in .sh
-      if ( (argum(1:1) ==char(10)) .or. (argum(1:1) ==char(13)) .or. (argum(1:1)==char( 0)) ) then
+      if ((argum(1:1) ==char(10)) .or. (argum(1:1) ==char(13)) .or. (argum(1:1)==char(0))) then
          argum=''
          return
       end if

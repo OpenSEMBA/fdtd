@@ -131,8 +131,8 @@ contains
       select type(ptr)
       type is (unshielded_multiwire_t)
          ptr%name = "line_0_0"
-         ptr%cell_inductance_per_meter = reshape( source = [5.481553487168089e-07_RKIND], shape = [ 1,1 ] )
-         ptr%cell_capacitance_per_meter = reshape( source = [2.0270004E-11_RKIND], shape = [ 1,1 ] )
+         ptr%cell_inductance_per_meter = reshape(source = [5.481553487168089e-07_RKIND], shape = [ 1,1 ])
+         ptr%cell_capacitance_per_meter = reshape(source = [2.0270004E-11_RKIND], shape = [ 1,1 ])
          ptr%resistance_per_meter =  reshape(source=[22.9e-3_RKIND], shape=[1,1])
          
          deallocate(ptr%multipolar_expansion)
@@ -247,8 +247,8 @@ contains
       type is (unshielded_multiwire_t)
          ptr%name = "line_0_1"
 
-         ptr%cell_inductance_per_meter = reshape( source = [6.482560773828984e-07_RKIND], shape = [ 1,1 ] )
-         ptr%cell_capacitance_per_meter = reshape( source = [1.7140003E-11_RKIND], shape = [ 1,1 ] )
+         ptr%cell_inductance_per_meter = reshape(source = [6.482560773828984e-07_RKIND], shape = [ 1,1 ])
+         ptr%cell_capacitance_per_meter = reshape(source = [1.7140003E-11_RKIND], shape = [ 1,1 ])
          ptr%resistance_per_meter =  reshape(source=[11.8e-3_RKIND], shape=[1,1])
          
          deallocate(ptr%multipolar_expansion)
@@ -348,8 +348,8 @@ contains
       select type(ptr)
       type is (unshielded_multiwire_t)
          ptr%name = "line_0_2"
-         ptr%cell_inductance_per_meter = reshape( source = [5.802145885361537e-07_RKIND], shape = [ 1,1 ] )
-         ptr%cell_capacitance_per_meter = reshape( source = [1.9150003E-11_RKIND], shape = [ 1,1 ] )
+         ptr%cell_inductance_per_meter = reshape(source = [5.802145885361537e-07_RKIND], shape = [ 1,1 ])
+         ptr%cell_capacitance_per_meter = reshape(source = [1.9150003E-11_RKIND], shape = [ 1,1 ])
          ptr%resistance_per_meter =  reshape(source=[17.3e-3_RKIND], shape=[1,1])
          
          deallocate(ptr%multipolar_expansion)

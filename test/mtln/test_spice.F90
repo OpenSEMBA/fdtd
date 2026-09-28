@@ -39,7 +39,7 @@ integer function test_spice_read_message() bind(C) result(error_cnt)
     end if
 
     do i = 1, 4                      
-        if (checkNear(circuit%nodes%values(i)%voltage, result(i), 0.01_rkind) .eqv. .false. ) then 
+        if (checkNear(circuit%nodes%values(i)%voltage, result(i), 0.01_rkind) .eqv. .false.) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -75,7 +75,7 @@ integer function test_spice_dc() bind(C) result(error_cnt)
     end if
 
     do i = 1, 4                      
-        if (checkNear(circuit%nodes%values(i)%voltage, result(i), 0.01_rkind) .eqv. .false. ) then 
+        if (checkNear(circuit%nodes%values(i)%voltage, result(i), 0.01_rkind) .eqv. .false.) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -111,17 +111,17 @@ integer function test_spice_tran() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         call circuit%updateNodes()
-        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_RKIND_TIEMPO) .eqv. .false. ) then 
+        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_RKIND_TIEMPO) .eqv. .false.) then 
             error_cnt = error_cnt + 1
         end if
     end do
-    if (checkNear(circuit%getNodeVoltage("in"), result(1), 0.01_rkind) .eqv. .false. ) then 
+    if (checkNear(circuit%getNodeVoltage("in"), result(1), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
-    if (checkNear(circuit%getNodeVoltage("int"), result(2), 0.01_rkind) .eqv. .false. ) then 
+    if (checkNear(circuit%getNodeVoltage("int"), result(2), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
-    if (checkNear(circuit%getNodeVoltage("out"), result(3), 0.01_rkind) .eqv. .false. ) then 
+    if (checkNear(circuit%getNodeVoltage("out"), result(3), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
 
@@ -158,17 +158,17 @@ integer function test_spice_tran_2() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         call circuit%updateNodes()
-        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_RKIND_TIEMPO) .eqv. .false. ) then 
+        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_RKIND_TIEMPO) .eqv. .false.) then 
             error_cnt = error_cnt + 1
         end if
     end do
-    if (checkNear(circuit%getNodeVoltage("in"), result(1), 0.01_rkind) .eqv. .false. ) then 
+    if (checkNear(circuit%getNodeVoltage("in"), result(1), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
-    if (checkNear(circuit%getNodeVoltage("int"), result(2), 0.01_rkind) .eqv. .false. ) then 
+    if (checkNear(circuit%getNodeVoltage("int"), result(2), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
-    if (checkNear(circuit%getNodeVoltage("out"), result(3), 0.01_rkind) .eqv. .false. ) then 
+    if (checkNear(circuit%getNodeVoltage("out"), result(3), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
 
@@ -208,7 +208,7 @@ integer function test_spice_current_source() bind(C) result(error_cnt)
         call circuit%step()
         call circuit%updateNodes()
         voltage = circuit%getNodeVoltage("1_initial")
-        if (checkNear(voltage, current*resistance, 0.01_rkind) .eqv. .false. ) then 
+        if (checkNear(voltage, current*resistance, 0.01_rkind) .eqv. .false.) then 
             error_cnt = error_cnt + 1
         end if
         current = 2.0*current
@@ -246,7 +246,7 @@ integer function test_spice_multiple() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         call circuit%updateNodes()
-        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_RKIND_TIEMPO) .eqv. .false. ) then 
+        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_RKIND_TIEMPO) .eqv. .false.) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -283,17 +283,17 @@ integer function test_spice_stop_mod_times() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         call circuit%updateNodes()
-        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_RKIND_TIEMPO) .eqv. .false. ) then 
+        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_RKIND_TIEMPO) .eqv. .false.) then 
             error_cnt = error_cnt + 1
         end if
     end do
-    if (checkNear(circuit%getNodeVoltage("in"), result(1), 0.01_rkind) .eqv. .false. ) then 
+    if (checkNear(circuit%getNodeVoltage("in"), result(1), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
-    if (checkNear(circuit%getNodeVoltage("int"), result(2), 0.01_rkind) .eqv. .false. ) then 
+    if (checkNear(circuit%getNodeVoltage("int"), result(2), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
-    if (checkNear(circuit%getNodeVoltage("out"), result(3), 0.01_rkind) .eqv. .false. ) then 
+    if (checkNear(circuit%getNodeVoltage("out"), result(3), 0.01_rkind) .eqv. .false.) then 
         error_cnt = error_cnt + 1
     end if
 
