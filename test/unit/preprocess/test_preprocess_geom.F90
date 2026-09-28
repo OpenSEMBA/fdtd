@@ -426,3 +426,72 @@ integer function test_checkLossyTag_duplicate_previous() bind(C, name="test_chec
         print *, 'test_checkLossyTag_duplicate_previous PASSED'
     end if
 end function test_checkLossyTag_duplicate_previous
+
+! Test file_has_samples for missing, empty, single-sample and two-sample files.
+integer function test_file_has_samples() bind(C, name="test_file_has_samples") result(status)
+    use, intrinsic :: iso_c_binding
+    use directoryUtils_m, only: file_has_samples
+    implicit none
+    character(len=4096) :: tempFolder
+    character(len=:), allocatable :: missingFile, emptyFile, singleSampleFile, twoSampleFile
+    integer :: unit, length, ios
+
+    status = 0
+    call get_environment_variable('TMPDIR', tempFolder, length, ios)
+    if (ios /= 0 .or. length == 0) then
+        call get_environment_variable('TEMP', tempFolder, length, ios)
+    end if
+    if (ios /= 0 .or. length == 0) then
+        tempFolder = '/tmp'
+    end if
+    tempFolder = trim(tempFolder)
+
+    missingFile = trim(tempFolder)//'/fdtd_file_has_samples_missing.exc'
+    emptyFile = trim(tempFolder)//'/fdtd_file_has_samples_empty.exc'
+    singleSampleFile = trim(tempFolder)//'/fdtd_file_has_samples_single.exc'
+    twoSampleFile = trim(tempFolder)//'/fdtd_file_has_samples_two.exc'
+
+    open(newunit=unit, file=emptyFile, status='replace', action='write')
+    close(unit)
+
+    open(newunit=unit, file=singleSampleFile, status='replace', action='write')
+    write(unit, *) 0.0, 1.0
+    close(unit)
+
+    open(newunit=unit, file=twoSampleFile, status='replace', action='write')
+    write(unit, *) 0.0, 0.0
+    write(unit, *) 1.0e-9, 1.0
+    close(unit)
+
+    if (file_has_samples(missingFile, 2)) then
+        print *, 'test_file_has_samples FAILED: missing file reported as readable'
+        status = 1
+    end if
+    if (file_has_samples(emptyFile, 2)) then
+        print *, 'test_file_has_samples FAILED: empty file reported as readable'
+        status = 1
+    end if
+    if (file_has_samples(singleSampleFile, 2)) then
+        print *, 'test_file_has_samples FAILED: single-sample file reported as having two samples'
+        status = 1
+    end if
+    if (.not. file_has_samples(singleSampleFile, 1)) then
+        print *, 'test_file_has_samples FAILED: single-sample file not accepted with one sample'
+        status = 1
+    end if
+    if (.not. file_has_samples(twoSampleFile, 2)) then
+        print *, 'test_file_has_samples FAILED: two-sample file rejected'
+        status = 1
+    end if
+
+    open(newunit=unit, file=emptyFile, status='old')
+    close(unit, status='delete')
+    open(newunit=unit, file=singleSampleFile, status='old')
+    close(unit, status='delete')
+    open(newunit=unit, file=twoSampleFile, status='old')
+    close(unit, status='delete')
+
+    if (status == 0) then
+        print *, 'test_file_has_samples PASSED'
+    end if
+end function test_file_has_samples

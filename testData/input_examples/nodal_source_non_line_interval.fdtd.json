@@ -1,0 +1,40 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Nodal source defined over surface and volume intervals - should fail with a fatal error, since nodal sources require oriented lines.",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 2000
+    },
+
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [10, 10, 10],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "coordinates": [],
+        "elements": [
+            {
+                "id": 1,
+                "type": "cell",
+                "intervals": [
+                    [ [5, 5, 5], [7, 7, 5] ],
+                    [ [5, 5, 5], [7, 7, 7] ]
+                ]
+            }
+        ]
+    },
+
+    "sources": [
+        {
+            "name": "non_line_nodal_source",
+            "type": "nodalSource",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [1]
+        }
+    ]
+}

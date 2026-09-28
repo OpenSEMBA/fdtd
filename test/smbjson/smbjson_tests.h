@@ -35,6 +35,9 @@ extern "C" int test_read_background_defaults();
 extern "C" int test_read_background_set();
 extern "C" int test_read_nodal_source_resistance_per_meter();
 extern "C" int test_read_nodal_source_total_resistance();
+extern "C" int test_read_nodal_source_zero_length();
+extern "C" int test_read_nodal_source_non_line_interval();
+extern "C" int test_read_nodal_source_one_cell_interval();
 
 TEST(smbjson, idchildtable_fhash)     {EXPECT_EQ(0, test_idchildtable_fhash()); }
 TEST(smbjson, idchildtable_add_get)   {EXPECT_EQ(0, test_idchildtable()); }
@@ -64,6 +67,12 @@ TEST(smbjson, read_nodal_source_resistance_per_meter) {
                                            EXPECT_EQ(0, test_read_nodal_source_resistance_per_meter()); }
 TEST(smbjson, read_nodal_source_total_resistance) {
                                            EXPECT_EQ(0, test_read_nodal_source_total_resistance()); }
+TEST(smbjson, read_nodal_source_zero_length) {
+                                           EXPECT_EQ(0, test_read_nodal_source_zero_length()); }
+TEST(smbjson, read_nodal_source_non_line_interval) {
+                                           EXPECT_EQ(0, test_read_nodal_source_non_line_interval()); }
+TEST(smbjson, read_nodal_source_one_cell_interval) {
+                                           EXPECT_EQ(0, test_read_nodal_source_one_cell_interval()); }
 
 #ifdef CompileWithMTLN
 TEST(smbjson, read_towelhanger)             { EXPECT_EQ(0, test_read_towelhanger()); }
