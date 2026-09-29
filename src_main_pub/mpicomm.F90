@@ -87,7 +87,7 @@ contains
 
       type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(limit_t), dimension(1:6) :: fullsize,SINPML_fullsize
-      integer(kind=4) num_procs, layoutnumber,ilay,padding,index(1:1),j
+      integer(kind=4) num_procs, layoutnumber,ilay,padding,elementindex(1:1),j
       integer(kind=4) forced
       logical :: forcing
       integer(kind=4), dimension(:), pointer :: trancos
@@ -129,7 +129,7 @@ contains
          end do
          !select the closest to 0 one
          elementIndex=minloc(cargaZE)
-         cZE(ilay)=ZE(index(1))
+         cZE(ilay)=ZE(elementindex(1))
          cZI(ilay+1)=cZE(ilay)
       end do
  
