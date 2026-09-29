@@ -647,6 +647,15 @@ module  FDETYPES_m
       real(kind=rkind), dimension(:), allocatable :: sigmam
    end type SGBCMaterialProfile_t
 
+   ! type :: conformal_maps_t
+   !    type(face_map_t) :: face_map
+   ! end type
+   ! type :: conformal_fields_t
+   !    type(face_t), dimension(:), allocatable :: faces
+   !    type(edge_t), dimension(:), allocatable :: edges
+   ! end type
+
+
    type, public :: edge_t
       integer(kind=4), dimension(3) :: cell
       integer(kind=4) :: direction = -1
@@ -660,6 +669,7 @@ module  FDETYPES_m
       integer(kind=4) :: direction = -1
       real(kind=rkind) :: ratio = -1
       logical :: is_two_sided = .false.
+      real(kind=RKIND), dimension(3) :: normal
       integer(kind=4) :: split_direction = 0
       real(kind=rkind) :: lower_fraction = 0.0_RKIND
       integer(kind=4) :: sgbc_profile_index = 0

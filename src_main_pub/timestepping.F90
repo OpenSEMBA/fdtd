@@ -71,6 +71,7 @@ module Solver_m
    use EpsMuTimeScale_m
    use CALC_CONSTANTS_m
    use conformal_sgbc_m, only: conformal_sgbc_state_t
+   use cell_map_m, only: face_map_t, edge_map_t, side_dir_t, buildConformalMaps
 #ifdef CompileWithPrescale
    use P_rescale
 #endif              
@@ -96,6 +97,14 @@ module Solver_m
       type(conformal_sgbc_state_t) :: sgbc
    end type conformal_surface_face_state_t
 
+   type :: conformal_maps_t
+      type(face_map_t) :: face_map
+      type(edge_map_t) :: edge_map
+      ! type(edges_on_face_map_t) :: edges_on_face_map
+   end type
+   type :: map_key_t
+      integer, dimension(4) :: key
+   end type
    type :: conformal_fields_t
       type(face_t), dimension(:), allocatable :: faces
       type(edge_t), dimension(:), allocatable :: edges
@@ -2608,10 +2617,13 @@ contains
 
    subroutine initializeConformalFields(this)
       class(solver_t) :: this
-      type(face_t) :: face
-      type(edge_t) :: edge
+      type(face_t), pointer :: face
+      type(edge_t), pointer :: edge
       type(edge_t), dimension(:), allocatable :: aux_edges
-      integer :: i,j
+      type(conformal_maps_t) :: conformal_maps
+      type(map_key_t), dimension(4) :: edges_on_face, faces_on_edge
+      integer(kind=4), dimension(3) :: cell
+      integer :: i,j,k,n
 
       do i = 1, this%sgg%NumMedia
          if (.not. (isConformalSurface(this%sgg%Med(i)))) cycle
@@ -2619,19 +2631,221 @@ contains
          if (.not. allocated(this%sgg%Med(i)%ConformalFace)) cycle
 
          allocate(this%conformal_fields%faces(size(this%sgg%Med(i)%ConformalFace(:))))
-         allocate(this%conformal_fields%edges(size(this%sgg%Med(i)%ConformalEdge(:))))
          this%conformal_fields%faces = this%sgg%Med(i)%ConformalFace(:)
-         this%conformal_fields%edges = this%sgg%Med(i)%ConformalEdges(:)
+         ! allocate(this%conformal_fields%edges(size(this%sgg%Med(i)%ConformalEdge(:))))
+         ! this%conformal_fields%edges = this%sgg%Med(i)%ConformalEdge(:)
 
-         do j = 1, size(this%conformal_fields%faces)
-            face = this%conformal_fields%faces(j)
-            if (.not. face%is_two_sided) cycle
-            ! iterate over 4 edges
-            ! if edge is not in ConformalEdges, add it
-            ! assign rI and rII fields in face
-            ! assign rI and rII fields in edge
+         ! copy edges with ratio /= 0
+         n = 0
+         do j = 1, size(this%sgg%Med(i)%ConformalEdge)
+            if (this%sgg%Med(i)%ConformalEdge(j)%ratio /= 0) n = n + 1
+         end do
+         allocate(this%conformal_fields%edges(n))
+         n = 0
+         do j = 1, size(this%sgg%Med(i)%ConformalEdge)
+            n = n + 1
+            if (this%sgg%Med(i)%ConformalEdge(j)%ratio /= 0) then 
+               this%conformal_fields%edges(n) = this%sgg%Med(i)%ConformalEdge(j)
+            end if
          end do
       end do
+
+      call buildConformalMaps(conformal_maps%face_map, & 
+                         conformal_maps%edge_map, & 
+                         this%conformal_fields%faces, &
+                         this%conformal_fields%edges)
+
+      do i = 1, size(conformal_maps%face_map%keys)
+         face => conformal_maps%face_map%getFace(conformal_maps%face_map%keys(i)%side_dir)
+         face%region_I_fields%H = 0.0
+         face%region_II_fields%H = 0.0
+      ! do i = i, size(this%conformal_fields%faces)
+         ! face => this%conformal_fields%faces(i)
+         if (.not. face%is_two_sided) cycle
+         edges_on_face = buildEdgesOnFace(face)
+         do j = 1, size(edges_on_face)
+            if (.not. conformal_maps%edge_map%hasKey(edges_on_face(j)%key)) 
+            edge => conformal_maps%edge_map%getEdge(edges_on_face(j)%key)
+            cell = edge%cell
+            ! ALLOCATION OF FIELDS ??
+            select case (face%direction)
+            case (FACE_X)
+               if (edge%ratio == 0) then
+                  if (face%normal(EDGE_Y) > 0) then 
+                     face%region_I_fields%E3  => this%Ez(cell(1),cell(2) + 1,cell(3))
+                     face%region_II_fields%E1 => this%Ez(cell(1),cell(2),cell(3))
+                  else if (face%normal(EDGE_Y) < 0) then 
+                     face%region_I_fields%E1  => this%Ez(cell(1),cell(2),cell(3))
+                     face%region_II_fields%E3 => this%Ez(cell(1),cell(2) + 1,cell(3))
+                  end if
+
+                  if (face%normal(EDGE_Z) > 0) then 
+                     face%region_I_fields%E2  => this%Ey(cell(1),cell(2),cell(3) + 1)
+                     face%region_II_fields%E4 => this%Ey(cell(1),cell(2),cell(3))
+                  else if (face%normal(EDGE_Z) < 0) then 
+                     face%region_I_fields%E4  => this%Ey(cell(1),cell(2),cell(3))
+                     face%region_II_fields%E2 => this%Ey(cell(1),cell(2),cell(3) + 1)
+
+                  end if
+               end if
+            case (FACE_Y)
+               if (edge%ratio == 0) then 
+                  if (face%normal(EDGE_Z) > 0) then 
+                     face%region_I_fields%E3  => this%Ex(cell(1),cell(2),cell(3)+1)
+                     face%region_II_fields%E1 => this%Ex(cell(1),cell(2),cell(3))
+                  else if (face%normal(EDGE_Z) < 0) then 
+                     face%region_I_fields%E1  => this%Ex(cell(1),cell(2),cell(3))
+                     face%region_II_fields%E3 => this%Ex(cell(1),cell(2),cell(3)+1)
+                  end if
+                  if (face%normal(EDGE_X) > 0) then 
+                     face%region_I_fields%E2  => this%Ez(cell(1)+1,cell(2),cell(3))
+                     face%region_II_fields%E4 => this%Ez(cell(1),cell(2),cell(3))
+                  else if (face%normal(EDGE_X) < 0) then 
+                     face%region_I_fields%E4  => this%Ez(cell(1),cell(2),cell(3))
+                     face%region_II_fields%E2 => this%Ez(cell(1)+1,cell(2),cell(3))
+                  end if
+               end if
+            case (FACE_Z)
+               if (edge%ratio == 0) then 
+                  if (face%normal(EDGE_X) > 0) then 
+                     face%region_I_fields%E3  => this%Ey(cell(1)+1,cell(2),cell(3))
+                     face%region_II_fields%E1 => this%Ey(cell(1),cell(2),cell(3))
+                  else if (face%normal(EDGE_X) < 0) then 
+                     face%region_I_fields%E1  => this%Ey(cell(1),cell(2),cell(3))
+                     face%region_II_fields%E3 => this%Ey(cell(1)+1,cell(2),cell(3))
+                  end if
+                  if (face%normal(EDGE_Y) > 0) then 
+                     face%region_I_fields%E2  => this%Ex(cell(1),cell(2)+1,cell(3))
+                     face%region_II_fields%E4 => this%Ex(cell(1),cell(2),cell(3))
+                  else if (face%normal(EDGE_Y) < 0) then 
+                     face%region_I_fields%E4  => this%Ex(cell(1),cell(2),cell(3))
+                     face%region_II_fields%E2 => this%Ex(cell(1),cell(2)+1,cell(3))
+                  end if
+               end if
+            end select
+
+            faces_on_edge = buildFacesOnEdge(edge)
+            do k = 1, size(faces_on_edge)
+               if (.not. conformal_maps%face_map%hasKey(faces_on_edge(k)%key)) then 
+                  cell = faces_on_edge(k)%key(1:3)
+                  select case(edge%direction)
+                  case (EDGE_X)
+                     select case (k)
+                     case(1)
+                        edge%region_I_fields%H1  => this%Hz(cell(1),cell(2),cell(3))
+                        edge%region_II_fields%H1 => this%Hz(cell(1),cell(2),cell(3))
+                     case(2)
+                        edge%region_I_fields%H1  => this%Hy(cell(1),cell(2),cell(3)-1)
+                        edge%region_II_fields%H1 => this%Hy(cell(1),cell(2),cell(3)-1)
+                     case(3)
+                        edge%region_I_fields%H1  => this%Hz(cell(1),cell(2)-1,cell(3))
+                        edge%region_II_fields%H1 => this%Hz(cell(1),cell(2)-1,cell(3))
+                     case(4)
+                        edge%region_I_fields%H1  => this%Hy(cell(1),cell(2),cell(3))
+                        edge%region_II_fields%H1 => this%Hy(cell(1),cell(2),cell(3))
+                     end select
+                  case (EDGE_Y)
+                     select case (k)
+                     case(1)
+                        edge%region_I_fields%H1  => this%Hx(cell(1),cell(2),cell(3))
+                        edge%region_II_fields%H1 => this%Hx(cell(1),cell(2),cell(3))
+                     case(2)
+                        edge%region_I_fields%H1  => this%Hz(cell(1)-1,cell(2),cell(3))
+                        edge%region_II_fields%H1 => this%Hz(cell(1)-1,cell(2),cell(3))
+                     case(3)
+                        edge%region_I_fields%H1  => this%Hx(cell(1),cell(2),cell(3)-1)
+                        edge%region_II_fields%H1 => this%Hx(cell(1),cell(2),cell(3)-1)
+                     case(4)
+                        edge%region_I_fields%H1  => this%Hz(cell(1),cell(2),cell(3))
+                        edge%region_II_fields%H1 => this%Hz(cell(1),cell(2),cell(3))
+                     end select
+                  case (EDGE_Z)
+                     select case (k)
+                     case(1)
+                        edge%region_I_fields%H1  => this%Hy(cell(1),cell(2),cell(3))
+                        edge%region_II_fields%H1 => this%Hy(cell(1),cell(2),cell(3))
+                     case(2)
+                        edge%region_I_fields%H1  => this%Hx(cell(1),cell(2)-1,cell(3))
+                        edge%region_II_fields%H1 => this%Hx(cell(1),cell(2)-1,cell(3))
+                     case(3)
+                        edge%region_I_fields%H1  => this%Hy(cell(1)-1,cell(2),cell(3))
+                        edge%region_II_fields%H1 => this%Hy(cell(1)-1,cell(2),cell(3))
+                     case(4)
+                        edge%region_I_fields%H1  => this%Hx(cell(1),cell(2),cell(3))
+                        edge%region_II_fields%H1 => this%Hx(cell(1),cell(2),cell(3))
+                     end select
+                  end select
+               end if
+            end do
+
+         end do
+      end do
+   
+      contains 
+
+      function buildEdgesOnFace(face) result(res)
+         type(face_t), intent(in) :: face
+         type(map_key_t), dimension(4) :: res
+         res(1)%key(1:3) = face%cell
+         res(2)%key(1:3) = face%cell
+         res(3)%key(1:3) = face%cell
+         res(4)%key(1:3) = face%cell
+         select case(face%direction)
+         case (FACE_X)
+          res(2)%key(1:3) = res(2)%key(1:3)  + [0,0,1]
+          res(3)%key(1:3) = res(3)%key(1:3)  + [0,1,0]
+          res(1)%key(4) = EDGE_Z
+          res(2)%key(4) = EDGE_Y
+          res(3)%key(4) = EDGE_Z
+          res(4)%key(4) = EDGE_Y
+         case (FACE_Y)
+          res(2)%key(1:3) = res(2)%key(1:3)  + [1,0,0]
+          res(3)%key(1:3) = res(3)%key(1:3)  + [0,0,1]
+          res(1)%key(4) = EDGE_X
+          res(2)%key(4) = EDGE_Z
+          res(3)%key(4) = EDGE_X
+          res(4)%key(4) = EDGE_Z
+         case (FACE_Z)
+          res(2)%key(1:3) = res(2)%key(1:3)  + [0,1,0]
+          res(3)%key(1:3) = res(3)%key(1:3)  + [1,0,0]
+          res(1)%key(4) = EDGE_Y
+          res(2)%key(4) = EDGE_X
+          res(3)%key(4) = EDGE_Y
+          res(4)%key(4) = EDGE_X
+         end select
+      end function
+
+      function buildFacesOnEdge(edge) result(res)
+         type(edge_t), intent(in) :: edge
+         type(map_key_t), dimension(4) :: res
+         res(1)%key(1:3) = edge%cell
+         res(2)%key(1:3) = edge%cell
+         res(3)%key(1:3) = edge%cell
+         res(4)%key(1:3) = edge%cell
+         select case (edge%direction)
+         case (EDGE_X)
+            res(2)%key(1:3) = res(2)%key(1:3) - [0,0,1]
+            res(3)%key(1:3) = res(3)%key(1:3) - [0,1,0]
+            res(1)%key(4) = EDGE_Z
+            res(2)%key(4) = EDGE_Y
+            res(3)%key(4) = EDGE_Z
+            res(4)%key(4) = EDGE_Y
+         case (EDGE_Y)
+            res(2)%key(1:3) = res(2)%key(1:3) - [1,0,0]
+            res(3)%key(1:3) = res(3)%key(1:3) - [0,0,1]
+            res(1)%key(4) = EDGE_X
+            res(2)%key(4) = EDGE_Z
+            res(3)%key(4) = EDGE_X
+            res(4)%key(4) = EDGE_Z
+         case (EDGE_Z)
+            res(2)%key(1:3) = res(2)%key(1:3) - [0,1,0]
+            res(3)%key(1:3) = res(3)%key(1:3) - [1,0,0]
+            res(1)%key(4) = EDGE_Y
+            res(2)%key(4) = EDGE_X
+            res(3)%key(4) = EDGE_Y
+            res(4)%key(4) = EDGE_X
+         end select
+      end function
 
    end subroutine
 

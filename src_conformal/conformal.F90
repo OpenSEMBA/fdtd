@@ -1194,13 +1194,28 @@ contains
       real(kind=rkind) :: area
       integer :: face
       integer, dimension(3) :: cell
+      real(kind=RKIND), dimension(3) :: normal = [0.0,0.0,0.0]
       cell = findContourCell(contour)
       face = findContourFace(contour)
+      normal = computeNormalFromSidesOnFace(contour)
       if (size(contour) /= 0) then
          area = 1.0 - contourArea(contour)
-         call addFace(faces, cell, face, area, is_two_sided)
+         call addFace(faces, cell, face, area, is_two_sided, normal)
       end if
    end subroutine
+
+   function computeNormalFromSidesOnFace(contour) result(res)
+      type(side_t), dimension(:), allocatable, intent(in) :: contour
+      real(kind=RKIND), dimension(3) :: res
+      integer :: i, n_on_face = 0
+      do i = 1, size(contour)
+         if (contour(i)%isOnAnyFace()) then 
+            res = res + contour(i)%normal
+            n_on_face = n_on_face + 1
+         end if
+      end do
+      res = res/n_on_face
+   end function
 
    function findLargestContour(sides) result(res)
       type(side_t), dimension(:), allocatable, intent(in) :: sides
@@ -1316,7 +1331,7 @@ contains
       edges = aux
    end subroutine
 
-   subroutine addFace(faces, cell, face, ratio, is_two_sided)
+   subroutine addFace(faces, cell, face, ratio, is_two_sided, normal)
       type(face_t), dimension(:), allocatable, intent(inout) :: faces
       type(face_t), dimension(:), allocatable :: aux
       integer(kind=4), dimension(3), intent(in) :: cell
@@ -1324,6 +1339,8 @@ contains
       type(face_t) :: new_face
       real(kind=rkind) :: ratio
       logical, optional, intent(in) :: is_two_sided
+      real(kind=RKIND), dimension(3), optional :: normal
+      real(kind=RKIND), dimension(3) :: n = [0.0,0.0,0.0]
       logical :: split = .false.
       integer :: i
 
@@ -1340,9 +1357,10 @@ contains
       !    end if
       ! end do
       if (present(is_two_sided)) split = is_two_sided
+      if (present(normal)) n = normal
       allocate(aux(size(faces) + 1))
       aux(1:size(faces)) = faces
-      new_face = face_t(cell=cell, ratio=ratio, direction=face, is_two_sided=split)
+      new_face = face_t(cell=cell, ratio=ratio, direction=face, is_two_sided=split, normal = n)
       ! new_face = face_t(cell=cell, ratio=ratio, direction=face, is_two_sided=split_candidate)
       aux(size(faces) + 1) = new_face
 
