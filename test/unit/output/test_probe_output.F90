@@ -1137,7 +1137,7 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
 
    n = 10
    allocate (expectedTime(2*n, 2))
-   allocate (expectedFreq(n, 2))
+   allocate (expectedFreq(n, 3))
 
    ! Action - first flush
    do i = 1, n
@@ -1151,6 +1151,7 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
 
       expectedFreq(i, 1) = 0.1*i
       expectedFreq(i, 2) = 0.2*i
+      expectedFreq(i, 3) = 0.0_RKIND
    end do
 
    probe%nTime = n
@@ -1167,7 +1168,8 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
       expectedTime(i + n, 2) = 10.0*(i + 10)
 
       expectedFreq(i, 1) = 0.1*i
-      expectedFreq(i, 2) = -0.5*i
+      expectedFreq(i, 2) = 0.5*i
+      expectedFreq(i, 3) = acos(-1.0_RKIND)
    end do
 
    probe%nTime = n
@@ -1183,9 +1185,9 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    unit = 2
    open (unit=unit, file=probe%filePathFreq, status='old', action='read')
    read (unit, '(A)', iostat=ios) header
-   test_err = test_err + assert_true(ios == 0 .and. trim(header) == 'frequency real imaginary', &
+   test_err = test_err + assert_true(ios == 0 .and. trim(header) == 'frequency magnitude phase', &
                                      'Point frequency header is incorrect')
-   test_err = test_err + assert_file_content(unit, expectedFreq, n, 2, 1e-06_RKIND)
+   test_err = test_err + assert_file_content(unit, expectedFreq, n, 3, 1e-06_RKIND)
    close (unit)
 
    !Cleanup

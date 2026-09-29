@@ -68,7 +68,7 @@ contains
                this%mtln%cables(i)%ptr%segments(j)%x = y
                this%mtln%cables(i)%ptr%segments(j)%y = z
                this%mtln%cables(i)%ptr%segments(j)%z = x
-               select case(abs(old_mtln%cables(i)%ptr%segments(j)%orientation))
+               select case(abs(or))
                case(1)
                   this%mtln%cables(i)%ptr%segments(j)%orientation = sign(3, or)
                case(2)

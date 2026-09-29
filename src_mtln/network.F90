@@ -9,19 +9,19 @@ module network_m
     type nw_node_t
         character(len=:), allocatable :: name
         type(node_source_t) :: source
-        integer :: source_type
+        integer(kind=4) :: source_type
         real(kind=rkind) :: line_c_per_meter, line_g_per_meter
         real(kind=rkind) :: step
-        real(kind=rkind) :: v
-        real(kind=rkind) :: i
-        integer :: bundle_number, conductor_number, v_index, i_index
-        integer :: side
+        real(kind=rkind), pointer :: v
+        real(kind=rkind), pointer :: i
+        integer(kind=4) :: bundle_number, conductor_number, v_index, i_index
+        integer(kind=4) :: side
         logical :: open = .false.
     end type
 
 
     type, public :: network_t
-        integer :: number_of_nodes = 0
+        integer(kind=4) :: number_of_nodes = 0
         type(nw_node_t), dimension(:), allocatable :: nodes
         character(256), dimension(:), allocatable :: description
     contains
@@ -37,7 +37,7 @@ contains
 
     integer function countNodes(connections)
         type(terminal_connection_t), dimension(:), allocatable :: connections
-        integer :: i
+        integer(kind=4) :: i
         countNodes = 0
         do i = 1, size(connections)
             countNodes = countNodes + size(connections(i)%nodes)
@@ -48,7 +48,7 @@ contains
         type(nw_node_t), dimension(:), intent(in) :: nodes
         character(*), dimension(:), intent(in) :: description
         type(string_t), dimension(:), allocatable :: names
-        integer :: i
+        integer(kind=4) :: i
         type(network_t) :: res
 
         res%nodes = nodes

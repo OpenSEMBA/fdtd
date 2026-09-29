@@ -575,6 +575,9 @@ contains
              newDomain = domain_t()
           end if
 
+          newDomain%transfer = observation%Transfer
+          if (observation%Transfer) newDomain%normalizationFile = observation%FileNormalize
+
           if (any(newDomain%domainType == [TIME_DOMAIN, BOTH_DOMAIN])) then
              simulationEndIndex = min(max(finalStepIndex + 2, lbound(timeArray, 1)), ubound(timeArray, 1))
              saveAllTimeSteps = globalSaveAll .or. observation%FinalTime < tiny(1.0_RKIND) .or. &

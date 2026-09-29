@@ -2,51 +2,51 @@ module mtln_types_m
    use FDETYPES_m, ONLY: direction_t, BUFSIZE, RKIND, RKIND_TIEMPO
    implicit none
 
-   integer, parameter :: TERMINATION_UNDEFINED  = -1
-   integer, parameter :: TERMINATION_SHORT      =  1
-   integer, parameter :: TERMINATION_OPEN       =  2
-   integer, parameter :: TERMINATION_SERIES     =  3
-   integer, parameter :: TERMINATION_PARALLEL   =  4
-   integer, parameter :: TERMINATION_RsLCp      =  5
-   integer, parameter :: TERMINATION_RLsCp      =  6
-   integer, parameter :: TERMINATION_LsRCp      =  7
-   integer, parameter :: TERMINATION_CsLRp      =  8
-   integer, parameter :: TERMINATION_RCsLp      =  9
-   integer, parameter :: TERMINATION_LCsRp      =  10
-   integer, parameter :: TERMINATION_CIRCUIT    =  11
-   integer, parameter :: TERMINATION_NETWORK    =  12
+   integer(kind=4), parameter :: TERMINATION_UNDEFINED  = -1
+   integer(kind=4), parameter :: TERMINATION_SHORT      =  1
+   integer(kind=4), parameter :: TERMINATION_OPEN       =  2
+   integer(kind=4), parameter :: TERMINATION_SERIES     =  3
+   integer(kind=4), parameter :: TERMINATION_PARALLEL   =  4
+   integer(kind=4), parameter :: TERMINATION_RsLCp      =  5
+   integer(kind=4), parameter :: TERMINATION_RLsCp      =  6
+   integer(kind=4), parameter :: TERMINATION_LsRCp      =  7
+   integer(kind=4), parameter :: TERMINATION_CsLRp      =  8
+   integer(kind=4), parameter :: TERMINATION_RCsLp      =  9
+   integer(kind=4), parameter :: TERMINATION_LCsRp      =  10
+   integer(kind=4), parameter :: TERMINATION_CIRCUIT    =  11
+   integer(kind=4), parameter :: TERMINATION_NETWORK    =  12
 
-   integer, parameter :: TERMINAL_NODE_SIDE_UNDEFINED = -1
-   integer, parameter :: TERMINAL_NODE_SIDE_INI       =  1
-   integer, parameter :: TERMINAL_NODE_SIDE_END       =  2
+   integer(kind=4), parameter :: TERMINAL_NODE_SIDE_UNDEFINED = -1
+   integer(kind=4), parameter :: TERMINAL_NODE_SIDE_INI       =  1
+   integer(kind=4), parameter :: TERMINAL_NODE_SIDE_END       =  2
 
-   integer, parameter :: TRANSFER_IMPEDANCE_DIRECTION_UNDEFINED   =  -1
-   integer, parameter :: TRANSFER_IMPEDANCE_DIRECTION_INWARDS     =   1
-   integer, parameter :: TRANSFER_IMPEDANCE_DIRECTION_OUTWARDS    =   2
-   integer, parameter :: TRANSFER_IMPEDANCE_DIRECTION_BOTH        =   3
+   integer(kind=4), parameter :: TRANSFER_IMPEDANCE_DIRECTION_UNDEFINED   =  -1
+   integer(kind=4), parameter :: TRANSFER_IMPEDANCE_DIRECTION_INWARDS     =   1
+   integer(kind=4), parameter :: TRANSFER_IMPEDANCE_DIRECTION_OUTWARDS    =   2
+   integer(kind=4), parameter :: TRANSFER_IMPEDANCE_DIRECTION_BOTH        =   3
 
-   integer, parameter :: PROBE_TYPE_UNDEFINED = -1
-   integer, parameter :: PROBE_TYPE_VOLTAGE   =  1
-   integer, parameter :: PROBE_TYPE_CURRENT   =  2
+   integer(kind=4), parameter :: PROBE_TYPE_UNDEFINED = -1
+   integer(kind=4), parameter :: PROBE_TYPE_VOLTAGE   =  1
+   integer(kind=4), parameter :: PROBE_TYPE_CURRENT   =  2
 
-   integer, parameter :: SOURCE_TYPE_UNDEFINED = -1
-   integer, parameter :: SOURCE_TYPE_VOLTAGE   =  1
-   integer, parameter :: SOURCE_TYPE_CURRENT   =  2
+   integer(kind=4), parameter :: SOURCE_TYPE_UNDEFINED = -1
+   integer(kind=4), parameter :: SOURCE_TYPE_VOLTAGE   =  1
+   integer(kind=4), parameter :: SOURCE_TYPE_CURRENT   =  2
 
-   integer, parameter :: DIRECTION_X_POS   =  1
-   integer, parameter :: DIRECTION_X_NEG   =  -1
-   integer, parameter :: DIRECTION_Y_POS   =  2
-   integer, parameter :: DIRECTION_Y_NEG   =  -2
-   integer, parameter :: DIRECTION_Z_POS   =  3
-   integer, parameter :: DIRECTION_Z_NEG   =  -3
+   integer(kind=4), parameter :: DIRECTION_X_POS   =  1
+   integer(kind=4), parameter :: DIRECTION_X_NEG   =  -1
+   integer(kind=4), parameter :: DIRECTION_Y_POS   =  2
+   integer(kind=4), parameter :: DIRECTION_Y_NEG   =  -2
+   integer(kind=4), parameter :: DIRECTION_Z_POS   =  3
+   integer(kind=4), parameter :: DIRECTION_Z_NEG   =  -3
 
 
    type parsed_generator_t
       character(len=256) :: path_to_excitation = ""
-      integer :: generator_type = SOURCE_TYPE_UNDEFINED
+      integer(kind=4) :: generator_type = SOURCE_TYPE_UNDEFINED
       type(cable_t), pointer :: attached_to_cable => null()
       real(kind=rkind) :: resistance = 0.0
-      integer :: index = -1, conductor = -1
+      integer(kind=4) :: index = -1, conductor = -1
    contains
       private
       procedure :: wire_source_eq
@@ -55,7 +55,7 @@ module mtln_types_m
 
    type node_source_t
       character(len=256) :: path_to_excitation = ""
-      integer :: source_type = SOURCE_TYPE_UNDEFINED
+      integer(kind=4) :: source_type = SOURCE_TYPE_UNDEFINED
       real(kind=rkind) :: resistance
    end type
 
@@ -65,13 +65,13 @@ module mtln_types_m
    end type
 
    type, public :: termination_t
-      integer :: termination_type = TERMINATION_UNDEFINED
+      integer(kind=4) :: termination_type = TERMINATION_UNDEFINED
       real(kind=rkind) :: resistance = 0.0_rkind
       real(kind=rkind) :: inductance = 0.0_rkind
       real(kind=rkind) :: capacitance = 1e22_rkind
       type(node_source_t) :: source
       type(terminal_circuit_t) :: model
-      integer :: networkCircuitNode = -1
+      integer(kind=4) :: networkCircuitNode = -1
    contains
       private
       procedure :: termination_eq
@@ -80,8 +80,8 @@ module mtln_types_m
 
    type :: terminal_node_t
       class(cable_t), pointer :: belongs_to_cable => null()
-      integer :: conductor_in_cable
-      integer :: side = TERMINAL_NODE_SIDE_UNDEFINED
+      integer(kind=4) :: conductor_in_cable
+      integer(kind=4) :: side = TERMINAL_NODE_SIDE_UNDEFINED
       type(termination_t) :: termination
    contains
       private
@@ -94,8 +94,8 @@ module mtln_types_m
       character(len=256) :: model_file = ""
       character(len=256) :: model_name = ""
       character(len=256) :: circuit_name = ""
-      integer :: number_of_nodes = -1
-      integer :: nodeId = -1
+      integer(kind=4) :: number_of_nodes = -1
+      integer(kind=4) :: nodeId = -1
    end type
 
    type :: terminal_connection_t
@@ -121,7 +121,7 @@ module mtln_types_m
       real(kind=rkind) :: inductive_term = 0.0_rkind
       real(kind=rkind) :: resistive_term = 0.0_rkind
       complex, dimension(:), allocatable :: poles, residues ! poles and residues
-      integer :: direction = TRANSFER_IMPEDANCE_DIRECTION_UNDEFINED
+      integer(kind=4) :: direction = TRANSFER_IMPEDANCE_DIRECTION_UNDEFINED
    contains
       private
       procedure :: transfer_impedance_per_meter_eq
@@ -130,7 +130,7 @@ module mtln_types_m
    end type
 
    type :: connector_t
-      integer :: id
+      integer(kind=4) :: id
       real(kind=rkind), dimension(:), allocatable :: resistances
       type(transfer_impedance_per_meter_t), dimension(:), allocatable :: transfer_impedances_per_meter
    contains
@@ -203,7 +203,7 @@ module mtln_types_m
       type(connector_t), pointer :: initial_connector => null()
       type(connector_t), pointer :: end_connector => null()
       character(len=bufsize) :: tag
-      integer :: n_segments
+      integer(kind=4) :: n_segments
    contains
       private
       procedure :: cable_eq
@@ -228,13 +228,13 @@ module mtln_types_m
       real(kind=rkind), allocatable, dimension(:,:) :: capacitance_per_meter
       type(transfer_impedance_per_meter_t) :: transfer_impedance
       class(cable_t), pointer :: parent_cable => null()
-      integer :: conductor_in_parent = -1
+      integer(kind=4) :: conductor_in_parent = -1
    end type
 
    type :: probe_t
       class(cable_t), pointer :: attached_to_cable => null()
-      integer :: index
-      integer :: probe_type = PROBE_TYPE_UNDEFINED
+      integer(kind=4) :: index
+      integer(kind=4) :: probe_type = PROBE_TYPE_UNDEFINED
       character(len=:), allocatable :: probe_name
       real(kind=rkind), dimension(3) :: probe_position
    contains
@@ -254,8 +254,8 @@ module mtln_types_m
       type(parsed_generator_t), dimension(:), allocatable :: wireGenerators
       type(connector_t), dimension(:), pointer :: connectors
       real(kind=RKIND_TIEMPO) :: time_step = 0.0
-      integer :: number_of_steps = 0
-      integer :: n_sh = 0, n_unsh = 0
+      integer(kind=4) :: number_of_steps = 0
+      integer(kind=4) :: n_sh = 0, n_unsh = 0
    contains
       private
       procedure :: mtln_eq
@@ -267,7 +267,7 @@ contains
 
    logical function mtln_eq(a,b)
       class(mtln_t), intent(in) :: a,b
-      integer :: i
+      integer(kind=4) :: i
 
       if (a%time_step /= b%time_step) then 
          mtln_eq = .false.
@@ -368,7 +368,7 @@ contains
    
    recursive logical function cable_eq(a,b)
       class(cable_t), intent(in) :: a, b
-      integer :: i
+      integer(kind=4) :: i
       cable_eq = .true.
       cable_eq = cable_eq .and.  (a%name == b%name)
       cable_eq = cable_eq .and.  all(a%step_size == b%step_size)
@@ -503,7 +503,7 @@ contains
 
    logical function terminal_connection_eq(a,b)
       class(terminal_connection_t), intent(in) :: a,b
-      integer :: i
+      integer(kind=4) :: i
       if (size(a%nodes) /= size(b%nodes)) then
          terminal_connection_eq = .false.
          return
@@ -519,7 +519,7 @@ contains
 
    logical function terminal_network_eq(a,b)
       class(terminal_network_t), intent(in) :: a,b
-      integer :: i
+      integer(kind=4) :: i
       if (size(a%connections) /= size(b%connections)) then
          terminal_network_eq = .false.
          return
@@ -538,7 +538,7 @@ contains
       class(terminal_connection_t) :: this
       type(terminal_node_t) :: node
       type(terminal_node_t), dimension(:), allocatable :: newNodes
-      integer :: newNodesSize
+      integer(kind=4) :: newNodesSize
 
       if (.not. allocated(this%nodes))  allocate(this%nodes(0))
 
@@ -561,7 +561,7 @@ contains
       class(terminal_network_t) :: this
       type(terminal_connection_t) :: connection
       type(terminal_connection_t), dimension(:), allocatable :: newConnections
-      integer :: newConnectionsSize
+      integer(kind=4) :: newConnectionsSize
 
       if (.not. allocated(this%connections))  allocate(this%connections(0))
 

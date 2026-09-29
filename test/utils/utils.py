@@ -208,3 +208,11 @@ def corrcoef_on_common_time(t_ref, y_ref, t_cmp, y_cmp):
     y_ref_common = y_ref[mask]
     y_cmp_interp = np.interp(t_common, t_cmp, y_cmp)
     return np.corrcoef(y_ref_common, y_cmp_interp)[0, 1]
+
+def check_values_are_comparable(arr):
+    if (np.any(np.isnan(arr)) == True or
+        np.any(np.isinf(arr)) == True or
+        np.all(arr == 0.0) == True):
+        assert False
+    else:
+        assert True

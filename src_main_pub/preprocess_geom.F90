@@ -16,6 +16,7 @@ module Preprocess_m
    
    use FDETYPES_m
    use DMMA_m
+   use directoryUtils_m, only: file_has_samples
    use conformal_m, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
    implicit none
 !!!variables globales del modulo
@@ -26,6 +27,14 @@ module Preprocess_m
    !
    public read_geomData, read_limits_nogeom,AssigLossyOrPECtoNodes,searchtag
   public checkDielectricTagForDuplicate, checkAnimatedTagForDuplicate, checkLossyTagForDuplicate
+   !
+   ! Information about a thin slot component that is only known after the PEC
+   ! has been stamped into the media matrices: the normal of the PEC plane
+   ! that contains it. It is kept outside ThinSlotComp_t so that the parsed
+   ! component preserves the signed direction coming from the input.
+   type :: thinSlotPreprocessed_t
+      integer(kind=4), allocatable :: normal(:)
+   end type
    !
 contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -90,6 +99,7 @@ contains
       integer(kind=4) :: i11, j11
       !
       type(tagtype_t) :: tagtype
+      type(thinSlotPreprocessed_t), allocatable :: thinSlotData(:)
       type(FreqDepenMaterial_t), pointer :: fdgeom
       !
       integer(kind=4) :: numertag
@@ -819,7 +829,7 @@ contains
       !LINs
       tama = (this%DielRegs%nLINS)
       do i = 1, tama
-         numeroasignaciones=0 !solo lo usa lumped para echarselo al primer y el resto ponerlo a PEC
+         numeroasignaciones=0 !lumped: first cell of this element gets the lumped medium, the rest go to PEC
          contamedia = contamedia + 1
          sgg%Med(contamedia)%Is%Dielectric = .TRUE.
          sgg%Med(contamedia)%Priority = prior_IL
@@ -2599,6 +2609,15 @@ contains
       end if
       !FIN WIRES
 
+      ! Information derived during preprocessing for each thin-slot component
+      ! (the PEC plane normal). Initialised to an invalid value; only the
+      ! components processed below, within the PEC bounding box, get a normal.
+      allocate (thinSlotData(this%tSlots%n_tg))
+      do j = 1, this%tSlots%n_tg
+         allocate (thinSlotData(j)%normal(this%tSlots%Tg(j)%N_tgc))
+         thinSlotData(j)%normal = -1
+      end do
+
       if (run_with_dmma) then
          !always at the end since the orientation is found from the PEC one
          !thin Slots
@@ -2729,13 +2748,13 @@ contains
                      orientacion = iEz
                      i1 = i1-1
                   ELSE
-                     write(buff,*) 'Cannot determine ortientation of the PEC plane with the Slot',i1, j1, k1, direccion
+                     write(buff,*) 'Thin Slot must be defined over a PEC surface',i1, j1, k1, direccion
                      call stoponerror (layoutnumber,num_procs,buff)
                      !ojo con el nfde no se puede hacer Slots en escalera porque no se puede determinar la orientacion de los planos
                      !en los tramos comunes. Por tanto No he podido testear los shared electricos anisotropos. solo los magneticos
                   end if
 
-                  this%tSlots%Tg(j)%TgC(i)%or = orientacion
+                  thinSlotData(j)%normal(i) = orientacion
                   medio2=-1
                   medio1=-1
                   SELECT CASE (Abs(orientacion))
@@ -2865,6 +2884,7 @@ contains
             end do
             !thin Slots
          end do
+         call completeThinSlotTopology()
          !
       end if !del run_with_dmma
 
@@ -3849,7 +3869,7 @@ contains
                               sgg%observation(i)%P(sgg%observation(i)%nP)%YI = punto%YI
                               sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = punto%ZI
                               direccion = this%tSlots%Tg(j1)%TgC(i1)%dir
-                              SELECT CASE (this%tSlots%Tg(j1)%TgC(i1)%or)
+                              SELECT CASE (thinSlotData(j1)%normal(i1))
                                CASE (iEx)
                                  SELECT CASE (direccion)
                                   CASE (iEz)
@@ -4816,6 +4836,594 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      ! The normal per-cell stamping represents an embedded straight linel with
+      ! one E edge and one H face. A terminal-to-terminal corner needs its
+      ! outer H face. At every directed turn, the E edges around the local
+      ! H-face L are derived from face-to-face adjacency.
+      subroutine completeThinSlotTopology()
+         integer(kind=4) :: slot
+
+         do slot = 1, this%tSlots%n_tg
+            call rejectThinSlotOnPECSurfacePerimeter(slot)
+            call completeThinSlotTerminalFaces(slot)
+            call completeThinSlotTurns(slot)
+            call completeThinSlotPerimeterTerminals(slot)
+         end do
+      end subroutine
+
+      ! A thin slot embedded in a PEC sheet must not run along the sheet
+      ! boundary. Legacy NFDE files describe PEC sheets as many single-cell
+      ! (!!!1PNT) entries, so the test is done on the assembled conductor in
+      ! the media matrices instead of on the input region rectangles. The slot
+      ! stamping writes its perpendicular E edges and its H face, but never its
+      ! own parallel E line: if that line is PEC and the conductor only
+      ! continues on one of its two sides, the slot lies on the sheet edge.
+      subroutine rejectThinSlotOnPECSurfacePerimeter(slot)
+         integer(kind=4), intent(in) :: slot
+         integer(kind=4) :: a
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: ownMedium, minusMedium, plusMedium
+
+         do a = 1, this%tSlots%Tg(slot)%n_tgc
+            if (.not. getThinSlotParallelLines(this%tSlots%Tg(slot)%TgC(a), &
+                                               thinSlotData(slot)%normal(a), &
+                                               ownMedium, minusMedium, plusMedium)) cycle
+            if (.not. isPECOrThinSlotMedium(ownMedium)) cycle
+            if (isPECOrThinSlotMedium(minusMedium) .neqv. isPECOrThinSlotMedium(plusMedium)) then
+               call StopOnError(layoutnumber, num_procs, 'Thin Slot cannot run along the perimeter of its PEC sheet')
+            end if
+         end do
+      end subroutine
+
+      logical function getThinSlotParallelLines(component, normal, ownMedium, minusMedium, plusMedium)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(in) :: normal
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(out) :: ownMedium, minusMedium, plusMedium
+         integer(kind=4) :: i, j, k
+
+         i = component%i
+         j = component%j
+         k = component%k
+         ownMedium = -1
+         minusMedium = -1
+         plusMedium = -1
+         getThinSlotParallelLines = .true.
+         select case (abs(normal))
+         case (iEx)
+            select case (component%dir)
+            case (iEy)
+               if (inEyBounds(i, j, k)) ownMedium = media%sggMiEy(i, j, k)
+               if (inEyBounds(i, j, k - 1)) minusMedium = media%sggMiEy(i, j, k - 1)
+               if (inEyBounds(i, j, k + 1)) plusMedium = media%sggMiEy(i, j, k + 1)
+            case (iEz)
+               if (inEzBounds(i, j, k)) ownMedium = media%sggMiEz(i, j, k)
+               if (inEzBounds(i, j - 1, k)) minusMedium = media%sggMiEz(i, j - 1, k)
+               if (inEzBounds(i, j + 1, k)) plusMedium = media%sggMiEz(i, j + 1, k)
+            case default
+               getThinSlotParallelLines = .false.
+            end select
+         case (iEy)
+            select case (component%dir)
+            case (iEx)
+               if (inExBounds(i, j, k)) ownMedium = media%sggMiEx(i, j, k)
+               if (inExBounds(i, j, k - 1)) minusMedium = media%sggMiEx(i, j, k - 1)
+               if (inExBounds(i, j, k + 1)) plusMedium = media%sggMiEx(i, j, k + 1)
+            case (iEz)
+               if (inEzBounds(i, j, k)) ownMedium = media%sggMiEz(i, j, k)
+               if (inEzBounds(i - 1, j, k)) minusMedium = media%sggMiEz(i - 1, j, k)
+               if (inEzBounds(i + 1, j, k)) plusMedium = media%sggMiEz(i + 1, j, k)
+            case default
+               getThinSlotParallelLines = .false.
+            end select
+         case (iEz)
+            select case (component%dir)
+            case (iEx)
+               if (inExBounds(i, j, k)) ownMedium = media%sggMiEx(i, j, k)
+               if (inExBounds(i, j - 1, k)) minusMedium = media%sggMiEx(i, j - 1, k)
+               if (inExBounds(i, j + 1, k)) plusMedium = media%sggMiEx(i, j + 1, k)
+            case (iEy)
+               if (inEyBounds(i, j, k)) ownMedium = media%sggMiEy(i, j, k)
+               if (inEyBounds(i - 1, j, k)) minusMedium = media%sggMiEy(i - 1, j, k)
+               if (inEyBounds(i + 1, j, k)) plusMedium = media%sggMiEy(i + 1, j, k)
+            case default
+               getThinSlotParallelLines = .false.
+            end select
+         case default
+            getThinSlotParallelLines = .false.
+         end select
+      end function
+
+      ! A medium counts as conductor for the slot perimeter test when it is
+      ! PEC or a thin slot: at the junction of two slot legs, one leg stamps
+      ! its perpendicular E edges on the parallel line of the other one, so
+      ! the structure must be considered to continue through the slot medium.
+      logical function isPECOrThinSlotMedium(medium)
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: medium
+
+         isPECOrThinSlotMedium = .false.
+         if (medium == 0) then
+            isPECOrThinSlotMedium = .true.
+         else if (medium > 0 .and. medium <= sgg%NumMedia) then
+            isPECOrThinSlotMedium = sgg%Med(medium)%Is%PEC .or. sgg%Med(medium)%Is%ThinSlot
+         end if
+      end function
+
+      subroutine completeThinSlotTurns(slot)
+         integer(kind=4), intent(in) :: slot
+         integer(kind=4) :: incomingIndex, outgoingIndex, vx, vy, vz
+         integer(kind=4) :: sx, sy, sz, incomingCount, outgoingCount
+         type(ThinSlotComp_t) :: incoming, outgoing
+
+         do incomingIndex = 1, this%tSlots%Tg(slot)%n_tgc
+            incoming = this%tSlots%Tg(slot)%TgC(incomingIndex)
+            call componentTraversalEnd(incoming, vx, vy, vz)
+            do outgoingIndex = 1, this%tSlots%Tg(slot)%n_tgc
+               if (incomingIndex == outgoingIndex) cycle
+               outgoing = this%tSlots%Tg(slot)%TgC(outgoingIndex)
+               if (abs(thinSlotData(slot)%normal(incomingIndex)) /= &
+                   abs(thinSlotData(slot)%normal(outgoingIndex))) cycle
+               if (incoming%dir == outgoing%dir) cycle
+               call componentTraversalStart(outgoing, sx, sy, sz)
+               if (vx /= sx .or. vy /= sy .or. vz /= sz) cycle
+               call directedVertexDegree(slot, vx, vy, vz, thinSlotData(slot)%normal(incomingIndex), &
+                                         incomingCount, outgoingCount)
+               if (incomingCount /= 1 .or. outgoingCount /= 1) cycle
+               call reconcileThinSlotTurnFaces(slot, thinSlotData(slot)%normal(incomingIndex), vx, vy, vz)
+            end do
+         end do
+      end subroutine
+
+      subroutine completeThinSlotTerminalFaces(slot)
+         integer(kind=4), intent(in) :: slot
+         integer(kind=4) :: a, b, ax, ay, az, bx, by, bz
+         integer(kind=4) :: sourceMedium
+         integer(kind=IKINDMTAG) :: sourceTag
+         type(ThinSlotComp_t) :: first, second
+
+         do a = 1, this%tSlots%Tg(slot)%n_tgc - 1
+            first = this%tSlots%Tg(slot)%TgC(a)
+            call componentTerminal(first, ax, ay, az)
+            do b = a + 1, this%tSlots%Tg(slot)%n_tgc
+               second = this%tSlots%Tg(slot)%TgC(b)
+               if (abs(thinSlotData(slot)%normal(a)) /= abs(thinSlotData(slot)%normal(b)) .or. &
+                   first%dir == second%dir) cycle
+               call componentTerminal(second, bx, by, bz)
+               if (ax /= bx .or. ay /= by .or. az /= bz) cycle
+               if (.not. perpendicularSurfaceDirections(thinSlotData(slot)%normal(a), first%dir, second%dir)) cycle
+               call getThinSlotMedium(first, thinSlotData(slot)%normal(a), sourceMedium, sourceTag)
+               if (sourceMedium < 0) cycle
+
+               select case (abs(thinSlotData(slot)%normal(a)))
+               case (iEx)
+                  call stampHx(ax, ay, az, sourceMedium, sourceTag)
+               case (iEy)
+                  call stampHy(ax, ay, az, sourceMedium, sourceTag)
+               case (iEz)
+                  call stampHz(ax, ay, az, sourceMedium, sourceTag)
+               end select
+            end do
+         end do
+      end subroutine
+
+      subroutine componentTraversalStart(component, vx, vy, vz)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(out) :: vx, vy, vz
+
+         if (component%or > 0) then
+            vx = component%i; vy = component%j; vz = component%k
+         else
+            call componentTerminal(component, vx, vy, vz)
+         end if
+      end subroutine
+
+      subroutine componentTraversalEnd(component, vx, vy, vz)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(out) :: vx, vy, vz
+
+         if (component%or > 0) then
+            call componentTerminal(component, vx, vy, vz)
+         else
+            vx = component%i; vy = component%j; vz = component%k
+         end if
+      end subroutine
+
+      subroutine directedVertexDegree(slot, vx, vy, vz, normal, incomingCount, outgoingCount)
+         integer(kind=4), intent(in) :: slot, vx, vy, vz, normal
+         integer(kind=4), intent(out) :: incomingCount, outgoingCount
+         integer(kind=4) :: a, sx, sy, sz, ex, ey, ez
+
+         incomingCount = 0
+         outgoingCount = 0
+         do a = 1, this%tSlots%Tg(slot)%n_tgc
+            if (abs(thinSlotData(slot)%normal(a)) /= abs(normal)) cycle
+            call componentTraversalStart(this%tSlots%Tg(slot)%TgC(a), sx, sy, sz)
+            call componentTraversalEnd(this%tSlots%Tg(slot)%TgC(a), ex, ey, ez)
+            if (sx == vx .and. sy == vy .and. sz == vz) outgoingCount = outgoingCount + 1
+            if (ex == vx .and. ey == vy .and. ez == vz) incomingCount = incomingCount + 1
+         end do
+      end subroutine
+
+      subroutine reconcileThinSlotTurnFaces(slot, normal, vx, vy, vz)
+         integer(kind=4), intent(in) :: slot, normal, vx, vy, vz
+         integer(kind=4) :: ii, jj, kk
+
+         select case (abs(normal))
+         case (iEx)
+            do kk = vz - 1, vz + 1
+               do jj = vy - 1, vy + 1
+                  if (faceCellDistance(jj, vy) + faceCellDistance(kk, vz) > 1) cycle
+                  call reconcileHxFaceEdges(slot, vx, jj, kk)
+               end do
+            end do
+         case (iEy)
+            do kk = vz - 1, vz + 1
+               do ii = vx - 1, vx + 1
+                  if (faceCellDistance(ii, vx) + faceCellDistance(kk, vz) > 1) cycle
+                  call reconcileHyFaceEdges(slot, ii, vy, kk)
+               end do
+            end do
+         case (iEz)
+            do jj = vy - 1, vy + 1
+               do ii = vx - 1, vx + 1
+                  if (faceCellDistance(ii, vx) + faceCellDistance(jj, vy) > 1) cycle
+                  call reconcileHzFaceEdges(slot, ii, jj, vz)
+               end do
+            end do
+         end select
+      end subroutine
+
+      integer(kind=4) function faceCellDistance(cellIndex, vertexIndex)
+         integer(kind=4), intent(in) :: cellIndex, vertexIndex
+
+         faceCellDistance = 0
+         if (cellIndex > vertexIndex) faceCellDistance = cellIndex - vertexIndex
+         if (cellIndex + 1 < vertexIndex) faceCellDistance = vertexIndex - cellIndex - 1
+      end function
+
+      subroutine reconcileHxFaceEdges(slot, ii, jj, kk)
+         integer(kind=4), intent(in) :: slot, ii, jj, kk
+         integer(kind=4) :: sourceMedium
+         integer(kind=IKINDMTAG) :: sourceTag
+
+         if (.not. isThinSlotFaceOfSlot(slot, iEx, ii, jj, kk)) return
+         sourceMedium = media%sggMiHx(ii,jj,kk); sourceTag = tag_numbers%face%x(ii,jj,kk)
+         if (isThinSlotFaceOfSlot(slot, iEx, ii, jj, kk - 1)) then
+            call stampEy(ii, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearEyThinSlot(ii, jj, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEx, ii, jj, kk + 1)) then
+            call stampEy(ii, jj, kk + 1, sourceMedium, sourceTag)
+         else
+            call clearEyThinSlot(ii, jj, kk + 1, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEx, ii, jj - 1, kk)) then
+            call stampEz(ii, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearEzThinSlot(ii, jj, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEx, ii, jj + 1, kk)) then
+            call stampEz(ii, jj + 1, kk, sourceMedium, sourceTag)
+         else
+            call clearEzThinSlot(ii, jj + 1, kk, slot)
+         end if
+      end subroutine
+
+      subroutine reconcileHyFaceEdges(slot, ii, jj, kk)
+         integer(kind=4), intent(in) :: slot, ii, jj, kk
+         integer(kind=4) :: sourceMedium
+         integer(kind=IKINDMTAG) :: sourceTag
+
+         if (.not. isThinSlotFaceOfSlot(slot, iEy, ii, jj, kk)) return
+         sourceMedium = media%sggMiHy(ii,jj,kk); sourceTag = tag_numbers%face%y(ii,jj,kk)
+         if (isThinSlotFaceOfSlot(slot, iEy, ii, jj, kk - 1)) then
+            call stampEx(ii, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearExThinSlot(ii, jj, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEy, ii, jj, kk + 1)) then
+            call stampEx(ii, jj, kk + 1, sourceMedium, sourceTag)
+         else
+            call clearExThinSlot(ii, jj, kk + 1, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEy, ii - 1, jj, kk)) then
+            call stampEz(ii, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearEzThinSlot(ii, jj, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEy, ii + 1, jj, kk)) then
+            call stampEz(ii + 1, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearEzThinSlot(ii + 1, jj, kk, slot)
+         end if
+      end subroutine
+
+      subroutine reconcileHzFaceEdges(slot, ii, jj, kk)
+         integer(kind=4), intent(in) :: slot, ii, jj, kk
+         integer(kind=4) :: sourceMedium
+         integer(kind=IKINDMTAG) :: sourceTag
+
+         if (.not. isThinSlotFaceOfSlot(slot, iEz, ii, jj, kk)) return
+         sourceMedium = media%sggMiHz(ii,jj,kk); sourceTag = tag_numbers%face%z(ii,jj,kk)
+         if (isThinSlotFaceOfSlot(slot, iEz, ii, jj - 1, kk)) then
+            call stampEx(ii, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearExThinSlot(ii, jj, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEz, ii, jj + 1, kk)) then
+            call stampEx(ii, jj + 1, kk, sourceMedium, sourceTag)
+         else
+            call clearExThinSlot(ii, jj + 1, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEz, ii - 1, jj, kk)) then
+            call stampEy(ii, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearEyThinSlot(ii, jj, kk, slot)
+         end if
+         if (isThinSlotFaceOfSlot(slot, iEz, ii + 1, jj, kk)) then
+            call stampEy(ii + 1, jj, kk, sourceMedium, sourceTag)
+         else
+            call clearEyThinSlot(ii + 1, jj, kk, slot)
+         end if
+      end subroutine
+
+      logical function perpendicularSurfaceDirections(normal, firstDirection, secondDirection)
+         integer(kind=4), intent(in) :: normal, firstDirection, secondDirection
+
+         perpendicularSurfaceDirections = firstDirection /= secondDirection .and. &
+            firstDirection /= abs(normal) .and. secondDirection /= abs(normal)
+      end function
+
+      logical function isThinSlotEdgeOfSlot(slot, medium, edgeTag)
+         integer(kind=4), intent(in) :: slot
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: medium
+         integer(kind=IKINDMTAG), intent(in) :: edgeTag
+         integer(kind=4) :: a
+
+         isThinSlotEdgeOfSlot = .false.
+         if (medium < 0 .or. medium > sgg%NumMedia) return
+         if (.not. sgg%Med(medium)%Is%ThinSlot) return
+         do a = 1, this%tSlots%Tg(slot)%n_tgc
+            if (edgeTag == 64 * searchtag(tagtype, this%tSlots%Tg(slot)%TgC(a)%tag)) then
+               isThinSlotEdgeOfSlot = .true.
+               return
+            end if
+         end do
+      end function
+
+      logical function isThinSlotFaceOfSlot(slot, normal, ii, jj, kk)
+         integer(kind=4), intent(in) :: slot, normal, ii, jj, kk
+
+         isThinSlotFaceOfSlot = .false.
+         select case (abs(normal))
+         case (iEx)
+            if (.not. inHxBounds(ii,jj,kk)) return
+            isThinSlotFaceOfSlot = isThinSlotEdgeOfSlot(slot, media%sggMiHx(ii,jj,kk), tag_numbers%face%x(ii,jj,kk))
+         case (iEy)
+            if (.not. inHyBounds(ii,jj,kk)) return
+            isThinSlotFaceOfSlot = isThinSlotEdgeOfSlot(slot, media%sggMiHy(ii,jj,kk), tag_numbers%face%y(ii,jj,kk))
+         case (iEz)
+            if (.not. inHzBounds(ii,jj,kk)) return
+            isThinSlotFaceOfSlot = isThinSlotEdgeOfSlot(slot, media%sggMiHz(ii,jj,kk), tag_numbers%face%z(ii,jj,kk))
+         end select
+      end function
+
+      subroutine completeThinSlotPerimeterTerminals(slot)
+         integer(kind=4), intent(in) :: slot
+         integer(kind=4) :: a, surface, vx, vy, vz, sourceMedium
+         integer(kind=IKINDMTAG) :: sourceTag
+         type(ThinSlotComp_t) :: component
+
+         do a = 1, this%tSlots%Tg(slot)%n_tgc
+            component = this%tSlots%Tg(slot)%TgC(a)
+            call componentTerminal(component, vx, vy, vz)
+            if (thinSlotVertexDegree(slot, vx, vy, vz, thinSlotData(slot)%normal(a)) /= 1) cycle
+            do surface = 1, this%pecregs%nSurfs
+               if (.not. vertexOnPECSurfacePerimeter(component, thinSlotData(slot)%normal(a), vx, vy, vz, &
+                                                      this%pecregs%Surfs(surface))) cycle
+               call getThinSlotMedium(component, thinSlotData(slot)%normal(a), sourceMedium, sourceTag)
+               if (sourceMedium < 0) cycle
+               select case (abs(thinSlotData(slot)%normal(a)))
+               case (iEx)
+                  if (component%dir == iEy) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
+                  if (component%dir == iEz) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
+               case (iEy)
+                  if (component%dir == iEx) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
+                  if (component%dir == iEz) call stampEx(vx, vy, vz, sourceMedium, sourceTag)
+               case (iEz)
+                  if (component%dir == iEx) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
+                  if (component%dir == iEy) call stampEx(vx, vy, vz, sourceMedium, sourceTag)
+               end select
+               exit
+            end do
+         end do
+      end subroutine
+
+      subroutine componentTerminal(component, vx, vy, vz)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(out) :: vx, vy, vz
+
+         vx = component%i; vy = component%j; vz = component%k
+         select case (component%dir)
+         case (iEx)
+            vx = vx + 1
+         case (iEy)
+            vy = vy + 1
+         case (iEz)
+            vz = vz + 1
+         end select
+      end subroutine
+
+      integer(kind=4) function thinSlotVertexDegree(slot, vx, vy, vz, normal)
+         integer(kind=4), intent(in) :: slot, vx, vy, vz, normal
+         integer(kind=4) :: a, ex, ey, ez
+
+         thinSlotVertexDegree = 0
+         do a = 1, this%tSlots%Tg(slot)%n_tgc
+            if (abs(thinSlotData(slot)%normal(a)) /= abs(normal)) cycle
+            if (this%tSlots%Tg(slot)%TgC(a)%i == vx .and. this%tSlots%Tg(slot)%TgC(a)%j == vy .and. &
+               this%tSlots%Tg(slot)%TgC(a)%k == vz) thinSlotVertexDegree = thinSlotVertexDegree + 1
+            call componentTerminal(this%tSlots%Tg(slot)%TgC(a), ex, ey, ez)
+            if (ex == vx .and. ey == vy .and. ez == vz) thinSlotVertexDegree = thinSlotVertexDegree + 1
+         end do
+      end function
+
+      logical function vertexOnPECSurfacePerimeter(component, normal, vx, vy, vz, surface)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(in) :: normal, vx, vy, vz
+         type(coords_t), intent(in) :: surface
+
+         vertexOnPECSurfacePerimeter = .false.
+         if (abs(normal) /= abs(surface%or)) return
+         select case (abs(normal))
+         case (iEx)
+            vertexOnPECSurfacePerimeter = vx == min(surface%xi, surface%xe) .and. &
+               vy >= min(surface%yi, surface%ye) .and. vy <= max(surface%yi, surface%ye) + 1 .and. &
+               vz >= min(surface%zi, surface%ze) .and. vz <= max(surface%zi, surface%ze) + 1 .and. &
+               (vy == min(surface%yi, surface%ye) .or. vy == max(surface%yi, surface%ye) + 1 .or. &
+                vz == min(surface%zi, surface%ze) .or. vz == max(surface%zi, surface%ze) + 1)
+         case (iEy)
+            vertexOnPECSurfacePerimeter = vy == min(surface%yi, surface%ye) .and. &
+               vx >= min(surface%xi, surface%xe) .and. vx <= max(surface%xi, surface%xe) + 1 .and. &
+               vz >= min(surface%zi, surface%ze) .and. vz <= max(surface%zi, surface%ze) + 1 .and. &
+               (vx == min(surface%xi, surface%xe) .or. vx == max(surface%xi, surface%xe) + 1 .or. &
+                vz == min(surface%zi, surface%ze) .or. vz == max(surface%zi, surface%ze) + 1)
+         case (iEz)
+            vertexOnPECSurfacePerimeter = vz == min(surface%zi, surface%ze) .and. &
+               vx >= min(surface%xi, surface%xe) .and. vx <= max(surface%xi, surface%xe) + 1 .and. &
+               vy >= min(surface%yi, surface%ye) .and. vy <= max(surface%yi, surface%ye) + 1 .and. &
+               (vx == min(surface%xi, surface%xe) .or. vx == max(surface%xi, surface%xe) + 1 .or. &
+                vy == min(surface%yi, surface%ye) .or. vy == max(surface%yi, surface%ye) + 1)
+         end select
+      end function
+
+      subroutine getThinSlotMedium(component, normal, sourceMedium, sourceTag)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(in) :: normal
+         integer(kind=4), intent(out) :: sourceMedium
+         integer(kind=IKINDMTAG), intent(out) :: sourceTag
+
+         sourceMedium = -1
+         sourceTag = 0
+         select case (abs(normal))
+         case (iEx)
+            if (component%dir == iEy) sourceMedium = media%sggMiEz(component%i, component%j, component%k)
+            if (component%dir == iEz) sourceMedium = media%sggMiEy(component%i, component%j, component%k)
+         case (iEy)
+            if (component%dir == iEx) sourceMedium = media%sggMiEz(component%i, component%j, component%k)
+            if (component%dir == iEz) sourceMedium = media%sggMiEx(component%i, component%j, component%k)
+         case (iEz)
+            if (component%dir == iEx) sourceMedium = media%sggMiEy(component%i, component%j, component%k)
+            if (component%dir == iEy) sourceMedium = media%sggMiEx(component%i, component%j, component%k)
+         end select
+         if (sourceMedium >= 0 .and. sourceMedium <= sgg%NumMedia) then
+            if (sgg%Med(sourceMedium)%Is%ThinSlot) sourceTag = media%sggMtag(component%i, component%j, component%k)
+            if (.not. sgg%Med(sourceMedium)%Is%ThinSlot) sourceMedium = -1
+         else
+            sourceMedium = -1
+         end if
+      end subroutine
+
+      subroutine stampEx(ii,jj,kk,imed,itag)
+         integer(kind=4), intent(in) :: ii,jj,kk,imed
+         integer(kind=IKINDMTAG), intent(in) :: itag
+         if (.not. inExBounds(ii,jj,kk)) return
+         if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiEx(ii,jj,kk))%Priority) then
+            media%sggMiEx(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%edge%x(ii,jj,kk) = itag
+         end if
+      end subroutine
+      subroutine clearExThinSlot(ii,jj,kk,slot)
+         integer(kind=4), intent(in) :: ii,jj,kk,slot
+         if (.not. inExBounds(ii,jj,kk)) return
+         if (isThinSlotEdgeOfSlot(slot, media%sggMiEx(ii,jj,kk), tag_numbers%edge%x(ii,jj,kk))) then
+            media%sggMiEx(ii,jj,kk) = 0; tag_numbers%edge%x(ii,jj,kk) = 0
+         end if
+      end subroutine
+      subroutine stampEy(ii,jj,kk,imed,itag)
+         integer(kind=4), intent(in) :: ii,jj,kk,imed
+         integer(kind=IKINDMTAG), intent(in) :: itag
+         if (.not. inEyBounds(ii,jj,kk)) return
+         if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiEy(ii,jj,kk))%Priority) then
+            media%sggMiEy(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%edge%y(ii,jj,kk) = itag
+         end if
+      end subroutine
+      subroutine clearEyThinSlot(ii,jj,kk,slot)
+         integer(kind=4), intent(in) :: ii,jj,kk,slot
+         if (.not. inEyBounds(ii,jj,kk)) return
+         if (isThinSlotEdgeOfSlot(slot, media%sggMiEy(ii,jj,kk), tag_numbers%edge%y(ii,jj,kk))) then
+            media%sggMiEy(ii,jj,kk) = 0; tag_numbers%edge%y(ii,jj,kk) = 0
+         end if
+      end subroutine
+      subroutine stampEz(ii,jj,kk,imed,itag)
+         integer(kind=4), intent(in) :: ii,jj,kk,imed
+         integer(kind=IKINDMTAG), intent(in) :: itag
+         if (.not. inEzBounds(ii,jj,kk)) return
+         if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiEz(ii,jj,kk))%Priority) then
+            media%sggMiEz(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%edge%z(ii,jj,kk) = itag
+         end if
+      end subroutine
+      subroutine clearEzThinSlot(ii,jj,kk,slot)
+         integer(kind=4), intent(in) :: ii,jj,kk,slot
+         if (.not. inEzBounds(ii,jj,kk)) return
+         if (isThinSlotEdgeOfSlot(slot, media%sggMiEz(ii,jj,kk), tag_numbers%edge%z(ii,jj,kk))) then
+            media%sggMiEz(ii,jj,kk) = 0; tag_numbers%edge%z(ii,jj,kk) = 0
+         end if
+      end subroutine
+      subroutine stampHx(ii,jj,kk,imed,itag)
+         integer(kind=4), intent(in) :: ii,jj,kk,imed
+         integer(kind=IKINDMTAG), intent(in) :: itag
+         if (.not. inHxBounds(ii,jj,kk)) return
+         if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiHx(ii,jj,kk))%Priority) then
+            media%sggMiHx(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%face%x(ii,jj,kk) = itag
+         end if
+      end subroutine
+      subroutine stampHy(ii,jj,kk,imed,itag)
+         integer(kind=4), intent(in) :: ii,jj,kk,imed
+         integer(kind=IKINDMTAG), intent(in) :: itag
+         if (.not. inHyBounds(ii,jj,kk)) return
+         if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiHy(ii,jj,kk))%Priority) then
+            media%sggMiHy(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%face%y(ii,jj,kk) = itag
+         end if
+      end subroutine
+      subroutine stampHz(ii,jj,kk,imed,itag)
+         integer(kind=4), intent(in) :: ii,jj,kk,imed
+         integer(kind=IKINDMTAG), intent(in) :: itag
+         if (.not. inHzBounds(ii,jj,kk)) return
+         if (sgg%Med(imed)%Priority > sgg%Med(media%sggMiHz(ii,jj,kk))%Priority) then
+            media%sggMiHz(ii,jj,kk) = imed; media%sggMtag(ii,jj,kk) = itag; tag_numbers%face%z(ii,jj,kk) = itag
+         end if
+      end subroutine
+
+      logical function inExBounds(ii,jj,kk)
+         integer(kind=4), intent(in) :: ii,jj,kk
+         inExBounds = ii >= Alloc_iEx_XI .and. ii <= Alloc_iEx_XE .and. jj >= Alloc_iEx_YI .and. jj <= Alloc_iEx_YE .and. &
+            kk >= Alloc_iEx_ZI .and. kk <= Alloc_iEx_ZE
+      end function
+      logical function inEyBounds(ii,jj,kk)
+         integer(kind=4), intent(in) :: ii,jj,kk
+         inEyBounds = ii >= Alloc_iEy_XI .and. ii <= Alloc_iEy_XE .and. jj >= Alloc_iEy_YI .and. jj <= Alloc_iEy_YE .and. &
+            kk >= Alloc_iEy_ZI .and. kk <= Alloc_iEy_ZE
+      end function
+      logical function inEzBounds(ii,jj,kk)
+         integer(kind=4), intent(in) :: ii,jj,kk
+         inEzBounds = ii >= Alloc_iEz_XI .and. ii <= Alloc_iEz_XE .and. jj >= Alloc_iEz_YI .and. jj <= Alloc_iEz_YE .and. &
+            kk >= Alloc_iEz_ZI .and. kk <= Alloc_iEz_ZE
+      end function
+      logical function inHxBounds(ii,jj,kk)
+         integer(kind=4), intent(in) :: ii,jj,kk
+         inHxBounds = ii >= Alloc_iHx_XI .and. ii <= Alloc_iHx_XE .and. jj >= Alloc_iHx_YI .and. jj <= Alloc_iHx_YE .and. &
+            kk >= Alloc_iHx_ZI .and. kk <= Alloc_iHx_ZE
+      end function
+      logical function inHyBounds(ii,jj,kk)
+         integer(kind=4), intent(in) :: ii,jj,kk
+         inHyBounds = ii >= Alloc_iHy_XI .and. ii <= Alloc_iHy_XE .and. jj >= Alloc_iHy_YI .and. jj <= Alloc_iHy_YE .and. &
+            kk >= Alloc_iHy_ZI .and. kk <= Alloc_iHy_ZE
+      end function
+      logical function inHzBounds(ii,jj,kk)
+         integer(kind=4), intent(in) :: ii,jj,kk
+         inHzBounds = ii >= Alloc_iHz_XI .and. ii <= Alloc_iHz_XE .and. jj >= Alloc_iHz_YI .and. jj <= Alloc_iHz_YE .and. &
+            kk >= Alloc_iHz_ZI .and. kk <= Alloc_iHz_ZE
+      end function
+
       subroutine initConformalBoundingBox(sgg, bbox)
          type(SGGFDTDINFO_t), intent(in) :: sgg
          type(XYZlimit_t), intent(inout) :: bbox
@@ -5201,6 +5809,10 @@ contains
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%name))//' DOES NOT EXIST'
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
+                     if (.not. file_has_samples(trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)), 2)) then
+                        buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
+                        call STOPONERROR(layoutnumber,num_procs,buff)
+                     end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
                      READ (15,*) tiempo2, field2
@@ -5251,6 +5863,10 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%name))//' DOES NOT EXIST'
+                        call STOPONERROR(layoutnumber,num_procs,buff)
+                     end if
+                     if (.not. file_has_samples(trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)), 2)) then
+                        buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)),action='read')
@@ -5307,6 +5923,10 @@ contains
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%name))//' DOES NOT EXIST'
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
+                     if (.not. file_has_samples(trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)), 2)) then
+                        buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
+                        call STOPONERROR(layoutnumber,num_procs,buff)
+                     end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
                      READ (15,*) tiempo2, field2
@@ -5354,6 +5974,10 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%name))//' DOES NOT EXIST'
+                        call STOPONERROR(layoutnumber,num_procs,buff)
+                     end if
+                     if (.not. file_has_samples(trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)), 2)) then
+                        buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
                         call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)),action='read')
@@ -5410,6 +6034,10 @@ contains
                inquire(file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)), EXIST=errnofile)
                if ( .NOT. errnofile) then
                   buff=trim(adjustl(sgg%NodalSource(j)%fichero%name))//' DOES NOT EXIST'
+                  call STOPONERROR(layoutnumber,num_procs,buff)
+               end if
+               if (.not. file_has_samples(trim(adjustl(sgg%NodalSource(j)%fichero%NAME)), 2)) then
+                  buff=trim(adjustl(sgg%NodalSource(j)%fichero%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
                   call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                open(15, file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)),action='read')
@@ -5470,6 +6098,10 @@ contains
             inquire(file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)), EXIST=errnofile)
             if ( .NOT. errnofile) then
                buff=trim(adjustl(sgg%PlaneWave(j)%fichero%name))//' DOES NOT EXIST'
+               call STOPONERROR(layoutnumber,num_procs,buff)
+            end if
+            if (.not. file_has_samples(trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)), 2)) then
+               buff=trim(adjustl(sgg%PlaneWave(j)%fichero%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
                call STOPONERROR(layoutnumber,num_procs,buff)
             end if
             open(15, file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)),action='read')
@@ -6677,13 +7309,13 @@ contains
 
             ! Check c1P coordinates
             call checkDielectricComponentTags(this%DielRegs%lins(i), this%DielRegs%lins(1:i-1), i-1, &
-               'c2P', numertag, tagtype, precounting, &
-               'Bug in Dielectric Surface Tags')
+               'c1P', numertag, tagtype, precounting, &
+               'Bug in Dielectric Line Tags')
 
             ! Check c2P coordinates
             call checkDielectricComponentTags(this%DielRegs%lins(i), this%DielRegs%lins(1:i-1), i-1, &
                'c2P', numertag, tagtype, precounting, &
-               'Bug in Dielectric Surface Tags')
+               'Bug in Dielectric Line Tags')
          end do
 !
          tama = (this%animats%nvols)
@@ -6913,29 +7545,9 @@ contains
 
          tama = this%tSlots%n_tg
          do i = 1, tama
-            numertag = numertag + 1
-            tama2 = this%tSlots%Tg(i)%N_tgc
-            if (tama2/=0) then
-               if ((i>1)) then
-                  if ((this%tSlots%Tg(i)%TgC(1)%tag == this%tSlots%Tg(i-1)%TgC(1)%tag)) then !do not increase
-                     numertag=numertag-1
-                  end if
-               end if
-            end if
-            if (precounting==1) then
-               if (tama2/=0) then
-                  tagtype%tag(numertag) =  this%tSlots%Tg(i)%TgC(1)%tag
-               else
-                  print *,'bug in tags. '
-                  stop
-               end if
-               do j = 1, tama2
-                  if (trim(adjustl(this%tSlots%Tg(i)%TgC(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                     print *,'bug in tags. '
-                     stop
-                  end if
-               end do
-            end if
+            call checkThinSlotTags(this%tSlots%Tg(i), &
+                                   this%tSlots%Tg(1:i-1), &
+                                   i-1, numertag, tagtype, precounting)
          end do
 
          if (associated(this%conformalRegs%volumes)) then 
@@ -7234,6 +7846,78 @@ contains
           tagtype%tag(numertag) = tagToCheck
        end if
     end subroutine
+
+   subroutine checkThinSlotTags(component, prev_components, n_prev, numertag, tagtype, precounting)
+      type(ThinSlot_t), intent(in) :: component
+      type(ThinSlot_t), intent(in) :: prev_components(:)
+      integer, intent(in) :: n_prev
+      integer, intent(inout) :: numertag
+      type(tagtype_t), intent(inout) :: tagtype
+      integer, intent(in) :: precounting
+
+      integer :: j
+
+      if (component%N_tgc == 0) then
+         print *, 'Bug in ThinSlot Tags. Missing coordinates'
+         stop
+      end if
+
+      check_tags: do j = 1, component%N_tgc
+         numertag = numertag + 1
+         call checkThinSlotTagForDuplicate(component, prev_components, n_prev, j, numertag, tagtype, precounting)
+      end do check_tags
+   end subroutine
+
+   subroutine checkThinSlotTagForDuplicate(component, prev_components, n_prev, idx, numertag, tagtype, precounting)
+      type(ThinSlot_t), intent(in) :: component
+      type(ThinSlot_t), intent(in) :: prev_components(:)
+      integer, intent(in) :: n_prev
+      integer, intent(in) :: idx
+      integer, intent(inout) :: numertag
+      type(tagtype_t), intent(inout) :: tagtype
+      integer, intent(in) :: precounting
+
+      logical :: foundDuplicate
+      character(len=BUFSIZE) :: tagToCheck
+      integer :: k, m
+
+      tagToCheck = trim(adjustl(component%TgC(idx)%tag))
+      if (len_trim(tagToCheck) == 0) then
+         ! Legacy NFDE thin gaps carry no layer tag. Keep them out of the
+         ! tag list, so searchtag() returns -1 for them, as it did before
+         ! the layer tag checks were introduced.
+         numertag = numertag - 1
+         return
+      end if
+      foundDuplicate = .false.
+
+      if (idx > 1) then
+         check_current: do k = 1, idx-1
+            if (tagToCheck == trim(adjustl(component%TgC(k)%tag))) then
+               foundDuplicate = .true.
+               exit check_current
+            end if
+         end do check_current
+      end if
+
+      if ((.not. foundDuplicate) .and. (n_prev > 0)) then
+         check_previous: do m = 1, n_prev
+            if (prev_components(m)%N_tgc > 0) then
+               do k = 1, prev_components(m)%N_tgc
+                  if (tagToCheck == trim(adjustl(prev_components(m)%TgC(k)%tag))) then
+                     foundDuplicate = .true.
+                  end if
+               end do
+            end if
+         end do check_previous
+      end if
+
+      if (foundDuplicate) then
+         numertag = numertag - 1
+      else if (precounting == 1) then
+         tagtype%tag(numertag) = tagToCheck
+      end if
+   end subroutine
 
 
    function searchtag(tagtype,tag) result(numertag)

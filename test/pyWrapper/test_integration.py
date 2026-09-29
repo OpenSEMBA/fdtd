@@ -99,12 +99,13 @@ def test_fdtd_clean_up_after_run(tmp_path):
 
     solver.run()
 
-    solved_probe_folders = solver.getSolvedProbeFolders("inbox")
-    assert os.path.isfile(solved_probe_folders[0])
+    solved_probe_files = solver.getSolvedProbeFolders("inbox")
+    assert len(solved_probe_files) == 2
+    assert all(os.path.isfile(path) for path in solved_probe_files)
 
     solver.cleanUp()
 
-    assert not os.path.exists(solved_probe_folders[0])
+    assert all(not os.path.exists(path) for path in solved_probe_files)
 
 
 @pytest.mark.planewave
@@ -116,10 +117,11 @@ def test_fdtd_scalar_probe_discovery_returns_only_dat_output(tmp_path):
 
     probe_folders = solver.getSolvedProbeFolders("inbox")
 
-    assert len(probe_folders) == 1
-    probe = Probe(probe_folders[0])
-    assert probe.getDatFile() is not None
-    assert probe.getBinFile() is None
+    assert len(probe_folders) == 2
+    probes = [Probe(path) for path in probe_folders]
+    assert {probe.domainType for probe in probes} == {"time", "frequency"}
+    assert all(probe.getDatFile() is not None for probe in probes)
+    assert all(probe.getBinFile() is None for probe in probes)
 
 
 @pytest.mark.planewave
@@ -305,9 +307,236 @@ def test_map_vtk_includes_thin_slot_geometry(tmp_path):
         vtk_map_filename, celltype=9, property="mediatype"
     )
 
-    assert line_media_dict.get(4.5, 0) > 0
-    assert any(media_type >= 400.0 for media_type in face_media_dict)
-    assert sum(face_media_dict.values()) > 0
+    # Embedded straight slots retain one thin-slot edge and face per cell.
+    assert line_media_dict.get(4.5, 0) == 10
+    n_slot_faces = sum(count for mt, count in face_media_dict.items() if mt >= 400.0)
+    assert n_slot_faces == 10
+
+
+@pytest.mark.thinSlot
+@pytest.mark.vtk
+def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
+    """Discontinuous Ex/Ez rectangle remains inside the designed footprint."""
+    import pyvista as pv
+
+    input_filename = CASES_FOLDER + "thin_slot_rectangle/thin_slot_rectangle.fdtd.json"
+    solver = FDTD(
+        input_filename=input_filename,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+        flags=["-dmma", "-mapvtk"],
+    )
+    solver["general"]["numberOfSteps"] = 1
+
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
+
+    line_media_dict = createPropertyDictionary(
+        vtk_map_filename, celltype=3, property="mediatype"
+    )
+    face_media_dict = createPropertyDictionary(
+        vtk_map_filename, celltype=9, property="mediatype"
+    )
+    # In the corner neighbourhoods, thin E edges are exactly the boundaries
+    # shared by two thin H faces.
+    assert line_media_dict.get(4.5, 0) == 48
+    n_slot_faces = sum(count for mt, count in face_media_dict.items() if mt >= 400.0)
+    assert n_slot_faces == 48
+
+    # Designed rectangle polyline on y=10: x,z in [14,26] (cell indices)
+    origin = np.array(solver["mesh"]["grid"]["origin"], dtype=float)
+    dx = float(solver["mesh"]["grid"]["steps"]["x"][0])
+    designed_min = origin + np.array([14, 10, 14], dtype=float) * dx
+    designed_max = origin + np.array([26, 10, 26], dtype=float) * dx
+    # Element at index N spans to node N+1; last cell starts at 25 for a [14,26] side
+    yee_tol = dx * 1.001
+    f32_tol = 1e-5
+
+    ugrid = pv.UnstructuredGrid(vtk_map_filename)
+    mt = ugrid.cell_data["mediatype"]
+    slot_line_idx = np.where((ugrid.celltypes == 3) & np.isclose(mt, 4.5))[0]
+    assert len(slot_line_idx) == 48
+
+    pts = np.vstack([ugrid.get_cell(int(ci)).points for ci in slot_line_idx])
+    assert pts[:, 0].min() >= designed_min[0] - f32_tol
+    assert pts[:, 0].max() <= designed_max[0] + yee_tol
+    assert pts[:, 2].min() >= designed_min[2] - f32_tol
+    assert pts[:, 2].max() <= designed_max[2] + yee_tol
+    assert np.allclose(pts[:, 1], designed_min[1], atol=1e-6)
+
+    slot_face_idx = np.where((ugrid.celltypes == 9) & (mt >= 400.0))[0]
+    assert len(slot_face_idx) == 48
+
+    def point(i, k):
+        return origin + np.array([i, 10, k], dtype=float) * dx
+
+    def node_index(node):
+        return (
+            int(np.rint((node[0] - origin[0]) / dx)),
+            int(np.rint((node[2] - origin[2]) / dx)),
+        )
+
+    def edge_key(start, end):
+        return tuple(sorted((start, end)))
+
+    face_cells = {
+        node_index(ugrid.get_cell(int(ci)).points.min(axis=0))
+        for ci in slot_face_idx
+    }
+    shared_face_edges = set()
+    for i, k in face_cells:
+        if (i + 1, k) in face_cells:
+            shared_face_edges.add(edge_key((i + 1, k), (i + 1, k + 1)))
+        if (i, k + 1) in face_cells:
+            shared_face_edges.add(edge_key((i, k + 1), (i + 1, k + 1)))
+
+    thin_edge_cells = {
+        edge_key(*(node_index(node) for node in ugrid.get_cell(int(ci)).points))
+        for ci in slot_line_idx
+    }
+    assert thin_edge_cells == shared_face_edges
+
+    def edge_media_type(start, end):
+        expected = np.array([point(*start), point(*end)])
+        matches = []
+        for ci in np.where(ugrid.celltypes == 3)[0]:
+            cell_points = ugrid.get_cell(int(ci)).points
+            if all(any(np.allclose(actual, desired, atol=f32_tol) for actual in cell_points) for desired in expected):
+                matches.append(ci)
+        assert len(matches) == 1
+        return mt[matches[0]]
+
+    # Exposed local boundaries are PEC. The two +x/+z edges which meet the
+    # corner face are intentionally absent: both are shared H-face edges.
+    exterior_edges = [
+        ((14, 14), (15, 14)),
+        ((14, 14), (14, 15)),
+        ((14, 26), (14, 27)),
+        ((26, 14), (27, 14)),
+        ((27, 26), (27, 27)),
+        ((26, 27), (27, 27)),
+    ]
+    for start, end in exterior_edges:
+        assert np.isclose(edge_media_type(start, end), 0.5)
+
+    face_pts = np.vstack([ugrid.get_cell(int(ci)).points for ci in slot_face_idx])
+    assert face_pts[:, 0].min() >= designed_min[0] - f32_tol
+    assert face_pts[:, 0].max() <= designed_max[0] + yee_tol
+    assert face_pts[:, 2].min() >= designed_min[2] - f32_tol
+    assert face_pts[:, 2].max() <= designed_max[2] + yee_tol
+    assert np.allclose(face_pts[:, 1], designed_min[1], atol=1e-6)
+
+    def face_media_type(i, k):
+        expected = np.array([point(i, k), point(i + 1, k), point(i + 1, k + 1), point(i, k + 1)])
+        matches = []
+        for ci in np.where(ugrid.celltypes == 9)[0]:
+            cell_points = ugrid.get_cell(int(ci)).points
+            if all(any(np.allclose(actual, desired, atol=f32_tol) for actual in cell_points) for desired in expected):
+                matches.append(ci)
+        assert len(matches) == 1
+        return mt[matches[0]]
+
+    # The established corner completion is the outer +x/+z H face, not the
+    # inner diagonal face introduced by the directed-turn regression.
+    assert face_media_type(26, 26) >= 400.0
+    assert np.isclose(face_media_type(25, 25), 0.0)
+
+@pytest.mark.lumped
+@pytest.mark.vtk
+def test_map_vtk_lumped_elements_get_distinct_media_type(tmp_path):
+    """A single lumped association yields one lumped element per elementId."""
+    input_filename = (
+        CASES_FOLDER
+        + "thin_slot_rectangle_lumped/thin_slot_rectangle_lumped.fdtd.json"
+    )
+    solver = FDTD(
+        input_filename=input_filename,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+        flags=["-dmma", "-mapvtk"],
+    )
+    solver["general"]["numberOfSteps"] = 1
+
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
+
+    line_media_dict = createPropertyDictionary(
+        vtk_map_filename, celltype=3, property="mediatype"
+    )
+    # Six elements listed in one association produce six lumped line cells.
+    assert line_media_dict.get(4.25, 0) == 6
+    # No lumped edge may be misclassified as a plain dielectric.
+    assert line_media_dict.get(2.5, 0) == 0
+
+    line_tag_dict = createPropertyDictionary(
+        vtk_map_filename, celltype=3, property="tagnumber"
+    )
+    # Each element contributes one lumped and one PEC line (12 cells over the
+    # six contiguous 64-wide tag blocks dedicated to the lumped elements).
+    lumped_tag_cells = sum(
+        count for tag, count in line_tag_dict.items() if 128.0 <= tag <= 511.0
+    )
+    assert lumped_tag_cells == 12
+
+
+@pytest.mark.thinSlot
+def test_thin_slot_without_pec_is_rejected(tmp_path):
+    input_filename = CASES_FOLDER + "thin_slot_no_pec/thin_slot_no_pec.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, flags=["-dmma"])
+
+    with pytest.raises(AssertionError):
+        solver.run()
+
+    assert b"Thin Slot must be defined over a PEC surface" in solver.output.stdout
+
+
+@pytest.mark.thinSlot
+@pytest.mark.vtk
+def test_thin_slot_terminal_on_pec_perimeter_adds_edge(tmp_path):
+    import pyvista as pv
+
+    input_filename = CASES_FOLDER + "thin_slot_perimeter_terminal/thin_slot_perimeter_terminal.fdtd.json"
+    solver = FDTD(
+        input_filename=input_filename,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+        flags=["-dmma", "-mapvtk"],
+    )
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    line_media_dict = createPropertyDictionary(
+        solver.getVTKMap(), celltype=3, property="mediatype"
+    )
+    # The 16 embedded linels retain their 16 edges; the endpoint on the PEC
+    # perimeter adds only its one transverse continuity edge.
+    assert line_media_dict.get(4.5, 0) == 17
+
+    ugrid = pv.UnstructuredGrid(solver.getVTKMap())
+    mt = ugrid.cell_data["mediatype"]
+    slot_line_idx = np.where((ugrid.celltypes == 3) & np.isclose(mt, 4.5))[0]
+    terminal = np.array([0.30, 0.10, 0.20])
+    assert sum(
+        np.any(np.linalg.norm(ugrid.get_cell(int(ci)).points - terminal, axis=1) <= 1e-5)
+        for ci in slot_line_idx
+    ) == 1
+
+
+@pytest.mark.thinSlot
+def test_thin_slot_along_pec_perimeter_is_rejected(tmp_path):
+    input_filename = CASES_FOLDER + "thin_slot_along_pec_perimeter/thin_slot_along_pec_perimeter.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, flags=["-dmma"])
+
+    with pytest.raises(AssertionError):
+        solver.run()
+
+    assert b"Thin Slot cannot run along the perimeter of its PEC sheet" in solver.output.stdout
 
 
 @pytest.mark.conformal

@@ -161,6 +161,8 @@ module outputTypes_m
       integer(kind=SINGLE)    :: fnum = 0
       integer(kind=SINGLE)    :: domainType = UNDEFINED_DOMAIN
       logical                 :: logarithmicSpacing = .false.
+      logical                 :: transfer = .false.
+      character(len=BUFSIZE)  :: normalizationFile = ''
    end type domain_t
 
    type :: spheric_domain_t
@@ -248,6 +250,8 @@ module outputTypes_m
       real(kind=RKIND), allocatable :: valueForTime(:)
       real(kind=RKIND), allocatable :: incidentForTime(:)
       complex(kind=CKIND), allocatable :: valueForFreq(:)
+      complex(kind=CKIND), allocatable :: incidentForFreq(:)
+      complex(kind=CKIND), allocatable :: normalizationForFreq(:)
       logical :: hasIncident = .false.
       type(output_artifact_t), allocatable :: artifacts(:)
    end type point_probe_output_t

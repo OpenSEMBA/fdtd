@@ -222,7 +222,7 @@ PROBE_TYPES: dict = {
         "field": "H",
         "direction": "z",
         "expected_extensions": [".dat"],
-        "expected_dat_columns": ["frequency", "real", "imaginary"],
+        "expected_dat_columns": ["frequency", "magnitude", "phase"],
     },
     "far_field": {
         "case": {"code": "case_name", "expected": "case_name"},

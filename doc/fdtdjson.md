@@ -286,7 +286,7 @@ A `material` with `type` `isotropic` represents an isotropic material with const
 
 ### `lumped`
 
-A `material` with `type` `lumped` represents a lumped circuit `model`, e.g a resistor. Lumped materials can only be assigned to `cell` `elements` with `intervals` describing oriented lines. If multiple cells are assigned to a lumped element, only the first one of them will be treated as a lumped by the solver, the other cells will be treated as a PEC material.
+A `material` with `type` `lumped` represents a lumped circuit `model`, e.g a resistor. Lumped materials can only be assigned to `cell` `elements` with `intervals` describing oriented lines. A single material association generates one lumped element per `elementId` in its list. Within each of those elements, only the first assigned cell is treated as a lumped by the solver, the other cells will be treated as a PEC material.
 The specific behavior is described using the `<model>` keyword, described below. `resistor`, `inductor` and `capacitor` are based, with some additions, on the following reference
 
 ```
@@ -818,7 +818,7 @@ An example of a planewave propagating towards $\hat{z}$ and polarized in the $+\
 
 ### `nodalSource`
 
-This object represents a time-varying vector field applied along an oriented line with the same orientation of the line. Therefore, the `elementIds` within must contain only elements of type `cell` with `intervals` describing a collection of oriented lines. Additionally, it may contain:
+This object represents a time-varying vector field applied along an oriented line with the same orientation of the line. Therefore, the `elementIds` within must contain only elements of type `cell` with `intervals` describing a collection of oriented lines. Intervals with zero length (points), as well as intervals describing surfaces or volumes, are not valid for this source and produce a fatal error. Additionally, it may contain:
 
 + `[field]` with a `current` label which indicates the vector field which will be applied. If not present, it defaults to `current`.
 + `[hardness]` with `soft` or `hard` label. A `soft` hardness indicated that the magnitude will be **added** to the field this situation is typical for a waveport. `hard` sources mean that the field is **substituted** by the value established by the `magnitudeFile`, which for an electric field `nodalSource` would be equivalent to a `pec` material if the magnitude is zero.

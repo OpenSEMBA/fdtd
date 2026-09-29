@@ -34,3 +34,7 @@ target_link_libraries(mtlnsolver PRIVATE
 	fdtd-utils
 	${MPI_Fortran_LIBRARIES}
 )
+
+if(TARGET jsonfortran)
+	target_link_libraries(mtlnsolver PRIVATE jsonfortran)
+endif()

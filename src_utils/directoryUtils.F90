@@ -12,6 +12,7 @@ module directoryUtils_m
    public :: get_last_component
    public :: remove_folder
    public :: file_exists
+   public :: file_has_samples
    public :: delete_file
    public :: list_files
     public :: create_file_with_path
@@ -191,6 +192,37 @@ contains
 
       inquire (file=trim(path), exist=exists)
    end function file_exists
+
+   !------------------------------------------------------------
+   ! Check whether a file holds at least minimumSamples lines
+   ! that can be read as a (time, value) pair. Missing, unreadable
+   ! and empty files all return false.
+   !------------------------------------------------------------
+   function file_has_samples(fileName, minimumSamples) result(hasSamples)
+      character(len=*), intent(in) :: fileName
+      integer, intent(in), optional :: minimumSamples
+      logical :: hasSamples
+      integer :: unit, ios, count, required
+      real(kind=RKIND) :: sampleTime, sampleValue
+
+      required = 1
+      if (present(minimumSamples)) required = max(1, minimumSamples)
+      hasSamples = .false.
+
+      open (newunit=unit, file=trim(adjustl(fileName)), status='old', action='read', iostat=ios)
+      if (ios /= 0) return
+
+      count = 0
+      do
+         read (unit, *, iostat=ios) sampleTime, sampleValue
+         if (ios /= 0) exit
+         count = count + 1
+         if (count >= required) exit
+      end do
+      close (unit)
+
+      hasSamples = count >= required
+   end function file_has_samples
 
    !------------------------------------------------------------
    ! Delete a file
