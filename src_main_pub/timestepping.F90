@@ -96,6 +96,11 @@ module Solver_m
       type(conformal_sgbc_state_t) :: sgbc
    end type conformal_surface_face_state_t
 
+   type :: conformal_fields_t
+      type(face_t), dimension(:), allocatable :: faces
+      type(edge_t), dimension(:), allocatable :: edges
+   end type
+
    type, public :: solver_t
       type(sim_control_t) :: control
       type(logic_control_t) :: thereAre
@@ -126,6 +131,7 @@ module Solver_m
       real(kind=rkind) :: eps0,mu0
       type(tagtype_t) :: tagtype
       type(conformal_surface_face_state_t), allocatable :: conformal_surface_faces(:)
+      type(conformal_fields_t) :: conformal_fields
 
 #ifdef CompileWithMTLN
       type(mtln_t) :: mtln_parsed
@@ -2599,6 +2605,40 @@ contains
          upper_e = this%Ez(upper_i,upper_j,upper_k)
       end select
    end subroutine getConformalElectricPair
+
+   subroutine initializeConformalFields(this)
+      class(solver_t) :: this
+      type(face_t) :: face
+      type(edge_t) :: edge
+      type(edge_t), dimension(:), allocatable :: aux_edges
+      integer :: i,j
+
+      do i = 1, this%sgg%NumMedia
+         if (.not. (isConformalSurface(this%sgg%Med(i)))) cycle
+         ! med_is_sgbc = this%sgg%Med(i)%Is%ConformalSGBC
+         if (.not. allocated(this%sgg%Med(i)%ConformalFace)) cycle
+
+         allocate(this%conformal_fields%faces(size(this%sgg%Med(i)%ConformalFace(:))))
+         allocate(this%conformal_fields%edges(size(this%sgg%Med(i)%ConformalEdge(:))))
+         this%conformal_fields%faces = this%sgg%Med(i)%ConformalFace(:)
+         this%conformal_fields%edges = this%sgg%Med(i)%ConformalEdges(:)
+
+         do j = 1, size(this%conformal_fields%faces)
+            face = this%conformal_fields%faces(j)
+            if (.not. face%is_two_sided) cycle
+            ! iterate over 4 edges
+            ! if edge is not in ConformalEdges, add it
+            ! assign rI and rII fields in face
+            ! assign rI and rII fields in edge
+         end do
+      end do
+
+   end subroutine
+
+   logical function isConformalSurface(medium)
+      type(MediaData_t), intent(in) :: medium
+      isConformalSurface = (medium%Is%ConformalPEC .or. medium%Is%ConformalSGBC) .and. medium%Is%Surface
+   end function
 
    subroutine initializeConformalSurfaceStates(this)
       class(solver_t) :: this

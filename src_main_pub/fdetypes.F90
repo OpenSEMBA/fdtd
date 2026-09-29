@@ -612,7 +612,7 @@ module  FDETYPES_m
    end type
 
    type :: conformal_edge_fields_t
-      real(kind=rkind), pointer :: E => null()
+      real(kind=rkind) :: E
       real(kind=rkind), pointer :: H1 => null()
       real(kind=rkind), pointer :: H2 => null()
       real(kind=rkind), pointer :: H3 => null()
@@ -620,8 +620,9 @@ module  FDETYPES_m
    end type
 
    type :: conformal_face_fields_t
-      real(kind=rkind), pointer :: H => null()
-      type(conformal_field_t) :: E1
+      real(kind=rkind) :: H
+      real(kind=rkind), pointer :: E1 => null()
+      ! type(conformal_field_t) :: E1
       real(kind=rkind), pointer :: E2 => null()
       real(kind=rkind), pointer :: E3 => null()
       real(kind=rkind), pointer :: E4 => null()
