@@ -2664,7 +2664,48 @@ contains
          if (.not. face%is_two_sided) cycle
          edges_on_face = buildEdgesOnFace(face)
          do j = 1, size(edges_on_face)
-            if (.not. conformal_maps%edge_map%hasKey(edges_on_face(j)%key)) 
+            if (.not. conformal_maps%edge_map%hasKey(edges_on_face(j)%key)) then 
+               cell = edges_on_face(j)%key(1:3)
+               ! call assignEdgeFields(face, j, cell)
+               select case (face%direction)
+               case (FACE_X)
+                  if (j == 1) then 
+                     if (face%normal(EDGE_Y) > 0) then 
+                        face%region_I_fields%E1 = 0.0
+                        face%region_II_fields%E1 => this%Ez(cell(1),cell(2),cell(3))
+                     else if (face%normal(EDGE_Y) < 0) then 
+                        face%region_I_fields%E1 => this%Ez(cell(1),cell(2),cell(3))
+                        face%region_II_fields%E1 = 0.0
+                     end if
+                  else if (j == 2) then 
+                     if (face%normal(EDGE_Z) > 0) then 
+                        face%region_I_fields%E2=> this%Ey(cell(1),cell(2),cell(3) + 1)
+                        face%region_II_fields%E2 = 0.0
+                     else if (face%normal(EDGE_Z) < 0) then 
+                        face%region_I_fields%E2 => 0.0
+                        face%region_II_fields%E2 => this%Ey(cell(1),cell(2),cell(3) + 1)
+                     end if
+                  else if (j == 3) then 
+                     if (face%normal(EDGE_Y) > 0) then 
+                        face%region_I_fields%E3 => this%Ez(cell(1),cell(2) + 1,cell(3))
+                        face%region_II_fields%E3 = 0.0
+                     else if (face%normal(EDGE_Y) < 0) then 
+                        face%region_I_fields%E3 = 0.0
+                        face%region_II_fields%E3 = => this%Ez(cell(1),cell(2) + 1,cell(3))
+                     end if
+                  else if (j == 4) then 
+                     if (face%normal(EDGE_Z) > 0) then 
+                        face%region_I_fields%E4 = 0.0
+                        face%region_II_fields%E4 => this%Ey(cell(1),cell(2),cell(3))
+                     else if (face%normal(EDGE_Z) < 0) then 
+                        face%region_I_fields%E4 => this%Ey(cell(1),cell(2),cell(3))
+                        face%region_II_fields%E4 = 0.0
+                     end if
+                  end if
+               end select 
+            end if
+
+
             edge => conformal_maps%edge_map%getEdge(edges_on_face(j)%key)
             cell = edge%cell
             ! ALLOCATION OF FIELDS ??
