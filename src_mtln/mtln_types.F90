@@ -190,9 +190,30 @@ module mtln_types_m
       generic, public :: operator(==) => multipolar_expansion_eq
    end type
 
+   ! One E-field edge coupled to a slanted wire division. The edge is
+   ! identified by its cell indices and its component (1=Ex, 2=Ey, 3=Ez).
+   ! weight = pond * direction cosine, and chord is the wire length inside
+   ! the cell. Together with the division length they reproduce the standard
+   ! axis-aligned coupling as the degenerate case chord = step_size,
+   ! weight = +-1.
+   type, public :: segment_coupling_t
+      integer(kind=4) :: i = 0, j = 0, k = 0
+      integer(kind=4) :: component = 0
+      real(kind=rkind) :: weight = 0.0_rkind
+      real(kind=rkind) :: chord = 0.0_rkind
+   end type segment_coupling_t
+
    type, extends(direction_t) :: segment_t
       type(box_2d_t) :: dualBox
       real(kind=rkind) :: d1, d2
+      ! Slanted divisions. For axis-aligned divisions is_slanted is false,
+      ! couplings stays unallocated, and orientation/direction are used as
+      ! before.
+      logical :: is_slanted = .false.
+      real(kind=rkind), dimension(1:3) :: direction_cosines = 0.0_rkind
+      real(kind=rkind), dimension(1:3) :: position_begin = 0.0_rkind
+      real(kind=rkind), dimension(1:3) :: position_end = 0.0_rkind
+      type(segment_coupling_t), dimension(:), allocatable :: couplings
    end type
 
 

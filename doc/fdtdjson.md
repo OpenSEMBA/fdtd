@@ -18,6 +18,7 @@ This document assumes that you are familiar with the basic JSON notation, a brie
 - [Material types](#bulk-materials)
   - [`lumped` models](#lumped)
   - [Wire and multiwire materials](#wire)
+  - [Slanted wires](#slanted-wires)
   - [Terminals and connectors](#terminal)
 - [Probe types](#probe-types)
 - [Probe domains](#domain)
@@ -29,9 +30,10 @@ The following are examples of valid inputs:
 
  1. An empty space illuminated by a plane wave: [planewave.fdtd.json](testData/input_examples/planewave.fdtd.json). The field at a point close to the center is recorded.
  2. A thin straight wire illuminated by a plane wave: [holland1981.fdtd.json](testData/input_examples/holland1981.fdtd.json) which aims to replicate the case described in https://doi.org/10.1109/TEMC.1981.303899. It contains a probe which records the wire at the middle of the wire.
- 3. A current injection which mimics a lightning strike on a square metallic surface: [currentinjection.fdtd.json](testData/input_examples/currentInjection.fdtd.json). It contains two bulk current probes to measure the current at the entry and exit lines.
- 4. A shielded pair of wires fed by a voltage source in one of its ends: [shieldedPair.fdtd.json](testData/input_examples/shieldedPair.fdtd.json). The interior of the shield uses a multiconductor transmission line (MTL) algorithm to evolve the common mode currents which are induced in the shield and propagated inside using a transfer impedance.
- 5. A multiconductor transmission line network (MTLN) case which includes three cable bundles with a shared junction: [mtln.fdtd.json](testData/input_examples/mtln.fdtd.json).
+ 3. The same wire rotated 30 degrees with respect to the grid: [holland1981_slanted.fdtd.json](testData/cases/holland_slanted/holland1981_slanted.fdtd.json), which exercises the slanted wire model.
+ 4. A current injection which mimics a lightning strike on a square metallic surface: [currentinjection.fdtd.json](testData/input_examples/currentInjection.fdtd.json). It contains two bulk current probes to measure the current at the entry and exit lines.
+ 5. A shielded pair of wires fed by a voltage source in one of its ends: [shieldedPair.fdtd.json](testData/input_examples/shieldedPair.fdtd.json). The interior of the shield uses a multiconductor transmission line (MTL) algorithm to evolve the common mode currents which are induced in the shield and propagated inside using a transfer impedance.
+ 6. A multiconductor transmission line network (MTLN) case which includes three cable bundles with a shared junction: [mtln.fdtd.json](testData/input_examples/mtln.fdtd.json).
 
 ## FDTD-JSON objects description
 All units are assumed to be SI-MKS, except when specified otherwise.
@@ -395,6 +397,26 @@ Materials of this type must contain:
 }
 ```
 
+### Slanted wires
+
+A polyline is considered slanted when it has at least one segment varying in more than one coordinate direction (a diagonal) or when any of its coordinates is not an integer number of cells (a fractional position). 
+In that case each segment is split at the cell boundaries, and every piece couples to the interpolated tangential electric field of the surrounding edges. Axis-aligned polylines keep using the staircased model.
+
+Slanted wires can be used with `wire` materials, and support the same terminals, connectors, generators, probes and PEC/lossy de-embedding as regular wires. 
+
+The following example is a 1 m wire rotated 30 degrees about the $+\hat{y}$ axis
+(see [holland1981_slanted.fdtd.json](../testData/cases/holland_slanted/holland1981_slanted.fdtd.json)):
+
+```json
+"coordinates": [
+    {"id": 1, "relativePosition": [ 8.5, 11.0,  7.669873]},
+    {"id": 2, "relativePosition": [11.0, 11.0, 12.0    ]},
+    {"id": 3, "relativePosition": [13.5, 11.0, 16.330127]}
+],
+"elements": [
+    {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3]}
+]
+```
 
 ### `shieldedMultiwire`
 

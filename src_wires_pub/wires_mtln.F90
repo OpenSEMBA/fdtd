@@ -72,6 +72,27 @@ contains
            return
       end if
       if (mtln_solver%dt < dtcritico) dtcritico = mtln_solver%dt
+#ifdef CompileWithMPI
+      block
+         integer(kind=4) :: sizeof, ierr, m, n
+         logical :: has_slanted
+         has_slanted = .false.
+         do m = 1, mtln_solver%number_of_bundles
+            do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments, 1)
+               if (mtln_solver%bundles(m)%external_field_segments(n)%is_slanted) then
+                  has_slanted = .true.
+               end if
+            end do
+         end do
+         call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+         if (sizeof > 1 .and. has_slanted) then
+            call WarnErrReport('MTLN slanted wires are not supported with MPI yet. '// &
+                               'Run the simulation with a single process.', .true.)
+            thereAreMTLNbundles = .false.
+            return
+         end if
+      end block
+#endif
       call pointSegmentsToFields()
       call mtln_solver%updatePULTerms()
 
@@ -91,6 +112,10 @@ contains
                   ! direction (see SEGMENT_GAP_ORIENTATION in mtl_m) and do not
                   ! correspond to a real field point; they must be skipped here.
                   if (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction) > 3) cycle
+                  if (mtln_solver%bundles(m)%external_field_segments(n)%is_slanted) then
+                     call pointSlantedCouplingsToFields(m, n)
+                     cycle
+                  end if
                   call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))
                   select case (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction))
                      case(DIRECTION_X_POS)
@@ -117,6 +142,42 @@ contains
          end do
       end subroutine
 
+      ! Points every E edge of a slanted division to its field. Couplings
+      ! embedded in PEC or lossy media are left unassociated so that both the
+      ! field pickup and the current injection skip them (de-embedding).
+      subroutine pointSlantedCouplingsToFields(m, n)
+         integer(kind=4), intent(in) :: m, n
+         integer(kind=4) :: c, i, j, k
+
+         associate (couplings => mtln_solver%bundles(m)%external_field_segments(n)%couplings)
+            do c = 1, size(couplings)
+               i = couplings(c)%position(1)
+               j = couplings(c)%position(2)
+               k = couplings(c)%position(3)
+               select case (couplings(c)%component)
+               case (DIRECTION_X_POS)
+                  if (isEmbeddedInPECorLossy(sggmiEx(i, j, k))) then
+                     couplings(c)%field => null()
+                  else
+                     couplings(c)%field => Ex(i, j, k)
+                  end if
+               case (DIRECTION_Y_POS)
+                  if (isEmbeddedInPECorLossy(sggmiEy(i, j, k))) then
+                     couplings(c)%field => null()
+                  else
+                     couplings(c)%field => Ey(i, j, k)
+                  end if
+               case (DIRECTION_Z_POS)
+                  if (isEmbeddedInPECorLossy(sggmiEz(i, j, k))) then
+                     couplings(c)%field => null()
+                  else
+                     couplings(c)%field => Ez(i, j, k)
+                  end if
+               end select
+            end do
+         end associate
+      end subroutine
+
       logical function isEmbeddedInPECorLossy(media)
          integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: media
          isEmbeddedInPECorLossy = (media == 0 .or. sgg%med(media)%is%pec .or. sgg%med(media)%is%lossy)
@@ -124,9 +185,12 @@ contains
 
    end subroutine InitWires_mtln
 
-   subroutine AdvanceWiresE_mtln(sgg,Idxh, Idyh, Idzh, eps00,mu00)  
+   subroutine AdvanceWiresE_mtln(sgg,Idxe,Idye,Idze,Idxh, Idyh, Idzh, eps00,mu00)  
       type(SGGFDTDINFO_t), intent(in), target    :: sgg      
       real(kind=RKIND), dimension(:), intent(in) :: &
+         Idxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE),&
+         Idye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE),&
+         Idze(sgg%ALLOC(iHz)%ZI : sgg%ALLOC(iHz)%ZE),&
          Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE),&
          Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE),&
          Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)  
@@ -143,6 +207,10 @@ contains
                ! Skip synthetic layer-junction "gap" segments: their field
                ! pointer is never associated (see pointSegmentsToFields above).
                if (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction) > 3) cycle
+               if (mtln_solver%bundles(m)%external_field_segments(n)%is_slanted) then
+                  call injectSlantedCurrent(m, n)
+                  cycle
+               end if
                punt => mtln_solver%bundles(m)%external_field_segments(n)%field
                punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
             end do
@@ -154,6 +222,42 @@ contains
 
 
    contains
+
+      ! Distributes the division current over every coupled E edge with the
+      ! adjoint of the field interpolation: the edge receives
+      ! dt/eps0 * chord * weight * I / dV, where dV is the volume of the edge
+      ! (dual transverse area times its own length).
+      subroutine injectSlantedCurrent(m, n)
+         integer(kind=4), intent(in) :: m, n
+         integer(kind=4) :: c, i, j, k, component
+         real(kind=rkind) :: current, dV_inverse, factor
+
+         current = 0.0_rkind
+         do i = 1, mtln_solver%bundles(m)%conductors_in_level(1)
+            current = current + mtln_solver%bundles(m)%i(i, n)
+         end do
+         factor = sgg%dt/eps0*current
+
+         associate (couplings => mtln_solver%bundles(m)%external_field_segments(n)%couplings)
+            do c = 1, size(couplings)
+               if (.not. associated(couplings(c)%field)) cycle
+               i = couplings(c)%position(1)
+               j = couplings(c)%position(2)
+               k = couplings(c)%position(3)
+               component = couplings(c)%component
+               select case (component)
+               case (DIRECTION_X_POS)
+                  dV_inverse = Idxe(i)*Idyh(j)*Idzh(k)
+               case (DIRECTION_Y_POS)
+                  dV_inverse = Idxh(i)*Idye(j)*Idzh(k)
+               case (DIRECTION_Z_POS)
+                  dV_inverse = Idxh(i)*Idyh(j)*Idze(k)
+               end select
+               couplings(c)%field = couplings(c)%field - &
+                  factor*couplings(c)%chord*couplings(c)%weight*dV_inverse
+            end do
+         end associate
+      end subroutine
 
       function getOrientedCurrent(m, n) result(res)
          integer(kind=4), intent(in) :: m, n

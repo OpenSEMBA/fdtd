@@ -257,6 +257,65 @@ def test_holland(tmp_path):
     assert np.allclose(expected_i_interp, p["current"], rtol=1e-4, atol=5e-5)
 
 
+def _run_holland_case(tmp_path, case, folder_name):
+    run_folder = tmp_path / folder_name
+    run_folder.mkdir()
+    solver = FDTD(
+        input_filename=CASES_FOLDER + case,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=run_folder,
+    )
+    solver.run()
+    return Probe(_get_solved_probe_folder(solver, "mid_point"))
+
+
+def _interpolate_on_common_time(p_ref, p_cmp, shift=0.0, samples=1000):
+    t_ref = p_ref["time"].to_numpy()
+    t_cmp = p_cmp["time"].to_numpy() + shift
+    t = np.linspace(max(t_ref[0], t_cmp[0]), min(t_ref[-1], t_cmp[-1]), samples)
+    return t, np.interp(t, t_ref, p_ref["current"]), np.interp(t, t_cmp, p_cmp["current"])
+
+
+@no_mtln_skip
+@pytest.mark.wires
+@pytest.mark.mtln
+@pytest.mark.slanted
+def test_holland_slanted_wire_projection(tmp_path):
+    """A 30 degree slanted wire scales the Holland current by cos(30)."""
+    p_base = _run_holland_case(tmp_path, "holland/holland1981.fdtd.json", "base")
+    p_slant = _run_holland_case(
+        tmp_path, "holland_slanted/holland1981_slanted.fdtd.json", "slanted"
+    )
+
+    _, base, slant = _interpolate_on_common_time(p_base, p_slant)
+    check_values_are_comparable(slant)
+    assert np.corrcoef(base, slant)[0, 1] > 0.99
+
+    ratio = np.max(np.abs(slant)) / np.max(np.abs(base))
+    assert abs(ratio - np.cos(np.pi / 6)) < 0.05
+
+
+@no_mtln_skip
+@pytest.mark.wires
+@pytest.mark.mtln
+@pytest.mark.slanted
+def test_holland_slanted_wire_rotated_wave(tmp_path):
+    """Rigidly rotating wire and plane wave keeps the induced current."""
+    p_base = _run_holland_case(tmp_path, "holland/holland1981.fdtd.json", "base")
+    p_rot = _run_holland_case(
+        tmp_path,
+        "holland_slanted/holland1981_slanted_rotated_wave.fdtd.json",
+        "rotated",
+    )
+
+    check_values_are_comparable(p_rot["current"].to_numpy())
+    best_corr = -1.0
+    for shift in np.arange(-3e-9, 3e-9, 1e-11):
+        _, base, rot = _interpolate_on_common_time(p_base, p_rot, shift=shift)
+        best_corr = max(best_corr, np.corrcoef(base, rot)[0, 1])
+    assert best_corr > 0.99
+
+
 @pytest.mark.wires
 @pytest.mark.termination
 @pytest.mark.probes
