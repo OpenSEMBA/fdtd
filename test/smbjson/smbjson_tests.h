@@ -18,6 +18,7 @@ extern "C" int test_read_planewave_empty_elementids();
 extern "C" int test_read_sgbc();
 extern "C" int test_read_dielectricslab();
 extern "C" int test_read_thinslot();
+extern "C" int test_read_thinslot_ez();
 extern "C" int test_read_currentinjection();
 extern "C" int test_read_sphere();
 extern "C" int test_read_airplane();
@@ -29,6 +30,7 @@ extern "C" int test_read_connectedwires();
 extern "C" int test_read_shieldedpair();
 extern "C" int test_read_large_airplane_mtln();
 extern "C" int test_read_lumped_fixture();
+extern "C" int test_read_lumped_multi_element();
 extern "C" int test_read_unshielded_multiwires_multipolar_expansion();
 
 extern "C" int test_read_background_defaults();
@@ -57,10 +59,12 @@ TEST(smbjson, read_planewave)            { EXPECT_EQ(0, test_read_planewave()); 
 TEST(smbjson, read_planewave_empty_elementids) { EXPECT_EQ(0, test_read_planewave_empty_elementids()); }
 TEST(smbjson, read_dielectricslab)       { EXPECT_EQ(0, test_read_dielectricslab()); }
 TEST(smbjson, read_thinslot)             { EXPECT_EQ(0, test_read_thinslot()); }
+TEST(smbjson, read_thinslot_ez)          { EXPECT_EQ(0, test_read_thinslot_ez()); }
 TEST(smbjson, read_sgbc)                 { EXPECT_EQ(0, test_read_sgbc()); }
 TEST(smbjson, read_sphere)               { EXPECT_EQ(0, test_read_sphere()); }
 TEST(smbjson, read_airplane)             { EXPECT_EQ(0, test_read_airplane()); }
 TEST(smbjson, read_lumped_fixture)       { EXPECT_EQ(0, test_read_lumped_fixture()); }
+TEST(smbjson, read_lumped_multi_element) { EXPECT_EQ(0, test_read_lumped_multi_element()); }
 TEST(smbjson, read_background_defaults) { EXPECT_EQ(0, test_read_background_defaults()); }
 TEST(smbjson, read_background_set)      { EXPECT_EQ(0, test_read_background_set()); }
 TEST(smbjson, read_nodal_source_resistance_per_meter) {
