@@ -2666,104 +2666,11 @@ contains
          do j = 1, size(edges_on_face)
             if (.not. conformal_maps%edge_map%hasKey(edges_on_face(j)%key)) then 
                cell = edges_on_face(j)%key(1:3)
-               ! call assignEdgeFields(face, j, cell)
-               select case (face%direction)
-               case (FACE_X)
-                  if (j == 1) then 
-                     if (face%normal(EDGE_Y) > 0) then 
-                        face%region_I_fields%E1 = 0.0
-                        face%region_II_fields%E1 => this%Ez(cell(1),cell(2),cell(3))
-                     else if (face%normal(EDGE_Y) < 0) then 
-                        face%region_I_fields%E1 => this%Ez(cell(1),cell(2),cell(3))
-                        face%region_II_fields%E1 = 0.0
-                     end if
-                  else if (j == 2) then 
-                     if (face%normal(EDGE_Z) > 0) then 
-                        face%region_I_fields%E2=> this%Ey(cell(1),cell(2),cell(3) + 1)
-                        face%region_II_fields%E2 = 0.0
-                     else if (face%normal(EDGE_Z) < 0) then 
-                        face%region_I_fields%E2 => 0.0
-                        face%region_II_fields%E2 => this%Ey(cell(1),cell(2),cell(3) + 1)
-                     end if
-                  else if (j == 3) then 
-                     if (face%normal(EDGE_Y) > 0) then 
-                        face%region_I_fields%E3 => this%Ez(cell(1),cell(2) + 1,cell(3))
-                        face%region_II_fields%E3 = 0.0
-                     else if (face%normal(EDGE_Y) < 0) then 
-                        face%region_I_fields%E3 = 0.0
-                        face%region_II_fields%E3 = => this%Ez(cell(1),cell(2) + 1,cell(3))
-                     end if
-                  else if (j == 4) then 
-                     if (face%normal(EDGE_Z) > 0) then 
-                        face%region_I_fields%E4 = 0.0
-                        face%region_II_fields%E4 => this%Ey(cell(1),cell(2),cell(3))
-                     else if (face%normal(EDGE_Z) < 0) then 
-                        face%region_I_fields%E4 => this%Ey(cell(1),cell(2),cell(3))
-                        face%region_II_fields%E4 = 0.0
-                     end if
-                  end if
-               end select 
-            end if
-
-
-            edge => conformal_maps%edge_map%getEdge(edges_on_face(j)%key)
-            cell = edge%cell
-            ! ALLOCATION OF FIELDS ??
-            select case (face%direction)
-            case (FACE_X)
-               if (edge%ratio == 0) then
-                  if (face%normal(EDGE_Y) > 0) then 
-                     face%region_I_fields%E3  => this%Ez(cell(1),cell(2) + 1,cell(3))
-                     face%region_II_fields%E1 => this%Ez(cell(1),cell(2),cell(3))
-                  else if (face%normal(EDGE_Y) < 0) then 
-                     face%region_I_fields%E1  => this%Ez(cell(1),cell(2),cell(3))
-                     face%region_II_fields%E3 => this%Ez(cell(1),cell(2) + 1,cell(3))
-                  end if
-
-                  if (face%normal(EDGE_Z) > 0) then 
-                     face%region_I_fields%E2  => this%Ey(cell(1),cell(2),cell(3) + 1)
-                     face%region_II_fields%E4 => this%Ey(cell(1),cell(2),cell(3))
-                  else if (face%normal(EDGE_Z) < 0) then 
-                     face%region_I_fields%E4  => this%Ey(cell(1),cell(2),cell(3))
-                     face%region_II_fields%E2 => this%Ey(cell(1),cell(2),cell(3) + 1)
-
-                  end if
-               end if
-            case (FACE_Y)
-               if (edge%ratio == 0) then 
-                  if (face%normal(EDGE_Z) > 0) then 
-                     face%region_I_fields%E3  => this%Ex(cell(1),cell(2),cell(3)+1)
-                     face%region_II_fields%E1 => this%Ex(cell(1),cell(2),cell(3))
-                  else if (face%normal(EDGE_Z) < 0) then 
-                     face%region_I_fields%E1  => this%Ex(cell(1),cell(2),cell(3))
-                     face%region_II_fields%E3 => this%Ex(cell(1),cell(2),cell(3)+1)
-                  end if
-                  if (face%normal(EDGE_X) > 0) then 
-                     face%region_I_fields%E2  => this%Ez(cell(1)+1,cell(2),cell(3))
-                     face%region_II_fields%E4 => this%Ez(cell(1),cell(2),cell(3))
-                  else if (face%normal(EDGE_X) < 0) then 
-                     face%region_I_fields%E4  => this%Ez(cell(1),cell(2),cell(3))
-                     face%region_II_fields%E2 => this%Ez(cell(1)+1,cell(2),cell(3))
-                  end if
-               end if
-            case (FACE_Z)
-               if (edge%ratio == 0) then 
-                  if (face%normal(EDGE_X) > 0) then 
-                     face%region_I_fields%E3  => this%Ey(cell(1)+1,cell(2),cell(3))
-                     face%region_II_fields%E1 => this%Ey(cell(1),cell(2),cell(3))
-                  else if (face%normal(EDGE_X) < 0) then 
-                     face%region_I_fields%E1  => this%Ey(cell(1),cell(2),cell(3))
-                     face%region_II_fields%E3 => this%Ey(cell(1)+1,cell(2),cell(3))
-                  end if
-                  if (face%normal(EDGE_Y) > 0) then 
-                     face%region_I_fields%E2  => this%Ex(cell(1),cell(2)+1,cell(3))
-                     face%region_II_fields%E4 => this%Ex(cell(1),cell(2),cell(3))
-                  else if (face%normal(EDGE_Y) < 0) then 
-                     face%region_I_fields%E4  => this%Ex(cell(1),cell(2),cell(3))
-                     face%region_II_fields%E2 => this%Ex(cell(1),cell(2)+1,cell(3))
-                  end if
-               end if
-            end select
+               call assignEdgeFieldsOnFace(face, j, cell)
+            else
+               edge => conformal_maps%edge_map%getEdge(edges_on_face(j)%key)
+               call assignSplitEdgeFieldsOnFace(face, edge, j)
+            endif
 
             faces_on_edge = buildFacesOnEdge(edge)
             do k = 1, size(faces_on_edge)
@@ -2776,14 +2683,14 @@ contains
                         edge%region_I_fields%H1  => this%Hz(cell(1),cell(2),cell(3))
                         edge%region_II_fields%H1 => this%Hz(cell(1),cell(2),cell(3))
                      case(2)
-                        edge%region_I_fields%H1  => this%Hy(cell(1),cell(2),cell(3)-1)
-                        edge%region_II_fields%H1 => this%Hy(cell(1),cell(2),cell(3)-1)
+                        edge%region_I_fields%H2  => this%Hy(cell(1),cell(2),cell(3)-1)
+                        edge%region_II_fields%H2 => this%Hy(cell(1),cell(2),cell(3)-1)
                      case(3)
-                        edge%region_I_fields%H1  => this%Hz(cell(1),cell(2)-1,cell(3))
-                        edge%region_II_fields%H1 => this%Hz(cell(1),cell(2)-1,cell(3))
+                        edge%region_I_fields%H3 => this%Hz(cell(1),cell(2)-1,cell(3))
+                        edge%region_II_fields%H3 => this%Hz(cell(1),cell(2)-1,cell(3))
                      case(4)
-                        edge%region_I_fields%H1  => this%Hy(cell(1),cell(2),cell(3))
-                        edge%region_II_fields%H1 => this%Hy(cell(1),cell(2),cell(3))
+                        edge%region_I_fields%H4  => this%Hy(cell(1),cell(2),cell(3))
+                        edge%region_II_fields%H4 => this%Hy(cell(1),cell(2),cell(3))
                      end select
                   case (EDGE_Y)
                      select case (k)
@@ -2823,6 +2730,97 @@ contains
       end do
    
       contains 
+
+      subroutine assignEdgeFieldsOnFace(face, j, cell)
+         type(face_t), pointer :: face
+         integer(kind=4), intent(in) :: j
+         integer(kind=4), dimension(3), intent(in) :: cell
+         integer(kind=4), dimension(3) :: c
+         real(kind=rkind), pointer, dimension(:,:,:) :: E
+         integer :: dir
+         c = cell
+         select case (face%direction)
+         case (FACE_X)
+            if (mod(j,2)==0) then 
+               E => this%Ey
+               dir = EDGE_Z
+            else if (mod(j,2)/=0) then 
+               E => this%Ez
+               dir = EDGE_Y
+            end if
+         case (FACE_Y)
+            if (mod(j,2)==0) then 
+               E => this%Ez
+               dir = EDGE_X
+            else if (mod(j,2)/=0) then 
+               E => this%Ex
+               dir = EDGE_Z
+            end if
+         case (FACE_Z)
+            if (mod(j,2)==0) then 
+               E => this%Ex
+               dir = EDGE_Y
+            else if (mod(j,2)/=0) then 
+               E => this%Ey
+               dir = EDGE_X
+            end if
+         end select
+         if (j==1) then 
+            if (face%normal(dir) > 0) then 
+               face%region_I_fields%E1 = 0.0
+               face%region_II_fields%E1 => E(c(1),c(2),c(3))
+            else if (face%normal(dir) < 0) then 
+               face%region_I_fields%E1 => E(c(1),c(2),c(3))
+               face%region_II_fields%E1 = 0.0
+            end if
+         else if (j == 2) then 
+            c(dir) = cell(dir) + 1
+            if (face%normal(dir) > 0) then 
+               face%region_I_fields%E2=> E(c(1),c(2),c(3))
+               face%region_II_fields%E2 = 0.0
+            else if (face%normal(dir) < 0) then 
+               face%region_I_fields%E2 = 0.0
+               face%region_II_fields%E2 => E(c(1),c(2),c(3))
+            end if
+         else if (j == 3) then 
+            c(dir) = cell(dir) + 1
+            if (face%normal(dir) > 0) then 
+               face%region_I_fields%E3 => E(c(1),c(2),c(3))
+               face%region_II_fields%E3 = 0.0
+            else if (face%normal(dir) < 0) then 
+               face%region_I_fields%E3 = 0.0
+               face%region_II_fields%E3 => E(c(1),c(2),c(3))
+            end if
+         else if (j == 4) then 
+            if (face%normal(dir) > 0) then 
+               face%region_I_fields%E4 = 0.0
+               face%region_II_fields%E4 => E(c(1),c(2),c(3))
+            else if (face%normal(dir) < 0) then 
+               face%region_I_fields%E4 => E(c(1),c(2),c(3))
+               face%region_II_fields%E4 = 0.0
+            end if
+         end if
+
+      end subroutine
+
+      subroutine assignSplitEdgeOnFace(face, edge, j)
+         type(face_t), pointer :: face
+         type(edge_t), pointer :: edge
+         integer(kind=4), intent(in) :: j
+         if (j==1) then 
+            face%region_I_fields%E1 => edge%region_I_fields%E
+            face%region_II_fields%E1 => edge%region_II_fields%E
+         else if (j==2) then 
+            face%region_I_fields%E2 => edge%region_I_fields%E
+            face%region_II_fields%E2 => edge%region_II_fields%E
+         else if (j==3) then 
+            face%region_I_fields%E3 => edge%region_I_fields%E
+            face%region_II_fields%E3 => edge%region_II_fields%E
+         else if (j==4) then 
+            face%region_I_fields%E4 => edge%region_I_fields%E
+            face%region_II_fields%E4 => edge%region_II_fields%E
+         end if
+      end subroutine
 
       function buildEdgesOnFace(face) result(res)
          type(face_t), intent(in) :: face
