@@ -521,4 +521,71 @@ contains
         end do
     end function
 
+      function buildEdgesOnFace(cell, direction) result(res)
+         integer(kind=4), dimension(3), intent(in) :: cell
+         integer(kind=4), intent(in) :: direction
+         type(map_key_t), dimension(4) :: res
+         res(1)%key(1:3) = cell
+         res(2)%key(1:3) = cell
+         res(3)%key(1:3) = cell
+         res(4)%key(1:3) = cell
+         select case(direction)
+         case (FACE_X)
+          res(2)%key(1:3) = res(2)%key(1:3)  + [0,0,1]
+          res(3)%key(1:3) = res(3)%key(1:3)  + [0,1,0]
+          res(1)%key(4) = EDGE_Z
+          res(2)%key(4) = EDGE_Y
+          res(3)%key(4) = EDGE_Z
+          res(4)%key(4) = EDGE_Y
+         case (FACE_Y)
+          res(2)%key(1:3) = res(2)%key(1:3)  + [1,0,0]
+          res(3)%key(1:3) = res(3)%key(1:3)  + [0,0,1]
+          res(1)%key(4) = EDGE_X
+          res(2)%key(4) = EDGE_Z
+          res(3)%key(4) = EDGE_X
+          res(4)%key(4) = EDGE_Z
+         case (FACE_Z)
+          res(2)%key(1:3) = res(2)%key(1:3)  + [0,1,0]
+          res(3)%key(1:3) = res(3)%key(1:3)  + [1,0,0]
+          res(1)%key(4) = EDGE_Y
+          res(2)%key(4) = EDGE_X
+          res(3)%key(4) = EDGE_Y
+          res(4)%key(4) = EDGE_X
+         end select
+      end function
+
+      function buildFacesOnEdge(cell, direction) result(res)
+         integer(kind=4), dimension(3), intent(in) :: cell
+         integer(kind=4), intent(in) :: direction
+         type(map_key_t), dimension(4) :: res
+         res(1)%key(1:3) = cell
+         res(2)%key(1:3) = cell
+         res(3)%key(1:3) = cell
+         res(4)%key(1:3) = cell
+         select case (direction)
+         case (EDGE_X)
+            res(2)%key(1:3) = res(2)%key(1:3) - [0,0,1]
+            res(3)%key(1:3) = res(3)%key(1:3) - [0,1,0]
+            res(1)%key(4) = EDGE_Z
+            res(2)%key(4) = EDGE_Y
+            res(3)%key(4) = EDGE_Z
+            res(4)%key(4) = EDGE_Y
+         case (EDGE_Y)
+            res(2)%key(1:3) = res(2)%key(1:3) - [1,0,0]
+            res(3)%key(1:3) = res(3)%key(1:3) - [0,0,1]
+            res(1)%key(4) = EDGE_X
+            res(2)%key(4) = EDGE_Z
+            res(3)%key(4) = EDGE_X
+            res(4)%key(4) = EDGE_Z
+         case (EDGE_Z)
+            res(2)%key(1:3) = res(2)%key(1:3) - [0,1,0]
+            res(3)%key(1:3) = res(3)%key(1:3) - [1,0,0]
+            res(1)%key(4) = EDGE_Y
+            res(2)%key(4) = EDGE_X
+            res(3)%key(4) = EDGE_Y
+            res(4)%key(4) = EDGE_X
+         end select
+      end function
+
+
 end module

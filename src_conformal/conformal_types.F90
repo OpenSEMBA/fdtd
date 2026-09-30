@@ -66,6 +66,10 @@ module conformal_types_m
         type(point_t) :: ini, end
     end type
 
+    type :: map_key_t
+        integer, dimension(4) :: key
+    end type
+
 
 contains
 

@@ -1,6 +1,6 @@
 module cell_map_m
 
-    use geometry_m, only: triangle_t, side_t, interval_t, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z, isNewSide
+    use geometry_m, only: triangle_t, side_t, interval_t, map_key_t, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z, isNewSide
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use NFDETypes_m, only: rkind, ConformalPECElements_t
     use FDETypes_m, only: face_t, edge_t
@@ -63,12 +63,9 @@ module cell_map_m
     end type
 
     !!!!
-    type :: side_dir_t
-        integer, dimension(4) :: side_dir
-    end type
 
     type, extends(fhash_tbl_t) :: side_tris_map_t
-        type(side_dir_t), dimension(:), allocatable :: keys
+        type(map_key_t), dimension(:), allocatable :: keys
     contains
         procedure :: hasKey => side_hasKey
         procedure :: getTrianglesFromSide
@@ -79,131 +76,8 @@ module cell_map_m
         procedure :: addTriangleToSide
     end type
 
-    type, extends(fhash_tbl_t) :: face_map_t
-        type(side_dir_t), dimension(:), allocatable :: keys
-        integer(kind=4) :: body_type = BODY_TYPE_UNDEFINED
-    contains
-        procedure :: hasKey  => face_hasKey
-        procedure :: getFace => face_getFace
-        procedure :: addFace => face_addFace
-    end type
-
-    type, extends(fhash_tbl_t) :: edge_map_t
-        type(side_dir_t), dimension(:), allocatable :: keys
-        integer(kind=4) :: body_type = BODY_TYPE_UNDEFINED
-    contains
-        procedure :: hasKey  => edge_hasKey
-        procedure :: getEdge => edge_getEdge
-        procedure :: addEdge => edge_addEdge
-    end type
-
-    ! type, extends(fhash_tbl_t) :: edges_on_face_map_t
-    !     type(side_dir_t), dimension(:), allocatable :: keys
-    !     integer(kind=4) :: body_type = BODY_TYPE_UNDEFINED
-    ! contains
-    !     ! procedure :: hasKey => eof_hasKey
-    !     ! procedure :: getEdges => eof_getFace
-    !     procedure :: addEdge => eof_addEdges
-    ! end type
-
 contains
 
-    subroutine buildConformalMaps(face_map, edge_map, faces, edges)
-        type(face_map_t), intent(inout) :: face_map
-        type(edge_map_t), intent(inout) :: edge_map
-        ! type(edges_on_face_map_t), intent(inout) :: edges_on_face_map
-        type(face_t), dimension(:), allocatable :: faces
-        type(edge_t), dimension(:), allocatable :: edges
-        ! type(side_dir_t), dimension(4) :: edges_on_face
-        integer :: i,j
-        if (.not. allocated(face_map%keys)) allocate(face_map%keys(0))
-        if (.not. allocated(edge_map%keys)) allocate(edge_map%keys(0))
-        ! if (.not. allocated(edges_on_face_map%keys)) allocate(edges_on_face_map%keys(0))
-        do i = 1, size(faces)
-            call face_map%addFace(faces(i))
-            ! edges_on_face = buildEdgesOnFace(faces(i))
-            ! call edges_on_face_map%addEdges(edges_on_face)
-        end do
-        do i = 1, size(edges)
-            call edge_map%addEdge(edges(i))
-            ! edges_on_face = buildEdgesOnFace(faces(i))
-            ! call edges_on_face_map%addEdges(edges_on_face)
-        end do
-    end subroutine
-
-
-    subroutine face_addFace(this, face)
-        class(face_map_t) :: this
-        type(face_t), intent(in), target :: face
-        integer(kind=4), dimension(4) :: face_key
-        ! type(side_dir_t), dimension(:), allocatable :: aux_keys
-        face_key(1:3) = face%cell
-        face_key(4) = face%direction
-        if (.not. this%hasKey(face_key)) then 
-            call this%set_ptr(key(face_key), value = face)
-            ! allocate(aux_keys(size(this%keys) + 1))
-            ! aux_keys(1:size(this%keys)) = this%keys
-            ! aux_keys(size(this%keys) + 1)%side_dir = face_key
-            ! deallocate(this%keys)
-            ! allocate(this%keys(size(aux_keys)))
-            ! this%keys = aux_keys
-        end if
-    end subroutine
-
-    function face_getFace(this, k, found) result(res)
-        class(face_map_t) :: this
-        integer(kind=4), dimension(4) :: k
-        logical, intent(inout), optional :: found
-        class(*), pointer :: alloc_val
-        type(face_t), pointer :: res
-        integer :: stat
-        if (present(found)) found = .false.
-        if (this%hasKey(k)) then 
-            call this%get_raw_ptr(key = key(k), value = alloc_val, stat = stat)
-            select type(alloc_val)
-            type is(face_t)
-                if (present(found)) found = .true.
-                res = alloc_val
-            end select
-        end if
-    end function
-
-    subroutine edge_addEdge(this, edge)
-        class(edge_map_t) :: this
-        type(edge_t), target, intent(in) :: edge
-        integer(kind=4), dimension(4) :: edge_key
-        ! type(side_dir_t), dimension(:), allocatable :: aux_keys
-        edge_key(1:3) = edge%cell
-        edge_key(4) = edge%direction
-        if (.not. this%hasKey(edge_key)) then 
-            call this%set_ptr(key(edge_key), value = edge)
-            ! allocate(aux_keys(size(this%keys) + 1))
-            ! aux_keys(1:size(this%keys)) = this%keys
-            ! aux_keys(size(this%keys) + 1)%side_dir = edge_key
-            ! deallocate(this%keys)
-            ! allocate(this%keys(size(aux_keys)))
-            ! this%keys = aux_keys
-        end if
-    end subroutine
-
-    function edge_getedge(this, k, found) result(res)
-        class(edge_map_t) :: this
-        integer(kind=4), dimension(4) :: k
-        logical, intent(inout), optional :: found
-        class(*), pointer :: alloc_val
-        type(edge_t), pointer :: res
-        integer :: stat
-    
-        if (present(found)) found = .false.
-        if (this%hasKey(k)) then 
-            call this%get_raw_ptr(key = key(k), value = alloc_val, stat = stat)
-            select type(alloc_val)
-            type is(edge_t)
-                if (present(found)) found = .true.
-                res = alloc_val
-            end select
-        end if
-    end function
 
 
     subroutine buildSideToTrisMap(res, triangles)
@@ -230,13 +104,13 @@ contains
         type(triangle_t), intent(in) :: triangle
         class(*), allocatable :: alloc_list
         type(element_set_t) :: aux_list
-        integer(kind=4), dimension(4) :: side_dir
-        type(side_dir_t), dimension(:), allocatable :: aux_keys
-        side_dir(1:3) = side%getCell()
-        side_dir(4) = side%getEdge()
-        if (this%hasKey(side_dir)) then 
+        integer(kind=4), dimension(4) :: map_key
+        type(map_key_t), dimension(:), allocatable :: aux_keys
+        map_key(1:3) = side%getCell()
+        map_key(4) = side%getEdge()
+        if (this%hasKey(map_key)) then 
 
-            call this%get_raw(key(side_dir), alloc_list)
+            call this%get_raw(key(map_key), alloc_list)
             select type(alloc_list)
             type is(element_set_t)
                 allocate(aux_list%triangles(size(alloc_list%triangles) + 1))
@@ -245,17 +119,17 @@ contains
                 deallocate(alloc_list%triangles)
                 allocate(alloc_list%triangles(size(aux_list%triangles)))
                 alloc_list%triangles = aux_list%triangles
-                call this%set(key(side_dir), value = alloc_list)
+                call this%set(key(map_key), value = alloc_list)
             end select
 
         else 
             allocate(aux_list%triangles(1))
             aux_list%triangles(1) = triangle
-            call this%set(key(side_dir), value = aux_list)
+            call this%set(key(map_key), value = aux_list)
 
             allocate(aux_keys(size(this%keys) + 1))
             aux_keys(1:size(this%keys)) = this%keys
-            aux_keys(size(this%keys) + 1)%side_dir = side_dir
+            aux_keys(size(this%keys) + 1)%key = map_key
             deallocate(this%keys)
             allocate(this%keys(size(aux_keys)))
             this%keys = aux_keys
@@ -268,14 +142,14 @@ contains
         type(side_tris_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
         type(side_triangle_map_t) :: tri_map
-        type(side_dir_t), dimension(:), allocatable :: keys
+        type(map_key_t), dimension(:), allocatable :: keys
         type(element_set_t) :: elems
         integer(kind=4) :: i
         call buildSideToTrisMap(tri_map, triangles)
         keys = tri_map%keys
         do i = 1, size(keys)
-            elems%triangles = tri_map%getTrianglesFromSide(keys(i)%side_dir)
-            call res%set(key(keys(i)%side_dir), value=elems)
+            elems%triangles = tri_map%getTrianglesFromSide(keys(i)%key)
+            call res%set(key(keys(i)%key), value=elems)
         end do
         res%keys = keys
     end subroutine
@@ -411,24 +285,6 @@ contains
             end if
         end do
     end subroutine
-
-    logical function face_hasKey(this, k)
-        class(face_map_t) :: this
-        integer(kind=4), dimension(4), intent(in) :: k
-        integer :: stat
-        face_hasKey = .false.
-        call this%check_key(key(k), stat)
-        if (stat == 0) face_hasKey = .true.
-    end function
-
-    logical function edge_hasKey(this, k)
-        class(edge_map_t) :: this
-        integer(kind=4), dimension(4), intent(in) :: k
-        integer :: stat
-        edge_hasKey = .false.
-        call this%check_key(key(k), stat)
-        if (stat == 0) edge_hasKey = .true.
-    end function
 
     logical function cell_hasKey(this, k)
         class(cell_map_t) :: this
