@@ -1380,10 +1380,6 @@ contains
                   end if
 
                   !!!
-
-
-!!old pre 17/07/15
-!!!                           sgg%Med(contamedia)%Multiport(1)%transversalSpaceDelta=delta
                   sgg%Med(contamedia)%Priority = prior_CS
                   sgg%Med(contamedia)%Epr   = this%LossyThinSurfs%cs(j)%eps(1) / Eps0
                   sgg%Med(contamedia)%Sigma =this%LossyThinSurfs%cs(j)%Sigma(1)
@@ -1411,8 +1407,7 @@ contains
                   sgg%Med(contamedia)%multiport(1)%multiportFileZ21 =  trim &
                   & (adjustl(this%LossyThinSurfs%cs(j)%files)) // '_z12.txt'
                   !
-!!
-                  if (mibc) then     !they will be handled with MIBC !!!151161
+                  if (mibc) then  
                      sgg%Med(contamedia)%Is%SGBC = .false.
                      sgg%Med(contamedia)%Is%SGBCDispersive = .false.
                      sgg%Med(contamedia)%Is%Lossy = .true.
@@ -1433,9 +1428,6 @@ contains
                         call WarnErrReport (buff,.TRUE.)
                      end if
                   end if
-
-                  !!!!!!!!end 09/07/13
-                  !
                   !
                end if
                !
@@ -1505,8 +1497,6 @@ contains
                   pointYI = Max (gridPoint%YI, Min(BoundingBox%YI, BoundingBox%YE))
                   pointZI = Max (gridPoint%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
 
-
-                  !!!!!!!!it was wrong before. bug summer 140815
                   if(.not.((pointXI>=sgg%allocDxI).and.(pointXI<=sgg%allocDxE))) pointXI= sgg%allocDxI
                   if(.not.((pointYI>=sgg%allocDyI).and.(pointYI<=sgg%allocDyE))) pointYI= sgg%allocDyI
                   if(.not.((pointZI>=sgg%allocDzI).and.(pointZI<=sgg%allocDzE))) pointZI= sgg%allocDzI
