@@ -493,7 +493,7 @@ def test_thin_slot_without_pec_is_rejected(tmp_path):
     with pytest.raises(AssertionError):
         solver.run()
 
-    assert b"Thin Slot must be defined over a PEC surface" in solver.output.stdout
+    assert b"Thin Slot must be defined over a conductive or surface-impedance material" in solver.output.stdout
 
 
 @pytest.mark.thinSlot
@@ -536,7 +536,72 @@ def test_thin_slot_along_pec_perimeter_is_rejected(tmp_path):
     with pytest.raises(AssertionError):
         solver.run()
 
-    assert b"Thin Slot cannot run along the perimeter of its PEC sheet" in solver.output.stdout
+    assert b"Thin Slot cannot run along the perimeter of its conductive sheet" in solver.output.stdout
+
+
+@pytest.mark.thinSlot
+@pytest.mark.vtk
+def test_thin_slot_on_conductive_surface_terminal_on_perimeter_adds_edge(tmp_path):
+    import pyvista as pv
+
+    input_filename = CASES_FOLDER + "thin_slot_conductive_perimeter_terminal/thin_slot_conductive_perimeter_terminal.fdtd.json"
+    solver = FDTD(
+        input_filename=input_filename,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+        flags=["-dmma", "-mapvtk"],
+    )
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    line_media_dict = createPropertyDictionary(
+        solver.getVTKMap(), celltype=3, property="mediatype"
+    )
+    # The 16 embedded linels retain their 16 edges; the endpoint on the
+    # conductive perimeter adds only its one transverse continuity edge.
+    assert line_media_dict.get(4.5, 0) == 17
+
+    ugrid = pv.UnstructuredGrid(solver.getVTKMap())
+    mt = ugrid.cell_data["mediatype"]
+    slot_line_idx = np.where((ugrid.celltypes == 3) & np.isclose(mt, 4.5))[0]
+    terminal = np.array([0.30, 0.10, 0.20])
+    assert sum(
+        np.any(np.linalg.norm(ugrid.get_cell(int(ci)).points - terminal, axis=1) <= 1e-5)
+        for ci in slot_line_idx
+    ) == 1
+
+
+@pytest.mark.thinSlot
+def test_thin_slot_along_conductive_perimeter_is_rejected(tmp_path):
+    input_filename = CASES_FOLDER + "thin_slot_along_conductive_perimeter/thin_slot_along_conductive_perimeter.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, flags=["-dmma"])
+
+    with pytest.raises(AssertionError):
+        solver.run()
+
+    assert b"Thin Slot cannot run along the perimeter of its conductive sheet" in solver.output.stdout
+
+
+@pytest.mark.thinSlot
+@pytest.mark.sgbc
+@pytest.mark.vtk
+def test_thin_slot_on_surface_impedance_sheet_terminal_on_perimeter_adds_edge(tmp_path):
+    input_filename = CASES_FOLDER + "thin_slot_surface_impedance/thin_slot_surface_impedance.fdtd.json"
+    solver = FDTD(
+        input_filename=input_filename,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+        flags=["-dmma", "-mapvtk"],
+    )
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    line_media_dict = createPropertyDictionary(
+        solver.getVTKMap(), celltype=3, property="mediatype"
+    )
+    # The 16 embedded linels retain their 16 edges; the endpoint on the
+    # surface-impedance perimeter adds only its one transverse continuity edge.
+    assert line_media_dict.get(4.5, 0) == 17
 
 
 @pytest.mark.conformal

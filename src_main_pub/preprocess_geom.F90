@@ -69,7 +69,8 @@ contains
       type(XYZlimit_t) :: punto, BoundingBox, conf_bounding_box
       type(xyzlimit_scaled_t) :: punto_s
       integer(kind=4) :: orientacion,orientacionL,orientacionR, direccion, contamedia,oldcontamedia, maxcontamedia, mincontamedia, inicontamedia, &
-         i1, j1, field, k1, pecmedio, ii, medio1, medio2, sondas,CONTACURR,CONTAVOLT,I_,J_
+         i1, j1, field, k1, pecmedio, ii, sondas,CONTACURR,CONTAVOLT,I_,J_
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: medio1, medio2
       !
       LOGICAL :: isathinwire, VALIDO, existia,medioespecial,input_conformal_flag,nodo_cazado
       LOGICAL :: errnofile,errnofile1,errnofile2,errnofile3,errnofile4
@@ -2642,80 +2643,36 @@ contains
                if ((i1 >= BoundingBox%XI) .AND. (i1 < BoundingBox%XE) .AND. &
                &    (j1 >= BoundingBox%YI) .AND. (j1 < BoundingBox%YE) .AND. &
                &    (k1 >= BoundingBox%ZI) .AND. (k1 < BoundingBox%ZE)) then
-                  !encuentra la orientacion del plano PEC que contiene al Slot
-                  oriX = (direccion == iEy)  .AND.   &
-                  &       (((media%sggMiHx(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHx(i1, j1, k1) )%is%pec)) .OR. &
-                  &       (sgg%Med(media%sggMiHx(i1, j1, k1))%Is%ThinSlot))          !&
-                  !& .AND. (((sggmiHz(i1, j1, k1) /=0).and.(.not.(sgg%med(sggmiHz(i1, j1, k1) )%is%pec))) .AND.                   &
-                  !&       ( .NOT. sgg%Med(sggmiHz(i1, j1,k1))%Is%ThinSlot))
+                  !encuentra la orientacion del plano conductor que contiene al Slot
+                  oriX = (direccion == iEy) .AND. isThinSlotHostMedium(media%sggMiHx(i1, j1, k1))
+                  oriX4 = (direccion == iEz) .AND. isThinSlotHostMedium(media%sggMiHx(i1, j1, k1))
+                  oriY = (direccion == iEx) .AND. isThinSlotHostMedium(media%sggMiHy(i1, j1, k1))
+                  oriY4 = (direccion == iEz) .AND. isThinSlotHostMedium(media%sggMiHy(i1, j1, k1))
+                  oriZ = (direccion == iEx) .AND. isThinSlotHostMedium(media%sggMiHz(i1, j1, k1))
+                  oriZ4 = (direccion == iEy) .AND. isThinSlotHostMedium(media%sggMiHz(i1, j1, k1))
 
-                  oriX4 =(direccion == iEz) .AND.    &
-                  &       (((               media%sggMiHx(i1, j1, k1) ==0).or.(sgg%med(               media%sggMiHx(i1, j1, k1) )%is%pec)) .OR.       &
-                  &        (       sgg%Med(media%sggMiHx(i1, j1, k1))%Is%ThinSlot))   !&
-                  !& .AND. (((               sggmiHy(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHy(i1, j1, k1) )%is%pec))) .AND.      &
-                  !&       ( .NOT.  sgg%Med(sggmiHy(i1, j1, k1))%Is%ThinSlot))
-
-                  oriY = (direccion == iEx) .AND.   &
-                  &       (((               media%sggMiHy(i1, j1, k1) ==0).or.(sgg%med(               media%sggMiHy(i1, j1, k1) )%is%pec)) .OR.       &
-                  &        (       sgg%Med(media%sggMiHy(i1, j1, k1))%Is%ThinSlot))   !&
-                  !& .AND. (((               sggmiHz(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHz(i1, j1, k1) )%is%pec))) .AND.      &
-                  !&        ( .NOT. sgg%Med(sggmiHz(i1, j1, k1))%Is%ThinSlot))
-
-                  oriY4 =(direccion == iEz) .AND.   &
-                  &       (((              media%sggMiHy(i1, j1, k1) ==0).or.(sgg%med(              media%sggMiHy(i1, j1, k1) )%is%pec)) .OR.        &
-                  &        (      sgg%Med(media%sggMiHy(i1, j1, k1))%Is%ThinSlot))    !&
-                  !&  .AND.(((               sggmiHx(i1, j1, k1) /=0).and.(.not.(sgg%med(              sggmiHx(i1, j1, k1) )%is%pec))) .AND.       &
-                  !&       ( .NOT. sgg%Med(sggmiHx(i1, j1, k1))%Is%ThinSlot))
-
-                  oriZ = (direccion == iEx) .AND.  &
-                  &       (((               media%sggMiHz(i1, j1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1, j1, k1) )%is%pec)) .OR.        &
-                  &        (       sgg%Med(media%sggMiHz(i1, j1, k1))%Is%ThinSlot))    !&
-                  !&       (((               sggmiHy(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHy(i1, j1, k1) )%is%pec))) .AND.       &
-                  !&        (.NOT.  sgg%Med(sggmiHy(i1, j1, k1))%Is%ThinSlot))
-
-                  oriZ4 = (direccion == iEy) .AND.   &
-                  &        (((               media%sggMiHz(i1, j1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1, j1, k1) )%is%pec)) .OR.       &
-                  &         (       sgg%Med(media%sggMiHz(i1, j1, k1))%Is%ThinSlot))   !&
-                  !& .AND.  (((              sggmiHx(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHx(i1, j1, k1) )%is%pec))) .AND.      &
-                  !&         ( .NOT. sgg%Med(sggmiHx(i1, j1, k1))%Is%ThinSlot))
-
-                  !encuentra la orientacion del plano PEC que contiene al Slot (considera los vecinos)
+                  !encuentra la orientacion del plano conductor que contiene al Slot (considera los vecinos)
                   !bounds must be checked with nested if/else: Fortran .AND. does not short-circuit,
                   !so k1-1/j1-1/i1-1 could still be evaluated out-of-bounds otherwise (bug fix 2026)
                   if (k1 > BoundingBox%ZI) then
-                     oriX2 = (direccion == iEy) .AND.   &
-                     &        (((               media%sggMiHx(i1, j1, k1-1) ==0).or.(sgg%med(               media%sggMiHx(i1, j1, k1-1) )%is%pec)) .OR.     &
-                     &         (       sgg%Med(media%sggMiHx(i1, j1, k1-1))%Is%ThinSlot))
-
-                     oriY2 = (direccion == iEx) .AND.   &
-                     &        (((               media%sggMiHy(i1, j1, k1-1) ==0).or.(sgg%med(               media%sggMiHy(i1, j1, k1-1) )%is%pec)) .OR.      &
-                     &         (sgg%Med(       media%sggMiHy(i1, j1, k1-1))%Is%ThinSlot))
+                     oriX2 = (direccion == iEy) .AND. isThinSlotHostMedium(media%sggMiHx(i1, j1, k1-1))
+                     oriY2 = (direccion == iEx) .AND. isThinSlotHostMedium(media%sggMiHy(i1, j1, k1-1))
                   else
                      oriX2 = .FALSE.
                      oriY2 = .FALSE.
                   end if
 
                   if (j1 > BoundingBox%YI) then
-                     oriX3 = (direccion == iEz) .AND.   &
-                     &        (((                media%sggMiHx(i1, j1-1, k1) ==0).or.(sgg%med(                media%sggMiHx(i1, j1-1, k1) )%is%pec)) .OR.     &
-                     &         (        sgg%Med(media%sggMiHx(i1, j1-1, k1))%Is%ThinSlot))
-
-                     oriZ2 = (direccion == iEx)  .AND.   &
-                     &        (((               media%sggMiHz(i1, j1-1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1, j1-1, k1) )%is%pec)) .OR.      &
-                     &         (       sgg%Med(media%sggMiHz(i1, j1-1, k1))%Is%ThinSlot))
+                     oriX3 = (direccion == iEz) .AND. isThinSlotHostMedium(media%sggMiHx(i1, j1-1, k1))
+                     oriZ2 = (direccion == iEx) .AND. isThinSlotHostMedium(media%sggMiHz(i1, j1-1, k1))
                   else
                      oriX3 = .FALSE.
                      oriZ2 = .FALSE.
                   end if
 
                   if (i1 > BoundingBox%XI) then
-                     oriY3 = (direccion == iEz) .AND.   &
-                     &        (((               media%sggMiHy(i1-1, j1, k1) ==0).or.(sgg%med(               media%sggMiHy(i1-1, j1, k1) )%is%pec)) .OR.      &
-                     &         (       sgg%Med(media%sggMiHy(i1-1, j1, k1))%Is%ThinSlot))
-
-                     oriZ3 = (direccion == iEy) .AND.   &
-                     &        (((               media%sggMiHz(i1-1, j1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1-1, j1, k1) )%is%pec)) .OR.      &
-                     &         (       sgg%Med(media%sggMiHz(i1-1, j1, k1))%Is%ThinSlot))
+                     oriY3 = (direccion == iEz) .AND. isThinSlotHostMedium(media%sggMiHy(i1-1, j1, k1))
+                     oriZ3 = (direccion == iEy) .AND. isThinSlotHostMedium(media%sggMiHz(i1-1, j1, k1))
                   else
                      oriY3 = .FALSE.
                      oriZ3 = .FALSE.
@@ -2748,7 +2705,7 @@ contains
                      orientacion = iEz
                      i1 = i1-1
                   ELSE
-                     write(buff,*) 'Thin Slot must be defined over a PEC surface',i1, j1, k1, direccion
+                     write(buff,*) 'Thin Slot must be defined over a conductive or surface-impedance material',i1, j1, k1, direccion
                      call stoponerror (layoutnumber,num_procs,buff)
                      !ojo con el nfde no se puede hacer Slots en escalera porque no se puede determinar la orientacion de los planos
                      !en los tramos comunes. Por tanto No he podido testear los shared electricos anisotropos. solo los magneticos
@@ -2781,8 +2738,8 @@ contains
                      end if
                   end select
 
-                  if ( ((sgg%Med(medio1)%Is%Dielectric).or.(sgg%Med(medio1)%Is%Thinslot).or.(sgg%Med(medio1)%Is%Pec).or.(medio1 ==1 )).and. &
-                     ((sgg%Med(medio2)%Is%Dielectric).or.(sgg%Med(medio2)%Is%Thinslot).or.(sgg%Med(medio2)%Is%Pec).or.(medio2 ==1 )) ) then
+                  if ( (isThinSlotHostMedium(medio1).or.(sgg%Med(medio1)%Is%Dielectric).or.(medio1 ==1 )).and. &
+                     (isThinSlotHostMedium(medio2).or.(sgg%Med(medio2)%Is%Dielectric).or.(medio2 ==1 )) ) then
                      !average adjacent media
                      !
                      epr1 = 0.5_RKIND  * (sgg%Med(medio1)%Epr+sgg%Med(medio2)%Epr)
@@ -4844,21 +4801,21 @@ contains
          integer(kind=4) :: slot
 
          do slot = 1, this%tSlots%n_tg
-            call rejectThinSlotOnPECSurfacePerimeter(slot)
+            call rejectThinSlotOnSheetPerimeter(slot)
             call completeThinSlotTerminalFaces(slot)
             call completeThinSlotTurns(slot)
             call completeThinSlotPerimeterTerminals(slot)
          end do
       end subroutine
 
-      ! A thin slot embedded in a PEC sheet must not run along the sheet
-      ! boundary. Legacy NFDE files describe PEC sheets as many single-cell
+      ! A thin slot embedded in a conductive sheet must not run along the
+      ! sheet boundary. Legacy NFDE files describe sheets as many single-cell
       ! (!!!1PNT) entries, so the test is done on the assembled conductor in
       ! the media matrices instead of on the input region rectangles. The slot
       ! stamping writes its perpendicular E edges and its H face, but never its
-      ! own parallel E line: if that line is PEC and the conductor only
+      ! own parallel E line: if that line is conductive and the conductor only
       ! continues on one of its two sides, the slot lies on the sheet edge.
-      subroutine rejectThinSlotOnPECSurfacePerimeter(slot)
+      subroutine rejectThinSlotOnSheetPerimeter(slot)
          integer(kind=4), intent(in) :: slot
          integer(kind=4) :: a
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: ownMedium, minusMedium, plusMedium
@@ -4867,9 +4824,9 @@ contains
             if (.not. getThinSlotParallelLines(this%tSlots%Tg(slot)%TgC(a), &
                                                thinSlotData(slot)%normal(a), &
                                                ownMedium, minusMedium, plusMedium)) cycle
-            if (.not. isPECOrThinSlotMedium(ownMedium)) cycle
-            if (isPECOrThinSlotMedium(minusMedium) .neqv. isPECOrThinSlotMedium(plusMedium)) then
-               call StopOnError(layoutnumber, num_procs, 'Thin Slot cannot run along the perimeter of its PEC sheet')
+            if (.not. isThinSlotHostMedium(ownMedium)) cycle
+            if (isThinSlotHostMedium(minusMedium) .neqv. isThinSlotHostMedium(plusMedium)) then
+               call StopOnError(layoutnumber, num_procs, 'Thin Slot cannot run along the perimeter of its conductive sheet')
             end if
          end do
       end subroutine
@@ -4932,19 +4889,22 @@ contains
          end select
       end function
 
-      ! A medium counts as conductor for the slot perimeter test when it is
-      ! PEC or a thin slot: at the junction of two slot legs, one leg stamps
-      ! its perpendicular E edges on the parallel line of the other one, so
-      ! the structure must be considered to continue through the slot medium.
-      logical function isPECOrThinSlotMedium(medium)
+      ! A medium can act as the conductive sheet (host) of a thin slot when it
+      ! is PEC, another thin slot, a surface with non-zero electric
+      ! conductivity, or a surface-impedance material (SGBC/MIBC). Bulk media
+      ! only qualify when applied as a surface: a thin slot is a gap between
+      ! surfaces, so conductive volumes are rejected.
+      logical function isThinSlotHostMedium(medium)
          integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: medium
 
-         isPECOrThinSlotMedium = .false.
-         if (medium == 0) then
-            isPECOrThinSlotMedium = .true.
-         else if (medium > 0 .and. medium <= sgg%NumMedia) then
-            isPECOrThinSlotMedium = sgg%Med(medium)%Is%PEC .or. sgg%Med(medium)%Is%ThinSlot
-         end if
+         isThinSlotHostMedium = .false.
+         if (medium < 0 .or. medium > sgg%NumMedia) return
+         isThinSlotHostMedium = sgg%Med(medium)%Is%PEC .or. &
+            sgg%Med(medium)%Is%ThinSlot .or. &
+            sgg%Med(medium)%Is%SGBC .or. &
+            sgg%Med(medium)%Is%Multiport .or. &
+            sgg%Med(medium)%Is%AnisMultiport .or. &
+            (sgg%Med(medium)%Is%Surface .and. sgg%Med(medium)%Sigma /= 0.0_RKIND)
       end function
 
       subroutine completeThinSlotTurns(slot)
@@ -5207,35 +5167,68 @@ contains
          end select
       end function
 
+      ! A slot terminal lying on the boundary of its conductive sheet gets the
+      ! transverse in-plane E edge stamped so the slot closes against the sheet
+      ! border. The sheet can be PEC, a conductive surface or a
+      ! surface-impedance material.
       subroutine completeThinSlotPerimeterTerminals(slot)
          integer(kind=4), intent(in) :: slot
-         integer(kind=4) :: a, surface, vx, vy, vz, sourceMedium
-         integer(kind=IKINDMTAG) :: sourceTag
+         integer(kind=4) :: a, vx, vy, vz
          type(ThinSlotComp_t) :: component
 
          do a = 1, this%tSlots%Tg(slot)%n_tgc
             component = this%tSlots%Tg(slot)%TgC(a)
             call componentTerminal(component, vx, vy, vz)
             if (thinSlotVertexDegree(slot, vx, vy, vz, thinSlotData(slot)%normal(a)) /= 1) cycle
-            do surface = 1, this%pecregs%nSurfs
-               if (.not. vertexOnPECSurfacePerimeter(component, thinSlotData(slot)%normal(a), vx, vy, vz, &
-                                                      this%pecregs%Surfs(surface))) cycle
-               call getThinSlotMedium(component, thinSlotData(slot)%normal(a), sourceMedium, sourceTag)
-               if (sourceMedium < 0) cycle
-               select case (abs(thinSlotData(slot)%normal(a)))
-               case (iEx)
-                  if (component%dir == iEy) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
-                  if (component%dir == iEz) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
-               case (iEy)
-                  if (component%dir == iEx) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
-                  if (component%dir == iEz) call stampEx(vx, vy, vz, sourceMedium, sourceTag)
-               case (iEz)
-                  if (component%dir == iEx) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
-                  if (component%dir == iEy) call stampEx(vx, vy, vz, sourceMedium, sourceTag)
-               end select
-               exit
+            if (.not. terminalOnHostSheetPerimeter(thinSlotData(slot)%normal(a), vx, vy, vz)) cycle
+            call stampThinSlotTerminalEdge(component, thinSlotData(slot)%normal(a), vx, vy, vz)
+         end do
+      end subroutine
+
+      logical function terminalOnHostSheetPerimeter(normal, vx, vy, vz)
+         integer(kind=4), intent(in) :: normal, vx, vy, vz
+         integer(kind=4) :: i, j
+
+         terminalOnHostSheetPerimeter = .true.
+         do i = 1, this%pecregs%nSurfs
+            if (vertexOnSurfacePerimeter(normal, vx, vy, vz, this%pecregs%Surfs(i))) return
+         end do
+         do i = 1, this%DielRegs%nsurfs
+            if (this%DielRegs%surfs(i)%sigma == 0.0_RKIND) cycle
+            do j = 1, this%DielRegs%surfs(i)%n_c2P
+               if (vertexOnSurfacePerimeter(normal, vx, vy, vz, this%DielRegs%surfs(i)%c2P(j))) return
+            end do
+            do j = 1, this%DielRegs%surfs(i)%n_c1P
+               if (vertexOnSurfacePerimeter(normal, vx, vy, vz, this%DielRegs%surfs(i)%c1P(j))) return
             end do
          end do
+         do i = 1, this%LossyThinSurfs%length
+            do j = 1, this%LossyThinSurfs%cs(i)%nc
+               if (vertexOnSurfacePerimeter(normal, vx, vy, vz, this%LossyThinSurfs%cs(i)%c(j))) return
+            end do
+         end do
+         terminalOnHostSheetPerimeter = .false.
+      end function
+
+      subroutine stampThinSlotTerminalEdge(component, normal, vx, vy, vz)
+         type(ThinSlotComp_t), intent(in) :: component
+         integer(kind=4), intent(in) :: normal, vx, vy, vz
+         integer(kind=4) :: sourceMedium
+         integer(kind=IKINDMTAG) :: sourceTag
+
+         call getThinSlotMedium(component, normal, sourceMedium, sourceTag)
+         if (sourceMedium < 0) return
+         select case (abs(normal))
+         case (iEx)
+            if (component%dir == iEy) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
+            if (component%dir == iEz) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
+         case (iEy)
+            if (component%dir == iEx) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
+            if (component%dir == iEz) call stampEx(vx, vy, vz, sourceMedium, sourceTag)
+         case (iEz)
+            if (component%dir == iEx) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
+            if (component%dir == iEy) call stampEx(vx, vy, vz, sourceMedium, sourceTag)
+         end select
       end subroutine
 
       subroutine componentTerminal(component, vx, vy, vz)
@@ -5267,28 +5260,27 @@ contains
          end do
       end function
 
-      logical function vertexOnPECSurfacePerimeter(component, normal, vx, vy, vz, surface)
-         type(ThinSlotComp_t), intent(in) :: component
+      logical function vertexOnSurfacePerimeter(normal, vx, vy, vz, surface)
          integer(kind=4), intent(in) :: normal, vx, vy, vz
          type(coords_t), intent(in) :: surface
 
-         vertexOnPECSurfacePerimeter = .false.
+         vertexOnSurfacePerimeter = .false.
          if (abs(normal) /= abs(surface%or)) return
          select case (abs(normal))
          case (iEx)
-            vertexOnPECSurfacePerimeter = vx == min(surface%xi, surface%xe) .and. &
+            vertexOnSurfacePerimeter = vx == min(surface%xi, surface%xe) .and. &
                vy >= min(surface%yi, surface%ye) .and. vy <= max(surface%yi, surface%ye) + 1 .and. &
                vz >= min(surface%zi, surface%ze) .and. vz <= max(surface%zi, surface%ze) + 1 .and. &
                (vy == min(surface%yi, surface%ye) .or. vy == max(surface%yi, surface%ye) + 1 .or. &
                 vz == min(surface%zi, surface%ze) .or. vz == max(surface%zi, surface%ze) + 1)
          case (iEy)
-            vertexOnPECSurfacePerimeter = vy == min(surface%yi, surface%ye) .and. &
+            vertexOnSurfacePerimeter = vy == min(surface%yi, surface%ye) .and. &
                vx >= min(surface%xi, surface%xe) .and. vx <= max(surface%xi, surface%xe) + 1 .and. &
                vz >= min(surface%zi, surface%ze) .and. vz <= max(surface%zi, surface%ze) + 1 .and. &
                (vx == min(surface%xi, surface%xe) .or. vx == max(surface%xi, surface%xe) + 1 .or. &
                 vz == min(surface%zi, surface%ze) .or. vz == max(surface%zi, surface%ze) + 1)
          case (iEz)
-            vertexOnPECSurfacePerimeter = vz == min(surface%zi, surface%ze) .and. &
+            vertexOnSurfacePerimeter = vz == min(surface%zi, surface%ze) .and. &
                vx >= min(surface%xi, surface%xe) .and. vx <= max(surface%xi, surface%xe) + 1 .and. &
                vy >= min(surface%yi, surface%ye) .and. vy <= max(surface%yi, surface%ye) + 1 .and. &
                (vx == min(surface%xi, surface%xe) .or. vx == max(surface%xi, surface%xe) + 1 .or. &
